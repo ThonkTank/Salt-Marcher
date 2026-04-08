@@ -1,12 +1,9 @@
 package features.world.dungeon.shell.editor.interaction.input;
 
-import features.world.dungeon.model.interaction.DungeonSelectionRef;
-import features.world.dungeon.state.EditorHover;
-
 public record EditorHitResolution(
-        DungeonSelectionRef hitRef,
-        DungeonSelectionRef resolvedRef,
-        EditorHover hover
+        features.world.dungeon.model.interaction.DungeonSelectionRef hitRef,
+        features.world.dungeon.model.interaction.DungeonSelectionRef resolvedRef,
+        features.world.dungeon.state.EditorHover hover
 ) {
     public EditorHitResolution {
         if (hover != null && hitRef == null) {

@@ -9,7 +9,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 **Target structure:** Salt Marcher is a feature-oriented monolith with one binding target architecture:
 - `src/features/<feature>/...` is the top-level product boundary
 - inside a feature, organize new work by **owner slice first**
-- every non-container directory under `src/` is either an owner, one of the four canonical owner-internal layers `input`, `tasks`, `repository`, `state`, or an organizational `*Bucket` directory directly under an owner
+- every non-container directory under `src/` is either an owner, one of the four canonical owner-internal layers `input`, `task`, `repository`, `state`, or an organizational `*Bucket` directory directly under an owner
 - every owner exposes exactly one public root entrypoint named `<Owner>Object` directly in its root package
 - non-feature code stays in shared homes such as `src/database/`, `src/importer/`, `src/shared/`, `src/ui/`, and `resources/`
 
@@ -133,7 +133,7 @@ Do not reverse that decision order. A capability does not belong in a package be
 
 Technical layers are subordinate tools inside an owner slice, not the primary architecture story:
 - `input` — canonical request and handoff schemas the owner accepts
-- `tasks` — owner-local static input/state transformation pipelines
+- `task` — owner-local static input-to-input transformation pipelines
 - `repository` — persistence-only state reconstruction and state storage
 - `state` — the owner's canonical protected runtime/object state plus the only allowed state factory/transition APIs
 
@@ -142,12 +142,12 @@ No other technical layer names are canonical. Legacy directories such as `model`
 ### Public Owner APIs
 
 - Cross-owner imports must go through the target owner's root package and its single public `<Owner>Object` seam.
-- Owner boundaries are derived structurally. Under `src/`, every non-container directory is either an owner, one of the four allowed layers `input`, `tasks`, `repository`, `state`, or a direct-child `*Bucket` under an owner.
+- Owner boundaries are derived structurally. Under `src/`, every non-container directory is either an owner, one of the four allowed layers `input`, `task`, `repository`, `state`, or a direct-child `*Bucket` under an owner.
 - `*Bucket` is the only organizational directory pattern. A directory that is not one of the four layers and does not end with `Bucket` is an owner by default.
 - `*Bucket` directories are transparent organization only: they may contain only `AGENTS.md` plus direct child owners or direct child layer directories, and they may not contain nested `*Bucket` directories.
 - Subowners must sit directly under their owner or inside one direct-child `*Bucket` of that owner. Layers are always flat and may not contain nested packages, subowners, or additional `*Bucket` directories.
 - Each import may cross only one owner edge: parent, direct child, or sibling with the same parent. Do not skip over intermediate owners to reach a grandchild, niece, or cousin owner directly.
-- Foreign code must never import another owner's `input`, `tasks`, `repository`, or `state` packages directly.
+- Foreign code may import another owner's `input` package only to construct valid requests for that owner. Foreign code must never import another owner's `task`, `repository`, or `state` packages directly.
 
 ### Owner Types vs Value Types
 
@@ -212,9 +212,9 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Treat documentation updates as part of done, not optional cleanup
 
 ### Repository & Owner Conventions
-- `<Owner>Object` is the only public owner entrypoint. It orchestrates requests, tasks, state transitions, and persistence, but it should not contain the owner's actual work logic
+- `<Owner>Object` is the only public owner entrypoint. It orchestrates requests, task pipelines, state transitions, and persistence, but it should not contain the owner's actual work logic
 - Repositories are pure `state <-> storage` translators. They persist owner `state` and reconstruct owner `state`; they do not own workflow logic
-- Tasks are static-only pipelines. They compute from owner `input` plus relevant owner `state`, and return values that the owner can consume directly or hand to the next consumer
+- Task files are static-only pipelines. They consume one project `input`, produce one project `input`, and must not touch repository or state directly
 - Owner `state` is protected runtime/object truth, not UI/session convenience state. State may change only through explicit factory/transition APIs in the same owner's `state` layer
 - Business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
 - Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state

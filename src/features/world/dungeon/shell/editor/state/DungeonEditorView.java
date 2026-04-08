@@ -1,10 +1,10 @@
-package features.world.dungeon.shell.editor;
+package features.world.dungeon.shell.editor.state;
 
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
 import features.world.dungeon.canvas.base.DungeonEditorRenderState;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.shell.AbstractDungeonMapView;
-import features.world.dungeon.shell.editor.interaction.EditorInteraction;
+import features.world.dungeon.shell.editor.interaction.state.EditorInteraction;
 import features.world.dungeon.state.DungeonEditorSessionState;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import features.world.dungeon.state.EditorInteractionState;

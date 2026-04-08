@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor;
+package features.world.dungeon.shell.editor.state;
 
 import features.world.dungeon.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeon.shell.editor.controls.MapControls;

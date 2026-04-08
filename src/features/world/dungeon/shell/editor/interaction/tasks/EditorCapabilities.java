@@ -4,10 +4,6 @@ import features.world.dungeon.shell.editor.interaction.input.EditorHitResolution
 import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
 import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
 
-import features.world.dungeon.model.interaction.DungeonSelectionRef;
-import features.world.dungeon.state.EditorHover;
-import features.world.dungeon.state.EditorHoverScope;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -23,45 +19,58 @@ public final class EditorCapabilities {
         return new EditorInteractionCapability(Objects.requireNonNull(resolver, "resolver"));
     }
 
-    public static EditorInteractionCapability owner(Predicate<DungeonSelectionRef> matcher) {
+    public static EditorInteractionCapability owner(Predicate<features.world.dungeon.model.interaction.DungeonSelectionRef> matcher) {
         return owner(matcher, (ctx, hitRef) -> ctx == null ? null : ctx.ownerRef(hitRef));
     }
 
     public static EditorInteractionCapability owner(
-            Predicate<DungeonSelectionRef> matcher,
-            BiFunction<EditorToolContext, DungeonSelectionRef, DungeonSelectionRef> resolvedRefResolver
+            Predicate<features.world.dungeon.model.interaction.DungeonSelectionRef> matcher,
+            BiFunction<
+                    EditorToolContext,
+                    features.world.dungeon.model.interaction.DungeonSelectionRef,
+                    features.world.dungeon.model.interaction.DungeonSelectionRef> resolvedRefResolver
     ) {
-        return capability(matcher, null, resolvedRefResolver, EditorHoverScope.OWNER);
+        return capability(matcher, null, resolvedRefResolver, features.world.dungeon.state.EditorHoverScope.OWNER);
     }
 
-    public static EditorInteractionCapability part(Predicate<DungeonSelectionRef> matcher) {
+    public static EditorInteractionCapability part(Predicate<features.world.dungeon.model.interaction.DungeonSelectionRef> matcher) {
         return part(matcher, (ctx, hitRef) -> hitRef);
     }
 
     public static EditorInteractionCapability part(
-            Predicate<DungeonSelectionRef> matcher,
-            BiFunction<EditorToolContext, DungeonSelectionRef, DungeonSelectionRef> resolvedRefResolver
+            Predicate<features.world.dungeon.model.interaction.DungeonSelectionRef> matcher,
+            BiFunction<
+                    EditorToolContext,
+                    features.world.dungeon.model.interaction.DungeonSelectionRef,
+                    features.world.dungeon.model.interaction.DungeonSelectionRef> resolvedRefResolver
     ) {
-        return capability(matcher, null, resolvedRefResolver, EditorHoverScope.PART);
+        return capability(matcher, null, resolvedRefResolver, features.world.dungeon.state.EditorHoverScope.PART);
     }
 
-    public static EditorInteractionCapability ref(Predicate<DungeonSelectionRef> matcher) {
+    public static EditorInteractionCapability ref(Predicate<features.world.dungeon.model.interaction.DungeonSelectionRef> matcher) {
         return capability(matcher, null, (ctx, hitRef) -> hitRef, null);
     }
 
-    public static EditorInteractionCapability partFallback(Function<EditorToolContext, DungeonSelectionRef> fallbackHitRefResolver) {
-        return capability(null, fallbackHitRefResolver, (ctx, hitRef) -> hitRef, EditorHoverScope.PART);
+    public static EditorInteractionCapability partFallback(
+            Function<EditorToolContext, features.world.dungeon.model.interaction.DungeonSelectionRef> fallbackHitRefResolver
+    ) {
+        return capability(null, fallbackHitRefResolver, (ctx, hitRef) -> hitRef, features.world.dungeon.state.EditorHoverScope.PART);
     }
 
-    public static EditorInteractionCapability refFallback(Function<EditorToolContext, DungeonSelectionRef> fallbackHitRefResolver) {
+    public static EditorInteractionCapability refFallback(
+            Function<EditorToolContext, features.world.dungeon.model.interaction.DungeonSelectionRef> fallbackHitRefResolver
+    ) {
         return capability(null, fallbackHitRefResolver, (ctx, hitRef) -> hitRef, null);
     }
 
     public static EditorInteractionCapability capability(
-            Predicate<DungeonSelectionRef> matcher,
-            Function<EditorToolContext, DungeonSelectionRef> fallbackHitRefResolver,
-            BiFunction<EditorToolContext, DungeonSelectionRef, DungeonSelectionRef> resolvedRefResolver,
-            EditorHoverScope hoverScope
+            Predicate<features.world.dungeon.model.interaction.DungeonSelectionRef> matcher,
+            Function<EditorToolContext, features.world.dungeon.model.interaction.DungeonSelectionRef> fallbackHitRefResolver,
+            BiFunction<
+                    EditorToolContext,
+                    features.world.dungeon.model.interaction.DungeonSelectionRef,
+                    features.world.dungeon.model.interaction.DungeonSelectionRef> resolvedRefResolver,
+            features.world.dungeon.state.EditorHoverScope hoverScope
     ) {
         Objects.requireNonNull(resolvedRefResolver, "resolvedRefResolver");
         if (matcher == null && fallbackHitRefResolver == null) {
@@ -72,30 +81,34 @@ public final class EditorCapabilities {
 
     private static EditorHitResolution resolve(
             EditorToolContext ctx,
-            Predicate<DungeonSelectionRef> matcher,
-            Function<EditorToolContext, DungeonSelectionRef> fallbackHitRefResolver,
-            BiFunction<EditorToolContext, DungeonSelectionRef, DungeonSelectionRef> resolvedRefResolver,
-            EditorHoverScope hoverScope
+            Predicate<features.world.dungeon.model.interaction.DungeonSelectionRef> matcher,
+            Function<EditorToolContext, features.world.dungeon.model.interaction.DungeonSelectionRef> fallbackHitRefResolver,
+            BiFunction<
+                    EditorToolContext,
+                    features.world.dungeon.model.interaction.DungeonSelectionRef,
+                    features.world.dungeon.model.interaction.DungeonSelectionRef> resolvedRefResolver,
+            features.world.dungeon.state.EditorHoverScope hoverScope
     ) {
-        DungeonSelectionRef hitRef = resolveHitRef(ctx, matcher, fallbackHitRefResolver);
+        features.world.dungeon.model.interaction.DungeonSelectionRef hitRef = resolveHitRef(ctx, matcher, fallbackHitRefResolver);
         if (hitRef == null) {
             return EditorHitResolution.none();
         }
-        DungeonSelectionRef resolvedRef = resolvedRefResolver.apply(ctx, hitRef);
+        features.world.dungeon.model.interaction.DungeonSelectionRef resolvedRef = resolvedRefResolver.apply(ctx, hitRef);
         return new EditorHitResolution(hitRef, resolvedRef, resolveHover(hitRef, resolvedRef, hoverScope));
     }
 
-    private static DungeonSelectionRef resolveHitRef(
+    private static features.world.dungeon.model.interaction.DungeonSelectionRef resolveHitRef(
             EditorToolContext ctx,
-            Predicate<DungeonSelectionRef> matcher,
-            Function<EditorToolContext, DungeonSelectionRef> fallbackHitRefResolver
+            Predicate<features.world.dungeon.model.interaction.DungeonSelectionRef> matcher,
+            Function<EditorToolContext, features.world.dungeon.model.interaction.DungeonSelectionRef> fallbackHitRefResolver
     ) {
         if (ctx == null) {
             return null;
         }
         if (matcher != null) {
-            List<DungeonSelectionRef> refs = ctx.snapshot() == null ? List.of() : ctx.snapshot().orderedRefs();
-            for (DungeonSelectionRef ref : refs) {
+            List<features.world.dungeon.model.interaction.DungeonSelectionRef> refs =
+                    ctx.snapshot() == null ? List.of() : ctx.snapshot().orderedRefs();
+            for (features.world.dungeon.model.interaction.DungeonSelectionRef ref : refs) {
                 if (ref != null && matcher.test(ref)) {
                     return ref;
                 }
@@ -104,18 +117,18 @@ public final class EditorCapabilities {
         return fallbackHitRefResolver == null ? null : fallbackHitRefResolver.apply(ctx);
     }
 
-    private static EditorHover resolveHover(
-            DungeonSelectionRef hitRef,
-            DungeonSelectionRef resolvedRef,
-            EditorHoverScope hoverScope
+    private static features.world.dungeon.state.EditorHover resolveHover(
+            features.world.dungeon.model.interaction.DungeonSelectionRef hitRef,
+            features.world.dungeon.model.interaction.DungeonSelectionRef resolvedRef,
+            features.world.dungeon.state.EditorHoverScope hoverScope
     ) {
         if (hoverScope == null || hitRef == null) {
             return null;
         }
-        DungeonSelectionRef hoverRef = switch (hoverScope) {
+        features.world.dungeon.model.interaction.DungeonSelectionRef hoverRef = switch (hoverScope) {
             case OWNER -> resolvedRef == null ? null : resolvedRef;
             case PART -> hitRef;
         };
-        return hoverRef == null ? null : new EditorHover(hoverRef, hoverScope);
+        return hoverRef == null ? null : new features.world.dungeon.state.EditorHover(hoverRef, hoverScope);
     }
 }

@@ -779,16 +779,45 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
 
 val checkOwnerApiBoundaryConvention by tasks.registering {
     group = "verification"
-    description = "Fail when touched files drift away from the canonical OwnerObject/input/tasks/repository/state/*Bucket structure."
+    description = "Fail when touched files drift away from the canonical *Object/input/task/repository/state/*Bucket structure."
 
     val projectRoot = layout.projectDirectory.asFile.toPath()
     val projectDirFile = layout.projectDirectory.asFile
     val srcDirFile = projectDirFile.resolve("src")
     val srcRootPath = srcDirFile.toPath()
     val importPattern = Regex("""^\s*import\s+(?:static\s+)?([a-zA-Z0-9_.*]+);""", RegexOption.MULTILINE)
+    val explicitImportPattern = Regex("""^\s*import\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
     val packagePattern = Regex("""^\s*package\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
-    val allowedLayers = setOf("input", "tasks", "repository", "state")
     val bucketSuffix = "Bucket"
+    val ownerRole = "owner"
+    val inputRole = "input"
+    val taskRole = "task"
+    val repositoryRole = "repository"
+    val stateRole = "state"
+    val bucketRole = "bucket"
+
+    data class TypeImports(
+        val explicitTypes: Map<String, String>,
+        val wildcardPackages: Set<String>,
+        val importedPackages: List<String>
+    )
+
+    data class SourceContext(
+        val path: String,
+        val file: File,
+        val packageName: String,
+        val dirName: String,
+        val role: String,
+        val ownerPackage: String,
+        val className: String,
+        val typeImports: TypeImports
+    )
+
+    data class MethodShape(
+        val returnType: String,
+        val parameterTypes: List<String>,
+        val isStatic: Boolean
+    )
 
     fun gitStdout(vararg args: String): String {
         val process = ProcessBuilder(listOf("git", *args))
@@ -828,155 +857,33 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         return relativePath.split('/').filter(String::isNotBlank)
     }
 
-    fun repoRelativePath(file: File): String {
-        return projectRoot.relativize(file.toPath()).toString().replace('\\', '/')
-    }
-
     fun packageNameFor(file: File): String {
         return srcRelativeSegments(file).joinToString(".")
-    }
-
-    fun isBucketName(name: String): Boolean {
-        return name.endsWith(bucketSuffix)
     }
 
     fun directChildren(dir: File): List<File> {
         return dir.listFiles()?.sortedBy(File::getName).orEmpty()
     }
 
-    data class OwnerNode(
-        val dir: File,
-        val srcRelativePath: String,
-        val packageName: String,
-        val parentOwnerPackageName: String?
-    ) {
-        fun ownerName(): String = dir.name
+    fun isBucketName(name: String): Boolean {
+        return name.endsWith(bucketSuffix)
     }
 
-    data class LayerNode(
-        val dir: File,
-        val srcRelativePath: String,
-        val packageName: String,
-        val layerName: String,
-        val owner: OwnerNode
-    )
-
-    val ownersByDirPath = linkedMapOf<String, OwnerNode>()
-    val ownersByPackage = linkedMapOf<String, OwnerNode>()
-    val layersByDirPath = linkedMapOf<String, LayerNode>()
-    val invalidReasonsByDirPath = linkedMapOf<String, MutableList<String>>()
-
-    fun recordInvalid(dir: File, reason: String) {
-        invalidReasonsByDirPath.getOrPut(srcRelativePath(dir)) { mutableListOf() }.add(reason)
-    }
-
-    fun scanLayer(owner: OwnerNode, dir: File) {
-        val relativePath = srcRelativePath(dir)
-        if (directChildren(dir).any(File::isDirectory)) {
-            recordInvalid(dir, "${repoRelativePath(dir)} :: layers are flat and may not contain subdirectories")
-        }
-        layersByDirPath[relativePath] = LayerNode(
-            dir = dir,
-            srcRelativePath = relativePath,
-            packageName = packageNameFor(dir),
-            layerName = dir.name,
-            owner = owner
-        )
-    }
-
-    fun scanOwner(dir: File, parentOwner: OwnerNode?) {
-        val relativePath = srcRelativePath(dir)
-        val owner = OwnerNode(
-            dir = dir,
-            srcRelativePath = relativePath,
-            packageName = packageNameFor(dir),
-            parentOwnerPackageName = parentOwner?.packageName
-        )
-        ownersByDirPath[relativePath] = owner
-        ownersByPackage[owner.packageName] = owner
-        directChildren(dir).filter(File::isDirectory).forEach { child ->
-            when {
-                child.name in allowedLayers -> scanLayer(owner, child)
-                isBucketName(child.name) -> {
-                    val disallowedFiles = directChildren(child).filter(File::isFile).filter { it.name != "AGENTS.md" }
-                    if (disallowedFiles.isNotEmpty()) {
-                        recordInvalid(
-                            child,
-                            "${repoRelativePath(child)} :: *Bucket directories may contain only AGENTS.md and child owner/layer directories"
-                        )
-                    }
-                    directChildren(child).filter(File::isDirectory).forEach { bucketChild ->
-                        when {
-                            bucketChild.name in allowedLayers -> scanLayer(owner, bucketChild)
-                            isBucketName(bucketChild.name) -> recordInvalid(
-                                bucketChild,
-                                "${repoRelativePath(bucketChild)} :: *Bucket directories may not contain nested *Bucket directories"
-                            )
-                            else -> scanOwner(bucketChild, owner)
-                        }
-                    }
-                }
-                else -> scanOwner(child, owner)
-            }
+    fun roleForDirectoryName(name: String): String {
+        return when (name) {
+            inputRole -> inputRole
+            taskRole -> taskRole
+            repositoryRole -> repositoryRole
+            stateRole -> stateRole
+            else -> if (isBucketName(name)) bucketRole else ownerRole
         }
     }
 
-    if (srcDirFile.isDirectory) {
-        directChildren(srcDirFile).filter(File::isDirectory).forEach { child ->
-            when {
-                child.name == "features" -> {
-                    directChildren(child).filter(File::isDirectory).forEach { featureChild ->
-                        when {
-                            featureChild.name in allowedLayers -> recordInvalid(
-                                featureChild,
-                                "${repoRelativePath(featureChild)} :: canonical layers may appear only inside an owner or *Bucket"
-                            )
-                            isBucketName(featureChild.name) -> recordInvalid(
-                                featureChild,
-                                "${repoRelativePath(featureChild)} :: *Bucket directories may appear only directly under an owner"
-                            )
-                            else -> scanOwner(featureChild, null)
-                        }
-                    }
-                }
-                child.name in allowedLayers -> recordInvalid(
-                    child,
-                    "${repoRelativePath(child)} :: canonical layers may appear only inside an owner or *Bucket"
-                )
-                isBucketName(child.name) -> recordInvalid(
-                    child,
-                    "${repoRelativePath(child)} :: *Bucket directories may appear only directly under an owner"
-                )
-                else -> scanOwner(child, null)
-            }
+    fun ownerPackageFor(packageName: String, role: String): String {
+        return when (role) {
+            inputRole, taskRole, repositoryRole, stateRole, bucketRole -> packageName.substringBeforeLast('.', "")
+            else -> packageName
         }
-    }
-
-    val ownersByDescendingPackageLength = ownersByPackage.values.sortedByDescending { it.packageName.length }
-
-    fun ownerForPackage(packageName: String?): OwnerNode? {
-        if (packageName.isNullOrBlank()) {
-            return null
-        }
-        return ownersByDescendingPackageLength.firstOrNull { owner ->
-            packageName == owner.packageName || packageName.startsWith(owner.packageName + ".")
-        }
-    }
-
-    fun ownerForFile(sourceFile: File): OwnerNode? {
-        var current = sourceFile.parentFile
-        while (current != null && current.toPath().startsWith(srcRootPath)) {
-            val owner = ownersByDirPath[srcRelativePath(current)]
-            if (owner != null) {
-                return owner
-            }
-            current = current.parentFile
-        }
-        return null
-    }
-
-    fun layerForFile(sourceFile: File): LayerNode? {
-        return layersByDirPath[srcRelativePath(sourceFile.parentFile)]
     }
 
     fun importedPackageName(imported: String, knownPackages: Set<String>): String? {
@@ -994,132 +901,346 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         return null
     }
 
-    fun ownerRootReasons(owner: OwnerNode): List<String> {
-        if (!owner.dir.isDirectory) {
-            return listOf("${repoRelativePath(owner.dir)} :: owner root directory is missing")
+    fun parseTypeImports(sourceText: String, knownPackages: Set<String>): TypeImports {
+        val explicitTypes = linkedMapOf<String, String>()
+        val wildcardPackages = linkedSetOf<String>()
+        val importedPackages = mutableListOf<String>()
+        explicitImportPattern.findAll(sourceText)
+            .map { match -> match.groupValues[1] }
+            .forEach { imported ->
+                importedPackageName(imported, knownPackages)?.let(importedPackages::add)
+                if (imported.endsWith(".*")) {
+                    wildcardPackages += imported.removeSuffix(".*")
+                } else {
+                    explicitTypes[imported.substringAfterLast('.')] = imported
+                }
+            }
+        return TypeImports(
+            explicitTypes = explicitTypes,
+            wildcardPackages = wildcardPackages,
+            importedPackages = importedPackages
+        )
+    }
+
+    fun splitTopLevelCommas(raw: String): List<String> {
+        if (raw.isBlank()) {
+            return emptyList()
         }
-        val directJavaFiles = directChildren(owner.dir)
-            .filter { child -> child.isFile && child.name.endsWith(".java") && child.name != "package-info.java" }
-        val matchingRootObjects = directJavaFiles.filter { child ->
-            child.name.endsWith("Object.java") &&
-                normalizedToken(child.name.removeSuffix(".java").removeSuffix("Object")) == normalizedToken(owner.ownerName())
+        val result = mutableListOf<String>()
+        val current = StringBuilder()
+        var depth = 0
+        raw.forEach { ch ->
+            when (ch) {
+                '<' -> {
+                    depth += 1
+                    current.append(ch)
+                }
+                '>' -> {
+                    depth = (depth - 1).coerceAtLeast(0)
+                    current.append(ch)
+                }
+                ',' -> {
+                    if (depth == 0) {
+                        result += current.toString().trim()
+                        current.setLength(0)
+                    } else {
+                        current.append(ch)
+                    }
+                }
+                else -> current.append(ch)
+            }
         }
-        val matchingRootObject = matchingRootObjects.singleOrNull()
+        val tail = current.toString().trim()
+        if (tail.isNotBlank()) {
+            result += tail
+        }
+        return result
+    }
+
+    fun parameterType(parameter: String): String {
+        val cleaned = parameter
+            .replace(Regex("""@\w+(?:\([^)]*\))?\s*"""), " ")
+            .replace(Regex("""\bfinal\s+"""), "")
+            .trim()
+            .replace("...", "[]")
+        val tokens = cleaned.split(Regex("""\s+""")).filter(String::isNotBlank)
+        if (tokens.size < 2) {
+            return cleaned
+        }
+        return tokens.dropLast(1).joinToString(" ")
+    }
+
+    fun publicMethods(sourceText: String): List<MethodShape> {
+        val pattern = Regex(
+            """(?m)^\s*public\s+(static\s+)?([A-Za-z0-9_<>\[\],.? ]+)\s+[A-Za-z_][A-Za-z0-9_]*\s*\(([^)]*)\)"""
+        )
+        return pattern.findAll(sourceText)
+            .map { match ->
+                MethodShape(
+                    returnType = match.groupValues[2].trim(),
+                    parameterTypes = splitTopLevelCommas(match.groupValues[3]).map(::parameterType),
+                    isStatic = match.groupValues[1].isNotBlank()
+                )
+            }
+            .toList()
+    }
+
+    fun projectTypePackages(
+        typeRef: String,
+        sourcePackage: String,
+        typeImports: TypeImports,
+        knownTypeNames: Set<String>
+    ): Set<String> {
+        val projectPackages = linkedSetOf<String>()
+        val fqcnPattern = Regex("""\b[a-z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][A-Za-z0-9_]*)*\.[A-Z][A-Za-z0-9_]*\b""")
+        fqcnPattern.findAll(typeRef).forEach { match ->
+            val fqcn = match.value
+            if (fqcn in knownTypeNames) {
+                projectPackages += fqcn.substringBeforeLast('.')
+            }
+        }
+        val simplePattern = Regex("""\b[A-Z][A-Za-z0-9_]*\b""")
+        simplePattern.findAll(typeRef).forEach { match ->
+            val simpleName = match.value
+            val importedFqcn = typeImports.explicitTypes[simpleName]
+            val candidates = buildList {
+                if (importedFqcn != null) {
+                    add(importedFqcn)
+                } else {
+                    add("$sourcePackage.$simpleName")
+                    typeImports.wildcardPackages.forEach { wildcardPackage ->
+                        add("$wildcardPackage.$simpleName")
+                    }
+                }
+            }
+            candidates.firstOrNull { candidate -> candidate in knownTypeNames }?.let { fqcn ->
+                projectPackages += fqcn.substringBeforeLast('.')
+            }
+        }
+        return projectPackages
+    }
+
+    fun sameOwner(sourceOwnerPackage: String, targetPackage: String): Boolean {
+        val targetRole = roleForDirectoryName(targetPackage.substringAfterLast('.'))
+        return ownerPackageFor(targetPackage, targetRole) == sourceOwnerPackage
+    }
+
+    fun ownerFileReasons(context: SourceContext, sourceText: String, knownTypeNames: Set<String>): List<String> {
         val reasons = mutableListOf<String>()
-        if (matchingRootObject == null) {
-            reasons += "${repoRelativePath(owner.dir)} :: owner root must contain exactly one public final *Object root type that matches the directory name"
+        val siblingJavaFiles = directChildren(context.file.parentFile)
+            .filter { child -> child.isFile && child.name.endsWith(".java") && child.name != "package-info.java" }
+        if (!context.className.endsWith("Object.java")) {
+            reasons += "${context.path} :: owner files must be named *Object"
         }
-        if (directJavaFiles.size != 1 || matchingRootObject == null || directJavaFiles.single() != matchingRootObject) {
-            reasons += "${repoRelativePath(owner.dir)} :: owner root must not contain Java types besides its single matching *Object"
+        if (normalizedToken(context.className.removeSuffix(".java").removeSuffix("Object")) != normalizedToken(context.dirName)) {
+            reasons += "${context.path} :: owner file name must match its directory name"
         }
-        matchingRootObject?.let { rootObjectFile ->
-            val className = rootObjectFile.name.removeSuffix(".java")
-            val rootText = rootObjectFile.readText()
-            val isPublicFinalClass = Regex("""(?m)^\s*public\s+final\s+class\s+$className\b""").containsMatchIn(rootText)
-            if (!isPublicFinalClass) {
-                reasons += "${repoRelativePath(rootObjectFile)} :: $className must be declared as a public final class"
+        if (siblingJavaFiles.size != 1 || siblingJavaFiles.single().canonicalFile != context.file.canonicalFile) {
+            reasons += "${context.path} :: owner directories may contain exactly one Java file"
+        }
+        val className = context.className.removeSuffix(".java")
+        if (!Regex("""(?m)^\s*public\s+final\s+class\s+$className\b""").containsMatchIn(sourceText)) {
+            reasons += "${context.path} :: owner files must declare a public final class named $className"
+        }
+        context.typeImports.importedPackages.forEach { importedPackage ->
+            val targetRole = roleForDirectoryName(importedPackage.substringAfterLast('.'))
+            val allowed = when {
+                sameOwner(context.ownerPackage, importedPackage) ->
+                    targetRole in setOf(inputRole, taskRole, stateRole, repositoryRole)
+                targetRole == ownerRole -> true
+                targetRole == inputRole -> true
+                else -> false
+            }
+            if (!allowed) {
+                reasons += "${context.path} -> $importedPackage :: owner files may import only own input/task/state/repository plus foreign owner roots and foreign input"
+            }
+        }
+        publicMethods(sourceText).forEach { method ->
+            val paramPackages = method.parameterTypes.flatMap { type ->
+                projectTypePackages(type, context.packageName, context.typeImports, knownTypeNames)
+            }
+            val returnPackages = projectTypePackages(method.returnType, context.packageName, context.typeImports, knownTypeNames)
+            (paramPackages + returnPackages).distinct().forEach { projectPackage ->
+                if (roleForDirectoryName(projectPackage.substringAfterLast('.')) != inputRole) {
+                    reasons += "${context.path} :: owner public methods may expose only input types from project code"
+                }
             }
         }
         return reasons
     }
 
-    fun layerTemplateReason(path: String, sourceText: String, layer: LayerNode?): String? {
-        if (layer == null || path.endsWith("package-info.java")) {
-            return null
+    fun inputFileReasons(context: SourceContext, sourceText: String): List<String> {
+        val reasons = mutableListOf<String>()
+        val className = context.className.removeSuffix(".java")
+        val isRecord = Regex("""(?m)^\s*(public\s+)?record\s+$className\b""").containsMatchIn(sourceText)
+        val isEnum = Regex("""(?m)^\s*(public\s+)?enum\s+$className\b""").containsMatchIn(sourceText)
+        val isSealedInterface = Regex("""(?m)^\s*(public\s+)?sealed\s+interface\s+$className\b""").containsMatchIn(sourceText)
+        if (!(isRecord || isEnum || isSealedInterface)) {
+            reasons += "${context.path} :: input files must declare a record, enum, or sealed interface"
         }
-        val className = path.substringAfterLast('/').removeSuffix(".java")
-
-        fun isRecord(): Boolean = Regex("""(?m)^\s*(public\s+)?record\s+$className\b""").containsMatchIn(sourceText)
-        fun isEnum(): Boolean = Regex("""(?m)^\s*(public\s+)?enum\s+$className\b""").containsMatchIn(sourceText)
-        fun isSealedInterface(): Boolean = Regex("""(?m)^\s*(public\s+)?sealed\s+interface\s+$className\b""").containsMatchIn(sourceText)
-        fun isFinalClass(): Boolean = Regex("""(?m)^\s*(public\s+)?final\s+class\s+$className\b""").containsMatchIn(sourceText)
-        fun hasPrivateConstructor(): Boolean =
-            Regex("""(?m)^\s*private\s+$className\s*\(\s*\)\s*\{""").containsMatchIn(sourceText)
-        fun hasPublicConstructor(): Boolean =
-            Regex("""(?m)^\s*public\s+$className\s*\(""").containsMatchIn(sourceText)
-        fun hasPublicStaticMethod(): Boolean =
-            Regex("""(?m)^\s*public\s+static\s+[\w<>\[\], ?]+\s+\w+\s*\(""").containsMatchIn(sourceText)
-        fun hasInstanceMethod(): Boolean =
-            Regex("""(?m)^\s*public\s+(?!static\b)(?!final\b)(?!class\b|record\b|enum\b|sealed\b|interface\b)[\w<>\[\], ?]+\s+\w+\s*\(""")
-                .containsMatchIn(sourceText)
-
-        return when (layer.layerName) {
-            "input" -> {
-                if (isRecord() || isEnum() || isSealedInterface()) {
-                    null
-                } else {
-                    "$path :: input types must be declared as record, enum, or sealed interface"
-                }
+        context.typeImports.importedPackages.forEach { importedPackage ->
+            if (roleForDirectoryName(importedPackage.substringAfterLast('.')) != inputRole) {
+                reasons += "${context.path} -> $importedPackage :: input files may import only other input packages from project code"
             }
-            "tasks" -> {
-                when {
-                    !isFinalClass() -> "$path :: tasks must be final classes"
-                    !hasPrivateConstructor() -> "$path :: tasks must hide construction behind a private constructor"
-                    hasPublicConstructor() -> "$path :: tasks must not expose public constructors"
-                    !hasPublicStaticMethod() -> "$path :: tasks must expose at least one public static pipeline method"
-                    hasInstanceMethod() -> "$path :: tasks must not expose public instance methods"
-                    else -> null
-                }
-            }
-            "repository" -> {
-                when {
-                    !isFinalClass() -> "$path :: repositories must be final classes"
-                    !hasPrivateConstructor() -> "$path :: repositories must hide construction behind a private constructor"
-                    hasPublicConstructor() -> "$path :: repositories must not expose public constructors"
-                    !hasPublicStaticMethod() -> "$path :: repositories must expose public static persistence methods"
-                    hasInstanceMethod() -> "$path :: repositories must not expose public instance methods"
-                    else -> null
-                }
-            }
-            "state" -> {
-                if (isRecord() || isEnum() || isFinalClass()) {
-                    null
-                } else {
-                    "$path :: state types must be records, enums, or final classes"
-                }
-            }
-            else -> null
         }
+        return reasons
     }
 
-    fun sourcePlacementReason(path: String, sourceFile: File, sourcePackage: String?): String? {
+    fun taskFileReasons(context: SourceContext, sourceText: String, knownTypeNames: Set<String>): List<String> {
+        val reasons = mutableListOf<String>()
+        val className = context.className.removeSuffix(".java")
+        val isFinalClass = Regex("""(?m)^\s*(public\s+)?final\s+class\s+$className\b""").containsMatchIn(sourceText)
+        val hasPrivateConstructor = Regex("""(?m)^\s*private\s+$className\s*\(""").containsMatchIn(sourceText)
+        val hasPublicConstructor = Regex("""(?m)^\s*public\s+$className\s*\(""").containsMatchIn(sourceText)
+        if (!isFinalClass) {
+            reasons += "${context.path} :: task files must declare a final class"
+        }
+        if (!hasPrivateConstructor || hasPublicConstructor) {
+            reasons += "${context.path} :: task files must hide construction behind a private constructor"
+        }
+        context.typeImports.importedPackages.forEach { importedPackage ->
+            if (roleForDirectoryName(importedPackage.substringAfterLast('.')) != inputRole) {
+                reasons += "${context.path} -> $importedPackage :: task files may import only input packages from project code"
+            }
+        }
+        val methods = publicMethods(sourceText)
+        val publicStaticMethods = methods.filter(MethodShape::isStatic)
+        val publicInstanceMethods = methods.filterNot(MethodShape::isStatic)
+        if (publicStaticMethods.size != 1) {
+            reasons += "${context.path} :: task files must expose exactly one public static method"
+        }
+        if (publicInstanceMethods.isNotEmpty()) {
+            reasons += "${context.path} :: task files must not expose public instance methods"
+        }
+        publicStaticMethods.singleOrNull()?.let { method ->
+            if (method.parameterTypes.size != 1) {
+                reasons += "${context.path} :: task files must model exactly one input parameter"
+            }
+            val paramPackages = method.parameterTypes.flatMap { type ->
+                projectTypePackages(type, context.packageName, context.typeImports, knownTypeNames)
+            }.distinct()
+            val returnPackages = projectTypePackages(method.returnType, context.packageName, context.typeImports, knownTypeNames)
+            if (paramPackages.size != 1 || paramPackages.any { projectPackage ->
+                    roleForDirectoryName(projectPackage.substringAfterLast('.')) != inputRole
+                }
+            ) {
+                reasons += "${context.path} :: task methods must accept exactly one project input type"
+            }
+            if (returnPackages.size != 1 || returnPackages.any { projectPackage ->
+                    roleForDirectoryName(projectPackage.substringAfterLast('.')) != inputRole
+                }
+            ) {
+                reasons += "${context.path} :: task methods must return exactly one project input type"
+            }
+        }
+        return reasons
+    }
+
+    fun stateFileReasons(context: SourceContext, sourceText: String, knownTypeNames: Set<String>): List<String> {
+        val reasons = mutableListOf<String>()
+        val className = context.className.removeSuffix(".java")
+        val isRecord = Regex("""(?m)^\s*(public\s+)?record\s+$className\b""").containsMatchIn(sourceText)
+        val isEnum = Regex("""(?m)^\s*(public\s+)?enum\s+$className\b""").containsMatchIn(sourceText)
+        val isFinalClass = Regex("""(?m)^\s*(public\s+)?final\s+class\s+$className\b""").containsMatchIn(sourceText)
+        if (!(isRecord || isEnum || isFinalClass)) {
+            reasons += "${context.path} :: state files must declare a final class, record, or enum"
+        }
+        if (isFinalClass && Regex("""(?m)^\s*public\s+$className\s*\(""").containsMatchIn(sourceText)) {
+            reasons += "${context.path} :: state classes must use factory or transition methods instead of public constructors"
+        }
+        context.typeImports.importedPackages.forEach { importedPackage ->
+            val importedRole = roleForDirectoryName(importedPackage.substringAfterLast('.'))
+            val allowed = sameOwner(context.ownerPackage, importedPackage) && importedRole in setOf(inputRole, stateRole)
+            if (!allowed) {
+                reasons += "${context.path} -> $importedPackage :: state files may import only own input and own state packages"
+            }
+        }
+        val methods = publicMethods(sourceText)
+        if (methods.any { !it.isStatic }) {
+            reasons += "${context.path} :: state files must not expose public instance methods"
+        }
+        methods.filter(MethodShape::isStatic).forEach { method ->
+            val paramPackages = method.parameterTypes.flatMap { type ->
+                projectTypePackages(type, context.packageName, context.typeImports, knownTypeNames)
+            }.distinct()
+            val returnPackages = projectTypePackages(method.returnType, context.packageName, context.typeImports, knownTypeNames)
+            if (paramPackages.any { projectPackage ->
+                    !sameOwner(context.ownerPackage, projectPackage) ||
+                        roleForDirectoryName(projectPackage.substringAfterLast('.')) !in setOf(inputRole, stateRole)
+                }
+            ) {
+                reasons += "${context.path} :: state factories may accept only own input and own state types"
+            }
+            if (returnPackages.any { projectPackage ->
+                    !sameOwner(context.ownerPackage, projectPackage) ||
+                        roleForDirectoryName(projectPackage.substringAfterLast('.')) != stateRole
+                }
+            ) {
+                reasons += "${context.path} :: state factories may return only own state types"
+            }
+        }
+        return reasons
+    }
+
+    fun repositoryFileReasons(context: SourceContext, sourceText: String, knownTypeNames: Set<String>): List<String> {
+        val reasons = mutableListOf<String>()
+        val className = context.className.removeSuffix(".java")
+        val isFinalClass = Regex("""(?m)^\s*(public\s+)?final\s+class\s+$className\b""").containsMatchIn(sourceText)
+        val hasPrivateConstructor = Regex("""(?m)^\s*private\s+$className\s*\(""").containsMatchIn(sourceText)
+        val hasPublicConstructor = Regex("""(?m)^\s*public\s+$className\s*\(""").containsMatchIn(sourceText)
+        if (!isFinalClass) {
+            reasons += "${context.path} :: repository files must declare a final class"
+        }
+        if (!hasPrivateConstructor || hasPublicConstructor) {
+            reasons += "${context.path} :: repository files must hide construction behind a private constructor"
+        }
+        context.typeImports.importedPackages.forEach { importedPackage ->
+            val importedRole = roleForDirectoryName(importedPackage.substringAfterLast('.'))
+            val allowed = sameOwner(context.ownerPackage, importedPackage) && importedRole == stateRole
+            if (!allowed) {
+                reasons += "${context.path} -> $importedPackage :: repository files may import only own state packages from project code"
+            }
+        }
+        val methods = publicMethods(sourceText)
+        if (methods.none(MethodShape::isStatic)) {
+            reasons += "${context.path} :: repository files must expose public static persistence methods"
+        }
+        if (methods.any { !it.isStatic }) {
+            reasons += "${context.path} :: repository files must not expose public instance methods"
+        }
+        methods.filter(MethodShape::isStatic).forEach { method ->
+            val paramPackages = method.parameterTypes.flatMap { type ->
+                projectTypePackages(type, context.packageName, context.typeImports, knownTypeNames)
+            }.distinct()
+            val returnPackages = projectTypePackages(method.returnType, context.packageName, context.typeImports, knownTypeNames)
+            if (paramPackages.any { projectPackage ->
+                    !sameOwner(context.ownerPackage, projectPackage) ||
+                        roleForDirectoryName(projectPackage.substringAfterLast('.')) != stateRole
+                }
+            ) {
+                reasons += "${context.path} :: repository methods may accept only own state types from project code"
+            }
+            if (returnPackages.any { projectPackage ->
+                    !sameOwner(context.ownerPackage, projectPackage) ||
+                        roleForDirectoryName(projectPackage.substringAfterLast('.')) != stateRole
+                }
+            ) {
+                reasons += "${context.path} :: repository methods may return only own state types from project code"
+            }
+        }
+        return reasons
+    }
+
+    fun sourcePlacementReasons(path: String, sourceFile: File, sourcePackage: String?, role: String): List<String> {
+        val reasons = mutableListOf<String>()
         val expectedPackage = packageNameFor(sourceFile.parentFile)
         if (sourcePackage != expectedPackage) {
-            return "$path :: package must match the filesystem grammar exactly ($expectedPackage)"
+            reasons += "$path :: package must match the filesystem grammar exactly ($expectedPackage)"
         }
-        val parentDirPath = srcRelativePath(sourceFile.parentFile)
-        if (layersByDirPath[parentDirPath] != null || ownersByDirPath[parentDirPath] != null) {
-            return null
+        if (role == bucketRole) {
+            reasons += "$path :: *Bucket directories must not contain Java files"
         }
-        if (isBucketName(sourceFile.parentFile.name)) {
-            return "$path :: Java files may not live directly inside *Bucket directories"
-        }
-        return "$path :: Java files must live either in an owner root or in one of the four canonical layers"
-    }
-
-    fun ancestorStructureReasons(sourceFile: File): Sequence<String> {
-        val reasons = linkedSetOf<String>()
-        var current = sourceFile.parentFile
-        while (current != null && current.toPath().startsWith(srcRootPath)) {
-            invalidReasonsByDirPath[srcRelativePath(current)].orEmpty().forEach(reasons::add)
-            current = current.parentFile
-        }
-        return reasons.asSequence()
-    }
-
-    fun isNeighbor(sourceOwner: OwnerNode?, targetOwner: OwnerNode): Boolean {
-        if (sourceOwner == null) {
-            return targetOwner.parentOwnerPackageName == null
-        }
-        val sourceParent = sourceOwner.parentOwnerPackageName
-        val targetParent = targetOwner.parentOwnerPackageName
-        if (sourceParent == targetOwner.packageName) {
-            return true
-        }
-        if (targetParent == sourceOwner.packageName) {
-            return true
-        }
-        return sourceParent != null && sourceParent == targetParent
+        return reasons
     }
 
     fun touchedJavaPaths(): Set<String> {
@@ -1150,28 +1271,15 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                 packagePattern.find(sourceFile.readText())?.groupValues?.get(1)
             }
             .toSet()
-        val touchedOwnerRoots = linkedSetOf<OwnerNode>()
-        fileTree("src") {
+        val knownTypeNames = fileTree("src") {
             include("**/*.java")
+            exclude("**/package-info.java")
         }.files
-            .asSequence()
-            .map { sourceFile ->
-                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
-                path to sourceFile
+            .mapNotNull { sourceFile ->
+                val packageName = packagePattern.find(sourceFile.readText())?.groupValues?.get(1) ?: return@mapNotNull null
+                "$packageName.${sourceFile.nameWithoutExtension}"
             }
-            .filter { (path, _) -> path in touchedPaths }
-            .forEach { (_, sourceFile) ->
-                val sourceText = sourceFile.readText()
-                ownerForFile(sourceFile)?.let(touchedOwnerRoots::add)
-                importPattern.findAll(sourceText)
-                    .map { match -> match.groupValues[1] }
-                    .mapNotNull { imported -> importedPackageName(imported, knownPackages) }
-                    .mapNotNull(::ownerForPackage)
-                    .forEach(touchedOwnerRoots::add)
-            }
-        val ownerRootObjectOffenders = touchedOwnerRoots.asSequence()
-            .flatMap { owner -> ownerRootReasons(owner).asSequence() }
-            .sorted()
+            .toSet()
 
         val offenders = fileTree("src") {
             include("**/*.java")
@@ -1185,51 +1293,40 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
             .flatMap { (path, sourceFile) ->
                 val sourceText = sourceFile.readText()
                 val sourcePackage = packagePattern.find(sourceText)?.groupValues?.get(1)
-                val sourceOwner = ownerForFile(sourceFile)
-                val layer = layerForFile(sourceFile)
-                val placementOffender = sourcePlacementReason(path, sourceFile, sourcePackage)?.let(::sequenceOf) ?: emptySequence()
-                val layerTemplateOffender = layerTemplateReason(path, sourceText, layer)?.let(::sequenceOf) ?: emptySequence()
-                val structureOffenders = ancestorStructureReasons(sourceFile)
-                val importOffenders = importPattern.findAll(sourceText)
-                    .map { match -> match.groupValues[1] }
-                    .mapNotNull { imported ->
-                        val importedPackage = importedPackageName(imported, knownPackages) ?: return@mapNotNull null
-                        val targetOwner = ownerForPackage(importedPackage) ?: return@mapNotNull null
-                        if (sourceOwner == targetOwner) {
-                            return@mapNotNull null
-                        }
-                        val usesOwnerRootPackage = importedPackage == targetOwner.packageName
-                        val neighbor = isNeighbor(sourceOwner, targetOwner)
-                        if (usesOwnerRootPackage && neighbor) {
-                            return@mapNotNull null
-                        }
-                        val reason = buildString {
-                            if (!usesOwnerRootPackage) {
-                                append("foreign owner imports must go through the owner root package ")
-                                append(targetOwner.packageName)
-                            }
-                            if (!neighbor) {
-                                if (isNotEmpty()) {
-                                    append("; ")
-                                }
-                                append("imports may cross only one owner edge")
-                            }
-                        }
-                        "$path -> $imported :: ${sourceOwner?.packageName ?: "<external>"} -> ${targetOwner.packageName} :: $reason"
-                    }
-                placementOffender + layerTemplateOffender + structureOffenders + importOffenders
+                val packageName = sourcePackage ?: packageNameFor(sourceFile.parentFile)
+                val role = roleForDirectoryName(sourceFile.parentFile.name)
+                val context = SourceContext(
+                    path = path,
+                    file = sourceFile,
+                    packageName = packageName,
+                    dirName = sourceFile.parentFile.name,
+                    role = role,
+                    ownerPackage = ownerPackageFor(packageName, role),
+                    className = sourceFile.name,
+                    typeImports = parseTypeImports(sourceText, knownPackages)
+                )
+                val placementReasons = sourcePlacementReasons(path, sourceFile, sourcePackage, role).asSequence()
+                val roleReasons = when (role) {
+                    ownerRole -> ownerFileReasons(context, sourceText, knownTypeNames)
+                    inputRole -> inputFileReasons(context, sourceText)
+                    taskRole -> taskFileReasons(context, sourceText, knownTypeNames)
+                    stateRole -> stateFileReasons(context, sourceText, knownTypeNames)
+                    repositoryRole -> repositoryFileReasons(context, sourceText, knownTypeNames)
+                    bucketRole -> emptyList()
+                    else -> emptyList()
+                }.asSequence()
+                placementReasons + roleReasons
             }
-            .plus(ownerRootObjectOffenders.asSequence())
             .sorted()
             .toList()
 
         if (offenders.isNotEmpty()) {
             val details = offenders.joinToString(separator = "\n") { offender -> " - $offender" }
             throw GradleException(
-                "Owner object boundary drift detected.\n" +
-                    "Touched files must follow the canonical OwnerObject/input/tasks/repository/state/*Bucket filesystem grammar.\n" +
-                    "Foreign owner access must stop at the target owner's root package and may cross only one owner edge.\n" +
-                    "Offending imports:\n$details"
+                "Owner role boundary drift detected.\n" +
+                    "Touched files must follow the canonical *Object/input/task/repository/state/*Bucket role grammar.\n" +
+                    "Each touched file is validated only against the invariants of its direct home directory role.\n" +
+                    "Offending files:\n$details"
             )
         }
     }

@@ -19,16 +19,16 @@ import features.world.dungeon.repository.DungeonStairRepository;
 import features.world.dungeon.repository.DungeonTransitionRepository;
 import features.world.dungeon.shell.editor.DungeonEditorView;
 import features.world.dungeon.shell.editor.RoomNarrationPane;
-import features.world.dungeon.shell.editor.interaction.BoundaryTool;
-import features.world.dungeon.shell.editor.interaction.CorridorTool;
-import features.world.dungeon.shell.editor.interaction.DoorTool;
-import features.world.dungeon.shell.editor.interaction.EditorInteraction;
-import features.world.dungeon.shell.editor.interaction.EditorTool;
-import features.world.dungeon.shell.editor.interaction.FloorTool;
-import features.world.dungeon.shell.editor.interaction.PaintTool;
-import features.world.dungeon.shell.editor.interaction.SelectionTool;
-import features.world.dungeon.shell.editor.interaction.StairTool;
-import features.world.dungeon.shell.editor.interaction.TransitionTool;
+import features.world.dungeon.shell.editor.interaction.input.EditorTool;
+import features.world.dungeon.shell.editor.interaction.state.BoundaryTool;
+import features.world.dungeon.shell.editor.interaction.state.CorridorTool;
+import features.world.dungeon.shell.editor.interaction.state.DoorTool;
+import features.world.dungeon.shell.editor.interaction.state.EditorInteraction;
+import features.world.dungeon.shell.editor.interaction.state.FloorTool;
+import features.world.dungeon.shell.editor.interaction.state.PaintTool;
+import features.world.dungeon.shell.editor.interaction.state.SelectionTool;
+import features.world.dungeon.shell.editor.interaction.state.StairTool;
+import features.world.dungeon.shell.editor.interaction.state.TransitionTool;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
 import features.world.dungeon.shell.runtime.DungeonRuntimeView;
 import features.world.dungeon.state.DungeonEditorSessionState;
@@ -46,12 +46,12 @@ import java.util.Objects;
  * <p>This module wires one shared set of state, loading, hit, and workflow owners and exposes the paired editor and
  * runtime views. Feature wiring should stay here instead of being rebuilt inside views or tools.</p>
  */
-public final class DungeonMapModule {
+public final class BootstrapObject {
 
     private final AppView dungeonView;
     private final AppView dungeonEditorView;
 
-    public DungeonMapModule(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
+    public BootstrapObject(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         DungeonMapApplicationService mapApplicationService = new DungeonMapApplicationService();
         DungeonClusterRepository clusterRepository = new DungeonClusterRepository();

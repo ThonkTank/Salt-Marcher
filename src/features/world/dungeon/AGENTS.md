@@ -22,7 +22,7 @@
 ## Canonical Types and APIs
 
 - `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridSegmentPath`, `GridArea`, `GridBoundary`, or `GridPath`, movement through `GridTranslation`, occupancy through `cellFootprint(): GridArea`, and aggregate boundary truth through `boundary(): GridBoundary`.
-- `checkOwnerApiBoundaryConvention` — build-time touched-file architecture gate — foreign-owner imports inside the dungeon tree must go through the target owner's root package, every owner must expose a single root `*Object` seam, and owner internals may use only the flat `input`, `tasks`, `repository`, and `state` layers plus optional direct-child `*Bucket` organization directories.
+- `checkOwnerApiBoundaryConvention` — build-time touched-file architecture gate — touched files are validated against the role of their direct home directory, every owner must expose a single root `*Object` seam, and owner internals may use only the flat `input`, `task`, `repository`, and `state` layers plus optional direct-child `*Bucket` organization directories.
 - `checkDungeonGeometryConvention` — build-time architecture gate — enforces the canonical geometry vocabulary by rejecting public/protected dungeon seams that expose raw point/segment collections or reintroduce second geometry dialects.
 - `dungeonmap` slice — authoritative loaded map snapshot plus load/reload and map-state seams — other owners rebuild through this slice after writes.
 - `DungeonClusterApplicationService` — cluster mutation seam — persists top-level cluster edits, cluster-backed room rewrites, and cluster bootstrap flows.
@@ -40,7 +40,7 @@
 - Place subowners directly under their owner path or inside one direct-child `*Bucket` of that owner. Any dungeon directory that is not one of the four canonical layers and does not end with `Bucket` is an owner by default.
 - Use `*Bucket` only for owner-local organization. A `*Bucket` may contain only `AGENTS.md` plus direct child owners or direct child layer directories, and it may not contain another `*Bucket`.
 - Put owner-local request and handoff schemas under `owner/input`.
-- Put owner-local transformation pipelines under `owner/tasks`; tasks stay static and do not own persistence or direct state mutation.
+- Put owner-local transformation pipelines under `owner/task`; task files stay static, model one `input -> input` pipeline, and do not own persistence or direct state mutation.
 - Put canonical protected object/runtime truth under `owner/state`; mutate it only through explicit state factory/transition APIs in that same layer.
 - Put persistence-only state reconstruction and storage under `owner/repository`.
 - Put shared physical topology on `dungeonmap/structure`, not on room, corridor, runtime, or renderer helpers.
@@ -67,9 +67,9 @@
 - Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `Structure.roomTopology()`.
 - Do not add a second shared dungeon geometry vocabulary beside the `geometry` slice and its `GridObject` family.
 - Do not bypass a documented intermediate dungeon owner by importing a grandchild or sibling-internal package directly; if a caller crosses an owner boundary at all, it must stop at the target owner's root package and its public `*Object` seam.
-- Do not place would-be dungeon subowners under `input`, `tasks`, `repository`, or `state`; move them to a direct child of the owning package or into one direct-child `*Bucket` first.
+- Do not place would-be dungeon subowners under `input`, `task`, `repository`, or `state`; move them to a direct child of the owning package or into one direct-child `*Bucket` first.
 - Do not use ad-hoc organizational directories. If a dungeon directory is not one of the four canonical layers, it must either be an owner or end with `Bucket`.
-- Do not introduce new dungeon-internal technical layers besides `input`, `tasks`, `repository`, and `state`, and do not introduce organizational directories that do not end with `Bucket`.
+- Do not introduce new dungeon-internal technical layers besides `input`, `task`, `repository`, and `state`, and do not introduce organizational directories that do not end with `Bucket`.
 - Do not let stair, room, cluster, boundary, runtime, or shell code reintroduce `occupiedPositions()`/`movedBy(...)`-style public aliases once `cellFootprint()` and `translated(GridTranslation)` exist.
 - Do not expose raw `Set/List/Collection<GridPoint|GridSegment>` seams from public/protected dungeon APIs outside the canonical geometry carriers.
 - Do not treat the geometry rules as advisory: if a public/protected dungeon seam needs raw cells, segments, or ordered routes, either keep it private/package-private or promote a canonical carrier instead of adding an exception around `checkDungeonGeometryConvention`.

@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor;
+package features.world.dungeon.shell.editor.state;
 
 import features.world.dungeon.application.room.DungeonRoomApplicationService;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;

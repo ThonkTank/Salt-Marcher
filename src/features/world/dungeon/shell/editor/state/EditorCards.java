@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor;
+package features.world.dungeon.shell.editor.state;
 
 import javafx.scene.Node;
 import javafx.scene.control.Label;

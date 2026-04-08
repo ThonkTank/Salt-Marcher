@@ -1,6 +1,6 @@
 package features.world.api;
 
-import features.world.dungeon.bootstrap.DungeonMapModule;
+import features.world.dungeon.bootstrap.BootstrapObject;
 import features.world.hexmap.api.HexMapModule;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
@@ -14,13 +14,13 @@ import java.util.Objects;
 public final class WorldModule {
 
     private final HexMapModule hexMapModule;
-    private final DungeonMapModule dungeonMapModule;
+    private final BootstrapObject dungeonMapModule;
     private final WorldTravelSurface travelSurface = HexMapModule.createTravelSurface();
 
     public WorldModule(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         this.hexMapModule = new HexMapModule(detailsNavigator, travelSurface);
-        this.dungeonMapModule = new DungeonMapModule(detailsNavigator, travelSurface);
+        this.dungeonMapModule = new BootstrapObject(detailsNavigator, travelSurface);
     }
 
     public void registerScenes(SceneRegistry sceneRegistry) {
