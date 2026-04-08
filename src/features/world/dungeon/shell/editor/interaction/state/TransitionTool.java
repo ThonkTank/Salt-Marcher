@@ -23,7 +23,7 @@ import features.world.dungeon.model.structures.transition.DungeonTransition;
 import features.world.dungeon.model.structures.transition.DungeonTransitionDestination;
 import features.world.dungeon.stair.model.StairPathPatternKind;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
-import features.world.dungeon.shell.editor.EditorCards;
+import features.world.dungeon.shell.editor.state.EditorCards;
 import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
 import features.world.dungeon.shell.editor.interaction.input.EditorTool;
 import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;

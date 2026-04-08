@@ -1,7 +1,7 @@
 package features.world.dungeon.shell.editor.controls;
 
 import features.world.dungeon.catalog.application.DungeonMapCatalogEntry;
-import features.world.dungeon.shell.editor.DungeonEditorControls.MapActionRequest;
+import features.world.dungeon.shell.editor.state.DungeonEditorControls.MapActionRequest;
 import features.world.dungeon.shell.controls.DungeonLevelOverlayControls;
 import features.world.dungeon.dungeonmap.state.DungeonLevelOverlayMode;
 import features.world.dungeon.dungeonmap.state.DungeonLevelOverlaySettings;

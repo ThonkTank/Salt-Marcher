@@ -10,7 +10,7 @@ import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridSegmentPath;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.shell.editor.EditorCards;
+import features.world.dungeon.shell.editor.state.EditorCards;
 import features.world.dungeon.state.DungeonEditorTool;
 import features.world.dungeon.state.DungeonEditorSessionState;
 import features.world.dungeon.state.EditorHover;

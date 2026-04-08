@@ -15,7 +15,7 @@ import features.world.dungeon.model.structures.connection.Connection;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.model.structures.room.Room;
-import features.world.dungeon.shell.editor.EditorCards;
+import features.world.dungeon.shell.editor.state.EditorCards;
 import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
 import features.world.dungeon.shell.editor.interaction.input.EditorTool;
 import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;

@@ -23,7 +23,7 @@ import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
-import features.world.dungeon.shell.editor.RoomNarrationPane;
+import features.world.dungeon.shell.editor.state.RoomNarrationPane;
 import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
 import features.world.dungeon.shell.editor.interaction.input.EditorTool;
 import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
