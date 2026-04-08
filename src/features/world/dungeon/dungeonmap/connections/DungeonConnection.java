@@ -1,4 +1,4 @@
-package features.world.dungeon.model.structures.connection;
+package features.world.dungeon.dungeonmap.connections;
 
 import java.util.List;
 import java.util.Objects;

@@ -1,4 +1,4 @@
-package features.world.dungeon.model.structures.connection;
+package features.world.dungeon.dungeonmap.connections;
 
 public record ConnectionEndpoint(ConnectionEndpointType type, Long id) {
 

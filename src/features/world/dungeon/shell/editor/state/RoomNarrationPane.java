@@ -6,8 +6,8 @@ import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeon.model.structures.connection.DoorExitCatalog;
+import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.DoorExitCatalog;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.room.RoomExitNarration;
 import features.world.dungeon.model.structures.room.RoomNarration;
@@ -136,7 +136,7 @@ public final class RoomNarrationPane {
         return null;
     }
 
-    private static List<features.world.dungeon.model.structures.connection.DoorExitDescriptor> describeRoomExits(
+    private static List<features.world.dungeon.dungeonmap.connections.DoorExitDescriptor> describeRoomExits(
             DungeonMap layout,
             Cluster cluster,
             Room room

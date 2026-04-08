@@ -1,7 +1,7 @@
 package features.world.dungeon.dungeonmap.model;
 
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
-import features.world.dungeon.model.structures.connection.DungeonConnection;
+import features.world.dungeon.dungeonmap.connections.DungeonConnection;
 
 import java.util.LinkedHashMap;
 import java.util.List;

@@ -2,7 +2,7 @@ package features.world.dungeon.dungeonmap.structure.model.room;
 
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridTranslation;
-import features.world.dungeon.model.structures.connection.DungeonConnection;
+import features.world.dungeon.dungeonmap.connections.DungeonConnection;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 

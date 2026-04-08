@@ -3,9 +3,9 @@ package features.world.dungeon.application.runtime.description;
 import features.world.dungeon.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
 import features.world.dungeon.model.structures.room.Room;
-import features.world.dungeon.model.structures.connection.DoorExitCatalog;
+import features.world.dungeon.dungeonmap.connections.DoorExitCatalog;
 
 import java.util.List;
 

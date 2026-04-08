@@ -34,10 +34,10 @@ import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
-import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;
-import features.world.dungeon.model.structures.connection.DungeonConnection;
-import features.world.dungeon.model.structures.connection.StairConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.DoorConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.DungeonConnection;
+import features.world.dungeon.dungeonmap.connections.StairConnectionCarrier;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
@@ -626,7 +626,7 @@ public final class DungeonMapApplicationService {
         }
         return transition.localConnection().endpoints().stream()
                 .filter(Objects::nonNull)
-                .filter(endpoint -> endpoint.type() == features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM)
+                .filter(endpoint -> endpoint.type() == features.world.dungeon.dungeonmap.connections.ConnectionEndpointType.ROOM)
                 .map(ConnectionEndpoint::id)
                 .filter(Objects::nonNull)
                 .anyMatch(affectedRoomIds::contains);
@@ -649,7 +649,7 @@ public final class DungeonMapApplicationService {
         if (localConnection.doorCarrier() != null) {
             ConnectionEndpoint entryEndpoint = localConnection.entryEndpoint();
             if (entryEndpoint == null
-                    || entryEndpoint.type() != features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM
+                    || entryEndpoint.type() != features.world.dungeon.dungeonmap.connections.ConnectionEndpointType.ROOM
                     || !affectedRoomIds.contains(entryEndpoint.id())) {
                 return localConnection;
             }
@@ -673,7 +673,7 @@ public final class DungeonMapApplicationService {
         if (localConnection.stairCarrier() != null) {
             ConnectionEndpoint entryEndpoint = localConnection.entryEndpoint();
             if (entryEndpoint == null
-                    || entryEndpoint.type() != features.world.dungeon.model.structures.connection.ConnectionEndpointType.ROOM
+                    || entryEndpoint.type() != features.world.dungeon.dungeonmap.connections.ConnectionEndpointType.ROOM
                     || !affectedRoomIds.contains(entryEndpoint.id())) {
                 return localConnection;
             }

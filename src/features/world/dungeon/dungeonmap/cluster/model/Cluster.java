@@ -14,9 +14,9 @@ import features.world.dungeon.dungeonmap.structure.model.boundary.StructureBound
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.wall.Wall;
 import features.world.dungeon.dungeonmap.structure.model.room.StructureRoomTopology;
-import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeon.model.structures.connection.ConnectionKind;
-import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.ConnectionKind;
+import features.world.dungeon.dungeonmap.connections.DoorConnectionCarrier;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.room.RoomNarration;
 

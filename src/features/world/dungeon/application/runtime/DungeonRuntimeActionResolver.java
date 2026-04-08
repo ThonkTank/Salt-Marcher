@@ -5,7 +5,7 @@ import features.world.dungeon.dungeonmap.api.CellStructure;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.model.structures.connection.ConnectionTraversalTarget;
+import features.world.dungeon.dungeonmap.connections.ConnectionTraversalTarget;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.stair.StairExit;

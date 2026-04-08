@@ -1,4 +1,4 @@
-package features.world.dungeon.model.structures.connection;
+package features.world.dungeon.dungeonmap.connections;
 
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;

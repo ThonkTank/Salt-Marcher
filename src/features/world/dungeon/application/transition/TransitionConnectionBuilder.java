@@ -9,11 +9,11 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
-import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
-import features.world.dungeon.model.structures.connection.ConnectionKind;
-import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;
-import features.world.dungeon.model.structures.connection.DungeonConnection;
-import features.world.dungeon.model.structures.connection.StairConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.ConnectionKind;
+import features.world.dungeon.dungeonmap.connections.DoorConnectionCarrier;
+import features.world.dungeon.dungeonmap.connections.DungeonConnection;
+import features.world.dungeon.dungeonmap.connections.StairConnectionCarrier;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.Stair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
@@ -153,7 +153,7 @@ public final class TransitionConnectionBuilder {
     }
 
     private static boolean occupiedByOtherConnection(
-            features.world.dungeon.model.structures.connection.Connection existingConnection
+            features.world.dungeon.dungeonmap.connections.Connection existingConnection
     ) {
         return existingConnection != null;
     }

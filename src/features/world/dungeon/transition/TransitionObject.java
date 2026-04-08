@@ -22,12 +22,12 @@ public final class TransitionObject {
     public void persistReboundConnections(
             Connection conn,
             features.world.dungeon.dungeonmap.model.DungeonMap originalMap,
-            Map<Long, features.world.dungeon.model.structures.connection.DungeonConnection> localConnectionsByTransitionId
+            Map<Long, features.world.dungeon.dungeonmap.connections.DungeonConnection> localConnectionsByTransitionId
     ) throws SQLException {
         if (conn == null || originalMap == null || localConnectionsByTransitionId == null || localConnectionsByTransitionId.isEmpty()) {
             return;
         }
-        for (Map.Entry<Long, features.world.dungeon.model.structures.connection.DungeonConnection> entry
+        for (Map.Entry<Long, features.world.dungeon.dungeonmap.connections.DungeonConnection> entry
                 : localConnectionsByTransitionId.entrySet()) {
             if (entry.getKey() == null) {
                 continue;

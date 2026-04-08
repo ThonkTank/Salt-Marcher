@@ -4,7 +4,7 @@ import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
-import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
+import features.world.dungeon.dungeonmap.connections.ConnectionEndpoint;
 import features.world.dungeon.model.structures.room.Room;
 
 import java.util.List;
