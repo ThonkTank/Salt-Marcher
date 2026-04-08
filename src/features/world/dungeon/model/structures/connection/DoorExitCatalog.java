@@ -2,6 +2,7 @@ package features.world.dungeon.model.structures.connection;
 
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -25,10 +26,11 @@ public final class DoorExitCatalog {
 
     public static List<DoorExitDescriptor> describe(
             DungeonMap layout,
-            Set<GridPoint> cells,
+            GridArea area,
             int levelZ,
             List<? extends Connection> connections
     ) {
+        Set<GridPoint> cells = area == null ? Set.of() : area.cells();
         if (cells == null || cells.isEmpty() || connections == null || connections.isEmpty()) {
             return List.of();
         }

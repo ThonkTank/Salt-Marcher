@@ -1,6 +1,7 @@
 package features.world.dungeon.shell.interaction;
 
 import features.world.dungeon.dungeonmap.model.DungeonMap;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
@@ -12,10 +13,7 @@ import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public final class DungeonSpatialHitSource implements DungeonHitSource {
 
@@ -35,15 +33,15 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
 
     private static List<DungeonHitDescriptor> roomDescriptors(DungeonMap layout, DungeonHitProbe probe) {
         Room room = roomAtCell(layout, probe.gridCell(), probe.levelZ());
-        Set<GridPoint> roomCells = room == null
-                ? Set.of()
-                : roomStructure(layout, room).surfaceAtLevel(probe.levelZ()).surface().cellFootprint().cells();
-        if (room == null || room.roomId() == null || roomCells.isEmpty()) {
+        GridArea roomArea = room == null
+                ? GridArea.empty()
+                : roomStructure(layout, room).surfaceAtLevel(probe.levelZ()).surface().cellFootprint();
+        if (room == null || room.roomId() == null || roomArea.isEmpty()) {
             return List.of();
         }
         return List.of(new DungeonHitDescriptor(
                 new DungeonSelectionRef.RoomRef(room.roomId()),
-                List.of(new DungeonHitSurface.CellSurface(roomCells, probe.levelZ()))));
+                List.of(new DungeonHitSurface.CellSurface(roomArea, probe.levelZ()))));
     }
 
     private static List<DungeonHitDescriptor> corridorDescriptors(DungeonMap layout, DungeonHitProbe probe) {
@@ -60,11 +58,11 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                                     probe.gridCell().y2() / 2,
                                     probe.levelZ()),
                             probe.gridCell()),
-                    List.of(new DungeonHitSurface.CellSurface(Set.of(probe.gridCell()), probe.levelZ()))));
+                    List.of(new DungeonHitSurface.CellSurface(probe.gridCell().cellFootprint(), probe.levelZ()))));
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.CorridorRef(corridor.corridorId()),
                     List.of(new DungeonHitSurface.CellSurface(
-                            corridor.surfaceAtLevel(probe.levelZ()).surface().cellFootprint().cells(),
+                            corridor.surfaceAtLevel(probe.levelZ()).surface().cellFootprint(),
                             probe.levelZ()))));
         }
         return List.copyOf(descriptors);
@@ -78,7 +76,7 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.StairRef(stair.stairId()),
-                    List.of(new DungeonHitSurface.CellSurface(Set.of(probe.gridCell()), probe.levelZ()))));
+                    List.of(new DungeonHitSurface.CellSurface(probe.gridCell().cellFootprint(), probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }
@@ -97,20 +95,20 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
                 descriptors.add(new DungeonHitDescriptor(
                         new DungeonSelectionRef.TransitionRef(transition.transitionId()),
                         List.of(new DungeonHitSurface.SegmentSurface(
-                                Set.of(anchorSegment),
+                                anchorSegment.boundary(),
                                 transition.localConnection().levelZ()))));
                 continue;
             }
-            Set<GridPoint> occupiedCells = transition.localConnection().cellFootprint(layout).cells().stream()
+            GridArea occupiedArea = GridArea.of(transition.localConnection().cellFootprint(layout).cells().stream()
                     .filter(point -> point != null && point.z() == probe.levelZ())
                     .filter(cell -> cell.equals(probe.gridCell()))
-                    .collect(java.util.stream.Collectors.toSet());
-            if (occupiedCells.isEmpty()) {
+                    .toList());
+            if (occupiedArea.isEmpty()) {
                 continue;
             }
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.TransitionRef(transition.transitionId()),
-                    List.of(new DungeonHitSurface.CellSurface(occupiedCells, probe.levelZ()))));
+                    List.of(new DungeonHitSurface.CellSurface(occupiedArea, probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }

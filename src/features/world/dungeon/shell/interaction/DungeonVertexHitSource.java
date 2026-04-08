@@ -2,7 +2,6 @@ package features.world.dungeon.shell.interaction;
 
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
-import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 
 import java.util.ArrayList;
@@ -21,7 +20,7 @@ public final class DungeonVertexHitSource implements DungeonHitSource {
         for (GridPoint point2x : cellVertices2x(probe.gridCell())) {
             descriptors.add(new DungeonHitDescriptor(
                     new DungeonSelectionRef.VertexRef(point2x),
-                    List.of(new DungeonHitSurface.PointSurface(Set.of(point2x), probe.levelZ()))));
+                    List.of(new DungeonHitSurface.PointSurface(point2x, probe.levelZ()))));
         }
         return List.copyOf(descriptors);
     }

@@ -1,5 +1,6 @@
 package features.world.dungeon.dungeonmap.cluster.repository;
 
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
@@ -159,14 +160,13 @@ public final class DungeonClusterRepository {
             Connection conn,
             long mapId,
             int levelZ,
-            Set<GridPoint> cells,
+            GridArea area,
             String roomName
     ) throws SQLException {
-        Set<GridPoint> resolvedCells = cells == null ? Set.of() : Set.copyOf(cells);
-        if (resolvedCells.isEmpty()) {
+        GridArea resolvedArea = area == null ? GridArea.empty() : area.onLevel(levelZ);
+        if (resolvedArea.isEmpty()) {
             return;
         }
-        features.world.dungeon.geometry.GridArea resolvedArea = features.world.dungeon.geometry.GridArea.of(resolvedCells);
         GridPoint center = resolvedArea.center();
         Structure structure = Structure.fromSpecification(StructureSpecification.ofLevel(
                 levelZ,

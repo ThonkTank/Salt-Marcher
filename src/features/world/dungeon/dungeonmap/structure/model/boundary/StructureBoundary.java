@@ -561,7 +561,7 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
         LinkedHashSet<GridSegment> result = new LinkedHashSet<>();
         for (Wall wall : walls == null ? List.<Wall>of() : walls) {
             if (wall != null) {
-                result.addAll(wall.boundarySegments());
+                result.addAll(wall.boundary().segments());
             }
         }
         return result.isEmpty() ? Set.of() : Set.copyOf(result);
@@ -626,7 +626,7 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
     }
 
     private static void addOccupiedSegments(Set<GridSegment> occupiedSegments, Wall wall) {
-        for (GridSegment segment2x : wall.boundarySegments()) {
+        for (GridSegment segment2x : wall.boundary().segments()) {
             if (!occupiedSegments.add(segment2x)) {
                 throw new IllegalArgumentException("Walls may not overlap on the same boundary segment");
             }
@@ -637,7 +637,7 @@ public final class StructureBoundary implements GridBounded, GridTranslatable<St
         long result = 17L;
         result = 31L * result + (door == null || door.doorState() == null ? 0L : door.doorState().ordinal());
         result = 31L * result + (door == null || door.persistedAnchorSegment() == null ? 0L : door.persistedAnchorSegment().hashCode());
-        for (GridSegment segment2x : door == null ? List.<GridSegment>of() : door.orderedBoundarySegments()) {
+        for (GridSegment segment2x : door == null ? List.<GridSegment>of() : door.boundary().segments().stream().sorted(GridSegment.ORDER).toList()) {
             result = 31L * result + segment2x.hashCode();
         }
         if (result == 0L) {

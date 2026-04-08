@@ -488,7 +488,7 @@ public final class DungeonMap {
         }
         return DoorExitCatalog.describe(
                 this,
-                corridor.surfaceAtLevel(corridor.levelZ()).floor().cellFootprint().cells(),
+                corridor.surfaceAtLevel(corridor.levelZ()).floor().cellFootprint(),
                 corridor.levelZ(),
                 connectionsForCorridor(corridor.corridorId()));
     }
@@ -665,16 +665,16 @@ public final class DungeonMap {
 
     public ConnectionSurfaceDescription describeConnectionSurface(
             ConnectionEndpoint endpoint,
-            GridSegment boundarySegment2x,
+            GridSegment boundarySegment,
             int levelZ
     ) {
-        if (endpoint == null || boundarySegment2x == null) {
+        if (endpoint == null || boundarySegment == null) {
             return null;
         }
         return switch (endpoint.type()) {
             case ROOM -> {
                 RoomBoundaryDescription boundary = describeRoomBoundary(
-                        new DungeonSelectionRef.RoomBoundaryRef(endpoint.id(), boundarySegment2x),
+                        new DungeonSelectionRef.RoomBoundaryRef(endpoint.id(), boundarySegment),
                         levelZ);
                 yield boundary == null ? null : new ConnectionSurfaceDescription(
                         endpoint,
@@ -683,9 +683,9 @@ public final class DungeonMap {
             }
             case CORRIDOR -> {
                 CorridorBoundaryDescription boundary = connectedCorridorBoundary(
-                        new DungeonSelectionRef.CorridorBoundaryRef(endpoint.id(), boundarySegment2x),
+                        new DungeonSelectionRef.CorridorBoundaryRef(endpoint.id(), boundarySegment),
                         levelZ);
-                CardinalDirection outwardDirection = boundary == null ? null : boundarySegment2x.directionFrom(boundary.corridorCell());
+                CardinalDirection outwardDirection = boundary == null ? null : boundarySegment.directionFrom(boundary.corridorCell());
                 yield boundary == null || outwardDirection == null
                         ? null
                         : new ConnectionSurfaceDescription(endpoint, boundary.corridorCell(), outwardDirection);

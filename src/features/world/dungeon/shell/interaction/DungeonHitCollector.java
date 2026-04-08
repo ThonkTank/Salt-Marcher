@@ -96,12 +96,12 @@ public final class DungeonHitCollector {
     }
 
     private static SurfaceMatch matchCell(DungeonHitSurface.CellSurface surface, DungeonHitProbe probe) {
-        return surface.cells().contains(probe.gridCell()) ? new SurfaceMatch(surface, 0.0) : null;
+        return surface.area().contains(probe.gridCell()) ? new SurfaceMatch(surface, 0.0) : null;
     }
 
     private static SurfaceMatch matchSegment(DungeonHitSurface.SegmentSurface surface, DungeonHitProbe probe) {
         double distance = Double.POSITIVE_INFINITY;
-        for (GridSegment segment2x : surface.segments()) {
+        for (GridSegment segment2x : surface.boundary().segments()) {
             distance = Math.min(distance, distanceToSegment(segment2x, probe));
         }
         return Double.isFinite(distance) && distance <= DungeonHitConventions.edgeTolerancePx(probe.gridSizePx())
@@ -110,10 +110,7 @@ public final class DungeonHitCollector {
     }
 
     private static SurfaceMatch matchPoint(DungeonHitSurface.PointSurface surface, DungeonHitProbe probe) {
-        double distance = Double.POSITIVE_INFINITY;
-        for (GridPoint point2x : surface.points()) {
-            distance = Math.min(distance, distanceToPoint(point2x, probe));
-        }
+        double distance = distanceToPoint(surface.point(), probe);
         return Double.isFinite(distance) && distance <= DungeonHitConventions.pointTolerancePx(probe.gridSizePx())
                 ? new SurfaceMatch(surface, distance)
                 : null;

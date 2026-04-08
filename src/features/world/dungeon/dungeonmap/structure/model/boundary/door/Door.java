@@ -45,32 +45,32 @@ public final class Door extends BoundaryObject implements GridTranslatable<Door>
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         return resolvedTranslation.isZero()
                 ? this
-                : new Door(doorId(), GridBoundary.of(translatedBoundarySegments(resolvedTranslation)),
+                : new Door(doorId(), boundary().translated(resolvedTranslation),
                 translatedAnchorSegment(resolvedTranslation), doorState);
     }
 
     public Door withDoorId(Long doorId) {
         return Objects.equals(doorId(), doorId)
                 ? this
-                : new Door(doorId, GridBoundary.of(orderedBoundarySegments()), anchorSegment(), doorState);
+                : new Door(doorId, boundary(), anchorSegment(), doorState);
     }
 
     public Door withDoorState(DoorState doorState) {
         DoorState resolvedDoorState = doorState == null ? DoorState.CLOSED : doorState;
         return resolvedDoorState == this.doorState
                 ? this
-                : new Door(doorId(), GridBoundary.of(orderedBoundarySegments()), anchorSegment(), resolvedDoorState);
+                : new Door(doorId(), boundary(), anchorSegment(), resolvedDoorState);
     }
 
-    public Door clippedToBoundary(GridBoundary boundarySegments) {
-        GridBoundary clippedBoundary = clippedBoundary(boundarySegments);
+    public Door clippedToBoundary(GridBoundary boundary) {
+        GridBoundary clippedBoundary = clippedBoundary(boundary);
         return clippedBoundary.isEmpty()
                 ? null
                 : Door.fromBoundary(doorId(), clippedBoundary, repairedAnchorSegment(clippedBoundary), doorState);
     }
 
-    public Door withoutBoundarySegments(GridBoundary removedBoundarySegments) {
-        List<GridBoundary> components = remainingBoundaryComponents(removedBoundarySegments);
+    public Door withoutBoundarySegments(GridBoundary removedBoundary) {
+        List<GridBoundary> components = remainingBoundaryComponents(removedBoundary);
         if (components.size() > 1) {
             throw new IllegalArgumentException("Door edit would split an existing door");
         }
@@ -81,13 +81,13 @@ public final class Door extends BoundaryObject implements GridTranslatable<Door>
         return Door.fromBoundary(doorId(), remainingComponent, repairedAnchorSegment(remainingComponent), doorState);
     }
 
-    public static List<Door> fromBoundaryComponents(GridBoundary boundarySegments, DoorState doorState) {
+    public static List<Door> fromBoundaryComponents(GridBoundary boundary, DoorState doorState) {
         ArrayList<Door> result = new ArrayList<>();
-        for (GridBoundary component : boundaryComponents(boundarySegments)) {
+        for (GridBoundary component : boundaryComponents(boundary)) {
             if (!component.isEmpty()) {
                 result.add(Door.fromBoundary(
                         component,
-                        canonicalAnchorSegment(component.segments(), null),
+                        canonicalAnchorSegment(component, null),
                         doorState));
             }
         }

@@ -47,11 +47,11 @@ public abstract class BoundaryObject implements GridOccupant, GridBounded {
         return boundary;
     }
 
-    protected final Set<GridSegment> boundarySegments() {
+    final Set<GridSegment> boundarySegments() {
         return boundary.segments();
     }
 
-    protected final List<GridSegment> orderedBoundarySegments() {
+    final List<GridSegment> orderedBoundarySegments() {
         return boundary.segments().stream().sorted(GridSegment.ORDER).toList();
     }
 
@@ -82,7 +82,7 @@ public abstract class BoundaryObject implements GridOccupant, GridBounded {
         return cellFootprint().overlaps(cells);
     }
 
-    protected final List<GridSegment> translatedBoundarySegments(GridTranslation translation) {
+    final List<GridSegment> translatedBoundarySegments(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         return orderedBoundarySegments().stream()
                 .map(segment -> segment.translated(resolvedTranslation))
@@ -94,25 +94,25 @@ public abstract class BoundaryObject implements GridOccupant, GridBounded {
         return anchorSegment == null ? null : anchorSegment.translated(resolvedTranslation);
     }
 
-    protected final GridBoundary clippedBoundary(GridBoundary boundarySegments) {
+    protected final GridBoundary clippedBoundary(GridBoundary boundary) {
         if (!hasBoundarySegments()) {
             return GridBoundary.empty();
         }
-        GridBoundary clippedBoundary = boundarySegments == null ? GridBoundary.empty() : boundarySegments;
+        GridBoundary clippedBoundary = boundary == null ? GridBoundary.empty() : boundary;
         return clippedBoundary.isEmpty() ? GridBoundary.empty() : clippedBoundary.intersection(boundary);
     }
 
-    protected final List<GridBoundary> remainingBoundaryComponents(GridBoundary removedBoundarySegments) {
+    protected final List<GridBoundary> remainingBoundaryComponents(GridBoundary removedBoundary) {
         if (!hasBoundarySegments()) {
             return List.of();
         }
-        GridBoundary removed = removedBoundarySegments == null ? GridBoundary.empty() : removedBoundarySegments;
+        GridBoundary removed = removedBoundary == null ? GridBoundary.empty() : removedBoundary;
         GridBoundary remaining = boundary.without(removed);
         return remaining.components();
     }
 
     protected final GridSegment repairedAnchorSegment(GridBoundary boundary) {
-        return canonicalAnchorSegment(boundary == null ? Set.of() : boundary.segments(), anchorSegment);
+        return canonicalAnchorSegment(boundary == null ? GridBoundary.empty() : boundary, anchorSegment);
     }
 
     protected final boolean sameBaseState(BoundaryObject other) {
@@ -125,15 +125,16 @@ public abstract class BoundaryObject implements GridOccupant, GridBounded {
         return Objects.hash(objectId, orderedBoundarySegments(), anchorSegment);
     }
 
-    protected static final List<GridBoundary> boundaryComponents(GridBoundary boundarySegments) {
-        GridBoundary boundary = boundarySegments == null ? GridBoundary.empty() : boundarySegments;
-        return boundary.isEmpty() ? List.of() : boundary.components();
+    protected static final List<GridBoundary> boundaryComponents(GridBoundary boundary) {
+        GridBoundary resolvedBoundary = boundary == null ? GridBoundary.empty() : boundary;
+        return resolvedBoundary.isEmpty() ? List.of() : resolvedBoundary.components();
     }
 
     protected static final GridSegment canonicalAnchorSegment(
-            Set<GridSegment> segments,
+            GridBoundary boundary,
             GridSegment preferredAnchorSegment
     ) {
+        Set<GridSegment> segments = boundary == null ? Set.of() : boundary.segments();
         if (preferredAnchorSegment != null && segments.contains(preferredAnchorSegment)) {
             return preferredAnchorSegment;
         }
@@ -141,6 +142,6 @@ public abstract class BoundaryObject implements GridOccupant, GridBounded {
     }
 
     private static GridSegment resolveAnchorSegment(GridSegment requestedAnchorSegment, Set<GridSegment> segments) {
-        return canonicalAnchorSegment(segments, requestedAnchorSegment);
+        return canonicalAnchorSegment(GridBoundary.of(segments), requestedAnchorSegment);
     }
 }

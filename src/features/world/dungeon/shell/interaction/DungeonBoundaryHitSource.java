@@ -1,6 +1,7 @@
 package features.world.dungeon.shell.interaction;
 
 import features.world.dungeon.dungeonmap.model.DungeonMap;
+import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
@@ -70,7 +71,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                     }
                     descriptors.add(new DungeonHitDescriptor(
                             ref,
-                            List.of(new DungeonHitSurface.SegmentSurface(Set.of(segment2x), levelZ))));
+                            List.of(new DungeonHitSurface.SegmentSurface(segment2x.boundary(), levelZ))));
                 }
             }
         }
@@ -98,7 +99,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
         for (Map.Entry<DungeonSelectionRef.DoorRef, LinkedHashSet<GridSegment>> entry : segmentsByDoor.entrySet()) {
             descriptors.add(new DungeonHitDescriptor(
                     entry.getKey(),
-                    List.of(new DungeonHitSurface.SegmentSurface(Set.copyOf(entry.getValue()), levelZ))));
+                    List.of(new DungeonHitSurface.SegmentSurface(GridBoundary.of(entry.getValue()), levelZ))));
         }
         return List.copyOf(descriptors);
     }
@@ -126,7 +127,7 @@ public final class DungeonBoundaryHitSource implements DungeonHitSource {
                 }
                 descriptors.add(new DungeonHitDescriptor(
                         ref,
-                        List.of(new DungeonHitSurface.SegmentSurface(Set.of(segment2x), levelZ))));
+                        List.of(new DungeonHitSurface.SegmentSurface(segment2x.boundary(), levelZ))));
             }
         }
         return List.copyOf(descriptors);

@@ -248,13 +248,13 @@ public final class DungeonClusterApplicationService {
                 .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
                 .toList();
         if (overlappingClusters.isEmpty()) {
-            createClusterWithRoom(conn, mapId, levelZ, requestedCells, nextRoomName(layout, new LinkedHashSet<>()));
+            createClusterWithRoom(conn, mapId, levelZ, cells, nextRoomName(layout, new LinkedHashSet<>()));
             return;
         }
 
         ClusterRewritePlan rewritePlan = ClusterStructureEditor.applyPaint(
                 overlappingClusters.getFirst(),
-                requestedCells,
+                cells,
                 overlappingClusters,
                 levelZ);
         if (rewritePlan == null || !rewritePlan.hasChanges()) {
@@ -286,7 +286,7 @@ public final class DungeonClusterApplicationService {
             DungeonMap layoutSnapshot = workingLayout;
             ClusterRewritePlan rewritePlan = ClusterStructureEditor.applyDelete(
                     cluster,
-                    cells.cells(),
+                    cells,
                     levelZ,
                     () -> nextRoomName(layoutSnapshot, reservedNames));
             if (rewritePlan == null || !rewritePlan.hasChanges()) {
@@ -371,27 +371,27 @@ public final class DungeonClusterApplicationService {
 
     public void createDefaultRoom(Connection conn, long mapId) throws SQLException {
         // Brand-new dungeons must bootstrap their first room without rehydrating an empty layout first.
-        createClusterWithRoom(conn, mapId, 0, Set.of(GridPoint.cell(0, 0, 0)), "Raum 1");
+        createClusterWithRoom(conn, mapId, 0, GridPoint.cell(0, 0, 0).cellFootprint(), "Raum 1");
     }
 
     private void createClusterWithRoom(
             Connection conn,
             long mapId,
             int levelZ,
-            Set<GridPoint> cells,
+            GridArea area,
             String roomName
     ) throws SQLException {
-        Set<GridPoint> resolvedCells = cells == null ? Set.of() : Set.copyOf(cells);
-        if (resolvedCells.isEmpty()) {
+        GridArea resolvedArea = area == null ? GridArea.empty() : area.onLevel(levelZ);
+        if (resolvedArea.isEmpty()) {
             return;
         }
-        GridPoint center = GridArea.of(resolvedCells).center();
+        GridPoint center = resolvedArea.center();
         Structure structure = Structure.fromSpecification(StructureSpecification.ofLevel(
                 levelZ,
                 new StructureSpecification.LevelSpecification(
                         center,
-                        GridArea.of(resolvedCells),
-                        GridArea.of(resolvedCells),
+                        resolvedArea,
+                        resolvedArea,
                         List.of(),
                         List.of())));
         DungeonClusterRepository.PersistedCluster persistedCluster =

@@ -45,32 +45,32 @@ public final class Wall extends BoundaryObject implements GridTranslatable<Wall>
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
         return resolvedTranslation.isZero()
                 ? this
-                : new Wall(wallId(), GridBoundary.of(translatedBoundarySegments(resolvedTranslation)),
+                : new Wall(wallId(), boundary().translated(resolvedTranslation),
                 translatedAnchorSegment(resolvedTranslation), wallKind);
     }
 
     public Wall withWallId(Long wallId) {
         return Objects.equals(wallId(), wallId)
                 ? this
-                : new Wall(wallId, GridBoundary.of(orderedBoundarySegments()), anchorSegment(), wallKind);
+                : new Wall(wallId, boundary(), anchorSegment(), wallKind);
     }
 
     public Wall withWallKind(WallKind wallKind) {
         WallKind resolvedWallKind = wallKind == null ? WallKind.solid() : wallKind;
         return Objects.equals(this.wallKind, resolvedWallKind)
                 ? this
-                : new Wall(wallId(), GridBoundary.of(orderedBoundarySegments()), anchorSegment(), resolvedWallKind);
+                : new Wall(wallId(), boundary(), anchorSegment(), resolvedWallKind);
     }
 
-    public Wall clippedToBoundary(GridBoundary boundarySegments) {
-        GridBoundary clippedBoundary = clippedBoundary(boundarySegments);
+    public Wall clippedToBoundary(GridBoundary boundary) {
+        GridBoundary clippedBoundary = clippedBoundary(boundary);
         return clippedBoundary.isEmpty()
                 ? null
                 : Wall.fromBoundary(wallId(), clippedBoundary, repairedAnchorSegment(clippedBoundary), wallKind);
     }
 
-    public List<Wall> withoutBoundarySegments(GridBoundary removedBoundarySegments) {
-        List<GridBoundary> components = remainingBoundaryComponents(removedBoundarySegments);
+    public List<Wall> withoutBoundarySegments(GridBoundary removedBoundary) {
+        List<GridBoundary> components = remainingBoundaryComponents(removedBoundary);
         if (components.isEmpty()) {
             return List.of();
         }
@@ -88,14 +88,14 @@ public final class Wall extends BoundaryObject implements GridTranslatable<Wall>
         return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
-    public static List<Wall> fromBoundaryComponents(GridBoundary boundarySegments, WallKind wallKind) {
+    public static List<Wall> fromBoundaryComponents(GridBoundary boundary, WallKind wallKind) {
         ArrayList<Wall> result = new ArrayList<>();
-        for (GridBoundary component : boundaryComponents(boundarySegments)) {
+        for (GridBoundary component : boundaryComponents(boundary)) {
             if (!component.isEmpty()) {
                 result.add(Wall.fromBoundary(
                         null,
                         component,
-                        canonicalAnchorSegment(component.segments(), null),
+                        canonicalAnchorSegment(component, null),
                         wallKind));
             }
         }

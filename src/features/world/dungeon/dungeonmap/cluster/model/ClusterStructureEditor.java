@@ -1,6 +1,7 @@
 package features.world.dungeon.dungeonmap.cluster.model;
 
 import features.world.dungeon.geometry.CardinalDirection;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.structures.room.Room;
@@ -35,11 +36,12 @@ public final class ClusterStructureEditor {
 
     public static ClusterRewritePlan applyPaint(
             Cluster cluster,
-            Set<GridPoint> paintCells,
+            GridArea paintArea,
             List<Cluster> overlappingClusters,
             int paintLevel
     ) {
-        if (cluster == null || paintCells == null || paintCells.isEmpty()) {
+        Set<GridPoint> paintCells = paintArea == null ? Set.of() : paintArea.cells();
+        if (cluster == null || paintCells.isEmpty()) {
             return null;
         }
         List<Cluster> resolvedClusters = normalizedClusters(overlappingClusters);
@@ -88,11 +90,12 @@ public final class ClusterStructureEditor {
 
     public static ClusterRewritePlan applyDelete(
             Cluster cluster,
-            Set<GridPoint> deletedCells,
+            GridArea deletedArea,
             int deleteLevel,
             Supplier<String> roomNameSupplier
     ) {
-        if (cluster == null || deletedCells == null || deletedCells.isEmpty()) {
+        Set<GridPoint> deletedCells = deletedArea == null ? Set.of() : deletedArea.cells();
+        if (cluster == null || deletedCells.isEmpty()) {
             return null;
         }
         Map<Integer, Set<GridPoint>> remainingCellsByLevel = mutableClusterCellsByLevel(cluster);

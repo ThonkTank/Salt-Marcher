@@ -542,9 +542,9 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
         }
         for (DungeonHitSurface surface : surfaces) {
             switch (surface) {
-                case DungeonHitSurface.CellSurface cellSurface -> drawHighlightedCells(pass, cellSurface.cells(), partHighlight);
-                case DungeonHitSurface.SegmentSurface segmentSurface -> drawHighlightedSegments(pass, segmentSurface.segments(), partHighlight);
-                case DungeonHitSurface.PointSurface pointSurface -> drawHighlightedPoints(pass, pointSurface.points(), partHighlight);
+                case DungeonHitSurface.CellSurface cellSurface -> drawHighlightedCells(pass, cellSurface.area().cells(), partHighlight);
+                case DungeonHitSurface.SegmentSurface segmentSurface -> drawHighlightedSegments(pass, segmentSurface.boundary().segments(), partHighlight);
+                case DungeonHitSurface.PointSurface pointSurface -> drawHighlightedPoints(pass, List.of(pointSurface.point()), partHighlight);
                 case DungeonHitSurface.LabelSurface ignored -> {
                 }
             }
