@@ -15,6 +15,8 @@ import features.world.dungeon.transition.input.LoadOverworldTargetsInput;
 import features.world.dungeon.transition.input.PlacePreparedTransitionInput;
 import features.world.dungeon.transition.input.PlacePreparedStairTransitionInput;
 import features.world.dungeon.transition.input.PersistReboundConnectionsInput;
+import features.world.dungeon.transition.task.DeleteTransitionTask;
+import features.world.dungeon.transition.task.LoadOverworldTargetsTask;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -84,15 +86,7 @@ public final class TransitionObject {
     public List<LoadOverworldTargetsInput.TargetInput> loadOverworldTargets(
             LoadOverworldTargetsInput input
     ) throws SQLException {
-        if (input == null) {
-            throw new IllegalArgumentException("input");
-        }
-        return features.world.api.read.ReadObject.loadOverworldTransitionTargets().stream()
-                .map(summary -> LoadOverworldTargetsInput.TargetInput.target(
-                        summary.mapId(),
-                        summary.tileId(),
-                        summary.label()))
-                .toList();
+        return LoadOverworldTargetsTask.loadOverworldTargets(input);
     }
 
     public void createTransition(CreateTransitionInput input) throws SQLException {
@@ -213,24 +207,7 @@ public final class TransitionObject {
     }
 
     public void deleteTransition(DeleteTransitionInput input) throws SQLException {
-        if (input == null) {
-            throw new IllegalArgumentException("input");
-        }
-        long transitionId = input.transitionId();
-        if (transitionId <= 0) {
-            return;
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTransactionRunner.inTransaction(conn, () -> {
-                Long mapId = transitionRepository.findMapId(conn, transitionId);
-                if (mapId == null) {
-                    throw new SQLException("Übergang existiert nicht");
-                }
-                transitionRepository.clearLinksTo(conn, transitionId);
-                transitionRepository.delete(conn, transitionId);
-                return null;
-            });
-        }
+        DeleteTransitionTask.deleteTransition(input);
     }
 
     public void placePreparedTransition(PlacePreparedTransitionInput input) throws SQLException {
