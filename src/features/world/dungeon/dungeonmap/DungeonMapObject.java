@@ -53,7 +53,7 @@ public final class DungeonMapObject {
         features.world.dungeon.dungeonmap.model.ClusterRewriteEffects rewriteEffects = mapApplicationService.reconcileClusterRewrite(
                 new features.world.dungeon.dungeonmap.api.ReconcileClusterRewriteRequest(originalMap, persistedRoomMap, rewriteRequest));
         corridorObject.persistReboundCorridors(conn, persistedRoomMap.mapId(), rewriteEffects.reboundCorridors());
-        transitionObject.persistReboundConnections(new PersistReboundConnectionsInput(
+        transitionObject.persistReboundConnections(PersistReboundConnectionsInput.reboundConnections(
                 conn,
                 originalMap,
                 rewriteEffects.reboundTransitionConnectionsById()));
