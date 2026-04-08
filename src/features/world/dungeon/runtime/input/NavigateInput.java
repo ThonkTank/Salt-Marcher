@@ -74,6 +74,18 @@ public record NavigateInput(
             return "TRANSITION".equalsIgnoreCase(kind);
         }
 
+        public boolean hasCellTarget() {
+            return cell != null;
+        }
+
+        public boolean hasDoorTarget() {
+            return doorId != null && doorId > 0;
+        }
+
+        public boolean hasTransitionTarget() {
+            return transitionId != null && transitionId > 0;
+        }
+
         public String label() {
             if (isCellAction()) {
                 return "Bewegen";

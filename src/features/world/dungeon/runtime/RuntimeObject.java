@@ -233,7 +233,7 @@ public final class RuntimeObject {
                     input.label(),
                     input.failureMessage(),
                     new DungeonRuntimeAction.CellTarget(
-                            Objects.requireNonNull(input.cell(), "action.cell"),
+                            Objects.requireNonNull(input.hasCellTarget() ? input.cell() : null, "action.cell"),
                             input.levelZ(),
                             CardinalDirection.parse(input.headingOverride())));
         }
@@ -243,14 +243,14 @@ public final class RuntimeObject {
                     input.failureMessage(),
                     new DungeonRuntimeAction.DoorTarget(
                             new features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef(
-                                    Objects.requireNonNull(input.doorId(), "action.doorId"))));
+                                    Objects.requireNonNull(input.hasDoorTarget() ? input.doorId() : null, "action.doorId"))));
         }
         if (input.isTransitionAction()) {
             return runtimeAction(
                     input.label(),
                     input.failureMessage(),
                     new DungeonRuntimeAction.TransitionTarget(
-                            Objects.requireNonNull(input.transitionId(), "action.transitionId")));
+                            Objects.requireNonNull(input.hasTransitionTarget() ? input.transitionId() : null, "action.transitionId")));
         }
         throw new IllegalArgumentException("Unbekannte Runtime-Aktion: " + input.kind());
     }
