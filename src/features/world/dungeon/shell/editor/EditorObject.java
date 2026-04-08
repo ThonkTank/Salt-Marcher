@@ -33,6 +33,7 @@ public final class EditorObject {
                                 resolvedInput.clusterApplicationService(),
                                 resolvedInput.corridorApplicationService(),
                                 resolvedInput.stairApplicationService(),
+                                resolvedInput.transitionApplicationService(),
                                 resolvedInput.hitCollector(),
                                 interactionState,
                                 statePaneObject));
@@ -46,6 +47,13 @@ public final class EditorObject {
                 resolvedInput.mapCatalogService(),
                 resolvedInput.sessionState(),
                 editorInteraction);
+    }
+
+    public ViewsInput composeEditor(ComposeEditorInput input) {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        return new ViewsInput(dungeonEditorView);
     }
 
     public ViewsInput views(ViewsInput input) {

@@ -112,6 +112,7 @@ public final class DungeonObject {
                 clusterApplicationService,
                 corridorApplicationService,
                 stairApplicationService,
+                transitionApplicationService,
                 roomObject,
                 hitCollector));
         this.views = new ViewsInput(

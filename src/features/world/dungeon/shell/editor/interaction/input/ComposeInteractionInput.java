@@ -8,6 +8,7 @@ public record ComposeInteractionInput(
         features.world.dungeon.dungeonmap.cluster.application.ApplicationObject clusterApplicationService,
         features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService corridorApplicationService,
         features.world.dungeon.application.stair.DungeonStairApplicationService stairApplicationService,
+        features.world.dungeon.application.transition.DungeonTransitionApplicationService transitionApplicationService,
         features.world.dungeon.shell.interaction.DungeonHitCollector hitCollector,
         features.world.dungeon.state.EditorInteractionState interactionState,
         features.world.dungeon.shell.editor.statepane.StatePaneObject statePaneObject

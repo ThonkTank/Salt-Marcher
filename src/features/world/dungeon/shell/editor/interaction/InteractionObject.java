@@ -1,12 +1,12 @@
 package features.world.dungeon.shell.editor.interaction;
 
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
+import features.world.dungeon.application.stair.StairDraftResolver;
+import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.api.PreviewMovedClusterRequest;
-import features.world.dungeon.dungeonmap.api.PreviewMovedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewMovedLocalDoorRequest;
-import features.world.dungeon.dungeonmap.api.PreviewMovedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
 import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
@@ -15,8 +15,6 @@ import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterDoorMoveRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterMoveRequest;
-import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.dungeonmap.corridor.application.CorridorInputEditor;
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
@@ -35,15 +33,11 @@ import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
 import features.world.dungeon.shell.editor.interaction.input.EditorToolPhase;
 import features.world.dungeon.shell.editor.interaction.input.InteractionResultInput;
 import features.world.dungeon.shell.editor.interaction.state.BoundaryTool;
-import features.world.dungeon.shell.editor.interaction.state.CorridorNodeDragSession;
-import features.world.dungeon.shell.editor.interaction.state.CorridorTileDragSession;
 import features.world.dungeon.shell.editor.interaction.state.CorridorTool;
-import features.world.dungeon.shell.editor.interaction.state.DoorDragSession;
 import features.world.dungeon.shell.editor.interaction.state.DoorTool;
 import features.world.dungeon.shell.editor.interaction.state.EditorInteraction;
 import features.world.dungeon.shell.editor.interaction.state.FloorTool;
 import features.world.dungeon.shell.editor.interaction.state.PaintTool;
-import features.world.dungeon.shell.editor.interaction.state.StairDragSession;
 import features.world.dungeon.shell.editor.interaction.state.StairTool;
 import features.world.dungeon.shell.editor.interaction.state.TransitionTool;
 import features.world.dungeon.shell.editor.interaction.tasks.EditorCapabilities;
@@ -52,8 +46,10 @@ import features.world.dungeon.state.DungeonEditorSessionState;
 import features.world.dungeon.state.DungeonEditorTool;
 import features.world.dungeon.state.EditorInteractionState;
 import features.world.dungeon.state.EditorPreview;
+import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -83,6 +79,8 @@ public final class InteractionObject {
         EditorInteractionState interactionState =
                 Objects.requireNonNull(resolvedInput.interactionState(), "interactionState");
         StatePaneObject statePaneObject = Objects.requireNonNull(resolvedInput.statePaneObject(), "statePaneObject");
+        DungeonTransitionApplicationService transitionApplicationService =
+                Objects.requireNonNull(resolvedInput.transitionApplicationService(), "transitionApplicationService");
 
         StairTool stairTool = new StairTool(
                 mapState,
@@ -136,10 +134,7 @@ public final class InteractionObject {
                         loadingService,
                         sessionState,
                         mapApplicationService,
-                        new features.world.dungeon.application.transition.DungeonTransitionApplicationService(
-                                null,
-                                null,
-                                null),
+                        transitionApplicationService,
                         interactionState));
         this.editorInteraction = new EditorInteraction(
                 mapState,
@@ -150,6 +145,13 @@ public final class InteractionObject {
     }
 
     public InteractionResultInput editorInteraction(EditorInteractionInput input) {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        return new InteractionResultInput(editorInteraction);
+    }
+
+    public InteractionResultInput composeInteraction(ComposeInteractionInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
@@ -236,8 +238,8 @@ public final class InteractionObject {
             clear();
             if (hit instanceof DungeonSelectionRef.StairRef stairRef) {
                 state.selectRef(resolvedSelectionRef);
-                stairTool.focusSelectedStair(ctx);
-                StairTool.StairDragSource stairDragSource = stairTool.stairDragSource();
+                focusSelectedStair(ctx);
+                StairDragSourceSnapshot stairDragSource = stairDragSource();
                 if (stairDragSource != null && Objects.equals(stairDragSource.stairId(), stairRef.stairId())) {
                     stairDragSession = StairDragSession.start(
                             stairDragSource.stairId(),
@@ -504,12 +506,12 @@ public final class InteractionObject {
         }
 
         @Override
-        public javafx.scene.Node statePaneContent() {
+        public Node statePaneContent() {
             if (activeTool != DungeonEditorTool.SELECT) {
                 return null;
             }
             if (state.selectedRef() instanceof DungeonSelectionRef.StairRef) {
-                return stairTool.sharedStairPaneContent();
+                return sharedStairPaneContent();
             }
             return statePaneObject;
         }
@@ -566,53 +568,48 @@ public final class InteractionObject {
         private void commitDoorMove(DoorDragSession session) {
             if (session == null
                     || session.targetBoundaryRef() == null
-                    || session.doorRef() == null
-                    || session.doorRef().doorRef() == null
-                    || session.doorRef().roomId() == null
-                    || session.targetBoundaryRef().roomId() == null
-                    || Objects.equals(session.doorRef().roomId(), session.targetBoundaryRef().roomId())) {
+                    || Objects.equals(session.sourceBoundarySegment2x(), session.targetBoundaryRef().boundarySegment())) {
                 return;
             }
             Long mapId = mapState.activeMapId();
             if (mapId == null) {
                 return;
             }
-            loadingService.submitMutation(
-                    () -> {
-                        roomApplicationService.moveDoor(new ClusterDoorMoveRequest(
-                                mapId,
-                                session.doorRef().roomId(),
-                                session.targetBoundaryRef().roomId(),
-                                session.doorRef().doorRef(),
-                                session.targetBoundaryRef().boundaryRef()));
-                        return mapId;
-                    },
-                    updatedMapId -> updatedMapId,
-                    ignored -> state.selectRef(session.targetBoundaryRef()),
-                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitDoorMove()", throwable));
+            if (session.clusterId() != null) {
+                commitLocalDoorMove(mapId, session);
+            } else if (session.corridorId() != null) {
+                commitCorridorDoorMove(mapId, session);
+            }
         }
 
         private void commitStairMove(StairDragSession session) {
-            if (session == null || session.stairId() == null || session.currentDraft() == null || session.currentDelta().isZero()) {
+            if (session == null) {
                 return;
             }
-            Long mapId = mapState.activeMapId();
-            if (mapId == null) {
+            GridTranslation translation = session.currentDelta()
+                    .combinedWith(GridTranslation.levels(session.currentLevel() - session.startLevel()));
+            Long mapId = session.baseMap().mapId() > 0 ? session.baseMap().mapId() : null;
+            DungeonStairApplicationService.StairDraft movedDraft = movedStairDraft(session);
+            if (mapId == null
+                    || movedDraft == null
+                    || translation.isZero()
+                    || previewStairMap(session) == null) {
                 return;
             }
             loadingService.submitMutation(
                     () -> {
-                        stairApplicationService.moveStair(new features.world.dungeon.stair.input.MoveStairInput(
+                        stairApplicationService.moveStair(new DungeonStairApplicationService.MoveStairRequest(
                                 mapId,
                                 session.stairId(),
-                                new features.world.dungeon.stair.input.MoveStairInput.TranslationInput(
-                                        session.currentDelta().dx(),
-                                        session.currentDelta().dy(),
-                                        session.currentLevel() - session.startLevel())));
+                                session.baseDraft(),
+                                translation));
                         return mapId;
                     },
                     updatedMapId -> updatedMapId,
-                    ignored -> state.selectRef(new DungeonSelectionRef.StairRef(session.stairId())),
+                    ignored -> {
+                        adoptMovedStairDraft(session.stairId(), movedDraft);
+                        state.selectRef(new DungeonSelectionRef.StairRef(session.stairId()));
+                    },
                     throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitStairMove()", throwable));
         }
 
@@ -620,12 +617,33 @@ public final class InteractionObject {
             if (dragSession == null) {
                 return null;
             }
-            GridTranslation translation = dragSession.currentDelta()
-                    .combinedWith(GridTranslation.levels(dragSession.currentLevel() - dragSession.startLevel()));
             return mapApplicationService.previewMovedCluster(new PreviewMovedClusterRequest(
                     dragSession.baseMap(),
                     dragSession.clusterId(),
-                    translation));
+                    dragSession.currentDelta()
+                            .combinedWith(GridTranslation.levels(dragSession.currentLevel() - dragSession.startLevel()))));
+        }
+
+        private DungeonMap previewStairMap(StairDragSession session) {
+            if (session == null || session.baseMap() == null || session.baseMap().mapId() <= 0) {
+                return null;
+            }
+            DungeonStairApplicationService.StairDraft movedDraft = movedStairDraft(session);
+            if (movedDraft == null) {
+                return null;
+            }
+            try {
+                return mapApplicationService.previewReplacedStair(new PreviewReplacedStairRequest(
+                                session.baseMap(),
+                                StairDraftResolver.resolvePreview(
+                                        session.baseMap(),
+                                        session.stairId(),
+                                        session.baseMap().mapId(),
+                                        movedDraft)))
+                        .projectedToLevel(session.currentLevel());
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
         }
 
         private DungeonMap previewCorridorMap() {
@@ -636,9 +654,28 @@ public final class InteractionObject {
             if (corridor == null) {
                 return null;
             }
-            return mapApplicationService.previewReplacedCorridor(new PreviewReplacedCorridorRequest(
+            Corridor updated = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(
                     mapState.activeMap(),
-                    corridorInputEditor(corridorNodeDragSession, corridor)));
+                    CorridorInputEditor.moveNode(
+                            corridor.input(),
+                            corridorNodeDragSession.nodeId(),
+                            corridorNodeDragSession.currentPoint())));
+            return mapApplicationService.previewReplacedCorridor(
+                            new PreviewReplacedCorridorRequest(mapState.activeMap(), updated))
+                    .projectedToLevel(mapState.activeProjectionLevel());
+        }
+
+        private DungeonMap previewDoorMap(DoorDragSession session) {
+            if (session == null || session.targetBoundaryRef() == null) {
+                return null;
+            }
+            if (session.clusterId() != null) {
+                return previewLocalDoorMap(session);
+            }
+            if (session.corridorId() != null) {
+                return previewCorridorDoorMap(session);
+            }
+            return null;
         }
 
         private DungeonMap previewCorridorTileMap() {
@@ -649,68 +686,346 @@ public final class InteractionObject {
             if (corridor == null) {
                 return null;
             }
-            return mapApplicationService.previewMovedCorridor(new PreviewMovedCorridorRequest(
+            Long segmentId = corridor.segmentIdAtCell(corridorTileDragSession.tileCell());
+            var insertedInput = CorridorInputEditor.insertNodeOnSegment(
+                    corridor.input(),
+                    segmentId,
+                    corridorTileDragSession.tileCell());
+            Long nodeId = insertedInput.nodes().stream()
+                    .filter(node -> node != null
+                            && !node.isDoorBound()
+                            && Objects.equals(node.fixedPoint(), corridorTileDragSession.tileCell()))
+                    .map(features.world.dungeon.dungeonmap.corridor.model.CorridorInputNode::nodeId)
+                    .findFirst()
+                    .orElse(null);
+            Corridor updated = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(
                     mapState.activeMap(),
-                    corridor,
-                    corridorTileDragSession.currentPoint(),
-                    mapState.activeProjectionLevel()));
+                    CorridorInputEditor.moveNode(
+                            insertedInput,
+                            nodeId,
+                            corridorTileDragSession.currentPoint())));
+            return mapApplicationService.previewReplacedCorridor(
+                            new PreviewReplacedCorridorRequest(mapState.activeMap(), updated))
+                    .projectedToLevel(mapState.activeProjectionLevel());
         }
 
-        private CorridorInputEditor corridorInputEditor(CorridorNodeDragSession session, Corridor corridor) {
-            return new CorridorInputEditor(
-                    corridor,
-                    session.nodeId(),
-                    session.currentPoint());
-        }
-
-        private DungeonMap previewStairMap(StairDragSession session) {
-            if (session == null || session.currentDraft() == null) {
-                return null;
-            }
-            return mapApplicationService.previewReplacedStair(new PreviewReplacedStairRequest(
-                    mapState.activeMap(),
-                    session.stairId(),
-                    StairDraftResolver.translate(session.currentDraft(), session.currentDelta(), session.currentLevel() - session.startLevel())));
-        }
-
-        private DungeonMap previewDoorMap(DoorDragSession session) {
-            if (session == null || session.targetBoundaryRef() == null || session.doorRef() == null) {
-                return null;
-            }
-            DoorRef previewDoorRef = session.targetBoundaryRef().boundaryRef() instanceof DoorRef targetDoorRef
-                    ? targetDoorRef
-                    : null;
-            if (previewDoorRef == null) {
+        private DungeonMap previewLocalDoorMap(DoorDragSession session) {
+            if (session == null
+                    || session.clusterId() == null
+                    || session.targetBoundaryRef() == null
+                    || session.baseMap() == null) {
                 return null;
             }
             return mapApplicationService.previewMovedLocalDoor(new PreviewMovedLocalDoorRequest(
-                    mapState.activeMap(),
-                    session.doorRef().roomId(),
-                    session.doorRef().doorRef(),
-                    session.targetBoundaryRef().roomId(),
-                    previewDoorRef));
+                            session.baseMap(),
+                            session.clusterId(),
+                            session.levelZ(),
+                            session.sourceBoundarySegment2x(),
+                            session.targetBoundaryRef().boundarySegment()))
+                    .projectedToLevel(session.levelZ());
         }
 
-        private static GridTranslation dragTranslation(GridPoint current, GridPoint pressed) {
-            if (current == null || pressed == null) {
-                return GridTranslation.zero();
+        private DungeonMap previewCorridorDoorMap(DoorDragSession session) {
+            if (session == null
+                    || session.corridorId() == null
+                    || session.targetBoundaryRef() == null
+                    || session.baseMap() == null) {
+                return null;
             }
-            return GridTranslation.of(current.x2() - pressed.x2(), current.y2() - pressed.y2(), 0);
+            Corridor corridor = session.baseMap().findCorridor(session.corridorId());
+            DungeonSelectionRef.DoorRef targetDoorRef = session.baseMap().doorSelectionRefAt(
+                    session.levelZ(),
+                    session.targetBoundaryRef().boundarySegment());
+            if (corridor == null
+                    || session.baseMap().existingExteriorRoomDoor(
+                    session.targetBoundaryRef(),
+                    session.levelZ()) == null
+                    || targetDoorRef == null) {
+                return null;
+            }
+            try {
+                Corridor updated = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(
+                        session.baseMap(),
+                        CorridorInputEditor.moveDoorAtBoundary(
+                                corridor,
+                                session.sourceBoundarySegment2x(),
+                                new DoorRef(targetDoorRef.doorId()))));
+                return mapApplicationService.previewReplacedCorridor(
+                                new PreviewReplacedCorridorRequest(session.baseMap(), updated))
+                        .projectedToLevel(session.levelZ());
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
         }
 
-        private static boolean isValidDoorTarget(DungeonSelectionRef.RoomBoundaryRef target, DoorDragSession session) {
-            return target != null
-                    && session != null
-                    && target.boundaryRef() instanceof DoorRef
-                    && !Objects.equals(target.roomId(), session.doorRef() == null ? null : session.doorRef().roomId());
+        private void commitLocalDoorMove(Long mapId, DoorDragSession session) {
+            if (session == null || session.clusterId() == null || previewLocalDoorMap(session) == null) {
+                return;
+            }
+            loadingService.submitMutation(
+                    () -> {
+                        roomApplicationService.moveDoor(new ClusterDoorMoveRequest(
+                                mapId,
+                                session.clusterId(),
+                                session.levelZ(),
+                                session.sourceBoundarySegment2x(),
+                                session.targetBoundaryRef().boundarySegment()));
+                        return mapId;
+                    },
+                    updatedMapId -> updatedMapId,
+                    ignored -> state.selectRef(session.baseMap().doorSelectionRefAt(
+                            session.levelZ(),
+                            session.targetBoundaryRef().boundarySegment())),
+                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitLocalDoorMove()", throwable));
         }
 
-        private DungeonSelectionRef.RoomBoundaryRef currentDoorTargetRef(EditorToolContext ctx, DoorDragSession session) {
-            DungeonSelectionRef hitRef = ctx == null ? null : ctx.hitRef();
-            return hitRef instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef
-                    && isValidDoorTarget(roomBoundaryRef, session)
-                    ? roomBoundaryRef
-                    : null;
+        private void commitCorridorDoorMove(Long mapId, DoorDragSession session) {
+            if (session == null || session.corridorId() == null || previewCorridorDoorMap(session) == null) {
+                return;
+            }
+            DungeonSelectionRef.DoorRef targetDoorRef = session.baseMap().doorSelectionRefAt(
+                    session.levelZ(),
+                    session.targetBoundaryRef().boundarySegment());
+            if (session.baseMap().existingExteriorRoomDoor(
+                    session.targetBoundaryRef(),
+                    session.levelZ()) == null
+                    || targetDoorRef == null) {
+                return;
+            }
+            loadingService.submitMutation(
+                    () -> {
+                        corridorApplicationService.moveDoor(new DungeonCorridorApplicationService.MoveCorridorDoorRequest(
+                                mapId,
+                                session.corridorId(),
+                                session.sourceBoundarySegment2x(),
+                                new DoorRef(targetDoorRef.doorId())));
+                        return mapId;
+                    },
+                    updatedMapId -> updatedMapId,
+                    ignored -> state.selectRef(session.baseMap().doorSelectionRefAt(
+                            session.levelZ(),
+                            session.targetBoundaryRef().boundarySegment())),
+                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitCorridorDoorMove()", throwable));
+        }
+
+        private DungeonStairApplicationService.StairDraft movedStairDraft(StairDragSession session) {
+            if (session == null) {
+                return null;
+            }
+            return StairDraftResolver.shiftedDraft(
+                    session.baseDraft(),
+                    session.currentDelta()
+                            .combinedWith(GridTranslation.levels(session.currentLevel() - session.startLevel())));
+        }
+
+        private DungeonSelectionRef.RoomBoundaryRef currentDoorTargetRef(
+                EditorToolContext ctx,
+                DoorDragSession session
+        ) {
+            if (ctx == null || session == null || !(ctx.hitRef() instanceof DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef)) {
+                return null;
+            }
+            return isValidDoorTarget(roomBoundaryRef, session) ? roomBoundaryRef : null;
+        }
+
+        private boolean isValidDoorTarget(
+                DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef,
+                DoorDragSession session
+        ) {
+            if (roomBoundaryRef == null || session == null) {
+                return false;
+            }
+            return previewDoorMap(session.withTargetBoundaryRef(roomBoundaryRef)) != null;
+        }
+
+        private static GridTranslation dragTranslation(GridPoint currentCell, GridPoint startCell) {
+            return GridTranslation.betweenCells(startCell, currentCell);
+        }
+
+        private boolean focusSelectedStair(EditorToolContext ctx) {
+            Object result = invokeStairToolMethod("focusSelectedStair", new Class<?>[]{EditorToolContext.class}, ctx);
+            return result instanceof Boolean value && value;
+        }
+
+        private StairDragSourceSnapshot stairDragSource() {
+            Object dragSource = invokeStairToolMethod("stairDragSource", new Class<?>[0]);
+            if (dragSource == null) {
+                return null;
+            }
+            Object stairIdValue = invokeDeclaredMethod(dragSource, "stairId", new Class<?>[0]);
+            Object draftValue = invokeDeclaredMethod(dragSource, "draft", new Class<?>[0]);
+            if (!(stairIdValue instanceof Long stairId)
+                    || !(draftValue instanceof DungeonStairApplicationService.StairDraft draft)) {
+                throw new IllegalStateException("SelectionEditorTool.stairDragSource(): unexpected drag source payload");
+            }
+            return new StairDragSourceSnapshot(stairId, draft);
+        }
+
+        private Node sharedStairPaneContent() {
+            Object result = invokeStairToolMethod("sharedStairPaneContent", new Class<?>[0]);
+            return result instanceof Node node ? node : null;
+        }
+
+        private void adoptMovedStairDraft(long stairId, DungeonStairApplicationService.StairDraft draft) {
+            invokeStairToolMethod(
+                    "adoptMovedStairDraft",
+                    new Class<?>[]{long.class, DungeonStairApplicationService.StairDraft.class},
+                    stairId,
+                    draft);
+        }
+
+        private Object invokeStairToolMethod(String name, Class<?>[] parameterTypes, Object... args) {
+            return invokeDeclaredMethod(stairTool, name, parameterTypes, args);
+        }
+
+        private static Object invokeDeclaredMethod(Object target, String name, Class<?>[] parameterTypes, Object... args) {
+            try {
+                Method method = target.getClass().getDeclaredMethod(name, parameterTypes);
+                method.setAccessible(true);
+                return method.invoke(target, args);
+            } catch (ReflectiveOperationException exception) {
+                throw new IllegalStateException(
+                        "SelectionEditorTool." + name + "(): failed to invoke " + target.getClass().getSimpleName(),
+                        exception);
+            }
+        }
+
+        private record StairDragSourceSnapshot(
+                long stairId,
+                DungeonStairApplicationService.StairDraft draft
+        ) {
+        }
+
+        private record ClusterDragSession(
+                Long clusterId,
+                DungeonMap baseMap,
+                GridPoint pressCell,
+                GridTranslation currentDelta,
+                int startLevel,
+                int currentLevel
+        ) {
+            private ClusterDragSession withCurrentDelta(GridTranslation translation) {
+                return new ClusterDragSession(clusterId, baseMap, pressCell, translation, startLevel, currentLevel);
+            }
+
+            private ClusterDragSession withCurrentLevel(int nextLevel) {
+                return new ClusterDragSession(clusterId, baseMap, pressCell, currentDelta, startLevel, nextLevel);
+            }
+
+            private static ClusterDragSession start(
+                    Long clusterId,
+                    DungeonMap baseMap,
+                    GridPoint pressCell,
+                    int startLevel
+            ) {
+                return new ClusterDragSession(clusterId, baseMap, pressCell, GridTranslation.none(), startLevel, startLevel);
+            }
+        }
+
+        private record StairDragSession(
+                long stairId,
+                DungeonMap baseMap,
+                DungeonStairApplicationService.StairDraft baseDraft,
+                GridPoint pressCell,
+                GridTranslation currentDelta,
+                int startLevel,
+                int currentLevel
+        ) {
+            private StairDragSession withCurrentDelta(GridTranslation translation) {
+                return new StairDragSession(stairId, baseMap, baseDraft, pressCell, translation, startLevel, currentLevel);
+            }
+
+            private StairDragSession withCurrentLevel(int nextLevel) {
+                return new StairDragSession(stairId, baseMap, baseDraft, pressCell, currentDelta, startLevel, nextLevel);
+            }
+
+            private static StairDragSession start(
+                    long stairId,
+                    DungeonMap baseMap,
+                    DungeonStairApplicationService.StairDraft baseDraft,
+                    GridPoint pressCell,
+                    int startLevel
+            ) {
+                return new StairDragSession(
+                        stairId,
+                        baseMap,
+                        baseDraft,
+                        pressCell,
+                        GridTranslation.none(),
+                        startLevel,
+                        startLevel);
+            }
+        }
+
+        private record CorridorNodeDragSession(
+                long corridorId,
+                Long nodeId,
+                GridPoint startPoint,
+                GridPoint currentPoint
+        ) {
+            private CorridorNodeDragSession withCurrentPoint(GridPoint point) {
+                return new CorridorNodeDragSession(corridorId, nodeId, startPoint, point);
+            }
+        }
+
+        private record CorridorTileDragSession(
+                long corridorId,
+                GridPoint tileCell,
+                GridPoint startPoint,
+                GridPoint currentPoint
+        ) {
+            private CorridorTileDragSession withCurrentPoint(GridPoint point) {
+                return new CorridorTileDragSession(corridorId, tileCell, startPoint, point);
+            }
+        }
+
+        private record DoorDragSession(
+                DungeonMap baseMap,
+                int levelZ,
+                Long clusterId,
+                Long corridorId,
+                GridSegment sourceBoundarySegment2x,
+                DungeonSelectionRef.RoomBoundaryRef targetBoundaryRef
+        ) {
+            private DoorDragSession withTargetBoundaryRef(DungeonSelectionRef.RoomBoundaryRef roomBoundaryRef) {
+                return new DoorDragSession(
+                        baseMap,
+                        levelZ,
+                        clusterId,
+                        corridorId,
+                        sourceBoundarySegment2x,
+                        roomBoundaryRef);
+            }
+
+            private static DoorDragSession start(
+                    DungeonMap baseMap,
+                    int levelZ,
+                    DungeonSelectionRef.DoorRef sourceRef
+            ) {
+                DoorDescription description = baseMap == null || sourceRef == null
+                        ? null
+                        : baseMap.describeDoor(sourceRef);
+                if (description == null
+                        || description.levelZ() != levelZ
+                        || description.isRoomExterior()) {
+                    return null;
+                }
+                return new DoorDragSession(
+                        baseMap,
+                        levelZ,
+                        description.isRoomLocal() ? description.clusterId() : null,
+                        description.isCorridorBoundary() ? description.corridorId() : null,
+                        doorAnchorSegment(baseMap, sourceRef),
+                        null);
+            }
+        }
+
+        private static GridSegment doorAnchorSegment(DungeonMap layout, DungeonSelectionRef.DoorRef doorRef) {
+            if (layout == null || doorRef == null) {
+                return null;
+            }
+            DoorDescription description = layout.describeDoor(doorRef);
+            return description == null ? null : description.anchorSegment();
         }
     }
 }

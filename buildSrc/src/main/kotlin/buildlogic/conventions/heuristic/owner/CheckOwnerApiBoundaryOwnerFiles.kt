@@ -634,7 +634,7 @@ private fun validateOwnerNewClassExpression(
         if (!allowedProjectType) {
             val reason = when (bodyMode) {
                 OwnerBodyMode.REQUEST ->
-                    "owner requests may construct only own or neighboring foreign input types ($projectTypeName)"
+                    "owner requests may construct only canonical input types ($projectTypeName)"
 
                 OwnerBodyMode.PRIVATE_CONSUMER ->
                     "owner private consumer methods may construct only canonical input types or direct sub-owner entrypoints ($projectTypeName)"

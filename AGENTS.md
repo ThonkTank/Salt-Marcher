@@ -106,7 +106,7 @@ Do not reverse that decision order. A capability does not belong in a package be
 - Place each capability on the lowest common owner that is actually edited, described, or constrained by it.
 - Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
 - The public `<Owner>Object` seam must stay stateless and workflowless. It may expose canonical requests, bind already-final values, make simple routing decisions, and hand final values to terminal consumers, but it must not hide workflow state, business logic, or complex intermediate processing.
-- Do not force every type into owner-style encapsulation. Immutable geometry types and strictly local transparent values may stay plain values when they do not own invariants or workflow state. Passive project types that must cross owner boundaries or be composed across owners belong in `input`, not in ad-hoc DTO or render-payload families.
+- Do not force every type into owner-style encapsulation. Immutable geometry types and strictly local transparent values may stay plain values when they do not own invariants or workflow state.
 - New code must follow the target architecture immediately.
 - Touched code should move toward the target architecture at the nearest safe seam without widening scope.
 - Preserve behavior, storage assumptions, user workflows, and explicit invariants unless the task explicitly requires changing them.
@@ -224,7 +224,6 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
 - New owner-local request and handoff schemas belong in the owner's `input` layer, not in legacy `api` or `model` roots. When one request needs small passive helper carriers, keep them nested inside the canonical `<Request>Input` instead of splitting them into artificial top-level pseudo-requests
 - Owner-private helper methods are allowed only as terminal consumers behind a public request. They must stay `private`, return `void`, consume already-final values, and must not become alternate workflow seams
-- Owner-to-owner composition is recursive only through public roots of direct sub-owners. If an owner must `new` a project-level composition target that is not canonical `input`, that target must be the `<Owner>Object` root of a direct sub-owner.
 
 ### Async & Threading
 - `javafx.concurrent.Task` + `new Thread()` (daemon, named `sm-<operation>` e.g. `sm-filter-load`, `sm-encounter-gen`, `sm-combat-setup`, `sm-stat-block`, `sm-save-terrain`)
