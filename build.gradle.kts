@@ -29,11 +29,6 @@ import buildlogic.conventions.heuristic.registerCheckArchitectureHeuristicsTask
 import buildlogic.conventions.heuristic.registerCheckDungeonGeometryConventionTask
 import buildlogic.conventions.hygiene.registerCheckBuildHygieneTask
 import buildlogic.conventions.hygiene.registerCheckNoCompiledArtifactsInSourceTask
-import buildlogic.conventions.legacy.registerCheckDungeonEditorArchitectureConventionTask
-import buildlogic.conventions.legacy.registerCheckFeatureApiBoundaryConventionTask
-import buildlogic.conventions.legacy.registerCheckLegacyArchitectureGuardsTask
-import buildlogic.conventions.legacy.registerCheckNoStdStreamsInFeatureServicesAndRepositoriesTask
-import buildlogic.conventions.legacy.registerCheckRepositorySqlExceptionConventionTask
 import buildlogic.conventions.policy.registerCheckLocalBuildPoliciesTask
 import buildlogic.conventions.policy.registerCheckUiAsyncSubmissionConventionTask
 import buildlogic.packaging.PackagingConfig
@@ -159,10 +154,7 @@ registerCrawlerItemsPipelineTask(importItems)
 registerCrawlerSpellsPipelineTask(importSpells)
 
 val checkNoCompiledArtifactsInSource = registerCheckNoCompiledArtifactsInSourceTask()
-val checkNoStdStreamsInFeatureServicesAndRepositories = registerCheckNoStdStreamsInFeatureServicesAndRepositoriesTask()
-val checkRepositorySqlExceptionConvention = registerCheckRepositorySqlExceptionConventionTask()
 val checkUiAsyncSubmissionConvention = registerCheckUiAsyncSubmissionConventionTask()
-val checkFeatureApiBoundaryConvention = registerCheckFeatureApiBoundaryConventionTask()
 
 val ownerConventionSupport = OwnerConventionSupport(project)
 val checkOwnerApiBoundarySourcePlacement = registerCheckOwnerApiBoundarySourcePlacementTask(ownerConventionSupport)
@@ -180,19 +172,12 @@ val checkOwnerApiBoundaryConvention = registerCheckOwnerApiBoundaryConventionTas
     checkOwnerApiBoundaryRepositoryFiles = checkOwnerApiBoundaryRepositoryFiles
 )
 
-val checkDungeonEditorArchitectureConvention = registerCheckDungeonEditorArchitectureConventionTask()
 val checkDungeonGeometryConvention = registerCheckDungeonGeometryConventionTask()
 val checkBuildHygiene = registerCheckBuildHygieneTask(checkNoCompiledArtifactsInSource)
 val checkLocalBuildPolicies = registerCheckLocalBuildPoliciesTask(checkUiAsyncSubmissionConvention)
 val checkArchitectureHeuristics = registerCheckArchitectureHeuristicsTask(
     checkOwnerApiBoundaryConvention = checkOwnerApiBoundaryConvention,
     checkDungeonGeometryConvention = checkDungeonGeometryConvention
-)
-registerCheckLegacyArchitectureGuardsTask(
-    checkNoStdStreamsInFeatureServicesAndRepositories = checkNoStdStreamsInFeatureServicesAndRepositories,
-    checkRepositorySqlExceptionConvention = checkRepositorySqlExceptionConvention,
-    checkFeatureApiBoundaryConvention = checkFeatureApiBoundaryConvention,
-    checkDungeonEditorArchitectureConvention = checkDungeonEditorArchitectureConvention
 )
 val checkConventions = registerCheckConventionsTask(
     checkBuildHygiene = checkBuildHygiene,
