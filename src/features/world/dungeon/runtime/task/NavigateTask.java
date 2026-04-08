@@ -29,13 +29,7 @@ public final class NavigateTask {
                     layout,
                     toNavigationSnapshot(input.currentNavigation()),
                     toRuntimeAction(input.action()));
-            return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
-                    ? features.world.dungeon.runtime.input.NavigateInput.NavigationInput.empty()
-                    : features.world.dungeon.runtime.input.NavigateInput.NavigationInput.navigation(
-                            snapshot.mapId(),
-                            snapshot.cell(),
-                            snapshot.levelZ(),
-                            snapshot.heading() == null ? "" : snapshot.heading().name());
+            return toNavigationInput(snapshot);
         }
     }
 
@@ -88,5 +82,17 @@ public final class NavigateTask {
                 "",
                 input.failureMessage(),
                 target);
+    }
+
+    private static features.world.dungeon.runtime.input.NavigateInput.NavigationInput toNavigationInput(
+            features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
+                ? features.world.dungeon.runtime.input.NavigateInput.NavigationInput.empty()
+                : features.world.dungeon.runtime.input.NavigateInput.NavigationInput.navigation(
+                        snapshot.mapId(),
+                        snapshot.cell(),
+                        snapshot.levelZ(),
+                        snapshot.heading() == null ? "" : snapshot.heading().name());
     }
 }
