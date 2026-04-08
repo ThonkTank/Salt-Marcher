@@ -1,9 +1,11 @@
 package features.world.dungeon.transition;
 
+import features.world.dungeon.transition.input.LoadOverworldTargetsInput;
 import features.world.dungeon.transition.input.PersistReboundConnectionsInput;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -15,6 +17,20 @@ public final class TransitionObject {
 
     public TransitionObject(features.world.dungeon.repository.DungeonTransitionRepository transitionRepository) {
         this.transitionRepository = java.util.Objects.requireNonNull(transitionRepository, "transitionRepository");
+    }
+
+    public List<LoadOverworldTargetsInput.TargetInput> loadOverworldTargets(
+            LoadOverworldTargetsInput input
+    ) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        return features.world.api.read.ReadObject.loadOverworldTransitionTargets().stream()
+                .map(summary -> new LoadOverworldTargetsInput.TargetInput(
+                        summary.mapId(),
+                        summary.tileId(),
+                        summary.label()))
+                .toList();
     }
 
     /**

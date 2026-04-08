@@ -7,6 +7,7 @@
 ## Canonical Types and APIs
 
 - `TransitionObject` — public transition root seam — accepts typed transition workflow requests and delegates them to the current transition workflow owner.
+- `input/LoadOverworldTargetsInput` — transition target-load request family — loads selectable overworld transition targets in transition-owned root-input form.
 - `input/PersistReboundConnectionsInput` — transition rebound request family — carries the original map plus resolved rebound connections so transition-local persistence can preserve attached stair placement specs.
 - `DungeonTransitionApplicationService` — legacy transition workflow seam for target lookup plus create, place, and delete flows while the root-owner migration continues.
 
