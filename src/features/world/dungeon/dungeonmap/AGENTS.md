@@ -8,16 +8,16 @@
 
 - `DungeonMapObject` — public root seam for loaded-map reads and map-owned workflows.
 - `input/` — public map-owned workflow request carriers for `DungeonMapObject`.
-- `application/` and `repository/` — map selection, load/reload orchestration, and rehydration.
-- `state/` — active map, projection level, overlay settings, and loading flags.
+- `repository/` and `state/` — canonical map-owner storage and runtime truth for loaded-map state.
+- Legacy `application/`, `api/`, and `model/` packages remain in the tree as internal collaborators and value homes. Reuse them only when touching existing flows; they do not define placement precedent for new owner-layer work.
 - `connections/`, `structure/`, `cluster/`, `corridor/` — map-owned child owners for traversal semantics and structure-backed map objects.
 
 ## Canonical Types and APIs
 
 - `DungeonMapObject` — public loaded-map seam for room, corridor, stair, transition, door, connection, traversability, and read-projection lookups.
 - `input/PersistClusterRewriteReboundsInput` — map-owned rebound-tail request family — carries the authoritative pre-write map plus the persisted cluster ids for the canonical room-reload and cross-owner rebound tail.
-- `DungeonMapApplicationService` — map-owned cross-owner workflow seam for cluster/corridor/stair/transition preview composition plus cluster rewrite validation and reconciliation.
-- `DungeonMapLoadResolver` and `DungeonMapLoadingService` — canonical selection, load, reload, and post-write refresh seams.
+- `DungeonMapApplicationService` — legacy internal workflow collaborator currently used by `DungeonMapObject` for cluster-rewrite reconciliation. Keep it behind the owner seam; do not treat `application/` as the destination for new touched architecture work.
+- `DungeonMapLoadResolver` and `DungeonMapLoadingService` — existing load/reload collaborators used by current map flows. Reuse when touching those paths, but move new owner-layer placement decisions toward `task`, `repository`, and `state`.
 - `DungeonMapRepository` — authoritative map rehydration seam over persisted owner slices.
 - `DungeonMapState` plus overlay policy state — shared map session state consumed by shell and canvas.
 
@@ -25,8 +25,9 @@
 
 - Put public cross-owner map access on `DungeonMapObject`.
 - Put root-owner workflow request carriers in `input/`.
-- Put preview, validation, reconcile, and resolve orchestration on `DungeonMapApplicationService`, not on tools or on the `DungeonMap` implementation itself.
-- Put selection, fallback, and reload policy in `application/`; put authoritative rehydration in `repository/`; put active-map and overlay state in `state/`.
+- Put authoritative rehydration in `repository/` and active-map plus overlay truth in `state/`.
+- If a map-owned request needs request-shaped input translation, add a matching `task/` seam rather than extending legacy `application/` packages.
+- When touching existing preview, validation, reconcile, or resolve flows that still depend on `DungeonMapApplicationService`, keep that dependency behind `DungeonMapObject` and migrate toward canonical owner layers at the nearest safe seam.
 - Keep shared traversal semantics under `connections/`, and keep structure-backed map objects under `structure/`, `cluster/`, and `corridor/`.
 - Keep successful writes authoritative: map-facing workflows end on reloads instead of mutating shell-local mirrors.
 

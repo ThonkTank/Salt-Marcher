@@ -32,16 +32,15 @@ internal data class OwnerConventionCatalog(
 }
 
 internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
-    snapshot: OwnerConventionSnapshot,
-    parsedSourcesByPath: Map<String, OwnerConventionParsedJavaSource>,
-    knownPackages: Set<String>,
-    knownTypeNames: Set<String>
+    snapshot: OwnerConventionSnapshot
 ): OwnerConventionCatalog {
     val allSourceFiles = sourceFiles(snapshot)
     val ownerSurfacesByOwner = allSourceFiles
         .asSequence()
         .filter { sourceFile -> sourceFile.context.role == ownerRole }
-        .mapNotNull { sourceFile -> ownerSurfaceShape(sourceFile, snapshot)?.let { surface -> surface.ownerPackage to surface } }
+        .mapNotNull { sourceFile ->
+            analyzeOwnerSurfaceShape(sourceFile, snapshot).model?.let { surface -> surface.ownerPackage to surface }
+        }
         .toMap(linkedMapOf())
     val requestStemsByOwner = ownerSurfacesByOwner.mapValues { (_, surface) -> surface.requestStems }
     val surfaceCatalog = OwnerConventionCatalog(
@@ -59,7 +58,7 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
     val inputApisByTypeName = allSourceFiles
         .asSequence()
         .filter { sourceFile -> sourceFile.context.role == inputRole }
-        .mapNotNull { sourceFile -> inputApiShape(sourceFile, surfaceSnapshot) }
+        .mapNotNull { sourceFile -> analyzeInputShape(sourceFile, surfaceSnapshot).model }
         .associateBy(OwnerConventionInputApi::typeName)
     val inputCatalog = surfaceCatalog.copy(
         inputApisByTypeName = inputApisByTypeName
@@ -68,17 +67,17 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
     val taskApisByTypeName = allSourceFiles
         .asSequence()
         .filter { sourceFile -> sourceFile.context.role == taskRole }
-        .mapNotNull { sourceFile -> taskApiShape(sourceFile, inputSnapshot) }
+        .mapNotNull { sourceFile -> analyzeTaskShape(sourceFile, inputSnapshot).model }
         .associateBy(OwnerConventionStaticApi::typeName)
     val stateApisByTypeName = allSourceFiles
         .asSequence()
         .filter { sourceFile -> sourceFile.context.role == stateRole }
-        .mapNotNull { sourceFile -> stateApiShape(sourceFile, inputSnapshot) }
+        .mapNotNull { sourceFile -> analyzeStateShape(sourceFile, inputSnapshot).model }
         .associateBy(OwnerConventionStaticApi::typeName)
     val repositoryApisByTypeName = allSourceFiles
         .asSequence()
         .filter { sourceFile -> sourceFile.context.role == repositoryRole }
-        .mapNotNull { sourceFile -> repositoryApiShape(sourceFile, inputSnapshot) }
+        .mapNotNull { sourceFile -> analyzeRepositoryShape(sourceFile, inputSnapshot).model }
         .associateBy(OwnerConventionStaticApi::typeName)
     val coreCatalog = inputCatalog.copy(
         taskApisByTypeName = taskApisByTypeName,
@@ -89,19 +88,13 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
     val canonicalOwnerCallersByOwner = allSourceFiles
         .asSequence()
         .filter { sourceFile -> sourceFile.context.role == ownerRole }
-        .mapNotNull { sourceFile -> ownerCallerShape(sourceFile, coreSnapshot)?.let { ownerCaller -> ownerCaller.ownerPackage to ownerCaller } }
+        .mapNotNull { sourceFile ->
+            analyzeOwnerSurfaceShape(sourceFile, coreSnapshot).model
+                ?.toCanonicalOwnerCaller()
+                ?.let { ownerCaller -> ownerCaller.ownerPackage to ownerCaller }
+        }
         .toMap(linkedMapOf())
     return coreCatalog.copy(
         canonicalOwnerCallersByOwner = canonicalOwnerCallersByOwner
-    )
-}
-internal fun OwnerConventionSupport.analyzeOwnerSurfaceFile(
-    sourceFile: OwnerConventionSourceFile,
-    snapshot: OwnerConventionSnapshot,
-    support: OwnerConventionSupport
-): OwnerConventionAnalysis<OwnerConventionOwnerSurface> {
-    return OwnerConventionAnalysis(
-        reasons = emptyList(),
-        model = support.ownerSurfaceShape(sourceFile, snapshot)
     )
 }

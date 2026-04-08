@@ -393,12 +393,7 @@ class OwnerConventionSupport(private val project: Project) {
             semanticModel = parsedJavaSources.semanticModel,
             callIndex = OwnerConventionCallIndex.EMPTY
         )
-        val catalog = buildOwnerConventionCatalog(
-            snapshot = baseSnapshot,
-            parsedSourcesByPath = parsedSourcesByPath,
-            knownPackages = knownPackages,
-            knownTypeNames = knownTypeNames
-        )
+        val catalog = buildOwnerConventionCatalog(snapshot = baseSnapshot)
         val catalogSnapshot = OwnerConventionSnapshot(
             touchedPaths = touchedPaths,
             knownPackages = knownPackages,

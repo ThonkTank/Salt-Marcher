@@ -30,19 +30,14 @@ internal fun analyzeRepositoryFile(
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
     val shapeAnalysis = support.analyzeRepositoryShape(sourceFile, snapshot)
-    val reasons = shapeAnalysis.reasons.toMutableList()
-    val primaryType = support.parsedPrimaryType(sourceFile)
-        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model)
-    reasons += repositoryBodyReasons(
-        sourceFile = sourceFile,
-        snapshot = snapshot,
-        support = support,
-        primaryType = primaryType
-    )
-    return OwnerConventionAnalysis(
-        reasons = reasons.distinct(),
-        model = shapeAnalysis.model
-    )
+    return support.extendShapeAnalysis(sourceFile, shapeAnalysis) { primaryType ->
+        repositoryBodyReasons(
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            primaryType = primaryType
+        )
+    }
 }
 
 internal fun repositoryClassShapeReasons(

@@ -169,25 +169,6 @@ internal fun OwnerConventionSupport.analyzeOwnerSurfaceShape(
     )
 }
 
-internal fun OwnerConventionSupport.ownerSurfaceShape(
-    sourceFile: OwnerConventionSourceFile,
-    snapshot: OwnerConventionSnapshot
-): OwnerConventionOwnerSurface? {
-    return analyzeOwnerSurfaceShape(sourceFile, snapshot).model
-}
-
-internal fun OwnerConventionSupport.ownerCallerShape(
-    sourceFile: OwnerConventionSourceFile,
-    snapshot: OwnerConventionSnapshot
-): OwnerConventionCanonicalOwnerCaller? {
-    val ownerSurface = analyzeOwnerSurfaceShape(sourceFile, snapshot).model ?: return null
-    return OwnerConventionCanonicalOwnerCaller(
-        typeName = ownerSurface.typeName,
-        ownerPackage = ownerSurface.ownerPackage,
-        requestMethodNames = ownerSurface.requestMethodNames
-    )
-}
-
 internal fun OwnerConventionSupport.analyzeInputShape(
     sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot
@@ -232,13 +213,6 @@ internal fun OwnerConventionSupport.analyzeInputShape(
             null
         }
     )
-}
-
-internal fun OwnerConventionSupport.inputApiShape(
-    sourceFile: OwnerConventionSourceFile,
-    snapshot: OwnerConventionSnapshot
-): OwnerConventionInputApi? {
-    return analyzeInputShape(sourceFile, snapshot).model
 }
 
 internal fun OwnerConventionSupport.analyzeTaskShape(
@@ -328,13 +302,6 @@ internal fun OwnerConventionSupport.analyzeTaskShape(
     )
 }
 
-internal fun OwnerConventionSupport.taskApiShape(
-    sourceFile: OwnerConventionSourceFile,
-    snapshot: OwnerConventionSnapshot
-): OwnerConventionStaticApi? {
-    return analyzeTaskShape(sourceFile, snapshot).model
-}
-
 internal fun OwnerConventionSupport.analyzeStateShape(
     sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot
@@ -412,13 +379,6 @@ internal fun OwnerConventionSupport.analyzeStateShape(
             null
         }
     )
-}
-
-internal fun OwnerConventionSupport.stateApiShape(
-    sourceFile: OwnerConventionSourceFile,
-    snapshot: OwnerConventionSnapshot
-): OwnerConventionStaticApi? {
-    return analyzeStateShape(sourceFile, snapshot).model
 }
 
 internal fun OwnerConventionSupport.analyzeRepositoryShape(
@@ -505,13 +465,6 @@ internal fun OwnerConventionSupport.analyzeRepositoryShape(
             null
         }
     )
-}
-
-internal fun OwnerConventionSupport.repositoryApiShape(
-    sourceFile: OwnerConventionSourceFile,
-    snapshot: OwnerConventionSnapshot
-): OwnerConventionStaticApi? {
-    return analyzeRepositoryShape(sourceFile, snapshot).model
 }
 
 internal fun isAllowedObjectsUtilityInvocation(

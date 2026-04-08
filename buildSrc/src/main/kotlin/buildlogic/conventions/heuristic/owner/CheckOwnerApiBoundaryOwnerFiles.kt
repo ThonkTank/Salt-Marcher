@@ -54,11 +54,10 @@ internal fun analyzeOwnerFile(
 ): OwnerConventionAnalysis<OwnerConventionCanonicalOwnerCaller> {
     val context = sourceFile.context
     val shapeAnalysis = support.analyzeOwnerSurfaceShape(sourceFile, snapshot)
+    val canonicalOwnerCaller = shapeAnalysis.model?.toCanonicalOwnerCaller()
     val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)
-        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model?.let {
-            OwnerConventionCanonicalOwnerCaller(it.typeName, it.ownerPackage, it.requestMethodNames)
-        })
+        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = canonicalOwnerCaller)
     val publicMethods = primaryType.methods.filter { Modifier.PUBLIC in it.modifiers }
     val fieldProjectTypes = primaryType.fields.mapNotNull { field ->
         val resolvedType = support.resolveProjectTypeName(field.tree.type, sourceFile.parsedSource, snapshot)
@@ -77,13 +76,6 @@ internal fun analyzeOwnerFile(
                 fieldProjectTypes = fieldProjectTypes
             )
         }
-    val canonicalOwnerCaller = shapeAnalysis.model?.let { ownerSurface ->
-        OwnerConventionCanonicalOwnerCaller(
-            typeName = ownerSurface.typeName,
-            ownerPackage = ownerSurface.ownerPackage,
-            requestMethodNames = ownerSurface.requestMethodNames
-        )
-    }
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
         model = canonicalOwnerCaller

@@ -14,7 +14,8 @@
 
 - Put shared world navigation behavior here.
 - Keep reusable world-owned UI building blocks shared by runtime and editor surfaces under world-owned UI, not under one editor subtree.
-- Keep editor-facing application services on typed request payloads such as `loadMapList`, `loadMap`, and `updateMap`.
+- Keep editor-facing world requests on explicit world-owned seams with typed request payloads such as `loadMapList`, `loadMap`, and `updateMap`.
+- Do not use `application` naming here as placement precedent for new touched architecture work.
 
 ## Forbidden Drift
 
