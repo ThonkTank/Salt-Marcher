@@ -80,7 +80,7 @@ public final class RuntimeObject {
                     layout,
                     input.preferredCell(),
                     input.preferredLevelZ(),
-                    CardinalDirection.parse(input.preferredHeading()));
+                    parseHeading(input.preferredHeading()));
             return toResolveNavigationInput(snapshot);
         }
     }
@@ -224,7 +224,7 @@ public final class RuntimeObject {
                 mapId,
                 cell,
                 levelZ,
-                CardinalDirection.parse(heading));
+                parseHeading(heading));
     }
 
     private static DungeonRuntimeAction toRuntimeAction(NavigateInput.ActionInput input) {
@@ -234,7 +234,7 @@ public final class RuntimeObject {
                     new DungeonRuntimeAction.CellTarget(
                             input.requireCellTarget(),
                             input.levelZ(),
-                            CardinalDirection.parse(input.resolvedHeadingOverride())));
+                            parseHeading(input.resolvedHeadingOverride())));
         }
         if (input.isDoorAction()) {
             return runtimeAction(
@@ -257,5 +257,9 @@ public final class RuntimeObject {
             Object target
     ) {
         return new DungeonRuntimeAction(input.label(), "", input.failureMessage(), target);
+    }
+
+    private static CardinalDirection parseHeading(String heading) {
+        return CardinalDirection.parse(heading);
     }
 }
