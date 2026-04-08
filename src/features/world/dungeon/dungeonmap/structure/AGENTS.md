@@ -10,6 +10,7 @@ This file covers `src/features/world/dungeon/dungeonmap/structure/`.
 
 - `Structure` — abstract shared physical structure base — composes the local `surface`, `boundary`, and `room` sub-owners for each level. `Cluster` and `Corridor` extend this base; `roomTopology()` is a derived companion over the physical structure plus room metadata, not an additional persisted structure state.
 - `StructureSpecification` — canonical full creation payload for public structure construction.
+- `Structure.fromSurfaceLevel(...)` — direct single-level build seam — creates final structure topology from one resolved surface area plus retained doors.
 - `StructureMutation` — canonical public mutation vocabulary for structure-backed physical edits.
 - `StructureSurface` — level-local surface aggregate seam; callers enter through `Structure.surfaceAtLevel(levelZ)` and then continue on `surface()` or `floor()`.
 - `surface/StructureSurfaceArea`, `surface/StructureFloor` — local surface sub-owners for area and floor truth.
@@ -23,7 +24,7 @@ This file covers `src/features/world/dungeon/dungeonmap/structure/`.
 ## Where New Code Goes
 
 - Put shared physical topology, boundary identity, and shared room-projection logic here.
-- Keep public structure-backed creation on `Structure.fromSpecification(...)` and public structure-backed mutation on `structure.mutated(...)`.
+- Keep public structure-backed creation on `Structure.fromSpecification(...)`, `Structure.fromSurfaceLevel(...)`, and public structure-backed mutation on `structure.mutated(...)`.
 - Put level-local surface behavior on the local `model/surface/` sub-owner and keep callers on `structure.surfaceAtLevel(levelZ).surface()` or `.floor()`.
 - Put object-local surface-area and floor behavior on the `model/surface/` subtree instead of expanding `StructureSurface`.
 - Keep structure construction explicit: new structures must materialize both surface and floor sets directly instead of creating a surface-only shell and letting callers infer walkability later.

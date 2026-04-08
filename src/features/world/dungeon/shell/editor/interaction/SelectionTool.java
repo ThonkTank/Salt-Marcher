@@ -500,7 +500,7 @@ public final class SelectionTool implements EditorTool {
                         corridor.input(),
                         corridorNodeDragSession.nodeId(),
                         corridorNodeDragSession.currentPoint()),
-                mapState.activeMap().corridorResolutionInput(new features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest(corridor.levelZ())));
+                mapState.activeMap().corridorResolutionInput(corridor.levelZ()));
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -539,7 +539,7 @@ public final class SelectionTool implements EditorTool {
                         insertedInput,
                         nodeId,
                         corridorTileDragSession.currentPoint()),
-                mapState.activeMap().corridorResolutionInput(new features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest(corridor.levelZ())));
+                mapState.activeMap().corridorResolutionInput(corridor.levelZ()));
         return mapState.activeMap()
                 .withUpdatedCorridor(updated)
                 .projectedToLevel(mapState.activeProjectionLevel());
@@ -581,12 +581,12 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         try {
-            Long nodeId = corridor.doorNodeIdAtBoundary(
-                    session.sourceBoundarySegment2x(),
-                    session.baseMap().corridorResolutionInput(new features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest(corridor.levelZ())));
             Corridor updated = corridor.withInput(
-                    CorridorInputEditor.moveDoor(corridor.input(), nodeId, new DoorRef(targetDoorRef.doorId())),
-                    session.baseMap().corridorResolutionInput(new features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest(corridor.levelZ())));
+                    CorridorInputEditor.moveDoorAtBoundary(
+                            corridor,
+                            session.sourceBoundarySegment2x(),
+                            new DoorRef(targetDoorRef.doorId())),
+                    session.baseMap().corridorResolutionInput(corridor.levelZ()));
             return session.baseMap()
                     .withUpdatedCorridor(updated)
                     .projectedToLevel(session.levelZ());

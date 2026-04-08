@@ -8,14 +8,15 @@
 
 - `model/Corridor` — top-level corridor aggregate that extends `Structure` with corridor-owned `CorridorInput` truth plus transient routed traces and connections derived from the input and final structure.
 - `model/CorridorInput`, `model/CorridorInputNode`, `model/CorridorSegment` — canonical persisted corridor-authored input — describe the ordered node-and-segment network; each `CorridorSegment` owns endpoint resolution and local replanning between its two anchors.
-- `model/CorridorResolutionInput` — fixed corridor-external input contract — supplies blocked area, room-exterior door facts, and occupied connection boundary through canonical `GridArea` / `GridBoundary` carriers.
+- `model/CorridorResolutionInput` — fixed corridor-external input contract — supplies blocked area and room-exterior door facts through canonical `GridArea` carriers and exterior-door descriptors.
 - `model/CorridorReconcileInput` — fixed room-rewrite contract — supplies affected room ids, before-or-after door facts, translations, level shifts, and updated resolution input for rebound workflows.
 - `model/CorridorRouting` — corridor-local segment-routing helper — stays package-private beneath `CorridorSegment`; external callers reuse `Corridor` and `CorridorSegment`, not raw routing helper records.
 - `model/CorridorPathTrace` — transient routed corridor trace keyed by authored `segmentId`; stores only canonical `GridPath`, and render/hit leaves derive the ordered `GridSegmentPath` view through `GridPath.segmentPath()`.
 - `model/Corridor.boundaryDoorBoundary()` — corridor-owned read projection — reports corridor boundary openings through the canonical `GridBoundary` carrier without requiring live external map context.
+- `model/Corridor.doorNodeIdAtBoundary(...)` — corridor-owned boundary-door lookup — resolves corridor boundary-door identity without rebuilding map context.
 - `model/Corridor.touchesRoomAnchorCells(...)` — corridor-owned anchor guard — answers whether removed room-floor cells would orphan one of this corridor's room-bound anchors.
 - `application/DungeonCorridorApplicationService` — public corridor workflow seam for corridor creation, room-door attachment, node or door movement, and topology deletion.
-- `application/CorridorInputEditor` — canonical authored-network edit helper — applies graph edits, segment splits, and connected-component partitioning to `CorridorInput` before re-resolution.
+- `application/CorridorInputEditor` — canonical authored-network edit helper — applies graph edits, direct boundary-door edits, segment splits, and connected-component partitioning to `CorridorInput` before re-resolution.
 - `repository/DungeonCorridorRepository` — corridor row, input-node, and input-segment persistence seam; final topology persists only through `structure/repository`.
 
 ## Where New Code Goes
@@ -23,7 +24,7 @@
 - Put corridor identity, persisted authored input truth, room attachment semantics, and corridor-local invariants on `Corridor`.
 - Route public corridor create or reload flows through `Corridor.fromInput(...)` or `Corridor.rehydrated(...)`.
 - Route public corridor rewrites through `corridor.withInput(...)`, `corridor.validateReconcile(...)`, and `corridor.reconciled(...)`; graph-edit translation belongs on `CorridorInputEditor`, not on the aggregate.
-- Let `Corridor` own corridor boundary-opening reads, room-anchor guard semantics, and authored input validation; callers may select a segment id or room/cell set, but they must not persist routed traces as owner truth.
+- Let `Corridor` own corridor boundary-opening reads, boundary-door lookup, room-anchor guard semantics, and authored input validation; callers may select a segment id or room/cell set, but they must not persist routed traces as owner truth.
 - Put reusable segment-routing helpers on `CorridorRouting`, not on layout, tools, or repositories.
 - Keep corridor-local routing helpers and drafts carrier-based: use `GridArea`, `GridBoundary`, and canonical `GridPath` instead of raw point or segment sets on public seams.
 - Keep shared physical corridor shape on canonical `Structure` values owned by the corridor aggregate instead of rebuilding separate corridor geometry mirrors.
