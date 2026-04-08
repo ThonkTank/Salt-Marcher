@@ -43,7 +43,8 @@ internal data class OwnerConventionSnapshot(
     val parsedSourcesByPath: Map<String, OwnerConventionParsedJavaSource>,
     val parsedTypesByName: Map<String, OwnerConventionParsedJavaType>,
     val catalog: OwnerConventionCatalog,
-    val semanticModel: OwnerConventionSemanticModel
+    val semanticModel: OwnerConventionSemanticModel,
+    val callIndex: OwnerConventionCallIndex
 )
 
 internal data class OwnerConventionSourceFile(
@@ -283,6 +284,29 @@ class OwnerConventionSupport(private val project: Project) {
         return snapshot.parsedTypesByName[typeName]
     }
 
+    internal fun registerRepositoryWideCheck(
+        taskName: String,
+        taskDescription: String,
+        failureHeader: String,
+        failureSummary: String,
+        reasonCollector: (OwnerConventionSnapshot) -> List<String>
+    ): TaskProvider<Task> = project.tasks.register(taskName) {
+        group = "verification"
+        description = taskDescription
+
+        doLast {
+            val offenders = reasonCollector(snapshot()).sorted()
+            if (offenders.isNotEmpty()) {
+                val details = offenders.joinToString(separator = "\n") { offender -> " - $offender" }
+                throw GradleException(
+                    "$failureHeader\n" +
+                        "$failureSummary\n" +
+                        "Offending calls:\n$details"
+                )
+            }
+        }
+    }
+
     private fun offenders(
         applicableRoles: Set<String>?,
         reasonCollector: (OwnerConventionSourceFile, OwnerConventionSnapshot) -> List<String>
@@ -334,7 +358,8 @@ class OwnerConventionSupport(private val project: Project) {
             parsedSourcesByPath = parsedSourcesByPath,
             parsedTypesByName = parsedTypesByName,
             catalog = OwnerConventionCatalog.EMPTY,
-            semanticModel = parsedJavaSources.semanticModel
+            semanticModel = parsedJavaSources.semanticModel,
+            callIndex = OwnerConventionCallIndex.EMPTY
         )
         val catalog = buildOwnerConventionCatalog(
             snapshot = baseSnapshot,
@@ -342,7 +367,7 @@ class OwnerConventionSupport(private val project: Project) {
             knownPackages = knownPackages,
             knownTypeNames = knownTypeNames
         )
-        return OwnerConventionSnapshot(
+        val catalogSnapshot = OwnerConventionSnapshot(
             touchedPaths = touchedPaths,
             knownPackages = knownPackages,
             knownTypeNames = knownTypeNames,
@@ -350,7 +375,12 @@ class OwnerConventionSupport(private val project: Project) {
             parsedSourcesByPath = parsedSourcesByPath,
             parsedTypesByName = parsedTypesByName,
             catalog = catalog,
-            semanticModel = parsedJavaSources.semanticModel
+            semanticModel = parsedJavaSources.semanticModel,
+            callIndex = OwnerConventionCallIndex.EMPTY
+        )
+        val callIndex = buildOwnerConventionCallIndex(catalogSnapshot)
+        return catalogSnapshot.copy(
+            callIndex = callIndex
         )
     }
 
