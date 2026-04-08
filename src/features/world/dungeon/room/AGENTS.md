@@ -7,13 +7,15 @@
 ## Canonical Types and APIs
 
 - `RoomObject` — public room root seam — accepts typed narration write requests and orchestrates the room-owned save through same-owner `state` and `repository`.
-- `input/SaveNarrationInput` — room-narration save request — carries the JDBC connection, the room id, the visual description, and a request-local nested exit narration value type.
+- `input/SaveNarrationInput` — room-narration save request — carries the caller-owned JDBC connection, the room id, the visual description, and the nested `SaveNarrationInput.ExitNarrationInput` value used only by this request shape.
 - `state/SaveNarrationState` — room-owned narration save state — normalizes the authored narration payload into the canonical room-owned save shape.
+- `state/SaveNarrationExitState` — room-owned normalized exit narration value derived from the nested request-local exit payload.
 - `repository/SaveNarrationRepository` — room-owned narration persistence seam — updates `dungeon_rooms.visual_description` and replaces `dungeon_room_exit_descriptions` rows from room-owned state.
 
 ## Where New Code Goes
 
 - Put public room write requests under `input/`.
+- Keep room-request-local passive helper values nested inside `SaveNarrationInput` when they belong only to that single request shape.
 - Put cross-owner room write entrypoints on `RoomObject`.
 - Put room-owned request normalization and protected save truth in `state/` when a room write needs a canonical internal payload.
 - Put direct room-owned SQL persistence in `repository/`.

@@ -118,7 +118,7 @@ Do not reverse that decision order. A capability does not belong in a package be
 ### Local Layer Vocabulary
 
 Technical layers are subordinate tools inside an owner slice, not the primary architecture story:
-- `input` — canonical request schemas the owner accepts; each input is named exactly `<Request>Input`, where `<Request>` matches a real public request method on the owner's `<Owner>Object`
+- `input` — canonical request schemas the owner accepts; each input is named exactly `<Request>Input`, where `<Request>` matches a real public request method on the owner's `<Owner>Object`. An input may carry request-local passive nested value types when they are part of that single request shape
 - `task` — owner-local static end-to-end input-to-input pipelines; each task is named exactly `<Request>Task`, where `<Request>` matches a real public request method on the owner's `<Owner>Object`, and the task starts from the matching `<Request>Input`
 - `repository` — persistence-only state reconstruction and state storage
 - `state` — the owner's canonical protected runtime/object state plus the only allowed state factory/transition APIs
@@ -215,7 +215,7 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Owner `state` is protected runtime/object truth, not UI/session convenience state. State may change only through explicit factory/transition APIs in the same owner's `state` layer
 - Business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
 - Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
-- New owner-local request and handoff schemas belong in the owner's `input` layer, not in legacy `api` or `model` roots
+- New owner-local request and handoff schemas belong in the owner's `input` layer, not in legacy `api` or `model` roots. When one request needs small passive helper carriers, keep them nested inside the canonical `<Request>Input` instead of splitting them into artificial top-level pseudo-requests
 
 ### Async & Threading
 - `javafx.concurrent.Task` + `new Thread()` (daemon, named `sm-<operation>` e.g. `sm-filter-load`, `sm-encounter-gen`, `sm-combat-setup`, `sm-stat-block`, `sm-save-terrain`)
