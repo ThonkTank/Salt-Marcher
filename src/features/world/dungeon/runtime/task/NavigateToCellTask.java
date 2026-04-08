@@ -27,13 +27,7 @@ public final class NavigateToCellTask {
                     toNavigationSnapshot(input.currentNavigation()),
                     input.cell(),
                     input.levelZ());
-            return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
-                    ? features.world.dungeon.runtime.input.NavigateToCellInput.NavigationInput.empty()
-                    : features.world.dungeon.runtime.input.NavigateToCellInput.NavigationInput.navigation(
-                            snapshot.mapId(),
-                            snapshot.cell(),
-                            snapshot.levelZ(),
-                            snapshot.heading() == null ? "" : snapshot.heading().name());
+            return toNavigationInput(snapshot);
         }
     }
 
@@ -48,5 +42,17 @@ public final class NavigateToCellTask {
                 input.cell(),
                 input.levelZ(),
                 features.world.dungeon.geometry.CardinalDirection.parse(input.heading()));
+    }
+
+    private static features.world.dungeon.runtime.input.NavigateToCellInput.NavigationInput toNavigationInput(
+            features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
+                ? features.world.dungeon.runtime.input.NavigateToCellInput.NavigationInput.empty()
+                : features.world.dungeon.runtime.input.NavigateToCellInput.NavigationInput.navigation(
+                        snapshot.mapId(),
+                        snapshot.cell(),
+                        snapshot.levelZ(),
+                        snapshot.heading() == null ? "" : snapshot.heading().name());
     }
 }
