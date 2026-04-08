@@ -140,15 +140,7 @@ internal fun analyzeOwnerFile(
                 fieldProjectTypes = fieldProjectTypes
             )
         }
-    val canonicalOwnerCaller = if (reasons.isEmpty()) {
-        OwnerConventionCanonicalOwnerCaller(
-            typeName = "${context.packageName}.${primaryType.name}",
-            ownerPackage = context.ownerPackage,
-            requestMethodNames = publicMethods.map(OwnerConventionParsedJavaMethod::name).toSet()
-        )
-    } else {
-        null
-    }
+    val canonicalOwnerCaller = support.ownerCallerShape(sourceFile, snapshot)
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
         model = canonicalOwnerCaller
@@ -181,11 +173,7 @@ private fun ownerRequestShapeReasons(
     if (parameterType != expectedInputType) {
         reasons += "${context.path} :: owner requests must accept exactly ${expectedInputType.substringAfterLast('.')} (${method.name})"
     }
-    val returnPackages = support.projectTypePackages(method.tree.returnType, sourceFile.parsedSource, snapshot)
-    if (returnPackages.any { projectPackage ->
-            support.roleForDirectoryName(projectPackage.substringAfterLast('.')) != support.inputRole
-        }
-    ) {
+    if (!support.isCanonicalOwnerRequestReturnType(method.tree.returnType, sourceFile.parsedSource, snapshot)) {
         reasons += "${context.path} :: owner public methods may expose only input types from project code (${method.name})"
     }
     return reasons
@@ -211,7 +199,7 @@ private fun validateOwnerDependencyTypes(
                     null
                 }
 
-            !support.sameOwnerEdgeOrNeighbor(context.ownerPackage, targetOwnerPackage) ->
+            !support.isOwnerReachable(context.ownerPackage, targetOwnerPackage) ->
                 "$reasonPrefix may cross only one owner edge ($typeName from $sourceTypeName)"
 
             typeRole == support.ownerRole && typeName == support.ownerSurfaceTypeName(targetOwnerPackage, snapshot) ->
@@ -609,7 +597,7 @@ private fun validateOwnerNewClassExpression(
         val projectRole = support.roleForDirectoryName(projectPackage.substringAfterLast('.'))
         val targetOwnerPackage = support.ownerPackageFor(projectPackage, projectRole)
         val allowedProjectType = projectRole == support.inputRole &&
-            (targetOwnerPackage == context.ownerPackage || support.sameOwnerEdgeOrNeighbor(context.ownerPackage, targetOwnerPackage))
+            support.isOwnerReachable(context.ownerPackage, targetOwnerPackage)
         if (!allowedProjectType) {
             return listOf("${context.path} :: owner requests may construct only own or neighboring foreign input types (${projectTypeName})")
         }
@@ -762,7 +750,7 @@ private fun classifyOwnerInvocation(
                 description = "owner requests may orchestrate only own task/state/repository collaborators"
             )
 
-        !support.sameOwnerEdgeOrNeighbor(context.ownerPackage, receiverOwnerPackage) ->
+        !support.isOwnerReachable(context.ownerPackage, receiverOwnerPackage) ->
             OwnerCallClassification(
                 allowed = false,
                 description = "owner requests may cross only one owner edge ($receiverTypeName)"
@@ -937,7 +925,7 @@ private fun isAllowedPassThroughValue(
                 val typeRole = support.roleForDirectoryName(typePackage.substringAfterLast('.'))
                 val targetOwnerPackage = support.ownerPackageFor(typePackage, typeRole)
                 typeRole == support.inputRole &&
-                    (targetOwnerPackage == sourceFile.context.ownerPackage || support.sameOwnerEdgeOrNeighbor(sourceFile.context.ownerPackage, targetOwnerPackage)) &&
+                    support.isOwnerReachable(sourceFile.context.ownerPackage, targetOwnerPackage) &&
                     newClass.arguments.all { argument ->
                         isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
                     }
@@ -1030,24 +1018,8 @@ private fun isAllowedUtilityInvocation(
     support: OwnerConventionSupport,
     environment: OwnerMethodEnvironment
 ): Boolean {
-    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
-    val receiverText = methodSelect.expression.toString()
-    val methodName = methodSelect.identifier.toString()
-    val arguments = invocation.arguments
-    if (receiverText !in setOf("Objects", "java.util.Objects")) {
-        return false
-    }
-    return when (methodName) {
-        "requireNonNull" -> arguments.size in setOf(1, 2) && arguments.all { argument ->
-            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
-        }
-        "equals" -> arguments.size == 2 && arguments.all { argument ->
-            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
-        }
-        "isNull", "nonNull" -> arguments.size == 1 && arguments.all { argument ->
-            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
-        }
-        else -> false
+    return isAllowedObjectsUtilityInvocation(invocation) { argument ->
+        isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
     }
 }
 
@@ -1058,18 +1030,7 @@ private fun isAllowedUtilityGuardInvocation(
     support: OwnerConventionSupport,
     environment: OwnerMethodEnvironment
 ): Boolean {
-    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
-    val receiverText = methodSelect.expression.toString()
-    if (receiverText !in setOf("Objects", "java.util.Objects")) {
-        return false
-    }
-    return when (methodSelect.identifier.toString()) {
-        "isNull", "nonNull" -> invocation.arguments.size == 1 && invocation.arguments.all { argument ->
-            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
-        }
-        "equals" -> invocation.arguments.size == 2 && invocation.arguments.all { argument ->
-            isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
-        }
-        else -> false
+    return isAllowedObjectsUtilityInvocation(invocation) { argument ->
+        isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
     }
 }

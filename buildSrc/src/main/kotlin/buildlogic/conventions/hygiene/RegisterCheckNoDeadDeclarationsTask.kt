@@ -8,9 +8,10 @@ import org.gradle.api.tasks.TaskProvider
 fun Project.registerCheckNoDeadDeclarationsTask(): TaskProvider<Task> = tasks.register("checkNoDeadDeclarations") {
     group = "verification"
     description = "Fail when touched Java sources introduce unreachable types, fields, constructors, or methods."
+    val currentProject = this@registerCheckNoDeadDeclarationsTask
 
     doLast {
-        val offenders = project.deadDeclarationReasons()
+        val offenders = currentProject.deadDeclarationReasons()
         if (offenders.isNotEmpty()) {
             val details = offenders.joinToString(separator = "\n") { offender -> " - $offender" }
             throw GradleException(

@@ -101,10 +101,10 @@ internal fun analyzeTaskFile(
             reasons += "${context.path} :: task files must model exactly one input parameter"
         }
         val parameterType = method.parameters.singleOrNull()?.let { parameter ->
-            support.declaredProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
+            support.declaredInputTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
         }
-        val returnType = support.declaredProjectTypeName(method.tree.returnType, sourceFile.parsedSource, snapshot)
-        if (parameterType == null || support.inputApi(parameterType, snapshot) == null) {
+        val returnType = support.declaredInputTypeName(method.tree.returnType, sourceFile.parsedSource, snapshot)
+        if (parameterType == null) {
             reasons += "${context.path} :: task methods must begin with exactly one canonical input type parameter"
         }
         if (requestStem != null) {
@@ -113,8 +113,10 @@ internal fun analyzeTaskFile(
                 reasons += "${context.path} :: task methods must accept exactly ${requestStem}Input from the same owner"
             }
         }
-        if (returnType == null || support.inputApi(returnType, snapshot) == null) {
+        if (returnType == null) {
             reasons += "${context.path} :: task methods must end with exactly one canonical input return type"
+        } else if (!support.isOwnerReachable(context.ownerPackage, support.ownerPackageForTypeName(returnType))) {
+            reasons += "${context.path} :: task methods may return only same-owner or neighboring input types"
         }
     }
     primaryType.methods.forEach { method ->
@@ -125,15 +127,7 @@ internal fun analyzeTaskFile(
             method = method
         )
     }
-    val canonicalApi = if (reasons.isEmpty()) {
-        OwnerConventionStaticApi(
-            typeName = "${context.packageName}.${primaryType.name}",
-            ownerPackage = context.ownerPackage,
-            publicStaticMethodNames = setOf(publicStaticMethods.single().name)
-        )
-    } else {
-        null
-    }
+    val canonicalApi = support.taskApiShape(sourceFile, snapshot)
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
         model = canonicalApi
@@ -373,7 +367,7 @@ private fun validateTaskNewClassExpression(
     if (typeRole != support.inputRole) {
         return listOf("${context.path} :: task methods may construct only input types, not $typeName (${method.name})")
     }
-    if (targetOwnerPackage != context.ownerPackage && !support.sameOwnerEdgeOrNeighbor(context.ownerPackage, targetOwnerPackage)) {
+    if (!support.isOwnerReachable(context.ownerPackage, targetOwnerPackage)) {
         return listOf("${context.path} :: task methods may construct only same-owner or neighboring input types ($typeName)")
     }
     return expression.arguments.flatMap { argument ->
@@ -410,7 +404,7 @@ private fun classifyTaskInvocation(
             description = "task methods must use explicit receivers for accessor and utility calls (${method.name})"
         )
     }
-    if (isAllowedTaskUtilityInvocation(invocation)) {
+    if (isAllowedTaskUtilityInvocation(invocation, sourceFile, snapshot, support, method, environment)) {
         return TaskCallClassification(
             allowed = true,
             description = "allowlisted pure helper"
@@ -578,12 +572,16 @@ private fun containsTaskProjectExpression(
     return taskProjectTypeNameForExpression(initializer, sourceFile, snapshot, support, environment) != null
 }
 
-private fun isAllowedTaskUtilityInvocation(invocation: MethodInvocationTree): Boolean {
-    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
-    val receiverText = methodSelect.expression.toString()
-    return when (receiverText) {
-        "Objects", "java.util.Objects" -> methodSelect.identifier.toString() in setOf("requireNonNull", "equals", "isNull", "nonNull")
-        else -> false
+private fun isAllowedTaskUtilityInvocation(
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    method: OwnerConventionParsedJavaMethod,
+    environment: TaskMethodEnvironment
+): Boolean {
+    return isAllowedObjectsUtilityInvocation(invocation) { argument ->
+        validateTaskValueExpression(argument, sourceFile, snapshot, support, method, environment).isEmpty()
     }
 }
 

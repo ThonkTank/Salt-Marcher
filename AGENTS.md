@@ -37,6 +37,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 ```bash
 ./gradlew build                  # compile + convention checks
 ./gradlew build --console=plain 2>&1  # recompile after every code change — fix all errors before proceeding
+./gradlew checkNoDeadCode        # fail when touched Java files add dead declarations or dead local code
 ./gradlew run                    # start JavaFX app
 ./gradlew installDesktopApp      # reinstall desktop launcher
 ./gradlew crawler                # monster crawl + import
@@ -51,6 +52,8 @@ End-to-end scripts: `./scripts/crawl.sh`, `./scripts/crawl-items.sh`.
 No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/.local/share}/salt-marcher/game.db` (auto-created on first run). Schema changes require deleting that DB and re-running `./scripts/crawl.sh` — there are no ALTER TABLE migrations. For ad-hoc DB inspection, prefer the vendored CLI at `./tools/sqlite3` or `./gradlew sqliteQuery --args='data/game.db .tables'`.
 
 `./gradlew build` also runs a post-build cleanup that deletes empty directories left behind under `src/` and `resources/`.
+
+`./gradlew check` includes a touched-Java dead-code gate. If a touched `src/**/*.java` file introduces unreachable types, methods, constructors, fields, dead locals, dead assignments, or obvious constant-condition branches, the build must fail. Intentionally retained declarations must be marked with `@SuppressWarnings("unused")` instead of being left as ambiguous fake/live code.
 
 **After code changes, do not stop at `./gradlew build` alone** when the desktop app is the manual test surface. Default to running `./gradlew build` and then `./gradlew installDesktopApp` before handoff unless the user explicitly says not to reinstall the desktop app. Notes about "nicht geprüfte Vorgänge" (unchecked operations) are expected and can be ignored.
 

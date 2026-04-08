@@ -123,7 +123,7 @@ private class DeadLocalBlockScanner(
                         description = "assignment to local ${variableElement.simpleName}"
                     )
                 },
-                constantBoolean = booleanConstant(node.initializer)
+                constantBoolean = booleanConstant(node.initializer, currentPath)
                     ?.takeIf { variableElement.modifiers.contains(Modifier.FINAL) }
             )
         }
@@ -131,36 +131,38 @@ private class DeadLocalBlockScanner(
     }
 
     override fun visitIf(node: IfTree, p: Nothing?) {
-        booleanConstant(node.condition)?.let { constant ->
+        booleanConstant(node.condition, TreePath(currentPath, node.condition))?.let { constant ->
             offenders += "${parsedSource.path}:${lineOf(node.condition)} :: dead ${if (constant) "else branch" else "then branch"} from constant if-condition"
         }
         super.visitIf(node, p)
     }
 
     override fun visitConditionalExpression(node: ConditionalExpressionTree, p: Nothing?) {
-        booleanConstant(node.condition)?.let { constant ->
+        booleanConstant(node.condition, TreePath(currentPath, node.condition))?.let { constant ->
             offenders += "${parsedSource.path}:${lineOf(node.condition)} :: dead ${if (constant) "false expression" else "true expression"} from constant conditional expression"
         }
         super.visitConditionalExpression(node, p)
     }
 
     override fun visitWhileLoop(node: WhileLoopTree, p: Nothing?) {
-        booleanConstant(node.condition)?.let { constant ->
+        booleanConstant(node.condition, TreePath(currentPath, node.condition))?.let { constant ->
             offenders += "${parsedSource.path}:${lineOf(node.condition)} :: ${if (constant) "constant true" else "dead while-body"} while-condition"
         }
         super.visitWhileLoop(node, p)
     }
 
     override fun visitDoWhileLoop(node: DoWhileLoopTree, p: Nothing?) {
-        booleanConstant(node.condition)?.let { constant ->
+        booleanConstant(node.condition, TreePath(currentPath, node.condition))?.let { constant ->
             offenders += "${parsedSource.path}:${lineOf(node.condition)} :: ${if (constant) "constant true" else "dead repeated branch"} do-while condition"
         }
         super.visitDoWhileLoop(node, p)
     }
 
     override fun visitForLoop(node: ForLoopTree, p: Nothing?) {
-        booleanConstant(node.condition)?.let { constant ->
-            offenders += "${parsedSource.path}:${lineOf(node.condition)} :: ${if (constant) "constant true" else "dead for-body"} for-condition"
+        node.condition?.let { condition ->
+            booleanConstant(condition, TreePath(currentPath, condition))?.let { constant ->
+                offenders += "${parsedSource.path}:${lineOf(condition)} :: ${if (constant) "constant true" else "dead for-body"} for-condition"
+            }
         }
         super.visitForLoop(node, p)
     }
@@ -220,7 +222,10 @@ private class DeadLocalBlockScanner(
     }
 
     private fun finishScope() {
-        val scope = scopes.removeLastOrNull() ?: return
+        if (scopes.isEmpty()) {
+            return
+        }
+        val scope = scopes.removeLast()
         scope.values.forEach { variable ->
             if (!variable.everRead) {
                 offenders += "${parsedSource.path}:${variable.declarationLine} :: dead local ${variable.name}"
@@ -247,7 +252,14 @@ private class DeadLocalBlockScanner(
     }
 
     private fun lookup(variableElement: VariableElement): DeadLocalVariableState? {
-        return scopes.asReversed().firstNotNullOfOrNull { scope -> scope[variableElement] }
+        val iterator = scopes.descendingIterator()
+        while (iterator.hasNext()) {
+            val state = iterator.next()[variableElement]
+            if (state != null) {
+                return state
+            }
+        }
+        return null
     }
 
     private fun isTrackedLocal(variableElement: VariableElement): Boolean {
@@ -259,18 +271,18 @@ private class DeadLocalBlockScanner(
         return parent is AssignmentTree && parent.variable == node
     }
 
-    private fun booleanConstant(expression: ExpressionTree?): Boolean? {
+    private fun booleanConstant(expression: ExpressionTree?, path: TreePath): Boolean? {
         return when (expression) {
             null -> null
-            is ParenthesizedTree -> booleanConstant(expression.expression)
+            is ParenthesizedTree -> booleanConstant(expression.expression, TreePath(path, expression.expression))
             is LiteralTree -> expression.value as? Boolean
             is UnaryTree -> if (expression.kind == Tree.Kind.LOGICAL_COMPLEMENT) {
-                booleanConstant(expression.expression)?.not()
+                booleanConstant(expression.expression, TreePath(path, expression.expression))?.not()
             } else {
                 null
             }
             is IdentifierTree -> {
-                val variableElement = trees.getElement(TreePath(currentPath, expression)) as? VariableElement ?: return null
+                val variableElement = trees.getElement(path) as? VariableElement ?: return null
                 lookup(variableElement)?.constantBoolean
             }
             else -> null

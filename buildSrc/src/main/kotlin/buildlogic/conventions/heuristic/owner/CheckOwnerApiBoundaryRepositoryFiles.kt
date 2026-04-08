@@ -102,18 +102,7 @@ internal fun analyzeRepositoryFile(
         support = support,
         primaryType = primaryType
     )
-    val canonicalApi = if (reasons.isEmpty()) {
-        OwnerConventionStaticApi(
-            typeName = "${context.packageName}.${primaryType.name}",
-            ownerPackage = context.ownerPackage,
-            publicStaticMethodNames = publicMethods
-                .filter { method -> Modifier.STATIC in method.modifiers }
-                .map(OwnerConventionParsedJavaMethod::name)
-                .toSet()
-        )
-    } else {
-        null
-    }
+    val canonicalApi = support.repositoryApiShape(sourceFile, snapshot)
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
         model = canonicalApi

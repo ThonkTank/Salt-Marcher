@@ -19,14 +19,19 @@ internal fun Project.mainJavaSourceFiles(): List<File> {
 
 internal fun Project.touchedJavaPaths(): Set<String> {
     val projectDir = layout.projectDirectory.asFile
-    val mergeBase = gitStdout(projectDir, "merge-base", "HEAD", "origin/main")
     val changed = linkedSetOf<String>()
-    listOf(
-        gitLines(projectDir, "diff", "--name-only", "--diff-filter=ACMR", "$mergeBase..HEAD", "--", "src"),
+    val currentBranch = gitStdout(projectDir, "branch", "--show-current")
+    val committedDiffs = if (currentBranch == "main") {
+        emptyList()
+    } else {
+        val mergeBase = gitStdout(projectDir, "merge-base", "HEAD", "origin/main")
+        listOf(gitLines(projectDir, "diff", "--name-only", "--diff-filter=ACMR", "$mergeBase..HEAD", "--", "src"))
+    }
+    (committedDiffs + listOf(
         gitLines(projectDir, "diff", "--name-only", "--cached", "--diff-filter=ACMR", "--", "src"),
         gitLines(projectDir, "diff", "--name-only", "--diff-filter=ACMR", "--", "src"),
         gitLines(projectDir, "ls-files", "--others", "--exclude-standard", "--", "src")
-    ).forEach { lines ->
+    )).forEach { lines ->
         lines.asSequence()
             .filter { path -> path.endsWith(".java") }
             .forEach(changed::add)

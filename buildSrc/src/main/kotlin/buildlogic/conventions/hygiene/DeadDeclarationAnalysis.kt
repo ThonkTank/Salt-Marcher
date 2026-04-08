@@ -6,7 +6,6 @@ import buildlogic.conventions.heuristic.owner.parseOwnerConventionJavaSources
 import com.sun.source.tree.AnnotationTree
 import com.sun.source.tree.BlockTree
 import com.sun.source.tree.ClassTree
-import com.sun.source.tree.ExpressionTree
 import com.sun.source.tree.IdentifierTree
 import com.sun.source.tree.LiteralTree
 import com.sun.source.tree.MemberReferenceTree
@@ -23,7 +22,6 @@ import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
-import javax.lang.model.element.Name
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
 import javax.lang.model.type.DeclaredType
@@ -455,13 +453,7 @@ private class DeadDeclarationAnalyzer(
 
     private fun declarationTarget(element: Element): Element? {
         return when (element) {
-            is TypeElement -> declarationsByElement.keys
-                .filterIsInstance<TypeElement>()
-                .firstOrNull { candidate -> candidate.qualifiedName.contentEquals(element.qualifiedName) }
-            is ExecutableElement -> declarationsByElement.keys
-                .filterIsInstance<ExecutableElement>()
-                .firstOrNull { candidate -> elements.hides(candidate, candidate).not() && candidate == element }
-                ?: element.takeIf { candidate -> candidate in declarationsByElement }
+            is TypeElement, is ExecutableElement -> element.takeIf { candidate -> candidate in declarationsByElement }
             is VariableElement -> if (isField(element)) element.takeIf { it in declarationsByElement } else null
             else -> null
         }

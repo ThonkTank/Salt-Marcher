@@ -185,6 +185,10 @@ class OwnerConventionSupport(private val project: Project) {
         return ownerPackageFor(targetPackage, targetRole) == sourceOwnerPackage
     }
 
+    internal fun sameOwnerOrReachableNeighbor(sourceOwnerPackage: String, targetOwnerPackage: String): Boolean {
+        return sourceOwnerPackage == targetOwnerPackage || sameOwnerEdgeOrNeighbor(sourceOwnerPackage, targetOwnerPackage)
+    }
+
     internal fun sameOwnerEdgeOrNeighbor(sourceOwnerPackage: String, targetOwnerPackage: String): Boolean {
         if (sourceOwnerPackage == targetOwnerPackage) {
             return true
@@ -455,14 +459,19 @@ class OwnerConventionSupport(private val project: Project) {
     }
 
     private fun touchedJavaPaths(): Set<String> {
-        val mergeBase = gitStdout("merge-base", "HEAD", "origin/main")
         val changed = linkedSetOf<String>()
-        listOf(
-            gitLines("diff", "--name-only", "--diff-filter=ACMR", "$mergeBase..HEAD", "--", "src"),
+        val currentBranch = gitStdout("branch", "--show-current")
+        val committedDiffs = if (currentBranch == "main") {
+            emptyList()
+        } else {
+            val mergeBase = gitStdout("merge-base", "HEAD", "origin/main")
+            listOf(gitLines("diff", "--name-only", "--diff-filter=ACMR", "$mergeBase..HEAD", "--", "src"))
+        }
+        (committedDiffs + listOf(
             gitLines("diff", "--name-only", "--cached", "--diff-filter=ACMR", "--", "src"),
             gitLines("diff", "--name-only", "--diff-filter=ACMR", "--", "src"),
             gitLines("ls-files", "--others", "--exclude-standard", "--", "src")
-        ).forEach { lines ->
+        )).forEach { lines ->
             lines.asSequence()
                 .filter { line -> line.endsWith(".java") }
                 .forEach(changed::add)

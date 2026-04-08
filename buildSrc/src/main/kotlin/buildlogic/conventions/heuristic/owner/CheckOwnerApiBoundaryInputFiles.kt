@@ -59,14 +59,7 @@ internal fun analyzeInputFile(
             reasons += "${context.path} -> $importedPackage :: input files may import only other input packages from project code"
         }
     }
-    val canonicalApi = if (reasons.isEmpty()) {
-        OwnerConventionInputApi(
-            typeName = "${context.packageName}.${primaryType.name}",
-            ownerPackage = context.ownerPackage
-        )
-    } else {
-        null
-    }
+    val canonicalApi = support.inputApiShape(sourceFile, snapshot)
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
         model = canonicalApi
