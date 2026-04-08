@@ -1,7 +1,6 @@
 package features.world.dungeon.dungeonmap.corridor.model;
 
 import features.world.dungeon.dungeonmap.structure.model.Structure;
-import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeon.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -36,6 +35,7 @@ public final class Corridor extends Structure {
     private final List<DungeonConnection> connections;
     private final GridBoundary boundaryDoorBoundary;
     private final Map<Long, GridBoundary> roomAnchorBoundariesByRoomId;
+    private final Map<GridSegment, Long> doorNodeIdsByBoundarySegment;
 
     public static Corridor fromInput(
             CorridorInput input,
@@ -45,7 +45,7 @@ public final class Corridor extends Structure {
         CorridorResolutionInput resolvedResolution = requireResolutionInput(resolvedInput.levelZ(), resolutionInput);
         return new Corridor(
                 resolvedInput,
-                deriveState(resolvedInput, resolvedResolution, List.of(), Map.of()),
+                deriveState(resolvedInput, resolvedResolution, List.of(), List.of(), resolvedInput),
                 resolvedResolution);
     }
 
@@ -75,6 +75,25 @@ public final class Corridor extends Structure {
         this.connections = state.connections();
         this.boundaryDoorBoundary = state.boundaryDoorBoundary();
         this.roomAnchorBoundariesByRoomId = state.roomAnchorBoundariesByRoomId();
+        this.doorNodeIdsByBoundarySegment = state.doorNodeIdsByBoundarySegment();
+    }
+
+    private Corridor(
+            CorridorInput input,
+            Structure structure,
+            List<CorridorPathTrace> pathTraces,
+            List<DungeonConnection> connections,
+            GridBoundary boundaryDoorBoundary,
+            Map<Long, GridBoundary> roomAnchorBoundariesByRoomId,
+            Map<GridSegment, Long> doorNodeIdsByBoundarySegment
+    ) {
+        super(structure);
+        this.input = input;
+        this.pathTraces = pathTraces == null ? List.of() : List.copyOf(pathTraces);
+        this.connections = connections == null ? List.of() : List.copyOf(connections);
+        this.boundaryDoorBoundary = boundaryDoorBoundary == null ? GridBoundary.empty() : boundaryDoorBoundary;
+        this.roomAnchorBoundariesByRoomId = roomAnchorBoundariesByRoomId == null ? Map.of() : Map.copyOf(roomAnchorBoundariesByRoomId);
+        this.doorNodeIdsByBoundarySegment = doorNodeIdsByBoundarySegment == null ? Map.of() : Map.copyOf(doorNodeIdsByBoundarySegment);
     }
 
     private Corridor(
@@ -84,7 +103,8 @@ public final class Corridor extends Structure {
             List<CorridorPathTrace> pathTraces,
             List<DungeonConnection> connections,
             GridBoundary boundaryDoorBoundary,
-            Map<Long, GridBoundary> roomAnchorBoundariesByRoomId
+            Map<Long, GridBoundary> roomAnchorBoundariesByRoomId,
+            Map<GridSegment, Long> doorNodeIdsByBoundarySegment
     ) {
         super(levelsByZ, roomTopology);
         this.input = input;
@@ -92,11 +112,20 @@ public final class Corridor extends Structure {
         this.connections = connections == null ? List.of() : List.copyOf(connections);
         this.boundaryDoorBoundary = boundaryDoorBoundary == null ? GridBoundary.empty() : boundaryDoorBoundary;
         this.roomAnchorBoundariesByRoomId = roomAnchorBoundariesByRoomId == null ? Map.of() : Map.copyOf(roomAnchorBoundariesByRoomId);
+        this.doorNodeIdsByBoundarySegment = doorNodeIdsByBoundarySegment == null ? Map.of() : Map.copyOf(doorNodeIdsByBoundarySegment);
     }
 
     @Override
     protected Corridor recreate(Map<Integer, Structure.LevelStructure> levelsByZ, StructureRoomTopology roomTopology) {
-        return new Corridor(input, levelsByZ, roomTopology, pathTraces, connections, boundaryDoorBoundary, roomAnchorBoundariesByRoomId);
+        return new Corridor(
+                input,
+                levelsByZ,
+                roomTopology,
+                pathTraces,
+                connections,
+                boundaryDoorBoundary,
+                roomAnchorBoundariesByRoomId,
+                doorNodeIdsByBoundarySegment);
     }
 
     public CorridorInput input() {
@@ -168,21 +197,8 @@ public final class Corridor extends Structure {
                 .orElse(null);
     }
 
-    public Long doorNodeIdAtBoundary(GridSegment boundarySegment, CorridorResolutionInput resolutionInput) {
-        if (boundarySegment == null) {
-            return null;
-        }
-        Map<Long, CorridorInputNode> nodesById = nodesById(input.nodes());
-        for (CorridorInputNode node : input.nodes()) {
-            if (node == null || !node.isDoorBound()) {
-                continue;
-            }
-            CorridorResolutionInput.ExteriorDoorInput door = requiredExteriorDoor(resolutionInput, node.doorRef());
-            if (Objects.equals(door.anchorSegment(), boundarySegment)) {
-                return node.nodeId();
-            }
-        }
-        return null;
+    public Long doorNodeIdAtBoundary(GridSegment boundarySegment) {
+        return boundarySegment == null ? null : doorNodeIdsByBoundarySegment.get(boundarySegment);
     }
 
     public List<Long> connectedRoomIds() {
@@ -216,14 +232,14 @@ public final class Corridor extends Structure {
 
     public Corridor withInput(CorridorInput updatedInput, CorridorResolutionInput resolutionInput) {
         CorridorInput normalizedInput = normalizeInput(Objects.requireNonNull(updatedInput, "updatedInput"));
-        Map<Long, CorridorPathTrace> reusableTraces = reusableTracesFor(normalizedInput, resolutionInput);
         return new Corridor(
                 normalizedInput,
                 deriveState(
                         normalizedInput,
                         requireResolutionInput(normalizedInput.levelZ(), resolutionInput),
                         boundaryAtLevel(levelZ()).doors(),
-                        reusableTraces),
+                        pathTraces,
+                        input),
                 resolutionInput);
     }
 
@@ -265,48 +281,28 @@ public final class Corridor extends Structure {
         return rebound;
     }
 
-    private Map<Long, CorridorPathTrace> reusableTracesFor(CorridorInput updatedInput, CorridorResolutionInput resolutionInput) {
-        Map<Long, CorridorInputNode> oldNodesById = nodesById(input.nodes());
-        Map<Long, CorridorInputNode> newNodesById = nodesById(updatedInput.nodes());
-        Map<Long, CorridorSegment> newSegmentsById = segmentsById(updatedInput.segments());
-        LinkedHashMap<Long, CorridorPathTrace> result = new LinkedHashMap<>();
-        for (CorridorPathTrace trace : pathTraces) {
-            CorridorSegment previousSegment = segmentById(input.segments(), trace.segmentId());
-            CorridorSegment nextSegment = newSegmentsById.get(trace.segmentId());
-            if (previousSegment == null || nextSegment == null) {
-                continue;
-            }
-            CorridorSegment.ResolvedSegmentEndpoints previousEndpoints = previousSegment.resolveEndpoints(oldNodesById, resolutionInput);
-            CorridorSegment.ResolvedSegmentEndpoints nextEndpoints = nextSegment.resolveEndpoints(newNodesById, resolutionInput);
-            if (!Objects.equals(previousEndpoints.start().point(), nextEndpoints.start().point())
-                    || !Objects.equals(previousEndpoints.end().point(), nextEndpoints.end().point())) {
-                continue;
-            }
-            if (!Objects.equals(previousEndpoints.start().attachments(), nextEndpoints.start().attachments())
-                    || !Objects.equals(previousEndpoints.end().attachments(), nextEndpoints.end().attachments())) {
-                continue;
-            }
-            result.put(trace.segmentId(), trace);
-        }
-        return Map.copyOf(result);
-    }
-
     private static CorridorState deriveState(
             CorridorInput input,
             CorridorResolutionInput resolutionInput,
             Collection<Door> retainedDoors,
-            Map<Long, CorridorPathTrace> reusableTraces
+            List<CorridorPathTrace> previousTraces,
+            CorridorInput previousInput
     ) {
         CorridorInput normalizedInput = normalizeInput(input);
         validateInput(normalizedInput, resolutionInput);
-        List<CorridorPathTrace> traces = routeSegmentTraces(normalizedInput, resolutionInput, reusableTraces);
+        List<CorridorPathTrace> traces = routeSegmentTraces(
+                normalizedInput,
+                resolutionInput,
+                previousTraces == null ? List.of() : previousTraces,
+                previousInput == null ? normalizedInput : previousInput);
         Structure structure = assembleStructure(normalizedInput.levelZ(), retainedDoors, traces);
         return new CorridorState(
                 structure,
                 traces,
                 materializeConnections(resolutionInput, normalizedInput.corridorId(), normalizedInput.mapId(), normalizedInput.levelZ(), normalizedInput.nodes()),
                 materializeBoundaryDoorBoundary(structure, normalizedInput.levelZ(), normalizedInput.nodes(), resolutionInput),
-                materializeRoomAnchorBoundaries(normalizedInput.nodes(), resolutionInput));
+                materializeRoomAnchorBoundaries(normalizedInput.nodes(), resolutionInput),
+                materializeDoorNodeIdsByBoundarySegment(normalizedInput.nodes(), resolutionInput));
     }
 
     private static CorridorState rehydratedState(
@@ -324,7 +320,8 @@ public final class Corridor extends Structure {
                 recoverSegmentTraces(normalizedInput, structure, resolutionInput),
                 materializeConnections(resolutionInput, normalizedInput.corridorId(), normalizedInput.mapId(), normalizedInput.levelZ(), normalizedInput.nodes()),
                 materializeBoundaryDoorBoundary(structure, normalizedInput.levelZ(), normalizedInput.nodes(), resolutionInput),
-                materializeRoomAnchorBoundaries(normalizedInput.nodes(), resolutionInput));
+                materializeRoomAnchorBoundaries(normalizedInput.nodes(), resolutionInput),
+                materializeDoorNodeIdsByBoundarySegment(normalizedInput.nodes(), resolutionInput));
     }
 
     private static CorridorInput normalizeInput(CorridorInput input) {
@@ -439,39 +436,19 @@ public final class Corridor extends Structure {
             Collection<Door> doors,
             List<CorridorPathTrace> traces
     ) {
-        GridArea occupiedArea = CorridorRouting.surfaceAreaForTraces(traces);
-        if (occupiedArea.isEmpty()) {
-            return Structure.empty();
-        }
-        Structure routedStructure = Structure.fromSpecification(StructureSpecification.ofLevel(
-                levelZ,
-                new StructureSpecification.LevelSpecification(
-                        occupiedArea.center(),
-                        occupiedArea,
-                        occupiedArea,
-                        List.of(),
-                        List.of())));
-        Set<GridPoint> hydratedCells = routedStructure.surfaceAtLevel(levelZ).surface().cellFootprint().cells();
-        if (!hydratedCells.equals(occupiedArea.cells())) {
-            throw new IllegalStateException("Corridor route projection changed the routed occupied cells");
-        }
-        StructureBoundary boundary = routedStructure.boundaryAtLevel(levelZ);
-        return Structure.fromSpecification(StructureSpecification.ofLevel(
-                levelZ,
-                new StructureSpecification.LevelSpecification(
-                        routedStructure.surfaceAtLevel(levelZ).surface().anchorCell(),
-                        routedStructure.surfaceAtLevel(levelZ).surface().cellFootprint(),
-                        routedStructure.surfaceAtLevel(levelZ).floor().cellFootprint(),
-                        doors == null ? List.of() : List.copyOf(doors),
-                        boundary.walls())));
+        return Structure.fromSurfaceLevel(levelZ, CorridorRouting.surfaceAreaForTraces(traces), doors);
     }
 
     private static List<CorridorPathTrace> routeSegmentTraces(
             CorridorInput input,
             CorridorResolutionInput resolutionInput,
-            Map<Long, CorridorPathTrace> reusableTraces
+            List<CorridorPathTrace> previousTraces,
+            CorridorInput previousInput
     ) {
         Map<Long, CorridorInputNode> nodesById = nodesById(input.nodes());
+        Map<Long, CorridorInputNode> previousNodesById = nodesById(previousInput.nodes());
+        Map<Long, CorridorPathTrace> previousTracesBySegmentId = tracesBySegmentId(previousTraces);
+        Map<Long, CorridorSegment> previousSegmentsById = segmentsById(previousInput.segments());
         List<CorridorSegment> orderedSegments = input.segments().stream()
                 .sorted(Comparator.comparing(CorridorSegment::segmentId))
                 .toList();
@@ -479,27 +456,18 @@ public final class Corridor extends Structure {
         GridArea reservedArea = GridArea.empty();
 
         for (CorridorSegment segment : orderedSegments) {
-            CorridorPathTrace reusableTrace = reusableTraces == null ? null : reusableTraces.get(segment.segmentId());
-            if (reusableTrace == null) {
-                continue;
-            }
-            tracesBySegmentId.put(segment.segmentId(), reusableTrace);
-            reservedArea = GridArea.of(unionCells(reservedArea, reusableTrace.path().cellFootprint()));
-        }
-
-        for (CorridorSegment segment : orderedSegments) {
-            if (tracesBySegmentId.containsKey(segment.segmentId())) {
-                continue;
-            }
-            CorridorSegment.ResolvedSegmentEndpoints endpoints = segment.resolveEndpoints(nodesById, resolutionInput);
-            CorridorPathTrace trace = segment.route(
-                    endpoints,
+            CorridorSegment.ResolvedSegment currentSegment = segment.resolve(nodesById, resolutionInput);
+            CorridorSegment previousSegment = previousSegmentsById.get(segment.segmentId());
+            CorridorSegment.ResolvedSegment previousResolvedSegment = previousSegment == null
+                    ? null
+                    : previousSegment.resolve(previousNodesById, resolutionInput);
+            CorridorPathTrace trace = segment.traceFrom(
+                    previousResolvedSegment,
+                    previousTracesBySegmentId.get(segment.segmentId()),
+                    currentSegment,
                     new CorridorSegment.RoutingContext(
-                            input.levelZ(),
                             resolutionInput.blockedArea(),
-                            reservedArea,
-                            resolutionInput.occupiedConnectionBoundary()),
-                    null);
+                            reservedArea));
             tracesBySegmentId.put(segment.segmentId(), trace);
             reservedArea = GridArea.of(unionCells(reservedArea, trace.path().cellFootprint()));
         }
@@ -533,7 +501,7 @@ public final class Corridor extends Structure {
         ArrayList<CorridorPathTrace> traces = new ArrayList<>();
         for (CorridorSegment segment : orderedSegments) {
             CorridorPathTrace trace = segment.recoverTrace(
-                    segment.resolveEndpoints(nodesById, resolutionInput),
+                    segment.resolve(nodesById, resolutionInput),
                     surfaceArea,
                     consumedNonNodeCells.isEmpty() ? GridArea.empty() : GridArea.of(consumedNonNodeCells),
                     fixedNodeArea);
@@ -616,6 +584,21 @@ public final class Corridor extends Structure {
         return result.isEmpty() ? GridBoundary.empty() : GridBoundary.of(result);
     }
 
+    private static Map<GridSegment, Long> materializeDoorNodeIdsByBoundarySegment(
+            List<CorridorInputNode> nodes,
+            CorridorResolutionInput input
+    ) {
+        LinkedHashMap<GridSegment, Long> result = new LinkedHashMap<>();
+        for (CorridorInputNode node : nodes) {
+            if (node == null || !node.isDoorBound()) {
+                continue;
+            }
+            CorridorResolutionInput.ExteriorDoorInput description = requiredExteriorDoor(input, node.doorRef());
+            result.put(description.anchorSegment(), node.nodeId());
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
     private static Map<Long, GridBoundary> materializeRoomAnchorBoundaries(
             List<CorridorInputNode> nodes,
             CorridorResolutionInput input
@@ -673,16 +656,6 @@ public final class Corridor extends Structure {
         return Map.copyOf(result);
     }
 
-    private static CorridorSegment segmentById(List<CorridorSegment> segments, Long segmentId) {
-        if (segmentId == null) {
-            return null;
-        }
-        return segments.stream()
-                .filter(segment -> segment != null && Objects.equals(segment.segmentId(), segmentId))
-                .findFirst()
-                .orElse(null);
-    }
-
     private void validateDoorRebind(CorridorReconcileInput input, CorridorInputNode node) {
         if (node == null || !node.isDoorBound()) {
             return;
@@ -720,12 +693,73 @@ public final class Corridor extends Structure {
         return Objects.requireNonNull(input, "input").requiredExteriorDoor(doorRef);
     }
 
+    /**
+     * Repository-only persistence seam: keep the already resolved corridor and remap owner-local ids after save.
+     */
+    public Corridor persistedAs(
+            CorridorInput persistedInput,
+            Structure persistedStructure,
+            Map<Long, Long> nodeIdRemap,
+            Map<Long, Long> segmentIdRemap,
+            CorridorResolutionInput resolutionInput
+    ) {
+        CorridorInput resolvedPersistedInput = normalizeInput(Objects.requireNonNull(persistedInput, "persistedInput"));
+        Map<Long, Long> resolvedNodeIdRemap = nodeIdRemap == null ? Map.of() : Map.copyOf(nodeIdRemap);
+        Map<Long, Long> resolvedSegmentIdRemap = segmentIdRemap == null ? Map.of() : Map.copyOf(segmentIdRemap);
+        CorridorResolutionInput resolvedResolutionInput = requireResolutionInput(
+                resolvedPersistedInput.levelZ(),
+                resolutionInput);
+        List<CorridorPathTrace> remappedTraces = pathTraces.stream()
+                .filter(Objects::nonNull)
+                .map(trace -> new CorridorPathTrace(
+                        remapId(trace.segmentId(), resolvedSegmentIdRemap),
+                        remapId(trace.startNodeId(), resolvedNodeIdRemap),
+                        remapId(trace.endNodeId(), resolvedNodeIdRemap),
+                        trace.path()))
+                .toList();
+        return new Corridor(
+                resolvedPersistedInput,
+                Objects.requireNonNull(persistedStructure, "persistedStructure"),
+                remappedTraces,
+                materializeConnections(
+                        resolvedResolutionInput,
+                        resolvedPersistedInput.corridorId(),
+                        resolvedPersistedInput.mapId(),
+                        resolvedPersistedInput.levelZ(),
+                        resolvedPersistedInput.nodes()),
+                materializeBoundaryDoorBoundary(
+                        persistedStructure,
+                        resolvedPersistedInput.levelZ(),
+                        resolvedPersistedInput.nodes(),
+                        resolvedResolutionInput),
+                materializeRoomAnchorBoundaries(resolvedPersistedInput.nodes(), resolvedResolutionInput),
+                materializeDoorNodeIdsByBoundarySegment(resolvedPersistedInput.nodes(), resolvedResolutionInput));
+    }
+
+    private static Map<Long, CorridorPathTrace> tracesBySegmentId(List<CorridorPathTrace> traces) {
+        LinkedHashMap<Long, CorridorPathTrace> result = new LinkedHashMap<>();
+        for (CorridorPathTrace trace : traces == null ? List.<CorridorPathTrace>of() : traces) {
+            if (trace != null && trace.segmentId() != null) {
+                result.put(trace.segmentId(), trace);
+            }
+        }
+        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+    }
+
+    private static Long remapId(Long id, Map<Long, Long> remap) {
+        if (id == null) {
+            return null;
+        }
+        return remap.getOrDefault(id, id);
+    }
+
     private record CorridorState(
             Structure structure,
             List<CorridorPathTrace> pathTraces,
             List<DungeonConnection> connections,
             GridBoundary boundaryDoorBoundary,
-            Map<Long, GridBoundary> roomAnchorBoundariesByRoomId
+            Map<Long, GridBoundary> roomAnchorBoundariesByRoomId,
+            Map<GridSegment, Long> doorNodeIdsByBoundarySegment
     ) {
         private CorridorState {
             structure = Objects.requireNonNull(structure, "structure");
@@ -733,6 +767,7 @@ public final class Corridor extends Structure {
             connections = connections == null ? List.of() : List.copyOf(connections);
             boundaryDoorBoundary = boundaryDoorBoundary == null ? GridBoundary.empty() : boundaryDoorBoundary;
             roomAnchorBoundariesByRoomId = roomAnchorBoundariesByRoomId == null ? Map.of() : Map.copyOf(roomAnchorBoundariesByRoomId);
+            doorNodeIdsByBoundarySegment = doorNodeIdsByBoundarySegment == null ? Map.of() : Map.copyOf(doorNodeIdsByBoundarySegment);
         }
     }
 }

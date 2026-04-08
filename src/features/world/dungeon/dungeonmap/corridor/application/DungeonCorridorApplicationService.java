@@ -4,8 +4,6 @@ import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorInput;
-import features.world.dungeon.dungeonmap.model.CorridorResolutionContextRequest;
-import features.world.dungeon.dungeonmap.model.CorridorResolutionRequest;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -42,8 +40,8 @@ public final class DungeonCorridorApplicationService {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 requiredExistingExteriorDoor(layout, resolvedRequest.levelZ(), resolvedRequest.start());
                 requiredExistingExteriorDoor(layout, resolvedRequest.levelZ(), resolvedRequest.end());
-                Corridor corridor = layout.resolveCorridor(new CorridorResolutionRequest(
-                        CorridorInputEditor.newDoorToDoorInput(layout.mapId(), resolvedRequest.levelZ(), resolvedRequest.start(), resolvedRequest.end())));
+                Corridor corridor = layout.resolveCorridor(
+                        CorridorInputEditor.newDoorToDoorInput(layout.mapId(), resolvedRequest.levelZ(), resolvedRequest.start(), resolvedRequest.end()));
                 Corridor persisted = corridorRepository.save(conn, corridor, layout);
                 if (persisted.corridorId() == null) {
                     throw new SQLException("No id returned for persisted corridor");
@@ -138,13 +136,10 @@ public final class DungeonCorridorApplicationService {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
                 DungeonMap.DoorDescription targetDoor = requiredExistingExteriorDoor(layout, corridor.levelZ(), resolvedRequest.targetDoorRef());
-                Long nodeId = corridor.doorNodeIdAtBoundary(
+                CorridorInput updatedInput = CorridorInputEditor.moveDoorAtBoundary(
+                        corridor,
                         resolvedRequest.sourceBoundarySegment(),
-                        layout.corridorResolutionInput(new CorridorResolutionContextRequest(corridor.levelZ())));
-                if (nodeId == null) {
-                    throw new IllegalArgumentException("Unknown corridor door boundary " + resolvedRequest.sourceBoundarySegment());
-                }
-                CorridorInput updatedInput = CorridorInputEditor.moveDoor(corridor.input(), nodeId, targetDoor.ref());
+                        targetDoor.ref());
                 saveUpdatedCorridor(conn, layout, corridor, updatedInput);
             });
         }
@@ -189,13 +184,7 @@ public final class DungeonCorridorApplicationService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Corridor corridor = requireCorridor(layout, resolvedRequest.corridorId());
-                Long nodeId = corridor.doorNodeIdAtBoundary(
-                        resolvedRequest.boundarySegment(),
-                        layout.corridorResolutionInput(new CorridorResolutionContextRequest(corridor.levelZ())));
-                if (nodeId == null) {
-                    throw new IllegalArgumentException("Unknown corridor door boundary " + resolvedRequest.boundarySegment());
-                }
-                persistInputs(conn, layout, corridor, CorridorInputEditor.deleteNode(corridor.input(), nodeId));
+                persistInputs(conn, layout, corridor, CorridorInputEditor.deleteDoorAtBoundary(corridor, resolvedRequest.boundarySegment()));
             });
         }
     }
@@ -211,7 +200,7 @@ public final class DungeonCorridorApplicationService {
         }
         Corridor updatedCorridor = corridor.withInput(
                 updatedInput,
-                layout.corridorResolutionInput(new CorridorResolutionContextRequest(corridor.levelZ())));
+                layout.corridorResolutionInput(corridor.levelZ()));
         corridorRepository.save(conn, updatedCorridor, layout);
     }
 
@@ -240,7 +229,7 @@ public final class DungeonCorridorApplicationService {
                     componentInput.nodes(),
                     componentInput.segments())
                     : componentInput;
-            Corridor resolved = workingLayout.resolveCorridor(new CorridorResolutionRequest(persistedInput));
+            Corridor resolved = workingLayout.resolveCorridor(persistedInput);
             Corridor persisted = corridorRepository.save(conn, resolved, workingLayout);
             if (first) {
                 workingLayout = workingLayout.withUpdatedCorridor(persisted);

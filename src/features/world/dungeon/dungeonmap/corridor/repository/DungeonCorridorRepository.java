@@ -4,7 +4,6 @@ import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorInput;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorInputNode;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorSegment;
-import features.world.dungeon.dungeonmap.model.CorridorRehydrationRequest;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -85,7 +84,7 @@ public final class DungeonCorridorRepository {
                             levelZ,
                             nodesAtLevel(nodesByCorridorId.getOrDefault(corridorId, List.of()), levelZ),
                             segmentsByCorridorId.getOrDefault(corridorId, List.of()));
-                    result.add(resolvedLayout.rehydrateCorridor(new CorridorRehydrationRequest(input, structure)));
+                    result.add(resolvedLayout.rehydrateCorridor(input, structure));
                 }
             }
         }
@@ -95,7 +94,8 @@ public final class DungeonCorridorRepository {
     public Corridor save(Connection conn, Corridor corridor, DungeonMap layout) throws SQLException {
         DungeonMap resolvedLayout = Objects.requireNonNull(layout, "layout");
         Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
-        CorridorInput persistedInput = assignPersistentIds(conn, resolvedCorridor.input());
+        PersistedInputRemap persistedInputRemap = assignPersistentIds(conn, resolvedCorridor.input());
+        CorridorInput persistedInput = persistedInputRemap.input();
         DungeonStructureRepository.PersistedStructure persistedStructure =
                 structureRepository.save(conn, persistedInput.structureObjectId(), resolvedCorridor);
         Long corridorId = persistedInput.corridorId();
@@ -113,7 +113,12 @@ public final class DungeonCorridorRepository {
                 persistedInput.segments());
         replaceNodes(conn, corridorId, persistedWithIds.nodes());
         replaceSegments(conn, corridorId, persistedWithIds.segments());
-        return resolvedLayout.rehydrateCorridor(new CorridorRehydrationRequest(persistedWithIds, persistedStructure.structure()));
+        return resolvedCorridor.persistedAs(
+                persistedWithIds,
+                persistedStructure.structure(),
+                persistedInputRemap.nodeIdRemap(),
+                persistedInputRemap.segmentIdRemap(),
+                resolvedLayout.corridorResolutionInput(persistedWithIds.levelZ()));
     }
 
     public void delete(Connection conn, long corridorId) throws SQLException {
@@ -125,7 +130,7 @@ public final class DungeonCorridorRepository {
         structureRepository.delete(conn, structureObjectId);
     }
 
-    private CorridorInput assignPersistentIds(Connection conn, CorridorInput input) throws SQLException {
+    private PersistedInputRemap assignPersistentIds(Connection conn, CorridorInput input) throws SQLException {
         CorridorInput resolvedInput = Objects.requireNonNull(input, "input");
         long nextNodeId = nextId(conn, "dungeon_corridor_input_nodes", "node_id");
         long nextSegmentId = nextId(conn, "dungeon_corridor_input_segments", "segment_id");
@@ -144,10 +149,14 @@ public final class DungeonCorridorRepository {
         }
 
         ArrayList<CorridorSegment> segments = new ArrayList<>();
+        LinkedHashMap<Long, Long> segmentIdRemap = new LinkedHashMap<>();
         for (CorridorSegment segment : resolvedInput.segments()) {
             Long persistedSegmentId = segment.segmentId();
             if (persistedSegmentId == null || persistedSegmentId <= 0) {
                 persistedSegmentId = nextSegmentId++;
+            }
+            if (segment.segmentId() != null && segment.segmentId() <= 0) {
+                segmentIdRemap.put(segment.segmentId(), persistedSegmentId);
             }
             segments.add(new CorridorSegment(
                     persistedSegmentId,
@@ -155,13 +164,16 @@ public final class DungeonCorridorRepository {
                     remapId(segment.endNodeId(), nodeIdRemap)));
         }
 
-        return new CorridorInput(
-                resolvedInput.corridorId(),
-                resolvedInput.structureObjectId(),
-                resolvedInput.mapId(),
-                resolvedInput.levelZ(),
-                nodes,
-                segments);
+        return new PersistedInputRemap(
+                new CorridorInput(
+                        resolvedInput.corridorId(),
+                        resolvedInput.structureObjectId(),
+                        resolvedInput.mapId(),
+                        resolvedInput.levelZ(),
+                        nodes,
+                        segments),
+                Map.copyOf(nodeIdRemap),
+                Map.copyOf(segmentIdRemap));
     }
 
     private long insertCorridor(Connection conn, long mapId, long structureObjectId, int levelZ) throws SQLException {
@@ -356,5 +368,17 @@ public final class DungeonCorridorRepository {
     @FunctionalInterface
     private interface CorridorRowKeyReader {
         long readKey(ResultSet rs) throws SQLException;
+    }
+
+    private record PersistedInputRemap(
+            CorridorInput input,
+            Map<Long, Long> nodeIdRemap,
+            Map<Long, Long> segmentIdRemap
+    ) {
+        private PersistedInputRemap {
+            input = Objects.requireNonNull(input, "input");
+            nodeIdRemap = nodeIdRemap == null ? Map.of() : Map.copyOf(nodeIdRemap);
+            segmentIdRemap = segmentIdRemap == null ? Map.of() : Map.copyOf(segmentIdRemap);
+        }
     }
 }

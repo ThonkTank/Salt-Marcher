@@ -1,10 +1,12 @@
 package features.world.dungeon.dungeonmap.corridor.application;
 
+import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorInput;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorInputNode;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorSegment;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridSegment;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -65,6 +67,16 @@ public final class CorridorInputEditor {
                     : candidate);
         }
         return new CorridorInput(input.corridorId(), input.structureObjectId(), input.mapId(), input.levelZ(), updatedNodes, input.segments());
+    }
+
+    public static CorridorInput moveDoorAtBoundary(Corridor corridor, GridSegment boundarySegment, DoorRef targetDoorRef) {
+        Objects.requireNonNull(corridor, "corridor");
+        Objects.requireNonNull(boundarySegment, "boundarySegment");
+        Long nodeId = corridor.doorNodeIdAtBoundary(boundarySegment);
+        if (nodeId == null) {
+            throw new IllegalArgumentException("Unknown corridor door boundary " + boundarySegment);
+        }
+        return moveDoor(corridor.input(), nodeId, targetDoorRef);
     }
 
     public static CorridorInput insertNodeOnSegment(CorridorInput input, Long segmentId, GridPoint point) {
@@ -136,6 +148,16 @@ public final class CorridorInputEditor {
                 .filter(candidate -> !Objects.equals(candidate.nodeId(), node.nodeId()))
                 .toList();
         return partition(new CorridorInput(input.corridorId(), input.structureObjectId(), input.mapId(), input.levelZ(), updatedNodes, updatedSegments));
+    }
+
+    public static List<CorridorInput> deleteDoorAtBoundary(Corridor corridor, GridSegment boundarySegment) {
+        Objects.requireNonNull(corridor, "corridor");
+        Objects.requireNonNull(boundarySegment, "boundarySegment");
+        Long nodeId = corridor.doorNodeIdAtBoundary(boundarySegment);
+        if (nodeId == null) {
+            throw new IllegalArgumentException("Unknown corridor door boundary " + boundarySegment);
+        }
+        return deleteNode(corridor.input(), nodeId);
     }
 
     private static CorridorInput splitSegment(CorridorInput input, CorridorSegment segment, Long midNodeId, boolean keepOriginalSegmentId) {

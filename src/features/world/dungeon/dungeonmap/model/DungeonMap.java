@@ -942,14 +942,11 @@ public final class DungeonMap {
         return withReplacedClusters(plan.originalClusters(), plan.finalClusters());
     }
 
-    public CorridorResolutionInput corridorResolutionInput(CorridorResolutionContextRequest request) {
-        CorridorResolutionContextRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        int levelZ = resolvedRequest.levelZ();
+    public CorridorResolutionInput corridorResolutionInput(int levelZ) {
         return new CorridorResolutionInput(
                 levelZ,
                 blockedRoomCells(levelZ),
-                exteriorDoorInputs(levelZ),
-                occupiedConnectionSegments(levelZ));
+                exteriorDoorInputs(levelZ));
     }
 
     public void validateClusterRewrite(ClusterRewritePlan plan) {
@@ -1063,8 +1060,7 @@ public final class DungeonMap {
         Corridor resolvedCorridor = Objects.requireNonNull(corridor, "corridor");
         DungeonMap resolvedUpdatedMap = Objects.requireNonNull(updatedMap, "updatedMap");
         int corridorLevel = resolvedCorridor.levelZ();
-        CorridorResolutionInput updatedResolution = resolvedUpdatedMap.corridorResolutionInput(
-                new CorridorResolutionContextRequest(corridorLevel));
+        CorridorResolutionInput updatedResolution = resolvedUpdatedMap.corridorResolutionInput(corridorLevel);
         return new CorridorReconcileInput(
                 affectedRoomIds,
                 exteriorDoorInputs(corridorLevel),
@@ -1109,16 +1105,6 @@ public final class DungeonMap {
             }
         }
         return blocked.isEmpty() ? GridArea.empty() : GridArea.of(blocked);
-    }
-
-    private GridBoundary occupiedConnectionSegments(int levelZ) {
-        LinkedHashSet<GridSegment> occupied = new LinkedHashSet<>();
-        for (ConnectionSegmentKey key : connectionsBySegmentAndLevel2x.keySet()) {
-            if (key != null && key.levelZ() == levelZ && key.segment2x() != null) {
-                occupied.add(key.segment2x());
-            }
-        }
-        return occupied.isEmpty() ? GridBoundary.empty() : GridBoundary.of(occupied);
     }
 
     private boolean touchesAffectedRooms(Corridor corridor, Set<Long> affectedRoomIds) {
@@ -1270,25 +1256,22 @@ public final class DungeonMap {
     }
 
     /**
-     * Corridor graph edits resolve against the layout that already owns room bindings and connection context; callers
-     * should not keep re-threading room collections through separate helper seams.
+     * Corridor authored input resolves against the map that already owns room bindings and door context.
      */
-    public Corridor resolveCorridor(CorridorResolutionRequest request) {
-        CorridorResolutionRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        CorridorInput input = resolvedRequest.input();
+    public Corridor resolveCorridor(CorridorInput input) {
+        CorridorInput resolvedInput = Objects.requireNonNull(input, "input");
         return Corridor.fromInput(
-                input,
-                corridorResolutionInput(new CorridorResolutionContextRequest(input.levelZ())));
+                resolvedInput,
+                corridorResolutionInput(resolvedInput.levelZ()));
     }
 
-    public Corridor rehydrateCorridor(CorridorRehydrationRequest request) {
-        CorridorRehydrationRequest resolvedRequest = Objects.requireNonNull(request, "request");
-        CorridorInput input = resolvedRequest.input();
-        Structure structure = resolvedRequest.structure();
+    public Corridor rehydrateCorridor(CorridorInput input, Structure structure) {
+        CorridorInput resolvedInput = Objects.requireNonNull(input, "input");
+        Structure resolvedStructure = Objects.requireNonNull(structure, "structure");
         return Corridor.rehydrated(
-                input,
-                structure,
-                corridorResolutionInput(new CorridorResolutionContextRequest(input.levelZ())));
+                resolvedInput,
+                resolvedStructure,
+                corridorResolutionInput(resolvedInput.levelZ()));
     }
 
     public DungeonMap withAddedCorridor(Corridor corridor) {

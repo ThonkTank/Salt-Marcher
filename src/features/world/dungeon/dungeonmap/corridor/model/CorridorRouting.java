@@ -2,7 +2,6 @@ package features.world.dungeon.dungeonmap.corridor.model;
 
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridArea;
-import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -81,16 +80,16 @@ final class CorridorRouting {
     }
 
     static CorridorPathTrace routeSegmentProjection(
-            CorridorSegment.ResolvedSegmentEndpoints endpoints,
+            CorridorSegment.ResolvedSegment resolvedSegment,
             CorridorSegment.RoutingContext context
     ) {
-        CorridorSegment segment = Objects.requireNonNull(endpoints, "endpoints").segment();
+        CorridorSegment segment = Objects.requireNonNull(resolvedSegment, "resolvedSegment").segment();
         CorridorSegment.RoutingContext resolvedContext = Objects.requireNonNull(context, "context");
         LinkedHashSet<GridPoint> blocked = new LinkedHashSet<>(resolvedContext.blockedArea().cells());
         blocked.addAll(resolvedContext.reservedArea().cells());
-        blocked.removeAll(endpoints.start().point().cellFootprint().cells());
-        blocked.removeAll(endpoints.end().point().cellFootprint().cells());
-        RoutePlan routePlan = findBestTrace(endpoints.start().attachments(), endpoints.end().attachments(), GridArea.of(blocked));
+        blocked.removeAll(resolvedSegment.start().point().cellFootprint().cells());
+        blocked.removeAll(resolvedSegment.end().point().cellFootprint().cells());
+        RoutePlan routePlan = findBestTrace(resolvedSegment.start().attachments(), resolvedSegment.end().attachments(), GridArea.of(blocked));
         return new CorridorPathTrace(
                 segment.segmentId(),
                 segment.startNodeId(),
@@ -99,7 +98,7 @@ final class CorridorRouting {
     }
 
     static CorridorPathTrace recoverSegmentTrace(
-            CorridorSegment.ResolvedSegmentEndpoints endpoints,
+            CorridorSegment.ResolvedSegment resolvedSegment,
             GridArea surfaceArea,
             GridArea consumedNonNodeArea,
             GridArea fixedNodeArea
@@ -108,8 +107,8 @@ final class CorridorRouting {
         if (resolvedSurfaceArea.isEmpty()) {
             throw new IllegalArgumentException("Persisted corridor structure must contain corridor surface cells");
         }
-        ResolvedNode startNode = endpoints.start();
-        ResolvedNode endNode = endpoints.end();
+        ResolvedNode startNode = resolvedSegment.start();
+        ResolvedNode endNode = resolvedSegment.end();
         List<AnchorAttachment> startAttachments = recoverAttachments(startNode.attachments(), resolvedSurfaceArea.cells());
         List<AnchorAttachment> endAttachments = recoverAttachments(endNode.attachments(), resolvedSurfaceArea.cells());
         if (startAttachments.isEmpty() || endAttachments.isEmpty()) {
@@ -126,7 +125,7 @@ final class CorridorRouting {
                 endAttachments,
                 resolvedSurfaceArea.cells(),
                 blockedCells);
-        CorridorSegment segment = endpoints.segment();
+        CorridorSegment segment = resolvedSegment.segment();
         return new CorridorPathTrace(
                 segment.segmentId(),
                 segment.startNodeId(),

@@ -5,8 +5,10 @@ import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.dungeonmap.structure.model.boundary.StructureBoundary;
+import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.room.StructureRoomTopology;
 import features.world.dungeon.dungeonmap.structure.model.surface.StructureSurface;
+import features.world.dungeon.geometry.GridArea;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -50,6 +52,21 @@ public abstract class Structure {
                     }
                 });
         return levels.isEmpty() ? empty() : fromLevels(levels);
+    }
+
+    public static Structure fromSurfaceLevel(int levelZ, GridArea surfaceArea, Collection<Door> doors) {
+        GridArea resolvedSurfaceArea = surfaceArea == null ? GridArea.empty() : surfaceArea.onLevel(levelZ);
+        if (resolvedSurfaceArea.isEmpty()) {
+            return empty();
+        }
+        return fromSpecification(StructureSpecification.ofLevel(
+                levelZ,
+                new StructureSpecification.LevelSpecification(
+                        resolvedSurfaceArea.center(),
+                        resolvedSurfaceArea,
+                        resolvedSurfaceArea,
+                        doors == null ? List.of() : List.copyOf(doors),
+                        List.of())));
     }
 
     public static Structure fromPersistenceSnapshot(PersistenceSnapshot snapshot) {
