@@ -52,7 +52,24 @@ public record ClusterRewriteRequest(
         return !affectedRoomIds().isEmpty();
     }
 
+    /**
+     * Room persistence work is broader than persisted affected-room ids: a topology rewrite may generate transient
+     * room projections that still need to be written after the cluster structure commit.
+     */
+    public boolean hasRoomPersistenceWork() {
+        return clustersContainRooms(originalClusters) || clustersContainRooms(rewrittenClusters);
+    }
+
     public boolean hasChanges() {
         return !originalClusters.equals(rewrittenClusters) || !translation.isZero();
+    }
+
+    private static boolean clustersContainRooms(List<Cluster> clusters) {
+        if (clusters == null || clusters.isEmpty()) {
+            return false;
+        }
+        return clusters.stream()
+                .filter(cluster -> cluster != null)
+                .anyMatch(cluster -> !cluster.roomTopology().rooms().isEmpty());
     }
 }

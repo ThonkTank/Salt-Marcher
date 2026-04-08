@@ -23,6 +23,6 @@ public record PersistClusterRewriteReboundsInput(
         return connection == null
                 || originalMap == null
                 || rewriteRequest == null
-                || !rewriteRequest.hasAffectedRooms();
+                || !rewriteRequest.hasRoomPersistenceWork();
     }
 }

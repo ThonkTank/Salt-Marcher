@@ -539,13 +539,6 @@ public final class ApplicationObject {
                                             resolvedArea,
                                             List.of(),
                                             List.of())));
-            features.world.dungeon.model.structures.room.Room room = new features.world.dungeon.model.structures.room.Room(
-                    null,
-                    mapId,
-                    0L,
-                    roomName,
-                    Map.of(levelZ, center),
-                    null);
             features.world.dungeon.dungeonmap.cluster.model.Cluster cluster =
                     features.world.dungeon.dungeonmap.cluster.model.Cluster.fromDefinition(
                             new features.world.dungeon.dungeonmap.cluster.model.ClusterDefinitionRequest(
@@ -553,7 +546,7 @@ public final class ApplicationObject {
                                     null,
                                     mapId,
                                     structure,
-                                    List.of(room)));
+                                    List.of()));
             return features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest.of(List.of(), List.of(cluster));
         }
 

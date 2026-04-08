@@ -80,7 +80,7 @@ public final class DungeonMapRepository {
             List<Long> persistedClusterIds
     ) throws SQLException {
         requireConnection(conn);
-        if (mapId <= 0 || rewriteRequest == null || !rewriteRequest.hasAffectedRooms()) {
+        if (mapId <= 0 || rewriteRequest == null || !rewriteRequest.hasRoomPersistenceWork()) {
             return loadMap(conn, mapId);
         }
         List<features.world.dungeon.dungeonmap.cluster.model.Cluster> finalClusters = normalizedClusters(rewriteRequest.rewrittenClusters());

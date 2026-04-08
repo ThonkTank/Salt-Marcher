@@ -1,10 +1,12 @@
 package buildlogic.conventions.heuristic.owner
 
 import com.sun.source.tree.BlockTree
+import com.sun.source.tree.ClassTree
 import com.sun.source.tree.MethodInvocationTree
 import com.sun.source.tree.NewClassTree
 import com.sun.source.util.TreePath
 import com.sun.source.util.TreePathScanner
+import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -16,7 +18,7 @@ fun Project.registerCheckOwnerApiBoundaryRepositoryFilesTask(
     taskName = "checkOwnerApiBoundaryRepositoryFiles",
     taskDescription = "Fail when touched owner repository files drift away from the canonical state-persistence rules.",
     failureHeader = "Owner repository drift detected.",
-    failureSummary = "Touched repository files must stay static state translators that depend only on their owner's state layer.",
+    failureSummary = "Touched repository files must stay stateless static state translators that depend only on their owner's state layer.",
     applicableRoles = setOf(support.repositoryRole)
 ) { sourceFile, snapshot ->
     analyzeRepositoryFile(sourceFile, snapshot, support).reasons
@@ -44,6 +46,7 @@ internal fun analyzeRepositoryFile(
     if (primaryType.kind != OwnerConventionParsedJavaTypeKind.CLASS || Modifier.FINAL !in primaryType.modifiers) {
         reasons += "${context.path} :: repository files must declare a final class"
     }
+    reasons += repositoryClassShapeReasons(context.path, primaryType)
     if (
         primaryType.constructors.none { Modifier.PRIVATE in it.modifiers } ||
         primaryType.constructors.any { Modifier.PUBLIC in it.modifiers }
@@ -115,6 +118,24 @@ internal fun analyzeRepositoryFile(
         reasons = reasons.distinct(),
         model = canonicalApi
     )
+}
+
+private fun repositoryClassShapeReasons(
+    path: String,
+    primaryType: OwnerConventionParsedJavaType
+): List<String> {
+    val reasons = mutableListOf<String>()
+    val classTree = primaryType.tree
+    if (primaryType.fields.isNotEmpty()) {
+        reasons += "$path :: repository files must not declare fields"
+    }
+    if (classTree.members.any { member -> member is BlockTree }) {
+        reasons += "$path :: repository files must not declare initializer blocks"
+    }
+    if (classTree.members.any { member -> member is ClassTree }) {
+        reasons += "$path :: repository files must not declare nested types"
+    }
+    return reasons
 }
 
 private fun repositoryBodyReasons(
@@ -199,7 +220,11 @@ private fun repositoryInvocationReasons(
     val context = sourceFile.context
     val calleeTypeName = support.topLevelTypeNameForTree(invocation, sourceFile.parsedSource, snapshot) ?: return emptyList()
     if (calleeTypeName == currentTypeName) {
-        return emptyList()
+        return if (isStaticRepositorySelfCall(invocation, sourceFile, snapshot, support)) {
+            emptyList()
+        } else {
+            listOf("${context.path} :: repository bodies must not call same-type instance helpers ($memberName -> $calleeTypeName)")
+        }
     }
     forbiddenRepositoryExternalTypeReason(calleeTypeName)?.let { reason ->
         return listOf("${context.path} :: $reason ($memberName -> $calleeTypeName)")
@@ -238,7 +263,7 @@ private fun repositoryNewClassReasons(
     val typeName = support.resolveTypeName(expression.identifier, sourceFile.parsedSource, snapshot)
         ?: return emptyList()
     if (typeName == currentTypeName) {
-        return emptyList()
+        return listOf("${context.path} :: repository bodies must not instantiate their own repository type ($memberName -> $typeName)")
     }
     forbiddenRepositoryExternalTypeReason(typeName)?.let { reason ->
         return listOf("${context.path} :: $reason ($memberName -> $typeName)")
@@ -254,6 +279,17 @@ private fun repositoryNewClassReasons(
     } else {
         listOf("${context.path} :: repository bodies may construct only own state project types ($memberName -> $typeName)")
     }
+}
+
+private fun isStaticRepositorySelfCall(
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport
+): Boolean {
+    val methodElement = support.elementFor(invocation, sourceFile.parsedSource, snapshot) as? ExecutableElement
+        ?: return false
+    return Modifier.STATIC in methodElement.modifiers
 }
 
 private fun forbiddenRepositoryExternalTypeReason(typeName: String): String? {
