@@ -56,6 +56,22 @@ public final class GridPath extends GridObject<GridPath> {
         return point != null && points.contains(point);
     }
 
+    public GridSegmentPath segmentPath() {
+        if (points.size() < 2) {
+            return GridSegmentPath.empty();
+        }
+        ArrayList<GridSegment> segments = new ArrayList<>();
+        for (int index = 1; index < points.size(); index++) {
+            GridPoint start = points.get(index - 1);
+            GridPoint end = points.get(index);
+            if (start.z() != end.z()) {
+                throw new IllegalStateException("GridPath.segmentPath requires same-level points");
+            }
+            segments.add(new GridSegment(start, end));
+        }
+        return GridSegmentPath.of(segments);
+    }
+
     @Override
     public GridPath translated(GridTranslation translation) {
         GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;

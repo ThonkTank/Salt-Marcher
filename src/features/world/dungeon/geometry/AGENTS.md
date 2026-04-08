@@ -16,6 +16,7 @@
 - `GridArea` - canonical unordered occupied cell set - represents room, corridor, and floor area.
 - `GridBoundary` - canonical unordered boundary segment set - represents wall and door geometry.
 - `GridPath` - canonical ordered dense lattice path - represents stairs, stair-like transitions, and routed corridor traces through a normalized step-by-step point sequence.
+- `GridPath.segmentPath()` - canonical same-level segment derivation - projects a dense point path into the ordered `GridSegmentPath` view when the path stays on one level.
 - `GridArea.rectangle(...)`, `GridPath.concat(...)`, `GridSegmentPath.concat(...)` - canonical composition helpers - build shared preview and routing shapes without reintroducing raw point or segment collection dialects.
 - `CardinalDirection` - canonical 4-neighbor direction helper over cell-space movement.
 

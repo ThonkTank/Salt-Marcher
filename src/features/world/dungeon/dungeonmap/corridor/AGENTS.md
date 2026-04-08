@@ -11,7 +11,7 @@
 - `model/CorridorResolutionInput` — fixed corridor-external input contract — supplies blocked area, room-exterior door facts, and occupied connection boundary through canonical `GridArea` / `GridBoundary` carriers.
 - `model/CorridorReconcileInput` — fixed room-rewrite contract — supplies affected room ids, before-or-after door facts, translations, level shifts, and updated resolution input for rebound workflows.
 - `model/CorridorRouting` — corridor-local segment-routing helper — stays package-private beneath `CorridorSegment`; external callers reuse `Corridor` and `CorridorSegment`, not raw routing helper records.
-- `model/CorridorPathTrace` — transient routed corridor trace keyed by authored `segmentId`; composes ordered geometry only through canonical `GridPath` plus the derived canonical `GridSegmentPath` view used by render and hit leaves.
+- `model/CorridorPathTrace` — transient routed corridor trace keyed by authored `segmentId`; stores only canonical `GridPath`, and render/hit leaves derive the ordered `GridSegmentPath` view through `GridPath.segmentPath()`.
 - `model/Corridor.boundaryDoorBoundary()` — corridor-owned read projection — reports corridor boundary openings through the canonical `GridBoundary` carrier without requiring live external map context.
 - `model/Corridor.touchesRoomAnchorCells(...)` — corridor-owned anchor guard — answers whether removed room-floor cells would orphan one of this corridor's room-bound anchors.
 - `application/DungeonCorridorApplicationService` — public corridor workflow seam for corridor creation, room-door attachment, node or door movement, and topology deletion.
