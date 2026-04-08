@@ -6,6 +6,7 @@ import features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapsh
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.runtime.input.LoadNavigationInput;
+import features.world.dungeon.runtime.input.NavigateToCellInput;
 import features.world.dungeon.runtime.input.RepairNavigationInput;
 import features.world.dungeon.runtime.input.ResolveNavigationInput;
 import features.world.dungeon.runtime.input.ResolveRepairNavigationInput;
@@ -82,6 +83,26 @@ public final class RuntimeObject {
         }
     }
 
+    public NavigateToCellInput.NavigationInput navigateToCell(
+            NavigateToCellInput input
+    ) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        if (input.mapId() <= 0) {
+            throw new SQLException("Kein aktiver Dungeon geladen");
+        }
+        try (java.sql.Connection conn = DatabaseManager.getConnection()) {
+            var layout = loadResolver.resolveRepairLayout(conn, input.mapId());
+            DungeonRuntimeNavigationSnapshot snapshot = runtimeApplicationService.navigateToCell(
+                    layout,
+                    toNavigationSnapshot(input.currentNavigation()),
+                    input.cell(),
+                    input.levelZ());
+            return toNavigateToCellInput(snapshot);
+        }
+    }
+
     private static ResolveRepairNavigationInput.NavigationInput toRepairNavigationInput(
             DungeonRuntimeNavigationSnapshot snapshot
     ) {
@@ -119,5 +140,31 @@ public final class RuntimeObject {
                 snapshot.cell(),
                 snapshot.levelZ(),
                 snapshot.heading() == null ? "" : snapshot.heading().name());
+    }
+
+    private static NavigateToCellInput.NavigationInput toNavigateToCellInput(
+            DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        if (snapshot == null || snapshot.isEmpty() || snapshot.cell() == null) {
+            return new NavigateToCellInput.NavigationInput(null, null, 0, "");
+        }
+        return new NavigateToCellInput.NavigationInput(
+                snapshot.mapId(),
+                snapshot.cell(),
+                snapshot.levelZ(),
+                snapshot.heading() == null ? "" : snapshot.heading().name());
+    }
+
+    private static DungeonRuntimeNavigationSnapshot toNavigationSnapshot(
+            NavigateToCellInput.NavigationInput input
+    ) {
+        if (input == null || input.mapId() == null || input.cell() == null) {
+            return DungeonRuntimeNavigationSnapshot.empty();
+        }
+        return new DungeonRuntimeNavigationSnapshot(
+                input.mapId(),
+                input.cell(),
+                input.levelZ(),
+                CardinalDirection.parse(input.heading()));
     }
 }
