@@ -21,6 +21,8 @@
 - `geometry` — public dungeon spatial seams use the canonical carriers from this slice instead of raw point or segment collections.
 - `dungeonmap/DungeonMapObject` — public loaded-map seam for cross-owner map reads and map-scoped workflows.
 - `room/RoomObject` — public room seam for room-owned narration writes.
+- `runtime/RuntimeObject` — public runtime seam for cross-owner runtime workflows such as persisted runtime-state repair.
+- `stair/StairObject` — public stair seam for cross-owner stair workflows, starting with stair deletion.
 - `dungeonmap/structure/StructureObject` and `Structure` — shared physical topology seam for structure-backed map objects and their persisted topology.
 - `dungeonmap/connections/ConnectionsObject` — shared traversal semantics seam for door-, stair-, and corridor-linked movement.
 - `catalog/CatalogObject` — public catalog seam for dungeon-map create, rename, and delete writes.
