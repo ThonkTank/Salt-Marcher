@@ -26,10 +26,12 @@
 - Put topology semantics on the owning feature slice, not on geometry helpers.
 - Prefer one canonical operation here over parallel shape-specific helpers elsewhere.
 - Keep public construction and transport on the canonical carriers themselves: callers should pass `GridArea`, `GridBoundary`, `GridPath`, `GridSegment`, `GridPoint`, or `GridTranslation`, not raw point/segment collections.
+- Treat canonical carrier usage as enforced architecture, not style guidance: outside the geometry carriers themselves, public/protected dungeon seams must not expose raw `Set/List/Collection<GridPoint|GridSegment>`.
 - Keep public movement deltas on `GridTranslation`; drag/drop, move requests, and reconciliation inputs must not encode translations as fake cell `GridPoint`s.
 - Keep public occupancy reads on `cellFootprint()` and keep them as `GridArea` until a terminal UI/runtime leaf actually needs raw cells.
 - Keep public boundary reads on `boundary()` and keep them as `GridBoundary` until a terminal UI/runtime leaf actually needs raw segments.
-- Treat canonical geometry usage as enforced architecture, not style guidance: `checkDungeonGeometryConvention` rejects public/protected dungeon seams that expose raw `Set/List/Collection<GridPoint|GridSegment>` or reintroduce second-dialect names.
+- Keep raw geometry collections confined to the canonical carriers and non-public algorithm or persistence leaves; if a caller truly needs raw cells or segments, unwrap `.cells()`, `.segments()`, or `.points()` only at that final leaf.
+- `checkDungeonGeometryConvention` is the build gate for these rules: if a public/protected dungeon seam reintroduces raw geometry collections or second-dialect names, the build must fail.
 - Keep public point reads lattice-only. Cell-space math belongs in owner-local leaf helpers derived from `x2()/y2()`, not as a second public coordinate API on `GridPoint`.
 - Keep `GridPath` explicitly ordered and canonical: public callers may supply sparse ordered points, but the primitive normalizes them to one dense lattice route instead of leaving density policy to owners.
 - Keep ordered boundary routes on `GridSegmentPath`; callers should not publish raw `List<GridSegment>` wall-path APIs beside it, and the primitive itself keeps boundary-step granularity canonical.
@@ -47,6 +49,6 @@
 - Do not add public `boundarySegments()`/`boundaryEdges()`-style aggregate boundary aliases beside `boundary()`.
 - Do not add public `movedBy(...)`-style translation aliases beside `translated(GridTranslation)`.
 - Do not add lossy point-to-cell coercions like `projectedCell()` in runtime, map, tool, or shell code; if a caller means occupied cells, it must use `GridArea` or an owner seam that already returns cells.
-- Do not expose raw point or segment collections from public/protected dungeon APIs outside the four canonical geometry carriers.
+- Do not expose raw point or segment collections from public/protected dungeon APIs outside the canonical geometry carriers or private/package-private leaf implementations.
 - Do not move owner semantics such as traversability, room identity, or selection policy into this slice.
 - Do not move authored stair path patterns or stair-path generation back into `geometry`.
