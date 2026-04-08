@@ -7,6 +7,7 @@
 ## Canonical Types and APIs
 
 - `RuntimeObject` — public runtime root seam — accepts typed runtime workflow requests and delegates them to the current runtime workflow owner.
+- `input/LoadNavigationInput` — runtime-navigation request family — loads the persisted or fallback navigation snapshot for one dungeon map into root-input form.
 - `input/RepairNavigationInput` — runtime-navigation repair request — carries the JDBC connection used to repair persisted runtime position after catalog mutations.
 - `input/ResolveRepairNavigationInput` — runtime repair-navigation request family — resolves the repaired runtime fallback snapshot into root-input form.
 
