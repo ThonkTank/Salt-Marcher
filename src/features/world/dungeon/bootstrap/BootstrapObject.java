@@ -1,43 +1,23 @@
 package features.world.dungeon.bootstrap;
 
-import features.world.api.WorldTravelSurface;
-import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
-import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
+import features.world.api.input.WorldTravelSurface;
 import features.world.dungeon.application.room.DungeonRoomApplicationService;
+import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
+import features.world.dungeon.bootstrap.input.BootstrapViews;
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
-import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.DungeonMapObject;
-import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
-import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
+import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
 import features.world.dungeon.dungeonmap.corridor.CorridorObject;
-import features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository;
-import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
-import features.world.dungeon.repository.DungeonRoomRepository;
-import features.world.dungeon.repository.DungeonStairRepository;
-import features.world.dungeon.repository.DungeonTransitionRepository;
-import features.world.dungeon.transition.TransitionObject;
-import features.world.dungeon.shell.editor.state.DungeonEditorView;
-import features.world.dungeon.shell.editor.state.RoomNarrationPane;
+import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.shell.editor.interaction.input.EditorTool;
-import features.world.dungeon.shell.editor.interaction.state.BoundaryTool;
-import features.world.dungeon.shell.editor.interaction.state.CorridorTool;
-import features.world.dungeon.shell.editor.interaction.state.DoorTool;
-import features.world.dungeon.shell.editor.interaction.state.EditorInteraction;
-import features.world.dungeon.shell.editor.interaction.state.FloorTool;
-import features.world.dungeon.shell.editor.interaction.state.PaintTool;
-import features.world.dungeon.shell.editor.interaction.state.SelectionTool;
-import features.world.dungeon.shell.editor.interaction.state.StairTool;
-import features.world.dungeon.shell.editor.interaction.state.TransitionTool;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
 import features.world.dungeon.shell.runtime.DungeonRuntimeView;
-import features.world.dungeon.state.DungeonEditorSessionState;
-import features.world.dungeon.dungeonmap.state.DungeonMapState;
-import features.world.dungeon.state.EditorInteractionState;
-import ui.shell.AppView;
+import features.world.dungeon.transition.TransitionObject;
 import ui.shell.DetailsNavigator;
 
 import java.util.List;
@@ -51,31 +31,37 @@ import java.util.Objects;
  */
 public final class BootstrapObject {
 
-    private final AppView dungeonView;
-    private final AppView dungeonEditorView;
+    private final ui.shell.AppView dungeonView;
+    private final ui.shell.AppView dungeonEditorView;
 
     public BootstrapObject(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         DungeonMapApplicationService mapApplicationService = new DungeonMapApplicationService();
-        DungeonClusterRepository clusterRepository = new DungeonClusterRepository();
-        DungeonRoomRepository roomRepository = new DungeonRoomRepository();
-        DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
-        DungeonStairRepository stairRepository = new DungeonStairRepository();
-        DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
-        DungeonMapRepository mapRepository = new DungeonMapRepository(
-                clusterRepository,
-                roomRepository,
-                corridorRepository,
-                stairRepository,
-                transitionRepository,
-                mapApplicationService);
+        features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository =
+                new features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository();
+        features.world.dungeon.repository.DungeonRoomRepository roomRepository =
+                new features.world.dungeon.repository.DungeonRoomRepository();
+        features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository corridorRepository =
+                new features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository();
+        features.world.dungeon.repository.DungeonStairRepository stairRepository =
+                new features.world.dungeon.repository.DungeonStairRepository();
+        features.world.dungeon.repository.DungeonTransitionRepository transitionRepository =
+                new features.world.dungeon.repository.DungeonTransitionRepository();
+        features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository =
+                new features.world.dungeon.dungeonmap.repository.DungeonMapRepository(
+                        clusterRepository,
+                        roomRepository,
+                        corridorRepository,
+                        stairRepository,
+                        transitionRepository,
+                        mapApplicationService);
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(mapRepository);
         DungeonMapObject mapObject = new DungeonMapObject(
                 mapRepository,
                 mapApplicationService,
                 new CorridorObject(corridorRepository),
                 new TransitionObject(transitionRepository));
-        DungeonClusterApplicationService clusterApplicationService = new DungeonClusterApplicationService(
+        ApplicationObject clusterApplicationService = new ApplicationObject(
                 mapApplicationService,
                 mapRepository,
                 clusterRepository,
@@ -97,26 +83,31 @@ public final class BootstrapObject {
                 mapRepository,
                 corridorRepository,
                 mapApplicationService);
-        DungeonMapState state = new DungeonMapState();
+        features.world.dungeon.dungeonmap.state.DungeonMapState state =
+                new features.world.dungeon.dungeonmap.state.DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 loadResolver,
                 state);
-        DungeonEditorSessionState editorSessionState = new DungeonEditorSessionState();
-        EditorInteractionState editorInteractionState = new EditorInteractionState();
-        RoomNarrationPane roomNarrationPane = new RoomNarrationPane(
-                state,
-                loadingService,
-                roomApplicationService,
-                editorInteractionState);
+        features.world.dungeon.state.DungeonEditorSessionState editorSessionState =
+                new features.world.dungeon.state.DungeonEditorSessionState();
+        features.world.dungeon.state.EditorInteractionState editorInteractionState =
+                new features.world.dungeon.state.EditorInteractionState();
+        features.world.dungeon.shell.editor.state.RoomNarrationPane roomNarrationPane =
+                new features.world.dungeon.shell.editor.state.RoomNarrationPane(
+                        state,
+                        loadingService,
+                        roomApplicationService,
+                        editorInteractionState);
         DungeonHitCollector hitCollector = new DungeonHitCollector();
-        StairTool stairTool = new StairTool(
-                state,
-                loadingService,
-                mapApplicationService,
-                stairApplicationService,
-                editorInteractionState);
+        features.world.dungeon.shell.editor.interaction.state.StairTool stairTool =
+                new features.world.dungeon.shell.editor.interaction.state.StairTool(
+                        state,
+                        loadingService,
+                        mapApplicationService,
+                        stairApplicationService,
+                        editorInteractionState);
         List<EditorTool> editorTools = List.of(
-                new SelectionTool(
+                new features.world.dungeon.shell.editor.interaction.state.SelectionTool(
                         state,
                         loadingService,
                         mapApplicationService,
@@ -126,48 +117,49 @@ public final class BootstrapObject {
                         roomNarrationPane,
                         stairTool,
                         editorInteractionState),
-                new PaintTool(
+                new features.world.dungeon.shell.editor.interaction.state.PaintTool(
                         state,
                         loadingService,
                         editorSessionState,
                         clusterApplicationService,
                         editorInteractionState),
-                new FloorTool(
+                new features.world.dungeon.shell.editor.interaction.state.FloorTool(
                         state,
                         loadingService,
                         editorSessionState,
                         clusterApplicationService,
                         editorInteractionState),
-                new BoundaryTool(
+                new features.world.dungeon.shell.editor.interaction.state.BoundaryTool(
                         state,
                         loadingService,
                         editorSessionState,
                         clusterApplicationService,
                         editorInteractionState),
-                new DoorTool(
+                new features.world.dungeon.shell.editor.interaction.state.DoorTool(
                         state,
                         loadingService,
                         clusterApplicationService,
                         editorInteractionState),
-                new CorridorTool(
+                new features.world.dungeon.shell.editor.interaction.state.CorridorTool(
                         state,
                         loadingService,
                         corridorApplicationService,
                         editorInteractionState),
                 stairTool,
-                new TransitionTool(
+                new features.world.dungeon.shell.editor.interaction.state.TransitionTool(
                         state,
                         loadingService,
                         editorSessionState,
                         mapApplicationService,
                         transitionApplicationService,
                         editorInteractionState));
-        EditorInteraction editorInteraction = new EditorInteraction(
-                state,
-                editorSessionState,
-                editorInteractionState,
-                hitCollector,
-                editorTools);
+        features.world.dungeon.shell.editor.interaction.state.EditorInteraction editorInteraction =
+                new features.world.dungeon.shell.editor.interaction.state.EditorInteraction(
+                        state,
+                        editorSessionState,
+                        editorInteractionState,
+                        hitCollector,
+                        editorTools);
         this.dungeonView = new DungeonRuntimeView(
                 "Dungeon",
                 false,
@@ -177,7 +169,7 @@ public final class BootstrapObject {
                 detailsNavigator,
                 travelSurface,
                 hitCollector);
-        this.dungeonEditorView = new DungeonEditorView(
+        this.dungeonEditorView = new features.world.dungeon.shell.editor.state.DungeonEditorView(
                 loadingService,
                 state,
                 mapCatalogService,
@@ -185,11 +177,7 @@ public final class BootstrapObject {
                 editorInteraction);
     }
 
-    public AppView dungeonView() {
-        return dungeonView;
-    }
-
-    public AppView dungeonEditorView() {
-        return dungeonEditorView;
+    public BootstrapViews views() {
+        return new BootstrapViews(dungeonView, dungeonEditorView);
     }
 }

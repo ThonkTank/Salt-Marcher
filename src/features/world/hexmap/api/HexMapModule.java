@@ -1,6 +1,6 @@
 package features.world.hexmap.api;
 
-import features.world.api.WorldTravelSurface;
+import features.world.api.input.WorldTravelSurface;
 import features.world.hexmap.ui.editor.MapEditorView;
 import features.world.hexmap.ui.overworld.OverworldView;
 import features.world.hexmap.ui.travel.TravelPane;
@@ -15,7 +15,11 @@ public final class HexMapModule {
     private final AppView mapEditorView;
 
     public static WorldTravelSurface createTravelSurface() {
-        return new TravelPane();
+        TravelPane travelPane = new TravelPane();
+        return new WorldTravelSurface(
+                travelPane,
+                travelPane::showOverworldTravel,
+                travelPane::showDungeonTravel);
     }
 
     public HexMapModule(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {

@@ -18,7 +18,7 @@ import features.party.api.PartyModule;
 import features.encounter.api.EncounterModule;
 import features.spells.api.SpellCatalogModule;
 import features.tables.api.TablesModule;
-import features.world.api.WorldModule;
+import features.world.api.ApiObject;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 import ui.shell.AppShell;
@@ -86,12 +86,13 @@ public class SaltMarcherApp extends Application {
         shell.addPersistentToolbarItem(partyModule.toolbarItem());
         adventuringDayToolbarModule.refreshActivePartyState();
 
-        WorldModule worldModule = new WorldModule(shell.getDetailsNavigator());
-        worldModule.registerScenes(shell.getSceneRegistry());
-        AppView overworldView = worldModule.overworldView();
-        AppView mapEditorView = worldModule.mapEditorView();
-        AppView dungeonView = worldModule.dungeonView();
-        AppView dungeonEditorView = worldModule.dungeonEditorView();
+        ApiObject worldApi = new ApiObject(shell.getDetailsNavigator());
+        worldApi.registerScenes(shell.getSceneRegistry());
+        var worldViews = worldApi.views();
+        AppView overworldView = worldViews.overworldView();
+        AppView mapEditorView = worldViews.mapEditorView();
+        AppView dungeonView = worldViews.dungeonView();
+        AppView dungeonEditorView = worldViews.dungeonEditorView();
 
         TablesModule tablesModule = new TablesModule(shell.getDetailsNavigator());
         AppView tableEditorView = tablesModule.view();

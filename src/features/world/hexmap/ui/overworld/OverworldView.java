@@ -1,6 +1,6 @@
 package features.world.hexmap.ui.overworld;
 
-import features.world.api.WorldTravelSurface;
+import features.world.api.input.WorldTravelSurface;
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.async.UiErrorReporter;

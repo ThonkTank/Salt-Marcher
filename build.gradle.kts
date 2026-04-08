@@ -795,6 +795,7 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
     val repositoryRole = "repository"
     val stateRole = "state"
     val bucketRole = "bucket"
+    val reservedRequestStemSuffixes = setOf("Input", "Task", "Request", "State", "Repository", "Object", "Owner")
 
     data class TypeImports(
         val explicitTypes: Map<String, String>,
@@ -843,6 +844,21 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
 
     fun normalizedToken(token: String): String {
         return token.filter(Char::isLetterOrDigit).lowercase()
+    }
+
+    fun requestStemFor(fileName: String, expectedSuffix: String): String? {
+        val suffix = "$expectedSuffix.java"
+        if (!fileName.endsWith(suffix)) {
+            return null
+        }
+        val stem = fileName.removeSuffix(suffix)
+        if (!Regex("""[A-Z][A-Za-z0-9]*""").matches(stem)) {
+            return null
+        }
+        if (reservedRequestStemSuffixes.any { reserved -> stem.endsWith(reserved) }) {
+            return null
+        }
+        return stem
     }
 
     fun srcRelativePath(file: File): String {
@@ -1020,6 +1036,39 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         return projectPackages
     }
 
+    fun projectTypeNames(
+        typeRef: String,
+        sourcePackage: String,
+        typeImports: TypeImports,
+        knownTypeNames: Set<String>
+    ): Set<String> {
+        val projectTypes = linkedSetOf<String>()
+        val fqcnPattern = Regex("""\b[a-z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][A-Za-z0-9_]*)*\.[A-Z][A-Za-z0-9_]*\b""")
+        fqcnPattern.findAll(typeRef).forEach { match ->
+            val fqcn = match.value
+            if (fqcn in knownTypeNames) {
+                projectTypes += fqcn
+            }
+        }
+        val simplePattern = Regex("""\b[A-Z][A-Za-z0-9_]*\b""")
+        simplePattern.findAll(typeRef).forEach { match ->
+            val simpleName = match.value
+            val importedFqcn = typeImports.explicitTypes[simpleName]
+            val candidates = buildList {
+                if (importedFqcn != null) {
+                    add(importedFqcn)
+                } else {
+                    add("$sourcePackage.$simpleName")
+                    typeImports.wildcardPackages.forEach { wildcardPackage ->
+                        add("$wildcardPackage.$simpleName")
+                    }
+                }
+            }
+            candidates.firstOrNull { candidate -> candidate in knownTypeNames }?.let(projectTypes::add)
+        }
+        return projectTypes
+    }
+
     fun sameOwner(sourceOwnerPackage: String, targetPackage: String): Boolean {
         val targetRole = roleForDirectoryName(targetPackage.substringAfterLast('.'))
         return ownerPackageFor(targetPackage, targetRole) == sourceOwnerPackage
@@ -1072,6 +1121,10 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
     fun inputFileReasons(context: SourceContext, sourceText: String): List<String> {
         val reasons = mutableListOf<String>()
         val className = context.className.removeSuffix(".java")
+        val requestStem = requestStemFor(context.className, "Input")
+        if (requestStem == null) {
+            reasons += "${context.path} :: input files must be named <Request>Input with a direct request stem"
+        }
         val isRecord = Regex("""(?m)^\s*(public\s+)?record\s+$className\b""").containsMatchIn(sourceText)
         val isEnum = Regex("""(?m)^\s*(public\s+)?enum\s+$className\b""").containsMatchIn(sourceText)
         val isSealedInterface = Regex("""(?m)^\s*(public\s+)?sealed\s+interface\s+$className\b""").containsMatchIn(sourceText)
@@ -1089,6 +1142,10 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
     fun taskFileReasons(context: SourceContext, sourceText: String, knownTypeNames: Set<String>): List<String> {
         val reasons = mutableListOf<String>()
         val className = context.className.removeSuffix(".java")
+        val requestStem = requestStemFor(context.className, "Task")
+        if (requestStem == null) {
+            reasons += "${context.path} :: task files must be named <Request>Task with a direct request stem"
+        }
         val isFinalClass = Regex("""(?m)^\s*(public\s+)?final\s+class\s+$className\b""").containsMatchIn(sourceText)
         val hasPrivateConstructor = Regex("""(?m)^\s*private\s+$className\s*\(""").containsMatchIn(sourceText)
         val hasPublicConstructor = Regex("""(?m)^\s*public\s+$className\s*\(""").containsMatchIn(sourceText)
@@ -1125,6 +1182,15 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                 }
             ) {
                 reasons += "${context.path} :: task methods must accept exactly one project input type"
+            }
+            if (requestStem != null) {
+                val paramTypes = method.parameterTypes.flatMap { type ->
+                    projectTypeNames(type, context.packageName, context.typeImports, knownTypeNames)
+                }.distinct()
+                val expectedInputType = "${context.ownerPackage}.input.${requestStem}Input"
+                if (paramTypes != listOf(expectedInputType)) {
+                    reasons += "${context.path} :: task methods must accept exactly ${requestStem}Input from the same owner"
+                }
             }
             if (returnPackages.size != 1 || returnPackages.any { projectPackage ->
                     roleForDirectoryName(projectPackage.substringAfterLast('.')) != inputRole

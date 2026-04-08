@@ -1,8 +1,8 @@
 package features.world.dungeon.application.transition;
 
 import database.DatabaseManager;
-import features.world.api.OverworldTransitionTargetSummary;
-import features.world.api.WorldReadApi;
+import features.world.api.input.OverworldTransitionTargetSummary;
+import features.world.api.read.ReadObject;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -49,7 +49,7 @@ public final class DungeonTransitionApplicationService {
     }
 
     public List<OverworldTransitionTargetSummary> loadOverworldTargets() throws SQLException {
-        return WorldReadApi.loadOverworldTransitionTargets();
+        return ReadObject.loadOverworldTransitionTargets();
     }
 
     public void delete(long transitionId) throws SQLException {
@@ -265,7 +265,7 @@ public final class DungeonTransitionApplicationService {
             if (overworld.tileId() <= 0) {
                 throw new SQLException("Overworld-Zielfeld fehlt");
             }
-            Long resolvedMapId = WorldReadApi.findOverworldMapIdForTile(overworld.tileId());
+            Long resolvedMapId = ReadObject.findOverworldMapIdForTile(overworld.tileId());
             if (resolvedMapId == null || resolvedMapId <= 0) {
                 throw new SQLException("Overworld-Zielfeld existiert nicht");
             }

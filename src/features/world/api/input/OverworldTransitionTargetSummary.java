@@ -1,4 +1,4 @@
-package features.world.api;
+package features.world.api.input;
 
 public record OverworldTransitionTargetSummary(
         long mapId,

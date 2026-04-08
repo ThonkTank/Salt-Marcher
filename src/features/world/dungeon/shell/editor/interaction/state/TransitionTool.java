@@ -1,6 +1,6 @@
 package features.world.dungeon.shell.editor.interaction.state;
 
-import features.world.api.OverworldTransitionTargetSummary;
+import features.world.api.input.OverworldTransitionTargetSummary;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeon.application.transition.TransitionConnectionBuilder;

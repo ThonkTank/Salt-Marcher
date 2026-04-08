@@ -1,10 +1,10 @@
-package features.world.api;
+package features.world.api.input;
 
-import javafx.scene.Node;
-
-import java.util.List;
-
-public interface WorldTravelSurface {
+public record WorldTravelSurface(
+        javafx.scene.Node sceneContent,
+        Runnable showOverworldTravelAction,
+        java.util.function.Consumer<DungeonTravelPresentation> showDungeonTravelAction
+) {
 
     record DungeonTravelAction(String label, Runnable action) {
         public DungeonTravelAction {
@@ -18,7 +18,7 @@ public interface WorldTravelSurface {
             String cellLabel,
             String headingLabel,
             String statusLabel,
-            List<DungeonTravelAction> actions,
+            java.util.List<DungeonTravelAction> actions,
             Runnable centerAction
     ) {
         public DungeonTravelPresentation {
@@ -29,15 +29,20 @@ public interface WorldTravelSurface {
             statusLabel = statusLabel == null || statusLabel.isBlank()
                     ? "Token im Dungeon auf ein begehbares Feld ziehen"
                     : statusLabel;
-            actions = actions == null ? List.of() : List.copyOf(actions);
+            actions = actions == null ? java.util.List.of() : java.util.List.copyOf(actions);
         }
     }
 
-    default Node sceneContent() {
-        return null;
+    public WorldTravelSurface {
+        showOverworldTravelAction = showOverworldTravelAction == null ? () -> { } : showOverworldTravelAction;
+        showDungeonTravelAction = showDungeonTravelAction == null ? ignored -> { } : showDungeonTravelAction;
     }
 
-    void showOverworldTravel();
+    public void showOverworldTravel() {
+        showOverworldTravelAction.run();
+    }
 
-    void showDungeonTravel(DungeonTravelPresentation presentation);
+    public void showDungeonTravel(DungeonTravelPresentation presentation) {
+        showDungeonTravelAction.accept(presentation);
+    }
 }

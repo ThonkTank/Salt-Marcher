@@ -1,6 +1,7 @@
-package features.world.api;
+package features.world.api.read;
 
 import database.DatabaseManager;
+import features.world.api.input.OverworldTransitionTargetSummary;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -9,9 +10,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class WorldReadApi {
+public final class ReadObject {
 
-    private WorldReadApi() {
+    private ReadObject() {
         throw new AssertionError("No instances");
     }
 

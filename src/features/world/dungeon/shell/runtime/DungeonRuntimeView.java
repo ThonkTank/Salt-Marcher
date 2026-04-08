@@ -1,6 +1,6 @@
 package features.world.dungeon.shell.runtime;
 
-import features.world.api.WorldTravelSurface;
+import features.world.api.input.WorldTravelSurface;
 import features.world.dungeon.application.runtime.DungeonRuntimeAction;
 import features.world.dungeon.application.runtime.DungeonRuntimeActionResolver;
 import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
