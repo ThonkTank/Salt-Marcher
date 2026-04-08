@@ -5,7 +5,7 @@ import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterDeleteRequest;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterPaintRequest;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -235,7 +235,7 @@ public final class DungeonClusterApplicationService {
                             conn,
                             resolvedRequest.mapId(),
                             layout,
-                            ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
+                            ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
                 }
                 return null;
             });
@@ -253,15 +253,15 @@ public final class DungeonClusterApplicationService {
             return;
         }
 
-        ClusterRewritePlan rewritePlan = overlappingClusters.getFirst().rewritePaint(new ClusterPaintRequest(
+        ClusterRewriteRequest rewriteRequest = overlappingClusters.getFirst().rewritePaint(new ClusterPaintRequest(
                 cells,
                 overlappingClusters,
                 levelZ));
-        if (rewritePlan == null || !rewritePlan.hasChanges()) {
+        if (rewriteRequest == null || !rewriteRequest.hasChanges()) {
             return;
         }
 
-        persistClusterRewrite(conn, mapId, layout, rewritePlan);
+        persistClusterRewrite(conn, mapId, layout, rewriteRequest);
     }
 
     public void deleteCells(Connection conn, long mapId, int levelZ, GridArea cells) throws SQLException {
@@ -284,14 +284,14 @@ public final class DungeonClusterApplicationService {
                 continue;
             }
             DungeonMap layoutSnapshot = workingLayout;
-            ClusterRewritePlan rewritePlan = cluster.rewriteDelete(new ClusterDeleteRequest(
+            ClusterRewriteRequest rewriteRequest = cluster.rewriteDelete(new ClusterDeleteRequest(
                     cells,
                     levelZ,
                     () -> nextRoomName(layoutSnapshot, reservedNames)));
-            if (rewritePlan == null || !rewritePlan.hasChanges()) {
+            if (rewriteRequest == null || !rewriteRequest.hasChanges()) {
                 continue;
             }
-            persistClusterRewrite(conn, mapId, workingLayout, rewritePlan);
+            persistClusterRewrite(conn, mapId, workingLayout, rewriteRequest);
             workingLayout = requireLayout(conn, mapId);
         }
     }
@@ -363,7 +363,7 @@ public final class DungeonClusterApplicationService {
                     levelZ,
                     GridArea.of(clusterRequestedCells),
                     deleteFloor ? ClusterMutationRequest.CellEditMode.REMOVE : ClusterMutationRequest.CellEditMode.ADD));
-            persistClusterRewrite(conn, mapId, workingLayout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
+            persistClusterRewrite(conn, mapId, workingLayout, ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
             workingLayout = requireLayout(conn, mapId);
         }
     }
@@ -414,11 +414,11 @@ public final class DungeonClusterApplicationService {
             DungeonTransactionRunner.inTransaction(conn, () -> {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 Cluster cluster = requireCluster(layout, resolvedRequest.clusterId());
-                ClusterRewritePlan rewritePlan = ClusterRewritePlan.of(
+                ClusterRewriteRequest rewriteRequest = ClusterRewriteRequest.of(
                         List.of(cluster),
                         List.of(cluster.mutated(new ClusterMutationRequest.Translation(resolvedTranslation))),
                         resolvedTranslation);
-                persistClusterRewrite(conn, resolvedRequest.mapId(), layout, rewritePlan);
+                persistClusterRewrite(conn, resolvedRequest.mapId(), layout, rewriteRequest);
                 return null;
             });
         }
@@ -463,7 +463,7 @@ public final class DungeonClusterApplicationService {
             return;
         }
 
-        persistClusterRewrite(conn, mapId, layout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
+        persistClusterRewrite(conn, mapId, layout, ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
     }
 
     public void deleteWallPath(
@@ -489,7 +489,7 @@ public final class DungeonClusterApplicationService {
             return;
         }
 
-        persistClusterRewrite(conn, mapId, layout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
+        persistClusterRewrite(conn, mapId, layout, ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
     }
 
     private void editDoor(
@@ -536,7 +536,7 @@ public final class DungeonClusterApplicationService {
         if (updatedCluster == cluster) {
             return;
         }
-        persistClusterRewrite(conn, mapId, layout, ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)));
+        persistClusterRewrite(conn, mapId, layout, ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
     }
 
     private static List<Cluster> overlappingClustersAtLevel(DungeonMap layout, Set<GridPoint> cells, int levelZ) {
@@ -596,18 +596,18 @@ public final class DungeonClusterApplicationService {
             Connection conn,
             long mapId,
             DungeonMap originalLayout,
-            ClusterRewritePlan rewritePlan
+            ClusterRewriteRequest rewriteRequest
     ) throws SQLException {
-        if (conn == null || originalLayout == null || rewritePlan == null || !rewritePlan.hasChanges()) {
+        if (conn == null || originalLayout == null || rewriteRequest == null || !rewriteRequest.hasChanges()) {
             return;
         }
-        originalLayout.validateClusterRewrite(rewritePlan);
-        clusterRepository.replaceClusters(conn, mapId, rewritePlan.originalClusters(), rewritePlan.finalClusters());
-        if (!rewritePlan.hasAffectedRooms()) {
+        originalLayout.validateClusterRewrite(rewriteRequest);
+        clusterRepository.replaceClusters(conn, mapId, rewriteRequest);
+        if (!rewriteRequest.hasAffectedRooms()) {
             return;
         }
         DungeonMap persistedRoomLayout = loadRoomRewriteLayout(conn, originalLayout, mapId);
-        var rewriteEffects = originalLayout.reconcileClusterRewrite(persistedRoomLayout, rewritePlan);
+        var rewriteEffects = originalLayout.reconcileClusterRewrite(persistedRoomLayout, rewriteRequest);
         for (Corridor reboundCorridor : rewriteEffects.reboundCorridors()) {
             if (reboundCorridor != null) {
                 corridorRepository.save(conn, reboundCorridor, persistedRoomLayout.mapId());

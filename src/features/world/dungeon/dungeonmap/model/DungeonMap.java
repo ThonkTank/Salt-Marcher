@@ -18,7 +18,7 @@ import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest;
 import features.world.dungeon.model.structures.connection.Connection;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
 import features.world.dungeon.model.structures.connection.DoorConnectionCarrier;
@@ -815,11 +815,11 @@ public final class DungeonMap {
         return new DungeonMap(mapId, name, corridors, updatedClusters, stairs, transitions, updatedClusterLevels);
     }
 
-    public DungeonMap withAppliedClusterRewrite(ClusterRewritePlan plan) {
-        if (plan == null) {
+    private DungeonMap withAppliedClusterRewrite(ClusterRewriteRequest request) {
+        if (request == null) {
             return this;
         }
-        return withReplacedClusters(plan.originalClusters(), plan.finalClusters());
+        return withReplacedClusters(request.originalClusters(), request.rewrittenClusters());
     }
 
     private CorridorResolutionInput corridorResolutionInput(int levelZ) {
@@ -829,28 +829,28 @@ public final class DungeonMap {
                 exteriorDoorInputs(levelZ));
     }
 
-    public void validateClusterRewrite(ClusterRewritePlan plan) {
-        if (plan == null || !plan.hasChanges()) {
+    public void validateClusterRewrite(ClusterRewriteRequest request) {
+        if (request == null || !request.hasChanges()) {
             return;
         }
-        Set<Long> affectedRoomIds = plan.affectedRoomIds();
+        Set<Long> affectedRoomIds = request.affectedRoomIds();
         if (affectedRoomIds.isEmpty()) {
             return;
         }
-        DungeonMap rewrittenMap = withAppliedClusterRewrite(plan);
-        validateCorridorRewrite(rewrittenMap, affectedRoomIds, plan.translation());
+        DungeonMap rewrittenMap = withAppliedClusterRewrite(request);
+        validateCorridorRewrite(rewrittenMap, affectedRoomIds, request.translation());
         validateTransitionRewrite(rewrittenMap, affectedRoomIds);
     }
 
-    public ClusterRewriteEffects reconcileClusterRewrite(DungeonMap persistedRoomMap, ClusterRewritePlan plan) {
-        if (persistedRoomMap == null || plan == null || !plan.hasChanges()) {
+    public ClusterRewriteEffects reconcileClusterRewrite(DungeonMap persistedRoomMap, ClusterRewriteRequest request) {
+        if (persistedRoomMap == null || request == null || !request.hasChanges()) {
             return ClusterRewriteEffects.empty();
         }
-        Set<Long> affectedRoomIds = plan.affectedRoomIds();
+        Set<Long> affectedRoomIds = request.affectedRoomIds();
         if (affectedRoomIds.isEmpty()) {
             return ClusterRewriteEffects.empty();
         }
-        List<Corridor> reboundCorridors = reboundCorridors(persistedRoomMap, affectedRoomIds, plan.translation());
+        List<Corridor> reboundCorridors = reboundCorridors(persistedRoomMap, affectedRoomIds, request.translation());
         Map<Long, DungeonConnection> reboundTransitionConnections = reboundTransitionConnections(
                 persistedRoomMap,
                 affectedRoomIds);
@@ -1135,45 +1135,6 @@ public final class DungeonMap {
         return reboundRoom;
     }
 
-    public DungeonMap withAddedTransition(DungeonTransition transition) {
-        if (transition == null) {
-            return this;
-        }
-        ArrayList<DungeonTransition> updatedTransitions = new ArrayList<>(transitions);
-        updatedTransitions.add(transition);
-        return withTransitions(updatedTransitions);
-    }
-
-    public DungeonMap withUpdatedTransition(DungeonTransition transition) {
-        if (transition == null || transition.transitionId() == null) {
-            return this;
-        }
-        boolean replaced = false;
-        ArrayList<DungeonTransition> updatedTransitions = new ArrayList<>(transitions.size());
-        for (DungeonTransition existing : transitions) {
-            if (existing != null && Objects.equals(existing.transitionId(), transition.transitionId())) {
-                updatedTransitions.add(transition);
-                replaced = true;
-            } else {
-                updatedTransitions.add(existing);
-            }
-        }
-        if (!replaced) {
-            updatedTransitions.add(transition);
-        }
-        return withTransitions(updatedTransitions);
-    }
-
-    public DungeonMap withRemovedTransition(Long transitionId) {
-        if (transitionId == null) {
-            return this;
-        }
-        List<DungeonTransition> updatedTransitions = transitions.stream()
-                .filter(transition -> transition == null || !Objects.equals(transition.transitionId(), transitionId))
-                .toList();
-        return updatedTransitions.size() == transitions.size() ? this : withTransitions(updatedTransitions);
-    }
-
     public DungeonMap withMutatedCluster(ClusterMapMutationRequest request) {
         if (request == null || request.clusterId() == null) {
             return this;
@@ -1186,12 +1147,12 @@ public final class DungeonMap {
         if (updatedCluster == cluster) {
             return this;
         }
-        ClusterRewritePlan plan = ClusterRewritePlan.of(
+        ClusterRewriteRequest rewriteRequest = ClusterRewriteRequest.of(
                 List.of(cluster),
                 List.of(updatedCluster),
                 rewriteTranslation(request.mutation()));
-        DungeonMap mutatedLayout = withAppliedClusterRewrite(plan);
-        return mutatedLayout.withAppliedClusterRewriteEffects(reconcileClusterRewrite(mutatedLayout, plan));
+        DungeonMap mutatedLayout = withAppliedClusterRewrite(rewriteRequest);
+        return mutatedLayout.withAppliedClusterRewriteEffects(reconcileClusterRewrite(mutatedLayout, rewriteRequest));
     }
 
     private static GridTranslation rewriteTranslation(ClusterMutationRequest mutation) {

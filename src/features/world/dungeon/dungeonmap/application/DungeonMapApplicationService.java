@@ -2,10 +2,13 @@ package features.world.dungeon.dungeonmap.application;
 
 import features.world.dungeon.dungeonmap.api.PreviewAddedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewAddedStairRequest;
+import features.world.dungeon.dungeonmap.api.PreviewAddedTransitionRequest;
 import features.world.dungeon.dungeonmap.api.PreviewRemovedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewRemovedStairRequest;
+import features.world.dungeon.dungeonmap.api.PreviewRemovedTransitionRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
+import features.world.dungeon.dungeonmap.api.PreviewReplacedTransitionRequest;
 import features.world.dungeon.dungeonmap.api.RehydrateCorridorRequest;
 import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
@@ -22,6 +25,7 @@ import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
+import features.world.dungeon.model.structures.transition.DungeonTransition;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -29,11 +33,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 /**
  * Map-owned workflow seam for corridor resolution, rehydration, and preview snapshot composition.
  *
  * <p>Corridor aggregates still own their authored input and reconciliation behavior. This service owns only the
- * map-external facts required to build or preview them from one authoritative loaded map snapshot.</p>
+ * map-external facts required to build corridors and compose corridor, stair, or transition previews from one
+ * authoritative loaded map snapshot.</p>
  */
 public final class DungeonMapApplicationService {
 
@@ -137,6 +143,48 @@ public final class DungeonMapApplicationService {
                 : withStairs(resolvedRequest.map(), updatedStairs);
     }
 
+    public DungeonMap previewAddedTransition(PreviewAddedTransitionRequest request) {
+        PreviewAddedTransitionRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        ArrayList<DungeonTransition> updatedTransitions = new ArrayList<>(resolvedRequest.map().transitions());
+        updatedTransitions.add(resolvedRequest.transition());
+        return withTransitions(resolvedRequest.map(), updatedTransitions);
+    }
+
+    public DungeonMap previewReplacedTransition(PreviewReplacedTransitionRequest request) {
+        PreviewReplacedTransitionRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        DungeonTransition transition = resolvedRequest.transition();
+        if (transition.transitionId() == null) {
+            return resolvedRequest.map();
+        }
+        boolean replaced = false;
+        ArrayList<DungeonTransition> updatedTransitions = new ArrayList<>(resolvedRequest.map().transitions().size());
+        for (DungeonTransition existing : resolvedRequest.map().transitions()) {
+            if (existing != null && Objects.equals(existing.transitionId(), transition.transitionId())) {
+                updatedTransitions.add(transition);
+                replaced = true;
+            } else {
+                updatedTransitions.add(existing);
+            }
+        }
+        if (!replaced) {
+            updatedTransitions.add(transition);
+        }
+        return withTransitions(resolvedRequest.map(), updatedTransitions);
+    }
+
+    public DungeonMap previewRemovedTransition(PreviewRemovedTransitionRequest request) {
+        PreviewRemovedTransitionRequest resolvedRequest = Objects.requireNonNull(request, "request");
+        if (resolvedRequest.transitionId() == null) {
+            return resolvedRequest.map();
+        }
+        List<DungeonTransition> updatedTransitions = resolvedRequest.map().transitions().stream()
+                .filter(transition -> transition == null || !Objects.equals(transition.transitionId(), resolvedRequest.transitionId()))
+                .toList();
+        return updatedTransitions.size() == resolvedRequest.map().transitions().size()
+                ? resolvedRequest.map()
+                : withTransitions(resolvedRequest.map(), updatedTransitions);
+    }
+
     private CorridorResolutionInput corridorResolutionInput(DungeonMap layout, int levelZ) {
         return new CorridorResolutionInput(
                 levelZ,
@@ -215,6 +263,17 @@ public final class DungeonMapApplicationService {
                 layout.clusters(),
                 updatedStairs,
                 layout.transitions(),
+                clusterLevelsById(layout));
+    }
+
+    private DungeonMap withTransitions(DungeonMap layout, List<DungeonTransition> updatedTransitions) {
+        return new DungeonMap(
+                layout.mapId(),
+                layout.name(),
+                layout.corridors(),
+                layout.clusters(),
+                layout.stairs(),
+                updatedTransitions,
                 clusterLevelsById(layout));
     }
 

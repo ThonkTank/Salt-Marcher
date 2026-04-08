@@ -152,6 +152,7 @@ public final class DungeonMapModule {
                         state,
                         loadingService,
                         editorSessionState,
+                        mapApplicationService,
                         transitionApplicationService,
                         editorInteractionState));
         EditorInteraction editorInteraction = new EditorInteraction(

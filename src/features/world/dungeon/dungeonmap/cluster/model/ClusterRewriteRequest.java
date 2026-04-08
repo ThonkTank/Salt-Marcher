@@ -8,25 +8,29 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Canonical cluster rewrite payload for replacing one or more persisted clusters.
+ * Canonical cluster rewrite request for replacing one or more persisted clusters.
  */
-public record ClusterRewritePlan(
+public record ClusterRewriteRequest(
         List<Cluster> originalClusters,
-        List<Cluster> finalClusters,
+        List<Cluster> rewrittenClusters,
         GridTranslation translation
 ) {
-    public ClusterRewritePlan {
+    public ClusterRewriteRequest {
         originalClusters = originalClusters == null ? List.of() : List.copyOf(originalClusters);
-        finalClusters = finalClusters == null ? List.of() : List.copyOf(finalClusters);
+        rewrittenClusters = rewrittenClusters == null ? List.of() : List.copyOf(rewrittenClusters);
         translation = translation == null ? GridTranslation.none() : translation;
     }
 
-    public static ClusterRewritePlan of(List<Cluster> originalClusters, List<Cluster> finalClusters) {
-        return new ClusterRewritePlan(originalClusters, finalClusters, GridTranslation.none());
+    public static ClusterRewriteRequest of(List<Cluster> originalClusters, List<Cluster> rewrittenClusters) {
+        return new ClusterRewriteRequest(originalClusters, rewrittenClusters, GridTranslation.none());
     }
 
-    public static ClusterRewritePlan of(List<Cluster> originalClusters, List<Cluster> finalClusters, GridTranslation translation) {
-        return new ClusterRewritePlan(originalClusters, finalClusters, translation);
+    public static ClusterRewriteRequest of(
+            List<Cluster> originalClusters,
+            List<Cluster> rewrittenClusters,
+            GridTranslation translation
+    ) {
+        return new ClusterRewriteRequest(originalClusters, rewrittenClusters, translation);
     }
 
     public Set<Long> affectedRoomIds() {
@@ -49,6 +53,6 @@ public record ClusterRewritePlan(
     }
 
     public boolean hasChanges() {
-        return !originalClusters.equals(finalClusters) || !translation.isZero();
+        return !originalClusters.equals(rewrittenClusters) || !translation.isZero();
     }
 }

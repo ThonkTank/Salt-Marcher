@@ -114,11 +114,11 @@ public final class Cluster extends Structure {
                 projectedTopology.rooms()));
     }
 
-    public ClusterRewritePlan rewritePaint(ClusterPaintRequest request) {
+    public ClusterRewriteRequest rewritePaint(ClusterPaintRequest request) {
         return ClusterStructureEditor.applyPaint(this, request);
     }
 
-    public ClusterRewritePlan rewriteDelete(ClusterDeleteRequest request) {
+    public ClusterRewriteRequest rewriteDelete(ClusterDeleteRequest request) {
         return ClusterStructureEditor.applyDelete(this, request);
     }
 

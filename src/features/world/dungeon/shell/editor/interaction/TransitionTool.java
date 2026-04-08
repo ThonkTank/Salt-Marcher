@@ -6,8 +6,11 @@ import features.world.dungeon.application.transition.DungeonTransitionApplicatio
 import features.world.dungeon.application.transition.TransitionConnectionBuilder;
 import features.world.dungeon.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
+import features.world.dungeon.dungeonmap.api.PreviewAddedTransitionRequest;
+import features.world.dungeon.dungeonmap.api.PreviewReplacedTransitionRequest;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
@@ -59,6 +62,7 @@ public final class TransitionTool implements EditorTool {
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
     private final DungeonEditorSessionState sessionState;
+    private final DungeonMapApplicationService mapApplicationService;
     private final DungeonTransitionApplicationService transitionApplicationService;
     private final EditorInteractionState state;
 
@@ -155,12 +159,14 @@ public final class TransitionTool implements EditorTool {
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
             DungeonEditorSessionState sessionState,
+            DungeonMapApplicationService mapApplicationService,
             DungeonTransitionApplicationService transitionApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
+        this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.transitionApplicationService = Objects.requireNonNull(transitionApplicationService, "transitionApplicationService");
         this.state = Objects.requireNonNull(state, "state");
         initializeStatePane();
@@ -785,8 +791,8 @@ public final class TransitionTool implements EditorTool {
         }
         DungeonMap layout = mapState.activeMap();
         DungeonMap previewLayout = previewTransition.transitionId() == null
-                ? layout.withAddedTransition(previewTransition)
-                : layout.withUpdatedTransition(previewTransition);
+                ? mapApplicationService.previewAddedTransition(new PreviewAddedTransitionRequest(layout, previewTransition))
+                : mapApplicationService.previewReplacedTransition(new PreviewReplacedTransitionRequest(layout, previewTransition));
         state.showPreview(new EditorPreview.LayoutPreview(previewLayout));
     }
 

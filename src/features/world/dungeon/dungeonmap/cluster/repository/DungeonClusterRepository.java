@@ -6,6 +6,7 @@ import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterDefinitionRequest;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest;
 import features.world.dungeon.model.structures.room.RoomExitNarration;
 import features.world.dungeon.model.structures.room.RoomNarration;
 import features.world.dungeon.model.structures.room.Room;
@@ -191,11 +192,13 @@ public final class DungeonClusterRepository {
     public void replaceClusters(
             Connection conn,
             long mapId,
-            List<Cluster> originalClusters,
-            List<Cluster> finalClusters
+            ClusterRewriteRequest rewriteRequest
     ) throws SQLException {
-        List<Cluster> resolvedOriginalClusters = normalizedClusters(originalClusters);
-        List<Cluster> resolvedFinalClusters = normalizedClusters(finalClusters);
+        if (rewriteRequest == null) {
+            return;
+        }
+        List<Cluster> resolvedOriginalClusters = normalizedClusters(rewriteRequest.originalClusters());
+        List<Cluster> resolvedFinalClusters = normalizedClusters(rewriteRequest.rewrittenClusters());
         if (resolvedOriginalClusters.isEmpty() && resolvedFinalClusters.isEmpty()) {
             return;
         }

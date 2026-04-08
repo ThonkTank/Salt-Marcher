@@ -34,7 +34,7 @@ final class ClusterStructureEditor {
     private ClusterStructureEditor() {
     }
 
-    static ClusterRewritePlan applyPaint(
+    static ClusterRewriteRequest applyPaint(
             Cluster cluster,
             ClusterPaintRequest request
     ) {
@@ -85,10 +85,10 @@ final class ClusterStructureEditor {
                 cluster.mapId(),
                 mergedStructure,
                 normalizedMetadataRooms(mergedMetadataRooms)));
-        return ClusterRewritePlan.of(resolvedClusters, List.of(mergedCluster));
+        return ClusterRewriteRequest.of(resolvedClusters, List.of(mergedCluster));
     }
 
-    static ClusterRewritePlan applyDelete(
+    static ClusterRewriteRequest applyDelete(
             Cluster cluster,
             ClusterDeleteRequest request
     ) {
@@ -110,7 +110,7 @@ final class ClusterStructureEditor {
             remainingCellsByLevel.put(resolvedRequest.deleteLevel(), Set.copyOf(remainingDeleteLevelCells));
         }
         if (remainingCellsByLevel.isEmpty()) {
-            return ClusterRewritePlan.of(List.of(cluster), List.of());
+            return ClusterRewriteRequest.of(List.of(cluster), List.of());
         }
 
         Map<Integer, Set<GridPoint>> remainingFloorCellsByLevel = mutableCellsByLevel(copyStructureFloorCellsByLevel(cluster));
@@ -130,12 +130,12 @@ final class ClusterStructureEditor {
                 copyStructureSurfaceCellsByLevel(cluster));
         List<Cluster> componentClusters = splitDeletedCluster(cluster, rewrittenStructure);
         if (componentClusters.isEmpty()) {
-            return ClusterRewritePlan.of(List.of(cluster), List.of());
+            return ClusterRewriteRequest.of(List.of(cluster), List.of());
         }
         ArrayList<Cluster> finalClusters = new ArrayList<>(componentClusters.size());
         finalClusters.add(withClusterId(componentClusters.getFirst(), cluster.clusterId()));
         finalClusters.addAll(componentClusters.stream().skip(1).toList());
-        return ClusterRewritePlan.of(
+        return ClusterRewriteRequest.of(
                 List.of(cluster),
                 assignGeneratedClusterRoomNames(finalClusters, resolvedRequest.roomNameSupplier()));
     }

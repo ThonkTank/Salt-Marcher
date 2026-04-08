@@ -11,7 +11,7 @@
 - `model/ClusterMutationRequest` — canonical cluster-local write vocabulary for floor, wall, door, and translation edits.
 - `model/ClusterPaintRequest`, `model/Cluster.rewritePaint(...)` — public cluster-owned paint rewrite seam — expands one paint area plus overlapping clusters into a cluster rewrite payload.
 - `model/ClusterDeleteRequest`, `model/Cluster.rewriteDelete(...)` — public cluster-owned delete rewrite seam — expands one delete area into zero or more replacement clusters.
-- `model/ClusterRewritePlan` — explicit cluster replacement payload for paint, delete, split, and move rewrites.
+- `model/ClusterRewriteRequest` — explicit cluster replacement payload for paint, delete, split, and move rewrites.
 - `application/DungeonClusterApplicationService` — public cluster workflow seam with request-record entrypoints for paint/delete, floor edits, wall and door edits, cluster moves, and default cluster bootstrap.
 - `repository/DungeonClusterRepository` — cluster row and structure-reference persistence seam; persists only cluster metadata plus the referenced final structure while room metadata stays in the room owner.
 
@@ -20,7 +20,7 @@
 - Put cluster identity, center, structure-backed boundary edits, and cluster-local move semantics on `Cluster`.
 - Put public paint/delete rewrite entrypoints on `Cluster` via `rewritePaint(...)` and `rewriteDelete(...)`.
 - Keep `ClusterStructureEditor` package-private inside `cluster/model` as an implementation detail behind those aggregate seams.
-- Let public cluster writes converge on `DungeonClusterApplicationService` request records and reduce them to `ClusterMutationRequest` or `ClusterRewritePlan` before persistence.
+- Let public cluster writes converge on `DungeonClusterApplicationService` request records and reduce them to `ClusterMutationRequest` or `ClusterRewriteRequest` before persistence.
 - Keep cluster persistence focused on cluster rows and cluster-owned structure references; derive cluster center from the final structure on every construction path and keep room metadata in `DungeonRoomRepository`.
 
 ## Forbidden Drift
