@@ -24,13 +24,19 @@ public final class ResolveNavigationTask {
                     input.preferredCell(),
                     input.preferredLevelZ(),
                     features.world.dungeon.geometry.CardinalDirection.parse(input.preferredHeading()));
-            return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
-                    ? features.world.dungeon.runtime.input.ResolveNavigationInput.NavigationInput.empty()
-                    : features.world.dungeon.runtime.input.ResolveNavigationInput.NavigationInput.navigation(
-                            snapshot.mapId(),
-                            snapshot.cell(),
-                            snapshot.levelZ(),
-                            snapshot.heading() == null ? "" : snapshot.heading().name());
+            return toNavigationInput(snapshot);
         }
+    }
+
+    private static features.world.dungeon.runtime.input.ResolveNavigationInput.NavigationInput toNavigationInput(
+            features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
+                ? features.world.dungeon.runtime.input.ResolveNavigationInput.NavigationInput.empty()
+                : features.world.dungeon.runtime.input.ResolveNavigationInput.NavigationInput.navigation(
+                        snapshot.mapId(),
+                        snapshot.cell(),
+                        snapshot.levelZ(),
+                        snapshot.heading() == null ? "" : snapshot.heading().name());
     }
 }
