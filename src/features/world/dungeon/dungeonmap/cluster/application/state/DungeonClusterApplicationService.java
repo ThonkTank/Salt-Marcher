@@ -29,28 +29,12 @@ public final class DungeonClusterApplicationService {
             features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
             features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
             features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository,
-            features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository corridorRepository,
-            features.world.dungeon.repository.DungeonTransitionRepository transitionRepository
+            features.world.dungeon.dungeonmap.DungeonMapObject mapObject
     ) {
         this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
-        this.mapObject = new features.world.dungeon.dungeonmap.DungeonMapObject(
-                mapRepository,
-                mapApplicationService,
-                new features.world.dungeon.dungeonmap.corridor.CorridorObject(corridorRepository),
-                new features.world.dungeon.transition.TransitionObject(transitionRepository));
+        this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
         this.clusterRepository = Objects.requireNonNull(clusterRepository, "clusterRepository");
-    }
-
-    public DungeonClusterApplicationService(
-            features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
-            features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
-            features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository,
-            features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository corridorRepository,
-            features.world.dungeon.repository.DungeonRoomRepository roomRepository,
-            features.world.dungeon.repository.DungeonTransitionRepository transitionRepository
-    ) {
-        this(mapApplicationService, mapRepository, clusterRepository, corridorRepository, transitionRepository);
     }
 
     public void rewriteSurface(ClusterSurfaceRewriteRequest request) throws SQLException {

@@ -11,6 +11,7 @@
 - `model/DungeonMap` — current loaded-map implementation behind the public root seam.
 - `application/` and `repository/` — authoritative map selection, load, reload, and rehydration seams.
 - `state/` — active-map, projection, overlay, and loading session state.
+- `connections/` — shared connection semantics owner for traversable links and their endpoint vocabulary.
 - `structure/` — shared physical topology owner; `Structure` is the abstract base type for structure-backed map objects.
 - `cluster/` — room-cluster owner built on `Structure`.
 - `corridor/` — corridor owner built on `Structure`.
@@ -20,6 +21,7 @@
 - `api/CellStructure` — map cell occupant projection — distinguishes room, corridor, stair, and transition ownership for runtime and editor callers.
 - `api/RoomBoundaryDescription`, `api/CorridorBoundaryDescription`, `api/ConnectionSurfaceDescription` — public map read projections for room walls, corridor attach surfaces, and connection-local entry surfaces.
 - `api/DoorDescription`, `api/DoorRole` — public map read projection for placed doors and their stable role semantics.
+- `connections/ConnectionsObject`, `connections/Connection`, `connections/ConnectionEndpoint` — shared connection owner seam and canonical traversal vocabulary for room-local, corridor, and transition links.
 - `api/ResolveCorridorRequest`, `api/RehydrateCorridorRequest` — public map-owned corridor build requests — carry only loaded-map truth plus authored corridor input or persisted structure.
 - `api/ValidateClusterRewriteRequest`, `api/ReconcileClusterRewriteRequest`, `api/AssertClusterFloorDeletionAllowedRequest` — public map-owned cluster rewrite requests — validate cross-owner effects, reconcile rebound corridors and transition anchors, and guard floor deletions against corridor, stair, and transition occupancy.
 - `api/PreviewMovedClusterRequest`, `api/PreviewMovedLocalDoorRequest` — public map-owned cluster preview requests — compose temporary map snapshots for cluster translation and local-door drags without exposing raw cluster rewrites.
@@ -48,6 +50,7 @@
 - Put map selection, fallback, and reload policy on `DungeonMapLoadResolver` or `DungeonMapLoadingService`, not in views or repositories.
 - Put map rehydration and staged owner loading in `repository/`.
 - Put active-map and overlay session state in `state/`.
+- Put shared traversal semantics under `connections/`, but keep physical door and stair ownership on the owner that edits or persists those carriers.
 - Put structure-backed map objects under `structure/`, `cluster/`, or `corridor/` inside this owner instead of restoring parallel top-level package trees.
 - Put shell cluster translation and local-door previews on `DungeonMapApplicationService` instead of rebuilding cluster rewrites in tools.
 - Put cluster rewrite validation, floor-deletion guards, and cross-owner rebound logic on `DungeonMapApplicationService`, not in cluster or transition services.
@@ -58,6 +61,7 @@
 - Do not move loaded map ownership back into generic `model/`, `loading/`, `state/`, or `repository/` roots.
 - Do not duplicate map selection or reload policy in shell, runtime, or owner-local workflow services.
 - Do not reintroduce top-level `structure`, `cluster`, or `corridor` owners beside `dungeonmap`.
+- Do not turn `connections/` into a second physical carrier owner for doors or stairs.
 - Do not turn `DungeonMapObject` or its `DungeonMap` implementation into a second physical topology owner when `structure`, `cluster`, `corridor`, `stair`, and `transition` already own their underlying truth.
 - Do not reintroduce public nested read-projection records or enums on `DungeonMap`; exported callers consume `dungeonmap/api` instead.
 - Do not let corridor callers bypass the fixed corridor input contract by passing raw map state, room lookups, primitive corridor bundles, or ad-hoc door resolution directly into `Corridor`.

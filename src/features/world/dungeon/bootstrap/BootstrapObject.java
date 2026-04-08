@@ -8,15 +8,18 @@ import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
 import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.corridor.CorridorObject;
 import features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeon.repository.DungeonRoomRepository;
 import features.world.dungeon.repository.DungeonStairRepository;
 import features.world.dungeon.repository.DungeonTransitionRepository;
+import features.world.dungeon.transition.TransitionObject;
 import features.world.dungeon.shell.editor.state.DungeonEditorView;
 import features.world.dungeon.shell.editor.state.RoomNarrationPane;
 import features.world.dungeon.shell.editor.interaction.input.EditorTool;
@@ -67,13 +70,16 @@ public final class BootstrapObject {
                 transitionRepository,
                 mapApplicationService);
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(mapRepository);
+        DungeonMapObject mapObject = new DungeonMapObject(
+                mapRepository,
+                mapApplicationService,
+                new CorridorObject(corridorRepository),
+                new TransitionObject(transitionRepository));
         DungeonClusterApplicationService clusterApplicationService = new DungeonClusterApplicationService(
                 mapApplicationService,
                 mapRepository,
                 clusterRepository,
-                corridorRepository,
-                roomRepository,
-                transitionRepository);
+                mapObject);
         DungeonRoomApplicationService roomApplicationService = new DungeonRoomApplicationService(roomRepository);
         DungeonStairApplicationService stairApplicationService = new DungeonStairApplicationService(
                 mapRepository,

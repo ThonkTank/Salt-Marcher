@@ -15,7 +15,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 
 **Owner slices:** a slice is the single central owner of one capability family. Allowed slice kinds are:
 - aggregate owners such as `room`, `corridor`, `stair`, `transition`
-- shared kernels such as `layout` or geometry only when they are the one canonical truth shared by several owners
+- foundational owner slices such as `layout` or geometry only when they are the canonical home of that capability family across several owners
 - workflow or surface owners such as `runtime`, `catalog`, `editor interaction`, or `render/input` only when the workflow or surface is itself the stable central owner
 
 **Legacy package names:** directories such as `service`, `builder`, `loading`, `shell`, `canvas`, `internal`, `maintenance`, or `support` may appear in the tree. They do **not** define architecture precedent by themselves. Treat them as exceptions that require an explicit local owner rule before using them as precedent.

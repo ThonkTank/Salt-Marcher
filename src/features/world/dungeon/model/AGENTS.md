@@ -4,18 +4,18 @@ This file covers `src/features/world/dungeon/model/`.
 
 ## Purpose
 
-`model` owns legacy shared dungeon value types that are not yet split into their own top-level owner slices, plus interaction refs and cross-owner connection semantics. The loaded map snapshot now lives in the sibling `dungeonmap` slice.
+`model` owns legacy shared dungeon value types that are not yet split into their own top-level owner slices, plus interaction refs. The loaded map snapshot and shared connection semantics now live in sibling `dungeonmap` owners.
 
 ## Canonical Types and APIs
 
 - `interaction/DungeonSelectionRef` — canonical editor/runtime selection vocabulary.
-- `structures/connection/Connection`, `ConnectionEndpoint`, `DoorExitCatalog` — shared cross-owner connection and exit semantics.
 - `DungeonStair` — stair aggregate over stair path geometry and exit validation.
 
 ## Where New Code Goes
 
 - Put new dungeon semantics on the lowest stable owner that enforces the invariant.
 - Put loaded-map snapshot, map loading, map rehydration, and map-scoped session state on the sibling `dungeonmap` owner.
+- Put shared connection semantics on the sibling `dungeonmap/connections` owner.
 - Put shared geometry behavior in the sibling `geometry/` slice only when it is owner-neutral and canonical.
 - Let top-level owners such as `Cluster` consume surface truth only through `Structure.surfaceAtLevel(levelZ).surface()` or `.floor()`, and boundary truth only through `Structure.boundaryAtLevel(levelZ)`.
 - When room or corridor workflows need to create or mutate physical structure, translate that request into `StructureSpecification` or `StructureMutation` and let `Structure` own the result.

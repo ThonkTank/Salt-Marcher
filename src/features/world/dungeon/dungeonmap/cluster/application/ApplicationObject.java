@@ -14,31 +14,13 @@ public final class ApplicationObject {
             features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
             features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
             features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository,
-            features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository corridorRepository,
-            features.world.dungeon.repository.DungeonTransitionRepository transitionRepository
+            features.world.dungeon.dungeonmap.DungeonMapObject mapObject
     ) {
         this.workflows = new features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService(
                 mapApplicationService,
                 mapRepository,
                 clusterRepository,
-                corridorRepository,
-                transitionRepository);
-    }
-
-    public ApplicationObject(
-            features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
-            features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
-            features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository,
-            features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository corridorRepository,
-            features.world.dungeon.repository.DungeonRoomRepository roomRepository,
-            features.world.dungeon.repository.DungeonTransitionRepository transitionRepository
-    ) {
-        this(
-                mapApplicationService,
-                mapRepository,
-                clusterRepository,
-                corridorRepository,
-                transitionRepository);
+                mapObject);
     }
 
     public void rewriteSurface(ClusterSurfaceRewriteRequest request) throws SQLException {

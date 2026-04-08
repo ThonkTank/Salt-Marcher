@@ -7,7 +7,8 @@
 ## Owner Atlas
 
 - `geometry` — `GridObject`, `GridPoint`, `GridSegment`, `GridSegmentPath`, `GridArea`, `GridBoundary`, `GridPath`, `CardinalDirection`
-- `dungeonmap` — `DungeonMap`, `DungeonMapLoadResolver`, `DungeonMapLoadingService`, `DungeonMapRepository`, `DungeonMapState`, and the nested map-object owners `dungeonmap/structure`, `dungeonmap/cluster`, and `dungeonmap/corridor`
+- `dungeonmap` — `DungeonMap`, `DungeonMapLoadResolver`, `DungeonMapLoadingService`, `DungeonMapRepository`, `DungeonMapState`, and the nested map-object owners `dungeonmap/structure`, `dungeonmap/cluster`, `dungeonmap/corridor`, and `dungeonmap/connections`
+- `dungeonmap/connections` — `ConnectionsObject`, `Connection`, `DungeonConnection`, `ConnectionEndpoint`, `ConnectionCarrier`, `ConnectionTraversalTarget`, `DoorExitCatalog`
 - `dungeonmap/structure` — `Structure`, derived `Structure.roomTopology()`, the local `surface`, `boundary`, and `room` sub-owners plus boundary-local `door` and `wall` object sub-owners, `DungeonStructureRepository`, `DungeonWallKindRepository`
 - `room` — `Room`, `DungeonRoomApplicationService`, `DungeonRoomRepository`
 - `dungeonmap/cluster` — `Cluster`, `DungeonClusterApplicationService`, `DungeonClusterRepository`
@@ -44,6 +45,7 @@
 - Put canonical protected object/runtime truth under `owner/state`; mutate it only through explicit state factory/transition APIs in that same layer.
 - Put persistence-only state reconstruction and storage under `owner/repository`.
 - Put shared physical topology on `dungeonmap/structure`, not on room, corridor, runtime, or renderer helpers.
+- Put shared traversal semantics that span cluster, corridor, and transition workflows on `dungeonmap/connections`, but keep physical carriers on the owner that edits or persists them.
 - Route level-local surface-area behavior only through `structure.surfaceAtLevel(levelZ).surface().something()`.
 - Route level-local floor behavior only through `structure.surfaceAtLevel(levelZ).floor().something()`.
 - Route level-local wall, door, and boundary-edge behavior only through `structure.boundaryAtLevel(levelZ).something()`.
@@ -65,6 +67,7 @@
 ## Forbidden Drift
 
 - Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `Structure.roomTopology()`.
+- Do not move physical door or stair ownership into `dungeonmap/connections`; that owner may describe carriers, but boundary and stair invariants stay on their existing owners.
 - Do not add a second shared dungeon geometry vocabulary beside the `geometry` slice and its `GridObject` family.
 - Do not bypass a documented intermediate dungeon owner by importing a grandchild or sibling-internal package directly; if a caller crosses an owner boundary at all, it must stop at the target owner's root package and its public `*Object` seam.
 - Do not place would-be dungeon subowners under `input`, `task`, `repository`, or `state`; move them to a direct child of the owning package or into one direct-child `*Bucket` first.
