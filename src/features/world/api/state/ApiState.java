@@ -23,8 +23,7 @@ public final class ApiState {
 
     public features.world.api.input.ViewsInput worldViews() {
         var hexMapViews = hexMapObject.views();
-        var dungeonViews = dungeonBootstrap.bootstrapViews(
-                features.world.dungeon.bootstrap.state.BootstrapViewsRequest.INSTANCE);
+        var dungeonViews = dungeonBootstrap.bootstrapViews(null);
         return new features.world.api.input.ViewsInput(
                 hexMapViews.overworldView(),
                 hexMapViews.mapEditorView(),
