@@ -6,6 +6,7 @@ import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.stair.input.CreateStairInput;
 import features.world.dungeon.stair.input.DeleteStairInput;
 import features.world.dungeon.stair.input.LoadEditorSpecInput;
+import features.world.dungeon.stair.input.UpdateStairInput;
 import features.world.dungeon.stair.model.StairPathPatternKind;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
 
@@ -40,6 +41,17 @@ public final class StairObject {
         return stairApplicationService.createStair(
                 new DungeonStairApplicationService.CreateStairRequest(
                         input.mapId(),
+                        toDraft(input.draft())));
+    }
+
+    public void updateStair(UpdateStairInput input) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        stairApplicationService.updateStair(
+                new DungeonStairApplicationService.UpdateStairRequest(
+                        input.mapId(),
+                        input.stairId(),
                         toDraft(input.draft())));
     }
 

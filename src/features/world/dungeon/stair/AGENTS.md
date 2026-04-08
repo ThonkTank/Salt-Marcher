@@ -10,6 +10,7 @@
 - `input/CreateStairInput` - stair create request family - carries the authored stair draft in root-input form for new stair creation.
 - `input/DeleteStairInput` - stair delete request - carries the active map id plus the target stair id.
 - `input/LoadEditorSpecInput` - stair editor-spec request family - carries the map and stair id and returns the authored editor spec in input form.
+- `input/UpdateStairInput` - stair update request - carries the target stair id plus the authored draft in root-input form.
 - `StairPathPatternKind` - authored stair path shape choice for editor workflows.
 - `StairPathPatternSpec` - authored stair path parameters - validates and normalizes stair/transition path inputs before generation.
 - `StairPathGenerator` - stair-owned generation seam - turns a validated `StairPathPatternSpec` plus anchor/span inputs into a canonical `GridPath`.
