@@ -73,16 +73,8 @@ public final class Stair implements GridTranslatable<Stair>, GridOccupant {
     }
 
     private static GridPath normalizePath(GridPath path) {
-        List<GridPoint> rawPoints = path == null ? List.of() : path.points();
-        java.util.ArrayList<GridPoint> result = new java.util.ArrayList<>();
-        for (GridPoint node : rawPoints) {
-            if (node != null) {
-                if (node.kind() != GridPoint.Kind.CELL) {
-                    throw new IllegalArgumentException("Treppenpfad darf nur Zellpunkte enthalten");
-                }
-                result.add(node);
-            }
-        }
+        GridPath resolvedPath = path == null ? GridPath.empty() : path;
+        List<GridPoint> result = resolvedPath.points();
         if (result.isEmpty()) {
             throw new IllegalArgumentException("Treppenpfad fehlt");
         }
@@ -104,7 +96,7 @@ public final class Stair implements GridTranslatable<Stair>, GridOccupant {
             }
             previous = current;
         }
-        return GridPath.of(List.copyOf(result));
+        return resolvedPath;
     }
 
     private static Set<Integer> normalizeStopLevels(List<GridPoint> path, Set<Integer> stopLevels) {

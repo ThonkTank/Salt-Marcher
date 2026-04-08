@@ -25,6 +25,7 @@ This file covers `src/features/world/dungeon/model/`.
 - Treat `StructureBoundary` as the `structure` slice's local `boundary` sub-owner; model callers may depend on its public API but must not re-home boundary truth back into `model/structures`.
 - When model callers work with one `Door` or `Wall`, use that object's explicit API for clipping, segment access, touching-cell reads, or rewrite behavior instead of recreating boundary-shape operations locally.
 - Treat `Connection` as the one allowed context-derived geometry exception: callers may use `boundary(layout)` and `cellFootprint(layout)` there, but they must not generalize that pattern into new shared geometry capabilities.
+- Let stair and corridor owners add only owner-specific path rules on top of canonical `GridPath`; they must not reintroduce separate path-density or interpolation dialects outside the geometry slice.
 - If room-facing code needs derived room structure, resolve the owning cluster or structure first and then continue on `cluster.roomTopology().structureFor(...)` instead of adding room-local surface or boundary forwarding methods.
 - Keep immutable geometry and similar value types transparent; put invariant-protecting mutation on the actual owner type.
 

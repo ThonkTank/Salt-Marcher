@@ -362,7 +362,7 @@ final class CorridorRouting {
     ) {
         return GridPath.concat(
                 startAnchorPath,
-                cellPath == null || cellPath.isEmpty() ? GridPath.empty() : GridPath.of(expandedCellPath(cellPath)),
+                cellPath == null || cellPath.isEmpty() ? GridPath.empty() : GridPath.of(cellPath),
                 reversedPath(endAnchorPath));
     }
 
@@ -373,26 +373,6 @@ final class CorridorRouting {
         ArrayList<GridPoint> reversed = new ArrayList<>(path.points());
         Collections.reverse(reversed);
         return GridPath.of(reversed);
-    }
-
-    private static List<GridPoint> expandedCellPath(List<GridPoint> cells) {
-        if (cells == null || cells.isEmpty()) {
-            return List.of();
-        }
-        ArrayList<GridPoint> result = new ArrayList<>();
-        for (int index = 0; index < cells.size(); index++) {
-            GridPoint cell = cells.get(index);
-            if (index == 0) {
-                result.add(cell);
-                continue;
-            }
-            GridPoint previous = cells.get(index - 1);
-            GridSegment edge = new GridSegment(previous, cell);
-            GridPoint midpoint = edge.midpoint();
-            result.add(midpoint);
-            result.add(cell);
-        }
-        return List.copyOf(result);
     }
 
     private static List<List<GridPoint>> anchorPaths(GridPoint anchorPoint, GridPoint cell) {

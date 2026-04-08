@@ -91,19 +91,38 @@ public final class GridSegmentPath extends GridObject<GridSegmentPath> implement
             if (segment == null) {
                 continue;
             }
-            int segmentLevelZ = segment.start().z();
-            if (levelZ == null) {
-                levelZ = segmentLevelZ;
-            } else if (levelZ != segmentLevelZ) {
-                throw new IllegalArgumentException("GridSegmentPath segments must lie on the same level");
+            List<GridSegment> expanded = segment.stepSegments();
+            if (expanded.isEmpty()) {
+                continue;
             }
-            if (previous != null && previous.sharedEndpoint(segment).isEmpty()) {
-                throw new IllegalArgumentException("GridSegmentPath segments must form a continuous route");
+            if (previous != null && previous.sharedEndpoint(expanded.getFirst()).isEmpty()
+                    && previous.sharedEndpoint(expanded.getLast()).isPresent()) {
+                expanded = reverseSegments(expanded);
             }
-            result.add(segment);
-            previous = segment;
+            for (GridSegment step : expanded) {
+                if (!step.isBoundaryStep()) {
+                    throw new IllegalArgumentException("GridSegmentPath segments must be boundary-step segments");
+                }
+                int segmentLevelZ = step.start().z();
+                if (levelZ == null) {
+                    levelZ = segmentLevelZ;
+                } else if (levelZ != segmentLevelZ) {
+                    throw new IllegalArgumentException("GridSegmentPath segments must lie on the same level");
+                }
+                if (previous != null && previous.sharedEndpoint(step).isEmpty()) {
+                    throw new IllegalArgumentException("GridSegmentPath segments must form a continuous route");
+                }
+                result.add(step);
+                previous = step;
+            }
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static List<GridSegment> reverseSegments(List<GridSegment> segments) {
+        ArrayList<GridSegment> reversed = new ArrayList<>(segments);
+        java.util.Collections.reverse(reversed);
+        return List.copyOf(reversed);
     }
 
     @Override

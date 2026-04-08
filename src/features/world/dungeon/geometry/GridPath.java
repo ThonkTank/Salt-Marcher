@@ -92,11 +92,60 @@ public final class GridPath extends GridObject<GridPath> {
         }
         ArrayList<GridPoint> result = new ArrayList<>();
         for (GridPoint point : points) {
-            if (point != null) {
-                result.add(point);
+            if (point == null) {
+                continue;
             }
+            appendCanonicalStepPath(result, point);
         }
         return result.isEmpty() ? List.of() : List.copyOf(result);
+    }
+
+    private static void appendCanonicalStepPath(List<GridPoint> result, GridPoint nextPoint) {
+        if (result.isEmpty()) {
+            result.add(nextPoint);
+            return;
+        }
+        GridPoint previous = result.get(result.size() - 1);
+        if (Objects.equals(previous, nextPoint)) {
+            return;
+        }
+        if (previous.z() != nextPoint.z()) {
+            appendLevelTransition(result, previous, nextPoint);
+            return;
+        }
+        appendSameLevelRun(result, previous, nextPoint);
+    }
+
+    private static void appendSameLevelRun(List<GridPoint> result, GridPoint start, GridPoint end) {
+        int dx2 = end.x2() - start.x2();
+        int dy2 = end.y2() - start.y2();
+        if (dx2 != 0 && dy2 != 0) {
+            throw new IllegalArgumentException("GridPath same-level steps must stay axis-aligned");
+        }
+        int stepX2 = Integer.compare(dx2, 0);
+        int stepY2 = Integer.compare(dy2, 0);
+        GridPoint current = start;
+        while (!current.equals(end)) {
+            current = GridPoint.lattice(current.x2() + stepX2, current.y2() + stepY2, current.z());
+            result.add(current);
+        }
+    }
+
+    private static void appendLevelTransition(List<GridPoint> result, GridPoint start, GridPoint end) {
+        int dz = end.z() - start.z();
+        if (Math.abs(dz) != 1) {
+            throw new IllegalArgumentException("GridPath level transitions must move exactly one level");
+        }
+        int dx2 = end.x2() - start.x2();
+        int dy2 = end.y2() - start.y2();
+        if (dx2 != 0 && dy2 != 0) {
+            throw new IllegalArgumentException("GridPath level transitions must stay axis-aligned");
+        }
+        int planarDistance2 = Math.abs(dx2) + Math.abs(dy2);
+        if (planarDistance2 > 2) {
+            throw new IllegalArgumentException("GridPath level transitions may move at most one cell per level");
+        }
+        result.add(end);
     }
 
     @Override

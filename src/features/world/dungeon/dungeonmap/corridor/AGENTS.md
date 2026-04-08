@@ -11,7 +11,7 @@
 - `model/CorridorResolutionInput` — fixed corridor-external input contract — supplies blocked area, room-exterior door facts, and occupied connection boundary through canonical `GridArea` / `GridBoundary` carriers.
 - `model/CorridorReconcileInput` — fixed room-rewrite contract — supplies affected room ids, before-or-after door facts, translations, level shifts, and updated resolution input for rebound workflows.
 - `model/CorridorRouting` — corridor-local segment-routing helper — stays package-private beneath `CorridorSegment`; external callers reuse `Corridor` and `CorridorSegment`, not raw routing helper records.
-- `model/CorridorPathTrace` — transient routed corridor trace keyed by authored `segmentId`; composes ordered geometry only through `GridPath` plus the derived ordered `GridSegmentPath` view used by render and hit leaves.
+- `model/CorridorPathTrace` — transient routed corridor trace keyed by authored `segmentId`; composes ordered geometry only through canonical `GridPath` plus the derived canonical `GridSegmentPath` view used by render and hit leaves.
 - `model/Corridor.boundaryDoorBoundary()` — corridor-owned read projection — reports corridor boundary openings through the canonical `GridBoundary` carrier without requiring live external map context.
 - `model/Corridor.touchesRoomAnchorCells(...)` — corridor-owned anchor guard — answers whether removed room-floor cells would orphan one of this corridor's room-bound anchors.
 - `application/DungeonCorridorApplicationService` — public corridor workflow seam for corridor creation, room-door attachment, node or door movement, and topology deletion.
@@ -25,7 +25,7 @@
 - Route public corridor rewrites through `corridor.withInput(...)`, `corridor.validateReconcile(...)`, and `corridor.reconciled(...)`; graph-edit translation belongs on `CorridorInputEditor`, not on the aggregate.
 - Let `Corridor` own corridor boundary-opening reads, room-anchor guard semantics, and authored input validation; callers may select a segment id or room/cell set, but they must not persist routed traces as owner truth.
 - Put reusable segment-routing helpers on `CorridorRouting`, not on layout, tools, or repositories.
-- Keep corridor-local routing helpers and drafts carrier-based: use `GridArea`, `GridBoundary`, and `GridPath` instead of raw point or segment sets on public seams.
+- Keep corridor-local routing helpers and drafts carrier-based: use `GridArea`, `GridBoundary`, and canonical `GridPath` instead of raw point or segment sets on public seams.
 - Keep shared physical corridor shape on canonical `Structure` values owned by the corridor aggregate instead of rebuilding separate corridor geometry mirrors.
 - Let public corridor writes converge on `DungeonCorridorApplicationService`.
 - Keep corridor persistence focused on corridor-local input metadata only; routed traces stay transient and shared structure persistence still goes through `structure/repository`.
