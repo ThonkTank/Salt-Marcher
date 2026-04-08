@@ -22,8 +22,10 @@ public final class ApiObject {
     public ApiObject(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         this.hexMapModule = new HexmapObject(detailsNavigator, travelSurface);
-        this.dungeonBootstrap = new BootstrapObject(detailsNavigator, travelSurface);
-        this.dungeonViews = dungeonBootstrap.views();
+        this.dungeonBootstrap = new BootstrapObject();
+        this.dungeonViews = dungeonBootstrap.views(new features.world.dungeon.bootstrap.input.ViewsInput(
+                detailsNavigator,
+                travelSurface));
     }
 
     public void registerScenes(RegisterScenesInput input) {

@@ -6,6 +6,7 @@ import features.world.dungeon.application.runtime.DungeonRuntimeApplicationServi
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeon.bootstrap.input.BootstrapViews;
+import features.world.dungeon.bootstrap.input.ViewsInput;
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
 import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
@@ -31,11 +32,10 @@ import java.util.Objects;
  */
 public final class BootstrapObject {
 
-    private final ui.shell.AppView dungeonView;
-    private final ui.shell.AppView dungeonEditorView;
-
-    public BootstrapObject(DetailsNavigator detailsNavigator, TravelSurfaceInput travelSurface) {
-        Objects.requireNonNull(detailsNavigator, "detailsNavigator");
+    public BootstrapViews views(ViewsInput input) {
+        Objects.requireNonNull(input, "input");
+        DetailsNavigator detailsNavigator = Objects.requireNonNull(input.detailsNavigator(), "detailsNavigator");
+        TravelSurfaceInput travelSurface = Objects.requireNonNull(input.travelSurface(), "travelSurface");
         DungeonMapApplicationService mapApplicationService = new DungeonMapApplicationService();
         features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository =
                 new features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository();
@@ -56,7 +56,7 @@ public final class BootstrapObject {
                         transitionRepository,
                         mapApplicationService);
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(mapRepository);
-        TransitionObject transitionObject = new TransitionObject(mapRepository, transitionRepository);
+        TransitionObject transitionObject = new TransitionObject();
         DungeonMapObject mapObject = new DungeonMapObject(
                 mapRepository,
                 mapApplicationService,
@@ -162,7 +162,7 @@ public final class BootstrapObject {
                         editorInteractionState,
                         hitCollector,
                         editorTools);
-        this.dungeonView = new SurfaceObject(
+        ui.shell.AppView dungeonView = new SurfaceObject(
                 "Dungeon",
                 false,
                 loadingService,
@@ -171,15 +171,12 @@ public final class BootstrapObject {
                 detailsNavigator,
                 travelSurface,
                 hitCollector);
-        this.dungeonEditorView = new features.world.dungeon.shell.editor.state.DungeonEditorView(
+        ui.shell.AppView dungeonEditorView = new features.world.dungeon.shell.editor.state.DungeonEditorView(
                 loadingService,
                 state,
                 mapCatalogService,
                 editorSessionState,
                 editorInteraction);
-    }
-
-    public BootstrapViews views() {
         return new BootstrapViews(dungeonView, dungeonEditorView);
     }
 }
