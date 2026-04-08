@@ -1,10 +1,12 @@
 package features.world.dungeon.transition;
 
 import database.DatabaseManager;
+import features.world.dungeon.application.transition.TransitionConnectionBuilder;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.transition.input.DeleteTransitionInput;
 import features.world.dungeon.transition.input.LoadDungeonTargetsInput;
 import features.world.dungeon.transition.input.LoadOverworldTargetsInput;
+import features.world.dungeon.transition.input.PlacePreparedTransitionInput;
 import features.world.dungeon.transition.input.PersistReboundConnectionsInput;
 
 import java.sql.Connection;
@@ -87,6 +89,43 @@ public final class TransitionObject {
                 }
                 transitionRepository.clearLinksTo(conn, transitionId);
                 transitionRepository.delete(conn, transitionId);
+                return null;
+            });
+        }
+    }
+
+    public void placePreparedTransition(PlacePreparedTransitionInput input) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        if (input.transitionId() <= 0) {
+            throw new SQLException("Kein vorbereiteter Übergang gewählt");
+        }
+        if (input.doorId() <= 0) {
+            throw new SQLException("Übergangs-Platzierung fehlt");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                Long mapId = transitionRepository.findMapId(conn, input.transitionId());
+                if (mapId == null) {
+                    throw new SQLException("Übergang existiert nicht");
+                }
+                features.world.dungeon.dungeonmap.model.DungeonMap layout = mapRepository.loadMap(conn, mapId);
+                if (layout == null) {
+                    throw new SQLException("Dungeon " + mapId + " konnte nicht geladen werden");
+                }
+                features.world.dungeon.dungeonmap.connections.input.DungeonConnection updatedLocalConnection;
+                try {
+                    updatedLocalConnection = TransitionConnectionBuilder.buildDoorConnection(
+                            layout,
+                            mapId,
+                            input.transitionId(),
+                            new features.world.dungeon.model.interaction.DungeonSelectionRef.DoorRef(input.doorId()),
+                            input.levelZ());
+                } catch (IllegalArgumentException ex) {
+                    throw new SQLException(ex.getMessage(), ex);
+                }
+                transitionRepository.updateLocalConnection(conn, input.transitionId(), updatedLocalConnection, null);
                 return null;
             });
         }
