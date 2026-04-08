@@ -3,9 +3,7 @@ package features.world.api;
 import features.world.api.input.RegisterScenesInput;
 import features.world.api.input.TravelSurfaceInput;
 import features.world.api.input.ViewsInput;
-import features.world.dungeon.bootstrap.BootstrapObject;
-import features.world.hexmap.HexmapObject;
-import ui.shell.DetailsNavigator;
+import features.world.api.state.ApiState;
 
 import java.util.Objects;
 
@@ -14,34 +12,21 @@ import java.util.Objects;
  */
 public final class ApiObject {
 
-    private final HexmapObject hexMapModule;
-    private final BootstrapObject dungeonBootstrap;
-    private final TravelSurfaceInput travelSurface = HexmapObject.createTravelSurface();
-    private final features.world.dungeon.bootstrap.input.BootstrapViews dungeonViews;
+    private final ApiState state;
 
-    public ApiObject(DetailsNavigator detailsNavigator) {
-        Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        this.hexMapModule = new HexmapObject(detailsNavigator, travelSurface);
-        this.dungeonBootstrap = new BootstrapObject();
-        this.dungeonViews = dungeonBootstrap.views(new features.world.dungeon.bootstrap.input.ViewsInput(
-                detailsNavigator,
-                travelSurface));
+    public ApiObject(ApiState state) {
+        this.state = Objects.requireNonNull(state, "state");
     }
 
     public void registerScenes(RegisterScenesInput input) {
-        input.sceneRegistry().registerScene("Reise", travelSurface.sceneContent());
+        input.sceneRegistry().registerScene("Reise", state.travelSurface().sceneContent());
     }
 
-    public TravelSurfaceInput travelSurface() {
-        return travelSurface;
+    public TravelSurfaceInput travelSurface(TravelSurfaceInput input) {
+        return state.travelSurface();
     }
 
-    public ViewsInput views() {
-        var hexMapViews = hexMapModule.views();
-        return new ViewsInput(
-                hexMapViews.overworldView(),
-                hexMapViews.mapEditorView(),
-                dungeonViews.dungeonView(),
-                dungeonViews.dungeonEditorView());
+    public ViewsInput views(ViewsInput input) {
+        return state.worldViews();
     }
 }

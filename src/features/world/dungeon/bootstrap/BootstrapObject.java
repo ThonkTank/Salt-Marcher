@@ -6,7 +6,8 @@ import features.world.dungeon.application.runtime.DungeonRuntimeApplicationServi
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeon.bootstrap.input.BootstrapViews;
-import features.world.dungeon.bootstrap.input.ViewsInput;
+import features.world.dungeon.bootstrap.input.BootstrapViewsInput;
+import features.world.dungeon.bootstrap.state.BootstrapState;
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
 import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
@@ -32,10 +33,15 @@ import java.util.Objects;
  */
 public final class BootstrapObject {
 
-    public BootstrapViews views(ViewsInput input) {
-        Objects.requireNonNull(input, "input");
-        DetailsNavigator detailsNavigator = Objects.requireNonNull(input.detailsNavigator(), "detailsNavigator");
-        TravelSurfaceInput travelSurface = Objects.requireNonNull(input.travelSurface(), "travelSurface");
+    private final BootstrapState state;
+
+    public BootstrapObject(BootstrapState state) {
+        this.state = Objects.requireNonNull(state, "state");
+    }
+
+    public BootstrapViews bootstrapViews(BootstrapViewsInput input) {
+        DetailsNavigator detailsNavigator = state.detailsNavigator();
+        TravelSurfaceInput travelSurface = state.travelSurface();
         DungeonMapApplicationService mapApplicationService = new DungeonMapApplicationService();
         features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository =
                 new features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository();

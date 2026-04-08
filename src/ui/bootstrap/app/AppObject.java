@@ -81,9 +81,9 @@ public final class AppObject extends Application {
         shell.addPersistentToolbarItem(partyModule.toolbarItem());
         adventuringDayToolbarModule.refreshActivePartyState();
 
-        ApiObject worldApi = new ApiObject(shell.getDetailsNavigator());
+        ApiObject worldApi = new ApiObject(new features.world.api.state.ApiState(shell.getDetailsNavigator()));
         worldApi.registerScenes(new features.world.api.input.RegisterScenesInput(shell.getSceneRegistry()));
-        var worldViews = worldApi.views();
+        var worldViews = worldApi.views(null);
         AppView overworldView = worldViews.overworldView();
         AppView mapEditorView = worldViews.mapEditorView();
         AppView dungeonView = worldViews.dungeonView();

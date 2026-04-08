@@ -238,6 +238,23 @@ class OwnerConventionSupport(private val project: Project) {
         return projectTypeNames(tree, parsedSource, snapshot).singleOrNull()
     }
 
+    internal fun typeNames(
+        tree: Tree?,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
+    ): Set<String> {
+        val path = treePath(tree, parsedSource) ?: return emptySet()
+        return typeNamesForPath(path, snapshot)
+    }
+
+    internal fun resolveTypeName(
+        tree: Tree?,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
+    ): String? {
+        return typeNames(tree, parsedSource, snapshot).singleOrNull()
+    }
+
     internal fun ownerRequestMethodNames(ownerPackage: String, snapshot: OwnerConventionSnapshot): Set<String> {
         return snapshot.catalog.ownerRequestMethodNamesByOwner[ownerPackage].orEmpty()
     }
@@ -489,6 +506,16 @@ class OwnerConventionSupport(private val project: Project) {
         return projectTypes
     }
 
+    private fun typeNamesForPath(
+        path: TreePath,
+        snapshot: OwnerConventionSnapshot
+    ): Set<String> {
+        val typeNames = linkedSetOf<String>()
+        addTypeName(snapshot.semanticModel.trees.getElement(path), typeNames)
+        collectTypeNames(snapshot.semanticModel.trees.getTypeMirror(path), typeNames)
+        return typeNames
+    }
+
     private fun addProjectTypeName(
         element: Element?,
         knownTypeNames: Set<String>,
@@ -511,6 +538,17 @@ class OwnerConventionSupport(private val project: Project) {
             current = current.enclosingElement
         }
         return topLevelType
+    }
+
+    private fun addTypeName(
+        element: Element?,
+        typeNames: MutableSet<String>
+    ) {
+        val topLevelType = topLevelTypeElement(element) ?: return
+        val typeName = topLevelType.qualifiedName.toString()
+        if (typeName.isNotBlank()) {
+            typeNames += typeName
+        }
     }
 
     private fun collectProjectTypeNames(
@@ -545,6 +583,41 @@ class OwnerConventionSupport(private val project: Project) {
 
             is UnionType -> typeMirror.alternatives.forEach { alternative ->
                 collectProjectTypeNames(alternative, knownTypeNames, projectTypes)
+            }
+        }
+    }
+
+    private fun collectTypeNames(
+        typeMirror: TypeMirror?,
+        typeNames: MutableSet<String>
+    ) {
+        when (typeMirror) {
+            null -> return
+
+            is DeclaredType -> {
+                addTypeName(typeMirror.asElement(), typeNames)
+                typeMirror.typeArguments.forEach { argument ->
+                    collectTypeNames(argument, typeNames)
+                }
+            }
+
+            is ArrayType -> collectTypeNames(typeMirror.componentType, typeNames)
+            is TypeVariable -> {
+                collectTypeNames(typeMirror.upperBound, typeNames)
+                collectTypeNames(typeMirror.lowerBound, typeNames)
+            }
+
+            is WildcardType -> {
+                collectTypeNames(typeMirror.extendsBound, typeNames)
+                collectTypeNames(typeMirror.superBound, typeNames)
+            }
+
+            is IntersectionType -> typeMirror.bounds.forEach { bound ->
+                collectTypeNames(bound, typeNames)
+            }
+
+            is UnionType -> typeMirror.alternatives.forEach { alternative ->
+                collectTypeNames(alternative, typeNames)
             }
         }
     }
