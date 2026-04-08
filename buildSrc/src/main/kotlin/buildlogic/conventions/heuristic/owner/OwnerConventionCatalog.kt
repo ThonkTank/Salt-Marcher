@@ -13,7 +13,6 @@ internal data class OwnerConventionInputApi(
 
 internal data class OwnerConventionCatalog(
     val ownerSurfacesByOwner: Map<String, OwnerConventionOwnerSurface>,
-    val canonicalOwnerCallersByOwner: Map<String, OwnerConventionCanonicalOwnerCaller>,
     val inputApisByTypeName: Map<String, OwnerConventionInputApi>,
     val taskApisByTypeName: Map<String, OwnerConventionStaticApi>,
     val stateApisByTypeName: Map<String, OwnerConventionStaticApi>,
@@ -22,7 +21,6 @@ internal data class OwnerConventionCatalog(
     companion object {
         val EMPTY = OwnerConventionCatalog(
             ownerSurfacesByOwner = emptyMap(),
-            canonicalOwnerCallersByOwner = emptyMap(),
             inputApisByTypeName = emptyMap(),
             taskApisByTypeName = emptyMap(),
             stateApisByTypeName = emptyMap(),
@@ -45,7 +43,6 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
     val requestStemsByOwner = ownerSurfacesByOwner.mapValues { (_, surface) -> surface.requestStems }
     val surfaceCatalog = OwnerConventionCatalog(
         ownerSurfacesByOwner = ownerSurfacesByOwner,
-        canonicalOwnerCallersByOwner = emptyMap(),
         inputApisByTypeName = emptyMap(),
         taskApisByTypeName = emptyMap(),
         stateApisByTypeName = emptyMap(),
@@ -84,17 +81,5 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
         stateApisByTypeName = stateApisByTypeName,
         repositoryApisByTypeName = repositoryApisByTypeName
     )
-    val coreSnapshot = inputSnapshot.copy(catalog = coreCatalog)
-    val canonicalOwnerCallersByOwner = allSourceFiles
-        .asSequence()
-        .filter { sourceFile -> sourceFile.context.role == ownerRole }
-        .mapNotNull { sourceFile ->
-            analyzeOwnerSurfaceShape(sourceFile, coreSnapshot).model
-                ?.toCanonicalOwnerCaller()
-                ?.let { ownerCaller -> ownerCaller.ownerPackage to ownerCaller }
-        }
-        .toMap(linkedMapOf())
-    return coreCatalog.copy(
-        canonicalOwnerCallersByOwner = canonicalOwnerCallersByOwner
-    )
+    return coreCatalog
 }

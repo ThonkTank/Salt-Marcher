@@ -294,41 +294,13 @@ class OwnerConventionSupport(private val project: Project) {
         return "$ownerPackage.$taskRole.${requestStem}Task"
     }
 
-    internal fun ownerSurfaceTypeName(ownerPackage: String, snapshot: OwnerConventionSnapshot): String? {
-        return snapshot.catalog.ownerSurfacesByOwner[ownerPackage]?.typeName
-    }
-
-    internal fun ownerSurfaceRequestMethodNames(ownerPackage: String, snapshot: OwnerConventionSnapshot): Set<String> {
-        return snapshot.catalog.ownerSurfacesByOwner[ownerPackage]?.requestMethodNames.orEmpty()
-    }
-
-    internal fun canonicalOwnerCaller(ownerPackage: String, snapshot: OwnerConventionSnapshot): OwnerConventionCanonicalOwnerCaller? {
-        return snapshot.catalog.canonicalOwnerCallersByOwner[ownerPackage]
-    }
-
-    internal fun taskApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionStaticApi? {
-        return snapshot.catalog.taskApisByTypeName[typeName]
-    }
-
-    internal fun inputApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionInputApi? {
-        return snapshot.catalog.inputApisByTypeName[typeName]
-    }
-
-    internal fun stateApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionStaticApi? {
-        return snapshot.catalog.stateApisByTypeName[typeName]
-    }
-
-    internal fun repositoryApi(typeName: String, snapshot: OwnerConventionSnapshot): OwnerConventionStaticApi? {
-        return snapshot.catalog.repositoryApisByTypeName[typeName]
-    }
-
     internal fun isCanonicalInputAccessorInvocation(
         receiverTypeName: String,
         invocation: MethodInvocationTree,
         parsedSource: OwnerConventionParsedJavaSource,
         snapshot: OwnerConventionSnapshot
     ): Boolean {
-        if (inputApi(receiverTypeName, snapshot) == null || invocation.arguments.isNotEmpty()) {
+        if (snapshot.catalog.inputApisByTypeName[receiverTypeName] == null || invocation.arguments.isNotEmpty()) {
             return false
         }
         val methodElement = elementFor(invocation, parsedSource, snapshot) as? ExecutableElement ?: return false

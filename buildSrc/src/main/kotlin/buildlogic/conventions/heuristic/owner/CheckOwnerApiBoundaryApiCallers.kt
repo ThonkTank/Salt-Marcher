@@ -34,9 +34,9 @@ private fun callerViolation(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): String? {
-    val taskApi = support.taskApi(callSite.calleeTypeName, snapshot)
+    val taskApi = snapshot.catalog.taskApisByTypeName[callSite.calleeTypeName]
     if (taskApi != null && callSite.calleeMethodName in taskApi.publicStaticMethodNames) {
-        return if (isAllowedTaskCaller(callSite, taskApi, snapshot, support)) {
+        return if (isCanonicalOwnerRequestCaller(callSite.caller, taskApi.ownerPackage, snapshot, support)) {
             null
         } else {
             formatCallerViolation(
@@ -46,9 +46,9 @@ private fun callerViolation(
         }
     }
 
-    val repositoryApi = support.repositoryApi(callSite.calleeTypeName, snapshot)
+    val repositoryApi = snapshot.catalog.repositoryApisByTypeName[callSite.calleeTypeName]
     if (repositoryApi != null && callSite.calleeMethodName in repositoryApi.publicStaticMethodNames) {
-        return if (isAllowedRepositoryCaller(callSite, repositoryApi, snapshot, support)) {
+        return if (isCanonicalOwnerRequestCaller(callSite.caller, repositoryApi.ownerPackage, snapshot, support)) {
             null
         } else {
             formatCallerViolation(
@@ -58,7 +58,7 @@ private fun callerViolation(
         }
     }
 
-    val stateApi = support.stateApi(callSite.calleeTypeName, snapshot)
+    val stateApi = snapshot.catalog.stateApisByTypeName[callSite.calleeTypeName]
     if (stateApi != null && callSite.calleeMethodName in stateApi.publicStaticMethodNames) {
         return if (isAllowedStateCaller(callSite, stateApi, snapshot, support)) {
             null
@@ -70,24 +70,6 @@ private fun callerViolation(
         }
     }
     return null
-}
-
-private fun isAllowedTaskCaller(
-    callSite: OwnerConventionApiCallSite,
-    api: OwnerConventionStaticApi,
-    snapshot: OwnerConventionSnapshot,
-    support: OwnerConventionSupport
-): Boolean {
-    return isCanonicalOwnerRequestCaller(callSite.caller, api.ownerPackage, snapshot, support)
-}
-
-private fun isAllowedRepositoryCaller(
-    callSite: OwnerConventionApiCallSite,
-    api: OwnerConventionStaticApi,
-    snapshot: OwnerConventionSnapshot,
-    support: OwnerConventionSupport
-): Boolean {
-    return isCanonicalOwnerRequestCaller(callSite.caller, api.ownerPackage, snapshot, support)
 }
 
 private fun isAllowedStateCaller(
@@ -104,11 +86,11 @@ private fun isAllowedStateCaller(
         return false
     }
     if (caller.role == support.repositoryRole) {
-        val repositoryApi = support.repositoryApi(caller.typeName, snapshot) ?: return false
+        val repositoryApi = snapshot.catalog.repositoryApisByTypeName[caller.typeName] ?: return false
         return repositoryApi.ownerPackage == api.ownerPackage
     }
     if (caller.role == support.stateRole) {
-        val stateApi = support.stateApi(caller.typeName, snapshot) ?: return false
+        val stateApi = snapshot.catalog.stateApisByTypeName[caller.typeName] ?: return false
         return stateApi.ownerPackage == api.ownerPackage
     }
     return false
@@ -123,11 +105,11 @@ private fun isCanonicalOwnerRequestCaller(
     if (caller.ownerPackage != ownerPackage || caller.role != support.ownerRole) {
         return false
     }
-    val canonicalOwnerCaller = support.canonicalOwnerCaller(ownerPackage, snapshot) ?: return false
-    if (caller.typeName != canonicalOwnerCaller.typeName) {
+    val ownerSurface = snapshot.catalog.ownerSurfacesByOwner[ownerPackage] ?: return false
+    if (caller.typeName != ownerSurface.typeName) {
         return false
     }
-    return caller.methodName in canonicalOwnerCaller.requestMethodNames
+    return caller.methodName in ownerSurface.requestMethodNames
 }
 
 private fun formatCallerViolation(

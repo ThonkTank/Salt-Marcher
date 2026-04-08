@@ -28,14 +28,19 @@ internal fun analyzeStateFile(
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
     val shapeAnalysis = support.analyzeStateShape(sourceFile, snapshot)
-    return support.extendShapeAnalysis(sourceFile, shapeAnalysis) { primaryType ->
-        stateBodyReasons(
-            sourceFile = sourceFile,
-            snapshot = snapshot,
-            support = support,
-            primaryType = primaryType
-        )
-    }
+    val reasons = shapeAnalysis.reasons.toMutableList()
+    val primaryType = support.parsedPrimaryType(sourceFile)
+        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model)
+    reasons += stateBodyReasons(
+        sourceFile = sourceFile,
+        snapshot = snapshot,
+        support = support,
+        primaryType = primaryType
+    )
+    return OwnerConventionAnalysis(
+        reasons = reasons.distinct(),
+        model = shapeAnalysis.model
+    )
 }
 
 private fun stateBodyReasons(

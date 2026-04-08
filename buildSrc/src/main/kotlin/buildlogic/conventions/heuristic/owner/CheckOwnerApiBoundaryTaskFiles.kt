@@ -48,16 +48,21 @@ internal fun analyzeTaskFile(
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
     val shapeAnalysis = support.analyzeTaskShape(sourceFile, snapshot)
-    return support.extendShapeAnalysis(sourceFile, shapeAnalysis) { primaryType ->
-        primaryType.methods.flatMap { method ->
-            taskMethodBodyReasons(
-                sourceFile = sourceFile,
-                snapshot = snapshot,
-                support = support,
-                method = method
-            )
-        }
+    val reasons = shapeAnalysis.reasons.toMutableList()
+    val primaryType = support.parsedPrimaryType(sourceFile)
+        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model)
+    primaryType.methods.forEach { method ->
+        reasons += taskMethodBodyReasons(
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            method = method
+        )
     }
+    return OwnerConventionAnalysis(
+        reasons = reasons.distinct(),
+        model = shapeAnalysis.model
+    )
 }
 
 internal fun taskClassShapeReasons(

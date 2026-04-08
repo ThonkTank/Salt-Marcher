@@ -1,7 +1,8 @@
 package features.world.dungeon.room;
 
 import features.world.dungeon.room.input.SaveNarrationInput;
-import features.world.dungeon.room.task.SaveNarrationTask;
+import features.world.dungeon.room.repository.SaveNarrationRepository;
+import features.world.dungeon.room.state.SaveNarrationState;
 
 import java.sql.SQLException;
 
@@ -11,6 +12,10 @@ import java.sql.SQLException;
 public final class RoomObject {
 
     public void saveNarration(SaveNarrationInput input) throws SQLException {
-        SaveNarrationTask.saveNarration(input);
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        SaveNarrationState narration = SaveNarrationState.saveNarration(input);
+        SaveNarrationRepository.saveNarration(narration);
     }
 }

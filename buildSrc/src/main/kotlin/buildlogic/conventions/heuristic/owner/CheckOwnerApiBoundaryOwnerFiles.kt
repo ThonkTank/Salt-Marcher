@@ -51,13 +51,11 @@ internal fun analyzeOwnerFile(
     sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
-): OwnerConventionAnalysis<OwnerConventionCanonicalOwnerCaller> {
-    val context = sourceFile.context
+): OwnerConventionAnalysis<OwnerConventionOwnerSurface> {
     val shapeAnalysis = support.analyzeOwnerSurfaceShape(sourceFile, snapshot)
-    val canonicalOwnerCaller = shapeAnalysis.model?.toCanonicalOwnerCaller()
     val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)
-        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = canonicalOwnerCaller)
+        ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model)
     val publicMethods = primaryType.methods.filter { Modifier.PUBLIC in it.modifiers }
     val fieldProjectTypes = primaryType.fields.mapNotNull { field ->
         val resolvedType = support.resolveProjectTypeName(field.tree.type, sourceFile.parsedSource, snapshot)
@@ -75,10 +73,10 @@ internal fun analyzeOwnerFile(
                 method = method,
                 fieldProjectTypes = fieldProjectTypes
             )
-        }
+    }
     return OwnerConventionAnalysis(
         reasons = reasons.distinct(),
-        model = canonicalOwnerCaller
+        model = shapeAnalysis.model
     )
 }
 
@@ -137,7 +135,8 @@ internal fun validateOwnerDependencyTypes(
             !support.isOwnerReachable(context.ownerPackage, targetOwnerPackage) ->
                 "$reasonPrefix may cross only one owner edge ($typeName from $sourceTypeName)"
 
-            typeRole == support.ownerRole && typeName == support.ownerSurfaceTypeName(targetOwnerPackage, snapshot) ->
+            typeRole == support.ownerRole &&
+                typeName == snapshot.catalog.ownerSurfacesByOwner[targetOwnerPackage]?.typeName ->
                 null
 
             typeRole == support.inputRole ->
@@ -624,7 +623,7 @@ private fun classifyOwnerInvocation(
     return when {
         receiverOwnerPackage == context.ownerPackage && receiverRole == support.taskRole -> {
             val expectedTaskType = support.ownerRequestTaskTypeName(context.ownerPackage, requestStem)
-            val taskApi = support.taskApi(receiverTypeName, snapshot)
+            val taskApi = snapshot.catalog.taskApisByTypeName[receiverTypeName]
             if (receiverTypeName != expectedTaskType) {
                 OwnerCallClassification(
                     allowed = false,
@@ -644,7 +643,7 @@ private fun classifyOwnerInvocation(
         }
 
         receiverOwnerPackage == context.ownerPackage && receiverRole == support.stateRole -> {
-            val stateApi = support.stateApi(receiverTypeName, snapshot)
+            val stateApi = snapshot.catalog.stateApisByTypeName[receiverTypeName]
             if (stateApi == null || methodName !in stateApi.publicStaticMethodNames) {
                 OwnerCallClassification(
                     allowed = false,
@@ -659,7 +658,7 @@ private fun classifyOwnerInvocation(
         }
 
         receiverOwnerPackage == context.ownerPackage && receiverRole == support.repositoryRole -> {
-            val repositoryApi = support.repositoryApi(receiverTypeName, snapshot)
+            val repositoryApi = snapshot.catalog.repositoryApisByTypeName[receiverTypeName]
             if (repositoryApi == null || methodName !in repositoryApi.publicStaticMethodNames) {
                 OwnerCallClassification(
                     allowed = false,
@@ -692,14 +691,13 @@ private fun classifyOwnerInvocation(
             )
 
         receiverRole == support.ownerRole -> {
-            val allowedRequestMethods = support.ownerSurfaceRequestMethodNames(receiverOwnerPackage, snapshot)
-            val ownerSurfaceTypeName = support.ownerSurfaceTypeName(receiverOwnerPackage, snapshot)
-            if (receiverTypeName != ownerSurfaceTypeName) {
+            val ownerSurface = snapshot.catalog.ownerSurfacesByOwner[receiverOwnerPackage]
+            if (ownerSurface == null || receiverTypeName != ownerSurface.typeName) {
                 OwnerCallClassification(
                     allowed = false,
                     description = "owner requests may target only foreign <Owner>Object seams ($receiverTypeName)"
                 )
-            } else if (methodName !in allowedRequestMethods) {
+            } else if (methodName !in ownerSurface.requestMethodNames) {
                 OwnerCallClassification(
                     allowed = false,
                     description = "owner requests may call only foreign owner request methods ($receiverTypeName.$methodName)"
