@@ -7,6 +7,7 @@ import com.sun.source.tree.ExpressionStatementTree
 import com.sun.source.tree.ExpressionTree
 import com.sun.source.tree.IdentifierTree
 import com.sun.source.tree.IfTree
+import com.sun.source.tree.LambdaExpressionTree
 import com.sun.source.tree.LiteralTree
 import com.sun.source.tree.MemberSelectTree
 import com.sun.source.tree.MethodInvocationTree
@@ -16,6 +17,7 @@ import com.sun.source.tree.ReturnTree
 import com.sun.source.tree.StatementTree
 import com.sun.source.tree.ThrowTree
 import com.sun.source.tree.Tree
+import com.sun.source.tree.TryTree
 import com.sun.source.tree.TypeCastTree
 import com.sun.source.tree.UnaryTree
 import com.sun.source.tree.VariableTree
@@ -274,6 +276,17 @@ private fun validateOwnerStatement(
             requestStem = requestStem
         )
 
+        Tree.Kind.TRY -> validateOwnerTryStatement(
+            statement = statement as TryTree,
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            primaryType = primaryType,
+            fieldProjectTypes = fieldProjectTypes,
+            environment = environment,
+            requestStem = requestStem
+        )
+
         Tree.Kind.BLOCK -> (statement as BlockTree).statements.flatMap { nested ->
             validateOwnerStatement(
                 statement = nested,
@@ -289,6 +302,64 @@ private fun validateOwnerStatement(
 
         else -> listOf("${context.path} :: owner request bodies may contain only guard clauses, local bindings, orchestration calls, returns, and throws (${statement.kind})")
     }
+}
+
+private fun validateOwnerTryStatement(
+    statement: TryTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    primaryType: OwnerConventionParsedJavaType,
+    fieldProjectTypes: Map<String, String>,
+    environment: OwnerMethodEnvironment,
+    requestStem: String
+): List<String> {
+    val reasons = mutableListOf<String>()
+    if (statement.catches.isNotEmpty() || statement.finallyBlock != null) {
+        reasons += "${sourceFile.context.path} :: owner try blocks may only scope owned resources around orchestration"
+    }
+    statement.resources.forEach { resource ->
+        val resourceVariable = resource as? VariableTree
+        if (resourceVariable == null) {
+            reasons += "${sourceFile.context.path} :: owner try resources must declare explicit local variables"
+            return@forEach
+        }
+        if (!isAllowedOwnerConnectionResource(resourceVariable, sourceFile, snapshot, support, environment)) {
+            reasons += "${sourceFile.context.path} :: owner try resources may only open a JDBC Connection via DatabaseManager.getConnection()"
+        }
+    }
+    statement.block.statements.forEach { nested ->
+        reasons += validateOwnerStatement(
+            statement = nested,
+            sourceFile = sourceFile,
+            snapshot = snapshot,
+            support = support,
+            primaryType = primaryType,
+            fieldProjectTypes = fieldProjectTypes,
+            environment = environment,
+            requestStem = requestStem
+        )
+    }
+    return reasons
+}
+
+private fun isAllowedOwnerConnectionResource(
+    variable: VariableTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    val initializer = variable.initializer as? MethodInvocationTree ?: return false
+    val methodSelect = initializer.methodSelect as? MemberSelectTree ?: return false
+    val receiverTypeName = support.topLevelTypeNameForTree(methodSelect.expression, sourceFile.parsedSource, snapshot)
+    if (receiverTypeName != "database.DatabaseManager" || methodSelect.identifier.toString() != "getConnection") {
+        return false
+    }
+    if (initializer.arguments.isNotEmpty()) {
+        return false
+    }
+    return isAllowedOwnerInfrastructureUtilityInvocation(initializer, sourceFile, snapshot, support, environment)
 }
 
 private fun validateOwnerIfStatement(
@@ -588,6 +659,12 @@ private fun classifyOwnerInvocation(
         return OwnerCallClassification(
             allowed = false,
             description = "owner requests must use explicit receivers for orchestration calls"
+        )
+    }
+    if (isAllowedOwnerInfrastructureUtilityInvocation(invocation, sourceFile, snapshot, support, environment)) {
+        return OwnerCallClassification(
+            allowed = true,
+            description = "allowed owner infrastructure utility call"
         )
     }
     val methodName = methodSelect.identifier.toString()
@@ -953,7 +1030,7 @@ private fun isAllowedUtilityInvocation(
 ): Boolean {
     return isAllowedObjectsUtilityInvocation(invocation) { argument ->
         isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
-    }
+    } || isAllowedOwnerInfrastructureUtilityInvocation(invocation, sourceFile, snapshot, support, environment)
 }
 
 private fun isAllowedUtilityGuardInvocation(
@@ -964,6 +1041,68 @@ private fun isAllowedUtilityGuardInvocation(
     environment: OwnerMethodEnvironment
 ): Boolean {
     return isAllowedObjectsUtilityInvocation(invocation) { argument ->
+        isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
+    }
+}
+
+private fun isAllowedOwnerInfrastructureUtilityInvocation(
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
+    val receiverTypeName = support.topLevelTypeNameForTree(methodSelect.expression, sourceFile.parsedSource, snapshot)
+    return when {
+        receiverTypeName == "database.DatabaseManager" &&
+            methodSelect.identifier.toString() == "getConnection" &&
+            invocation.arguments.isEmpty() -> true
+
+        receiverTypeName == "features.world.dungeon.application.support.DungeonTransactionRunner" &&
+            methodSelect.identifier.toString() == "inTransaction" &&
+            invocation.arguments.size == 2 &&
+            isAllowedPassThroughValue(invocation.arguments[0], sourceFile, snapshot, support, environment) &&
+            isAllowedOwnerTransactionLambda(invocation.arguments[1], sourceFile, snapshot, support, environment) -> true
+
+        else -> false
+    }
+}
+
+private fun isAllowedOwnerTransactionLambda(
+    expression: ExpressionTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment
+): Boolean {
+    val lambda = expression as? LambdaExpressionTree ?: return false
+    if (lambda.parameters.isNotEmpty()) {
+        return false
+    }
+    val invocation = when (val body = lambda.body) {
+        is BlockTree -> {
+            val statement = body.statements.singleOrNull() as? ReturnTree ?: return false
+            statement.expression as? MethodInvocationTree ?: return false
+        }
+        else -> body as? MethodInvocationTree ?: return false
+    }
+    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
+    val receiverTypeName = support.topLevelTypeNameForTree(methodSelect.expression, sourceFile.parsedSource, snapshot)
+        ?: return false
+    val receiverPackage = receiverTypeName.substringBeforeLast('.')
+    val receiverRole = support.roleForDirectoryName(receiverPackage.substringAfterLast('.'))
+    val receiverOwnerPackage = support.ownerPackageFor(receiverPackage, receiverRole)
+    val repositoryApi = snapshot.catalog.repositoryApisByTypeName[receiverTypeName]
+    if (
+        receiverOwnerPackage != sourceFile.context.ownerPackage ||
+        receiverRole != support.repositoryRole ||
+        repositoryApi == null ||
+        methodSelect.identifier.toString() !in repositoryApi.publicStaticMethodNames
+    ) {
+        return false
+    }
+    return invocation.arguments.all { argument ->
         isAllowedPassThroughValue(argument, sourceFile, snapshot, support, environment)
     }
 }

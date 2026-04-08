@@ -20,10 +20,6 @@ public final class RoomObject {
             throw new IllegalArgumentException("input");
         }
         SaveNarrationState narration = SaveNarrationState.saveNarration(input);
-        persistNarration(narration);
-    }
-
-    private void persistNarration(SaveNarrationState narration) throws SQLException {
         try (Connection conn = DatabaseManager.getConnection()) {
             // Room saves own their DB lifecycle so callers stay on typed room requests instead of infrastructure payloads.
             DungeonTransactionRunner.inTransaction(conn, () -> SaveNarrationRepository.saveNarration(conn, narration));

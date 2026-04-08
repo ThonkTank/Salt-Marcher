@@ -1,10 +1,10 @@
 package features.world.dungeon.room.state;
 
-import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.room.input.SaveNarrationInput;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @SuppressWarnings("unused")
 public record SaveNarrationState(
@@ -20,37 +20,34 @@ public record SaveNarrationState(
         if (input.roomId() <= 0) {
             throw new IllegalArgumentException("roomId");
         }
+        List<SaveNarrationExitState> normalizedExitNarrations = new ArrayList<>();
+        for (SaveNarrationInput.ExitNarrationInput exitNarration : input.exitNarrations()) {
+            if (exitNarration == null) {
+                continue;
+            }
+            normalizedExitNarrations.add(new SaveNarrationExitState(
+                    exitNarration.levelZ(),
+                    exitNarration.roomCellX(),
+                    exitNarration.roomCellY(),
+                    exitNarration.roomCellZ(),
+                    normalizedDirection(exitNarration.direction()),
+                    normalizedDescription(exitNarration.description())));
+        }
         return new SaveNarrationState(
                 input.roomId(),
                 normalizedDescription(input.visualDescription()),
-                exitNarrations(input));
-    }
-
-    private static List<SaveNarrationExitState> exitNarrations(SaveNarrationInput input) {
-        List<SaveNarrationExitState> result = new ArrayList<>();
-        for (SaveNarrationInput.ExitNarrationInput exit : normalizedExitNarrations(input.exitNarrations())) {
-            if (exit == null) {
-                continue;
-            }
-            result.add(new SaveNarrationExitState(
-                    exit.levelZ(),
-                    exit.roomCellX(),
-                    exit.roomCellY(),
-                    exit.roomCellZ(),
-                    normalizedDirection(exit.direction()),
-                    normalizedDescription(exit.description())));
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<SaveNarrationInput.ExitNarrationInput> normalizedExitNarrations(
-            List<SaveNarrationInput.ExitNarrationInput> exitNarrations
-    ) {
-        return exitNarrations == null ? List.of() : List.copyOf(exitNarrations);
+                List.copyOf(normalizedExitNarrations));
     }
 
     private static String normalizedDirection(String direction) {
-        return CardinalDirection.parse(direction).name();
+        String normalizedDirection = direction == null ? "" : direction.trim().toUpperCase(Locale.ROOT);
+        return switch (normalizedDirection) {
+            case "", "N", "NORTH" -> "NORTH";
+            case "E", "EAST" -> "EAST";
+            case "S", "SOUTH" -> "SOUTH";
+            case "W", "WEST" -> "WEST";
+            default -> throw new IllegalArgumentException("direction");
+        };
     }
 
     private static String normalizedDescription(String description) {
