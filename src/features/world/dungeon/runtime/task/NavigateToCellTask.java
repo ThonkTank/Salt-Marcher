@@ -41,7 +41,7 @@ public final class NavigateToCellTask {
                 input.mapId(),
                 input.cell(),
                 input.levelZ(),
-                features.world.dungeon.geometry.CardinalDirection.parse(input.heading()));
+                heading(input.heading()));
     }
 
     private static features.world.dungeon.runtime.input.NavigateToCellInput.NavigationInput toNavigationInput(
@@ -61,5 +61,9 @@ public final class NavigateToCellTask {
             features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver
     ) {
         return new features.world.dungeon.application.runtime.DungeonRuntimeApplicationService(mapRepository, loadResolver);
+    }
+
+    private static features.world.dungeon.geometry.CardinalDirection heading(String name) {
+        return features.world.dungeon.geometry.CardinalDirection.parse(name);
     }
 }
