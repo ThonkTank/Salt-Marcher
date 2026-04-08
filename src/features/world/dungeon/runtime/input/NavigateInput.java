@@ -1,5 +1,7 @@
 package features.world.dungeon.runtime.input;
 
+import java.util.Objects;
+
 public record NavigateInput(
         long mapId,
         NavigationInput currentNavigation,
@@ -84,6 +86,22 @@ public record NavigateInput(
 
         public boolean hasTransitionTarget() {
             return transitionId != null && transitionId > 0;
+        }
+
+        public features.world.dungeon.geometry.GridPoint requireCellTarget() {
+            return Objects.requireNonNull(hasCellTarget() ? cell : null, "action.cell");
+        }
+
+        public Long requireDoorTarget() {
+            return Objects.requireNonNull(hasDoorTarget() ? doorId : null, "action.doorId");
+        }
+
+        public Long requireTransitionTarget() {
+            return Objects.requireNonNull(hasTransitionTarget() ? transitionId : null, "action.transitionId");
+        }
+
+        public String resolvedHeadingOverride() {
+            return headingOverride;
         }
 
         public String label() {
