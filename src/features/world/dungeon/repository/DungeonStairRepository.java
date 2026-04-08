@@ -160,12 +160,13 @@ public final class DungeonStairRepository {
         }
     }
 
-    public void replacePathNodes(Connection conn, long stairId, List<GridPoint> pathNodes) throws SQLException {
+    public void replacePathNodes(Connection conn, long stairId, GridPath path) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_stair_path_nodes WHERE stair_id=?")) {
             delete.setLong(1, stairId);
             delete.executeUpdate();
         }
+        List<GridPoint> pathNodes = (path == null ? GridPath.empty() : path).points();
         try (PreparedStatement insert = conn.prepareStatement(
                 "INSERT INTO dungeon_stair_path_nodes(stair_id, sort_order, cell_x, cell_y, cell_z) VALUES(?,?,?,?,?)")) {
             // Path order is the whole stair geometry contract.

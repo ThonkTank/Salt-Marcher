@@ -219,16 +219,17 @@ public final class DungeonTransitionRepository {
 
     private void replaceCarrierDetails(Connection conn, long transitionId, DungeonConnection localConnection) throws SQLException {
         StairConnectionCarrier stairCarrier = localConnection == null ? null : localConnection.stairCarrier();
-        replacePathNodes(conn, transitionId, stairCarrier == null ? List.of() : stairCarrier.stair().gridPath().points());
+        replacePathNodes(conn, transitionId, stairCarrier == null ? GridPath.empty() : stairCarrier.stair().gridPath());
         replaceStopLevels(conn, transitionId, stairCarrier == null ? Set.of() : stairCarrier.stair().stopLevels());
     }
 
-    private void replacePathNodes(Connection conn, long transitionId, List<GridPoint> pathNodes) throws SQLException {
+    private void replacePathNodes(Connection conn, long transitionId, GridPath path) throws SQLException {
         try (PreparedStatement delete = conn.prepareStatement(
                 "DELETE FROM dungeon_transition_stair_path_nodes WHERE transition_id=?")) {
             delete.setLong(1, transitionId);
             delete.executeUpdate();
         }
+        List<GridPoint> pathNodes = (path == null ? GridPath.empty() : path).points();
         if (pathNodes == null || pathNodes.isEmpty()) {
             return;
         }

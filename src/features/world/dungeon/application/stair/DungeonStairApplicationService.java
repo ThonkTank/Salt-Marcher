@@ -50,7 +50,7 @@ public final class DungeonStairApplicationService {
                         namedDraft);
                 DungeonStairRepository.StairEditorData editorData = toEditorData(namedDraft);
                 long stairId = stairRepository.insertStair(conn, resolvedRequest.mapId(), stair, editorData);
-                stairRepository.replacePathNodes(conn, stairId, stair.gridPath().points());
+                stairRepository.replacePathNodes(conn, stairId, stair.gridPath());
                 stairRepository.replaceStopLevels(conn, stairId, stair.stopLevels());
                 return stairId;
             });
@@ -76,7 +76,7 @@ public final class DungeonStairApplicationService {
                         resolvedRequest.mapId(),
                         draft);
                 stairRepository.updateStair(conn, resolvedRequest.stairId(), stair, toEditorData(draft));
-                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.gridPath().points());
+                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.gridPath());
                 stairRepository.replaceStopLevels(conn, resolvedRequest.stairId(), stair.stopLevels());
                 return null;
             });
@@ -108,7 +108,7 @@ public final class DungeonStairApplicationService {
                         resolvedRequest.mapId(),
                         movedDraft);
                 stairRepository.updateStair(conn, resolvedRequest.stairId(), stair, toEditorData(movedDraft));
-                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.gridPath().points());
+                stairRepository.replacePathNodes(conn, resolvedRequest.stairId(), stair.gridPath());
                 stairRepository.replaceStopLevels(conn, resolvedRequest.stairId(), stair.stopLevels());
                 return null;
             });

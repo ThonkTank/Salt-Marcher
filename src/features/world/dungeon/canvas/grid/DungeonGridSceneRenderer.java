@@ -384,7 +384,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                     Math.max(5.0, pass.gridSize() * 0.16));
         }
         for (CorridorPathTrace trace : corridor.pathTraces()) {
-            for (GridPoint corner : trace.turnPoints()) {
+            for (GridPoint corner : corridorTurnPoints(trace.segmentPath())) {
                 drawCorridorHandle(
                         pass.gc(),
                         pass.camera(),
@@ -395,6 +395,22 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         Math.max(4.0, pass.gridSize() * 0.13));
             }
         }
+    }
+
+    private static List<GridPoint> corridorTurnPoints(GridSegmentPath path) {
+        if (path == null || path.segments().size() < 2) {
+            return List.of();
+        }
+        ArrayList<GridPoint> result = new ArrayList<>();
+        List<GridSegment> segments = path.segments();
+        for (int index = 1; index < segments.size(); index++) {
+            GridSegment previous = segments.get(index - 1);
+            GridSegment current = segments.get(index);
+            if (previous.orientation() != current.orientation()) {
+                result.add(current.start());
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static void drawCorridorHandle(

@@ -184,7 +184,7 @@ public final class DungeonSelectionHighlightResolver {
                 .filter(trace -> Objects.equals(trace.segmentId(), corridorSegmentRef.segmentId()))
                 .findFirst()
                 .map(trace -> List.<DungeonHitSurface>of(
-                        new DungeonHitSurface.SegmentSurface(Set.copyOf(trace.segments()), levelZ)))
+                        new DungeonHitSurface.SegmentSurface(Set.copyOf(trace.segmentPath().segments()), levelZ)))
                 .orElse(List.of());
     }
 

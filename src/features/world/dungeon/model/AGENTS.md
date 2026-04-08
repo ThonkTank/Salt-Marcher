@@ -24,6 +24,7 @@ This file covers `src/features/world/dungeon/model/`.
 - Treat `Structure.roomTopology()` as a derived read companion over physical structure plus room metadata, not as an alternate persisted structure payload.
 - Treat `StructureBoundary` as the `structure` slice's local `boundary` sub-owner; model callers may depend on its public API but must not re-home boundary truth back into `model/structures`.
 - When model callers work with one `Door` or `Wall`, use that object's explicit API for clipping, segment access, touching-cell reads, or rewrite behavior instead of recreating boundary-shape operations locally.
+- Treat `Connection` as the one allowed context-derived geometry exception: callers may use `boundary(layout)` and `cellFootprint(layout)` there, but they must not generalize that pattern into new shared geometry capabilities.
 - If room-facing code needs derived room structure, resolve the owning cluster or structure first and then continue on `cluster.roomTopology().structureFor(...)` instead of adding room-local surface or boundary forwarding methods.
 - Keep immutable geometry and similar value types transparent; put invariant-protecting mutation on the actual owner type.
 
@@ -36,4 +37,5 @@ This file covers `src/features/world/dungeon/model/`.
 - Do not move `DungeonMap`, map loading, or map state ownership back into `model/`.
 - Do not cache or re-export room mirrors on `Cluster`, corridor helpers, or other model owners. If code needs room cells, floor cells, anchors, or containment, resolve the owning cluster and then continue on `cluster.roomTopology().structureFor(...)`.
 - Do not widen `Door` or `Wall` back onto generic geometry helpers from model code; if a needed read is missing, add it to `BoundaryObject`, `Door`, `Wall`, or `StructureBoundary` instead of widening the caller.
+- Do not copy `Connection`'s context-derived geometry pattern onto new owners. If another owner truly needs context-resolved geometry, document that as a new owner-specific seam instead of broadening the shared geometry algebra.
 - Do not expose graph-debug helpers like adjacency or component index mirrors from `Cluster` unless a real consumer needs them.

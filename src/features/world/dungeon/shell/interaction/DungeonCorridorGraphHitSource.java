@@ -48,7 +48,7 @@ public final class DungeonCorridorGraphHitSource implements DungeonHitSource {
             if (trace.path().isEmpty()) {
                 continue;
             }
-            Set<GridSegment> segments2x = Set.copyOf(trace.segments());
+            Set<GridSegment> segments2x = Set.copyOf(trace.segmentPath().segments());
             if (segments2x.isEmpty()) {
                 continue;
             }
