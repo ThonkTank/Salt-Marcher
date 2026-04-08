@@ -22,7 +22,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import ui.async.UiErrorReporter;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -158,7 +157,7 @@ public final class BoundaryTool implements EditorTool {
                     deleteMode,
                     vertex,
                     vertex,
-                    Set.of(),
+                    GridSegmentPath.empty(),
                     deleteMode
                             ? "Start auf Innenwand oder Tür gewählt, nächsten Eckpunkt anklicken"
                             : "Start-Eckpunkt gewählt, nächsten Eckpunkt anklicken"));
@@ -178,15 +177,14 @@ public final class BoundaryTool implements EditorTool {
                     draft.deleteMode(),
                     draft.startVertex(),
                     draft.currentVertex(),
-                    draft.previewEdges(),
+                    draft.previewPath(),
                     deleteMode
                             ? "Pfad kann nur entlang bestehender Innenwände oder Türen verlaufen"
                             : "Zwischen diesen Eckpunkten gibt es keinen gültigen Pfad"));
             return true;
         }
 
-        Set<GridSegment> nextPreview = new LinkedHashSet<>(draft.previewEdges());
-        nextPreview.addAll(result.boundary().segments());
+        GridSegmentPath nextPreview = GridSegmentPath.concat(draft.previewPath(), result);
         showDraft(new Draft(
                 draft.clusterId(),
                 draft.deleteMode(),
@@ -207,9 +205,9 @@ public final class BoundaryTool implements EditorTool {
             return false;
         }
         Long mapId = mapState.activeMapId();
-        Set<GridSegment> edges = currentDraft.previewEdges();
+        GridSegmentPath path = currentDraft.previewPath();
         clear();
-        if (mapId == null || edges.isEmpty()) {
+        if (mapId == null || path.isEmpty()) {
             return true;
         }
         loadingService.submitMutation(
@@ -219,13 +217,13 @@ public final class BoundaryTool implements EditorTool {
                                 mapId,
                                 currentDraft.clusterId(),
                                 mapState.activeProjectionLevel(),
-                                features.world.dungeon.geometry.GridBoundary.of(edges)));
+                                path.boundary()));
                     } else {
                         roomApplicationService.createWallPath(new DungeonClusterApplicationService.CreateWallPathRequest(
                                 mapId,
                                 currentDraft.clusterId(),
                                 mapState.activeProjectionLevel(),
-                                features.world.dungeon.geometry.GridBoundary.of(edges)));
+                                path.boundary()));
                     }
                     return mapId;
                 },
@@ -313,7 +311,7 @@ public final class BoundaryTool implements EditorTool {
     private void showDraft(Draft nextDraft) {
         draft = nextDraft;
         state.showPreview(new EditorPreview.BoundaryPreview(
-                nextDraft.previewEdges(),
+                nextDraft.previewPath(),
                 nextDraft.startVertex(),
                 nextDraft.currentVertex(),
                 nextDraft.deleteMode()));
@@ -338,7 +336,7 @@ public final class BoundaryTool implements EditorTool {
         if (resolved == null) {
             return EditorHitResolution.none();
         }
-        DungeonSelectionRef hitRef = new DungeonSelectionRef.VertexRef(resolved.vertex2x());
+        DungeonSelectionRef hitRef = new DungeonSelectionRef.VertexRef(resolved.vertex());
         DungeonSelectionRef resolvedRef = clusterOwnerRef(resolved.clusterId());
         return new EditorHitResolution(hitRef, resolvedRef, new EditorHover(hitRef, EditorHoverScope.PART));
     }
@@ -367,14 +365,14 @@ public final class BoundaryTool implements EditorTool {
 
     private static String statusMessage(
             boolean deleteMode,
-            Set<GridSegment> previewEdges
+            GridSegmentPath previewPath
     ) {
         if (deleteMode) {
-            return previewEdges.isEmpty()
+            return previewPath == null || previewPath.isEmpty()
                     ? "Nur Außenwände getroffen, nichts zu löschen"
                     : "Innenwand-/Türpfad aktiv, Rechtsklick schließt ab";
         }
-        if (!previewEdges.isEmpty()) {
+        if (previewPath != null && !previewPath.isEmpty()) {
             return "Wandpfad aktiv, Rechtsklick oder Klick auf bestehende Wand schließt ab";
         }
         return "Pfad aktiv";
@@ -385,18 +383,18 @@ public final class BoundaryTool implements EditorTool {
             boolean deleteMode,
             GridPoint startVertex,
             GridPoint currentVertex,
-            Set<GridSegment> previewEdges,
+            GridSegmentPath previewPath,
             String statusMessage
     ) {
         private Draft {
-            previewEdges = previewEdges == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(previewEdges));
+            previewPath = previewPath == null ? GridSegmentPath.empty() : previewPath;
             statusMessage = statusMessage == null ? "" : statusMessage;
         }
     }
 
     private record ResolvedBoundaryVertex(
             Long clusterId,
-            GridPoint vertex2x
+            GridPoint vertex
     ) {
     }
 }

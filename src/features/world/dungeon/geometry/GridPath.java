@@ -18,6 +18,28 @@ public final class GridPath extends GridObject<GridPath> {
         return new GridPath(points);
     }
 
+    public static GridPath concat(GridPath... paths) {
+        if (paths == null || paths.length == 0) {
+            return empty();
+        }
+        ArrayList<GridPoint> result = new ArrayList<>();
+        for (GridPath path : paths) {
+            if (path == null || path.isEmpty()) {
+                continue;
+            }
+            for (GridPoint point : path.points()) {
+                if (point == null) {
+                    continue;
+                }
+                if (!result.isEmpty() && Objects.equals(result.get(result.size() - 1), point)) {
+                    continue;
+                }
+                result.add(point);
+            }
+        }
+        return result.isEmpty() ? empty() : new GridPath(result);
+    }
+
     private GridPath(List<GridPoint> points) {
         this.points = normalizePoints(points);
     }

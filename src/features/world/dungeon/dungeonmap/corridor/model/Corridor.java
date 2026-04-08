@@ -476,7 +476,7 @@ public final class Corridor extends Structure {
                 .sorted(Comparator.comparing(CorridorSegment::segmentId))
                 .toList();
         LinkedHashMap<Long, CorridorPathTrace> tracesBySegmentId = new LinkedHashMap<>();
-        LinkedHashSet<GridPoint> reservedCells = new LinkedHashSet<>();
+        GridArea reservedArea = GridArea.empty();
 
         for (CorridorSegment segment : orderedSegments) {
             CorridorPathTrace reusableTrace = reusableTraces == null ? null : reusableTraces.get(segment.segmentId());
@@ -484,7 +484,7 @@ public final class Corridor extends Structure {
                 continue;
             }
             tracesBySegmentId.put(segment.segmentId(), reusableTrace);
-            reservedCells.addAll(reusableTrace.path().cellFootprint().cells());
+            reservedArea = GridArea.of(unionCells(reservedArea, reusableTrace.path().cellFootprint()));
         }
 
         for (CorridorSegment segment : orderedSegments) {
@@ -496,12 +496,12 @@ public final class Corridor extends Structure {
                     endpoints,
                     new CorridorSegment.RoutingContext(
                             input.levelZ(),
-                            GridArea.of(resolutionInput.blockedCells()),
-                            reservedCells,
-                            resolutionInput.occupiedConnectionSegments()),
+                            resolutionInput.blockedArea(),
+                            reservedArea,
+                            resolutionInput.occupiedConnectionBoundary()),
                     null);
             tracesBySegmentId.put(segment.segmentId(), trace);
-            reservedCells.addAll(trace.path().cellFootprint().cells());
+            reservedArea = GridArea.of(unionCells(reservedArea, trace.path().cellFootprint()));
         }
 
         return orderedSegments.stream()
@@ -519,13 +519,14 @@ public final class Corridor extends Structure {
         List<CorridorSegment> orderedSegments = input.segments().stream()
                 .sorted(Comparator.comparing(CorridorSegment::segmentId))
                 .toList();
-        Set<GridPoint> surfaceCells = structure.surfaceAtLevel(input.levelZ()).surface().cellFootprint().cells();
+        GridArea surfaceArea = structure.surfaceAtLevel(input.levelZ()).surface().cellFootprint();
         LinkedHashSet<GridPoint> fixedNodeCells = new LinkedHashSet<>();
         for (CorridorInputNode node : input.nodes()) {
             if (node != null && !node.isDoorBound() && node.fixedPoint() != null && node.fixedPoint().kind() == GridPoint.Kind.CELL) {
                 fixedNodeCells.add(node.fixedPoint());
             }
         }
+        GridArea fixedNodeArea = fixedNodeCells.isEmpty() ? GridArea.empty() : GridArea.of(fixedNodeCells);
 
         LinkedHashSet<GridPoint> consumedNonNodeCells = new LinkedHashSet<>();
         LinkedHashSet<GridPoint> coveredSurfaceCells = new LinkedHashSet<>();
@@ -533,9 +534,9 @@ public final class Corridor extends Structure {
         for (CorridorSegment segment : orderedSegments) {
             CorridorPathTrace trace = segment.recoverTrace(
                     segment.resolveEndpoints(nodesById, resolutionInput),
-                    surfaceCells,
-                    consumedNonNodeCells,
-                    fixedNodeCells);
+                    surfaceArea,
+                    consumedNonNodeCells.isEmpty() ? GridArea.empty() : GridArea.of(consumedNonNodeCells),
+                    fixedNodeArea);
             traces.add(trace);
             Set<GridPoint> traceCells = trace.path().cellFootprint().cells();
             coveredSurfaceCells.addAll(traceCells);
@@ -549,7 +550,7 @@ public final class Corridor extends Structure {
                 }
             }
         }
-        if (!coveredSurfaceCells.equals(surfaceCells)) {
+        if (!coveredSurfaceCells.equals(surfaceArea.cells())) {
             throw new IllegalArgumentException("Persisted corridor surface cannot be reconstructed from corridor metadata");
         }
         return List.copyOf(traces);
@@ -638,6 +639,12 @@ public final class Corridor extends Structure {
             result.put(entry.getKey(), GridBoundary.of(entry.getValue()));
         }
         return Map.copyOf(result);
+    }
+
+    private static Set<GridPoint> unionCells(GridArea left, GridArea right) {
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>(left == null ? Set.<GridPoint>of() : left.cells());
+        result.addAll(right == null ? Set.of() : right.cells());
+        return result.isEmpty() ? Set.of() : Set.copyOf(result);
     }
 
     private static Map<Long, CorridorInputNode> nodesById(List<CorridorInputNode> nodes) {

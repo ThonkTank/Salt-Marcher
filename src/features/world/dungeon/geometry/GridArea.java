@@ -19,6 +19,29 @@ public final class GridArea extends GridObject<GridArea> {
         return new GridArea(cells);
     }
 
+    public static GridArea rectangle(GridPoint startCell, GridPoint endCell) {
+        if (startCell == null || endCell == null) {
+            return empty();
+        }
+        if (startCell.kind() != GridPoint.Kind.CELL || endCell.kind() != GridPoint.Kind.CELL) {
+            throw new IllegalArgumentException("GridArea.rectangle requires cell points");
+        }
+        if (startCell.z() != endCell.z()) {
+            throw new IllegalArgumentException("GridArea.rectangle requires both cells on the same level");
+        }
+        int minX = Math.min(startCell.x2(), endCell.x2()) / 2;
+        int maxX = Math.max(startCell.x2(), endCell.x2()) / 2;
+        int minY = Math.min(startCell.y2(), endCell.y2()) / 2;
+        int maxY = Math.max(startCell.y2(), endCell.y2()) / 2;
+        LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
+        for (int x = minX; x <= maxX; x++) {
+            for (int y = minY; y <= maxY; y++) {
+                result.add(GridPoint.cell(x, y, startCell.z()));
+            }
+        }
+        return result.isEmpty() ? empty() : new GridArea(result);
+    }
+
     private GridArea(Collection<GridPoint> cells) {
         this.cells = GridPoint.normalizeCells(cells);
     }

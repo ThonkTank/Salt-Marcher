@@ -1,6 +1,8 @@
 package features.world.dungeon.dungeonmap.corridor.model;
 
 import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridBoundary;
+import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 
@@ -45,7 +47,7 @@ public record CorridorSegment(
         return null;
     }
 
-    public ResolvedSegmentEndpoints resolveEndpoints(
+    ResolvedSegmentEndpoints resolveEndpoints(
             Map<Long, CorridorInputNode> nodesById,
             CorridorResolutionInput resolutionInput
     ) {
@@ -57,7 +59,7 @@ public record CorridorSegment(
                 resolvedNode(endNode, resolutionInput));
     }
 
-    public CorridorPathTrace route(
+    CorridorPathTrace route(
             ResolvedSegmentEndpoints endpoints,
             RoutingContext context,
             CorridorPathTrace reusableTrace
@@ -70,17 +72,17 @@ public record CorridorSegment(
                 Objects.requireNonNull(context, "context"));
     }
 
-    public CorridorPathTrace recoverTrace(
+    CorridorPathTrace recoverTrace(
             ResolvedSegmentEndpoints endpoints,
-            Set<GridPoint> surfaceCells,
-            Set<GridPoint> consumedNonNodeCells,
-            Set<GridPoint> fixedNodeCells
+            GridArea surfaceArea,
+            GridArea consumedNonNodeArea,
+            GridArea fixedNodeArea
     ) {
         return CorridorRouting.recoverSegmentTrace(
                 Objects.requireNonNull(endpoints, "endpoints"),
-                surfaceCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(surfaceCells)),
-                consumedNonNodeCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(consumedNonNodeCells)),
-                fixedNodeCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(fixedNodeCells)));
+                surfaceArea == null ? GridArea.empty() : surfaceArea,
+                consumedNonNodeArea == null ? GridArea.empty() : consumedNonNodeArea,
+                fixedNodeArea == null ? GridArea.empty() : fixedNodeArea);
     }
 
     private static CorridorInputNode requiredNode(Map<Long, CorridorInputNode> nodesById, Long nodeId) {
@@ -102,7 +104,7 @@ public record CorridorSegment(
                     door.anchorPoint(),
                     List.of(new CorridorRouting.AnchorAttachment(
                             door.exteriorCell(),
-                            List.of(door.anchorPoint(), door.exteriorCell()))),
+                            GridPath.of(List.of(door.anchorPoint(), door.exteriorCell())))),
                     true);
         }
         return new CorridorRouting.ResolvedNode(
@@ -110,26 +112,26 @@ public record CorridorSegment(
                 node.fixedPoint(),
                 CorridorRouting.attachmentsForPoint(
                         node.fixedPoint(),
-                        GridArea.of(resolutionInput.blockedCells())),
+                        resolutionInput.blockedArea()),
                 false);
     }
 
-    public record RoutingContext(
+    record RoutingContext(
             int levelZ,
-            GridArea blockedCells,
-            Set<GridPoint> reservedCells,
-            Set<GridSegment> occupiedConnectionSegments
+            GridArea blockedArea,
+            GridArea reservedArea,
+            GridBoundary occupiedConnectionBoundary
     ) {
         public RoutingContext {
-            blockedCells = blockedCells == null ? GridArea.empty() : blockedCells;
-            reservedCells = reservedCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(reservedCells));
-            occupiedConnectionSegments = occupiedConnectionSegments == null
-                    ? Set.of()
-                    : Set.copyOf(new LinkedHashSet<>(occupiedConnectionSegments));
+            blockedArea = blockedArea == null ? GridArea.empty() : blockedArea;
+            reservedArea = reservedArea == null ? GridArea.empty() : reservedArea;
+            occupiedConnectionBoundary = occupiedConnectionBoundary == null
+                    ? GridBoundary.empty()
+                    : occupiedConnectionBoundary;
         }
     }
 
-    public record ResolvedSegmentEndpoints(
+    record ResolvedSegmentEndpoints(
             CorridorSegment segment,
             CorridorRouting.ResolvedNode start,
             CorridorRouting.ResolvedNode end

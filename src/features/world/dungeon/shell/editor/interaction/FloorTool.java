@@ -4,7 +4,7 @@ import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterAppli
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
-import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
@@ -111,7 +111,7 @@ public final class FloorTool implements EditorTool {
         }
         CellWindowDragSession finishedSession = cell == null ? dragSession : dragSession.withEndCell(cell);
         int activeLevel = mapState.activeProjectionLevel();
-        Set<GridPoint> cells = validRoomCells(ctx == null ? null : ctx.activeMap(), activeLevel, finishedSession.previewCells());
+        GridArea cells = validRoomArea(ctx == null ? null : ctx.activeMap(), activeLevel, finishedSession.cellFootprint());
         clear();
         Long mapId = mapState.activeMapId();
         if (mapId == null || cells.isEmpty()) {
@@ -123,12 +123,12 @@ public final class FloorTool implements EditorTool {
                         roomApplicationService.deleteFloorCells(new DungeonClusterApplicationService.DeleteFloorCellsRequest(
                                 mapId,
                                 activeLevel,
-                                features.world.dungeon.geometry.GridArea.of(cells)));
+                                cells));
                     } else {
                         roomApplicationService.addFloorCells(new DungeonClusterApplicationService.AddFloorCellsRequest(
                                 mapId,
                                 activeLevel,
-                                features.world.dungeon.geometry.GridArea.of(cells)));
+                                cells));
                     }
                     return mapId;
                 },
@@ -168,7 +168,7 @@ public final class FloorTool implements EditorTool {
         }
         int activeLevel = mapState.activeProjectionLevel();
         state.showPreview(new EditorPreview.PaintPreview(
-                validRoomCells(layout, activeLevel, dragSession.previewCells()),
+                validRoomArea(layout, activeLevel, dragSession.cellFootprint()),
                 activeLevel,
                 dragSession.deleteMode()));
     }
@@ -197,17 +197,17 @@ public final class FloorTool implements EditorTool {
         return new DungeonSelectionRef.RoomCellRef(room.roomId(), GridPoint.cell(gridCell.x2() / 2, gridCell.y2() / 2, levelZ));
     }
 
-    private static Set<GridPoint> validRoomCells(DungeonMap layout, int levelZ, Set<GridPoint> cells) {
-        if (layout == null || cells == null || cells.isEmpty()) {
-            return Set.of();
+    private static GridArea validRoomArea(DungeonMap layout, int levelZ, GridArea area) {
+        if (layout == null || area == null || area.isEmpty()) {
+            return GridArea.empty();
         }
         LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
-        for (GridPoint cell : cells) {
+        for (GridPoint cell : area.cells()) {
             if (roomAtCell(layout, cell, levelZ) != null) {
                 result.add(cell);
             }
         }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        return result.isEmpty() ? GridArea.empty() : GridArea.of(result);
     }
 
     private static Room roomAtCell(DungeonMap layout, GridPoint cell, int levelZ) {

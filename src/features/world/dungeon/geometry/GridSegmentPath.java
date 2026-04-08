@@ -18,6 +18,20 @@ public final class GridSegmentPath extends GridObject<GridSegmentPath> implement
         return new GridSegmentPath(segments);
     }
 
+    public static GridSegmentPath concat(GridSegmentPath... paths) {
+        if (paths == null || paths.length == 0) {
+            return empty();
+        }
+        ArrayList<GridSegment> result = new ArrayList<>();
+        for (GridSegmentPath path : paths) {
+            if (path == null || path.isEmpty()) {
+                continue;
+            }
+            result.addAll(path.segments());
+        }
+        return result.isEmpty() ? empty() : new GridSegmentPath(result);
+    }
+
     private GridSegmentPath(List<GridSegment> segments) {
         this.segments = normalizeSegments(segments);
     }

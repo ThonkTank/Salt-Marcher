@@ -2,6 +2,7 @@ package features.world.dungeon.dungeonmap.model;
 
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.geometry.GridTranslation;
@@ -1095,7 +1096,7 @@ public final class DungeonMap {
         return result.isEmpty() ? Map.of() : Map.copyOf(result);
     }
 
-    private Set<GridPoint> blockedRoomCells(int levelZ) {
+    private GridArea blockedRoomCells(int levelZ) {
         LinkedHashSet<GridPoint> blocked = new LinkedHashSet<>();
         for (Cluster cluster : clusters) {
             if (cluster == null) {
@@ -1107,17 +1108,17 @@ public final class DungeonMap {
                 }
             }
         }
-        return blocked.isEmpty() ? Set.of() : Set.copyOf(blocked);
+        return blocked.isEmpty() ? GridArea.empty() : GridArea.of(blocked);
     }
 
-    private Set<GridSegment> occupiedConnectionSegments(int levelZ) {
+    private GridBoundary occupiedConnectionSegments(int levelZ) {
         LinkedHashSet<GridSegment> occupied = new LinkedHashSet<>();
         for (ConnectionSegmentKey key : connectionsBySegmentAndLevel2x.keySet()) {
             if (key != null && key.levelZ() == levelZ && key.segment2x() != null) {
                 occupied.add(key.segment2x());
             }
         }
-        return occupied.isEmpty() ? Set.of() : Set.copyOf(occupied);
+        return occupied.isEmpty() ? GridBoundary.empty() : GridBoundary.of(occupied);
     }
 
     private boolean touchesAffectedRooms(Corridor corridor, Set<Long> affectedRoomIds) {

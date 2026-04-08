@@ -1,32 +1,32 @@
 package features.world.dungeon.dungeonmap.corridor.model;
 
 import features.world.dungeon.geometry.CardinalDirection;
+import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Frozen corridor-external context materialized by the map owner.
  */
 public record CorridorResolutionInput(
         int levelZ,
-        Set<GridPoint> blockedCells,
+        GridArea blockedArea,
         Map<DoorRef, ExteriorDoorInput> exteriorDoorsByRef,
-        Set<GridSegment> occupiedConnectionSegments
+        GridBoundary occupiedConnectionBoundary
 ) {
     public CorridorResolutionInput {
-        blockedCells = blockedCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(blockedCells));
+        blockedArea = blockedArea == null ? GridArea.empty() : blockedArea.onLevel(levelZ);
         exteriorDoorsByRef = exteriorDoorsByRef == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(exteriorDoorsByRef));
-        occupiedConnectionSegments = occupiedConnectionSegments == null
-                ? Set.of()
-                : Set.copyOf(new LinkedHashSet<>(occupiedConnectionSegments));
+        occupiedConnectionBoundary = occupiedConnectionBoundary == null
+                ? GridBoundary.empty()
+                : occupiedConnectionBoundary;
         if (exteriorDoorsByRef.keySet().stream().anyMatch(Objects::isNull)
                 || exteriorDoorsByRef.values().stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("Corridor exterior door inputs must stay complete");
@@ -42,7 +42,7 @@ public record CorridorResolutionInput(
     }
 
     boolean hasOccupiedConnection(GridSegment boundarySegment) {
-        return boundarySegment != null && occupiedConnectionSegments.contains(boundarySegment);
+        return boundarySegment != null && occupiedConnectionBoundary.contains(boundarySegment);
     }
 
     public record ExteriorDoorInput(

@@ -44,7 +44,7 @@ public final class DungeonGridInteractiveLabels {
         if (handle == null || gridSize <= 0.0) {
             return new Point2D(0.0, 0.0);
         }
-        GridPoint anchor = handle.anchor2x();
+        GridPoint anchor = handle.anchor();
         return new Point2D(
                 panX + (anchor.x2() + 1) * gridSize / 2.0,
                 panY + (anchor.y2() + 1) * gridSize / 2.0);

@@ -8,10 +8,10 @@ import features.world.dungeon.canvas.base.DungeonSceneFrame;
 import features.world.dungeon.canvas.base.DungeonSceneRenderer;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
-import features.world.dungeon.geometry.GridPoint;
-import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
+import features.world.dungeon.geometry.GridSegmentPath;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
@@ -232,34 +232,34 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
             GraphicsContext gc,
             DungeonCanvasCamera camera,
             double gridSize,
-            Set<GridSegment> previewEdges,
-            GridPoint startVertex2x,
-            GridPoint currentVertex2x,
+            GridSegmentPath previewPath,
+            GridPoint startVertex,
+            GridPoint currentVertex,
             boolean deleteMode
     ) {
-        if (previewEdges != null && !previewEdges.isEmpty()) {
+        if (previewPath != null && !previewPath.isEmpty()) {
             gc.setStroke(deleteMode ? DungeonCanvasTheme.BOUNDARY_DELETE_PREVIEW_STROKE : DungeonCanvasTheme.BOUNDARY_PREVIEW_STROKE);
             gc.setLineWidth(3.2);
-            for (GridSegment segment2x : previewEdges) {
+            for (GridSegment segment2x : previewPath.segments()) {
                 strokeSegment2x(gc, camera, gridSize, segment2x);
             }
         }
-        if (startVertex2x != null) {
+        if (startVertex != null) {
             drawBoundaryVertexMarker(
                     gc,
                     camera,
                     gridSize,
-                    startVertex2x,
+                    startVertex,
                     DungeonCanvasTheme.BOUNDARY_START_VERTEX_FILL,
                     DungeonCanvasTheme.BOUNDARY_START_VERTEX_STROKE,
-                    currentVertex2x != null && currentVertex2x.equals(startVertex2x) ? 6.0 : 5.0);
+                    currentVertex != null && currentVertex.equals(startVertex) ? 6.0 : 5.0);
         }
-        if (currentVertex2x != null && !currentVertex2x.equals(startVertex2x)) {
+        if (currentVertex != null && !currentVertex.equals(startVertex)) {
             drawBoundaryVertexMarker(
                     gc,
                     camera,
                     gridSize,
-                    currentVertex2x,
+                    currentVertex,
                     DungeonCanvasTheme.BOUNDARY_CURRENT_VERTEX_FILL,
                     DungeonCanvasTheme.BOUNDARY_CURRENT_VERTEX_STROKE,
                     5.0);
@@ -993,17 +993,17 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
     private static void drawPaintPreview(
             GraphicsContext gc,
             DungeonCanvasCamera camera,
-            Set<GridPoint> previewCells,
+            GridArea previewArea,
             boolean deleteMode
     ) {
-        if (previewCells == null || previewCells.isEmpty()) {
+        if (previewArea == null || previewArea.isEmpty()) {
             return;
         }
         double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
         gc.setFill(deleteMode ? DungeonCanvasTheme.DELETE_PREVIEW_FILL : DungeonCanvasTheme.PAINT_PREVIEW_FILL);
         gc.setStroke(deleteMode ? DungeonCanvasTheme.DELETE_PREVIEW_STROKE : DungeonCanvasTheme.PAINT_PREVIEW_STROKE);
         gc.setLineWidth(1.5);
-        for (GridPoint tile : previewCells) {
+        for (GridPoint tile : previewArea.cells()) {
             double x = camera.panX() + cellX(tile) * gridSize;
             double y = camera.panY() + cellY(tile) * gridSize;
             gc.fillRect(x, y, gridSize, gridSize);
@@ -1218,7 +1218,7 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                 drawPaintPreview(
                         gc,
                         frame.camera(),
-                        paintPreview.cells(),
+                        paintPreview.area(),
                         paintPreview.deleteMode());
             }
             if (editor.preview() instanceof EditorPreview.BoundaryPreview boundaryPreview) {
@@ -1226,9 +1226,9 @@ public final class DungeonGridSceneRenderer implements DungeonSceneRenderer {
                         gc,
                         frame.camera(),
                         DungeonCanvasTheme.BASE_GRID * frame.camera().zoom(),
-                        boundaryPreview.edges(),
-                        boundaryPreview.startVertex2x(),
-                        boundaryPreview.currentVertex2x(),
+                        boundaryPreview.path(),
+                        boundaryPreview.startVertex(),
+                        boundaryPreview.currentVertex(),
                         boundaryPreview.deleteMode());
             }
         }

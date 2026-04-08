@@ -3,7 +3,7 @@ package features.world.dungeon.shell.editor.interaction;
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
-import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.state.DungeonEditorTool;
@@ -77,7 +77,7 @@ public final class PaintTool implements EditorTool {
         state.clearSelection();
         paintSession = new CellWindowDragSession(cell, cell, sessionState.selectedTool() == DungeonEditorTool.ROOM_DELETE);
         state.showPreview(new EditorPreview.PaintPreview(
-                paintSession.previewCells(),
+                paintSession.cellFootprint(),
                 mapState.activeProjectionLevel(),
                 paintSession.deleteMode()));
         return true;
@@ -98,7 +98,7 @@ public final class PaintTool implements EditorTool {
         }
         paintSession = paintSession.withEndCell(cell);
         state.showPreview(new EditorPreview.PaintPreview(
-                paintSession.previewCells(),
+                paintSession.cellFootprint(),
                 mapState.activeProjectionLevel(),
                 paintSession.deleteMode()));
         return true;
@@ -113,7 +113,7 @@ public final class PaintTool implements EditorTool {
         GridPoint cell = resolvedCell(ctx);
         CellWindowDragSession finishedSession = cell == null ? paintSession : paintSession.withEndCell(cell);
         int activeLevel = mapState.activeProjectionLevel();
-        Set<GridPoint> cells = finishedSession.previewCells();
+        GridArea cells = finishedSession.cellFootprint();
         clear();
         Long mapId = mapState.activeMapId();
         if (mapId == null || cells.isEmpty()) {
@@ -125,12 +125,12 @@ public final class PaintTool implements EditorTool {
                         roomApplicationService.deleteCells(new DungeonClusterApplicationService.DeleteCellsRequest(
                                 mapId,
                                 activeLevel,
-                                features.world.dungeon.geometry.GridArea.of(cells)));
+                                cells));
                     } else {
                         roomApplicationService.paintCells(new DungeonClusterApplicationService.PaintCellsRequest(
                                 mapId,
                                 activeLevel,
-                                features.world.dungeon.geometry.GridArea.of(cells)));
+                                cells));
                     }
                     return mapId;
                 },
