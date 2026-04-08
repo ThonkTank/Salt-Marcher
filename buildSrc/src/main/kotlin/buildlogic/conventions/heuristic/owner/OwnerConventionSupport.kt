@@ -247,6 +247,15 @@ class OwnerConventionSupport(private val project: Project) {
         return projectTypeNames(tree, parsedSource, snapshot).singleOrNull()
     }
 
+    internal fun declaredProjectTypeName(
+        tree: Tree?,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
+    ): String? {
+        val typeName = topLevelTypeNameForTree(tree, parsedSource, snapshot) ?: return null
+        return typeName.takeIf { it in snapshot.knownTypeNames }
+    }
+
     internal fun typeNames(
         tree: Tree?,
         parsedSource: OwnerConventionParsedJavaSource,

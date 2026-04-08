@@ -163,8 +163,8 @@ private fun OwnerConventionSupport.isOwnerSurfaceRequestShape(
         return false
     }
     val expectedInputType = "$ownerPackage.$inputRole.${requestStem}Input"
-    val parameterTypes = projectTypeNames(method.parameters.single().tree.type, parsedSource, snapshot)
-    if (parameterTypes != setOf(expectedInputType)) {
+    val parameterType = declaredProjectTypeName(method.parameters.single().tree.type, parsedSource, snapshot)
+    if (parameterType != expectedInputType) {
         return false
     }
     val returnPackages = projectTypePackages(method.tree.returnType, parsedSource, snapshot)

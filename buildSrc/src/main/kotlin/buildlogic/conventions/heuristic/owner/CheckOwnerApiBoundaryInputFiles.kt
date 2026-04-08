@@ -34,7 +34,7 @@ internal fun analyzeInputFile(
     if (requestStem == null) {
         reasons += "${context.path} :: input files must be named <Request>Input with a direct request stem"
     } else if (requestStem !in snapshot.requestStemsByOwner[context.ownerPackage].orEmpty()) {
-        reasons += "${context.path} :: input files must match a real public request on ${context.ownerPackage}.${support.ownerObjectName(context.ownerPackage)}"
+        reasons += "${context.path} :: input files must match a real public request on ${context.ownerPackage}.${support.ownerObjectName(context.ownerPackage)} that accepts exactly ${requestStem}Input"
     }
     val primaryType = support.parsedPrimaryType(sourceFile)
     if (primaryType == null) {

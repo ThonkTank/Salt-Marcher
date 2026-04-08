@@ -175,10 +175,10 @@ private fun ownerRequestShapeReasons(
         reasons += "${context.path} :: owner requests must accept exactly one ${requestStem}Input parameter (${method.name})"
     }
     val expectedInputType = "${context.ownerPackage}.${support.inputRole}.${requestStem}Input"
-    val parameterTypes = method.parameters.flatMap { parameter ->
-        support.projectTypeNames(parameter.tree.type, sourceFile.parsedSource, snapshot)
-    }.distinct()
-    if (parameterTypes != listOf(expectedInputType)) {
+    val parameterType = method.parameters.singleOrNull()?.let { parameter ->
+        support.declaredProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
+    }
+    if (parameterType != expectedInputType) {
         reasons += "${context.path} :: owner requests must accept exactly ${expectedInputType.substringAfterLast('.')} (${method.name})"
     }
     val returnPackages = support.projectTypePackages(method.tree.returnType, sourceFile.parsedSource, snapshot)

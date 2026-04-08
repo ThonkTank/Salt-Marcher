@@ -100,27 +100,21 @@ internal fun analyzeTaskFile(
         if (method.parameters.size != 1) {
             reasons += "${context.path} :: task files must model exactly one input parameter"
         }
-        val parameterTypes = method.parameters.flatMap { parameter ->
-            support.projectTypeNames(parameter.tree.type, sourceFile.parsedSource, snapshot)
-        }.distinct()
-        val returnTypes = support.projectTypeNames(method.tree.returnType, sourceFile.parsedSource, snapshot)
-        if (parameterTypes.size != 1 || parameterTypes.any { typeName ->
-                support.roleForDirectoryName(typeName.substringBeforeLast('.').substringAfterLast('.')) != support.inputRole
-            }
-        ) {
-            reasons += "${context.path} :: task methods must accept exactly one project input type"
+        val parameterType = method.parameters.singleOrNull()?.let { parameter ->
+            support.declaredProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
+        }
+        val returnType = support.declaredProjectTypeName(method.tree.returnType, sourceFile.parsedSource, snapshot)
+        if (parameterType == null || support.inputApi(parameterType, snapshot) == null) {
+            reasons += "${context.path} :: task methods must begin with exactly one canonical input type parameter"
         }
         if (requestStem != null) {
             val expectedInputType = "${context.ownerPackage}.${support.inputRole}.${requestStem}Input"
-            if (parameterTypes != listOf(expectedInputType)) {
+            if (parameterType != expectedInputType) {
                 reasons += "${context.path} :: task methods must accept exactly ${requestStem}Input from the same owner"
             }
         }
-        if (returnTypes.size != 1 || returnTypes.any { typeName ->
-                support.roleForDirectoryName(typeName.substringBeforeLast('.').substringAfterLast('.')) != support.inputRole
-            }
-        ) {
-            reasons += "${context.path} :: task methods must return exactly one project input type"
+        if (returnType == null || support.inputApi(returnType, snapshot) == null) {
+            reasons += "${context.path} :: task methods must end with exactly one canonical input return type"
         }
     }
     primaryType.methods.forEach { method ->
