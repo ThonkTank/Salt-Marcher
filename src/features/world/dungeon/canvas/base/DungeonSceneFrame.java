@@ -19,7 +19,7 @@ public record DungeonSceneFrame(
         layout = layout == null ? DungeonMap.empty() : layout;
         projectedLayout = projectedLayout == null ? layout.projectedToLevel(projectionLevel) : projectedLayout;
         camera = Objects.requireNonNull(camera, "camera");
-        levelOverlaySettings = levelOverlaySettings == null ? DungeonLevelOverlaySettings.defaults() : levelOverlaySettings;
+        levelOverlaySettings = levelOverlaySettings == null ? DungeonLevelOverlaySettings.DEFAULTS : levelOverlaySettings;
         editor = editor == null ? DungeonEditorRenderState.empty() : editor;
         runtime = runtime == null ? DungeonRuntimeRenderOverlay.empty() : runtime;
     }

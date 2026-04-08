@@ -256,6 +256,23 @@ class OwnerConventionSupport(private val project: Project) {
         return typeNames(tree, parsedSource, snapshot).singleOrNull()
     }
 
+    internal fun elementFor(
+        tree: Tree?,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
+    ): Element? {
+        val path = treePath(tree, parsedSource) ?: return null
+        return snapshot.semanticModel.trees.getElement(path)
+    }
+
+    internal fun topLevelTypeNameForTree(
+        tree: Tree?,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
+    ): String? {
+        return topLevelTypeName(elementFor(tree, parsedSource, snapshot))
+    }
+
     internal fun ownerRequestMethodNames(ownerPackage: String, snapshot: OwnerConventionSnapshot): Set<String> {
         return snapshot.catalog.ownerRequestMethodNamesByOwner[ownerPackage].orEmpty()
     }
@@ -568,6 +585,10 @@ class OwnerConventionSupport(private val project: Project) {
             current = current.enclosingElement
         }
         return topLevelType
+    }
+
+    internal fun topLevelTypeName(element: Element?): String? {
+        return topLevelTypeElement(element)?.qualifiedName?.toString()?.takeIf(String::isNotBlank)
     }
 
     private fun addTypeName(

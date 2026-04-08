@@ -111,7 +111,7 @@ public final class DungeonLevelOverlayControls {
                 commitSelectedLevels();
             }
         });
-        showSettings(DungeonLevelOverlaySettings.defaults(), false);
+        showSettings(DungeonLevelOverlaySettings.DEFAULTS, false);
     }
 
     public Node trigger() {
@@ -135,7 +135,7 @@ public final class DungeonLevelOverlayControls {
     }
 
     public void showSettings(DungeonLevelOverlaySettings settings, boolean disabled) {
-        DungeonLevelOverlaySettings resolved = settings == null ? DungeonLevelOverlaySettings.defaults() : settings;
+        DungeonLevelOverlaySettings resolved = settings == null ? DungeonLevelOverlaySettings.DEFAULTS : settings;
         syncing = true;
         modeSelector.getSelectionModel().select(resolved.mode());
         rangeSpinner.getValueFactory().setValue(resolved.levelRange());

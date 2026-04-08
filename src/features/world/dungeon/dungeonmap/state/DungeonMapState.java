@@ -21,7 +21,7 @@ public final class DungeonMapState {
     private DungeonMap activeMap = DungeonMap.empty();
     private Long activeMapId;
     private int activeProjectionLevel;
-    private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.defaults();
+    private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.DEFAULTS;
     private boolean loading;
     private boolean mutationPending;
     private String errorMessage;
@@ -174,7 +174,7 @@ public final class DungeonMapState {
     }
 
     private void updateLevelOverlaySettings(DungeonLevelOverlaySettings settings) {
-        DungeonLevelOverlaySettings resolved = settings == null ? DungeonLevelOverlaySettings.defaults() : settings;
+        DungeonLevelOverlaySettings resolved = settings == null ? DungeonLevelOverlaySettings.DEFAULTS : settings;
         if (Objects.equals(levelOverlaySettings, resolved)) {
             return;
         }

@@ -34,7 +34,7 @@ public final class EncounterPartyCacheRepository {
     ) {}
 
     public static CacheState ensureState(Connection conn) throws SQLException {
-        String hash = computeCurrentPartyHash(conn);
+        String hash = currentPartyHashForConnection(conn);
         try (PreparedStatement insert = conn.prepareStatement(
                 "INSERT OR IGNORE INTO encounter_party_cache_state "
                         + "(id, party_comp_hash, party_comp_version, analysis_model_version, active_run_id, cache_status, updated_at) "
@@ -68,7 +68,7 @@ public final class EncounterPartyCacheRepository {
 
     public static CacheState invalidateForCurrentParty(Connection conn) throws SQLException {
         CacheState state = ensureState(conn);
-        String currentHash = computeCurrentPartyHash(conn);
+        String currentHash = currentPartyHashForConnection(conn);
         if (!currentHash.equals(state.partyCompHash())) {
             try (PreparedStatement update = conn.prepareStatement(
                     "UPDATE encounter_party_cache_state "
@@ -160,6 +160,10 @@ public final class EncounterPartyCacheRepository {
     }
 
     public static String computeCurrentPartyHash(Connection conn) throws SQLException {
+        return currentPartyHashForConnection(conn);
+    }
+
+    private static String currentPartyHashForConnection(Connection conn) throws SQLException {
         List<Integer> levels = PartyApi.loadActivePartyLevelsForComposition(conn);
         StringBuilder raw = new StringBuilder();
         raw.append("party:");

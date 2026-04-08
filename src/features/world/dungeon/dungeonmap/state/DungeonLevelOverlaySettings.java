@@ -13,6 +13,11 @@ public record DungeonLevelOverlaySettings(
     private static final int DEFAULT_LEVEL_RANGE = 2;
     private static final int MAX_LEVEL_RANGE = 6;
     private static final double DEFAULT_OPACITY = 0.35;
+    public static final DungeonLevelOverlaySettings DEFAULTS = new DungeonLevelOverlaySettings(
+            DungeonLevelOverlayMode.NEARBY,
+            DEFAULT_LEVEL_RANGE,
+            DEFAULT_OPACITY,
+            List.of());
 
     public DungeonLevelOverlaySettings {
         mode = mode == null ? DungeonLevelOverlayMode.OFF : mode;
@@ -25,11 +30,4 @@ public record DungeonLevelOverlaySettings(
                 .toList();
     }
 
-    public static DungeonLevelOverlaySettings defaults() {
-        return new DungeonLevelOverlaySettings(
-                DungeonLevelOverlayMode.NEARBY,
-                DEFAULT_LEVEL_RANGE,
-                DEFAULT_OPACITY,
-                List.of());
-    }
 }

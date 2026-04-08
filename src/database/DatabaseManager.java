@@ -323,7 +323,7 @@ public final class DatabaseManager {
                     + "radius     INTEGER"
                     + ")");
 
-            EncounterSchemaSupport.createSchema(stmt);
+            EncounterSchemaSupport.ensureCompatibility(conn);
 
             stmt.execute("CREATE TABLE IF NOT EXISTS factions ("
                     + "faction_id  INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -371,7 +371,7 @@ public final class DatabaseManager {
                     + "is_dark       INTEGER NOT NULL DEFAULT 0"
                     + ")");
 
-            CampaignStateSchemaSupport.createSchema(stmt);
+            CampaignStateSchemaSupport.ensureCompatibility(conn);
 
             stmt.execute("CREATE TABLE IF NOT EXISTS tile_faction_influence ("
                     + "tile_id      INTEGER NOT NULL REFERENCES hex_tiles(tile_id) ON DELETE CASCADE,"
@@ -538,7 +538,6 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creature_aliases_slug_key ON creature_import_aliases(slug_key)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_map ON hex_tiles(map_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_faction ON hex_tiles(dominant_faction_id)");
-            EncounterSchemaSupport.createIndexes(stmt);
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_world_locations_tile ON world_locations(tile_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_tile_influence_faction ON tile_faction_influence(faction_id)");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_tod_phases_order ON time_of_day_phases(display_order)");
@@ -558,11 +557,9 @@ public final class DatabaseManager {
             ensureSpellCompatibility(conn);
             ensureEncounterAnalysisColumns(conn);
             ensureLootTableCompatibility(conn);
-            EncounterSchemaSupport.ensureCompatibility(conn);
             // Dungeon startup creates only the current schema. Older dungeon storage shapes are unsupported and must
             // be reset explicitly instead of being upgraded in-place at runtime.
             DungeonStorageSupport.createSchema(stmt);
-            CampaignStateSchemaSupport.ensureCompatibility(conn);
             dropLegacyRoleColumns(conn);
 
             // Seed default time-of-day phases (German UI strings)

@@ -55,7 +55,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
     private DungeonMap mapModel = DungeonMap.empty();
     private DungeonViewMode viewMode = DungeonViewMode.GRID;
     private int projectionLevel;
-    private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.defaults();
+    private DungeonLevelOverlaySettings levelOverlaySettings = DungeonLevelOverlaySettings.DEFAULTS;
     private DungeonEditorRenderState editorRenderState = DungeonEditorRenderState.empty();
     private DungeonRuntimeRenderOverlay runtimeRenderOverlay = DungeonRuntimeRenderOverlay.empty();
     private DungeonCanvasInteractionHandler interactionHandler = NOOP_HANDLER;
@@ -167,7 +167,7 @@ public final class DungeonCanvasWorkspace extends BorderPane {
 
     private boolean applyLevelOverlaySettings(DungeonLevelOverlaySettings levelOverlaySettings) {
         DungeonLevelOverlaySettings nextSettings = levelOverlaySettings == null
-                ? DungeonLevelOverlaySettings.defaults()
+                ? DungeonLevelOverlaySettings.DEFAULTS
                 : levelOverlaySettings;
         if (Objects.equals(this.levelOverlaySettings, nextSettings)) {
             return false;

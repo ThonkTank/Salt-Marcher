@@ -21,9 +21,19 @@ public final class DungeonEditorStatePane {
 
     public void refresh(DungeonEditorTool tool, Node toolContent) {
         activeToolLabel.setText((tool == null ? DungeonEditorTool.SELECT : tool).label());
-        content.getChildren().setAll(EditorCards.card("Werkzeug", activeToolLabel));
+        content.getChildren().setAll(editorCard("Werkzeug", activeToolLabel));
         if (toolContent != null) {
             content.getChildren().add(toolContent);
         }
+    }
+
+    private static VBox editorCard(String title, Node... content) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("editor-panel-title");
+        VBox box = new VBox(6);
+        box.getStyleClass().add("editor-card");
+        box.getChildren().add(titleLabel);
+        box.getChildren().addAll(content);
+        return box;
     }
 }

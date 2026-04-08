@@ -13,7 +13,7 @@ public final class EncounterSchemaSupport {
         throw new AssertionError("No instances");
     }
 
-    public static void createSchema(Statement stmt) throws SQLException {
+    private static void createSchema(Statement stmt) throws SQLException {
         stmt.execute("CREATE TABLE IF NOT EXISTS encounters ("
                 + "encounter_id   INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "name           TEXT NOT NULL,"
@@ -45,7 +45,7 @@ public final class EncounterSchemaSupport {
                 + ")");
     }
 
-    public static void createIndexes(Statement stmt) throws SQLException {
+    private static void createIndexes(Statement stmt) throws SQLException {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_slots_encounter ON encounter_slots(encounter_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_slots_order ON encounter_slots(encounter_id, display_order)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounters_created_at ON encounters(created_at)");

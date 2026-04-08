@@ -40,7 +40,7 @@ public final class RoomNarrationPane {
     private final DungeonRoomApplicationService roomApplicationService;
     private final EditorInteractionState editorState;
     private final VBox narrationContent = new VBox(8);
-    private final VBox narrationCard = EditorCards.card("Raumbeschreibung", narrationContent);
+    private final VBox narrationCard = editorCard("Raumbeschreibung", narrationContent);
     private final Map<Long, Button> narrationSaveButtons = new LinkedHashMap<>();
     private final Map<Long, Label> narrationStatusLabels = new LinkedHashMap<>();
 
@@ -176,7 +176,7 @@ public final class RoomNarrationPane {
         narrationStatusLabels.put(card.roomId(), statusLabel);
         saveButton.setOnAction(event -> saveRoomNarration(card, visualArea, exitAreas));
         roomBox.getChildren().addAll(statusLabel, saveButton);
-        return EditorCards.card(card.roomName(), roomBox);
+        return editorCard(card.roomName(), roomBox);
     }
 
     private void saveRoomNarration(RoomNarrationCard card, TextArea visualArea, List<TextArea> exitAreas) {
@@ -219,6 +219,16 @@ public final class RoomNarrationPane {
         area.setWrapText(true);
         area.setPrefRowCount(3);
         return area;
+    }
+
+    private static VBox editorCard(String title, Node... content) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("editor-panel-title");
+        VBox box = new VBox(6);
+        box.getStyleClass().add("editor-card");
+        box.getChildren().add(titleLabel);
+        box.getChildren().addAll(content);
+        return box;
     }
 
     private record RoomNarrationCard(

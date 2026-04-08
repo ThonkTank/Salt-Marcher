@@ -16,7 +16,7 @@ public final class CampaignStateSchemaSupport {
         throw new AssertionError("No instances");
     }
 
-    public static void createSchema(Statement stmt) throws SQLException {
+    private static void createSchema(Statement stmt) throws SQLException {
         stmt.execute("CREATE TABLE IF NOT EXISTS campaign_state ("
                 + "campaign_id         INTEGER PRIMARY KEY DEFAULT 1,"
                 + "map_id              INTEGER REFERENCES hex_maps(map_id),"
