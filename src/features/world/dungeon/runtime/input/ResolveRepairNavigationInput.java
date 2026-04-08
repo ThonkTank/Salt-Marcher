@@ -12,5 +12,18 @@ public record ResolveRepairNavigationInput(
         public NavigationInput {
             heading = heading == null ? "" : heading.trim();
         }
+
+        public static NavigationInput empty() {
+            return new NavigationInput(null, null, 0, "");
+        }
+
+        public static NavigationInput navigation(
+                Long mapId,
+                features.world.dungeon.geometry.GridPoint cell,
+                int levelZ,
+                String heading
+        ) {
+            return new NavigationInput(mapId, cell, levelZ, heading);
+        }
     }
 }
