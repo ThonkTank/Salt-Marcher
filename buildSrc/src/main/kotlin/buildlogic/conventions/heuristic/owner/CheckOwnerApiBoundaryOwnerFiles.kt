@@ -478,6 +478,9 @@ private fun validateOwnerCallExpressionStatement(
     if (expression !is MethodInvocationTree) {
         return listOf("${context.path} :: owner expression statements must be direct orchestration calls")
     }
+    if (isAllowedOwnerInfrastructureUtilityInvocation(expression, sourceFile, snapshot, support, environment)) {
+        return emptyList()
+    }
     val classification = classifyOwnerInvocation(
         invocation = expression,
         sourceFile = sourceFile,
@@ -562,6 +565,9 @@ private fun validateOwnerValueExpression(
 
         Tree.Kind.METHOD_INVOCATION -> {
             val invocation = expression as MethodInvocationTree
+            if (isAllowedOwnerInfrastructureUtilityInvocation(invocation, sourceFile, snapshot, support, environment)) {
+                return emptyList()
+            }
             val classification = classifyOwnerInvocation(
                 invocation = invocation,
                 sourceFile = sourceFile,
