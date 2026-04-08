@@ -24,15 +24,21 @@ public final class LoadNavigationTask {
             var layout = loadResolver.resolveRepairLayout(conn, input.mapId());
             features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot =
                     runtimeApplicationService.loadNavigation(layout);
-            return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
-                    ? features.world.dungeon.runtime.input.LoadNavigationInput.NavigationInput.empty()
-                    : features.world.dungeon.runtime.input.LoadNavigationInput.NavigationInput.navigation(
-                            snapshot.mapId(),
-                            snapshot.cell(),
-                            snapshot.levelZ(),
-                            snapshot.heading() == null ? "" : snapshot.heading().name());
+            return toNavigationInput(snapshot);
         } catch (RuntimeException exception) {
             throw new java.sql.SQLException("Dungeon " + input.mapId() + " konnte nicht geladen werden", exception);
         }
+    }
+
+    private static features.world.dungeon.runtime.input.LoadNavigationInput.NavigationInput toNavigationInput(
+            features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        return snapshot == null || snapshot.isEmpty() || snapshot.cell() == null
+                ? features.world.dungeon.runtime.input.LoadNavigationInput.NavigationInput.empty()
+                : features.world.dungeon.runtime.input.LoadNavigationInput.NavigationInput.navigation(
+                        snapshot.mapId(),
+                        snapshot.cell(),
+                        snapshot.levelZ(),
+                        snapshot.heading() == null ? "" : snapshot.heading().name());
     }
 }
