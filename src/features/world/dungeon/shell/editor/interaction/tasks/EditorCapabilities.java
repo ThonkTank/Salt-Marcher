@@ -1,4 +1,8 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.tasks;
+
+import features.world.dungeon.shell.editor.interaction.input.EditorHitResolution;
+import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
 
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.state.EditorHover;

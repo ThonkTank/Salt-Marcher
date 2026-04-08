@@ -1,11 +1,17 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.state;
 
-import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
+import features.world.dungeon.shell.editor.interaction.input.CellWindowDragSession;
+import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
+import features.world.dungeon.shell.editor.interaction.input.EditorTool;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolPhase;
+import features.world.dungeon.shell.editor.interaction.tasks.EditorCapabilities;
 import features.world.dungeon.state.DungeonEditorTool;
 import features.world.dungeon.state.DungeonEditorSessionState;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;

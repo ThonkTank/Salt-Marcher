@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.input;
 
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.state.EditorHover;

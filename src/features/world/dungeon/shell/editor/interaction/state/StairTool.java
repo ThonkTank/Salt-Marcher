@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.state;
 
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
@@ -18,6 +18,11 @@ import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.stair.model.StairPathPatternKind;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
 import features.world.dungeon.shell.editor.EditorCards;
+import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
+import features.world.dungeon.shell.editor.interaction.input.EditorTool;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolPhase;
+import features.world.dungeon.shell.editor.interaction.tasks.EditorCapabilities;
 import features.world.dungeon.state.DungeonEditorTool;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import features.world.dungeon.state.EditorInteractionState;

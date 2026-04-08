@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.input;
 
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridOccupant;

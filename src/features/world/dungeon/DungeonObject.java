@@ -5,5 +5,8 @@ package features.world.dungeon;
  *
  * <p>Cross-owner seams anchor on this owner root instead of importing internal layer packages directly.
  */
-public abstract class DungeonObject {
+public final class DungeonObject {
+
+    private DungeonObject() {
+    }
 }

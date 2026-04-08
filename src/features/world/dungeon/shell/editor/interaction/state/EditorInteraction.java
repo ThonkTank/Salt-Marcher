@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.state;
 
 import features.world.dungeon.canvas.base.DungeonCanvasCamera;
 import features.world.dungeon.canvas.base.DungeonCanvasInteractionHandler;
@@ -8,6 +8,11 @@ import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
 import features.world.dungeon.shell.interaction.DungeonHitProbe;
 import features.world.dungeon.shell.interaction.DungeonHitSnapshot;
+import features.world.dungeon.shell.editor.interaction.input.EditorHitResolution;
+import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
+import features.world.dungeon.shell.editor.interaction.input.EditorTool;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolPhase;
 import features.world.dungeon.state.DungeonEditorTool;
 import features.world.dungeon.state.DungeonEditorSessionState;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;

@@ -8,7 +8,7 @@ import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
-import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
 import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;

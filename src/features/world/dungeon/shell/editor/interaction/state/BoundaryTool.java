@@ -1,6 +1,6 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.state;
 
-import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
@@ -16,6 +16,12 @@ import features.world.dungeon.state.DungeonEditorSessionState;
 import features.world.dungeon.state.EditorHover;
 import features.world.dungeon.state.EditorHoverScope;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;
+import features.world.dungeon.shell.editor.interaction.input.EditorHitResolution;
+import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
+import features.world.dungeon.shell.editor.interaction.input.EditorTool;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolPhase;
+import features.world.dungeon.shell.editor.interaction.tasks.EditorCapabilities;
 import features.world.dungeon.state.EditorInteractionState;
 import features.world.dungeon.state.EditorPreview;
 import javafx.scene.Node;

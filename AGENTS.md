@@ -9,7 +9,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 **Target structure:** Salt Marcher is a feature-oriented monolith with one binding target architecture:
 - `src/features/<feature>/...` is the top-level product boundary
 - inside a feature, organize new work by **owner slice first**
-- every non-container directory under `src/` is either an owner or one of the four canonical owner-internal layers: `input`, `tasks`, `repository`, `state`
+- every non-container directory under `src/` is either an owner, one of the four canonical owner-internal layers `input`, `tasks`, `repository`, `state`, or an organizational `*Bucket` directory directly under an owner
 - every owner exposes exactly one public root entrypoint named `<Owner>Object` directly in its root package
 - non-feature code stays in shared homes such as `src/database/`, `src/importer/`, `src/shared/`, `src/ui/`, and `resources/`
 
@@ -142,8 +142,10 @@ No other technical layer names are canonical. Legacy directories such as `model`
 ### Public Owner APIs
 
 - Cross-owner imports must go through the target owner's root package and its single public `<Owner>Object` seam.
-- Owner boundaries are derived structurally. Under `src/`, every non-container directory is either an owner or one of the four allowed layers `input`, `tasks`, `repository`, `state`.
-- Subowners must sit directly under their owner. Once one of the four allowed layer segments appears, every later segment is invalid; layers are flat and may not contain nested packages or subowners.
+- Owner boundaries are derived structurally. Under `src/`, every non-container directory is either an owner, one of the four allowed layers `input`, `tasks`, `repository`, `state`, or a direct-child `*Bucket` under an owner.
+- `*Bucket` is the only organizational directory pattern. A directory that is not one of the four layers and does not end with `Bucket` is an owner by default.
+- `*Bucket` directories are transparent organization only: they may contain only `AGENTS.md` plus direct child owners or direct child layer directories, and they may not contain nested `*Bucket` directories.
+- Subowners must sit directly under their owner or inside one direct-child `*Bucket` of that owner. Layers are always flat and may not contain nested packages, subowners, or additional `*Bucket` directories.
 - Each import may cross only one owner edge: parent, direct child, or sibling with the same parent. Do not skip over intermediate owners to reach a grandchild, niece, or cousin owner directly.
 - Foreign code must never import another owner's `input`, `tasks`, `repository`, or `state` packages directly.
 

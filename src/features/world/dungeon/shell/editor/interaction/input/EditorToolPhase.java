@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.input;
 
 public enum EditorToolPhase {
     HOVER,

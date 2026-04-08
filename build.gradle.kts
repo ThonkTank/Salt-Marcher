@@ -779,14 +779,16 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
 
 val checkOwnerApiBoundaryConvention by tasks.registering {
     group = "verification"
-    description = "Fail when touched files drift away from the canonical OwnerObject/input/tasks/repository/state structure."
+    description = "Fail when touched files drift away from the canonical OwnerObject/input/tasks/repository/state/*Bucket structure."
 
     val projectRoot = layout.projectDirectory.asFile.toPath()
     val projectDirFile = layout.projectDirectory.asFile
+    val srcDirFile = projectDirFile.resolve("src")
+    val srcRootPath = srcDirFile.toPath()
     val importPattern = Regex("""^\s*import\s+(?:static\s+)?([a-zA-Z0-9_.*]+);""", RegexOption.MULTILINE)
     val packagePattern = Regex("""^\s*package\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
     val allowedLayers = setOf("input", "tasks", "repository", "state")
-    val stateLayer = "state"
+    val bucketSuffix = "Bucket"
 
     fun gitStdout(vararg args: String): String {
         val process = ProcessBuilder(listOf("git", *args))
@@ -814,67 +816,171 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         return token.filter(Char::isLetterOrDigit).lowercase()
     }
 
-    data class PackageContext(
-        val packageName: String,
-        val rootSegments: List<String>,
-        val logicalSegments: List<String>,
-        val ownerSegments: List<String>,
-        val layerName: String?,
-        val layerIndex: Int?
-    ) {
-        fun ownerPackage(): String {
-            return (rootSegments + ownerSegments).joinToString(".")
-        }
-
-        fun ownerName(): String {
-            return ownerSegments.last()
-        }
+    fun srcRelativePath(file: File): String {
+        return srcRootPath.relativize(file.toPath()).toString().replace('\\', '/')
     }
 
-    fun packageContext(packageName: String?): PackageContext? {
-        if (packageName.isNullOrBlank()) {
-            return null
+    fun srcRelativeSegments(file: File): List<String> {
+        val relativePath = srcRelativePath(file)
+        if (relativePath.isBlank()) {
+            return emptyList()
         }
-        val segments = packageName.split('.')
-        if (segments.isEmpty()) {
-            return null
+        return relativePath.split('/').filter(String::isNotBlank)
+    }
+
+    fun repoRelativePath(file: File): String {
+        return projectRoot.relativize(file.toPath()).toString().replace('\\', '/')
+    }
+
+    fun packageNameFor(file: File): String {
+        return srcRelativeSegments(file).joinToString(".")
+    }
+
+    fun isBucketName(name: String): Boolean {
+        return name.endsWith(bucketSuffix)
+    }
+
+    fun directChildren(dir: File): List<File> {
+        return dir.listFiles()?.sortedBy(File::getName).orEmpty()
+    }
+
+    data class OwnerNode(
+        val dir: File,
+        val srcRelativePath: String,
+        val packageName: String,
+        val parentOwnerPackageName: String?
+    ) {
+        fun ownerName(): String = dir.name
+    }
+
+    data class LayerNode(
+        val dir: File,
+        val srcRelativePath: String,
+        val packageName: String,
+        val layerName: String,
+        val owner: OwnerNode
+    )
+
+    val ownersByDirPath = linkedMapOf<String, OwnerNode>()
+    val ownersByPackage = linkedMapOf<String, OwnerNode>()
+    val layersByDirPath = linkedMapOf<String, LayerNode>()
+    val invalidReasonsByDirPath = linkedMapOf<String, MutableList<String>>()
+
+    fun recordInvalid(dir: File, reason: String) {
+        invalidReasonsByDirPath.getOrPut(srcRelativePath(dir)) { mutableListOf() }.add(reason)
+    }
+
+    fun scanLayer(owner: OwnerNode, dir: File) {
+        val relativePath = srcRelativePath(dir)
+        if (directChildren(dir).any(File::isDirectory)) {
+            recordInvalid(dir, "${repoRelativePath(dir)} :: layers are flat and may not contain subdirectories")
         }
-        val rootSegments = if (segments.first() == "features") listOf("features") else emptyList()
-        val logicalSegments = if (rootSegments.isEmpty()) segments else segments.drop(1)
-        if (logicalSegments.isEmpty()) {
-            return null
-        }
-        val layerIndex = logicalSegments.indexOfFirst { it in allowedLayers }.takeIf { it >= 0 }
-        val ownerSegments = if (layerIndex == null) logicalSegments else logicalSegments.take(layerIndex)
-        if (ownerSegments.isEmpty()) {
-            return null
-        }
-        val layerName = layerIndex?.let(logicalSegments::get)
-        return PackageContext(
-            packageName = packageName,
-            rootSegments = rootSegments,
-            logicalSegments = logicalSegments,
-            ownerSegments = ownerSegments,
-            layerName = layerName,
-            layerIndex = layerIndex
+        layersByDirPath[relativePath] = LayerNode(
+            dir = dir,
+            srcRelativePath = relativePath,
+            packageName = packageNameFor(dir),
+            layerName = dir.name,
+            owner = owner
         )
     }
 
-    fun ownerPackagePrefix(packageName: String?): String? {
-        return packageContext(packageName)?.ownerPackage()
+    fun scanOwner(dir: File, parentOwner: OwnerNode?) {
+        val relativePath = srcRelativePath(dir)
+        val owner = OwnerNode(
+            dir = dir,
+            srcRelativePath = relativePath,
+            packageName = packageNameFor(dir),
+            parentOwnerPackageName = parentOwner?.packageName
+        )
+        ownersByDirPath[relativePath] = owner
+        ownersByPackage[owner.packageName] = owner
+        directChildren(dir).filter(File::isDirectory).forEach { child ->
+            when {
+                child.name in allowedLayers -> scanLayer(owner, child)
+                isBucketName(child.name) -> {
+                    val disallowedFiles = directChildren(child).filter(File::isFile).filter { it.name != "AGENTS.md" }
+                    if (disallowedFiles.isNotEmpty()) {
+                        recordInvalid(
+                            child,
+                            "${repoRelativePath(child)} :: *Bucket directories may contain only AGENTS.md and child owner/layer directories"
+                        )
+                    }
+                    directChildren(child).filter(File::isDirectory).forEach { bucketChild ->
+                        when {
+                            bucketChild.name in allowedLayers -> scanLayer(owner, bucketChild)
+                            isBucketName(bucketChild.name) -> recordInvalid(
+                                bucketChild,
+                                "${repoRelativePath(bucketChild)} :: *Bucket directories may not contain nested *Bucket directories"
+                            )
+                            else -> scanOwner(bucketChild, owner)
+                        }
+                    }
+                }
+                else -> scanOwner(child, owner)
+            }
+        }
     }
 
-    fun parentOwnerPackagePrefix(ownerPackagePrefix: String?): String? {
-        val ownerContext = packageContext(ownerPackagePrefix) ?: return null
-        if (ownerContext.ownerSegments.size <= 1) {
+    if (srcDirFile.isDirectory) {
+        directChildren(srcDirFile).filter(File::isDirectory).forEach { child ->
+            when {
+                child.name == "features" -> {
+                    directChildren(child).filter(File::isDirectory).forEach { featureChild ->
+                        when {
+                            featureChild.name in allowedLayers -> recordInvalid(
+                                featureChild,
+                                "${repoRelativePath(featureChild)} :: canonical layers may appear only inside an owner or *Bucket"
+                            )
+                            isBucketName(featureChild.name) -> recordInvalid(
+                                featureChild,
+                                "${repoRelativePath(featureChild)} :: *Bucket directories may appear only directly under an owner"
+                            )
+                            else -> scanOwner(featureChild, null)
+                        }
+                    }
+                }
+                child.name in allowedLayers -> recordInvalid(
+                    child,
+                    "${repoRelativePath(child)} :: canonical layers may appear only inside an owner or *Bucket"
+                )
+                isBucketName(child.name) -> recordInvalid(
+                    child,
+                    "${repoRelativePath(child)} :: *Bucket directories may appear only directly under an owner"
+                )
+                else -> scanOwner(child, null)
+            }
+        }
+    }
+
+    val ownersByDescendingPackageLength = ownersByPackage.values.sortedByDescending { it.packageName.length }
+
+    fun ownerForPackage(packageName: String?): OwnerNode? {
+        if (packageName.isNullOrBlank()) {
             return null
         }
-        return (ownerContext.rootSegments + ownerContext.ownerSegments.dropLast(1)).joinToString(".")
+        return ownersByDescendingPackageLength.firstOrNull { owner ->
+            packageName == owner.packageName || packageName.startsWith(owner.packageName + ".")
+        }
+    }
+
+    fun ownerForFile(sourceFile: File): OwnerNode? {
+        var current = sourceFile.parentFile
+        while (current != null && current.toPath().startsWith(srcRootPath)) {
+            val owner = ownersByDirPath[srcRelativePath(current)]
+            if (owner != null) {
+                return owner
+            }
+            current = current.parentFile
+        }
+        return null
+    }
+
+    fun layerForFile(sourceFile: File): LayerNode? {
+        return layersByDirPath[srcRelativePath(sourceFile.parentFile)]
     }
 
     fun importedPackageName(imported: String, knownPackages: Set<String>): String? {
-        val normalizedImport = imported.removeSuffix(".*")
-        var candidate = normalizedImport
+        var candidate = imported.removeSuffix(".*")
         while (candidate.isNotBlank()) {
             if (candidate in knownPackages) {
                 return candidate
@@ -888,65 +994,39 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         return null
     }
 
-    fun packageStructureReason(packageName: String?): String? {
-        val context = packageContext(packageName) ?: return null
-        val layerIndexes = context.logicalSegments.withIndex()
-            .filter { (_, segment) -> segment in allowedLayers }
-            .map { (index, _) -> index }
-        if (layerIndexes.size > 1) {
-            return "$packageName :: owner packages may contain at most one layer segment"
+    fun ownerRootReasons(owner: OwnerNode): List<String> {
+        if (!owner.dir.isDirectory) {
+            return listOf("${repoRelativePath(owner.dir)} :: owner root directory is missing")
         }
-        if (context.layerIndex != null && context.layerIndex != context.logicalSegments.lastIndex) {
-            return "$packageName :: layers must be flat and may not contain nested packages or subowners"
+        val directJavaFiles = directChildren(owner.dir)
+            .filter { child -> child.isFile && child.name.endsWith(".java") && child.name != "package-info.java" }
+        val matchingRootObjects = directJavaFiles.filter { child ->
+            child.name.endsWith("Object.java") &&
+                normalizedToken(child.name.removeSuffix(".java").removeSuffix("Object")) == normalizedToken(owner.ownerName())
         }
-        return null
-    }
-
-    fun matchingRootObjectFile(ownerPackagePrefix: String): File? {
-        val ownerContext = packageContext(ownerPackagePrefix) ?: return null
-        val ownerDir = projectDirFile.resolve("src/" + ownerPackagePrefix.replace('.', '/'))
-        if (!ownerDir.isDirectory) {
-            return null
-        }
-        return ownerDir.listFiles()
-            ?.filter { child -> child.isFile && child.name.endsWith("Object.java") }
-            ?.singleOrNull { child ->
-                normalizedToken(child.name.removeSuffix(".java").removeSuffix("Object")) ==
-                    normalizedToken(ownerContext.ownerName())
-            }
-    }
-
-    fun ownerRootReasons(ownerPackagePrefix: String): List<String> {
-        val ownerContext = packageContext(ownerPackagePrefix) ?: return listOf("$ownerPackagePrefix :: invalid owner package")
-        val ownerDir = projectDirFile.resolve("src/" + ownerPackagePrefix.replace('.', '/'))
-        if (!ownerDir.isDirectory) {
-            return listOf("$ownerPackagePrefix :: owner root directory is missing")
-        }
-        val directJavaFiles = ownerDir.listFiles()
-            ?.filter { child -> child.isFile && child.name.endsWith(".java") && child.name != "package-info.java" }
-            .orEmpty()
-        val matchingRootObject = matchingRootObjectFile(ownerPackagePrefix)
+        val matchingRootObject = matchingRootObjects.singleOrNull()
         val reasons = mutableListOf<String>()
         if (matchingRootObject == null) {
-            reasons += "$ownerPackagePrefix :: owner root must contain exactly one public ${ownerContext.ownerName()}Object root type"
+            reasons += "${repoRelativePath(owner.dir)} :: owner root must contain exactly one public final *Object root type that matches the directory name"
         }
         if (directJavaFiles.size != 1 || matchingRootObject == null || directJavaFiles.single() != matchingRootObject) {
-            reasons += "$ownerPackagePrefix :: owner root must not contain Java types besides its single ${ownerContext.ownerName()}Object"
+            reasons += "${repoRelativePath(owner.dir)} :: owner root must not contain Java types besides its single matching *Object"
         }
         matchingRootObject?.let { rootObjectFile ->
             val className = rootObjectFile.name.removeSuffix(".java")
             val rootText = rootObjectFile.readText()
             val isPublicFinalClass = Regex("""(?m)^\s*public\s+final\s+class\s+$className\b""").containsMatchIn(rootText)
             if (!isPublicFinalClass) {
-                reasons += "$ownerPackagePrefix :: $className must be declared as a public final class"
+                reasons += "${repoRelativePath(rootObjectFile)} :: $className must be declared as a public final class"
             }
         }
         return reasons
     }
 
-    fun layerTemplateReason(path: String, sourceText: String, sourcePackage: String?): String? {
-        val context = packageContext(sourcePackage) ?: return null
-        val layerName = context.layerName ?: return null
+    fun layerTemplateReason(path: String, sourceText: String, layer: LayerNode?): String? {
+        if (layer == null || path.endsWith("package-info.java")) {
+            return null
+        }
         val className = path.substringAfterLast('/').removeSuffix(".java")
 
         fun isRecord(): Boolean = Regex("""(?m)^\s*(public\s+)?record\s+$className\b""").containsMatchIn(sourceText)
@@ -963,7 +1043,7 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
             Regex("""(?m)^\s*public\s+(?!static\b)(?!final\b)(?!class\b|record\b|enum\b|sealed\b|interface\b)[\w<>\[\], ?]+\s+\w+\s*\(""")
                 .containsMatchIn(sourceText)
 
-        return when (layerName) {
+        return when (layer.layerName) {
             "input" -> {
                 if (isRecord() || isEnum() || isSealedInterface()) {
                     null
@@ -991,7 +1071,7 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                     else -> null
                 }
             }
-            stateLayer -> {
+            "state" -> {
                 if (isRecord() || isEnum() || isFinalClass()) {
                     null
                 } else {
@@ -1002,16 +1082,41 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         }
     }
 
-    fun isNeighbor(sourceOwnerPackagePrefix: String?, targetOwnerPackagePrefix: String): Boolean {
-        if (sourceOwnerPackagePrefix == null) {
-            return parentOwnerPackagePrefix(targetOwnerPackagePrefix) == null
+    fun sourcePlacementReason(path: String, sourceFile: File, sourcePackage: String?): String? {
+        val expectedPackage = packageNameFor(sourceFile.parentFile)
+        if (sourcePackage != expectedPackage) {
+            return "$path :: package must match the filesystem grammar exactly ($expectedPackage)"
         }
-        val sourceParent = parentOwnerPackagePrefix(sourceOwnerPackagePrefix)
-        val targetParent = parentOwnerPackagePrefix(targetOwnerPackagePrefix)
-        if (sourceParent == targetOwnerPackagePrefix) {
+        val parentDirPath = srcRelativePath(sourceFile.parentFile)
+        if (layersByDirPath[parentDirPath] != null || ownersByDirPath[parentDirPath] != null) {
+            return null
+        }
+        if (isBucketName(sourceFile.parentFile.name)) {
+            return "$path :: Java files may not live directly inside *Bucket directories"
+        }
+        return "$path :: Java files must live either in an owner root or in one of the four canonical layers"
+    }
+
+    fun ancestorStructureReasons(sourceFile: File): Sequence<String> {
+        val reasons = linkedSetOf<String>()
+        var current = sourceFile.parentFile
+        while (current != null && current.toPath().startsWith(srcRootPath)) {
+            invalidReasonsByDirPath[srcRelativePath(current)].orEmpty().forEach(reasons::add)
+            current = current.parentFile
+        }
+        return reasons.asSequence()
+    }
+
+    fun isNeighbor(sourceOwner: OwnerNode?, targetOwner: OwnerNode): Boolean {
+        if (sourceOwner == null) {
+            return targetOwner.parentOwnerPackageName == null
+        }
+        val sourceParent = sourceOwner.parentOwnerPackageName
+        val targetParent = targetOwner.parentOwnerPackageName
+        if (sourceParent == targetOwner.packageName) {
             return true
         }
-        if (targetParent == sourceOwnerPackagePrefix) {
+        if (targetParent == sourceOwner.packageName) {
             return true
         }
         return sourceParent != null && sourceParent == targetParent
@@ -1045,7 +1150,7 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                 packagePattern.find(sourceFile.readText())?.groupValues?.get(1)
             }
             .toSet()
-        val touchedOwnerRoots = linkedSetOf<String>()
+        val touchedOwnerRoots = linkedSetOf<OwnerNode>()
         fileTree("src") {
             include("**/*.java")
         }.files
@@ -1057,16 +1162,15 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
             .filter { (path, _) -> path in touchedPaths }
             .forEach { (_, sourceFile) ->
                 val sourceText = sourceFile.readText()
-                val sourcePackage = packagePattern.find(sourceText)?.groupValues?.get(1)
-                ownerPackagePrefix(sourcePackage)?.let(touchedOwnerRoots::add)
+                ownerForFile(sourceFile)?.let(touchedOwnerRoots::add)
                 importPattern.findAll(sourceText)
                     .map { match -> match.groupValues[1] }
                     .mapNotNull { imported -> importedPackageName(imported, knownPackages) }
-                    .mapNotNull(::ownerPackagePrefix)
+                    .mapNotNull(::ownerForPackage)
                     .forEach(touchedOwnerRoots::add)
             }
         val ownerRootObjectOffenders = touchedOwnerRoots.asSequence()
-            .flatMap { ownerPackage -> ownerRootReasons(ownerPackage).asSequence() }
+            .flatMap { owner -> ownerRootReasons(owner).asSequence() }
             .sorted()
 
         val offenders = fileTree("src") {
@@ -1081,31 +1185,28 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
             .flatMap { (path, sourceFile) ->
                 val sourceText = sourceFile.readText()
                 val sourcePackage = packagePattern.find(sourceText)?.groupValues?.get(1)
-                val sourceOwner = ownerPackagePrefix(sourcePackage)
-                val packagePlacementOffender = packageStructureReason(sourcePackage)?.let { reason ->
-                    sequenceOf("$path :: $reason")
-                } ?: emptySequence()
-                val layerTemplateOffender = layerTemplateReason(path, sourceText, sourcePackage)?.let { reason ->
-                    sequenceOf(reason)
-                } ?: emptySequence()
+                val sourceOwner = ownerForFile(sourceFile)
+                val layer = layerForFile(sourceFile)
+                val placementOffender = sourcePlacementReason(path, sourceFile, sourcePackage)?.let(::sequenceOf) ?: emptySequence()
+                val layerTemplateOffender = layerTemplateReason(path, sourceText, layer)?.let(::sequenceOf) ?: emptySequence()
+                val structureOffenders = ancestorStructureReasons(sourceFile)
                 val importOffenders = importPattern.findAll(sourceText)
                     .map { match -> match.groupValues[1] }
                     .mapNotNull { imported ->
                         val importedPackage = importedPackageName(imported, knownPackages) ?: return@mapNotNull null
-                        val targetOwner = ownerPackagePrefix(importedPackage) ?: return@mapNotNull null
+                        val targetOwner = ownerForPackage(importedPackage) ?: return@mapNotNull null
                         if (sourceOwner == targetOwner) {
                             return@mapNotNull null
                         }
-                        val usesOwnerRootPackage = importedPackage == targetOwner
+                        val usesOwnerRootPackage = importedPackage == targetOwner.packageName
                         val neighbor = isNeighbor(sourceOwner, targetOwner)
                         if (usesOwnerRootPackage && neighbor) {
                             return@mapNotNull null
                         }
-                        val sourceLabel = sourceOwner ?: "<external>"
                         val reason = buildString {
                             if (!usesOwnerRootPackage) {
                                 append("foreign owner imports must go through the owner root package ")
-                                append(targetOwner)
+                                append(targetOwner.packageName)
                             }
                             if (!neighbor) {
                                 if (isNotEmpty()) {
@@ -1114,9 +1215,9 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                                 append("imports may cross only one owner edge")
                             }
                         }
-                        "$path -> $imported :: $sourceLabel -> $targetOwner :: $reason"
+                        "$path -> $imported :: ${sourceOwner?.packageName ?: "<external>"} -> ${targetOwner.packageName} :: $reason"
                     }
-                packagePlacementOffender + layerTemplateOffender + importOffenders
+                placementOffender + layerTemplateOffender + structureOffenders + importOffenders
             }
             .plus(ownerRootObjectOffenders.asSequence())
             .sorted()
@@ -1126,9 +1227,9 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
             val details = offenders.joinToString(separator = "\n") { offender -> " - $offender" }
             throw GradleException(
                 "Owner object boundary drift detected.\n" +
-                "Touched files must follow the canonical OwnerObject/input/tasks/repository/state structure.\n" +
-                "Foreign owner access must stop at the target owner's root package and may cross only one owner edge.\n" +
-                "Offending imports:\n$details"
+                    "Touched files must follow the canonical OwnerObject/input/tasks/repository/state/*Bucket filesystem grammar.\n" +
+                    "Foreign owner access must stop at the target owner's root package and may cross only one owner edge.\n" +
+                    "Offending imports:\n$details"
             )
         }
     }

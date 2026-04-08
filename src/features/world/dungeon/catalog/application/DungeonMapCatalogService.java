@@ -1,7 +1,7 @@
 package features.world.dungeon.catalog.application;
 
 import database.DatabaseManager;
-import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
 import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.catalog.persistence.DungeonMapCatalogRepository;

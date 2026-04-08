@@ -1,13 +1,4 @@
-package features.world.dungeon.dungeonmap.cluster.application;
-
-import database.DatabaseManager;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterDeleteRequest;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterPaintRequest;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest;
-import features.world.dungeon.dungeonmap.cluster.model.Cluster;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterDefinitionRequest;
-import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
+package features.world.dungeon.dungeonmap.cluster.application.state;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -30,29 +21,31 @@ import java.util.function.Supplier;
 public final class DungeonClusterApplicationService {
 
     private final features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService;
+    private final features.world.dungeon.dungeonmap.DungeonMapObject mapObject;
     private final features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository;
-    private final DungeonClusterRepository clusterRepository;
-    private final features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository corridorRepository;
-    private final features.world.dungeon.repository.DungeonTransitionRepository transitionRepository;
+    private final features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository;
 
     public DungeonClusterApplicationService(
             features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
             features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
-            DungeonClusterRepository clusterRepository,
+            features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository,
             features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository corridorRepository,
             features.world.dungeon.repository.DungeonTransitionRepository transitionRepository
     ) {
         this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
+        this.mapObject = new features.world.dungeon.dungeonmap.DungeonMapObject(
+                mapRepository,
+                mapApplicationService,
+                new features.world.dungeon.dungeonmap.corridor.CorridorObject(corridorRepository),
+                new features.world.dungeon.transition.TransitionObject(transitionRepository));
         this.clusterRepository = Objects.requireNonNull(clusterRepository, "clusterRepository");
-        this.corridorRepository = Objects.requireNonNull(corridorRepository, "corridorRepository");
-        this.transitionRepository = Objects.requireNonNull(transitionRepository, "transitionRepository");
     }
 
     public DungeonClusterApplicationService(
             features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
             features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
-            DungeonClusterRepository clusterRepository,
+            features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository,
             features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository corridorRepository,
             features.world.dungeon.repository.DungeonRoomRepository roomRepository,
             features.world.dungeon.repository.DungeonTransitionRepository transitionRepository
@@ -69,7 +62,7 @@ public final class DungeonClusterApplicationService {
         if (resolvedCells.isEmpty()) {
             return;
         }
-        try (Connection conn = DatabaseManager.getConnection()) {
+        try (Connection conn = database.DatabaseManager.getConnection()) {
             features.world.dungeon.application.support.DungeonTransactionRunner.inTransaction(conn, () -> {
                 rewriteSurface(conn, resolvedRequest.mapId(), resolvedRequest.levelZ(), resolvedCells, resolvedRequest.mode());
                 return null;
@@ -86,7 +79,7 @@ public final class DungeonClusterApplicationService {
         if (resolvedCells.isEmpty()) {
             return;
         }
-        try (Connection conn = DatabaseManager.getConnection()) {
+        try (Connection conn = database.DatabaseManager.getConnection()) {
             features.world.dungeon.application.support.DungeonTransactionRunner.inTransaction(conn, () -> {
                 applyFloorEdit(
                         conn,
@@ -116,7 +109,7 @@ public final class DungeonClusterApplicationService {
             return;
         }
 
-        java.util.Map<Long, Set<features.world.dungeon.geometry.GridPoint>> requestedByClusterId = new java.util.LinkedHashMap<>();
+        Map<Long, Set<features.world.dungeon.geometry.GridPoint>> requestedByClusterId = new LinkedHashMap<>();
         for (features.world.dungeon.model.structures.room.Room room : affectedRooms) {
             if (room == null || room.roomId() == null) {
                 continue;
@@ -149,7 +142,7 @@ public final class DungeonClusterApplicationService {
         }
 
         for (Long clusterId : requestedByClusterId.keySet().stream().sorted().toList()) {
-            Cluster cluster = workingLayout.findCluster(clusterId);
+            features.world.dungeon.dungeonmap.cluster.model.Cluster cluster = workingLayout.findCluster(clusterId);
             if (cluster == null) {
                 continue;
             }
@@ -166,11 +159,15 @@ public final class DungeonClusterApplicationService {
             if (!changed) {
                 continue;
             }
-            Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.FloorCellsEdit(
+            features.world.dungeon.dungeonmap.cluster.model.Cluster updatedCluster = cluster.mutated(new features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.FloorCellsEdit(
                     levelZ,
                     features.world.dungeon.geometry.GridArea.of(clusterRequestedCells),
-                    deleteFloor ? ClusterMutationRequest.CellEditMode.REMOVE : ClusterMutationRequest.CellEditMode.ADD));
-            persistClusterRewrite(conn, mapId, workingLayout, ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
+                    deleteFloor ? features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.CellEditMode.REMOVE : features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.CellEditMode.ADD));
+            persistClusterRewrite(
+                    conn,
+                    mapId,
+                    workingLayout,
+                    features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
             workingLayout = requireLayout(conn, mapId);
         }
     }
@@ -184,7 +181,7 @@ public final class DungeonClusterApplicationService {
         if (resolvedSegments.isEmpty()) {
             return;
         }
-        try (Connection conn = DatabaseManager.getConnection()) {
+        try (Connection conn = database.DatabaseManager.getConnection()) {
             features.world.dungeon.application.support.DungeonTransactionRunner.inTransaction(conn, () -> {
                 editBoundary(
                         conn,
@@ -207,14 +204,14 @@ public final class DungeonClusterApplicationService {
                 || resolvedRequest.targetBoundarySegment() == null) {
             throw new IllegalArgumentException("Local door move requires mapId, clusterId, source boundary, and target boundary");
         }
-        try (Connection conn = DatabaseManager.getConnection()) {
+        try (Connection conn = database.DatabaseManager.getConnection()) {
             features.world.dungeon.application.support.DungeonTransactionRunner.inTransaction(conn, () -> {
                 features.world.dungeon.dungeonmap.model.DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
-                Cluster cluster = layout.findCluster(resolvedRequest.clusterId());
+                features.world.dungeon.dungeonmap.cluster.model.Cluster cluster = layout.findCluster(resolvedRequest.clusterId());
                 if (cluster == null) {
                     return null;
                 }
-                Cluster updatedCluster = cluster.mutated(new ClusterMutationRequest.DoorMove(
+                features.world.dungeon.dungeonmap.cluster.model.Cluster updatedCluster = cluster.mutated(new features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.DoorMove(
                         resolvedRequest.levelZ(),
                         resolvedRequest.sourceBoundarySegment(),
                         resolvedRequest.targetBoundarySegment()));
@@ -223,7 +220,7 @@ public final class DungeonClusterApplicationService {
                             conn,
                             resolvedRequest.mapId(),
                             layout,
-                            ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
+                            features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
                 }
                 return null;
             });
@@ -243,9 +240,10 @@ public final class DungeonClusterApplicationService {
         }
         features.world.dungeon.dungeonmap.model.DungeonMap layout = requireLayout(conn, mapId);
         Set<features.world.dungeon.geometry.GridPoint> requestedCells = cells.cells();
-        List<Cluster> overlappingClusters = overlappingClustersAtLevel(layout, requestedCells, levelZ).stream()
-                .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
-                .toList();
+        List<features.world.dungeon.dungeonmap.cluster.model.Cluster> overlappingClusters =
+                overlappingClustersAtLevel(layout, requestedCells, levelZ).stream()
+                        .sorted(Comparator.comparing(cluster -> cluster.clusterId() == null ? Long.MAX_VALUE : cluster.clusterId()))
+                        .toList();
         if (overlappingClusters.isEmpty()) {
             persistClusterRewrite(
                     conn,
@@ -255,10 +253,11 @@ public final class DungeonClusterApplicationService {
             return;
         }
 
-        ClusterRewriteRequest rewriteRequest = overlappingClusters.getFirst().rewritePaint(new ClusterPaintRequest(
-                cells,
-                overlappingClusters,
-                levelZ));
+        features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest =
+                overlappingClusters.getFirst().rewritePaint(new features.world.dungeon.dungeonmap.cluster.model.ClusterPaintRequest(
+                        cells,
+                        overlappingClusters,
+                        levelZ));
         if (rewriteRequest == null || !rewriteRequest.hasChanges()) {
             return;
         }
@@ -276,20 +275,21 @@ public final class DungeonClusterApplicationService {
         }
 
         List<Long> affectedClusterIds = overlappingClustersAtLevel(workingLayout, cells.cells(), levelZ).stream()
-                .map(Cluster::clusterId)
+                .map(features.world.dungeon.dungeonmap.cluster.model.Cluster::clusterId)
                 .filter(Objects::nonNull)
                 .sorted()
                 .toList();
         for (Long clusterId : affectedClusterIds) {
-            Cluster cluster = workingLayout.findCluster(clusterId);
+            features.world.dungeon.dungeonmap.cluster.model.Cluster cluster = workingLayout.findCluster(clusterId);
             if (cluster == null) {
                 continue;
             }
             features.world.dungeon.dungeonmap.model.DungeonMap layoutSnapshot = workingLayout;
-            ClusterRewriteRequest rewriteRequest = cluster.rewriteDelete(new ClusterDeleteRequest(
-                    cells,
-                    levelZ,
-                    () -> nextRoomName(layoutSnapshot, reservedNames)));
+            features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest =
+                    cluster.rewriteDelete(new features.world.dungeon.dungeonmap.cluster.model.ClusterDeleteRequest(
+                            cells,
+                            levelZ,
+                            () -> nextRoomName(layoutSnapshot, reservedNames)));
             if (rewriteRequest == null || !rewriteRequest.hasChanges()) {
                 continue;
             }
@@ -325,14 +325,15 @@ public final class DungeonClusterApplicationService {
         if (resolvedTranslation.isZero()) {
             return;
         }
-        try (Connection conn = DatabaseManager.getConnection()) {
+        try (Connection conn = database.DatabaseManager.getConnection()) {
             features.world.dungeon.application.support.DungeonTransactionRunner.inTransaction(conn, () -> {
                 features.world.dungeon.dungeonmap.model.DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
-                Cluster cluster = requireCluster(layout, resolvedRequest.clusterId());
-                ClusterRewriteRequest rewriteRequest = ClusterRewriteRequest.of(
-                        List.of(cluster),
-                        List.of(cluster.mutated(new ClusterMutationRequest.Translation(resolvedTranslation))),
-                        resolvedTranslation);
+                features.world.dungeon.dungeonmap.cluster.model.Cluster cluster = requireCluster(layout, resolvedRequest.clusterId());
+                features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest =
+                        features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest.of(
+                                List.of(cluster),
+                                List.of(cluster.mutated(new features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.Translation(resolvedTranslation))),
+                                resolvedTranslation);
                 persistClusterRewrite(conn, resolvedRequest.mapId(), layout, rewriteRequest);
                 return null;
             });
@@ -368,39 +369,47 @@ public final class DungeonClusterApplicationService {
             return;
         }
         features.world.dungeon.dungeonmap.model.DungeonMap layout = requireLayout(conn, mapId);
-        Cluster cluster = layout.findCluster(clusterId);
+        features.world.dungeon.dungeonmap.cluster.model.Cluster cluster = layout.findCluster(clusterId);
         if (cluster == null) {
             return;
         }
-        Cluster updatedCluster = switch (target) {
-            case WALL -> cluster.mutated(new ClusterMutationRequest.WallPathEdit(
+        features.world.dungeon.dungeonmap.cluster.model.Cluster updatedCluster = switch (target) {
+            case WALL -> cluster.mutated(new features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.WallPathEdit(
                     levelZ,
                     segments,
                     mode == ClusterBoundaryEditMode.DELETE
-                            ? ClusterMutationRequest.BoundaryEditMode.DELETE
-                            : ClusterMutationRequest.BoundaryEditMode.CREATE));
-            case INTERIOR_DOOR -> cluster.mutated(new ClusterMutationRequest.DoorSegmentsEdit(
+                            ? features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.BoundaryEditMode.DELETE
+                            : features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.BoundaryEditMode.CREATE));
+            case INTERIOR_DOOR -> cluster.mutated(new features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.DoorSegmentsEdit(
                     levelZ,
                     segments,
                     mode == ClusterBoundaryEditMode.DELETE
-                            ? ClusterMutationRequest.BoundaryEditMode.DELETE
-                            : ClusterMutationRequest.BoundaryEditMode.CREATE,
-                    ClusterMutationRequest.DoorScope.INTERIOR));
-            case EXTERIOR_DOOR -> cluster.mutated(new ClusterMutationRequest.DoorSegmentsEdit(
+                            ? features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.BoundaryEditMode.DELETE
+                            : features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.BoundaryEditMode.CREATE,
+                    features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.DoorScope.INTERIOR));
+            case EXTERIOR_DOOR -> cluster.mutated(new features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.DoorSegmentsEdit(
                     levelZ,
                     segments,
                     mode == ClusterBoundaryEditMode.DELETE
-                            ? ClusterMutationRequest.BoundaryEditMode.DELETE
-                            : ClusterMutationRequest.BoundaryEditMode.CREATE,
-                    ClusterMutationRequest.DoorScope.EXTERIOR));
+                            ? features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.BoundaryEditMode.DELETE
+                            : features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.BoundaryEditMode.CREATE,
+                    features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest.DoorScope.EXTERIOR));
         };
         if (updatedCluster == cluster) {
             return;
         }
-        persistClusterRewrite(conn, mapId, layout, ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
+        persistClusterRewrite(
+                conn,
+                mapId,
+                layout,
+                features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest.of(List.of(cluster), List.of(updatedCluster)));
     }
 
-    private static List<Cluster> overlappingClustersAtLevel(features.world.dungeon.dungeonmap.model.DungeonMap layout, Set<features.world.dungeon.geometry.GridPoint> cells, int levelZ) {
+    private static List<features.world.dungeon.dungeonmap.cluster.model.Cluster> overlappingClustersAtLevel(
+            features.world.dungeon.dungeonmap.model.DungeonMap layout,
+            Set<features.world.dungeon.geometry.GridPoint> cells,
+            int levelZ
+    ) {
         return layout.overlappingClusters(features.world.dungeon.geometry.GridArea.of(cells)).stream()
                 .filter(cluster -> cluster != null && cluster.roomTopology().rooms().stream()
                         .anyMatch(room -> room != null
@@ -408,7 +417,11 @@ public final class DungeonClusterApplicationService {
                 .toList();
     }
 
-    private static List<features.world.dungeon.model.structures.room.Room> overlappingRoomsAtLevel(features.world.dungeon.dungeonmap.model.DungeonMap layout, Set<features.world.dungeon.geometry.GridPoint> cells, int levelZ) {
+    private static List<features.world.dungeon.model.structures.room.Room> overlappingRoomsAtLevel(
+            features.world.dungeon.dungeonmap.model.DungeonMap layout,
+            Set<features.world.dungeon.geometry.GridPoint> cells,
+            int levelZ
+    ) {
         if (layout == null || cells == null || cells.isEmpty()) {
             return List.of();
         }
@@ -445,8 +458,11 @@ public final class DungeonClusterApplicationService {
         return layout;
     }
 
-    private static Cluster requireCluster(features.world.dungeon.dungeonmap.model.DungeonMap layout, long clusterId) throws SQLException {
-        Cluster cluster = layout == null ? null : layout.findCluster(clusterId);
+    private static features.world.dungeon.dungeonmap.cluster.model.Cluster requireCluster(
+            features.world.dungeon.dungeonmap.model.DungeonMap layout,
+            long clusterId
+    ) throws SQLException {
+        features.world.dungeon.dungeonmap.cluster.model.Cluster cluster = layout == null ? null : layout.findCluster(clusterId);
         if (cluster == null) {
             throw new SQLException("Cluster " + clusterId + " existiert nicht");
         }
@@ -457,43 +473,18 @@ public final class DungeonClusterApplicationService {
             Connection conn,
             long mapId,
             features.world.dungeon.dungeonmap.model.DungeonMap originalLayout,
-            ClusterRewriteRequest rewriteRequest
+            features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest
     ) throws SQLException {
         if (conn == null || originalLayout == null || rewriteRequest == null || !rewriteRequest.hasChanges()) {
             return;
         }
-        mapApplicationService.validateClusterRewrite(new features.world.dungeon.dungeonmap.api.ValidateClusterRewriteRequest(originalLayout, rewriteRequest));
+        mapApplicationService.validateClusterRewrite(
+                new features.world.dungeon.dungeonmap.api.ValidateClusterRewriteRequest(originalLayout, rewriteRequest));
         List<Long> persistedClusterIds = clusterRepository.persistRewrite(conn, mapId, rewriteRequest);
-        if (!rewriteRequest.hasAffectedRooms()) {
-            return;
-        }
-        features.world.dungeon.dungeonmap.model.DungeonMap persistedRoomLayout = mapRepository.persistClusterRoomRewriteAndReload(
-                conn,
-                mapId,
-                rewriteRequest,
-                persistedClusterIds);
-        var rewriteEffects = mapApplicationService.reconcileClusterRewrite(
-                new features.world.dungeon.dungeonmap.api.ReconcileClusterRewriteRequest(originalLayout, persistedRoomLayout, rewriteRequest));
-        for (features.world.dungeon.dungeonmap.corridor.model.Corridor reboundCorridor : rewriteEffects.reboundCorridors()) {
-            if (reboundCorridor != null) {
-                corridorRepository.save(conn, reboundCorridor, persistedRoomLayout.mapId());
-            }
-        }
-        for (Map.Entry<Long, features.world.dungeon.model.structures.connection.DungeonConnection> entry
-                : rewriteEffects.reboundTransitionConnectionsById().entrySet()) {
-            if (entry.getKey() == null) {
-                continue;
-            }
-            features.world.dungeon.model.structures.transition.DungeonTransition transition = originalLayout.findTransition(entry.getKey());
-            transitionRepository.updateLocalConnection(
-                    conn,
-                    entry.getKey(),
-                    entry.getValue(),
-                    transition == null ? null : transition.stairPlacementSpec());
-        }
+        mapObject.persistClusterRewriteRebounds(conn, originalLayout, rewriteRequest, persistedClusterIds);
     }
 
-    private static ClusterRewriteRequest newClusterRewrite(
+    private static features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest newClusterRewrite(
             long mapId,
             int levelZ,
             features.world.dungeon.geometry.GridArea area,
@@ -501,17 +492,19 @@ public final class DungeonClusterApplicationService {
     ) {
         features.world.dungeon.geometry.GridArea resolvedArea = area == null ? features.world.dungeon.geometry.GridArea.empty() : area.onLevel(levelZ);
         if (resolvedArea.isEmpty()) {
-            return ClusterRewriteRequest.of(List.of(), List.of());
+            return features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest.of(List.of(), List.of());
         }
         features.world.dungeon.geometry.GridPoint center = resolvedArea.center();
-        features.world.dungeon.dungeonmap.structure.model.Structure structure = features.world.dungeon.dungeonmap.structure.model.Structure.fromSpecification(features.world.dungeon.dungeonmap.structure.model.StructureSpecification.ofLevel(
-                levelZ,
-                new features.world.dungeon.dungeonmap.structure.model.StructureSpecification.LevelSpecification(
-                        center,
-                        resolvedArea,
-                        resolvedArea,
-                        List.of(),
-                        List.of())));
+        features.world.dungeon.dungeonmap.structure.model.Structure structure =
+                features.world.dungeon.dungeonmap.structure.model.Structure.fromSpecification(
+                        features.world.dungeon.dungeonmap.structure.model.StructureSpecification.ofLevel(
+                                levelZ,
+                                new features.world.dungeon.dungeonmap.structure.model.StructureSpecification.LevelSpecification(
+                                        center,
+                                        resolvedArea,
+                                        resolvedArea,
+                                        List.of(),
+                                        List.of())));
         features.world.dungeon.model.structures.room.Room room = new features.world.dungeon.model.structures.room.Room(
                 null,
                 mapId,
@@ -519,16 +512,21 @@ public final class DungeonClusterApplicationService {
                 roomName,
                 Map.of(levelZ, center),
                 null);
-        Cluster cluster = Cluster.fromDefinition(new ClusterDefinitionRequest(
-                null,
-                null,
-                mapId,
-                structure,
-                List.of(room)));
-        return ClusterRewriteRequest.of(List.of(), List.of(cluster));
+        features.world.dungeon.dungeonmap.cluster.model.Cluster cluster =
+                features.world.dungeon.dungeonmap.cluster.model.Cluster.fromDefinition(
+                        new features.world.dungeon.dungeonmap.cluster.model.ClusterDefinitionRequest(
+                                null,
+                                null,
+                                mapId,
+                                structure,
+                                List.of(room)));
+        return features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest.of(List.of(), List.of(cluster));
     }
 
-    private static Set<features.world.dungeon.geometry.GridPoint> intersect(Set<features.world.dungeon.geometry.GridPoint> left, Set<features.world.dungeon.geometry.GridPoint> right) {
+    private static Set<features.world.dungeon.geometry.GridPoint> intersect(
+            Set<features.world.dungeon.geometry.GridPoint> left,
+            Set<features.world.dungeon.geometry.GridPoint> right
+    ) {
         if (left == null || left.isEmpty() || right == null || right.isEmpty()) {
             return Set.of();
         }
@@ -550,16 +548,23 @@ public final class DungeonClusterApplicationService {
                 .toList();
     }
 
-    private static features.world.dungeon.dungeonmap.structure.model.Structure roomStructure(features.world.dungeon.dungeonmap.model.DungeonMap layout, features.world.dungeon.model.structures.room.Room room) {
+    private static features.world.dungeon.dungeonmap.structure.model.Structure roomStructure(
+            features.world.dungeon.dungeonmap.model.DungeonMap layout,
+            features.world.dungeon.model.structures.room.Room room
+    ) {
         if (layout == null || room == null) {
             return features.world.dungeon.dungeonmap.structure.model.Structure.empty();
         }
-        Cluster cluster = layout.findCluster(room.clusterId());
+        features.world.dungeon.dungeonmap.cluster.model.Cluster cluster = layout.findCluster(room.clusterId());
         return cluster == null ? features.world.dungeon.dungeonmap.structure.model.Structure.empty() : cluster.roomTopology().structureFor(room);
     }
 
-    private static features.world.dungeon.model.structures.room.Room roomAtCell(features.world.dungeon.dungeonmap.model.DungeonMap layout, features.world.dungeon.geometry.GridPoint cell, int levelZ) {
-        Cluster cluster = layout == null ? null : layout.clusterAtCell(cell, levelZ);
+    private static features.world.dungeon.model.structures.room.Room roomAtCell(
+            features.world.dungeon.dungeonmap.model.DungeonMap layout,
+            features.world.dungeon.geometry.GridPoint cell,
+            int levelZ
+    ) {
+        features.world.dungeon.dungeonmap.cluster.model.Cluster cluster = layout == null ? null : layout.clusterAtCell(cell, levelZ);
         return cluster == null ? null : cluster.roomTopology().roomAt(cell, levelZ);
     }
 

@@ -1,4 +1,4 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.tasks;
 
 import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
 import features.world.dungeon.dungeonmap.model.DungeonMap;

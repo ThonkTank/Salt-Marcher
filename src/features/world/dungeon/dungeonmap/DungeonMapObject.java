@@ -1,9 +1,54 @@
 package features.world.dungeon.dungeonmap;
+import features.world.dungeon.dungeonmap.corridor.CorridorObject;
+import features.world.dungeon.transition.TransitionObject;
 
-import features.world.dungeon.DungeonObject;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Public root owner object for loaded dungeon-map snapshots and map-owned workflows.
  */
-public abstract class DungeonMapObject extends DungeonObject {
+public final class DungeonMapObject {
+
+    private final features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository;
+    private final features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService;
+    private final CorridorObject corridorObject;
+    private final TransitionObject transitionObject;
+
+    public DungeonMapObject(
+            features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
+            features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
+            CorridorObject corridorObject,
+            TransitionObject transitionObject
+    ) {
+        this.mapRepository = java.util.Objects.requireNonNull(mapRepository, "mapRepository");
+        this.mapApplicationService = java.util.Objects.requireNonNull(mapApplicationService, "mapApplicationService");
+        this.corridorObject = java.util.Objects.requireNonNull(corridorObject, "corridorObject");
+        this.transitionObject = java.util.Objects.requireNonNull(transitionObject, "transitionObject");
+    }
+
+    /**
+     * Canonical map-owned tail for persisted cluster rewrites: reload authoritative room-backed state, reconcile
+     * cross-owner effects, and delegate rebound writes to corridor and transition root seams.
+     */
+    public void persistClusterRewriteRebounds(
+            Connection conn,
+            features.world.dungeon.dungeonmap.model.DungeonMap originalMap,
+            features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest,
+            List<Long> persistedClusterIds
+    ) throws SQLException {
+        if (conn == null || originalMap == null || rewriteRequest == null || !rewriteRequest.hasAffectedRooms()) {
+            return;
+        }
+        features.world.dungeon.dungeonmap.model.DungeonMap persistedRoomMap = mapRepository.persistClusterRoomRewriteAndReload(
+                conn,
+                originalMap.mapId(),
+                rewriteRequest,
+                persistedClusterIds);
+        features.world.dungeon.dungeonmap.model.ClusterRewriteEffects rewriteEffects = mapApplicationService.reconcileClusterRewrite(
+                new features.world.dungeon.dungeonmap.api.ReconcileClusterRewriteRequest(originalMap, persistedRoomMap, rewriteRequest));
+        corridorObject.persistReboundCorridors(conn, persistedRoomMap.mapId(), rewriteEffects.reboundCorridors());
+        transitionObject.persistReboundConnections(conn, originalMap, rewriteEffects.reboundTransitionConnectionsById());
+    }
 }

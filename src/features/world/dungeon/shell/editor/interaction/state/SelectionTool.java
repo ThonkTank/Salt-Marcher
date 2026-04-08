@@ -1,8 +1,8 @@
-package features.world.dungeon.shell.editor.interaction;
+package features.world.dungeon.shell.editor.interaction.state;
 
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.dungeonmap.corridor.application.CorridorInputEditor;
-import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
+import features.world.dungeon.dungeonmap.cluster.application.state.DungeonClusterApplicationService;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
@@ -24,6 +24,11 @@ import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.shell.editor.RoomNarrationPane;
+import features.world.dungeon.shell.editor.interaction.input.EditorInteractionCapability;
+import features.world.dungeon.shell.editor.interaction.input.EditorTool;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolContext;
+import features.world.dungeon.shell.editor.interaction.input.EditorToolPhase;
+import features.world.dungeon.shell.editor.interaction.tasks.EditorCapabilities;
 import features.world.dungeon.state.DungeonEditorTool;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;
 import features.world.dungeon.state.EditorInteractionState;
