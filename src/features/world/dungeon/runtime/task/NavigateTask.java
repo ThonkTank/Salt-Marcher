@@ -50,25 +50,13 @@ public final class NavigateTask {
             features.world.dungeon.runtime.input.NavigateInput.ActionInput input
     ) {
         if (input.isCellAction()) {
-            return runtimeAction(
-                    input,
-                    new features.world.dungeon.application.runtime.DungeonRuntimeAction.CellTarget(
-                            input.requireCellTarget(),
-                            input.levelZ(),
-                            heading(input.resolvedHeadingOverride())));
+            return runtimeAction(input, cellTarget(input));
         }
         if (input.isDoorAction()) {
-            return runtimeAction(
-                    input,
-                    new features.world.dungeon.application.runtime.DungeonRuntimeAction.DoorTarget(
-                            new features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef(
-                                    input.requireDoorTarget())));
+            return runtimeAction(input, doorTarget(input));
         }
         if (input.isTransitionAction()) {
-            return runtimeAction(
-                    input,
-                    new features.world.dungeon.application.runtime.DungeonRuntimeAction.TransitionTarget(
-                            input.requireTransitionTarget()));
+            return runtimeAction(input, transitionTarget(input));
         }
         throw new IllegalArgumentException("Unbekannte Runtime-Aktion: " + input.kind());
     }
@@ -105,5 +93,29 @@ public final class NavigateTask {
 
     private static features.world.dungeon.geometry.CardinalDirection heading(String name) {
         return features.world.dungeon.geometry.CardinalDirection.parse(name);
+    }
+
+    private static features.world.dungeon.application.runtime.DungeonRuntimeAction.CellTarget cellTarget(
+            features.world.dungeon.runtime.input.NavigateInput.ActionInput input
+    ) {
+        return new features.world.dungeon.application.runtime.DungeonRuntimeAction.CellTarget(
+                input.requireCellTarget(),
+                input.levelZ(),
+                heading(input.resolvedHeadingOverride()));
+    }
+
+    private static features.world.dungeon.application.runtime.DungeonRuntimeAction.DoorTarget doorTarget(
+            features.world.dungeon.runtime.input.NavigateInput.ActionInput input
+    ) {
+        return new features.world.dungeon.application.runtime.DungeonRuntimeAction.DoorTarget(
+                new features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef(
+                        input.requireDoorTarget()));
+    }
+
+    private static features.world.dungeon.application.runtime.DungeonRuntimeAction.TransitionTarget transitionTarget(
+            features.world.dungeon.runtime.input.NavigateInput.ActionInput input
+    ) {
+        return new features.world.dungeon.application.runtime.DungeonRuntimeAction.TransitionTarget(
+                input.requireTransitionTarget());
     }
 }
