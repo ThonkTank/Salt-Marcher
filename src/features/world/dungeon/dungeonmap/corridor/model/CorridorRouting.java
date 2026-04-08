@@ -1,20 +1,16 @@
 package features.world.dungeon.dungeonmap.corridor.model;
 
-import features.world.dungeon.dungeonmap.structure.model.Structure;
-import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPath;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,16 +43,6 @@ public final class CorridorRouting {
         }
     }
 
-    public record RoutedProjection(
-            Structure structure,
-            List<CorridorPathTrace> traces
-    ) {
-        public RoutedProjection {
-            structure = structure == null ? Structure.empty() : structure;
-            traces = traces == null ? List.of() : List.copyOf(traces);
-        }
-    }
-
     public static GridArea surfaceAreaForTraces(Collection<CorridorPathTrace> traces) {
         LinkedHashSet<GridPoint> result = new LinkedHashSet<>();
         for (CorridorPathTrace trace : traces == null ? List.<CorridorPathTrace>of() : traces) {
@@ -70,81 +56,6 @@ public final class CorridorRouting {
             }
         }
         return result.isEmpty() ? GridArea.empty() : GridArea.of(result);
-    }
-
-    public static List<CorridorPathTrace> recoverPathTraces(
-            Structure structure,
-            int levelZ,
-            Collection<ResolvedNode> nodes,
-            Collection<CorridorSegment> segments
-    ) {
-        Structure resolvedStructure = structure == null ? Structure.empty() : structure;
-        List<ResolvedNode> resolvedNodes = sanitizeNodes(nodes);
-        List<CorridorSegment> resolvedSegments = sanitizeSegments(segments);
-        if (resolvedSegments.isEmpty()) {
-            return List.of();
-        }
-        Set<GridPoint> surfaceCells = resolvedStructure.surfaceAtLevel(levelZ).surface().cellFootprint().cells();
-        if (surfaceCells.isEmpty()) {
-            throw new IllegalArgumentException("Persisted corridor structure must contain corridor surface cells");
-        }
-
-        Map<Long, ResolvedNode> nodesById = new LinkedHashMap<>();
-        LinkedHashSet<GridPoint> fixedNodeCells = new LinkedHashSet<>();
-        for (ResolvedNode node : resolvedNodes) {
-            nodesById.put(node.nodeId(), node);
-            if (!node.doorBound() && node.point().kind() == GridPoint.Kind.CELL) {
-                fixedNodeCells.add(node.point());
-            }
-        }
-
-        LinkedHashSet<GridPoint> consumedNonNodeCells = new LinkedHashSet<>();
-        LinkedHashSet<GridPoint> coveredSurfaceCells = new LinkedHashSet<>();
-        ArrayList<CorridorPathTrace> result = new ArrayList<>();
-        for (CorridorSegment segment : resolvedSegments) {
-            ResolvedNode startNode = nodesById.get(segment.startNodeId());
-            ResolvedNode endNode = nodesById.get(segment.endNodeId());
-            if (startNode == null || endNode == null) {
-                throw new IllegalArgumentException("Persisted corridor segment references missing node");
-            }
-            List<AnchorAttachment> startAttachments = recoverAttachments(startNode.attachments(), surfaceCells);
-            List<AnchorAttachment> endAttachments = recoverAttachments(endNode.attachments(), surfaceCells);
-            if (startAttachments.isEmpty() || endAttachments.isEmpty()) {
-                throw new IllegalArgumentException("Persisted corridor node no longer touches corridor surface");
-            }
-
-            LinkedHashSet<GridPoint> blockedCells = new LinkedHashSet<>(consumedNonNodeCells);
-            blockedCells.addAll(fixedNodeCells);
-            blockedCells.removeAll(startNode.point().cellFootprint().cells());
-            blockedCells.removeAll(endNode.point().cellFootprint().cells());
-
-            RoutePlan recoveredRoute = findBestTraceWithinSurface(
-                    startAttachments,
-                    endAttachments,
-                    surfaceCells,
-                    blockedCells);
-            CorridorPathTrace trace = new CorridorPathTrace(
-                    segment.segmentId(),
-                    segment.startNodeId(),
-                    segment.endNodeId(),
-                    GridPath.of(recoveredRoute.path2x()));
-            result.add(trace);
-
-            Set<GridPoint> traceCells = trace.path().cellFootprint().cells();
-            coveredSurfaceCells.addAll(traceCells);
-            for (GridPoint cell : traceCells) {
-                if (!startNode.point().cellFootprint().cells().contains(cell)
-                        && !endNode.point().cellFootprint().cells().contains(cell)
-                        && !fixedNodeCells.contains(cell)) {
-                    consumedNonNodeCells.add(cell);
-                }
-            }
-        }
-
-        if (!coveredSurfaceCells.equals(surfaceCells)) {
-            throw new IllegalArgumentException("Persisted corridor surface cannot be reconstructed from corridor metadata");
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
     }
 
     public static List<AnchorAttachment> attachmentsForPoint(GridPoint anchorPoint, GridArea blockedCells) {
@@ -168,90 +79,58 @@ public final class CorridorRouting {
         return attachments.isEmpty() ? List.of() : List.copyOf(attachments);
     }
 
-    public static RoutedProjection routeSurfaceProjection(
-            int levelZ,
-            Collection<ResolvedNode> nodes,
-            Collection<CorridorSegment> segments,
-            GridArea blockedCells,
-            Map<Long, CorridorPathTrace> reusableTraces
+    public static CorridorPathTrace routeSegmentProjection(
+            CorridorSegment.ResolvedSegmentEndpoints endpoints,
+            CorridorSegment.RoutingContext context
     ) {
-        Map<Long, ResolvedNode> nodesById = indexResolvedNodes(nodes);
-        List<CorridorSegment> orderedSegments = sanitizeSegments(segments);
-        if (orderedSegments.isEmpty()) {
-            return new RoutedProjection(Structure.empty(), List.of());
-        }
-
-        LinkedHashMap<Long, CorridorPathTrace> tracesBySegmentId = new LinkedHashMap<>();
-        for (CorridorSegment segment : orderedSegments) {
-            CorridorPathTrace reusableTrace = reusableTraces == null ? null : reusableTraces.get(segment.segmentId());
-            if (reusableTrace != null) {
-                tracesBySegmentId.put(segment.segmentId(), reusableTrace);
-            }
-        }
-
-        LinkedHashSet<GridPoint> occupiedCells = new LinkedHashSet<>();
-        for (CorridorPathTrace reusableTrace : tracesBySegmentId.values()) {
-            occupiedCells.addAll(reusableTrace.path().cellFootprint().cells());
-        }
-
-        for (CorridorSegment segment : orderedSegments) {
-            if (tracesBySegmentId.containsKey(segment.segmentId())) {
-                continue;
-            }
-            ResolvedNode start = nodesById.get(segment.startNodeId());
-            ResolvedNode end = nodesById.get(segment.endNodeId());
-            if (start == null || end == null) {
-                throw new IllegalArgumentException("Corridor segment references missing node");
-            }
-            LinkedHashSet<GridPoint> blocked = new LinkedHashSet<>(blockedCells == null ? Set.<GridPoint>of() : blockedCells.cells());
-            blocked.addAll(occupiedCells);
-            blocked.removeAll(start.point().cellFootprint().cells());
-            blocked.removeAll(end.point().cellFootprint().cells());
-            RoutePlan routePlan = findBestTrace(start.attachments(), end.attachments(), GridArea.of(blocked));
-            CorridorPathTrace trace = new CorridorPathTrace(
-                    segment.segmentId(),
-                    segment.startNodeId(),
-                    segment.endNodeId(),
-                    GridPath.of(routePlan.path2x()));
-            tracesBySegmentId.put(segment.segmentId(), trace);
-            occupiedCells.addAll(trace.path().cellFootprint().cells());
-        }
-
-        List<CorridorPathTrace> traces = orderedSegments.stream()
-                .map(segment -> tracesBySegmentId.get(segment.segmentId()))
-                .filter(Objects::nonNull)
-                .toList();
-        GridArea occupiedArea = surfaceAreaForTraces(traces);
-        if (occupiedArea.isEmpty()) {
-            return new RoutedProjection(Structure.empty(), traces);
-        }
-        Structure structure = Structure.fromSpecification(StructureSpecification.ofLevel(
-                levelZ,
-                new StructureSpecification.LevelSpecification(
-                        occupiedArea.center(),
-                        occupiedArea,
-                        occupiedArea,
-                        List.of(),
-                        List.of())));
-        Set<GridPoint> hydratedCells = structure.surfaceAtLevel(levelZ).surface().cellFootprint().cells();
-        if (!hydratedCells.equals(occupiedArea.cells())) {
-            throw new IllegalStateException("Corridor route projection changed the routed occupied cells");
-        }
-        return new RoutedProjection(structure, traces);
+        CorridorSegment segment = Objects.requireNonNull(endpoints, "endpoints").segment();
+        CorridorSegment.RoutingContext resolvedContext = Objects.requireNonNull(context, "context");
+        LinkedHashSet<GridPoint> blocked = new LinkedHashSet<>(resolvedContext.blockedCells().cells());
+        blocked.addAll(resolvedContext.reservedCells());
+        blocked.removeAll(endpoints.start().point().cellFootprint().cells());
+        blocked.removeAll(endpoints.end().point().cellFootprint().cells());
+        RoutePlan routePlan = findBestTrace(endpoints.start().attachments(), endpoints.end().attachments(), GridArea.of(blocked));
+        return new CorridorPathTrace(
+                segment.segmentId(),
+                segment.startNodeId(),
+                segment.endNodeId(),
+                GridPath.of(routePlan.path2x()));
     }
 
-    private static Map<Long, ResolvedNode> indexResolvedNodes(Collection<ResolvedNode> nodes) {
-        if (nodes == null || nodes.isEmpty()) {
-            return Map.of();
+    public static CorridorPathTrace recoverSegmentTrace(
+            CorridorSegment.ResolvedSegmentEndpoints endpoints,
+            Set<GridPoint> surfaceCells,
+            Set<GridPoint> consumedNonNodeCells,
+            Set<GridPoint> fixedNodeCells
+    ) {
+        Set<GridPoint> resolvedSurfaceCells = surfaceCells == null ? Set.of() : surfaceCells;
+        if (resolvedSurfaceCells.isEmpty()) {
+            throw new IllegalArgumentException("Persisted corridor structure must contain corridor surface cells");
         }
-        Map<Long, ResolvedNode> result = new LinkedHashMap<>();
-        for (ResolvedNode node : nodes) {
-            if (node == null) {
-                continue;
-            }
-            result.put(node.nodeId(), node);
+        ResolvedNode startNode = endpoints.start();
+        ResolvedNode endNode = endpoints.end();
+        List<AnchorAttachment> startAttachments = recoverAttachments(startNode.attachments(), resolvedSurfaceCells);
+        List<AnchorAttachment> endAttachments = recoverAttachments(endNode.attachments(), resolvedSurfaceCells);
+        if (startAttachments.isEmpty() || endAttachments.isEmpty()) {
+            throw new IllegalArgumentException("Persisted corridor node no longer touches corridor surface");
         }
-        return result.isEmpty() ? Map.of() : Map.copyOf(result);
+
+        LinkedHashSet<GridPoint> blockedCells = new LinkedHashSet<>(consumedNonNodeCells == null ? Set.<GridPoint>of() : consumedNonNodeCells);
+        blockedCells.addAll(fixedNodeCells == null ? Set.<GridPoint>of() : fixedNodeCells);
+        blockedCells.removeAll(startNode.point().cellFootprint().cells());
+        blockedCells.removeAll(endNode.point().cellFootprint().cells());
+
+        RoutePlan recoveredRoute = findBestTraceWithinSurface(
+                startAttachments,
+                endAttachments,
+                resolvedSurfaceCells,
+                blockedCells);
+        CorridorSegment segment = endpoints.segment();
+        return new CorridorPathTrace(
+                segment.segmentId(),
+                segment.startNodeId(),
+                segment.endNodeId(),
+                GridPath.of(recoveredRoute.path2x()));
     }
 
     private static List<AnchorAttachment> recoverAttachments(Collection<AnchorAttachment> attachments, Set<GridPoint> surfaceCells) {
@@ -264,31 +143,6 @@ public final class CorridorRouting {
                 .sorted(Comparator
                         .comparing(AnchorAttachment::cell, GridPoint.ORDER)
                         .thenComparingInt(attachment -> attachment.anchorPath().size()))
-                .toList();
-    }
-
-    private static List<ResolvedNode> sanitizeNodes(Collection<ResolvedNode> nodes) {
-        if (nodes == null || nodes.isEmpty()) {
-            return List.of();
-        }
-        return nodes.stream()
-                .filter(Objects::nonNull)
-                .sorted(Comparator
-                        .comparing((ResolvedNode node) -> node.nodeId() == null ? Long.MAX_VALUE : node.nodeId())
-                        .thenComparing(ResolvedNode::point, GridPoint.ORDER))
-                .toList();
-    }
-
-    private static List<CorridorSegment> sanitizeSegments(Collection<CorridorSegment> segments) {
-        if (segments == null || segments.isEmpty()) {
-            return List.of();
-        }
-        return segments.stream()
-                .filter(Objects::nonNull)
-                .sorted(Comparator
-                        .comparing((CorridorSegment segment) -> segment.segmentId() == null ? Long.MAX_VALUE : segment.segmentId())
-                        .thenComparing(CorridorSegment::startNodeId)
-                        .thenComparing(CorridorSegment::endNodeId))
                 .toList();
     }
 

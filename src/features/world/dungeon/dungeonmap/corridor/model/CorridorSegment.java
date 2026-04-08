@@ -1,5 +1,18 @@
 package features.world.dungeon.dungeonmap.corridor.model;
 
+import features.world.dungeon.geometry.GridArea;
+import features.world.dungeon.geometry.GridPoint;
+import features.world.dungeon.geometry.GridSegment;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+/**
+ * Persisted authored corridor segment. Each segment owns endpoint resolution and local replanning.
+ */
 public record CorridorSegment(
         Long segmentId,
         Long startNodeId,
@@ -30,5 +43,101 @@ public record CorridorSegment(
             return startNodeId;
         }
         return null;
+    }
+
+    public ResolvedSegmentEndpoints resolveEndpoints(
+            Map<Long, CorridorInputNode> nodesById,
+            CorridorResolutionInput resolutionInput
+    ) {
+        CorridorInputNode startNode = requiredNode(nodesById, startNodeId);
+        CorridorInputNode endNode = requiredNode(nodesById, endNodeId);
+        return new ResolvedSegmentEndpoints(
+                this,
+                resolvedNode(startNode, resolutionInput),
+                resolvedNode(endNode, resolutionInput));
+    }
+
+    public CorridorPathTrace route(
+            ResolvedSegmentEndpoints endpoints,
+            RoutingContext context,
+            CorridorPathTrace reusableTrace
+    ) {
+        if (reusableTrace != null) {
+            return reusableTrace;
+        }
+        return CorridorRouting.routeSegmentProjection(
+                Objects.requireNonNull(endpoints, "endpoints"),
+                Objects.requireNonNull(context, "context"));
+    }
+
+    public CorridorPathTrace recoverTrace(
+            ResolvedSegmentEndpoints endpoints,
+            Set<GridPoint> surfaceCells,
+            Set<GridPoint> consumedNonNodeCells,
+            Set<GridPoint> fixedNodeCells
+    ) {
+        return CorridorRouting.recoverSegmentTrace(
+                Objects.requireNonNull(endpoints, "endpoints"),
+                surfaceCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(surfaceCells)),
+                consumedNonNodeCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(consumedNonNodeCells)),
+                fixedNodeCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(fixedNodeCells)));
+    }
+
+    private static CorridorInputNode requiredNode(Map<Long, CorridorInputNode> nodesById, Long nodeId) {
+        CorridorInputNode node = nodesById == null ? null : nodesById.get(nodeId);
+        if (node == null) {
+            throw new IllegalArgumentException("Corridor segment references missing node " + nodeId);
+        }
+        return node;
+    }
+
+    private static CorridorRouting.ResolvedNode resolvedNode(
+            CorridorInputNode node,
+            CorridorResolutionInput resolutionInput
+    ) {
+        if (node.isDoorBound()) {
+            CorridorResolutionInput.ExteriorDoorInput door = resolutionInput.requiredExteriorDoor(node.doorRef());
+            return new CorridorRouting.ResolvedNode(
+                    node.nodeId(),
+                    door.anchorPoint(),
+                    List.of(new CorridorRouting.AnchorAttachment(
+                            door.exteriorCell(),
+                            List.of(door.anchorPoint(), door.exteriorCell()))),
+                    true);
+        }
+        return new CorridorRouting.ResolvedNode(
+                node.nodeId(),
+                node.fixedPoint(),
+                CorridorRouting.attachmentsForPoint(
+                        node.fixedPoint(),
+                        GridArea.of(resolutionInput.blockedCells())),
+                false);
+    }
+
+    public record RoutingContext(
+            int levelZ,
+            GridArea blockedCells,
+            Set<GridPoint> reservedCells,
+            Set<GridSegment> occupiedConnectionSegments
+    ) {
+        public RoutingContext {
+            blockedCells = blockedCells == null ? GridArea.empty() : blockedCells;
+            reservedCells = reservedCells == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(reservedCells));
+            occupiedConnectionSegments = occupiedConnectionSegments == null
+                    ? Set.of()
+                    : Set.copyOf(new LinkedHashSet<>(occupiedConnectionSegments));
+        }
+    }
+
+    public record ResolvedSegmentEndpoints(
+            CorridorSegment segment,
+            CorridorRouting.ResolvedNode start,
+            CorridorRouting.ResolvedNode end
+    ) {
+        public ResolvedSegmentEndpoints {
+            segment = Objects.requireNonNull(segment, "segment");
+            start = Objects.requireNonNull(start, "start");
+            end = Objects.requireNonNull(end, "end");
+        }
     }
 }
