@@ -4,6 +4,11 @@ import database.DatabaseManager;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.dungeonmap.api.CorridorBoundaryDescription;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
+import features.world.dungeon.dungeonmap.api.PreviewAddedCorridorRequest;
+import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
+import features.world.dungeon.dungeonmap.api.RehydrateCorridorRequest;
+import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
+import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -23,13 +28,16 @@ public final class DungeonCorridorApplicationService {
 
     private final DungeonMapRepository mapRepository;
     private final DungeonCorridorRepository corridorRepository;
+    private final DungeonMapApplicationService mapApplicationService;
 
     public DungeonCorridorApplicationService(
             DungeonMapRepository mapRepository,
-            DungeonCorridorRepository corridorRepository
+            DungeonCorridorRepository corridorRepository,
+            DungeonMapApplicationService mapApplicationService
     ) {
         this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
         this.corridorRepository = Objects.requireNonNull(corridorRepository, "corridorRepository");
+        this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
     }
 
     public long createDoorToDoor(CreateDoorToDoorRequest request) throws SQLException {
@@ -42,9 +50,14 @@ public final class DungeonCorridorApplicationService {
                 DungeonMap layout = requireLayout(conn, resolvedRequest.mapId());
                 requiredExistingExteriorDoor(layout, resolvedRequest.levelZ(), resolvedRequest.start());
                 requiredExistingExteriorDoor(layout, resolvedRequest.levelZ(), resolvedRequest.end());
-                Corridor corridor = layout.resolveCorridor(
-                        CorridorInputEditor.newDoorToDoorInput(layout.mapId(), resolvedRequest.levelZ(), resolvedRequest.start(), resolvedRequest.end()));
-                Corridor persisted = corridorRepository.save(conn, corridor, layout);
+                Corridor corridor = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(
+                        layout,
+                        CorridorInputEditor.newDoorToDoorInput(layout.mapId(), resolvedRequest.levelZ(), resolvedRequest.start(), resolvedRequest.end())));
+                var persistedData = corridorRepository.save(conn, corridor, layout.mapId());
+                Corridor persisted = mapApplicationService.rehydrateCorridor(new RehydrateCorridorRequest(
+                        layout,
+                        persistedData.input(),
+                        persistedData.structure()));
                 if (persisted.corridorId() == null) {
                     throw new SQLException("No id returned for persisted corridor");
                 }
@@ -200,10 +213,8 @@ public final class DungeonCorridorApplicationService {
         if (Objects.equals(updatedInput, corridor.input())) {
             return;
         }
-        Corridor updatedCorridor = corridor.withInput(
-                updatedInput,
-                layout.corridorResolutionInput(corridor.levelZ()));
-        corridorRepository.save(conn, updatedCorridor, layout);
+        Corridor updatedCorridor = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(layout, updatedInput));
+        corridorRepository.save(conn, updatedCorridor, layout.mapId());
     }
 
     private void persistInputs(
@@ -231,13 +242,17 @@ public final class DungeonCorridorApplicationService {
                     componentInput.nodes(),
                     componentInput.segments())
                     : componentInput;
-            Corridor resolved = workingLayout.resolveCorridor(persistedInput);
-            Corridor persisted = corridorRepository.save(conn, resolved, workingLayout);
+            Corridor resolved = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(workingLayout, persistedInput));
+            var persistedData = corridorRepository.save(conn, resolved, workingLayout.mapId());
+            Corridor persisted = mapApplicationService.rehydrateCorridor(
+                    new RehydrateCorridorRequest(workingLayout, persistedData.input(), persistedData.structure()));
             if (first) {
-                workingLayout = workingLayout.withUpdatedCorridor(persisted);
+                workingLayout = mapApplicationService.previewReplacedCorridor(
+                        new PreviewReplacedCorridorRequest(workingLayout, persisted));
                 first = false;
             } else {
-                workingLayout = workingLayout.withAddedCorridor(persisted);
+                workingLayout = mapApplicationService.previewAddedCorridor(
+                        new PreviewAddedCorridorRequest(workingLayout, persisted));
             }
         }
     }

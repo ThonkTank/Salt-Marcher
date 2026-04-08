@@ -16,13 +16,14 @@
 - `model/Corridor.doorNodeIdAtBoundary(...)` — corridor-owned boundary-door lookup — resolves corridor boundary-door identity without rebuilding map context.
 - `model/Corridor.touchesRoomAnchorCells(...)` — corridor-owned anchor guard — answers whether removed room-floor cells would orphan one of this corridor's room-bound anchors.
 - `application/DungeonCorridorApplicationService` — public corridor workflow seam for corridor creation, room-door attachment, node or door movement, and topology deletion.
+- `application/../DungeonMapApplicationService` — map-owned corridor resolve, rehydrate, and preview seam — supplies the external blocked-area and exterior-door facts needed to build or preview a `Corridor` from authored input.
 - `application/CorridorInputEditor` — canonical authored-network edit helper — applies graph edits, direct boundary-door edits, segment splits, and connected-component partitioning to `CorridorInput` before re-resolution.
-- `repository/DungeonCorridorRepository` — corridor row, input-node, and input-segment persistence seam; final topology persists only through `structure/repository`.
+- `repository/DungeonCorridorRepository` — corridor row, input-node, and input-segment persistence seam; persists raw authored input plus referenced final structure only, while map-owned rehydration stays outside the repository.
 
 ## Where New Code Goes
 
 - Put corridor identity, persisted authored input truth, room attachment semantics, and corridor-local invariants on `Corridor`.
-- Route public corridor create or reload flows through `Corridor.fromInput(...)` or `Corridor.rehydrated(...)`.
+- Route public corridor create or reload flows through `DungeonMapApplicationService` request entrypoints instead of calling `Corridor.fromInput(...)`, `Corridor.rehydrated(...)`, or `DungeonMap` helpers directly.
 - Route public corridor rewrites through `corridor.withInput(...)`, `corridor.validateReconcile(...)`, and `corridor.reconciled(...)`; graph-edit translation belongs on `CorridorInputEditor`, not on the aggregate.
 - Let `Corridor` own corridor boundary-opening reads, boundary-door lookup, room-anchor guard semantics, and authored input validation; callers may select a segment id or room/cell set, but they must not persist routed traces as owner truth.
 - Put reusable segment-routing helpers on `CorridorRouting`, not on layout, tools, or repositories.
@@ -36,6 +37,7 @@
 - Do not move corridor ownership back into `model/structures`, generic `model`, or editor tools.
 - Do not mirror corridor routing or attachment truth onto `DungeonMap`, runtime helpers, or render payloads. `DungeonMap` may only materialize the fixed corridor input objects and orchestrate cross-owner reconcile flows.
 - Do not add a second corridor mutation or persistence seam beside `Corridor`, `DungeonCorridorApplicationService`, and `DungeonCorridorRepository`.
+- Do not let `DungeonCorridorRepository` or editor preview code rehydrate corridors by calling `DungeonMap` directly; map-owned corridor build facts must enter through `DungeonMapApplicationService`.
 - Do not pass raw `DungeonMap`, cluster, room, or repository context into `Corridor`; corridor-external state must enter only through `CorridorResolutionInput` or `CorridorReconcileInput`.
 - Do not publish raw corridor-routing helper records, point paths, raw segment lists, or blocked-cell sets beside `CorridorResolutionInput`, `CorridorSegment`, and `CorridorPathTrace`.
 - Do not decode corridor room-anchor semantics in `DungeonMap`, cluster workflows, or shell code by iterating `corridor.nodes()` and inspecting door-bound nodes.

@@ -7,6 +7,7 @@ import features.world.dungeon.application.room.DungeonRoomApplicationService;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
+import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
 import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver;
@@ -52,12 +53,19 @@ public final class DungeonMapModule {
 
     public DungeonMapModule(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        DungeonMapRepository mapRepository = new DungeonMapRepository();
+        DungeonMapApplicationService mapApplicationService = new DungeonMapApplicationService();
         DungeonClusterRepository clusterRepository = new DungeonClusterRepository();
         DungeonRoomRepository roomRepository = new DungeonRoomRepository();
         DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
         DungeonStairRepository stairRepository = new DungeonStairRepository();
         DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
+        DungeonMapRepository mapRepository = new DungeonMapRepository(
+                clusterRepository,
+                roomRepository,
+                corridorRepository,
+                stairRepository,
+                transitionRepository,
+                mapApplicationService);
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(mapRepository);
         DungeonClusterApplicationService clusterApplicationService = new DungeonClusterApplicationService(
                 mapRepository,
@@ -80,7 +88,8 @@ public final class DungeonMapModule {
                 runtimeApplicationService);
         DungeonCorridorApplicationService corridorApplicationService = new DungeonCorridorApplicationService(
                 mapRepository,
-                corridorRepository);
+                corridorRepository,
+                mapApplicationService);
         DungeonMapState state = new DungeonMapState();
         DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
                 loadResolver,
@@ -102,6 +111,7 @@ public final class DungeonMapModule {
                 new SelectionTool(
                         state,
                         loadingService,
+                        mapApplicationService,
                         clusterApplicationService,
                         corridorApplicationService,
                         stairApplicationService,

@@ -17,6 +17,7 @@ import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
 import features.world.dungeon.model.structures.connection.Connection;
 import features.world.dungeon.model.structures.connection.ConnectionEndpoint;
@@ -28,7 +29,6 @@ import features.world.dungeon.model.structures.connection.StairConnectionCarrier
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorReconcileInput;
 import features.world.dungeon.dungeonmap.corridor.model.CorridorResolutionInput;
-import features.world.dungeon.dungeonmap.corridor.model.CorridorInput;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.stair.DungeonStair;
 import features.world.dungeon.model.structures.transition.DungeonTransition;
@@ -822,7 +822,7 @@ public final class DungeonMap {
         return withReplacedClusters(plan.originalClusters(), plan.finalClusters());
     }
 
-    public CorridorResolutionInput corridorResolutionInput(int levelZ) {
+    private CorridorResolutionInput corridorResolutionInput(int levelZ) {
         return new CorridorResolutionInput(
                 levelZ,
                 blockedRoomCells(levelZ),
@@ -1135,64 +1135,6 @@ public final class DungeonMap {
         return reboundRoom;
     }
 
-    /**
-     * Corridor authored input resolves against the map that already owns room bindings and door context.
-     */
-    public Corridor resolveCorridor(CorridorInput input) {
-        CorridorInput resolvedInput = Objects.requireNonNull(input, "input");
-        return Corridor.fromInput(
-                resolvedInput,
-                corridorResolutionInput(resolvedInput.levelZ()));
-    }
-
-    public Corridor rehydrateCorridor(CorridorInput input, Structure structure) {
-        CorridorInput resolvedInput = Objects.requireNonNull(input, "input");
-        Structure resolvedStructure = Objects.requireNonNull(structure, "structure");
-        return Corridor.rehydrated(
-                resolvedInput,
-                resolvedStructure,
-                corridorResolutionInput(resolvedInput.levelZ()));
-    }
-
-    public DungeonMap withAddedCorridor(Corridor corridor) {
-        if (corridor == null) {
-            return this;
-        }
-        ArrayList<Corridor> updatedCorridors = new ArrayList<>(corridors);
-        updatedCorridors.add(corridor);
-        return withCorridors(updatedCorridors);
-    }
-
-    public DungeonMap withUpdatedCorridor(Corridor corridor) {
-        if (corridor == null || corridor.corridorId() == null) {
-            return this;
-        }
-        boolean replaced = false;
-        ArrayList<Corridor> updatedCorridors = new ArrayList<>(corridors.size());
-        for (Corridor existing : corridors) {
-            if (existing != null && Objects.equals(existing.corridorId(), corridor.corridorId())) {
-                updatedCorridors.add(corridor);
-                replaced = true;
-            } else {
-                updatedCorridors.add(existing);
-            }
-        }
-        if (!replaced) {
-            updatedCorridors.add(corridor);
-        }
-        return withCorridors(updatedCorridors);
-    }
-
-    public DungeonMap withRemovedCorridor(Long corridorId) {
-        if (corridorId == null) {
-            return this;
-        }
-        List<Corridor> updatedCorridors = corridors.stream()
-                .filter(corridor -> corridor == null || !Objects.equals(corridor.corridorId(), corridorId))
-                .toList();
-        return updatedCorridors.size() == corridors.size() ? this : withCorridors(updatedCorridors);
-    }
-
     public DungeonMap withAddedStair(DungeonStair stair) {
         if (stair == null) {
             return this;
@@ -1271,18 +1213,30 @@ public final class DungeonMap {
         return updatedTransitions.size() == transitions.size() ? this : withTransitions(updatedTransitions);
     }
 
-    public DungeonMap withMovedCluster(Long clusterId, GridTranslation translation) {
-        Cluster cluster = findCluster(clusterId);
-        GridTranslation resolvedTranslation = translation == null ? GridTranslation.none() : translation;
-        if (clusterId == null || cluster == null || resolvedTranslation.isZero()) {
+    public DungeonMap withMutatedCluster(ClusterMapMutationRequest request) {
+        if (request == null || request.clusterId() == null) {
+            return this;
+        }
+        Cluster cluster = findCluster(request.clusterId());
+        if (cluster == null) {
+            return this;
+        }
+        Cluster updatedCluster = cluster.mutated(request.mutation());
+        if (updatedCluster == cluster) {
             return this;
         }
         ClusterRewritePlan plan = ClusterRewritePlan.of(
                 List.of(cluster),
-                List.of(cluster.translated(resolvedTranslation)),
-                resolvedTranslation);
-        DungeonMap movedLayout = withAppliedClusterRewrite(plan);
-        return movedLayout.withAppliedClusterRewriteEffects(reconcileClusterRewrite(movedLayout, plan));
+                List.of(updatedCluster),
+                rewriteTranslation(request.mutation()));
+        DungeonMap mutatedLayout = withAppliedClusterRewrite(plan);
+        return mutatedLayout.withAppliedClusterRewriteEffects(reconcileClusterRewrite(mutatedLayout, plan));
+    }
+
+    private static GridTranslation rewriteTranslation(ClusterMutationRequest mutation) {
+        return mutation instanceof ClusterMutationRequest.Translation translation
+                ? translation.translation()
+                : GridTranslation.none();
     }
 
     private DungeonMap withCorridors(List<Corridor> updatedCorridors) {

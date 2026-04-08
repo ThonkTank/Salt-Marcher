@@ -3,13 +3,16 @@ package features.world.dungeon.shell.editor.interaction;
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.dungeonmap.corridor.application.CorridorInputEditor;
 import features.world.dungeon.dungeonmap.cluster.application.DungeonClusterApplicationService;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterMutation;
-import features.world.dungeon.dungeonmap.cluster.model.ClusterRewritePlan;
+import features.world.dungeon.dungeonmap.cluster.model.ClusterMutationRequest;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
+import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
+import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
+import features.world.dungeon.dungeonmap.model.ClusterMapMutationRequest;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -40,6 +43,7 @@ public final class SelectionTool implements EditorTool {
 
     private final DungeonMapState mapState;
     private final DungeonMapLoadingService loadingService;
+    private final DungeonMapApplicationService mapApplicationService;
     private final DungeonClusterApplicationService roomApplicationService;
     private final DungeonCorridorApplicationService corridorApplicationService;
     private final DungeonStairApplicationService stairApplicationService;
@@ -61,6 +65,7 @@ public final class SelectionTool implements EditorTool {
     public SelectionTool(
             DungeonMapState mapState,
             DungeonMapLoadingService loadingService,
+            DungeonMapApplicationService mapApplicationService,
             DungeonClusterApplicationService roomApplicationService,
             DungeonCorridorApplicationService corridorApplicationService,
             DungeonStairApplicationService stairApplicationService,
@@ -70,6 +75,7 @@ public final class SelectionTool implements EditorTool {
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
         this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.corridorApplicationService = Objects.requireNonNull(corridorApplicationService, "corridorApplicationService");
         this.stairApplicationService = Objects.requireNonNull(stairApplicationService, "stairApplicationService");
@@ -461,10 +467,11 @@ public final class SelectionTool implements EditorTool {
         if (dragSession == null) {
             return null;
         }
-        return dragSession.baseMap().withMovedCluster(
+        return dragSession.baseMap().withMutatedCluster(new ClusterMapMutationRequest(
                 dragSession.clusterId(),
-                dragSession.currentDelta()
-                        .combinedWith(GridTranslation.levels(dragSession.currentLevel() - dragSession.startLevel())));
+                new ClusterMutationRequest.Translation(
+                        dragSession.currentDelta()
+                                .combinedWith(GridTranslation.levels(dragSession.currentLevel() - dragSession.startLevel())))));
     }
 
     private DungeonMap previewStairMap(StairDragSession session) {
@@ -496,14 +503,14 @@ public final class SelectionTool implements EditorTool {
         if (corridor == null) {
             return null;
         }
-        Corridor updated = corridor.withInput(
+        Corridor updated = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(
+                mapState.activeMap(),
                 CorridorInputEditor.moveNode(
                         corridor.input(),
                         corridorNodeDragSession.nodeId(),
-                        corridorNodeDragSession.currentPoint()),
-                mapState.activeMap().corridorResolutionInput(corridor.levelZ()));
-        return mapState.activeMap()
-                .withUpdatedCorridor(updated)
+                        corridorNodeDragSession.currentPoint())));
+        return mapApplicationService.previewReplacedCorridor(
+                        new PreviewReplacedCorridorRequest(mapState.activeMap(), updated))
                 .projectedToLevel(mapState.activeProjectionLevel());
     }
 
@@ -535,14 +542,14 @@ public final class SelectionTool implements EditorTool {
                 .map(features.world.dungeon.dungeonmap.corridor.model.CorridorInputNode::nodeId)
                 .findFirst()
                 .orElse(null);
-        Corridor updated = corridor.withInput(
+        Corridor updated = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(
+                mapState.activeMap(),
                 CorridorInputEditor.moveNode(
                         insertedInput,
                         nodeId,
-                        corridorTileDragSession.currentPoint()),
-                mapState.activeMap().corridorResolutionInput(corridor.levelZ()));
-        return mapState.activeMap()
-                .withUpdatedCorridor(updated)
+                        corridorTileDragSession.currentPoint())));
+        return mapApplicationService.previewReplacedCorridor(
+                        new PreviewReplacedCorridorRequest(mapState.activeMap(), updated))
                 .projectedToLevel(mapState.activeProjectionLevel());
     }
 
@@ -550,19 +557,13 @@ public final class SelectionTool implements EditorTool {
         if (session == null || session.clusterId() == null || session.targetBoundaryRef() == null || session.baseMap() == null) {
             return null;
         }
-        Cluster cluster = session.baseMap().findCluster(session.clusterId());
-        if (cluster == null) {
-            return null;
-        }
-        Cluster updatedCluster = cluster.mutated(new ClusterMutation.DoorMove(
-                session.levelZ(),
-                session.sourceBoundarySegment2x(),
-                session.targetBoundaryRef().boundarySegment()));
-        if (updatedCluster == cluster) {
-            return null;
-        }
         return session.baseMap()
-                .withAppliedClusterRewrite(ClusterRewritePlan.of(List.of(cluster), List.of(updatedCluster)))
+                .withMutatedCluster(new ClusterMapMutationRequest(
+                        session.clusterId(),
+                        new ClusterMutationRequest.DoorMove(
+                                session.levelZ(),
+                                session.sourceBoundarySegment2x(),
+                                session.targetBoundaryRef().boundarySegment())))
                 .projectedToLevel(session.levelZ());
     }
 
@@ -582,14 +583,14 @@ public final class SelectionTool implements EditorTool {
             return null;
         }
         try {
-            Corridor updated = corridor.withInput(
+            Corridor updated = mapApplicationService.resolveCorridor(new ResolveCorridorRequest(
+                    session.baseMap(),
                     CorridorInputEditor.moveDoorAtBoundary(
                             corridor,
                             session.sourceBoundarySegment2x(),
-                            new DoorRef(targetDoorRef.doorId())),
-                    session.baseMap().corridorResolutionInput(corridor.levelZ()));
-            return session.baseMap()
-                    .withUpdatedCorridor(updated)
+                            new DoorRef(targetDoorRef.doorId()))));
+            return mapApplicationService.previewReplacedCorridor(
+                            new PreviewReplacedCorridorRequest(session.baseMap(), updated))
                     .projectedToLevel(session.levelZ());
         } catch (IllegalArgumentException ignored) {
             return null;

@@ -1,6 +1,8 @@
 package features.world.dungeon.dungeonmap.repository;
 
 import features.world.dungeon.catalog.application.DungeonMapCatalogEntry;
+import features.world.dungeon.dungeonmap.api.RehydrateCorridorRequest;
+import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
 import features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository;
 import features.world.dungeon.dungeonmap.corridor.repository.DungeonCorridorRepository;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -26,11 +28,38 @@ import java.util.Map;
  */
 public final class DungeonMapRepository {
 
-    private final DungeonClusterRepository clusterRepository = new DungeonClusterRepository();
-    private final DungeonRoomRepository roomRepository = new DungeonRoomRepository();
-    private final DungeonCorridorRepository corridorRepository = new DungeonCorridorRepository();
-    private final DungeonStairRepository stairRepository = new DungeonStairRepository();
-    private final DungeonTransitionRepository transitionRepository = new DungeonTransitionRepository();
+    private final DungeonClusterRepository clusterRepository;
+    private final DungeonRoomRepository roomRepository;
+    private final DungeonCorridorRepository corridorRepository;
+    private final DungeonStairRepository stairRepository;
+    private final DungeonTransitionRepository transitionRepository;
+    private final DungeonMapApplicationService mapApplicationService;
+
+    public DungeonMapRepository() {
+        this(
+                new DungeonClusterRepository(),
+                new DungeonRoomRepository(),
+                new DungeonCorridorRepository(),
+                new DungeonStairRepository(),
+                new DungeonTransitionRepository(),
+                new DungeonMapApplicationService());
+    }
+
+    public DungeonMapRepository(
+            DungeonClusterRepository clusterRepository,
+            DungeonRoomRepository roomRepository,
+            DungeonCorridorRepository corridorRepository,
+            DungeonStairRepository stairRepository,
+            DungeonTransitionRepository transitionRepository,
+            DungeonMapApplicationService mapApplicationService
+    ) {
+        this.clusterRepository = java.util.Objects.requireNonNull(clusterRepository, "clusterRepository");
+        this.roomRepository = java.util.Objects.requireNonNull(roomRepository, "roomRepository");
+        this.corridorRepository = java.util.Objects.requireNonNull(corridorRepository, "corridorRepository");
+        this.stairRepository = java.util.Objects.requireNonNull(stairRepository, "stairRepository");
+        this.transitionRepository = java.util.Objects.requireNonNull(transitionRepository, "transitionRepository");
+        this.mapApplicationService = java.util.Objects.requireNonNull(mapApplicationService, "mapApplicationService");
+    }
 
     public DungeonMap loadMap(Connection conn, long mapId) throws SQLException {
         requireConnection(conn);
@@ -54,7 +83,10 @@ public final class DungeonMapRepository {
         List<Cluster> clusters = clusterRepository.loadClusters(conn, mapId, roomMetadata);
         Map<Long, Integer> clusterLevels = clusterRepository.loadClusterLevels(conn, mapId);
         DungeonMap roomMap = new DungeonMap(mapId, mapName, List.of(), clusters, List.of(), List.of(), clusterLevels);
-        List<Corridor> corridors = corridorRepository.loadByMap(conn, roomMap);
+        List<Corridor> corridors = corridorRepository.loadByMap(conn, mapId).stream()
+                .map(data -> mapApplicationService.rehydrateCorridor(
+                        new RehydrateCorridorRequest(roomMap, data.input(), data.structure())))
+                .toList();
         DungeonMap structureMap = new DungeonMap(
                 mapId,
                 mapName,
