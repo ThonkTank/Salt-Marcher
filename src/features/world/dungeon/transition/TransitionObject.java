@@ -7,6 +7,7 @@ import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.stair.model.StairPathPatternKind;
 import features.world.dungeon.stair.model.StairPathPatternSpec;
+import features.world.dungeon.transition.input.CreateStairTransitionInput;
 import features.world.dungeon.transition.input.CreateTransitionInput;
 import features.world.dungeon.transition.input.DeleteTransitionInput;
 import features.world.dungeon.transition.input.LoadDungeonTargetsInput;
@@ -119,6 +120,66 @@ public final class TransitionObject {
                         validatedDestination,
                         null,
                         null));
+                if (input.bidirectional()
+                        && validatedDestination instanceof features.world.dungeon.model.structures.transition.DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
+                    long counterpartId = transitionRepository.insert(conn, new features.world.dungeon.model.structures.transition.DungeonTransition(
+                            null,
+                            dungeonDestination.mapId(),
+                            input.description(),
+                            null,
+                            new features.world.dungeon.model.structures.transition.DungeonTransitionDestination.DungeonMapDestination(
+                                    input.mapId(),
+                                    insertedTransitionId),
+                            insertedTransitionId,
+                            null));
+                    transitionRepository.linkPair(conn, insertedTransitionId, counterpartId);
+                }
+                return null;
+            });
+        }
+    }
+
+    public void createStairTransition(CreateStairTransitionInput input) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        if (input.mapId() <= 0) {
+            throw new SQLException("Kein aktiver Dungeon geladen");
+        }
+        if (input.draft() == null) {
+            throw new SQLException("Treppen-Platzierung fehlt");
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                features.world.dungeon.dungeonmap.model.DungeonMap layout = mapRepository.loadMap(conn, input.mapId());
+                if (layout == null) {
+                    throw new SQLException("Dungeon " + input.mapId() + " konnte nicht geladen werden");
+                }
+                features.world.dungeon.model.structures.transition.DungeonTransitionDestination validatedDestination =
+                        requireDestination(conn, input.destination(), input.bidirectional());
+                long reservedTransitionId = transitionRepository.nextTransitionId(conn);
+                features.world.dungeon.application.stair.DungeonStairApplicationService.StairDraft stairDraft =
+                        toStairDraft(input.draft());
+                features.world.dungeon.dungeonmap.connections.input.DungeonConnection localConnection;
+                try {
+                    localConnection = TransitionConnectionBuilder.buildStairConnection(
+                            layout,
+                            input.mapId(),
+                            reservedTransitionId,
+                            stairDraft,
+                            false,
+                            null);
+                } catch (IllegalArgumentException ex) {
+                    throw new SQLException(ex.getMessage(), ex);
+                }
+                long insertedTransitionId = transitionRepository.insert(conn, new features.world.dungeon.model.structures.transition.DungeonTransition(
+                        reservedTransitionId,
+                        input.mapId(),
+                        input.description(),
+                        localConnection,
+                        validatedDestination,
+                        null,
+                        toPlacementSpec(stairDraft)));
                 if (input.bidirectional()
                         && validatedDestination instanceof features.world.dungeon.model.structures.transition.DungeonTransitionDestination.DungeonMapDestination dungeonDestination) {
                     long counterpartId = transitionRepository.insert(conn, new features.world.dungeon.model.structures.transition.DungeonTransition(

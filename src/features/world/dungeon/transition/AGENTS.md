@@ -7,6 +7,7 @@
 ## Canonical Types and APIs
 
 - `TransitionObject` — public transition root seam — accepts typed transition workflow requests and delegates them to the current transition workflow owner.
+- `input/CreateStairTransitionInput` — transition create request family — backs `TransitionObject.createStairTransition(...)` for stair-anchored transition creation.
 - `input/CreateTransitionInput` — transition create request family — backs `TransitionObject.createTransition(...)` for door-anchored transition creation.
 - `input/DeleteTransitionInput` — transition delete request family — backs `TransitionObject.deleteTransition(...)` for one persisted transition.
 - `input/LoadDungeonTargetsInput` — transition target-load request family — loads selectable dungeon transition targets in transition-owned root-input form.
