@@ -19,6 +19,7 @@ import buildlogic.cleanup.registerDeleteEmptySourceDirectoriesTask
 import buildlogic.conventions.registerCheckConventionsTask
 import buildlogic.conventions.heuristic.owner.OwnerConventionSupport
 import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryConventionTask
+import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryApiCallersTask
 import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryBucketFilesTask
 import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryInputFilesTask
 import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryOwnerFilesTask
@@ -165,6 +166,7 @@ val checkOwnerApiBoundaryInputFiles = registerCheckOwnerApiBoundaryInputFilesTas
 val checkOwnerApiBoundaryTaskFiles = registerCheckOwnerApiBoundaryTaskFilesTask(ownerConventionSupport)
 val checkOwnerApiBoundaryStateFiles = registerCheckOwnerApiBoundaryStateFilesTask(ownerConventionSupport)
 val checkOwnerApiBoundaryRepositoryFiles = registerCheckOwnerApiBoundaryRepositoryFilesTask(ownerConventionSupport)
+val checkOwnerApiBoundaryApiCallers = registerCheckOwnerApiBoundaryApiCallersTask(ownerConventionSupport)
 val checkOwnerApiBoundaryConvention = registerCheckOwnerApiBoundaryConventionTask(
     checkOwnerApiBoundaryRoleDispatch = checkOwnerApiBoundaryRoleDispatch,
     checkOwnerApiBoundaryBucketFiles = checkOwnerApiBoundaryBucketFiles,
@@ -172,7 +174,8 @@ val checkOwnerApiBoundaryConvention = registerCheckOwnerApiBoundaryConventionTas
     checkOwnerApiBoundaryInputFiles = checkOwnerApiBoundaryInputFiles,
     checkOwnerApiBoundaryTaskFiles = checkOwnerApiBoundaryTaskFiles,
     checkOwnerApiBoundaryStateFiles = checkOwnerApiBoundaryStateFiles,
-    checkOwnerApiBoundaryRepositoryFiles = checkOwnerApiBoundaryRepositoryFiles
+    checkOwnerApiBoundaryRepositoryFiles = checkOwnerApiBoundaryRepositoryFiles,
+    checkOwnerApiBoundaryApiCallers = checkOwnerApiBoundaryApiCallers
 )
 
 val checkDungeonGeometryConvention = registerCheckDungeonGeometryConventionTask()

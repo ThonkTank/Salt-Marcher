@@ -11,7 +11,8 @@ fun Project.registerCheckOwnerApiBoundaryConventionTask(
     checkOwnerApiBoundaryInputFiles: TaskProvider<out Task>,
     checkOwnerApiBoundaryTaskFiles: TaskProvider<out Task>,
     checkOwnerApiBoundaryStateFiles: TaskProvider<out Task>,
-    checkOwnerApiBoundaryRepositoryFiles: TaskProvider<out Task>
+    checkOwnerApiBoundaryRepositoryFiles: TaskProvider<out Task>,
+    checkOwnerApiBoundaryApiCallers: TaskProvider<out Task>
 ): TaskProvider<Task> = tasks.register("checkOwnerApiBoundaryConvention") {
     group = "verification"
     description = "Run touched-file owner boundary dispatch plus one validation task per canonical role."
@@ -22,4 +23,5 @@ fun Project.registerCheckOwnerApiBoundaryConventionTask(
     dependsOn(checkOwnerApiBoundaryTaskFiles)
     dependsOn(checkOwnerApiBoundaryStateFiles)
     dependsOn(checkOwnerApiBoundaryRepositoryFiles)
+    dependsOn(checkOwnerApiBoundaryApiCallers)
 }
