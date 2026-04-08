@@ -6,57 +6,70 @@ import org.gradle.api.tasks.TaskProvider
 
 fun Project.registerCheckOwnerApiBoundaryApiCallersTask(
     support: OwnerConventionSupport
-): TaskProvider<Task> = support.registerRepositoryWideCheck(
+): TaskProvider<Task> = support.registerCheck(
     taskName = "checkOwnerApiBoundaryApiCallers",
-    taskDescription = "Fail when canonical task/state/repository APIs are called from unauthorized repo-wide caller roles.",
-    failureHeader = "Owner API caller drift detected.",
-    failureSummary = "Canonical task, state, and repository APIs must be called only from their explicit repo-wide owner-approved caller roles."
-) { snapshot ->
-    apiCallerReasons(snapshot, support)
+    taskDescription = "Fail when touched files call canonical task/state/repository APIs from unauthorized roles.",
+    failureHeader = "Touched-file owner API caller drift detected.",
+    failureSummary = "Touched files may call canonical task, state, and repository APIs only through their explicit owner-approved roles."
+) { sourceFile, snapshot ->
+    apiCallerReasons(sourceFile, snapshot, support)
 }
 
 private fun apiCallerReasons(
+    sourceFile: OwnerConventionSourceFile,
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): List<String> {
-    val reasons = mutableListOf<String>()
-    snapshot.catalog.taskApisByTypeName.values.forEach { api ->
-        reasons += snapshot.callIndex.callsTo(api.typeName, api.publicStaticMethodNames).mapNotNull { callSite ->
-            if (isAllowedTaskCaller(callSite, api, snapshot, support)) {
-                null
-            } else {
-                formatCallerViolation(
-                    callSite = callSite,
-                    expectation = "task APIs may be called only from the same owner's canonical <Owner>Object request methods"
-                )
-            }
+    return snapshot.callIndex.callSites
+        .asSequence()
+        .filter { callSite -> callSite.caller.path == sourceFile.context.path }
+        .mapNotNull { callSite -> callerViolation(callSite, snapshot, support) }
+        .distinct()
+        .sorted()
+        .toList()
+}
+
+private fun callerViolation(
+    callSite: OwnerConventionApiCallSite,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport
+): String? {
+    val taskApi = support.taskApi(callSite.calleeTypeName, snapshot)
+    if (taskApi != null && callSite.calleeMethodName in taskApi.publicStaticMethodNames) {
+        return if (isAllowedTaskCaller(callSite, taskApi, snapshot, support)) {
+            null
+        } else {
+            formatCallerViolation(
+                callSite = callSite,
+                expectation = "task APIs may be called only from the same owner's canonical <Owner>Object request methods"
+            )
         }
     }
-    snapshot.catalog.repositoryApisByTypeName.values.forEach { api ->
-        reasons += snapshot.callIndex.callsTo(api.typeName, api.publicStaticMethodNames).mapNotNull { callSite ->
-            if (isAllowedRepositoryCaller(callSite, api, snapshot, support)) {
-                null
-            } else {
-                formatCallerViolation(
-                    callSite = callSite,
-                    expectation = "repository APIs may be called only from the same owner's canonical <Owner>Object request methods"
-                )
-            }
+
+    val repositoryApi = support.repositoryApi(callSite.calleeTypeName, snapshot)
+    if (repositoryApi != null && callSite.calleeMethodName in repositoryApi.publicStaticMethodNames) {
+        return if (isAllowedRepositoryCaller(callSite, repositoryApi, snapshot, support)) {
+            null
+        } else {
+            formatCallerViolation(
+                callSite = callSite,
+                expectation = "repository APIs may be called only from the same owner's canonical <Owner>Object request methods"
+            )
         }
     }
-    snapshot.catalog.stateApisByTypeName.values.forEach { api ->
-        reasons += snapshot.callIndex.callsTo(api.typeName, api.publicStaticMethodNames).mapNotNull { callSite ->
-            if (isAllowedStateCaller(callSite, api, snapshot, support)) {
-                null
-            } else {
-                formatCallerViolation(
-                    callSite = callSite,
-                    expectation = "state APIs may be called only from the same owner's canonical <Owner>Object request methods or explicit same-owner repository/state collaborators"
-                )
-            }
+
+    val stateApi = support.stateApi(callSite.calleeTypeName, snapshot)
+    if (stateApi != null && callSite.calleeMethodName in stateApi.publicStaticMethodNames) {
+        return if (isAllowedStateCaller(callSite, stateApi, snapshot, support)) {
+            null
+        } else {
+            formatCallerViolation(
+                callSite = callSite,
+                expectation = "state APIs may be called only from the same owner's canonical <Owner>Object request methods or explicit same-owner repository/state collaborators"
+            )
         }
     }
-    return reasons.distinct()
+    return null
 }
 
 private fun isAllowedTaskCaller(

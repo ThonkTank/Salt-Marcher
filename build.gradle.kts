@@ -28,7 +28,7 @@ import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryRoleD
 import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryStateFilesTask
 import buildlogic.conventions.heuristic.owner.registerCheckOwnerApiBoundaryTaskFilesTask
 import buildlogic.conventions.heuristic.registerCheckArchitectureHeuristicsTask
-import buildlogic.conventions.heuristic.registerCheckDungeonGeometryConventionTask
+import buildlogic.conventions.heuristic.registerCheckDungeonGeometryHeuristicTask
 import buildlogic.conventions.hygiene.registerCheckBuildHygieneTask
 import buildlogic.conventions.hygiene.registerCheckNoCompiledArtifactsInSourceTask
 import buildlogic.conventions.policy.registerCheckLocalBuildPoliciesTask
@@ -178,7 +178,7 @@ val checkOwnerApiBoundaryConvention = registerCheckOwnerApiBoundaryConventionTas
     checkOwnerApiBoundaryApiCallers = checkOwnerApiBoundaryApiCallers
 )
 
-val checkDungeonGeometryConvention = registerCheckDungeonGeometryConventionTask()
+val checkDungeonGeometryConvention = registerCheckDungeonGeometryHeuristicTask()
 val checkBuildHygiene = registerCheckBuildHygieneTask(checkNoCompiledArtifactsInSource)
 val checkLocalBuildPolicies = registerCheckLocalBuildPoliciesTask(checkUiAsyncSubmissionConvention)
 val checkArchitectureHeuristics = registerCheckArchitectureHeuristicsTask(
