@@ -145,7 +145,7 @@ Use these layer names only when they clearly describe a local responsibility ins
 
 ### Public Owner APIs
 
-- Cross-owner imports must go through the target owner's `api` package. The positive pattern is `features.<owner>.api` for top-level features and `<owner>.api` for documented nested owners.
+- Cross-owner imports must go through the target owner's root package. The positive pattern is a public `*Object` root type at `features.<owner>` for top-level owners and at `<owner>` for documented nested owners.
 - Owner boundaries are derived structurally. Under `features.<feature>`, every contiguous run of non-layer segments before the first transparent layer is the owner path.
 - Subowners must sit directly under their owner. Once a sanctioned owner-internal layer segment (`model`, `application`, `tasks`, `types`, `repository`, `state`, `ui`, `api`, `bootstrap`) appears, every later segment is layer-internal only, not another owner.
 - Each import may cross only one owner edge: parent, direct child, or sibling with the same parent. Do not skip over intermediate owners to reach a grandchild, niece, or cousin owner directly.

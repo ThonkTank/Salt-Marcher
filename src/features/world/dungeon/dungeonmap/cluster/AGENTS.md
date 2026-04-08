@@ -6,8 +6,9 @@
 
 ## Canonical Types and APIs
 
+- `ClusterObject` — public root owner seam for cluster-owned dungeon structures.
 - `model/ClusterDefinitionRequest` — canonical cluster-owned construction and rehydration request.
-- `model/Cluster` — top-level cluster aggregate that extends `Structure` with cluster identity and room metadata membership; `center()` is derived runtime state from the final structure and public writes converge on `mutated(ClusterMutationRequest)`.
+- `model/Cluster` — current cluster implementation behind `ClusterObject`; extends `Structure` with cluster identity and room metadata membership, and public writes converge on `mutated(ClusterMutationRequest)`.
 - `model/ClusterMutationRequest` — canonical cluster-local write vocabulary for floor, wall, door, and translation edits.
 - `model/ClusterPaintRequest`, `model/Cluster.rewritePaint(...)` — public cluster-owned paint rewrite seam — expands one paint area plus overlapping clusters into a cluster rewrite payload.
 - `model/ClusterDeleteRequest`, `model/Cluster.rewriteDelete(...)` — public cluster-owned delete rewrite seam — expands one delete area into zero or more replacement clusters.
@@ -24,7 +25,7 @@
 
 ## Where New Code Goes
 
-- Put cluster identity, center, structure-backed boundary edits, and cluster-local move semantics on `Cluster`.
+- Put public cross-owner cluster access on `ClusterObject` and keep cluster identity, center, structure-backed boundary edits, and cluster-local move semantics on `Cluster`.
 - Put public paint/delete rewrite entrypoints on `Cluster` via `rewritePaint(...)` and `rewriteDelete(...)`.
 - Keep `ClusterStructureEditor` package-private inside `cluster/model` as an implementation detail behind those aggregate seams.
 - Let public cluster writes converge on the six `DungeonClusterApplicationService` workflow request families and reduce them to `ClusterRewriteRequest` before persistence; bootstrap uses the same rewrite payload as every other persisted cluster change.

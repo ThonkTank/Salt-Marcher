@@ -6,7 +6,8 @@
 
 ## Canonical Types and APIs
 
-- `model/Corridor` — top-level corridor aggregate that extends `Structure` with corridor-owned `CorridorInput` truth plus transient routed traces and connections derived from the input and final structure.
+- `CorridorObject` — public root owner object for corridor-owned dungeon structures.
+- `model/Corridor` — current corridor implementation behind `CorridorObject`; extends `Structure` with corridor-owned `CorridorInput` truth plus transient routed traces and connections derived from the input and final structure.
 - `model/CorridorInput`, `model/CorridorInputNode`, `model/CorridorSegment` — canonical persisted corridor-authored input — describe the ordered node-and-segment network; each `CorridorSegment` owns endpoint resolution and local replanning between its two anchors.
 - `model/CorridorResolutionInput` — fixed corridor-external input contract — supplies blocked area and room-exterior door facts through canonical `GridArea` carriers and exterior-door descriptors.
 - `model/CorridorReconcileInput` — fixed room-rewrite contract — supplies affected room ids, before-or-after door facts, translations, level shifts, and updated resolution input for rebound workflows.
@@ -22,7 +23,7 @@
 
 ## Where New Code Goes
 
-- Put corridor identity, persisted authored input truth, room attachment semantics, and corridor-local invariants on `Corridor`.
+- Put public cross-owner corridor access on `CorridorObject` and keep corridor identity, persisted authored input truth, room attachment semantics, and corridor-local invariants on `Corridor`.
 - Route public corridor create or reload flows through `DungeonMapApplicationService` request entrypoints instead of calling `Corridor.fromInput(...)`, `Corridor.rehydrated(...)`, or `DungeonMap` helpers directly.
 - Route public corridor rewrites through `corridor.withInput(...)`, `corridor.validateReconcile(...)`, and `corridor.reconciled(...)`; graph-edit translation belongs on `CorridorInputEditor`, not on the aggregate.
 - Let `Corridor` own corridor boundary-opening reads, boundary-door lookup, room-anchor guard semantics, and authored input validation; callers may select a segment id or room/cell set, but they must not persist routed traces as owner truth.

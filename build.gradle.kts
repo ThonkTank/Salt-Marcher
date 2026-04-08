@@ -848,10 +848,6 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         }
     }
 
-    fun apiPackagePrefix(ownerPackagePrefix: String): String {
-        return "$ownerPackagePrefix.api"
-    }
-
     fun importedPackageName(imported: String, knownPackages: Set<String>): String? {
         val normalizedImport = imported.removeSuffix(".*")
         if (!normalizedImport.startsWith("features.")) {
@@ -927,6 +923,42 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                 packagePattern.find(sourceFile.readText())?.groupValues?.get(1)
             }
             .toSet()
+        val touchedOwnerRoots = linkedSetOf<String>()
+        fileTree("src") {
+            include("**/*.java")
+        }.files
+            .asSequence()
+            .map { sourceFile ->
+                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
+                path to sourceFile
+            }
+            .filter { (path, _) -> path in touchedPaths }
+            .forEach { (_, sourceFile) ->
+                val sourceText = sourceFile.readText()
+                val sourcePackage = packagePattern.find(sourceText)?.groupValues?.get(1)
+                ownerPackagePrefix(sourcePackage)?.let(touchedOwnerRoots::add)
+                importPattern.findAll(sourceText)
+                    .map { match -> match.groupValues[1] }
+                    .mapNotNull { imported -> importedPackageName(imported, knownPackages) }
+                    .mapNotNull(::ownerPackagePrefix)
+                    .forEach(touchedOwnerRoots::add)
+            }
+        val ownerRootObjectOffenders = touchedOwnerRoots.asSequence()
+            .mapNotNull { ownerPackage ->
+                val ownerDir = projectDirFile.resolve("src/" + ownerPackage.replace('.', '/'))
+                if (!ownerDir.isDirectory) {
+                    return@mapNotNull "$ownerPackage :: owner root directory is missing"
+                }
+                val hasRootObject = ownerDir.listFiles()
+                    ?.any { child -> child.isFile && child.name.endsWith("Object.java") }
+                    ?: false
+                if (hasRootObject) {
+                    null
+                } else {
+                    "$ownerPackage :: owner root must expose a public *Object type"
+                }
+            }
+            .sorted()
 
         val offenders = fileTree("src") {
             include("**/*.java")
@@ -952,17 +984,16 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                         if (sourceOwner == targetOwner) {
                             return@mapNotNull null
                         }
-                        val apiPrefix = apiPackagePrefix(targetOwner)
-                        val usesApiPackage = imported == apiPrefix || imported.startsWith("$apiPrefix.")
+                        val usesOwnerRootPackage = importedPackage == targetOwner
                         val neighbor = isNeighbor(sourceOwner, targetOwner)
-                        if (usesApiPackage && neighbor) {
+                        if (usesOwnerRootPackage && neighbor) {
                             return@mapNotNull null
                         }
                         val sourceLabel = sourceOwner ?: "<external>"
                         val reason = buildString {
-                            if (!usesApiPackage) {
-                                append("foreign owner imports must go through ")
-                                append(apiPrefix)
+                            if (!usesOwnerRootPackage) {
+                                append("foreign owner imports must go through the owner root package ")
+                                append(targetOwner)
                             }
                             if (!neighbor) {
                                 if (isNotEmpty()) {
@@ -975,6 +1006,7 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                     }
                 packagePlacementOffender + importOffenders
             }
+            .plus(ownerRootObjectOffenders.asSequence())
             .sorted()
             .toList()
 
@@ -982,7 +1014,7 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
             val details = offenders.joinToString(separator = "\n") { offender -> " - $offender" }
             throw GradleException(
                 "Owner api boundary drift detected.\n" +
-                "Touched files may only import foreign owners through the target owner's api package,\n" +
+                "Touched files may only import foreign owners through the target owner's root package,\n" +
                 "each import may cross at most one owner edge, and subowners must sit directly under their owner.\n" +
                 "Offending imports:\n$details"
             )

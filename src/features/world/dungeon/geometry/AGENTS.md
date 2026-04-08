@@ -6,10 +6,11 @@
 
 ## Canonical Types and APIs
 
+- `GeometryObject<T>` - public root owner object for dungeon geometry - anchors cross-owner geometry access and the shared geometry inheritance chain.
 - `GridTranslatable<T>` - canonical translation capability - every public map/object delta seam must use `translated(GridTranslation)`.
 - `GridOccupant` - canonical occupancy capability - every public occupied-cell seam must answer with `cellFootprint(): GridArea`.
 - `GridBounded` - canonical boundary capability - every public boundary-segment aggregate seam must answer with `boundary(): GridBoundary`.
-- `GridObject` - common immutable base for canonical grid objects - exposes translation, occupied levels, and cell-footprint algebra.
+- `GridObject` - common immutable base for canonical grid objects - extends `GeometryObject` and exposes translation, occupied levels, and cell-footprint algebra.
 - `GridPoint` - canonical lattice point - represents cell centers, edge centers, and vertices on the doubled grid; the public coordinate answer is `x2()/y2()/z()`.
 - `GridSegment` - canonical same-level axis-aligned lattice segment - represents walls, doors, and corridor trace segments.
 - `GridSegmentPath` - canonical ordered boundary-step route - represents ordered boundary-edit previews and commits while preserving the same step granularity as `GridBoundary`.

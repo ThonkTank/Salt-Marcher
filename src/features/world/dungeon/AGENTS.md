@@ -22,7 +22,7 @@
 ## Canonical Types and APIs
 
 - `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridSegmentPath`, `GridArea`, `GridBoundary`, or `GridPath`, movement through `GridTranslation`, occupancy through `cellFootprint(): GridArea`, and aggregate boundary truth through `boundary(): GridBoundary`.
-- `checkOwnerApiBoundaryConvention` — build-time touched-file architecture gate — foreign-owner imports inside the dungeon tree must go through the target owner's `api` package, owner boundaries are derived from contiguous pre-layer package segments, and subowners must sit directly under their owner instead of under sanctioned owner-internal layers.
+- `checkOwnerApiBoundaryConvention` — build-time touched-file architecture gate — foreign-owner imports inside the dungeon tree must go through the target owner's root package, public owner seams anchor on root `*Object` types, owner boundaries are derived from contiguous pre-layer package segments, and subowners must sit directly under their owner instead of under sanctioned owner-internal layers.
 - `checkDungeonGeometryConvention` — build-time architecture gate — enforces the canonical geometry vocabulary by rejecting public/protected dungeon seams that expose raw point/segment collections or reintroduce second geometry dialects.
 - `dungeonmap` slice — authoritative loaded map snapshot plus load/reload and map-state seams — other owners rebuild through this slice after writes.
 - `DungeonClusterApplicationService` — cluster mutation seam — persists top-level cluster edits, cluster-backed room rewrites, and cluster bootstrap flows.
@@ -36,7 +36,7 @@
 ## Where New Code Goes
 
 - Put new behavior on the documented owner first.
-- Route foreign-owner reads and workflows through the target owner's `api` package. `dungeon` callers enter `dungeonmap.api`, `dungeonmap` callers enter `cluster.api`, `corridor.api`, or `structure.api`, and deeper child owners are reached only through their direct parent-owner boundary.
+- Route foreign-owner reads and workflows through the target owner's root package. `dungeon` callers enter `dungeonmap` through `DungeonMapObject`, `dungeonmap` callers enter `cluster`, `corridor`, or `structure` through their root `*Object` seams, and deeper child owners are reached only through their direct parent-owner boundary.
 - Place subowners directly under their owner path. Once a dungeon package enters `model`, `application`, `tasks`, `types`, `repository`, `state`, `ui`, `api`, or `bootstrap`, later segments are technical subpackages only and must not define another owner.
 - Put owner-local transformation pipelines under `owner/tasks`, especially when the owner is expressing an explicit input-output chain instead of a long-lived mutable workflow surface.
 - Put owner-local static carrier and helper types under `owner/types` when they do not themselves own mutable state or cross-owner API responsibilities.
@@ -63,7 +63,7 @@
 
 - Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `Structure.roomTopology()`.
 - Do not add a second shared dungeon geometry vocabulary beside the `geometry` slice and its `GridObject` family.
-- Do not bypass a documented intermediate dungeon owner by importing a grandchild or sibling-internal package directly; if a caller crosses an owner boundary at all, it must stop at the target owner's `api` package.
+- Do not bypass a documented intermediate dungeon owner by importing a grandchild or sibling-internal package directly; if a caller crosses an owner boundary at all, it must stop at the target owner's root package and its public `*Object` seam.
 - Do not place would-be dungeon subowners under `model`, `application`, `tasks`, `types`, `repository`, `state`, `ui`, `api`, or `bootstrap`; move them to a direct child of the owning package first.
 - Do not let stair, room, cluster, boundary, runtime, or shell code reintroduce `occupiedPositions()`/`movedBy(...)`-style public aliases once `cellFootprint()` and `translated(GridTranslation)` exist.
 - Do not expose raw `Set/List/Collection<GridPoint|GridSegment>` seams from public/protected dungeon APIs outside the canonical geometry carriers.
