@@ -41,5 +41,33 @@ public record NavigateInput(
             kind = kind == null ? "" : kind.trim();
             headingOverride = headingOverride == null ? "" : headingOverride.trim();
         }
+
+        public static ActionInput cellAction(
+                features.world.dungeon.geometry.GridPoint cell,
+                int levelZ,
+                String headingOverride
+        ) {
+            return new ActionInput("CELL", cell, levelZ, headingOverride, null, null);
+        }
+
+        public static ActionInput doorAction(Long doorId) {
+            return new ActionInput("DOOR", null, 0, "", doorId, null);
+        }
+
+        public static ActionInput transitionAction(Long transitionId) {
+            return new ActionInput("TRANSITION", null, 0, "", null, transitionId);
+        }
+
+        public boolean isCellAction() {
+            return "CELL".equalsIgnoreCase(kind);
+        }
+
+        public boolean isDoorAction() {
+            return "DOOR".equalsIgnoreCase(kind);
+        }
+
+        public boolean isTransitionAction() {
+            return "TRANSITION".equalsIgnoreCase(kind);
+        }
     }
 }

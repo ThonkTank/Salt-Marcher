@@ -219,9 +219,8 @@ public final class RuntimeObject {
     }
 
     private static DungeonRuntimeAction toRuntimeAction(NavigateInput.ActionInput input) {
-        String kind = input.kind().trim().toUpperCase(java.util.Locale.ROOT);
-        return switch (kind) {
-            case "CELL" -> new DungeonRuntimeAction(
+        if (input.isCellAction()) {
+            return new DungeonRuntimeAction(
                     "Bewegen",
                     "",
                     "Bewegung konnte nicht ausgeführt werden",
@@ -229,20 +228,24 @@ public final class RuntimeObject {
                             Objects.requireNonNull(input.cell(), "action.cell"),
                             input.levelZ(),
                             CardinalDirection.parse(input.headingOverride())));
-            case "DOOR" -> new DungeonRuntimeAction(
+        }
+        if (input.isDoorAction()) {
+            return new DungeonRuntimeAction(
                     "Tür benutzen",
                     "",
                     "Verbindung konnte nicht benutzt werden",
                     new DungeonRuntimeAction.DoorTarget(
                             new features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef(
                                     Objects.requireNonNull(input.doorId(), "action.doorId"))));
-            case "TRANSITION" -> new DungeonRuntimeAction(
+        }
+        if (input.isTransitionAction()) {
+            return new DungeonRuntimeAction(
                     "Übergang benutzen",
                     "",
                     "Übergang konnte nicht benutzt werden",
                     new DungeonRuntimeAction.TransitionTarget(
                             Objects.requireNonNull(input.transitionId(), "action.transitionId")));
-            default -> throw new IllegalArgumentException("Unbekannte Runtime-Aktion: " + input.kind());
-        };
+        }
+        throw new IllegalArgumentException("Unbekannte Runtime-Aktion: " + input.kind());
     }
 }
