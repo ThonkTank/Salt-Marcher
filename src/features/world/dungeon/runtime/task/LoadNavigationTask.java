@@ -39,7 +39,7 @@ public final class LoadNavigationTask {
                         snapshot.mapId(),
                         snapshot.cell(),
                         snapshot.levelZ(),
-                        snapshot.heading() == null ? "" : snapshot.heading().name());
+                        headingName(snapshot));
     }
 
     private static features.world.dungeon.application.runtime.DungeonRuntimeApplicationService runtimeApplicationService(
@@ -47,5 +47,11 @@ public final class LoadNavigationTask {
             features.world.dungeon.dungeonmap.application.DungeonMapLoadResolver loadResolver
     ) {
         return new features.world.dungeon.application.runtime.DungeonRuntimeApplicationService(mapRepository, loadResolver);
+    }
+
+    private static String headingName(
+            features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot snapshot
+    ) {
+        return snapshot.heading() == null ? "" : snapshot.heading().name();
     }
 }
