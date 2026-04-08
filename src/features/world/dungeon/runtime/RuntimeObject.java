@@ -202,11 +202,7 @@ public final class RuntimeObject {
         if (input == null || input.isEmpty()) {
             return DungeonRuntimeNavigationSnapshot.empty();
         }
-        return new DungeonRuntimeNavigationSnapshot(
-                input.mapId(),
-                input.cell(),
-                input.levelZ(),
-                CardinalDirection.parse(input.heading()));
+        return navigationSnapshot(input.mapId(), input.cell(), input.levelZ(), input.heading());
     }
 
     private static DungeonRuntimeNavigationSnapshot toNavigationSnapshot(
@@ -215,11 +211,20 @@ public final class RuntimeObject {
         if (input == null || input.isEmpty()) {
             return DungeonRuntimeNavigationSnapshot.empty();
         }
+        return navigationSnapshot(input.mapId(), input.cell(), input.levelZ(), input.heading());
+    }
+
+    private static DungeonRuntimeNavigationSnapshot navigationSnapshot(
+            Long mapId,
+            features.world.dungeon.geometry.GridPoint cell,
+            int levelZ,
+            String heading
+    ) {
         return new DungeonRuntimeNavigationSnapshot(
-                input.mapId(),
-                input.cell(),
-                input.levelZ(),
-                CardinalDirection.parse(input.heading()));
+                mapId,
+                cell,
+                levelZ,
+                CardinalDirection.parse(heading));
     }
 
     private static DungeonRuntimeAction toRuntimeAction(NavigateInput.ActionInput input) {
