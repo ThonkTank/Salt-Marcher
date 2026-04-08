@@ -1,5 +1,7 @@
 package features.world.dungeon.transition;
 
+import features.world.dungeon.transition.input.PersistReboundConnectionsInput;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
@@ -19,11 +21,14 @@ public final class TransitionObject {
      * Persist map-owned rebound results through the transition owner seam while preserving any existing stair
      * placement spec attached to the original transition.
      */
-    public void persistReboundConnections(
-            Connection conn,
-            features.world.dungeon.dungeonmap.model.DungeonMap originalMap,
-            Map<Long, features.world.dungeon.dungeonmap.connections.input.DungeonConnection> localConnectionsByTransitionId
-    ) throws SQLException {
+    public void persistReboundConnections(PersistReboundConnectionsInput input) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        Connection conn = input.connection();
+        features.world.dungeon.dungeonmap.model.DungeonMap originalMap = input.originalMap();
+        Map<Long, features.world.dungeon.dungeonmap.connections.input.DungeonConnection> localConnectionsByTransitionId =
+                input.localConnectionsByTransitionId();
         if (conn == null || originalMap == null || localConnectionsByTransitionId == null || localConnectionsByTransitionId.isEmpty()) {
             return;
         }

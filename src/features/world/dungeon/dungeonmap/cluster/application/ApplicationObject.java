@@ -7,6 +7,7 @@ import features.world.dungeon.dungeonmap.cluster.application.input.ClusterDoorMo
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterFloorEditRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterMoveRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterSurfaceRewriteRequest;
+import features.world.dungeon.dungeonmap.input.PersistClusterRewriteReboundsInput;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -452,7 +453,11 @@ public final class ApplicationObject {
             mapApplicationService.validateClusterRewrite(
                     new features.world.dungeon.dungeonmap.api.ValidateClusterRewriteRequest(originalLayout, rewriteRequest));
             List<Long> persistedClusterIds = clusterRepository.persistRewrite(conn, mapId, rewriteRequest);
-            mapObject.persistClusterRewriteRebounds(conn, originalLayout, rewriteRequest, persistedClusterIds);
+            mapObject.persistClusterRewriteRebounds(new PersistClusterRewriteReboundsInput(
+                    conn,
+                    originalLayout,
+                    rewriteRequest,
+                    persistedClusterIds));
         }
 
         private static List<features.world.dungeon.dungeonmap.cluster.model.Cluster> overlappingClustersAtLevel(

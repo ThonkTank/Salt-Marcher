@@ -7,7 +7,8 @@
 ## Owner Atlas
 
 - `DungeonMapObject` — public root seam for loaded-map reads and map-owned workflows.
-- `api/` — exported read projections plus map-owned request carriers.
+- `api/` — exported read projections for foreign owners.
+- `input/` — public map-owned workflow request carriers for `DungeonMapObject`.
 - `application/` and `repository/` — map selection, load/reload orchestration, and rehydration.
 - `state/` — active map, projection level, overlay settings, and loading flags.
 - `connections/`, `structure/`, `cluster/`, `corridor/` — map-owned child owners for traversal semantics and structure-backed map objects.
@@ -15,7 +16,8 @@
 ## Canonical Types and APIs
 
 - `DungeonMapObject` — public loaded-map seam for room, corridor, stair, transition, door, connection, traversability, and read-projection lookups.
-- `dungeonmap/api` — exported map-owned projections and grouped request families for preview, validation, reconcile, resolve, and rehydrate workflows.
+- `dungeonmap/api` — exported map-owned projections and grouped request families for preview, validation, and reconcile workflows consumed outside the root owner seam.
+- `input/PersistClusterRewriteReboundsInput` — map-owned rebound-tail request family — carries the authoritative pre-write map plus the persisted cluster ids for the canonical room-reload and cross-owner rebound tail.
 - `DungeonMapApplicationService` — map-owned cross-owner workflow seam for cluster/corridor/stair/transition preview composition plus cluster rewrite validation and reconciliation.
 - `DungeonMapLoadResolver` and `DungeonMapLoadingService` — canonical selection, load, reload, and post-write refresh seams.
 - `DungeonMapRepository` — authoritative map rehydration seam over persisted owner slices.
@@ -24,7 +26,7 @@
 ## Where New Code Goes
 
 - Put public cross-owner map access on `DungeonMapObject`.
-- Put exported read projections and map-owned workflow request carriers in `api/`.
+- Put exported read projections in `api/` and root-owner workflow request carriers in `input/`.
 - Put preview, validation, reconcile, and resolve orchestration on `DungeonMapApplicationService`, not on tools or on the `DungeonMap` implementation itself.
 - Put selection, fallback, and reload policy in `application/`; put authoritative rehydration in `repository/`; put active-map and overlay state in `state/`.
 - Keep shared traversal semantics under `connections/`, and keep structure-backed map objects under `structure/`, `cluster/`, and `corridor/`.

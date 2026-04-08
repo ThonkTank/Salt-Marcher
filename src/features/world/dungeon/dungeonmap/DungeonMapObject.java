@@ -1,6 +1,8 @@
 package features.world.dungeon.dungeonmap;
 import features.world.dungeon.dungeonmap.corridor.CorridorObject;
+import features.world.dungeon.dungeonmap.input.PersistClusterRewriteReboundsInput;
 import features.world.dungeon.transition.TransitionObject;
+import features.world.dungeon.transition.input.PersistReboundConnectionsInput;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -32,12 +34,14 @@ public final class DungeonMapObject {
      * Canonical map-owned tail for persisted cluster rewrites: reload authoritative room-backed state, reconcile
      * cross-owner effects, and delegate rebound writes to corridor and transition root seams.
      */
-    public void persistClusterRewriteRebounds(
-            Connection conn,
-            features.world.dungeon.dungeonmap.model.DungeonMap originalMap,
-            features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest,
-            List<Long> persistedClusterIds
-    ) throws SQLException {
+    public void persistClusterRewriteRebounds(PersistClusterRewriteReboundsInput input) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        Connection conn = input.connection();
+        features.world.dungeon.dungeonmap.model.DungeonMap originalMap = input.originalMap();
+        features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest = input.rewriteRequest();
+        List<Long> persistedClusterIds = input.persistedClusterIds();
         if (conn == null || originalMap == null || rewriteRequest == null || !rewriteRequest.hasAffectedRooms()) {
             return;
         }
@@ -49,6 +53,9 @@ public final class DungeonMapObject {
         features.world.dungeon.dungeonmap.model.ClusterRewriteEffects rewriteEffects = mapApplicationService.reconcileClusterRewrite(
                 new features.world.dungeon.dungeonmap.api.ReconcileClusterRewriteRequest(originalMap, persistedRoomMap, rewriteRequest));
         corridorObject.persistReboundCorridors(conn, persistedRoomMap.mapId(), rewriteEffects.reboundCorridors());
-        transitionObject.persistReboundConnections(conn, originalMap, rewriteEffects.reboundTransitionConnectionsById());
+        transitionObject.persistReboundConnections(new PersistReboundConnectionsInput(
+                conn,
+                originalMap,
+                rewriteEffects.reboundTransitionConnectionsById()));
     }
 }

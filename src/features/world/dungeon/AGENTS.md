@@ -23,6 +23,7 @@
 - `room/RoomObject` — public room seam for room-owned narration writes.
 - `runtime/RuntimeObject` — public runtime seam for cross-owner runtime workflows such as persisted runtime-state repair.
 - `stair/StairObject` — public stair seam for cross-owner stair workflows, starting with stair deletion.
+- `transition/TransitionObject` — public transition seam for cross-owner transition workflows and transition-owned rebound persistence.
 - `dungeonmap/structure/StructureObject` and `Structure` — shared physical topology seam for structure-backed map objects and their persisted topology.
 - `dungeonmap/connections/ConnectionsObject` — shared traversal semantics seam for door-, stair-, and corridor-linked movement.
 - `catalog/CatalogObject` — public catalog seam for dungeon-map create, rename, and delete writes.
