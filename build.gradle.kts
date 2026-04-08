@@ -9,7 +9,6 @@ import buildlogic.application.registerCrawlerSpellsPipelineTask
 import buildlogic.application.registerCrawlerSpellsSlugsTask
 import buildlogic.application.registerCrawlerSpellsTask
 import buildlogic.application.registerCrawlerTask
-import buildlogic.application.registerHelloWorldTask
 import buildlogic.application.registerImportItemsTask
 import buildlogic.application.registerImportMonstersTask
 import buildlogic.application.registerImportSpellsTask
@@ -146,7 +145,6 @@ val crawlerMonsters = registerCrawlerMonstersTask(applicationTaskSupport)
 val importMonsters = registerImportMonstersTask(applicationTaskSupport, crawlerMonsters)
 registerRecoverEncounterTablesTask(applicationTaskSupport)
 registerSqliteQueryTask(applicationTaskSupport)
-registerHelloWorldTask(applicationTaskSupport)
 registerBackfillCreatureAnalysisTask(applicationTaskSupport)
 registerRebuildCreatureAnalysisTask(applicationTaskSupport)
 registerApplyCreatureOverridesTask(applicationTaskSupport)

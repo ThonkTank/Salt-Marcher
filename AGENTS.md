@@ -45,7 +45,6 @@ This file defines the repository-specific operating constraints for Claude Code 
 ./gradlew crawlerItemsSlugs      # slug-list only
 ./gradlew importMonsters         # import only (no crawl)
 ./gradlew importItems            # import only (no crawl)
-./gradlew helloWorld            # tiny standalone CLI sample for build-check experiments
 ```
 
 End-to-end scripts: `./scripts/crawl.sh`, `./scripts/crawl-items.sh`.
