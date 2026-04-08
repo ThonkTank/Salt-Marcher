@@ -17,7 +17,7 @@ import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
-import ui.bootstrap.SaltMarcherPreloader;
+import ui.bootstrap.preloader.PreloaderObject;
 import ui.shell.AppShell;
 import ui.shell.AppView;
 import ui.shell.ViewId;
@@ -115,7 +115,7 @@ public final class AppObject extends Application {
         primaryStage.setMinHeight(500);
         primaryStage.show();
         Platform.setImplicitExit(true);
-        notifyPreloader(new SaltMarcherPreloader.AppReadyNotification());
+        notifyPreloader(new PreloaderObject.AppReadyNotification());
 
         Task<CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions>> filterTask = new Task<>() {
             @Override

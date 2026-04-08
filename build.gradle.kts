@@ -24,7 +24,7 @@ plugins {
 
 val desktopAppName = "Salt Marcher"
 val launcherName = "salt-marcher"
-val preloaderJvmArg = "-Djavafx.preloader=ui.bootstrap.SaltMarcherPreloader"
+val preloaderJvmArg = "-Djavafx.preloader=ui.bootstrap.preloader.PreloaderObject"
 val jpackageModulePathArg = "--module-path=${'$'}APPDIR"
 val jpackageAddModulesArg = "--add-modules=javafx.controls"
 val desktopIconRelativePath = "icons/salt-marcher.svg"

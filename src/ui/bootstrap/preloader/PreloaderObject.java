@@ -1,4 +1,4 @@
-package ui.bootstrap;
+package ui.bootstrap.preloader;
 
 import javafx.application.Preloader;
 import javafx.geometry.Insets;
@@ -10,7 +10,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-public class SaltMarcherPreloader extends Preloader {
+public final class PreloaderObject extends Preloader {
 
     private Stage stage;
 
@@ -61,7 +61,7 @@ public class SaltMarcherPreloader extends Preloader {
 
         Scene scene = new Scene(root, 360, 220);
         scene.getStylesheets().add(
-                SaltMarcherPreloader.class.getResource("/salt-marcher.css").toExternalForm());
+                PreloaderObject.class.getResource("/salt-marcher.css").toExternalForm());
         return scene;
     }
 
