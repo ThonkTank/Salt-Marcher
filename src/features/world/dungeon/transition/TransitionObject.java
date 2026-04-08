@@ -1,5 +1,9 @@
 package features.world.dungeon.transition;
 
+import database.DatabaseManager;
+import features.world.dungeon.application.support.DungeonTransactionRunner;
+import features.world.dungeon.transition.input.DeleteTransitionInput;
+import features.world.dungeon.transition.input.LoadDungeonTargetsInput;
 import features.world.dungeon.transition.input.LoadOverworldTargetsInput;
 import features.world.dungeon.transition.input.PersistReboundConnectionsInput;
 
@@ -13,10 +17,44 @@ import java.util.Map;
  */
 public final class TransitionObject {
 
+    private final features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository;
     private final features.world.dungeon.repository.DungeonTransitionRepository transitionRepository;
 
-    public TransitionObject(features.world.dungeon.repository.DungeonTransitionRepository transitionRepository) {
+    public TransitionObject(
+            features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
+            features.world.dungeon.repository.DungeonTransitionRepository transitionRepository
+    ) {
+        this.mapRepository = java.util.Objects.requireNonNull(mapRepository, "mapRepository");
         this.transitionRepository = java.util.Objects.requireNonNull(transitionRepository, "transitionRepository");
+    }
+
+    public List<LoadDungeonTargetsInput.TargetInput> loadDungeonTargets(
+            LoadDungeonTargetsInput input
+    ) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        long mapId = input.mapId();
+        if (mapId <= 0) {
+            return List.of();
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return mapRepository.loadMap(conn, mapId).placedTransitions().stream()
+                    .map(transition -> new LoadDungeonTargetsInput.TargetInput(
+                            transition.transitionId(),
+                            transition.mapId(),
+                            transition.label(),
+                            transition.description(),
+                            transition.localConnection() != null && transition.localConnection().doorCarrier() != null
+                                    ? "Tür"
+                                    : transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                    ? "Treppe"
+                                    : "",
+                            transition.localConnection() != null && transition.localConnection().stairCarrier() != null
+                                    ? transition.localConnection().stairCarrier().anchorLevelZ()
+                                    : null))
+                    .toList();
+        }
     }
 
     public List<LoadOverworldTargetsInput.TargetInput> loadOverworldTargets(
@@ -31,6 +69,27 @@ public final class TransitionObject {
                         summary.tileId(),
                         summary.label()))
                 .toList();
+    }
+
+    public void deleteTransition(DeleteTransitionInput input) throws SQLException {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        long transitionId = input.transitionId();
+        if (transitionId <= 0) {
+            return;
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonTransactionRunner.inTransaction(conn, () -> {
+                Long mapId = transitionRepository.findMapId(conn, transitionId);
+                if (mapId == null) {
+                    throw new SQLException("Übergang existiert nicht");
+                }
+                transitionRepository.clearLinksTo(conn, transitionId);
+                transitionRepository.delete(conn, transitionId);
+                return null;
+            });
+        }
     }
 
     /**

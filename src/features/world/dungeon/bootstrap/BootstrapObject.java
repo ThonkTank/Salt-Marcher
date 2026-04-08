@@ -56,11 +56,12 @@ public final class BootstrapObject {
                         transitionRepository,
                         mapApplicationService);
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(mapRepository);
+        TransitionObject transitionObject = new TransitionObject(mapRepository, transitionRepository);
         DungeonMapObject mapObject = new DungeonMapObject(
                 mapRepository,
                 mapApplicationService,
                 new CorridorObject(corridorRepository),
-                new TransitionObject(transitionRepository));
+                transitionObject);
         ApplicationObject clusterApplicationService = new ApplicationObject(
                 mapApplicationService,
                 mapRepository,
