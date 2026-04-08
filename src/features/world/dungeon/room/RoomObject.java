@@ -9,6 +9,7 @@ import java.sql.SQLException;
 /**
  * Public root seam for room-owned narration writes.
  */
+@SuppressWarnings("unused")
 public final class RoomObject {
 
     public void saveNarration(SaveNarrationInput input) throws SQLException {
@@ -16,6 +17,6 @@ public final class RoomObject {
             throw new IllegalArgumentException("input");
         }
         SaveNarrationState narration = SaveNarrationState.saveNarration(input);
-        SaveNarrationRepository.saveNarration(narration);
+        SaveNarrationRepository.saveNarration(input.connection(), narration);
     }
 }

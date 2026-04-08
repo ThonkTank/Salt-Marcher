@@ -16,6 +16,9 @@ public record SaveNarrationState(
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
+        if (input.connection() == null) {
+            throw new IllegalArgumentException("connection");
+        }
         if (input.roomId() <= 0) {
             throw new IllegalArgumentException("roomId");
         }
