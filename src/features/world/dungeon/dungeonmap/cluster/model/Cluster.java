@@ -39,56 +39,38 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
     private final long mapId;
     private final GridPoint center;
 
-    public static Cluster fromSpecification(ClusterSpecification specification) {
-        ClusterSpecification resolvedSpecification = Objects.requireNonNull(specification, "specification");
-        return new Cluster(resolvedSpecification, resolveClusterBase(
-                resolvedSpecification.clusterId(),
-                resolvedSpecification.mapId(),
-                resolvedSpecification.structure(),
-                resolvedSpecification.rooms()));
+    public static Cluster fromDefinition(ClusterDefinitionRequest definition) {
+        ClusterDefinitionRequest resolvedDefinition = Objects.requireNonNull(definition, "definition");
+        return new Cluster(resolvedDefinition, resolveClusterBase(
+                resolvedDefinition.clusterId(),
+                resolvedDefinition.mapId(),
+                resolvedDefinition.structure(),
+                resolvedDefinition.rooms()));
     }
 
     private Cluster(
-            ClusterSpecification specification,
-            Map<Integer, Structure.LevelStructure> levelsByZ,
-            StructureRoomTopology roomTopology
-    ) {
-        this(
-                specification == null ? null : specification.clusterId(),
-                specification == null ? null : specification.structureObjectId(),
-                specification == null ? 0L : specification.mapId(),
-                specification == null ? null : specification.center(),
-                levelsByZ,
-                roomTopology);
-    }
-
-    private Cluster(
-            ClusterSpecification specification,
-            ClusterBase base
-    ) {
-        super(base.structure(), base.roomTopology());
-        ClusterSpecification resolvedSpecification = Objects.requireNonNull(specification, "specification");
-        this.clusterId = resolvedSpecification.clusterId();
-        this.structureObjectId = resolvedSpecification.structureObjectId();
-        this.mapId = resolvedSpecification.mapId();
-        this.center = resolvedSpecification.center() == null
-                ? Topology.derivedCenter(base.structure())
-                : resolvedSpecification.center();
-    }
-
-    private Cluster(
-            Long clusterId,
-            Long structureObjectId,
-            long mapId,
-            GridPoint center,
+            ClusterDefinitionRequest definition,
             Map<Integer, Structure.LevelStructure> levelsByZ,
             StructureRoomTopology roomTopology
     ) {
         super(levelsByZ, roomTopology);
-        this.clusterId = clusterId;
-        this.structureObjectId = structureObjectId;
-        this.mapId = mapId;
-        this.center = center == null ? Topology.derivedCenter(levelsByZ) : center;
+        ClusterDefinitionRequest resolvedDefinition = Objects.requireNonNull(definition, "definition");
+        this.clusterId = resolvedDefinition.clusterId();
+        this.structureObjectId = resolvedDefinition.structureObjectId();
+        this.mapId = resolvedDefinition.mapId();
+        this.center = Topology.derivedCenter(levelsByZ);
+    }
+
+    private Cluster(
+            ClusterDefinitionRequest definition,
+            ClusterBase base
+    ) {
+        super(base.structure(), base.roomTopology());
+        ClusterDefinitionRequest resolvedDefinition = Objects.requireNonNull(definition, "definition");
+        this.clusterId = resolvedDefinition.clusterId();
+        this.structureObjectId = resolvedDefinition.structureObjectId();
+        this.mapId = resolvedDefinition.mapId();
+        this.center = Topology.derivedCenter(base.structure());
     }
 
     @Override
@@ -96,11 +78,11 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
             Map<Integer, Structure.LevelStructure> levelsByZ,
             StructureRoomTopology roomTopology
     ) {
-        return new Cluster(specification(), levelsByZ, roomTopology);
+        return new Cluster(definitionRequest(), levelsByZ, roomTopology);
     }
 
-    private ClusterSpecification specification() {
-        return new ClusterSpecification(clusterId, structureObjectId, mapId, center, this, roomTopology().rooms());
+    private ClusterDefinitionRequest definitionRequest() {
+        return new ClusterDefinitionRequest(clusterId, structureObjectId, mapId, this, roomTopology().rooms());
     }
 
     public Long clusterId() {
@@ -125,11 +107,10 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         if (projectedStructure == null || projectedStructure.levels().isEmpty() || projectedTopology.rooms().isEmpty()) {
             return null;
         }
-        return fromSpecification(new ClusterSpecification(
+        return fromDefinition(new ClusterDefinitionRequest(
                 clusterId,
                 structureObjectId,
                 mapId,
-                center,
                 projectedStructure,
                 projectedTopology.rooms()));
     }
@@ -227,11 +208,10 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
             return this;
         }
         Structure movedStructure = super.mutated(new StructureMutation.Translation(resolvedTranslation));
-        return fromSpecification(new ClusterSpecification(
+        return fromDefinition(new ClusterDefinitionRequest(
                 clusterId,
                 structureObjectId,
                 mapId,
-                center.translated(GridTranslation.planar(resolvedTranslation.dxCells(), resolvedTranslation.dyCells())),
                 movedStructure,
                 movedStructure.roomTopology().rooms()));
     }
@@ -392,11 +372,10 @@ public final class Cluster extends Structure implements GridTranslatable<Cluster
         if (Objects.equals(updatedStructure, this)) {
             return this;
         }
-        return fromSpecification(new ClusterSpecification(
+        return fromDefinition(new ClusterDefinitionRequest(
                 clusterId,
                 structureObjectId,
                 mapId,
-                null,
                 updatedStructure,
                 updatedStructure == null ? roomTopology().rooms() : updatedStructure.roomTopology().rooms()));
     }

@@ -78,11 +78,10 @@ public final class ClusterStructureEditor {
                 mergedDoorsByLevel,
                 mergedWallsByLevel,
                 previousClusterCellsByLevel);
-        Cluster mergedCluster = Cluster.fromSpecification(new ClusterSpecification(
+        Cluster mergedCluster = Cluster.fromDefinition(new ClusterDefinitionRequest(
                 cluster.clusterId(),
                 cluster.structureObjectId(),
                 cluster.mapId(),
-                centerCell(flattenCells(mergedClusterCellsByLevel)),
                 mergedStructure,
                 normalizedMetadataRooms(mergedMetadataRooms)));
         return ClusterRewritePlan.of(resolvedClusters, List.of(mergedCluster));
@@ -164,11 +163,10 @@ public final class ClusterStructureEditor {
         List<Room> reassignedRooms = rooms(cluster).stream()
                 .map(room -> room == null ? null : room.withClusterId(resolvedClusterId))
                 .toList();
-        return Cluster.fromSpecification(new ClusterSpecification(
+        return Cluster.fromDefinition(new ClusterDefinitionRequest(
                 clusterId,
                 cluster.structureObjectId(),
                 cluster.mapId(),
-                cluster.center(),
                 cluster,
                 reassignedRooms));
     }
@@ -505,11 +503,10 @@ public final class ClusterStructureEditor {
                 componentDoorsByLevel,
                 componentWallsByLevel,
                 null);
-        return Cluster.fromSpecification(new ClusterSpecification(
+        return Cluster.fromDefinition(new ClusterDefinitionRequest(
                 null,
                 null,
                 originalCluster.mapId(),
-                centerCell(flattenCells(componentCellsByLevel)),
                 componentStructure,
                 metadataRoomsForComponent(rooms(originalCluster), componentStructure)));
     }
@@ -626,11 +623,10 @@ public final class ClusterStructureEditor {
                 renamedClusters.add(cluster);
                 continue;
             }
-            renamedClusters.add(Cluster.fromSpecification(new ClusterSpecification(
+            renamedClusters.add(Cluster.fromDefinition(new ClusterDefinitionRequest(
                     cluster.clusterId(),
                     cluster.structureObjectId(),
                     cluster.mapId(),
-                    cluster.center(),
                     cluster,
                     renamedRooms)));
             changed = true;

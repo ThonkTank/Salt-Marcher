@@ -6,7 +6,7 @@
 
 ## Canonical Types and APIs
 
-- `model/ClusterSpecification` — canonical cluster-authored payload for construction and rehydration.
+- `model/ClusterDefinitionRequest` — canonical cluster-owned construction and rehydration request.
 - `model/Cluster` — top-level cluster aggregate that extends `Structure` with cluster identity and room metadata membership; `center()` is derived runtime state from the final structure and public writes converge on `mutated(ClusterMutation)`.
 - `model/ClusterMutation` — canonical cluster-local write vocabulary for floor, wall, door, and translation edits.
 - `model/ClusterRewritePlan` — explicit cluster replacement payload for paint, delete, split, and move rewrites.
@@ -19,7 +19,7 @@
 - Put cluster identity, center, structure-backed boundary edits, and cluster-local move semantics on `Cluster`.
 - Put reusable cluster rewrite mechanics on `ClusterStructureEditor`, not on room workflows or editor tools.
 - Let public cluster writes converge on `DungeonClusterApplicationService` request records and reduce them to `ClusterMutation` or `ClusterRewritePlan` before persistence.
-- Keep cluster persistence focused on cluster rows and cluster-owned structure references; derive cluster center from structure on load and keep room metadata in `DungeonRoomRepository`.
+- Keep cluster persistence focused on cluster rows and cluster-owned structure references; derive cluster center from the final structure on every construction path and keep room metadata in `DungeonRoomRepository`.
 
 ## Forbidden Drift
 
