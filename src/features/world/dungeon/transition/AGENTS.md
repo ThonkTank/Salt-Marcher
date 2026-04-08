@@ -11,6 +11,7 @@
 - `input/LoadDungeonTargetsInput` — transition target-load request family — loads selectable dungeon transition targets in transition-owned root-input form.
 - `input/LoadOverworldTargetsInput` — transition target-load request family — loads selectable overworld transition targets in transition-owned root-input form.
 - `input/PlacePreparedTransitionInput` — transition prepared-placement request family — backs `TransitionObject.placePreparedTransition(...)` for door-anchored prepared transitions.
+- `input/PlacePreparedStairTransitionInput` — transition prepared-placement request family — backs `TransitionObject.placePreparedStairTransition(...)` for stair-anchored prepared transitions.
 - `input/PersistReboundConnectionsInput` — transition rebound request family — carries the original map plus resolved rebound connections so transition-local persistence can preserve attached stair placement specs.
 - `DungeonTransitionApplicationService` — legacy transition workflow seam for target lookup plus create, place, and delete flows while the root-owner migration continues.
 
