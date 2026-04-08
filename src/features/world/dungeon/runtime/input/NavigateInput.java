@@ -27,6 +27,10 @@ public record NavigateInput(
         ) {
             return new NavigationInput(mapId, cell, levelZ, heading);
         }
+
+        public boolean isEmpty() {
+            return mapId == null || cell == null;
+        }
     }
 
     public record ActionInput(

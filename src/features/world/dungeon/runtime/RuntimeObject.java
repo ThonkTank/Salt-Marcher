@@ -208,7 +208,7 @@ public final class RuntimeObject {
     private static DungeonRuntimeNavigationSnapshot toNavigationSnapshot(
             NavigateInput.NavigationInput input
     ) {
-        if (input == null || input.mapId() == null || input.cell() == null) {
+        if (input == null || input.isEmpty()) {
             return DungeonRuntimeNavigationSnapshot.empty();
         }
         return new DungeonRuntimeNavigationSnapshot(
