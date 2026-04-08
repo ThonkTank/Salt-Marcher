@@ -1,6 +1,7 @@
 package buildlogic.conventions.heuristic.owner
 
 import com.sun.source.tree.MethodInvocationTree
+import com.sun.source.util.TreePath
 import com.sun.source.util.TreePathScanner
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
@@ -50,11 +51,10 @@ internal fun OwnerConventionSupport.buildOwnerConventionCallIndex(
         parsedSource.topLevelTypes.forEach { parsedType ->
             val callerTypeName = "$packageName.${parsedType.name}"
             parsedType.constructors.forEach { constructor ->
-                constructor.body?.accept(
+                constructor.body?.let { body ->
                     OwnerConventionCallScanner(
                         support = this,
                         snapshot = snapshot,
-                        parsedSource = parsedSource,
                         caller = OwnerConventionCallerRef(
                             path = parsedSource.path,
                             typeName = callerTypeName,
@@ -63,16 +63,14 @@ internal fun OwnerConventionSupport.buildOwnerConventionCallIndex(
                             methodName = "<init>"
                         ),
                         callSites = callSites
-                    ),
-                    null
-                )
+                    ).scan(TreePath.getPath(parsedSource.compilationUnit, body), null)
+                }
             }
             parsedType.methods.forEach { method ->
-                method.body?.accept(
+                method.body?.let { body ->
                     OwnerConventionCallScanner(
                         support = this,
                         snapshot = snapshot,
-                        parsedSource = parsedSource,
                         caller = OwnerConventionCallerRef(
                             path = parsedSource.path,
                             typeName = callerTypeName,
@@ -81,9 +79,8 @@ internal fun OwnerConventionSupport.buildOwnerConventionCallIndex(
                             methodName = method.name
                         ),
                         callSites = callSites
-                    ),
-                    null
-                )
+                    ).scan(TreePath.getPath(parsedSource.compilationUnit, body), null)
+                }
             }
         }
     }
@@ -93,28 +90,28 @@ internal fun OwnerConventionSupport.buildOwnerConventionCallIndex(
 private class OwnerConventionCallScanner(
     private val support: OwnerConventionSupport,
     private val snapshot: OwnerConventionSnapshot,
-    private val parsedSource: OwnerConventionParsedJavaSource,
     private val caller: OwnerConventionCallerRef,
     private val callSites: MutableList<OwnerConventionApiCallSite>
 ) : TreePathScanner<Unit, Nothing?>() {
 
     override fun visitMethodInvocation(node: MethodInvocationTree, p: Nothing?) {
-        val invocationPath = currentPath ?: return
-        val methodElement = snapshot.semanticModel.trees.getElement(invocationPath) as? ExecutableElement ?: return
-        val calleeType = topLevelTypeElement(methodElement) ?: return
-        val calleeTypeName = calleeType.qualifiedName.toString()
-        if (calleeTypeName !in snapshot.knownTypeNames) {
-            return
+        val invocationPath = currentPath
+        if (invocationPath != null) {
+            val methodElement = snapshot.semanticModel.trees.getElement(invocationPath) as? ExecutableElement
+            val calleeType = topLevelTypeElement(methodElement)
+            val calleeTypeName = calleeType?.qualifiedName?.toString()
+            if (methodElement != null && calleeTypeName != null && calleeTypeName in snapshot.knownTypeNames) {
+                val calleePackage = calleeTypeName.substringBeforeLast('.')
+                val calleeRole = support.roleForDirectoryName(calleePackage.substringAfterLast('.'))
+                callSites += OwnerConventionApiCallSite(
+                    caller = caller,
+                    calleeTypeName = calleeTypeName,
+                    calleeOwnerPackage = support.ownerPackageFor(calleePackage, calleeRole),
+                    calleeRole = calleeRole,
+                    calleeMethodName = methodElement.simpleName.toString()
+                )
+            }
         }
-        val calleePackage = calleeTypeName.substringBeforeLast('.')
-        val calleeRole = support.roleForDirectoryName(calleePackage.substringAfterLast('.'))
-        callSites += OwnerConventionApiCallSite(
-            caller = caller,
-            calleeTypeName = calleeTypeName,
-            calleeOwnerPackage = support.ownerPackageFor(calleePackage, calleeRole),
-            calleeRole = calleeRole,
-            calleeMethodName = methodElement.simpleName.toString()
-        )
         super.visitMethodInvocation(node, p)
     }
 }
