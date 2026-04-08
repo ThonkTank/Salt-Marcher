@@ -9,7 +9,8 @@ This file defines the repository-specific operating constraints for Claude Code 
 **Target structure:** Salt Marcher is a feature-oriented monolith with one binding target architecture:
 - `src/features/<feature>/...` is the top-level product boundary
 - inside a feature, organize new work by **owner slice first**
-- only inside an owner slice may you use local technical layers such as `model`, `application`, `repository`, `state`, `ui`, `api`, or `bootstrap`
+- every non-container directory under `src/` is either an owner or one of the four canonical owner-internal layers: `input`, `tasks`, `repository`, `state`
+- every owner exposes exactly one public root entrypoint named `<Owner>Object` directly in its root package
 - non-feature code stays in shared homes such as `src/database/`, `src/importer/`, `src/shared/`, `src/ui/`, and `resources/`
 
 **Owner slices:** a slice is the single central owner of one capability family. Allowed slice kinds are:
@@ -131,25 +132,20 @@ Do not reverse that decision order. A capability does not belong in a package be
 ### Local Layer Vocabulary
 
 Technical layers are subordinate tools inside an owner slice, not the primary architecture story:
-- `model` — canonical business and editor truth for that owner
-- `application` — workflows and use cases for that owner
-- `tasks` — owner-local transformation pipelines that turn explicit inputs into explicit outputs
-- `types` — owner-local static carrier and helper types that do not own mutable workflow state
-- `repository` — storage access for that owner
-- `state` — shared transient UI or workflow state for that owner
-- `ui` — presentation and interaction owned by that owner
-- `api` — deliberate exported boundary for that owner or feature
-- `bootstrap` — internal composition and wiring
+- `input` — canonical request and handoff schemas the owner accepts
+- `tasks` — owner-local static input/state transformation pipelines
+- `repository` — persistence-only state reconstruction and state storage
+- `state` — the owner's canonical protected runtime/object state plus the only allowed state factory/transition APIs
 
-Use these layer names only when they clearly describe a local responsibility inside the already-chosen owner slice.
+No other technical layer names are canonical. Legacy directories such as `model`, `application`, `service`, `ui`, `api`, `bootstrap`, `internal`, or `support` may still exist in untouched code, but they are refactor targets, not precedent.
 
 ### Public Owner APIs
 
-- Cross-owner imports must go through the target owner's root package. The positive pattern is a public `*Object` root type at `features.<owner>` for top-level owners and at `<owner>` for documented nested owners.
-- Owner boundaries are derived structurally. Under `features.<feature>`, every contiguous run of non-layer segments before the first transparent layer is the owner path.
-- Subowners must sit directly under their owner. Once a sanctioned owner-internal layer segment (`model`, `application`, `tasks`, `types`, `repository`, `state`, `ui`, `api`, `bootstrap`) appears, every later segment is layer-internal only, not another owner.
+- Cross-owner imports must go through the target owner's root package and its single public `<Owner>Object` seam.
+- Owner boundaries are derived structurally. Under `src/`, every non-container directory is either an owner or one of the four allowed layers `input`, `tasks`, `repository`, `state`.
+- Subowners must sit directly under their owner. Once one of the four allowed layer segments appears, every later segment is invalid; layers are flat and may not contain nested packages or subowners.
 - Each import may cross only one owner edge: parent, direct child, or sibling with the same parent. Do not skip over intermediate owners to reach a grandchild, niece, or cousin owner directly.
-- Code outside `src/features/` may import only top-level feature `api` packages; it must not reach into nested feature owners or technical layers.
+- Foreign code must never import another owner's `input`, `tasks`, `repository`, or `state` packages directly.
 
 ### Owner Types vs Value Types
 
@@ -213,14 +209,14 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Update those `AGENTS.md` files whenever the implementation changes documented truths, invariants, workflows, package roles, or UI behavior, and clean out stale statements that no longer describe current code or guidance
 - Treat documentation updates as part of done, not optional cleanup
 
-### Repository & Application Conventions
-- Repositories are stateless (`Connection` passed in). Let repositories propagate `SQLException`; fallback behavior, retries, and user-facing degradation belong in application workflows
-- Application workflows may propagate `SQLException` from repositories and transaction boundaries, but business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
+### Repository & Owner Conventions
+- `<Owner>Object` is the only public owner entrypoint. It orchestrates requests, tasks, state transitions, and persistence, but it should not contain the owner's actual work logic
+- Repositories are pure `state <-> storage` translators. They persist owner `state` and reconstruct owner `state`; they do not own workflow logic
+- Tasks are static-only pipelines. They compute from owner `input` plus relevant owner `state`, and return values that the owner can consume directly or hand to the next consumer
+- Owner `state` is protected runtime/object truth, not UI/session convenience state. State may change only through explicit factory/transition APIs in the same owner's `state` layer
+- Business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
 - Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
-- Stateful workflow entrypoints (`*ApplicationService`, `*Session`) are instance-based
-- Some existing feature areas use `service/` packages. Keep their public workflow entrypoints at the package root, place new code in `application/`, and move close collaborators into focused owner slices when touching that area
-- Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`. Use the `*Summary` naming pattern for lightweight selector DTOs. Keep `model/` focused on domain/editor state, not transport shapes for other features
-- Feature module APIs should expose narrow, role-specific setup methods. Do not hide unrelated wiring behind a generic `initialize(...)` entrypoint
+- New owner-local request and handoff schemas belong in the owner's `input` layer, not in legacy `api` or `model` roots
 
 ### Async & Threading
 - `javafx.concurrent.Task` + `new Thread()` (daemon, named `sm-<operation>` e.g. `sm-filter-load`, `sm-encounter-gen`, `sm-combat-setup`, `sm-stat-block`, `sm-save-terrain`)

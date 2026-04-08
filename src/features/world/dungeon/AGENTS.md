@@ -22,7 +22,7 @@
 ## Canonical Types and APIs
 
 - `GridObject` and the `geometry` slice — canonical dungeon grid algebra — every topology owner must express shared spatial truth through `GridPoint`, `GridSegment`, `GridSegmentPath`, `GridArea`, `GridBoundary`, or `GridPath`, movement through `GridTranslation`, occupancy through `cellFootprint(): GridArea`, and aggregate boundary truth through `boundary(): GridBoundary`.
-- `checkOwnerApiBoundaryConvention` — build-time touched-file architecture gate — foreign-owner imports inside the dungeon tree must go through the target owner's root package, public owner seams anchor on root `*Object` types, owner boundaries are derived from contiguous pre-layer package segments, and subowners must sit directly under their owner instead of under sanctioned owner-internal layers.
+- `checkOwnerApiBoundaryConvention` — build-time touched-file architecture gate — foreign-owner imports inside the dungeon tree must go through the target owner's root package, every owner must expose a single root `*Object` seam, and owner internals may use only the flat `input`, `tasks`, `repository`, and `state` layers.
 - `checkDungeonGeometryConvention` — build-time architecture gate — enforces the canonical geometry vocabulary by rejecting public/protected dungeon seams that expose raw point/segment collections or reintroduce second geometry dialects.
 - `dungeonmap` slice — authoritative loaded map snapshot plus load/reload and map-state seams — other owners rebuild through this slice after writes.
 - `DungeonClusterApplicationService` — cluster mutation seam — persists top-level cluster edits, cluster-backed room rewrites, and cluster bootstrap flows.
@@ -37,9 +37,11 @@
 
 - Put new behavior on the documented owner first.
 - Route foreign-owner reads and workflows through the target owner's root package. `dungeon` callers enter `dungeonmap` through `DungeonMapObject`, `dungeonmap` callers enter `cluster`, `corridor`, or `structure` through their root `*Object` seams, and deeper child owners are reached only through their direct parent-owner boundary.
-- Place subowners directly under their owner path. Once a dungeon package enters `model`, `application`, `tasks`, `types`, `repository`, `state`, `ui`, `api`, or `bootstrap`, later segments are technical subpackages only and must not define another owner.
-- Put owner-local transformation pipelines under `owner/tasks`, especially when the owner is expressing an explicit input-output chain instead of a long-lived mutable workflow surface.
-- Put owner-local static carrier and helper types under `owner/types` when they do not themselves own mutable state or cross-owner API responsibilities.
+- Place subowners directly under their owner path. Once a dungeon package enters `input`, `tasks`, `repository`, or `state`, later segments are invalid; layers are flat and may not define another owner.
+- Put owner-local request and handoff schemas under `owner/input`.
+- Put owner-local transformation pipelines under `owner/tasks`; tasks stay static and do not own persistence or direct state mutation.
+- Put canonical protected object/runtime truth under `owner/state`; mutate it only through explicit state factory/transition APIs in that same layer.
+- Put persistence-only state reconstruction and storage under `owner/repository`.
 - Put shared physical topology on `dungeonmap/structure`, not on room, corridor, runtime, or renderer helpers.
 - Route level-local surface-area behavior only through `structure.surfaceAtLevel(levelZ).surface().something()`.
 - Route level-local floor behavior only through `structure.surfaceAtLevel(levelZ).floor().something()`.
@@ -55,7 +57,7 @@
 - Treat `floor` as the only traversable/runtime/exit truth. `surface` remains explicit owned geometry for projection, editing, and hit/selection areas; it must not be used as a fallback for "walkable anyway".
 - Let door- and wall-specific reads and edits terminate on the explicit `BoundaryObject`, `Door`, and `Wall` APIs returned from that boundary owner instead of rebuilding raw `GridBoundary` surgery or derived mirrors in callers.
 - Keep shared structure persistence shaped like the runtime `Structure -> level -> surface(surface area + floor) + boundary` composition so save and reload do not rebuild a second flattened structure model.
-- Route authoritative reloads through `dungeonmap/application/DungeonMapLoadingService`.
+- Route authoritative reloads through the owning `*Object` orchestration plus the owner's `repository` and `state` layers.
 - Keep runtime-only semantics under `runtime` and gesture meaning under `editor interaction`.
 - Keep loaded-map ownership, selection policy, and map-scoped overlay state under `dungeonmap`, and keep structure-backed map objects under `dungeonmap/structure`, `dungeonmap/cluster`, and `dungeonmap/corridor` instead of reviving top-level owners.
 
@@ -64,7 +66,8 @@
 - Do not add a second shared physical topology owner beside `Structure`, `StructureSurface`, `StructureSurfaceArea`, `StructureFloor`, `StructureBoundary`, and `Structure.roomTopology()`.
 - Do not add a second shared dungeon geometry vocabulary beside the `geometry` slice and its `GridObject` family.
 - Do not bypass a documented intermediate dungeon owner by importing a grandchild or sibling-internal package directly; if a caller crosses an owner boundary at all, it must stop at the target owner's root package and its public `*Object` seam.
-- Do not place would-be dungeon subowners under `model`, `application`, `tasks`, `types`, `repository`, `state`, `ui`, `api`, or `bootstrap`; move them to a direct child of the owning package first.
+- Do not place would-be dungeon subowners under `input`, `tasks`, `repository`, or `state`; move them to a direct child of the owning package first.
+- Do not introduce new dungeon-internal technical buckets besides `input`, `tasks`, `repository`, and `state`.
 - Do not let stair, room, cluster, boundary, runtime, or shell code reintroduce `occupiedPositions()`/`movedBy(...)`-style public aliases once `cellFootprint()` and `translated(GridTranslation)` exist.
 - Do not expose raw `Set/List/Collection<GridPoint|GridSegment>` seams from public/protected dungeon APIs outside the canonical geometry carriers.
 - Do not treat the geometry rules as advisory: if a public/protected dungeon seam needs raw cells, segments, or ordered routes, either keep it private/package-private or promote a canonical carrier instead of adding an exception around `checkDungeonGeometryConvention`.
