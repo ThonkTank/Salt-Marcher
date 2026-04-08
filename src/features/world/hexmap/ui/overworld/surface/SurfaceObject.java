@@ -1,6 +1,6 @@
-package features.world.hexmap.ui.overworld;
+package features.world.hexmap.ui.overworld.surface;
 
-import features.world.api.input.WorldTravelSurface;
+import features.world.api.input.TravelSurfaceInput;
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.async.UiErrorReporter;
@@ -10,18 +10,18 @@ import ui.shell.NavigationIcons;
  * Overworld-Reiseansicht. Zeigt die Hex-Karte im Hauptbereich inklusive Gruppenmarker.
  * Reise-Steuerelemente erscheinen im linken Kontrollpanel.
  */
-public class OverworldView implements AppView {
+public final class SurfaceObject implements AppView {
 
-    private final OverworldControls overworldControls;
-    private final HexMapPane hexMapPane;
-    private final OverworldApplicationService applicationService;
-    private final WorldTravelSurface travelSurface;
+    private final features.world.hexmap.ui.overworld.OverworldControls overworldControls;
+    private final features.world.hexmap.ui.overworld.HexMapPane hexMapPane;
+    private final features.world.hexmap.ui.overworld.OverworldApplicationService applicationService;
+    private final TravelSurfaceInput travelSurface;
     private boolean mapLoaded = false;
 
-    public OverworldView(WorldTravelSurface travelSurface) {
-        overworldControls = new OverworldControls();
-        hexMapPane = new HexMapPane();
-        applicationService = new OverworldApplicationService();
+    public SurfaceObject(TravelSurfaceInput travelSurface) {
+        overworldControls = new features.world.hexmap.ui.overworld.OverworldControls();
+        hexMapPane = new features.world.hexmap.ui.overworld.HexMapPane();
+        applicationService = new features.world.hexmap.ui.overworld.OverworldApplicationService();
         this.travelSurface = travelSurface;
         hexMapPane.setOnPartyTokenMoved(tileId ->
                 applicationService.schedulePartyTileUpdate(

@@ -87,7 +87,7 @@ public class SaltMarcherApp extends Application {
         adventuringDayToolbarModule.refreshActivePartyState();
 
         ApiObject worldApi = new ApiObject(shell.getDetailsNavigator());
-        worldApi.registerScenes(shell.getSceneRegistry());
+        worldApi.registerScenes(new features.world.api.input.RegisterScenesInput(shell.getSceneRegistry()));
         var worldViews = worldApi.views();
         AppView overworldView = worldViews.overworldView();
         AppView mapEditorView = worldViews.mapEditorView();

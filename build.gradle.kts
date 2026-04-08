@@ -815,6 +815,7 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
     )
 
     data class MethodShape(
+        val name: String,
         val returnType: String,
         val parameterTypes: List<String>,
         val isStatic: Boolean
@@ -988,17 +989,29 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
 
     fun publicMethods(sourceText: String): List<MethodShape> {
         val pattern = Regex(
-            """(?m)^\s*public\s+(static\s+)?([A-Za-z0-9_<>\[\],.? ]+)\s+[A-Za-z_][A-Za-z0-9_]*\s*\(([^)]*)\)"""
+            """(?m)^\s*public\s+(static\s+)?([A-Za-z0-9_<>\[\],.? ]+)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(([^)]*)\)"""
         )
         return pattern.findAll(sourceText)
             .map { match ->
                 MethodShape(
+                    name = match.groupValues[3].trim(),
                     returnType = match.groupValues[2].trim(),
-                    parameterTypes = splitTopLevelCommas(match.groupValues[3]).map(::parameterType),
+                    parameterTypes = splitTopLevelCommas(match.groupValues[4]).map(::parameterType),
                     isStatic = match.groupValues[1].isNotBlank()
                 )
             }
             .toList()
+    }
+
+    fun requestStemForMethod(methodName: String): String? {
+        if (!Regex("""[a-z][A-Za-z0-9]*""").matches(methodName)) {
+            return null
+        }
+        val stem = methodName.replaceFirstChar { ch -> ch.titlecase() }
+        if (reservedRequestStemSuffixes.any { reserved -> stem.endsWith(reserved) }) {
+            return null
+        }
+        return stem
     }
 
     fun projectTypePackages(
@@ -1118,12 +1131,14 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         return reasons
     }
 
-    fun inputFileReasons(context: SourceContext, sourceText: String): List<String> {
+    fun inputFileReasons(context: SourceContext, sourceText: String, requestStemsByOwner: Map<String, Set<String>>): List<String> {
         val reasons = mutableListOf<String>()
         val className = context.className.removeSuffix(".java")
         val requestStem = requestStemFor(context.className, "Input")
         if (requestStem == null) {
             reasons += "${context.path} :: input files must be named <Request>Input with a direct request stem"
+        } else if (requestStem !in requestStemsByOwner[context.ownerPackage].orEmpty()) {
+            reasons += "${context.path} :: input files must match a real public request on ${context.ownerPackage}.${context.ownerPackage.substringAfterLast('.').replaceFirstChar { it.titlecase() }}Object"
         }
         val isRecord = Regex("""(?m)^\s*(public\s+)?record\s+$className\b""").containsMatchIn(sourceText)
         val isEnum = Regex("""(?m)^\s*(public\s+)?enum\s+$className\b""").containsMatchIn(sourceText)
@@ -1139,12 +1154,19 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
         return reasons
     }
 
-    fun taskFileReasons(context: SourceContext, sourceText: String, knownTypeNames: Set<String>): List<String> {
+    fun taskFileReasons(
+        context: SourceContext,
+        sourceText: String,
+        knownTypeNames: Set<String>,
+        requestStemsByOwner: Map<String, Set<String>>
+    ): List<String> {
         val reasons = mutableListOf<String>()
         val className = context.className.removeSuffix(".java")
         val requestStem = requestStemFor(context.className, "Task")
         if (requestStem == null) {
             reasons += "${context.path} :: task files must be named <Request>Task with a direct request stem"
+        } else if (requestStem !in requestStemsByOwner[context.ownerPackage].orEmpty()) {
+            reasons += "${context.path} :: task files must match a real public request on ${context.ownerPackage}.${context.ownerPackage.substringAfterLast('.').replaceFirstChar { it.titlecase() }}Object"
         }
         val isFinalClass = Regex("""(?m)^\s*(public\s+)?final\s+class\s+$className\b""").containsMatchIn(sourceText)
         val hasPrivateConstructor = Regex("""(?m)^\s*private\s+$className\s*\(""").containsMatchIn(sourceText)
@@ -1346,6 +1368,23 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                 "$packageName.${sourceFile.nameWithoutExtension}"
             }
             .toSet()
+        val requestStemsByOwner = fileTree("src") {
+            include("**/*.java")
+            exclude("**/package-info.java")
+        }.files
+            .mapNotNull { sourceFile ->
+                val sourceText = sourceFile.readText()
+                val packageName = packagePattern.find(sourceText)?.groupValues?.get(1) ?: return@mapNotNull null
+                val role = roleForDirectoryName(sourceFile.parentFile.name)
+                if (role != ownerRole || !sourceFile.name.endsWith("Object.java")) {
+                    return@mapNotNull null
+                }
+                ownerPackageFor(packageName, role) to publicMethods(sourceText)
+                    .mapNotNull { method -> requestStemForMethod(method.name) }
+                    .toSet()
+            }
+            .groupBy({ (ownerPackage, _) -> ownerPackage }, { (_, stems) -> stems })
+            .mapValues { (_, stemSets) -> stemSets.flatten().toSet() }
 
         val offenders = fileTree("src") {
             include("**/*.java")
@@ -1374,8 +1413,8 @@ val checkOwnerApiBoundaryConvention by tasks.registering {
                 val placementReasons = sourcePlacementReasons(path, sourceFile, sourcePackage, role).asSequence()
                 val roleReasons = when (role) {
                     ownerRole -> ownerFileReasons(context, sourceText, knownTypeNames)
-                    inputRole -> inputFileReasons(context, sourceText)
-                    taskRole -> taskFileReasons(context, sourceText, knownTypeNames)
+                    inputRole -> inputFileReasons(context, sourceText, requestStemsByOwner)
+                    taskRole -> taskFileReasons(context, sourceText, knownTypeNames, requestStemsByOwner)
                     stateRole -> stateFileReasons(context, sourceText, knownTypeNames)
                     repositoryRole -> repositoryFileReasons(context, sourceText, knownTypeNames)
                     bucketRole -> emptyList()

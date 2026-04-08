@@ -1,6 +1,6 @@
-package features.world.dungeon.shell.runtime;
+package features.world.dungeon.shell.runtime.surface;
 
-import features.world.api.input.WorldTravelSurface;
+import features.world.api.input.TravelSurfaceInput;
 import features.world.dungeon.application.runtime.DungeonRuntimeAction;
 import features.world.dungeon.application.runtime.DungeonRuntimeActionResolver;
 import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
@@ -8,17 +8,24 @@ import features.world.dungeon.application.runtime.DungeonRuntimeLocation;
 import features.world.dungeon.application.runtime.DungeonRuntimeNavigationSnapshot;
 import features.world.dungeon.application.runtime.description.DungeonRuntimeDescription;
 import features.world.dungeon.application.runtime.description.DungeonRuntimeDescriptionResolver;
+import features.world.dungeon.canvas.base.DungeonCanvasCamera;
+import features.world.dungeon.canvas.base.DungeonCanvasInteractionHandler;
+import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.canvas.base.DungeonCanvasTheme;
 import features.world.dungeon.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.shell.AbstractDungeonMapView;
 import features.world.dungeon.shell.controls.DungeonLevelOverlayControls;
+import features.world.dungeon.shell.interaction.DungeonDragService;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
-import features.world.dungeon.dungeonmap.state.DungeonMapState;
-import features.world.dungeon.state.DungeonRuntimeState;
-import features.world.dungeon.state.DungeonViewMode;
+import features.world.dungeon.shell.interaction.DungeonHitProbe;
+import features.world.dungeon.shell.interaction.DungeonHitSnapshot;
+import features.world.dungeon.shell.runtime.DungeonRuntimeDescriptionPane;
+import features.world.dungeon.shell.runtime.DungeonRuntimeSelectionPolicy;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -33,6 +40,8 @@ import ui.shell.NavigationIcons;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Shell wiring for the dungeon runtime surface.
@@ -41,32 +50,33 @@ import java.util.Objects;
  * and delegates executable travel to runtime application owners. Runtime workflow state stays in shared state, not in
  * view-local mirrors.</p>
  */
-public final class DungeonRuntimeView extends AbstractDungeonMapView {
+public final class SurfaceObject extends AbstractDungeonMapView {
 
     private final String title;
     private final boolean editorMode;
     private final DungeonRuntimeApplicationService runtimeApplicationService;
     private final DetailsNavigator detailsNavigator;
-    private final WorldTravelSurface travelSurface;
-    private final DungeonRuntimeState runtimeState = new DungeonRuntimeState();
+    private final TravelSurfaceInput travelSurface;
+    private final features.world.dungeon.state.DungeonRuntimeState runtimeState =
+            new features.world.dungeon.state.DungeonRuntimeState();
     private final VBox controls;
     private final Label zoomLabel = new Label();
     private final Label mapLabel = new Label();
     private final Label levelLabel = new Label();
-    private final DungeonLevelOverlayControls overlayControls = new DungeonLevelOverlayControls(DungeonRuntimeView::sectionLabel);
+    private final DungeonLevelOverlayControls overlayControls = new DungeonLevelOverlayControls(SurfaceObject::sectionLabel);
     private final Runnable mapStateListener = this::onMapStateChanged;
     private long runtimeRequestSequence;
     private Long runtimeMapId;
     private DungeonSelectionRef lastPublishedOwnerRef;
 
-    public DungeonRuntimeView(
+    public SurfaceObject(
             String title,
             boolean editorMode,
             DungeonMapLoadingService loadingService,
-            DungeonMapState state,
+            features.world.dungeon.dungeonmap.state.DungeonMapState state,
             DungeonRuntimeApplicationService runtimeApplicationService,
             DetailsNavigator detailsNavigator,
-            WorldTravelSurface travelSurface,
+            TravelSurfaceInput travelSurface,
             DungeonHitCollector hitCollector
     ) {
         super(editorMode, loadingService, state);
@@ -75,10 +85,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
         this.runtimeApplicationService = Objects.requireNonNull(runtimeApplicationService, "runtimeApplicationService");
         this.detailsNavigator = Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         this.travelSurface = travelSurface;
-        workspace().setViewMode(DungeonViewMode.GRID);
-        workspace().setInteractionHandler(new DungeonRuntimeInteractionController(
-                state,
-                runtimeState,
+        workspace().setViewMode(features.world.dungeon.state.DungeonViewMode.GRID);
+        workspace().setInteractionHandler(new RuntimeInteractionController(
                 cell -> state.activeMap().nearestTraversableCell(cell, state.activeProjectionLevel()),
                 this::previewPartyNavigation,
                 this::movePartyToNavigation,
@@ -212,7 +220,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                     if (requestId != runtimeRequestSequence) {
                         return;
                     }
-                    System.err.println("DungeonRuntimeView.loadRuntimeNavigation(): " + failure.getMessage());
+                    System.err.println("SurfaceObject.loadRuntimeNavigation(): " + failure.getMessage());
                     runtimeState.showFailure("Standort konnte nicht geladen werden");
                 });
     }
@@ -243,7 +251,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                         navigation.levelZ()),
                 this::applyNavigationSnapshot,
                 failure -> {
-                    System.err.println("DungeonRuntimeView.movePartyToNavigation(): " + failure.getMessage());
+                    System.err.println("SurfaceObject.movePartyToNavigation(): " + failure.getMessage());
                     runtimeState.showFailure("Standort konnte nicht gespeichert werden");
                 });
     }
@@ -272,7 +280,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
             return;
         }
         DungeonRuntimeNavigationSnapshot navigation = runtimeState.activeNavigation();
-        travelSurface.showDungeonTravel(new WorldTravelSurface.DungeonTravelPresentation(
+        travelSurface.showDungeonTravel(new TravelSurfaceInput.DungeonTravelPresentationInput(
                 state().activeMap().name(),
                 description == null ? "Kein Standort" : description.title(),
                 cellLabel(navigation.cell(), navigation.levelZ()),
@@ -282,7 +290,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 workspace()::resetView));
     }
 
-    private List<WorldTravelSurface.DungeonTravelAction> travelActions(List<DungeonRuntimeAction> actions) {
+    private List<TravelSurfaceInput.DungeonTravelActionInput> travelActions(List<DungeonRuntimeAction> actions) {
         if (actions == null || actions.isEmpty()) {
             return List.of();
         }
@@ -291,8 +299,8 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 .toList();
     }
 
-    private WorldTravelSurface.DungeonTravelAction toTravelAction(DungeonRuntimeAction action) {
-        return new WorldTravelSurface.DungeonTravelAction(action.label(), () -> triggerRuntimeAction(action));
+    private TravelSurfaceInput.DungeonTravelActionInput toTravelAction(DungeonRuntimeAction action) {
+        return new TravelSurfaceInput.DungeonTravelActionInput(action.label(), () -> triggerRuntimeAction(action));
     }
 
     private void triggerRuntimeAction(DungeonRuntimeAction action) {
@@ -305,7 +313,7 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
                 () -> runtimeApplicationService.navigate(layout, runtimeState.persistedNavigation(), action),
                 this::applyNavigationSnapshot,
                 failure -> {
-                    System.err.println("DungeonRuntimeView.triggerRuntimeAction(): " + failure.getMessage());
+                    System.err.println("SurfaceObject.triggerRuntimeAction(): " + failure.getMessage());
                     runtimeState.showFailure(action.failureMessage());
                 });
     }
@@ -366,5 +374,176 @@ public final class DungeonRuntimeView extends AbstractDungeonMapView {
     private static String headingLabel(CardinalDirection heading) {
         CardinalDirection resolvedHeading = heading == null ? CardinalDirection.defaultDirection() : heading;
         return resolvedHeading.label();
+    }
+
+    private final class RuntimeInteractionController implements DungeonCanvasInteractionHandler {
+
+        private final Function<GridPoint, GridPoint> nearestTraversableCell;
+        private final Consumer<DungeonRuntimeNavigationSnapshot> previewHandler;
+        private final Consumer<DungeonRuntimeNavigationSnapshot> moveHandler;
+        private final DungeonHitCollector hitCollector;
+        private final DungeonRuntimeSelectionPolicy selectionPolicy = new DungeonRuntimeSelectionPolicy();
+        private final DungeonDragService dragService = new DungeonDragService();
+        private final PlacementValidator placementValidator = new PlacementValidator();
+
+        private DungeonDragService.DungeonDragSession dragSession;
+
+        private RuntimeInteractionController(
+                Function<GridPoint, GridPoint> nearestTraversableCell,
+                Consumer<DungeonRuntimeNavigationSnapshot> previewHandler,
+                Consumer<DungeonRuntimeNavigationSnapshot> moveHandler,
+                DungeonHitCollector hitCollector
+        ) {
+            this.nearestTraversableCell = Objects.requireNonNull(nearestTraversableCell, "nearestTraversableCell");
+            this.previewHandler = Objects.requireNonNull(previewHandler, "previewHandler");
+            this.moveHandler = Objects.requireNonNull(moveHandler, "moveHandler");
+            this.hitCollector = Objects.requireNonNull(hitCollector, "hitCollector");
+        }
+
+        @Override
+        public boolean handlePressed(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+            if (!interactionEnabled() || event == null) {
+                dragSession = null;
+                return false;
+            }
+            DungeonHitSnapshot hitSnapshot = collect(event, camera);
+            if (hitSnapshot == null) {
+                dragSession = null;
+                return false;
+            }
+            DungeonMap activeMap = activeMap();
+            if (!selectionPolicy.canBeginDrag(activeMap, event, hitSnapshot, runtimeState.activeNavigation())) {
+                dragSession = null;
+                return false;
+            }
+            GridPoint activeCell = runtimeState.activeNavigation().cell();
+            if (activeCell == null) {
+                dragSession = null;
+                return false;
+            }
+            DungeonDragService.DungeonDragResult result = dragService.begin(
+                    event,
+                    new DungeonDragService.DungeonDragTarget.TileDragTarget(activeCell));
+            if (result instanceof DungeonDragService.DungeonDragResult.Started started) {
+                dragSession = started.session();
+                previewHandler.accept(navigationAt(started.session().currentCell(), hitSnapshot.probe().levelZ()));
+                return true;
+            }
+            dragSession = null;
+            return false;
+        }
+
+        @Override
+        public boolean handleDragged(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+            if (dragSession == null || event == null) {
+                return false;
+            }
+            DungeonHitSnapshot hitSnapshot = collect(event, camera);
+            if (hitSnapshot == null || !selectionPolicy.canContinueDrag(event, dragSession)) {
+                return false;
+            }
+            DungeonDragService.DungeonDragResult result = dragService.update(event, dragSession, nearestTraversableCell);
+            if (result instanceof DungeonDragService.DungeonDragResult.Updated updated
+                    && placementValidator.validateTraversable(
+                    activeMap(),
+                    updated.session().currentCell(),
+                    hitSnapshot.probe().levelZ()) instanceof PlacementValidator.PlacementResult.Valid valid) {
+                dragSession = updated.session();
+                previewHandler.accept(navigationAt(valid.cell(), hitSnapshot.probe().levelZ()));
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean handleReleased(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+            if (dragSession == null || event == null) {
+                return false;
+            }
+            DungeonHitSnapshot hitSnapshot = collect(event, camera);
+            DungeonDragService.DungeonDragSession currentSession = dragSession;
+            dragSession = null;
+            if (hitSnapshot == null) {
+                runtimeState.clearDragPreview();
+                return false;
+            }
+            if (selectionPolicy.canDrop(currentSession)) {
+                DungeonDragService.DungeonDragResult result = dragService.drop(event, currentSession, nearestTraversableCell);
+                if (result instanceof DungeonDragService.DungeonDragResult.Dropped dropped
+                        && placementValidator.validateTraversable(
+                        activeMap(),
+                        dropped.session().currentCell(),
+                        hitSnapshot.probe().levelZ()) instanceof PlacementValidator.PlacementResult.Valid valid) {
+                    moveHandler.accept(navigationAt(valid.cell(), hitSnapshot.probe().levelZ()));
+                    return true;
+                }
+            }
+            runtimeState.clearDragPreview();
+            return false;
+        }
+
+        private DungeonHitSnapshot collect(DungeonCanvasPointerEvent event, DungeonCanvasCamera camera) {
+            if (event == null || event.canvasPoint() == null || event.gridCell() == null || camera == null) {
+                return null;
+            }
+            DungeonMap activeMap = activeMap();
+            double gridSize = DungeonCanvasTheme.BASE_GRID * camera.zoom();
+            DungeonHitProbe probe = new DungeonHitProbe(
+                    event.canvasPoint(),
+                    event.gridCell(),
+                    DungeonHitProbe.gridPointForCanvas(event.canvasPoint(), camera.panX(), camera.panY(), gridSize),
+                    state().activeProjectionLevel(),
+                    camera.panX(),
+                    camera.panY(),
+                    gridSize);
+            return hitCollector.collect(activeMap, probe);
+        }
+
+        private boolean interactionEnabled() {
+            return !state().busy() && !runtimeState.loading() && !runtimeState.moving();
+        }
+
+        private DungeonMap activeMap() {
+            DungeonMap layout = state().activeMap();
+            return layout == null ? DungeonMap.empty() : layout;
+        }
+
+        private DungeonRuntimeNavigationSnapshot navigationAt(GridPoint cell, int levelZ) {
+            Long mapId = state().activeMapId();
+            return new DungeonRuntimeNavigationSnapshot(mapId, cell, levelZ, runtimeState.activeNavigation().heading());
+        }
+    }
+
+    private static final class PlacementValidator {
+
+        private sealed interface PlacementResult permits PlacementResult.Valid, PlacementResult.Invalid {
+
+            record Valid(GridPoint cell, int level) implements PlacementResult {
+                public Valid {
+                    Objects.requireNonNull(cell, "cell");
+                }
+            }
+
+            record Invalid(GridPoint cell, int level, String reason) implements PlacementResult {
+                public Invalid {
+                    Objects.requireNonNull(cell, "cell");
+                    Objects.requireNonNull(reason, "reason");
+                }
+            }
+        }
+
+        private PlacementResult validateTraversable(
+                DungeonMap layout,
+                GridPoint cell,
+                int level
+        ) {
+            if (layout == null || cell == null) {
+                return null;
+            }
+            if (!layout.isTraversableCell(cell, level)) {
+                return new PlacementResult.Invalid(cell, level, "Zelle ist nicht begehbar.");
+            }
+            return new PlacementResult.Valid(cell, level);
+        }
     }
 }

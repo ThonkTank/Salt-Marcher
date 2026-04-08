@@ -1,6 +1,6 @@
 package features.world.hexmap.ui.travel;
 
-import features.world.api.input.WorldTravelSurface;
+import features.world.api.input.TravelSurfaceInput;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -21,7 +21,7 @@ import java.util.List;
  * CampaignStateRepository / HexTileRepository ersetzt werden, sobald das
  * Overworld-Backend mit der UI verbunden ist.
  */
-public class TravelPane extends VBox {
+public final class TravelObject extends VBox {
 
     private final Label iconLabel = new Label();
     private final Label locationLabel = new Label();
@@ -38,7 +38,7 @@ public class TravelPane extends VBox {
     private final VBox actionItems = new VBox(6);
     private final Button actionButton = new Button();
 
-    public TravelPane() {
+    public TravelObject() {
         getStyleClass().add("travel-pane");
 
         iconLabel.getStyleClass().add("travel-location-icon");
@@ -122,13 +122,9 @@ public class TravelPane extends VBox {
         actionButton.setOnAction(null);
     }
 
-    public TravelPane sceneContent() {
-        return this;
-    }
-
-    public void showDungeonTravel(WorldTravelSurface.DungeonTravelPresentation presentation) {
-        WorldTravelSurface.DungeonTravelPresentation resolvedPresentation = presentation == null
-                ? new WorldTravelSurface.DungeonTravelPresentation(null, null, null, null, null, null, null)
+    public void showDungeonTravel(TravelSurfaceInput.DungeonTravelPresentationInput presentation) {
+        TravelSurfaceInput.DungeonTravelPresentationInput resolvedPresentation = presentation == null
+                ? new TravelSurfaceInput.DungeonTravelPresentationInput(null, null, null, null, null, null, null)
                 : presentation;
         String resolvedArea = resolvedPresentation.areaLabel();
         iconLabel.setText("D");
@@ -154,9 +150,9 @@ public class TravelPane extends VBox {
         });
     }
 
-    private void rebuildTravelActions(List<WorldTravelSurface.DungeonTravelAction> actions) {
+    private void rebuildTravelActions(List<TravelSurfaceInput.DungeonTravelActionInput> actions) {
         actionItems.getChildren().clear();
-        List<WorldTravelSurface.DungeonTravelAction> resolvedActions = actions == null ? List.of() : actions;
+        List<TravelSurfaceInput.DungeonTravelActionInput> resolvedActions = actions == null ? List.of() : actions;
         if (resolvedActions.isEmpty()) {
             Label hint = new Label("Token im Dungeon auf ein begehbares Feld ziehen");
             hint.getStyleClass().add("travel-placeholder");
@@ -164,7 +160,7 @@ public class TravelPane extends VBox {
             actionItems.getChildren().add(hint);
             return;
         }
-        for (WorldTravelSurface.DungeonTravelAction action : resolvedActions) {
+        for (TravelSurfaceInput.DungeonTravelActionInput action : resolvedActions) {
             if (action == null) {
                 continue;
             }

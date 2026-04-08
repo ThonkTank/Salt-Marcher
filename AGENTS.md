@@ -132,8 +132,8 @@ Do not reverse that decision order. A capability does not belong in a package be
 ### Local Layer Vocabulary
 
 Technical layers are subordinate tools inside an owner slice, not the primary architecture story:
-- `input` — canonical request schemas the owner accepts; each request schema is named exactly `<Request>Input`
-- `task` — owner-local static end-to-end input-to-input pipelines; each request pipeline is named exactly `<Request>Task` and starts from the matching `<Request>Input`
+- `input` — canonical request schemas the owner accepts; each input is named exactly `<Request>Input`, where `<Request>` matches a real public request method on the owner's `<Owner>Object`
+- `task` — owner-local static end-to-end input-to-input pipelines; each task is named exactly `<Request>Task`, where `<Request>` matches a real public request method on the owner's `<Owner>Object`, and the task starts from the matching `<Request>Input`
 - `repository` — persistence-only state reconstruction and state storage
 - `state` — the owner's canonical protected runtime/object state plus the only allowed state factory/transition APIs
 

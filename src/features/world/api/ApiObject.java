@@ -1,11 +1,10 @@
 package features.world.api;
 
-import features.world.api.input.WorldTravelSurface;
-import features.world.api.input.WorldViews;
+import features.world.api.input.RegisterScenesInput;
+import features.world.api.input.TravelSurfaceInput;
+import features.world.api.input.ViewsInput;
 import features.world.dungeon.bootstrap.BootstrapObject;
-import features.world.hexmap.api.HexMapModule;
 import ui.shell.DetailsNavigator;
-import ui.shell.SceneRegistry;
 
 import java.util.Objects;
 
@@ -14,25 +13,28 @@ import java.util.Objects;
  */
 public final class ApiObject {
 
-    private final HexMapModule hexMapModule;
+    private final features.world.hexmap.api.ApiObject hexMapModule;
     private final BootstrapObject dungeonBootstrap;
-    private final WorldTravelSurface travelSurface = HexMapModule.createTravelSurface();
+    private final TravelSurfaceInput travelSurface = features.world.hexmap.api.ApiObject.createTravelSurface();
     private final features.world.dungeon.bootstrap.input.BootstrapViews dungeonViews;
 
     public ApiObject(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        this.hexMapModule = new HexMapModule(detailsNavigator, travelSurface);
+        this.hexMapModule = new features.world.hexmap.api.ApiObject(detailsNavigator, travelSurface);
         this.dungeonBootstrap = new BootstrapObject(detailsNavigator, travelSurface);
         this.dungeonViews = dungeonBootstrap.views();
     }
 
-    public void registerScenes(SceneRegistry sceneRegistry) {
-        Objects.requireNonNull(sceneRegistry, "sceneRegistry");
-        sceneRegistry.registerScene("Reise", travelSurface.sceneContent());
+    public void registerScenes(RegisterScenesInput input) {
+        input.sceneRegistry().registerScene("Reise", travelSurface.sceneContent());
     }
 
-    public WorldViews views() {
-        return new WorldViews(
+    public TravelSurfaceInput travelSurface() {
+        return travelSurface;
+    }
+
+    public ViewsInput views() {
+        return new ViewsInput(
                 hexMapModule.overworldView(),
                 hexMapModule.mapEditorView(),
                 dungeonViews.dungeonView(),

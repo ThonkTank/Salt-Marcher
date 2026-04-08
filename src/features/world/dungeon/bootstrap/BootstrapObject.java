@@ -1,6 +1,6 @@
 package features.world.dungeon.bootstrap;
 
-import features.world.api.input.WorldTravelSurface;
+import features.world.api.input.TravelSurfaceInput;
 import features.world.dungeon.application.room.DungeonRoomApplicationService;
 import features.world.dungeon.application.runtime.DungeonRuntimeApplicationService;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
@@ -16,7 +16,7 @@ import features.world.dungeon.dungeonmap.corridor.CorridorObject;
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.shell.editor.interaction.input.EditorTool;
 import features.world.dungeon.shell.interaction.DungeonHitCollector;
-import features.world.dungeon.shell.runtime.DungeonRuntimeView;
+import features.world.dungeon.shell.runtime.surface.SurfaceObject;
 import features.world.dungeon.transition.TransitionObject;
 import ui.shell.DetailsNavigator;
 
@@ -34,7 +34,7 @@ public final class BootstrapObject {
     private final ui.shell.AppView dungeonView;
     private final ui.shell.AppView dungeonEditorView;
 
-    public BootstrapObject(DetailsNavigator detailsNavigator, WorldTravelSurface travelSurface) {
+    public BootstrapObject(DetailsNavigator detailsNavigator, TravelSurfaceInput travelSurface) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         DungeonMapApplicationService mapApplicationService = new DungeonMapApplicationService();
         features.world.dungeon.dungeonmap.cluster.repository.DungeonClusterRepository clusterRepository =
@@ -160,7 +160,7 @@ public final class BootstrapObject {
                         editorInteractionState,
                         hitCollector,
                         editorTools);
-        this.dungeonView = new DungeonRuntimeView(
+        this.dungeonView = new SurfaceObject(
                 "Dungeon",
                 false,
                 loadingService,
