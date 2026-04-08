@@ -88,7 +88,7 @@ private fun ownerFileReasons(
         support = support,
         sourceTypeName = ownerObjectTypeName,
         projectTypeNames = primaryType.fields.flatMap { field ->
-            support.projectTypeNames(field.typeRef, context.packageName, context.typeImports, snapshot.knownTypeNames)
+            support.projectTypeNames(field.tree.type, sourceFile.parsedSource, snapshot)
         }.toSet(),
         reasonPrefix = "${context.path} :: owner fields"
     ).forEach(reasons::add)
@@ -99,7 +99,7 @@ private fun ownerFileReasons(
         sourceTypeName = ownerObjectTypeName,
         projectTypeNames = primaryType.constructors.flatMap { constructor ->
             constructor.parameters.flatMap { parameter ->
-                support.projectTypeNames(parameter.typeRef, context.packageName, context.typeImports, snapshot.knownTypeNames)
+                support.projectTypeNames(parameter.tree.type, sourceFile.parsedSource, snapshot)
             }
         }.toSet(),
         reasonPrefix = "${context.path} :: owner constructors"
@@ -121,12 +121,8 @@ private fun ownerFileReasons(
         reasons += ownerRequestShapeReasons(sourceFile, method, snapshot, support)
     }
     val fieldProjectTypes = primaryType.fields.mapNotNull { field ->
-        val resolvedType = support.resolveProjectTypeName(
-            field.typeRef,
-            context.packageName,
-            context.typeImports,
-            snapshot.knownTypeNames
-        ) ?: return@mapNotNull null
+        val resolvedType = support.resolveProjectTypeName(field.tree.type, sourceFile.parsedSource, snapshot)
+            ?: return@mapNotNull null
         field.name to resolvedType
     }.toMap()
     publicMethods
@@ -165,22 +161,12 @@ private fun ownerRequestShapeReasons(
     }
     val expectedInputType = "${context.ownerPackage}.${support.inputRole}.${requestStem}Input"
     val parameterTypes = method.parameters.flatMap { parameter ->
-        support.projectTypeNames(
-            parameter.typeRef,
-            context.packageName,
-            context.typeImports,
-            snapshot.knownTypeNames
-        )
+        support.projectTypeNames(parameter.tree.type, sourceFile.parsedSource, snapshot)
     }.distinct()
     if (parameterTypes != listOf(expectedInputType)) {
         reasons += "${context.path} :: owner requests must accept exactly ${expectedInputType.substringAfterLast('.')} (${method.name})"
     }
-    val returnPackages = support.projectTypePackages(
-        method.returnTypeRef ?: "void",
-        context.packageName,
-        context.typeImports,
-        snapshot.knownTypeNames
-    )
+    val returnPackages = support.projectTypePackages(method.tree.returnType, sourceFile.parsedSource, snapshot)
     if (returnPackages.any { projectPackage ->
             support.roleForDirectoryName(projectPackage.substringAfterLast('.')) != support.inputRole
         }
@@ -238,12 +224,8 @@ private fun ownerRequestBodyReasons(
     val body = method.body ?: return listOf("${context.path} :: owner request bodies must be present (${method.name})")
     val parameter = method.parameters.singleOrNull()
         ?: return listOf("${context.path} :: owner requests must model exactly one request parameter (${method.name})")
-    val requestParameterTypeName = support.resolveProjectTypeName(
-        parameter.typeRef,
-        context.packageName,
-        context.typeImports,
-        snapshot.knownTypeNames
-    ) ?: return listOf("${context.path} :: owner requests must use a resolvable project input type (${method.name})")
+    val requestParameterTypeName = support.resolveProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
+        ?: return listOf("${context.path} :: owner requests must use a resolvable project input type (${method.name})")
     val environment = OwnerMethodEnvironment(
         requestParameterName = parameter.name,
         requestParameterTypeName = requestParameterTypeName
@@ -291,12 +273,7 @@ private fun validateOwnerStatement(
                     requestStem = requestStem
                 )
             }
-            val declaredTypeName = support.resolveProjectTypeName(
-                variable.type.toString(),
-                context.packageName,
-                context.typeImports,
-                snapshot.knownTypeNames
-            )
+            val declaredTypeName = support.resolveProjectTypeName(variable.type, sourceFile.parsedSource, snapshot)
             if (variable.type.toString() == "var" && containsProjectExpression(initializer = variable.initializer, sourceFile = sourceFile, snapshot = snapshot, support = support, environment = environment)) {
                 reasons += "${context.path} :: owner locals derived from project calls or inputs must declare an explicit type (${variable.name})"
             }
@@ -611,12 +588,7 @@ private fun validateOwnerNewClassExpression(
     requestStem: String
 ): List<String> {
     val context = sourceFile.context
-    val projectTypeName = support.resolveProjectTypeName(
-        expression.identifier.toString(),
-        context.packageName,
-        context.typeImports,
-        snapshot.knownTypeNames
-    )
+    val projectTypeName = support.resolveProjectTypeName(expression.identifier, sourceFile.parsedSource, snapshot)
     if (projectTypeName != null) {
         val projectPackage = projectTypeName.substringBeforeLast('.')
         val projectRole = support.roleForDirectoryName(projectPackage.substringAfterLast('.'))
@@ -826,12 +798,7 @@ private fun containsProjectExpression(
         return false
     }
     if (initializer is NewClassTree) {
-        return support.resolveProjectTypeName(
-            initializer.identifier.toString(),
-            sourceFile.context.packageName,
-            sourceFile.context.typeImports,
-            snapshot.knownTypeNames
-        ) != null
+        return support.resolveProjectTypeName(initializer.identifier, sourceFile.parsedSource, snapshot) != null
     }
     if (initializer is MethodInvocationTree) {
         return projectTypeNameForExpression(
@@ -857,25 +824,15 @@ private fun projectTypeNameForExpression(
     val context = sourceFile.context
     return when (expression) {
         is IdentifierTree -> {
-            when (expression.name.toString()) {
-                environment.requestParameterName -> environment.requestParameterTypeName
-                else -> environment.localProjectTypes[expression.name.toString()]
-                    ?: fieldProjectTypes[expression.name.toString()]
-                    ?: support.resolveProjectTypeName(
-                        expression.name.toString(),
-                        context.packageName,
-                        context.typeImports,
-                        snapshot.knownTypeNames
-                    )
-            }
+            support.resolveProjectTypeName(expression, sourceFile.parsedSource, snapshot)
+                ?: when (expression.name.toString()) {
+                    environment.requestParameterName -> environment.requestParameterTypeName
+                    else -> environment.localProjectTypes[expression.name.toString()]
+                        ?: fieldProjectTypes[expression.name.toString()]
+                }
         }
 
-        is MemberSelectTree -> support.resolveProjectTypeName(
-            expression.toString(),
-            context.packageName,
-            context.typeImports,
-            snapshot.knownTypeNames
-        )
+        is MemberSelectTree -> support.resolveProjectTypeName(expression, sourceFile.parsedSource, snapshot)
 
         is ParenthesizedTree -> projectTypeNameForExpression(
             expression.expression,
@@ -957,12 +914,7 @@ private fun isAllowedPassThroughValue(
 
         Tree.Kind.NEW_CLASS -> {
             val newClass = expression as NewClassTree
-            val typeName = support.resolveProjectTypeName(
-                newClass.identifier.toString(),
-                sourceFile.context.packageName,
-                sourceFile.context.typeImports,
-                snapshot.knownTypeNames
-            )
+            val typeName = support.resolveProjectTypeName(newClass.identifier, sourceFile.parsedSource, snapshot)
             if (typeName == null) {
                 false
             } else {

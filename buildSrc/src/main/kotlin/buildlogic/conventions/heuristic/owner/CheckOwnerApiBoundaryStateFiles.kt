@@ -61,19 +61,9 @@ private fun stateFileReasons(
         .filter { Modifier.STATIC in it.modifiers }
         .forEach { method ->
             val parameterPackages = method.parameters.flatMap { parameter ->
-                support.projectTypePackages(
-                    parameter.typeRef,
-                    context.packageName,
-                    context.typeImports,
-                    snapshot.knownTypeNames
-                )
+                support.projectTypePackages(parameter.tree.type, sourceFile.parsedSource, snapshot)
             }.distinct()
-            val returnPackages = support.projectTypePackages(
-                method.returnTypeRef ?: "void",
-                context.packageName,
-                context.typeImports,
-                snapshot.knownTypeNames
-            )
+            val returnPackages = support.projectTypePackages(method.tree.returnType, sourceFile.parsedSource, snapshot)
             if (parameterPackages.any { projectPackage ->
                     !support.sameOwner(context.ownerPackage, projectPackage) ||
                         support.roleForDirectoryName(projectPackage.substringAfterLast('.')) !in setOf(support.inputRole, support.stateRole)

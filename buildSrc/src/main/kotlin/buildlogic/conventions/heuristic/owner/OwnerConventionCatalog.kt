@@ -29,6 +29,7 @@ internal data class OwnerConventionCatalog(
 }
 
 internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
+    snapshot: OwnerConventionSnapshot,
     parsedSourcesByPath: Map<String, OwnerConventionParsedJavaSource>,
     knownPackages: Set<String>,
     knownTypeNames: Set<String>
@@ -53,16 +54,14 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
         ) {
             return@forEach
         }
-        val typeImports = typeImportsFor(parsedSource.importDeclarations, knownPackages)
         val ownerPackage = ownerPackageFor(packageName, role)
         val requestMethods = primaryType.methods
             .filter { method ->
                 isCanonicalOwnerRequestShape(
                     method = method,
-                    packageName = packageName,
                     ownerPackage = ownerPackage,
-                    typeImports = typeImports,
-                    knownTypeNames = knownTypeNames
+                    parsedSource = parsedSource,
+                    snapshot = snapshot
                 )
             }
             .map { method -> method.name }
@@ -83,14 +82,12 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
             knownPackages = knownPackages,
             knownTypeNames = knownTypeNames,
             role = taskRole
-        ) { parsedSource, packageName, ownerPackage, primaryType, typeImports ->
+        ) { parsedSource, _, ownerPackage, primaryType, _ ->
             canonicalTaskApi(
                 parsedSource = parsedSource,
-                packageName = packageName,
                 ownerPackage = ownerPackage,
                 primaryType = primaryType,
-                typeImports = typeImports,
-                knownTypeNames = knownTypeNames,
+                snapshot = snapshot,
                 requestStemsByOwner = requestStemsByOwner
             )
         },
@@ -99,14 +96,12 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
             knownPackages = knownPackages,
             knownTypeNames = knownTypeNames,
             role = stateRole
-        ) { parsedSource, packageName, ownerPackage, primaryType, typeImports ->
+        ) { parsedSource, _, ownerPackage, primaryType, _ ->
             canonicalStateApi(
                 parsedSource = parsedSource,
-                packageName = packageName,
                 ownerPackage = ownerPackage,
                 primaryType = primaryType,
-                typeImports = typeImports,
-                knownTypeNames = knownTypeNames
+                snapshot = snapshot
             )
         },
         repositoryApisByTypeName = buildStaticApisByTypeName(
@@ -114,14 +109,12 @@ internal fun OwnerConventionSupport.buildOwnerConventionCatalog(
             knownPackages = knownPackages,
             knownTypeNames = knownTypeNames,
             role = repositoryRole
-        ) { parsedSource, packageName, ownerPackage, primaryType, typeImports ->
+        ) { parsedSource, _, ownerPackage, primaryType, _ ->
             canonicalRepositoryApi(
                 parsedSource = parsedSource,
-                packageName = packageName,
                 ownerPackage = ownerPackage,
                 primaryType = primaryType,
-                typeImports = typeImports,
-                knownTypeNames = knownTypeNames
+                snapshot = snapshot
             )
         }
     )
@@ -157,13 +150,12 @@ private fun OwnerConventionSupport.buildStaticApisByTypeName(
 
 private fun OwnerConventionSupport.canonicalTaskApi(
     parsedSource: OwnerConventionParsedJavaSource,
-    packageName: String,
     ownerPackage: String,
     primaryType: OwnerConventionParsedJavaType,
-    typeImports: OwnerConventionTypeImports,
-    knownTypeNames: Set<String>,
+    snapshot: OwnerConventionSnapshot,
     requestStemsByOwner: Map<String, Set<String>>
 ): OwnerConventionStaticApi? {
+    val packageName = parsedSource.packageName ?: return null
     if (
         parsedSource.topLevelTypes.size != 1 ||
         primaryType.kind != OwnerConventionParsedJavaTypeKind.CLASS ||
@@ -191,9 +183,9 @@ private fun OwnerConventionSupport.canonicalTaskApi(
         return null
     }
     val parameterTypes = method.parameters.flatMap { parameter ->
-        projectTypeNames(parameter.typeRef, packageName, typeImports, knownTypeNames)
+        projectTypeNames(parameter.tree.type, parsedSource, snapshot)
     }.distinct()
-    val returnPackages = projectTypePackages(method.returnTypeRef ?: "void", packageName, typeImports, knownTypeNames)
+    val returnPackages = projectTypePackages(method.tree.returnType, parsedSource, snapshot)
     val expectedInputType = "$ownerPackage.$inputRole.${requestStem}Input"
     if (parameterTypes != listOf(expectedInputType)) {
         return null
@@ -213,12 +205,11 @@ private fun OwnerConventionSupport.canonicalTaskApi(
 
 private fun OwnerConventionSupport.canonicalStateApi(
     parsedSource: OwnerConventionParsedJavaSource,
-    packageName: String,
     ownerPackage: String,
     primaryType: OwnerConventionParsedJavaType,
-    typeImports: OwnerConventionTypeImports,
-    knownTypeNames: Set<String>
+    snapshot: OwnerConventionSnapshot
 ): OwnerConventionStaticApi? {
+    val packageName = parsedSource.packageName ?: return null
     val validKind = primaryType.kind == OwnerConventionParsedJavaTypeKind.RECORD ||
         primaryType.kind == OwnerConventionParsedJavaTypeKind.ENUM ||
         (primaryType.kind == OwnerConventionParsedJavaTypeKind.CLASS && Modifier.FINAL in primaryType.modifiers)
@@ -236,9 +227,9 @@ private fun OwnerConventionSupport.canonicalStateApi(
         .filter { Modifier.STATIC in it.modifiers }
         .filter { method ->
             val parameterPackages = method.parameters.flatMap { parameter ->
-                projectTypePackages(parameter.typeRef, packageName, typeImports, knownTypeNames)
+                projectTypePackages(parameter.tree.type, parsedSource, snapshot)
             }.distinct()
-            val returnPackages = projectTypePackages(method.returnTypeRef ?: "void", packageName, typeImports, knownTypeNames)
+            val returnPackages = projectTypePackages(method.tree.returnType, parsedSource, snapshot)
             parameterPackages.all { projectPackage ->
                 sameOwner(ownerPackage, projectPackage) &&
                     roleForDirectoryName(projectPackage.substringAfterLast('.')) in setOf(inputRole, stateRole)
@@ -258,12 +249,11 @@ private fun OwnerConventionSupport.canonicalStateApi(
 
 private fun OwnerConventionSupport.canonicalRepositoryApi(
     parsedSource: OwnerConventionParsedJavaSource,
-    packageName: String,
     ownerPackage: String,
     primaryType: OwnerConventionParsedJavaType,
-    typeImports: OwnerConventionTypeImports,
-    knownTypeNames: Set<String>
+    snapshot: OwnerConventionSnapshot
 ): OwnerConventionStaticApi? {
+    val packageName = parsedSource.packageName ?: return null
     if (
         parsedSource.topLevelTypes.size != 1 ||
         primaryType.kind != OwnerConventionParsedJavaTypeKind.CLASS ||
@@ -285,9 +275,9 @@ private fun OwnerConventionSupport.canonicalRepositoryApi(
         .filter { Modifier.STATIC in it.modifiers }
         .filter { method ->
             val parameterPackages = method.parameters.flatMap { parameter ->
-                projectTypePackages(parameter.typeRef, packageName, typeImports, knownTypeNames)
+                projectTypePackages(parameter.tree.type, parsedSource, snapshot)
             }.distinct()
-            val returnPackages = projectTypePackages(method.returnTypeRef ?: "void", packageName, typeImports, knownTypeNames)
+            val returnPackages = projectTypePackages(method.tree.returnType, parsedSource, snapshot)
             parameterPackages.all { projectPackage ->
                 sameOwner(ownerPackage, projectPackage) &&
                     roleForDirectoryName(projectPackage.substringAfterLast('.')) == stateRole
@@ -307,10 +297,9 @@ private fun OwnerConventionSupport.canonicalRepositoryApi(
 
 private fun OwnerConventionSupport.isCanonicalOwnerRequestShape(
     method: OwnerConventionParsedJavaMethod,
-    packageName: String,
     ownerPackage: String,
-    typeImports: OwnerConventionTypeImports,
-    knownTypeNames: Set<String>
+    parsedSource: OwnerConventionParsedJavaSource,
+    snapshot: OwnerConventionSnapshot
 ): Boolean {
     val requestStem = requestStemForMethod(method.name) ?: return false
     if (Modifier.PUBLIC !in method.modifiers || Modifier.STATIC in method.modifiers) {
@@ -320,10 +309,10 @@ private fun OwnerConventionSupport.isCanonicalOwnerRequestShape(
         return false
     }
     val expectedInputType = "$ownerPackage.$inputRole.${requestStem}Input"
-    val parameterTypes = projectTypeNames(method.parameters.single().typeRef, packageName, typeImports, knownTypeNames)
+    val parameterTypes = projectTypeNames(method.parameters.single().tree.type, parsedSource, snapshot)
     if (parameterTypes != setOf(expectedInputType)) {
         return false
     }
-    val returnPackages = projectTypePackages(method.returnTypeRef ?: "void", packageName, typeImports, knownTypeNames)
+    val returnPackages = projectTypePackages(method.tree.returnType, parsedSource, snapshot)
     return returnPackages.all { projectPackage -> roleForDirectoryName(projectPackage.substringAfterLast('.')) == inputRole }
 }

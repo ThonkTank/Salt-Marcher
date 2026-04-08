@@ -68,19 +68,9 @@ private fun taskFileReasons(
             reasons += "${context.path} :: task files must model exactly one input parameter"
         }
         val parameterTypes = method.parameters.flatMap { parameter ->
-            support.projectTypeNames(
-                parameter.typeRef,
-                context.packageName,
-                context.typeImports,
-                snapshot.knownTypeNames
-            )
+            support.projectTypeNames(parameter.tree.type, sourceFile.parsedSource, snapshot)
         }.distinct()
-        val returnTypes = support.projectTypeNames(
-            method.returnTypeRef ?: "void",
-            context.packageName,
-            context.typeImports,
-            snapshot.knownTypeNames
-        )
+        val returnTypes = support.projectTypeNames(method.tree.returnType, sourceFile.parsedSource, snapshot)
         if (parameterTypes.size != 1 || parameterTypes.any { typeName ->
                 support.roleForDirectoryName(typeName.substringBeforeLast('.').substringAfterLast('.')) != support.inputRole
             }

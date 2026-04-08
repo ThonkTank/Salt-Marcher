@@ -8,9 +8,12 @@ import com.sun.source.tree.MethodTree
 import com.sun.source.tree.Tree
 import com.sun.source.tree.VariableTree
 import com.sun.source.util.JavacTask
+import com.sun.source.util.Trees
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
+import javax.tools.DiagnosticCollector
+import javax.tools.JavaFileObject
 import javax.lang.model.element.Modifier
 import javax.tools.ToolProvider
 import org.gradle.api.GradleException
@@ -24,13 +27,15 @@ internal enum class OwnerConventionParsedJavaTypeKind {
 
 internal data class OwnerConventionParsedJavaParameter(
     val name: String,
-    val typeRef: String
+    val typeRef: String,
+    val tree: VariableTree
 )
 
 internal data class OwnerConventionParsedJavaField(
     val name: String,
     val typeRef: String,
-    val modifiers: Set<Modifier>
+    val modifiers: Set<Modifier>,
+    val tree: VariableTree
 )
 
 internal data class OwnerConventionParsedJavaMethod(
@@ -61,27 +66,59 @@ internal data class OwnerConventionParsedJavaSource(
     val compilationUnit: CompilationUnitTree
 )
 
+internal data class OwnerConventionSemanticModel(
+    val trees: Trees
+)
+
+internal data class OwnerConventionParsedJavaSources(
+    val sourcesByPath: Map<String, OwnerConventionParsedJavaSource>,
+    val semanticModel: OwnerConventionSemanticModel
+)
+
 internal fun parseOwnerConventionJavaSources(
     projectRoot: Path,
-    files: Collection<File>
-): Map<String, OwnerConventionParsedJavaSource> {
+    files: Collection<File>,
+    classpath: Collection<File>
+): OwnerConventionParsedJavaSources {
     if (files.isEmpty()) {
-        return emptyMap()
+        return OwnerConventionParsedJavaSources(
+            sourcesByPath = emptyMap(),
+            semanticModel = OwnerConventionSemanticModel(Trees.instance((ToolProvider.getSystemJavaCompiler()
+                ?: throw GradleException("JDK compiler is required for owner convention parsing."))
+                .getTask(null, null, null, emptyList(), null, emptyList<JavaFileObject>()) as JavacTask))
+        )
     }
     val compiler = ToolProvider.getSystemJavaCompiler()
         ?: throw GradleException("JDK compiler is required for owner convention parsing.")
     val fileManager = compiler.getStandardFileManager(null, null, StandardCharsets.UTF_8)
+    val diagnostics = DiagnosticCollector<JavaFileObject>()
     return try {
         val javaFileObjects = fileManager.getJavaFileObjectsFromFiles(files)
+        val options = mutableListOf(
+            "-proc:none",
+            "--enable-preview",
+            "--release",
+            "21"
+        )
+        if (classpath.isNotEmpty()) {
+            options += listOf(
+                "-classpath",
+                classpath.joinToString(File.pathSeparator) { file -> file.absolutePath }
+            )
+        }
         val task = compiler.getTask(
             null,
             fileManager,
-            null,
-            listOf("-proc:none"),
+            diagnostics,
+            options,
             null,
             javaFileObjects
         ) as JavacTask
-        task.parse()
+        val compilationUnits = task.parse().toList()
+        task.analyze()
+        val trees = Trees.instance(task)
+        OwnerConventionParsedJavaSources(
+            sourcesByPath = compilationUnits
             .map { compilationUnit ->
                 val file = File(compilationUnit.sourceFile.toUri())
                 val path = projectRoot.relativize(file.toPath()).toString().replace('\\', '/')
@@ -96,7 +133,9 @@ internal fun parseOwnerConventionJavaSources(
                     compilationUnit = compilationUnit
                 )
             }
-            .toMap()
+            .toMap(),
+            semanticModel = OwnerConventionSemanticModel(trees)
+        )
     } finally {
         fileManager.close()
     }
@@ -111,7 +150,8 @@ private fun parseJavaType(classTree: ClassTree): OwnerConventionParsedJavaType {
             is VariableTree -> fields += OwnerConventionParsedJavaField(
                 name = member.name.toString(),
                 typeRef = member.type.toString(),
-                modifiers = member.modifiers.flags
+                modifiers = member.modifiers.flags,
+                tree = member
             )
 
             is MethodTree -> {
@@ -121,7 +161,8 @@ private fun parseJavaType(classTree: ClassTree): OwnerConventionParsedJavaType {
                     parameters = member.parameters.map { parameter ->
                         OwnerConventionParsedJavaParameter(
                             name = parameter.name.toString(),
-                            typeRef = parameter.type.toString()
+                            typeRef = parameter.type.toString(),
+                            tree = parameter
                         )
                     },
                     modifiers = member.modifiers.flags,

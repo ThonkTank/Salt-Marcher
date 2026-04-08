@@ -1,10 +1,22 @@
 package buildlogic.conventions.heuristic.owner
 
+import com.sun.source.tree.Tree
+import com.sun.source.util.TreePath
 import java.io.File
+import javax.lang.model.element.Element
+import javax.lang.model.element.TypeElement
+import javax.lang.model.type.ArrayType
+import javax.lang.model.type.DeclaredType
+import javax.lang.model.type.IntersectionType
+import javax.lang.model.type.TypeMirror
+import javax.lang.model.type.TypeVariable
+import javax.lang.model.type.UnionType
+import javax.lang.model.type.WildcardType
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.SourceSetContainer
 
 data class OwnerConventionTypeImports(
     val explicitTypes: Map<String, String>,
@@ -30,7 +42,8 @@ internal data class OwnerConventionSnapshot(
     val requestStemsByOwner: Map<String, Set<String>>,
     val parsedSourcesByPath: Map<String, OwnerConventionParsedJavaSource>,
     val parsedTypesByName: Map<String, OwnerConventionParsedJavaType>,
-    val catalog: OwnerConventionCatalog
+    val catalog: OwnerConventionCatalog,
+    val semanticModel: OwnerConventionSemanticModel
 )
 
 internal data class OwnerConventionSourceFile(
@@ -180,112 +193,22 @@ class OwnerConventionSupport(private val project: Project) {
     }
 
     internal fun projectTypePackages(
-        typeRef: String,
-        sourcePackage: String,
-        typeImports: OwnerConventionTypeImports,
-        knownTypeNames: Set<String>
+        tree: Tree?,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
     ): Set<String> {
-        val projectPackages = linkedSetOf<String>()
-        val fqcnPattern = Regex("""\b[a-z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][A-Za-z0-9_]*)*\.[A-Z][A-Za-z0-9_]*\b""")
-        fqcnPattern.findAll(typeRef).forEach { match ->
-            val fqcn = match.value
-            val resolvedTypeName = resolveKnownTopLevelTypeName(fqcn, knownTypeNames)
-            if (resolvedTypeName != null) {
-                projectPackages += resolvedTypeName.substringBeforeLast('.')
-            }
-        }
-        val nestedSimplePattern = Regex("""\b([A-Z][A-Za-z0-9_]*)\.[A-Z][A-Za-z0-9_]*\b""")
-        nestedSimplePattern.findAll(typeRef).forEach { match ->
-            val outerSimpleName = match.groupValues[1]
-            val importedFqcn = typeImports.explicitTypes[outerSimpleName]
-            val candidates = buildList {
-                if (importedFqcn != null) {
-                    add(importedFqcn)
-                } else {
-                    add("$sourcePackage.$outerSimpleName")
-                    typeImports.wildcardPackages.forEach { wildcardPackage ->
-                        add("$wildcardPackage.$outerSimpleName")
-                    }
-                }
-            }
-            candidates.firstNotNullOfOrNull { candidate ->
-                resolveKnownTopLevelTypeName(candidate, knownTypeNames)
-            }?.let { fqcn ->
-                projectPackages += fqcn.substringBeforeLast('.')
-            }
-        }
-        val simplePattern = Regex("""\b[A-Z][A-Za-z0-9_]*\b""")
-        simplePattern.findAll(typeRef).forEach { match ->
-            val simpleName = match.value
-            val importedFqcn = typeImports.explicitTypes[simpleName]
-            val candidates = buildList {
-                if (importedFqcn != null) {
-                    add(importedFqcn)
-                } else {
-                    add("$sourcePackage.$simpleName")
-                    typeImports.wildcardPackages.forEach { wildcardPackage ->
-                        add("$wildcardPackage.$simpleName")
-                    }
-                }
-            }
-            candidates.firstNotNullOfOrNull { candidate ->
-                resolveKnownTopLevelTypeName(candidate, knownTypeNames)
-            }?.let { fqcn ->
-                projectPackages += fqcn.substringBeforeLast('.')
-            }
-        }
-        return projectPackages
+        return projectTypeNames(tree, parsedSource, snapshot)
+            .map { typeName -> typeName.substringBeforeLast('.') }
+            .toSet()
     }
 
     internal fun projectTypeNames(
-        typeRef: String,
-        sourcePackage: String,
-        typeImports: OwnerConventionTypeImports,
-        knownTypeNames: Set<String>
+        tree: Tree?,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
     ): Set<String> {
-        val projectTypes = linkedSetOf<String>()
-        val fqcnPattern = Regex("""\b[a-z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][A-Za-z0-9_]*)*\.[A-Z][A-Za-z0-9_]*\b""")
-        fqcnPattern.findAll(typeRef).forEach { match ->
-            val fqcn = match.value
-            resolveKnownTopLevelTypeName(fqcn, knownTypeNames)?.let(projectTypes::add)
-        }
-        val nestedSimplePattern = Regex("""\b([A-Z][A-Za-z0-9_]*)\.[A-Z][A-Za-z0-9_]*\b""")
-        nestedSimplePattern.findAll(typeRef).forEach { match ->
-            val outerSimpleName = match.groupValues[1]
-            val importedFqcn = typeImports.explicitTypes[outerSimpleName]
-            val candidates = buildList {
-                if (importedFqcn != null) {
-                    add(importedFqcn)
-                } else {
-                    add("$sourcePackage.$outerSimpleName")
-                    typeImports.wildcardPackages.forEach { wildcardPackage ->
-                        add("$wildcardPackage.$outerSimpleName")
-                    }
-                }
-            }
-            candidates.firstNotNullOfOrNull { candidate ->
-                resolveKnownTopLevelTypeName(candidate, knownTypeNames)
-            }?.let(projectTypes::add)
-        }
-        val simplePattern = Regex("""\b[A-Z][A-Za-z0-9_]*\b""")
-        simplePattern.findAll(typeRef).forEach { match ->
-            val simpleName = match.value
-            val importedFqcn = typeImports.explicitTypes[simpleName]
-            val candidates = buildList {
-                if (importedFqcn != null) {
-                    add(importedFqcn)
-                } else {
-                    add("$sourcePackage.$simpleName")
-                    typeImports.wildcardPackages.forEach { wildcardPackage ->
-                        add("$wildcardPackage.$simpleName")
-                    }
-                }
-            }
-            candidates.firstNotNullOfOrNull { candidate ->
-                resolveKnownTopLevelTypeName(candidate, knownTypeNames)
-            }?.let(projectTypes::add)
-        }
-        return projectTypes
+        val path = treePath(tree, parsedSource) ?: return emptySet()
+        return projectTypeNamesForPath(path, snapshot)
     }
 
     private fun resolveKnownTopLevelTypeName(typeName: String, knownTypeNames: Set<String>): String? {
@@ -308,12 +231,11 @@ class OwnerConventionSupport(private val project: Project) {
     }
 
     internal fun resolveProjectTypeName(
-        typeRef: String,
-        sourcePackage: String,
-        typeImports: OwnerConventionTypeImports,
-        knownTypeNames: Set<String>
+        tree: Tree?,
+        parsedSource: OwnerConventionParsedJavaSource,
+        snapshot: OwnerConventionSnapshot
     ): String? {
-        return projectTypeNames(typeRef, sourcePackage, typeImports, knownTypeNames).singleOrNull()
+        return projectTypeNames(tree, parsedSource, snapshot).singleOrNull()
     }
 
     internal fun ownerRequestMethodNames(ownerPackage: String, snapshot: OwnerConventionSnapshot): Set<String> {
@@ -362,22 +284,16 @@ class OwnerConventionSupport(private val project: Project) {
 
     private fun snapshot(): OwnerConventionSnapshot {
         val touchedPaths = touchedJavaPaths()
-        if (touchedPaths.isEmpty()) {
-            return OwnerConventionSnapshot(
-                touchedPaths = emptySet(),
-                knownPackages = emptySet(),
-                knownTypeNames = emptySet(),
-                requestStemsByOwner = emptyMap(),
-                parsedSourcesByPath = emptyMap(),
-                parsedTypesByName = emptyMap(),
-                catalog = OwnerConventionCatalog.EMPTY
-            )
-        }
         val allSourceFiles = project.fileTree("src") {
             include("**/*.java")
             exclude("**/package-info.java")
         }.files.sortedBy(File::getPath)
-        val parsedSourcesByPath = parseOwnerConventionJavaSources(projectRoot, allSourceFiles)
+        val parsedJavaSources = parseOwnerConventionJavaSources(
+            projectRoot = projectRoot,
+            files = allSourceFiles,
+            classpath = mainCompileClasspath()
+        )
+        val parsedSourcesByPath = parsedJavaSources.sourcesByPath
         val knownPackages = parsedSourcesByPath.values
             .mapNotNull(OwnerConventionParsedJavaSource::packageName)
             .toSet()
@@ -393,7 +309,18 @@ class OwnerConventionSupport(private val project: Project) {
                 parsedSource.topLevelTypes.map { type -> "$packageName.${type.name}" to type }
             }
             .toMap()
+        val baseSnapshot = OwnerConventionSnapshot(
+            touchedPaths = touchedPaths,
+            knownPackages = knownPackages,
+            knownTypeNames = knownTypeNames,
+            requestStemsByOwner = emptyMap(),
+            parsedSourcesByPath = parsedSourcesByPath,
+            parsedTypesByName = parsedTypesByName,
+            catalog = OwnerConventionCatalog.EMPTY,
+            semanticModel = parsedJavaSources.semanticModel
+        )
         val catalog = buildOwnerConventionCatalog(
+            snapshot = baseSnapshot,
             parsedSourcesByPath = parsedSourcesByPath,
             knownPackages = knownPackages,
             knownTypeNames = knownTypeNames
@@ -405,7 +332,8 @@ class OwnerConventionSupport(private val project: Project) {
             requestStemsByOwner = catalog.requestStemsByOwner,
             parsedSourcesByPath = parsedSourcesByPath,
             parsedTypesByName = parsedTypesByName,
-            catalog = catalog
+            catalog = catalog,
+            semanticModel = parsedJavaSources.semanticModel
         )
     }
 
@@ -540,6 +468,85 @@ class OwnerConventionSupport(private val project: Project) {
             candidate = candidate.substring(0, lastDot)
         }
         return null
+    }
+
+    private fun mainCompileClasspath(): Collection<File> {
+        val sourceSets = project.extensions.findByType(SourceSetContainer::class.java) ?: return emptyList()
+        return sourceSets.getByName("main").compileClasspath.files.sortedBy(File::getAbsolutePath)
+    }
+
+    private fun treePath(tree: Tree?, parsedSource: OwnerConventionParsedJavaSource): TreePath? {
+        return if (tree == null) null else TreePath.getPath(parsedSource.compilationUnit, tree)
+    }
+
+    private fun projectTypeNamesForPath(
+        path: TreePath,
+        snapshot: OwnerConventionSnapshot
+    ): Set<String> {
+        val projectTypes = linkedSetOf<String>()
+        addProjectTypeName(snapshot.semanticModel.trees.getElement(path), snapshot.knownTypeNames, projectTypes)
+        collectProjectTypeNames(snapshot.semanticModel.trees.getTypeMirror(path), snapshot.knownTypeNames, projectTypes)
+        return projectTypes
+    }
+
+    private fun addProjectTypeName(
+        element: Element?,
+        knownTypeNames: Set<String>,
+        projectTypes: MutableSet<String>
+    ) {
+        val topLevelType = topLevelTypeElement(element) ?: return
+        val typeName = topLevelType.qualifiedName.toString()
+        if (typeName in knownTypeNames) {
+            projectTypes += typeName
+        }
+    }
+
+    private fun topLevelTypeElement(element: Element?): TypeElement? {
+        var current = element
+        var topLevelType: TypeElement? = null
+        while (current != null) {
+            if (current is TypeElement) {
+                topLevelType = current
+            }
+            current = current.enclosingElement
+        }
+        return topLevelType
+    }
+
+    private fun collectProjectTypeNames(
+        typeMirror: TypeMirror?,
+        knownTypeNames: Set<String>,
+        projectTypes: MutableSet<String>
+    ) {
+        when (typeMirror) {
+            null -> return
+
+            is DeclaredType -> {
+                addProjectTypeName(typeMirror.asElement(), knownTypeNames, projectTypes)
+                typeMirror.typeArguments.forEach { argument ->
+                    collectProjectTypeNames(argument, knownTypeNames, projectTypes)
+                }
+            }
+
+            is ArrayType -> collectProjectTypeNames(typeMirror.componentType, knownTypeNames, projectTypes)
+            is TypeVariable -> {
+                collectProjectTypeNames(typeMirror.upperBound, knownTypeNames, projectTypes)
+                collectProjectTypeNames(typeMirror.lowerBound, knownTypeNames, projectTypes)
+            }
+
+            is WildcardType -> {
+                collectProjectTypeNames(typeMirror.extendsBound, knownTypeNames, projectTypes)
+                collectProjectTypeNames(typeMirror.superBound, knownTypeNames, projectTypes)
+            }
+
+            is IntersectionType -> typeMirror.bounds.forEach { bound ->
+                collectProjectTypeNames(bound, knownTypeNames, projectTypes)
+            }
+
+            is UnionType -> typeMirror.alternatives.forEach { alternative ->
+                collectProjectTypeNames(alternative, knownTypeNames, projectTypes)
+            }
+        }
     }
 
 }
