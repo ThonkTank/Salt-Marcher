@@ -9,7 +9,7 @@ import org.gradle.api.tasks.TaskProvider
 fun Project.registerCheckDungeonEditorArchitectureConventionTask(): TaskProvider<Task> =
     tasks.register("checkDungeonEditorArchitectureConvention") {
         group = "verification"
-        description = "Fail when dungeonmap packages drift across forbidden architecture boundaries."
+        description = "Legacy dungeonmap migration guard for older package splits and boundaries."
         val importPattern = Regex("""^\s*import\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
         val projectRoot = layout.projectDirectory.asFile.toPath()
 

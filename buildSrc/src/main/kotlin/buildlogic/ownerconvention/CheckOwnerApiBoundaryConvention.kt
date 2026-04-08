@@ -13,7 +13,7 @@ fun Project.registerCheckOwnerApiBoundaryConventionTask(
     checkOwnerApiBoundaryRepositoryFiles: TaskProvider<out Task>
 ): TaskProvider<Task> = tasks.register("checkOwnerApiBoundaryConvention") {
     group = "verification"
-    description = "Run all focused owner API boundary convention checks."
+    description = "Run touched-file owner boundary heuristics for the canonical *Object/input/task/repository/state grammar."
     dependsOn(checkOwnerApiBoundarySourcePlacement)
     dependsOn(checkOwnerApiBoundaryOwnerFiles)
     dependsOn(checkOwnerApiBoundaryInputFiles)

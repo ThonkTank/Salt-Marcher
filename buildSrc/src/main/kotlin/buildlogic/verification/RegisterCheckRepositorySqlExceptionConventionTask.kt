@@ -8,7 +8,7 @@ import org.gradle.api.tasks.TaskProvider
 fun Project.registerCheckRepositorySqlExceptionConventionTask(): TaskProvider<Task> =
     tasks.register("checkRepositorySqlExceptionConvention") {
         group = "verification"
-        description = "Fail when new repositories catch and likely swallow SQLException."
+        description = "Legacy guard for SQLException-swallowing patterns in legacy feature repository packages."
         val sqlCatchPattern = Regex("""catch\s*\(\s*SQLException\b""")
         val sqlSwallowPattern = Regex(
             """catch\s*\(\s*SQLException\b[\s\S]*?(?:System\.(?:out|err)\.println\(|return\s+(?:Optional\.empty\(\)|0L|false|null)\s*;)[\s\S]*?\}"""

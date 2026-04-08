@@ -8,7 +8,7 @@ import org.gradle.api.tasks.TaskProvider
 fun Project.registerCheckDungeonGeometryConventionTask(): TaskProvider<Task> =
     tasks.register("checkDungeonGeometryConvention") {
         group = "verification"
-        description = "Fail when dungeon public APIs drift away from canonical geometry carriers."
+        description = "Heuristic guard for canonical dungeon geometry carriers on public/protected seams."
 
         val projectRoot = layout.projectDirectory.asFile.toPath()
         val allowedRawGeometryCarrierFiles = setOf(

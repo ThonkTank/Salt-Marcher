@@ -13,7 +13,7 @@ private data class FeatureBoundary(
 fun Project.registerCheckFeatureApiBoundaryConventionTask(): TaskProvider<Task> =
     tasks.register("checkFeatureApiBoundaryConvention") {
         group = "verification"
-        description = "Fail when cross-feature consumers bypass feature api packages."
+        description = "Legacy guard for older feature api/service/repository boundary rules."
         val projectRoot = layout.projectDirectory.asFile.toPath()
         val importPattern = Regex("""^\s*import\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
         val boundaries = listOf(

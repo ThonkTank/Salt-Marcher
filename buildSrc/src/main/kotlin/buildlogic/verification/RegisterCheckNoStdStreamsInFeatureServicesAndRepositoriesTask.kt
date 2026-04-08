@@ -8,7 +8,7 @@ import org.gradle.api.tasks.TaskProvider
 fun Project.registerCheckNoStdStreamsInFeatureServicesAndRepositoriesTask(): TaskProvider<Task> =
     tasks.register("checkNoStdStreamsInFeatureServicesAndRepositories") {
         group = "verification"
-        description = "Fail on new System.out/System.err usage in feature service/repository code."
+        description = "Legacy guard for System.out/System.err usage in legacy feature service/repository packages."
         val stdStreamPattern = Regex("""System\.(?:out|err)\.println\(""")
         val projectRoot = layout.projectDirectory.asFile.toPath()
 

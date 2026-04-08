@@ -35,7 +35,12 @@ import buildlogic.packaging.registerPrepareRuntimeImageTask
 import buildlogic.packaging.registerStageJpackageInputTask
 import buildlogic.verification.registerCheckDungeonEditorArchitectureConventionTask
 import buildlogic.verification.registerCheckDungeonGeometryConventionTask
+import buildlogic.verification.registerCheckArchitectureHeuristicsTask
+import buildlogic.verification.registerCheckBuildHygieneTask
+import buildlogic.verification.registerCheckConventionsTask
 import buildlogic.verification.registerCheckFeatureApiBoundaryConventionTask
+import buildlogic.verification.registerCheckLegacyArchitectureGuardsTask
+import buildlogic.verification.registerCheckLocalBuildPoliciesTask
 import buildlogic.verification.registerCheckNoCompiledArtifactsInSourceTask
 import buildlogic.verification.registerCheckNoStdStreamsInFeatureServicesAndRepositoriesTask
 import buildlogic.verification.registerCheckRepositorySqlExceptionConventionTask
@@ -177,17 +182,27 @@ val checkOwnerApiBoundaryConvention = registerCheckOwnerApiBoundaryConventionTas
 
 val checkDungeonEditorArchitectureConvention = registerCheckDungeonEditorArchitectureConventionTask()
 val checkDungeonGeometryConvention = registerCheckDungeonGeometryConventionTask()
+val checkBuildHygiene = registerCheckBuildHygieneTask(checkNoCompiledArtifactsInSource)
+val checkLocalBuildPolicies = registerCheckLocalBuildPoliciesTask(checkUiAsyncSubmissionConvention)
+val checkArchitectureHeuristics = registerCheckArchitectureHeuristicsTask(
+    checkOwnerApiBoundaryConvention = checkOwnerApiBoundaryConvention,
+    checkDungeonGeometryConvention = checkDungeonGeometryConvention
+)
+registerCheckLegacyArchitectureGuardsTask(
+    checkNoStdStreamsInFeatureServicesAndRepositories = checkNoStdStreamsInFeatureServicesAndRepositories,
+    checkRepositorySqlExceptionConvention = checkRepositorySqlExceptionConvention,
+    checkFeatureApiBoundaryConvention = checkFeatureApiBoundaryConvention,
+    checkDungeonEditorArchitectureConvention = checkDungeonEditorArchitectureConvention
+)
+val checkConventions = registerCheckConventionsTask(
+    checkBuildHygiene = checkBuildHygiene,
+    checkLocalBuildPolicies = checkLocalBuildPolicies,
+    checkArchitectureHeuristics = checkArchitectureHeuristics
+)
 val deleteEmptySourceDirectories = registerDeleteEmptySourceDirectoriesTask()
 
 tasks.named("check") {
-    dependsOn(checkNoCompiledArtifactsInSource)
-    dependsOn(checkNoStdStreamsInFeatureServicesAndRepositories)
-    dependsOn(checkRepositorySqlExceptionConvention)
-    dependsOn(checkUiAsyncSubmissionConvention)
-    dependsOn(checkFeatureApiBoundaryConvention)
-    dependsOn(checkOwnerApiBoundaryConvention)
-    dependsOn(checkDungeonEditorArchitectureConvention)
-    dependsOn(checkDungeonGeometryConvention)
+    dependsOn(checkConventions)
 }
 
 tasks.named("build") {
