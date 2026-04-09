@@ -30,12 +30,15 @@ public final class DungeoncleanObject {
         ComposeWorkspaceInput.WorkspaceInput workspace =
                 new EditorObject(composeWorkspaceInput).composeWorkspace(composeWorkspaceInput);
         this.surface = new LoadSurfaceInput.SurfaceInput(
+                workspace.surfaceId(),
                 workspace.title(),
                 workspace.navigationLabel(),
                 workspace.controlsContent(),
                 workspace.mainContent(),
                 workspace.detailsContent(),
-                workspace.stateContent());
+                workspace.stateContent(),
+                workspace.onShow(),
+                workspace.onHide());
     }
 
     public LoadSurfaceInput.SurfaceInput loadSurface(LoadSurfaceInput input) {

@@ -29,22 +29,20 @@ public final class FrameObject {
         HBox toolbar = new HBox(8);
         toolbar.getStyleClass().add("toolbar");
         toolbar.setAlignment(Pos.CENTER_LEFT);
-        Label toolbarTitle = new Label(resolvedInput.title() == null ? "" : resolvedInput.title());
-        toolbarTitle.getStyleClass().add("toolbar-title");
+        if (resolvedInput.toolbarContent() != null) {
+            toolbar.getChildren().add(resolvedInput.toolbarContent());
+        }
         Region toolbarSpacer = new Region();
         HBox.setHgrow(toolbarSpacer, Priority.ALWAYS);
-        toolbar.getChildren().addAll(toolbarTitle, toolbarSpacer);
+        toolbar.getChildren().add(toolbarSpacer);
         shell.setTop(toolbar);
 
-        VBox sidebar = new VBox(4);
+        VBox sidebar = new VBox();
         sidebar.getStyleClass().add("nav-sidebar");
         sidebar.setAlignment(Pos.TOP_CENTER);
-        String navigationLabel = resolvedInput.navigationLabel() == null ? "" : resolvedInput.navigationLabel().trim();
-        ToggleButton activeButton = new ToggleButton(navigationLabel.isEmpty() ? "APP" : navigationLabel);
-        activeButton.getStyleClass().add("nav-btn");
-        activeButton.setSelected(true);
-        activeButton.setFocusTraversable(false);
-        sidebar.getChildren().add(activeButton);
+        if (resolvedInput.navigationContent() != null) {
+            sidebar.getChildren().add(resolvedInput.navigationContent());
+        }
         shell.setLeft(sidebar);
 
         VBox controlsPanel = new VBox();

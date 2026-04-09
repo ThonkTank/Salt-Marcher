@@ -1,15 +1,14 @@
-package features.appshell.input;
+package features.appshell.navigation.input;
 
 import javafx.scene.Node;
-import javafx.scene.layout.BorderPane;
 
 @SuppressWarnings("unused")
-public record ComposeShellInput(
+public record ComposeNavigationInput(
         java.util.List<SurfaceInput> surfaces,
         String initialSurfaceId
 ) {
 
-    public ComposeShellInput {
+    public ComposeNavigationInput {
         surfaces = surfaces == null ? java.util.List.of() : java.util.List.copyOf(surfaces.stream()
                 .filter(java.util.Objects::nonNull)
                 .toList());
@@ -29,8 +28,13 @@ public record ComposeShellInput(
     ) {
     }
 
-    public record ShellInput(
-            BorderPane root
+    public record NavigationInput(
+            Node toolbarContent,
+            Node navigationContent,
+            Node controlsContent,
+            Node mainContent,
+            Node detailsContent,
+            Node stateContent
     ) {
     }
 }

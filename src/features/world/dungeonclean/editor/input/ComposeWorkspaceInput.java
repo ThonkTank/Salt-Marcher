@@ -16,12 +16,15 @@ public record ComposeWorkspaceInput(
     }
 
     public record WorkspaceInput(
+            String surfaceId,
             String title,
             String navigationLabel,
             Node controlsContent,
             Node mainContent,
             Node detailsContent,
-            Node stateContent
+            Node stateContent,
+            Runnable onShow,
+            Runnable onHide
     ) {
     }
 }

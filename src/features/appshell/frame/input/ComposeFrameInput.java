@@ -5,8 +5,8 @@ import javafx.scene.layout.BorderPane;
 
 @SuppressWarnings("unused")
 public record ComposeFrameInput(
-        String title,
-        String navigationLabel,
+        Node toolbarContent,
+        Node navigationContent,
         Node controlsContent,
         Node mainContent,
         Node detailsContent,

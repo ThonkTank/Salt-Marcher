@@ -7,7 +7,7 @@
 ## Canonical Types and APIs
 
 - `DungeoncleanObject` — public feature root seam for the clean dungeon rebuild and the packaged clean launcher target.
-- `DungeoncleanObject.loadSurface(...)` — clean feature surface export seam — returns the clean editor workspace as passive shell panel content.
+- `DungeoncleanObject.loadSurface(...)` — clean feature surface export seam — returns the clean editor workspace as a registered clean shell surface.
 - `input/LoadSurfaceInput` — clean feature surface request and result carrier.
 - `editor/EditorObject` — clean editor owner seam for the current parallel workspace surface.
 - `cluster/ClusterObject` — clean cluster owner seam for persisted rewrite fallout.

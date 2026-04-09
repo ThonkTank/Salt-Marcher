@@ -6,13 +6,13 @@
 
 ## Canonical Types and APIs
 
-- `FrameObject.composeFrame(...)` — builds the shell frame around already-final panel nodes.
+- `FrameObject.composeFrame(...)` — builds the shell frame around already-final toolbar, navigation, and cockpit panel nodes.
 - `input/ComposeFrameInput` — frame composition request carrier.
 
 ## Where New Code Goes
 
 - Keep only frame layout structure here.
-- Accept already-final content nodes from parent owners instead of pulling feature data directly.
+- Accept already-final toolbar, navigation, and cockpit content nodes from parent owners instead of pulling feature data directly.
 
 ## Forbidden Drift
 

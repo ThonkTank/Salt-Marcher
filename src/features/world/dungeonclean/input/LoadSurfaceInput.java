@@ -6,12 +6,15 @@ import javafx.scene.Node;
 public record LoadSurfaceInput() {
 
     public record SurfaceInput(
+            String surfaceId,
             String title,
             String navigationLabel,
             Node controlsContent,
             Node mainContent,
             Node detailsContent,
-            Node stateContent
+            Node stateContent,
+            Runnable onShow,
+            Runnable onHide
     ) {
     }
 }

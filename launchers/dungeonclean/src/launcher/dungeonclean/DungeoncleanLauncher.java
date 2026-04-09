@@ -23,12 +23,17 @@ public final class DungeoncleanLauncher extends Application {
         DungeoncleanObject dungeoncleanObject = new DungeoncleanObject();
         var surface = dungeoncleanObject.loadSurface(new features.world.dungeonclean.input.LoadSurfaceInput());
         ComposeShellInput composeShellInput = new ComposeShellInput(
-                surface.title(),
-                surface.navigationLabel(),
-                surface.controlsContent(),
-                surface.mainContent(),
-                surface.detailsContent(),
-                surface.stateContent());
+                java.util.List.of(new ComposeShellInput.SurfaceInput(
+                        surface.surfaceId(),
+                        surface.title(),
+                        surface.navigationLabel(),
+                        surface.controlsContent(),
+                        surface.mainContent(),
+                        surface.detailsContent(),
+                        surface.stateContent(),
+                        surface.onShow(),
+                        surface.onHide())),
+                surface.surfaceId());
         javafx.scene.layout.BorderPane shell =
                 new AppshellObject(composeShellInput).composeShell(composeShellInput).root();
 

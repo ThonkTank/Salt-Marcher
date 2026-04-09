@@ -7,13 +7,14 @@
 ## Canonical Types and APIs
 
 - `AppshellObject.composeShell(...)` — public app-shell root seam — composes the active clean shell frame around already-final panel content.
-- `input/ComposeShellInput` — clean shell request carrier — provides the title, nav label, and four cockpit panel nodes.
+- `input/ComposeShellInput` — clean shell request carrier — provides the registered clean shell surfaces plus the initial active surface.
 - `frame/FrameObject` — shell-frame owner seam — builds the cockpit layout structure and initial divider positions.
+- `navigation/NavigationObject` — shell navigation owner seam — registers shell surfaces, owns the active surface, and swaps cockpit content on navigation.
 
 ## Where New Code Goes
 
 - Put clean shell composition here instead of wiring new launchers directly to `ui.shell`.
-- Keep feature surfaces passive when they cross into the shell: title, nav label, and panel nodes only.
+- Keep feature surfaces passive when they cross into the shell: stable ids, labels, panel nodes, and optional lifecycle callbacks only.
 
 ## Forbidden Drift
 

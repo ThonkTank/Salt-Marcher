@@ -69,12 +69,15 @@ public final class EditorObject {
         state.setPadding(new javafx.geometry.Insets(12));
 
         this.workspace = new ComposeWorkspaceInput.WorkspaceInput(
+                "dungeonclean-editor",
                 "Dungeon Clean",
                 "DC",
                 controls,
                 new javafx.scene.control.ScrollPane(main),
                 null,
-                state);
+                state,
+                null,
+                null);
     }
 
     public ComposeWorkspaceInput.WorkspaceInput composeWorkspace(ComposeWorkspaceInput input) {
