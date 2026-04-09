@@ -7,6 +7,7 @@
 ## Canonical Types and APIs
 
 - `launchers/dungeonclean/src/launcher/dungeonclean/DungeoncleanLauncher.java` — default packaged app launcher — boots the clean dungeon application through the standard Gradle `run`/`installDist`/`installDesktopApp` lifecycle.
+- `launchers/dungeonclean/src/launcher/dungeonclean/startup/StartupObject.java` — launcher-local startup lifecycle seam — owns pre-start database setup, failure handling, and the app-ready preloader handshake.
 
 ## Where New Code Goes
 
