@@ -7,6 +7,7 @@
 ## Canonical Types and APIs
 
 - `CorridorObject` — public root owner seam for corridor-owned structures.
+- `state/PersistReboundCorridorsState` — passive corridor-owned rebound staging state — carries the authored input network and persisted ids needed for a future canonical rebound persistence boundary.
 - `Corridor`, `CorridorInput`, `CorridorInputNode`, `CorridorSegment` — canonical corridor aggregate and authored input network.
 - `CorridorResolutionInput` and `CorridorReconcileInput` — fixed external contracts for map-owned resolution and room-rewrite reconciliation.
 - `CorridorInputEditor`, `CorridorRouting`, `CorridorPathTrace` — corridor-local edit, routing, and transient trace helpers.
@@ -19,6 +20,7 @@
 - Put public cross-owner corridor access on `CorridorObject` and keep corridor identity, authored input truth, room attachment semantics, and corridor-local invariants on `Corridor`.
 - Route public create and reload flows through the map-owned resolve/rehydrate seams instead of constructing a corridor directly from ad-hoc map context.
 - Route authored-network rewrites through `Corridor` and `CorridorInputEditor`; keep routed traces transient and derived.
+- Stage future rebound-tail persistence on `PersistReboundCorridorsState` instead of adding more room-rewrite fallout directly to legacy map-owned rebound paths.
 - Keep corridor persistence focused on authored input metadata and referenced final structure state.
 - When touching existing corridor application collaborators, keep them behind corridor- or map-owned seams and avoid extending `application/` as a new owner-layer destination.
 
