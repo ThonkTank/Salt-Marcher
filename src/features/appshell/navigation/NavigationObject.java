@@ -1,11 +1,15 @@
 package features.appshell.navigation;
 
 import features.appshell.navigation.input.ComposeNavigationInput;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
@@ -40,6 +44,12 @@ public final class NavigationObject {
         private ComposeNavigationInput.NavigationInput composeNavigation() {
             Label toolbarTitle = new Label();
             toolbarTitle.getStyleClass().add("toolbar-title");
+            StackPane toolbarItemsContent = new StackPane();
+            Region toolbarSpacer = new Region();
+            HBox.setHgrow(toolbarSpacer, Priority.ALWAYS);
+            HBox toolbarContent = new HBox(8, toolbarTitle, toolbarSpacer, toolbarItemsContent);
+            toolbarContent.setAlignment(Pos.CENTER_LEFT);
+            HBox.setHgrow(toolbarItemsContent, Priority.NEVER);
 
             VBox navigationContent = new VBox(4);
             navigationContent.setAlignment(Pos.TOP_CENTER);
@@ -63,6 +73,7 @@ public final class NavigationObject {
                 ComposeNavigationInput.SurfaceInput activeSurface = findSurface(surfaces, activeSurfaceId[0]);
                 if (activeSurface == null) {
                     toolbarTitle.setText("");
+                    toolbarItemsContent.getChildren().clear();
                     controlsContent.getChildren().setAll(controlsPlaceholder);
                     mainContent.getChildren().setAll(mainPlaceholder);
                     detailsContent.getChildren().setAll(detailsPlaceholder);
@@ -70,6 +81,8 @@ public final class NavigationObject {
                     return;
                 }
                 toolbarTitle.setText(activeSurface.title());
+                toolbarItemsContent.getChildren().setAll(
+                        activeSurface.toolbarContent() == null ? createEmptyToolbarContent() : activeSurface.toolbarContent());
                 controlsContent.getChildren().setAll(activeSurface.controlsContent() == null ? controlsPlaceholder : activeSurface.controlsContent());
                 mainContent.getChildren().setAll(activeSurface.mainContent() == null ? mainPlaceholder : activeSurface.mainContent());
                 detailsContent.getChildren().setAll(activeSurface.detailsContent() == null ? detailsPlaceholder : activeSurface.detailsContent());
@@ -107,7 +120,7 @@ public final class NavigationObject {
 
             showActiveSurface.run();
             return new ComposeNavigationInput.NavigationInput(
-                    toolbarTitle,
+                    toolbarContent,
                     navigationContent,
                     controlsContent,
                     mainContent,
@@ -131,6 +144,7 @@ public final class NavigationObject {
                         surfaceId,
                         surface.title() == null ? "" : surface.title().trim(),
                         surface.navigationLabel() == null ? "" : surface.navigationLabel().trim(),
+                        surface.toolbarContent(),
                         surface.controlsContent(),
                         surface.mainContent(),
                         surface.detailsContent(),
@@ -171,8 +185,12 @@ public final class NavigationObject {
 
         private static VBox createPlaceholder(String text) {
             VBox placeholder = new VBox(new Label(text));
-            placeholder.setPadding(new javafx.geometry.Insets(12));
+            placeholder.setPadding(new Insets(12));
             return placeholder;
+        }
+
+        private static Node createEmptyToolbarContent() {
+            return new HBox();
         }
     }
 }

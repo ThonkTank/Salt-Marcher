@@ -9,6 +9,7 @@ public record LoadSurfaceInput() {
             String surfaceId,
             String title,
             String navigationLabel,
+            Node toolbarContent,
             Node controlsContent,
             Node mainContent,
             Node detailsContent,

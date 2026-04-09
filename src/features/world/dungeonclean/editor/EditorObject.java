@@ -26,9 +26,10 @@ public final class EditorObject {
 
         javafx.scene.control.Label statusLabel = new javafx.scene.control.Label("Bereit.");
         statusLabel.setWrapText(true);
+        javafx.scene.control.Label toolbarStatusLabel = new javafx.scene.control.Label("Bereit.");
+        toolbarStatusLabel.getStyleClass().add("text-muted");
 
         javafx.scene.control.Button refreshButton = new javafx.scene.control.Button("Cluster-Status laden");
-        refreshButton.setMaxWidth(Double.MAX_VALUE);
         refreshButton.setOnAction(event -> {
             try {
                 ComposeWorkspaceInput.StatusSnapshot snapshot = statusLoader.call();
@@ -37,20 +38,25 @@ public final class EditorObject {
                                 + "rooms=" + snapshot.roomCount() + "\n"
                                 + "room_levels=" + snapshot.roomLevelCount() + "\n"
                                 + "room_exit_descriptions=" + snapshot.roomNarrationCount());
-                statusLabel.setText(
-                        snapshot.errorMessage() == null || snapshot.errorMessage().isBlank()
-                                ? "DB-Status erfolgreich geladen."
-                                : snapshot.errorMessage());
+                String statusMessage = snapshot.errorMessage() == null || snapshot.errorMessage().isBlank()
+                        ? "DB-Status erfolgreich geladen."
+                        : snapshot.errorMessage();
+                statusLabel.setText(statusMessage);
+                toolbarStatusLabel.setText(statusMessage);
             } catch (Exception exception) {
                 countsLabel.setText("DB-Zugriff fehlgeschlagen.");
-                statusLabel.setText("Fehler beim Laden des Cluster-Status: " + exception.getMessage());
+                String errorMessage = "Fehler beim Laden des Cluster-Status: " + exception.getMessage();
+                statusLabel.setText(errorMessage);
+                toolbarStatusLabel.setText(errorMessage);
             }
         });
+        javafx.scene.layout.HBox toolbarContent = new javafx.scene.layout.HBox(10, refreshButton, toolbarStatusLabel);
+        toolbarContent.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
         javafx.scene.layout.VBox controls = new javafx.scene.layout.VBox(10,
                 new javafx.scene.control.Label("Dungeon Clean"),
                 new javafx.scene.control.Label("Paralleler Neuaufbau ohne Legacy-Verkabelung."),
-                refreshButton);
+                new javafx.scene.control.Label("Toolbar-Aktion: Cluster-Status laden."));
         controls.setFillWidth(true);
         controls.setPadding(new javafx.geometry.Insets(12));
 
@@ -72,6 +78,7 @@ public final class EditorObject {
                 "dungeonclean-editor",
                 "Dungeon Clean",
                 "DC",
+                toolbarContent,
                 controls,
                 new javafx.scene.control.ScrollPane(main),
                 null,

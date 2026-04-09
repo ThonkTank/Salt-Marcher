@@ -33,6 +33,7 @@ public final class DungeoncleanObject {
                 workspace.surfaceId(),
                 workspace.title(),
                 workspace.navigationLabel(),
+                workspace.toolbarContent(),
                 workspace.controlsContent(),
                 workspace.mainContent(),
                 workspace.detailsContent(),

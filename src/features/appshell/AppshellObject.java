@@ -25,6 +25,7 @@ public final class AppshellObject {
                     surface.surfaceId(),
                     surface.title(),
                     surface.navigationLabel(),
+                    surface.toolbarContent(),
                     surface.controlsContent(),
                     surface.mainContent(),
                     surface.detailsContent(),

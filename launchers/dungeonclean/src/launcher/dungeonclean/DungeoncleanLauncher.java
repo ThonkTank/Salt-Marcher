@@ -27,6 +27,7 @@ public final class DungeoncleanLauncher extends Application {
                         surface.surfaceId(),
                         surface.title(),
                         surface.navigationLabel(),
+                        surface.toolbarContent(),
                         surface.controlsContent(),
                         surface.mainContent(),
                         surface.detailsContent(),

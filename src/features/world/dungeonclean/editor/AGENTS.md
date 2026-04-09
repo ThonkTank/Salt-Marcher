@@ -6,8 +6,8 @@
 
 ## Canonical Types and APIs
 
-- `EditorObject.composeWorkspace(...)` — clean editor composition seam — returns a registered clean shell surface for the current workspace.
-- `input/ComposeWorkspaceInput` — clean editor composition input, status callback, and workspace surface carrier.
+- `EditorObject.composeWorkspace(...)` — clean editor composition seam — returns a registered clean shell surface for the current workspace, including toolbar projection.
+- `input/ComposeWorkspaceInput` — clean editor composition input, status callback, toolbar projection, and workspace surface carrier.
 
 ## Where New Code Goes
 

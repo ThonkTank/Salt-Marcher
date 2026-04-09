@@ -6,11 +6,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
@@ -30,11 +28,9 @@ public final class FrameObject {
         toolbar.getStyleClass().add("toolbar");
         toolbar.setAlignment(Pos.CENTER_LEFT);
         if (resolvedInput.toolbarContent() != null) {
+            HBox.setHgrow(resolvedInput.toolbarContent(), Priority.ALWAYS);
             toolbar.getChildren().add(resolvedInput.toolbarContent());
         }
-        Region toolbarSpacer = new Region();
-        HBox.setHgrow(toolbarSpacer, Priority.ALWAYS);
-        toolbar.getChildren().add(toolbarSpacer);
         shell.setTop(toolbar);
 
         VBox sidebar = new VBox();
