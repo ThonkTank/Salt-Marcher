@@ -15,9 +15,16 @@ public final class ClusterObject {
             throw new IllegalArgumentException("input");
         }
         PersistClusterRewriteTailInput resolvedInput = input;
-        features.world.dungeon.dungeonmap.input.PersistClusterRewriteReboundsInput reboundInput =
-                resolvedInput.reboundInput();
-        if (reboundInput == null) {
+        java.sql.Connection connection = resolvedInput.connection();
+        if (connection == null) {
+            return;
+        }
+        features.world.dungeon.dungeonmap.model.DungeonMap originalMap = resolvedInput.originalMap();
+        if (originalMap == null) {
+            return;
+        }
+        features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest = resolvedInput.rewriteRequest();
+        if (rewriteRequest == null) {
             return;
         }
     }
