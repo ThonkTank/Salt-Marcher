@@ -6,10 +6,8 @@
 
 ## Canonical Types and APIs
 
-- `EditorObject.composeEditor(...)` — clean editor composition seam.
-- `EditorObject.views(...)` — clean editor view export seam.
-- `input/ComposeEditorInput` — clean editor composition input and status callback carrier.
-- `input/ViewsInput` — clean editor view carrier.
+- `EditorObject.composeWorkspace(...)` — clean editor composition seam — returns passive shell panel content for the current workspace.
+- `input/ComposeWorkspaceInput` — clean editor composition input, status callback, and workspace surface carrier.
 
 ## Where New Code Goes
 
@@ -20,3 +18,4 @@
 
 - Do not import `dungeonclean/cluster` directly from this owner.
 - Do not let editor UI write to the database except through callbacks provided by the clean root seam.
+- Do not rebuild a local `AppView`-style abstraction here; export passive panel nodes instead.

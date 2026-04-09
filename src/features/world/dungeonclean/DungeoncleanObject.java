@@ -3,8 +3,8 @@ package features.world.dungeonclean;
 import features.world.dungeonclean.cluster.ClusterObject;
 import features.world.dungeonclean.cluster.input.LoadClusterRewriteTailStatusInput;
 import features.world.dungeonclean.editor.EditorObject;
-import features.world.dungeonclean.editor.input.ComposeEditorInput;
-import features.world.dungeonclean.input.ViewsInput;
+import features.world.dungeonclean.editor.input.ComposeWorkspaceInput;
+import features.world.dungeonclean.input.LoadSurfaceInput;
 
 /**
  * Public clean dungeon rebuild seam. Migrated capabilities live under clean child owners until a stable top-level
@@ -13,28 +13,35 @@ import features.world.dungeonclean.input.ViewsInput;
 @SuppressWarnings("unused")
 public final class DungeoncleanObject {
 
-    private final ViewsInput views;
+    private final LoadSurfaceInput.SurfaceInput surface;
 
     public DungeoncleanObject() {
         ClusterObject clusterObject = new ClusterObject();
-        EditorObject editorObject = new EditorObject(new ComposeEditorInput(
+        ComposeWorkspaceInput composeWorkspaceInput = new ComposeWorkspaceInput(
                 () -> {
                     LoadClusterRewriteTailStatusInput.StatusInput status =
                             clusterObject.loadClusterRewriteTailStatus(new LoadClusterRewriteTailStatusInput());
-                    return new ComposeEditorInput.StatusSnapshot(
+                    return new ComposeWorkspaceInput.StatusSnapshot(
                             status.roomCount(),
                             status.roomLevelCount(),
                             status.roomNarrationCount(),
                             status.errorMessage());
-                }));
-        this.views = new ViewsInput(
-                editorObject.views(new features.world.dungeonclean.editor.input.ViewsInput(null)).dungeonEditorView());
+                });
+        ComposeWorkspaceInput.WorkspaceInput workspace =
+                new EditorObject(composeWorkspaceInput).composeWorkspace(composeWorkspaceInput);
+        this.surface = new LoadSurfaceInput.SurfaceInput(
+                workspace.title(),
+                workspace.navigationLabel(),
+                workspace.controlsContent(),
+                workspace.mainContent(),
+                workspace.detailsContent(),
+                workspace.stateContent());
     }
 
-    public ViewsInput views(ViewsInput input) {
+    public LoadSurfaceInput.SurfaceInput loadSurface(LoadSurfaceInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        return views;
+        return surface;
     }
 }

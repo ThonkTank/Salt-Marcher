@@ -1,7 +1,6 @@
 package features.world.dungeonclean.editor;
 
-import features.world.dungeonclean.editor.input.ComposeEditorInput;
-import features.world.dungeonclean.editor.input.ViewsInput;
+import features.world.dungeonclean.editor.input.ComposeWorkspaceInput;
 
 import java.util.Objects;
 
@@ -11,11 +10,11 @@ import java.util.Objects;
 @SuppressWarnings("unused")
 public final class EditorObject {
 
-    private final ViewsInput views;
+    private final ComposeWorkspaceInput.WorkspaceInput workspace;
 
-    public EditorObject(ComposeEditorInput input) {
-        ComposeEditorInput resolvedInput = Objects.requireNonNull(input, "input");
-        java.util.concurrent.Callable<ComposeEditorInput.StatusSnapshot> statusLoader =
+    public EditorObject(ComposeWorkspaceInput input) {
+        ComposeWorkspaceInput resolvedInput = Objects.requireNonNull(input, "input");
+        java.util.concurrent.Callable<ComposeWorkspaceInput.StatusSnapshot> statusLoader =
                 Objects.requireNonNull(resolvedInput.statusLoader(), "statusLoader");
 
         javafx.scene.control.Label summaryLabel = new javafx.scene.control.Label(
@@ -32,7 +31,7 @@ public final class EditorObject {
         refreshButton.setMaxWidth(Double.MAX_VALUE);
         refreshButton.setOnAction(event -> {
             try {
-                ComposeEditorInput.StatusSnapshot snapshot = statusLoader.call();
+                ComposeWorkspaceInput.StatusSnapshot snapshot = statusLoader.call();
                 countsLabel.setText(
                         "Persistierte Room-Tables:\n"
                                 + "rooms=" + snapshot.roomCount() + "\n"
@@ -69,47 +68,19 @@ public final class EditorObject {
                 new javafx.scene.control.Label("Naechste Kandidaten fuer den Mirror: corridor, transition, map catalog."));
         state.setPadding(new javafx.geometry.Insets(12));
 
-        ui.shell.AppView dungeonEditorView = new ui.shell.AppView() {
-            @Override
-            public javafx.scene.Node getMainContent() {
-                return new javafx.scene.control.ScrollPane(main);
-            }
-
-            @Override
-            public String getTitle() {
-                return "Dungeon Clean";
-            }
-
-            @Override
-            public String getIconText() {
-                return "DC";
-            }
-
-            @Override
-            public javafx.scene.Node getControlsContent() {
-                return controls;
-            }
-
-            @Override
-            public javafx.scene.Node getStateContent() {
-                return state;
-            }
-        };
-
-        this.views = new ViewsInput(dungeonEditorView);
+        this.workspace = new ComposeWorkspaceInput.WorkspaceInput(
+                "Dungeon Clean",
+                "DC",
+                controls,
+                new javafx.scene.control.ScrollPane(main),
+                null,
+                state);
     }
 
-    public ViewsInput composeEditor(ComposeEditorInput input) {
+    public ComposeWorkspaceInput.WorkspaceInput composeWorkspace(ComposeWorkspaceInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        return views;
-    }
-
-    public ViewsInput views(ViewsInput input) {
-        if (input == null) {
-            throw new IllegalArgumentException("input");
-        }
-        return views;
+        return workspace;
     }
 }
