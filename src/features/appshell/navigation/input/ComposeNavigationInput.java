@@ -6,7 +6,8 @@ import javafx.scene.Node;
 public record ComposeNavigationInput(
         java.util.List<SurfaceInput> surfaces,
         String initialSurfaceId,
-        Node defaultDetailsContent
+        Node defaultDetailsContent,
+        Node defaultStateContent
 ) {
 
     public ComposeNavigationInput {

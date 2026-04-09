@@ -20,6 +20,8 @@ public final class EditorObject {
                 resolvedInput.showInspectorContent();
         Runnable clearInspector = resolvedInput.clearInspector();
         java.util.function.Predicate<Object> isInspectorShowing = resolvedInput.isInspectorShowing();
+        java.util.function.Function<ComposeWorkspaceInput.SceneRegistrationInput, ComposeWorkspaceInput.SceneHandleInput> registerScene =
+                resolvedInput.registerScene();
 
         javafx.scene.control.Label summaryLabel = new javafx.scene.control.Label(
                 "Die saubere Dungeon-App laeuft separat und spiegelt aktuell den cluster-room-tail.");
@@ -57,6 +59,35 @@ public final class EditorObject {
         javafx.scene.layout.HBox toolbarContent = new javafx.scene.layout.HBox(10, refreshButton, toolbarStatusLabel);
         toolbarContent.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
+        final ComposeWorkspaceInput.SceneHandleInput[] sceneHandleRef = new ComposeWorkspaceInput.SceneHandleInput[1];
+        javafx.scene.control.Button sceneButton = new javafx.scene.control.Button("Szene oeffnen");
+        sceneButton.setOnAction(event -> {
+            if (registerScene == null) {
+                return;
+            }
+            if (sceneHandleRef[0] == null) {
+                javafx.scene.layout.VBox sceneCard = new javafx.scene.layout.VBox(
+                        12,
+                        new javafx.scene.control.Label("Dungeon Clean Szene"),
+                        new javafx.scene.control.Label("Diese Szene bleibt unten rechts aktiv, auch wenn spaeter weitere Shell-Surfaces hinzukommen."),
+                        new javafx.scene.control.Label(countsLabel.getText()),
+                        new javafx.scene.control.Label(statusLabel.getText()));
+                sceneCard.setPadding(new javafx.geometry.Insets(12));
+                sceneHandleRef[0] = registerScene.apply(new ComposeWorkspaceInput.SceneRegistrationInput("Dungeon", sceneCard));
+            } else if (sceneHandleRef[0].setContent() != null) {
+                javafx.scene.layout.VBox sceneCard = new javafx.scene.layout.VBox(
+                        12,
+                        new javafx.scene.control.Label("Dungeon Clean Szene"),
+                        new javafx.scene.control.Label(countsLabel.getText()),
+                        new javafx.scene.control.Label(statusLabel.getText()));
+                sceneCard.setPadding(new javafx.geometry.Insets(12));
+                sceneHandleRef[0].setContent().accept(sceneCard);
+            }
+            if (sceneHandleRef[0] != null && sceneHandleRef[0].activate() != null) {
+                sceneHandleRef[0].activate().run();
+            }
+        });
+
         final String inspectorEntryKey = "dungeonclean.workspace";
         javafx.scene.control.Button inspectorButton = new javafx.scene.control.Button("Info im Inspector");
         inspectorButton.setOnAction(event -> {
@@ -92,11 +123,12 @@ public final class EditorObject {
                     }));
         });
         toolbarContent.getChildren().add(1, inspectorButton);
+        toolbarContent.getChildren().add(2, sceneButton);
 
         javafx.scene.layout.VBox controls = new javafx.scene.layout.VBox(10,
                 new javafx.scene.control.Label("Dungeon Clean"),
                 new javafx.scene.control.Label("Paralleler Neuaufbau ohne Legacy-Verkabelung."),
-                new javafx.scene.control.Label("Toolbar-Aktionen: Cluster-Status laden und Info im Inspector."));
+                new javafx.scene.control.Label("Toolbar-Aktionen: Cluster-Status laden, Info im Inspector und Szene oeffnen."));
         controls.setFillWidth(true);
         controls.setPadding(new javafx.geometry.Insets(12));
 

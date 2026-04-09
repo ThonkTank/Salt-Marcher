@@ -36,7 +36,8 @@ public final class AppshellObject {
         ComposeNavigationInput composeNavigationInput = new ComposeNavigationInput(
                 navigationSurfaces,
                 resolvedInput.initialSurfaceId(),
-                resolvedInput.defaultDetailsContent());
+                resolvedInput.defaultDetailsContent(),
+                resolvedInput.defaultStateContent());
         ComposeNavigationInput.NavigationInput navigation =
                 new NavigationObject(composeNavigationInput).composeNavigation(composeNavigationInput);
         ComposeFrameInput frameInput = new ComposeFrameInput(

@@ -66,6 +66,9 @@ public final class NavigationObject {
             Node defaultDetailsContent = input.defaultDetailsContent() == null
                     ? detailsPlaceholder
                     : input.defaultDetailsContent();
+            Node defaultStateContent = input.defaultStateContent() == null
+                    ? statePlaceholder
+                    : input.defaultStateContent();
 
             java.util.List<ComposeNavigationInput.SurfaceInput> surfaces = normalizeSurfaces(input.surfaces());
             String initialSurfaceId = resolveInitialSurfaceId(surfaces, input.initialSurfaceId());
@@ -80,7 +83,7 @@ public final class NavigationObject {
                     controlsContent.getChildren().setAll(controlsPlaceholder);
                     mainContent.getChildren().setAll(mainPlaceholder);
                     detailsContent.getChildren().setAll(defaultDetailsContent);
-                    stateContent.getChildren().setAll(statePlaceholder);
+                    stateContent.getChildren().setAll(defaultStateContent);
                     return;
                 }
                 toolbarTitle.setText(activeSurface.title());
@@ -90,7 +93,8 @@ public final class NavigationObject {
                 mainContent.getChildren().setAll(activeSurface.mainContent() == null ? mainPlaceholder : activeSurface.mainContent());
                 detailsContent.getChildren().setAll(
                         activeSurface.detailsContent() == null ? defaultDetailsContent : activeSurface.detailsContent());
-                stateContent.getChildren().setAll(activeSurface.stateContent() == null ? statePlaceholder : activeSurface.stateContent());
+                stateContent.getChildren().setAll(
+                        activeSurface.stateContent() == null ? defaultStateContent : activeSurface.stateContent());
                 if (activeSurface.onShow() != null) {
                     activeSurface.onShow().run();
                 }

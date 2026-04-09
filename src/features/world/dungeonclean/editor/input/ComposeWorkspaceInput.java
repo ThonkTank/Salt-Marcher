@@ -8,7 +8,8 @@ public record ComposeWorkspaceInput(
         java.util.function.Consumer<InspectorInfoInput> showInspectorInfo,
         java.util.function.Consumer<HostedInspectorInput> showInspectorContent,
         Runnable clearInspector,
-        java.util.function.Predicate<Object> isInspectorShowing
+        java.util.function.Predicate<Object> isInspectorShowing,
+        java.util.function.Function<SceneRegistrationInput, SceneHandleInput> registerScene
 ) {
 
     public record StatusSnapshot(
@@ -30,6 +31,18 @@ public record ComposeWorkspaceInput(
             String title,
             Object entryKey,
             java.util.function.Supplier<Node> contentSupplier
+    ) {
+    }
+
+    public record SceneRegistrationInput(
+            String label,
+            Node initialContent
+    ) {
+    }
+
+    public record SceneHandleInput(
+            java.util.function.Consumer<Node> setContent,
+            Runnable activate
     ) {
     }
 

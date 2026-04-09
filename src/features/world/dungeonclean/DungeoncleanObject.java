@@ -45,7 +45,19 @@ public final class DungeoncleanObject {
                     }
                 },
                 resolvedInput.clearInspector(),
-                resolvedInput.isInspectorShowing());
+                resolvedInput.isInspectorShowing(),
+                registration -> {
+                    if (resolvedInput.registerScene() == null || registration == null) {
+                        return new ComposeWorkspaceInput.SceneHandleInput(content -> { }, () -> { });
+                    }
+                    LoadSurfaceInput.SceneHandleInput handle = resolvedInput.registerScene().apply(
+                            new LoadSurfaceInput.SceneRegistrationInput(
+                                    registration.label(),
+                                    registration.initialContent()));
+                    return new ComposeWorkspaceInput.SceneHandleInput(
+                            handle.setContent(),
+                            handle.activate());
+                });
         ComposeWorkspaceInput.WorkspaceInput workspace =
                 new EditorObject(composeWorkspaceInput).composeWorkspace(composeWorkspaceInput);
         this.surface = new LoadSurfaceInput.SurfaceInput(

@@ -7,7 +7,8 @@ import javafx.scene.layout.BorderPane;
 public record ComposeShellInput(
         java.util.List<SurfaceInput> surfaces,
         String initialSurfaceId,
-        Node defaultDetailsContent
+        Node defaultDetailsContent,
+        Node defaultStateContent
 ) {
 
     public ComposeShellInput {
