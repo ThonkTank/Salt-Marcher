@@ -141,7 +141,7 @@ No other technical layer names are canonical. Directories such as `model`, `appl
 - Subowners must sit directly under their owner or inside one direct-child `*Bucket` of that owner. Layers are always flat and may not contain nested packages, subowners, or additional `*Bucket` directories.
 - Each import may cross only one owner edge: parent, direct child, or sibling with the same parent. Do not skip over intermediate owners to reach a grandchild, niece, or cousin owner directly.
 - Foreign code may import another owner's `input` package only to construct valid requests for that owner. Foreign code must never import another owner's `task`, `repository`, or `state` packages directly.
-- Owner composition through `new` is narrower than import reachability. Public owner requests may construct only canonical `input` types. Private terminal consumer methods may construct canonical `input` types plus the public roots of direct sub-owners, and nothing else.
+- Owner composition through `new` is narrower than import reachability. Public owner requests may construct only canonical `input` types. Private terminal consumer methods may construct canonical `input` types plus the public roots of direct sub-owners, and may call only canonical request methods on those direct sub-owner entrypoints.
 
 ### Owner Types vs Value Types
 

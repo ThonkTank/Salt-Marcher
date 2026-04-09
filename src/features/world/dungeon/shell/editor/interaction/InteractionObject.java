@@ -57,9 +57,10 @@ import java.util.Set;
 /**
  * Public root owner object for dungeon editor interaction.
  */
+@SuppressWarnings("unused")
 public final class InteractionObject {
 
-    private final EditorInteraction editorInteraction;
+    private final InteractionResultInput interactionResult;
 
     public InteractionObject(ComposeInteractionInput input) {
         ComposeInteractionInput resolvedInput = Objects.requireNonNull(input, "input");
@@ -136,26 +137,27 @@ public final class InteractionObject {
                         mapApplicationService,
                         transitionApplicationService,
                         interactionState));
-        this.editorInteraction = new EditorInteraction(
+        EditorInteraction editorInteraction = new EditorInteraction(
                 mapState,
                 sessionState,
                 interactionState,
                 hitCollector,
                 editorTools);
+        this.interactionResult = new InteractionResultInput(editorInteraction);
     }
 
     public InteractionResultInput editorInteraction(EditorInteractionInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        return new InteractionResultInput(editorInteraction);
+        return interactionResult;
     }
 
     public InteractionResultInput composeInteraction(ComposeInteractionInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        return new InteractionResultInput(editorInteraction);
+        return interactionResult;
     }
 
     private static final class SelectionEditorTool implements EditorTool {

@@ -179,9 +179,16 @@ private fun ownerRequestBodyReasons(
         ?: return listOf("${context.path} :: owner requests must model exactly one request parameter (${method.name})")
     val requestParameterTypeName = support.resolveProjectTypeName(parameter.tree.type, sourceFile.parsedSource, snapshot)
         ?: return listOf("${context.path} :: owner requests must use a resolvable project input type (${method.name})")
+    val finalFieldNames = primaryType.fields
+        .filter { field -> Modifier.FINAL in field.modifiers }
+        .map { field -> field.name }
     val environment = OwnerMethodEnvironment(
-        availableValueNames = linkedSetOf(parameter.name),
-        localProjectTypes = linkedMapOf(parameter.name to requestParameterTypeName)
+        availableValueNames = linkedSetOf(parameter.name).apply { addAll(finalFieldNames) },
+        localProjectTypes = linkedMapOf(parameter.name to requestParameterTypeName).apply {
+            finalFieldNames.forEach { fieldName ->
+                fieldProjectTypes[fieldName]?.let { typeName -> put(fieldName, typeName) }
+            }
+        }
     )
     val reasons = mutableListOf<String>()
     body.statements.forEach { statement ->
@@ -476,6 +483,13 @@ private fun validateOwnerCallExpressionStatement(
             validateTerminalConsumerArgument(argument, sourceFile, snapshot, support, environment)
         }
     }
+    if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER &&
+        isAllowedDirectSubOwnerRequestInvocation(expression, sourceFile, snapshot, support, environment, fieldProjectTypes)
+    ) {
+        return expression.arguments.flatMap { argument ->
+            validateTerminalConsumerArgument(argument, sourceFile, snapshot, support, environment)
+        }
+    }
     val classification = classifyOwnerInvocation(
         invocation = expression,
         sourceFile = sourceFile,
@@ -490,7 +504,7 @@ private fun validateOwnerCallExpressionStatement(
         return listOf("${context.path} :: ${classification.description}")
     }
     if (bodyMode == OwnerBodyMode.PRIVATE_CONSUMER) {
-        return listOf("${context.path} :: owner private consumer methods must not delegate into canonical task/state/repository seams")
+        return listOf("${context.path} :: ${privateConsumerInvocationDescription(expression, sourceFile, snapshot, support, fieldProjectTypes, environment)}")
     }
     return expression.arguments.flatMap { argument ->
         validatePassThroughArgument(argument, sourceFile, snapshot, support, primaryType, fieldProjectTypes, environment, requestStem, bodyMode)
@@ -1152,6 +1166,69 @@ private fun isAllowedPrivateConsumerTerminalInvocation(
         environment = environment
     )
     return receiverTypeName == null
+}
+
+private fun isAllowedDirectSubOwnerRequestInvocation(
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    environment: OwnerMethodEnvironment,
+    fieldProjectTypes: Map<String, String>
+): Boolean {
+    val methodSelect = invocation.methodSelect as? MemberSelectTree ?: return false
+    val receiverTypeName = projectTypeNameForExpression(
+        expression = methodSelect.expression,
+        sourceFile = sourceFile,
+        snapshot = snapshot,
+        support = support,
+        fieldProjectTypes = fieldProjectTypes,
+        environment = environment
+    ) ?: return false
+    val receiverPackage = receiverTypeName.substringBeforeLast('.')
+    val receiverRole = support.roleForDirectoryName(receiverPackage.substringAfterLast('.'))
+    if (receiverRole != support.ownerRole) {
+        return false
+    }
+    val receiverOwnerPackage = support.ownerPackageFor(receiverPackage, receiverRole)
+    val ownerSurface = snapshot.catalog.ownerSurfacesByOwner[receiverOwnerPackage] ?: return false
+    return receiverTypeName == ownerSurface.typeName &&
+        support.isDirectSubOwner(sourceFile.context.ownerPackage, receiverOwnerPackage) &&
+        methodSelect.identifier.toString() in ownerSurface.requestMethodNames
+}
+
+private fun privateConsumerInvocationDescription(
+    invocation: MethodInvocationTree,
+    sourceFile: OwnerConventionSourceFile,
+    snapshot: OwnerConventionSnapshot,
+    support: OwnerConventionSupport,
+    fieldProjectTypes: Map<String, String>,
+    environment: OwnerMethodEnvironment
+): String {
+    val methodSelect = invocation.methodSelect as? MemberSelectTree
+        ?: return "owner private consumer methods may call only direct sub-owner request methods or non-project terminal consumers"
+    val receiverTypeName = projectTypeNameForExpression(
+        expression = methodSelect.expression,
+        sourceFile = sourceFile,
+        snapshot = snapshot,
+        support = support,
+        fieldProjectTypes = fieldProjectTypes,
+        environment = environment
+    ) ?: return "owner private consumer methods may call only direct sub-owner request methods or non-project terminal consumers"
+    val receiverPackage = receiverTypeName.substringBeforeLast('.')
+    val receiverRole = support.roleForDirectoryName(receiverPackage.substringAfterLast('.'))
+    val receiverOwnerPackage = support.ownerPackageFor(receiverPackage, receiverRole)
+    return when {
+        receiverOwnerPackage == sourceFile.context.ownerPackage &&
+            receiverRole in setOf(support.taskRole, support.stateRole, support.repositoryRole) ->
+            "owner private consumer methods must not delegate into canonical task/state/repository seams"
+
+        receiverRole == support.ownerRole ->
+            "owner private consumer methods may call only direct sub-owner request methods ($receiverTypeName.${methodSelect.identifier})"
+
+        else ->
+            "owner private consumer methods may call only direct sub-owner request methods or non-project terminal consumers"
+    }
 }
 
 private fun validateTerminalConsumerArgument(

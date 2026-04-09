@@ -8,9 +8,10 @@ import java.util.Objects;
 /**
  * Public root owner object for dungeon editor surfaces.
  */
+@SuppressWarnings("unused")
 public final class EditorObject {
 
-    private final ui.shell.AppView dungeonEditorView;
+    private final ViewsInput views;
 
     public EditorObject(ComposeEditorInput input) {
         ComposeEditorInput resolvedInput = Objects.requireNonNull(input, "input");
@@ -41,25 +42,26 @@ public final class EditorObject {
                 interactionObject.editorInteraction(
                         new features.world.dungeon.shell.editor.interaction.input.EditorInteractionInput())
                         .editorInteraction();
-        this.dungeonEditorView = new features.world.dungeon.shell.editor.state.DungeonEditorView(
+        ui.shell.AppView dungeonEditorView = new features.world.dungeon.shell.editor.state.DungeonEditorView(
                 resolvedInput.loadingService(),
                 resolvedInput.mapState(),
                 resolvedInput.mapCatalogService(),
                 resolvedInput.sessionState(),
                 editorInteraction);
+        this.views = new ViewsInput(dungeonEditorView);
     }
 
     public ViewsInput composeEditor(ComposeEditorInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        return new ViewsInput(dungeonEditorView);
+        return views;
     }
 
     public ViewsInput views(ViewsInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        return new ViewsInput(dungeonEditorView);
+        return views;
     }
 }
