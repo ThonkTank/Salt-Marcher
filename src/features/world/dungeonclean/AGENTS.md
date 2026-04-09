@@ -6,7 +6,7 @@
 
 ## Canonical Types and APIs
 
-- `DungeoncleanObject` — public feature root seam for the clean dungeon rebuild.
+- `DungeoncleanObject` — public feature root seam for the clean dungeon rebuild and the packaged clean launcher target.
 - `DungeoncleanObject.views(...)` — clean feature view export seam — returns the clean editor workspace view.
 - `input/ViewsInput` — clean feature view carrier — exposes the parallel clean editor surface.
 - `editor/EditorObject` — clean editor owner seam for the current workspace surface.

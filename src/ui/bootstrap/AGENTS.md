@@ -6,13 +6,13 @@
 
 ## Canonical Types and APIs
 
-- `app/AppObject` — application entry owner — boots the shell, registers feature views, and starts async startup loading.
+- `app/AppObject` — legacy application entry owner — preserves the old shell bootstrap flow but is no longer the default packaged launcher.
 - `preloader/PreloaderObject` — JavaFX preloader owner — shows the startup card until the main app signals readiness.
 
 ## Where New Code Goes
 
-- Keep top-level launcher wiring under `app`.
-- Keep startup splash and preloader-only behavior under `preloader`.
+- Keep preloader-only behavior under `preloader`.
+- Do not add new default launcher wiring here when the launcher must avoid owner heuristics; use `launchers/` instead.
 
 ## Forbidden Drift
 

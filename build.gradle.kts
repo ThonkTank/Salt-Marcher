@@ -61,6 +61,7 @@ val jpackageModulePathArg = "--module-path=${'$'}APPDIR"
 val jpackageAddModulesArg = "--add-modules=javafx.controls"
 val desktopIconRelativePath = "icons/salt-marcher.svg"
 val packageVersion = providers.gradleProperty("saltMarcherVersion").orElse("0.1.0")
+val dungeoncleanLauncherSourceDir = layout.projectDirectory.dir("launchers/dungeonclean/src")
 
 repositories {
     mavenCentral()
@@ -101,7 +102,7 @@ dependencies {
 }
 
 application {
-    mainClass = "ui.bootstrap.app.AppObject"
+    mainClass = "launcher.dungeonclean.DungeoncleanLauncher"
     applicationDefaultJvmArgs = listOf(preloaderJvmArg, "--enable-preview")
 }
 
@@ -113,6 +114,25 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<CreateStartScripts>().configureEach {
     applicationName = launcherName
+}
+
+val compileDungeoncleanLauncher = tasks.register<JavaCompile>("compileDungeoncleanLauncher") {
+    group = "build"
+    description = "Compile the external dungeonclean launcher into the main runtime output."
+    source = fileTree(dungeoncleanLauncherSourceDir) {
+        include("**/*.java")
+    }
+    dependsOn(tasks.named("compileJava"), tasks.named("processResources"))
+    classpath = files(
+        layout.buildDirectory.dir("classes/java/main"),
+        layout.buildDirectory.dir("resources/main"),
+        configurations.runtimeClasspath
+    )
+    destinationDirectory.set(layout.buildDirectory.dir("classes/java/main"))
+}
+
+tasks.named("classes") {
+    dependsOn(compileDungeoncleanLauncher)
 }
 
 tasks.test {
