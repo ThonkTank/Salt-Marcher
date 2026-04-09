@@ -7,14 +7,18 @@
 ## Canonical Types and APIs
 
 - `ClusterObject.persistClusterRewriteTail(...)` — clean cluster-owned rewrite-tail seam.
+- `ClusterObject.loadClusterRewriteTailStatus(...)` — clean cluster-owned room-table status read seam.
 - `input/PersistClusterRewriteTailInput` — clean cluster-owned rewrite-tail request carrier.
+- `input/LoadClusterRewriteTailStatusInput` — clean cluster-owned room-table status request and result carrier.
+- `state/LoadClusterRewriteTailStatusState` — normalized room-table status snapshot.
+- `repository/LoadClusterRewriteTailStatusRepository` — clean cluster-owned room-table status repository.
 - `state/PersistClusterRewriteTailState` — normalized final room rewrite state.
 - `repository/PersistClusterRewriteTailRepository` — transaction-owning room rewrite persistence boundary.
 
 ## Where New Code Goes
 
 - Keep clean rewrite fallout logic here instead of touching legacy `dungeonmap/cluster/application`.
-- Translate legacy rewrite facts into nested clean input carriers at the edge, then persist only through clean state/repository seams.
+- Translate clean rewrite facts into nested clean input carriers at the edge, then persist or load only through clean state/repository seams.
 
 ## Forbidden Drift
 

@@ -25,7 +25,6 @@ public final class PersistClusterRewriteTailRepository {
         PersistClusterRewriteTailState resolvedState = state == null
                 ? null
                 : new PersistClusterRewriteTailState(
-                        state.connection(),
                         state.mapId(),
                         state.rewrittenClusters(),
                         state.removedRoomIds());
@@ -35,20 +34,27 @@ public final class PersistClusterRewriteTailRepository {
         if (resolvedState.rewrittenClusters().isEmpty() && resolvedState.removedRoomIds().isEmpty()) {
             return resolvedState;
         }
-        Connection conn = resolvedState.connection();
-        if (conn == null) {
-            throw new IllegalArgumentException("connection");
+        try (java.sql.Connection connection = database.DatabaseManager.getConnection()) {
+            boolean originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                deleteRooms(connection, resolvedState.removedRoomIds());
+                ArrayList<PersistClusterRewriteTailState.ClusterState> persistedClusters = new ArrayList<>();
+                for (PersistClusterRewriteTailState.ClusterState cluster : resolvedState.rewrittenClusters()) {
+                    persistedClusters.add(persistCluster(connection, resolvedState.mapId(), cluster));
+                }
+                connection.commit();
+                connection.setAutoCommit(originalAutoCommit);
+                return new PersistClusterRewriteTailState(
+                        resolvedState.mapId(),
+                        persistedClusters,
+                        resolvedState.removedRoomIds());
+            } catch (SQLException exception) {
+                connection.rollback();
+                connection.setAutoCommit(originalAutoCommit);
+                throw exception;
+            }
         }
-        deleteRooms(conn, resolvedState.removedRoomIds());
-        ArrayList<PersistClusterRewriteTailState.ClusterState> persistedClusters = new ArrayList<>();
-        for (PersistClusterRewriteTailState.ClusterState cluster : resolvedState.rewrittenClusters()) {
-            persistedClusters.add(persistCluster(conn, resolvedState.mapId(), cluster));
-        }
-        return new PersistClusterRewriteTailState(
-                conn,
-                resolvedState.mapId(),
-                persistedClusters,
-                resolvedState.removedRoomIds());
     }
 
     private static PersistClusterRewriteTailState.ClusterState persistCluster(

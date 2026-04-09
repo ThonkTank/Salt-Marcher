@@ -7,10 +7,12 @@
 ## Canonical Types and APIs
 
 - `DungeoncleanObject` — public feature root seam for the clean dungeon rebuild.
-- `DungeoncleanObject.views(...)` — clean feature view export seam — returns the startable shell view for the parallel clean rebuild workspace.
-- `input/ViewsInput` — clean feature view carrier — exposes the `dungeonclean` shell view.
+- `DungeoncleanObject.views(...)` — clean feature view export seam — returns the clean editor workspace view.
+- `input/ViewsInput` — clean feature view carrier — exposes the parallel clean editor surface.
+- `editor/EditorObject` — clean editor owner seam for the current workspace surface.
 - `cluster/ClusterObject` — clean cluster owner seam for persisted rewrite fallout.
 - `cluster/input/PersistClusterRewriteTailInput` — clean cluster rewrite-tail handoff.
+- `cluster/input/LoadClusterRewriteTailStatusInput` — clean cluster status read request and result carrier.
 - `cluster/state/PersistClusterRewriteTailState` — clean cluster-owned persisted room rewrite state.
 - `cluster/repository/PersistClusterRewriteTailRepository` — clean cluster-owned room rewrite persistence boundary.
 
@@ -18,7 +20,7 @@
 
 - Add migrated capabilities here instead of extending or repairing legacy `features.world.dungeon`.
 - Keep each migrated capability fully functional inside `dungeonclean` before wiring any caller across.
-- Prefer request-local nested input value types over untyped payload carriers when legacy facts must cross into clean seams.
+- Prefer request-local nested input value types over untyped payload carriers when clean facts cross owner seams.
 
 ## Forbidden Drift
 

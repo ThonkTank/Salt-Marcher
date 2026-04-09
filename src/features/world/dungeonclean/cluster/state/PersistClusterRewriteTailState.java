@@ -2,7 +2,6 @@ package features.world.dungeonclean.cluster.state;
 
 import features.world.dungeonclean.cluster.input.PersistClusterRewriteTailInput;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -12,7 +11,6 @@ import java.util.List;
  */
 @SuppressWarnings("unused")
 public record PersistClusterRewriteTailState(
-        Connection connection,
         long mapId,
         List<ClusterState> rewrittenClusters,
         List<Long> removedRoomIds
@@ -38,15 +36,39 @@ public record PersistClusterRewriteTailState(
             throw new IllegalArgumentException("input");
         }
         ArrayList<ClusterState> rewrittenClusters = new ArrayList<>();
-        for (PersistClusterRewriteTailInput.ClusterInput cluster : input.rewrittenClusters()) {
+        List<PersistClusterRewriteTailInput.ClusterInput> clusterInputs = input.rewrittenClusters() == null
+                ? List.of()
+                : input.rewrittenClusters();
+        for (PersistClusterRewriteTailInput.ClusterInput cluster : clusterInputs) {
+            if (cluster == null) {
+                continue;
+            }
             ArrayList<RoomState> rooms = new ArrayList<>();
-            for (PersistClusterRewriteTailInput.RoomInput room : cluster.rooms()) {
+            List<PersistClusterRewriteTailInput.RoomInput> roomInputs = cluster.rooms() == null
+                    ? List.of()
+                    : cluster.rooms();
+            for (PersistClusterRewriteTailInput.RoomInput room : roomInputs) {
+                if (room == null) {
+                    continue;
+                }
                 ArrayList<LevelAnchorState> anchors = new ArrayList<>();
-                for (PersistClusterRewriteTailInput.LevelAnchorInput anchor : room.levelAnchors()) {
+                List<PersistClusterRewriteTailInput.LevelAnchorInput> levelAnchorInputs = room.levelAnchors() == null
+                        ? List.of()
+                        : room.levelAnchors();
+                for (PersistClusterRewriteTailInput.LevelAnchorInput anchor : levelAnchorInputs) {
+                    if (anchor == null) {
+                        continue;
+                    }
                     anchors.add(new LevelAnchorState(anchor.levelZ(), anchor.anchorX2(), anchor.anchorY2()));
                 }
                 ArrayList<ExitNarrationState> exitNarrations = new ArrayList<>();
-                for (PersistClusterRewriteTailInput.ExitNarrationInput exitNarration : room.exitNarrations()) {
+                List<PersistClusterRewriteTailInput.ExitNarrationInput> exitNarrationInputs = room.exitNarrations() == null
+                        ? List.of()
+                        : room.exitNarrations();
+                for (PersistClusterRewriteTailInput.ExitNarrationInput exitNarration : exitNarrationInputs) {
+                    if (exitNarration == null) {
+                        continue;
+                    }
                     exitNarrations.add(new ExitNarrationState(
                             exitNarration.levelZ(),
                             exitNarration.roomCellX(),
@@ -64,7 +86,6 @@ public record PersistClusterRewriteTailState(
             rewrittenClusters.add(new ClusterState(cluster.clusterId(), rooms));
         }
         return new PersistClusterRewriteTailState(
-                input.connection(),
                 input.mapId(),
                 rewrittenClusters,
                 input.removedRoomIds());
