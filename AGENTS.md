@@ -40,6 +40,9 @@ This file defines the repository-specific operating constraints for Claude Code 
 ./gradlew checkNoDeadCode        # fail when touched Java files add dead declarations or dead local code
 ./gradlew run                    # start JavaFX app
 ./gradlew installDesktopApp      # reinstall desktop launcher
+./gradlew inspectDatabase        # inspect current or requested SQLite database
+./gradlew backupDatabase         # create a SQLite backup copy
+./gradlew resetDungeonDatabase   # drop dungeon tables after backup
 ./gradlew crawler                # monster crawl + import
 ./gradlew crawlerItemsPipeline   # item crawl + import
 ./gradlew crawlerItemsSlugs      # slug-list only

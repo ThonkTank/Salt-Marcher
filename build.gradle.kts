@@ -1,5 +1,6 @@
 import buildlogic.application.ApplicationTaskSupport
 import buildlogic.application.registerApplyCreatureOverridesTask
+import buildlogic.application.registerBackupDatabaseTask
 import buildlogic.application.registerBackfillCreatureAnalysisTask
 import buildlogic.application.registerCrawlerItemsPipelineTask
 import buildlogic.application.registerCrawlerItemsSlugsTask
@@ -12,8 +13,10 @@ import buildlogic.application.registerCrawlerTask
 import buildlogic.application.registerImportItemsTask
 import buildlogic.application.registerImportMonstersTask
 import buildlogic.application.registerImportSpellsTask
+import buildlogic.application.registerInspectDatabaseTask
 import buildlogic.application.registerRebuildCreatureAnalysisTask
 import buildlogic.application.registerRecoverEncounterTablesTask
+import buildlogic.application.registerResetDungeonDatabaseTask
 import buildlogic.application.registerSqliteQueryTask
 import buildlogic.cleanup.registerDeleteEmptySourceDirectoriesTask
 import buildlogic.conventions.registerCheckConventionsTask
@@ -164,6 +167,9 @@ val applicationTaskSupport = ApplicationTaskSupport(project)
 val crawlerMonsters = registerCrawlerMonstersTask(applicationTaskSupport)
 val importMonsters = registerImportMonstersTask(applicationTaskSupport, crawlerMonsters)
 registerRecoverEncounterTablesTask(applicationTaskSupport)
+registerInspectDatabaseTask(applicationTaskSupport)
+registerBackupDatabaseTask(applicationTaskSupport)
+registerResetDungeonDatabaseTask(applicationTaskSupport)
 registerSqliteQueryTask(applicationTaskSupport)
 registerBackfillCreatureAnalysisTask(applicationTaskSupport)
 registerRebuildCreatureAnalysisTask(applicationTaskSupport)
