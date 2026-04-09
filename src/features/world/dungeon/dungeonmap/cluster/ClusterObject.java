@@ -1,6 +1,7 @@
 package features.world.dungeon.dungeonmap.cluster;
 
 import features.world.dungeon.dungeonmap.cluster.input.PersistClusterRewriteTailInput;
+import features.world.dungeon.dungeonmap.cluster.state.PersistClusterRewriteTailState;
 
 import java.sql.SQLException;
 
@@ -14,18 +15,12 @@ public final class ClusterObject {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        PersistClusterRewriteTailInput resolvedInput = input;
-        long mapId = resolvedInput.mapId();
-        if (mapId <= 0) {
+        if (input.connection() == null) {
             return;
         }
-        features.world.dungeon.dungeonmap.model.DungeonMap originalMap = resolvedInput.originalMap();
-        if (originalMap == null) {
+        if (input.mapId() <= 0) {
             return;
         }
-        features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest = resolvedInput.rewriteRequest();
-        if (rewriteRequest == null) {
-            return;
-        }
+        PersistClusterRewriteTailState.persistClusterRewriteTail(input);
     }
 }

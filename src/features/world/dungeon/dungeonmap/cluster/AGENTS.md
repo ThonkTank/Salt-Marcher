@@ -8,7 +8,8 @@
 
 - `ClusterObject` — public root owner seam for cluster-owned structures.
 - `ClusterObject.persistClusterRewriteTail(...)` — canonical cluster-owned rewrite tail seam for moving persisted rewrite fallout out of legacy `cluster/application` call paths.
-- `input/PersistClusterRewriteTailInput` — cluster-owned final tail handoff — carries only the map id, authoritative original map, and rewrite request needed to finish cluster rewrite fallout.
+- `input/PersistClusterRewriteTailInput` — cluster-owned final tail handoff — carries the authoritative original map/rewrite payload plus constructor-projected final room rewrite rows for the clean tail slice.
+- `state/PersistClusterRewriteTailState` — passive cluster-owned rewrite-tail state — normalizes projected final room rows so later clean repository work can consume them without raw rewrite models.
 - `Cluster`, `ClusterDefinitionRequest`, `ClusterMutationRequest`, `ClusterRewriteRequest` — canonical cluster-owned aggregate and write vocabulary.
 - `Cluster.rewritePaint(...)` and `Cluster.rewriteDelete(...)` — aggregate-owned rewrite entrypoints for paint and delete flows.
 - Cluster topology edits commit physical `Structure` first; room metadata is a cluster-internal automatic follow-up derived from the rewritten structure instead of a tool-owned source of truth.
