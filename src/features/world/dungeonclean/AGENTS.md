@@ -7,6 +7,8 @@
 ## Canonical Types and APIs
 
 - `DungeoncleanObject` — public feature root seam for the clean dungeon rebuild.
+- `DungeoncleanObject.views(...)` — clean feature view export seam — returns the startable shell view for the parallel clean rebuild workspace.
+- `input/ViewsInput` — clean feature view carrier — exposes the `dungeonclean` shell view.
 - `cluster/ClusterObject` — clean cluster owner seam for persisted rewrite fallout.
 - `cluster/input/PersistClusterRewriteTailInput` — clean cluster rewrite-tail handoff.
 - `cluster/state/PersistClusterRewriteTailState` — clean cluster-owned persisted room rewrite state.
