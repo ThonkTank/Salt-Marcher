@@ -8,6 +8,7 @@
 
 - `CorridorObject` — public root owner seam for corridor-owned structures.
 - `state/PersistReboundCorridorsState` — passive corridor-owned rebound staging state — carries the authored input network and persisted ids needed for a future canonical rebound persistence boundary.
+- `repository/PersistReboundCorridorsRepository` — canonical corridor-owned rebound metadata persistence boundary — persists only corridor rows plus input-network metadata from `PersistReboundCorridorsState`, leaving structure persistence outside the slice.
 - `Corridor`, `CorridorInput`, `CorridorInputNode`, `CorridorSegment` — canonical corridor aggregate and authored input network.
 - `CorridorResolutionInput` and `CorridorReconcileInput` — fixed external contracts for map-owned resolution and room-rewrite reconciliation.
 - `CorridorInputEditor`, `CorridorRouting`, `CorridorPathTrace` — corridor-local edit, routing, and transient trace helpers.
@@ -21,6 +22,7 @@
 - Route public create and reload flows through the map-owned resolve/rehydrate seams instead of constructing a corridor directly from ad-hoc map context.
 - Route authored-network rewrites through `Corridor` and `CorridorInputEditor`; keep routed traces transient and derived.
 - Stage future rebound-tail persistence on `PersistReboundCorridorsState` instead of adding more room-rewrite fallout directly to legacy map-owned rebound paths.
+- Keep the successor rebound repository metadata-only until structure persistence has its own clean handoff; do not smuggle structure writes back through the new corridor rebound boundary.
 - Keep corridor persistence focused on authored input metadata and referenced final structure state.
 - When touching existing corridor application collaborators, keep them behind corridor- or map-owned seams and avoid extending `application/` as a new owner-layer destination.
 
