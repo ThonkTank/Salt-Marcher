@@ -118,16 +118,20 @@ Do not reverse that decision order. A capability does not belong in a package be
 ### Local Layer Vocabulary
 
 Technical layers are subordinate tools inside an owner slice, not the primary architecture story:
-- `input` — canonical request schemas the owner accepts; each input is named exactly `<Request>Input`, where `<Request>` matches a real public request method on the owner's `<Owner>Object`. An input may carry request-local passive nested value types when they are part of that single request shape
-- `task` — owner-local static end-to-end input-to-input pipelines; each task is named exactly `<Request>Task`, where `<Request>` matches a real public request method on the owner's `<Owner>Object`, and the task starts from the matching `<Request>Input`
-- `repository` — the owner's static persistence boundary. It reconstructs owner `state`, persists owner `state`, and may own the JDBC connection plus transaction scope needed to complete that persistence flow
-- `state` — the owner's canonical protected runtime/object state plus the only allowed state factory/transition APIs
+- `input` — the owner's canonical request carriers
+- `task` — the owner's static input-to-input pipelines
+- `repository` — the owner's static persistence boundary for owner `state`
+- `state` — the owner's protected runtime/object state plus owner-local factory/transition APIs
 
-For touched Java files, these are build gates, not style preferences:
-- `input` files fail `checkOwnerApiBoundaryInputFiles` if they stop matching a real owner request, add methods or initializer blocks, import non-`input` project packages, or let request-local nested value types declare methods or further nested types.
-- Owner files fail `checkOwnerApiBoundaryOwnerFiles` if they overload request names, expose non-private helper seams, accept the wrong `<Request>Input`, or let request bodies do more than pass-through bindings, simple routing, canonical layer delegation, private terminal consumption, returns, and throws.
-- `state` files fail `checkOwnerApiBoundaryStateFiles` if they import project packages outside same-owner `input`/`state`, expose public instance methods, or accept/return foreign project types on public static factory-transition APIs.
-- `repository` files fail `checkOwnerApiBoundaryRepositoryFiles` if they import project packages outside same-owner `state`, expose public instance methods, or publish persistence methods whose project-facing signature is not anchored on same-owner `state`.
+### Canonical Owner Boundary Restraints
+
+For touched Java files, these six rules are the single source of truth for the owner build checks:
+- `owner` — public owner APIs are only the canonical request methods on `<Owner>Object`. Each request must accept exactly one same-stem `<Request>Input`, may expose only project `input` types, and its body may do only pass-through binding, simple routing, canonical layer delegation, private terminal consumption, returns, and throws. Private owner helpers are allowed only as terminal consumers behind a public request; they must stay `private`, return `void`, consume already-final values, and must not become alternate workflow seams.
+- `input` — input files are passive canonical request carriers. They must match a real public owner request, must not declare methods or initializer blocks, may import only project `input` packages, and any request-local nested value types must stay passive as well.
+- `task` — task files are stateless static `<Request>Task` pipelines. They must start from exactly one same-owner same-stem `<Request>Input`, end in exactly one canonical `input`, stay linear, and must not orchestrate owner, `state`, or `repository` APIs.
+- `state` — state files are owner-local factory/transition boundaries. They may depend only on same-owner `input` and `state`, may read own input only through canonical accessors, may construct only own `state`, and must not touch database infrastructure, SQL APIs, UI, threads, I/O, owner seams, task APIs, or repository APIs.
+- `repository` — repository files are stateless static persistence boundaries. They must not declare fields, initializer blocks, or nested types; may depend only on JDBC, `DatabaseManager`, approved transaction helpers, local helpers, and same-owner `state`; may construct only same-owner `state`; and must not orchestrate owner seams, task APIs, or other repository APIs.
+- `api callers` — canonical `task` and `repository` APIs may be called only from the same owner's canonical `<Owner>Object` request methods. Canonical `state` APIs may be called only from the same owner's canonical `<Owner>Object` request methods or explicit same-owner `state`/`repository` collaborators that the checker allows.
 
 No other technical layer names are canonical. Directories such as `model`, `application`, `service`, `ui`, `api`, `bootstrap`, `internal`, or `support` do not define valid package precedent for new or touched architecture work.
 
@@ -216,14 +220,9 @@ The rules in this section are decision filters, not soft preferences. When multi
 - Treat documentation updates as part of done, not optional cleanup
 
 ### Repository & Owner Conventions
-- `<Owner>Object` is the only public owner entrypoint. It is a stateless end seam: it accepts canonical requests, performs pass-through binding and simple routing, delegates real work into same-owner `task`/`state`/`repository`, and may hand final values into private terminal consumer methods
-- Repositories are static persistence boundaries. They persist owner `state`, reconstruct owner `state`, and may own the JDBC connection plus transaction scope needed to complete that persistence flow
-- Task files are static-only pipelines. They consume one project `input`, produce one project `input`, and must not touch repository or state directly
-- Owner `state` is protected runtime/object truth, not UI/session convenience state. State may change only through explicit factory/transition APIs in the same owner's `state` layer
 - Business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
 - Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
 - New owner-local request and handoff schemas belong in the owner's `input` layer, not in legacy `api` or `model` roots. When one request needs small passive helper carriers, keep them nested inside the canonical `<Request>Input` instead of splitting them into artificial top-level pseudo-requests
-- Owner-private helper methods are allowed only as terminal consumers behind a public request. They must stay `private`, return `void`, consume already-final values, and must not become alternate workflow seams
 
 ### Async & Threading
 - `javafx.concurrent.Task` + `new Thread()` (daemon, named `sm-<operation>` e.g. `sm-filter-load`, `sm-encounter-gen`, `sm-combat-setup`, `sm-stat-block`, `sm-save-terrain`)
