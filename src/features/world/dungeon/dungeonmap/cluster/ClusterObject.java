@@ -15,8 +15,8 @@ public final class ClusterObject {
             throw new IllegalArgumentException("input");
         }
         PersistClusterRewriteTailInput resolvedInput = input;
-        java.sql.Connection connection = resolvedInput.connection();
-        if (connection == null) {
+        long mapId = resolvedInput.mapId();
+        if (mapId <= 0) {
             return;
         }
         features.world.dungeon.dungeonmap.model.DungeonMap originalMap = resolvedInput.originalMap();
