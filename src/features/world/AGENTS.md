@@ -2,12 +2,13 @@
 
 ## Purpose
 
-`features.world` owns world navigation surfaces and the world-owned boundary that composes `hexmap` and `dungeon`.
+`features.world` owns world navigation surfaces and the world-owned boundary that composes `hexmap` plus dungeon-facing features.
 
 ## Canonical Types and APIs
 
 - `features.world.api.ApiObject` — public world-owned boundary used by shared bootstrap — composes overworld and dungeon-facing surfaces plus the shared travel scene.
 - `features.world.hexmap.HexmapObject` — hexmap feature root seam — returns the overworld/editor view pair and shared travel surface wiring consumed by the world boundary.
+- `features.world.dungeonclean.DungeoncleanObject` — parallel clean dungeon rebuild seam. Use it for migrated capabilities instead of reopening legacy `features.world.dungeon` seams.
 - `features.campaignstate.api` — campaign-state seam consumed for persisted world-session position.
 
 ## Where New Code Goes
