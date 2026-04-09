@@ -6,6 +6,8 @@ import features.world.dungeonclean.editor.EditorObject;
 import features.world.dungeonclean.editor.input.ComposeWorkspaceInput;
 import features.world.dungeonclean.input.LoadSurfaceInput;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * Public clean dungeon rebuild seam. Migrated capabilities live under clean child owners until a stable top-level
  * composition surface is warranted.
@@ -19,14 +21,55 @@ public final class DungeoncleanObject {
         LoadSurfaceInput resolvedInput = java.util.Objects.requireNonNull(input, "input");
         ClusterObject clusterObject = new ClusterObject();
         ComposeWorkspaceInput composeWorkspaceInput = new ComposeWorkspaceInput(
-                () -> {
-                    LoadClusterRewriteTailStatusInput.StatusInput status =
-                            clusterObject.loadClusterRewriteTailStatus(new LoadClusterRewriteTailStatusInput());
-                    return new ComposeWorkspaceInput.StatusSnapshot(
-                            status.roomCount(),
-                            status.roomLevelCount(),
-                            status.roomNarrationCount(),
-                            status.errorMessage());
+                loadRequest -> {
+                    if (loadRequest == null) {
+                        return;
+                    }
+                    if (loadRequest.onLoading() != null) {
+                        loadRequest.onLoading().run();
+                    }
+                    if (resolvedInput.submitBackgroundTask() == null) {
+                        try {
+                            LoadClusterRewriteTailStatusInput.StatusInput status =
+                                    clusterObject.loadClusterRewriteTailStatus(new LoadClusterRewriteTailStatusInput());
+                            if (loadRequest.onLoaded() != null) {
+                                loadRequest.onLoaded().accept(new ComposeWorkspaceInput.StatusSnapshot(
+                                        status.roomCount(),
+                                        status.roomLevelCount(),
+                                        status.roomNarrationCount(),
+                                        status.errorMessage()));
+                            }
+                        } catch (Exception exception) {
+                            if (loadRequest.onFailure() != null) {
+                                loadRequest.onFailure().accept(exception);
+                            }
+                        }
+                        return;
+                    }
+                    AtomicReference<ComposeWorkspaceInput.StatusSnapshot> snapshotReference = new AtomicReference<>();
+                    resolvedInput.submitBackgroundTask().accept(new LoadSurfaceInput.BackgroundTaskInput(
+                            "DungeoncleanObject.loadClusterRewriteTailStatus()",
+                            () -> {
+                                LoadClusterRewriteTailStatusInput.StatusInput status =
+                                        clusterObject.loadClusterRewriteTailStatus(new LoadClusterRewriteTailStatusInput());
+                                snapshotReference.set(new ComposeWorkspaceInput.StatusSnapshot(
+                                        status.roomCount(),
+                                        status.roomLevelCount(),
+                                        status.roomNarrationCount(),
+                                        status.errorMessage()));
+                                return null;
+                            },
+                            () -> {
+                                if (loadRequest.onLoaded() != null) {
+                                    loadRequest.onLoaded().accept(snapshotReference.get());
+                                }
+                            },
+                            throwable -> {
+                                if (loadRequest.onFailure() != null) {
+                                    loadRequest.onFailure().accept(throwable);
+                                }
+                            },
+                            null));
                 },
                 info -> {
                     if (resolvedInput.showInspectorInfo() != null && info != null) {

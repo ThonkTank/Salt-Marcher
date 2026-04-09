@@ -4,7 +4,7 @@ import javafx.scene.Node;
 
 @SuppressWarnings("unused")
 public record ComposeWorkspaceInput(
-        java.util.concurrent.Callable<StatusSnapshot> statusLoader,
+        java.util.function.Consumer<LoadStatusAsyncInput> loadStatusAsync,
         java.util.function.Consumer<InspectorInfoInput> showInspectorInfo,
         java.util.function.Consumer<HostedInspectorInput> showInspectorContent,
         Runnable clearInspector,
@@ -17,6 +17,13 @@ public record ComposeWorkspaceInput(
             long roomLevelCount,
             long roomNarrationCount,
             String errorMessage
+    ) {
+    }
+
+    public record LoadStatusAsyncInput(
+            Runnable onLoading,
+            java.util.function.Consumer<StatusSnapshot> onLoaded,
+            java.util.function.Consumer<Throwable> onFailure
     ) {
     }
 

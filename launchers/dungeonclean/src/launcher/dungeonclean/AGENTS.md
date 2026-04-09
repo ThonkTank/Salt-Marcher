@@ -7,13 +7,14 @@
 ## Canonical Types and APIs
 
 - `DungeoncleanLauncher` — JavaFX entry class for the packaged clean app — delegates startup lifecycle and owns the final main-stage composition handoff.
-- `startup/StartupObject` — launcher-local startup lifecycle owner — runs pre-start database setup, coordinates failure handling, and triggers the app-ready handshake after the main stage is shown.
+- `startup/StartupObject` — launcher-local startup lifecycle owner — runs pre-start database setup through the clean async seam, coordinates failure handling, and triggers the app-ready handshake after the main stage is shown.
 
 ## Where New Code Goes
 
 - Keep JavaFX `Application` entry wiring on `DungeoncleanLauncher`.
 - Keep startup task orchestration, failure handling, and preloader signaling under `startup`.
 - Let launcher-local code compose public feature seams; do not rebuild feature workflows here.
+- Delegate background execution and failure logging to `features.appshell.async` instead of rebuilding launcher-local async helpers.
 
 ## Forbidden Drift
 

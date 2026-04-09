@@ -14,8 +14,8 @@ public final class EditorObject {
 
     public EditorObject(ComposeWorkspaceInput input) {
         ComposeWorkspaceInput resolvedInput = Objects.requireNonNull(input, "input");
-        java.util.concurrent.Callable<ComposeWorkspaceInput.StatusSnapshot> statusLoader =
-                Objects.requireNonNull(resolvedInput.statusLoader(), "statusLoader");
+        java.util.function.Consumer<ComposeWorkspaceInput.LoadStatusAsyncInput> loadStatusAsync =
+                Objects.requireNonNull(resolvedInput.loadStatusAsync(), "loadStatusAsync");
         java.util.function.Consumer<ComposeWorkspaceInput.HostedInspectorInput> showInspectorContent =
                 resolvedInput.showInspectorContent();
         Runnable clearInspector = resolvedInput.clearInspector();
@@ -37,24 +37,33 @@ public final class EditorObject {
 
         javafx.scene.control.Button refreshButton = new javafx.scene.control.Button("Cluster-Status laden");
         refreshButton.setOnAction(event -> {
-            try {
-                ComposeWorkspaceInput.StatusSnapshot snapshot = statusLoader.call();
-                countsLabel.setText(
-                        "Persistierte Room-Tables:\n"
-                                + "rooms=" + snapshot.roomCount() + "\n"
-                                + "room_levels=" + snapshot.roomLevelCount() + "\n"
-                                + "room_exit_descriptions=" + snapshot.roomNarrationCount());
-                String statusMessage = snapshot.errorMessage() == null || snapshot.errorMessage().isBlank()
-                        ? "DB-Status erfolgreich geladen."
-                        : snapshot.errorMessage();
-                statusLabel.setText(statusMessage);
-                toolbarStatusLabel.setText(statusMessage);
-            } catch (Exception exception) {
-                countsLabel.setText("DB-Zugriff fehlgeschlagen.");
-                String errorMessage = "Fehler beim Laden des Cluster-Status: " + exception.getMessage();
-                statusLabel.setText(errorMessage);
-                toolbarStatusLabel.setText(errorMessage);
-            }
+            loadStatusAsync.accept(new ComposeWorkspaceInput.LoadStatusAsyncInput(
+                    () -> {
+                        countsLabel.setText("Cluster-Status wird geladen...");
+                        statusLabel.setText("Lade DB-Status im Hintergrund...");
+                        toolbarStatusLabel.setText("Laedt...");
+                    },
+                    snapshot -> {
+                        countsLabel.setText(
+                                "Persistierte Room-Tables:\n"
+                                        + "rooms=" + snapshot.roomCount() + "\n"
+                                        + "room_levels=" + snapshot.roomLevelCount() + "\n"
+                                        + "room_exit_descriptions=" + snapshot.roomNarrationCount());
+                        String statusMessage = snapshot.errorMessage() == null || snapshot.errorMessage().isBlank()
+                                ? "DB-Status erfolgreich geladen."
+                                : snapshot.errorMessage();
+                        statusLabel.setText(statusMessage);
+                        toolbarStatusLabel.setText(statusMessage);
+                    },
+                    throwable -> {
+                        countsLabel.setText("DB-Zugriff fehlgeschlagen.");
+                        String errorMessage = "Fehler beim Laden des Cluster-Status: "
+                                + (throwable == null || throwable.getMessage() == null
+                                ? "Unbekannter Fehler"
+                                : throwable.getMessage());
+                        statusLabel.setText(errorMessage);
+                        toolbarStatusLabel.setText(errorMessage);
+                    }));
         });
         javafx.scene.layout.HBox toolbarContent = new javafx.scene.layout.HBox(10, refreshButton, toolbarStatusLabel);
         toolbarContent.setAlignment(javafx.geometry.Pos.CENTER_LEFT);

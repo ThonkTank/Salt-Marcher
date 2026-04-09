@@ -7,8 +7,8 @@
 ## Canonical Types and APIs
 
 - `DungeoncleanObject` — public feature root seam for the clean dungeon rebuild and the packaged clean launcher target.
-- `DungeoncleanObject.loadSurface(...)` — clean feature surface export seam — returns the clean editor workspace as a registered clean shell surface with toolbar, inspector publication, and scene-registration hooks.
-- `input/LoadSurfaceInput` — clean feature surface request and result carrier, including passive inspector publication and scene-registration callbacks from the shell.
+- `DungeoncleanObject.loadSurface(...)` — clean feature surface export seam — returns the clean editor workspace as a registered clean shell surface with toolbar, inspector publication, scene-registration, and background-task hooks.
+- `input/LoadSurfaceInput` — clean feature surface request and result carrier, including passive inspector publication, scene-registration, and background-task callbacks from the shell.
 - `editor/EditorObject` — clean editor owner seam for the current parallel workspace surface.
 - `cluster/ClusterObject` — clean cluster owner seam for persisted rewrite fallout.
 - `cluster/input/PersistClusterRewriteTailInput` — clean cluster rewrite-tail handoff.
@@ -22,6 +22,7 @@
 - Keep each migrated capability fully functional inside `dungeonclean` before wiring any caller across.
 - Prefer request-local nested input value types over untyped payload carriers when clean facts cross owner seams, including shell panel handoffs.
 - Accept shell-owned inspector publication and scene-registration callbacks from callers instead of importing shell owners directly.
+- Accept shell-owned background-task callbacks from callers instead of importing shell async owners directly.
 
 ## Forbidden Drift
 

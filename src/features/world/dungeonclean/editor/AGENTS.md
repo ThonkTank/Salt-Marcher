@@ -6,8 +6,8 @@
 
 ## Canonical Types and APIs
 
-- `EditorObject.composeWorkspace(...)` — clean editor composition seam — returns a registered clean shell surface for the current workspace, including toolbar projection, inspector publication, and scene-registration hooks.
-- `input/ComposeWorkspaceInput` — clean editor composition input, status callback, inspector publication callbacks, scene-registration callbacks, toolbar projection, and workspace surface carrier.
+- `EditorObject.composeWorkspace(...)` — clean editor composition seam — returns a registered clean shell surface for the current workspace, including toolbar projection, inspector publication, scene-registration, and background-loading hooks.
+- `input/ComposeWorkspaceInput` — clean editor composition input, async status-load callback, inspector publication callbacks, scene-registration callbacks, toolbar projection, and workspace surface carrier.
 
 ## Where New Code Goes
 
@@ -15,6 +15,7 @@
 - Accept already-final callbacks and passive carriers from `dungeonclean` root instead of importing sibling clean owners directly.
 - Publish read-mostly inspector cards through the provided callbacks instead of owning a local details panel.
 - Register persistent lower-right scene tabs through the provided callbacks instead of assuming the workspace owns the shell state pane.
+- Run background loads through the provided callbacks instead of creating local `Task` or `Thread` plumbing here.
 
 ## Forbidden Drift
 

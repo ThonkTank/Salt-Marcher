@@ -13,6 +13,7 @@
 - `navigation/NavigationObject` — shell navigation owner seam — registers shell surfaces, owns the active surface, and swaps cockpit content on navigation.
 - `inspector/InspectorObject` — shell inspector owner seam — builds the shared upper-right inspector plus passive publication callbacks.
 - `scene/SceneObject` — shell scene owner seam — builds the shared lower-right persistent scene pane plus passive tab-registration callbacks.
+- `async/AsyncObject` — shell async owner seam — centralizes clean background submission, thread naming, and failure reporting.
 
 ## Where New Code Goes
 
@@ -20,6 +21,7 @@
 - Keep feature surfaces passive when they cross into the shell: stable ids, labels, panel nodes, optional toolbar nodes, and optional lifecycle callbacks only.
 - Keep the shell-owned inspector global to the shell and let features publish read-mostly cards into it through passive callbacks.
 - Keep the shell-owned lower-right scene pane global to the shell and let features register persistent activity tabs into it through passive callbacks.
+- Keep clean background submission and failure reporting centralized here instead of rebuilding `Task`/`Thread` boilerplate in features or launchers.
 
 ## Forbidden Drift
 

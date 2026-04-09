@@ -1,6 +1,8 @@
 package launcher.dungeonclean;
 
 import features.appshell.AppshellObject;
+import features.appshell.async.AsyncObject;
+import features.appshell.async.input.ComposeAsyncInput;
 import features.appshell.inspector.InspectorObject;
 import features.appshell.inspector.input.ComposeInspectorInput;
 import features.appshell.input.ComposeShellInput;
@@ -16,7 +18,10 @@ import launcher.dungeonclean.startup.input.StartApplicationInput;
 
 public final class DungeoncleanLauncher extends Application {
 
-    private final StartupObject startupObject = new StartupObject();
+    private final ComposeAsyncInput composeAsyncInput = new ComposeAsyncInput();
+    private final ComposeAsyncInput.AsyncInput async =
+            new AsyncObject(composeAsyncInput).composeAsync(composeAsyncInput);
+    private final StartupObject startupObject = new StartupObject(async);
 
     @Override
     public void start(Stage primaryStage) {
@@ -50,7 +55,13 @@ public final class DungeoncleanLauncher extends Application {
                             return new features.world.dungeonclean.input.LoadSurfaceInput.SceneHandleInput(
                                     handle.setContent(),
                                     handle.activate());
-                        });
+                        },
+                        task -> async.submitBackground().accept(new ComposeAsyncInput.SubmitBackgroundInput(
+                                task.operationName(),
+                                task.work(),
+                                task.onSuccess(),
+                                task.onFailure(),
+                                task.onCancelled())));
         DungeoncleanObject dungeoncleanObject = new DungeoncleanObject(loadSurfaceInput);
         var surface = dungeoncleanObject.loadSurface(loadSurfaceInput);
         ComposeShellInput composeShellInput = new ComposeShellInput(

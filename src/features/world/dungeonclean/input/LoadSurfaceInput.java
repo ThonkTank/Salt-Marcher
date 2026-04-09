@@ -8,7 +8,8 @@ public record LoadSurfaceInput(
         java.util.function.Consumer<HostedInspectorInput> showInspectorContent,
         Runnable clearInspector,
         java.util.function.Predicate<Object> isInspectorShowing,
-        java.util.function.Function<SceneRegistrationInput, SceneHandleInput> registerScene
+        java.util.function.Function<SceneRegistrationInput, SceneHandleInput> registerScene,
+        java.util.function.Consumer<BackgroundTaskInput> submitBackgroundTask
 ) {
 
     public record InspectorInfoInput(
@@ -34,6 +35,15 @@ public record LoadSurfaceInput(
     public record SceneHandleInput(
             java.util.function.Consumer<Node> setContent,
             Runnable activate
+    ) {
+    }
+
+    public record BackgroundTaskInput(
+            String operationName,
+            java.util.concurrent.Callable<Void> work,
+            Runnable onSuccess,
+            java.util.function.Consumer<Throwable> onFailure,
+            Runnable onCancelled
     ) {
     }
 

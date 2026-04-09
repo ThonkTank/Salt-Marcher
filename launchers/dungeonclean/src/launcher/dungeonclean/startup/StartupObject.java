@@ -1,34 +1,35 @@
 package launcher.dungeonclean.startup;
 
 import database.DatabaseManager;
+import features.appshell.async.input.ComposeAsyncInput;
 import javafx.application.Platform;
 import javafx.application.Preloader;
-import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import launcher.dungeonclean.startup.input.ShowMainStageInput;
 import launcher.dungeonclean.startup.input.StartApplicationInput;
-import ui.async.UiErrorReporter;
 import ui.bootstrap.preloader.PreloaderObject;
 
 public final class StartupObject {
 
     private static final String STARTUP_ERROR_TITLE = "Start fehlgeschlagen";
     private static final String STARTUP_ERROR_TEXT = "Salt Marcher konnte nicht gestartet werden.";
+    private final ComposeAsyncInput.AsyncInput async;
+
+    public StartupObject(ComposeAsyncInput.AsyncInput async) {
+        this.async = java.util.Objects.requireNonNull(async, "async");
+    }
 
     public void start(StartApplicationInput input) {
         Platform.setImplicitExit(false);
-        Task<Void> startupTask = new Task<>() {
-            @Override
-            protected Void call() {
-                DatabaseManager.setupDatabase();
-                return null;
-            }
-        };
-        startupTask.setOnSucceeded(event -> showMainStage(input));
-        startupTask.setOnFailed(event -> handleStartupFailure(input, startupTask.getException()));
-        Thread startupThread = new Thread(startupTask, "sm-startup");
-        startupThread.setDaemon(false);
-        startupThread.start();
+        async.submitBackground().accept(new ComposeAsyncInput.SubmitBackgroundInput(
+                "StartupObject.start()",
+                () -> {
+                    DatabaseManager.setupDatabase();
+                    return null;
+                },
+                () -> showMainStage(input),
+                throwable -> handleStartupFailure(input, throwable),
+                null));
     }
 
     private void showMainStage(StartApplicationInput input) {
@@ -42,7 +43,9 @@ public final class StartupObject {
     }
 
     private void handleStartupFailure(StartApplicationInput input, Throwable throwable) {
-        UiErrorReporter.reportBackgroundFailure("StartupObject.start()", throwable);
+        async.reportBackgroundFailure().accept(new ComposeAsyncInput.ReportBackgroundFailureInput(
+                "StartupObject.start()",
+                throwable));
         input.notifyPreloader().accept(new Preloader.StateChangeNotification(
                 Preloader.StateChangeNotification.Type.BEFORE_START));
 
