@@ -56,6 +56,9 @@ internal fun analyzeOwnerFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionOwnerSurface> {
+    if (sourceFile.context.packageName == "database") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     val shapeAnalysis = support.analyzeOwnerSurfaceShape(sourceFile, snapshot)
     val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)

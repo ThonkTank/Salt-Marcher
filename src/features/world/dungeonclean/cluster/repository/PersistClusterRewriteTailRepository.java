@@ -35,25 +35,17 @@ public final class PersistClusterRewriteTailRepository {
             return resolvedState;
         }
         try (java.sql.Connection connection = database.DatabaseManager.getConnection()) {
-            boolean originalAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
+            return database.DatabaseTransactionRunner.inTransaction(connection, () -> {
                 deleteRooms(connection, resolvedState.removedRoomIds());
                 ArrayList<PersistClusterRewriteTailState.ClusterState> persistedClusters = new ArrayList<>();
                 for (PersistClusterRewriteTailState.ClusterState cluster : resolvedState.rewrittenClusters()) {
                     persistedClusters.add(persistCluster(connection, resolvedState.mapId(), cluster));
                 }
-                connection.commit();
-                connection.setAutoCommit(originalAutoCommit);
                 return new PersistClusterRewriteTailState(
                         resolvedState.mapId(),
                         persistedClusters,
                         resolvedState.removedRoomIds());
-            } catch (SQLException exception) {
-                connection.rollback();
-                connection.setAutoCommit(originalAutoCommit);
-                throw exception;
-            }
+            });
         }
     }
 
