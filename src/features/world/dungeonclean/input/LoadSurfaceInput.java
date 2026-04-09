@@ -3,7 +3,26 @@ package features.world.dungeonclean.input;
 import javafx.scene.Node;
 
 @SuppressWarnings("unused")
-public record LoadSurfaceInput() {
+public record LoadSurfaceInput(
+        java.util.function.Consumer<InspectorInfoInput> showInspectorInfo,
+        java.util.function.Consumer<HostedInspectorInput> showInspectorContent,
+        Runnable clearInspector,
+        java.util.function.Predicate<Object> isInspectorShowing
+) {
+
+    public record InspectorInfoInput(
+            String title,
+            Object entryKey,
+            String message
+    ) {
+    }
+
+    public record HostedInspectorInput(
+            String title,
+            Object entryKey,
+            java.util.function.Supplier<Node> contentSupplier
+    ) {
+    }
 
     public record SurfaceInput(
             String surfaceId,

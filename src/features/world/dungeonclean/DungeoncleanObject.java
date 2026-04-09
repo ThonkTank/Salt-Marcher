@@ -15,7 +15,8 @@ public final class DungeoncleanObject {
 
     private final LoadSurfaceInput.SurfaceInput surface;
 
-    public DungeoncleanObject() {
+    public DungeoncleanObject(LoadSurfaceInput input) {
+        LoadSurfaceInput resolvedInput = java.util.Objects.requireNonNull(input, "input");
         ClusterObject clusterObject = new ClusterObject();
         ComposeWorkspaceInput composeWorkspaceInput = new ComposeWorkspaceInput(
                 () -> {
@@ -26,7 +27,25 @@ public final class DungeoncleanObject {
                             status.roomLevelCount(),
                             status.roomNarrationCount(),
                             status.errorMessage());
-                });
+                },
+                info -> {
+                    if (resolvedInput.showInspectorInfo() != null && info != null) {
+                        resolvedInput.showInspectorInfo().accept(new LoadSurfaceInput.InspectorInfoInput(
+                                info.title(),
+                                info.entryKey(),
+                                info.message()));
+                    }
+                },
+                hosted -> {
+                    if (resolvedInput.showInspectorContent() != null && hosted != null) {
+                        resolvedInput.showInspectorContent().accept(new LoadSurfaceInput.HostedInspectorInput(
+                                hosted.title(),
+                                hosted.entryKey(),
+                                hosted.contentSupplier()));
+                    }
+                },
+                resolvedInput.clearInspector(),
+                resolvedInput.isInspectorShowing());
         ComposeWorkspaceInput.WorkspaceInput workspace =
                 new EditorObject(composeWorkspaceInput).composeWorkspace(composeWorkspaceInput);
         this.surface = new LoadSurfaceInput.SurfaceInput(

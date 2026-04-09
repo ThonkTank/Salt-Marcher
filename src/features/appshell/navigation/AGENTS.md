@@ -7,12 +7,13 @@
 ## Canonical Types and APIs
 
 - `NavigationObject.composeNavigation(...)` — registers shell surfaces, selects the initial active surface, and returns live toolbar/navigation/panel nodes for the shell frame.
-- `input/ComposeNavigationInput` — navigation request carrier with registered surfaces, optional toolbar nodes, and optional lifecycle callbacks.
+- `input/ComposeNavigationInput` — navigation request carrier with registered surfaces, optional toolbar nodes, optional lifecycle callbacks, and the shell-owned default details surface.
 
 ## Where New Code Goes
 
 - Keep active-surface selection, toolbar projection, and panel swapping here.
 - Normalize shell-surface ids, labels, toolbar nodes, and lifecycle callbacks at the navigation owner edge before wiring the live navigation UI.
+- Use the shell-owned default details surface whenever the active surface does not provide its own details node.
 
 ## Forbidden Drift
 

@@ -16,6 +16,10 @@ public final class EditorObject {
         ComposeWorkspaceInput resolvedInput = Objects.requireNonNull(input, "input");
         java.util.concurrent.Callable<ComposeWorkspaceInput.StatusSnapshot> statusLoader =
                 Objects.requireNonNull(resolvedInput.statusLoader(), "statusLoader");
+        java.util.function.Consumer<ComposeWorkspaceInput.HostedInspectorInput> showInspectorContent =
+                resolvedInput.showInspectorContent();
+        Runnable clearInspector = resolvedInput.clearInspector();
+        java.util.function.Predicate<Object> isInspectorShowing = resolvedInput.isInspectorShowing();
 
         javafx.scene.control.Label summaryLabel = new javafx.scene.control.Label(
                 "Die saubere Dungeon-App laeuft separat und spiegelt aktuell den cluster-room-tail.");
@@ -53,10 +57,46 @@ public final class EditorObject {
         javafx.scene.layout.HBox toolbarContent = new javafx.scene.layout.HBox(10, refreshButton, toolbarStatusLabel);
         toolbarContent.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
 
+        final String inspectorEntryKey = "dungeonclean.workspace";
+        javafx.scene.control.Button inspectorButton = new javafx.scene.control.Button("Info im Inspector");
+        inspectorButton.setOnAction(event -> {
+            if (isInspectorShowing != null && isInspectorShowing.test(inspectorEntryKey)) {
+                if (clearInspector != null) {
+                    clearInspector.run();
+                }
+                return;
+            }
+            if (showInspectorContent == null) {
+                return;
+            }
+            showInspectorContent.accept(new ComposeWorkspaceInput.HostedInspectorInput(
+                    "Dungeon Clean",
+                    inspectorEntryKey,
+                    () -> {
+                        javafx.scene.control.Label inspectorSummaryLabel = new javafx.scene.control.Label(summaryLabel.getText());
+                        inspectorSummaryLabel.setWrapText(true);
+                        javafx.scene.control.Label inspectorCountsLabel = new javafx.scene.control.Label(countsLabel.getText());
+                        inspectorCountsLabel.setWrapText(true);
+                        javafx.scene.control.Label inspectorStatusLabel = new javafx.scene.control.Label(statusLabel.getText());
+                        inspectorStatusLabel.setWrapText(true);
+                        javafx.scene.layout.VBox inspectorCard = new javafx.scene.layout.VBox(
+                                12,
+                                new javafx.scene.control.Label("Parallel laufender Clean-Workspace"),
+                                inspectorSummaryLabel,
+                                new javafx.scene.control.Label("Cluster-Status"),
+                                inspectorCountsLabel,
+                                new javafx.scene.control.Label("Aktueller Zustand"),
+                                inspectorStatusLabel);
+                        inspectorCard.setPadding(new javafx.geometry.Insets(12));
+                        return inspectorCard;
+                    }));
+        });
+        toolbarContent.getChildren().add(1, inspectorButton);
+
         javafx.scene.layout.VBox controls = new javafx.scene.layout.VBox(10,
                 new javafx.scene.control.Label("Dungeon Clean"),
                 new javafx.scene.control.Label("Paralleler Neuaufbau ohne Legacy-Verkabelung."),
-                new javafx.scene.control.Label("Toolbar-Aktion: Cluster-Status laden."));
+                new javafx.scene.control.Label("Toolbar-Aktionen: Cluster-Status laden und Info im Inspector."));
         controls.setFillWidth(true);
         controls.setPadding(new javafx.geometry.Insets(12));
 

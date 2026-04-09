@@ -1,6 +1,8 @@
 package launcher.dungeonclean;
 
 import features.appshell.AppshellObject;
+import features.appshell.inspector.InspectorObject;
+import features.appshell.inspector.input.ComposeInspectorInput;
 import features.appshell.input.ComposeShellInput;
 import features.world.dungeonclean.DungeoncleanObject;
 import javafx.application.Application;
@@ -20,8 +22,23 @@ public final class DungeoncleanLauncher extends Application {
     }
 
     private void showMainStage(ShowMainStageInput input) {
-        DungeoncleanObject dungeoncleanObject = new DungeoncleanObject();
-        var surface = dungeoncleanObject.loadSurface(new features.world.dungeonclean.input.LoadSurfaceInput());
+        ComposeInspectorInput composeInspectorInput = new ComposeInspectorInput();
+        ComposeInspectorInput.InspectorInput inspector =
+                new InspectorObject(composeInspectorInput).composeInspector(composeInspectorInput);
+        features.world.dungeonclean.input.LoadSurfaceInput loadSurfaceInput =
+                new features.world.dungeonclean.input.LoadSurfaceInput(
+                        info -> inspector.navigator().showInfo().accept(new ComposeInspectorInput.InfoEntryInput(
+                                info.title(),
+                                info.entryKey(),
+                                info.message())),
+                        hosted -> inspector.navigator().showContent().accept(new ComposeInspectorInput.HostedEntryInput(
+                                hosted.title(),
+                                hosted.entryKey(),
+                                hosted.contentSupplier())),
+                        inspector.navigator().clear(),
+                        inspector.navigator().isShowing());
+        DungeoncleanObject dungeoncleanObject = new DungeoncleanObject(loadSurfaceInput);
+        var surface = dungeoncleanObject.loadSurface(loadSurfaceInput);
         ComposeShellInput composeShellInput = new ComposeShellInput(
                 java.util.List.of(new ComposeShellInput.SurfaceInput(
                         surface.surfaceId(),
@@ -34,7 +51,8 @@ public final class DungeoncleanLauncher extends Application {
                         surface.stateContent(),
                         surface.onShow(),
                         surface.onHide())),
-                surface.surfaceId());
+                surface.surfaceId(),
+                inspector.detailsContent());
         javafx.scene.layout.BorderPane shell =
                 new AppshellObject(composeShellInput).composeShell(composeShellInput).root();
 

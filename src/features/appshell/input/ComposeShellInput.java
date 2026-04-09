@@ -6,7 +6,8 @@ import javafx.scene.layout.BorderPane;
 @SuppressWarnings("unused")
 public record ComposeShellInput(
         java.util.List<SurfaceInput> surfaces,
-        String initialSurfaceId
+        String initialSurfaceId,
+        Node defaultDetailsContent
 ) {
 
     public ComposeShellInput {

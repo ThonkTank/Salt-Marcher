@@ -63,6 +63,9 @@ public final class NavigationObject {
             VBox mainPlaceholder = createPlaceholder("Kein lokaler Inhalt");
             VBox detailsPlaceholder = createPlaceholder("Keine lokalen Details");
             VBox statePlaceholder = createPlaceholder("Kein lokaler Zustand");
+            Node defaultDetailsContent = input.defaultDetailsContent() == null
+                    ? detailsPlaceholder
+                    : input.defaultDetailsContent();
 
             java.util.List<ComposeNavigationInput.SurfaceInput> surfaces = normalizeSurfaces(input.surfaces());
             String initialSurfaceId = resolveInitialSurfaceId(surfaces, input.initialSurfaceId());
@@ -76,7 +79,7 @@ public final class NavigationObject {
                     toolbarItemsContent.getChildren().clear();
                     controlsContent.getChildren().setAll(controlsPlaceholder);
                     mainContent.getChildren().setAll(mainPlaceholder);
-                    detailsContent.getChildren().setAll(detailsPlaceholder);
+                    detailsContent.getChildren().setAll(defaultDetailsContent);
                     stateContent.getChildren().setAll(statePlaceholder);
                     return;
                 }
@@ -85,7 +88,8 @@ public final class NavigationObject {
                         activeSurface.toolbarContent() == null ? createEmptyToolbarContent() : activeSurface.toolbarContent());
                 controlsContent.getChildren().setAll(activeSurface.controlsContent() == null ? controlsPlaceholder : activeSurface.controlsContent());
                 mainContent.getChildren().setAll(activeSurface.mainContent() == null ? mainPlaceholder : activeSurface.mainContent());
-                detailsContent.getChildren().setAll(activeSurface.detailsContent() == null ? detailsPlaceholder : activeSurface.detailsContent());
+                detailsContent.getChildren().setAll(
+                        activeSurface.detailsContent() == null ? defaultDetailsContent : activeSurface.detailsContent());
                 stateContent.getChildren().setAll(activeSurface.stateContent() == null ? statePlaceholder : activeSurface.stateContent());
                 if (activeSurface.onShow() != null) {
                     activeSurface.onShow().run();
