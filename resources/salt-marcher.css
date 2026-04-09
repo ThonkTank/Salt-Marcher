@@ -1,5 +1,5 @@
 /* Loaded at runtime via classpath: java -cp "out:resources:..." ui.SaltMarcherApp
-   Java-side color constants mirrored in ui/components/ThemeColors.java — keep in sync. */
+   Java-side Canvas colors mirrored in ui/theme/ThemeObject.java — keep in sync. */
 .root {
     -sm-bg-darkest:  #12181c;
     -sm-bg-panel:    #1a2025;

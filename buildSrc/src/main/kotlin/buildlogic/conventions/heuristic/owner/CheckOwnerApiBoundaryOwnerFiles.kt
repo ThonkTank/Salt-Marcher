@@ -56,7 +56,10 @@ internal fun analyzeOwnerFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionOwnerSurface> {
-    if (sourceFile.context.packageName == "database" || sourceFile.context.packageName == "importer") {
+    if (sourceFile.context.packageName == "database" ||
+        sourceFile.context.packageName == "importer" ||
+        sourceFile.context.packageName == "ui.components"
+    ) {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }
     val shapeAnalysis = support.analyzeOwnerSurfaceShape(sourceFile, snapshot)

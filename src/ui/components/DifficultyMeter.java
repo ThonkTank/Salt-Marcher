@@ -5,17 +5,22 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
+import ui.theme.ThemeObject;
+import ui.theme.input.LoadCanvasPaletteInput;
 
 /**
  * Canvas-based XP difficulty bar.
  * Renders colored threshold zones (easy/medium/hard/deadly) and a marker at the
  * current adjusted-XP position. Colors are Canvas-drawn and must stay in sync with
- * the CSS variables in resources/salt-marcher.css (see {@link ThemeColors}).
+ * the CSS variables in resources/salt-marcher.css via {@link ThemeObject}.
  * Call {@link #update} after each roster change.
  */
+@SuppressWarnings("unused")
 public class DifficultyMeter extends Region {
     private static final double BAR_CORNER_RADIUS = 3.0;
     private final Canvas canvas = new Canvas();
+    private final LoadCanvasPaletteInput.CanvasPaletteInput palette =
+            new ThemeObject().loadCanvasPalette(new LoadCanvasPaletteInput());
     private int easyThreshold, mediumThreshold, hardThreshold, deadlyThreshold;
     private int adjustedXp;
 
@@ -60,14 +65,20 @@ public class DifficultyMeter extends Region {
         double barW = w - pad * 2;
 
         if (deadlyThreshold <= 0 || barW <= 0) {
-            gc.setFill(ThemeColors.BG_ELEVATED);
+            gc.setFill(palette.bgElevated());
             gc.fillRoundRect(pad, barY, barW, barH, 6, 6);
             return;
         }
 
         double maxXp = deadlyThreshold * 1.5;
         int[] thresholds = { 0, easyThreshold, mediumThreshold, hardThreshold, deadlyThreshold };
-        Color[] colors = { ThemeColors.BG_ELEVATED, ThemeColors.EASY, ThemeColors.MEDIUM, ThemeColors.HARD, ThemeColors.DEADLY };
+        Color[] colors = {
+                palette.bgElevated(),
+                palette.easy(),
+                palette.medium(),
+                palette.hard(),
+                palette.deadly()
+        };
 
         // Clip to rounded rect — fillRoundRect can't paint multiple color segments inside one rounded region,
         // so we clip the entire bar to a rounded path and then fill each difficulty zone as a plain rect.
@@ -95,14 +106,14 @@ public class DifficultyMeter extends Region {
         // Marker
         if (adjustedXp > 0) {
             double markerX = pad + (Math.min(adjustedXp, maxXp) / maxXp * barW);
-            gc.setStroke(ThemeColors.TEXT_PRIMARY);
+            gc.setStroke(palette.textPrimary());
             gc.setLineWidth(2);
             gc.strokeLine(markerX, barY - 2, markerX, barY + barH + 2);
 
             double triSize = 5;
             double[] triX = { markerX - triSize, markerX + triSize, markerX };
             double[] triY = { barY - triSize - 2, barY - triSize - 2, barY - 1 };
-            gc.setFill(ThemeColors.TEXT_PRIMARY);
+            gc.setFill(palette.textPrimary());
             gc.fillPolygon(triX, triY, 3);
         }
     }

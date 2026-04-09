@@ -234,7 +234,7 @@ The rules in this section are decision filters, not soft preferences. When multi
 
 ### CSS & Theming
 - `resources/salt-marcher.css` is the single source of truth for design tokens (CSS variables on `.root`)
-- `ThemeColors.java` has `Color` constants mirroring CSS variables for Canvas-only drawing — must be kept in sync manually
+- `src/ui/theme/ThemeObject` mirrors the small Canvas-only color palette from CSS for Java rendering and must stay in sync manually
 
 ### UI Naming
 - `*View` = AppView impls, `*Pane` = Region subclasses, `*Dropdown` = anchored non-modal editor windows backed by `Popup`, `*Popup` = existing popup-oriented controllers, `*Controls` = left-column control panels, `*Canvas` = canvas subclasses for specific contexts
