@@ -2,50 +2,41 @@
 
 ## Purpose
 
-`src/clean` owns the isolated clean application rebuild that now backs the default `build`/`run`/`installDesktopApp` lifecycle. The current live slice is the first clean shell-framework pass plus the first real top-level feature roster: `Catalog`, `Travel`, `Map Editor`, `Tabellen`. Encounter runtime state now lives in the shell-owned Scene pane instead of a top-level sidebar tab.
+`src/clean` owns the active Salt Marcher application rebuild. Keep new application behavior here, because this tree is the live product surface that `build`, `run`, and `installDesktopApp` now exercise.
 
 ## Owner Atlas
 
-- `clean.CleanObject` — public clean application root seam — canonical request entry for the isolated app lifecycle and parent owner that bootstraps the clean shell, the top-level feature tabs, and initial hook usage.
-- `clean.startup.StartupObject` — clean startup owner — stages the already-composed clean shell on the JavaFX `Stage` and loads clean-local styling.
-- `clean.shell.ShellObject` — clean shell root owner — composes the clean frame, navigation, inspector, scene, and async framework owners into the live shell.
-- `clean.featuretabs.FeaturetabsObject` — clean top-level feature roster owner — builds the 4-tab surface set and the initial active tab for the shell.
-- `clean.catalog.CatalogObject` — clean top-level catalog owner — surfaces the session workspace that currently hosts the reusable creature browser slice.
-- `clean.creatures.CreaturesObject` — clean creature root owner — composes the reusable creature catalog content mounted by `Catalog`.
-- `clean.encounter.EncounterObject` — clean encounter runtime owner — registers and updates the persistent scene-owned encounter state.
+- `clean.CleanObject` - root application seam that assembles the live clean owners and launches startup.
+- `clean.startup.StartupObject` - startup owner that stages the composed root on the JavaFX `Stage`.
+- `clean.shell.ShellObject` - reusable cockpit shell owner for frame, navigation, inspector, scene, and async hooks.
+- `clean.featuretabs.FeaturetabsObject` - top-level feature roster owner for `Catalog`, `Travel`, `Map Editor`, and `Tabellen`.
+- `clean.catalog.CatalogObject` - top-level catalog workspace owner.
+- `clean.creatures.CreaturesObject` - reusable creature slice owner mounted inside `Catalog`.
+- `clean.encounter.EncounterObject` - encounter runtime owner rendered through the shell scene pane.
 
-## Canonical Types and APIs
+## Canonical Types And APIs
 
-- `CleanObject.showApplication(ShowApplicationInput)` — clean root request — validates the launcher request and returns the already-bootstrapped clean application handoff created by the owner-local assembly path.
-- `startup/StartupObject.startApplication(StartApplicationInput)` — startup request — returns the already-staged JavaFX startup handoff created by the startup assembly path.
-- `shell/ShellObject.composeShell(ComposeShellInput)` — shell request — returns the live shell root plus the shell-owned hook bundle for later feature attachment.
-- `featuretabs/FeaturetabsObject.composeFeaturetabs(ComposeFeaturetabsInput)` — top-level feature-tab request — returns the ordered Clean shell surfaces for `Catalog`, `Travel`, `Map Editor`, and `Tabellen`.
-- `catalog/CatalogObject.composeCatalog(ComposeCatalogInput)` — catalog request — returns the top-level Clean catalog surface that currently hosts the creature slice.
-- `creatures/CreaturesObject.composeCatalogcontent(ComposeCatalogcontentInput)` — creature content request — returns the reusable creature browser/statblock content mounted by `Catalog`.
-- `encounter/EncounterObject.composeEncounter(ComposeEncounterInput)` — encounter runtime request — returns the scene registration hook plus the command seam that receives creatures added from catalog content.
+- `CleanObject.showApplication(ShowApplicationInput)` - validates the launcher request and returns the launched application handoff.
+- `StartupObject.startApplication(StartApplicationInput)` - stages the composed root on the provided `Stage`.
+- `ShellObject.composeShell(ComposeShellInput)` - returns the shell root plus the hook bundle that features consume.
+- `FeaturetabsObject.composeFeaturetabs(ComposeFeaturetabsInput)` - returns the ordered top-level surfaces and initial surface id.
+- `CatalogObject.composeCatalog(ComposeCatalogInput)` - returns the top-level catalog surface.
+- `CreaturesObject.composeCatalogcontent(ComposeCatalogcontentInput)` - returns the reusable creature catalog content mounted by `Catalog`.
+- `EncounterObject.composeEncounter(ComposeEncounterInput)` - returns the scene registration hook and the encounter command seam.
 
 ## Where New Code Goes
 
-- Put all new clean application entry, shell, surface, persistence, and feature rebuild work under `src/clean`.
-- Let `CleanObject` remain the bootstrap seam only. Move reusable shell mechanics under `clean/shell`, and move later feature-specific workflow into dedicated clean feature owners instead of growing `CleanObject`.
-- Treat `clean/shell` as the single home for the reusable shell framework. Later features should attach through passive `SurfaceInput` packets plus the hook bundle returned from `ShellObject`.
-- Keep the top-level Clean feature roster under `clean/featuretabs` instead of hardcoding surface lists in `CleanObject`.
-- Keep reusable creature catalog, browser, and statblock work under `clean/creatures` instead of regrowing that logic inside feature-tab owners.
-- Keep top-level catalog workspace ownership under `clean/catalog` and runtime encounter state under `clean/encounter`.
-- Keep `Travel` and `Map Editor` aggregated at the top level. Hexmap and Dungeon internals may stay separate, but top-level switching should happen automatically from the selected map instead of via extra sidebar tabs.
-- Keep clean resources under `resources/clean`.
-- Mirror the legacy shell presentation from `ui.shell.AppShell` and the shell-facing parts of `resources/salt-marcher.css` inside `resources/clean/clean.css`, instead of inventing a second cockpit look.
-- Keep the shell slice buildable while features are still missing. Do not regress back to `Runtime`-owned UI composition or back to the old top-level `clean/frame` and `clean/navigation` scaffolds.
-- When a clean owner must assemble JavaFX nodes, keep the public request method trivial and push the actual scene-graph assembly into a private owner-local assembly path behind the constructor. That is the current clean-safe pattern that survives the owner boundary checks.
+- Put new clean application entry and cross-owner assembly in `clean`, because `CleanObject` is the only parent seam that is allowed to stitch sibling owners together.
+- Put reusable shell behavior in `clean/shell`, because features should attach through surfaces and hooks rather than rebuilding frame logic locally.
+- Put top-level navigation choices in `clean/featuretabs`, because that owner decides which primary surfaces exist.
+- Put top-level catalog workspace behavior in `clean/catalog`, because `Catalog` owns the workspace surface, not the creature slice mounted inside it.
+- Put reusable creature catalog behavior in `clean/creatures`, because `Catalog` should host content, not own creature-specific browsing or statblock behavior.
+- Put encounter runtime state in `clean/encounter`, because the scene pane is the persistent runtime surface for the active session.
+- Keep clean-specific resources in `resources/clean`, because the clean app must stay visually self-contained.
 
 ## Forbidden Drift
 
-- Do not import legacy project packages from `database`, `features`, `importer`, `shared`, or `ui`.
-- Do not route clean startup back through `launchers/` or `src/ui/bootstrap`.
-- Do not let `src/clean` silently depend on legacy CSS, shell abstractions, or persistence helpers.
-- Do not restyle `src/clean` into a separate visual language. Clean may duplicate the original shell presentation locally, but it must not directly load or import legacy shell code or CSS.
-- Do not treat `CleanObject.Runtime` as architecture precedent for clean feature work. It is only the JavaFX launcher shell and exception boundary, not a valid home for capability logic, navigation workflow, or panel composition.
-- Do not put scene-graph assembly, event-handler wiring, surface lists, or sibling-owner orchestration directly into public clean owner request methods. Those shapes must be pushed into canonical tasks, state transitions, repositories, or private terminal consumers that already satisfy the owner rules.
-- Do not resurrect the retired top-level shell scaffolds under `clean/frame` or `clean/navigation`. The active reusable shell lives only under `clean/shell`.
-- Do not route cross-owner work through sibling clean owners as convenience hops. Cross-owner communication in `src/clean` must stay request-based, input-shaped, and be launched from the parent owner that actually owns that subowner edge.
-- Do not bring back the retired demo tabs (`Start`, `Framework`), the old top-level split between `Karte`/`Dungeon` and `Karteneditor`/`Dungeon-Editor`, or the removed top-level `Encounter` / `Zauber` tabs.
+- Keep `src/clean` isolated from legacy packages in `database`, `features`, `importer`, `shared`, and `ui`, because the clean rebuild must remain independently movable and reviewable.
+- Mirror the legacy cockpit presentation locally instead of importing legacy shell code or CSS, because clean needs behavioral continuity without taking a code dependency on abandoned trees.
+- Keep cross-owner communication request-based and parent-launched, because sibling convenience hops hide the real ownership graph.
+- Keep scene-graph assembly out of public request methods, because the owner checks expect those seams to stay trivial and auditable.

@@ -2,28 +2,26 @@
 
 ## Purpose
 
-`src/clean/featuretabs` owns the top-level Clean product tabs that plug passive surfaces into `clean/shell`.
+`src/clean/featuretabs` owns the top-level clean feature roster. Keep primary surface selection here, because one owner must define which first-level workspaces exist and in what order.
 
-## Canonical Types and APIs
+## Canonical Types And APIs
 
-- `FeaturetabsObject.composeFeaturetabs(ComposeFeaturetabsInput)` — top-level feature-tab request — returns the ordered Clean shell surfaces plus the initial active surface id.
-- `mapcatalog/MapcatalogObject.loadMaps(LoadMapsInput)` — clean seed catalog request — returns the mixed Hexmap/Dungeon map list used by aggregated top-level tabs.
-- `navigationicon/NavigationiconObject.composeNavigationicon(ComposeNavigationiconInput)` — navigation icon request — returns the clean-local sidebar graphics for the current top-level roster.
-- `traveltab/TraveltabObject.composeTraveltab(ComposeTraveltabInput)` — aggregated runtime surface for `Travel`, with automatic Hexmap/Dungeon subview switching based on the selected map.
-- `mapeditortab/MapeditortabObject.composeMapeditortab(ComposeMapeditortabInput)` — aggregated editor surface for `Map Editor`, with automatic Hexmap/Dungeon subview switching based on the selected map.
-- `tablestab/TablestabObject.composeTablestab(ComposeTablestabInput)` — placeholder editor surface for `Tabellen`.
+- `FeaturetabsObject.composeFeaturetabs(ComposeFeaturetabsInput)` - returns the ordered shell surfaces plus the initial surface id.
+- `mapcatalog/MapcatalogObject.loadMaps(LoadMapsInput)` - returns the clean-local map list used by the aggregated travel and editor tabs.
+- `navigationicon/NavigationiconObject.composeNavigationicon(ComposeNavigationiconInput)` - returns the sidebar graphics for the top-level roster.
+- `traveltab/TraveltabObject.composeTraveltab(ComposeTraveltabInput)` - returns the aggregated `Travel` surface.
+- `mapeditortab/MapeditortabObject.composeMapeditortab(ComposeMapeditortabInput)` - returns the aggregated `Map Editor` surface.
+- `tablestab/TablestabObject.composeTablestab(ComposeTablestabInput)` - returns the `Tabellen` surface.
 
 ## Where New Code Goes
 
-- Keep the durable top-level Clean roster here: `Catalog`, `Travel`, `Map Editor`, `Tabellen`.
-- Keep top-level tab ownership separate from the shell. `clean/shell` renders the surfaces; `clean/featuretabs` decides which surfaces exist and in what order.
-- Keep top-level tab ownership separate from reusable feature products. `FeaturetabsObject` may compose the sibling top-level `clean.catalog` owner, but creature catalog/browser/statblock ownership stays in `clean/creatures`.
-- Keep `Travel` and `Map Editor` aggregated at the top level, but keep their Hexmap/Dungeon implementations as separate internal child owners that switch automatically from the selected map.
-- Keep the map list clean-local until real clean repositories exist. Replace `mapcatalog` later with a clean persistence-backed owner instead of importing legacy world code.
+- Keep the durable top-level roster here, because the shell should render surfaces, not decide which ones exist.
+- Keep navigation icon selection and section metadata here, because top-level navigation belongs with the roster owner.
+- Keep aggregated `Travel` and `Map Editor` switching inside their child owners, because the roster should expose stable top-level surfaces while those features decide their internal mode changes.
+- Keep temporary clean-local map loading in `mapcatalog` until a real clean persistence owner exists, because top-level tabs still need one source of map choices.
 
 ## Forbidden Drift
 
-- Do not reintroduce top-level `Encounter`, `Zauber`, `Karte`, `Dungeon`, `Karteneditor`, or `Dungeon-Editor` tabs in Clean.
-- Do not add manual Hexmap/Dungeon mode toggles to `Travel` or `Map Editor`; those tabs switch by map selection.
-- Do not import legacy world/runtime/editor owners from `features.world` or `ui.shell.NavigationIcons`.
-- Do not push the top-level tab roster back into `clean.CleanObject`; keep `CleanObject` as the bootstrap seam only.
+- Keep reusable feature products such as the creature slice in their own owners, because `featuretabs` should mount top-level surfaces rather than absorb feature internals.
+- Keep top-level roster decisions out of `CleanObject`, because the root owner should assemble siblings, not become a second navigation owner.
+- Keep legacy world and legacy navigation code out of this subtree, because abandoned structures are not valid precedent for the clean roster.

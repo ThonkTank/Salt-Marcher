@@ -2,18 +2,18 @@
 
 ## Purpose
 
-`src/clean/encounter` owns the runtime encounter state shown in the shell-owned Scene pane. It is no longer a top-level sidebar surface.
+`src/clean/encounter` owns the runtime encounter state rendered in the shell scene pane. Keep session encounter behavior here, because the lower-right scene surface is the persistent runtime area of the clean app.
 
-## Canonical Types and APIs
+## Canonical Types And APIs
 
-- `EncounterObject.composeEncounter(ComposeEncounterInput)` — encounter runtime request — returns the shell hook connector plus the command seam used by catalog content to add creatures into the active encounter state.
+- `EncounterObject.composeEncounter(ComposeEncounterInput)` - returns the shell registration hook and the command seam used to add creatures into the active encounter.
 
 ## Where New Code Goes
 
-- Keep encounter roster/tracker state in this owner and surface it through the shell scene registry.
-- Add future generate, save, and combat workflow here instead of rebuilding encounter state in catalog or shell owners.
+- Keep roster, tracker, combat-start, save, and future encounter session behavior here, because they all mutate the same runtime state.
+- Publish encounter UI through the shell scene registry, because encounter is a persistent runtime surface rather than a top-level tab.
 
 ## Forbidden Drift
 
-- Do not turn encounter back into a top-level feature tab.
-- Do not make creature catalog owners persist encounter state locally.
+- Keep creature selection and browsing in `clean.creatures`, because encounter consumes creatures but does not own catalog behavior.
+- Keep top-level navigation in `clean.featuretabs`, because encounter runtime belongs in the scene pane, not the primary sidebar roster.

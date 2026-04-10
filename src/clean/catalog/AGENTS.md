@@ -2,18 +2,18 @@
 
 ## Purpose
 
-`src/clean/catalog` owns the top-level Clean catalog workspace surfaced in the sidebar. It is the long-lived browser home for reusable content slices such as creatures now and spells/items later.
+`src/clean/catalog` owns the top-level `Catalog` workspace surface. It hosts reusable content slices, because the workspace owner should decide how content is mounted without absorbing the content's domain logic.
 
-## Canonical Types and APIs
+## Canonical Types And APIs
 
-- `CatalogObject.composeCatalog(ComposeCatalogInput)` — catalog surface request — returns the top-level shell surface for the Clean catalog workspace.
+- `CatalogObject.composeCatalog(ComposeCatalogInput)` - returns the top-level shell surface for the clean catalog workspace.
 
 ## Where New Code Goes
 
-- Keep top-level catalog surface ownership here instead of pushing catalog-specific surface assembly back into `clean.featuretabs`.
-- Keep concrete content products such as creatures, spells, and items in their own owners and mount them here through passive content packets.
+- Keep workspace-level surface composition here, because `Catalog` owns the top-level shell surface.
+- Mount concrete content products here through passive content packets, because creatures, items, or spells should keep their own domain owners.
 
 ## Forbidden Drift
 
-- Do not move reusable creature browser/statblock logic into this owner.
-- Do not turn `CatalogObject` into a generic shell registry; it owns one top-level workspace surface only.
+- Keep creature-specific browser, statblock, and data-loading logic in `clean.creatures`, because `Catalog` is a host surface, not a creature owner.
+- Keep shell registry mechanics in `clean.shell`, because this owner should describe one workspace surface only.
