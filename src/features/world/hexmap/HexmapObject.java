@@ -1,7 +1,8 @@
 package features.world.hexmap;
 
-import features.world.hexmap.input.ComposeInput;
+import features.world.hexmap.editorsurface.EditorsurfaceObject;
 import features.world.api.input.TravelSurfaceInput;
+import features.world.hexmap.input.ComposeInput;
 import features.world.hexmap.ui.travel.TravelObject;
 
 import java.util.Objects;
@@ -23,6 +24,7 @@ public final class HexmapObject {
         return new ComposeInput.ComposedHexmapInput(
                 travelSurface,
                 new features.world.hexmap.ui.overworld.surface.SurfaceObject(travelSurface),
-                new features.world.hexmap.ui.editor.surface.SurfaceObject(resolvedInput.detailsNavigator()));
+                new EditorsurfaceObject(new features.world.hexmap.editorsurface.input.ComposeInput(
+                        resolvedInput.detailsNavigator())));
     }
 }
