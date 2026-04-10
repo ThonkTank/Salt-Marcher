@@ -1,13 +1,16 @@
 package features.world.dungeon.dungeonmap.cluster.application;
 
 import features.world.dungeon.dungeonmap.DungeonMapObject;
+import features.world.dungeon.dungeonmap.cluster.ClusterObject;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterBootstrapRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterBoundaryEditRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterDoorMoveRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterFloorEditRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterMoveRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterSurfaceRewriteRequest;
+import features.world.dungeon.dungeonmap.cluster.input.PersistClusterRewriteTailInput;
 import features.world.dungeon.dungeonmap.input.PersistClusterRewriteReboundsInput;
+import features.world.dungeon.dungeonmap.input.PersistClusterRewriteRoomsInput;
 import features.world.dungeon.dungeonmap.structure.StructureObject;
 import features.world.dungeon.dungeonmap.structure.input.EmptyInput;
 import features.world.dungeon.dungeonmap.structure.input.FromSpecificationInput;
@@ -29,6 +32,7 @@ import java.util.Set;
 public final class ApplicationObject {
 
     private static final StructureObject STRUCTURE = new StructureObject();
+    private static final ClusterObject CLUSTER = new ClusterObject();
     private final Workflows workflows;
 
     public ApplicationObject(
@@ -454,11 +458,59 @@ public final class ApplicationObject {
             mapApplicationService.validateClusterRewrite(
                     new features.world.dungeon.dungeonmap.api.ValidateClusterRewriteRequest(originalLayout, rewriteRequest));
             List<Long> persistedClusterIds = clusterRepository.persistRewrite(conn, mapId, rewriteRequest);
+            PersistClusterRewriteTailInput.TailInput rewriteTail = CLUSTER.persistClusterRewriteTail(
+                    new PersistClusterRewriteTailInput(
+                            conn,
+                            originalLayout,
+                            rewriteRequest,
+                            persistedClusterIds,
+                            0L,
+                            List.of(),
+                            List.of()));
+            mapObject.persistClusterRewriteRooms(new PersistClusterRewriteRoomsInput(
+                    conn,
+                    rewriteTail.mapId(),
+                    rewriteTail.rewrittenClusters().stream()
+                            .map(ApplicationObject.Workflows::clusterRewriteRoomsClusterInput)
+                            .toList(),
+                    rewriteTail.removedRoomIds()));
             mapObject.persistClusterRewriteRebounds(PersistClusterRewriteReboundsInput.clusterRewriteRebounds(
                     conn,
                     originalLayout,
-                    rewriteRequest,
-                    persistedClusterIds));
+                    rewriteRequest));
+        }
+
+        private static PersistClusterRewriteRoomsInput.ClusterInput clusterRewriteRoomsClusterInput(
+                PersistClusterRewriteTailInput.ClusterInput cluster
+        ) {
+            return new PersistClusterRewriteRoomsInput.ClusterInput(
+                    cluster.clusterId(),
+                    cluster.rooms().stream()
+                            .map(ApplicationObject.Workflows::clusterRewriteRoomsRoomInput)
+                            .toList());
+        }
+
+        private static PersistClusterRewriteRoomsInput.RoomInput clusterRewriteRoomsRoomInput(
+                PersistClusterRewriteTailInput.RoomInput room
+        ) {
+            return new PersistClusterRewriteRoomsInput.RoomInput(
+                    room.roomId(),
+                    room.name(),
+                    room.levelAnchors().stream()
+                            .map(anchor -> new PersistClusterRewriteRoomsInput.LevelAnchorInput(
+                                    anchor.levelZ(),
+                                    anchor.anchorX2(),
+                                    anchor.anchorY2()))
+                            .toList(),
+                    room.visualDescription(),
+                    room.exitNarrations().stream()
+                            .map(exitNarration -> new PersistClusterRewriteRoomsInput.ExitNarrationInput(
+                                    exitNarration.levelZ(),
+                                    exitNarration.roomCellX(),
+                                    exitNarration.roomCellY(),
+                                    exitNarration.direction(),
+                                    exitNarration.description()))
+                            .toList());
         }
 
         private static List<features.world.dungeon.dungeonmap.cluster.model.Cluster> overlappingClustersAtLevel(

@@ -4,12 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Repository-owned dungeon-map rehydration from direct persisted structure owners.
@@ -70,37 +66,29 @@ public final class DungeonMapRepository {
     }
 
     /**
-     * Parent-owned rewrite tail for cluster commits: room metadata stays in the room owner, then the canonical
-     * map repository rebuilds one authoritative snapshot from persisted owners.
+     * Parent-owned room rewrite persistence for cluster commits. Reloading the authoritative map stays a separate
+     * map-owner step so the cluster tail can normalize room fallout before rebound reconciliation.
      */
-    public features.world.dungeon.dungeonmap.model.DungeonMap persistClusterRoomRewriteAndReload(
+    public void persistClusterRewriteRooms(
             Connection conn,
-            long mapId,
-            features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest,
-            List<Long> persistedClusterIds
+            features.world.dungeon.dungeonmap.state.PersistClusterRewriteRoomsState state
     ) throws SQLException {
         requireConnection(conn);
-        if (mapId <= 0 || rewriteRequest == null || !rewriteRequest.hasRoomPersistenceWork()) {
-            return loadMap(conn, mapId);
+        features.world.dungeon.dungeonmap.state.PersistClusterRewriteRoomsState resolvedState =
+                features.world.dungeon.dungeonmap.state.PersistClusterRewriteRoomsState.persistClusterRewriteRooms(state);
+        if (resolvedState.rewrittenClusters().isEmpty() && resolvedState.removedRoomIds().isEmpty()) {
+            return;
         }
-        List<features.world.dungeon.dungeonmap.cluster.model.Cluster> finalClusters = normalizedClusters(rewriteRequest.rewrittenClusters());
-        List<Long> resolvedClusterIds = persistedClusterIds == null ? List.of() : List.copyOf(persistedClusterIds);
-        if (finalClusters.size() != resolvedClusterIds.size()) {
-            throw new IllegalArgumentException("Persisted cluster ids must match rewritten clusters");
+        roomRepository.deleteRooms(conn, resolvedState.removedRoomIds());
+        for (features.world.dungeon.dungeonmap.state.PersistClusterRewriteRoomsState.ClusterState cluster : resolvedState.rewrittenClusters()) {
+            roomRepository.saveRooms(
+                    conn,
+                    resolvedState.mapId(),
+                    cluster.clusterId(),
+                    cluster.rooms().stream()
+                            .map(DungeonMapRepository::roomStateToRoom)
+                            .toList());
         }
-
-        Set<Long> finalRoomIds = roomIds(finalClusters);
-        List<Long> removedRoomIds = new ArrayList<>();
-        for (Long roomId : roomIds(normalizedClusters(rewriteRequest.originalClusters()))) {
-            if (roomId != null && !finalRoomIds.contains(roomId)) {
-                removedRoomIds.add(roomId);
-            }
-        }
-        roomRepository.deleteRooms(conn, removedRoomIds);
-        for (int i = 0; i < finalClusters.size(); i++) {
-            roomRepository.saveRooms(conn, mapId, resolvedClusterIds.get(i), finalClusters.get(i).roomTopology().rooms());
-        }
-        return loadMap(conn, mapId);
     }
 
     private features.world.dungeon.dungeonmap.model.DungeonMap loadMap(Connection conn, long mapId, String mapName) throws SQLException {
@@ -152,39 +140,29 @@ public final class DungeonMapRepository {
         }
     }
 
-    private static List<features.world.dungeon.dungeonmap.cluster.model.Cluster> normalizedClusters(List<features.world.dungeon.dungeonmap.cluster.model.Cluster> clusters) {
-        if (clusters == null || clusters.isEmpty()) {
-            return List.of();
+    private static features.world.dungeon.model.structures.room.Room roomStateToRoom(
+            features.world.dungeon.dungeonmap.state.PersistClusterRewriteRoomsState.RoomState room
+    ) {
+        java.util.LinkedHashMap<Integer, features.world.dungeon.geometry.GridPoint> anchorsByLevel = new java.util.LinkedHashMap<>();
+        for (features.world.dungeon.dungeonmap.state.PersistClusterRewriteRoomsState.LevelAnchorState anchor : room.levelAnchors()) {
+            anchorsByLevel.put(anchor.levelZ(), new features.world.dungeon.geometry.GridPoint(anchor.anchorX2(), anchor.anchorY2(), anchor.levelZ()));
         }
-        List<features.world.dungeon.dungeonmap.cluster.model.Cluster> result = new ArrayList<>();
-        Set<Long> seenClusterIds = new LinkedHashSet<>();
-        for (features.world.dungeon.dungeonmap.cluster.model.Cluster cluster : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            if (cluster.clusterId() == null) {
-                result.add(cluster);
-                continue;
-            }
-            if (seenClusterIds.add(cluster.clusterId())) {
-                result.add(cluster);
-            }
-        }
-        return result.isEmpty() ? List.of() : List.copyOf(result);
-    }
-
-    private static Set<Long> roomIds(Collection<features.world.dungeon.dungeonmap.cluster.model.Cluster> clusters) {
-        LinkedHashSet<Long> result = new LinkedHashSet<>();
-        for (features.world.dungeon.dungeonmap.cluster.model.Cluster cluster : clusters == null ? List.<features.world.dungeon.dungeonmap.cluster.model.Cluster>of() : clusters) {
-            if (cluster == null) {
-                continue;
-            }
-            for (features.world.dungeon.model.structures.room.Room room : cluster.roomTopology().rooms()) {
-                if (room != null && room.roomId() != null) {
-                    result.add(room.roomId());
-                }
-            }
-        }
-        return result.isEmpty() ? Set.of() : Set.copyOf(result);
+        List<features.world.dungeon.model.structures.room.RoomExitNarration> exitNarrations = room.exitNarrations().stream()
+                .map(exitNarration -> new features.world.dungeon.model.structures.room.RoomExitNarration(
+                        exitNarration.levelZ(),
+                        new features.world.dungeon.geometry.GridPoint(
+                                exitNarration.roomCellX() * 2,
+                                exitNarration.roomCellY() * 2,
+                                exitNarration.levelZ()),
+                        features.world.dungeon.geometry.CardinalDirection.valueOf(exitNarration.direction()),
+                        exitNarration.description()))
+                .toList();
+        return new features.world.dungeon.model.structures.room.Room(
+                room.roomId(),
+                room.name(),
+                anchorsByLevel,
+                new features.world.dungeon.model.structures.room.RoomNarration(
+                        room.visualDescription(),
+                        exitNarrations));
     }
 }

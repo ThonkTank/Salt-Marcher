@@ -11,16 +11,17 @@ import java.sql.SQLException;
 @SuppressWarnings("unused")
 public final class ClusterObject {
 
-    public void persistClusterRewriteTail(PersistClusterRewriteTailInput input) throws SQLException {
+    public PersistClusterRewriteTailInput.TailInput persistClusterRewriteTail(PersistClusterRewriteTailInput input) throws SQLException {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
         if (input.connection() == null) {
-            return;
+            return new PersistClusterRewriteTailInput.TailInput(input.mapId(), java.util.List.of(), java.util.List.of());
         }
         if (input.mapId() <= 0) {
-            return;
+            return new PersistClusterRewriteTailInput.TailInput(input.mapId(), java.util.List.of(), java.util.List.of());
         }
-        PersistClusterRewriteTailState.persistClusterRewriteTail(input);
+        return PersistClusterRewriteTailState.persistClusterRewriteTailInput(
+                PersistClusterRewriteTailState.persistClusterRewriteTail(input));
     }
 }

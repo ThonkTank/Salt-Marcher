@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Passive cluster-owned rewrite-tail state. This slice carries the projected final room rows for one persisted
@@ -32,7 +31,7 @@ public record PersistClusterRewriteTailState(
             throw new IllegalArgumentException("input");
         }
         ArrayList<ClusterState> rewrittenClusters = new ArrayList<>();
-        for (Map<String, Object> cluster : input.rewrittenClusters()) {
+        for (PersistClusterRewriteTailInput.ClusterInput cluster : input.rewrittenClusters()) {
             ClusterState projectedCluster = projectedCluster(cluster);
             if (projectedCluster != null) {
                 rewrittenClusters.add(projectedCluster);
@@ -43,6 +42,49 @@ public record PersistClusterRewriteTailState(
                 input.mapId(),
                 rewrittenClusters,
                 input.removedRoomIds());
+    }
+
+    public static PersistClusterRewriteTailInput.TailInput persistClusterRewriteTailInput(
+            PersistClusterRewriteTailState state
+    ) {
+        if (state == null) {
+            throw new IllegalArgumentException("state");
+        }
+        ArrayList<PersistClusterRewriteTailInput.ClusterInput> rewrittenClusters = new ArrayList<>();
+        for (ClusterState cluster : state.rewrittenClusters()) {
+            ArrayList<PersistClusterRewriteTailInput.RoomInput> rooms = new ArrayList<>();
+            for (RoomState room : cluster.rooms()) {
+                ArrayList<PersistClusterRewriteTailInput.LevelAnchorInput> anchors = new ArrayList<>();
+                for (LevelAnchorState anchor : room.levelAnchors()) {
+                    anchors.add(new PersistClusterRewriteTailInput.LevelAnchorInput(
+                            anchor.levelZ(),
+                            anchor.anchorX2(),
+                            anchor.anchorY2()));
+                }
+                ArrayList<PersistClusterRewriteTailInput.ExitNarrationInput> exitNarrations = new ArrayList<>();
+                for (ExitNarrationState exitNarration : room.exitNarrations()) {
+                    exitNarrations.add(new PersistClusterRewriteTailInput.ExitNarrationInput(
+                            exitNarration.levelZ(),
+                            exitNarration.roomCellX(),
+                            exitNarration.roomCellY(),
+                            exitNarration.direction(),
+                            exitNarration.description()));
+                }
+                rooms.add(new PersistClusterRewriteTailInput.RoomInput(
+                        room.roomId(),
+                        room.name(),
+                        anchors.isEmpty() ? List.of() : List.copyOf(anchors),
+                        room.visualDescription(),
+                        exitNarrations.isEmpty() ? List.of() : List.copyOf(exitNarrations)));
+            }
+            rewrittenClusters.add(new PersistClusterRewriteTailInput.ClusterInput(
+                    cluster.clusterId(),
+                    rooms.isEmpty() ? List.of() : List.copyOf(rooms)));
+        }
+        return new PersistClusterRewriteTailInput.TailInput(
+                state.mapId(),
+                rewrittenClusters.isEmpty() ? List.of() : List.copyOf(rewrittenClusters),
+                state.removedRoomIds());
     }
 
     public record ClusterState(
@@ -95,17 +137,17 @@ public record PersistClusterRewriteTailState(
         }
     }
 
-    private static ClusterState projectedCluster(Map<String, Object> cluster) {
+    private static ClusterState projectedCluster(PersistClusterRewriteTailInput.ClusterInput cluster) {
         if (cluster == null) {
             return null;
         }
-        Long clusterId = longValue(cluster.get("clusterId"));
+        long clusterId = cluster.clusterId();
         if (clusterId == null || clusterId <= 0) {
             return null;
         }
         ArrayList<RoomState> rooms = new ArrayList<>();
-        for (Object roomValue : listValue(cluster.get("rooms"))) {
-            RoomState room = projectedRoom(mapValue(roomValue));
+        for (PersistClusterRewriteTailInput.RoomInput roomValue : cluster.rooms() == null ? List.<PersistClusterRewriteTailInput.RoomInput>of() : cluster.rooms()) {
+            RoomState room = projectedRoom(roomValue);
             if (room != null) {
                 rooms.add(room);
             }
@@ -113,61 +155,35 @@ public record PersistClusterRewriteTailState(
         return new ClusterState(clusterId, rooms);
     }
 
-    private static RoomState projectedRoom(Map<String, Object> room) {
+    private static RoomState projectedRoom(PersistClusterRewriteTailInput.RoomInput room) {
         if (room == null) {
             return null;
         }
         ArrayList<LevelAnchorState> anchors = new ArrayList<>();
-        for (Object anchorValue : listValue(room.get("levelAnchors"))) {
-            Map<String, Object> anchor = mapValue(anchorValue);
-            Integer levelZ = intValue(anchor.get("levelZ"));
-            Integer anchorX2 = intValue(anchor.get("anchorX2"));
-            Integer anchorY2 = intValue(anchor.get("anchorY2"));
-            if (levelZ != null && anchorX2 != null && anchorY2 != null) {
-                anchors.add(new LevelAnchorState(levelZ, anchorX2, anchorY2));
+        for (PersistClusterRewriteTailInput.LevelAnchorInput anchor : room.levelAnchors() == null ? List.<PersistClusterRewriteTailInput.LevelAnchorInput>of() : room.levelAnchors()) {
+            if (anchor != null) {
+                anchors.add(new LevelAnchorState(anchor.levelZ(), anchor.anchorX2(), anchor.anchorY2()));
             }
         }
         ArrayList<ExitNarrationState> exitNarrations = new ArrayList<>();
-        for (Object exitNarrationValue : listValue(room.get("exitNarrations"))) {
-            Map<String, Object> exitNarration = mapValue(exitNarrationValue);
-            Integer levelZ = intValue(exitNarration.get("levelZ"));
-            Integer roomCellX = intValue(exitNarration.get("roomCellX"));
-            Integer roomCellY = intValue(exitNarration.get("roomCellY"));
-            if (levelZ != null && roomCellX != null && roomCellY != null) {
+        for (PersistClusterRewriteTailInput.ExitNarrationInput exitNarration : room.exitNarrations() == null
+                ? List.<PersistClusterRewriteTailInput.ExitNarrationInput>of()
+                : room.exitNarrations()) {
+            if (exitNarration != null) {
                 exitNarrations.add(new ExitNarrationState(
-                        levelZ,
-                        roomCellX,
-                        roomCellY,
-                        stringValue(exitNarration.get("direction")),
-                        stringValue(exitNarration.get("description"))));
+                        exitNarration.levelZ(),
+                        exitNarration.roomCellX(),
+                        exitNarration.roomCellY(),
+                        exitNarration.direction(),
+                        exitNarration.description()));
             }
         }
         return new RoomState(
-                longValue(room.get("roomId")),
-                stringValue(room.get("name")),
+                room.roomId(),
+                room.name(),
                 anchors,
-                stringValue(room.get("visualDescription")),
+                room.visualDescription(),
                 exitNarrations);
-    }
-
-    private static Map<String, Object> mapValue(Object value) {
-        return value instanceof Map<?, ?> rawMap ? (Map<String, Object>) rawMap : Map.of();
-    }
-
-    private static List<?> listValue(Object value) {
-        return value instanceof List<?> rawList ? rawList : List.of();
-    }
-
-    private static Long longValue(Object value) {
-        return value instanceof Number number ? number.longValue() : null;
-    }
-
-    private static Integer intValue(Object value) {
-        return value instanceof Number number ? number.intValue() : null;
-    }
-
-    private static String stringValue(Object value) {
-        return value == null ? "" : value.toString();
     }
 
     private static List<ClusterState> normalizedClusters(List<ClusterState> clusters) {

@@ -2,10 +2,8 @@ package features.world.dungeon.dungeonmap.cluster.input;
 
 import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 
 @SuppressWarnings("unused")
 public record PersistClusterRewriteTailInput(
@@ -14,15 +12,53 @@ public record PersistClusterRewriteTailInput(
         features.world.dungeon.dungeonmap.cluster.model.ClusterRewriteRequest rewriteRequest,
         List<Long> persistedClusterIds,
         long mapId,
-        List<Map<String, Object>> rewrittenClusters,
+        List<ClusterInput> rewrittenClusters,
         List<Long> removedRoomIds
 ) {
+
+    public record TailInput(
+            long mapId,
+            List<ClusterInput> rewrittenClusters,
+            List<Long> removedRoomIds
+    ) {
+    }
+
+    public record ClusterInput(
+            long clusterId,
+            List<RoomInput> rooms
+    ) {
+    }
+
+    public record RoomInput(
+            Long roomId,
+            String name,
+            List<LevelAnchorInput> levelAnchors,
+            String visualDescription,
+            List<ExitNarrationInput> exitNarrations
+    ) {
+    }
+
+    public record LevelAnchorInput(
+            int levelZ,
+            int anchorX2,
+            int anchorY2
+    ) {
+    }
+
+    public record ExitNarrationInput(
+            int levelZ,
+            int roomCellX,
+            int roomCellY,
+            String direction,
+            String description
+    ) {
+    }
 
     public PersistClusterRewriteTailInput {
         persistedClusterIds = persistedClusterIds == null ? List.of() : List.copyOf(persistedClusterIds);
         mapId = originalMap == null ? mapId : originalMap.mapId();
 
-        ArrayList<Map<String, Object>> projectedClusters = new ArrayList<>();
+        ArrayList<ClusterInput> projectedClusters = new ArrayList<>();
         if (rewriteRequest != null && rewriteRequest.rewrittenClusters() != null && !rewriteRequest.rewrittenClusters().isEmpty()) {
             if (rewriteRequest.rewrittenClusters().size() != persistedClusterIds.size()) {
                 throw new IllegalArgumentException("Persisted cluster ids must match rewritten clusters");
@@ -33,49 +69,42 @@ public record PersistClusterRewriteTailInput(
                 if (cluster == null || persistedClusterId == null || persistedClusterId <= 0) {
                     continue;
                 }
-                ArrayList<Map<String, Object>> projectedRooms = new ArrayList<>();
+                ArrayList<RoomInput> projectedRooms = new ArrayList<>();
                 for (features.world.dungeon.model.structures.room.Room room : cluster.roomTopology().rooms()) {
                     if (room == null) {
                         continue;
                     }
-                    ArrayList<Map<String, Object>> projectedAnchors = new ArrayList<>();
+                    ArrayList<LevelAnchorInput> projectedAnchors = new ArrayList<>();
                     for (Map.Entry<Integer, features.world.dungeon.geometry.GridPoint> entry : room.anchorsByLevel().entrySet()) {
                         Integer levelZ = entry.getKey();
                         features.world.dungeon.geometry.GridPoint anchor = entry.getValue();
                         if (levelZ == null || anchor == null) {
                             continue;
                         }
-                        LinkedHashMap<String, Object> projectedAnchor = new LinkedHashMap<>();
-                        projectedAnchor.put("levelZ", levelZ);
-                        projectedAnchor.put("anchorX2", anchor.x2());
-                        projectedAnchor.put("anchorY2", anchor.y2());
-                        projectedAnchors.add(Map.copyOf(projectedAnchor));
+                        projectedAnchors.add(new LevelAnchorInput(levelZ, anchor.x2(), anchor.y2()));
                     }
-                    ArrayList<Map<String, Object>> projectedExitNarrations = new ArrayList<>();
+                    ArrayList<ExitNarrationInput> projectedExitNarrations = new ArrayList<>();
                     for (features.world.dungeon.model.structures.room.RoomExitNarration exitNarration : room.narration().exitNarrations()) {
                         if (exitNarration == null || exitNarration.roomCell() == null || exitNarration.direction() == null) {
                             continue;
                         }
-                        LinkedHashMap<String, Object> projectedExitNarration = new LinkedHashMap<>();
-                        projectedExitNarration.put("levelZ", exitNarration.levelZ());
-                        projectedExitNarration.put("roomCellX", exitNarration.roomCell().x2() / 2);
-                        projectedExitNarration.put("roomCellY", exitNarration.roomCell().y2() / 2);
-                        projectedExitNarration.put("direction", exitNarration.direction().name());
-                        projectedExitNarration.put("description", exitNarration.description());
-                        projectedExitNarrations.add(Map.copyOf(projectedExitNarration));
+                        projectedExitNarrations.add(new ExitNarrationInput(
+                                exitNarration.levelZ(),
+                                exitNarration.roomCell().x2() / 2,
+                                exitNarration.roomCell().y2() / 2,
+                                exitNarration.direction().name(),
+                                exitNarration.description()));
                     }
-                    LinkedHashMap<String, Object> projectedRoom = new LinkedHashMap<>();
-                    projectedRoom.put("roomId", room.roomId());
-                    projectedRoom.put("name", room.name());
-                    projectedRoom.put("levelAnchors", projectedAnchors.isEmpty() ? List.of() : List.copyOf(projectedAnchors));
-                    projectedRoom.put("visualDescription", room.narration().visualDescription());
-                    projectedRoom.put("exitNarrations", projectedExitNarrations.isEmpty() ? List.of() : List.copyOf(projectedExitNarrations));
-                    projectedRooms.add(Map.copyOf(projectedRoom));
+                    projectedRooms.add(new RoomInput(
+                            room.roomId(),
+                            room.name(),
+                            projectedAnchors.isEmpty() ? List.of() : List.copyOf(projectedAnchors),
+                            room.narration().visualDescription(),
+                            projectedExitNarrations.isEmpty() ? List.of() : List.copyOf(projectedExitNarrations)));
                 }
-                LinkedHashMap<String, Object> projectedCluster = new LinkedHashMap<>();
-                projectedCluster.put("clusterId", persistedClusterId);
-                projectedCluster.put("rooms", projectedRooms.isEmpty() ? List.of() : List.copyOf(projectedRooms));
-                projectedClusters.add(Map.copyOf(projectedCluster));
+                projectedClusters.add(new ClusterInput(
+                        persistedClusterId,
+                        projectedRooms.isEmpty() ? List.of() : List.copyOf(projectedRooms)));
             }
         }
         rewrittenClusters = rewrittenClusters == null || rewrittenClusters.isEmpty()
