@@ -23,7 +23,7 @@
 - `dungeonmap/DungeonMapObject` — public loaded-map seam for cross-owner map reads and map-scoped workflows.
 - `dungeonmap/input/EnsureLoadedInput`, `SelectMapInput`, and `SubmitMutationInput` — canonical map-owned load/reload requests used by shell and editor flows.
 - `dungeonmap/input/SetActiveProjectionLevelInput`, `SetReachableProjectionLevelInput`, and the `SetLevelOverlay*Input` requests — canonical map-owned session-state transitions for loaded-map projection and overlay controls.
-- `room/RoomObject` — public room seam for room-owned narration writes.
+- `room/RoomObject` — public room seam for room-owned metadata and narration writes.
 - `runtime/RuntimeObject` — public runtime seam for cross-owner runtime workflows such as persisted runtime-state repair.
 - `stair/StairObject` — public stair seam for cross-owner stair workflows, starting with stair deletion.
 - `transition/TransitionObject` — public transition seam for cross-owner transition workflows and transition-owned rebound persistence.
