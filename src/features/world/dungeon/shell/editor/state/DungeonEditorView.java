@@ -4,6 +4,11 @@ import features.world.dungeon.catalog.application.DungeonMapCatalogService;
 import features.world.dungeon.canvas.base.DungeonEditorRenderState;
 import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.input.SelectMapInput;
+import features.world.dungeon.dungeonmap.input.SetActiveProjectionLevelInput;
+import features.world.dungeon.dungeonmap.input.SetLevelOverlayModeInput;
+import features.world.dungeon.dungeonmap.input.SetLevelOverlayOpacityInput;
+import features.world.dungeon.dungeonmap.input.SetLevelOverlayRangeInput;
+import features.world.dungeon.dungeonmap.input.SetSelectedOverlayLevelsInput;
 import features.world.dungeon.shell.AbstractDungeonMapView;
 import features.world.dungeon.shell.editor.interaction.state.EditorInteraction;
 import features.world.dungeon.state.DungeonEditorSessionState;
@@ -58,16 +63,20 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         controls.setOnNewMapRequested(mapDropdownController::showCreate);
         controls.setOnEditMapRequested(request ->
                 mapDropdownController.showEdit(new DungeonMapDropdownController.EditRequest(request.map(), request.anchor())));
-        controls.setOnPreviousLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() - 1));
-        controls.setOnNextLevelRequested(() -> mapState.setActiveProjectionLevel(mapState.activeProjectionLevel() + 1));
-        controls.setOnOverlayModeChanged(mapState::setLevelOverlayMode);
-        controls.setOnOverlayRangeChanged(mapState::setLevelOverlayRange);
-        controls.setOnOverlayOpacityChanged(mapState::setLevelOverlayOpacity);
-        controls.setOnSelectedOverlayLevelsChanged(mapState::setSelectedOverlayLevels);
+        controls.setOnPreviousLevelRequested(() -> mapObject.setActiveProjectionLevel(
+                new SetActiveProjectionLevelInput(mapState.activeProjectionLevel() - 1)));
+        controls.setOnNextLevelRequested(() -> mapObject.setActiveProjectionLevel(
+                new SetActiveProjectionLevelInput(mapState.activeProjectionLevel() + 1)));
+        controls.setOnOverlayModeChanged(mode -> mapObject.setLevelOverlayMode(new SetLevelOverlayModeInput(mode)));
+        controls.setOnOverlayRangeChanged(levelRange -> mapObject.setLevelOverlayRange(new SetLevelOverlayRangeInput(levelRange)));
+        controls.setOnOverlayOpacityChanged(opacity -> mapObject.setLevelOverlayOpacity(new SetLevelOverlayOpacityInput(opacity)));
+        controls.setOnSelectedOverlayLevelsChanged(levels -> mapObject.setSelectedOverlayLevels(new SetSelectedOverlayLevelsInput(levels)));
         controls.setOnViewModeChanged(sessionState::selectViewMode);
         controls.setOnToolChanged(sessionState::selectTool);
 
         workspace().setInteractionHandler(editorInteraction);
+        workspace().setOnLevelScrollRequested(levelDelta -> mapObject.setActiveProjectionLevel(
+                new SetActiveProjectionLevelInput(mapState.activeProjectionLevel() + levelDelta)));
         refreshSessionUi(sessionState, editorInteraction);
         refreshMapUi(mapState, sessionState, editorInteraction);
         refreshEditorRenderState(interactionState);

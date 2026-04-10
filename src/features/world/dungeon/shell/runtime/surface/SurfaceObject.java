@@ -15,6 +15,11 @@ import features.world.dungeon.canvas.base.DungeonCanvasTheme;
 import features.world.dungeon.canvas.base.DungeonRuntimeRenderOverlay;
 import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.input.SelectMapInput;
+import features.world.dungeon.dungeonmap.input.SetLevelOverlayModeInput;
+import features.world.dungeon.dungeonmap.input.SetLevelOverlayOpacityInput;
+import features.world.dungeon.dungeonmap.input.SetLevelOverlayRangeInput;
+import features.world.dungeon.dungeonmap.input.SetReachableProjectionLevelInput;
+import features.world.dungeon.dungeonmap.input.SetSelectedOverlayLevelsInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
@@ -94,17 +99,19 @@ public final class SurfaceObject extends AbstractDungeonMapView {
                 this::movePartyToNavigation,
                 hitCollector));
         workspace().setOnLevelScrollRequested(delta ->
-                state.setReachableProjectionLevel(state.activeProjectionLevel() + delta));
+                mapObject.setReachableProjectionLevel(new SetReachableProjectionLevelInput(state.activeProjectionLevel() + delta)));
         workspace().setOnStateChanged(this::refreshLabels);
         runtimeState.addListener(this::refreshRuntimeUi);
         Button upLevelButton = new Button("Ebene +");
         Button downLevelButton = new Button("Ebene -");
-        upLevelButton.setOnAction(event -> state.setReachableProjectionLevel(state.activeProjectionLevel() + 1));
-        downLevelButton.setOnAction(event -> state.setReachableProjectionLevel(state.activeProjectionLevel() - 1));
-        overlayControls.setOnModeChanged(state::setLevelOverlayMode);
-        overlayControls.setOnRangeChanged(state::setLevelOverlayRange);
-        overlayControls.setOnOpacityChanged(state::setLevelOverlayOpacity);
-        overlayControls.setOnSelectedLevelsChanged(state::setSelectedOverlayLevels);
+        upLevelButton.setOnAction(event ->
+                mapObject.setReachableProjectionLevel(new SetReachableProjectionLevelInput(state.activeProjectionLevel() + 1)));
+        downLevelButton.setOnAction(event ->
+                mapObject.setReachableProjectionLevel(new SetReachableProjectionLevelInput(state.activeProjectionLevel() - 1)));
+        overlayControls.setOnModeChanged(mode -> mapObject.setLevelOverlayMode(new SetLevelOverlayModeInput(mode)));
+        overlayControls.setOnRangeChanged(levelRange -> mapObject.setLevelOverlayRange(new SetLevelOverlayRangeInput(levelRange)));
+        overlayControls.setOnOpacityChanged(opacity -> mapObject.setLevelOverlayOpacity(new SetLevelOverlayOpacityInput(opacity)));
+        overlayControls.setOnSelectedLevelsChanged(levels -> mapObject.setSelectedOverlayLevels(new SetSelectedOverlayLevelsInput(levels)));
         Region levelSpacer = new Region();
         HBox.setHgrow(levelSpacer, Priority.ALWAYS);
         HBox levelRow = new HBox(8, levelLabel, downLevelButton, upLevelButton, levelSpacer, overlayControls.trigger());
@@ -183,7 +190,7 @@ public final class SurfaceObject extends AbstractDungeonMapView {
             runtimeState.clear();
             return;
         }
-        state().setReachableProjectionLevel(state().activeProjectionLevel());
+        mapObject().setReachableProjectionLevel(new SetReachableProjectionLevelInput(state().activeProjectionLevel()));
         if (runtimeState.pendingNavigation() != null
                 && !Objects.equals(runtimeState.pendingNavigation().mapId(), state().activeMapId())
                 && !state().loading()) {
@@ -328,7 +335,7 @@ public final class SurfaceObject extends AbstractDungeonMapView {
         }
         runtimeState.showNavigation(snapshot);
         if (snapshot != null && snapshot.cell() != null) {
-            state().setReachableProjectionLevel(snapshot.levelZ());
+            mapObject().setReachableProjectionLevel(new SetReachableProjectionLevelInput(snapshot.levelZ()));
         }
     }
 

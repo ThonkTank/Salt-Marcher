@@ -66,7 +66,8 @@ public final class DungeonObject {
                 mapApplicationService,
                 new CorridorObject(corridorRepository),
                 transitionObject,
-                loadingService);
+                loadingService,
+                mapState);
         ApplicationObject clusterApplicationService = new ApplicationObject(
                 mapApplicationService,
                 mapRepository,

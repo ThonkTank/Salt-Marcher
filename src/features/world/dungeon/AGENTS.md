@@ -22,6 +22,7 @@
 - `geometry` — public dungeon spatial seams use the canonical carriers from this slice instead of raw point or segment collections.
 - `dungeonmap/DungeonMapObject` — public loaded-map seam for cross-owner map reads and map-scoped workflows.
 - `dungeonmap/input/EnsureLoadedInput`, `SelectMapInput`, and `SubmitMutationInput` — canonical map-owned load/reload requests used by shell and editor flows.
+- `dungeonmap/input/SetActiveProjectionLevelInput`, `SetReachableProjectionLevelInput`, and the `SetLevelOverlay*Input` requests — canonical map-owned session-state transitions for loaded-map projection and overlay controls.
 - `room/RoomObject` — public room seam for room-owned narration writes.
 - `runtime/RuntimeObject` — public runtime seam for cross-owner runtime workflows such as persisted runtime-state repair.
 - `stair/StairObject` — public stair seam for cross-owner stair workflows, starting with stair deletion.
@@ -36,6 +37,7 @@
 - Do not route new world-facing dungeon composition back through `DungeonObject`; that boundary now lives on `features.world.dungeonclean.DungeoncleanObject`.
 - Cross owner boundaries only through the target owner's root package and public `*Object` seam. Do not skip intermediate owners.
 - Keep shared physical topology on `dungeonmap/structure`, shared traversal semantics on `dungeonmap/connections`, and loaded-map/session ownership on `dungeonmap`.
+- Route projection-level and overlay-control mutations through `dungeonmap/DungeonMapObject` instead of mutating `DungeonMapState` directly from shell views.
 - Keep public dungeon geometry carrier-based. Shared spatial seams use the canonical `geometry` types rather than raw `Set/List/Collection<GridPoint|GridSegment>`.
 - Keep runtime-only meaning under the `runtime` owner, editor gesture meaning under `shell/editor/interaction`, shell hit/highlight publication under `shell/interaction`, and display-only rendering under `canvas`.
 - Route authoritative reloads through the owning workflow plus the owner's `repository` and `state` layers. Views and tools do not own the authoritative map snapshot.
