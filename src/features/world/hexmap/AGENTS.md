@@ -6,7 +6,8 @@
 
 ## Canonical Types and APIs
 
-- `HexmapObject` — hexmap feature root seam — composes the overworld session surface, the map editor surface, and the shared travel scene surface for the world boundary.
+- `HexmapObject` — hexmap feature root seam — composes the overworld session surface, the map editor surface, and the shared travel scene surface for the world boundary via `compose`.
+- `input/ComposeInput` — canonical world-facing hexmap composition request and result carrier.
 - `ui/overworld/surface/SurfaceObject` — overworld session surface — drives the party-token travel view and delegates persistence to existing editor/runtime helpers.
 - `ui/editor/surface/SurfaceObject` — map-editor session surface — owns the top-level editor view wiring while delegating paint, load, and inspector publication to existing editor collaborators.
 - `ui/travel/TravelObject` — shared travel scene surface — renders overworld and dungeon travel summaries for the shell-owned scene pane.
@@ -16,6 +17,7 @@
 
 ## Where New Code Goes
 
+- Keep top-level world-facing hexmap composition on `HexmapObject`; the world feature should not manually assemble travel plus overworld/editor surfaces around it.
 - Keep runtime and editor hex rendering on the shared renderer.
 - Keep debounced party-tile persistence and transactional map resizing in `HexMapService`.
 - Keep paint batching on the existing paint-and-flush workflow.
@@ -23,5 +25,6 @@
 
 ## Forbidden Drift
 
+- Do not let the world parent recreate the hexmap travel surface or manually reassemble hexmap child views outside `HexmapObject`.
 - Do not fork separate runtime and editor renderers for the same hex surface behavior.
 - Do not degrade paint drag into per-tile persistence writes.

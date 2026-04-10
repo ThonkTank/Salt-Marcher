@@ -11,7 +11,7 @@
 - `features.world.read.ReadObject` — canonical world read bridge for world-wide transition-target and map-id lookups consumed by dungeon and shell-facing workflows.
 - `features.world.read.input` — canonical world-owned read requests and result carriers.
 - `features.world.api.ApiObject` — compatibility world boundary. Keep old callers stable here, but do not treat `api/` as placement precedent for new world-owned code.
-- `features.world.hexmap.HexmapObject` — hexmap feature root seam — returns the overworld/editor view pair and shared travel surface wiring consumed by the world boundary.
+- `features.world.hexmap.HexmapObject` — hexmap feature root seam — composes and returns the overworld/editor surfaces plus shared travel surface wiring consumed by the world boundary.
 - `features.world.dungeonclean.DungeoncleanObject` — parallel clean dungeon rebuild seam. Use it for migrated capabilities instead of reopening legacy `features.world.dungeon` seams.
 - `features.campaignstate.CampaignstateObject` — campaign-state seam consumed for persisted world-session position and time progression.
 
@@ -21,6 +21,7 @@
 - Keep reusable world-owned UI building blocks shared by runtime and editor surfaces under world-owned UI, not under one editor subtree.
 - Keep editor-facing world requests on explicit world-owned seams with typed request payloads such as `loadMapList`, `loadMap`, and `updateMap`.
 - Put world-wide read bridges under `features.world.read` instead of `features.world.api.read`.
+- Let `HexmapObject` own the top-level hexmap composition handoff instead of rebuilding its travel/editor/runtime pieces in the world parent.
 - Keep `api/` as compatibility only; do not place new world-owned boundary logic there.
 - Do not use `application` naming here as placement precedent for new touched architecture work.
 
