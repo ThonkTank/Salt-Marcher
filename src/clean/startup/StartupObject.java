@@ -9,20 +9,43 @@ import javafx.scene.Scene;
 @SuppressWarnings("unused")
 public final class StartupObject {
 
-    public StartApplicationInput startApplication(StartApplicationInput input) {
-        if (input == null) {
-            throw new NullPointerException("input");
-        }
-        showStage(input);
-        return input;
+    private final StartApplicationInput startup;
+
+    public StartupObject(StartApplicationInput input) {
+        this.startup = java.util.Objects.requireNonNull(input, "input");
+        new StartupAssembly(startup).startApplication();
     }
 
-    private void showStage(StartApplicationInput input) {
-        Scene scene = new Scene(input.root(), 1280, 800);
-        input.primaryStage().setTitle(input.applicationTitle());
-        input.primaryStage().setScene(scene);
-        input.primaryStage().setMinWidth(960);
-        input.primaryStage().setMinHeight(640);
-        input.primaryStage().show();
+    public StartApplicationInput startApplication(StartApplicationInput input) {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        return startup;
+    }
+
+    private static final class StartupAssembly {
+
+        private final StartApplicationInput input;
+
+        private StartupAssembly(StartApplicationInput input) {
+            this.input = input;
+        }
+
+        private void startApplication() {
+            Scene scene = new Scene(input.root(), 1280, 800);
+            if (!input.root().getStyleClass().contains("clean-root")) {
+                input.root().getStyleClass().add("clean-root");
+            }
+            java.net.URL stylesheetUrl = StartupObject.class.getResource("/clean/clean.css");
+            if (stylesheetUrl == null) {
+                throw new IllegalStateException("Missing clean stylesheet: /clean/clean.css");
+            }
+            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
+            input.primaryStage().setTitle(input.applicationTitle());
+            input.primaryStage().setScene(scene);
+            input.primaryStage().setMinWidth(960);
+            input.primaryStage().setMinHeight(640);
+            input.primaryStage().show();
+        }
     }
 }

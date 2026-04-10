@@ -1,7 +1,7 @@
-package clean.frame.input;
+package clean.shell.frame.input;
 
 import javafx.scene.Node;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.BorderPane;
 
 @SuppressWarnings("unused")
 public record ComposeFrameInput(
@@ -14,7 +14,7 @@ public record ComposeFrameInput(
 ) {
 
     public record FrameInput(
-            VBox root
+            BorderPane root
     ) {
     }
 }

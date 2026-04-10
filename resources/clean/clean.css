@@ -7,6 +7,7 @@
     -fx-background-color: rgba(52, 40, 28, 0.92);
     -fx-border-color: rgba(255, 255, 255, 0.18);
     -fx-border-width: 0 0 1 0;
+    -fx-padding: 16 20 16 20;
 }
 
 .toolbar-title {
@@ -28,6 +29,9 @@
     -fx-background-color: rgba(61, 47, 34, 0.95);
     -fx-border-color: rgba(255, 255, 255, 0.08);
     -fx-border-width: 0 1 0 0;
+    -fx-padding: 18 12 18 12;
+    -fx-spacing: 12px;
+    -fx-pref-width: 140px;
 }
 
 .navigation-list {
@@ -58,6 +62,8 @@
 
 .column-stack {
     -fx-fill-width: true;
+    -fx-padding: 18px;
+    -fx-spacing: 16px;
 }
 
 .panel-shell {
@@ -67,6 +73,7 @@
     -fx-border-color: rgba(61, 47, 34, 0.12);
     -fx-border-width: 1px;
     -fx-effect: dropshadow(gaussian, rgba(43, 31, 20, 0.10), 18, 0.12, 0, 8);
+    -fx-padding: 14px;
 }
 
 .panel-title {
@@ -78,12 +85,13 @@
 .panel-content {
     -fx-background-color: rgba(255, 255, 255, 0.55);
     -fx-background-radius: 14px;
-    -fx-padding: 0;
+    -fx-padding: 14px;
 }
 
 .hero-card {
     -fx-background-color: linear-gradient(to bottom right, rgba(86, 64, 47, 0.95), rgba(52, 39, 28, 0.96));
     -fx-background-radius: 16px;
+    -fx-padding: 20px;
 }
 
 .eyebrow-label {
@@ -112,6 +120,7 @@
 .list-card,
 .empty-panel {
     -fx-background-color: transparent;
+    -fx-spacing: 8px;
 }
 
 .section-label {

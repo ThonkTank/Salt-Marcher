@@ -1,11 +1,21 @@
-package clean.navigation.input;
+package clean.shell.navigation.input;
 
 import javafx.scene.Node;
 
 @SuppressWarnings("unused")
 public record ComposeNavigationInput(
-        SurfaceInput activeSurface
+        java.util.List<SurfaceInput> surfaces,
+        String initialSurfaceId,
+        Node defaultDetailsContent,
+        Node defaultStateContent
 ) {
+
+    public ComposeNavigationInput {
+        surfaces = surfaces == null ? java.util.List.of() : java.util.List.copyOf(surfaces.stream()
+                .filter(java.util.Objects::nonNull)
+                .toList());
+        initialSurfaceId = initialSurfaceId == null ? "" : initialSurfaceId.trim();
+    }
 
     public record SurfaceInput(
             String surfaceId,
@@ -15,7 +25,9 @@ public record ComposeNavigationInput(
             Node controlsContent,
             Node mainContent,
             Node detailsContent,
-            Node stateContent
+            Node stateContent,
+            Runnable onShow,
+            Runnable onHide
     ) {
     }
 
