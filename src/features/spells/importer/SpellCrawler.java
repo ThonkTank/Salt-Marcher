@@ -4,9 +4,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import shared.crawler.config.CrawlerConfig;
+import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
-import shared.crawler.config.CrawlerProperties;
+import shared.crawler.config.input.LoadRuntimeConfigInput;
+import shared.crawler.config.input.ResolveProjectPathInput;
 import shared.crawler.http.CrawlerHttpClient;
 import shared.crawler.slug.SlugIdentity;
 
@@ -15,11 +16,9 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -36,31 +35,38 @@ public final class SpellCrawler {
     private final long delayMs;
     private final Path slugFile;
 
-    public SpellCrawler(CrawlerConfig config, Path outputDir, Path slugFile) {
-        this.httpClient = config.httpClient();
-        this.cobaltSession = config.cobaltSession();
+    public SpellCrawler(LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig, Path outputDir, Path slugFile) {
+        this.httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        this.cobaltSession = runtimeConfig.cobaltSession();
         this.outputDir = outputDir;
-        this.delayMs = config.delayMs();
+        this.delayMs = runtimeConfig.delayMs();
         this.slugFile = slugFile;
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Properties props = CrawlerProperties.loadCrawlerProperties();
-        CrawlerConfig config;
+        ConfigObject configObject = new ConfigObject();
+        LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig;
         try {
-            config = CrawlerConfig.fromProperties(props);
+            runtimeConfig = configObject.loadRuntimeConfig(new LoadRuntimeConfigInput());
         } catch (CrawlerConfigException e) {
             System.err.println(e.getMessage());
             System.exit(1);
             return;
         }
 
-        Path outputDir = CrawlerProperties.resolveOutputDir(
-                props.getProperty("spells.output.dir", "data/spells"));
-        Path slugFile = Paths.get(props.getProperty("spells.slugs.file", "data/spell-slugs.txt"));
+        Path outputDir = configObject.resolveProjectPath(new ResolveProjectPathInput(
+                runtimeConfig.properties().getProperty("spells.output.dir", "data/spells"),
+                "spells.output.dir"
+        )).path();
+        Path slugFile = configObject.resolveProjectPath(new ResolveProjectPathInput(
+                runtimeConfig.properties().getProperty("spells.slugs.file", "data/spell-slugs.txt"),
+                "spells.slugs.file"
+        )).path();
         Files.createDirectories(outputDir);
 
-        SpellCrawler crawler = new SpellCrawler(config, outputDir, slugFile);
+        SpellCrawler crawler = new SpellCrawler(runtimeConfig, outputDir, slugFile);
         if (args.length > 0 && "--build-slugs".equals(args[0])) {
             crawler.buildSlugList();
             return;
@@ -138,8 +144,7 @@ public final class SpellCrawler {
 
     private Set<String> collectSlugsFromListing() throws IOException, InterruptedException {
         Set<String> rawSlugs = new LinkedHashSet<>();
-        int page = 1;
-        while (true) {
+        for (int page = 1; ; page++) {
             System.out.println("Loading spell listing page " + page + "...");
             List<String> pageSlugs = fetchSpellSlugs(page);
             int sizeBefore = rawSlugs.size();
@@ -150,7 +155,6 @@ public final class SpellCrawler {
                 break;
             }
             System.out.println("  +" + newlyAdded + " new spells (total: " + rawSlugs.size() + ")");
-            page++;
             Thread.sleep(delayMs);
         }
         return SlugIdentity.deduplicateSlugs(rawSlugs);

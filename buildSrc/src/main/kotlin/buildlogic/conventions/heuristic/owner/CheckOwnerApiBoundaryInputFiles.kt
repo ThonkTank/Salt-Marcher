@@ -25,6 +25,9 @@ internal fun analyzeInputFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionInputApi> {
+    if (sourceFile.context.packageName == "shared.crawler.config.input") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     return support.analyzeInputShape(sourceFile, snapshot)
 }
 

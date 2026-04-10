@@ -4,9 +4,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import shared.crawler.config.CrawlerConfig;
+import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
-import shared.crawler.config.CrawlerProperties;
+import shared.crawler.config.input.LoadRuntimeConfigInput;
+import shared.crawler.config.input.ResolveProjectPathInput;
 import shared.crawler.http.CrawlerHttpClient;
 import shared.crawler.slug.SlugIdentity;
 
@@ -17,7 +18,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -44,11 +44,13 @@ public class MonsterCrawler {
     private final Path outputDir;
     private final long delayMs;
 
-    public MonsterCrawler(CrawlerConfig config, Path outputDir) {
-        this.httpClient = config.httpClient();
-        this.cobaltSession = config.cobaltSession();
+    public MonsterCrawler(LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig, Path outputDir) {
+        this.httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        this.cobaltSession = runtimeConfig.cobaltSession();
         this.outputDir = outputDir;
-        this.delayMs = config.delayMs();
+        this.delayMs = runtimeConfig.delayMs();
     }
 
     // -------------------------------------------------------------------------
@@ -56,22 +58,24 @@ public class MonsterCrawler {
     // -------------------------------------------------------------------------
 
     public static void main(String[] args) throws Exception {
-        Properties props = CrawlerProperties.loadCrawlerProperties();
+        ConfigObject configObject = new ConfigObject();
+        LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig;
 
-        CrawlerConfig config;
         try {
-            config = CrawlerConfig.fromProperties(props);
+            runtimeConfig = configObject.loadRuntimeConfig(new LoadRuntimeConfigInput());
         } catch (CrawlerConfigException e) {
             System.err.println(e.getMessage());
             System.exit(1);
             return;
         }
-        Path outputDir = CrawlerProperties.resolveOutputDir(
-                props.getProperty("output.dir", "data/monsters"));
+        Path outputDir = configObject.resolveProjectPath(new ResolveProjectPathInput(
+                runtimeConfig.properties().getProperty("output.dir", "data/monsters"),
+                "output.dir"
+        )).path();
 
         Files.createDirectories(outputDir);
 
-        new MonsterCrawler(config, outputDir).crawl();
+        new MonsterCrawler(runtimeConfig, outputDir).crawl();
     }
 
     // -------------------------------------------------------------------------
@@ -84,8 +88,7 @@ public class MonsterCrawler {
 
         // Collect all slugs from the listing pages first
         Set<String> rawSlugs = new LinkedHashSet<>();
-        int page = 1;
-        while (true) {
+        for (int page = 1; ; page++) {
             System.out.println("Loading listing page " + page + "...");
             List<String> pageSlugs = fetchMonsterSlugs(page);
             int sizeBefore = rawSlugs.size();
@@ -97,7 +100,6 @@ public class MonsterCrawler {
                 break;
             }
             System.out.println("  +" + newlyAdded + " new monsters (total: " + rawSlugs.size() + ")");
-            page++;
             Thread.sleep(delayMs);
         }
 

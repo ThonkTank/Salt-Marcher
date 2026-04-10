@@ -4,9 +4,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import shared.crawler.config.CrawlerConfig;
+import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
-import shared.crawler.config.CrawlerProperties;
+import shared.crawler.config.input.LoadRuntimeConfigInput;
+import shared.crawler.config.input.ResolveProjectPathInput;
 import shared.crawler.http.CrawlerHttpClient;
 import shared.crawler.slug.SlugIdentity;
 
@@ -18,7 +19,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -45,11 +45,13 @@ public class ItemCrawler {
     private final long delayMs;
     private final Path magicItemSlugsFile;
 
-    public ItemCrawler(CrawlerConfig config, Path outputDir, Path magicItemSlugsFile) {
-        this.httpClient = config.httpClient();
-        this.cobaltSession = config.cobaltSession();
+    public ItemCrawler(LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig, Path outputDir, Path magicItemSlugsFile) {
+        this.httpClient = HttpClient.newBuilder()
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        this.cobaltSession = runtimeConfig.cobaltSession();
         this.outputDir = outputDir;
-        this.delayMs = config.delayMs();
+        this.delayMs = runtimeConfig.delayMs();
         this.magicItemSlugsFile = magicItemSlugsFile;
     }
 
@@ -58,25 +60,29 @@ public class ItemCrawler {
     // -------------------------------------------------------------------------
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Properties props = CrawlerProperties.loadCrawlerProperties();
+        ConfigObject configObject = new ConfigObject();
+        LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig;
 
-        CrawlerConfig config;
         try {
-            config = CrawlerConfig.fromProperties(props);
+            runtimeConfig = configObject.loadRuntimeConfig(new LoadRuntimeConfigInput());
         } catch (CrawlerConfigException e) {
             System.err.println(e.getMessage());
             System.exit(1);
             return;
         }
-        Path outputDir = CrawlerProperties.resolveOutputDir(
-                props.getProperty("items.output.dir", "data/items"));
-        Path slugsFile = Paths.get(props.getProperty("magic-items.slugs.file",
-                "data/magic-item-slugs.txt"));
+        Path outputDir = configObject.resolveProjectPath(new ResolveProjectPathInput(
+                runtimeConfig.properties().getProperty("items.output.dir", "data/items"),
+                "items.output.dir"
+        )).path();
+        Path slugsFile = configObject.resolveProjectPath(new ResolveProjectPathInput(
+                runtimeConfig.properties().getProperty("magic-items.slugs.file", "data/magic-item-slugs.txt"),
+                "magic-items.slugs.file"
+        )).path();
 
         Files.createDirectories(outputDir.resolve("equipment"));
         Files.createDirectories(outputDir.resolve("magic-items"));
 
-        ItemCrawler crawler = new ItemCrawler(config, outputDir, slugsFile);
+        ItemCrawler crawler = new ItemCrawler(runtimeConfig, outputDir, slugsFile);
 
         if (args.length > 0 && "--build-slugs".equals(args[0])) {
             crawler.buildMagicItemSlugList();
@@ -96,8 +102,7 @@ public class ItemCrawler {
 
         // 1. Collect equipment slugs via pagination
         Set<String> rawEquipmentSlugs = new LinkedHashSet<>();
-        int page = 1;
-        while (true) {
+        for (int page = 1; ; page++) {
             System.out.println("Loading equipment listing page " + page + "...");
             List<String> pageSlugs = fetchEquipmentSlugs(page);
             int sizeBefore = rawEquipmentSlugs.size();
@@ -110,7 +115,6 @@ public class ItemCrawler {
                 break;
             }
             System.out.println("  +" + newlyAdded + " new items (total: " + rawEquipmentSlugs.size() + ")");
-            page++;
             Thread.sleep(delayMs);
         }
 
@@ -322,12 +326,11 @@ public class ItemCrawler {
 
         // Paginate /magic-items?page=X and extract static links.
         Set<String> slugs = new LinkedHashSet<>();
-        int page = 1;
         int emptyPages = 0;
 
         // Two-strike sentinel: stop after two consecutive pages with no new slugs.
         // Tolerates a single transient empty page before giving up.
-        while (emptyPages < 2) {
+        for (int page = 1; emptyPages < 2; page++) {
             String url = BASE_URL + "/magic-items?page=" + page;
             System.out.println("  Page " + page + "...");
 
@@ -345,6 +348,9 @@ public class ItemCrawler {
 
                 if (slugs.size() == sizeBefore) {
                     emptyPages++;
+                    if (emptyPages >= 2) {
+                        break;
+                    }
                 } else {
                     emptyPages = 0;
                     System.out.println("    +" + (slugs.size() - sizeBefore)
@@ -353,9 +359,11 @@ public class ItemCrawler {
             } catch (IOException e) {
                 System.err.println("ItemCrawler.buildMagicItemSlugList(): " + e.getMessage());
                 emptyPages++;
+                if (emptyPages >= 2) {
+                    break;
+                }
             }
 
-            page++;
             Thread.sleep(delayMs);
         }
 

@@ -6,7 +6,10 @@
 
 ## Canonical Types and APIs
 
-- `shared/crawler/*` — shared crawler utilities.
+- `shared/crawler/config/ConfigObject` — shared runtime config seam for crawler properties, session validation, delay parsing, and project-local path resolution.
+- `shared/crawler/http/CrawlerHttpClient` — shared authenticated crawler GET helper.
+- `shared/crawler/slug/*` — shared crawler slug utilities.
+- `shared/crawler/text/*` — shared crawler text helpers.
 - `shared/creatures/parser/*` — parser helpers reused by importer and creature UI or application code.
 
 ## Where New Code Goes
