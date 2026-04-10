@@ -3,10 +3,18 @@ package features.loottable.ui;
 import features.items.api.ItemBrowserPane;
 import features.items.api.ItemBrowserRowAction;
 import features.items.api.ItemCatalogService;
+import features.loottable.LoottableObject;
 import features.loottable.api.LootTableSummary;
+import features.loottable.input.AddItemInput;
+import features.loottable.input.CreateTableInput;
+import features.loottable.input.DeleteTableInput;
+import features.loottable.input.LoadTableInput;
+import features.loottable.input.LoadTablesInput;
+import features.loottable.input.RemoveItemInput;
+import features.loottable.input.RenameTableInput;
+import features.loottable.input.UpdateWeightInput;
 import features.loottable.model.LootTable;
 import features.loottable.service.LootTableNameNormalizer;
-import features.loottable.service.LootTableService;
 import features.tables.ui.TableActionRequest;
 import features.tables.ui.TableEditorTaskRunner;
 import javafx.scene.Node;
@@ -22,7 +30,9 @@ import java.util.concurrent.Callable;
 import java.util.HashSet;
 import java.util.function.Consumer;
 
+@SuppressWarnings("unused")
 public class LootTableEditorView implements AppView {
+    private static final LoottableObject LOOT_TABLES = new LoottableObject();
 
     private final ItemBrowserPane itemBrowserPane;
     private final LootTableEditorControls controls;
@@ -91,9 +101,9 @@ public class LootTableEditorView implements AppView {
         long tableId = table.tableId;
         entriesPane.setOnRemoveEntry(itemId -> runTask(
                 "removeItem",
-                () -> LootTableService.removeItem(tableId, itemId),
+                () -> LOOT_TABLES.removeItem(new RemoveItemInput(tableId, itemId)),
                 status -> {
-                    if (status == LootTableService.MutationStatus.SUCCESS) reloadEntries();
+                    if (status.status() == RemoveItemInput.Status.SUCCESS) reloadEntries();
                     else showMutationError("Loot-Tabelle", "Item konnte nicht entfernt werden.", entriesPane);
                 }));
         entriesPane.setOnUpdateWeight((itemId, weight) -> {
@@ -104,11 +114,11 @@ public class LootTableEditorView implements AppView {
             entriesPane.setPendingWeightItemIds(pendingWeightItemIds);
             runTask(
                     "updateWeight",
-                    () -> LootTableService.updateWeight(tableId, itemId, weight),
+                    () -> LOOT_TABLES.updateWeight(new UpdateWeightInput(tableId, itemId, weight)),
                     status -> {
                         pendingWeightItemIds.remove(itemId);
                         entriesPane.setPendingWeightItemIds(pendingWeightItemIds);
-                        if (status == LootTableService.MutationStatus.SUCCESS) return;
+                        if (status.status() == UpdateWeightInput.Status.SUCCESS) return;
                         showMutationError("Loot-Tabelle", "Gewichtung konnte nicht gespeichert werden.", entriesPane);
                         reloadEntries();
                     },
@@ -126,13 +136,13 @@ public class LootTableEditorView implements AppView {
         if (currentTable == null || item == null || item.itemId() <= 0) return;
         long tableId = currentTable.tableId;
         runTask("addItem",
-                () -> LootTableService.addItem(tableId, item.itemId()),
+                () -> LOOT_TABLES.addItem(new AddItemInput(tableId, item.itemId(), 1)),
                 status -> {
-                    if (status == LootTableService.MutationStatus.SUCCESS) {
+                    if (status.status() == AddItemInput.Status.SUCCESS) {
                         reloadEntries();
-                    } else if (status == LootTableService.MutationStatus.DUPLICATE_ENTRY) {
+                    } else if (status.status() == AddItemInput.Status.DUPLICATE_ENTRY) {
                         showMessage("Item bereits vorhanden", "Item „" + item.name() + "“ ist bereits in der Tabelle.", controls);
-                    } else if (status == LootTableService.MutationStatus.VALIDATION_ERROR) {
+                    } else if (status.status() == AddItemInput.Status.VALIDATION_ERROR) {
                         showMutationError("Loot-Tabelle", "Nur Items mit positivem Wert können zu Loot-Tabellen hinzugefügt werden.", controls);
                     } else {
                         showMutationError("Loot-Tabelle", "Item konnte nicht zur Tabelle hinzugefügt werden.", controls);
@@ -143,10 +153,10 @@ public class LootTableEditorView implements AppView {
     private void reloadEntries() {
         if (currentTable == null) return;
         long tableId = currentTable.tableId;
-        runTask("reloadEntries", () -> LootTableService.loadWithEntries(tableId), result -> {
+        runTask("reloadEntries", () -> LOOT_TABLES.loadTable(new LoadTableInput(tableId)), result -> {
             if (currentTable == null || currentTable.tableId != tableId) return;
-            if (result.status() == LootTableService.ReadStatus.SUCCESS && result.table() != null) {
-                LootTable loaded = result.table();
+            if (result.status() == LoadTableInput.Status.SUCCESS && result.table() != null) {
+                LootTable loaded = toLootTable(result.table());
                 currentTable.description = loaded.description;
                 currentTable.entries = loaded.entries;
                 pendingWeightItemIds.clear();
@@ -156,7 +166,7 @@ public class LootTableEditorView implements AppView {
                 for (LootTable.Entry entry : loaded.entries) ids.add(entry.itemId());
                 setExcludeIds(ids);
                 refreshInspectorTableIfVisible(tableId);
-            } else if (result.status() == LootTableService.ReadStatus.NOT_FOUND) {
+            } else if (result.status() == LoadTableInput.Status.NOT_FOUND) {
                 currentTable = null;
                 pendingWeightItemIds.clear();
                 entriesPane.setPendingWeightItemIds(Set.of());
@@ -171,10 +181,10 @@ public class LootTableEditorView implements AppView {
     }
 
     private void reloadTableList() {
-        runTask("reloadTableList", LootTableService::loadAll, result -> {
-            if (result.status() == LootTableService.ReadStatus.SUCCESS) {
-                knownTables = List.copyOf(result.tables());
-                controls.setTableList(result.tables());
+        runTask("reloadTableList", () -> LOOT_TABLES.loadTables(new LoadTablesInput()), result -> {
+            if (result.success()) {
+                knownTables = result.tables().stream().map(LootTableEditorView::toLootTable).toList();
+                controls.setTableList(knownTables);
                 if (currentTable != null) {
                     refreshInspectorTableIfVisible(currentTable.tableId);
                 }
@@ -185,14 +195,14 @@ public class LootTableEditorView implements AppView {
     }
 
     private void reloadTableListAndSelect(long tableId) {
-        runTask("reloadTableListAndSelect", LootTableService::loadAll, result -> {
-            if (result.status() != LootTableService.ReadStatus.SUCCESS) {
+        runTask("reloadTableListAndSelect", () -> LOOT_TABLES.loadTables(new LoadTablesInput()), result -> {
+            if (!result.success()) {
                 showLoadError("Loot-Tabellen konnten nicht geladen werden.", null);
                 return;
             }
-            knownTables = List.copyOf(result.tables());
-            controls.setTableList(result.tables());
-            result.tables().stream().filter(t -> t.tableId == tableId).findFirst().ifPresent(controls::selectTable);
+            knownTables = result.tables().stream().map(LootTableEditorView::toLootTable).toList();
+            controls.setTableList(knownTables);
+            knownTables.stream().filter(t -> t.tableId == tableId).findFirst().ifPresent(controls::selectTable);
         });
     }
 
@@ -204,7 +214,7 @@ public class LootTableEditorView implements AppView {
                 tableNameDropdown.showError("Es existiert bereits eine Loot-Tabelle mit dem Namen „" + stripped + "“.");
                 return;
             }
-            runTask("createTable", () -> LootTableService.createTable(stripped, ""), result -> {
+            runTask("createTable", () -> LOOT_TABLES.createTable(new CreateTableInput(stripped, "")), result -> {
                 switch (result.status()) {
                     case SUCCESS -> {
                         tableNameDropdown.hide();
@@ -228,8 +238,8 @@ public class LootTableEditorView implements AppView {
                 return;
             }
             long tableId = table.tableId;
-            runTask("renameTable", () -> LootTableService.renameTable(tableId, stripped), status -> {
-                switch (status) {
+            runTask("renameTable", () -> LOOT_TABLES.renameTable(new RenameTableInput(tableId, stripped)), status -> {
+                switch (status.status()) {
                     case SUCCESS -> {
                         tableNameDropdown.hide();
                         currentTable.name = stripped;
@@ -255,8 +265,8 @@ public class LootTableEditorView implements AppView {
                 "Löschen",
                 () -> {
             long tableId = table.tableId;
-            runTask("deleteTable", () -> LootTableService.deleteTable(tableId), status -> {
-                if (status == LootTableService.MutationStatus.SUCCESS) {
+            runTask("deleteTable", () -> LOOT_TABLES.deleteTable(new DeleteTableInput(tableId)), status -> {
+                if (status.status() == DeleteTableInput.Status.SUCCESS) {
                     deleteTableDropdown.hide();
                     currentTable = null;
                     pendingWeightItemIds.clear();
@@ -360,5 +370,36 @@ public class LootTableEditorView implements AppView {
 
     private void showMessage(String title, String message, Node anchor) {
         messageDropdown.show(anchor == null ? controls : anchor, title, message);
+    }
+
+    private static LootTable toLootTable(LoadTablesInput.TableSummaryInput table) {
+        LootTable mapped = new LootTable();
+        mapped.tableId = table.tableId();
+        mapped.name = table.name();
+        mapped.description = table.description();
+        mapped.entries = List.of();
+        return mapped;
+    }
+
+    private static LootTable toLootTable(LoadTableInput.TableInput table) {
+        LootTable mapped = new LootTable();
+        mapped.tableId = table.tableId();
+        mapped.name = table.name();
+        mapped.description = table.description();
+        mapped.entries = table.entries().stream()
+                .map(LootTableEditorView::toEntry)
+                .toList();
+        return mapped;
+    }
+
+    private static LootTable.Entry toEntry(LoadTableInput.EntryInput entry) {
+        return new LootTable.Entry(
+                entry.itemId(),
+                entry.itemName(),
+                entry.category(),
+                entry.rarity(),
+                entry.costCp(),
+                entry.costDisplay(),
+                entry.weight());
     }
 }

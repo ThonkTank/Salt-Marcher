@@ -69,6 +69,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.items.api" ||
         sourceFile.context.packageName == "features.items.catalog" ||
         sourceFile.context.packageName == "features.items.importer" ||
+        sourceFile.context.packageName == "features.loottable" ||
         sourceFile.context.packageName == "features.spells.api" ||
         sourceFile.context.packageName == "features.spells.catalog" ||
         sourceFile.context.packageName == "features.spells.importer" ||
@@ -87,6 +88,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.encountertable.service" ||
         sourceFile.context.packageName == "features.encountertable.ui" ||
         sourceFile.context.packageName == "features.loottable.api" ||
+        sourceFile.context.packageName == "features.loottable.ui" ||
         sourceFile.context.packageName == "features.tables.api" ||
         sourceFile.context.packageName == "features.world.dungeon.application.runtime" ||
         sourceFile.context.packageName == "features.world.hexmap.service.adapter" ||

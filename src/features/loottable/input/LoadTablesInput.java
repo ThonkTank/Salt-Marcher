@@ -1,0 +1,20 @@
+package features.loottable.input;
+
+import java.util.List;
+
+@SuppressWarnings("unused")
+public record LoadTablesInput() {
+
+    public record TableSummaryInput(
+            long tableId,
+            String name,
+            String description
+    ) {
+    }
+
+    public record LoadedTablesInput(
+            boolean success,
+            List<TableSummaryInput> tables
+    ) {
+    }
+}

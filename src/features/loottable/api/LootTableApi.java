@@ -1,10 +1,14 @@
 package features.loottable.api;
 
-import features.loottable.service.LootTableService;
+import features.loottable.LoottableObject;
+import features.loottable.input.LoadTablesInput;
+import features.loottable.input.LoadWeightedItemsInput;
 
 import java.util.List;
 
+@SuppressWarnings("unused")
 public final class LootTableApi {
+    private static final LoottableObject LOOT_TABLES = new LoottableObject();
 
     private LootTableApi() {
         throw new AssertionError("No instances");
@@ -31,16 +35,17 @@ public final class LootTableApi {
     public record WeightedItemsResult(ReadStatus status, List<WeightedLootItem> items) {}
 
     public static TableSummaryCatalogResult loadAllSummaries() {
-        LootTableService.TableListResult result = LootTableService.loadAll();
+        LoadTablesInput.LoadedTablesInput result = LOOT_TABLES.loadTables(new LoadTablesInput());
         return new TableSummaryCatalogResult(
-                mapStatus(result.status()),
+                mapStatus(result.success()),
                 result.tables().stream()
-                        .map(table -> new LootTableSummary(table.tableId, table.name))
+                        .map(table -> new LootTableSummary(table.tableId(), table.name()))
                         .toList());
     }
 
     public static WeightedItemsResult loadWeightedItems(long lootTableId) {
-        LootTableService.WeightedItemsResult result = LootTableService.loadWeightedItems(lootTableId);
+        LoadWeightedItemsInput.LoadedWeightedItemsInput result =
+                LOOT_TABLES.loadWeightedItems(new LoadWeightedItemsInput(lootTableId));
         return new WeightedItemsResult(
                 mapStatus(result.status()),
                 result.items().stream()
@@ -55,7 +60,11 @@ public final class LootTableApi {
                         .toList());
     }
 
-    private static ReadStatus mapStatus(LootTableService.ReadStatus status) {
-        return status == LootTableService.ReadStatus.STORAGE_ERROR ? ReadStatus.STORAGE_ERROR : ReadStatus.SUCCESS;
+    private static ReadStatus mapStatus(boolean success) {
+        return success ? ReadStatus.SUCCESS : ReadStatus.STORAGE_ERROR;
+    }
+
+    private static ReadStatus mapStatus(LoadWeightedItemsInput.Status status) {
+        return status == LoadWeightedItemsInput.Status.SUCCESS ? ReadStatus.SUCCESS : ReadStatus.STORAGE_ERROR;
     }
 }
