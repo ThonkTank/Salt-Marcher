@@ -10,6 +10,7 @@
 - `importer.MonsterImportApplicationService` - monster-specific file import plus recovery/override/drift post-processing.
 - `importer.Database*Tool` and related CLI tools - explicit maintenance and recovery entrypoints outside feature UI flows.
 - `features.creatures.identity.IdentityObject` - creature-owned identity seam for import id assignment and alias persistence.
+- `features.encountertable.recovery.RecoveryObject` - encounter-table-owned recovery seam consumed by monster import and maintenance tools.
 
 ## Where New Code Goes
 

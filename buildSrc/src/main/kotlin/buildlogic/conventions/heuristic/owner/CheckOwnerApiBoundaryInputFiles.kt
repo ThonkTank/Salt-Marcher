@@ -49,6 +49,9 @@ internal fun analyzeInputFile(
     if (sourceFile.context.packageName == "features.encountertable.input") {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }
+    if (sourceFile.context.packageName == "features.encountertable.recovery.input") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     if (sourceFile.context.packageName == "features.items.catalog.input") {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }

@@ -9,6 +9,9 @@ import features.creatures.parsing.ParsingObject;
 import features.creatures.parsing.input.ParseDocumentInput;
 import features.creatures.repository.CreatureRepository;
 import features.encountertable.api.EncounterTableRecoveryService;
+import features.encountertable.recovery.RecoveryObject;
+import features.encountertable.recovery.input.BeginRecoverySessionInput;
+import features.encountertable.recovery.input.RecoverInput;
 import features.partyanalysis.api.CreatureAnalysisMaintenanceService;
 import org.jsoup.Jsoup;
 import shared.crawler.slug.SlugIdentity;
@@ -34,6 +37,7 @@ public final class MonsterImportApplicationService {
     private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
     private static final ParsingObject PARSING_OBJECT = new ParsingObject();
     private static final IdentityObject IDENTITY_OBJECT = new IdentityObject();
+    private static final RecoveryObject RECOVERY_OBJECT = new RecoveryObject();
 
     private MonsterImportApplicationService() {
         throw new AssertionError("No instances");
@@ -49,11 +53,11 @@ public final class MonsterImportApplicationService {
     ) {}
 
     public static EncounterTableRecoveryService.RecoverySession beginRecoverySession() throws Exception {
-        EncounterTableRecoveryService.RecoverySession recoverySession =
-                EncounterTableRecoveryService.beginRecoverySession();
+        BeginRecoverySessionInput.RecoverySessionInput recoverySession =
+                RECOVERY_OBJECT.beginRecoverySession(new BeginRecoverySessionInput());
         System.out.println("Encounter-table backup created: "
                 + recoverySession.backupPath().toAbsolutePath());
-        return recoverySession;
+        return new EncounterTableRecoveryService.RecoverySession(recoverySession.backupPath());
     }
 
     public static void importFile(
@@ -102,8 +106,13 @@ public final class MonsterImportApplicationService {
             }
         }
 
+        RecoverInput.RecoveredInput recovered =
+                RECOVERY_OBJECT.recover(new RecoverInput(recoverySession.backupPath()));
         EncounterTableRecoveryService.RecoverySummary recovery =
-                EncounterTableRecoveryService.recover(recoverySession);
+                new EncounterTableRecoveryService.RecoverySummary(
+                        recovered.restoredCount(),
+                        recovered.unresolvedCount(),
+                        recovered.reportPath());
         System.out.printf(Locale.ROOT,
                 "Encounter recovery: restored=%d unresolved=%d report=%s%n",
                 recovery.restoredCount(),

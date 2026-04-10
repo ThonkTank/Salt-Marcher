@@ -1,11 +1,15 @@
-package features.encountertable.recovery.service;
+package features.encountertable.recovery;
 
 import database.DatabaseManager;
 import features.creatures.identity.IdentityObject;
 import features.creatures.identity.input.ResolveRecoveryIdInput;
+import features.encountertable.recovery.input.BeginRecoverySessionInput;
+import features.encountertable.recovery.input.RecoverInput;
 import features.encountertable.recovery.model.RecoveryRestoreResult;
 import features.encountertable.recovery.model.TableSnapshot;
 import features.encountertable.recovery.repository.RecoveryRepository;
+import features.encountertable.recovery.service.EncounterRecoveryBackupStore;
+import features.encountertable.recovery.service.EncounterRecoveryReportWriter;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -14,40 +18,25 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Snapshot + recovery for encounter table entries around bulk creature imports.
+ * Canonical root seam for encounter-table backup and recovery workflows used by
+ * importer and maintenance entrypoints.
  */
 @SuppressWarnings("unused")
-public final class EncounterTableRecoveryService {
+public final class RecoveryObject {
     private static final IdentityObject IDENTITY_OBJECT = new IdentityObject();
 
-    private EncounterTableRecoveryService() {
-        throw new AssertionError("No instances");
-    }
-
-    /**
-     * Captures current encounter table state and writes a mandatory backup artifact.
-     */
-    public static RecoverySession beginRecoverySession() throws SQLException, IOException {
+    public BeginRecoverySessionInput.RecoverySessionInput beginRecoverySession(BeginRecoverySessionInput input)
+            throws SQLException, IOException {
         List<TableSnapshot> snapshot;
         try (Connection conn = DatabaseManager.getConnection()) {
             snapshot = RecoveryRepository.loadEncounterSnapshot(conn);
         }
         Path backupPath = EncounterRecoveryBackupStore.writeEncounterBackup(snapshot);
-        return new RecoverySession(backupPath);
+        return new BeginRecoverySessionInput.RecoverySessionInput(backupPath);
     }
 
-    /**
-     * Restores encounter table entries from a prior snapshot after import changes.
-     */
-    public static RecoverySummary recover(RecoverySession session) throws SQLException, IOException {
-        return recover(session.backupPath());
-    }
-
-    /**
-     * Restores encounter table entries from a persisted backup artifact.
-     */
-    public static RecoverySummary recover(Path backupPath) throws SQLException, IOException {
-        List<TableSnapshot> snapshot = EncounterRecoveryBackupStore.readEncounterBackup(backupPath);
+    public RecoverInput.RecoveredInput recover(RecoverInput input) throws SQLException, IOException {
+        List<TableSnapshot> snapshot = EncounterRecoveryBackupStore.readEncounterBackup(input.backupPath());
         RecoveryRestoreResult restore;
         try (Connection conn = DatabaseManager.getConnection()) {
             conn.setAutoCommit(false);
@@ -70,24 +59,12 @@ public final class EncounterTableRecoveryService {
                 conn.setAutoCommit(true);
             }
         }
-
         Path reportPath = restore.unresolvedEntries().isEmpty()
                 ? null
                 : EncounterRecoveryReportWriter.writeRecoveryReport(restore.unresolvedEntries());
-        return new RecoverySummary(restore.restoredCount(), restore.unresolvedEntries().size(), reportPath);
-    }
-
-    public record RecoverySummary(int restoredCount, int unresolvedCount, Path reportPath) {}
-
-    public static final class RecoverySession {
-        private final Path backupPath;
-
-        private RecoverySession(Path backupPath) {
-            this.backupPath = backupPath;
-        }
-
-        public Path backupPath() {
-            return backupPath;
-        }
+        return new RecoverInput.RecoveredInput(
+                restore.restoredCount(),
+                restore.unresolvedEntries().size(),
+                reportPath);
     }
 }

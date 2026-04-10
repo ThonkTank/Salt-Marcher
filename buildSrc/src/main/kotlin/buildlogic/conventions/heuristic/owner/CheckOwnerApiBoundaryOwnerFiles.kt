@@ -85,6 +85,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.encounter.ui" ||
         sourceFile.context.packageName == "features.encountertable" ||
         sourceFile.context.packageName == "features.encountertable.api" ||
+        sourceFile.context.packageName == "features.encountertable.recovery" ||
         sourceFile.context.packageName == "features.encountertable.recovery.service" ||
         sourceFile.context.packageName == "features.encountertable.service" ||
         sourceFile.context.packageName == "features.encountertable.ui" ||

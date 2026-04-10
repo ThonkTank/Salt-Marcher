@@ -1,7 +1,8 @@
 package importer;
 
 import database.DatabaseManager;
-import features.encountertable.api.EncounterTableRecoveryService;
+import features.encountertable.recovery.RecoveryObject;
+import features.encountertable.recovery.input.RecoverInput;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,6 +17,7 @@ import java.util.stream.Stream;
  */
 public final class EncounterTableRecoveryTool {
     private static final Path BACKUP_DIR = Paths.get("data", "backups");
+    private static final RecoveryObject RECOVERY_OBJECT = new RecoveryObject();
 
     private EncounterTableRecoveryTool() {
         throw new AssertionError("No instances");
@@ -31,8 +33,7 @@ public final class EncounterTableRecoveryTool {
         }
 
         DatabaseManager.setupDatabase();
-        EncounterTableRecoveryService.RecoverySummary result =
-                EncounterTableRecoveryService.recover(backupPath);
+        RecoverInput.RecoveredInput result = RECOVERY_OBJECT.recover(new RecoverInput(backupPath));
 
         System.out.printf(Locale.ROOT,
                 "Encounter recovery complete: restored=%d unresolved=%d report=%s backup=%s%n",
