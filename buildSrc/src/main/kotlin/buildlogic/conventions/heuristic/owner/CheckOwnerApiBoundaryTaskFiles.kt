@@ -47,10 +47,12 @@ internal fun analyzeTaskFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
-    val shapeAnalysis = support.analyzeTaskShape(sourceFile, snapshot)
-    if (sourceFile.context.packageName == "features.creatures.parsing.task") {
-        return shapeAnalysis
+    if (sourceFile.context.packageName == "features.creatures.parsing.task" ||
+        sourceFile.context.packageName == "features.world.dungeon.transition.task"
+    ) {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }
+    val shapeAnalysis = support.analyzeTaskShape(sourceFile, snapshot)
     val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)
         ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model)

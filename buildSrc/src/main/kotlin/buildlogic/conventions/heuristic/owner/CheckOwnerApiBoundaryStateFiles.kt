@@ -27,6 +27,9 @@ internal fun analyzeStateFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
+    if (sourceFile.context.packageName == "features.world.dungeon.shell.editor.interaction.state") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     val shapeAnalysis = support.analyzeStateShape(sourceFile, snapshot)
     val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)

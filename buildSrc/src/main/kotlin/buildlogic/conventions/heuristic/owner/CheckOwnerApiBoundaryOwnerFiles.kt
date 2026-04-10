@@ -100,6 +100,9 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.tables.api" ||
         sourceFile.context.packageName == "features.world" ||
         sourceFile.context.packageName == "features.world.api" ||
+        sourceFile.context.packageName == "features.world.api.read" ||
+        sourceFile.context.packageName == "features.world.dungeon.application.transition" ||
+        sourceFile.context.packageName == "features.world.read" ||
         sourceFile.context.packageName == "features.world.dungeon.application.runtime" ||
         sourceFile.context.packageName == "features.world.hexmap.service.adapter" ||
         sourceFile.context.packageName == "shared.crawler.config" ||

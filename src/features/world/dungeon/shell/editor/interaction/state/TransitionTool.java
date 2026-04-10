@@ -1,6 +1,5 @@
 package features.world.dungeon.shell.editor.interaction.state;
 
-import features.world.api.input.OverworldTransitionTargetSummary;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.transition.DungeonTransitionApplicationService;
 import features.world.dungeon.application.transition.TransitionConnectionBuilder;
@@ -49,6 +48,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
+import features.world.read.input.LoadOverworldTransitionTargetsInput.OverworldTransitionTargetSummaryInput;
 
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -62,6 +62,7 @@ import java.util.Set;
  * <p>This tool owns transition form state and gesture interpretation, but canonical connection construction and
  * validation stay in transition workflow seams instead of being reimplemented in UI code.</p>
  */
+@SuppressWarnings("unused")
 public final class TransitionTool implements EditorTool {
 
     private final DungeonMapState mapState;
@@ -77,7 +78,7 @@ public final class TransitionTool implements EditorTool {
     private final CheckBox transitionBidirectionalBox = new CheckBox("Zweiseitig");
     private final ComboBox<DungeonMapCatalogEntry> transitionTargetMapBox = new ComboBox<>();
     private final ComboBox<DungeonTransition> transitionTargetTransitionBox = new ComboBox<>();
-    private final ComboBox<OverworldTransitionTargetSummary> transitionTargetOverworldBox = new ComboBox<>();
+    private final ComboBox<OverworldTransitionTargetSummaryInput> transitionTargetOverworldBox = new ComboBox<>();
     private final FlowPane preparedTransitionButtons = new FlowPane();
     private final Label transitionSummaryLabel = new Label("Kein Übergang gewählt");
     private final Label transitionStatusLabel = new Label();
@@ -136,7 +137,7 @@ public final class TransitionTool implements EditorTool {
     private final VBox statePane = new VBox(10);
 
     private List<DungeonTransition> dungeonTargetOptions = List.of();
-    private List<OverworldTransitionTargetSummary> overworldTargetOptions = List.of();
+    private List<OverworldTransitionTargetSummaryInput> overworldTargetOptions = List.of();
     private Long loadedDungeonTargetMapId;
     private boolean overworldTargetsLoaded;
     private long dungeonTargetRequestSequence;
@@ -353,12 +354,12 @@ public final class TransitionTool implements EditorTool {
         });
         transitionTargetOverworldBox.setConverter(new javafx.util.StringConverter<>() {
             @Override
-            public String toString(OverworldTransitionTargetSummary summary) {
+            public String toString(OverworldTransitionTargetSummaryInput summary) {
                 return summary == null ? "" : summary.label();
             }
 
             @Override
-            public OverworldTransitionTargetSummary fromString(String string) {
+            public OverworldTransitionTargetSummaryInput fromString(String string) {
                 return null;
             }
         });
@@ -1158,7 +1159,7 @@ public final class TransitionTool implements EditorTool {
         refreshStatePane();
     }
 
-    private void setSelectedOverworldTarget(OverworldTransitionTargetSummary summary) {
+    private void setSelectedOverworldTarget(OverworldTransitionTargetSummaryInput summary) {
         DungeonTransitionDestination next = summary == null
                 ? null
                 : new DungeonTransitionDestination.OverworldTileDestination(summary.mapId(), summary.tileId());
@@ -1226,7 +1227,7 @@ public final class TransitionTool implements EditorTool {
                 .orElse(null);
     }
 
-    private OverworldTransitionTargetSummary selectedOverworldTarget() {
+    private OverworldTransitionTargetSummaryInput selectedOverworldTarget() {
         if (!(selectedDestination instanceof DungeonTransitionDestination.OverworldTileDestination overworld)) {
             return null;
         }

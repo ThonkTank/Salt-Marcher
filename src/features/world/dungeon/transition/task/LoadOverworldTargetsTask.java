@@ -1,6 +1,8 @@
 package features.world.dungeon.transition.task;
 
+@SuppressWarnings("unused")
 public final class LoadOverworldTargetsTask {
+    private static final features.world.read.ReadObject WORLD_READ_OBJECT = new features.world.read.ReadObject();
 
     private LoadOverworldTargetsTask() {
     }
@@ -11,7 +13,7 @@ public final class LoadOverworldTargetsTask {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        return features.world.api.read.ReadObject.loadOverworldTransitionTargets().stream()
+        return WORLD_READ_OBJECT.loadOverworldTransitionTargets(new features.world.read.input.LoadOverworldTransitionTargetsInput()).targets().stream()
                 .map(summary -> features.world.dungeon.transition.input.LoadOverworldTargetsInput.TargetInput.target(
                         summary.mapId(),
                         summary.tileId(),

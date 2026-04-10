@@ -1,8 +1,6 @@
 package features.world.dungeon.application.transition;
 
 import database.DatabaseManager;
-import features.world.api.input.OverworldTransitionTargetSummary;
-import features.world.api.read.ReadObject;
 import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.support.DungeonTransactionRunner;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -21,6 +19,10 @@ import features.world.dungeon.transition.input.DeleteTransitionInput;
 import features.world.dungeon.transition.input.LoadOverworldTargetsInput;
 import features.world.dungeon.transition.input.PlacePreparedStairTransitionInput;
 import features.world.dungeon.transition.input.PlacePreparedTransitionInput;
+import features.world.read.ReadObject;
+import features.world.read.input.FindOverworldMapIdForTileInput;
+import features.world.read.input.LoadOverworldTransitionTargetsInput.OverworldTransitionTargetSummaryInput;
+import features.world.read.input.LoadOverworldTransitionTargetsInput;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -33,7 +35,9 @@ import java.util.List;
  * <p>The tool keeps temporary form state locally. This seam accepts only current-model destinations or prepared
  * transition ids, validates them, and persists paired dungeon transitions in one transaction.
  */
+@SuppressWarnings("unused")
 public final class DungeonTransitionApplicationService {
+    private static final ReadObject WORLD_READ_OBJECT = new ReadObject();
 
     private final DungeonMapRepository mapRepository;
     private final DungeonTransitionRepository transitionRepository;
@@ -58,13 +62,8 @@ public final class DungeonTransitionApplicationService {
         }
     }
 
-    public List<OverworldTransitionTargetSummary> loadOverworldTargets() throws SQLException {
-        return transitionObject.loadOverworldTargets(new LoadOverworldTargetsInput()).stream()
-                .map(target -> new OverworldTransitionTargetSummary(
-                        target.mapId(),
-                        target.tileId(),
-                        target.label()))
-                .toList();
+    public List<OverworldTransitionTargetSummaryInput> loadOverworldTargets() throws SQLException {
+        return WORLD_READ_OBJECT.loadOverworldTransitionTargets(new LoadOverworldTransitionTargetsInput()).targets();
     }
 
     public void delete(long transitionId) throws SQLException {
@@ -303,7 +302,8 @@ public final class DungeonTransitionApplicationService {
             if (overworld.tileId() <= 0) {
                 throw new SQLException("Overworld-Zielfeld fehlt");
             }
-            Long resolvedMapId = ReadObject.findOverworldMapIdForTile(overworld.tileId());
+            Long resolvedMapId = WORLD_READ_OBJECT.findOverworldMapIdForTile(
+                    new FindOverworldMapIdForTileInput(overworld.tileId())).mapId();
             if (resolvedMapId == null || resolvedMapId <= 0) {
                 throw new SQLException("Overworld-Zielfeld existiert nicht");
             }

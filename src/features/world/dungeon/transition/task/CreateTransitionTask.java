@@ -1,6 +1,8 @@
 package features.world.dungeon.transition.task;
 
+@SuppressWarnings("unused")
 public final class CreateTransitionTask {
+    private static final features.world.read.ReadObject WORLD_READ_OBJECT = new features.world.read.ReadObject();
 
     private CreateTransitionTask() {
     }
@@ -82,7 +84,8 @@ public final class CreateTransitionTask {
             if (input.tileId() <= 0) {
                 throw new java.sql.SQLException("Overworld-Zielfeld fehlt");
             }
-            Long resolvedMapId = features.world.api.read.ReadObject.findOverworldMapIdForTile(input.tileId());
+            Long resolvedMapId = WORLD_READ_OBJECT.findOverworldMapIdForTile(
+                    new features.world.read.input.FindOverworldMapIdForTileInput(input.tileId())).mapId();
             if (resolvedMapId == null || resolvedMapId <= 0) {
                 throw new java.sql.SQLException("Overworld-Zielfeld existiert nicht");
             }
