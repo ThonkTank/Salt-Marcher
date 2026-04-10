@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`src/clean` owns the isolated clean application rebuild that now backs the default `build`/`run`/`installDesktopApp` lifecycle. The current live slice is the first clean shell-framework pass plus the first real top-level feature roster: `Encounter`, `Travel`, `Map Editor`, `Tabellen`, `Zauber`.
+`src/clean` owns the isolated clean application rebuild that now backs the default `build`/`run`/`installDesktopApp` lifecycle. The current live slice is the first clean shell-framework pass plus the first real top-level feature roster: `Encounter`, `Travel`, `Map Editor`, `Tabellen`, `Zauber`. `Encounter` now hosts the first reusable clean creature slice instead of a pure placeholder surface.
 
 ## Owner Atlas
 
@@ -10,6 +10,7 @@
 - `clean.startup.StartupObject` — clean startup owner — stages the already-composed clean shell on the JavaFX `Stage` and loads clean-local styling.
 - `clean.shell.ShellObject` — clean shell root owner — composes the clean frame, navigation, inspector, scene, and async framework owners into the live shell.
 - `clean.featuretabs.FeaturetabsObject` — clean top-level feature roster owner — builds the 5-tab surface set and the initial active tab for the shell.
+- `clean.creatures.CreaturesObject` — clean creature root owner — composes the reusable clean creature host that is currently embedded under `Encounter`.
 
 ## Canonical Types and APIs
 
@@ -17,6 +18,7 @@
 - `startup/StartupObject.startApplication(StartApplicationInput)` — startup request — returns the already-staged JavaFX startup handoff created by the startup assembly path.
 - `shell/ShellObject.composeShell(ComposeShellInput)` — shell request — returns the live shell root plus the shell-owned hook bundle for later feature attachment.
 - `featuretabs/FeaturetabsObject.composeFeaturetabs(ComposeFeaturetabsInput)` — top-level feature-tab request — returns the ordered Clean shell surfaces for `Encounter`, `Travel`, `Map Editor`, `Tabellen`, and `Zauber`.
+- `creatures/CreaturesObject.composeEncounterhost(ComposeEncounterhostInput)` — creature host request — returns the reusable creature browser/statblock host that the `Encounter` tab mounts into the shell.
 
 ## Where New Code Goes
 
@@ -24,6 +26,7 @@
 - Let `CleanObject` remain the bootstrap seam only. Move reusable shell mechanics under `clean/shell`, and move later feature-specific workflow into dedicated clean feature owners instead of growing `CleanObject`.
 - Treat `clean/shell` as the single home for the reusable shell framework. Later features should attach through passive `SurfaceInput` packets plus the hook bundle returned from `ShellObject`.
 - Keep the top-level Clean feature roster under `clean/featuretabs` instead of hardcoding surface lists in `CleanObject`.
+- Keep reusable creature catalog, browser, and statblock work under `clean/creatures` instead of regrowing that logic inside `EncountertabObject`.
 - Keep `Travel` and `Map Editor` aggregated at the top level. Hexmap and Dungeon internals may stay separate, but top-level switching should happen automatically from the selected map instead of via extra sidebar tabs.
 - Keep clean resources under `resources/clean`.
 - Mirror the legacy shell presentation from `ui.shell.AppShell` and the shell-facing parts of `resources/salt-marcher.css` inside `resources/clean/clean.css`, instead of inventing a second cockpit look.

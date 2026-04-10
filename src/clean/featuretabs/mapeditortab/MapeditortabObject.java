@@ -71,6 +71,7 @@ public final class MapeditortabObject {
                     null,
                     null,
                     null,
+                    null,
                     null
             ));
         }

@@ -40,7 +40,10 @@ public final class FeaturetabsObject {
     private static final class FeaturetabsAssembly {
 
         private FeaturetabsAssembly(ComposeFeaturetabsInput input) {
+            this.input = input;
         }
+
+        private final ComposeFeaturetabsInput input;
 
         private ComposeFeaturetabsInput.FeaturetabsInput composeFeaturetabs() {
             ComposeNavigationiconInput navigationiconInput = new ComposeNavigationiconInput();
@@ -51,7 +54,10 @@ public final class FeaturetabsObject {
             java.util.List<LoadMapsInput.MapInput> maps =
                     new MapcatalogObject(loadMapsInput).loadMaps(loadMapsInput).maps();
 
-            ComposeEncountertabInput encountertabInput = new ComposeEncountertabInput(navigationIcons.encounterGraphic());
+            ComposeEncountertabInput encountertabInput = new ComposeEncountertabInput(
+                    navigationIcons.encounterGraphic(),
+                    input.encounterhost()
+            );
             ComposeShellInput.SurfaceInput encounterSurface =
                     new EncountertabObject(encountertabInput).composeEncountertab(encountertabInput).surface();
 

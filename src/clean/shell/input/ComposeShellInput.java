@@ -31,7 +31,8 @@ public record ComposeShellInput(
             Node detailsContent,
             Node stateContent,
             Runnable onShow,
-            Runnable onHide
+            Runnable onHide,
+            java.util.function.Consumer<ShellHooksInput> onShellReady
     ) {
     }
 

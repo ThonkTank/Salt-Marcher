@@ -48,6 +48,7 @@ public final class SpellstabObject {
                     null,
                     null,
                     null,
+                    null,
                     null
             ));
         }

@@ -1,5 +1,7 @@
 package clean;
 
+import clean.creatures.CreaturesObject;
+import clean.creatures.input.ComposeEncounterhostInput;
 import clean.featuretabs.FeaturetabsObject;
 import clean.featuretabs.input.ComposeFeaturetabsInput;
 import clean.shell.ShellObject;
@@ -46,7 +48,11 @@ public final class CleanObject {
         }
 
         private void showApplication() {
-            ComposeFeaturetabsInput composeFeaturetabsInput = new ComposeFeaturetabsInput();
+            ComposeEncounterhostInput composeEncounterhostInput = new ComposeEncounterhostInput();
+            ComposeEncounterhostInput.EncounterhostInput encounterhost =
+                    new CreaturesObject(composeEncounterhostInput).composeEncounterhost(composeEncounterhostInput);
+
+            ComposeFeaturetabsInput composeFeaturetabsInput = new ComposeFeaturetabsInput(encounterhost);
             ComposeFeaturetabsInput.FeaturetabsInput featuretabs =
                     new FeaturetabsObject(composeFeaturetabsInput).composeFeaturetabs(composeFeaturetabsInput);
             ComposeShellInput composeShellInput = new ComposeShellInput(
@@ -80,7 +86,7 @@ public final class CleanObject {
             hooks.inspectorNavigator().showInfo().accept(new ComposeInspectorInput.InfoEntryInput(
                     "Clean Shell",
                     "clean-shell:overview",
-                    "Die Clean-Shell traegt jetzt 5 Top-Level-Featuretabs und bindet Inspector, Scene und Async shell-owned ein."
+                    "Die Clean-Shell traegt jetzt 5 Top-Level-Featuretabs. Encounter hostet bereits den ersten sauberen Creature-Browser, waehrend Inspector, Scene und Async shell-owned bleiben."
             ));
         }
 
@@ -151,7 +157,7 @@ public final class CleanObject {
                     10,
                     new Label("Shell bereit"),
                     new Label("Navigation, Inspector, Scene und Async laufen ohne Legacy-Shell."),
-                    new Label("Encounter, Travel, Map Editor, Tabellen und Zauber sind als Clean-Top-Level vorbereitet.")
+                    new Label("Encounter zeigt bereits den ersten Clean-Creature-Slice; Travel, Map Editor, Tabellen und Zauber bleiben als weitere Clean-Top-Level vorbereitet.")
             );
             hostedContent.setFillWidth(true);
             return hostedContent;

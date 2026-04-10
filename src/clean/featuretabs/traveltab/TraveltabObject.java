@@ -71,6 +71,7 @@ public final class TraveltabObject {
                     null,
                     null,
                     null,
+                    null,
                     null
             ));
         }

@@ -1,5 +1,6 @@
 package clean.featuretabs.encountertab;
 
+import clean.creatures.input.ComposeEncounterhostInput;
 import clean.featuretabs.encountertab.input.ComposeEncountertabInput;
 import clean.shell.input.ComposeShellInput;
 import javafx.geometry.Insets;
@@ -8,7 +9,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
 /**
- * Top-level clean placeholder surface for encounter workflow.
+ * Top-level clean encounter surface that now hosts the first reusable creature slice.
  */
 @SuppressWarnings("unused")
 public final class EncountertabObject {
@@ -36,6 +37,7 @@ public final class EncountertabObject {
         }
 
         private ComposeEncountertabInput.EncountertabInput composeEncountertab() {
+            ComposeEncounterhostInput.EncounterhostInput encounterhost = input.encounterhost();
             return new ComposeEncountertabInput.EncountertabInput(new ComposeShellInput.SurfaceInput(
                     "encounter",
                     "Encounter",
@@ -43,35 +45,41 @@ public final class EncountertabObject {
                     "E",
                     input.navigationGraphic(),
                     null,
-                    createControls(),
-                    createMain(),
+                    createControls(encounterhost),
+                    createMain(encounterhost),
                     null,
                     null,
                     null,
-                    null
+                    null,
+                    encounterhost == null ? null : encounterhost.onShellReady()
             ));
         }
 
-        private static Node createControls() {
+        private static Node createControls(ComposeEncounterhostInput.EncounterhostInput encounterhost) {
+            Node hostedControls = encounterhost == null ? createMissingContent() : encounterhost.controlsContent();
             VBox controls = new VBox(
                     8,
                     createSectionLabel("Session"),
-                    createMutedLabel("Encounter ist als eigener Clean-Top-Level vorbereitet."),
-                    createMutedLabel("Initiative, Parties und Kampfablauf werden spaeter hier eingehangen.")
+                    createMutedLabel("Encounter hostet jetzt den ersten sauberen Creature-Browser als Grundlage fuer die spaetere Builder-Migration."),
+                    hostedControls
             );
             controls.setFillWidth(true);
             controls.setPadding(new Insets(12));
             return controls;
         }
 
-        private static Node createMain() {
+        private static Node createMain(ComposeEncounterhostInput.EncounterhostInput encounterhost) {
+            if (encounterhost == null || encounterhost.mainContent() == null) {
+                return createMissingContent();
+            }
             VBox main = new VBox(
-                    12,
-                    createTitleLabel("Encounter"),
-                    createMutedLabel("Der Clean-Einstieg reserviert diesen Surface fuer die kuenftige Encounter-Runtime."),
-                    createMutedLabel("Legacy-Encounterlogik ist noch nicht angebunden.")
+                    8,
+                    createMutedLabel("Die eigentliche Encounter-Runtime folgt spaeter. Dieser Slice migriert zuerst den wiederverwendbaren Creature-Katalog."),
+                    encounterhost.mainContent()
             );
+            VBox.setVgrow(encounterhost.mainContent(), javafx.scene.layout.Priority.ALWAYS);
             main.setPadding(new Insets(12));
+            main.setFillWidth(true);
             return main;
         }
 
@@ -92,6 +100,16 @@ public final class EncountertabObject {
             label.getStyleClass().add("text-muted");
             label.setWrapText(true);
             return label;
+        }
+
+        private static Node createMissingContent() {
+            VBox fallback = new VBox(
+                    12,
+                    createTitleLabel("Encounter"),
+                    createMutedLabel("Der Clean-Creature-Host konnte nicht vorbereitet werden.")
+            );
+            fallback.setPadding(new Insets(12));
+            return fallback;
         }
     }
 }

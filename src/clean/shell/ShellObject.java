@@ -98,6 +98,12 @@ public final class ShellObject {
                     scene.registry(),
                     async
             );
+            for (ComposeShellInput.SurfaceInput surface : input.surfaces()) {
+                if (surface == null || surface.onShellReady() == null) {
+                    continue;
+                }
+                surface.onShellReady().accept(hooks);
+            }
             return new ComposeShellInput.ShellInput(frame.root(), hooks);
         }
     }
