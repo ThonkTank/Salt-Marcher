@@ -4,6 +4,8 @@ import features.spells.model.Spell;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import shared.crawler.text.TextObject;
+import shared.crawler.text.input.NormalizeTextInput;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -15,7 +17,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("unused")
 public final class HtmlSpellParser {
+    private static final TextObject TEXT_OBJECT = new TextObject();
     private static final Pattern LABEL_PATTERN = Pattern.compile(
             "^(level|school|casting time|range(?:/area)?|components|duration|attack/save|damage/effect|classes):\\s*(.+)$",
             Pattern.CASE_INSENSITIVE);
@@ -177,7 +181,6 @@ public final class HtmlSpellParser {
         }
         List<String> descriptionParts = new ArrayList<>();
         List<String> higherLevelParts = new ArrayList<>();
-        boolean inHigherLevels = false;
         for (Element node : content.select("h2, h3, p, li")) {
             String text = cleanText(node.text());
             if (text.isBlank() || isMetaField(text) || text.equalsIgnoreCase(extractSource(doc))) {
@@ -185,14 +188,13 @@ public final class HtmlSpellParser {
             }
             String lower = text.toLowerCase(Locale.ROOT);
             if (lower.equals("at higher levels") || lower.startsWith("at higher levels.")) {
-                inHigherLevels = true;
                 String remainder = text.replaceFirst("(?i)^at higher levels\\.?\\s*", "");
                 if (!remainder.isBlank()) {
                     higherLevelParts.add(remainder);
                 }
                 continue;
             }
-            if (inHigherLevels) {
+            if (!higherLevelParts.isEmpty()) {
                 higherLevelParts.add(text);
             } else {
                 descriptionParts.add(text);
@@ -264,13 +266,9 @@ public final class HtmlSpellParser {
         while (diceMatcher.find()) {
             int count = Integer.parseInt(diceMatcher.group(1));
             int sides = Integer.parseInt(diceMatcher.group(2));
-            int modifier = 0;
-            if (diceMatcher.group(3) != null && diceMatcher.group(4) != null) {
-                modifier = Integer.parseInt(diceMatcher.group(4));
-                if ("-".equals(diceMatcher.group(3))) {
-                    modifier = -modifier;
-                }
-            }
+            int modifier = diceMatcher.group(3) != null && diceMatcher.group(4) != null
+                    ? Integer.parseInt(diceMatcher.group(4)) * ("-".equals(diceMatcher.group(3)) ? -1 : 1)
+                    : 0;
             best = Math.max(best, count * ((sides + 1) / 2.0) + modifier);
         }
         Matcher flatMatcher = FLAT_DAMAGE_PATTERN.matcher(description);
@@ -439,10 +437,7 @@ public final class HtmlSpellParser {
     }
 
     private static String cleanText(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace('\u00A0', ' ').replaceAll("\\s+", " ").trim();
+        return TEXT_OBJECT.normalizeText(new NormalizeTextInput(value, false)).value();
     }
 
     private static double round2(double value) {

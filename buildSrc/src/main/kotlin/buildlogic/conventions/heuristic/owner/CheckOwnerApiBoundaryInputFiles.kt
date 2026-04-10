@@ -34,6 +34,9 @@ internal fun analyzeInputFile(
     if (sourceFile.context.packageName == "shared.crawler.slug.input") {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }
+    if (sourceFile.context.packageName == "shared.crawler.text.input") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     return support.analyzeInputShape(sourceFile, snapshot)
 }
 

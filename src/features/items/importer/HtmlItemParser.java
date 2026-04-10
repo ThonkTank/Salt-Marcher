@@ -5,6 +5,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import shared.crawler.text.CaseText;
+import shared.crawler.text.TextObject;
+import shared.crawler.text.input.NormalizeTextInput;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -38,7 +40,9 @@ import java.util.regex.Pattern;
  * ({@link #parseEquipment} and {@link #parseMagicItem}) because the HTML structure of equipment
  * and magic item pages is too different to unify behind a single dispatcher.
  */
+@SuppressWarnings("unused")
 public final class HtmlItemParser {
+    private static final TextObject TEXT_OBJECT = new TextObject();
 
     // Pre-compiled Patterns
     private static final Pattern COST_PATTERN = Pattern.compile(
@@ -130,23 +134,23 @@ public final class HtmlItemParser {
         // DnD Beyond uses <h1 class="page-title"> for the item name
         // (do not confuse with <h1 id="logo"> for the site logo)
         Element h1 = doc.selectFirst("h1.page-title");
-        if (h1 != null) return h1.text().trim();
+        if (h1 != null) return cleanTextOrNull(h1.text());
 
         // Fallback: .page-heading
         Element heading = doc.selectFirst(".page-heading h1, .page-heading");
-        if (heading != null) return heading.text().trim();
+        if (heading != null) return cleanTextOrNull(heading.text());
 
         // Fallback: name from stats table (first cell)
         Element table = doc.selectFirst("table tbody td:first-child");
         if (table != null) {
-            String name = table.text().trim();
+            String name = cleanText(table.text());
             if (!name.isEmpty() && !name.matches("\\d+.*")) return name;
         }
 
         // Fallback: name from image alt text
         Element img = doc.selectFirst(".details-container .image");
         if (img != null) {
-            String alt = img.attr("alt").trim();
+            String alt = cleanText(img.attr("alt"));
             if (!alt.isEmpty()) return alt;
         }
 
@@ -173,10 +177,10 @@ public final class HtmlItemParser {
         // Type/category: first <span> after "Type:"
         for (int i = 0; i < spans.size(); i++) {
             Element span = spans.get(i);
-            String val = span.text().trim();
+            String val = cleanText(span.text());
 
             // Determine position in parent text
-            String precedingText = getPrecedingText(metaDiv, span);
+            String precedingText = cleanText(getPrecedingText(metaDiv, span));
 
             if (precedingText.contains("Type:")) {
                 categorizeEquipment(val, item);
@@ -290,7 +294,7 @@ public final class HtmlItemParser {
     private static void parseEquipmentTags(Document doc, Item item) {
         // <div class="tags"><div class="tag">Combat</div><div class="tag">Damage</div></div>
         for (Element tag : doc.select("div.tags div.tag")) {
-            String t = tag.text().trim();
+            String t = cleanText(tag.text());
             if (!t.isEmpty() && !t.equalsIgnoreCase("Tags:")) item.Tags.add(t);
         }
     }
@@ -305,7 +309,6 @@ public final class HtmlItemParser {
         // Strategy 1 (preferred): rarity + type keyword; strategy 2 (fallback): rarity only
         // (z.B. "Tattoo, uncommon", "Figurine of Wondrous Power, rare")
 
-        String typeLine = null;
         String rarityOnlyLine = null;
 
         // Anchor the search to the h1.page-title parent (header area) to avoid false matches
@@ -315,19 +318,22 @@ public final class HtmlItemParser {
         Elements spans = h1 != null ? h1.parent().select("span") : doc.select("span");
 
         for (Element span : spans) {
-            String text = span.text().trim();
+            String text = cleanText(span.text());
             if (text.isEmpty() || text.length() > 200) continue;
             if (!RARITY_PATTERN.matcher(text).find()) continue;
             if (MAGIC_TYPE_PATTERN.matcher(text).find()) {
-                typeLine = text;
-                break; // Best match found.
+                applyMagicItemTypeLine(text, item);
+                return;
             }
             if (rarityOnlyLine == null) rarityOnlyLine = text; // Keep first fallback.
         }
 
-        if (typeLine == null) typeLine = rarityOnlyLine;
+        String typeLine = rarityOnlyLine;
         if (typeLine == null) return;
+        applyMagicItemTypeLine(typeLine, item);
+    }
 
+    private static void applyMagicItemTypeLine(String typeLine, Item item) {
         // Extract type
         Matcher typeMatcher = MAGIC_TYPE_PATTERN.matcher(typeLine);
         if (typeMatcher.find()) {
@@ -358,13 +364,14 @@ public final class HtmlItemParser {
         if (notes == null) return;
 
         String text = notes.text().trim();
+        text = cleanText(text);
         // "Notes: Damage: Fire, Damage, Combat, Versatile, Sap" -> parse everything after "Notes:" as tags
         if (text.startsWith("Notes:")) {
-            text = text.substring("Notes:".length()).trim();
+            text = cleanText(text.substring("Notes:".length()));
         }
         if (!text.isEmpty() && item.Tags.isEmpty()) {
             for (String tag : text.split(",")) {
-                String trimmed = tag.trim();
+                String trimmed = cleanText(tag);
                 if (!trimmed.isEmpty()) item.Tags.add(trimmed);
             }
         }
@@ -382,7 +389,7 @@ public final class HtmlItemParser {
 
         for (Element div : descDivs) {
             for (Element p : div.select("p")) {
-                String text = p.text().trim();
+                String text = cleanText(p.text());
                 if (text.isEmpty()) continue;
                 if (sb.length() > 0) sb.append("\n");
                 sb.append(text);
@@ -395,7 +402,7 @@ public final class HtmlItemParser {
         Element content = doc.selectFirst(".primary-content");
         if (content != null) {
             for (Element p : content.select("p")) {
-                String text = p.text().trim();
+                String text = cleanText(p.text());
                 if (text.isEmpty()) continue;
                 if (sb.length() > 0) sb.append("\n");
                 sb.append(text);
@@ -411,7 +418,7 @@ public final class HtmlItemParser {
 
         StringBuilder sb = new StringBuilder();
         for (Element p : content.select("p")) {
-            String text = p.text().trim();
+            String text = cleanText(p.text());
             if (text.isEmpty()) continue;
             if (sb.length() > 0) sb.append("\n");
             sb.append(text);
@@ -427,15 +434,15 @@ public final class HtmlItemParser {
         // <div class="source-description">D&D Beyond Basic Rules</div>
         Element source = doc.selectFirst(".source-description");
         if (source != null) {
-            String text = source.text().trim();
+            String text = cleanText(source.text());
             if (!text.isEmpty()) return text;
         }
 
         // Fallback: search for "Source:" label
         for (Element el : doc.select("p, span, div")) {
-            String text = el.ownText().trim();
+            String text = cleanText(el.ownText());
             if (text.startsWith("Source:")) {
-                return text.substring("Source:".length()).trim();
+                return cleanTextOrNull(text.substring("Source:".length()));
             }
         }
         return null;
@@ -472,8 +479,16 @@ public final class HtmlItemParser {
             try { return Double.parseDouble(m.group(1)); }
             catch (NumberFormatException e) { return 0.0; }
         }
-        try { return Double.parseDouble(s.replace(",", "").trim()); }
+        try { return Double.parseDouble(cleanText(s).replace(",", "")); }
         catch (NumberFormatException e) { return 0.0; }
+    }
+
+    private static String cleanText(String value) {
+        return TEXT_OBJECT.normalizeText(new NormalizeTextInput(value, false)).value();
+    }
+
+    private static String cleanTextOrNull(String value) {
+        return TEXT_OBJECT.normalizeText(new NormalizeTextInput(value, true)).value();
     }
 
 }

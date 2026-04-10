@@ -63,6 +63,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "shared.crawler.config" ||
         sourceFile.context.packageName == "shared.crawler.http" ||
         sourceFile.context.packageName == "shared.crawler.slug" ||
+        sourceFile.context.packageName == "shared.crawler.text" ||
         sourceFile.context.packageName == "ui.components" ||
         sourceFile.context.packageName.startsWith("ui.components.")
     ) {
