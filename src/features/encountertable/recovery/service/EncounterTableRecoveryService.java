@@ -1,7 +1,8 @@
 package features.encountertable.recovery.service;
 
 import database.DatabaseManager;
-import features.creatures.api.CreatureRecoveryIdentityService;
+import features.creatures.identity.IdentityObject;
+import features.creatures.identity.input.ResolveRecoveryIdInput;
 import features.encountertable.recovery.model.RecoveryRestoreResult;
 import features.encountertable.recovery.model.TableSnapshot;
 import features.encountertable.recovery.repository.RecoveryRepository;
@@ -15,7 +16,9 @@ import java.util.List;
 /**
  * Snapshot + recovery for encounter table entries around bulk creature imports.
  */
+@SuppressWarnings("unused")
 public final class EncounterTableRecoveryService {
+    private static final IdentityObject IDENTITY_OBJECT = new IdentityObject();
 
     private EncounterTableRecoveryService() {
         throw new AssertionError("No instances");
@@ -52,12 +55,13 @@ public final class EncounterTableRecoveryService {
                 restore = RecoveryRepository.recoverEncounterEntries(
                         conn,
                         snapshot,
-                        (connection, entry) -> CreatureRecoveryIdentityService.resolveEncounterRecoveryId(
-                                connection,
-                                entry.creatureId(),
-                                entry.sourceSlug(),
-                                entry.slugKey(),
-                                entry.creatureName()));
+                        (connection, entry) -> IDENTITY_OBJECT.resolveRecoveryId(
+                                new ResolveRecoveryIdInput(
+                                        connection,
+                                        entry.creatureId(),
+                                        entry.sourceSlug(),
+                                        entry.slugKey(),
+                                        entry.creatureName())).localId());
                 conn.commit();
             } catch (SQLException e) {
                 conn.rollback();

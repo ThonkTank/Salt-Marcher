@@ -7,6 +7,7 @@
 ## Canonical Types and APIs
 
 - `features.creatures.catalog.CatalogObject` — canonical creature catalog root for counts, filter options, search/list reads, and encounter-facing candidate loads.
+- `features.creatures.identity.IdentityObject` — canonical creature identity root for recovery-id matching, import-id assignment, and alias persistence.
 - `features.creatures.api` — current public creature compatibility surface for reads and reusable creature UI. Preserve compatibility here, but do not treat `api/` as the default placement for new owner-local code.
 - `features.creatures.parsing.ParsingObject` — creature-owned HTML/stat-block parsing seam for monster crawl and import flows.
 - `CreatureBrowserPane`, `CreatureFilterPane` — reusable creature-owned browser surfaces.
@@ -19,6 +20,7 @@
 - Put canonical creature catalog reads in `features.creatures.catalog`.
 - Put creature search/filter UI and reusable creature widgets in `features.creatures`.
 - Put creature-detail HTML extraction and monster stat-block parsing in `features.creatures.parsing`.
+- Put canonical slug/name/id matching and alias persistence in `features.creatures.identity`.
 - Keep importer-adjacent creature helpers creature-owned unless they are truly shared-owned.
 - Keep cross-feature DnD rule vocabulary in `shared/rules`, not in creature-owned model packages.
 - Treat `features.creatures.service.DndMath` as a compatibility wrapper only; new cross-feature CR rule work belongs in `shared/rules/service`.
@@ -32,3 +34,4 @@
 - Do not move creature-owned UI into generic shared UI by default.
 - Do not duplicate stat-block loading or attack-calculation seams outside the creature platform.
 - Do not recreate creature stat-block parsing in `src/importer`.
+- Do not treat import- or recovery-side identity helpers as the canonical owner over `features.creatures.identity`.

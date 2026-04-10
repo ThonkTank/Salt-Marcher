@@ -1,12 +1,13 @@
 package importer;
 
 import database.DatabaseManager;
+import features.creatures.identity.IdentityObject;
+import features.creatures.identity.input.ResolveImportIdInput;
+import features.creatures.identity.input.UpsertAliasInput;
 import features.creatures.model.Creature;
 import features.creatures.parsing.ParsingObject;
 import features.creatures.parsing.input.ParseDocumentInput;
 import features.creatures.repository.CreatureRepository;
-import features.creatures.repository.identity.CreatureImportAliasRepository;
-import features.creatures.application.identity.CreatureImportIdentityService;
 import features.encountertable.api.EncounterTableRecoveryService;
 import features.partyanalysis.api.CreatureAnalysisMaintenanceService;
 import org.jsoup.Jsoup;
@@ -32,6 +33,7 @@ public final class MonsterImportApplicationService {
 
     private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
     private static final ParsingObject PARSING_OBJECT = new ParsingObject();
+    private static final IdentityObject IDENTITY_OBJECT = new IdentityObject();
 
     private MonsterImportApplicationService() {
         throw new AssertionError("No instances");
@@ -70,14 +72,13 @@ public final class MonsterImportApplicationService {
         if (creature.Name == null || creature.Name.isBlank()) {
             throw new IllegalStateException("No name found");
         }
-        CreatureImportIdentityService.ImportIdResolution idResolution =
-                CreatureImportIdentityService.resolveImportId(
-                        conn, externalId, sourceSlug, slugKey, creature.Name, reservedIds);
+        ResolveImportIdInput.ResolvedImportIdInput idResolution =
+                IDENTITY_OBJECT.resolveImportId(
+                        new ResolveImportIdInput(conn, externalId, sourceSlug, slugKey, creature.Name, reservedIds));
         creature.Id = idResolution.localId();
         CreatureRepository.save(creature, conn);
         CreatureAnalysisMaintenanceService.refreshForCreature(conn, creature.Id);
-        CreatureImportAliasRepository.upsertAlias(
-                conn, sourceSlug, slugKey, externalId, creature.Id);
+        IDENTITY_OBJECT.upsertAlias(new UpsertAliasInput(conn, sourceSlug, slugKey, externalId, creature.Id));
         if (idResolution.driftReason() != null) {
             driftEvents.add(new DriftEvent(
                     sourceSlug, externalId, creature.Id, creature.Name, idResolution.driftReason()));

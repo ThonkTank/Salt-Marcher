@@ -62,8 +62,10 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.calendar" ||
         sourceFile.context.packageName == "features.campaignstate" ||
         sourceFile.context.packageName == "features.campaignstate.api" ||
+        sourceFile.context.packageName == "features.creatures.application.identity" ||
         sourceFile.context.packageName == "features.creatures.api" ||
         sourceFile.context.packageName == "features.creatures.catalog" ||
+        sourceFile.context.packageName == "features.creatures.identity" ||
         sourceFile.context.packageName == "features.items.importer" ||
         sourceFile.context.packageName == "features.spells.importer" ||
         sourceFile.context.packageName == "features.creatures.model" ||
@@ -75,6 +77,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.encounter.internal.wiring" ||
         sourceFile.context.packageName == "features.encounter.ui" ||
         sourceFile.context.packageName == "features.encountertable.api" ||
+        sourceFile.context.packageName == "features.encountertable.recovery.service" ||
         sourceFile.context.packageName == "features.encountertable.service" ||
         sourceFile.context.packageName == "features.encountertable.ui" ||
         sourceFile.context.packageName == "features.tables.api" ||

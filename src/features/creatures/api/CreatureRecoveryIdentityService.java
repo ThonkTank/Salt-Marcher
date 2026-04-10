@@ -1,6 +1,7 @@
 package features.creatures.api;
 
-import features.creatures.repository.identity.CreatureIdentityLookupRepository;
+import features.creatures.identity.IdentityObject;
+import features.creatures.identity.input.ResolveRecoveryIdInput;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -8,7 +9,10 @@ import java.sql.SQLException;
 /**
  * Public identity resolution policy for encounter-table recovery.
  */
+@SuppressWarnings("unused")
 public final class CreatureRecoveryIdentityService {
+    private static final IdentityObject IDENTITY_OBJECT = new IdentityObject();
+
     private CreatureRecoveryIdentityService() {
         throw new AssertionError("No instances");
     }
@@ -19,17 +23,7 @@ public final class CreatureRecoveryIdentityService {
             String sourceSlug,
             String slugKey,
             String creatureName) throws SQLException {
-        if (CreatureIdentityLookupRepository.existsById(conn, creatureId)) {
-            return creatureId;
-        }
-        long bySlug = CreatureIdentityLookupRepository.findUniqueBySourceSlug(conn, sourceSlug);
-        if (bySlug > 0) {
-            return bySlug;
-        }
-        long bySlugName = CreatureIdentityLookupRepository.findUniqueBySlugAndName(conn, slugKey, creatureName);
-        if (bySlugName > 0) {
-            return bySlugName;
-        }
-        return CreatureIdentityLookupRepository.findUniqueByName(conn, creatureName);
+        return IDENTITY_OBJECT.resolveRecoveryId(
+                new ResolveRecoveryIdInput(conn, creatureId, sourceSlug, slugKey, creatureName)).localId();
     }
 }
