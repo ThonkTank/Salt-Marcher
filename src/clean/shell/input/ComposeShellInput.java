@@ -22,7 +22,9 @@ public record ComposeShellInput(
     public record SurfaceInput(
             String surfaceId,
             String title,
+            String sidebarSectionId,
             String navigationIconText,
+            Node navigationGraphic,
             Node toolbarContent,
             Node controlsContent,
             Node mainContent,

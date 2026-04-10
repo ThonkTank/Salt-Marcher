@@ -1,7 +1,7 @@
 package clean;
 
-import clean.placeholder.PlaceholderObject;
-import clean.placeholder.input.ComposePlaceholderInput;
+import clean.featuretabs.FeaturetabsObject;
+import clean.featuretabs.input.ComposeFeaturetabsInput;
 import clean.shell.ShellObject;
 import clean.shell.async.input.ComposeAsyncInput;
 import clean.shell.input.ComposeShellInput;
@@ -46,17 +46,12 @@ public final class CleanObject {
         }
 
         private void showApplication() {
-            ComposePlaceholderInput startSurfaceInput = createStartSurfaceInput();
-            ComposeShellInput.SurfaceInput startSurface =
-                    new PlaceholderObject(startSurfaceInput).composePlaceholder(startSurfaceInput);
-
-            ComposePlaceholderInput frameworkSurfaceInput = createFrameworkSurfaceInput();
-            ComposeShellInput.SurfaceInput frameworkSurface =
-                    new PlaceholderObject(frameworkSurfaceInput).composePlaceholder(frameworkSurfaceInput);
-
+            ComposeFeaturetabsInput composeFeaturetabsInput = new ComposeFeaturetabsInput();
+            ComposeFeaturetabsInput.FeaturetabsInput featuretabs =
+                    new FeaturetabsObject(composeFeaturetabsInput).composeFeaturetabs(composeFeaturetabsInput);
             ComposeShellInput composeShellInput = new ComposeShellInput(
-                    java.util.List.of(startSurface, frameworkSurface),
-                    "start"
+                    featuretabs.surfaces(),
+                    featuretabs.initialSurfaceId()
             );
             ComposeShellInput.ShellInput shell = new ShellObject(composeShellInput).composeShell(composeShellInput);
             bootstrapShellHooks(shell.hooks());
@@ -67,42 +62,6 @@ public final class CleanObject {
                     shell.root()
             );
             new StartupObject(startApplicationInput).startApplication(startApplicationInput);
-        }
-
-        private ComposePlaceholderInput createStartSurfaceInput() {
-            return new ComposePlaceholderInput(
-                    "start",
-                    "Clean Start",
-                    "S",
-                    "Isolierter Clean-Einstieg",
-                    "Die neue Shell lebt jetzt unter clean/shell und traegt Navigation, Inspector, Szene und Async.",
-                    "Sidebar, Toolbar und Cockpit stammen nicht mehr aus dem Bootstrap.",
-                    "Die Feature-Anbindung erfolgt kuenftig ueber passive Surface-Pakete.",
-                    "Naechster Schritt ist das Einhaengen einzelner Features in diese Shell.",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-        }
-
-        private ComposePlaceholderInput createFrameworkSurfaceInput() {
-            return new ComposePlaceholderInput(
-                    "frameworks",
-                    "Framework Slice",
-                    "F",
-                    "Dieser Demo-Surface beschreibt genau die Grundschicht, an die spaeter Features andocken.",
-                    "Globaler Inspector als read-mostly Details-Flaeche.",
-                    "Globale Scene-Tabs fuer persistente Aktivitaeten im unteren rechten Pane.",
-                    "Zentrale Async-Hooks fuer Hintergrundarbeit und Fehlerpfade.",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
         }
 
         private void bootstrapShellHooks(ComposeShellInput.ShellHooksInput hooks) {
@@ -121,7 +80,7 @@ public final class CleanObject {
             hooks.inspectorNavigator().showInfo().accept(new ComposeInspectorInput.InfoEntryInput(
                     "Clean Shell",
                     "clean-shell:overview",
-                    "Inspector, Scene und Async werden jetzt shell-owned in src/clean/shell bereitgestellt."
+                    "Die Clean-Shell traegt jetzt 5 Top-Level-Featuretabs und bindet Inspector, Scene und Async shell-owned ein."
             ));
         }
 
@@ -131,12 +90,12 @@ public final class CleanObject {
             }
             VBox initialContent = new VBox(
                     8,
-                    new Label("Shell-Framework aktiv"),
-                    new Label("Die globale Szene wurde beim Start ueber die neuen Shell-Hooks registriert.")
+                    new Label("Clean Shell aktiv"),
+                    new Label("Die globale Szene wurde beim Start fuer die vorbereiteten Featuretabs registriert.")
             );
             initialContent.getStyleClass().add("list-card");
             ComposeSceneInput.HandleInput handle = hooks.sceneRegistry().registerScene().apply(
-                    new ComposeSceneInput.RegistrationInput("Shell", initialContent)
+                    new ComposeSceneInput.RegistrationInput("Clean", initialContent)
             );
             if (handle != null) {
                 handle.activate().run();
@@ -171,7 +130,7 @@ public final class CleanObject {
                 VBox readyContent = new VBox(
                         8,
                         new Label("Async bereit"),
-                        new Label("Der shell-owned Hintergrundpfad hat den Demo-Status aktualisiert.")
+                        new Label("Der shell-owned Hintergrundpfad hat den globalen Clean-Status aktualisiert.")
                 );
                 readyContent.getStyleClass().add("list-card");
                 sceneHandle.setContent().accept(readyContent);
@@ -181,18 +140,18 @@ public final class CleanObject {
                 return;
             }
             hooks.inspectorNavigator().showContent().accept(new ComposeInspectorInput.HostedEntryInput(
-                    "Framework Status",
+                    "Shell Status",
                     "clean-shell:status",
-                    this::createFrameworkStatusContent
+                    this::createShellStatusContent
             ));
         }
 
-        private VBox createFrameworkStatusContent() {
+        private VBox createShellStatusContent() {
             VBox hostedContent = new VBox(
                     10,
                     new Label("Shell bereit"),
                     new Label("Navigation, Inspector, Scene und Async laufen ohne Legacy-Shell."),
-                    new Label("Die naechsten Slices koennen nun passive Surfaces einhaengen.")
+                    new Label("Encounter, Travel, Map Editor, Tabellen und Zauber sind als Clean-Top-Level vorbereitet.")
             );
             hostedContent.setFillWidth(true);
             return hostedContent;

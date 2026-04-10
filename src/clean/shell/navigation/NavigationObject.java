@@ -4,7 +4,10 @@ import clean.shell.navigation.input.ComposeNavigationInput;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
@@ -110,7 +113,12 @@ public final class NavigationObject {
                 }
             };
 
-            for (ComposeNavigationInput.SurfaceInput surface : surfaces) {
+            for (int index = 0; index < surfaces.size(); index++) {
+                ComposeNavigationInput.SurfaceInput surface = surfaces.get(index);
+                String previousSectionId = index == 0 ? "" : surfaces.get(index - 1).sidebarSectionId();
+                if (shouldInsertSeparator(previousSectionId, surface.sidebarSectionId())) {
+                    navigationContent.getChildren().add(createSeparator());
+                }
                 String buttonLabel = surface.navigationIconText().isBlank()
                         ? surface.surfaceId()
                         : surface.navigationIconText();
@@ -120,6 +128,12 @@ public final class NavigationObject {
                 button.setFocusTraversable(false);
                 button.setTooltip(new Tooltip(surface.title()));
                 button.setAccessibleText(surface.title());
+                if (surface.navigationGraphic() != null) {
+                    button.setText("");
+                    button.setGraphic(surface.navigationGraphic());
+                    button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                    installGraphicColors(button, surface.navigationGraphic());
+                }
                 if (surface.surfaceId().equals(activeSurfaceId[0])) {
                     button.setSelected(true);
                 }
@@ -160,7 +174,9 @@ public final class NavigationObject {
                 normalizedSurfaces.add(new ComposeNavigationInput.SurfaceInput(
                         surfaceId,
                         surface.title() == null ? "" : surface.title().trim(),
+                        normalizeSectionId(surface.sidebarSectionId()),
                         surface.navigationIconText() == null ? "" : surface.navigationIconText().trim(),
+                        surface.navigationGraphic(),
                         surface.toolbarContent(),
                         surface.controlsContent(),
                         surface.mainContent(),
@@ -170,6 +186,54 @@ public final class NavigationObject {
                         surface.onHide()));
             }
             return java.util.List.copyOf(normalizedSurfaces);
+        }
+
+        private static boolean shouldInsertSeparator(String previousSectionId, String currentSectionId) {
+            return !previousSectionId.isBlank()
+                    && !currentSectionId.isBlank()
+                    && !previousSectionId.equals(currentSectionId);
+        }
+
+        private static Region createSeparator() {
+            Separator separator = new Separator();
+            separator.setMaxWidth(24);
+            VBox.setMargin(separator, new Insets(6, 6, 6, 6));
+            return separator;
+        }
+
+        private static String normalizeSectionId(String value) {
+            return value == null ? "" : value.trim();
+        }
+
+        private static void installGraphicColors(ToggleButton button, Node graphic) {
+            updateGraphicColors(button, graphic);
+            button.hoverProperty().addListener((observable, previousValue, currentValue) ->
+                    updateGraphicColors(button, graphic));
+            button.selectedProperty().addListener((observable, previousValue, currentValue) ->
+                    updateGraphicColors(button, graphic));
+            button.disabledProperty().addListener((observable, previousValue, currentValue) ->
+                    updateGraphicColors(button, graphic));
+        }
+
+        private static void updateGraphicColors(ToggleButton button, Node graphic) {
+            String color = button.isSelected() || button.isHover() ? "#ecedee" : "#a4a7ab";
+            applyGraphicColor(graphic, javafx.scene.paint.Color.web(color));
+        }
+
+        private static void applyGraphicColor(Node node, javafx.scene.paint.Color color) {
+            if (node instanceof javafx.scene.shape.Shape shape) {
+                Object role = shape.getProperties().get("clean-nav-role");
+                if ("fill".equals(role)) {
+                    shape.setFill(color);
+                } else {
+                    shape.setStroke(color);
+                }
+            }
+            if (node instanceof Parent parent) {
+                for (Node child : parent.getChildrenUnmodifiable()) {
+                    applyGraphicColor(child, color);
+                }
+            }
         }
 
         private static String resolveInitialSurfaceId(
