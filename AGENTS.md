@@ -37,7 +37,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 
 ```bash
 ./gradlew build                  # compile + convention checks
-./gradlew build --console=plain 2>&1  # recompile after every code change — fix all errors before proceeding
+./gradlew build                  # recompile after every code change — fix all errors before proceeding
 ./gradlew checkNoDeadCode        # fail when touched Java files add dead declarations or dead local code
 ./gradlew run                    # start JavaFX app
 ./gradlew installDesktopApp      # reinstall desktop launcher
@@ -52,6 +52,8 @@ This file defines the repository-specific operating constraints for Claude Code 
 ```
 
 End-to-end scripts: `./scripts/crawl.sh`, `./scripts/crawl-items.sh`.
+
+Repo defaults force plain Gradle console output plus failure stacktraces, so standard agent runs do not need extra `--console=plain`, `2>&1`, or stacktrace flags just to surface build failures clearly.
 
 No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/.local/share}/salt-marcher/game.db` (auto-created on first run). Schema changes require deleting that DB and re-running `./scripts/crawl.sh` — there are no ALTER TABLE migrations. For ad-hoc DB inspection, prefer the vendored CLI at `./tools/sqlite3` or `./gradlew sqliteQuery --args='data/game.db .tables'`.
 
