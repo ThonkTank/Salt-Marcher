@@ -12,7 +12,8 @@
 - `editorcontrols/EditorcontrolsObject` — canonical hexmap editor-controls seam — composes map selection, tool switching, terrain selection, and editor state-pane controls for the editor surface.
 - `editorsurface/EditorsurfaceObject` — canonical hexmap editor-surface seam — owns editor view composition, map load/reload flow, dirty-tile flush, dropdown workflows, and tile-detail publication into the shell inspector.
 - `editorsurface/input/ComposeInput` — canonical editor-surface request carrying shell inspector access for the editor view.
-- `ui/overworld/surface/SurfaceObject` — overworld session surface — drives the party-token travel view and delegates persistence to existing editor/runtime helpers.
+- `overworldsurface/OverworldsurfaceObject` — canonical hexmap overworld-surface seam — owns the AppView composition, travel-scene handoff, initial map load, and party-token persistence lifecycle for the running overworld view.
+- `overworldsurface/input/ComposeInput` — canonical overworld-surface request carrying the world-owned travel handoff.
 - `ui/travel/TravelObject` — shared travel scene surface — renders overworld and dungeon travel summaries for the shell-owned scene pane.
 - `features.world.hexmap.api.HexTileSummary` — stable read DTO for shell inspector hex-tile cards.
 - `HexGridPane` — shared renderer for read-only and editing workflows.
@@ -24,6 +25,7 @@
 - Put map-list loading, first-map loading, map create/update persistence, terrain flushes, and party-tile persistence under `catalog/`.
 - Put editor tool switching, map picker callbacks, and terrain-palette state under `editorcontrols/`.
 - Put editor-view composition, map dropdown flow, async map loading, paint flush orchestration, and inspector publication under `editorsurface/`.
+- Put the running overworld AppView composition, travel-scene activation, initial load, and party-token session lifecycle under `overworldsurface/`.
 - Keep runtime and editor hex rendering on the shared renderer.
 - Keep debounced party-tile persistence and transactional map resizing owned by the canonical catalog seam even when UI-facing async wrappers still exist.
 - Keep paint batching on the existing paint-and-flush workflow; editor and overworld wrappers should call the catalog seam instead of writing SQL directly.
@@ -36,5 +38,6 @@
 - Do not keep `HexMapService` or `HexMapSupport` as the factual home of map catalog and persistence behavior.
 - Do not keep the editor surface as the factual owner of tool-switch and control-pane orchestration.
 - Do not keep legacy `ui/editor/surface` classes as the factual home of editor view workflow once `editorsurface/` exists.
+- Do not keep legacy `ui/overworld/surface` classes as the factual home of overworld view workflow once `overworldsurface/` exists.
 - Do not fork separate runtime and editor renderers for the same hex surface behavior.
 - Do not degrade paint drag into per-tile persistence writes.

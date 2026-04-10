@@ -1,6 +1,7 @@
 package features.world.hexmap;
 
 import features.world.hexmap.editorsurface.EditorsurfaceObject;
+import features.world.hexmap.overworldsurface.OverworldsurfaceObject;
 import features.world.api.input.TravelSurfaceInput;
 import features.world.hexmap.input.ComposeInput;
 import features.world.hexmap.ui.travel.TravelObject;
@@ -23,7 +24,8 @@ public final class HexmapObject {
                 travelPane::showDungeonTravel);
         return new ComposeInput.ComposedHexmapInput(
                 travelSurface,
-                new features.world.hexmap.ui.overworld.surface.SurfaceObject(travelSurface),
+                new OverworldsurfaceObject(new features.world.hexmap.overworldsurface.input.ComposeInput(
+                        travelSurface)),
                 new EditorsurfaceObject(new features.world.hexmap.editorsurface.input.ComposeInput(
                         resolvedInput.detailsNavigator())));
     }
