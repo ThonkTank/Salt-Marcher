@@ -1,13 +1,16 @@
 package features.party.api;
 
-import features.party.service.PartyService;
+import features.party.PartyObject;
+import features.party.input.AwardXpToCharactersInput;
 
 import java.util.List;
 
 /**
  * Public cross-feature write facade for party XP/rest state.
  */
+@SuppressWarnings("unused")
 public final class PartyMutationApi {
+    private static final PartyObject PARTY_OBJECT = new PartyObject();
 
     public enum MutationStatus {
         SUCCESS,
@@ -22,11 +25,12 @@ public final class PartyMutationApi {
     }
 
     public static MutationResult awardXpToCharacters(List<Long> ids, int xpPerCharacter) {
-        PartyService.MutationResult result = PartyService.awardXpToCharacters(ids, xpPerCharacter);
+        AwardXpToCharactersInput.AwardedXpToCharactersInput result =
+                PARTY_OBJECT.awardXpToCharacters(new AwardXpToCharactersInput(ids, xpPerCharacter));
         return new MutationResult(mapStatus(result.status()));
     }
 
-    private static MutationStatus mapStatus(PartyService.MutationStatus status) {
+    private static MutationStatus mapStatus(AwardXpToCharactersInput.Status status) {
         if (status == null) {
             return MutationStatus.STORAGE_ERROR;
         }

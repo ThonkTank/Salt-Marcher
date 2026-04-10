@@ -1,21 +1,23 @@
 package features.party.api;
 
-import database.DatabaseManager;
-import features.party.model.PlayerCharacter;
-import features.party.repository.PlayerCharacterRepository;
-import features.party.service.PartyProgressionRules;
+import features.party.PartyObject;
+import features.party.input.CalculatePartyLevelInput;
+import features.party.input.LoadActivePartyInput;
+import features.party.input.LoadActivePartyLevelsForCompositionInput;
+import features.party.input.LoadActivePartyLevelsInput;
+import features.party.input.LoadAdventuringDayPartyInput;
+import features.party.input.LoadPartySnapshotInput;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Public cross-feature read facade for party state.
  */
+@SuppressWarnings("unused")
 public final class PartyApi {
-    private static final Logger LOGGER = Logger.getLogger(PartyApi.class.getName());
+    private static final PartyObject PARTY_OBJECT = new PartyObject();
 
     private PartyApi() {
         throw new AssertionError("No instances");
@@ -45,67 +47,65 @@ public final class PartyApi {
     public record AdventuringDayPartyResult(ReadStatus status, AdventuringDayPartySummary summary) {}
 
     public static ActivePartyResult loadActiveParty() {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return new ActivePartyResult(
-                    ReadStatus.SUCCESS,
-                    mapMembers(PlayerCharacterRepository.getPartyMembers(conn)));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "PartyApi.loadActiveParty(): DB access failed", e);
-            return new ActivePartyResult(ReadStatus.STORAGE_ERROR, List.of());
-        }
+        LoadActivePartyInput.LoadedActivePartyInput result = PARTY_OBJECT.loadActiveParty(new LoadActivePartyInput());
+        return new ActivePartyResult(
+                mapStatus(result.status()),
+                result.members().stream().map(PartyApi::toSummary).toList());
     }
 
     public static PartySnapshotResult loadPartySnapshot() {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return new PartySnapshotResult(
-                    ReadStatus.SUCCESS,
-                    mapMembers(PlayerCharacterRepository.getPartyMembers(conn)),
-                    mapMembers(PlayerCharacterRepository.getAvailableCharacters(conn)));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "PartyApi.loadPartySnapshot(): DB access failed", e);
-            return new PartySnapshotResult(ReadStatus.STORAGE_ERROR, List.of(), List.of());
-        }
+        LoadPartySnapshotInput.LoadedPartySnapshotInput result = PARTY_OBJECT.loadPartySnapshot(new LoadPartySnapshotInput());
+        return new PartySnapshotResult(
+                mapStatus(result.status()),
+                result.members().stream().map(PartyApi::toSummary).toList(),
+                result.available().stream().map(PartyApi::toSummary).toList());
     }
 
     public static AdventuringDayPartyResult loadAdventuringDayParty() {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            List<PlayerCharacter> members = PlayerCharacterRepository.getPartyMembers(conn);
-            PartyProgressionRules.AdventuringDayStatus status = PartyProgressionRules.computeAdventuringDayStatus(members);
-            return new AdventuringDayPartyResult(
-                    ReadStatus.SUCCESS,
-                    new AdventuringDayPartySummary(
-                            members.stream().map(pc -> pc.Level).toList(),
-                            status.remainingToShortRest(),
-                            status.remainingToLongRest()));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "PartyApi.loadAdventuringDayParty(): DB access failed", e);
-            return new AdventuringDayPartyResult(ReadStatus.STORAGE_ERROR, null);
-        }
+        LoadAdventuringDayPartyInput.LoadedAdventuringDayPartyInput result =
+                PARTY_OBJECT.loadAdventuringDayParty(new LoadAdventuringDayPartyInput());
+        return new AdventuringDayPartyResult(
+                mapStatus(result.status()),
+                result.summary() == null
+                        ? null
+                        : new AdventuringDayPartySummary(
+                                result.summary().activePartyLevels(),
+                                result.summary().remainingToShortRest(),
+                                result.summary().remainingToLongRest()));
     }
 
     public static int calculatePartyLevel(List<PartyMemberSummary> party) {
-        return party == null || party.isEmpty()
-                ? 1
-                : (int) Math.round(party.stream().mapToInt(PartyMemberSummary::level).average().orElse(1));
+        return PARTY_OBJECT.calculatePartyLevel(
+                new CalculatePartyLevelInput(
+                        party == null ? List.of() : party.stream().map(PartyMemberSummary::level).toList()))
+                .level();
     }
 
     public static List<Integer> loadActivePartyLevels(Connection conn) throws SQLException {
-        return PlayerCharacterRepository.getActivePartyLevels(conn);
+        return PARTY_OBJECT.loadActivePartyLevels(new LoadActivePartyLevelsInput(conn)).levels();
     }
 
     public static List<Integer> loadActivePartyLevelsForComposition(Connection conn) throws SQLException {
-        return PlayerCharacterRepository.getActivePartyLevelsForComposition(conn);
+        return PARTY_OBJECT.loadActivePartyLevelsForComposition(new LoadActivePartyLevelsForCompositionInput(conn)).levels();
     }
 
-    private static List<PartyMemberSummary> mapMembers(List<PlayerCharacter> party) {
-        if (party == null || party.isEmpty()) {
-            return List.of();
-        }
-        return party.stream()
-                .map(pc -> new PartyMemberSummary(
-                        pc.Id,
-                        pc.Name,
-                        pc.Level))
-                .toList();
+    private static ReadStatus mapStatus(LoadActivePartyInput.Status status) {
+        return status == LoadActivePartyInput.Status.SUCCESS ? ReadStatus.SUCCESS : ReadStatus.STORAGE_ERROR;
+    }
+
+    private static ReadStatus mapStatus(LoadPartySnapshotInput.Status status) {
+        return status == LoadPartySnapshotInput.Status.SUCCESS ? ReadStatus.SUCCESS : ReadStatus.STORAGE_ERROR;
+    }
+
+    private static ReadStatus mapStatus(LoadAdventuringDayPartyInput.Status status) {
+        return status == LoadAdventuringDayPartyInput.Status.SUCCESS ? ReadStatus.SUCCESS : ReadStatus.STORAGE_ERROR;
+    }
+
+    private static PartyMemberSummary toSummary(LoadActivePartyInput.PartyMemberInput member) {
+        return new PartyMemberSummary(member.id(), member.name(), member.level());
+    }
+
+    private static PartyMemberSummary toSummary(LoadPartySnapshotInput.CharacterInput member) {
+        return new PartyMemberSummary(member.id(), member.name(), member.level());
     }
 }

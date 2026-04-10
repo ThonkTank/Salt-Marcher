@@ -1,7 +1,8 @@
 package features.party.ui;
 
-import features.party.model.PlayerCharacter;
-import features.party.service.PartyService;
+import features.party.input.CreateCharacterAndAddToPartyInput;
+import features.party.input.LoadPartySnapshotInput;
+import features.party.input.UpdateCharacterInput;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -18,7 +19,12 @@ import ui.components.AnchoredDropdown;
 
 import java.util.function.Consumer;
 
+@SuppressWarnings("unused")
 final class PartyCharacterEditorDropdown {
+    private enum Mode {
+        CREATE,
+        EDIT
+    }
 
     private final VBox panel = new VBox(10);
     private final Label titleLabel = new Label();
@@ -37,7 +43,10 @@ final class PartyCharacterEditorDropdown {
     private final Button submitButton = new Button("Speichern");
     private final AnchoredDropdown dropdown = new AnchoredDropdown(panel);
 
-    private Consumer<PartyService.CharacterDraft> onSubmit = draft -> { };
+    private Mode mode = Mode.CREATE;
+    private long editingCharacterId = -1L;
+    private Consumer<CreateCharacterAndAddToPartyInput> onCreate = input -> { };
+    private Consumer<UpdateCharacterInput> onUpdate = input -> { };
     private Runnable onDelete = () -> { };
 
     PartyCharacterEditorDropdown() {
@@ -106,13 +115,16 @@ final class PartyCharacterEditorDropdown {
         resetState();
     }
 
-    void showCreate(Node anchor, Consumer<PartyService.CharacterDraft> onSubmit) {
+    void showCreate(Node anchor, Consumer<CreateCharacterAndAddToPartyInput> onSubmit) {
+        mode = Mode.CREATE;
+        editingCharacterId = -1L;
         titleLabel.setText("Neuer Charakter");
         submitButton.setText("Erstellen");
         revealDeleteButton.setVisible(false);
         revealDeleteButton.setManaged(false);
         populateFields("", "", 1, 10, 10);
-        this.onSubmit = onSubmit == null ? draft -> { } : onSubmit;
+        this.onCreate = onSubmit == null ? input -> { } : onSubmit;
+        this.onUpdate = input -> { };
         this.onDelete = () -> { };
         setDeleteConfirmationVisible(false);
         resetError();
@@ -120,21 +132,29 @@ final class PartyCharacterEditorDropdown {
         dropdown.requestFocus(nameField);
     }
 
-    void showEdit(Node anchor, PlayerCharacter character, Consumer<PartyService.CharacterDraft> onSubmit, Runnable onDelete) {
+    void showEdit(
+            Node anchor,
+            LoadPartySnapshotInput.CharacterInput character,
+            Consumer<UpdateCharacterInput> onSubmit,
+            Runnable onDelete
+    ) {
+        mode = Mode.EDIT;
+        editingCharacterId = character == null ? -1L : character.id();
         titleLabel.setText("Charakter bearbeiten");
         submitButton.setText("Speichern");
         revealDeleteButton.setVisible(true);
         revealDeleteButton.setManaged(true);
         populateFields(
-                character == null ? "" : safe(character.Name),
-                character == null ? "" : safe(character.PlayerName),
-                character == null ? 1 : character.Level,
-                character == null ? 10 : character.PassivePerception,
-                character == null ? 10 : character.ArmorClass);
+                character == null ? "" : safe(character.name()),
+                character == null ? "" : safe(character.playerName()),
+                character == null ? 1 : character.level(),
+                character == null ? 10 : character.passivePerception(),
+                character == null ? 10 : character.armorClass());
         deleteMessageLabel.setText(character == null
                 ? "Charakter wirklich dauerhaft löschen?"
-                : "\"" + safe(character.Name) + "\" wirklich dauerhaft löschen?");
-        this.onSubmit = onSubmit == null ? draft -> { } : onSubmit;
+                : "\"" + safe(character.name()) + "\" wirklich dauerhaft löschen?");
+        this.onCreate = input -> { };
+        this.onUpdate = onSubmit == null ? input -> { } : onSubmit;
         this.onDelete = onDelete == null ? () -> { } : onDelete;
         setDeleteConfirmationVisible(false);
         resetError();
@@ -171,7 +191,17 @@ final class PartyCharacterEditorDropdown {
         if (armorClass == null) {
             return;
         }
-        onSubmit.accept(new PartyService.CharacterDraft(
+        if (mode == Mode.CREATE) {
+            onCreate.accept(new CreateCharacterAndAddToPartyInput(
+                    name,
+                    safe(playerNameField.getText()).trim(),
+                    level,
+                    passivePerception,
+                    armorClass));
+            return;
+        }
+        onUpdate.accept(new UpdateCharacterInput(
+                editingCharacterId,
                 name,
                 safe(playerNameField.getText()).trim(),
                 level,
@@ -235,6 +265,11 @@ final class PartyCharacterEditorDropdown {
     }
 
     private void resetState() {
+        mode = Mode.CREATE;
+        editingCharacterId = -1L;
+        onCreate = input -> { };
+        onUpdate = input -> { };
+        onDelete = () -> { };
         resetError();
         setDeleteConfirmationVisible(false);
     }

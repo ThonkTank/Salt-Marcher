@@ -1,8 +1,7 @@
 package features.party.ui;
 
-import features.party.model.PlayerCharacter;
+import features.party.input.LoadPartySnapshotInput;
 import features.party.service.PartyProgressionRules;
-import features.party.service.PartyService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -28,13 +27,14 @@ import javafx.stage.Popup;
 import java.util.List;
 
 /** Steuerung fuer das Party-Panel in der Toolbar (Popup-basiert, kein Node). */
+@SuppressWarnings("unused")
 public class PartyPopup {
 
     private final Button triggerButton;
     private final Popup popup;
 
     private final VBox memberList = new VBox();
-    private final ListView<PlayerCharacter> suggestionList = new ListView<>();
+    private final ListView<LoadPartySnapshotInput.CharacterInput> suggestionList = new ListView<>();
     private final TextField searchField = new TextField();
     private final Label summaryLabel = new Label();
     private final Label actionStatusLabel = new Label();
@@ -42,8 +42,8 @@ public class PartyPopup {
     private final Button longRestButton = new Button("Long Rest");
     private final PartyCharacterEditorDropdown characterEditorDropdown = new PartyCharacterEditorDropdown();
 
-    private final ObservableList<PlayerCharacter> available = FXCollections.observableArrayList();
-    private final FilteredList<PlayerCharacter> filtered = new FilteredList<>(available);
+    private final ObservableList<LoadPartySnapshotInput.CharacterInput> available = FXCollections.observableArrayList();
+    private final FilteredList<LoadPartySnapshotInput.CharacterInput> filtered = new FilteredList<>(available);
     private final PartyPopupController controller;
 
     public PartyPopup(PartyPopupController controller) {
@@ -71,10 +71,7 @@ public class PartyPopup {
 
     public Button getTriggerButton() { return triggerButton; }
 
-    // ---- Panel-Aufbau ----
-
     private VBox buildPanel() {
-        // Kopfbereich
         Label headerLabel = new Label("PARTY");
         headerLabel.getStyleClass().addAll("large");
         Button closeBtn = new Button("\u00D7");
@@ -87,12 +84,10 @@ public class PartyPopup {
         header.getStyleClass().add("party-header");
         header.setAlignment(Pos.CENTER_LEFT);
 
-        // Mitgliederliste
         Label partyLabel = new Label("AKTUELLE PARTY");
         partyLabel.getStyleClass().add("party-section-label");
         memberList.getStyleClass().add("party-list");
 
-        // Suchbereich
         Label searchLabel = new Label("CHARAKTER HINZUF\u00DCGEN");
         searchLabel.getStyleClass().add("party-section-label");
 
@@ -100,7 +95,7 @@ public class PartyPopup {
         searchField.textProperty().addListener((obs, old, nv) -> {
             String lower = nv.trim().toLowerCase();
             filtered.setPredicate(lower.isEmpty() ? p -> true
-                    : pc -> pc.Name.toLowerCase().contains(lower));
+                    : pc -> pc.name().toLowerCase().contains(lower));
             suggestionList.setVisible(!filtered.isEmpty());
             suggestionList.setManaged(!filtered.isEmpty());
         });
@@ -119,18 +114,18 @@ public class PartyPopup {
         suggestionList.setManaged(false);
         suggestionList.setCellFactory(lv -> new ListCell<>() {
             @Override
-            protected void updateItem(PlayerCharacter pc, boolean empty) {
+            protected void updateItem(LoadPartySnapshotInput.CharacterInput pc, boolean empty) {
                 super.updateItem(pc, empty);
-                setText(empty || pc == null ? null : pc.Name + "  (Lv " + pc.Level + ")");
+                setText(empty || pc == null ? null : pc.name() + "  (Lv " + pc.level() + ")");
             }
         });
         suggestionList.setOnMouseClicked(e -> {
-            PlayerCharacter sel = suggestionList.getSelectionModel().getSelectedItem();
+            LoadPartySnapshotInput.CharacterInput sel = suggestionList.getSelectionModel().getSelectedItem();
             if (sel != null) addExisting(sel);
         });
         suggestionList.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
-                PlayerCharacter sel = suggestionList.getSelectionModel().getSelectedItem();
+                LoadPartySnapshotInput.CharacterInput sel = suggestionList.getSelectionModel().getSelectedItem();
                 if (sel != null) addExisting(sel);
             }
         });
@@ -147,7 +142,6 @@ public class PartyPopup {
         VBox newCharBox = new VBox(newCharBtn);
         newCharBox.getStyleClass().add("party-search");
 
-        // Statistik-Fusszeile
         summaryLabel.getStyleClass().add("party-summary");
         summaryLabel.setMaxWidth(Double.MAX_VALUE);
         actionStatusLabel.getStyleClass().add("text-muted");
@@ -178,14 +172,11 @@ public class PartyPopup {
         return panel;
     }
 
-    // ---- Popup umschalten ----
-
     private void togglePopup() {
         if (popup.isShowing()) {
             popup.hide();
             return;
         }
-        // Ladeplatzhalter anzeigen, waehrend Daten geladen werden
         memberList.getChildren().clear();
         Label loadingLabel = new Label("Lade...");
         loadingLabel.getStyleClass().add("text-muted");
@@ -202,11 +193,9 @@ public class PartyPopup {
         }
     }
 
-    // ---- Daten laden ----
-
     private void loadData() {
         controller.loadPartySnapshot(result -> {
-            if (result.status() != PartyService.ReadStatus.SUCCESS) {
+            if (result.status() != LoadPartySnapshotInput.Status.SUCCESS) {
                 applyData(emptySnapshot());
                 showStorageError("Party konnte nicht geladen werden.");
                 return;
@@ -215,31 +204,28 @@ public class PartyPopup {
         });
     }
 
-    private void applyData(PartyService.PartySnapshotResult result) {
+    private void applyData(LoadPartySnapshotInput.LoadedPartySnapshotInput result) {
         clearStatus();
-        // Mitgliederliste aktualisieren
         memberList.getChildren().clear();
-        for (PlayerCharacter pc : result.members()) {
+        for (LoadPartySnapshotInput.CharacterInput pc : result.members()) {
             memberList.getChildren().add(buildMemberRow(pc));
         }
 
-        // Suchvorschlaege aktualisieren
         available.setAll(result.available());
         searchField.clear();
         suggestionList.setVisible(false);
         suggestionList.setManaged(false);
 
-        // Toolbar-Button und Fusszeile aktualisieren
         updateSummary(result.members());
     }
 
-    private VBox buildMemberRow(PlayerCharacter pc) {
-        Label nameLabel = new Label(pc.Name);
+    private VBox buildMemberRow(LoadPartySnapshotInput.CharacterInput pc) {
+        Label nameLabel = new Label(pc.name());
         nameLabel.getStyleClass().add("party-member-name");
         nameLabel.setWrapText(true);
         HBox.setHgrow(nameLabel, Priority.ALWAYS);
 
-        Label levelLabel = new Label("Lv " + pc.Level);
+        Label levelLabel = new Label("Lv " + pc.level());
         levelLabel.getStyleClass().add("party-member-level");
         HBox headerRow = new HBox(8, nameLabel, levelLabel);
         headerRow.setAlignment(Pos.CENTER_LEFT);
@@ -289,52 +275,46 @@ public class PartyPopup {
         return row;
     }
 
-    private void updateSummary(List<PlayerCharacter> members) {
+    private void updateSummary(List<LoadPartySnapshotInput.CharacterInput> members) {
         if (members.isEmpty()) {
             triggerButton.setText("Keine _Party \u25BE");
             summaryLabel.setText("Keine Party-Mitglieder");
             shortRestButton.setDisable(true);
             longRestButton.setDisable(true);
-        } else {
-            int size = members.size();
-            double avgLevelExact = members.stream().mapToInt(pc -> pc.Level).average().orElse(1.0);
-            int avgLvl = PartyService.averageLevel(members);
-            triggerButton.setText(size + " Charaktere, \u00D8 Lv " + avgLvl + " \u25BE");
-            summaryLabel.setText(size + " Charaktere  \u00B7  \u00D8 Lv " + String.format("%.1f", avgLevelExact));
-            shortRestButton.setDisable(false);
-            longRestButton.setDisable(false);
+            return;
         }
+        int size = members.size();
+        double avgLevelExact = members.stream().mapToInt(LoadPartySnapshotInput.CharacterInput::level).average().orElse(1.0);
+        int avgLevelRounded = (int) Math.round(avgLevelExact);
+        triggerButton.setText(size + " Charaktere, \u00D8 Lv " + avgLevelRounded + " \u25BE");
+        summaryLabel.setText(size + " Charaktere  \u00B7  \u00D8 Lv " + String.format("%.1f", avgLevelExact));
+        shortRestButton.setDisable(false);
+        longRestButton.setDisable(false);
     }
 
-    // ---- Aktionen ----
-
-    private void addExisting(PlayerCharacter pc) {
-        controller.mutateAndReload(
-                () -> PartyService.addToParty(pc.Id),
-                "PartyPopup.addExisting(id=" + pc.Id + ")",
+    private void addExisting(LoadPartySnapshotInput.CharacterInput pc) {
+        controller.addToPartyAndReload(
+                pc.id(),
                 result -> handleMutationAndReloadResult(result, "Charakter konnte nicht zur Party hinzugefügt werden."));
     }
 
-    private void onRemoveFromParty(PlayerCharacter pc) {
-        controller.mutateAndReload(
-                () -> PartyService.removeFromParty(pc.Id),
-                "PartyPopup.onRemoveFromParty(id=" + pc.Id + ")",
+    private void onRemoveFromParty(LoadPartySnapshotInput.CharacterInput pc) {
+        controller.removeFromPartyAndReload(
+                pc.id(),
                 result -> handleMutationAndReloadResult(result, "Charakter konnte nicht aus der Party entfernt werden."));
     }
 
-    private void onEditCharacter(Button anchor, PlayerCharacter pc) {
+    private void onEditCharacter(Button anchor, LoadPartySnapshotInput.CharacterInput pc) {
         characterEditorDropdown.showEdit(
                 anchor,
                 pc,
-                draft -> controller.mutateAndReload(
-                        () -> PartyService.updateCharacter(pc.Id, draft),
-                        "PartyPopup.onEditCharacter(id=" + pc.Id + ")",
+                input -> controller.updateCharacterAndReload(
+                        input,
                         result -> handleEditorMutationAndReloadResult(
                                 result,
                                 "Charakter konnte nicht gespeichert werden.")),
-                () -> controller.mutateAndReload(
-                        () -> PartyService.deleteCharacter(pc.Id),
-                        "PartyPopup.onDeleteCharacter(id=" + pc.Id + ")",
+                () -> controller.deleteCharacterAndReload(
+                        pc.id(),
                         result -> handleEditorMutationAndReloadResult(
                                 result,
                                 "Charakter konnte nicht gelöscht werden.")));
@@ -343,28 +323,28 @@ public class PartyPopup {
     private void onNewCharacter(Button anchor) {
         characterEditorDropdown.showCreate(
                 anchor,
-                draft -> controller.createAndAddCharacterAndReload(
-                        draft,
+                input -> controller.createAndAddCharacterAndReload(
+                        input,
                         result -> handleEditorMutationAndReloadResult(
                                 result,
                                 "Charakter konnte nicht erstellt werden.")));
     }
 
-    private void onAwardXp(PlayerCharacter pc, TextField xpField) {
+    private void onAwardXp(LoadPartySnapshotInput.CharacterInput pc, TextField xpField) {
         int xpAmount = parsePositiveInt(xpField.getText());
         if (xpAmount <= 0) {
             showStatus("XP muss größer als 0 sein.", true);
             return;
         }
         controller.awardXpToCharacterAndReload(
-                pc.Id,
+                pc.id(),
                 xpAmount,
                 result -> {
                     if (!handleMutationAndReloadResult(result, "XP konnten nicht gespeichert werden.")) {
                         return;
                     }
                     xpField.clear();
-                    showStatus(pc.Name + " erhält " + xpAmount + " XP.", false);
+                    showStatus(pc.name() + " erhält " + xpAmount + " XP.", false);
                 });
     }
 
@@ -390,16 +370,16 @@ public class PartyPopup {
             PartyWorkflowApplicationService.MutationAndReloadResult result,
             String storageErrorMessage
     ) {
-        if (result.mutationStatus() == PartyService.MutationStatus.NOT_FOUND) {
+        if (result.mutationStatus() == PartyWorkflowApplicationService.MutationStatus.NOT_FOUND) {
             characterEditorDropdown.showError("Charakter wurde nicht gefunden.");
             return;
         }
-        if (result.mutationStatus() != PartyService.MutationStatus.SUCCESS) {
+        if (result.mutationStatus() != PartyWorkflowApplicationService.MutationStatus.SUCCESS) {
             characterEditorDropdown.showError(storageErrorMessage);
             return;
         }
-        PartyService.PartySnapshotResult snapshot = result.snapshotResult();
-        if (snapshot == null || snapshot.status() != PartyService.ReadStatus.SUCCESS) {
+        LoadPartySnapshotInput.LoadedPartySnapshotInput snapshot = result.snapshotResult();
+        if (snapshot == null || snapshot.status() != LoadPartySnapshotInput.Status.SUCCESS) {
             applyData(emptySnapshot());
             characterEditorDropdown.showError("Party konnte nach der Änderung nicht neu geladen werden.");
             return;
@@ -408,39 +388,39 @@ public class PartyPopup {
         applyData(snapshot);
     }
 
-    private static String buildMemberDetails(PlayerCharacter pc) {
-        String playerName = pc.PlayerName == null || pc.PlayerName.isBlank()
+    private static String buildMemberDetails(LoadPartySnapshotInput.CharacterInput pc) {
+        String playerName = pc.playerName() == null || pc.playerName().isBlank()
                 ? null
-                : pc.PlayerName.trim();
+                : pc.playerName().trim();
         String prefix = playerName == null ? "" : playerName + "  ·  ";
-        return prefix + "AC " + pc.ArmorClass + "  ·  PP " + pc.PassivePerception;
+        return prefix + "AC " + pc.armorClass() + "  ·  PP " + pc.passivePerception();
     }
 
-    private static String buildProgressionDetails(PlayerCharacter pc) {
-        if (pc.Level >= 20) {
+    private static String buildProgressionDetails(LoadPartySnapshotInput.CharacterInput pc) {
+        if (pc.level() >= 20) {
             return "Max-Level erreicht";
         }
-        if (PartyProgressionRules.isLevelUpReady(pc.Level, pc.CurrentXp)) {
+        if (PartyProgressionRules.isLevelUpReady(pc.level(), pc.currentXp())) {
             return "Level-up bereit";
         }
-        int xpToNext = PartyProgressionRules.xpToNextLevel(pc.Level, pc.CurrentXp);
-        return xpToNext + " XP bis Level " + (pc.Level + 1);
+        int xpToNext = PartyProgressionRules.xpToNextLevel(pc.level(), pc.currentXp());
+        return xpToNext + " XP bis Level " + (pc.level() + 1);
     }
 
     private boolean handleMutationAndReloadResult(
             PartyWorkflowApplicationService.MutationAndReloadResult result,
             String storageErrorMessage
     ) {
-        if (result.mutationStatus() == PartyService.MutationStatus.NOT_FOUND) {
+        if (result.mutationStatus() == PartyWorkflowApplicationService.MutationStatus.NOT_FOUND) {
             showStorageError("Charakter wurde nicht gefunden.");
             return false;
         }
-        if (result.mutationStatus() != PartyService.MutationStatus.SUCCESS) {
+        if (result.mutationStatus() != PartyWorkflowApplicationService.MutationStatus.SUCCESS) {
             showStorageError(storageErrorMessage);
             return false;
         }
-        PartyService.PartySnapshotResult snapshot = result.snapshotResult();
-        if (snapshot == null || snapshot.status() != PartyService.ReadStatus.SUCCESS) {
+        LoadPartySnapshotInput.LoadedPartySnapshotInput snapshot = result.snapshotResult();
+        if (snapshot == null || snapshot.status() != LoadPartySnapshotInput.Status.SUCCESS) {
             applyData(emptySnapshot());
             showStorageError("Party konnte nach der Änderung nicht neu geladen werden.");
             return false;
@@ -449,9 +429,9 @@ public class PartyPopup {
         return true;
     }
 
-    private static PartyService.PartySnapshotResult emptySnapshot() {
-        return new PartyService.PartySnapshotResult(
-                PartyService.ReadStatus.STORAGE_ERROR,
+    private static LoadPartySnapshotInput.LoadedPartySnapshotInput emptySnapshot() {
+        return new LoadPartySnapshotInput.LoadedPartySnapshotInput(
+                LoadPartySnapshotInput.Status.STORAGE_ERROR,
                 List.of(),
                 List.of());
     }
@@ -493,5 +473,4 @@ public class PartyPopup {
         field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9]*") ? change : null));
         return field;
     }
-
 }
