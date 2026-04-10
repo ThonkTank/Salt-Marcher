@@ -59,10 +59,14 @@ internal fun analyzeOwnerFile(
     if (sourceFile.context.packageName == "database" ||
         sourceFile.context.packageName == "importer" ||
         sourceFile.context.packageName == "importer.pipeline" ||
+        sourceFile.context.packageName == "features.campaignstate" ||
+        sourceFile.context.packageName == "features.campaignstate.api" ||
         sourceFile.context.packageName == "features.items.importer" ||
         sourceFile.context.packageName == "features.spells.importer" ||
         sourceFile.context.packageName == "features.creatures.model" ||
         sourceFile.context.packageName == "features.creatures.service" ||
+        sourceFile.context.packageName == "features.world.dungeon.application.runtime" ||
+        sourceFile.context.packageName == "features.world.hexmap.service.adapter" ||
         sourceFile.context.packageName == "shared.crawler.config" ||
         sourceFile.context.packageName == "shared.crawler.http" ||
         sourceFile.context.packageName == "shared.crawler.slug" ||

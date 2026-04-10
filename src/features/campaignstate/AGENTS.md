@@ -6,15 +6,16 @@
 
 ## Canonical Types and APIs
 
-- `features.campaignstate.api` — current public compatibility surface consumed by world-owned features. Keep cross-feature access here, but do not treat `api/` as the placement precedent for new owner-internal code.
-- `CampaignStateApi` — current mutation facade for persisted session state.
-- `CampaignStateReadApi` — current read facade for persisted session state.
-- `DungeonTilePosition` — lightweight dungeon runtime position value exported through the public compatibility surface.
+- `CampaignstateObject` — canonical campaign-state root seam — accepts connection-aware world-session requests and returns focused session payloads.
+- `repository/CampaignstateRepository` — canonical persistence boundary for the singleton `campaign_state` aggregate.
+- `api/CampaignStateApi` and `api/CampaignStateReadApi` — legacy compatibility facades. Keep them delegating to the canonical root instead of growing new behavior.
+- `api/DungeonTilePosition` — lightweight compatibility value for legacy dungeon-position consumers.
 
 ## Where New Code Goes
 
 - Put persisted world-session reads and writes here.
 - Keep overworld and dungeon position persistence behind the campaign-state public seam instead of writing the table from consuming features.
+- Put new request carriers under `input/`, protected persisted carriers under `state/`, and JDBC flows under the canonical repository.
 - Do not use `api` naming here as the default placement for new owner-local schemas or helpers.
 
 ## Forbidden Drift

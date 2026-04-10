@@ -9,7 +9,7 @@
 - `features.world.api.ApiObject` — public world-owned boundary used by shared bootstrap — composes overworld and dungeon-facing surfaces plus the shared travel scene.
 - `features.world.hexmap.HexmapObject` — hexmap feature root seam — returns the overworld/editor view pair and shared travel surface wiring consumed by the world boundary.
 - `features.world.dungeonclean.DungeoncleanObject` — parallel clean dungeon rebuild seam. Use it for migrated capabilities instead of reopening legacy `features.world.dungeon` seams.
-- `features.campaignstate.api` — campaign-state seam consumed for persisted world-session position.
+- `features.campaignstate.CampaignstateObject` — campaign-state seam consumed for persisted world-session position and time progression.
 
 ## Where New Code Goes
 
