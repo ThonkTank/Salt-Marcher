@@ -8,7 +8,9 @@ import features.encounter.api.AdventuringDayToolbarModule;
 import features.encounter.api.EncounterModule;
 import features.party.api.PartyModule;
 import features.spells.api.SpellCatalogModule;
-import features.tables.api.TablesModule;
+import features.tables.TablesObject;
+import features.tables.input.CreateWorkspaceViewInput;
+import features.tables.input.SetCreatureFilterDataInput;
 import features.world.api.ApiObject;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -93,8 +95,8 @@ public final class AppObject extends Application {
         AppView dungeonView = worldViews.dungeonView();
         AppView dungeonEditorView = worldViews.dungeonEditorView();
 
-        TablesModule tablesModule = new TablesModule(shell.getDetailsNavigator());
-        AppView tableEditorView = tablesModule.view();
+        TablesObject tablesObject = new TablesObject(shell.getDetailsNavigator());
+        AppView tableEditorView = tablesObject.createWorkspaceView(new CreateWorkspaceViewInput()).workspaceView();
         SpellCatalogModule spellCatalogModule = new SpellCatalogModule();
         spellCatalogModule.start(shell.getDetailsNavigator());
         AppView spellCatalogView = spellCatalogModule.view();
@@ -142,7 +144,7 @@ public final class AppObject extends Application {
                                 new IllegalStateException("CatalogObject.loadFilterOptions() failed"));
                     }
                     encounterModule.setFilterData(result);
-                    tablesModule.setCreatureFilterData(result);
+                    tablesObject.setCreatureFilterData(new SetCreatureFilterDataInput(result));
                 },
                 throwable -> UiErrorReporter.reportBackgroundFailure("AppObject.start()", throwable));
     }

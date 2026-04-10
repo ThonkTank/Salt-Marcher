@@ -1,9 +1,9 @@
 package features.tables.api;
 
+import features.tables.TablesObject;
+import features.tables.input.CreateWorkspaceViewInput;
+import features.tables.input.SetCreatureFilterDataInput;
 import features.creatures.catalog.input.LoadFilterOptionsInput;
-import features.encountertable.api.EncounterTableModule;
-import features.loottable.api.LootTableModule;
-import features.tables.ui.TablesWorkspaceView;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
@@ -12,26 +12,17 @@ import ui.shell.DetailsNavigator;
  */
 @SuppressWarnings("unused")
 public final class TablesModule {
-
-    private final EncounterTableModule encounterTableModule;
-    private final LootTableModule lootTableModule;
-    private final TablesWorkspaceView workspaceView;
+    private final TablesObject tablesObject;
 
     public TablesModule(DetailsNavigator detailsNavigator) {
-        this.encounterTableModule = new EncounterTableModule();
-        this.lootTableModule = new LootTableModule();
-        this.encounterTableModule.setDetailsNavigator(detailsNavigator);
-        this.workspaceView = new TablesWorkspaceView(
-                encounterTableModule.view(),
-                lootTableModule.view());
-        lootTableModule.start(detailsNavigator);
+        this.tablesObject = new TablesObject(detailsNavigator);
     }
 
     public AppView view() {
-        return workspaceView;
+        return tablesObject.createWorkspaceView(new CreateWorkspaceViewInput()).workspaceView();
     }
 
     public void setCreatureFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
-        encounterTableModule.setFilterData(data);
+        tablesObject.setCreatureFilterData(new SetCreatureFilterDataInput(data));
     }
 }
