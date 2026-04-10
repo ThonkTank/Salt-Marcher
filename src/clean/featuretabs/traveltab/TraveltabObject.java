@@ -18,7 +18,6 @@ import javafx.scene.layout.VBox;
 /**
  * Aggregated Clean travel surface for Hexmap and Dungeon runtime.
  */
-@SuppressWarnings("unused")
 public final class TraveltabObject {
 
     private final ComposeTraveltabInput.TraveltabInput traveltab;

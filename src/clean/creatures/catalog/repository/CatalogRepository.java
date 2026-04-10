@@ -20,7 +20,6 @@ import java.util.Set;
 /**
  * Stateless clean creature persistence boundary.
  */
-@SuppressWarnings("unused")
 public final class CatalogRepository {
     private CatalogRepository() {
         throw new AssertionError("No instances");
@@ -175,47 +174,6 @@ public final class CatalogRepository {
                 );
             }
         }
-    }
-
-    public static CatalogState.EncounterCandidatesState loadEncounterCandidates(
-            List<String> types,
-            int minXp,
-            int maxXp,
-            List<String> biomes,
-            List<String> subtypes,
-            boolean encounterGenerationProjection
-    ) throws SQLException {
-        StringBuilder sql = new StringBuilder(encounterGenerationProjection
-                ? "SELECT id, name, creature_type, cr, xp, hp, ac, initiative_bonus, legendary_action_count FROM creatures WHERE xp >= ? AND xp <= ?"
-                : "SELECT id, name, creature_type, cr, xp, hp, ac, initiative_bonus, legendary_action_count FROM creatures WHERE xp >= ? AND xp <= ?");
-        List<Object> params = new ArrayList<>();
-        params.add(minXp);
-        params.add(maxXp);
-        appendTypeClause(sql, params, types);
-        appendSubtypeClause(sql, params, subtypes);
-        appendBiomesClause(sql, params, biomes);
-
-        List<CatalogState.EncounterCandidateState> creatures = new ArrayList<>();
-        try (Connection connection = openConnection();
-             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
-            bindParams(statement, params);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    creatures.add(new CatalogState.EncounterCandidateState(
-                            resultSet.getLong("id"),
-                            resultSet.getString("name"),
-                            resultSet.getString("creature_type"),
-                            resultSet.getString("cr"),
-                            resultSet.getInt("xp"),
-                            resultSet.getInt("hp"),
-                            resultSet.getInt("ac"),
-                            resultSet.getInt("initiative_bonus"),
-                            resultSet.getInt("legendary_action_count")
-                    ));
-                }
-            }
-        }
-        return new CatalogState.EncounterCandidatesState(List.copyOf(creatures));
     }
 
     private static CatalogState.CreatureDetailsState mapCreatureDetails(ResultSet resultSet) throws SQLException {

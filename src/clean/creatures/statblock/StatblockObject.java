@@ -16,7 +16,6 @@ import javafx.scene.layout.VBox;
 /**
  * Clean creature statblock publisher for the shell-owned inspector.
  */
-@SuppressWarnings("unused")
 public final class StatblockObject {
 
     private final ComposeStatblockInput.StatblockInput statblock;

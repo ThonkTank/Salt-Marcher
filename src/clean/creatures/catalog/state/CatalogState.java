@@ -3,9 +3,7 @@ package clean.creatures.catalog.state;
 /**
  * Owner-local runtime and persistence shapes for the clean creature catalog.
  */
-@SuppressWarnings("unused")
 public final class CatalogState {
-
     private CatalogState() {
         throw new AssertionError("No instances");
     }
@@ -92,21 +90,4 @@ public final class CatalogState {
     ) {
     }
 
-    public record EncounterCandidateState(
-            long creatureId,
-            String name,
-            String creatureType,
-            String cr,
-            int xp,
-            int hp,
-            int ac,
-            int initiativeBonus,
-            int legendaryActionCount
-    ) {
-    }
-
-    public record EncounterCandidatesState(
-            java.util.List<EncounterCandidateState> creatures
-    ) {
-    }
 }

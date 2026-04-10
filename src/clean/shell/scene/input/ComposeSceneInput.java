@@ -2,7 +2,6 @@ package clean.shell.scene.input;
 
 import javafx.scene.Node;
 
-@SuppressWarnings("unused")
 public record ComposeSceneInput() {
 
     public record RegistrationInput(

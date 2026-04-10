@@ -18,7 +18,6 @@ import javafx.scene.layout.VBox;
 /**
  * Aggregated Clean editor surface for Hexmap and Dungeon map editing.
  */
-@SuppressWarnings("unused")
 public final class MapeditortabObject {
 
     private final ComposeMapeditortabInput.MapeditortabInput mapeditortab;

@@ -8,7 +8,6 @@ import javafx.scene.layout.VBox;
 /**
  * Clean placeholder editor surface for Hexmap editing.
  */
-@SuppressWarnings("unused")
 public final class HexeditorObject {
 
     private final ComposeHexeditorInput.HexeditorInput hexeditor;

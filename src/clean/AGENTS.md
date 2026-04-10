@@ -40,3 +40,4 @@
 - Mirror the legacy cockpit presentation locally instead of importing legacy shell code or CSS, because clean needs behavioral continuity without taking a code dependency on abandoned trees.
 - Keep cross-owner communication request-based and parent-launched, because sibling convenience hops hide the real ownership graph.
 - Keep scene-graph assembly out of public request methods, because the owner checks expect those seams to stay trivial and auditable.
+- Keep clean runtime dispatch explicit and modelable. Do not add reflection, `ServiceLoader`, `MethodHandles`, dynamic proxies, or other open-ended runtime lookup in `src/clean`, because the tree-wide dead-code gate rejects unmodeled dynamic reachability.

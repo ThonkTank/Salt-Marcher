@@ -1,6 +1,5 @@
 package clean.featuretabs.mapcatalog.input;
 
-@SuppressWarnings("unused")
 public record LoadMapsInput() {
 
     public record MapInput(

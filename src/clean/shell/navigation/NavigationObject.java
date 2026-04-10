@@ -19,7 +19,6 @@ import javafx.scene.layout.VBox;
 /**
  * Clean shell navigation owner for active-surface switching.
  */
-@SuppressWarnings("unused")
 public final class NavigationObject {
 
     private final ComposeNavigationInput.NavigationInput navigation;

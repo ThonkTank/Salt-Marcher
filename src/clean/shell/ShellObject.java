@@ -15,7 +15,6 @@ import clean.shell.scene.input.ComposeSceneInput;
 /**
  * Public clean shell root seam for shell-framework composition.
  */
-@SuppressWarnings("unused")
 public final class ShellObject {
 
     private final ComposeShellInput.ShellInput shell;

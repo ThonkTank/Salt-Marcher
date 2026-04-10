@@ -8,7 +8,6 @@ import javafx.scene.layout.VBox;
 /**
  * Clean placeholder runtime surface for Hexmap travel.
  */
-@SuppressWarnings("unused")
 public final class HextravelObject {
 
     private final ComposeHextravelInput.HextravelInput hextravel;

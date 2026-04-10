@@ -6,7 +6,6 @@ import clean.shell.scene.input.ComposeSceneInput;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 
-@SuppressWarnings("unused")
 public record ComposeShellInput(
         java.util.List<SurfaceInput> surfaces,
         String initialSurfaceId

@@ -15,7 +15,6 @@ import javafx.scene.layout.VBox;
 /**
  * Clean shell-owned lower-right scene owner.
  */
-@SuppressWarnings("unused")
 public final class SceneObject {
 
     private final ComposeSceneInput.SceneInput scene;

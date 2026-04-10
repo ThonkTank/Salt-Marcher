@@ -8,7 +8,6 @@ import javafx.scene.layout.VBox;
 /**
  * Clean placeholder editor surface for dungeon editing.
  */
-@SuppressWarnings("unused")
 public final class DungeoneditorObject {
 
     private final ComposeDungeoneditorInput.DungeoneditorInput dungeoneditor;

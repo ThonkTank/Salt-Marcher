@@ -13,7 +13,6 @@ import java.util.logging.Logger;
 /**
  * Canonical root seam for clean creature catalog reads.
  */
-@SuppressWarnings("unused")
 public final class CatalogObject {
     private static final Logger LOGGER = Logger.getLogger(CatalogObject.class.getName());
     private final ComposeCatalogInput.CatalogInput catalog;
@@ -66,8 +65,7 @@ public final class CatalogObject {
             return new ComposeCatalogInput.CatalogInput(
                     this::loadFilterOptions,
                     this::searchCreatures,
-                    this::loadCreature,
-                    this::loadEncounterCandidates
+                    this::loadCreature
             );
         }
 
@@ -178,33 +176,6 @@ public final class CatalogObject {
             }
         }
 
-        private ComposeCatalogInput.LoadedEncounterCandidatesInput loadEncounterCandidates(
-                ComposeCatalogInput.LoadEncounterCandidatesInput input
-        ) {
-            if (input == null) {
-                return new ComposeCatalogInput.LoadedEncounterCandidatesInput(false, List.of());
-            }
-            try {
-                CatalogState.EncounterCandidatesState state = CatalogRepository.loadEncounterCandidates(
-                        this.normalizeTexts(input.types()),
-                        Math.max(0, input.minXp()),
-                        Math.max(input.minXp(), input.maxXp()),
-                        this.normalizeTexts(input.biomes()),
-                        this.normalizeTexts(input.subtypes()),
-                        input.encounterGenerationProjection()
-                );
-                return new ComposeCatalogInput.LoadedEncounterCandidatesInput(
-                        true,
-                        state.creatures().stream()
-                                .map(this::toEncounterCandidateInput)
-                                .toList()
-                );
-            } catch (SQLException exception) {
-                LOGGER.log(Level.WARNING, "CatalogObject.loadEncounterCandidates(): DB access failed", exception);
-                return new ComposeCatalogInput.LoadedEncounterCandidatesInput(false, List.of());
-            }
-        }
-
         private ComposeCatalogInput.CreatureSummaryInput toCreatureSummaryInput(
                 CatalogState.CreatureSummaryState state
         ) {
@@ -277,22 +248,6 @@ public final class CatalogObject {
                     state.name(),
                     state.description(),
                     state.toHitBonus()
-            );
-        }
-
-        private ComposeCatalogInput.EncounterCandidateInput toEncounterCandidateInput(
-                CatalogState.EncounterCandidateState state
-        ) {
-            return new ComposeCatalogInput.EncounterCandidateInput(
-                    state.creatureId(),
-                    state.name(),
-                    state.creatureType(),
-                    state.cr(),
-                    state.xp(),
-                    state.hp(),
-                    state.ac(),
-                    state.initiativeBonus(),
-                    state.legendaryActionCount()
             );
         }
 

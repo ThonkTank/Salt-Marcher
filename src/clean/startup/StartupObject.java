@@ -6,7 +6,6 @@ import javafx.scene.Scene;
 /**
  * Startup owner for the clean application shell and stage presentation.
  */
-@SuppressWarnings("unused")
 public final class StartupObject {
 
     private final StartApplicationInput startup;

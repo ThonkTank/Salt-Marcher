@@ -5,7 +5,6 @@ import clean.featuretabs.mapcatalog.input.LoadMapsInput;
 /**
  * Clean-local seed map catalog for aggregated top-level tabs.
  */
-@SuppressWarnings("unused")
 public final class MapcatalogObject {
 
     private final LoadMapsInput.LoadedMapsInput loadedMaps;

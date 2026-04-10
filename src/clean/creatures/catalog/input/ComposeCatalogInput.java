@@ -1,6 +1,5 @@
 package clean.creatures.catalog.input;
 
-@SuppressWarnings("unused")
 public record ComposeCatalogInput() {
 
     public record LoadFilterOptionsInput() {
@@ -130,40 +129,10 @@ public record ComposeCatalogInput() {
     ) {
     }
 
-    public record LoadEncounterCandidatesInput(
-            java.util.List<String> types,
-            int minXp,
-            int maxXp,
-            java.util.List<String> biomes,
-            java.util.List<String> subtypes,
-            boolean encounterGenerationProjection
-    ) {
-    }
-
-    public record EncounterCandidateInput(
-            long creatureId,
-            String name,
-            String creatureType,
-            String cr,
-            int xp,
-            int hp,
-            int ac,
-            int initiativeBonus,
-            int legendaryActionCount
-    ) {
-    }
-
-    public record LoadedEncounterCandidatesInput(
-            boolean success,
-            java.util.List<EncounterCandidateInput> creatures
-    ) {
-    }
-
     public record CatalogInput(
             java.util.function.Function<LoadFilterOptionsInput, LoadedFilterOptionsInput> loadFilterOptions,
             java.util.function.Function<SearchCreaturesInput, SearchedCreaturesInput> searchCreatures,
-            java.util.function.Function<LoadCreatureInput, LoadedCreatureInput> loadCreature,
-            java.util.function.Function<LoadEncounterCandidatesInput, LoadedEncounterCandidatesInput> loadEncounterCandidates
+            java.util.function.Function<LoadCreatureInput, LoadedCreatureInput> loadCreature
     ) {
     }
 }

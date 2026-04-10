@@ -2,7 +2,6 @@ package clean.shell.inspector.input;
 
 import javafx.scene.Node;
 
-@SuppressWarnings("unused")
 public record ComposeInspectorInput() {
 
     public record InfoEntryInput(

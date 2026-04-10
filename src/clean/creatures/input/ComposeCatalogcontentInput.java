@@ -2,7 +2,6 @@ package clean.creatures.input;
 
 import clean.catalog.input.ComposeCatalogInput;
 
-@SuppressWarnings("unused")
 public record ComposeCatalogcontentInput(
         java.util.function.Consumer<RowActionInput> rowAction,
         String rowActionLabel

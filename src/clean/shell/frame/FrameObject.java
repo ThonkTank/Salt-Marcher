@@ -19,7 +19,6 @@ import javafx.scene.paint.Color;
 /**
  * Clean shell frame owner for the cockpit layout structure.
  */
-@SuppressWarnings("unused")
 public final class FrameObject {
 
     private final ComposeFrameInput.FrameInput frame;

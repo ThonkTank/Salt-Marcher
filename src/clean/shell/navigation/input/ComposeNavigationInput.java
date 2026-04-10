@@ -2,7 +2,6 @@ package clean.shell.navigation.input;
 
 import javafx.scene.Node;
 
-@SuppressWarnings("unused")
 public record ComposeNavigationInput(
         java.util.List<SurfaceInput> surfaces,
         String initialSurfaceId,

@@ -3,7 +3,6 @@ package clean.creatures.statblock.input;
 import clean.creatures.catalog.input.ComposeCatalogInput;
 import clean.shell.input.ComposeShellInput;
 
-@SuppressWarnings("unused")
 public record ComposeStatblockInput(
         ComposeCatalogInput.CatalogInput catalog
 ) {

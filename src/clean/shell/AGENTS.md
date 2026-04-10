@@ -11,7 +11,7 @@
 - `navigation/NavigationObject.composeNavigation(ComposeNavigationInput)` - returns the active-surface projection and sidebar content.
 - `inspector/InspectorObject.composeInspector(ComposeInspectorInput)` - returns the global details pane and publication hooks.
 - `scene/SceneObject.composeScene(ComposeSceneInput)` - returns the global runtime pane and scene-registration hooks.
-- `async/AsyncObject.composeAsync(ComposeAsyncInput)` - returns background-submission and failure-reporting hooks.
+- `async/AsyncObject.composeAsync(ComposeAsyncInput)` - returns the shell-wide async failure-reporting hook.
 
 ## Where New Code Goes
 

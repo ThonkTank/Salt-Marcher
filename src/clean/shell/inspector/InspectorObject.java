@@ -21,7 +21,6 @@ import javafx.scene.paint.Color;
 /**
  * Clean shell-owned global inspector owner.
  */
-@SuppressWarnings("unused")
 public final class InspectorObject {
 
     private final ComposeInspectorInput.InspectorInput inspector;

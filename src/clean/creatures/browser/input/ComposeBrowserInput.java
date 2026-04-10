@@ -4,7 +4,6 @@ import clean.creatures.catalog.input.ComposeCatalogInput;
 import clean.creatures.statblock.input.ComposeStatblockInput;
 import javafx.scene.Node;
 
-@SuppressWarnings("unused")
 public record ComposeBrowserInput(
         ComposeCatalogInput.CatalogInput catalog,
         java.util.function.Consumer<ComposeStatblockInput.ShowCreatureStatblockInput> showCreatureStatblock,

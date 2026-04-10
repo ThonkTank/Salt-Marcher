@@ -10,7 +10,6 @@ import javafx.scene.layout.VBox;
 /**
  * Top-level clean catalog workspace surface.
  */
-@SuppressWarnings("unused")
 public final class CatalogObject {
 
     private final ComposeCatalogInput.CatalogInput catalog;

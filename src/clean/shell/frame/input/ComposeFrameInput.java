@@ -3,7 +3,6 @@ package clean.shell.frame.input;
 import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 
-@SuppressWarnings("unused")
 public record ComposeFrameInput(
         Node toolbarContent,
         Node navigationContent,

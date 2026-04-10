@@ -17,7 +17,6 @@ import javafx.scene.layout.VBox;
 /**
  * Clean encounter runtime owner surfaced through the shell-owned Scene pane.
  */
-@SuppressWarnings("unused")
 public final class EncounterObject {
 
     private final ComposeEncounterInput.EncounterInput encounter;

@@ -3,7 +3,6 @@ package clean.featuretabs.input;
 import clean.creatures.input.ComposeCatalogcontentInput;
 import clean.shell.input.ComposeShellInput;
 
-@SuppressWarnings("unused")
 public record ComposeFeaturetabsInput(
         ComposeCatalogcontentInput.CatalogcontentInput catalogcontent
 ) {

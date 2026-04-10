@@ -18,7 +18,6 @@ import clean.shell.input.ComposeShellInput;
 /**
  * Top-level Clean sidebar roster owner.
  */
-@SuppressWarnings("unused")
 public final class FeaturetabsObject {
 
     private final ComposeFeaturetabsInput.FeaturetabsInput featuretabs;

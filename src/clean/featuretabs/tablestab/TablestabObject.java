@@ -10,7 +10,6 @@ import javafx.scene.layout.VBox;
 /**
  * Top-level clean placeholder surface for tables.
  */
-@SuppressWarnings("unused")
 public final class TablestabObject {
 
     private final ComposeTablestabInput.TablestabInput tablestab;

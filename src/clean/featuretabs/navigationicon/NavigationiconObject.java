@@ -13,7 +13,6 @@ import javafx.scene.shape.Rectangle;
 /**
  * Clean-local mirror of the legacy shell navigation icon set.
  */
-@SuppressWarnings("unused")
 public final class NavigationiconObject {
 
     private final ComposeNavigationiconInput.NavigationiconInput navigationicon;

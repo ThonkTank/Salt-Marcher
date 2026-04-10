@@ -8,7 +8,6 @@ import javafx.scene.layout.VBox;
 /**
  * Clean placeholder runtime surface for dungeon travel.
  */
-@SuppressWarnings("unused")
 public final class DungeontravelObject {
 
     private final ComposeDungeontravelInput.DungeontravelInput dungeontravel;

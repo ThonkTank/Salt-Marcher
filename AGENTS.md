@@ -32,7 +32,7 @@ Salt Marcher is a Java 21 / JavaFX / SQLite application built with the Gradle wr
 
 - Run `./gradlew build` after code changes, because it compiles the app and runs the owner / clean dead-code checks.
 - Run `./gradlew installDesktopApp` after code changes unless the user explicitly waives it, because the desktop app is the normal manual test surface.
-- `./gradlew checkNoDeadCode` is the strict `src/clean` hygiene gate. Any unreachable type/member under `src/clean` must fail, and type-level `@SuppressWarnings("unused")` is not allowed there.
+- `./gradlew checkNoDeadCode` is the strict `src/clean` hygiene gate. Any unreachable declaration, dead local flow, `@SuppressWarnings(...)`, or unmodeled dynamic reachability under `src/clean` must fail there.
 - There is no test framework and no linter. Verification claims must therefore be literal and command-based.
 - The app database lives at `${XDG_DATA_HOME:-~/.local/share}/salt-marcher/game.db`. Schema changes require rebuilding from crawled data, because there are no `ALTER TABLE` migrations.
 - First data load comes from `./scripts/crawl.sh` or `./scripts/crawl-items.sh` after creating `crawler.properties` from `crawler.properties.example`.
