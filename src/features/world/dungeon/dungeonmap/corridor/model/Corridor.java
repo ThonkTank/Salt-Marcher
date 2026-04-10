@@ -1,5 +1,7 @@
 package features.world.dungeon.dungeonmap.corridor.model;
 
+import features.world.dungeon.dungeonmap.structure.StructureObject;
+import features.world.dungeon.dungeonmap.structure.input.FromSurfaceLevelInput;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.boundary.StructureBoundary;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
@@ -28,8 +30,10 @@ import java.util.Set;
 /**
  * Corridor persists only authored network input plus final structure. Routed traces stay transient.
  */
+@SuppressWarnings("unused")
 public final class Corridor extends Structure {
 
+    private static final StructureObject STRUCTURE = new StructureObject();
     private final CorridorInput input;
     private final List<CorridorPathTrace> pathTraces;
     private final List<DungeonConnection> connections;
@@ -436,7 +440,10 @@ public final class Corridor extends Structure {
             Collection<Door> doors,
             List<CorridorPathTrace> traces
     ) {
-        return Structure.fromSurfaceLevel(levelZ, CorridorRouting.surfaceAreaForTraces(traces), doors);
+        return STRUCTURE.fromSurfaceLevel(new FromSurfaceLevelInput(
+                levelZ,
+                CorridorRouting.surfaceAreaForTraces(traces),
+                doors));
     }
 
     private static List<CorridorPathTrace> routeSegmentTraces(
@@ -453,9 +460,13 @@ public final class Corridor extends Structure {
                 .sorted(Comparator.comparing(CorridorSegment::segmentId))
                 .toList();
         LinkedHashMap<Long, CorridorPathTrace> tracesBySegmentId = new LinkedHashMap<>();
-        GridArea reservedArea = GridArea.empty();
 
-        for (CorridorSegment segment : orderedSegments) {
+        for (int index = 0; index < orderedSegments.size(); index++) {
+            CorridorSegment segment = orderedSegments.get(index);
+            GridArea reservedArea = GridArea.of(tracesBySegmentId.values().stream()
+                    .filter(Objects::nonNull)
+                    .flatMap(trace -> trace.path().cellFootprint().cells().stream())
+                    .toList());
             CorridorSegment.ResolvedSegment currentSegment = segment.resolve(nodesById, resolutionInput);
             CorridorSegment previousSegment = previousSegmentsById.get(segment.segmentId());
             CorridorSegment.ResolvedSegment previousResolvedSegment = previousSegment == null
@@ -469,7 +480,6 @@ public final class Corridor extends Structure {
                             resolutionInput.blockedArea(),
                             reservedArea));
             tracesBySegmentId.put(segment.segmentId(), trace);
-            reservedArea = GridArea.of(unionCells(reservedArea, trace.path().cellFootprint()));
         }
 
         return orderedSegments.stream()

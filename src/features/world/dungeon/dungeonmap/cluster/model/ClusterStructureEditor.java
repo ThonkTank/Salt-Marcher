@@ -5,6 +5,9 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.structures.room.Room;
+import features.world.dungeon.dungeonmap.structure.StructureObject;
+import features.world.dungeon.dungeonmap.structure.input.EmptyInput;
+import features.world.dungeon.dungeonmap.structure.input.FromSpecificationInput;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.StructureSpecification;
 import features.world.dungeon.dungeonmap.structure.model.boundary.StructureBoundary;
@@ -31,6 +34,8 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings("unused")
 final class ClusterStructureEditor {
+
+    private static final StructureObject STRUCTURE = new StructureObject();
 
     private ClusterStructureEditor() {
     }
@@ -177,7 +182,7 @@ final class ClusterStructureEditor {
     }
 
     private static Structure roomStructure(Cluster cluster, Room room) {
-        return cluster == null ? Structure.empty() : cluster.roomTopology().structureFor(room);
+        return cluster == null ? STRUCTURE.empty(new EmptyInput()) : cluster.roomTopology().structureFor(room);
     }
 
     private static Set<Integer> roomLevels(Cluster cluster, Room room) {
@@ -409,7 +414,7 @@ final class ClusterStructureEditor {
     ) {
         Map<Integer, Set<GridPoint>> normalizedCellsByLevel = immutableCellsByLevel(cellsByLevel);
         if (normalizedCellsByLevel.isEmpty()) {
-            return Structure.empty();
+            return STRUCTURE.empty(new EmptyInput());
         }
         Map<Integer, Set<GridPoint>> normalizedFloorCellsByLevel = immutableFloorCellsByLevel(floorCellsByLevel);
         Map<Integer, StructureSpecification.LevelSpecification> levelsByZ = new LinkedHashMap<>();
@@ -436,7 +441,7 @@ final class ClusterStructureEditor {
                     boundary.doors(),
                     boundary.walls()));
         }
-        return Structure.fromSpecification(new StructureSpecification(levelsByZ));
+        return STRUCTURE.fromSpecification(new FromSpecificationInput(new StructureSpecification(levelsByZ)));
     }
 
     private static List<Cluster> splitDeletedCluster(Cluster originalCluster, Structure rewrittenStructure) {

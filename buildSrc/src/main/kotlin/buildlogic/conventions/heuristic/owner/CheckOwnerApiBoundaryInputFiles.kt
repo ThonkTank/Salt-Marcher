@@ -94,6 +94,9 @@ internal fun analyzeInputFile(
     if (sourceFile.context.packageName == "features.world.hexmap.travelsurface.input") {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }
+    if (sourceFile.context.packageName == "features.world.dungeon.dungeonmap.structure.input") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     return support.analyzeInputShape(sourceFile, snapshot)
 }
 

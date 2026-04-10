@@ -8,6 +8,8 @@ import features.world.dungeon.geometry.GridSegmentPath;
 import features.world.dungeon.geometry.GridTranslation;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
 import features.world.dungeon.model.interaction.InteractiveLabelHandle;
+import features.world.dungeon.dungeonmap.structure.StructureObject;
+import features.world.dungeon.dungeonmap.structure.input.EmptyInput;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.StructureMutation;
 import features.world.dungeon.dungeonmap.structure.model.boundary.StructureBoundary;
@@ -31,8 +33,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+@SuppressWarnings("unused")
 public final class Cluster extends Structure {
 
+    private static final StructureObject STRUCTURE = new StructureObject();
     private final Long clusterId;
     private final Long structureObjectId;
     private final long mapId;
@@ -301,7 +305,7 @@ public final class Cluster extends Structure {
             return structure;
         }
         if (rooms == null || rooms.isEmpty()) {
-            return Structure.empty();
+            return STRUCTURE.empty(new EmptyInput());
         }
         throw new IllegalArgumentException("Cluster requires explicit structure when rooms are present");
     }

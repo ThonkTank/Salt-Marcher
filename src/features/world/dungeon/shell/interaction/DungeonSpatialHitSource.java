@@ -5,6 +5,8 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
+import features.world.dungeon.dungeonmap.structure.StructureObject;
+import features.world.dungeon.dungeonmap.structure.input.EmptyInput;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
@@ -15,7 +17,10 @@ import features.world.dungeon.model.structures.transition.DungeonTransition;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public final class DungeonSpatialHitSource implements DungeonHitSource {
+
+    private static final StructureObject STRUCTURE = new StructureObject();
 
     @Override
     public List<DungeonHitDescriptor> describe(DungeonMap layout, DungeonHitProbe probe) {
@@ -120,9 +125,9 @@ public final class DungeonSpatialHitSource implements DungeonHitSource {
 
     private static Structure roomStructure(DungeonMap layout, Room room) {
         if (layout == null || room == null) {
-            return Structure.empty();
+            return STRUCTURE.empty(new EmptyInput());
         }
         Cluster cluster = layout.findCluster(room.clusterId());
-        return cluster == null ? Structure.empty() : cluster.roomTopology().structureFor(room);
+        return cluster == null ? STRUCTURE.empty(new EmptyInput()) : cluster.roomTopology().structureFor(room);
     }
 }

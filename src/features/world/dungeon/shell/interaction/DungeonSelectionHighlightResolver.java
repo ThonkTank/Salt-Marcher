@@ -6,6 +6,8 @@ import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
+import features.world.dungeon.dungeonmap.structure.StructureObject;
+import features.world.dungeon.dungeonmap.structure.input.EmptyInput;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -19,7 +21,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public final class DungeonSelectionHighlightResolver {
+
+    private static final StructureObject STRUCTURE = new StructureObject();
 
     private DungeonSelectionHighlightResolver() {
     }
@@ -128,10 +133,10 @@ public final class DungeonSelectionHighlightResolver {
 
     private static Structure roomStructure(DungeonMap layout, Room room) {
         if (layout == null || room == null) {
-            return Structure.empty();
+            return STRUCTURE.empty(new EmptyInput());
         }
         Cluster cluster = layout.findCluster(room.clusterId());
-        return cluster == null ? Structure.empty() : cluster.roomTopology().structureFor(room);
+        return cluster == null ? STRUCTURE.empty(new EmptyInput()) : cluster.roomTopology().structureFor(room);
     }
 
     private static List<DungeonHitSurface> corridorOwnerSurfaces(Corridor corridor, int levelZ) {

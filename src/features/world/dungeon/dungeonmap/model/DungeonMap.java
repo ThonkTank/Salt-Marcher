@@ -12,6 +12,8 @@ import features.world.dungeon.geometry.GridBoundary;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
+import features.world.dungeon.dungeonmap.structure.StructureObject;
+import features.world.dungeon.dungeonmap.structure.input.EmptyInput;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.Door;
 import features.world.dungeon.dungeonmap.structure.model.boundary.door.DoorRef;
@@ -48,6 +50,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unused")
 public final class DungeonMap {
 
+    private static final StructureObject STRUCTURE = new StructureObject();
     private static final DungeonMap EMPTY = new DungeonMap(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), Map.of());
 
     private final long mapId;
@@ -398,12 +401,12 @@ public final class DungeonMap {
 
     private Structure roomStructure(Room room) {
         Cluster cluster = clusterForRoom(room);
-        return cluster == null ? Structure.empty() : cluster.roomTopology().structureFor(room);
+        return cluster == null ? STRUCTURE.empty(new EmptyInput()) : cluster.roomTopology().structureFor(room);
     }
 
     private Structure roomStructure(Long roomId) {
         Cluster cluster = clusterForRoom(roomId);
-        return cluster == null ? Structure.empty() : cluster.roomTopology().structureFor(roomId);
+        return cluster == null ? STRUCTURE.empty(new EmptyInput()) : cluster.roomTopology().structureFor(roomId);
     }
 
     public DungeonStair findStair(Long stairId) {
