@@ -7,7 +7,14 @@ import javafx.stage.Stage;
 public record StartApplicationInput(
         Stage primaryStage,
         String applicationTitle,
-        java.util.List<ComposeNavigationInput.SurfaceInput> surfaces,
+        ComposeNavigationInput.SurfaceInput startSurface,
+        ComposeNavigationInput.SurfaceInput encounterSurface,
+        ComposeNavigationInput.SurfaceInput overworldSurface,
+        ComposeNavigationInput.SurfaceInput mapEditorSurface,
+        ComposeNavigationInput.SurfaceInput dungeonSurface,
+        ComposeNavigationInput.SurfaceInput dungeonEditorSurface,
+        ComposeNavigationInput.SurfaceInput tablesSurface,
+        ComposeNavigationInput.SurfaceInput spellsSurface,
         String initialSurfaceId
 ) {
 }

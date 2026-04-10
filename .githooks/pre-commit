@@ -24,5 +24,5 @@ echo "Blocked commit: staged changes touch sensitive build surfaces." >&2
 printf '  %s\n' "${blocked_paths[@]}" >&2
 echo >&2
 echo "Authoritative build checks live outside the repository in ~/Schreibtisch/SM/buildSrc." >&2
-echo "The repository copy is expected to be only the buildSrc symlink plus the build.gradle.kts shell." >&2
+echo "The repository must only point at that external build logic through settings.gradle.kts and must not contain a buildSrc path." >&2
 exit 1

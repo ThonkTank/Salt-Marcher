@@ -4,7 +4,14 @@ import javafx.scene.Node;
 
 @SuppressWarnings("unused")
 public record ComposeNavigationInput(
-        java.util.List<SurfaceInput> surfaces,
+        SurfaceInput startSurface,
+        SurfaceInput encounterSurface,
+        SurfaceInput overworldSurface,
+        SurfaceInput mapEditorSurface,
+        SurfaceInput dungeonSurface,
+        SurfaceInput dungeonEditorSurface,
+        SurfaceInput tablesSurface,
+        SurfaceInput spellsSurface,
         String initialSurfaceId
 ) {
 

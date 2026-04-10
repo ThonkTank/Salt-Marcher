@@ -6,8 +6,14 @@ public record ComposePlaceholderInput(
         String title,
         String navigationLabel,
         String summary,
-        java.util.List<String> controlsItems,
-        java.util.List<String> detailItems,
-        java.util.List<String> stateItems
+        String controlsLineOne,
+        String controlsLineTwo,
+        String controlsLineThree,
+        String detailsLineOne,
+        String detailsLineTwo,
+        String detailsLineThree,
+        String stateLineOne,
+        String stateLineTwo,
+        String stateLineThree
 ) {
 }

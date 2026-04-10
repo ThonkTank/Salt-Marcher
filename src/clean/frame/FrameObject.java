@@ -2,7 +2,6 @@ package clean.frame;
 
 import clean.frame.input.ComposeFrameInput;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -20,14 +19,21 @@ public final class FrameObject {
     public ComposeFrameInput.FrameInput composeFrame(ComposeFrameInput input) {
         ComposeFrameInput resolvedInput = java.util.Objects.requireNonNull(input, "input");
         BorderPane root = new BorderPane();
+        ComposeFrameInput.FrameInput frame = new ComposeFrameInput.FrameInput(root);
+        composeFrame(frame, resolvedInput);
+        return frame;
+    }
+
+    private void composeFrame(ComposeFrameInput.FrameInput frame, ComposeFrameInput input) {
+        BorderPane root = frame.root();
         root.getStyleClass().add("clean-root");
 
-        StackPane toolbarHost = new StackPane(resolvedInput.toolbarContent() == null ? new Region() : resolvedInput.toolbarContent());
+        StackPane toolbarHost = new StackPane(input.toolbarContent() == null ? new Region() : input.toolbarContent());
         toolbarHost.getStyleClass().add("toolbar-shell");
         toolbarHost.setPadding(new Insets(16));
         root.setTop(toolbarHost);
 
-        StackPane navigationHost = new StackPane(resolvedInput.navigationContent() == null ? new Region() : resolvedInput.navigationContent());
+        StackPane navigationHost = new StackPane(input.navigationContent() == null ? new Region() : input.navigationContent());
         navigationHost.getStyleClass().add("navigation-shell");
         navigationHost.setPadding(new Insets(16));
         navigationHost.setPrefWidth(180);
@@ -36,7 +42,7 @@ public final class FrameObject {
 
         Label controlsTitleLabel = new Label("Controls");
         controlsTitleLabel.getStyleClass().add("panel-title");
-        StackPane controlsContentHost = new StackPane(resolvedInput.controlsContent() == null ? new Region() : resolvedInput.controlsContent());
+        StackPane controlsContentHost = new StackPane(input.controlsContent() == null ? new Region() : input.controlsContent());
         controlsContentHost.getStyleClass().add("panel-content");
         VBox controlsPanel = new VBox(10, controlsTitleLabel, controlsContentHost);
         controlsPanel.getStyleClass().add("panel-shell");
@@ -44,7 +50,7 @@ public final class FrameObject {
 
         Label mainTitleLabel = new Label("Main");
         mainTitleLabel.getStyleClass().add("panel-title");
-        StackPane mainContentHost = new StackPane(resolvedInput.mainContent() == null ? new Region() : resolvedInput.mainContent());
+        StackPane mainContentHost = new StackPane(input.mainContent() == null ? new Region() : input.mainContent());
         mainContentHost.getStyleClass().add("panel-content");
         VBox mainPanel = new VBox(10, mainTitleLabel, mainContentHost);
         mainPanel.getStyleClass().add("panel-shell");
@@ -59,7 +65,7 @@ public final class FrameObject {
 
         Label detailsTitleLabel = new Label("Details");
         detailsTitleLabel.getStyleClass().add("panel-title");
-        StackPane detailsContentHost = new StackPane(resolvedInput.detailsContent() == null ? new Region() : resolvedInput.detailsContent());
+        StackPane detailsContentHost = new StackPane(input.detailsContent() == null ? new Region() : input.detailsContent());
         detailsContentHost.getStyleClass().add("panel-content");
         VBox detailsPanel = new VBox(10, detailsTitleLabel, detailsContentHost);
         detailsPanel.getStyleClass().add("panel-shell");
@@ -69,7 +75,7 @@ public final class FrameObject {
 
         Label stateTitleLabel = new Label("State");
         stateTitleLabel.getStyleClass().add("panel-title");
-        StackPane stateContentHost = new StackPane(resolvedInput.stateContent() == null ? new Region() : resolvedInput.stateContent());
+        StackPane stateContentHost = new StackPane(input.stateContent() == null ? new Region() : input.stateContent());
         stateContentHost.getStyleClass().add("panel-content");
         VBox statePanel = new VBox(10, stateTitleLabel, stateContentHost);
         statePanel.getStyleClass().add("panel-shell");
@@ -88,6 +94,5 @@ public final class FrameObject {
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
         HBox.setHgrow(rightColumn, Priority.ALWAYS);
         root.setCenter(content);
-        return new ComposeFrameInput.FrameInput(root);
     }
 }

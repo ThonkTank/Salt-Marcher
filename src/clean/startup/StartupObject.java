@@ -5,6 +5,7 @@ import clean.frame.input.ComposeFrameInput;
 import clean.navigation.NavigationObject;
 import clean.navigation.input.ComposeNavigationInput;
 import clean.startup.input.StartApplicationInput;
+import clean.startup.task.StartApplicationTask;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 
@@ -14,13 +15,13 @@ import javafx.scene.layout.BorderPane;
 @SuppressWarnings("unused")
 public final class StartupObject {
 
+    private final NavigationObject navigationObject = new NavigationObject();
+    private final FrameObject frameObject = new FrameObject();
+
     public void startApplication(StartApplicationInput input) {
         StartApplicationInput resolvedInput = java.util.Objects.requireNonNull(input, "input");
-        ComposeNavigationInput composeNavigationInput = new ComposeNavigationInput(
-                resolvedInput.surfaces(),
-                resolvedInput.initialSurfaceId());
-        ComposeNavigationInput.NavigationInput navigation =
-                new NavigationObject().composeNavigation(composeNavigationInput);
+        ComposeNavigationInput composeNavigationInput = StartApplicationTask.startApplication(resolvedInput);
+        ComposeNavigationInput.NavigationInput navigation = navigationObject.composeNavigation(composeNavigationInput);
         ComposeFrameInput composeFrameInput = new ComposeFrameInput(
                 navigation.toolbarContent(),
                 navigation.navigationContent(),
@@ -28,16 +29,21 @@ public final class StartupObject {
                 navigation.mainContent(),
                 navigation.detailsContent(),
                 navigation.stateContent());
-        BorderPane root = new FrameObject().composeFrame(composeFrameInput).root();
+        ComposeFrameInput.FrameInput frame = frameObject.composeFrame(composeFrameInput);
+        showStage(frame, resolvedInput);
+    }
+
+    private void showStage(ComposeFrameInput.FrameInput frame, StartApplicationInput input) {
+        BorderPane root = frame.root();
         Scene scene = new Scene(root, 1280, 800);
         java.net.URL stylesheet = StartupObject.class.getResource("/clean/clean.css");
         if (stylesheet != null) {
             scene.getStylesheets().add(stylesheet.toExternalForm());
         }
-        resolvedInput.primaryStage().setTitle(resolvedInput.applicationTitle());
-        resolvedInput.primaryStage().setScene(scene);
-        resolvedInput.primaryStage().setMinWidth(960);
-        resolvedInput.primaryStage().setMinHeight(640);
-        resolvedInput.primaryStage().show();
+        input.primaryStage().setTitle(input.applicationTitle());
+        input.primaryStage().setScene(scene);
+        input.primaryStage().setMinWidth(960);
+        input.primaryStage().setMinHeight(640);
+        input.primaryStage().show();
     }
 }

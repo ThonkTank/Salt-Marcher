@@ -1,4 +1,4 @@
 # Sensitive build-check surfaces require explicit review.
 /build.gradle.kts @ThonkTank
-/buildSrc @ThonkTank
+/settings.gradle.kts @ThonkTank
 /CODEOWNERS @ThonkTank
