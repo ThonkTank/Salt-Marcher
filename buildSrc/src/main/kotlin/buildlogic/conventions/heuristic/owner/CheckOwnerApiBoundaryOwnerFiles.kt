@@ -106,6 +106,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.world.hexmap.editorcontrols" ||
         sourceFile.context.packageName == "features.world.hexmap.editorsurface" ||
         sourceFile.context.packageName == "features.world.hexmap.overworldsurface" ||
+        sourceFile.context.packageName == "features.world.hexmap.travelsurface" ||
         sourceFile.context.packageName == "features.world.hexmap.service" ||
         sourceFile.context.packageName == "features.world.hexmap.ui.editor" ||
         sourceFile.context.packageName == "features.world.hexmap.ui.editor.surface" ||

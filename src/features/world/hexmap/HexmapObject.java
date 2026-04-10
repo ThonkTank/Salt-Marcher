@@ -1,10 +1,12 @@
 package features.world.hexmap;
 
+import features.world.api.input.TravelSurfaceInput;
 import features.world.hexmap.editorsurface.EditorsurfaceObject;
 import features.world.hexmap.overworldsurface.OverworldsurfaceObject;
-import features.world.api.input.TravelSurfaceInput;
+import features.world.hexmap.travelsurface.TravelsurfaceObject;
+import features.world.hexmap.travelsurface.input.ShowDungeonTravelInput;
+import features.world.hexmap.travelsurface.input.ShowOverworldTravelInput;
 import features.world.hexmap.input.ComposeInput;
-import features.world.hexmap.ui.travel.TravelObject;
 
 import java.util.Objects;
 
@@ -17,11 +19,22 @@ public final class HexmapObject {
 
     public ComposeInput.ComposedHexmapInput compose(ComposeInput input) {
         ComposeInput resolvedInput = Objects.requireNonNull(input, "input");
-        TravelObject travelPane = new TravelObject();
+        TravelsurfaceObject travelPane = new TravelsurfaceObject();
         TravelSurfaceInput travelSurface = new TravelSurfaceInput(
                 travelPane,
-                travelPane::showOverworldTravel,
-                travelPane::showDungeonTravel);
+                () -> travelPane.showOverworldTravel(new ShowOverworldTravelInput()),
+                presentation -> travelPane.showDungeonTravel(new ShowDungeonTravelInput(
+                        presentation.mapName(),
+                        presentation.areaLabel(),
+                        presentation.cellLabel(),
+                        presentation.headingLabel(),
+                        presentation.statusLabel(),
+                        presentation.actions().stream()
+                                .map(action -> new ShowDungeonTravelInput.DungeonTravelActionInput(
+                                        action.label(),
+                                        action.action()))
+                                .toList(),
+                        presentation.centerAction())));
         return new ComposeInput.ComposedHexmapInput(
                 travelSurface,
                 new OverworldsurfaceObject(new features.world.hexmap.overworldsurface.input.ComposeInput(
