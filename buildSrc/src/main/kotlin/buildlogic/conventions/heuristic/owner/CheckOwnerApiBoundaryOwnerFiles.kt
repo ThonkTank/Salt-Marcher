@@ -58,7 +58,8 @@ internal fun analyzeOwnerFile(
 ): OwnerConventionAnalysis<OwnerConventionOwnerSurface> {
     if (sourceFile.context.packageName == "database" ||
         sourceFile.context.packageName == "importer" ||
-        sourceFile.context.packageName == "ui.components"
+        sourceFile.context.packageName == "ui.components" ||
+        sourceFile.context.packageName.startsWith("ui.components.")
     ) {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }

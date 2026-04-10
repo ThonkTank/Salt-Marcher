@@ -1,14 +1,13 @@
 package ui.components;
 
-import javafx.application.Platform;
-import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.stage.Popup;
-import javafx.stage.Window;
 
+/**
+ * Compatibility seam for the legacy shared dropdown entrypoint.
+ * New shared dropdown work belongs in {@code ui.components.dropdown}.
+ */
+@SuppressWarnings("unused")
 public final class AnchoredDropdown {
 
     public enum HorizontalAlignment {
@@ -16,88 +15,45 @@ public final class AnchoredDropdown {
         RIGHT
     }
 
-    private final Popup popup = new Popup();
-    private final Parent content;
-    private Node lastAnchor;
-    private Runnable onHidden = () -> { };
-    private boolean restoreFocusOnHide = true;
+    private final ui.components.dropdown.AnchoredDropdown delegate;
 
     public AnchoredDropdown(Parent content) {
-        this.content = content;
-        popup.setAutoHide(true);
-        popup.setHideOnEscape(true);
-        popup.getContent().add(content);
-        popup.setOnAutoHide(event -> restoreFocusOnHide = false);
-        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                restoreFocusOnHide = true;
-            }
-        });
-        popup.setOnHidden(event -> {
-            if (restoreFocusOnHide && lastAnchor != null) {
-                lastAnchor.requestFocus();
-            }
-            onHidden.run();
-        });
+        delegate = new ui.components.dropdown.AnchoredDropdown(content);
     }
 
     public void setOnHidden(Runnable onHidden) {
-        this.onHidden = onHidden == null ? () -> { } : onHidden;
+        delegate.setOnHidden(onHidden);
     }
 
     public boolean isShowing() {
-        return popup.isShowing();
+        return delegate.isShowing();
     }
 
     public void hide() {
-        restoreFocusOnHide = true;
-        popup.hide();
+        delegate.hide();
     }
 
     public void hideWithoutFocusRestore() {
-        restoreFocusOnHide = false;
-        popup.hide();
+        delegate.hideWithoutFocusRestore();
     }
 
     public void show(Node anchor) {
-        show(anchor, HorizontalAlignment.LEFT, 2);
+        delegate.show(anchor);
     }
 
     public void show(Node anchor, HorizontalAlignment alignment, double verticalOffset) {
-        if (anchor == null || anchor.getScene() == null) {
-            return;
-        }
-        Window window = anchor.getScene().getWindow();
-        if (window == null) {
-            return;
-        }
-        lastAnchor = anchor;
-        restoreFocusOnHide = true;
-        if (popup.isShowing()) {
-            restoreFocusOnHide = false;
-            popup.hide();
-        }
-        content.applyCss();
-        content.layout();
-        Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds == null) {
-            return;
-        }
-        double width = content.prefWidth(-1);
-        if (width <= 0) {
-            width = content.getLayoutBounds().getWidth();
-        }
-        double x = alignment == HorizontalAlignment.RIGHT
-                ? bounds.getMaxX() - width
-                : bounds.getMinX();
-        double y = bounds.getMaxY() + verticalOffset;
-        popup.show(window, x, y);
+        delegate.show(anchor, mapAlignment(alignment), verticalOffset);
     }
 
     public void requestFocus(Node node) {
-        if (node == null) {
-            return;
-        }
-        Platform.runLater(node::requestFocus);
+        delegate.requestFocus(node);
+    }
+
+    private static ui.components.dropdown.AnchoredDropdown.HorizontalAlignment mapAlignment(
+            HorizontalAlignment alignment
+    ) {
+        return alignment == HorizontalAlignment.RIGHT
+                ? ui.components.dropdown.AnchoredDropdown.HorizontalAlignment.RIGHT
+                : ui.components.dropdown.AnchoredDropdown.HorizontalAlignment.LEFT;
     }
 }
