@@ -1,8 +1,9 @@
 package features.creatures.ui.shared.catalog;
 
+import features.creatures.catalog.CatalogObject;
+import features.creatures.catalog.input.SearchCreaturesInput;
 import features.creatures.api.CreatureBrowserPageLoader;
 import features.creatures.api.CreatureBrowserRowAction;
-import features.creatures.api.CreatureCatalogService;
 import features.creatures.model.Creature;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -23,7 +24,8 @@ import java.util.function.Consumer;
  * Stat blocks are displayed externally via onRequestStatBlock callback (routed to InspectorPane).
  * Filters live externally in EncounterControls (left panel).
  */
-public class CreatureBrowserPane extends AbstractCatalogBrowserPane<Creature, CreatureCatalogService.FilterCriteria> {
+@SuppressWarnings("unused")
+public class CreatureBrowserPane extends AbstractCatalogBrowserPane<Creature, SearchCreaturesInput.CriteriaInput> {
     private static final List<SortOption> SORT_OPTIONS = List.of(
             new SortOption("Name (A-Z)", "name", "ASC"),
             new SortOption("Name (Z-A)", "name", "DESC"),
@@ -41,6 +43,7 @@ public class CreatureBrowserPane extends AbstractCatalogBrowserPane<Creature, Cr
     private boolean combatMode = false;
     private Set<Long> excludeIds = Set.of();
     private List<Long> currentTableIds = List.of();
+    private final CatalogObject catalogObject = new CatalogObject();
     private CreatureBrowserPageLoader pageLoader = this::loadDefaultPage;
     private CreatureBrowserRowAction rowAction;
     private boolean compatibilityRowAction = true;
@@ -193,20 +196,21 @@ public class CreatureBrowserPane extends AbstractCatalogBrowserPane<Creature, Cr
     }
 
     @Override
-    protected CreatureCatalogService.FilterCriteria emptyCriteria() {
-        return CreatureCatalogService.FilterCriteria.empty();
+    protected SearchCreaturesInput.CriteriaInput emptyCriteria() {
+        return new SearchCreaturesInput.CriteriaInput(
+                null, null, null, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     @Override
     protected PageLoadResult<Creature> loadPage(
-            CreatureCatalogService.FilterCriteria criteria,
+            SearchCreaturesInput.CriteriaInput criteria,
             String sortColumn,
             String sortDirection,
             int limit,
             int offset) {
         return sanitizeResult(pageLoader.load(
                 criteria,
-                new CreatureCatalogService.PageRequest(sortColumn, sortDirection, limit, offset)));
+                new SearchCreaturesInput.PageInput(sortColumn, sortDirection, limit, offset)));
     }
 
     @Override
@@ -219,11 +223,15 @@ public class CreatureBrowserPane extends AbstractCatalogBrowserPane<Creature, Cr
         return "CreatureBrowserPane.loadPage()";
     }
 
-    private CreatureCatalogService.ServiceResult<CreatureCatalogService.PageResult> loadDefaultPage(
-            CreatureCatalogService.FilterCriteria criteria,
-            CreatureCatalogService.PageRequest pageRequest) {
+    private SearchCreaturesInput.SearchedCreaturesInput loadDefaultPage(
+            SearchCreaturesInput.CriteriaInput criteria,
+            SearchCreaturesInput.PageInput pageRequest) {
         List<Long> excluded = excludeIds.isEmpty() ? null : List.copyOf(excludeIds);
-        return CreatureCatalogService.searchCreatures(criteria, excluded, currentTableIds, pageRequest);
+        return catalogObject.searchCreatures(new SearchCreaturesInput(
+                criteria,
+                excluded,
+                currentTableIds,
+                pageRequest));
     }
 
     private void syncCompatibilityRowAction() {
@@ -250,26 +258,24 @@ public class CreatureBrowserPane extends AbstractCatalogBrowserPane<Creature, Cr
     }
 
     private static PageLoadResult<Creature> sanitizeResult(
-            CreatureCatalogService.ServiceResult<CreatureCatalogService.PageResult> result) {
+            SearchCreaturesInput.SearchedCreaturesInput result) {
         if (result == null) {
-            return invalidResult("CreatureBrowserPageLoader returned null ServiceResult");
+            return invalidResult("CreatureBrowserPageLoader returned null search result");
         }
-        CreatureCatalogService.PageResult page = result.value();
-        if (page == null) {
-            return invalidResult("CreatureBrowserPageLoader returned null PageResult");
-        }
-        if (page.creatures() == null) {
+        if (result.creatures() == null) {
             return invalidResult("CreatureBrowserPageLoader returned PageResult with null creatures");
         }
-        if (!result.isOk()) {
+        if (!result.success()) {
             return new PageLoadResult<>(
-                    page.creatures(),
-                    page.totalCount(),
+                    result.creatures(),
+                    result.totalCount(),
                     false,
-                    new IllegalStateException("CreatureCatalogService status: " + result.status()),
+                    new IllegalStateException(result.invalidCriteria()
+                            ? "Creature search rejected invalid criteria"
+                            : "Creature catalog search failed"),
                     false);
         }
-        return new PageLoadResult<>(page.creatures(), page.totalCount(), true, null, false);
+        return new PageLoadResult<>(result.creatures(), result.totalCount(), true, null, false);
     }
 
     private static PageLoadResult<Creature> invalidResult(String message) {

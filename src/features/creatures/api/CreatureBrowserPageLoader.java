@@ -1,8 +1,11 @@
 package features.creatures.api;
 
+import features.creatures.catalog.input.SearchCreaturesInput;
+
+@SuppressWarnings("unused")
 @FunctionalInterface
 public interface CreatureBrowserPageLoader {
-    CreatureCatalogService.ServiceResult<CreatureCatalogService.PageResult> load(
-            CreatureCatalogService.FilterCriteria criteria,
-            CreatureCatalogService.PageRequest pageRequest);
+    SearchCreaturesInput.SearchedCreaturesInput load(
+            SearchCreaturesInput.CriteriaInput criteria,
+            SearchCreaturesInput.PageInput pageRequest);
 }

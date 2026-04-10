@@ -1,7 +1,8 @@
 package features.encounter.builder.ui;
 
 import features.encounter.builder.application.EncounterBuilderService;
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
+import features.creatures.catalog.input.SearchCreaturesInput;
 import features.encountertable.model.EncounterTable;
 import features.encounter.generation.service.EncounterDifficultyBand;
 import features.encounter.internal.EncounterDifficultyUiText;
@@ -32,11 +33,12 @@ import ui.components.ThemeColors;
  * Encounter controls panel shown above the monster list.
  * Layout: filter section on top (including table selector), compact control grid below.
  */
+@SuppressWarnings("unused")
 public class EncounterControls extends VBox {
 
     private final EncounterBuilderService encounterService;
     private CreatureFilterPane filterPane;
-    private Consumer<CreatureCatalogService.FilterCriteria> filterCallback;
+    private Consumer<SearchCreaturesInput.CriteriaInput> filterCallback;
     private Consumer<List<Long>> onTableChanged;
     private final SliderControl difficultySlider;
     private final SliderControl balanceSlider;
@@ -204,7 +206,7 @@ public class EncounterControls extends VBox {
     }
 
     /** Initialize filter pane with async-loaded data. Replaces loading placeholder. */
-    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         filterPane = new CreatureFilterPane(data);
         filterRegion.getChildren().setAll(filterPane);
         if (filterCallback != null) filterPane.setOnFilterChanged(filterCallback);
@@ -214,7 +216,7 @@ public class EncounterControls extends VBox {
     }
 
     /** Wires the filter-change callback. May be called before or after {@link #setFilterData}. */
-    public void setOnFilterChanged(Consumer<CreatureCatalogService.FilterCriteria> callback) {
+    public void setOnFilterChanged(Consumer<SearchCreaturesInput.CriteriaInput> callback) {
         this.filterCallback = callback;
         if (filterPane != null) filterPane.setOnFilterChanged(callback);
     }
@@ -228,8 +230,11 @@ public class EncounterControls extends VBox {
      * Returns the current filter criteria, or an empty (no-filter) criteria if the CreatureFilterPane
      * has not yet loaded.
      */
-    public CreatureCatalogService.FilterCriteria buildCriteria() {
-        return filterPane != null ? filterPane.buildCriteria() : CreatureCatalogService.FilterCriteria.empty();
+    public SearchCreaturesInput.CriteriaInput buildCriteria() {
+        return filterPane != null
+                ? filterPane.buildCriteria()
+                : new SearchCreaturesInput.CriteriaInput(
+                        null, null, null, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     /**

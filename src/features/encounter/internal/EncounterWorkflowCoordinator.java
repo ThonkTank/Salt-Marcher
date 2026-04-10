@@ -6,7 +6,7 @@ import features.encounter.builder.ui.BuilderWorkflowController;
 import features.encounter.builder.ui.EncounterControls;
 import features.encounter.builder.ui.EncounterRosterPane;
 import features.encounter.combat.ui.CombatWorkflowController;
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
 import features.creatures.model.Creature;
 import features.encountertable.model.EncounterTable;
 import javafx.scene.Scene;
@@ -17,6 +17,7 @@ import ui.shell.SceneHandle;
 import java.util.List;
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public final class EncounterWorkflowCoordinator {
 
     enum Mode { BUILDER, COMBAT }
@@ -77,7 +78,7 @@ public final class EncounterWorkflowCoordinator {
         return currentMode == Mode.COMBAT ? "Encounter Runner" : "Encounter Builder";
     }
 
-    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         builderWorkflowController.setFilterData(data);
         monsterList.applyFilters(encounterControls.buildCriteria());
     }

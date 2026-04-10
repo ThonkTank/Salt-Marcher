@@ -1,6 +1,7 @@
 package features.creatures.ui.shared.catalog;
 
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
+import features.creatures.catalog.input.SearchCreaturesInput;
 import javafx.animation.PauseTransition;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -22,17 +23,18 @@ import ui.components.SearchableFilterButton;
 /**
  * Filter bar for the monster database: name search, CR range, and five
  * multi-select category filters (size, type, subtype, biome, alignment).
- * Requires a pre-loaded {@link features.creatures.api.CreatureCatalogService.FilterOptions} for the
- * combo box contents. Register a listener via {@link #setOnFilterChanged} to
- * receive live updates; call {@link #buildCriteria()} to read the current state.
+ * Requires pre-loaded creature catalog filter options for the combo box
+ * contents. Register a listener via {@link #setOnFilterChanged} to receive
+ * live updates; call {@link #buildCriteria()} to read the current state.
  *
  * <p>Layout: [search field] / [CR + filter buttons] / [active filter chips]
  *
  * <p>Owned by the creatures UI subsystem and shared by encounter-facing screens.
  */
+@SuppressWarnings("unused")
 public class CreatureFilterPane extends VBox {
 
-    private Consumer<CreatureCatalogService.FilterCriteria> onFilterChanged;
+    private Consumer<SearchCreaturesInput.CriteriaInput> onFilterChanged;
     private Supplier<List<Node>> externalChipSource = null;
 
     private final TextField searchField;
@@ -46,7 +48,7 @@ public class CreatureFilterPane extends VBox {
     private final FlowPane chipsPane;
     private final List<String> crValues;
 
-    public CreatureFilterPane(CreatureCatalogService.FilterOptions data) {
+    public CreatureFilterPane(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         getStyleClass().add("filter-pane");
         setSpacing(4);
         setPadding(new Insets(6, 8, 6, 8));
@@ -118,11 +120,11 @@ public class CreatureFilterPane extends VBox {
         filterRow.getChildren().add(filterRow.getChildren().size() - 1, node);
     }
 
-    public void setOnFilterChanged(Consumer<CreatureCatalogService.FilterCriteria> callback) {
+    public void setOnFilterChanged(Consumer<SearchCreaturesInput.CriteriaInput> callback) {
         this.onFilterChanged = callback;
     }
 
-    public CreatureCatalogService.FilterCriteria buildCriteria() {
+    public SearchCreaturesInput.CriteriaInput buildCriteria() {
         String name = searchField.getText().trim();
         if (name.isEmpty()) name = null;
 
@@ -133,14 +135,14 @@ public class CreatureFilterPane extends VBox {
         String crMin = crValues.indexOf(minCr) > 0 ? minCr : null;
         String crMax = crValues.indexOf(maxCr) < maxIdx ? maxCr : null;
 
-        return new CreatureCatalogService.FilterCriteria(name, crMin, crMax,
+        return new SearchCreaturesInput.CriteriaInput(name, crMin, crMax,
                 sizeFilter.getSelectedValues(), typeFilter.getSelectedValues(),
                 subtypeFilter.getSelectedValues(), biomeFilter.getSelectedValues(),
                 alignFilter.getSelectedValues());
     }
 
     private void fireChange() {
-        CreatureCatalogService.FilterCriteria c = buildCriteria();
+        SearchCreaturesInput.CriteriaInput c = buildCriteria();
         rebuildChips(c);
         if (onFilterChanged != null) onFilterChanged.accept(c);
     }
@@ -156,7 +158,7 @@ public class CreatureFilterPane extends VBox {
         fireChange();
     }
 
-    private void rebuildChips(CreatureCatalogService.FilterCriteria c) {
+    private void rebuildChips(SearchCreaturesInput.CriteriaInput c) {
         chipsPane.getChildren().clear();
 
         if (c.crMin() != null || c.crMax() != null) {

@@ -1,7 +1,8 @@
 package features.encountertable.service;
 
 import database.DatabaseManager;
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.CatalogObject;
+import features.creatures.catalog.input.LoadCreaturesByIdsInput;
 import features.creatures.model.Creature;
 import features.encountertable.model.EncounterTable;
 import features.encountertable.repository.EncounterTableRepository;
@@ -17,7 +18,9 @@ import java.util.logging.Logger;
  * Stateless facade for encounter table persistence.
  * Owns the Connection lifecycle via try-with-resources.
  */
+@SuppressWarnings("unused")
 public final class EncounterTableService {
+    private static final CatalogObject CATALOG_OBJECT = new CatalogObject();
     private static final Logger LOGGER = Logger.getLogger(EncounterTableService.class.getName());
     private static final int MIN_WEIGHT = 1;
     private static final int MAX_WEIGHT = 10;
@@ -173,12 +176,13 @@ public final class EncounterTableService {
             if (selection.weights().isEmpty()) {
                 return new CandidatesResult(ReadStatus.SUCCESS, List.of(), selection.weights());
             }
-            CreatureCatalogService.ServiceResult<List<Creature>> creatureResult =
-                    CreatureCatalogService.loadCreaturesByIdsForEncounterGeneration(List.copyOf(selection.weights().keySet()));
-            if (!creatureResult.isOk()) {
+            LoadCreaturesByIdsInput.LoadedCreaturesByIdsInput creatureResult =
+                    CATALOG_OBJECT.loadCreaturesByIds(
+                            new LoadCreaturesByIdsInput(List.copyOf(selection.weights().keySet()), true));
+            if (!creatureResult.success()) {
                 return new CandidatesResult(ReadStatus.STORAGE_ERROR, List.of(), Map.of());
             }
-            return new CandidatesResult(ReadStatus.SUCCESS, creatureResult.value(), selection.weights());
+            return new CandidatesResult(ReadStatus.SUCCESS, creatureResult.creatures(), selection.weights());
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "EncounterTableService.getCandidatesFromTables(): DB access failed", e);
             return new CandidatesResult(ReadStatus.STORAGE_ERROR, List.of(), Map.of());

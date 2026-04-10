@@ -1,22 +1,22 @@
 package features.creatures.api;
 
-import database.DatabaseManager;
+import features.creatures.catalog.CatalogObject;
+import features.creatures.catalog.input.CountAllInput;
+import features.creatures.catalog.input.LoadCreatureInput;
+import features.creatures.catalog.input.LoadCreaturesByIdsInput;
+import features.creatures.catalog.input.LoadEncounterCandidatesInput;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
+import features.creatures.catalog.input.SearchCreaturesInput;
 import features.creatures.model.Creature;
-import features.creatures.repository.CreatureRepository;
-import features.creatures.repository.CreatureSearchRepository;
-import shared.rules.service.XpCalculator;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
- * Public facade for creature data access.
+ * Compatibility facade for older creature catalog callers.
  */
+@SuppressWarnings("unused")
 public final class CreatureCatalogService {
-    private static final Logger LOGGER = Logger.getLogger(CreatureCatalogService.class.getName());
+    private static final CatalogObject CATALOG_OBJECT = new CatalogObject();
 
     private CreatureCatalogService() {
         throw new AssertionError("No instances");
@@ -62,12 +62,8 @@ public final class CreatureCatalogService {
     }
 
     public static ServiceResult<Integer> countAll() {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return ServiceResult.ok(CreatureSearchRepository.countAll(conn));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "CreatureCatalogService.countAll(): DB access failed", e);
-            return ServiceResult.dbAccessFailed(0);
-        }
+        CountAllInput.CountedAllInput counted = CATALOG_OBJECT.countAll(new CountAllInput());
+        return counted.success() ? ServiceResult.ok(counted.totalCount()) : ServiceResult.dbAccessFailed(0);
     }
 
     public static ServiceResult<PageResult> searchCreatures(
@@ -75,111 +71,80 @@ public final class CreatureCatalogService {
             List<Long> excludeIds,
             List<Long> tableIds,
             PageRequest pageRequest) {
-        FilterCriteria effectiveCriteria = criteria != null ? criteria : FilterCriteria.empty();
-        PageRequest effectivePage = pageRequest != null ? pageRequest : new PageRequest("name", "ASC", 50, 0);
-
-        Integer xpMin = parseCrToXpOrNull(effectiveCriteria.crMin());
-        if (effectiveCriteria.crMin() != null && xpMin == null) {
-            LOGGER.warning("CreatureCatalogService.searchCreatures(): unknown CR min value: " + effectiveCriteria.crMin());
-            return new ServiceResult<>(Status.INVALID_FILTER, new PageResult(List.of(), 0));
+        SearchCreaturesInput.SearchedCreaturesInput searched = CATALOG_OBJECT.searchCreatures(
+                new SearchCreaturesInput(
+                        criteria != null
+                                ? new SearchCreaturesInput.CriteriaInput(
+                                        criteria.nameQuery(),
+                                        criteria.crMin(),
+                                        criteria.crMax(),
+                                        criteria.sizes(),
+                                        criteria.types(),
+                                        criteria.subtypes(),
+                                        criteria.biomes(),
+                                        criteria.alignments())
+                                : null,
+                        excludeIds,
+                        tableIds,
+                        pageRequest != null
+                                ? new SearchCreaturesInput.PageInput(
+                                        pageRequest.sortColumn(),
+                                        pageRequest.sortDirection(),
+                                        pageRequest.limit(),
+                                        pageRequest.offset())
+                                : null));
+        PageResult pageResult = new PageResult(searched.creatures(), searched.totalCount());
+        if (searched.success()) {
+            return ServiceResult.ok(pageResult);
         }
-        Integer xpMax = parseCrToXpOrNull(effectiveCriteria.crMax());
-        if (effectiveCriteria.crMax() != null && xpMax == null) {
-            LOGGER.warning("CreatureCatalogService.searchCreatures(): unknown CR max value: " + effectiveCriteria.crMax());
-            return new ServiceResult<>(Status.INVALID_FILTER, new PageResult(List.of(), 0));
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            CreatureSearchRepository.SearchResult r = CreatureSearchRepository.searchWithFiltersAndCount(
-                    conn,
-                    effectiveCriteria.nameQuery(), xpMin, xpMax,
-                    effectiveCriteria.sizes(), effectiveCriteria.types(), effectiveCriteria.subtypes(),
-                    effectiveCriteria.biomes(), effectiveCriteria.alignments(),
-                    excludeIds, tableIds,
-                    effectivePage.sortColumn(), effectivePage.sortDirection(),
-                    effectivePage.limit(), effectivePage.offset());
-            return ServiceResult.ok(new PageResult(r.creatures(), r.totalCount()));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "CreatureCatalogService.searchCreatures(): DB access failed", e);
-            return ServiceResult.dbAccessFailed(new PageResult(List.of(), 0));
-        }
+        return searched.invalidCriteria()
+                ? new ServiceResult<>(Status.INVALID_FILTER, pageResult)
+                : ServiceResult.dbAccessFailed(pageResult);
     }
 
     public static ServiceResult<Creature> getCreature(Long id) {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return ServiceResult.ok(CreatureRepository.getCreature(conn, id));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "CreatureCatalogService.getCreature(): DB access failed", e);
-            return ServiceResult.dbAccessFailed(null);
-        }
+        LoadCreatureInput.LoadedCreatureInput loaded = CATALOG_OBJECT.loadCreature(new LoadCreatureInput(id));
+        return loaded.success() ? ServiceResult.ok(loaded.creature()) : ServiceResult.dbAccessFailed(null);
     }
 
     public static ServiceResult<List<Creature>> getCreaturesForEncounter(
             List<String> types, int minXP, int maxXP,
             List<String> biomes, List<String> subtypes) {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return ServiceResult.ok(
-                    CreatureSearchRepository.getCreaturesByFilters(conn, types, minXP, maxXP, biomes, subtypes));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "CreatureCatalogService.getCreaturesForEncounter(): DB access failed", e);
-            return ServiceResult.dbAccessFailed(List.of());
-        }
+        LoadEncounterCandidatesInput.LoadedEncounterCandidatesInput loaded = CATALOG_OBJECT.loadEncounterCandidates(
+                new LoadEncounterCandidatesInput(types, minXP, maxXP, biomes, subtypes, false));
+        return loaded.success() ? ServiceResult.ok(loaded.creatures()) : ServiceResult.dbAccessFailed(List.of());
     }
 
     public static ServiceResult<List<Creature>> getCreaturesForEncounterGeneration(
             List<String> types, int minXP, int maxXP,
             List<String> biomes, List<String> subtypes) {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return ServiceResult.ok(
-                    CreatureSearchRepository.getCreaturesForEncounterGeneration(
-                            conn, types, minXP, maxXP, biomes, subtypes));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "CreatureCatalogService.getCreaturesForEncounterGeneration(): DB access failed", e);
-            return ServiceResult.dbAccessFailed(List.of());
-        }
+        LoadEncounterCandidatesInput.LoadedEncounterCandidatesInput loaded = CATALOG_OBJECT.loadEncounterCandidates(
+                new LoadEncounterCandidatesInput(types, minXP, maxXP, biomes, subtypes, true));
+        return loaded.success() ? ServiceResult.ok(loaded.creatures()) : ServiceResult.dbAccessFailed(List.of());
     }
 
     public static ServiceResult<List<Creature>> loadCreaturesByIds(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return ServiceResult.ok(List.of());
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return ServiceResult.ok(CreatureRepository.getCreaturesByIds(conn, ids));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "CreatureCatalogService.loadCreaturesByIds(): DB access failed", e);
-            return ServiceResult.dbAccessFailed(List.of());
-        }
+        LoadCreaturesByIdsInput.LoadedCreaturesByIdsInput loaded =
+                CATALOG_OBJECT.loadCreaturesByIds(new LoadCreaturesByIdsInput(ids, false));
+        return loaded.success() ? ServiceResult.ok(loaded.creatures()) : ServiceResult.dbAccessFailed(List.of());
     }
 
     public static ServiceResult<List<Creature>> loadCreaturesByIdsForEncounterGeneration(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return ServiceResult.ok(List.of());
-        }
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return ServiceResult.ok(CreatureRepository.getCreaturesByIdsForEncounterGeneration(conn, ids));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "CreatureCatalogService.loadCreaturesByIdsForEncounterGeneration(): DB access failed", e);
-            return ServiceResult.dbAccessFailed(List.of());
-        }
+        LoadCreaturesByIdsInput.LoadedCreaturesByIdsInput loaded =
+                CATALOG_OBJECT.loadCreaturesByIds(new LoadCreaturesByIdsInput(ids, true));
+        return loaded.success() ? ServiceResult.ok(loaded.creatures()) : ServiceResult.dbAccessFailed(List.of());
     }
 
     public static ServiceResult<FilterOptions> loadFilterOptions() {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return ServiceResult.ok(new FilterOptions(
-                    CreatureSearchRepository.getDistinctSizes(conn),
-                    CreatureSearchRepository.getDistinctTypes(conn),
-                    CreatureSearchRepository.getDistinctSubtypes(conn),
-                    CreatureSearchRepository.getDistinctBiomes(conn),
-                    CreatureSearchRepository.getDistinctAlignments(conn),
-                    XpCalculator.crValues()
-            ));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "CreatureCatalogService.loadFilterOptions(): DB access failed", e);
-            return ServiceResult.dbAccessFailed(
-                    new FilterOptions(List.of(), List.of(), List.of(), List.of(), List.of(), List.of()));
-        }
-    }
-
-    private static Integer parseCrToXpOrNull(String cr) {
-        return cr != null ? XpCalculator.xpForCr(cr) : null;
+        LoadFilterOptionsInput.LoadedFilterOptionsInput loaded =
+                CATALOG_OBJECT.loadFilterOptions(new LoadFilterOptionsInput());
+        FilterOptions filterOptions = new FilterOptions(
+                loaded.sizes(),
+                loaded.types(),
+                loaded.subtypes(),
+                loaded.biomes(),
+                loaded.alignments(),
+                loaded.crValues());
+        return loaded.success() ? ServiceResult.ok(filterOptions) : ServiceResult.dbAccessFailed(filterOptions);
     }
 }

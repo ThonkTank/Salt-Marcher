@@ -7,7 +7,7 @@ import features.loottable.api.LootTableApi;
 import features.tables.ui.TableActionRequest;
 import features.tables.ui.TableEditorTaskRunner;
 import javafx.scene.Node;
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
 import features.encountertable.service.EncounterTableNameNormalizer;
 import features.encountertable.service.EncounterTableService;
 import features.creatures.api.CreatureBrowserPane;
@@ -30,6 +30,7 @@ import java.util.function.Consumer;
  * Inspector: read-only table summary on explicit table selection.
  * State:    creature entries in the selected table.
  */
+@SuppressWarnings("unused")
 public class EncounterTableEditorView implements AppView {
 
     private final CreatureBrowserPane monsterList;
@@ -64,7 +65,7 @@ public class EncounterTableEditorView implements AppView {
 
     // ---- Public API (wired by SaltMarcherApp) ----
 
-    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         controls.setFilterData(data);
         controls.setOnFilterChanged(monsterList::applyFilters);
     }

@@ -1,10 +1,11 @@
 package features.encountertable.api;
 
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
 import features.encountertable.ui.EncounterTableEditorView;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
+@SuppressWarnings("unused")
 public final class EncounterTableModule {
 
     private final EncounterTableEditorView tableEditorView;
@@ -17,7 +18,7 @@ public final class EncounterTableModule {
         return tableEditorView;
     }
 
-    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         tableEditorView.setFilterData(data);
     }
 

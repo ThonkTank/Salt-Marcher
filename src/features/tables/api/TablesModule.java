@@ -1,6 +1,6 @@
 package features.tables.api;
 
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
 import features.encountertable.api.EncounterTableModule;
 import features.loottable.api.LootTableModule;
 import features.tables.ui.TablesWorkspaceView;
@@ -10,6 +10,7 @@ import ui.shell.DetailsNavigator;
 /**
  * Shell-facing facade for the combined encounter/loot table workspace.
  */
+@SuppressWarnings("unused")
 public final class TablesModule {
 
     private final EncounterTableModule encounterTableModule;
@@ -30,7 +31,7 @@ public final class TablesModule {
         return workspaceView;
     }
 
-    public void setCreatureFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setCreatureFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         encounterTableModule.setFilterData(data);
     }
 }

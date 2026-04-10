@@ -5,7 +5,7 @@ import features.encounter.builder.ui.EncounterRosterPane;
 import features.encounter.internal.EncounterWorkflowCoordinator;
 import features.encountertable.model.EncounterTable;
 import features.creatures.api.CreatureBrowserPane;
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
 import features.creatures.api.StatBlockRequest;
 import javafx.scene.Node;
 import ui.shell.AppView;
@@ -18,6 +18,7 @@ import java.util.List;
  * Encounter workflow view: orchestrates builder and combat modes.
  * Builder mode shows the creature browser + roster; combat mode shows the turn tracker.
  */
+@SuppressWarnings("unused")
 public class EncounterView implements AppView {
 
     private final CreatureBrowserPane monsterList;
@@ -50,7 +51,7 @@ public class EncounterView implements AppView {
         rosterPane.setOnRequestStatBlock(id -> callbacks.detailsNavigator().showStatBlock(StatBlockRequest.forCreature(id)));
     }
 
-    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         workflow.setFilterData(data);
     }
 

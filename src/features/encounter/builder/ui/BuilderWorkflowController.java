@@ -1,6 +1,7 @@
 package features.encounter.builder.ui;
 
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
+import features.creatures.catalog.input.SearchCreaturesInput;
 import features.creatures.model.Creature;
 import features.encounter.api.EncounterStorageApi;
 import features.encounter.builder.application.EncounterBuilderService;
@@ -26,13 +27,14 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+@SuppressWarnings("unused")
 public final class BuilderWorkflowController {
 
     private final EncounterBuilderService encounterService;
     private final EncounterControls encounterControls;
     private final EncounterRosterPane rosterPane;
     private final SceneHandle encounterScene;
-    private final Supplier<CreatureCatalogService.FilterCriteria> criteriaSupplier;
+    private final Supplier<SearchCreaturesInput.CriteriaInput> criteriaSupplier;
     private final Consumer<InitiativePane> onShowInitiativePane;
     private final CombatWorkflowController combatWorkflowController;
 
@@ -49,7 +51,7 @@ public final class BuilderWorkflowController {
             EncounterControls encounterControls,
             EncounterRosterPane rosterPane,
             SceneHandle encounterScene,
-            Supplier<CreatureCatalogService.FilterCriteria> criteriaSupplier,
+            Supplier<SearchCreaturesInput.CriteriaInput> criteriaSupplier,
             Consumer<InitiativePane> onShowInitiativePane,
             CombatWorkflowController combatWorkflowController
     ) {
@@ -63,7 +65,7 @@ public final class BuilderWorkflowController {
         this.rosterPane.setOnSaveEncounter(this::saveEncounter);
     }
 
-    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         encounterControls.setFilterData(data);
     }
 
@@ -95,7 +97,7 @@ public final class BuilderWorkflowController {
 
         int partySize = partyCache.size();
         int avgLevel = cachedAvgLevel;
-        CreatureCatalogService.FilterCriteria criteria = criteriaSupplier.get();
+        SearchCreaturesInput.CriteriaInput criteria = criteriaSupplier.get();
         EncounterDifficultyBand difficultyBand = encounterControls.getSelectedDifficultyBand();
         int balanceLevel = encounterControls.getSelectedBalanceLevel();
         double amountValue = encounterControls.getSelectedAmountValue();

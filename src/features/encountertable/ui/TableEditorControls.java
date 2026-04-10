@@ -1,6 +1,7 @@
 package features.encountertable.ui;
 
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
+import features.creatures.catalog.input.SearchCreaturesInput;
 import features.creatures.api.CreatureFilterPane;
 import features.encountertable.model.EncounterTable;
 import features.loottable.api.LootTableApi;
@@ -17,10 +18,11 @@ import java.util.function.Consumer;
  * Top section: table selector ComboBox + create/rename/delete actions.
  * Bottom section: CreatureFilterPane for the monster browser.
  */
+@SuppressWarnings("unused")
 public class TableEditorControls extends ManagedTableControls<EncounterTable> {
 
     private CreatureFilterPane filterPane;
-    private Consumer<CreatureCatalogService.FilterCriteria> filterCallback;
+    private Consumer<SearchCreaturesInput.CriteriaInput> filterCallback;
 
     private final ComboBox<LootTableApi.LootTableSummary> lootTableCombo;
 
@@ -56,7 +58,7 @@ public class TableEditorControls extends ManagedTableControls<EncounterTable> {
 
     // ---- Public API ----
 
-    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         filterPane = new CreatureFilterPane(data);
         setFilterContent(filterPane);
         if (filterCallback != null) {
@@ -64,15 +66,18 @@ public class TableEditorControls extends ManagedTableControls<EncounterTable> {
         }
     }
 
-    public void setOnFilterChanged(Consumer<CreatureCatalogService.FilterCriteria> callback) {
+    public void setOnFilterChanged(Consumer<SearchCreaturesInput.CriteriaInput> callback) {
         this.filterCallback = callback;
         if (filterPane != null) {
             filterPane.setOnFilterChanged(callback);
         }
     }
 
-    public CreatureCatalogService.FilterCriteria buildCriteria() {
-        return filterPane != null ? filterPane.buildCriteria() : CreatureCatalogService.FilterCriteria.empty();
+    public SearchCreaturesInput.CriteriaInput buildCriteria() {
+        return filterPane != null
+                ? filterPane.buildCriteria()
+                : new SearchCreaturesInput.CriteriaInput(
+                        null, null, null, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     /**

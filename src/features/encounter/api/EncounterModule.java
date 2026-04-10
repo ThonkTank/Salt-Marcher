@@ -9,7 +9,7 @@ import features.encounter.internal.wiring.DefaultPartyAnalysisProvider;
 import features.encounter.internal.wiring.DefaultPartyProvider;
 import features.encounter.ui.EncounterView;
 import features.encounter.ui.EncounterViewCallbacks;
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
 import features.partyanalysis.api.PartyAnalysisCacheService;
 import features.partyanalysis.api.PartyCacheRefreshPort;
 import ui.shell.AppView;
@@ -18,6 +18,7 @@ import ui.shell.SceneRegistry;
 
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public final class EncounterModule {
 
     private final EncounterView view;
@@ -62,7 +63,7 @@ public final class EncounterModule {
         return partyCacheService;
     }
 
-    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         view.setFilterData(data);
     }
 
