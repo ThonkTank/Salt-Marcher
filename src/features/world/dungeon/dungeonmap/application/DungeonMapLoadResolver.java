@@ -1,36 +1,48 @@
 package features.world.dungeon.dungeonmap.application;
 
+import features.world.dungeon.catalog.CatalogObject;
 import features.world.dungeon.catalog.application.DungeonMapCatalogEntry;
-import features.world.dungeon.catalog.persistence.DungeonMapCatalogRepository;
+import features.world.dungeon.catalog.input.LoadMapListInput;
+import features.world.dungeon.catalog.input.ResolveSelectionInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.dungeonmap.repository.DungeonMapRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 /**
- * Owns synchronous dungeon-map selection policy so loading and runtime repair share one fallback order.
+ * Owns synchronous dungeon-map loading over catalog-owned map lists and selection policy.
  */
+@SuppressWarnings("unused")
 public final class DungeonMapLoadResolver {
 
     private final DungeonMapRepository mapRepository;
+    private final CatalogObject catalogObject;
 
     public DungeonMapLoadResolver(DungeonMapRepository mapRepository) {
+        this(mapRepository, new CatalogObject());
+    }
+
+    public DungeonMapLoadResolver(
+            DungeonMapRepository mapRepository,
+            CatalogObject catalogObject
+    ) {
         this.mapRepository = Objects.requireNonNull(mapRepository, "mapRepository");
+        this.catalogObject = Objects.requireNonNull(catalogObject, "catalogObject");
     }
 
     public LoadResolution resolveInitial(Connection conn) throws SQLException {
         requireConnection(conn);
-        List<DungeonMapCatalogEntry> maps = DungeonMapCatalogRepository.listMaps(conn);
+        LoadMapListInput.LoadedMapListInput mapList = catalogObject.loadMapList(new LoadMapListInput(conn));
+        ResolveSelectionInput.ResolvedSelectionInput selection = catalogObject.resolveSelection(
+                new ResolveSelectionInput(mapList.maps(), null, List.of(), Set.of()));
         DungeonMap firstUsableLayout = null;
         int failedMapCount = 0;
-        String firstFailureName = null;
-        String firstFailureReason = null;
-        for (DungeonMapCatalogEntry map : maps) {
+        String firstFailureDetail = null;
+        for (DungeonMapCatalogEntry map : selection.candidateMaps()) {
             if (map == null) {
                 continue;
             }
@@ -38,9 +50,8 @@ public final class DungeonMapLoadResolver {
                 DungeonMap layout = mapRepository.loadMap(conn, map);
                 if (layout == null) {
                     failedMapCount++;
-                    if (firstFailureName == null) {
-                        firstFailureName = map.name();
-                        firstFailureReason = "Layout fehlt";
+                    if (firstFailureDetail == null) {
+                        firstFailureDetail = map.name() + " (Layout fehlt)";
                     }
                     continue;
                 }
@@ -49,16 +60,15 @@ public final class DungeonMapLoadResolver {
                 }
             } catch (RuntimeException exception) {
                 failedMapCount++;
-                if (firstFailureName == null) {
-                    firstFailureName = map.name();
-                    firstFailureReason = loadFailureMessage(exception);
+                if (firstFailureDetail == null) {
+                    firstFailureDetail = map.name() + " (" + loadFailureMessage(exception) + ")";
                 }
             }
         }
         return new LoadResolution(
-                maps,
+                mapList.maps(),
                 firstUsableLayout,
-                aggregatedFailureMessage(failedMapCount, firstFailureName, firstFailureReason));
+                aggregatedFailureMessage(failedMapCount, firstFailureDetail));
     }
 
     public LoadResolution resolveSelection(
@@ -67,44 +77,46 @@ public final class DungeonMapLoadResolver {
             List<Long> preferredMapIds
     ) throws SQLException {
         requireConnection(conn);
-        List<DungeonMapCatalogEntry> maps = DungeonMapCatalogRepository.listMaps(conn);
-        DungeonMapCatalogEntry requestedMap = findMap(maps, mapId);
+        LoadMapListInput.LoadedMapListInput mapList = catalogObject.loadMapList(new LoadMapListInput(conn));
+        ResolveSelectionInput.ResolvedSelectionInput selection = catalogObject.resolveSelection(
+                new ResolveSelectionInput(mapList.maps(), mapId, preferredMapIds, Set.of()));
+        DungeonMapCatalogEntry requestedMap = selection.requestedMap();
         if (requestedMap == null) {
             return fallbackResolution(
                     conn,
-                    maps,
-                    preferredMapIds,
-                    Set.of(),
+                    mapList.maps(),
+                    selection.candidateMaps(),
                     "Dungeon " + mapId + " existiert nicht mehr");
         }
         try {
             DungeonMap layout = mapRepository.loadMap(conn, requestedMap);
             if (layout != null) {
-                return new LoadResolution(maps, layout, null);
+                return new LoadResolution(mapList.maps(), layout, null);
             }
             return fallbackResolution(
                     conn,
-                    maps,
-                    preferredMapIds,
-                    Set.of(requestedMap.mapId()),
+                    mapList.maps(),
+                    selection.candidateMaps(),
                     "Dungeon " + requestedMap.name() + " existiert nicht mehr");
         } catch (RuntimeException exception) {
             return fallbackResolution(
                     conn,
-                    maps,
-                    preferredMapIds,
-                    Set.of(requestedMap.mapId()),
+                    mapList.maps(),
+                    selection.candidateMaps(),
                     requestedLoadFailureMessage(requestedMap, exception));
         }
     }
 
     public DungeonMap resolveRepairLayout(Connection conn, Long preferredMapId) throws SQLException {
         requireConnection(conn);
-        List<DungeonMapCatalogEntry> maps = DungeonMapCatalogRepository.listMaps(conn);
-        for (DungeonMapCatalogEntry candidate : candidateMaps(
-                maps,
-                preferredMapId == null ? List.of() : List.of(preferredMapId),
-                Set.of())) {
+        LoadMapListInput.LoadedMapListInput mapList = catalogObject.loadMapList(new LoadMapListInput(conn));
+        ResolveSelectionInput.ResolvedSelectionInput selection = catalogObject.resolveSelection(
+                new ResolveSelectionInput(
+                        mapList.maps(),
+                        null,
+                        preferredMapId == null ? List.of() : List.of(preferredMapId),
+                        Set.of()));
+        for (DungeonMapCatalogEntry candidate : selection.candidateMaps()) {
             DungeonMap layout = tryLoadLayout(conn, candidate);
             if (layout != null) {
                 return layout;
@@ -116,12 +128,11 @@ public final class DungeonMapLoadResolver {
     private LoadResolution fallbackResolution(
             Connection conn,
             List<DungeonMapCatalogEntry> maps,
-            List<Long> preferredMapIds,
-            Set<Long> excludedMapIds,
+            List<DungeonMapCatalogEntry> fallbackMaps,
             String primaryMessage
     ) throws SQLException {
         String message = primaryMessage;
-        for (DungeonMapCatalogEntry fallbackMap : candidateMaps(maps, preferredMapIds, excludedMapIds)) {
+        for (DungeonMapCatalogEntry fallbackMap : fallbackMaps) {
             try {
                 DungeonMap layout = mapRepository.loadMap(conn, fallbackMap);
                 if (layout != null) {
@@ -148,46 +159,17 @@ public final class DungeonMapLoadResolver {
         }
     }
 
-    private static List<DungeonMapCatalogEntry> candidateMaps(
-            List<DungeonMapCatalogEntry> maps,
-            List<Long> preferredMapIds,
-            Set<Long> excludedMapIds
-    ) {
-        LinkedHashMap<Long, DungeonMapCatalogEntry> mapsById = new LinkedHashMap<>();
-        for (DungeonMapCatalogEntry map : maps) {
-            if (map != null && !excludedMapIds.contains(map.mapId())) {
-                mapsById.putIfAbsent(map.mapId(), map);
-            }
-        }
-        LinkedHashMap<Long, DungeonMapCatalogEntry> candidates = new LinkedHashMap<>();
-        if (preferredMapIds != null) {
-            for (Long preferredMapId : preferredMapIds) {
-                if (preferredMapId == null) {
-                    continue;
-                }
-                DungeonMapCatalogEntry preferredMap = mapsById.get(preferredMapId);
-                if (preferredMap != null) {
-                    candidates.putIfAbsent(preferredMapId, preferredMap);
-                }
-            }
-        }
-        for (DungeonMapCatalogEntry map : mapsById.values()) {
-            candidates.putIfAbsent(map.mapId(), map);
-        }
-        return List.copyOf(candidates.values());
-    }
-
-    private static String aggregatedFailureMessage(int failedMapCount, String firstFailureName, String firstFailureReason) {
+    private static String aggregatedFailureMessage(int failedMapCount, String firstFailureDetail) {
         if (failedMapCount <= 0) {
             return null;
         }
         String prefix = failedMapCount == 1
                 ? "1 Dungeon konnte nicht geladen werden"
                 : failedMapCount + " Dungeons konnten nicht geladen werden";
-        if (firstFailureName == null || firstFailureReason == null) {
+        if (firstFailureDetail == null || firstFailureDetail.isBlank()) {
             return prefix;
         }
-        return prefix + ": " + firstFailureName + " (" + firstFailureReason + ")";
+        return prefix + ": " + firstFailureDetail;
     }
 
     private static String combineMessages(String primaryMessage, String secondaryMessage) {
@@ -210,15 +192,6 @@ public final class DungeonMapLoadResolver {
 
     private static String requestedLoadFailureMessage(DungeonMapCatalogEntry map, RuntimeException exception) {
         return "Dungeon " + map.name() + " konnte nicht geladen werden (" + loadFailureMessage(exception) + ")";
-    }
-
-    private static DungeonMapCatalogEntry findMap(List<DungeonMapCatalogEntry> maps, long mapId) {
-        for (DungeonMapCatalogEntry map : maps) {
-            if (map.mapId() == mapId) {
-                return map;
-            }
-        }
-        return null;
     }
 
     private static void requireConnection(Connection conn) {

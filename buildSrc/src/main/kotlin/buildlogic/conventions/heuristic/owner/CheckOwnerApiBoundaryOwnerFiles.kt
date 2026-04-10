@@ -113,6 +113,8 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.world.hexmap.ui.editor.surface" ||
         sourceFile.context.packageName == "features.world.hexmap.ui.overworld" ||
         sourceFile.context.packageName == "features.world.dungeon.application.transition" ||
+        sourceFile.context.packageName == "features.world.dungeon.catalog" ||
+        sourceFile.context.packageName == "features.world.dungeon.dungeonmap.application" ||
         sourceFile.context.packageName == "features.world.dungeon.dungeonmap.cluster.application" ||
         sourceFile.context.packageName == "features.world.dungeon.dungeonmap.cluster.model" ||
         sourceFile.context.packageName == "features.world.dungeon.dungeonmap.corridor.model" ||
