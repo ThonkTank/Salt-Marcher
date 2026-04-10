@@ -243,6 +243,9 @@ The rules in this section are decision filters, not soft preferences. When multi
 
 ### CSS & Theming
 - `resources/salt-marcher.css` is the single source of truth for design tokens (CSS variables on `.root`)
+- Only `resources/salt-marcher.css` and `resources/clean/clean.css` are allowed stylesheet files in this repository.
+- `setStyle(...)` is forbidden in project Java code. Reuse established stylesheet classes and existing layout patterns instead of introducing inline styling.
+- New selectors or style-rule blocks in `resources/salt-marcher.css` or `resources/clean/clean.css` require explicit user approval. Without that approval, agents may only reuse existing classes and edit declarations inside already-approved selectors.
 - `src/ui/theme/ThemeObject` mirrors the small Canvas-only color palette from CSS for Java rendering and must stay in sync manually
 
 ### UI Naming

@@ -26,6 +26,7 @@
 - Keep placeholder surfaces passive and disposable. Replace them later with dedicated clean feature owners instead of importing legacy feature code.
 - Keep clean resources under `resources/clean`.
 - Mirror the legacy shell presentation from `ui.shell.AppShell` and the shell-facing parts of `resources/salt-marcher.css` inside `resources/clean/clean.css`, instead of inventing a second cockpit look.
+- Keep `resources/clean/clean.css` as the only clean-local stylesheet. Reuse its existing classes and avoid inline `setStyle(...)` styling in clean Java code.
 - Keep the shell slice buildable while features are still missing. Do not regress back to `Runtime`-owned UI composition or back to the old top-level `clean/frame` and `clean/navigation` scaffolds.
 - When a clean owner must assemble JavaFX nodes, keep the public request method trivial and push the actual scene-graph assembly into a private owner-local assembly path behind the constructor. That is the current clean-safe pattern that survives the owner boundary checks.
 
@@ -35,6 +36,7 @@
 - Do not route clean startup back through `launchers/` or `src/ui/bootstrap`.
 - Do not let `src/clean` silently depend on legacy CSS, shell abstractions, or persistence helpers.
 - Do not restyle `src/clean` into a separate visual language. Clean may duplicate the original shell presentation locally, but it must not directly load or import legacy shell code or CSS.
+- Do not add extra clean stylesheet files or new `resources/clean/clean.css` selectors without explicit user approval.
 - Do not treat `CleanObject.Runtime` as architecture precedent for clean feature work. It is only the JavaFX launcher shell and exception boundary, not a valid home for capability logic, navigation workflow, or panel composition.
 - Do not put scene-graph assembly, event-handler wiring, surface lists, or sibling-owner orchestration directly into public clean owner request methods. Those shapes must be pushed into canonical tasks, state transitions, repositories, or private terminal consumers that already satisfy the owner rules.
 - Do not resurrect the retired top-level shell scaffolds under `clean/frame` or `clean/navigation`. The active reusable shell lives only under `clean/shell`.

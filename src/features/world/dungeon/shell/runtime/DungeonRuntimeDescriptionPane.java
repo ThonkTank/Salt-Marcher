@@ -4,11 +4,12 @@ import features.world.dungeon.application.runtime.DungeonRuntimeAction;
 import features.world.dungeon.application.runtime.description.DungeonRuntimeDescription;
 import features.world.dungeon.application.runtime.description.DungeonRuntimeExit;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -76,15 +77,17 @@ public final class DungeonRuntimeDescriptionPane extends VBox {
         return label;
     }
 
-    private static TextFlow exitLine(DungeonRuntimeExit exit) {
-        Text prefix = new Text(exitDescriptionPrefix(exit) + " ");
-        prefix.setStyle("-fx-fill: -sm-text-muted;");
+    private static HBox exitLine(DungeonRuntimeExit exit) {
+        Label prefix = new Label(exitDescriptionPrefix(exit));
+        prefix.getStyleClass().add("text-muted");
 
-        Text description = new Text(valueOrDash(exit.description()));
-        description.setStyle("-fx-fill: -sm-text-primary;");
-        TextFlow flow = new TextFlow(prefix, description);
-        flow.setLineSpacing(2);
-        return flow;
+        Label description = text(valueOrDash(exit.description()));
+        description.setMaxWidth(Double.MAX_VALUE);
+
+        HBox row = new HBox(6, prefix, description);
+        row.setAlignment(Pos.TOP_LEFT);
+        HBox.setHgrow(description, Priority.ALWAYS);
+        return row;
     }
 
     private static String exitDescriptionPrefix(DungeonRuntimeExit exit) {

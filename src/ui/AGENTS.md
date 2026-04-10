@@ -15,9 +15,11 @@
 
 - Put Java-side mirrors of CSS theme tokens in `ui/theme`.
 - Put reusable JavaFX helper nodes or small style helpers in the documented `ui/components` family homes when they are not owned by a product feature.
-- Keep `resources/salt-marcher.css` as the single source of truth for theme tokens; mirror only the Canvas colors that Java code genuinely needs.
+- Keep `resources/salt-marcher.css` as the shared UI stylesheet and token source of truth; mirror only the Canvas colors that Java code genuinely needs.
+- Reuse existing `resources/salt-marcher.css` classes instead of adding inline `setStyle(...)` calls or ad-hoc per-pane styling helpers.
 
 ## Forbidden Drift
 
 - Do not recreate mixed utility catch-alls under `ui/components`.
 - Do not treat `ui/theme` as a home for general reusable components or CSS helper methods.
+- Do not add new shared stylesheet files, and do not add new selectors to `resources/salt-marcher.css` without explicit user approval.

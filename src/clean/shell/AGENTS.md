@@ -21,6 +21,7 @@
 - Keep shell-owned inspector, scene, and async behavior here instead of importing or wrapping legacy `ui.shell` or `ui.async`.
 - Keep the public `*Object` request methods thin. When JavaFX composition is needed, use a private nested assembly inside the owner file and let the public request only validate and return the already-built result.
 - Mirror the visual shell contract from `ui.shell.AppShell` and the shell-facing parts of `resources/salt-marcher.css`, but keep that presentation duplicated locally inside `resources/clean/clean.css`.
+- Reuse the existing `resources/clean/clean.css` selector set when styling clean shell surfaces; do not reach for inline `setStyle(...)` or subtree-local ad-hoc stylesheet variants.
 
 ## Forbidden Drift
 
@@ -28,4 +29,5 @@
 - Do not import legacy `ui.shell`, `ui.async`, or feature packages here.
 - Do not move scene-graph assembly or event-handler wiring back into the public `compose*` request methods; that immediately breaks the owner checks in this subtree.
 - Do not let `clean/shell` drift into a separate visual language. If the original shell changes structurally or stylistically, mirror the relevant shell presentation here instead of inventing a second cockpit style.
+- Do not add new `resources/clean/clean.css` selectors for shell work without explicit user approval.
 - Do not make later clean features call sibling shell owners directly; they should consume the hook bundle returned from `ShellObject`.

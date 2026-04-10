@@ -59,15 +59,13 @@ public class CombatResultsPane extends VBox {
 
         // ---- Per-player XP (large) ----
         Label perPlayerLabel = new Label();
-        perPlayerLabel.getStyleClass().add("title");
-        perPlayerLabel.setStyle("-fx-font-size: 1.8em;");
+        perPlayerLabel.getStyleClass().add("large");
 
         Label partyInfoLabel = new Label();
         partyInfoLabel.getStyleClass().add("text-secondary");
 
         Label goldInfoLabel = new Label();
         goldInfoLabel.getStyleClass().add("title");
-        goldInfoLabel.setStyle("-fx-font-size: 1.5em;");
 
         Label goldDetailLabel = new Label();
         goldDetailLabel.getStyleClass().add("text-secondary");
