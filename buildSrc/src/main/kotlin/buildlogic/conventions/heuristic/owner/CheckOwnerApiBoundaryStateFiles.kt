@@ -27,12 +27,6 @@ internal fun analyzeStateFile(
     snapshot: OwnerConventionSnapshot,
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
-    if (sourceFile.context.packageName == "features.world.dungeon.shell.editor.state" ||
-        sourceFile.context.packageName == "features.world.dungeon.shell.editor.interaction.state" ||
-        sourceFile.context.packageName == "features.world.api.state"
-    ) {
-        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
-    }
     val shapeAnalysis = support.analyzeStateShape(sourceFile, snapshot)
     val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)
@@ -133,28 +127,20 @@ private fun stateInvocationReasons(
     if (calleeTypeName == currentTypeName) {
         return emptyList()
     }
+    forbiddenStateExternalTypeReason(calleeTypeName)?.let { reason ->
+        return listOf("${context.path} :: $reason ($memberName -> $calleeTypeName)")
+    }
     if (calleeTypeName !in snapshot.knownTypeNames) {
-        forbiddenStateExternalTypeReason(calleeTypeName)?.let { reason ->
-            return listOf("${context.path} :: $reason ($memberName -> $calleeTypeName)")
-        }
         return emptyList()
     }
     val calleePackage = calleeTypeName.substringBeforeLast('.')
     val calleeRole = support.roleForDirectoryName(calleePackage.substringAfterLast('.'))
     val calleeOwnerPackage = support.ownerPackageFor(calleePackage, calleeRole)
-    if (calleeOwnerPackage == context.ownerPackage &&
-        calleeRole == support.inputRole &&
-        support.isCanonicalInputAccessorInvocation(calleeTypeName, invocation, sourceFile.parsedSource, snapshot)
-    ) {
-        return emptyList()
-    }
-    if (calleeOwnerPackage == context.ownerPackage && calleeRole == support.stateRole) {
-        return emptyList()
-    }
-    forbiddenStateExternalTypeReason(calleeTypeName)?.let { reason ->
-        return listOf("${context.path} :: $reason ($memberName -> $calleeTypeName)")
-    }
     return when {
+        calleeOwnerPackage == context.ownerPackage && calleeRole == support.stateRole -> emptyList()
+        calleeOwnerPackage == context.ownerPackage &&
+            calleeRole == support.inputRole &&
+            support.isCanonicalInputAccessorInvocation(calleeTypeName, invocation, sourceFile.parsedSource, snapshot) -> emptyList()
         calleeOwnerPackage == context.ownerPackage && calleeRole == support.inputRole ->
             listOf("${context.path} :: state bodies may read own input values only through canonical input accessors ($memberName -> $calleeTypeName)")
         calleeRole == support.repositoryRole ->
@@ -185,21 +171,15 @@ private fun stateNewClassReasons(
     if (typeName == currentTypeName) {
         return emptyList()
     }
+    forbiddenStateExternalTypeReason(typeName)?.let { reason ->
+        return listOf("${context.path} :: $reason ($memberName -> $typeName)")
+    }
     if (typeName !in snapshot.knownTypeNames) {
-        forbiddenStateExternalTypeReason(typeName)?.let { reason ->
-            return listOf("${context.path} :: $reason ($memberName -> $typeName)")
-        }
         return emptyList()
     }
     val typePackage = typeName.substringBeforeLast('.')
     val typeRole = support.roleForDirectoryName(typePackage.substringAfterLast('.'))
     val targetOwnerPackage = support.ownerPackageFor(typePackage, typeRole)
-    if (targetOwnerPackage == context.ownerPackage && typeRole == support.stateRole) {
-        return emptyList()
-    }
-    forbiddenStateExternalTypeReason(typeName)?.let { reason ->
-        return listOf("${context.path} :: $reason ($memberName -> $typeName)")
-    }
     return if (targetOwnerPackage == context.ownerPackage && typeRole == support.stateRole) {
         emptyList()
     } else {

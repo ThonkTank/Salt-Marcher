@@ -162,7 +162,6 @@ private fun repositoryInvocationReasons(
     val calleeOwnerPackage = support.ownerPackageFor(calleePackage, calleeRole)
     return when {
         calleeTypeName == "database.DatabaseManager" -> emptyList()
-        calleeTypeName == "database.DatabaseTransactionRunner" -> emptyList()
         calleeTypeName == "features.world.dungeon.application.support.DungeonTransactionRunner" -> emptyList()
         calleeOwnerPackage == context.ownerPackage && calleeRole == support.stateRole -> emptyList()
         calleeRole == support.ownerRole ->
