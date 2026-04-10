@@ -40,7 +40,7 @@ Salt Marcher is a Java 21 / JavaFX / SQLite application built with the Gradle wr
 ## Sensitive Surfaces
 
 - Do not edit `build.gradle.kts`, `settings.gradle.kts`, `CODEOWNERS`, `~/Schreibtisch/SM/buildSrc`, or `~/Schreibtisch/SM/build-checks` unless the user explicitly asks, because they are guarded build infrastructure.
-- Do not add a `buildSrc` directory to this repository, because Gradle is wired to the external `../SM/buildSrc` include.
+- Do not add a `buildSrc` directory to this repository, because Gradle is wired to the external `../buildSrc` include.
 - Never commit secrets. Keep crawler cookies only in local `crawler.properties`, and keep database backups in `data/backups/db/`.
 
 ## Architecture Rules
@@ -48,18 +48,24 @@ Salt Marcher is a Java 21 / JavaFX / SQLite application built with the Gradle wr
 - Choose the owning feature first, then the single owner slice, then the technical layer, because ownership is the primary architecture boundary.
 - Give each capability one central owner, because mirrored ownership creates hidden coupling.
 - Every owner exposes exactly one public root seam named `<Owner>Object` in its root package, because cross-owner work must stay structurally obvious.
+- Keep each owner directory to exactly one Java file, because the owner-boundary build checks treat sibling Java files as ownership drift.
 - Cross-owner access goes through the target owner root package and its canonical `input` types, because foreign `task`, `repository`, and `state` APIs are internal implementation details.
 - Use only the canonical owner-internal layers `input`, `task`, `repository`, and `state`, because the build checks and documentation assume that vocabulary.
 - Treat any other non-container directory under `src/` as an owner unless it ends with `Bucket`, because only `*Bucket` is a transparent organizational directory.
 - Keep `*Bucket` directories shallow and organizational only, because ownership must remain directly readable from the tree.
 
-## Layer Rules
+## Canonical Owner Role Model
 
-- `input` carries passive request data only, because owner seams must exchange stable shapes rather than workflow logic.
-- `task` is a stateless input-to-input pipeline, because orchestration belongs at the owner seam.
-- `repository` is a stateless persistence boundary, because SQL and storage policy should not leak into owners or UI.
-- `state` owns local runtime transitions and factories, because mutable invariants need one protected home.
-- Keep public `<Owner>Object` request methods thin, because they are routing seams, not workflow containers.
+- `owner` is the single public seam of a capability. It exposes exactly one `<Owner>Object` in the owner root package, accepts canonical same-owner `input` requests, validates and routes the request, and keeps cross-owner orchestration structurally obvious.
+- `owner` is the final consumer of owner-local static data. It may read same-owner `state`, send static request-shaped data through same-owner `task`, call same-owner `repository` when runtime snapshots must be loaded or persisted, and assemble final `Node` or `ComposeShellInput.SurfaceInput` results behind private owner assembly paths.
+- Public owner request methods stay thin and auditable. Non-trivial assembly, branching, and terminal consumption may exist behind private owner-local paths, but the public seam remains the visible routing boundary.
+- Cross-owner work goes only through the target owner's public `<Owner>Object` request methods plus that owner's canonical `input` types. Foreign `task`, `state`, and `repository` layers remain owner-internal implementation detail.
+
+- `input` carries passive request or result data for one real owner request. Name each input file `<Request>Input`, keep it aligned to a real public request method on the same owner, and keep it as a pure value carrier.
+- `task` is a stateless `Input -> Input` transformation seam. It prepares static data for owner consumption, keeps request-shaped translation explicit, and does not become a second orchestration or runtime-state home.
+- `state` is the owner-local runtime and display truth. It holds transient selection, mode, visibility, active-resource identity, and other mutable runtime facts, and it exposes owner-local queries or transitions over that truth.
+- `repository` is the owner-local state snapshot persistence seam. It hydrates runtime truth from persisted owner snapshots and persists updated owner snapshots when the owner decides runtime state must cross process boundaries.
+- No additional canonical owner-internal layers exist beyond `input`, `task`, `state`, and `repository`, because the build checks and documentation assume this vocabulary.
 
 ## Documentation Contract
 

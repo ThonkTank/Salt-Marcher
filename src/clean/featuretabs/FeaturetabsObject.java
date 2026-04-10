@@ -3,17 +3,13 @@ package clean.featuretabs;
 import clean.catalog.CatalogObject;
 import clean.catalog.input.ComposeCatalogInput;
 import clean.featuretabs.input.ComposeFeaturetabsInput;
-import clean.featuretabs.mapcatalog.MapcatalogObject;
-import clean.featuretabs.mapcatalog.input.LoadMapsInput;
-import clean.featuretabs.mapeditortab.MapeditortabObject;
-import clean.featuretabs.mapeditortab.input.ComposeMapeditortabInput;
 import clean.featuretabs.navigationicon.NavigationiconObject;
 import clean.featuretabs.navigationicon.input.ComposeNavigationiconInput;
 import clean.featuretabs.tablestab.TablestabObject;
 import clean.featuretabs.tablestab.input.ComposeTablestabInput;
-import clean.featuretabs.traveltab.TraveltabObject;
-import clean.featuretabs.traveltab.input.ComposeTraveltabInput;
 import clean.shell.input.ComposeShellInput;
+import clean.world.WorldObject;
+import clean.world.input.ComposeWorldInput;
 
 /**
  * Top-level Clean sidebar roster owner.
@@ -47,10 +43,6 @@ public final class FeaturetabsObject {
             ComposeNavigationiconInput.NavigationiconInput navigationIcons =
                     new NavigationiconObject(navigationiconInput).composeNavigationicon(navigationiconInput);
 
-            LoadMapsInput loadMapsInput = new LoadMapsInput();
-            java.util.List<LoadMapsInput.MapInput> maps =
-                    new MapcatalogObject(loadMapsInput).loadMaps(loadMapsInput).maps();
-
             ComposeCatalogInput composeCatalogInput = new ComposeCatalogInput(
                     navigationIcons.catalogGraphic(),
                     input.catalogcontent() == null ? null : input.catalogcontent().content()
@@ -58,19 +50,12 @@ public final class FeaturetabsObject {
             ComposeShellInput.SurfaceInput catalogSurface =
                     new CatalogObject(composeCatalogInput).composeCatalog(composeCatalogInput).surface();
 
-            ComposeTraveltabInput traveltabInput = new ComposeTraveltabInput(
+            ComposeWorldInput composeWorldInput = new ComposeWorldInput(
                     navigationIcons.travelGraphic(),
-                    maps
+                    navigationIcons.mapEditorGraphic()
             );
-            ComposeShellInput.SurfaceInput travelSurface =
-                    new TraveltabObject(traveltabInput).composeTraveltab(traveltabInput).surface();
-
-            ComposeMapeditortabInput mapeditortabInput = new ComposeMapeditortabInput(
-                    navigationIcons.mapEditorGraphic(),
-                    maps
-            );
-            ComposeShellInput.SurfaceInput mapEditorSurface =
-                    new MapeditortabObject(mapeditortabInput).composeMapeditortab(mapeditortabInput).surface();
+            ComposeWorldInput.WorldInput world =
+                    new WorldObject(composeWorldInput).composeWorld(composeWorldInput);
 
             ComposeTablestabInput tablestabInput = new ComposeTablestabInput(navigationIcons.tablesGraphic());
             ComposeShellInput.SurfaceInput tablesSurface =
@@ -79,8 +64,8 @@ public final class FeaturetabsObject {
             return new ComposeFeaturetabsInput.FeaturetabsInput(
                     java.util.List.of(
                             catalogSurface,
-                            travelSurface,
-                            mapEditorSurface,
+                            world.travelSurface(),
+                            world.mapEditorSurface(),
                             tablesSurface
                     ),
                     "catalog"

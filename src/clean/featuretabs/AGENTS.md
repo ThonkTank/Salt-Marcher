@@ -7,18 +7,16 @@
 ## Canonical Types And APIs
 
 - `FeaturetabsObject.composeFeaturetabs(ComposeFeaturetabsInput)` - returns the ordered shell surfaces plus the initial surface id.
-- `mapcatalog/MapcatalogObject.loadMaps(LoadMapsInput)` - returns the clean-local map list used by the aggregated travel and editor tabs.
 - `navigationicon/NavigationiconObject.composeNavigationicon(ComposeNavigationiconInput)` - returns the sidebar graphics for the top-level roster.
-- `traveltab/TraveltabObject.composeTraveltab(ComposeTraveltabInput)` - returns the aggregated `Travel` surface.
-- `mapeditortab/MapeditortabObject.composeMapeditortab(ComposeMapeditortabInput)` - returns the aggregated `Map Editor` surface.
 - `tablestab/TablestabObject.composeTablestab(ComposeTablestabInput)` - returns the `Tabellen` surface.
+- `../world/WorldObject.composeWorld(ComposeWorldInput)` - returns the aggregated `Travel` and `Map Editor` surfaces from the clean-local world subtree.
 
 ## Where New Code Goes
 
 - Keep the durable top-level roster here, because the shell should render surfaces, not decide which ones exist.
 - Keep navigation icon selection and section metadata here, because top-level navigation belongs with the roster owner.
-- Keep aggregated `Travel` and `Map Editor` switching inside their child owners, because the roster should expose stable top-level surfaces while those features decide their internal mode changes.
-- Keep temporary clean-local map loading in `mapcatalog` until a real clean persistence owner exists, because top-level tabs still need one source of map choices.
+- Keep world-specific top-level host composition in `clean/world`, because `featuretabs` should mount those surfaces rather than absorb world internals.
+- Keep the dormant placeholder subtrees under `mapcatalog`, `traveltab`, and `mapeditortab` unreferenced until an explicit cleanup task, because this owner now delegates active world wiring through `clean/world`.
 
 ## Forbidden Drift
 
