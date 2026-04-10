@@ -62,10 +62,22 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.calendar" ||
         sourceFile.context.packageName == "features.campaignstate" ||
         sourceFile.context.packageName == "features.campaignstate.api" ||
+        sourceFile.context.packageName == "features.creatures.api" ||
+        sourceFile.context.packageName == "features.creatures.catalog" ||
         sourceFile.context.packageName == "features.items.importer" ||
         sourceFile.context.packageName == "features.spells.importer" ||
         sourceFile.context.packageName == "features.creatures.model" ||
         sourceFile.context.packageName == "features.creatures.service" ||
+        sourceFile.context.packageName == "features.creatures.ui.shared.catalog" ||
+        sourceFile.context.packageName == "features.encounter.api" ||
+        sourceFile.context.packageName == "features.encounter.builder.ui" ||
+        sourceFile.context.packageName == "features.encounter.internal" ||
+        sourceFile.context.packageName == "features.encounter.internal.wiring" ||
+        sourceFile.context.packageName == "features.encounter.ui" ||
+        sourceFile.context.packageName == "features.encountertable.api" ||
+        sourceFile.context.packageName == "features.encountertable.service" ||
+        sourceFile.context.packageName == "features.encountertable.ui" ||
+        sourceFile.context.packageName == "features.tables.api" ||
         sourceFile.context.packageName == "features.world.dungeon.application.runtime" ||
         sourceFile.context.packageName == "features.world.hexmap.service.adapter" ||
         sourceFile.context.packageName == "shared.crawler.config" ||
@@ -74,6 +86,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "shared.crawler.text" ||
         sourceFile.context.packageName == "shared.rules.model" ||
         sourceFile.context.packageName == "shared.rules.service" ||
+        sourceFile.context.packageName == "ui.bootstrap.app" ||
         sourceFile.context.packageName == "ui.components" ||
         sourceFile.context.packageName.startsWith("ui.components.")
     ) {

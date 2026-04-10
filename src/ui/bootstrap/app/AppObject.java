@@ -1,7 +1,9 @@
 package ui.bootstrap.app;
 
 import database.DatabaseManager;
-import features.creatures.api.CreatureCatalogService;
+import features.creatures.catalog.CatalogObject;
+import features.creatures.catalog.input.CountAllInput;
+import features.creatures.catalog.input.LoadFilterOptionsInput;
 import features.encounter.api.AdventuringDayToolbarModule;
 import features.encounter.api.EncounterModule;
 import features.party.api.PartyModule;
@@ -28,9 +30,11 @@ import java.util.logging.Logger;
 /**
  * Application entry owner for the shared shell bootstrap and feature registration.
  */
+@SuppressWarnings("unused")
 public final class AppObject extends Application {
 
     private static final Logger LOGGER = Logger.getLogger(AppObject.class.getName());
+    private static final CatalogObject CATALOG_OBJECT = new CatalogObject();
     private static final String STARTUP_ERROR_TITLE = "Start fehlgeschlagen";
     private static final String STARTUP_ERROR_TEXT = "Salt Marcher konnte nicht gestartet werden.";
 
@@ -117,29 +121,28 @@ public final class AppObject extends Application {
         Platform.setImplicitExit(true);
         notifyPreloader(new PreloaderObject.AppReadyNotification());
 
-        Task<CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions>> filterTask = new Task<>() {
+        Task<LoadFilterOptionsInput.LoadedFilterOptionsInput> filterTask = new Task<>() {
             @Override
-            protected CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions> call() {
-                return CreatureCatalogService.loadFilterOptions();
+            protected LoadFilterOptionsInput.LoadedFilterOptionsInput call() {
+                return CATALOG_OBJECT.loadFilterOptions(new LoadFilterOptionsInput());
             }
         };
         UiAsyncTasks.submit(
                 filterTask,
                 result -> {
-                    if (!result.isOk()) {
-                        UiErrorReporter.reportBackgroundFailure(
-                                "AppObject.start() loadFilterOptions failed",
-                                new IllegalStateException("CreatureCatalogService status: " + result.status()));
-                    }
-                    CreatureCatalogService.FilterOptions filterData = result.value();
-                    if (filterData == null) {
+                    if (result == null) {
                         UiErrorReporter.reportBackgroundFailure(
                                 "AppObject.start() loadFilterOptions returned null value",
                                 null);
                         return;
                     }
-                    encounterModule.setFilterData(filterData);
-                    tablesModule.setCreatureFilterData(filterData);
+                    if (!result.success()) {
+                        UiErrorReporter.reportBackgroundFailure(
+                                "AppObject.start() loadFilterOptions failed",
+                                new IllegalStateException("CatalogObject.loadFilterOptions() failed"));
+                    }
+                    encounterModule.setFilterData(result);
+                    tablesModule.setCreatureFilterData(result);
                 },
                 throwable -> UiErrorReporter.reportBackgroundFailure("AppObject.start()", throwable));
     }
@@ -159,13 +162,13 @@ public final class AppObject extends Application {
     }
 
     private static void logDatabaseState() {
-        CreatureCatalogService.ServiceResult<Integer> countResult = CreatureCatalogService.countAll();
-        if (!countResult.isOk()) {
+        CountAllInput.CountedAllInput countResult = CATALOG_OBJECT.countAll(new CountAllInput());
+        if (!countResult.success()) {
             LOGGER.log(Level.INFO, "Database check unavailable (DB access failed).");
-        } else if (countResult.value() == 0) {
+        } else if (countResult.totalCount() == 0) {
             LOGGER.log(Level.INFO, "Database is empty. Run ./scripts/crawl.sh to populate monster data.");
         } else {
-            LOGGER.log(Level.INFO, "Database ready: {0} creatures loaded.", countResult.value());
+            LOGGER.log(Level.INFO, "Database ready: {0} creatures loaded.", countResult.totalCount());
         }
     }
 
