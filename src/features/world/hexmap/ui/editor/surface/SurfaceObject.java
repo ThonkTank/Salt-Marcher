@@ -1,15 +1,15 @@
 package features.world.hexmap.ui.editor.surface;
 
 import features.world.hexmap.api.HexTileSummary;
+import features.world.hexmap.editorcontrols.EditorcontrolsObject;
+import features.world.hexmap.editorcontrols.input.ComposeInput;
 import features.world.hexmap.model.HexMap;
 import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
 import features.world.hexmap.ui.editor.MapEditorApplicationService;
 import features.world.hexmap.ui.editor.controls.EditorTool;
-import features.world.hexmap.ui.editor.controls.MapEditorControls;
 import features.world.hexmap.ui.editor.dropdowns.HexMapFormDropdown;
 import features.world.hexmap.ui.editor.panes.MapEditorCanvas;
-import features.world.hexmap.ui.editor.panes.ToolSettingsPane;
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
@@ -28,11 +28,11 @@ import java.util.function.Consumer;
  * Details werden im shell-owned DetailsPane gezeigt.
  * Zustandspanel: ToolSettingsPane (Gelaendepalette, spaetere Brush-Einstellungen).
  */
+@SuppressWarnings("unused")
 public final class SurfaceObject implements AppView {
 
-    private final MapEditorControls controls;
+    private final ComposeInput.ComposedEditorControlsInput editorControls;
     private final MapEditorCanvas canvas;
-    private final ToolSettingsPane toolSettingsPane;
     private final MapEditorApplicationService applicationService;
     private final DetailsNavigator detailsNavigator;
     private final HexMapFormDropdown mapDropdown = new HexMapFormDropdown();
@@ -46,28 +46,22 @@ public final class SurfaceObject implements AppView {
 
     public SurfaceObject(DetailsNavigator detailsNavigator) {
         this.detailsNavigator = detailsNavigator;
-        controls = new MapEditorControls();
         canvas = new MapEditorCanvas();
-        toolSettingsPane = new ToolSettingsPane();
         applicationService = new MapEditorApplicationService();
-        toolSettingsPane.setActiveTool(controls.getActiveTool());
-
-        controls.setOnToolChanged(tool -> {
-            canvas.setPaintMode(tool == EditorTool.TERRAIN_BRUSH);
-            toolSettingsPane.setActiveTool(tool);
-        });
-
-        controls.setOnMapSelected(mapId -> {
-            currentMapId = mapId;
-            loadMapAsync(mapId);
-        });
-        controls.setOnNewMapRequested(this::showNewMapDropdown);
-        controls.setOnEditMapRequested(this::showEditMapDropdown);
+        editorControls = new EditorcontrolsObject().compose(new ComposeInput(
+                tool -> canvas.setPaintMode(tool == EditorTool.TERRAIN_BRUSH),
+                mapId -> {
+                    currentMapId = mapId;
+                    loadMapAsync(mapId);
+                },
+                this::showNewMapDropdown,
+                this::showEditMapDropdown));
+        canvas.setPaintMode(editorControls.activeToolSupplier().get() == EditorTool.TERRAIN_BRUSH);
 
         canvas.setOnTileClicked(tile -> {
-            if (controls.getActiveTool() == EditorTool.SELECT) {
+            if (editorControls.activeToolSupplier().get() == EditorTool.SELECT) {
                 showTileDetails(tile, null);
-            } else if (controls.getActiveTool() == EditorTool.TERRAIN_BRUSH) {
+            } else if (editorControls.activeToolSupplier().get() == EditorTool.TERRAIN_BRUSH) {
                 paintTile(tile);
             }
         });
@@ -79,7 +73,7 @@ public final class SurfaceObject implements AppView {
     /** Optimistisches UI-Update; DB-Schreiben wird bis zum Ende des Malstrichs aufgeschoben. */
     private void paintTile(HexTile tile) {
         if (tile == null || tile.tileId() == null) return;
-        HexTerrainType terrain = toolSettingsPane.getActiveTerrainType();
+        HexTerrainType terrain = editorControls.activeTerrainTypeSupplier().get();
         if (terrain == tile.terrainType()) return;
 
         canvas.updateTileTerrain(tile.tileId(), terrain);
@@ -98,13 +92,13 @@ public final class SurfaceObject implements AppView {
             if (currentMapId != null) {
                 loadMapAsync(currentMapId);
             }
-            messageDropdown.show(controls,
+            messageDropdown.show(editorControls.controlsContent(),
                     "Speichern fehlgeschlagen",
                     "Geländeänderungen konnten nicht gespeichert werden. Die Karte wurde neu geladen.");
         });
     }
 
-    private void showEditMapDropdown(MapEditorControls.MapActionRequest request) {
+    private void showEditMapDropdown(ComposeInput.MapActionRequestInput request) {
         HexMap map = request.map();
         int oldRadius = map.radius() != null ? map.radius() : 0;
         mapDropdown.showEdit(
@@ -119,11 +113,11 @@ public final class SurfaceObject implements AppView {
 
     private void submitMapUpdate(Long mapId, String name, int oldRadius, int newRadius) {
         applicationService.updateMap(mapId, name, oldRadius, newRadius,
-            () -> loadMapListAsync(maps -> controls.selectMap(mapId)),
+            () -> loadMapListAsync(maps -> editorControls.selectMapAction().accept(mapId)),
             ex -> {
                     UiErrorReporter.reportBackgroundFailure("SurfaceObject.editMap()", ex);
                 String msg = ex.getMessage() != null ? ex.getMessage() : "Unbekannter Fehler";
-                messageDropdown.show(controls, "Fehler beim Speichern", msg);
+                messageDropdown.show(editorControls.controlsContent(), "Fehler beim Speichern", msg);
             });
     }
 
@@ -131,9 +125,9 @@ public final class SurfaceObject implements AppView {
     private void loadMapList() {
         loadMapListAsync(maps -> {
             if (maps.isEmpty()) {
-                showNewMapDropdown(controls);
+                showNewMapDropdown(editorControls.controlsContent());
             } else {
-                controls.selectMap(maps.get(0).mapId());
+                editorControls.selectMapAction().accept(maps.get(0).mapId());
             }
         });
     }
@@ -142,10 +136,10 @@ public final class SurfaceObject implements AppView {
         mapDropdown.showCreate(anchor, result -> {
             mapDropdown.hide();
             applicationService.createMap(result.name(), result.radius(),
-                newMapId -> loadMapListAsync(maps -> controls.selectMap(newMapId)),
+                newMapId -> loadMapListAsync(maps -> editorControls.selectMapAction().accept(newMapId)),
                 ex -> {
                     UiErrorReporter.reportBackgroundFailure("SurfaceObject.createMap()", ex);
-                    messageDropdown.show(controls, "Karte konnte nicht erstellt werden", "Bitte Eingaben und Datenbankstatus prüfen.");
+                    messageDropdown.show(editorControls.controlsContent(), "Karte konnte nicht erstellt werden", "Bitte Eingaben und Datenbankstatus prüfen.");
                 });
         });
     }
@@ -153,7 +147,7 @@ public final class SurfaceObject implements AppView {
     /** Laedt die Kartenliste asynchron, fuellt die Controls und ruft danach onLoaded auf dem FX-Thread auf. */
     private void loadMapListAsync(Consumer<List<HexMap>> onLoaded) {
         applicationService.loadMapList(maps -> {
-            controls.setMaps(maps);
+            editorControls.setMapsAction().accept(maps);
             onLoaded.accept(maps);
         }, ex -> UiErrorReporter.reportBackgroundFailure("SurfaceObject.loadMapListAsync()", ex));
     }
@@ -179,8 +173,8 @@ public final class SurfaceObject implements AppView {
     @Override public String getTitle()        { return "Karteneditor"; }
     @Override public String getIconText()     { return ""; }
     @Override public Node getNavigationGraphic() { return NavigationIcons.mapEditor(); }
-    @Override public Node getControlsContent() { return controls; }
-    @Override public Node getStateContent()    { return toolSettingsPane; }
+    @Override public Node getControlsContent() { return editorControls.controlsContent(); }
+    @Override public Node getStateContent()    { return editorControls.stateContent(); }
 
     @Override
     public void onShow() {

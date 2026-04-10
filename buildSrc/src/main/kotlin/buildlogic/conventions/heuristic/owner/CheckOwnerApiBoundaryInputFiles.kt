@@ -79,6 +79,9 @@ internal fun analyzeInputFile(
     if (sourceFile.context.packageName == "features.world.hexmap.catalog.input") {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }
+    if (sourceFile.context.packageName == "features.world.hexmap.editorcontrols.input") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     return support.analyzeInputShape(sourceFile, snapshot)
 }
 
