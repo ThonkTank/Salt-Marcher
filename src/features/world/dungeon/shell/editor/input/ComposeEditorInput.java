@@ -1,7 +1,8 @@
 package features.world.dungeon.shell.editor.input;
 
+@SuppressWarnings("unused")
 public record ComposeEditorInput(
-        features.world.dungeon.dungeonmap.application.DungeonMapLoadingService loadingService,
+        features.world.dungeon.dungeonmap.DungeonMapObject mapObject,
         features.world.dungeon.dungeonmap.state.DungeonMapState mapState,
         features.world.dungeon.catalog.application.DungeonMapCatalogService mapCatalogService,
         features.world.dungeon.state.DungeonEditorSessionState sessionState,

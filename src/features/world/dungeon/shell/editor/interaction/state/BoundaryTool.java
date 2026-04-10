@@ -3,8 +3,9 @@ package features.world.dungeon.shell.editor.interaction.state;
 import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterBoundaryEditRequest;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.geometry.GridSegment;
@@ -40,10 +41,11 @@ import java.util.Set;
  * <p>This tool owns wall-path gesture meaning and only publishes preview geometry through shared editor state. Local
  * door removal as part of one boundary path remains part of this tool's draft semantics.</p>
  */
+@SuppressWarnings("unused")
 public final class BoundaryTool implements EditorTool {
 
     private final DungeonMapState mapState;
-    private final DungeonMapLoadingService loadingService;
+    private final DungeonMapObject mapObject;
     private final DungeonEditorSessionState sessionState;
     private final ApplicationObject roomApplicationService;
     private final EditorInteractionState state;
@@ -56,13 +58,13 @@ public final class BoundaryTool implements EditorTool {
 
     public BoundaryTool(
             DungeonMapState mapState,
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             DungeonEditorSessionState sessionState,
             ApplicationObject roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
-        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.state = Objects.requireNonNull(state, "state");
@@ -218,7 +220,7 @@ public final class BoundaryTool implements EditorTool {
         if (mapId == null || path.isEmpty()) {
             return true;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
@@ -234,7 +236,7 @@ public final class BoundaryTool implements EditorTool {
                 updatedMapId -> updatedMapId,
                 ignored -> {
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryTool.finishDraft()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("BoundaryTool.finishDraft()", throwable)));
         return true;
     }
 

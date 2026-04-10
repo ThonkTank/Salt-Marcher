@@ -13,7 +13,8 @@ import features.world.dungeon.canvas.base.DungeonCanvasInteractionHandler;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
 import features.world.dungeon.canvas.base.DungeonCanvasTheme;
 import features.world.dungeon.canvas.base.DungeonRuntimeRenderOverlay;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
+import features.world.dungeon.dungeonmap.input.SelectMapInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
@@ -50,6 +51,7 @@ import java.util.function.Function;
  * and delegates executable travel to runtime application owners. Runtime workflow state stays in shared state, not in
  * view-local mirrors.</p>
  */
+@SuppressWarnings("unused")
 public final class SurfaceObject extends AbstractDungeonMapView {
 
     private final String title;
@@ -72,14 +74,14 @@ public final class SurfaceObject extends AbstractDungeonMapView {
     public SurfaceObject(
             String title,
             boolean editorMode,
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             features.world.dungeon.dungeonmap.state.DungeonMapState state,
             DungeonRuntimeApplicationService runtimeApplicationService,
             DetailsNavigator detailsNavigator,
             TravelSurfaceInput travelSurface,
             DungeonHitCollector hitCollector
     ) {
-        super(editorMode, loadingService, state);
+        super(editorMode, mapObject, state);
         this.title = title;
         this.editorMode = editorMode;
         this.runtimeApplicationService = Objects.requireNonNull(runtimeApplicationService, "runtimeApplicationService");
@@ -321,7 +323,7 @@ public final class SurfaceObject extends AbstractDungeonMapView {
     private void applyNavigationSnapshot(DungeonRuntimeNavigationSnapshot snapshot) {
         if (snapshot != null && snapshot.mapId() != null && !Objects.equals(snapshot.mapId(), state().activeMapId())) {
             runtimeState.showPendingNavigation(snapshot);
-            loadingService().selectMap(snapshot.mapId());
+            mapObject().selectMap(new SelectMapInput(snapshot.mapId()));
             return;
         }
         runtimeState.showNavigation(snapshot);

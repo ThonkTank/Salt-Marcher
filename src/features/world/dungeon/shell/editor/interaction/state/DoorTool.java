@@ -3,9 +3,10 @@ package features.world.dungeon.shell.editor.interaction.state;
 import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterBoundaryEditRequest;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
 import features.world.dungeon.dungeonmap.api.RoomBoundaryDescription;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridSegment;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
@@ -40,10 +41,11 @@ import java.util.stream.Collectors;
  * <p>Door placement, selection, and deletion for room-owned doors stay here so door gestures do not leak into generic
  * selection or corridor tooling.</p>
  */
+@SuppressWarnings("unused")
 public final class DoorTool implements EditorTool {
 
     private final DungeonMapState mapState;
-    private final DungeonMapLoadingService loadingService;
+    private final DungeonMapObject mapObject;
     private final ApplicationObject roomApplicationService;
     private final EditorInteractionState state;
 
@@ -57,12 +59,12 @@ public final class DoorTool implements EditorTool {
 
     public DoorTool(
             DungeonMapState mapState,
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             ApplicationObject roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
-        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
         this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.state = Objects.requireNonNull(state, "state");
         summaryLabel.setWrapText(true);
@@ -257,7 +259,7 @@ public final class DoorTool implements EditorTool {
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
@@ -279,7 +281,7 @@ public final class DoorTool implements EditorTool {
                         state.clearSelection();
                     }
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.createLocalDoor()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.createLocalDoor()", throwable)));
     }
 
     private void deleteLocalDoor(Long clusterId, int levelZ, GridSegment segment2x) {
@@ -287,7 +289,7 @@ public final class DoorTool implements EditorTool {
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
@@ -300,7 +302,7 @@ public final class DoorTool implements EditorTool {
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> state.clearSelection(),
-                throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.deleteLocalDoor()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.deleteLocalDoor()", throwable)));
     }
 
     private void createExteriorDoor(Long clusterId, int levelZ, GridSegment segment2x, GridSegment followUpSegment2x) {
@@ -308,7 +310,7 @@ public final class DoorTool implements EditorTool {
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
@@ -330,7 +332,7 @@ public final class DoorTool implements EditorTool {
                         state.clearSelection();
                     }
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.createExteriorDoor()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.createExteriorDoor()", throwable)));
     }
 
     private void deleteExteriorDoor(Long clusterId, int levelZ, GridSegment segment2x) {
@@ -338,7 +340,7 @@ public final class DoorTool implements EditorTool {
         if (mapId == null || clusterId == null || segment2x == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     roomApplicationService.editBoundary(new ClusterBoundaryEditRequest(
                             mapId,
@@ -351,7 +353,7 @@ public final class DoorTool implements EditorTool {
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> state.clearSelection(),
-                throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.deleteExteriorDoor()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("DoorTool.deleteExteriorDoor()", throwable)));
     }
 
     private void renderLocalDoorPane(Connection connection) {

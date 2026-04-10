@@ -1,6 +1,10 @@
 package features.world.dungeon.dungeonmap;
+
 import features.world.dungeon.dungeonmap.corridor.CorridorObject;
+import features.world.dungeon.dungeonmap.input.EnsureLoadedInput;
 import features.world.dungeon.dungeonmap.input.PersistClusterRewriteReboundsInput;
+import features.world.dungeon.dungeonmap.input.SelectMapInput;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.transition.TransitionObject;
 import features.world.dungeon.transition.input.PersistReboundConnectionsInput;
 
@@ -17,17 +21,59 @@ public final class DungeonMapObject {
     private final features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService;
     private final CorridorObject corridorObject;
     private final TransitionObject transitionObject;
+    private final features.world.dungeon.dungeonmap.application.DungeonMapLoadingService loadingService;
 
+    @SuppressWarnings("unused")
     public DungeonMapObject(
             features.world.dungeon.dungeonmap.repository.DungeonMapRepository mapRepository,
             features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
             CorridorObject corridorObject,
-            TransitionObject transitionObject
+            TransitionObject transitionObject,
+            features.world.dungeon.dungeonmap.application.DungeonMapLoadingService loadingService
     ) {
         this.mapRepository = java.util.Objects.requireNonNull(mapRepository, "mapRepository");
         this.mapApplicationService = java.util.Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.corridorObject = java.util.Objects.requireNonNull(corridorObject, "corridorObject");
         this.transitionObject = java.util.Objects.requireNonNull(transitionObject, "transitionObject");
+        this.loadingService = java.util.Objects.requireNonNull(loadingService, "loadingService");
+    }
+
+    /**
+     * Canonical map-owned initial-load handoff for shell surfaces. Selection policy remains in catalog; this owner
+     * owns the authoritative load/reload workflow that drives shared map state.
+     */
+    @SuppressWarnings("unused")
+    public void ensureLoaded(EnsureLoadedInput input) {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        loadingService.ensureLoaded();
+    }
+
+    /**
+     * Canonical map-owned explicit map-selection handoff for editor and runtime surfaces.
+     */
+    @SuppressWarnings("unused")
+    public void selectMap(SelectMapInput input) {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        loadingService.selectMap(input.mapId());
+    }
+
+    /**
+     * Canonical map-owned reload-after-write handoff. Mutations stay on their feature owners, then this owner
+     * restores shared map state from authoritative reloads instead of local mirrors.
+     */
+    public <T> void submitMutation(SubmitMutationInput<T> input) {
+        if (input == null) {
+            throw new IllegalArgumentException("input");
+        }
+        loadingService.submitMutation(
+                input.work(),
+                input.preferredMapIdResolver(),
+                input.onPersisted(),
+                input.onFailure());
     }
 
     /**

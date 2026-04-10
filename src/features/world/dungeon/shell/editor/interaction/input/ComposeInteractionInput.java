@@ -1,8 +1,9 @@
 package features.world.dungeon.shell.editor.interaction.input;
 
+@SuppressWarnings("unused")
 public record ComposeInteractionInput(
         features.world.dungeon.dungeonmap.state.DungeonMapState mapState,
-        features.world.dungeon.dungeonmap.application.DungeonMapLoadingService loadingService,
+        features.world.dungeon.dungeonmap.DungeonMapObject mapObject,
         features.world.dungeon.state.DungeonEditorSessionState sessionState,
         features.world.dungeon.dungeonmap.application.DungeonMapApplicationService mapApplicationService,
         features.world.dungeon.dungeonmap.cluster.application.ApplicationObject clusterApplicationService,

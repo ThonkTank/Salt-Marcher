@@ -21,6 +21,7 @@
 - `DungeonObject` — legacy dungeon composition seam — kept for compatibility under the final `dungeonclean` root while clean owners replace it incrementally.
 - `geometry` — public dungeon spatial seams use the canonical carriers from this slice instead of raw point or segment collections.
 - `dungeonmap/DungeonMapObject` — public loaded-map seam for cross-owner map reads and map-scoped workflows.
+- `dungeonmap/input/EnsureLoadedInput`, `SelectMapInput`, and `SubmitMutationInput` — canonical map-owned load/reload requests used by shell and editor flows.
 - `room/RoomObject` — public room seam for room-owned narration writes.
 - `runtime/RuntimeObject` — public runtime seam for cross-owner runtime workflows such as persisted runtime-state repair.
 - `stair/StairObject` — public stair seam for cross-owner stair workflows, starting with stair deletion.

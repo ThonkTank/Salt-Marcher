@@ -9,14 +9,15 @@ import features.world.dungeon.dungeonmap.api.PreviewMovedClusterRequest;
 import features.world.dungeon.dungeonmap.api.PreviewMovedLocalDoorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedCorridorRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.api.ResolveCorridorRequest;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterDoorMoveRequest;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterMoveRequest;
 import features.world.dungeon.dungeonmap.corridor.application.CorridorInputEditor;
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.dungeonmap.corridor.model.Corridor;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.dungeonmap.state.DungeonMapState;
@@ -65,7 +66,7 @@ public final class InteractionObject {
     public InteractionObject(ComposeInteractionInput input) {
         ComposeInteractionInput resolvedInput = Objects.requireNonNull(input, "input");
         DungeonMapState mapState = Objects.requireNonNull(resolvedInput.mapState(), "mapState");
-        DungeonMapLoadingService loadingService = Objects.requireNonNull(resolvedInput.loadingService(), "loadingService");
+        DungeonMapObject mapObject = Objects.requireNonNull(resolvedInput.mapObject(), "mapObject");
         DungeonEditorSessionState sessionState = Objects.requireNonNull(resolvedInput.sessionState(), "sessionState");
         DungeonMapApplicationService mapApplicationService =
                 Objects.requireNonNull(resolvedInput.mapApplicationService(), "mapApplicationService");
@@ -85,7 +86,7 @@ public final class InteractionObject {
 
         StairTool stairTool = new StairTool(
                 mapState,
-                loadingService,
+                mapObject,
                 mapApplicationService,
                 stairApplicationService,
                 interactionState);
@@ -93,7 +94,7 @@ public final class InteractionObject {
         List<EditorTool> editorTools = List.of(
                 new SelectionEditorTool(
                         mapState,
-                        loadingService,
+                        mapObject,
                         mapApplicationService,
                         clusterApplicationService,
                         corridorApplicationService,
@@ -103,36 +104,36 @@ public final class InteractionObject {
                         interactionState),
                 new PaintTool(
                         mapState,
-                        loadingService,
+                        mapObject,
                         sessionState,
                         clusterApplicationService,
                         interactionState),
                 new FloorTool(
                         mapState,
-                        loadingService,
+                        mapObject,
                         sessionState,
                         clusterApplicationService,
                         interactionState),
                 new BoundaryTool(
                         mapState,
-                        loadingService,
+                        mapObject,
                         sessionState,
                         clusterApplicationService,
                         interactionState),
                 new DoorTool(
                         mapState,
-                        loadingService,
+                        mapObject,
                         clusterApplicationService,
                         interactionState),
                 new CorridorTool(
                         mapState,
-                        loadingService,
+                        mapObject,
                         corridorApplicationService,
                         interactionState),
                 stairTool,
                 new TransitionTool(
                         mapState,
-                        loadingService,
+                        mapObject,
                         sessionState,
                         mapApplicationService,
                         transitionApplicationService,
@@ -163,7 +164,7 @@ public final class InteractionObject {
     private static final class SelectionEditorTool implements EditorTool {
 
         private final DungeonMapState mapState;
-        private final DungeonMapLoadingService loadingService;
+        private final DungeonMapObject mapObject;
         private final DungeonMapApplicationService mapApplicationService;
         private final ApplicationObject roomApplicationService;
         private final DungeonCorridorApplicationService corridorApplicationService;
@@ -185,7 +186,7 @@ public final class InteractionObject {
 
         private SelectionEditorTool(
                 DungeonMapState mapState,
-                DungeonMapLoadingService loadingService,
+                DungeonMapObject mapObject,
                 DungeonMapApplicationService mapApplicationService,
                 ApplicationObject roomApplicationService,
                 DungeonCorridorApplicationService corridorApplicationService,
@@ -195,7 +196,7 @@ public final class InteractionObject {
                 EditorInteractionState state
         ) {
             this.mapState = Objects.requireNonNull(mapState, "mapState");
-            this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+            this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
             this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
             this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
             this.corridorApplicationService = Objects.requireNonNull(corridorApplicationService, "corridorApplicationService");
@@ -402,7 +403,7 @@ public final class InteractionObject {
                 state.clearPreview();
                 Long mapId = mapState.activeMapId();
                 if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapId != null) {
-                    loadingService.submitMutation(
+                    mapObject.submitMutation(new SubmitMutationInput<>(
                             () -> {
                                 corridorApplicationService.moveNode(new DungeonCorridorApplicationService.MoveCorridorNodeRequest(
                                         mapId,
@@ -416,7 +417,7 @@ public final class InteractionObject {
                                     current.corridorId(),
                                     current.nodeId(),
                                     current.currentPoint())),
-                            throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.released()", throwable));
+                            throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.released()", throwable)));
                 }
                 return true;
             }
@@ -426,7 +427,7 @@ public final class InteractionObject {
                 state.clearPreview();
                 Long mapId = mapState.activeMapId();
                 if (!Objects.equals(current.startPoint(), current.currentPoint()) && mapId != null) {
-                    loadingService.submitMutation(
+                    mapObject.submitMutation(new SubmitMutationInput<>(
                             () -> {
                                 corridorApplicationService.promoteTileNodeAndMove(
                                         new DungeonCorridorApplicationService.PromoteCorridorTileNodeRequest(
@@ -439,7 +440,7 @@ public final class InteractionObject {
                             },
                             updatedMapId -> updatedMapId,
                             ignored -> state.selectRef(new DungeonSelectionRef.CorridorRef(current.corridorId())),
-                            throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.released()", throwable));
+                            throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.released()", throwable)));
                 }
                 return true;
             }
@@ -453,7 +454,7 @@ public final class InteractionObject {
             state.clearPreview();
             dragSession = null;
             if (mapId != null && clusterId != null && !translation.isZero()) {
-                loadingService.submitMutation(
+                mapObject.submitMutation(new SubmitMutationInput<>(
                         () -> {
                             roomApplicationService.moveCluster(new ClusterMoveRequest(
                                     mapId,
@@ -464,7 +465,7 @@ public final class InteractionObject {
                         updatedMapId -> updatedMapId,
                         ignored -> {
                         },
-                        throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.released()", throwable));
+                        throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.released()", throwable)));
             }
             return true;
         }
@@ -598,7 +599,7 @@ public final class InteractionObject {
                     || previewStairMap(session) == null) {
                 return;
             }
-            loadingService.submitMutation(
+            mapObject.submitMutation(new SubmitMutationInput<>(
                     () -> {
                         stairApplicationService.moveStair(new DungeonStairApplicationService.MoveStairRequest(
                                 mapId,
@@ -612,7 +613,7 @@ public final class InteractionObject {
                         adoptMovedStairDraft(session.stairId(), movedDraft);
                         state.selectRef(new DungeonSelectionRef.StairRef(session.stairId()));
                     },
-                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitStairMove()", throwable));
+                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitStairMove()", throwable)));
         }
 
         private DungeonMap previewMap() {
@@ -764,7 +765,7 @@ public final class InteractionObject {
             if (session == null || session.clusterId() == null || previewLocalDoorMap(session) == null) {
                 return;
             }
-            loadingService.submitMutation(
+            mapObject.submitMutation(new SubmitMutationInput<>(
                     () -> {
                         roomApplicationService.moveDoor(new ClusterDoorMoveRequest(
                                 mapId,
@@ -778,7 +779,7 @@ public final class InteractionObject {
                     ignored -> state.selectRef(session.baseMap().doorSelectionRefAt(
                             session.levelZ(),
                             session.targetBoundaryRef().boundarySegment())),
-                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitLocalDoorMove()", throwable));
+                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitLocalDoorMove()", throwable)));
         }
 
         private void commitCorridorDoorMove(Long mapId, DoorDragSession session) {
@@ -794,7 +795,7 @@ public final class InteractionObject {
                     || targetDoorRef == null) {
                 return;
             }
-            loadingService.submitMutation(
+            mapObject.submitMutation(new SubmitMutationInput<>(
                     () -> {
                         corridorApplicationService.moveDoor(new DungeonCorridorApplicationService.MoveCorridorDoorRequest(
                                 mapId,
@@ -807,7 +808,7 @@ public final class InteractionObject {
                     ignored -> state.selectRef(session.baseMap().doorSelectionRefAt(
                             session.levelZ(),
                             session.targetBoundaryRef().boundarySegment())),
-                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitCorridorDoorMove()", throwable));
+                    throwable -> UiErrorReporter.reportBackgroundFailure("SelectionEditorTool.commitCorridorDoorMove()", throwable)));
         }
 
         private DungeonStairApplicationService.StairDraft movedStairDraft(StairDragSession session) {

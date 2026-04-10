@@ -4,10 +4,11 @@ import features.world.dungeon.application.stair.DungeonStairApplicationService;
 import features.world.dungeon.application.stair.StairDraftResolver;
 import features.world.dungeon.application.stair.StairNameGenerator;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.api.PreviewAddedStairRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedStairRequest;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
@@ -54,10 +55,11 @@ import java.util.stream.Collectors;
  * <p>The tool owns stair form state and preview publication, while stair validation and path resolution stay in the
  * shared stair workflow seams so preview and commit cannot drift apart.</p>
  */
+@SuppressWarnings("unused")
 public final class StairTool implements EditorTool {
 
     private final DungeonMapState mapState;
-    private final DungeonMapLoadingService loadingService;
+    private final DungeonMapObject mapObject;
     private final DungeonMapApplicationService mapApplicationService;
     private final DungeonStairApplicationService stairApplicationService;
     private final EditorInteractionState state;
@@ -123,13 +125,13 @@ public final class StairTool implements EditorTool {
 
     public StairTool(
             DungeonMapState mapState,
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             DungeonMapApplicationService mapApplicationService,
             DungeonStairApplicationService stairApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
-        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
         this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.stairApplicationService = Objects.requireNonNull(stairApplicationService, "stairApplicationService");
         this.state = Objects.requireNonNull(state, "state");
@@ -553,7 +555,7 @@ public final class StairTool implements EditorTool {
         if (ctx != null && ctx.resolvedRef() != null) {
             state.selectRef(ctx.resolvedRef());
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     stairApplicationService.deleteStair(new DungeonStairApplicationService.DeleteStairRequest(mapId, stairRef.stairId()));
                     return mapId;
@@ -565,7 +567,7 @@ public final class StairTool implements EditorTool {
                     }
                     state.clearSelection();
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("StairTool.handleStairDeletePressed()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("StairTool.handleStairDeletePressed()", throwable)));
         return true;
     }
 
@@ -680,7 +682,7 @@ public final class StairTool implements EditorTool {
         }
         clearStairStatusOverride();
         if (stairDraftId == null) {
-            loadingService.submitMutation(
+            mapObject.submitMutation(new SubmitMutationInput<>(
                     () -> stairApplicationService.createStair(
                             new DungeonStairApplicationService.CreateStairRequest(mapId, resolution.draft())),
                     createdId -> mapId,
@@ -695,11 +697,11 @@ public final class StairTool implements EditorTool {
                                 ? "Treppe konnte nicht erstellt werden"
                                 : throwable.getMessage();
                         UiErrorReporter.reportBackgroundFailure("StairTool.commitStairDraft()", throwable);
-                    });
+                    }));
             return;
         }
         long stairId = stairDraftId;
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     stairApplicationService.updateStair(
                             new DungeonStairApplicationService.UpdateStairRequest(mapId, stairId, resolution.draft()));
@@ -716,7 +718,7 @@ public final class StairTool implements EditorTool {
                             ? "Treppe konnte nicht aktualisiert werden"
                             : throwable.getMessage();
                     UiErrorReporter.reportBackgroundFailure("StairTool.commitStairDraft()", throwable);
-                });
+                }));
     }
 
     private void cancelStairDraft() {

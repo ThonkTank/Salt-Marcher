@@ -3,7 +3,8 @@ package features.world.dungeon.shell.editor.interaction.state;
 import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterFloorEditRequest;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
@@ -35,10 +36,11 @@ import java.util.Set;
  * <p>The drag-window interaction is shared with paint mode, but this tool is the owner of the extra filtering that
  * keeps previews and commits inside valid room cells on the active level.</p>
  */
+@SuppressWarnings("unused")
 public final class FloorTool implements EditorTool {
 
     private final DungeonMapState mapState;
-    private final DungeonMapLoadingService loadingService;
+    private final DungeonMapObject mapObject;
     private final DungeonEditorSessionState sessionState;
     private final ApplicationObject roomApplicationService;
     private final EditorInteractionState state;
@@ -47,13 +49,13 @@ public final class FloorTool implements EditorTool {
 
     public FloorTool(
             DungeonMapState mapState,
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             DungeonEditorSessionState sessionState,
             ApplicationObject roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
-        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.state = Objects.requireNonNull(state, "state");
@@ -124,7 +126,7 @@ public final class FloorTool implements EditorTool {
         if (mapId == null || cells.isEmpty()) {
             return true;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     roomApplicationService.editFloor(new ClusterFloorEditRequest(
                             mapId,
@@ -138,7 +140,7 @@ public final class FloorTool implements EditorTool {
                 updatedMapId -> updatedMapId,
                 ignored -> {
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("FloorTool.released()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("FloorTool.released()", throwable)));
         return true;
     }
 

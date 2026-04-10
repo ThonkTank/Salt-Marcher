@@ -2,8 +2,9 @@ package features.world.dungeon.shell.editor.interaction.state;
 
 import features.world.dungeon.dungeonmap.corridor.application.DungeonCorridorApplicationService;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
 import features.world.dungeon.geometry.CardinalDirection;
 import features.world.dungeon.geometry.GridPoint;
@@ -41,10 +42,11 @@ import java.util.stream.Collectors;
  * <p>This tool owns the UI-side meaning of door-to-door and door-to-wall corridor gestures. Canonical corridor graph
  * validation and persistence stay in model and application owners.</p>
  */
+@SuppressWarnings("unused")
 public final class CorridorTool implements EditorTool {
 
     private final DungeonMapState mapState;
-    private final DungeonMapLoadingService loadingService;
+    private final DungeonMapObject mapObject;
     private final DungeonCorridorApplicationService corridorApplicationService;
     private final EditorInteractionState state;
 
@@ -60,12 +62,12 @@ public final class CorridorTool implements EditorTool {
 
     public CorridorTool(
             DungeonMapState mapState,
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             DungeonCorridorApplicationService corridorApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
-        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
         this.corridorApplicationService = Objects.requireNonNull(corridorApplicationService, "corridorApplicationService");
         this.state = Objects.requireNonNull(state, "state");
         summaryLabel.setWrapText(true);
@@ -250,7 +252,7 @@ public final class CorridorTool implements EditorTool {
         if (mapId == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> corridorApplicationService.createDoorToDoor(new DungeonCorridorApplicationService.CreateDoorToDoorRequest(
                         mapId,
                         mapState.activeProjectionLevel(),
@@ -261,7 +263,7 @@ public final class CorridorTool implements EditorTool {
                     clearPendingEndpoint();
                     state.selectRef(corridorOwnerRef(createdId));
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.createDoorToDoor()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.createDoorToDoor()", throwable)));
     }
 
     private void attachDoorToBoundary(CorridorEndpoint endpoint, Long corridorId, GridSegment boundarySegment2x) {
@@ -272,7 +274,7 @@ public final class CorridorTool implements EditorTool {
         if (mapId == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     corridorApplicationService.attachDoorToCorridorBoundary(
                             new DungeonCorridorApplicationService.AttachDoorToCorridorBoundaryRequest(
@@ -287,7 +289,7 @@ public final class CorridorTool implements EditorTool {
                     clearPendingEndpoint();
                     state.selectRef(corridorOwnerRef(corridorId));
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.attachDoorToBoundary()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.attachDoorToBoundary()", throwable)));
     }
 
     private void deleteCorridorNode(Long corridorId, Long nodeId) {
@@ -295,7 +297,7 @@ public final class CorridorTool implements EditorTool {
         if (mapId == null || corridorId == null || nodeId == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     corridorApplicationService.deleteNode(new DungeonCorridorApplicationService.DeleteCorridorNodeRequest(
                             mapId,
@@ -305,7 +307,7 @@ public final class CorridorTool implements EditorTool {
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> state.clearSelection(),
-                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.deleteCorridorNode()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.deleteCorridorNode()", throwable)));
     }
 
     private void deleteCorridorSegment(Long corridorId, Long segmentId) {
@@ -313,7 +315,7 @@ public final class CorridorTool implements EditorTool {
         if (mapId == null || corridorId == null || segmentId == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     corridorApplicationService.deleteSegment(new DungeonCorridorApplicationService.DeleteCorridorSegmentRequest(
                             mapId,
@@ -323,7 +325,7 @@ public final class CorridorTool implements EditorTool {
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> state.clearSelection(),
-                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.deleteCorridorSegment()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.deleteCorridorSegment()", throwable)));
     }
 
     private void deleteCorridorDoor(Long corridorId, GridSegment boundarySegment2x) {
@@ -331,7 +333,7 @@ public final class CorridorTool implements EditorTool {
         if (mapId == null || corridorId == null || boundarySegment2x == null) {
             return;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     corridorApplicationService.deleteDoor(new DungeonCorridorApplicationService.DeleteCorridorDoorRequest(
                             mapId,
@@ -341,7 +343,7 @@ public final class CorridorTool implements EditorTool {
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> state.clearSelection(),
-                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.deleteCorridorDoor()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("CorridorTool.deleteCorridorDoor()", throwable)));
     }
 
     private void renderConnectionPane(Connection connection, Corridor corridor) {

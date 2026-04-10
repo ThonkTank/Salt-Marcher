@@ -1,6 +1,7 @@
 package features.world.dungeon.shell.editor.statepane;
 
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.dungeonmap.cluster.model.Cluster;
 import features.world.dungeon.dungeonmap.connections.input.ConnectionEndpoint;
 import features.world.dungeon.dungeonmap.connections.input.DoorExitCatalog;
@@ -28,11 +29,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
  * Editor-owned lower-right pane surface for room narration editing.
  */
+@SuppressWarnings("unused")
 public final class StatePaneObject extends VBox {
 
     private final VBox narrationContent = new VBox(8);
@@ -42,7 +45,7 @@ public final class StatePaneObject extends VBox {
     public StatePaneObject(ComposeStatePaneInput input) {
         ComposeStatePaneInput resolvedInput = Objects.requireNonNull(input, "input");
         DungeonMapState mapState = Objects.requireNonNull(resolvedInput.mapState(), "mapState");
-        DungeonMapLoadingService loadingService = Objects.requireNonNull(resolvedInput.loadingService(), "loadingService");
+        DungeonMapObject mapObject = Objects.requireNonNull(resolvedInput.mapObject(), "mapObject");
         RoomObject roomObject = Objects.requireNonNull(resolvedInput.roomObject(), "roomObject");
         EditorInteractionState interactionState = Objects.requireNonNull(resolvedInput.interactionState(), "interactionState");
 
@@ -94,18 +97,9 @@ public final class StatePaneObject extends VBox {
         Runnable refresh = () -> {
             DungeonMap layout = mapState.activeMap();
             DungeonSelectionRef selectedRef = interactionState.selectedRef();
-            Room selectedRoom = null;
-            if (layout != null && selectedRef instanceof DungeonSelectionRef.RoomRef roomRef) {
-                for (Cluster cluster : layout.clusters()) {
-                    Room room = cluster == null ? null : cluster.roomTopology().findRoom(roomRef.roomId());
-                    if (room != null) {
-                        selectedRoom = room;
-                        break;
-                    }
-                }
-            }
+            Room selectedRoom = findSelectedRoom(layout, selectedRef);
 
-            java.util.function.BiFunction<Cluster, Room, RoomNarrationCard> buildCard = (cluster, room) -> new RoomNarrationCard(
+            BiFunction<Cluster, Room, RoomNarrationCard> buildCard = (cluster, room) -> new RoomNarrationCard(
                     room.roomId() == null ? 0L : room.roomId(),
                     room.name(),
                     room.narration().visualDescription(),
@@ -127,24 +121,20 @@ public final class StatePaneObject extends VBox {
                                     room.narration().exitDescription(exit.levelZ(), exit.localCell(), exit.direction())))
                             .toList());
 
-            List<RoomNarrationCard> cards;
-            if (selectedRoom != null) {
-                Cluster cluster = layout.findCluster(selectedRoom.clusterId());
-                cards = List.of(buildCard.apply(cluster, selectedRoom));
-            } else {
-                Cluster cluster = layout == null ? null : layout.clusterOnLevel(selectedRef, mapState.activeProjectionLevel());
-                if (cluster == null) {
-                    cards = List.of();
-                } else {
-                    cards = cluster.roomTopology().rooms().stream()
+            Cluster visibleCluster = selectedRoom == null
+                    ? (layout == null ? null : layout.clusterOnLevel(selectedRef, mapState.activeProjectionLevel()))
+                    : null;
+            List<RoomNarrationCard> cards = selectedRoom != null
+                    ? List.of(buildCard.apply(layout.findCluster(selectedRoom.clusterId()), selectedRoom))
+                    : (visibleCluster == null
+                    ? List.of()
+                    : visibleCluster.roomTopology().rooms().stream()
                             .filter(Objects::nonNull)
                             .sorted(Comparator
                                     .comparing(Room::name, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
                                     .thenComparing(Room::roomId, Comparator.nullsLast(Long::compareTo)))
-                            .map(room -> buildCard.apply(cluster, room))
-                            .toList();
-                }
-            }
+                            .map(room -> buildCard.apply(visibleCluster, room))
+                            .toList());
 
             narrationContent.getChildren().clear();
             narrationSaveButtons.clear();
@@ -191,7 +181,7 @@ public final class StatePaneObject extends VBox {
                                 exitAreas.get(index).getText()));
                     }
                     setSaveState.accept(card.roomId(), new SaveUiState(true, "Speichert..."));
-                    loadingService.submitMutation(
+                    mapObject.submitMutation(new SubmitMutationInput<>(
                             () -> {
                                 roomObject.saveNarration(new SaveNarrationInput(
                                         card.roomId(),
@@ -206,7 +196,7 @@ public final class StatePaneObject extends VBox {
                                 setSaveState.accept(
                                         card.roomId(),
                                         new SaveUiState(false, "Raumbeschreibung konnte nicht gespeichert werden."));
-                            });
+                            }));
                 });
                 roomBox.getChildren().addAll(statusLabel, saveButton);
 
@@ -222,6 +212,22 @@ public final class StatePaneObject extends VBox {
         interactionState.addListener(refresh);
         mapState.addListener(refresh);
         refresh.run();
+    }
+
+    private static Room findSelectedRoom(
+            DungeonMap layout,
+            DungeonSelectionRef selectedRef
+    ) {
+        if (layout == null || !(selectedRef instanceof DungeonSelectionRef.RoomRef roomRef)) {
+            return null;
+        }
+        for (Cluster cluster : layout.clusters()) {
+            Room room = cluster == null ? null : cluster.roomTopology().findRoom(roomRef.roomId());
+            if (room != null) {
+                return room;
+            }
+        }
+        return null;
     }
 
     public void showStatePane(ShowStatePaneInput input) {

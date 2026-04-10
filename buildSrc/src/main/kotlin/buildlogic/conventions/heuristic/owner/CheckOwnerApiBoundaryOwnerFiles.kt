@@ -114,6 +114,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.world.hexmap.ui.overworld" ||
         sourceFile.context.packageName == "features.world.dungeon.application.transition" ||
         sourceFile.context.packageName == "features.world.dungeon.catalog" ||
+        sourceFile.context.packageName == "features.world.dungeon.dungeonmap" ||
         sourceFile.context.packageName == "features.world.dungeon.dungeonmap.application" ||
         sourceFile.context.packageName == "features.world.dungeon.dungeonmap.cluster.application" ||
         sourceFile.context.packageName == "features.world.dungeon.dungeonmap.cluster.model" ||
@@ -123,6 +124,9 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.world.dungeon.dungeonmap.structure.model.room" ||
         sourceFile.context.packageName == "features.world.dungeon.geometry" ||
         sourceFile.context.packageName == "features.world.dungeon.model.structures.stair" ||
+        sourceFile.context.packageName == "features.world.dungeon.shell" ||
+        sourceFile.context.packageName == "features.world.dungeon.shell.editor.statepane" ||
+        sourceFile.context.packageName == "features.world.dungeon.shell.runtime.surface" ||
         sourceFile.context.packageName == "features.world.dungeon.shell.interaction" ||
         sourceFile.context.packageName == "features.world.read" ||
         sourceFile.context.packageName == "features.world.dungeon.application.runtime" ||

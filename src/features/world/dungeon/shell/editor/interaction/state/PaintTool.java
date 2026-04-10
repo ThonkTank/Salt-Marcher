@@ -3,7 +3,8 @@ package features.world.dungeon.shell.editor.interaction.state;
 import features.world.dungeon.dungeonmap.cluster.application.ApplicationObject;
 import features.world.dungeon.dungeonmap.cluster.application.input.ClusterSurfaceRewriteRequest;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.geometry.GridArea;
 import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.interaction.DungeonSelectionRef;
@@ -31,10 +32,11 @@ import java.util.Set;
  * <p>This tool owns paint-window draft semantics and publishes preview cells only. Room mutation rules themselves stay
  * in room workflows.</p>
  */
+@SuppressWarnings("unused")
 public final class PaintTool implements EditorTool {
 
     private final DungeonMapState mapState;
-    private final DungeonMapLoadingService loadingService;
+    private final DungeonMapObject mapObject;
     private final DungeonEditorSessionState sessionState;
     private final ApplicationObject roomApplicationService;
     private final EditorInteractionState state;
@@ -43,13 +45,13 @@ public final class PaintTool implements EditorTool {
 
     public PaintTool(
             DungeonMapState mapState,
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             DungeonEditorSessionState sessionState,
             ApplicationObject roomApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
-        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.roomApplicationService = Objects.requireNonNull(roomApplicationService, "roomApplicationService");
         this.state = Objects.requireNonNull(state, "state");
@@ -126,7 +128,7 @@ public final class PaintTool implements EditorTool {
         if (mapId == null || cells.isEmpty()) {
             return true;
         }
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     roomApplicationService.rewriteSurface(new ClusterSurfaceRewriteRequest(
                             mapId,
@@ -140,7 +142,7 @@ public final class PaintTool implements EditorTool {
                 updatedMapId -> updatedMapId,
                 ignored -> {
                 },
-                throwable -> UiErrorReporter.reportBackgroundFailure("PaintTool.released()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("PaintTool.released()", throwable)));
         return true;
     }
 

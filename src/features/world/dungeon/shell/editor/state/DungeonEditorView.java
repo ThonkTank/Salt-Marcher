@@ -2,7 +2,8 @@ package features.world.dungeon.shell.editor.state;
 
 import features.world.dungeon.catalog.application.DungeonMapCatalogService;
 import features.world.dungeon.canvas.base.DungeonEditorRenderState;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
+import features.world.dungeon.dungeonmap.input.SelectMapInput;
 import features.world.dungeon.shell.AbstractDungeonMapView;
 import features.world.dungeon.shell.editor.interaction.state.EditorInteraction;
 import features.world.dungeon.state.DungeonEditorSessionState;
@@ -13,6 +14,7 @@ import ui.shell.NavigationIcons;
 
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public final class DungeonEditorView extends AbstractDungeonMapView {
 
     private final DungeonEditorControls controls = new DungeonEditorControls();
@@ -20,18 +22,18 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
     private Long previousMapId;
 
     public DungeonEditorView(
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             DungeonMapState mapState,
             DungeonMapCatalogService mapCatalogService,
             DungeonEditorSessionState sessionState,
             EditorInteraction editorInteraction
     ) {
-        super(true, loadingService, mapState);
+        super(true, mapObject, mapState);
         EditorInteractionState interactionState = editorInteraction.state();
 
         DungeonMapDropdownController mapDropdownController = new DungeonMapDropdownController(
                 mapCatalogService,
-                loadingService,
+                mapObject,
                 mapState);
 
         // Editor interaction state → one batched render payload for the workspace
@@ -50,7 +52,7 @@ public final class DungeonEditorView extends AbstractDungeonMapView {
         // Control callbacks → state mutations
         controls.setOnMapSelected(entry -> {
             if (entry != null) {
-                loadingService.selectMap(entry.mapId());
+                mapObject.selectMap(new SelectMapInput(entry.mapId()));
             }
         });
         controls.setOnNewMapRequested(mapDropdownController::showCreate);

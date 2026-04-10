@@ -5,9 +5,10 @@ import features.world.dungeon.application.transition.DungeonTransitionApplicatio
 import features.world.dungeon.application.transition.TransitionConnectionBuilder;
 import features.world.dungeon.catalog.application.DungeonMapCatalogEntry;
 import features.world.dungeon.canvas.base.DungeonCanvasPointerEvent;
+import features.world.dungeon.dungeonmap.DungeonMapObject;
 import features.world.dungeon.dungeonmap.application.DungeonMapApplicationService;
-import features.world.dungeon.dungeonmap.application.DungeonMapLoadingService;
 import features.world.dungeon.dungeonmap.api.DoorDescription;
+import features.world.dungeon.dungeonmap.input.SubmitMutationInput;
 import features.world.dungeon.dungeonmap.api.PreviewAddedTransitionRequest;
 import features.world.dungeon.dungeonmap.api.PreviewReplacedTransitionRequest;
 import features.world.dungeon.dungeonmap.model.DungeonMap;
@@ -66,7 +67,7 @@ import java.util.Set;
 public final class TransitionTool implements EditorTool {
 
     private final DungeonMapState mapState;
-    private final DungeonMapLoadingService loadingService;
+    private final DungeonMapObject mapObject;
     private final DungeonEditorSessionState sessionState;
     private final DungeonMapApplicationService mapApplicationService;
     private final DungeonTransitionApplicationService transitionApplicationService;
@@ -163,14 +164,14 @@ public final class TransitionTool implements EditorTool {
 
     public TransitionTool(
             DungeonMapState mapState,
-            DungeonMapLoadingService loadingService,
+            DungeonMapObject mapObject,
             DungeonEditorSessionState sessionState,
             DungeonMapApplicationService mapApplicationService,
             DungeonTransitionApplicationService transitionApplicationService,
             EditorInteractionState state
     ) {
         this.mapState = Objects.requireNonNull(mapState, "mapState");
-        this.loadingService = Objects.requireNonNull(loadingService, "loadingService");
+        this.mapObject = Objects.requireNonNull(mapObject, "mapObject");
         this.sessionState = Objects.requireNonNull(sessionState, "sessionState");
         this.mapApplicationService = Objects.requireNonNull(mapApplicationService, "mapApplicationService");
         this.transitionApplicationService = Objects.requireNonNull(transitionApplicationService, "transitionApplicationService");
@@ -653,7 +654,7 @@ public final class TransitionTool implements EditorTool {
         state.clearSelection();
         Long selectedPreparedTransitionId = preparedTransitionId;
         boolean placingPrepared = selectedPreparedTransitionId != null && selectedPreparedTransitionId > 0;
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     if (placingPrepared) {
                         transitionApplicationService.placePrepared(selectedPreparedTransitionId, sourceRef, levelZ);
@@ -672,7 +673,7 @@ public final class TransitionTool implements EditorTool {
                             ? defaultCreateFailureMessage(placingPrepared)
                             : throwable.getMessage());
                     UiErrorReporter.reportBackgroundFailure("TransitionTool.handleDoorCreatePressed()", throwable);
-                });
+                }));
         return true;
     }
 
@@ -700,14 +701,14 @@ public final class TransitionTool implements EditorTool {
             return false;
         }
         state.selectRef(ctx == null ? null : ctx.resolvedRef());
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     transitionApplicationService.delete(transition.transitionId());
                     return mapId;
                 },
                 updatedMapId -> updatedMapId,
                 ignored -> state.clearSelection(),
-                throwable -> UiErrorReporter.reportBackgroundFailure("TransitionTool.handleDeletePressed()", throwable));
+                throwable -> UiErrorReporter.reportBackgroundFailure("TransitionTool.handleDeletePressed()", throwable)));
         return true;
     }
 
@@ -817,7 +818,7 @@ public final class TransitionTool implements EditorTool {
         boolean placingPrepared = selectedPreparedTransitionId != null && selectedPreparedTransitionId > 0;
         clearStairStatusOverride();
         clearPlacementError();
-        loadingService.submitMutation(
+        mapObject.submitMutation(new SubmitMutationInput<>(
                 () -> {
                     if (placingPrepared) {
                         transitionApplicationService.placePreparedStair(selectedPreparedTransitionId, resolution.draft());
@@ -837,7 +838,7 @@ public final class TransitionTool implements EditorTool {
                             : throwable.getMessage();
                     UiErrorReporter.reportBackgroundFailure("TransitionTool.commitStairDraft()", throwable);
                     refreshStatePane();
-                });
+                }));
     }
 
     private TransitionStairDraftResolution resolveCurrentStairDraft(boolean allowSingleStop) {

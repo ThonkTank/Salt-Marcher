@@ -21,14 +21,14 @@ public final class EditorObject {
                 new features.world.dungeon.shell.editor.statepane.StatePaneObject(
                         new features.world.dungeon.shell.editor.statepane.input.ComposeStatePaneInput(
                                 resolvedInput.mapState(),
-                                resolvedInput.loadingService(),
+                                resolvedInput.mapObject(),
                                 resolvedInput.roomObject(),
                                 interactionState));
         features.world.dungeon.shell.editor.interaction.InteractionObject interactionObject =
                 new features.world.dungeon.shell.editor.interaction.InteractionObject(
                         new features.world.dungeon.shell.editor.interaction.input.ComposeInteractionInput(
                                 resolvedInput.mapState(),
-                                resolvedInput.loadingService(),
+                                resolvedInput.mapObject(),
                                 resolvedInput.sessionState(),
                                 resolvedInput.mapApplicationService(),
                                 resolvedInput.clusterApplicationService(),
@@ -43,7 +43,7 @@ public final class EditorObject {
                         new features.world.dungeon.shell.editor.interaction.input.EditorInteractionInput())
                         .editorInteraction();
         ui.shell.AppView dungeonEditorView = new features.world.dungeon.shell.editor.state.DungeonEditorView(
-                resolvedInput.loadingService(),
+                resolvedInput.mapObject(),
                 resolvedInput.mapState(),
                 resolvedInput.mapCatalogService(),
                 resolvedInput.sessionState(),

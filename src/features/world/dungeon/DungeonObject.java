@@ -28,6 +28,7 @@ public final class DungeonObject {
 
     private final ViewsInput views;
 
+    @SuppressWarnings("unused")
     public DungeonObject(ComposeDungeonInput input) {
         ComposeDungeonInput resolvedInput = Objects.requireNonNull(input, "input");
         DetailsNavigator detailsNavigator = Objects.requireNonNull(resolvedInput.detailsNavigator(), "detailsNavigator");
@@ -55,11 +56,17 @@ public final class DungeonObject {
                         mapApplicationService);
         DungeonMapLoadResolver loadResolver = new DungeonMapLoadResolver(mapRepository);
         TransitionObject transitionObject = new TransitionObject();
+        features.world.dungeon.dungeonmap.state.DungeonMapState mapState =
+                new features.world.dungeon.dungeonmap.state.DungeonMapState();
+        DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
+                loadResolver,
+                mapState);
         DungeonMapObject mapObject = new DungeonMapObject(
                 mapRepository,
                 mapApplicationService,
                 new CorridorObject(corridorRepository),
-                transitionObject);
+                transitionObject,
+                loadingService);
         ApplicationObject clusterApplicationService = new ApplicationObject(
                 mapApplicationService,
                 mapRepository,
@@ -83,11 +90,6 @@ public final class DungeonObject {
                 mapRepository,
                 corridorRepository,
                 mapApplicationService);
-        features.world.dungeon.dungeonmap.state.DungeonMapState mapState =
-                new features.world.dungeon.dungeonmap.state.DungeonMapState();
-        DungeonMapLoadingService loadingService = new DungeonMapLoadingService(
-                loadResolver,
-                mapState);
         features.world.dungeon.state.DungeonEditorSessionState editorSessionState =
                 new features.world.dungeon.state.DungeonEditorSessionState();
         features.world.dungeon.shell.interaction.DungeonHitCollector hitCollector =
@@ -96,7 +98,7 @@ public final class DungeonObject {
         ui.shell.AppView dungeonView = new features.world.dungeon.shell.runtime.surface.SurfaceObject(
                 "Dungeon",
                 false,
-                loadingService,
+                mapObject,
                 mapState,
                 runtimeApplicationService,
                 detailsNavigator,
@@ -104,7 +106,7 @@ public final class DungeonObject {
                 hitCollector);
 
         EditorObject editorObject = new EditorObject(new ComposeEditorInput(
-                loadingService,
+                mapObject,
                 mapState,
                 mapCatalogService,
                 editorSessionState,
