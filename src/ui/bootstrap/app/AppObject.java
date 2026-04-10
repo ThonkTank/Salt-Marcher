@@ -11,7 +11,9 @@ import features.spells.api.SpellCatalogModule;
 import features.tables.TablesObject;
 import features.tables.input.CreateWorkspaceViewInput;
 import features.tables.input.SetCreatureFilterDataInput;
-import features.world.api.ApiObject;
+import features.world.WorldObject;
+import features.world.input.RegisterScenesInput;
+import features.world.input.ViewsInput;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.application.Preloader;
@@ -87,9 +89,9 @@ public final class AppObject extends Application {
         shell.addPersistentToolbarItem(partyModule.toolbarItem());
         adventuringDayToolbarModule.refreshActivePartyState();
 
-        ApiObject worldApi = new ApiObject(new features.world.api.state.ApiState(shell.getDetailsNavigator()));
-        worldApi.registerScenes(new features.world.api.input.RegisterScenesInput(shell.getSceneRegistry()));
-        var worldViews = worldApi.views(null);
+        WorldObject worldObject = new WorldObject(shell.getDetailsNavigator());
+        worldObject.registerScenes(new RegisterScenesInput(shell.getSceneRegistry()));
+        var worldViews = worldObject.views(new ViewsInput(null, null, null, null));
         AppView overworldView = worldViews.overworldView();
         AppView mapEditorView = worldViews.mapEditorView();
         AppView dungeonView = worldViews.dungeonView();

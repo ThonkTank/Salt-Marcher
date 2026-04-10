@@ -98,6 +98,8 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.loottable.ui" ||
         sourceFile.context.packageName == "features.tables" ||
         sourceFile.context.packageName == "features.tables.api" ||
+        sourceFile.context.packageName == "features.world" ||
+        sourceFile.context.packageName == "features.world.api" ||
         sourceFile.context.packageName == "features.world.dungeon.application.runtime" ||
         sourceFile.context.packageName == "features.world.hexmap.service.adapter" ||
         sourceFile.context.packageName == "shared.crawler.config" ||
