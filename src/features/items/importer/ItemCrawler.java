@@ -8,11 +8,11 @@ import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
 import shared.crawler.config.input.LoadRuntimeConfigInput;
 import shared.crawler.config.input.ResolveProjectPathInput;
-import shared.crawler.http.CrawlerHttpClient;
+import shared.crawler.http.HttpObject;
+import shared.crawler.http.input.ComposeHttpInput;
 import shared.crawler.slug.SlugIdentity;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,19 +39,13 @@ public class ItemCrawler {
     private static final Pattern EQUIPMENT_SLUG_PATTERN =
             Pattern.compile("^/equipment/\\d+-[a-z0-9][a-z0-9-]*$");
 
-    private final HttpClient httpClient;
-    private final String cobaltSession;
+    private final ComposeHttpInput.CrawlerHttpInput crawlerHttp;
     private final Path outputDir;
-    private final long delayMs;
     private final Path magicItemSlugsFile;
 
-    public ItemCrawler(LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig, Path outputDir, Path magicItemSlugsFile) {
-        this.httpClient = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .build();
-        this.cobaltSession = runtimeConfig.cobaltSession();
+    public ItemCrawler(ComposeHttpInput.CrawlerHttpInput crawlerHttp, Path outputDir, Path magicItemSlugsFile) {
+        this.crawlerHttp = crawlerHttp;
         this.outputDir = outputDir;
-        this.delayMs = runtimeConfig.delayMs();
         this.magicItemSlugsFile = magicItemSlugsFile;
     }
 
@@ -78,11 +72,13 @@ public class ItemCrawler {
                 runtimeConfig.properties().getProperty("magic-items.slugs.file", "data/magic-item-slugs.txt"),
                 "magic-items.slugs.file"
         )).path();
+        ComposeHttpInput.CrawlerHttpInput crawlerHttp =
+                new HttpObject().composeHttp(new ComposeHttpInput(runtimeConfig));
 
         Files.createDirectories(outputDir.resolve("equipment"));
         Files.createDirectories(outputDir.resolve("magic-items"));
 
-        ItemCrawler crawler = new ItemCrawler(runtimeConfig, outputDir, slugsFile);
+        ItemCrawler crawler = new ItemCrawler(crawlerHttp, outputDir, slugsFile);
 
         if (args.length > 0 && "--build-slugs".equals(args[0])) {
             crawler.buildMagicItemSlugList();
@@ -115,7 +111,6 @@ public class ItemCrawler {
                 break;
             }
             System.out.println("  +" + newlyAdded + " new items (total: " + rawEquipmentSlugs.size() + ")");
-            Thread.sleep(delayMs);
         }
 
         // Deduplication: for slugs with the same name suffix, keep the lowest ID (2014 version)
@@ -153,16 +148,15 @@ public class ItemCrawler {
             return;
         }
 
-        // 3. Sequential detail fetch.
-        // DnD Beyond rate-limits aggressively; a single thread with delayMs between
-        // requests is the only safe strategy.
+        // 3. Sequential detail fetch. The shared HTTP seam owns request pacing
+        // and retry behavior between raw fetches.
         List<CrawlEntry> entryList = new ArrayList<>(entries);
         int total   = entryList.size();
         int success = 0;
         int skipped = 0;
         int failed  = 0;
 
-        System.out.println("Starting sequential fetch (delay=" + delayMs + "ms between requests)...");
+        System.out.println("Starting sequential fetch (delay=" + crawlerHttp.delayMs() + "ms between requests)...");
 
         for (int idx = 0; idx < total; idx++) {
             CrawlEntry entry = entryList.get(idx);
@@ -180,7 +174,6 @@ public class ItemCrawler {
                 System.out.printf("[%d/%d] %s/%s%n", idx + 1, total, subdir, entry.slug);
                 fetchItemDetail(entry.slug, entry.isMagic, outFile);
                 success++;
-                Thread.sleep(delayMs);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -364,7 +357,6 @@ public class ItemCrawler {
                 }
             }
 
-            Thread.sleep(delayMs);
         }
 
         if (slugs.isEmpty()) {
@@ -386,7 +378,7 @@ public class ItemCrawler {
     // -------------------------------------------------------------------------
 
     private String get(String url) throws IOException, InterruptedException {
-        return CrawlerHttpClient.get(url, httpClient, cobaltSession);
+        return crawlerHttp.fetchPageApi().fetchPage(new ComposeHttpInput.FetchPageInput(url));
     }
 
     // -------------------------------------------------------------------------

@@ -28,6 +28,9 @@ internal fun analyzeInputFile(
     if (sourceFile.context.packageName == "shared.crawler.config.input") {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }
+    if (sourceFile.context.packageName == "shared.crawler.http.input") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     return support.analyzeInputShape(sourceFile, snapshot)
 }
 

@@ -8,11 +8,11 @@ import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
 import shared.crawler.config.input.LoadRuntimeConfigInput;
 import shared.crawler.config.input.ResolveProjectPathInput;
-import shared.crawler.http.CrawlerHttpClient;
+import shared.crawler.http.HttpObject;
+import shared.crawler.http.input.ComposeHttpInput;
 import shared.crawler.slug.SlugIdentity;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -39,18 +39,12 @@ public class MonsterCrawler {
     private static final Pattern SLUG_PATTERN =
             Pattern.compile("^/monsters/[a-z0-9][a-z0-9-]*[a-z][a-z0-9-]*$");
 
-    private final HttpClient httpClient;
-    private final String cobaltSession;
+    private final ComposeHttpInput.CrawlerHttpInput crawlerHttp;
     private final Path outputDir;
-    private final long delayMs;
 
-    public MonsterCrawler(LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig, Path outputDir) {
-        this.httpClient = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .build();
-        this.cobaltSession = runtimeConfig.cobaltSession();
+    public MonsterCrawler(ComposeHttpInput.CrawlerHttpInput crawlerHttp, Path outputDir) {
+        this.crawlerHttp = crawlerHttp;
         this.outputDir = outputDir;
-        this.delayMs = runtimeConfig.delayMs();
     }
 
     // -------------------------------------------------------------------------
@@ -72,10 +66,12 @@ public class MonsterCrawler {
                 runtimeConfig.properties().getProperty("output.dir", "data/monsters"),
                 "output.dir"
         )).path();
+        ComposeHttpInput.CrawlerHttpInput crawlerHttp =
+                new HttpObject().composeHttp(new ComposeHttpInput(runtimeConfig));
 
         Files.createDirectories(outputDir);
 
-        new MonsterCrawler(runtimeConfig, outputDir).crawl();
+        new MonsterCrawler(crawlerHttp, outputDir).crawl();
     }
 
     // -------------------------------------------------------------------------
@@ -100,7 +96,6 @@ public class MonsterCrawler {
                 break;
             }
             System.out.println("  +" + newlyAdded + " new monsters (total: " + rawSlugs.size() + ")");
-            Thread.sleep(delayMs);
         }
 
         // Deduplication: for slugs with the same name suffix, keep the lowest ID (2014 version)
@@ -119,16 +114,15 @@ public class MonsterCrawler {
             return;
         }
 
-        // Fetch each monster detail page sequentially.
-        // DnD Beyond rate-limits aggressively; a single thread with delayMs between
-        // requests is the only safe strategy.
+        // Fetch each monster detail page sequentially. The shared HTTP seam owns
+        // the pacing and retry policy between requests.
         List<String> slugList = new ArrayList<>(slugs);
         int total   = slugList.size();
         int success = 0;
         int skipped = 0;
         int failed  = 0;
 
-        System.out.println("Starting sequential fetch (delay=" + delayMs + "ms between requests)...");
+        System.out.println("Starting sequential fetch (delay=" + crawlerHttp.delayMs() + "ms between requests)...");
 
         for (int idx = 0; idx < total; idx++) {
             String slug = slugList.get(idx);
@@ -144,7 +138,6 @@ public class MonsterCrawler {
                 System.out.printf("[%d/%d] %s%n", idx + 1, total, slug);
                 fetchMonsterDetail(slug, outFile);
                 success++;
-                Thread.sleep(delayMs);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -233,7 +226,7 @@ public class MonsterCrawler {
     // -------------------------------------------------------------------------
 
     private String get(String url) throws IOException, InterruptedException {
-        return CrawlerHttpClient.get(url, httpClient, cobaltSession);
+        return crawlerHttp.fetchPageApi().fetchPage(new ComposeHttpInput.FetchPageInput(url));
     }
 
 }

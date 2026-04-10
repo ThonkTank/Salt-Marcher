@@ -8,11 +8,11 @@ import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
 import shared.crawler.config.input.LoadRuntimeConfigInput;
 import shared.crawler.config.input.ResolveProjectPathInput;
-import shared.crawler.http.CrawlerHttpClient;
+import shared.crawler.http.HttpObject;
+import shared.crawler.http.input.ComposeHttpInput;
 import shared.crawler.slug.SlugIdentity;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,19 +29,13 @@ public final class SpellCrawler {
     private static final Pattern SPELL_SLUG_PATTERN =
             Pattern.compile("^(?:\\d+-)?[a-z0-9][a-z0-9-]*$");
 
-    private final HttpClient httpClient;
-    private final String cobaltSession;
+    private final ComposeHttpInput.CrawlerHttpInput crawlerHttp;
     private final Path outputDir;
-    private final long delayMs;
     private final Path slugFile;
 
-    public SpellCrawler(LoadRuntimeConfigInput.RuntimeConfigInput runtimeConfig, Path outputDir, Path slugFile) {
-        this.httpClient = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER)
-                .build();
-        this.cobaltSession = runtimeConfig.cobaltSession();
+    public SpellCrawler(ComposeHttpInput.CrawlerHttpInput crawlerHttp, Path outputDir, Path slugFile) {
+        this.crawlerHttp = crawlerHttp;
         this.outputDir = outputDir;
-        this.delayMs = runtimeConfig.delayMs();
         this.slugFile = slugFile;
     }
 
@@ -64,9 +58,11 @@ public final class SpellCrawler {
                 runtimeConfig.properties().getProperty("spells.slugs.file", "data/spell-slugs.txt"),
                 "spells.slugs.file"
         )).path();
+        ComposeHttpInput.CrawlerHttpInput crawlerHttp =
+                new HttpObject().composeHttp(new ComposeHttpInput(runtimeConfig));
         Files.createDirectories(outputDir);
 
-        SpellCrawler crawler = new SpellCrawler(runtimeConfig, outputDir, slugFile);
+        SpellCrawler crawler = new SpellCrawler(crawlerHttp, outputDir, slugFile);
         if (args.length > 0 && "--build-slugs".equals(args[0])) {
             crawler.buildSlugList();
             return;
@@ -91,7 +87,7 @@ public final class SpellCrawler {
         int skipped = 0;
         int failed = 0;
 
-        System.out.println("Starting sequential fetch (delay=" + delayMs + "ms between requests)...");
+        System.out.println("Starting sequential fetch (delay=" + crawlerHttp.delayMs() + "ms between requests)...");
         for (int idx = 0; idx < total; idx++) {
             String slug = slugList.get(idx);
             Path outFile = outputDir.resolve(slug + ".html");
@@ -104,7 +100,6 @@ public final class SpellCrawler {
                 System.out.printf("[%d/%d] %s%n", idx + 1, total, slug);
                 fetchSpellDetail(slug, outFile);
                 success++;
-                Thread.sleep(delayMs);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -155,7 +150,6 @@ public final class SpellCrawler {
                 break;
             }
             System.out.println("  +" + newlyAdded + " new spells (total: " + rawSlugs.size() + ")");
-            Thread.sleep(delayMs);
         }
         return SlugIdentity.deduplicateSlugs(rawSlugs);
     }
@@ -207,6 +201,6 @@ public final class SpellCrawler {
     }
 
     private String get(String url) throws IOException, InterruptedException {
-        return CrawlerHttpClient.get(url, httpClient, cobaltSession);
+        return crawlerHttp.fetchPageApi().fetchPage(new ComposeHttpInput.FetchPageInput(url));
     }
 }
