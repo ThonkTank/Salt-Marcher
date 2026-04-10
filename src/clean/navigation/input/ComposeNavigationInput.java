@@ -23,9 +23,7 @@ public record ComposeNavigationInput(
             Node controlsContent,
             Node mainContent,
             Node detailsContent,
-            Node stateContent,
-            Runnable onShow,
-            Runnable onHide
+            Node stateContent
     ) {
     }
 
