@@ -1,4 +1,4 @@
 # Sensitive build-check surfaces require explicit review.
 /build.gradle.kts @ThonkTank
-/buildSrc/src/main/kotlin/buildlogic/conventions/** @ThonkTank
+/buildSrc @ThonkTank
 /CODEOWNERS @ThonkTank
