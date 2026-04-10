@@ -1,12 +1,16 @@
 package clean;
 
-import clean.input.ShowApplicationInput;
+import clean.frame.FrameObject;
+import clean.frame.input.ComposeFrameInput;
+import clean.navigation.NavigationObject;
+import clean.navigation.input.ComposeNavigationInput;
+import clean.placeholder.PlaceholderObject;
+import clean.placeholder.input.ComposePlaceholderInput;
+import clean.startup.StartupObject;
+import clean.startup.input.StartApplicationInput;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /**
@@ -15,8 +19,43 @@ import javafx.stage.Stage;
 @SuppressWarnings("unused")
 public final class CleanObject {
 
-    public void showApplication(ShowApplicationInput input) {
-        java.util.Objects.requireNonNull(input, "input");
+    private final PlaceholderObject placeholderObject = new PlaceholderObject();
+    private final NavigationObject navigationObject = new NavigationObject();
+    private final FrameObject frameObject = new FrameObject();
+
+    public ComposeFrameInput.FrameInput showApplication(clean.input.ShowApplicationInput input) {
+        if (input == null) {
+            throw new NullPointerException("input");
+        }
+        ComposePlaceholderInput composePlaceholderInput = new ComposePlaceholderInput(
+                "start",
+                "Clean Start",
+                "Start",
+                "Isolierter Clean-Einstieg",
+                "Lifecycle laeuft ueber src/clean.",
+                "Kein Legacy-Import im Start-Slice.",
+                "Naechster Ausbau erfolgt owner-konform.",
+                "Dies ist die erste owner-konforme Clean-Surface.",
+                "Sie bildet den Einstieg fuer weitere Slices.",
+                "Navigation ist hier bewusst noch statisch.",
+                "Status: buildfaehig.",
+                "Status: isoliert.",
+                "Status: bereit fuer den naechsten Slice."
+        );
+        ComposeNavigationInput.SurfaceInput startSurface =
+                placeholderObject.composePlaceholder(composePlaceholderInput);
+        ComposeNavigationInput composeNavigationInput = new ComposeNavigationInput(startSurface);
+        ComposeNavigationInput.NavigationInput navigation =
+                navigationObject.composeNavigation(composeNavigationInput);
+        ComposeFrameInput composeFrameInput = new ComposeFrameInput(
+                navigation.toolbarContent(),
+                navigation.navigationContent(),
+                navigation.controlsContent(),
+                navigation.mainContent(),
+                navigation.detailsContent(),
+                navigation.stateContent()
+        );
+        return frameObject.composeFrame(composeFrameInput);
     }
 
     public static final class Runtime extends Application {
@@ -24,17 +63,15 @@ public final class CleanObject {
         @Override
         public void start(Stage primaryStage) {
             try {
-                new CleanObject().showApplication(new ShowApplicationInput(primaryStage));
-                Label titleLabel = new Label("Salt Marcher");
-                Label surfaceLabel = new Label("Clean Start");
-                Label summaryLabel = new Label("Isolierter Clean-Einstieg");
-                VBox root = new VBox(12, titleLabel, surfaceLabel, summaryLabel);
-                Scene scene = new Scene(root, 1280, 800);
-                primaryStage.setTitle("Salt Marcher");
-                primaryStage.setScene(scene);
-                primaryStage.setMinWidth(960);
-                primaryStage.setMinHeight(640);
-                primaryStage.show();
+                CleanObject cleanObject = new CleanObject();
+                ComposeFrameInput.FrameInput frame =
+                        cleanObject.showApplication(new clean.input.ShowApplicationInput(primaryStage));
+                StartApplicationInput startApplicationInput = new StartApplicationInput(
+                        primaryStage,
+                        "Salt Marcher",
+                        frame.root()
+                );
+                new StartupObject().startApplication(startApplicationInput);
             } catch (RuntimeException exception) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Start fehlgeschlagen");

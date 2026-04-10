@@ -14,14 +14,13 @@ public final class NavigationObject {
 
     public ComposeNavigationInput.NavigationInput composeNavigation(ComposeNavigationInput input) {
         ComposeNavigationInput resolvedInput = java.util.Objects.requireNonNull(input, "input");
-        ComposeNavigationInput.SurfaceInput startSurface = resolvedInput.startSurface();
-        Label titleLabel = new Label(startSurface.title());
-        HBox toolbarContent = new HBox(titleLabel);
-        VBox navigationContent = new VBox();
-        StackPane controlsContent = new StackPane();
-        StackPane mainContent = new StackPane();
-        StackPane detailsContent = new StackPane();
-        StackPane stateContent = new StackPane();
+        ComposeNavigationInput.SurfaceInput activeSurface = resolvedInput.activeSurface();
+        HBox toolbarContent = new HBox(activeSurface.toolbarContent());
+        VBox navigationContent = new VBox(new Label(activeSurface.navigationLabel()));
+        StackPane controlsContent = new StackPane(activeSurface.controlsContent());
+        StackPane mainContent = new StackPane(activeSurface.mainContent());
+        StackPane detailsContent = new StackPane(activeSurface.detailsContent());
+        StackPane stateContent = new StackPane(activeSurface.stateContent());
         return new ComposeNavigationInput.NavigationInput(
                 toolbarContent,
                 navigationContent,
