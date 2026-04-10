@@ -3,6 +3,8 @@ package ui.shell;
 import features.creatures.api.StatBlockLoader;
 import features.creatures.api.StatBlockRequest;
 import features.encountertable.api.EncounterTableSummary;
+import features.items.catalog.CatalogObject;
+import features.items.catalog.input.LoadItemInput;
 import features.items.api.ItemCatalogService;
 import features.items.api.ItemViewerPane;
 import features.loottable.api.LootTableSummary;
@@ -33,7 +35,10 @@ import java.util.function.Supplier;
  * Top-right panel: shared history-aware inspector for stat blocks, items, and other read-mostly
  * references across all views. Interactive controls are exceptions, not the default.
  */
+@SuppressWarnings("unused")
 public class InspectorPane extends VBox implements DetailsNavigator {
+    private static final CatalogObject ITEM_CATALOG = new CatalogObject();
+
     private final VBox detailContent;
     private final Label detailTitle;
     private final ScrollPane detailScroll;
@@ -261,22 +266,22 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     private void renderItem(long itemId, long requestVersion) {
         cancelPendingTask();
         showContentNode("Item", loadingNode("Lade Item..."), false);
-        Task<ItemCatalogService.ServiceResult<ItemCatalogService.ItemDetails>> task = new Task<>() {
-            @Override protected ItemCatalogService.ServiceResult<ItemCatalogService.ItemDetails> call() {
-                return ItemCatalogService.getItem(itemId);
+        Task<LoadItemInput.LoadedItemInput> task = new Task<>() {
+            @Override protected LoadItemInput.LoadedItemInput call() {
+                return ITEM_CATALOG.loadItem(new LoadItemInput(itemId));
             }
         };
         pendingStatBlockTask = task;
         ui.async.UiAsyncTasks.submit(task, result -> {
             if (requestVersion != renderVersion) return;
-            if (!result.isOk()) {
+            if (!result.success()) {
                 ui.async.UiErrorReporter.reportBackgroundFailure(
                         "InspectorPane.renderItem() service failure",
-                        new IllegalStateException("ItemCatalogService status: " + result.status()));
+                        new IllegalStateException("CatalogObject.loadItem() failed"));
                 showContentNode("Item", loadingNode("Item konnte nicht geladen werden."), false);
                 return;
             }
-            ItemCatalogService.ItemDetails item = result.value();
+            ItemCatalogService.ItemDetails item = toItemDetails(result.item());
             String title = item != null && item.name() != null && !item.name().isBlank() ? item.name() : "Item";
             showContentNode(title, new ItemViewerPane(item), false);
         }, throwable -> {
@@ -284,6 +289,30 @@ public class InspectorPane extends VBox implements DetailsNavigator {
             ui.async.UiErrorReporter.reportBackgroundFailure("InspectorPane.renderItem()", throwable);
             showContentNode("Item", loadingNode("Item konnte nicht geladen werden."), false);
         });
+    }
+
+    private static ItemCatalogService.ItemDetails toItemDetails(LoadItemInput.ItemDetailsInput item) {
+        if (item == null) {
+            return null;
+        }
+        return new ItemCatalogService.ItemDetails(
+                item.itemId(),
+                item.name(),
+                item.category(),
+                item.subcategory(),
+                item.magic(),
+                item.rarity(),
+                item.requiresAttunement(),
+                item.attunementCondition(),
+                item.costDisplay(),
+                item.costCp(),
+                item.weightLb(),
+                item.damage(),
+                item.properties(),
+                item.armorClass(),
+                item.description(),
+                item.source(),
+                item.tags());
     }
 
     private void renderEncounterTable(EncounterTableSummary summary) {

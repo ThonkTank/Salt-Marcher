@@ -1,5 +1,7 @@
 package features.loottable.api;
 
+import features.items.catalog.CatalogObject;
+import features.items.catalog.input.LoadFilterOptionsInput;
 import features.items.api.ItemCatalogService;
 import javafx.concurrent.Task;
 import features.loottable.ui.LootTableEditorView;
@@ -8,7 +10,9 @@ import ui.async.UiErrorReporter;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
+@SuppressWarnings("unused")
 public final class LootTableModule {
+    private static final CatalogObject ITEM_CATALOG = new CatalogObject();
 
     private final LootTableEditorView editorView;
 
@@ -18,20 +22,25 @@ public final class LootTableModule {
 
     public void start(DetailsNavigator detailsNavigator) {
         editorView.setDetailsNavigator(detailsNavigator);
-        Task<ItemCatalogService.ServiceResult<ItemCatalogService.FilterOptions>> itemFilterTask = new Task<>() {
-            @Override protected ItemCatalogService.ServiceResult<ItemCatalogService.FilterOptions> call() {
-                return ItemCatalogService.loadFilterOptions();
+        Task<LoadFilterOptionsInput.LoadedFilterOptionsInput> itemFilterTask = new Task<>() {
+            @Override protected LoadFilterOptionsInput.LoadedFilterOptionsInput call() {
+                return ITEM_CATALOG.loadFilterOptions(new LoadFilterOptionsInput());
             }
         };
         UiAsyncTasks.submit(
                 itemFilterTask,
                 result -> {
-                    if (!result.isOk()) {
+                    if (!result.success()) {
                         UiErrorReporter.reportBackgroundFailure(
                                 "LootTableModule.start() loadItemFilterOptions failed",
-                                new IllegalStateException("ItemCatalogService status: " + result.status()));
+                                new IllegalStateException("CatalogObject.loadFilterOptions() failed"));
                     }
-                    ItemCatalogService.FilterOptions filterData = result.value();
+                    ItemCatalogService.FilterOptions filterData = new ItemCatalogService.FilterOptions(
+                            result.categories(),
+                            result.subcategories(),
+                            result.rarities(),
+                            result.tags(),
+                            result.sources());
                     if (filterData == null) {
                         UiErrorReporter.reportBackgroundFailure(
                                 "LootTableModule.start() loadItemFilterOptions returned null value",

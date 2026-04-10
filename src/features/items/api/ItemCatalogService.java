@@ -1,10 +1,19 @@
 package features.items.api;
 
-import features.items.service.ItemCatalogApplicationService;
+import features.items.catalog.CatalogObject;
+import features.items.catalog.input.LoadFilterOptionsInput;
+import features.items.catalog.input.LoadItemInput;
+import features.items.catalog.input.SearchItemsByNameInput;
+import features.items.catalog.input.SearchItemsInput;
 
 import java.util.List;
 
+/**
+ * Compatibility facade for older item catalog callers.
+ */
+@SuppressWarnings("unused")
 public final class ItemCatalogService {
+    private static final CatalogObject CATALOG_OBJECT = new CatalogObject();
 
     private ItemCatalogService() {
         throw new AssertionError("No instances");
@@ -91,21 +100,94 @@ public final class ItemCatalogService {
     }
 
     public static ServiceResult<FilterOptions> loadFilterOptions() {
-        return ItemCatalogApplicationService.loadFilterOptions();
+        LoadFilterOptionsInput.LoadedFilterOptionsInput loaded =
+                CATALOG_OBJECT.loadFilterOptions(new LoadFilterOptionsInput());
+        FilterOptions filterOptions = new FilterOptions(
+                loaded.categories(),
+                loaded.subcategories(),
+                loaded.rarities(),
+                loaded.tags(),
+                loaded.sources());
+        return loaded.success() ? ServiceResult.ok(filterOptions) : ServiceResult.dbAccessFailed(filterOptions);
     }
 
     public static ServiceResult<PageResult> searchItems(
             FilterCriteria criteria,
             List<Long> excludeIds,
             PageRequest pageRequest) {
-        return ItemCatalogApplicationService.searchItems(criteria, excludeIds, pageRequest);
+        SearchItemsInput.SearchedItemsInput searched = CATALOG_OBJECT.searchItems(
+                new SearchItemsInput(
+                        criteria != null
+                                ? new SearchItemsInput.CriteriaInput(
+                                        criteria.nameQuery(),
+                                        criteria.minCostCp(),
+                                        criteria.maxCostCp(),
+                                        criteria.magicOnly(),
+                                        criteria.attunementOnly(),
+                                        criteria.categories(),
+                                        criteria.subcategories(),
+                                        criteria.rarities(),
+                                        criteria.tags(),
+                                        criteria.sources())
+                                : null,
+                        excludeIds,
+                        pageRequest != null
+                                ? new SearchItemsInput.PageInput(
+                                        pageRequest.sortColumn(),
+                                        pageRequest.sortDirection(),
+                                        pageRequest.limit(),
+                                        pageRequest.offset())
+                                : null));
+        PageResult pageResult = new PageResult(
+                searched.items().stream().map(ItemCatalogService::toItemSummary).toList(),
+                searched.totalCount());
+        return searched.success() ? ServiceResult.ok(pageResult) : ServiceResult.dbAccessFailed(pageResult);
     }
 
     public static ServiceResult<List<ItemSummary>> searchByName(String query, int limit) {
-        return ItemCatalogApplicationService.searchByName(query, limit);
+        SearchItemsByNameInput.SearchedItemsByNameInput searched =
+                CATALOG_OBJECT.searchItemsByName(new SearchItemsByNameInput(query, limit));
+        List<ItemSummary> items = searched.items().stream().map(ItemCatalogService::toItemSummary).toList();
+        return searched.success() ? ServiceResult.ok(items) : ServiceResult.dbAccessFailed(items);
     }
 
     public static ServiceResult<ItemDetails> getItem(Long itemId) {
-        return ItemCatalogApplicationService.getItem(itemId);
+        LoadItemInput.LoadedItemInput loaded = CATALOG_OBJECT.loadItem(new LoadItemInput(itemId));
+        ItemDetails item = loaded.item() != null ? toItemDetails(loaded.item()) : null;
+        return loaded.success() ? ServiceResult.ok(item) : ServiceResult.dbAccessFailed(item);
+    }
+
+    private static ItemSummary toItemSummary(SearchItemsInput.ItemSummaryInput item) {
+        return new ItemSummary(
+                item.itemId(),
+                item.name(),
+                item.category(),
+                item.subcategory(),
+                item.magic(),
+                item.rarity(),
+                item.requiresAttunement(),
+                item.costCp(),
+                item.costDisplay());
+    }
+
+    private static ItemDetails toItemDetails(LoadItemInput.ItemDetailsInput item) {
+        return new ItemDetails(
+                item.itemId(),
+                item.name(),
+                item.category(),
+                item.subcategory(),
+                item.magic(),
+                item.rarity(),
+                item.requiresAttunement(),
+                item.attunementCondition(),
+                item.costDisplay(),
+                item.costCp(),
+                item.weightLb(),
+                item.damage(),
+                item.properties(),
+                item.armorClass(),
+                item.description(),
+                item.source(),
+                item.tags());
     }
 }
