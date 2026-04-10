@@ -77,6 +77,15 @@
     -fx-font-size: 11px;
 }
 
+.text-secondary {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+
+.bold {
+    -fx-font-weight: bold;
+}
+
 .heading {
     -fx-font-weight: bold;
     -fx-font-size: 16px;
@@ -120,6 +129,266 @@
 
 .button.flat:hover {
     -fx-background-color: derive(-sm-bg-elevated, 10%);
+}
+
+.button.accent {
+    -fx-background-color: -sm-accent;
+}
+
+.button.accent:hover {
+    -fx-background-color: -sm-accent-hover;
+}
+
+.button:disabled {
+    -fx-opacity: 0.4;
+    -fx-cursor: default;
+}
+
+.chip-remove-btn {
+    -fx-padding: 0 4 0 4;
+    -fx-font-size: 11px;
+    -fx-min-width: 24;
+    -fx-pref-width: 24;
+    -fx-max-width: 24;
+    -fx-min-height: 24;
+}
+
+.text-field {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-prompt-text-fill: -sm-text-muted;
+    -fx-font-size: 13px;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 4 8 4 8;
+}
+
+.text-field:focused {
+    -fx-border-color: -sm-accent-hover;
+}
+
+.table-view {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent;
+}
+
+.table-view .filler {
+    -fx-background-color: -sm-bg-elevated;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: -sm-bg-elevated;
+}
+
+.table-view .column-header-background .filler {
+    -fx-background-color: -sm-bg-elevated;
+}
+
+.table-view .column-header {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-cell-size: 28px;
+}
+
+.table-view .table-row-cell:selected {
+    -fx-background-color: -sm-accent;
+}
+
+.table-view .table-row-cell .table-cell {
+    -fx-text-fill: -sm-text-primary;
+}
+
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: -sm-text-primary;
+}
+
+.table-view .table-row-cell:empty {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent;
+}
+
+.table-view .placeholder .label {
+    -fx-text-fill: -sm-text-muted;
+}
+
+.combo-box {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: -sm-text-primary;
+    -fx-background-color: -sm-bg-elevated;
+    -fx-font-size: 13px;
+}
+
+.combo-box .arrow-button {
+    -fx-background-color: -sm-bg-elevated;
+}
+
+.combo-box .arrow {
+    -fx-background-color: -sm-text-secondary;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-color: -sm-bg-elevated;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: -sm-bg-card;
+}
+
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+
+.creature-link {
+    -fx-text-fill: -sm-creature-link;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.button.creature-link {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-text-fill: -sm-creature-link;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.button.creature-link:hover {
+    -fx-underline: true;
+    -fx-background-color: transparent;
+}
+
+.chip {
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 11px;
+    -fx-text-fill: -sm-text-primary;
+}
+
+.chip-type {
+    -fx-background-color: -sm-chip-type-bg;
+    -fx-border-color: -sm-chip-type-border;
+}
+
+.chip-biome {
+    -fx-background-color: -sm-chip-biome-bg;
+    -fx-border-color: -sm-chip-biome-border;
+}
+
+.chip-size {
+    -fx-background-color: -sm-chip-size-bg;
+    -fx-border-color: -sm-chip-size-border;
+}
+
+.chip-align {
+    -fx-background-color: -sm-chip-align-bg;
+    -fx-border-color: -sm-chip-align-border;
+}
+
+.chip-subtype {
+    -fx-background-color: -sm-chip-sub-bg;
+    -fx-border-color: -sm-chip-sub-border;
+}
+
+.chip-cr {
+    -fx-background-color: -sm-chip-cr-bg;
+    -fx-border-color: -sm-chip-cr-border;
+}
+
+.filter-pane {
+    -fx-background-color: -sm-bg-darkest;
+}
+
+.quick-search-field {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-prompt-text-fill: -sm-text-muted;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 4 8;
+    -fx-font-size: 13px;
+}
+
+.quick-search-field:focused {
+    -fx-border-color: -sm-accent-hover;
+}
+
+.filter-dropdown {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
+}
+
+.filter-trigger {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 3 8;
+    -fx-font-size: 11px;
+}
+
+.filter-trigger:hover {
+    -fx-text-fill: -sm-text-primary;
+    -fx-background-color: -sm-bg-card;
+}
+
+.filter-trigger-active {
+    -fx-border-color: -sm-accent;
+    -fx-text-fill: -sm-accent-hover;
+}
+
+.check-box {
+    -fx-text-fill: -sm-text-primary;
+}
+
+.check-box .box {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+.check-box:focused .box {
+    -fx-border-color: -sm-accent-hover;
+}
+
+.check-box:selected .box {
+    -fx-background-color: -sm-accent;
+    -fx-border-color: -sm-accent;
+}
+
+.check-box:selected .box .mark {
+    -fx-background-color: -sm-text-primary;
 }
 
 .toggle-control {

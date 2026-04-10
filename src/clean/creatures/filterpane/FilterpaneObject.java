@@ -3,22 +3,24 @@ package clean.creatures.filterpane;
 import clean.creatures.catalog.input.ComposeCatalogInput;
 import clean.creatures.filterpane.input.ComposeFilterpaneInput;
 import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
-import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Popup;
 import javafx.util.Duration;
 
 import java.util.ArrayList;
@@ -48,19 +50,21 @@ public final class FilterpaneObject {
     }
 
     private static final class FilterpaneAssembly {
+        private static final int SEARCH_FIELD_THRESHOLD = 6;
+
         private final ComposeFilterpaneInput input;
         private final TextField searchField = new TextField();
         private final FlowPane filterRow = new FlowPane(4, 4);
         private final FlowPane chipsPane = new FlowPane(4, 2);
-        private final Button crTrigger = new Button("CR");
+        private final ComboBox<String> crMinBox = new ComboBox<>();
+        private final ComboBox<String> crMaxBox = new ComboBox<>();
         private final List<String> crValues;
         private final MultiSelectFilter sizeFilter;
         private final MultiSelectFilter typeFilter;
         private final MultiSelectFilter subtypeFilter;
         private final MultiSelectFilter biomeFilter;
         private final MultiSelectFilter alignFilter;
-        private String crMin;
-        private String crMax;
+        private boolean updatingCrRange;
 
         private FilterpaneAssembly(ComposeFilterpaneInput input) {
             this.input = input;
@@ -97,7 +101,7 @@ public final class FilterpaneObject {
 
         private ComposeFilterpaneInput.FilterpaneInput composeFilterpane() {
             configureSearchField();
-            configureCrTrigger();
+            configureCrRange();
             VBox controlsContent = createControlsContent();
             rebuildChips();
             return new ComposeFilterpaneInput.FilterpaneInput(controlsContent);
@@ -105,27 +109,34 @@ public final class FilterpaneObject {
 
         private void configureSearchField() {
             searchField.setPromptText("Monster suchen...");
+            searchField.setMaxWidth(Double.MAX_VALUE);
             PauseTransition debounce = new PauseTransition(Duration.millis(300));
             debounce.setOnFinished(event -> fireChange());
             searchField.textProperty().addListener((observable, oldValue, newValue) -> debounce.playFromStart());
         }
 
-        private void configureCrTrigger() {
-            crTrigger.getStyleClass().add("filter-trigger");
-            crTrigger.setOnAction(event -> showCrMenu());
-            refreshCrTriggerState();
+        private void configureCrRange() {
+            crMinBox.setItems(FXCollections.observableArrayList(crValues));
+            crMaxBox.setItems(FXCollections.observableArrayList(crValues));
+            crMinBox.setPrefWidth(65);
+            crMaxBox.setPrefWidth(65);
+            crMinBox.setAccessibleText("Minimaler CR");
+            crMaxBox.setAccessibleText("Maximaler CR");
+            resetCrRange();
+            crMinBox.setOnAction(event -> onCrSelectionChanged());
+            crMaxBox.setOnAction(event -> onCrSelectionChanged());
         }
 
         private VBox createControlsContent() {
             Button clearButton = new Button("Leeren");
-            clearButton.getStyleClass().addAll("button", "compact", "flat");
+            clearButton.getStyleClass().addAll("compact", "flat");
             clearButton.setOnAction(event -> clearAll());
 
             HBox searchRow = new HBox(6, searchField);
             HBox.setHgrow(searchField, Priority.ALWAYS);
 
             filterRow.getChildren().setAll(
-                    crTrigger,
+                    createCrRangeControl(),
                     sizeFilter.trigger(),
                     typeFilter.trigger(),
                     subtypeFilter.trigger(),
@@ -144,85 +155,64 @@ public final class FilterpaneObject {
             return container;
         }
 
-        private void showCrMenu() {
-            ContextMenu menu = new ContextMenu();
-            menu.setAutoHide(true);
+        private HBox createCrRangeControl() {
+            Label crLabel = new Label("CR");
+            crLabel.getStyleClass().addAll("text-muted", "bold");
+            crLabel.setMinWidth(20);
 
-            ComboBox<String> minBox = new ComboBox<>(FXCollections.observableArrayList(crValues));
-            ComboBox<String> maxBox = new ComboBox<>(FXCollections.observableArrayList(crValues));
-            minBox.setMaxWidth(Double.MAX_VALUE);
-            maxBox.setMaxWidth(Double.MAX_VALUE);
+            Label dash = new Label("-");
+            dash.getStyleClass().add("text-muted");
 
-            if (!crValues.isEmpty()) {
-                minBox.getSelectionModel().select(crMin == null ? 0 : crValues.indexOf(crMin));
-                maxBox.getSelectionModel().select(crMax == null ? crValues.size() - 1 : crValues.indexOf(crMax));
-            }
-
-            Button applyButton = new Button("Anwenden");
-            applyButton.getStyleClass().addAll("button", "compact", "accent");
-            applyButton.setOnAction(event -> {
-                updateCrBounds(minBox.getValue(), maxBox.getValue());
-                menu.hide();
-                fireChange();
-            });
-
-            Button clearButton = new Button("Leeren");
-            clearButton.getStyleClass().addAll("button", "compact", "flat");
-            clearButton.setOnAction(event -> {
-                crMin = null;
-                crMax = null;
-                menu.hide();
-                fireChange();
-            });
-
-            VBox popup = new VBox(
-                    8,
-                    createFilterLabel("Minimum"),
-                    minBox,
-                    createFilterLabel("Maximum"),
-                    maxBox,
-                    new HBox(6, applyButton, clearButton)
-            );
-            popup.getStyleClass().add("filter-dropdown");
-
-            CustomMenuItem content = new CustomMenuItem(popup, false);
-            menu.getItems().setAll(content);
-            menu.show(crTrigger, Side.BOTTOM, 0, 0);
+            return new HBox(2, crLabel, crMinBox, dash, crMaxBox);
         }
 
-        private void updateCrBounds(String selectedMin, String selectedMax) {
-            if (crValues.isEmpty()) {
-                crMin = null;
-                crMax = null;
-                refreshCrTriggerState();
+        private void onCrSelectionChanged() {
+            if (updatingCrRange || crValues.isEmpty()) {
                 return;
             }
-
-            int minIndex = selectedMin == null ? 0 : Math.max(0, crValues.indexOf(selectedMin));
-            int maxIndex = selectedMax == null ? crValues.size() - 1 : Math.max(0, crValues.indexOf(selectedMax));
+            int minIndex = crMinBox.getSelectionModel().getSelectedIndex();
+            int maxIndex = crMaxBox.getSelectionModel().getSelectedIndex();
             if (minIndex > maxIndex) {
-                int swap = minIndex;
-                minIndex = maxIndex;
-                maxIndex = swap;
+                withSuppressedCrCallback(() -> crMaxBox.getSelectionModel().select(minIndex));
             }
-
-            crMin = minIndex <= 0 ? null : crValues.get(minIndex);
-            crMax = maxIndex >= crValues.size() - 1 ? null : crValues.get(maxIndex);
-            refreshCrTriggerState();
+            fireChange();
         }
 
-        private void refreshCrTriggerState() {
-            crTrigger.setText(buildCrTriggerText());
-            updateTriggerState(crTrigger, crMin != null || crMax != null);
+        private void withSuppressedCrCallback(Runnable action) {
+            updatingCrRange = true;
+            try {
+                action.run();
+            } finally {
+                updatingCrRange = false;
+            }
         }
 
-        private String buildCrTriggerText() {
-            if (crMin == null && crMax == null) {
-                return "CR";
+        private void resetCrRange() {
+            withSuppressedCrCallback(() -> {
+                if (crValues.isEmpty()) {
+                    crMinBox.getSelectionModel().clearSelection();
+                    crMaxBox.getSelectionModel().clearSelection();
+                    return;
+                }
+                crMinBox.getSelectionModel().selectFirst();
+                crMaxBox.getSelectionModel().selectLast();
+            });
+        }
+
+        private String selectedCrMin() {
+            if (crValues.isEmpty()) {
+                return null;
             }
-            String min = crMin == null ? fallbackCrMin() : crMin;
-            String max = crMax == null ? fallbackCrMax() : crMax;
-            return "CR: " + min + "-" + max;
+            int index = crMinBox.getSelectionModel().getSelectedIndex();
+            return index > 0 ? crMinBox.getValue() : null;
+        }
+
+        private String selectedCrMax() {
+            if (crValues.isEmpty()) {
+                return null;
+            }
+            int index = crMaxBox.getSelectionModel().getSelectedIndex();
+            return index >= 0 && index < crValues.size() - 1 ? crMaxBox.getValue() : null;
         }
 
         private String fallbackCrMin() {
@@ -235,9 +225,7 @@ public final class FilterpaneObject {
 
         private void clearAll() {
             searchField.clear();
-            crMin = null;
-            crMax = null;
-            refreshCrTriggerState();
+            resetCrRange();
             sizeFilter.clearSelection();
             typeFilter.clearSelection();
             subtypeFilter.clearSelection();
@@ -260,8 +248,8 @@ public final class FilterpaneObject {
             }
             return new ComposeCatalogInput.CriteriaInput(
                     nameQuery,
-                    crMin,
-                    crMax,
+                    selectedCrMin(),
+                    selectedCrMax(),
                     sizeFilter.selectedValues(),
                     typeFilter.selectedValues(),
                     subtypeFilter.selectedValues(),
@@ -271,14 +259,13 @@ public final class FilterpaneObject {
         }
 
         private void rebuildChips() {
+            ComposeCatalogInput.CriteriaInput criteria = buildCriteria();
             chipsPane.getChildren().clear();
-            if (crMin != null || crMax != null) {
-                String label = "CR: " + (crMin == null ? fallbackCrMin() : crMin)
-                        + "-" + (crMax == null ? fallbackCrMax() : crMax);
+            if (criteria.crMin() != null || criteria.crMax() != null) {
+                String label = "CR: " + (criteria.crMin() == null ? fallbackCrMin() : criteria.crMin())
+                        + "-" + (criteria.crMax() == null ? fallbackCrMax() : criteria.crMax());
                 chipsPane.getChildren().add(createChip(label, "chip-cr", () -> {
-                    crMin = null;
-                    crMax = null;
-                    refreshCrTriggerState();
+                    resetCrRange();
                     fireChange();
                 }));
             }
@@ -309,17 +296,11 @@ public final class FilterpaneObject {
             chip.getStyleClass().addAll("chip", styleClass);
             Label label = new Label(text);
             Button removeButton = new Button("×");
-            removeButton.getStyleClass().addAll("button", "flat", "compact", "chip-remove-btn");
+            removeButton.getStyleClass().addAll("flat", "compact", "chip-remove-btn");
             removeButton.setAccessibleText("Entfernen: " + text);
             removeButton.setOnAction(event -> onRemove.run());
             chip.getChildren().addAll(label, removeButton);
             return chip;
-        }
-
-        private static Label createFilterLabel(String text) {
-            Label label = new Label(text);
-            label.getStyleClass().add("text-secondary");
-            return label;
         }
 
         private static void updateTriggerState(Button trigger, boolean active) {
@@ -347,71 +328,36 @@ public final class FilterpaneObject {
         private final class MultiSelectFilter {
             private final String title;
             private final String chipStyleClass;
-            private final List<String> values;
             private final Set<String> selectedValues = new LinkedHashSet<>();
             private final Button trigger = new Button();
+            private final Popup popup = new Popup();
+            private final List<CheckBox> checkBoxes = new ArrayList<>();
 
             private MultiSelectFilter(String title, String chipStyleClass, List<String> values) {
                 this.title = title;
                 this.chipStyleClass = chipStyleClass;
-                this.values = values;
-                this.trigger.setText(title);
-                this.trigger.getStyleClass().add("filter-trigger");
-                this.trigger.setOnAction(event -> showMenu());
-            }
 
-            private void showMenu() {
-                ContextMenu menu = new ContextMenu();
-                menu.setAutoHide(true);
+                trigger.getStyleClass().addAll("compact", "filter-trigger");
+                trigger.setOnAction(event -> togglePopup());
 
-                TextField popupSearchField = new TextField();
-                popupSearchField.setPromptText("Suchen...");
+                VBox popupContent = new VBox(4);
+                popupContent.getStyleClass().add("filter-dropdown");
 
-                VBox options = new VBox(4);
-                ScrollPane scrollPane = new ScrollPane(options);
-                scrollPane.setFitToWidth(true);
-                scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-                scrollPane.setPrefViewportHeight(180);
-
-                Runnable rebuildOptions = () -> populateOptions(options, popupSearchField.getText());
-                popupSearchField.textProperty().addListener((observable, oldValue, newValue) -> rebuildOptions.run());
-                rebuildOptions.run();
-
-                Button clearButton = new Button("Leeren");
-                clearButton.getStyleClass().addAll("button", "compact", "flat");
-                clearButton.setOnAction(event -> {
-                    clearSelection();
-                    menu.hide();
-                    fireChange();
-                });
-
-                VBox popup = new VBox(8, popupSearchField, scrollPane, clearButton);
-                popup.getStyleClass().add("filter-dropdown");
-                popup.setPrefWidth(220);
-
-                CustomMenuItem content = new CustomMenuItem(popup, false);
-                menu.getItems().setAll(content);
-                menu.show(trigger, Side.BOTTOM, 0, 0);
-            }
-
-            private void populateOptions(VBox container, String query) {
-                container.getChildren().clear();
-                String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-                List<String> visibleValues = values.stream()
-                        .filter(value -> normalizedQuery.isEmpty() || value.toLowerCase().contains(normalizedQuery))
-                        .toList();
-                if (visibleValues.isEmpty()) {
-                    Label empty = new Label("Keine Optionen");
-                    empty.getStyleClass().add("text-muted");
-                    container.getChildren().add(empty);
-                    return;
+                if (values.size() > SEARCH_FIELD_THRESHOLD) {
+                    TextField popupSearchField = new TextField();
+                    popupSearchField.setPromptText(title + " suchen...");
+                    popupSearchField.getStyleClass().add("quick-search-field");
+                    popupSearchField.textProperty().addListener((observable, oldValue, newValue) ->
+                            filterCheckboxes(newValue));
+                    popupContent.getChildren().add(popupSearchField);
+                    popup.setOnShown(event -> Platform.runLater(popupSearchField::requestFocus));
                 }
 
-                for (String value : visibleValues) {
+                VBox checkboxList = new VBox(2);
+                for (String value : values) {
                     CheckBox checkBox = new CheckBox(value);
-                    checkBox.setSelected(selectedValues.contains(value));
-                    checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-                        if (newValue) {
+                    checkBox.setOnAction(event -> {
+                        if (checkBox.isSelected()) {
                             selectedValues.add(value);
                         } else {
                             selectedValues.remove(value);
@@ -419,7 +365,50 @@ public final class FilterpaneObject {
                         refreshState();
                         fireChange();
                     });
-                    container.getChildren().add(checkBox);
+                    checkBoxes.add(checkBox);
+                    checkboxList.getChildren().add(checkBox);
+                }
+
+                ScrollPane scrollPane = new ScrollPane(checkboxList);
+                scrollPane.setFitToWidth(true);
+                scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+                scrollPane.setMaxHeight(280);
+                scrollPane.setPrefWidth(200);
+                scrollPane.setMinWidth(160);
+
+                popupContent.getChildren().add(scrollPane);
+
+                popup.setAutoHide(true);
+                popup.getContent().add(popupContent);
+                popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                    if (event.getCode() == KeyCode.ESCAPE) {
+                        popup.hide();
+                        trigger.requestFocus();
+                        event.consume();
+                    }
+                });
+
+                refreshState();
+            }
+
+            private void togglePopup() {
+                if (popup.isShowing()) {
+                    popup.hide();
+                    return;
+                }
+                Bounds bounds = trigger.localToScreen(trigger.getBoundsInLocal());
+                if (bounds != null) {
+                    popup.show(trigger, bounds.getMinX(), bounds.getMaxY() + 2);
+                }
+            }
+
+            private void filterCheckboxes(String query) {
+                String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
+                for (CheckBox checkBox : checkBoxes) {
+                    boolean visible = normalizedQuery.isEmpty()
+                            || checkBox.getText().toLowerCase().contains(normalizedQuery);
+                    checkBox.setVisible(visible);
+                    checkBox.setManaged(visible);
                 }
             }
 
@@ -437,17 +426,27 @@ public final class FilterpaneObject {
 
             private void clearSelection() {
                 selectedValues.clear();
+                for (CheckBox checkBox : checkBoxes) {
+                    checkBox.setSelected(false);
+                }
                 refreshState();
             }
 
             private void removeValue(String value) {
                 selectedValues.remove(value);
+                for (CheckBox checkBox : checkBoxes) {
+                    if (value.equals(checkBox.getText())) {
+                        checkBox.setSelected(false);
+                        break;
+                    }
+                }
                 refreshState();
             }
 
             private void refreshState() {
-                updateTriggerState(trigger, !selectedValues.isEmpty());
-                trigger.setText(title);
+                int count = selectedValues.size();
+                trigger.setText(count > 0 ? title + " (" + count + ") ▼" : title + " ▼");
+                updateTriggerState(trigger, count > 0);
             }
         }
     }

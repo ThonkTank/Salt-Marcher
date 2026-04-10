@@ -3,17 +3,16 @@ package clean.creatures.browser;
 import clean.creatures.browser.input.ComposeBrowserInput;
 import clean.creatures.catalog.input.ComposeCatalogInput;
 import clean.creatures.statblock.input.ComposeStatblockInput;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
@@ -47,55 +46,11 @@ public final class BrowserObject {
 
     private static final class BrowserAssembly {
         private static final int PAGE_SIZE = 50;
-        private static final String SECONDARY_TEXT_STYLE = "-fx-text-fill: -sm-text-secondary; -fx-font-size: 11px;";
-        private static final String COMBO_STYLE = """
-                -fx-background-color: -sm-bg-elevated;
-                -fx-border-color: -sm-border-subtle;
-                -fx-border-radius: 3;
-                -fx-background-radius: 3;
-                """;
-        private static final String COMBO_CELL_STYLE = """
-                -fx-background-color: -sm-bg-elevated;
-                -fx-text-fill: -sm-text-primary;
-                -fx-font-size: 13px;
-                """;
-        private static final String TABLE_STYLE = """
-                -fx-background-color: -sm-bg-card;
-                -fx-border-color: transparent;
-                """;
-        private static final String TABLE_ROW_STYLE = """
-                -fx-background-color: -sm-bg-card;
-                -fx-border-color: transparent transparent -sm-border-subtle transparent;
-                -fx-cell-size: 28px;
-                """;
-        private static final String TABLE_ROW_SELECTED_STYLE = """
-                -fx-background-color: -sm-accent;
-                -fx-border-color: transparent transparent -sm-border-subtle transparent;
-                -fx-cell-size: 28px;
-                """;
-        private static final String TABLE_CELL_STYLE = "-fx-text-fill: -sm-text-primary;";
-        private static final String LINK_BUTTON_STYLE = """
-                -fx-background-color: transparent;
-                -fx-border-color: transparent;
-                -fx-padding: 0;
-                -fx-text-fill: -sm-creature-link;
-                -fx-font-weight: bold;
-                -fx-cursor: hand;
-                """;
-        private static final String ACCENT_BUTTON_STYLE = """
-                -fx-background-color: -sm-accent;
-                -fx-text-fill: -sm-text-primary;
-                -fx-font-weight: bold;
-                -fx-font-size: 11px;
-                -fx-background-radius: 3;
-                -fx-border-radius: 3;
-                -fx-padding: 2 6 2 6;
-                """;
-
         private final ComposeBrowserInput input;
         private final Label countLabel = new Label("0 Monster gefunden");
         private final Label pageLabel = new Label("Seite 1 / 1");
         private final Label placeholderLabel = new Label("Keine Monster gefunden");
+        private final Label sortLabel = new Label("Sortierung:");
         private final ComboBox<SortOption> sortComboBox = new ComboBox<>();
         private final TableView<ComposeCatalogInput.CreatureSummaryInput> tableView = new TableView<>();
         private final Button previousButton = new Button("◀ Zurück");
@@ -116,9 +71,10 @@ public final class BrowserObject {
         }
 
         private void configureBrowserChrome() {
-            countLabel.setStyle(SECONDARY_TEXT_STYLE);
-            pageLabel.setStyle(SECONDARY_TEXT_STYLE);
-            placeholderLabel.setStyle("-fx-text-fill: -sm-text-muted;");
+            countLabel.getStyleClass().add("text-secondary");
+            pageLabel.getStyleClass().add("text-secondary");
+            sortLabel.getStyleClass().add("text-muted");
+            placeholderLabel.getStyleClass().add("text-muted");
 
             sortComboBox.getItems().setAll(
                     new SortOption("Name (A-Z)", "name", "ASC"),
@@ -130,10 +86,9 @@ public final class BrowserObject {
             );
             sortComboBox.getSelectionModel().selectFirst();
             sortComboBox.valueProperty().addListener((observable, oldValue, newValue) -> resetAndSearch());
-            styleComboBox(sortComboBox);
 
-            previousButton.getStyleClass().addAll("button", "compact", "flat");
-            nextButton.getStyleClass().addAll("button", "compact", "flat");
+            previousButton.getStyleClass().addAll("compact", "flat");
+            nextButton.getStyleClass().addAll("compact", "flat");
             previousButton.setOnAction(event -> movePage(-PAGE_SIZE));
             nextButton.setOnAction(event -> movePage(PAGE_SIZE));
         }
@@ -141,34 +96,24 @@ public final class BrowserObject {
         private Node createMainContent() {
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
-            HBox topRow = new HBox(8, countLabel, spacer, sortComboBox);
+            HBox topRow = new HBox(8, countLabel, spacer, sortLabel, sortComboBox);
+            topRow.setAlignment(Pos.CENTER_LEFT);
+            topRow.setPadding(new Insets(0, 0, 6, 0));
 
             HBox pagination = new HBox(8, previousButton, pageLabel, nextButton);
+            pagination.setAlignment(Pos.CENTER);
+            pagination.setPadding(new Insets(6, 0, 0, 0));
 
-            VBox content = new VBox(8, topRow, tableView, pagination);
-            content.setPadding(new Insets(8, 8, 8, 8));
+            VBox content = new VBox(topRow, tableView, pagination);
+            content.setPadding(new Insets(8));
             VBox.setVgrow(tableView, Priority.ALWAYS);
             return content;
         }
 
         private void configureTable() {
-            tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_SUBSEQUENT_COLUMNS);
+            tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            tableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
             tableView.setPlaceholder(placeholderLabel);
-            tableView.setStyle(TABLE_STYLE);
-            tableView.setRowFactory(table -> new TableRow<>() {
-                {
-                    selectedProperty().addListener((observable, oldValue, newValue) -> applyRowStyle(this));
-                    emptyProperty().addListener((observable, oldValue, newValue) -> applyRowStyle(this));
-                }
-
-                @Override
-                protected void updateItem(ComposeCatalogInput.CreatureSummaryInput item, boolean empty) {
-                    super.updateItem(item, empty);
-                    applyRowStyle(this);
-                }
-            });
-            tableView.skinProperty().addListener((observable, oldValue, newValue) -> applyTableHeaderStyles());
-            Platform.runLater(this::applyTableHeaderStyles);
 
             TableColumn<ComposeCatalogInput.CreatureSummaryInput, ComposeCatalogInput.CreatureSummaryInput> nameColumn =
                     new TableColumn<>("Name");
@@ -179,18 +124,14 @@ public final class BrowserObject {
                 private final Button button = new Button();
 
                 {
-                    button.getStyleClass().add("flat");
-                    button.setStyle(LINK_BUTTON_STYLE);
+                    button.getStyleClass().addAll("creature-link", "flat");
                     button.setOnAction(event -> showStatblock(getItem()));
-                    button.setOnMouseEntered(event -> button.setUnderline(true));
-                    button.setOnMouseExited(event -> button.setUnderline(false));
                     button.setMaxWidth(Double.MAX_VALUE);
                 }
 
                 @Override
                 protected void updateItem(ComposeCatalogInput.CreatureSummaryInput item, boolean empty) {
                     super.updateItem(item, empty);
-                    setStyle(TABLE_CELL_STYLE);
                     if (empty || item == null) {
                         setGraphic(null);
                         return;
@@ -243,15 +184,13 @@ public final class BrowserObject {
                     private final Button button = new Button(normalizeActionLabel(input.rowActionLabel()));
 
                     {
-                        button.getStyleClass().add("compact");
-                        button.setStyle(ACCENT_BUTTON_STYLE);
+                        button.getStyleClass().addAll("accent", "compact");
                         button.setOnAction(event -> runRowAction(getItem()));
                     }
 
                     @Override
                     protected void updateItem(ComposeCatalogInput.CreatureSummaryInput item, boolean empty) {
                         super.updateItem(item, empty);
-                        setStyle(TABLE_CELL_STYLE);
                         setGraphic(empty || item == null ? null : button);
                     }
                 });
@@ -342,7 +281,6 @@ public final class BrowserObject {
                 @Override
                 protected void updateItem(T item, boolean empty) {
                     super.updateItem(item, empty);
-                    setStyle(TABLE_CELL_STYLE);
                     setText(empty ? null : formatter.apply(item));
                 }
             };
@@ -350,45 +288,6 @@ public final class BrowserObject {
 
         private TableCell<ComposeCatalogInput.CreatureSummaryInput, String> createTextCell() {
             return createValueCell(value -> value == null ? "" : value);
-        }
-
-        private void styleComboBox(ComboBox<SortOption> comboBox) {
-            comboBox.setStyle(COMBO_STYLE);
-            comboBox.setButtonCell(new ListCell<>() {
-                @Override
-                protected void updateItem(SortOption item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty || item == null ? null : item.label());
-                    setStyle(COMBO_CELL_STYLE);
-                }
-            });
-            comboBox.setCellFactory(listView -> new ListCell<>() {
-                @Override
-                protected void updateItem(SortOption item, boolean empty) {
-                    super.updateItem(item, empty);
-                    setText(empty || item == null ? null : item.label());
-                    setStyle(COMBO_CELL_STYLE);
-                }
-            });
-        }
-
-        private void applyTableHeaderStyles() {
-            tableView.lookupAll(".column-header-background").forEach(node ->
-                    node.setStyle("-fx-background-color: -sm-bg-elevated;"));
-            tableView.lookupAll(".filler").forEach(node ->
-                    node.setStyle("-fx-background-color: -sm-bg-elevated;"));
-            tableView.lookupAll(".column-header").forEach(node ->
-                    node.setStyle("-fx-background-color: -sm-bg-elevated; -fx-border-color: transparent transparent -sm-border-subtle transparent;"));
-            tableView.lookupAll(".column-header .label").forEach(node ->
-                    node.setStyle("-fx-text-fill: -sm-text-secondary; -fx-font-size: 11px;"));
-        }
-
-        private void applyRowStyle(TableRow<?> row) {
-            if (row.isEmpty()) {
-                row.setStyle(TABLE_STYLE);
-                return;
-            }
-            row.setStyle(row.isSelected() ? TABLE_ROW_SELECTED_STYLE : TABLE_ROW_STYLE);
         }
 
         private void showStatblock(ComposeCatalogInput.CreatureSummaryInput creature) {
