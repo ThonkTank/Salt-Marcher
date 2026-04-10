@@ -30,17 +30,31 @@ public final class PersistClusterRewriteRoomsRepository {
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             return features.world.dungeon.application.support.DungeonTransactionRunner.inTransaction(conn, () -> {
-                deleteRooms(conn, resolvedState.removedRoomIds());
-                List<PersistClusterRewriteRoomsState.ClusterState> persistedClusters = new ArrayList<>();
-                for (PersistClusterRewriteRoomsState.ClusterState cluster : resolvedState.rewrittenClusters()) {
-                    persistedClusters.add(persistCluster(conn, resolvedState.mapId(), cluster));
-                }
-                return new PersistClusterRewriteRoomsState(
-                        resolvedState.mapId(),
-                        persistedClusters,
-                        resolvedState.removedRoomIds());
+                return persistClusterRewriteRooms(conn, resolvedState);
             });
         }
+    }
+
+    public static PersistClusterRewriteRoomsState persistClusterRewriteRooms(
+            Connection conn,
+            PersistClusterRewriteRoomsState state
+    ) throws SQLException {
+        if (conn == null) {
+            throw new IllegalArgumentException("conn");
+        }
+        PersistClusterRewriteRoomsState resolvedState = PersistClusterRewriteRoomsState.persistClusterRewriteRooms(state);
+        if (resolvedState.rewrittenClusters().isEmpty() && resolvedState.removedRoomIds().isEmpty()) {
+            return resolvedState;
+        }
+        deleteRooms(conn, resolvedState.removedRoomIds());
+        List<PersistClusterRewriteRoomsState.ClusterState> persistedClusters = new ArrayList<>();
+        for (PersistClusterRewriteRoomsState.ClusterState cluster : resolvedState.rewrittenClusters()) {
+            persistedClusters.add(persistCluster(conn, resolvedState.mapId(), cluster));
+        }
+        return new PersistClusterRewriteRoomsState(
+                resolvedState.mapId(),
+                persistedClusters,
+                resolvedState.removedRoomIds());
     }
 
     private static PersistClusterRewriteRoomsState.ClusterState persistCluster(

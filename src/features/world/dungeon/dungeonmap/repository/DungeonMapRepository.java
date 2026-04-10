@@ -145,20 +145,27 @@ public final class DungeonMapRepository {
     ) {
         java.util.LinkedHashMap<Integer, features.world.dungeon.geometry.GridPoint> anchorsByLevel = new java.util.LinkedHashMap<>();
         for (features.world.dungeon.dungeonmap.state.PersistClusterRewriteRoomsState.LevelAnchorState anchor : room.levelAnchors()) {
-            anchorsByLevel.put(anchor.levelZ(), new features.world.dungeon.geometry.GridPoint(anchor.anchorX2(), anchor.anchorY2(), anchor.levelZ()));
+            anchorsByLevel.put(
+                    anchor.levelZ(),
+                    features.world.dungeon.geometry.GridPoint.lattice(
+                            anchor.anchorX2(),
+                            anchor.anchorY2(),
+                            anchor.levelZ()));
         }
         List<features.world.dungeon.model.structures.room.RoomExitNarration> exitNarrations = room.exitNarrations().stream()
                 .map(exitNarration -> new features.world.dungeon.model.structures.room.RoomExitNarration(
                         exitNarration.levelZ(),
-                        new features.world.dungeon.geometry.GridPoint(
-                                exitNarration.roomCellX() * 2,
-                                exitNarration.roomCellY() * 2,
+                        features.world.dungeon.geometry.GridPoint.cell(
+                                exitNarration.roomCellX(),
+                                exitNarration.roomCellY(),
                                 exitNarration.levelZ()),
                         features.world.dungeon.geometry.CardinalDirection.valueOf(exitNarration.direction()),
                         exitNarration.description()))
                 .toList();
-        return new features.world.dungeon.model.structures.room.Room(
+        return features.world.dungeon.model.structures.room.Room.metadata(
                 room.roomId(),
+                0L,
+                0L,
                 room.name(),
                 anchorsByLevel,
                 new features.world.dungeon.model.structures.room.RoomNarration(

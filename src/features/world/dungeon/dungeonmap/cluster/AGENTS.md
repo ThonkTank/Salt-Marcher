@@ -8,8 +8,9 @@
 
 - `ClusterObject` — public root owner seam for cluster-owned structures.
 - `ClusterObject.persistClusterRewriteTail(...)` — canonical cluster-owned rewrite tail seam for moving persisted rewrite fallout out of legacy `cluster/application` call paths.
-- `input/PersistClusterRewriteTailInput` — cluster-owned final tail handoff — carries the authoritative original map/rewrite payload plus constructor-projected final room rewrite rows for the clean tail slice.
-- `state/PersistClusterRewriteTailState` — passive cluster-owned rewrite-tail state — normalizes projected final room rows so later clean repository work can consume them without raw rewrite models.
+- `input/PersistClusterRewriteTailInput` — cluster-owned final tail handoff — accepts the authoritative original map/rewrite payload plus persisted cluster ids and projects the final typed room rewrite rows.
+- `input/PersistClusterRewriteTailInput.TailInput` — canonical cluster-owned rewrite-tail result — the final typed room rewrite fallout that map-owned room persistence consumes next.
+- `state/PersistClusterRewriteTailState` — passive cluster-owned rewrite-tail state — normalizes the projected final room rewrite rows without exposing raw rewrite models to later consumers.
 - `Cluster`, `ClusterDefinitionRequest`, `ClusterMutationRequest`, `ClusterRewriteRequest` — canonical cluster-owned aggregate and write vocabulary.
 - `Cluster.rewritePaint(...)` and `Cluster.rewriteDelete(...)` — aggregate-owned rewrite entrypoints for paint and delete flows.
 - Cluster topology edits commit physical `Structure` first; room metadata is a cluster-internal automatic follow-up derived from the rewritten structure instead of a tool-owned source of truth.
@@ -22,7 +23,7 @@
 - Put public cross-owner cluster access on `ClusterObject` and keep cluster identity, structure-backed edits, and cluster-local invariants on `Cluster`.
 - Let persisted cluster writes converge on `ClusterRewriteRequest` before persistence, and keep any touched legacy `DungeonClusterApplicationService` flow behind cluster-owned seams.
 - New public rewrite-tail entrypoints belong on `ClusterObject`, not under `cluster/application`.
-- Model the public rewrite tail in cluster-owned input terms and keep JDBC/session scope out of public owner inputs.
+- Model the public rewrite tail in cluster-owned input terms and keep the final tail result map-neutral so `dungeonmap` consumes typed fallout instead of raw rewrite models.
 - Let cluster rewrites remanage room metadata after topology changes; tools submit topology intent and do not hand-author room creation as a separate truth source.
 - Route map-scoped validation, rebound reconciliation, floor-delete guards, and editor previews through the existing map-owned collaborator paths when touching them, but do not treat `application/` packages as the destination for new owner-layer work.
 - Keep cluster persistence focused on cluster rows and cluster-owned structure references; keep room metadata in the room owner.

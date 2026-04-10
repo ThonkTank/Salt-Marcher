@@ -17,9 +17,10 @@
 - `DungeonMapObject` — public loaded-map seam for room, corridor, stair, transition, door, connection, traversability, initial load, explicit map selection, and reload-after-write.
 - `input/EnsureLoadedInput`, `input/SelectMapInput`, and `input/SubmitMutationInput` — canonical map-owned load/reload request family consumed by shell and editor surfaces.
 - `input/SetActiveProjectionLevelInput`, `input/SetReachableProjectionLevelInput`, and the `SetLevelOverlay*Input` requests — canonical map-owned session-state transitions for projection and overlay controls.
+- `input/PersistClusterRewriteRoomsInput` — canonical map-owned room-rewrite request family — accepts one cluster-owned final tail and persists room rows before reload/rebound reconciliation.
 - `state/PersistClusterRewriteRoomsState` — canonical passive map-owned room-rewrite persistence state — carries only final room rows, anchors, and exit narration rows for one persisted cluster rewrite commit.
-- `repository/PersistClusterRewriteRoomsRepository` — canonical map-owned room-rewrite persistence boundary — owns the JDBC transaction for rewriting room tables from `PersistClusterRewriteRoomsState`.
-- `input/PersistClusterRewriteReboundsInput` — map-owned rebound-tail request family — carries the authoritative pre-write map plus the persisted cluster ids for the canonical room-reload and cross-owner rebound tail.
+- `repository/PersistClusterRewriteRoomsRepository` — canonical map-owned room-rewrite persistence boundary — rewrites room tables from `PersistClusterRewriteRoomsState` and can either own its own transaction or join an existing map-owned JDBC write scope.
+- `input/PersistClusterRewriteReboundsInput` — map-owned rebound-tail request family — carries the authoritative pre-write map and rewrite request for the canonical reload/reconcile/rebound tail after room rows already exist.
 - `DungeonMapApplicationService` — legacy internal workflow collaborator currently used by `DungeonMapObject` for cluster-rewrite reconciliation. Keep it behind the owner seam; do not treat `application/` as the destination for new touched architecture work.
 - `DungeonMapLoadResolver` and `DungeonMapLoadingService` — legacy internal load/reload collaborators now consumed through `DungeonMapObject`. Keep them behind the owner seam; do not wire shell or editor surfaces to `application/` directly.
 - `DungeonMapRepository` — authoritative map rehydration seam over persisted owner slices.
@@ -32,7 +33,7 @@
 - Put authoritative rehydration in `repository/` and active-map plus overlay truth in `state/`.
 - Route shell/editor initial-load, select-map, and reload-after-write flows through `DungeonMapObject` instead of importing `DungeonMapLoadingService` from `application/`.
 - Route shell/editor/runtime projection-level and overlay mutations through `DungeonMapObject` instead of mutating `DungeonMapState` directly from views or controls.
-- Put new cluster-rewrite room persistence on `PersistClusterRewriteRoomsState` plus `PersistClusterRewriteRoomsRepository` instead of extending the legacy combined rebound flow.
+- Put new cluster-rewrite room persistence on `PersistClusterRewriteRoomsInput` plus `PersistClusterRewriteRoomsState` and `PersistClusterRewriteRoomsRepository`; keep room-row persistence out of the rebound-tail request.
 - If a map-owned request needs request-shaped input translation, add a matching `task/` seam rather than extending legacy `application/` packages.
 - When touching existing preview, validation, reconcile, or resolve flows that still depend on `DungeonMapApplicationService`, keep that dependency behind `DungeonMapObject` and migrate toward canonical owner layers at the nearest safe seam.
 - Keep shared traversal semantics under `connections/`, and keep structure-backed map objects under `structure/`, `cluster/`, and `corridor/`.

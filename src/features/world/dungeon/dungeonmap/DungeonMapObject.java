@@ -156,7 +156,7 @@ public final class DungeonMapObject {
         if (input.connection() == null || input.mapId() <= 0) {
             return;
         }
-        mapRepository.persistClusterRewriteRooms(
+        features.world.dungeon.dungeonmap.repository.PersistClusterRewriteRoomsRepository.persistClusterRewriteRooms(
                 input.connection(),
                 features.world.dungeon.dungeonmap.state.PersistClusterRewriteRoomsState.persistClusterRewriteRooms(input));
     }

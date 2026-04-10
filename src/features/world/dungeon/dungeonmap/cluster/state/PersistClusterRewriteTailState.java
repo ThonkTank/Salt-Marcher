@@ -142,7 +142,7 @@ public record PersistClusterRewriteTailState(
             return null;
         }
         long clusterId = cluster.clusterId();
-        if (clusterId == null || clusterId <= 0) {
+        if (clusterId <= 0) {
             return null;
         }
         ArrayList<RoomState> rooms = new ArrayList<>();
