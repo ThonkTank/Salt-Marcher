@@ -1,7 +1,6 @@
 package features.world.dungeon.dungeonmap.structure.model.room;
 
 import features.world.dungeon.geometry.GridPoint;
-import features.world.dungeon.geometry.GridPoint;
 import features.world.dungeon.model.structures.room.Room;
 import features.world.dungeon.model.structures.room.RoomNarration;
 import features.world.dungeon.dungeonmap.structure.model.Structure;
@@ -18,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+@SuppressWarnings("unused")
 final class StructureRoomProjectionIndex {
 
     private static final StructureRoomProjectionIndex EMPTY = new StructureRoomProjectionIndex(
@@ -192,7 +192,7 @@ final class StructureRoomProjectionIndex {
     }
 
     Room roomAt(GridPoint cell, int levelZ) {
-        return cell == null ? null : roomsByPoint.get(GridPoint.cell(cell.x2() / 2, cell.y2() / 2, levelZ));
+        return cell == null ? null : roomsByPoint.get(cell.withLevel(levelZ));
     }
 
     Room roomAt(GridPoint point) {
@@ -270,7 +270,7 @@ final class StructureRoomProjectionIndex {
 
     private static OverlapIndex indexRoomsByPoint(List<Room> rooms, Map<Room, Map<Integer, Set<GridPoint>>> roomCellsByRoom) {
         Map<GridPoint, Room> result = new LinkedHashMap<>();
-        boolean hasOverlaps = false;
+        Set<GridPoint> overlaps = new LinkedHashSet<>();
         for (Room room : rooms) {
             if (room == null) {
                 continue;
@@ -281,15 +281,15 @@ final class StructureRoomProjectionIndex {
                     continue;
                 }
                 for (GridPoint cell : entry.getValue()) {
-                    GridPoint point = GridPoint.cell(cell.x2() / 2, cell.y2() / 2, levelZ);
+                    GridPoint point = cell.withLevel(levelZ);
                     if (result.containsKey(point) && result.get(point) != room) {
-                        hasOverlaps = true;
+                        overlaps.add(point);
                     }
                     result.put(point, room);
                 }
             }
         }
-        return new OverlapIndex(Map.copyOf(result), hasOverlaps);
+        return new OverlapIndex(Map.copyOf(result), !overlaps.isEmpty());
     }
 
     private static Map<Integer, Set<GridPoint>> roomCellsByLevel(

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@SuppressWarnings("unused")
 final class StructureRoomGraph {
 
     private static final StructureRoomGraph EMPTY = new StructureRoomGraph(Map.of(), List.of(), Map.of(), List.of());
@@ -151,7 +152,7 @@ final class StructureRoomGraph {
         }
         List<Room> touchingRooms = new ArrayList<>();
         for (GridPoint cell : door.cellFootprint().cells().stream().sorted(GridPoint.ORDER).toList()) {
-            Room room = roomsByPoint.get(GridPoint.cell(cell.x2() / 2, cell.y2() / 2, levelZ));
+            Room room = roomsByPoint.get(cell.withLevel(levelZ));
             if (room != null && !touchingRooms.contains(room)) {
                 touchingRooms.add(room);
             }

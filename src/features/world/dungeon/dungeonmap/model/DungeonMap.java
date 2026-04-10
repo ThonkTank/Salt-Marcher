@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
  * <p>Map indices and runtime-facing cell lookups stay on `GridPoint`; shared half-step geometry belongs to
  * `GridSegment`.
  */
+@SuppressWarnings("unused")
 public final class DungeonMap {
 
     private static final DungeonMap EMPTY = new DungeonMap(0L, "Kein Dungeon", List.of(), List.of(), List.of(), List.of(), Map.of());
@@ -185,7 +186,7 @@ public final class DungeonMap {
             GridPoint preferred = roomStructure(defaultRoom).surfaceAtLevel(levelZ).center();
             GridPoint resolved = nearestTraversableCell(preferred, levelZ);
             if (resolved != null) {
-                return GridPoint.cell(cellX(resolved), cellY(resolved), levelZ);
+                return resolved.withLevel(levelZ);
             }
         }
         for (int levelZ : reachableLevels) {
@@ -194,7 +195,7 @@ public final class DungeonMap {
                     .findFirst()
                     .orElse(null);
             if (fallback != null) {
-                return GridPoint.cell(cellX(fallback), cellY(fallback), levelZ);
+                return fallback.withLevel(levelZ);
             }
         }
         return null;
@@ -725,8 +726,7 @@ public final class DungeonMap {
             return null;
         }
         return traversableCells.stream()
-                .min(Comparator
-                        .comparingInt((GridPoint candidate) -> Math.abs(cellX(candidate) - cellX(cell)) + Math.abs(cellY(candidate) - cellY(cell)))
+                .min(Comparator.<GridPoint>comparingInt(candidate -> candidate.planarCellDistanceTo(cell))
                         .thenComparing(GridPoint.ORDER))
                 .orElse(null);
     }
@@ -737,8 +737,7 @@ public final class DungeonMap {
             return null;
         }
         return candidates.stream()
-                .min(Comparator
-                        .comparingInt((GridPoint candidate) -> Math.abs(cellX(candidate) - cellX(cell)) + Math.abs(cellY(candidate) - cellY(cell)))
+                .min(Comparator.<GridPoint>comparingInt(candidate -> candidate.planarCellDistanceTo(cell))
                         .thenComparing(GridPoint.ORDER))
                 .orElse(null);
     }
@@ -1305,14 +1304,6 @@ public final class DungeonMap {
             result.put(levelEntry.getKey(), Map.copyOf(perCell));
         }
         return Map.copyOf(result);
-    }
-
-    private static int cellX(GridPoint point) {
-        return point.x2() / 2;
-    }
-
-    private static int cellY(GridPoint point) {
-        return point.y2() / 2;
     }
 
     private record ConnectionSegmentKey(int levelZ, GridSegment segment2x) {

@@ -29,6 +29,7 @@ import java.util.function.Supplier;
  * <p>These workflows produce explicit cluster rewrite plans, while the room semantics themselves live under the
  * structure-owned room subtree instead of on {@link Cluster}.</p>
  */
+@SuppressWarnings("unused")
 final class ClusterStructureEditor {
 
     private ClusterStructureEditor() {
@@ -144,7 +145,6 @@ final class ClusterStructureEditor {
         if (rooms == null || rooms.isEmpty()) {
             return List.of();
         }
-        boolean changed = false;
         List<Room> renamedRooms = new ArrayList<>(rooms.size());
         for (Room room : rooms) {
             if (room == null || room.roomId() != null || room.name() != null && !room.name().isBlank()) {
@@ -155,9 +155,8 @@ final class ClusterStructureEditor {
             Room renamedRoom = room.withName(
                     generatedName == null || generatedName.isBlank() ? "Raum neu" : generatedName.trim());
             renamedRooms.add(renamedRoom);
-            changed = true;
         }
-        return changed ? List.copyOf(renamedRooms) : rooms;
+        return renamedRooms.equals(rooms) ? rooms : List.copyOf(renamedRooms);
     }
 
     private static Cluster withClusterId(Cluster cluster, Long clusterId) {
@@ -540,15 +539,7 @@ final class ClusterStructureEditor {
         if (start == null || end == null) {
             return Integer.MAX_VALUE;
         }
-        return Math.abs(cellX(start) - cellX(end)) + Math.abs(cellY(start) - cellY(end));
-    }
-
-    private static int cellX(GridPoint point) {
-        return point.x2() / 2;
-    }
-
-    private static int cellY(GridPoint point) {
-        return point.y2() / 2;
+        return start.planarCellDistanceTo(end);
     }
 
     private static Map<Integer, Set<GridPoint>> mutableCellsByLevel(Map<Integer, Set<GridPoint>> source) {
@@ -613,7 +604,6 @@ final class ClusterStructureEditor {
         if (clusters == null || roomNameSupplier == null) {
             return clusters == null ? List.of() : List.copyOf(clusters);
         }
-        boolean changed = false;
         List<Cluster> renamedClusters = new ArrayList<>(clusters.size());
         for (Cluster cluster : clusters) {
             if (cluster == null) {
@@ -631,8 +621,7 @@ final class ClusterStructureEditor {
                     cluster.mapId(),
                     cluster,
                     renamedRooms)));
-            changed = true;
         }
-        return changed ? List.copyOf(renamedClusters) : List.copyOf(clusters);
+        return renamedClusters.equals(clusters) ? List.copyOf(clusters) : List.copyOf(renamedClusters);
     }
 }

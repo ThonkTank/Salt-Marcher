@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+@SuppressWarnings("unused")
 public final class GridPoint extends GridObject<GridPoint> {
 
     public enum Kind {
@@ -77,6 +78,18 @@ public final class GridPoint extends GridObject<GridPoint> {
 
     public GridPoint withLevel(int levelZ) {
         return levelZ == z ? this : new GridPoint(x2, y2, levelZ, true);
+    }
+
+    /**
+     * Canonical planar distance on dungeon cells. Cross-owner callers should use this instead of re-deriving
+     * half-step cell math from x2/y2 pairs.
+     */
+    public int planarCellDistanceTo(GridPoint other) {
+        GridPoint resolvedOther = Objects.requireNonNull(other, "other");
+        if (kind() != Kind.CELL || resolvedOther.kind() != Kind.CELL) {
+            throw new IllegalArgumentException("GridPoint.planarCellDistanceTo requires cell points");
+        }
+        return Math.abs(x2 - resolvedOther.x2) / 2 + Math.abs(y2 - resolvedOther.y2) / 2;
     }
 
     public GridPoint step(CardinalDirection direction) {

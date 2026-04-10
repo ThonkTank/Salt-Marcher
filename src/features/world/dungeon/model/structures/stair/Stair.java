@@ -17,6 +17,7 @@ import java.util.Set;
 /**
  * Passive stair object over canonical ordered path topology.
  */
+@SuppressWarnings("unused")
 public final class Stair implements GridTranslatable<Stair>, GridOccupant {
 
     private final GridPath path;
@@ -79,22 +80,20 @@ public final class Stair implements GridTranslatable<Stair>, GridOccupant {
             throw new IllegalArgumentException("Treppenpfad fehlt");
         }
         LinkedHashSet<Integer> seenLevels = new LinkedHashSet<>();
-        GridPoint previous = null;
-        for (GridPoint current : result) {
+        for (int index = 0; index < result.size(); index++) {
+            GridPoint current = result.get(index);
             if (!seenLevels.add(current.z())) {
                 throw new IllegalArgumentException("Treppenpfad darf jede Ebene nur einmal belegen");
             }
-            if (previous != null) {
+            if (index > 0) {
+                GridPoint previous = result.get(index - 1);
                 if (current.z() != previous.z() + 1) {
                     throw new IllegalArgumentException("Treppenpfad muss Ebenen in 1er-Schritten verbinden");
                 }
-                int planarDistance = Math.abs(current.x2() - previous.x2()) / 2
-                        + Math.abs(current.y2() - previous.y2()) / 2;
-                if (planarDistance > 1) {
+                if (previous.planarCellDistanceTo(current) > 1) {
                     throw new IllegalArgumentException("Treppenpfad verletzt die 1:1-Steigung");
                 }
             }
-            previous = current;
         }
         return resolvedPath;
     }

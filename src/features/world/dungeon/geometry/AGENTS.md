@@ -10,6 +10,7 @@
 - `GeometryObject<T>` and `GridObject<T>` — common immutable base for canonical dungeon geometry values.
 - `GridTranslatable<T>`, `GridOccupant`, `GridBounded` — canonical movement, occupancy, and boundary capability names.
 - `GridPoint`, `GridSegment`, `GridSegmentPath`, `GridArea`, `GridBoundary`, `GridPath`, `CardinalDirection` — canonical public geometry carriers and helpers.
+- `GridPoint.withLevel(...)` and `GridPoint.planarCellDistanceTo(...)` — canonical level-rebasing and planar cell-distance helpers. Reuse these instead of rebuilding half-step `x2()/y2()` math in consumer owners.
 - `GridPath.segmentPath()` plus carrier composition helpers such as `GridArea.rectangle(...)`, `GridPath.concat(...)`, and `GridSegmentPath.concat(...)` — shared geometry composition seams.
 
 ## Where New Code Goes
@@ -17,6 +18,7 @@
 - Put owner-neutral spatial algebra here.
 - Keep public coordinates lattice-only through `GridPoint.x2()/y2()/z()`.
 - Keep public movement deltas on `GridTranslation`, occupancy on `cellFootprint(): GridArea`, and aggregate boundary reads on `boundary(): GridBoundary`.
+- Keep planar cell-distance and level-rebasing semantics on `GridPoint` instead of re-deriving them inside topology, catalog, runtime, or shell owners.
 - Keep geometry immutable and value-like.
 
 ## Forbidden Drift
