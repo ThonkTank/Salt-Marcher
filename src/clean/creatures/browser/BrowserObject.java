@@ -3,31 +3,30 @@ package clean.creatures.browser;
 import clean.creatures.browser.input.ComposeBrowserInput;
 import clean.creatures.catalog.input.ComposeCatalogInput;
 import clean.creatures.statblock.input.ComposeStatblockInput;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.Separator;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TitledPane;
-import javafx.scene.layout.BorderPane;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
- * Reusable clean creature browser hosted by Encounter today and reusable by later clean features.
+ * Reusable clean creature browser table mirroring the legacy catalog browser role.
  */
 @SuppressWarnings("unused")
 public final class BrowserObject {
@@ -35,7 +34,7 @@ public final class BrowserObject {
     private final ComposeBrowserInput.BrowserInput browser;
 
     public BrowserObject(ComposeBrowserInput input) {
-        ComposeBrowserInput resolvedInput = java.util.Objects.requireNonNull(input, "input");
+        ComposeBrowserInput resolvedInput = Objects.requireNonNull(input, "input");
         this.browser = new BrowserAssembly(resolvedInput).composeBrowser();
     }
 
@@ -48,24 +47,60 @@ public final class BrowserObject {
 
     private static final class BrowserAssembly {
         private static final int PAGE_SIZE = 50;
+        private static final String SECONDARY_TEXT_STYLE = "-fx-text-fill: -sm-text-secondary; -fx-font-size: 11px;";
+        private static final String COMBO_STYLE = """
+                -fx-background-color: -sm-bg-elevated;
+                -fx-border-color: -sm-border-subtle;
+                -fx-border-radius: 3;
+                -fx-background-radius: 3;
+                """;
+        private static final String COMBO_CELL_STYLE = """
+                -fx-background-color: -sm-bg-elevated;
+                -fx-text-fill: -sm-text-primary;
+                -fx-font-size: 13px;
+                """;
+        private static final String TABLE_STYLE = """
+                -fx-background-color: -sm-bg-card;
+                -fx-border-color: transparent;
+                """;
+        private static final String TABLE_ROW_STYLE = """
+                -fx-background-color: -sm-bg-card;
+                -fx-border-color: transparent transparent -sm-border-subtle transparent;
+                -fx-cell-size: 28px;
+                """;
+        private static final String TABLE_ROW_SELECTED_STYLE = """
+                -fx-background-color: -sm-accent;
+                -fx-border-color: transparent transparent -sm-border-subtle transparent;
+                -fx-cell-size: 28px;
+                """;
+        private static final String TABLE_CELL_STYLE = "-fx-text-fill: -sm-text-primary;";
+        private static final String LINK_BUTTON_STYLE = """
+                -fx-background-color: transparent;
+                -fx-border-color: transparent;
+                -fx-padding: 0;
+                -fx-text-fill: -sm-creature-link;
+                -fx-font-weight: bold;
+                -fx-cursor: hand;
+                """;
+        private static final String ACCENT_BUTTON_STYLE = """
+                -fx-background-color: -sm-accent;
+                -fx-text-fill: -sm-text-primary;
+                -fx-font-weight: bold;
+                -fx-font-size: 11px;
+                -fx-background-radius: 3;
+                -fx-border-radius: 3;
+                -fx-padding: 2 6 2 6;
+                """;
 
         private final ComposeBrowserInput input;
-        private final TextField searchField = new TextField();
-        private final ComboBox<String> minCrComboBox = new ComboBox<>();
-        private final ComboBox<String> maxCrComboBox = new ComboBox<>();
+        private final Label countLabel = new Label("0 Monster gefunden");
+        private final Label pageLabel = new Label("Seite 1 / 1");
+        private final Label placeholderLabel = new Label("Keine Monster gefunden");
         private final ComboBox<SortOption> sortComboBox = new ComboBox<>();
-        private final ComboBox<DirectionOption> directionComboBox = new ComboBox<>();
-        private final Label countLabel = new Label("0 Treffer");
-        private final Label statusLabel = new Label();
-        private final Label pageLabel = new Label("Seite 1");
         private final TableView<ComposeCatalogInput.CreatureSummaryInput> tableView = new TableView<>();
-        private final Button previousButton = new Button("Zurueck");
-        private final Button nextButton = new Button("Weiter");
-        private final FilterGroup sizesGroup = new FilterGroup("Groessen");
-        private final FilterGroup typesGroup = new FilterGroup("Typen");
-        private final FilterGroup subtypesGroup = new FilterGroup("Subtypen");
-        private final FilterGroup biomesGroup = new FilterGroup("Biomes");
-        private final FilterGroup alignmentsGroup = new FilterGroup("Ausrichtung");
+        private final Button previousButton = new Button("◀ Zurück");
+        private final Button nextButton = new Button("Weiter ▶");
+        private ComposeCatalogInput.CriteriaInput criteria = emptyCriteria();
         private int offset;
         private int totalCount;
 
@@ -74,194 +109,172 @@ public final class BrowserObject {
         }
 
         private ComposeBrowserInput.BrowserInput composeBrowser() {
-            configureControls();
+            configureBrowserChrome();
             configureTable();
-            loadFilterOptions();
             runSearch();
-            return new ComposeBrowserInput.BrowserInput(
-                    createControlsContent(),
-                    createMainContent()
-            );
+            return new ComposeBrowserInput.BrowserInput(createMainContent(), this::applyCriteria);
         }
 
-        private void configureControls() {
-            searchField.setPromptText("Kreatur suchen");
-            searchField.setOnAction(event -> resetAndSearch());
+        private void configureBrowserChrome() {
+            countLabel.setStyle(SECONDARY_TEXT_STYLE);
+            pageLabel.setStyle(SECONDARY_TEXT_STYLE);
+            placeholderLabel.setStyle("-fx-text-fill: -sm-text-muted;");
 
             sortComboBox.getItems().setAll(
-                    new SortOption("Name", "name"),
-                    new SortOption("CR", "cr"),
-                    new SortOption("Typ", "type"),
-                    new SortOption("Groesse", "size")
+                    new SortOption("Name (A-Z)", "name", "ASC"),
+                    new SortOption("Name (Z-A)", "name", "DESC"),
+                    new SortOption("CR (aufst.)", "cr", "ASC"),
+                    new SortOption("CR (abst.)", "cr", "DESC"),
+                    new SortOption("XP (aufst.)", "xp", "ASC"),
+                    new SortOption("XP (abst.)", "xp", "DESC")
             );
             sortComboBox.getSelectionModel().selectFirst();
-
-            directionComboBox.getItems().setAll(
-                    new DirectionOption("Aufsteigend", "ASC"),
-                    new DirectionOption("Absteigend", "DESC")
-            );
-            directionComboBox.getSelectionModel().selectFirst();
+            sortComboBox.valueProperty().addListener((observable, oldValue, newValue) -> resetAndSearch());
+            styleComboBox(sortComboBox);
 
             previousButton.getStyleClass().addAll("button", "compact", "flat");
             nextButton.getStyleClass().addAll("button", "compact", "flat");
             previousButton.setOnAction(event -> movePage(-PAGE_SIZE));
             nextButton.setOnAction(event -> movePage(PAGE_SIZE));
-
-            countLabel.getStyleClass().add("text-muted");
-            statusLabel.getStyleClass().add("text-muted");
-            statusLabel.setWrapText(true);
-            pageLabel.getStyleClass().add("text-muted");
-        }
-
-        private Node createControlsContent() {
-            Button searchButton = new Button("Suchen");
-            searchButton.getStyleClass().addAll("button", "compact");
-            searchButton.setOnAction(event -> resetAndSearch());
-
-            Button resetButton = new Button("Reset");
-            resetButton.getStyleClass().addAll("button", "compact", "flat");
-            resetButton.setOnAction(event -> resetFilters());
-
-            HBox crRow = new HBox(8, wrapControl("CR min", minCrComboBox), wrapControl("CR max", maxCrComboBox));
-            HBox sortRow = new HBox(8, wrapControl("Sortierung", sortComboBox), wrapControl("Richtung", directionComboBox));
-
-            VBox controls = new VBox(
-                    10,
-                    createSectionLabel("Kreaturen"),
-                    createMutedLabel("Der erste Clean-Creature-Slice haengt hier bereits den wiederverwendbaren Browser ein."),
-                    wrapControl("Suche", searchField),
-                    crRow,
-                    sortRow,
-                    new HBox(8, searchButton, resetButton),
-                    new Separator(),
-                    sizesGroup.pane(),
-                    typesGroup.pane(),
-                    subtypesGroup.pane(),
-                    biomesGroup.pane(),
-                    alignmentsGroup.pane()
-            );
-            controls.setFillWidth(true);
-            controls.setPadding(new Insets(12));
-            return new ScrollPane(controls) {{
-                setFitToWidth(true);
-                setHbarPolicy(ScrollBarPolicy.NEVER);
-            }};
         }
 
         private Node createMainContent() {
-            VBox content = new VBox(8);
-            content.setPadding(new Insets(12));
-            content.setFillWidth(true);
-
-            Label titleLabel = createSectionLabel("Creature Browser");
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
-            HBox header = new HBox(8, titleLabel, spacer, countLabel, pageLabel);
+            HBox topRow = new HBox(8, countLabel, spacer, sortComboBox);
 
-            HBox pagination = new HBox(8, previousButton, nextButton);
+            HBox pagination = new HBox(8, previousButton, pageLabel, nextButton);
 
+            VBox content = new VBox(8, topRow, tableView, pagination);
+            content.setPadding(new Insets(8, 8, 8, 8));
             VBox.setVgrow(tableView, Priority.ALWAYS);
-            content.getChildren().addAll(header, statusLabel, tableView, pagination);
-
-            BorderPane pane = new BorderPane(content);
-            return pane;
+            return content;
         }
 
         private void configureTable() {
             tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_SUBSEQUENT_COLUMNS);
-            tableView.setPlaceholder(createMutedLabel("Keine Kreaturen gefunden"));
-
-            TableColumn<ComposeCatalogInput.CreatureSummaryInput, ComposeCatalogInput.CreatureSummaryInput> nameColumn =
-                    new TableColumn<>("Name");
-            nameColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
-            nameColumn.setCellFactory(column -> new TableCell<>() {
-                private final Button button = new Button();
-
+            tableView.setPlaceholder(placeholderLabel);
+            tableView.setStyle(TABLE_STYLE);
+            tableView.setRowFactory(table -> new TableRow<>() {
                 {
-                    button.getStyleClass().addAll("button", "compact", "flat");
-                    button.setMaxWidth(Double.MAX_VALUE);
-                    button.setOnAction(event -> {
-                        ComposeCatalogInput.CreatureSummaryInput item = getItem();
-                        if (item == null || input.showCreatureStatblock() == null) {
-                            return;
-                        }
-                        input.showCreatureStatblock().accept(
-                                new ComposeStatblockInput.ShowCreatureStatblockInput(item.creatureId(), null)
-                        );
-                    });
+                    selectedProperty().addListener((observable, oldValue, newValue) -> applyRowStyle(this));
+                    emptyProperty().addListener((observable, oldValue, newValue) -> applyRowStyle(this));
                 }
 
                 @Override
                 protected void updateItem(ComposeCatalogInput.CreatureSummaryInput item, boolean empty) {
                     super.updateItem(item, empty);
+                    applyRowStyle(this);
+                }
+            });
+            tableView.skinProperty().addListener((observable, oldValue, newValue) -> applyTableHeaderStyles());
+            Platform.runLater(this::applyTableHeaderStyles);
+
+            TableColumn<ComposeCatalogInput.CreatureSummaryInput, ComposeCatalogInput.CreatureSummaryInput> nameColumn =
+                    new TableColumn<>("Name");
+            nameColumn.setMinWidth(120);
+            nameColumn.setPrefWidth(200);
+            nameColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
+            nameColumn.setCellFactory(column -> new TableCell<>() {
+                private final Button button = new Button();
+
+                {
+                    button.getStyleClass().add("flat");
+                    button.setStyle(LINK_BUTTON_STYLE);
+                    button.setOnAction(event -> showStatblock(getItem()));
+                    button.setOnMouseEntered(event -> button.setUnderline(true));
+                    button.setOnMouseExited(event -> button.setUnderline(false));
+                    button.setMaxWidth(Double.MAX_VALUE);
+                }
+
+                @Override
+                protected void updateItem(ComposeCatalogInput.CreatureSummaryInput item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setStyle(TABLE_CELL_STYLE);
                     if (empty || item == null) {
                         setGraphic(null);
                         return;
                     }
                     button.setText(item.name());
+                    button.setAccessibleText("Stat Block: " + item.name());
                     setGraphic(button);
                 }
             });
 
             TableColumn<ComposeCatalogInput.CreatureSummaryInput, String> crColumn = new TableColumn<>("CR");
+            crColumn.setMinWidth(40);
+            crColumn.setPrefWidth(50);
+            crColumn.setMaxWidth(60);
             crColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().cr()));
-
-            TableColumn<ComposeCatalogInput.CreatureSummaryInput, Integer> xpColumn = new TableColumn<>("XP");
-            xpColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().xp()));
+            crColumn.setCellFactory(column -> createTextCell());
 
             TableColumn<ComposeCatalogInput.CreatureSummaryInput, String> typeColumn = new TableColumn<>("Typ");
+            typeColumn.setMinWidth(80);
+            typeColumn.setPrefWidth(110);
+            typeColumn.setMaxWidth(150);
             typeColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().creatureType()));
+            typeColumn.setCellFactory(column -> createTextCell());
 
-            TableColumn<ComposeCatalogInput.CreatureSummaryInput, String> sizeColumn = new TableColumn<>("Groesse");
+            TableColumn<ComposeCatalogInput.CreatureSummaryInput, String> sizeColumn = new TableColumn<>("Größe");
+            sizeColumn.setMinWidth(65);
+            sizeColumn.setPrefWidth(85);
+            sizeColumn.setMaxWidth(100);
             sizeColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().size()));
+            sizeColumn.setCellFactory(column -> createTextCell());
 
-            tableView.getColumns().setAll(nameColumn, crColumn, xpColumn, typeColumn, sizeColumn);
+            TableColumn<ComposeCatalogInput.CreatureSummaryInput, Integer> xpColumn = new TableColumn<>("XP");
+            xpColumn.setMinWidth(45);
+            xpColumn.setPrefWidth(60);
+            xpColumn.setMaxWidth(75);
+            xpColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue().xp()));
+            xpColumn.setCellFactory(column -> createValueCell(value -> value == null ? "" : Integer.toString(value)));
+
+            tableView.getColumns().setAll(nameColumn, crColumn, typeColumn, sizeColumn, xpColumn);
 
             if (input.rowAction() != null) {
                 TableColumn<ComposeCatalogInput.CreatureSummaryInput, ComposeCatalogInput.CreatureSummaryInput> actionColumn =
-                        new TableColumn<>(normalizeActionLabel(input.rowActionLabel()));
+                        new TableColumn<>("");
+                actionColumn.setMinWidth(55);
+                actionColumn.setPrefWidth(65);
+                actionColumn.setMaxWidth(75);
+                actionColumn.setSortable(false);
                 actionColumn.setCellValueFactory(data -> new ReadOnlyObjectWrapper<>(data.getValue()));
                 actionColumn.setCellFactory(column -> new TableCell<>() {
                     private final Button button = new Button(normalizeActionLabel(input.rowActionLabel()));
 
                     {
-                        button.getStyleClass().addAll("button", "compact");
-                        button.setOnAction(event -> {
-                            ComposeCatalogInput.CreatureSummaryInput item = getItem();
-                            if (item == null) {
-                                return;
-                            }
-                            input.rowAction().accept(new ComposeBrowserInput.RowActionInput(
-                                    item.creatureId(),
-                                    item.name()
-                            ));
-                        });
+                        button.getStyleClass().add("compact");
+                        button.setStyle(ACCENT_BUTTON_STYLE);
+                        button.setOnAction(event -> runRowAction(getItem()));
                     }
 
                     @Override
                     protected void updateItem(ComposeCatalogInput.CreatureSummaryInput item, boolean empty) {
                         super.updateItem(item, empty);
+                        setStyle(TABLE_CELL_STYLE);
                         setGraphic(empty || item == null ? null : button);
                     }
                 });
                 tableView.getColumns().add(actionColumn);
             }
+
+            tableView.setOnKeyPressed(event -> {
+                ComposeCatalogInput.CreatureSummaryInput selected = tableView.getSelectionModel().getSelectedItem();
+                if (selected == null || event.getCode() != KeyCode.ENTER) {
+                    return;
+                }
+                if (event.isShiftDown()) {
+                    runRowAction(selected);
+                } else {
+                    showStatblock(selected);
+                }
+                event.consume();
+            });
         }
 
-        private void loadFilterOptions() {
-            ComposeCatalogInput.LoadedFilterOptionsInput loaded = input.catalog().loadFilterOptions().apply(
-                    new ComposeCatalogInput.LoadFilterOptionsInput()
-            );
-            minCrComboBox.getItems().setAll(loaded.crValues());
-            maxCrComboBox.getItems().setAll(loaded.crValues());
-            sizesGroup.setValues(loaded.sizes());
-            typesGroup.setValues(loaded.types());
-            subtypesGroup.setValues(loaded.subtypes());
-            biomesGroup.setValues(loaded.biomes());
-            alignmentsGroup.setValues(loaded.alignments());
-            if (!loaded.success()) {
-                statusLabel.setText("Filteroptionen konnten nicht vollstaendig geladen werden.");
-            }
+        private void applyCriteria(ComposeCatalogInput.CriteriaInput input) {
+            criteria = input == null ? emptyCriteria() : input;
+            resetAndSearch();
         }
 
         private void movePage(int delta) {
@@ -278,164 +291,150 @@ public final class BrowserObject {
             runSearch();
         }
 
-        private void resetFilters() {
-            searchField.clear();
-            minCrComboBox.getSelectionModel().clearSelection();
-            maxCrComboBox.getSelectionModel().clearSelection();
-            sortComboBox.getSelectionModel().selectFirst();
-            directionComboBox.getSelectionModel().selectFirst();
-            sizesGroup.clear();
-            typesGroup.clear();
-            subtypesGroup.clear();
-            biomesGroup.clear();
-            alignmentsGroup.clear();
-            resetAndSearch();
-        }
-
         private void runSearch() {
             SortOption sortOption = sortComboBox.getValue();
-            DirectionOption directionOption = directionComboBox.getValue();
-            ComposeCatalogInput.SearchCreaturesInput searchInput = new ComposeCatalogInput.SearchCreaturesInput(
-                    new ComposeCatalogInput.CriteriaInput(
-                            searchField.getText(),
-                            minCrComboBox.getValue(),
-                            maxCrComboBox.getValue(),
-                            sizesGroup.selectedValues(),
-                            typesGroup.selectedValues(),
-                            subtypesGroup.selectedValues(),
-                            biomesGroup.selectedValues(),
-                            alignmentsGroup.selectedValues()
-                    ),
-                    List.of(),
-                    List.of(),
-                    new ComposeCatalogInput.PageInput(
-                            sortOption == null ? "name" : sortOption.sortColumn(),
-                            directionOption == null ? "ASC" : directionOption.sortDirection(),
-                            PAGE_SIZE,
-                            offset
+            ComposeCatalogInput.SearchedCreaturesInput searched = input.catalog().searchCreatures().apply(
+                    new ComposeCatalogInput.SearchCreaturesInput(
+                            criteria,
+                            List.of(),
+                            List.of(),
+                            new ComposeCatalogInput.PageInput(
+                                    sortOption == null ? "name" : sortOption.sortColumn(),
+                                    sortOption == null ? "ASC" : sortOption.sortDirection(),
+                                    PAGE_SIZE,
+                                    offset
+                            )
                     )
             );
 
-            ComposeCatalogInput.SearchedCreaturesInput searched = input.catalog().searchCreatures().apply(searchInput);
             if (searched.invalidCriteria()) {
                 totalCount = 0;
                 tableView.getItems().clear();
-                statusLabel.setText("Der gewaehlt CR-Bereich ist ungueltig.");
+                placeholderLabel.setText("Keine Monster gefunden");
                 updatePaging();
                 return;
             }
             if (!searched.success()) {
                 totalCount = 0;
                 tableView.getItems().clear();
-                statusLabel.setText("Der Clean-Kreaturenkatalog konnte nicht geladen werden.");
+                placeholderLabel.setText("Der Kreaturenkatalog konnte nicht geladen werden");
                 updatePaging();
                 return;
             }
 
+            placeholderLabel.setText("Keine Monster gefunden");
             totalCount = searched.totalCount();
             tableView.getItems().setAll(searched.creatures());
-            statusLabel.setText(searched.creatures().isEmpty()
-                    ? "Keine Treffer fuer die aktuelle Filterkombination."
-                    : "");
             updatePaging();
         }
 
         private void updatePaging() {
             int currentPage = totalCount == 0 ? 1 : (offset / PAGE_SIZE) + 1;
             int totalPages = Math.max(1, (int) Math.ceil(totalCount / (double) PAGE_SIZE));
-            countLabel.setText(totalCount + " Treffer");
+            countLabel.setText(totalCount + " Monster gefunden");
             pageLabel.setText("Seite " + currentPage + " / " + totalPages);
             previousButton.setDisable(offset <= 0);
             nextButton.setDisable(offset + PAGE_SIZE >= totalCount);
         }
 
-        private static VBox wrapControl(String labelText, Node control) {
-            Label label = createMutedLabel(labelText);
-            VBox wrapper = new VBox(4, label, control);
-            wrapper.setFillWidth(true);
-            if (control instanceof Region region) {
-                region.setMaxWidth(Double.MAX_VALUE);
+        private <T> TableCell<ComposeCatalogInput.CreatureSummaryInput, T> createValueCell(Function<T, String> formatter) {
+            return new TableCell<>() {
+                @Override
+                protected void updateItem(T item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setStyle(TABLE_CELL_STYLE);
+                    setText(empty ? null : formatter.apply(item));
+                }
+            };
+        }
+
+        private TableCell<ComposeCatalogInput.CreatureSummaryInput, String> createTextCell() {
+            return createValueCell(value -> value == null ? "" : value);
+        }
+
+        private void styleComboBox(ComboBox<SortOption> comboBox) {
+            comboBox.setStyle(COMBO_STYLE);
+            comboBox.setButtonCell(new ListCell<>() {
+                @Override
+                protected void updateItem(SortOption item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item.label());
+                    setStyle(COMBO_CELL_STYLE);
+                }
+            });
+            comboBox.setCellFactory(listView -> new ListCell<>() {
+                @Override
+                protected void updateItem(SortOption item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item.label());
+                    setStyle(COMBO_CELL_STYLE);
+                }
+            });
+        }
+
+        private void applyTableHeaderStyles() {
+            tableView.lookupAll(".column-header-background").forEach(node ->
+                    node.setStyle("-fx-background-color: -sm-bg-elevated;"));
+            tableView.lookupAll(".filler").forEach(node ->
+                    node.setStyle("-fx-background-color: -sm-bg-elevated;"));
+            tableView.lookupAll(".column-header").forEach(node ->
+                    node.setStyle("-fx-background-color: -sm-bg-elevated; -fx-border-color: transparent transparent -sm-border-subtle transparent;"));
+            tableView.lookupAll(".column-header .label").forEach(node ->
+                    node.setStyle("-fx-text-fill: -sm-text-secondary; -fx-font-size: 11px;"));
+        }
+
+        private void applyRowStyle(TableRow<?> row) {
+            if (row.isEmpty()) {
+                row.setStyle(TABLE_STYLE);
+                return;
             }
-            return wrapper;
+            row.setStyle(row.isSelected() ? TABLE_ROW_SELECTED_STYLE : TABLE_ROW_STYLE);
         }
 
-        private static Label createSectionLabel(String text) {
-            Label label = new Label(text);
-            label.getStyleClass().add("subheading");
-            return label;
+        private void showStatblock(ComposeCatalogInput.CreatureSummaryInput creature) {
+            if (creature == null || input.showCreatureStatblock() == null) {
+                return;
+            }
+            input.showCreatureStatblock().accept(
+                    new ComposeStatblockInput.ShowCreatureStatblockInput(creature.creatureId(), null)
+            );
         }
 
-        private static Label createMutedLabel(String text) {
-            Label label = new Label(text);
-            label.getStyleClass().add("text-muted");
-            label.setWrapText(true);
-            return label;
+        private void runRowAction(ComposeCatalogInput.CreatureSummaryInput creature) {
+            if (creature == null || input.rowAction() == null) {
+                return;
+            }
+            input.rowAction().accept(new ComposeBrowserInput.RowActionInput(
+                    creature.creatureId(),
+                    creature.name()
+            ));
+        }
+
+        private static ComposeCatalogInput.CriteriaInput emptyCriteria() {
+            return new ComposeCatalogInput.CriteriaInput(
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of()
+            );
         }
 
         private static String normalizeActionLabel(String value) {
-            return value == null || value.isBlank() ? "Aktion" : value.trim();
+            return value == null || value.isBlank() ? "+Add" : value.trim();
         }
 
         private record SortOption(
                 String label,
-                String sortColumn
-        ) {
-            @Override
-            public String toString() {
-                return label;
-            }
-        }
-
-        private record DirectionOption(
-                String label,
+                String sortColumn,
                 String sortDirection
         ) {
             @Override
             public String toString() {
                 return label;
-            }
-        }
-
-        private static final class FilterGroup {
-            private final VBox content = new VBox(4);
-            private final TitledPane pane;
-            private final List<CheckBox> checkBoxes = new ArrayList<>();
-
-            private FilterGroup(String title) {
-                pane = new TitledPane(title, content);
-                pane.setExpanded(false);
-                pane.setAnimated(false);
-            }
-
-            private void setValues(List<String> values) {
-                content.getChildren().clear();
-                checkBoxes.clear();
-                for (String value : values) {
-                    if (value == null || value.isBlank()) {
-                        continue;
-                    }
-                    CheckBox checkBox = new CheckBox(value);
-                    checkBoxes.add(checkBox);
-                    content.getChildren().add(checkBox);
-                }
-                if (checkBoxes.isEmpty()) {
-                    content.getChildren().add(createMutedLabel("Keine Optionen"));
-                }
-            }
-
-            private List<String> selectedValues() {
-                return checkBoxes.stream()
-                        .filter(CheckBox::isSelected)
-                        .map(CheckBox::getText)
-                        .toList();
-            }
-
-            private void clear() {
-                checkBoxes.forEach(checkBox -> checkBox.setSelected(false));
-            }
-
-            private TitledPane pane() {
-                return pane;
             }
         }
     }

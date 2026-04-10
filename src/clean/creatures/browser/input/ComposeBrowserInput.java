@@ -19,8 +19,8 @@ public record ComposeBrowserInput(
     }
 
     public record BrowserInput(
-            Node controlsContent,
-            Node mainContent
+            Node mainContent,
+            java.util.function.Consumer<ComposeCatalogInput.CriteriaInput> applyCriteria
     ) {
     }
 }

@@ -1,16 +1,29 @@
 .clean-root {
-    -sm-bg-darkest:  #12181c;
-    -sm-bg-panel:    #1a2025;
-    -sm-bg-card:     #232b2f;
+    -sm-bg-darkest: #12181c;
+    -sm-bg-panel: #1a2025;
+    -sm-bg-card: #232b2f;
     -sm-bg-elevated: #26282a;
 
-    -sm-text-primary:   #ecedee;
+    -sm-text-primary: #ecedee;
     -sm-text-secondary: #a4a7ab;
-    -sm-text-muted:     #969aa0;
+    -sm-text-muted: #969aa0;
 
-    -sm-accent:       #1e7fd4;
+    -sm-accent: #1e7fd4;
     -sm-accent-hover: #41a9f2;
     -sm-border-subtle: #333a3f;
+    -sm-creature-link: #41a9f2;
+    -sm-chip-type-bg: #1a2a3e;
+    -sm-chip-type-border: #305590;
+    -sm-chip-biome-bg: #1a3025;
+    -sm-chip-biome-border: #307045;
+    -sm-chip-size-bg: #2a1a30;
+    -sm-chip-size-border: #553070;
+    -sm-chip-align-bg: #30251a;
+    -sm-chip-align-border: #705530;
+    -sm-chip-sub-bg: #1a3030;
+    -sm-chip-sub-border: #307070;
+    -sm-chip-cr-bg: #1a2530;
+    -sm-chip-cr-border: #305070;
 
     -fx-font-family: "SansSerif";
     -fx-font-size: 13px;

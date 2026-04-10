@@ -4,6 +4,8 @@ import clean.creatures.browser.BrowserObject;
 import clean.creatures.browser.input.ComposeBrowserInput;
 import clean.creatures.catalog.CatalogObject;
 import clean.creatures.catalog.input.ComposeCatalogInput;
+import clean.creatures.filterpane.FilterpaneObject;
+import clean.creatures.filterpane.input.ComposeFilterpaneInput;
 import clean.creatures.input.ComposeCatalogcontentInput;
 import clean.creatures.statblock.StatblockObject;
 import clean.creatures.statblock.input.ComposeStatblockInput;
@@ -41,6 +43,10 @@ public final class CreaturesObject {
             ComposeCatalogInput.CatalogInput catalog =
                     new CatalogObject(composeCatalogInput).composeCatalog(composeCatalogInput);
 
+            ComposeCatalogInput.LoadedFilterOptionsInput filterOptions = catalog.loadFilterOptions().apply(
+                    new ComposeCatalogInput.LoadFilterOptionsInput()
+            );
+
             ComposeStatblockInput composeStatblockInput = new ComposeStatblockInput(catalog);
             ComposeStatblockInput.StatblockInput statblock =
                     new StatblockObject(composeStatblockInput).composeStatblock(composeStatblockInput);
@@ -54,8 +60,16 @@ public final class CreaturesObject {
             ComposeBrowserInput.BrowserInput browser =
                     new BrowserObject(composeBrowserInput).composeBrowser(composeBrowserInput);
 
+            ComposeFilterpaneInput composeFilterpaneInput = new ComposeFilterpaneInput(
+                    filterOptions,
+                    browser.applyCriteria(),
+                    null
+            );
+            ComposeFilterpaneInput.FilterpaneInput filterpane =
+                    new FilterpaneObject(composeFilterpaneInput).composeFilterpane(composeFilterpaneInput);
+
             return new ComposeCatalogcontentInput.CatalogcontentInput(new clean.catalog.input.ComposeCatalogInput.CatalogcontentInput(
-                    browser.controlsContent(),
+                    filterpane.controlsContent(),
                     browser.mainContent(),
                     statblock.onShellReady()
             ));
