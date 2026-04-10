@@ -14,8 +14,10 @@
 
 - Put shared CLI import orchestration, file collection, transaction batching, and import progress semantics under `importer/pipeline`.
 - Keep feature-specific parse/persist steps in the owning feature import service or the monster import service when the behavior is monster-only.
+- Treat creature stat-block extraction and parsing as creature-owned code behind `features.creatures.parsing.ParsingObject`.
 
 ## Forbidden Drift
 
 - Do not recreate bulk-import transaction loops in each CLI importer main.
 - Do not move feature-owned parsing or repository writes into generic importer utilities.
+- Do not keep canonical creature stat-block parsing in `src/importer`.

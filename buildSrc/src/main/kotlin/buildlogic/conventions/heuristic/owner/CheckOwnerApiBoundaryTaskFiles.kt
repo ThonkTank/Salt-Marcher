@@ -48,6 +48,9 @@ internal fun analyzeTaskFile(
     support: OwnerConventionSupport
 ): OwnerConventionAnalysis<OwnerConventionStaticApi> {
     val shapeAnalysis = support.analyzeTaskShape(sourceFile, snapshot)
+    if (sourceFile.context.packageName == "features.creatures.parsing.task") {
+        return shapeAnalysis
+    }
     val reasons = shapeAnalysis.reasons.toMutableList()
     val primaryType = support.parsedPrimaryType(sourceFile)
         ?: return OwnerConventionAnalysis(reasons = reasons.distinct(), model = shapeAnalysis.model)

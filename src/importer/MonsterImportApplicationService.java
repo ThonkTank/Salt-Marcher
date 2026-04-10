@@ -2,6 +2,8 @@ package importer;
 
 import database.DatabaseManager;
 import features.creatures.model.Creature;
+import features.creatures.parsing.ParsingObject;
+import features.creatures.parsing.input.ParseDocumentInput;
 import features.creatures.repository.CreatureRepository;
 import features.creatures.repository.identity.CreatureImportAliasRepository;
 import features.creatures.application.identity.CreatureImportIdentityService;
@@ -29,6 +31,7 @@ public final class MonsterImportApplicationService {
     public static final Path DEFAULT_MONSTER_DATA_DIR = Path.of("data", "monsters");
 
     private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+    private static final ParsingObject PARSING_OBJECT = new ParsingObject();
 
     private MonsterImportApplicationService() {
         throw new AssertionError("No instances");
@@ -60,7 +63,8 @@ public final class MonsterImportApplicationService {
         String sourceSlug = SlugIdentity.slugFromFilename(filename);
         String slugKey = SlugIdentity.slugKey(sourceSlug);
         Long externalId = SlugIdentity.extractIdFromFilename(filename);
-        Creature creature = HtmlStatBlockParser.parse(Jsoup.parse(Files.readString(path)));
+        Creature creature = PARSING_OBJECT.parseDocument(
+                new ParseDocumentInput(Jsoup.parse(Files.readString(path)))).creature();
         creature.SourceSlug = sourceSlug;
         creature.SlugKey = slugKey;
         if (creature.Name == null || creature.Name.isBlank()) {

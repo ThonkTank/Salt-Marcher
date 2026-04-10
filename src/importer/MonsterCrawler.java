@@ -1,8 +1,9 @@
 package importer;
 
+import features.creatures.parsing.ParsingObject;
+import features.creatures.parsing.input.ExtractStatBlockInput;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
 import shared.crawler.config.input.LoadRuntimeConfigInput;
@@ -40,10 +41,12 @@ public class MonsterCrawler {
 
     private final ComposeHttpInput.CrawlerHttpInput crawlerHttp;
     private final Path outputDir;
+    private final ParsingObject parsingObject;
 
     public MonsterCrawler(ComposeHttpInput.CrawlerHttpInput crawlerHttp, Path outputDir) {
         this.crawlerHttp = crawlerHttp;
         this.outputDir = outputDir;
+        this.parsingObject = new ParsingObject();
     }
 
     // -------------------------------------------------------------------------
@@ -154,7 +157,7 @@ public class MonsterCrawler {
         String html = get(url);
         Document doc = Jsoup.parse(html, BASE_URL);
 
-        String text = extractStatBlock(doc);
+        String text = parsingObject.extractStatBlock(new ExtractStatBlockInput(doc)).html();
 
         if (text.isBlank()) {
             throw new IOException("No stat block content found. Page may not be accessible.");
@@ -162,24 +165,6 @@ public class MonsterCrawler {
 
         Files.writeString(outFile, text);
         System.out.println("  → Saved: " + outFile.getFileName());
-    }
-
-    // -------------------------------------------------------------------------
-    // HTML extraction: stat block text
-    // -------------------------------------------------------------------------
-
-    private String extractStatBlock(Document doc) {
-        Element block = HtmlStatBlockParser.findStatBlock(doc);
-        if (block == null) return "";
-
-        // Habitat/Environment tags are outside the stat block in the page
-        // <p class="tags environment-tags">Habitat: <span class="tag environment-tag">Forest</span>...
-        StringBuilder sb = new StringBuilder(block.outerHtml());
-        Element envTags = doc.selectFirst("p.environment-tags");
-        if (envTags != null) {
-            sb.append("\n").append(envTags.outerHtml());
-        }
-        return sb.toString();
     }
 
     // -------------------------------------------------------------------------

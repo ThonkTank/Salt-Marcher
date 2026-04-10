@@ -35,10 +35,10 @@ import java.util.regex.Pattern;
  *   </div>
  *   <div class="source-description">Dungeon Master's Guide, pg. 234</div>
  *
- * <p>Unlike {@link HtmlStatBlockParser} which exposes a single {@code parse()} entry point
- * (internally auto-detecting the 2014/2024 stat block format), this parser exposes two methods
- * ({@link #parseEquipment} and {@link #parseMagicItem}) because the HTML structure of equipment
- * and magic item pages is too different to unify behind a single dispatcher.
+ * <p>Unlike the creature parsing seam, which exposes a single document-parse request for both
+ * 2014 and 2024 monster stat blocks, this parser exposes two methods ({@link #parseEquipment}
+ * and {@link #parseMagicItem}) because the HTML structure of equipment and magic item pages is
+ * too different to unify behind a single dispatcher.
  */
 @SuppressWarnings("unused")
 public final class HtmlItemParser {
