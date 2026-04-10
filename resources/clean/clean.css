@@ -38,23 +38,41 @@
     -fx-text-fill: -sm-text-primary;
 }
 
+.separator .line {
+    -fx-border-color: -sm-border-subtle;
+}
+
+.shell-chrome {
+    -fx-background-color: -sm-bg-panel;
+}
+
+.shell-pane {
+    -fx-background-color: -sm-bg-darkest;
+}
+
+.card {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 12;
+    -fx-spacing: 8;
+}
+
 .text-muted {
     -fx-text-fill: -sm-text-muted;
     -fx-font-size: 11px;
 }
 
-.title {
-    -fx-font-weight: bold;
-    -fx-font-size: 15px;
-}
-
-.large {
+.heading {
     -fx-font-weight: bold;
     -fx-font-size: 16px;
 }
 
-.bold {
+.subheading {
+    -fx-text-fill: -sm-text-muted;
     -fx-font-weight: bold;
+    -fx-font-size: 11px;
 }
 
 .button {
@@ -91,103 +109,25 @@
     -fx-background-color: derive(-sm-bg-elevated, 10%);
 }
 
-.remove-btn {
-    -fx-font-size: 16px;
-}
-
-.toolbar {
-    -fx-background-color: -sm-bg-panel;
-    -fx-padding: 6 12 6 12;
-    -fx-border-color: transparent transparent -sm-border-subtle transparent;
-}
-
-.nav-sidebar {
-    -fx-background-color: -sm-bg-panel;
-    -fx-padding: 8 4 8 4;
-    -fx-border-color: transparent -sm-border-subtle transparent transparent;
-    -fx-pref-width: 48;
-    -fx-min-width: 48;
-    -fx-max-width: 48;
-}
-
-.nav-btn {
+.toggle-control {
     -fx-background-color: transparent;
     -fx-background-radius: 6;
-    -fx-pref-width: 36;
-    -fx-pref-height: 36;
-    -fx-min-width: 36;
-    -fx-min-height: 36;
-    -fx-padding: 0;
+    -fx-border-radius: 6;
     -fx-cursor: hand;
-    -fx-font-size: 18px;
     -fx-text-fill: -sm-text-secondary;
 }
 
-.nav-btn:hover {
+.toggle-control:hover {
     -fx-background-color: -sm-bg-elevated;
     -fx-text-fill: -sm-text-primary;
 }
 
-.nav-btn:selected {
-    -fx-background-color: #165fa0;
+.toggle-control:selected {
+    -fx-background-color: -sm-accent;
     -fx-text-fill: -sm-text-primary;
 }
 
-.nav-btn:focused {
+.toggle-control:focused {
     -fx-border-color: -sm-accent-hover;
     -fx-border-width: 2;
-}
-
-.control-panel {
-    -fx-background-color: -sm-bg-panel;
-}
-
-.section-header {
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-padding: 6 8 4 8;
-}
-
-.inspector-pane {
-    -fx-background-color: -sm-bg-darkest;
-}
-
-.stat-block-fixed-header {
-    -fx-background-color: -sm-bg-elevated;
-    -fx-border-color: transparent transparent -sm-border-subtle transparent;
-    -fx-border-width: 0 0 1 0;
-    -fx-padding: 4 8 4 8;
-}
-
-.scene-pane {
-    -fx-background-color: -sm-bg-darkest;
-}
-
-.scene-tab-bar {
-    -fx-background-color: -sm-bg-panel;
-    -fx-border-color: transparent transparent -sm-border-subtle transparent;
-    -fx-border-width: 1;
-}
-
-.scene-tab {
-    -fx-background-color: transparent;
-    -fx-background-radius: 4 4 0 0;
-    -fx-text-fill: -sm-text-secondary;
-    -fx-font-size: 12px;
-    -fx-padding: 4 10 4 10;
-    -fx-cursor: hand;
-}
-
-.scene-tab:hover {
-    -fx-background-color: -sm-bg-elevated;
-    -fx-text-fill: -sm-text-primary;
-}
-
-.scene-tab:selected {
-    -fx-background-color: -sm-bg-darkest;
-    -fx-text-fill: -sm-text-primary;
-    -fx-border-color: -sm-border-subtle -sm-border-subtle transparent -sm-border-subtle;
-    -fx-border-width: 1;
-    -fx-border-radius: 4 4 0 0;
-    -fx-background-radius: 4 4 0 0;
 }

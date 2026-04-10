@@ -35,7 +35,7 @@ public final class HexeditorObject {
 
         private ComposeHexeditorInput.HexeditorInput composeHexeditor() {
             Label title = new Label("Map Editor: Hexmap");
-            title.getStyleClass().add("title");
+            title.getStyleClass().add("heading");
 
             Label mapLabel = createMutedLabel("Aktive Karte: " + normalizeText(input.map().title()));
             Label summaryLabel = createMutedLabel(normalizeText(input.map().summary()));

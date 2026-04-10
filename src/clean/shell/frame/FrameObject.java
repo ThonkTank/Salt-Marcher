@@ -1,14 +1,20 @@
 package clean.shell.frame;
 
 import clean.shell.frame.input.ComposeFrameInput;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.BorderStrokeStyle;
+import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 
 /**
  * Clean shell frame owner for the cockpit layout structure.
@@ -43,8 +49,10 @@ public final class FrameObject {
             root.getStyleClass().add("clean-root");
 
             HBox toolbarShell = new HBox(8);
-            toolbarShell.getStyleClass().add("toolbar");
+            toolbarShell.getStyleClass().add("shell-chrome");
             toolbarShell.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            toolbarShell.setPadding(new Insets(6, 12, 6, 12));
+            toolbarShell.setBorder(createBorder(0, 0, 1, 0));
             if (input.toolbarContent() != null) {
                 HBox.setHgrow(input.toolbarContent(), Priority.ALWAYS);
                 toolbarShell.getChildren().add(input.toolbarContent());
@@ -52,8 +60,13 @@ public final class FrameObject {
             root.setTop(toolbarShell);
 
             VBox navigationShell = new VBox();
-            navigationShell.getStyleClass().add("nav-sidebar");
+            navigationShell.getStyleClass().add("shell-chrome");
             navigationShell.setAlignment(javafx.geometry.Pos.TOP_CENTER);
+            navigationShell.setPadding(new Insets(8, 4, 8, 4));
+            navigationShell.setPrefWidth(48);
+            navigationShell.setMinWidth(48);
+            navigationShell.setMaxWidth(48);
+            navigationShell.setBorder(createBorder(0, 1, 0, 0));
             if (input.navigationContent() != null) {
                 VBox.setVgrow(input.navigationContent(), Priority.ALWAYS);
                 navigationShell.getChildren().add(input.navigationContent());
@@ -61,7 +74,7 @@ public final class FrameObject {
             root.setLeft(navigationShell);
 
             VBox controlsPanel = new VBox();
-            controlsPanel.getStyleClass().add("control-panel");
+            controlsPanel.getStyleClass().add("shell-chrome");
             controlsPanel.setPrefWidth(240);
             controlsPanel.setMinWidth(200);
             controlsPanel.setMaxHeight(Double.MAX_VALUE);
@@ -108,14 +121,23 @@ public final class FrameObject {
 
         private static VBox createPlaceholderPane(String titleText, String bodyText) {
             Label title = new Label(titleText);
-            title.getStyleClass().addAll("section-header", "text-muted");
+            title.getStyleClass().add("subheading");
             Label body = new Label(bodyText);
             body.getStyleClass().add("text-muted");
             body.setWrapText(true);
             VBox box = new VBox(8, title, body);
             box.setFillWidth(true);
-            box.setPadding(new javafx.geometry.Insets(12));
+            box.setPadding(new Insets(12));
             return box;
+        }
+
+        private static Border createBorder(double top, double right, double bottom, double left) {
+            return new Border(new BorderStroke(
+                    Color.web("#333a3f"),
+                    BorderStrokeStyle.SOLID,
+                    null,
+                    new BorderWidths(top, right, bottom, left)
+            ));
         }
     }
 }

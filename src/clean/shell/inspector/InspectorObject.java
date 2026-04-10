@@ -7,11 +7,16 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.BorderStrokeStyle;
+import javafx.scene.layout.BorderWidths;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 
 /**
  * Clean shell-owned global inspector owner.
@@ -49,10 +54,10 @@ public final class InspectorObject {
         }
 
         private ComposeInspectorInput.InspectorInput composeInspector() {
-            titleLabel.getStyleClass().add("bold");
+            titleLabel.getStyleClass().add("heading");
             backButton.getStyleClass().addAll("compact", "flat");
             forwardButton.getStyleClass().addAll("compact", "flat");
-            clearButton.getStyleClass().addAll("compact", "remove-btn");
+            clearButton.getStyleClass().addAll("compact", "flat");
             backButton.setAccessibleText("Zurueck");
             forwardButton.setAccessibleText("Vorwaerts");
             clearButton.setAccessibleText("Details schliessen");
@@ -61,7 +66,9 @@ public final class InspectorObject {
             HBox.setHgrow(spacer, Priority.ALWAYS);
             HBox header = new HBox(8, backButton, forwardButton, titleLabel, spacer, clearButton);
             header.setAlignment(Pos.CENTER_LEFT);
-            header.getStyleClass().add("stat-block-fixed-header");
+            header.getStyleClass().add("shell-chrome");
+            header.setPadding(new Insets(4, 8, 4, 8));
+            header.setBorder(createBottomBorder());
 
             contentHost.getChildren().setAll(placeholder);
 
@@ -70,7 +77,7 @@ public final class InspectorObject {
             scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
             VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
-            root.getStyleClass().add("inspector-pane");
+            root.getStyleClass().add("shell-pane");
             root.getChildren().setAll(header, scrollPane);
 
             backButton.setOnAction(event -> goBack());
@@ -209,6 +216,15 @@ public final class InspectorObject {
 
         private static String normalizeText(String value) {
             return value == null ? "" : value.trim();
+        }
+
+        private static Border createBottomBorder() {
+            return new Border(new BorderStroke(
+                    Color.web("#333a3f"),
+                    BorderStrokeStyle.SOLID,
+                    null,
+                    new BorderWidths(0, 0, 1, 0)
+            ));
         }
 
         private record EntryModel(

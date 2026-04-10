@@ -5,7 +5,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.ToggleButton;
@@ -50,7 +49,7 @@ public final class NavigationObject {
             String initialSurfaceId = resolveInitialSurfaceId(surfaces, input.initialSurfaceId());
 
             Label toolbarTitle = new Label();
-            toolbarTitle.getStyleClass().add("large");
+            toolbarTitle.getStyleClass().add("heading");
             StackPane toolbarItemsHost = new StackPane();
             Region toolbarSpacer = new Region();
             HBox.setHgrow(toolbarSpacer, Priority.ALWAYS);
@@ -123,15 +122,18 @@ public final class NavigationObject {
                         ? surface.surfaceId()
                         : surface.navigationIconText();
                 ToggleButton button = new ToggleButton(buttonLabel);
-                button.getStyleClass().add("nav-btn");
+                button.getStyleClass().add("toggle-control");
                 button.setToggleGroup(toggleGroup);
                 button.setFocusTraversable(false);
                 button.setTooltip(new Tooltip(surface.title()));
                 button.setAccessibleText(surface.title());
+                button.setMinSize(36, 36);
+                button.setPrefSize(36, 36);
+                button.setMaxWidth(36);
+                button.setPadding(Insets.EMPTY);
                 if (surface.navigationGraphic() != null) {
                     button.setText("");
                     button.setGraphic(surface.navigationGraphic());
-                    button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
                     installGraphicColors(button, surface.navigationGraphic());
                 }
                 if (surface.surfaceId().equals(activeSurfaceId[0])) {

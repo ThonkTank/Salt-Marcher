@@ -35,7 +35,7 @@ public final class DungeoneditorObject {
 
         private ComposeDungeoneditorInput.DungeoneditorInput composeDungeoneditor() {
             Label title = new Label("Map Editor: Dungeon");
-            title.getStyleClass().add("title");
+            title.getStyleClass().add("heading");
 
             Label mapLabel = createMutedLabel("Aktive Karte: " + normalizeText(input.map().title()));
             Label summaryLabel = createMutedLabel(normalizeText(input.map().summary()));

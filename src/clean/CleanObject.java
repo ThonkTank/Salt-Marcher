@@ -93,7 +93,7 @@ public final class CleanObject {
                     new Label("Clean Shell aktiv"),
                     new Label("Die globale Szene wurde beim Start fuer die vorbereiteten Featuretabs registriert.")
             );
-            initialContent.getStyleClass().add("list-card");
+            initialContent.getStyleClass().add("card");
             ComposeSceneInput.HandleInput handle = hooks.sceneRegistry().registerScene().apply(
                     new ComposeSceneInput.RegistrationInput("Clean", initialContent)
             );
@@ -132,7 +132,7 @@ public final class CleanObject {
                         new Label("Async bereit"),
                         new Label("Der shell-owned Hintergrundpfad hat den globalen Clean-Status aktualisiert.")
                 );
-                readyContent.getStyleClass().add("list-card");
+                readyContent.getStyleClass().add("card");
                 sceneHandle.setContent().accept(readyContent);
                 sceneHandle.activate().run();
             }

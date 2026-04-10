@@ -96,7 +96,7 @@ public final class TraveltabObject {
 
         private static VBox createControls(ComboBox<LoadMapsInput.MapInput> mapSelector, Label activeModeLabel) {
             Label header = new Label("Runtime");
-            header.getStyleClass().addAll("section-header", "text-muted");
+            header.getStyleClass().add("subheading");
 
             Label mapLabel = createMutedLabel("Karte");
             Label noteLabel = createMutedLabel(
@@ -156,7 +156,7 @@ public final class TraveltabObject {
 
         private static Label createTitleLabel(String text) {
             Label label = new Label(text);
-            label.getStyleClass().add("title");
+            label.getStyleClass().add("heading");
             return label;
         }
 

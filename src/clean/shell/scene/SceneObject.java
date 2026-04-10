@@ -47,8 +47,8 @@ public final class SceneObject {
 
         private ComposeSceneInput.SceneInput composeScene() {
             tabBar.setAlignment(Pos.CENTER_LEFT);
-            tabBar.setPadding(new Insets(4, 0, 0, 0));
-            tabBar.getStyleClass().add("scene-tab-bar");
+            tabBar.setPadding(new Insets(4, 8, 0, 8));
+            tabBar.getStyleClass().add("shell-chrome");
 
             placeholderLabel.getStyleClass().add("text-muted");
             placeholderLabel.setWrapText(true);
@@ -57,7 +57,7 @@ public final class SceneObject {
             contentHost.getChildren().setAll(placeholder);
             VBox.setVgrow(contentHost, Priority.ALWAYS);
 
-            root.getStyleClass().add("scene-pane");
+            root.getStyleClass().add("shell-pane");
             root.getChildren().setAll(tabBar, contentHost);
             rebuildTabBar();
 
@@ -133,7 +133,8 @@ public final class SceneObject {
             private TabEntry(String label, Node initialContent) {
                 this.label = label;
                 this.button = new ToggleButton(label);
-                this.button.getStyleClass().add("scene-tab");
+                this.button.getStyleClass().add("toggle-control");
+                this.button.setPadding(new Insets(4, 10, 4, 10));
                 this.button.setToggleGroup(toggleGroup);
                 this.button.setOnAction(event -> activateTab(this));
                 this.content = initialContent;

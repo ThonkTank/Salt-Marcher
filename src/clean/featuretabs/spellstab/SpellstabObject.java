@@ -76,13 +76,13 @@ public final class SpellstabObject {
 
         private static Label createSectionLabel(String text) {
             Label label = new Label(text);
-            label.getStyleClass().addAll("section-header", "text-muted");
+            label.getStyleClass().add("subheading");
             return label;
         }
 
         private static Label createTitleLabel(String text) {
             Label label = new Label(text);
-            label.getStyleClass().add("title");
+            label.getStyleClass().add("heading");
             return label;
         }
 
