@@ -89,7 +89,7 @@ public final class AppObject extends Application {
         shell.addPersistentToolbarItem(partyModule.toolbarItem());
         adventuringDayToolbarModule.refreshActivePartyState();
 
-        WorldObject worldObject = new WorldObject(shell.getDetailsNavigator());
+        WorldObject worldObject = new WorldObject(shell.getDetailsNavigator(), shell.getSceneRegistry());
         worldObject.registerScenes(new RegisterScenesInput(shell.getSceneRegistry()));
         var worldViews = worldObject.views(new ViewsInput(null, null, null, null));
         AppView overworldView = worldViews.overworldView();

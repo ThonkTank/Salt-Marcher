@@ -13,7 +13,7 @@
 - `features.world.api.ApiObject` — compatibility world boundary. Keep old callers stable here, but do not treat `api/` as placement precedent for new world-owned code.
 - `features.world.hexmap.HexmapObject` — hexmap feature root seam — composes and returns the overworld/editor surfaces plus shared travel surface wiring consumed by the world boundary.
 - `features.world.hexmap.catalog.CatalogObject` — canonical hexmap map-catalog and persistence seam consumed by hexmap editor and overworld workflows.
-- `features.world.dungeonclean.DungeoncleanObject` — parallel clean dungeon rebuild seam. Use it for migrated capabilities instead of reopening legacy `features.world.dungeon` seams.
+- `features.world.dungeonclean.DungeoncleanObject` — canonical world-facing dungeon root boundary — returns the dungeon runtime view plus the clean dungeon editor view consumed by the world boundary.
 - `features.campaignstate.CampaignstateObject` — campaign-state seam consumed for persisted world-session position and time progression.
 
 ## Where New Code Goes
@@ -23,6 +23,7 @@
 - Keep editor-facing world requests on explicit world-owned seams with typed request payloads such as `loadMapList`, `loadMap`, and `updateMap`.
 - Put world-wide read bridges under `features.world.read` instead of `features.world.api.read`.
 - Let `HexmapObject` own the top-level hexmap composition handoff instead of rebuilding its travel/editor/runtime pieces in the world parent.
+- Let `DungeoncleanObject` own the top-level dungeon composition handoff instead of keeping `features.world.dungeon.DungeonObject` as the factual world-facing assembler.
 - Keep `api/` as compatibility only; do not place new world-owned boundary logic there.
 - Do not use `application` naming here as placement precedent for new touched architecture work.
 
@@ -32,3 +33,4 @@
 - Do not add new world package families without naming a stable world-owned owner first.
 - Do not keep `ApiObject` as the factual world composition root.
 - Do not keep `api/read` as the factual world read bridge.
+- Do not keep `features.world.dungeon.DungeonObject` as the factual world-facing dungeon root once `dungeonclean` owns the boundary.

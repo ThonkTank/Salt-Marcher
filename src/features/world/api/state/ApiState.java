@@ -4,16 +4,19 @@ package features.world.api.state;
 public final class ApiState {
 
     private final features.world.hexmap.input.ComposeInput.ComposedHexmapInput hexmap;
-    private final features.world.dungeon.DungeonObject dungeonObject;
+    private final features.world.dungeonclean.input.ViewsInput.LoadedViewsInput dungeonViews;
 
-    public ApiState(ui.shell.DetailsNavigator detailsNavigator) {
+    public ApiState(ui.shell.DetailsNavigator detailsNavigator, ui.shell.SceneRegistry sceneRegistry) {
         ui.shell.DetailsNavigator resolvedDetailsNavigator =
                 java.util.Objects.requireNonNull(detailsNavigator, "detailsNavigator");
+        ui.shell.SceneRegistry resolvedSceneRegistry =
+                java.util.Objects.requireNonNull(sceneRegistry, "sceneRegistry");
         this.hexmap = new features.world.hexmap.HexmapObject().compose(
                 new features.world.hexmap.input.ComposeInput(resolvedDetailsNavigator));
-        this.dungeonObject = new features.world.dungeon.DungeonObject(
-                new features.world.dungeon.input.ComposeDungeonInput(
+        this.dungeonViews = new features.world.dungeonclean.DungeoncleanObject().views(
+                new features.world.dungeonclean.input.ViewsInput(
                         resolvedDetailsNavigator,
+                        resolvedSceneRegistry,
                         hexmap.travelSurface()));
     }
 
@@ -22,7 +25,6 @@ public final class ApiState {
     }
 
     public features.world.api.input.ViewsInput worldViews() {
-        var dungeonViews = dungeonObject.views(new features.world.dungeon.input.ViewsInput(null, null));
         return new features.world.api.input.ViewsInput(
                 hexmap.overworldView(),
                 hexmap.mapEditorView(),

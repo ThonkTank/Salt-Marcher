@@ -4,6 +4,7 @@ import features.world.api.state.ApiState;
 import features.world.input.RegisterScenesInput;
 import features.world.input.ViewsInput;
 import ui.shell.DetailsNavigator;
+import ui.shell.SceneRegistry;
 
 import java.util.Objects;
 
@@ -16,8 +17,8 @@ public final class WorldObject {
 
     private final ApiState state;
 
-    public WorldObject(DetailsNavigator detailsNavigator) {
-        this(new ApiState(detailsNavigator));
+    public WorldObject(DetailsNavigator detailsNavigator, SceneRegistry sceneRegistry) {
+        this(new ApiState(detailsNavigator, sceneRegistry));
     }
 
     public WorldObject(ApiState state) {

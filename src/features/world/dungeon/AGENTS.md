@@ -18,7 +18,7 @@
 ## Canonical Types and APIs
 
 - `checkOwnerApiBoundaryConvention` — build-time owner-boundary gate for `*Object`, `input`, `task`, `repository`, `state`, and `*Bucket` rules.
-- `DungeonObject` — public dungeon feature seam — composes the dungeon runtime and dungeon editor views for higher-level consumers.
+- `DungeonObject` — legacy dungeon composition seam — kept for compatibility under the final `dungeonclean` root while clean owners replace it incrementally.
 - `geometry` — public dungeon spatial seams use the canonical carriers from this slice instead of raw point or segment collections.
 - `dungeonmap/DungeonMapObject` — public loaded-map seam for cross-owner map reads and map-scoped workflows.
 - `room/RoomObject` — public room seam for room-owned narration writes.
@@ -32,6 +32,7 @@
 ## Where New Code Goes
 
 - Put new behavior on the documented owner first.
+- Do not route new world-facing dungeon composition back through `DungeonObject`; that boundary now lives on `features.world.dungeonclean.DungeoncleanObject`.
 - Cross owner boundaries only through the target owner's root package and public `*Object` seam. Do not skip intermediate owners.
 - Keep shared physical topology on `dungeonmap/structure`, shared traversal semantics on `dungeonmap/connections`, and loaded-map/session ownership on `dungeonmap`.
 - Keep public dungeon geometry carrier-based. Shared spatial seams use the canonical `geometry` types rather than raw `Set/List/Collection<GridPoint|GridSegment>`.
@@ -46,3 +47,4 @@
 - Do not introduce new dungeon-internal technical layers besides `input`, `task`, `repository`, and `state`, and do not introduce organizational directories that do not end with `Bucket`.
 - Do not mirror room, corridor, stair, transition, runtime, or map state into tool-local state, render payloads, or storage helper types.
 - Do not create alternate load, repair, or compatibility paths outside the canonical map-owner workflows.
+- Do not re-promote `DungeonObject` to the world-facing dungeon root.
