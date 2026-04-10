@@ -61,10 +61,13 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "importer.pipeline" ||
         sourceFile.context.packageName == "features.items.importer" ||
         sourceFile.context.packageName == "features.spells.importer" ||
+        sourceFile.context.packageName == "features.creatures.model" ||
         sourceFile.context.packageName == "shared.crawler.config" ||
         sourceFile.context.packageName == "shared.crawler.http" ||
         sourceFile.context.packageName == "shared.crawler.slug" ||
         sourceFile.context.packageName == "shared.crawler.text" ||
+        sourceFile.context.packageName == "shared.rules.model" ||
+        sourceFile.context.packageName == "shared.rules.service" ||
         sourceFile.context.packageName == "ui.components" ||
         sourceFile.context.packageName.startsWith("ui.components.")
     ) {

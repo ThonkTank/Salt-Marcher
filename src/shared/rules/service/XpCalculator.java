@@ -1,8 +1,12 @@
 package shared.rules.service;
 
+import shared.rules.model.EncounterDifficulty;
+import shared.rules.model.EncounterDifficultyStats;
+
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("unused")
 public final class XpCalculator {
     private static final int MAX_LEVEL = 20;
 
@@ -11,19 +15,79 @@ public final class XpCalculator {
     }
 
     public enum Difficulty {
-        EASY("Easy"),
-        MEDIUM("Medium"),
-        HARD("Hard"),
-        DEADLY("Deadly");
+        EASY(EncounterDifficulty.EASY),
+        MEDIUM(EncounterDifficulty.MEDIUM),
+        HARD(EncounterDifficulty.HARD),
+        DEADLY(EncounterDifficulty.DEADLY);
 
-        private final String label;
+        private final EncounterDifficulty model;
 
-        Difficulty(String label) {
-            this.label = label;
+        Difficulty(EncounterDifficulty model) {
+            this.model = model;
         }
 
         public String label() {
-            return label;
+            return model.label();
+        }
+
+        EncounterDifficulty model() {
+            return model;
+        }
+
+        static Difficulty fromModel(EncounterDifficulty model) {
+            return switch (model) {
+                case EASY -> EASY;
+                case MEDIUM -> MEDIUM;
+                case HARD -> HARD;
+                case DEADLY -> DEADLY;
+            };
+        }
+    }
+
+    public record DifficultyStats(
+            int adjXp,
+            String difficulty,
+            int easyTh,
+            int mediumTh,
+            int hardTh,
+            int deadlyTh) {
+        static DifficultyStats fromModel(EncounterDifficultyStats model) {
+            return new DifficultyStats(
+                    model.adjXp(),
+                    model.difficulty(),
+                    model.easyTh(),
+                    model.mediumTh(),
+                    model.hardTh(),
+                    model.deadlyTh());
+        }
+
+        public EncounterDifficultyStats model() {
+            return new EncounterDifficultyStats(adjXp, difficulty, easyTh, mediumTh, hardTh, deadlyTh);
+        }
+    }
+
+    public record AdventuringDayBudget(
+            int totalXp,
+            int perThirdXp,
+            int shortRestAfterFirstThirdXp,
+            int shortRestAfterSecondThirdXp,
+            int characterCount) {
+        static AdventuringDayBudget fromModel(shared.rules.model.AdventuringDayBudget model) {
+            return new AdventuringDayBudget(
+                    model.totalXp(),
+                    model.perThirdXp(),
+                    model.shortRestAfterFirstThirdXp(),
+                    model.shortRestAfterSecondThirdXp(),
+                    model.characterCount());
+        }
+
+        public shared.rules.model.AdventuringDayBudget model() {
+            return new shared.rules.model.AdventuringDayBudget(
+                    totalXp,
+                    perThirdXp,
+                    shortRestAfterFirstThirdXp,
+                    shortRestAfterSecondThirdXp,
+                    characterCount);
         }
     }
 
@@ -111,6 +175,16 @@ public final class XpCalculator {
     private static final int DEADLY_COL = 3;
 
     public static int xpThreshold(int avgLevel, Difficulty difficulty) {
+        if (difficulty == null) {
+            throw new IllegalArgumentException("difficulty cannot be null");
+        }
+        return xpThreshold(avgLevel, difficulty.model());
+    }
+
+    public static int xpThreshold(int avgLevel, EncounterDifficulty difficulty) {
+        if (difficulty == null) {
+            throw new IllegalArgumentException("difficulty cannot be null");
+        }
         if (avgLevel < 1 || avgLevel > MAX_LEVEL) {
             throw new IllegalArgumentException("Invalid level: " + avgLevel);
         }
@@ -137,9 +211,9 @@ public final class XpCalculator {
         return XP_AT_LEVEL[level];
     }
 
-    public static AdventuringDayBudget computeAdventuringDayBudget(List<Integer> levels) {
+    public static shared.rules.model.AdventuringDayBudget computeAdventuringDayBudgetModel(List<Integer> levels) {
         if (levels == null || levels.isEmpty()) {
-            return new AdventuringDayBudget(0, 0, 0, 0, 0);
+            return new shared.rules.model.AdventuringDayBudget(0, 0, 0, 0, 0);
         }
         int totalXp = 0;
         int characterCount = 0;
@@ -151,18 +225,22 @@ public final class XpCalculator {
             characterCount++;
         }
         if (characterCount == 0) {
-            return new AdventuringDayBudget(0, 0, 0, 0, 0);
+            return new shared.rules.model.AdventuringDayBudget(0, 0, 0, 0, 0);
         }
         int perThirdXp = (int) Math.round(totalXp / 3.0);
         // DMG guidance expects two short rests roughly one-third and two-thirds through the day.
         int shortRestAfterFirstThirdXp = perThirdXp;
         int shortRestAfterSecondThirdXp = (int) Math.round((totalXp * 2.0) / 3.0);
-        return new AdventuringDayBudget(
+        return new shared.rules.model.AdventuringDayBudget(
                 totalXp,
                 perThirdXp,
                 shortRestAfterFirstThirdXp,
                 shortRestAfterSecondThirdXp,
                 characterCount);
+    }
+
+    public static AdventuringDayBudget computeAdventuringDayBudget(List<Integer> levels) {
+        return AdventuringDayBudget.fromModel(computeAdventuringDayBudgetModel(levels));
     }
 
     /**
@@ -196,44 +274,40 @@ public final class XpCalculator {
      *   [0.833, 1.0]   → Deadly (centre: 1.0)
      * </pre>
      */
-    public static Difficulty classifyDifficulty(double t) {
+    public static EncounterDifficulty classifyEncounterDifficulty(double t) {
         t = clampUnit(t);
-        if (t < 0.167) return Difficulty.EASY;
-        if (t < 0.50) return Difficulty.MEDIUM;
-        if (t < 0.833) return Difficulty.HARD;
-        return Difficulty.DEADLY;
+        if (t < 0.167) return EncounterDifficulty.EASY;
+        if (t < 0.50) return EncounterDifficulty.MEDIUM;
+        if (t < 0.833) return EncounterDifficulty.HARD;
+        return EncounterDifficulty.DEADLY;
     }
 
-    // ---- DifficultyStats: shared between EncounterRosterPane and CombatTrackerPane ----
+    public static Difficulty classifyDifficulty(double t) {
+        return Difficulty.fromModel(classifyEncounterDifficulty(t));
+    }
 
-    public record DifficultyStats(int adjXp, String difficulty,
-                                  int easyTh, int mediumTh, int hardTh, int deadlyTh) {}
-
-    public record AdventuringDayBudget(
-            int totalXp,
-            int perThirdXp,
-            int shortRestAfterFirstThirdXp,
-            int shortRestAfterSecondThirdXp,
-            int characterCount) {}
-
-    public static DifficultyStats computeStats(int adjXp, int partySize, int avgLevel) {
+    public static EncounterDifficultyStats computeEncounterDifficultyStats(int adjXp, int partySize, int avgLevel) {
         int partySz = Math.max(1, partySize);
-        int easyTh = xpThreshold(avgLevel, Difficulty.EASY) * partySz;
-        int mediumTh = xpThreshold(avgLevel, Difficulty.MEDIUM) * partySz;
-        int hardTh = xpThreshold(avgLevel, Difficulty.HARD) * partySz;
-        int deadlyTh = xpThreshold(avgLevel, Difficulty.DEADLY) * partySz;
+        int easyTh = xpThreshold(avgLevel, EncounterDifficulty.EASY) * partySz;
+        int mediumTh = xpThreshold(avgLevel, EncounterDifficulty.MEDIUM) * partySz;
+        int hardTh = xpThreshold(avgLevel, EncounterDifficulty.HARD) * partySz;
+        int deadlyTh = xpThreshold(avgLevel, EncounterDifficulty.DEADLY) * partySz;
         String diff = adjXp == 0 ? "" :
                 classifyDifficultyByXp(adjXp, easyTh, mediumTh, hardTh, deadlyTh);
-        return new DifficultyStats(adjXp, diff, easyTh, mediumTh, hardTh, deadlyTh);
+        return new EncounterDifficultyStats(adjXp, diff, easyTh, mediumTh, hardTh, deadlyTh);
+    }
+
+    public static DifficultyStats computeStats(int adjXp, int partySize, int avgLevel) {
+        return DifficultyStats.fromModel(computeEncounterDifficultyStats(adjXp, partySize, avgLevel));
     }
 
     /** Categorizes by XP thresholds (for encounter summary display). */
     public static String classifyDifficultyByXp(int adjustedXp, int easyTh, int mediumTh,
                                                 int hardTh, int deadlyTh) {
-        if (adjustedXp >= deadlyTh) return Difficulty.DEADLY.label();
-        if (adjustedXp >= hardTh) return Difficulty.HARD.label();
-        if (adjustedXp >= mediumTh) return Difficulty.MEDIUM.label();
-        if (adjustedXp >= easyTh) return Difficulty.EASY.label();
+        if (adjustedXp >= deadlyTh) return EncounterDifficulty.DEADLY.label();
+        if (adjustedXp >= hardTh) return EncounterDifficulty.HARD.label();
+        if (adjustedXp >= mediumTh) return EncounterDifficulty.MEDIUM.label();
+        if (adjustedXp >= easyTh) return EncounterDifficulty.EASY.label();
         return "Trivial";
     }
 
