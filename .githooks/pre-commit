@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# shellcheck source=.githooks/lib/sensitive-build-paths.sh
+source "$SCRIPT_DIR/lib/sensitive-build-paths.sh"
+
+if [[ "${SM_ALLOW_SENSITIVE_BUILD_CHANGES:-0}" == "1" ]]; then
+    exit 0
+fi
+
+blocked_paths=()
+while IFS= read -r path; do
+    if [[ -z "$path" ]]; then
+        continue
+    fi
+    if sm_is_sensitive_build_path "$path"; then
+        blocked_paths+=("$path")
+    fi
+done < <(git diff --cached --name-only)
+
+if [[ "${#blocked_paths[@]}" -eq 0 ]]; then
+    exit 0
+fi
+
+echo "Blocked commit: staged changes touch sensitive build surfaces." >&2
+printf '  %s\n' "${blocked_paths[@]}" >&2
+echo >&2
+echo "Re-run intentionally with:" >&2
+echo "  SM_ALLOW_SENSITIVE_BUILD_CHANGES=1 git commit ..." >&2
+exit 1

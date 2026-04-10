@@ -1,0 +1,9 @@
+# Sensitive build surfaces require explicit review.
+/build.gradle.kts @ThonkTank
+/settings.gradle.kts @ThonkTank
+/gradle.properties @ThonkTank
+/gradlew @ThonkTank
+/gradlew.bat @ThonkTank
+/gradle/** @ThonkTank
+/buildSrc/** @ThonkTank
+/CODEOWNERS @ThonkTank
