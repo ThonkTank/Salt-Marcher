@@ -59,12 +59,10 @@ plugins {
 
 val desktopAppName = "Salt Marcher"
 val launcherName = "salt-marcher"
-val preloaderJvmArg = "-Djavafx.preloader=ui.bootstrap.preloader.PreloaderObject"
 val jpackageModulePathArg = "--module-path=${'$'}APPDIR"
 val jpackageAddModulesArg = "--add-modules=javafx.controls"
 val desktopIconRelativePath = "icons/salt-marcher.svg"
 val packageVersion = providers.gradleProperty("saltMarcherVersion").orElse("0.1.0")
-val dungeoncleanLauncherSourceDir = layout.projectDirectory.dir("launchers/dungeonclean/src")
 
 repositories {
     mavenCentral()
@@ -85,6 +83,7 @@ sourceSets {
     main {
         java {
             setSrcDirs(listOf("src"))
+            include("clean/**")
             exclude("test/**")
         }
         resources {
@@ -105,8 +104,8 @@ dependencies {
 }
 
 application {
-    mainClass = "launcher.dungeonclean.DungeoncleanLauncher"
-    applicationDefaultJvmArgs = listOf(preloaderJvmArg, "--enable-preview")
+    mainClass = "clean.CleanObject\$Runtime"
+    applicationDefaultJvmArgs = listOf("--enable-preview")
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -119,25 +118,6 @@ tasks.withType<CreateStartScripts>().configureEach {
     applicationName = launcherName
 }
 
-val compileDungeoncleanLauncher = tasks.register<JavaCompile>("compileDungeoncleanLauncher") {
-    group = "build"
-    description = "Compile the external dungeonclean launcher into the main runtime output."
-    source = fileTree(dungeoncleanLauncherSourceDir) {
-        include("**/*.java")
-    }
-    dependsOn(tasks.named("compileJava"), tasks.named("processResources"))
-    classpath = files(
-        layout.buildDirectory.dir("classes/java/main"),
-        layout.buildDirectory.dir("resources/main"),
-        configurations.runtimeClasspath
-    )
-    destinationDirectory.set(layout.buildDirectory.dir("classes/java/main"))
-}
-
-tasks.named("classes") {
-    dependsOn(compileDungeoncleanLauncher)
-}
-
 tasks.test {
     useJUnitPlatform()
 }
@@ -147,7 +127,7 @@ val packagingSupport = PackagingSupport(
     config = PackagingConfig(
         desktopAppName = desktopAppName,
         launcherName = launcherName,
-        preloaderJvmArg = preloaderJvmArg,
+        preloaderJvmArg = "",
         jpackageModulePathArg = jpackageModulePathArg,
         jpackageAddModulesArg = jpackageAddModulesArg,
         desktopIconRelativePath = desktopIconRelativePath,
@@ -192,6 +172,31 @@ val checkNoDeadCode = registerCheckNoDeadCodeTask(
     checkNoDeadLocalCode = checkNoDeadLocalCode
 )
 val checkUiAsyncSubmissionConvention = registerCheckUiAsyncSubmissionConventionTask()
+val checkCleanIsolation = tasks.register("checkCleanIsolation") {
+    group = "verification"
+    description = "Fail when src/clean imports legacy project packages."
+    val legacyImportPattern = Regex("""(?m)^\s*import\s+(?:static\s+)?(?:database|features|importer|shared|ui)\.""")
+
+    doLast {
+        val offenders = fileTree("src/clean") {
+            include("**/*.java")
+        }.files
+            .sortedBy { it.relativeTo(project.projectDir).path }
+            .mapNotNull { file ->
+                val relativePath = file.relativeTo(project.projectDir).invariantSeparatorsPath
+                if (legacyImportPattern.containsMatchIn(file.readText())) relativePath else null
+            }
+
+        if (offenders.isNotEmpty()) {
+            val details = offenders.joinToString(separator = "\n") { " - $it" }
+            throw GradleException(
+                "Clean isolation drift detected.\n" +
+                    "src/clean must not import legacy project packages from src/.\n" +
+                    "Offending files:\n$details"
+            )
+        }
+    }
+}
 
 val ownerConventionSupport = OwnerConventionSupport(project)
 val checkOwnerApiBoundaryRoleDispatch = registerCheckOwnerApiBoundaryRoleDispatchTask(ownerConventionSupport)
@@ -218,7 +223,10 @@ val checkBuildHygiene = registerCheckBuildHygieneTask(
     checkNoCompiledArtifactsInSource = checkNoCompiledArtifactsInSource,
     checkNoDeadCode = checkNoDeadCode
 )
-val checkLocalBuildPolicies = registerCheckLocalBuildPoliciesTask(checkUiAsyncSubmissionConvention)
+val checkLocalBuildPolicies = registerCheckLocalBuildPoliciesTask(
+    checkUiAsyncSubmissionConvention = checkUiAsyncSubmissionConvention,
+    checkCleanIsolation = checkCleanIsolation
+)
 val checkArchitectureHeuristics = registerCheckArchitectureHeuristicsTask(
     checkOwnerApiBoundaryConvention = checkOwnerApiBoundaryConvention,
     checkDungeonGeometryConvention = checkDungeonGeometryConvention

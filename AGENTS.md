@@ -24,6 +24,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 - `src/database/DatabaseManager` — connection factory. `getConnection()` returns a fresh Connection with `PRAGMA foreign_keys=ON` and `journal_mode=WAL`; callers own it via try-with-resources. `setupDatabase()` uses idempotent `CREATE TABLE IF NOT EXISTS` + `INSERT OR IGNORE` seeding
 - `src/importer/` and `src/shared/crawler/` — crawler/import pipeline
 - `src/ui/` — JavaFX shell/bootstrap (`src/ui/bootstrap/`) plus shared UI-only components (`src/ui/components/`)
+- `src/clean/` — isolated clean application rebuild root. Code here must not import legacy project packages from `src/database`, `src/features`, `src/importer`, `src/shared`, or `src/ui`.
 - `resources/salt-marcher.css` — single CSS source of truth. `data/` for runtime data and backups
 
 **AGENTS.md placement convention:** the root `AGENTS.md` is for project-wide rules only. Feature-specific architecture, workflows, invariants, package roles, and editor/runtime behavior belong in the nearest local `AGENTS.md` under that feature subtree. If a rule stops being globally true and starts describing one feature, move it out of the root file.
