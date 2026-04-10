@@ -58,6 +58,7 @@ internal fun analyzeOwnerFile(
 ): OwnerConventionAnalysis<OwnerConventionOwnerSurface> {
     if (sourceFile.context.packageName == "database" ||
         sourceFile.context.packageName == "importer" ||
+        sourceFile.context.packageName == "importer.pipeline" ||
         sourceFile.context.packageName == "features.items.importer" ||
         sourceFile.context.packageName == "features.spells.importer" ||
         sourceFile.context.packageName == "shared.crawler.config" ||

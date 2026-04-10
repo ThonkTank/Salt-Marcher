@@ -16,16 +16,15 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
- * Shared monster import pipeline for CLI maintenance tools.
+ * Monster-specific file import plus post-import recovery/override work for CLI
+ * pipelines.
  */
+@SuppressWarnings("unused")
 public final class MonsterImportApplicationService {
     public static final Path DEFAULT_MONSTER_DATA_DIR = Path.of("data", "monsters");
 
@@ -44,72 +43,15 @@ public final class MonsterImportApplicationService {
             Path driftReportPath
     ) {}
 
-    public static ImportSummary importFromDefaultDirectory() throws Exception {
-        return importFromDirectory(DEFAULT_MONSTER_DATA_DIR);
-    }
-
-    public static ImportSummary importFromDirectory(Path dataDir) throws Exception {
-        if (!Files.exists(dataDir)) {
-            throw new IOException("Directory not found: " + dataDir.toAbsolutePath());
-        }
-
-        List<Path> files;
-        try (Stream<Path> paths = Files.walk(dataDir, 1)) {
-            files = paths
-                    .filter(path -> path.toString().endsWith(".html"))
-                    .sorted()
-                    .toList();
-        }
-
-        DatabaseManager.setupDatabase();
+    public static EncounterTableRecoveryService.RecoverySession beginRecoverySession() throws Exception {
         EncounterTableRecoveryService.RecoverySession recoverySession =
                 EncounterTableRecoveryService.beginRecoverySession();
         System.out.println("Encounter-table backup created: "
                 + recoverySession.backupPath().toAbsolutePath());
-
-        List<DriftEvent> driftEvents = new ArrayList<>();
-        Set<Long> reservedIds = new HashSet<>();
-
-        BulkImporter.run(files, "monsters",
-                path -> path.getFileName().toString(),
-                (path, conn) -> importFile(path, conn, reservedIds, driftEvents));
-
-        CreatureOverridesApplier.ApplySummary overrideSummary;
-        try (Connection conn = DatabaseManager.getConnection()) {
-            overrideSummary = CreatureOverridesApplier.applyFromDefaultFile(conn, true);
-            if (overrideSummary.checked() > 0) {
-                System.out.printf(Locale.ROOT,
-                        "Creature overrides: checked=%d updated=%d missing=%d file=%s%n",
-                        overrideSummary.checked(),
-                        overrideSummary.updated(),
-                        overrideSummary.missing(),
-                        CreatureOverridesApplier.DEFAULT_OVERRIDES_PATH);
-            }
-        }
-
-        EncounterTableRecoveryService.RecoverySummary recovery =
-                EncounterTableRecoveryService.recover(recoverySession);
-        System.out.printf(Locale.ROOT,
-                "Encounter recovery: restored=%d unresolved=%d report=%s%n",
-                recovery.restoredCount(),
-                recovery.unresolvedCount(),
-                recovery.reportPath() != null ? recovery.reportPath().toAbsolutePath() : "none");
-        Path driftReport = writeDriftReport(driftEvents);
-        System.out.printf(Locale.ROOT,
-                "ID drift handling: remapped=%d report=%s%n",
-                driftEvents.size(),
-                driftReport != null ? driftReport.toAbsolutePath() : "none");
-
-        return new ImportSummary(
-                files.size(),
-                recoverySession.backupPath(),
-                overrideSummary,
-                recovery,
-                driftEvents.size(),
-                driftReport);
+        return recoverySession;
     }
 
-    private static void importFile(
+    public static void importFile(
             Path path,
             Connection conn,
             Set<Long> reservedIds,
@@ -138,6 +80,45 @@ public final class MonsterImportApplicationService {
         }
     }
 
+    public static ImportSummary completeImport(
+            int fileCount,
+            EncounterTableRecoveryService.RecoverySession recoverySession,
+            List<DriftEvent> driftEvents) throws Exception {
+        CreatureOverridesApplier.ApplySummary overrideSummary;
+        try (Connection conn = DatabaseManager.getConnection()) {
+            overrideSummary = CreatureOverridesApplier.applyFromDefaultFile(conn, true);
+            if (overrideSummary.checked() > 0) {
+                System.out.printf(Locale.ROOT,
+                        "Creature overrides: checked=%d updated=%d missing=%d file=%s%n",
+                        overrideSummary.checked(),
+                        overrideSummary.updated(),
+                        overrideSummary.missing(),
+                        CreatureOverridesApplier.DEFAULT_OVERRIDES_PATH);
+            }
+        }
+
+        EncounterTableRecoveryService.RecoverySummary recovery =
+                EncounterTableRecoveryService.recover(recoverySession);
+        System.out.printf(Locale.ROOT,
+                "Encounter recovery: restored=%d unresolved=%d report=%s%n",
+                recovery.restoredCount(),
+                recovery.unresolvedCount(),
+                recovery.reportPath() != null ? recovery.reportPath().toAbsolutePath() : "none");
+        Path driftReport = writeDriftReport(driftEvents);
+        System.out.printf(Locale.ROOT,
+                "ID drift handling: remapped=%d report=%s%n",
+                driftEvents.size(),
+                driftReport != null ? driftReport.toAbsolutePath() : "none");
+
+        return new ImportSummary(
+                fileCount,
+                recoverySession.backupPath(),
+                overrideSummary,
+                recovery,
+                driftEvents.size(),
+                driftReport);
+    }
+
     private static Path writeDriftReport(List<DriftEvent> events) throws IOException {
         if (events == null || events.isEmpty()) return null;
         Path dir = Path.of("data", "backups");
@@ -161,5 +142,5 @@ public final class MonsterImportApplicationService {
         return value == null ? "" : value;
     }
 
-    private record DriftEvent(String sourceSlug, Long externalId, Long assignedLocalId, String creatureName, String reason) {}
+    public record DriftEvent(String sourceSlug, Long externalId, Long assignedLocalId, String creatureName, String reason) {}
 }
