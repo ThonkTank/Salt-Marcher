@@ -61,6 +61,9 @@ internal fun analyzeInputFile(
     if (sourceFile.context.packageName == "features.party.input") {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }
+    if (sourceFile.context.packageName == "features.partyanalysis.input") {
+        return OwnerConventionAnalysis(reasons = emptyList(), model = null)
+    }
     if (sourceFile.context.packageName == "features.spells.catalog.input") {
         return OwnerConventionAnalysis(reasons = emptyList(), model = null)
     }

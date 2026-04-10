@@ -1,7 +1,12 @@
 package features.partyanalysis.api;
 
 import features.creatures.model.Creature;
-import features.partyanalysis.application.EncounterPartyAnalysisService;
+import features.partyanalysis.PartyanalysisObject;
+import features.partyanalysis.input.ClassifyRoleProfileForActivePartyInput;
+import features.partyanalysis.input.FallbackRoleProfileInput;
+import features.partyanalysis.input.LoadGenerationSnapshotInput;
+import features.partyanalysis.input.LoadRoleProfilesForActivePartyInput;
+import features.partyanalysis.input.LoadStaticRoleHintsInput;
 import features.partyanalysis.model.CreatureRoleProfile;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 import features.partyanalysis.model.StaticCreatureRoleHint;
@@ -12,7 +17,9 @@ import java.util.Set;
 /**
  * Public read facade for encounter generation and runtime role classification.
  */
+@SuppressWarnings("unused")
 public final class PartyAnalysisReadApi {
+    private static final PartyanalysisObject PARTY_ANALYSIS_OBJECT = new PartyanalysisObject();
 
     private PartyAnalysisReadApi() {
         throw new AssertionError("No instances");
@@ -37,14 +44,16 @@ public final class PartyAnalysisReadApi {
     }
 
     public static CreatureRoleProfile classifyRoleProfileForActiveParty(Creature creature) {
-        return EncounterPartyAnalysisService.classifyRoleProfileForActiveParty(creature);
+        return PARTY_ANALYSIS_OBJECT.classifyRoleProfileForActiveParty(
+                new ClassifyRoleProfileForActivePartyInput(creature)).roleProfile();
     }
 
     public static CreatureRoleProfile fallbackRoleProfile(
             Creature creature,
             EncounterPartyBenchmarks partyBenchmarks
     ) {
-        return EncounterPartyAnalysisService.fallbackRoleProfile(creature, partyBenchmarks);
+        return PARTY_ANALYSIS_OBJECT.fallbackRoleProfile(
+                new FallbackRoleProfileInput(creature, partyBenchmarks, null)).roleProfile();
     }
 
     public static CreatureRoleProfile fallbackRoleProfile(
@@ -52,26 +61,29 @@ public final class PartyAnalysisReadApi {
             EncounterPartyBenchmarks partyBenchmarks,
             StaticCreatureRoleHint staticRoleHint
     ) {
-        return EncounterPartyAnalysisService.fallbackRoleProfile(creature, partyBenchmarks, staticRoleHint);
+        return PARTY_ANALYSIS_OBJECT.fallbackRoleProfile(
+                new FallbackRoleProfileInput(creature, partyBenchmarks, staticRoleHint)).roleProfile();
     }
 
     public static Map<Long, CreatureRoleProfile> loadRoleProfilesForActiveParty() {
-        return EncounterPartyAnalysisService.loadRoleProfilesForActiveParty();
+        return PARTY_ANALYSIS_OBJECT.loadRoleProfilesForActiveParty(
+                new LoadRoleProfilesForActivePartyInput()).roleProfilesByCreatureId();
     }
 
     public static GenerationSnapshot loadGenerationSnapshot() {
-        return mapSnapshot(EncounterPartyAnalysisService.loadGenerationSnapshot());
+        return mapSnapshot(PARTY_ANALYSIS_OBJECT.loadGenerationSnapshot(new LoadGenerationSnapshotInput(Set.of())));
     }
 
     public static GenerationSnapshot loadGenerationSnapshot(Set<Long> creatureIds) {
-        return mapSnapshot(EncounterPartyAnalysisService.loadGenerationSnapshot(creatureIds));
+        return mapSnapshot(PARTY_ANALYSIS_OBJECT.loadGenerationSnapshot(new LoadGenerationSnapshotInput(creatureIds)));
     }
 
     public static Map<Long, StaticCreatureRoleHint> loadStaticRoleHints(Set<Long> creatureIds) {
-        return EncounterPartyAnalysisService.loadStaticRoleHints(creatureIds);
+        return PARTY_ANALYSIS_OBJECT.loadStaticRoleHints(
+                new LoadStaticRoleHintsInput(creatureIds)).staticRoleHintsByCreatureId();
     }
 
-    private static GenerationSnapshot mapSnapshot(EncounterPartyAnalysisService.GenerationSnapshot snapshot) {
+    private static GenerationSnapshot mapSnapshot(LoadGenerationSnapshotInput.LoadedGenerationSnapshotInput snapshot) {
         if (snapshot == null) {
             return new GenerationSnapshot(CacheReadiness.STORAGE_ERROR, null, 0, null, Map.of());
         }
@@ -83,7 +95,7 @@ public final class PartyAnalysisReadApi {
                 snapshot.roleProfilesByCreatureId());
     }
 
-    private static CacheReadiness mapReadiness(EncounterPartyAnalysisService.CacheReadiness readiness) {
+    private static CacheReadiness mapReadiness(LoadGenerationSnapshotInput.CacheReadiness readiness) {
         return switch (readiness) {
             case READY -> CacheReadiness.READY;
             case NOT_READY -> CacheReadiness.NOT_READY;

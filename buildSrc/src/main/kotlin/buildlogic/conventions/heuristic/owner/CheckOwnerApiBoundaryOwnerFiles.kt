@@ -78,6 +78,8 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.party" ||
         sourceFile.context.packageName == "features.party.api" ||
         sourceFile.context.packageName == "features.party.ui" ||
+        sourceFile.context.packageName == "features.partyanalysis" ||
+        sourceFile.context.packageName == "features.partyanalysis.api" ||
         sourceFile.context.packageName == "features.creatures.model" ||
         sourceFile.context.packageName == "features.creatures.service" ||
         sourceFile.context.packageName == "features.creatures.ui.shared.catalog" ||
