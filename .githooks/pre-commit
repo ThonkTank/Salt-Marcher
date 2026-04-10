@@ -6,10 +6,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=.githooks/lib/sensitive-build-paths.sh
 source "$SCRIPT_DIR/lib/sensitive-build-paths.sh"
 
-if [[ "${SM_ALLOW_SENSITIVE_BUILD_CHANGES:-0}" == "1" ]]; then
-    exit 0
-fi
-
 blocked_paths=()
 while IFS= read -r path; do
     if [[ -z "$path" ]]; then
@@ -27,6 +23,6 @@ fi
 echo "Blocked commit: staged changes touch sensitive build surfaces." >&2
 printf '  %s\n' "${blocked_paths[@]}" >&2
 echo >&2
-echo "Re-run intentionally with:" >&2
-echo "  SM_ALLOW_SENSITIVE_BUILD_CHANGES=1 git commit ..." >&2
+echo "Authoritative protection lives outside the repository in ~/Schreibtisch/SM/build-checks." >&2
+echo "Intentional commits must be reviewed against that external reference and committed with --no-verify." >&2
 exit 1

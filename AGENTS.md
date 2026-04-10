@@ -58,7 +58,7 @@ No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/
 
 `./gradlew check` includes a touched-Java dead-code gate. If a touched `src/**/*.java` file introduces unreachable types, methods, constructors, fields, dead locals, dead assignments, or obvious constant-condition branches, the build must fail. Intentionally retained declarations must be marked with `@SuppressWarnings("unused")` instead of being left as ambiguous fake/live code.
 
-**Sensitive build surfaces:** `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties`, `gradlew`, `gradlew.bat`, `gradle/**`, `buildSrc/**`, and `CODEOWNERS` are protected workflow infrastructure. Agents must not edit them unless the user explicitly asks for build/policy guardrail work or otherwise clearly approves those edits.
+**Sensitive build-check surfaces:** `build.gradle.kts`, `buildSrc/src/main/kotlin/buildlogic/conventions/**`, and `CODEOWNERS` are protected guardrail infrastructure. The authoritative reference copy lives outside the repo under `~/Schreibtisch/SM/build-checks`, and local Gradle verification is expected to compare the repo copy against that external reference. Agents must not edit these files unless the user explicitly asks for build-check guardrail work or otherwise clearly approves those edits.
 
 **After code changes, do not stop at `./gradlew build` alone** when the desktop app is the manual test surface. Default to running `./gradlew build` and then `./gradlew installDesktopApp` before handoff unless the user explicitly says not to reinstall the desktop app. Notes about "nicht geprüfte Vorgänge" (unchecked operations) are expected and can be ignored.
 

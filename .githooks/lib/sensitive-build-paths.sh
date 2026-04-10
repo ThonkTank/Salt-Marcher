@@ -4,12 +4,12 @@ sm_is_sensitive_build_path() {
     local path="${1#./}"
 
     case "$path" in
-        build.gradle.kts|settings.gradle.kts|gradle.properties|gradlew|gradlew.bat|CODEOWNERS)
+        build.gradle.kts|CODEOWNERS)
             return 0
             ;;
     esac
 
-    if [[ "$path" == gradle/* || "$path" == buildSrc/* ]]; then
+    if [[ "$path" == buildSrc/src/main/kotlin/buildlogic/conventions/* ]]; then
         return 0
     fi
 
