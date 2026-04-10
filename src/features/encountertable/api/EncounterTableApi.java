@@ -1,8 +1,11 @@
 package features.encountertable.api;
 
+import features.encountertable.EncountertableObject;
+import features.encountertable.input.LoadCandidatesInput;
+import features.encountertable.input.LoadDistinctLinkedLootTableIdsInput;
+import features.encountertable.input.LoadTablesInput;
 import features.creatures.model.Creature;
 import features.encountertable.model.EncounterTable;
-import features.encountertable.service.EncounterTableService;
 
 import java.util.List;
 import java.util.Map;
@@ -10,7 +13,9 @@ import java.util.Map;
 /**
  * Public cross-feature read facade for encounter table data.
  */
+@SuppressWarnings("unused")
 public final class EncounterTableApi {
+    private static final EncountertableObject ENCOUNTER_TABLES = new EncountertableObject();
 
     private EncounterTableApi() {
         throw new AssertionError("No instances");
@@ -33,37 +38,56 @@ public final class EncounterTableApi {
     public record LinkedLootTableIdsResult(ReadStatus status, List<Long> lootTableIds) {}
 
     public static TableCatalogResult loadAll() {
-        EncounterTableService.TableListResult result = EncounterTableService.loadAll();
+        LoadTablesInput.LoadedTablesInput result = ENCOUNTER_TABLES.loadTables(new LoadTablesInput());
         return new TableCatalogResult(
-                mapStatus(result.status()),
-                result.tables());
+                mapStatus(result.success()),
+                result.tables().stream()
+                        .map(EncounterTableApi::toTable)
+                        .toList());
     }
 
     public static TableSummaryCatalogResult loadAllSummaries() {
-        EncounterTableService.TableListResult result = EncounterTableService.loadAll();
+        LoadTablesInput.LoadedTablesInput result = ENCOUNTER_TABLES.loadTables(new LoadTablesInput());
         List<EncounterTableSummary> summaries = result.tables().stream()
-                .map(table -> new EncounterTableSummary(table.tableId, table.name))
+                .map(table -> new EncounterTableSummary(table.tableId(), table.name()))
                 .toList();
-        return new TableSummaryCatalogResult(mapStatus(result.status()), summaries);
+        return new TableSummaryCatalogResult(mapStatus(result.success()), summaries);
     }
 
     public static CandidateSelectionResult loadCandidates(List<Long> tableIds, int maxXp) {
-        EncounterTableService.CandidatesResult result = EncounterTableService.getCandidatesFromTables(tableIds, maxXp);
+        LoadCandidatesInput.LoadedCandidatesInput result =
+                ENCOUNTER_TABLES.loadCandidates(new LoadCandidatesInput(tableIds, maxXp));
         return new CandidateSelectionResult(
                 mapStatus(result.status()),
                 result.candidates(),
                 result.selectionWeights());
     }
 
-    private static ReadStatus mapStatus(EncounterTableService.ReadStatus status) {
-        return status == EncounterTableService.ReadStatus.SUCCESS
-                ? ReadStatus.SUCCESS
-                : ReadStatus.STORAGE_ERROR;
+    public static LinkedLootTableIdsResult loadDistinctLinkedLootTableIds(List<Long> tableIds) {
+        LoadDistinctLinkedLootTableIdsInput.LoadedDistinctLinkedLootTableIdsInput result =
+                ENCOUNTER_TABLES.loadDistinctLinkedLootTableIds(new LoadDistinctLinkedLootTableIdsInput(tableIds));
+        return new LinkedLootTableIdsResult(mapStatus(result.status()), result.lootTableIds());
     }
 
-    public static LinkedLootTableIdsResult loadDistinctLinkedLootTableIds(List<Long> tableIds) {
-        EncounterTableService.LinkedLootTableIdsResult result =
-                EncounterTableService.loadDistinctLinkedLootTableIds(tableIds);
-        return new LinkedLootTableIdsResult(mapStatus(result.status()), result.lootTableIds());
+    private static ReadStatus mapStatus(boolean success) {
+        return success ? ReadStatus.SUCCESS : ReadStatus.STORAGE_ERROR;
+    }
+
+    private static ReadStatus mapStatus(LoadCandidatesInput.Status status) {
+        return status == LoadCandidatesInput.Status.SUCCESS ? ReadStatus.SUCCESS : ReadStatus.STORAGE_ERROR;
+    }
+
+    private static ReadStatus mapStatus(LoadDistinctLinkedLootTableIdsInput.Status status) {
+        return status == LoadDistinctLinkedLootTableIdsInput.Status.SUCCESS ? ReadStatus.SUCCESS : ReadStatus.STORAGE_ERROR;
+    }
+
+    private static EncounterTable toTable(LoadTablesInput.TableSummaryInput table) {
+        EncounterTable mapped = new EncounterTable();
+        mapped.tableId = table.tableId();
+        mapped.name = table.name();
+        mapped.description = table.description();
+        mapped.linkedLootTableId = table.linkedLootTableId();
+        mapped.entries = List.of();
+        return mapped;
     }
 }

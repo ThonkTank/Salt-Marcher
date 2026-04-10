@@ -1,6 +1,16 @@
 package features.encountertable.ui;
 
+import features.encountertable.EncountertableObject;
 import features.encountertable.api.EncounterTableSummary;
+import features.encountertable.input.AddCreatureInput;
+import features.encountertable.input.CreateTableInput;
+import features.encountertable.input.DeleteTableInput;
+import features.encountertable.input.LoadTableInput;
+import features.encountertable.input.LoadTablesInput;
+import features.encountertable.input.RemoveCreatureInput;
+import features.encountertable.input.RenameTableInput;
+import features.encountertable.input.UpdateLinkedLootTableInput;
+import features.encountertable.input.UpdateWeightInput;
 import features.encountertable.model.EncounterTable;
 import features.encountertable.service.EncounterTableLootCoverageAnalyzer;
 import features.loottable.api.LootTableApi;
@@ -9,7 +19,6 @@ import features.tables.ui.TableEditorTaskRunner;
 import javafx.scene.Node;
 import features.creatures.catalog.input.LoadFilterOptionsInput;
 import features.encountertable.service.EncounterTableNameNormalizer;
-import features.encountertable.service.EncounterTableService;
 import features.creatures.api.CreatureBrowserPane;
 import features.creatures.api.StatBlockRequest;
 import ui.components.ConfirmationDropdown;
@@ -32,6 +41,7 @@ import java.util.function.Consumer;
  */
 @SuppressWarnings("unused")
 public class EncounterTableEditorView implements AppView {
+    private static final EncountertableObject ENCOUNTER_TABLES = new EncountertableObject();
 
     private final CreatureBrowserPane monsterList;
     private final TableEditorControls controls;
@@ -103,11 +113,11 @@ public class EncounterTableEditorView implements AppView {
             long tableId = table.tableId;
             monsterList.setOnAddCreature(creature -> runTask(
                     "addCreature",
-                    () -> EncounterTableService.addCreature(tableId, creature.Id),
+                    () -> ENCOUNTER_TABLES.addCreature(new AddCreatureInput(tableId, creature.Id, 1)),
                     status -> {
-                        if (status == EncounterTableService.MutationStatus.SUCCESS) {
+                        if (status.status() == AddCreatureInput.Status.SUCCESS) {
                             reloadEntries();
-                        } else if (status == EncounterTableService.MutationStatus.VALIDATION_ERROR) {
+                        } else if (status.status() == AddCreatureInput.Status.VALIDATION_ERROR) {
                             showMutationError("Encounter-Tabelle", "Gewichtung muss zwischen 1 und 10 liegen.", controls);
                             reloadEntries();
                         } else {
@@ -117,9 +127,9 @@ public class EncounterTableEditorView implements AppView {
                     }));
             entriesPane.setOnRemoveEntry(creatureId -> runTask(
                     "removeEntry",
-                    () -> EncounterTableService.removeCreature(tableId, creatureId),
+                    () -> ENCOUNTER_TABLES.removeCreature(new RemoveCreatureInput(tableId, creatureId)),
                     status -> {
-                        if (status == EncounterTableService.MutationStatus.SUCCESS) {
+                        if (status.status() == RemoveCreatureInput.Status.SUCCESS) {
                             reloadEntries();
                         } else {
                             showMutationError("Encounter-Tabelle", "Kreatur konnte nicht aus der Tabelle entfernt werden.", entriesPane);
@@ -129,10 +139,10 @@ public class EncounterTableEditorView implements AppView {
             entriesPane.setOnUpdateWeight((creatureId, weight) -> {
                 // Optimistic update already applied in TableEntriesPane; reload only on error
                         runTask("updateWeight",
-                                () -> EncounterTableService.updateWeight(tableId, creatureId, weight),
+                                () -> ENCOUNTER_TABLES.updateWeight(new UpdateWeightInput(tableId, creatureId, weight)),
                                 status -> {
-                                    if (status == EncounterTableService.MutationStatus.SUCCESS) return;
-                                    if (status == EncounterTableService.MutationStatus.VALIDATION_ERROR) {
+                                    if (status.status() == UpdateWeightInput.Status.SUCCESS) return;
+                                    if (status.status() == UpdateWeightInput.Status.VALIDATION_ERROR) {
                                         showMutationError("Encounter-Tabelle", "Gewichtung muss zwischen 1 und 10 liegen.", entriesPane);
                                         reloadEntries();
                                         return;
@@ -155,11 +165,11 @@ public class EncounterTableEditorView implements AppView {
         if (currentTable == null) return;
         long tableId = currentTable.tableId;
         runTask("reloadEntries",
-                () -> EncounterTableService.loadWithEntries(tableId),
+                () -> ENCOUNTER_TABLES.loadTable(new LoadTableInput(tableId)),
                 result -> {
                     if (currentTable == null || currentTable.tableId != tableId) return;
-                    if (result.status() == EncounterTableService.ReadStatus.SUCCESS && result.table() != null) {
-                        EncounterTable loaded = result.table();
+                    if (result.status() == LoadTableInput.Status.SUCCESS && result.table() != null) {
+                        EncounterTable loaded = toEncounterTable(result.table());
                         currentTable.entries = loaded.entries;
                         currentTable.linkedLootTableId = loaded.linkedLootTableId;
                         entriesPane.setEntries(loaded.entries);
@@ -167,7 +177,7 @@ public class EncounterTableEditorView implements AppView {
                         for (EncounterTable.Entry entry : loaded.entries) ids.add(entry.creatureId());
                         monsterList.setExcludeIds(ids);
                         refreshLinkedLootCoverageWarning();
-                    } else if (result.status() == EncounterTableService.ReadStatus.NOT_FOUND) {
+                    } else if (result.status() == LoadTableInput.Status.NOT_FOUND) {
                         currentTable = null;
                         currentLootCoverageWarning = null;
                         entriesPane.setEntries(List.of());
@@ -182,10 +192,10 @@ public class EncounterTableEditorView implements AppView {
 
     private void reloadTableList() {
         runTask("reloadTableList",
-                EncounterTableService::loadAll,
+                () -> ENCOUNTER_TABLES.loadTables(new LoadTablesInput()),
                 result -> {
-                    if (result.status() == EncounterTableService.ReadStatus.SUCCESS) {
-                        applyTableList(result.tables());
+                    if (result.success()) {
+                        applyTableList(result.tables().stream().map(EncounterTableEditorView::toEncounterTable).toList());
                     } else {
                         showLoadError("Tabellenliste konnte nicht geladen werden.", controls);
                     }
@@ -209,13 +219,13 @@ public class EncounterTableEditorView implements AppView {
 
     private void reloadTableListAndSelect(long selectId) {
         runTask("reloadTableListAndSelect",
-                EncounterTableService::loadAll,
+                () -> ENCOUNTER_TABLES.loadTables(new LoadTablesInput()),
                 result -> {
-                    if (result.status() != EncounterTableService.ReadStatus.SUCCESS) {
+                    if (!result.success()) {
                         showLoadError("Tabellenliste konnte nicht geladen werden.", controls);
                         return;
                     }
-                    List<EncounterTable> tables = result.tables();
+                    List<EncounterTable> tables = result.tables().stream().map(EncounterTableEditorView::toEncounterTable).toList();
                     applyTableList(tables);
                     controls.setLootTableList(knownLootTables);
                     tables.stream()
@@ -232,7 +242,7 @@ public class EncounterTableEditorView implements AppView {
                 return;
             }
             runTask("onCreateTable",
-                    () -> EncounterTableService.createTable(stripped, ""),
+                    () -> ENCOUNTER_TABLES.createTable(new CreateTableInput(stripped, "")),
                     createResult -> {
                         switch (createResult.status()) {
                             case SUCCESS -> {
@@ -260,9 +270,9 @@ public class EncounterTableEditorView implements AppView {
                 return;
             }
             runTask("onRenameTable",
-                    () -> EncounterTableService.renameTable(tableId, stripped),
+                    () -> ENCOUNTER_TABLES.renameTable(new RenameTableInput(tableId, stripped)),
                     status -> {
-                        switch (status) {
+                        switch (status.status()) {
                             case SUCCESS -> {
                                 tableNameDropdown.hide();
                                 currentTable.name = stripped;
@@ -291,9 +301,9 @@ public class EncounterTableEditorView implements AppView {
                 () -> {
             long tableId = table.tableId;
             runTask("onDeleteTable",
-                    () -> EncounterTableService.deleteTable(tableId),
+                    () -> ENCOUNTER_TABLES.deleteTable(new DeleteTableInput(tableId)),
                     status -> {
-                        if (status == EncounterTableService.MutationStatus.SUCCESS) {
+                        if (status.status() == DeleteTableInput.Status.SUCCESS) {
                             deleteTableDropdown.hide();
                             currentTable = null;
                             resetTableSelectionState();
@@ -312,9 +322,9 @@ public class EncounterTableEditorView implements AppView {
         if (java.util.Objects.equals(currentTable.linkedLootTableId, lootTableId)) return;
         long tableId = currentTable.tableId;
         runTask("updateLinkedLootTable",
-                () -> EncounterTableService.updateLinkedLootTable(tableId, lootTableId),
+                () -> ENCOUNTER_TABLES.updateLinkedLootTable(new UpdateLinkedLootTableInput(tableId, lootTableId)),
                 status -> {
-                    if (status == EncounterTableService.MutationStatus.SUCCESS) {
+                    if (status.status() == UpdateLinkedLootTableInput.Status.SUCCESS) {
                         currentTable.linkedLootTableId = lootTableId;
                         currentLootCoverageWarning = null;
                         refreshInspectorTableIfVisible(tableId);
@@ -456,5 +466,37 @@ public class EncounterTableEditorView implements AppView {
 
     private void showMessage(String title, String message, Node anchor) {
         messageDropdown.show(anchor == null ? controls : anchor, title, message);
+    }
+
+    private static EncounterTable toEncounterTable(LoadTablesInput.TableSummaryInput table) {
+        EncounterTable mapped = new EncounterTable();
+        mapped.tableId = table.tableId();
+        mapped.name = table.name();
+        mapped.description = table.description();
+        mapped.linkedLootTableId = table.linkedLootTableId();
+        mapped.entries = List.of();
+        return mapped;
+    }
+
+    private static EncounterTable toEncounterTable(LoadTableInput.TableInput table) {
+        EncounterTable mapped = new EncounterTable();
+        mapped.tableId = table.tableId();
+        mapped.name = table.name();
+        mapped.description = table.description();
+        mapped.linkedLootTableId = table.linkedLootTableId();
+        mapped.entries = table.entries().stream()
+                .map(EncounterTableEditorView::toEntry)
+                .toList();
+        return mapped;
+    }
+
+    private static EncounterTable.Entry toEntry(LoadTableInput.EntryInput entry) {
+        return new EncounterTable.Entry(
+                entry.creatureId(),
+                entry.creatureName(),
+                entry.creatureType(),
+                entry.crDisplay(),
+                entry.xp(),
+                entry.weight());
     }
 }
