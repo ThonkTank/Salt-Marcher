@@ -7,6 +7,7 @@
 ## Canonical Types and APIs
 
 - `shared/rules/model/*` — shared DnD rule vocabulary consumed across creature, party, encounter, and importer flows.
+- `shared/rules/service/ChallengeRatingRules` — shared CR-derived proficiency and benchmark lookup seam.
 - `shared/rules/service/XpCalculator` — shared XP threshold, CR-XP lookup, and difficulty/adventuring-day rules seam.
 - `shared/rules/service/LootCalculator` — shared loot settlement rules seam.
 - `shared/crawler/config/ConfigObject` — shared runtime config seam for crawler properties, session validation, delay parsing, and project-local path resolution.

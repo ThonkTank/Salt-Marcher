@@ -62,6 +62,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.items.importer" ||
         sourceFile.context.packageName == "features.spells.importer" ||
         sourceFile.context.packageName == "features.creatures.model" ||
+        sourceFile.context.packageName == "features.creatures.service" ||
         sourceFile.context.packageName == "shared.crawler.config" ||
         sourceFile.context.packageName == "shared.crawler.http" ||
         sourceFile.context.packageName == "shared.crawler.slug" ||

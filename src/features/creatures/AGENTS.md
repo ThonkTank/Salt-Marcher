@@ -17,6 +17,7 @@
 - Put creature search, filtering, detail reads, and reusable creature widgets in `features.creatures`.
 - Keep importer-adjacent creature helpers creature-owned unless they are truly shared-owned.
 - Keep cross-feature DnD rule vocabulary in `shared/rules`, not in creature-owned model packages.
+- Treat `features.creatures.service.DndMath` as a compatibility wrapper only; new cross-feature CR rule work belongs in `shared/rules/service`.
 - Move UI to `ui/components` only when it is no longer creature-owned and is reused by unrelated features.
 - Do not use legacy `api`, `application`, or `service` package names here as placement precedent for new touched architecture work.
 

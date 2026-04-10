@@ -12,6 +12,7 @@ features consume without any single feature owning the vocabulary.
 - `shared.rules.model.EncounterDifficultyStats` - passive encounter threshold snapshot for builder and combat UI.
 - `shared.rules.model.AdventuringDayBudget` - passive adventuring-day XP budget snapshot.
 - `shared.rules.model.LootCoins` - passive physical coin representation with denomination-sensitive equality.
+- `shared.rules.service.ChallengeRatingRules` - canonical CR-derived rule lookup seam for proficiency bonus and CR benchmarks.
 - `shared.rules.service.XpCalculator` - shared XP thresholds, CR-to-XP lookups, and encounter/adventuring-day rule calculations.
 - `shared.rules.service.LootCalculator` - shared loot settlement rules.
 
@@ -24,5 +25,6 @@ features consume without any single feature owning the vocabulary.
 ## Forbidden Drift
 
 - Do not leave cross-feature rule vocabulary under `features.creatures` or other feature-owned model packages.
+- Do not leave cross-feature CR-derived rule calculations in `features.creatures.service`.
 - Do not move feature workflows or persistence into `shared.rules`.
 - Do not reintroduce model carriers as nested helper types inside calculator classes once they are canonical shared model.
