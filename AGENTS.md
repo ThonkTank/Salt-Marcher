@@ -139,6 +139,10 @@ For touched Java files, these six rules are the single source of truth for the o
 - `repository` — repository files are stateless static persistence boundaries. They must not declare fields, initializer blocks, or nested types; may depend only on JDBC, `DatabaseManager`, approved transaction helpers, local helpers, and same-owner `state`; may construct only same-owner `state`; and must not orchestrate owner seams, task APIs, or other repository APIs.
 - `api callers` — canonical `task` and `repository` APIs may be called only from the same owner's canonical `<Owner>Object` request methods. Canonical `state` APIs may be called only from the same owner's canonical `<Owner>Object` request methods or explicit same-owner `state`/`repository` collaborators that the checker allows.
 
+Two frequent failure modes are not optional style points:
+- Public owner request methods are not an implementation home for JavaFX composition. Do not allocate scene graphs, event handlers, surface catalogs, collections of sibling inputs, or other intermediate workflow structures inline in `*Object` request bodies just because the code is UI-facing.
+- A neighboring owner is callable only through its real public `<Owner>Object` request seam. Do not keep peer-owner instances in owner fields as a workflow shortcut, and do not chain foreign owner return values through another owner's public request body except as canonical `input` values that the checker already allows.
+
 No other technical layer names are canonical. Directories such as `model`, `application`, `service`, `ui`, `api`, `bootstrap`, `internal`, or `support` do not define valid package precedent for new or touched architecture work.
 
 ### Public Owner APIs
