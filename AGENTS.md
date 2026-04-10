@@ -38,7 +38,7 @@ This file defines the repository-specific operating constraints for Claude Code 
 ```bash
 ./gradlew build                  # compile + convention checks
 ./gradlew build                  # recompile after every code change — fix all errors before proceeding
-./gradlew checkNoDeadCode        # fail when touched Java files add dead declarations or dead local code
+./gradlew checkNoDeadCode        # fail when src/clean has dead declarations or type-level unused suppressions, or touched clean files add dead local code
 ./gradlew run                    # start JavaFX app
 ./gradlew installDesktopApp      # reinstall desktop launcher
 ./gradlew inspectDatabase        # inspect current or requested SQLite database
@@ -59,7 +59,7 @@ No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/
 
 `./gradlew build` also runs a post-build cleanup that deletes empty directories left behind under `src/` and `resources/`.
 
-`./gradlew check` includes a touched-Java dead-code gate. If a touched `src/**/*.java` file introduces unreachable types, methods, constructors, fields, dead locals, dead assignments, or obvious constant-condition branches, the build must fail. Intentionally retained declarations must be marked with `@SuppressWarnings("unused")` instead of being left as ambiguous fake/live code.
+`./gradlew check` includes a `src/clean` dead-code gate. Any unreachable type, method, constructor, or field anywhere under `src/clean/**/*.java` must fail the build. Dead locals, dead assignments, and obvious constant-condition branches remain touched-file checks under `src/clean`. Type-level `@SuppressWarnings("unused")` is forbidden in `src/clean`; only narrowly scoped member-level suppressions are allowed for genuine analyzer blind spots.
 
 **Sensitive build-check surfaces:** `build.gradle.kts`, `settings.gradle.kts`, and `CODEOWNERS` are protected guardrail infrastructure. The authoritative build logic lives outside the repo under `~/Schreibtisch/SM/buildSrc` and is loaded through `pluginManagement.includeBuild("../SM/buildSrc")`; the repository must not contain a `buildSrc` path at all. Local Gradle verification is expected to fail if the external include wiring drifts from its external reference. Agents must never autonomously edit, stage, commit, or push these files, the external build-check logic under `~/Schreibtisch/SM/buildSrc`, or the external guard/reference files under `~/Schreibtisch/SM/build-checks`. Only a direct, explicit user instruction to change the build checks or guardrails themselves permits those edits; a failing check, a desired refactor, a migration under `src/clean`, or any other implied convenience is not permission.
 
