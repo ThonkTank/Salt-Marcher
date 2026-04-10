@@ -12,6 +12,7 @@
 - `features.world.read.input` — canonical world-owned read requests and result carriers.
 - `features.world.api.ApiObject` — compatibility world boundary. Keep old callers stable here, but do not treat `api/` as placement precedent for new world-owned code.
 - `features.world.hexmap.HexmapObject` — hexmap feature root seam — composes and returns the overworld/editor surfaces plus shared travel surface wiring consumed by the world boundary.
+- `features.world.hexmap.catalog.CatalogObject` — canonical hexmap map-catalog and persistence seam consumed by hexmap editor and overworld workflows.
 - `features.world.dungeonclean.DungeoncleanObject` — parallel clean dungeon rebuild seam. Use it for migrated capabilities instead of reopening legacy `features.world.dungeon` seams.
 - `features.campaignstate.CampaignstateObject` — campaign-state seam consumed for persisted world-session position and time progression.
 

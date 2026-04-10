@@ -1,9 +1,14 @@
 package features.world.hexmap.ui.editor;
 
+import features.world.hexmap.catalog.CatalogObject;
+import features.world.hexmap.catalog.input.CreateMapInput;
+import features.world.hexmap.catalog.input.FlushTerrainChangesInput;
+import features.world.hexmap.catalog.input.LoadMapInput;
+import features.world.hexmap.catalog.input.LoadMapListInput;
+import features.world.hexmap.catalog.input.UpdateMapInput;
 import features.world.hexmap.model.HexMap;
 import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
-import features.world.hexmap.service.HexMapService;
 import javafx.concurrent.Task;
 import ui.async.UiAsyncTasks;
 
@@ -15,13 +20,15 @@ import java.util.function.Consumer;
  * UI-naher Application-Service fuer Workflows im Karteneditor.
  * Kapselt Task-Setup und delegiert Persistenzlogik an den HexMapService.
  */
+@SuppressWarnings("unused")
 public final class MapEditorApplicationService {
+    private final CatalogObject catalogObject = new CatalogObject();
 
     public void loadMapList(Consumer<List<HexMap>> onSuccess, Consumer<Throwable> onError) {
         Task<List<HexMap>> task = new Task<>() {
             @Override
             protected List<HexMap> call() throws Exception {
-                return HexMapService.getAllMaps();
+                return catalogObject.loadMapList(new LoadMapListInput()).maps();
             }
         };
         UiAsyncTasks.submit(task, onSuccess, onError);
@@ -35,7 +42,7 @@ public final class MapEditorApplicationService {
         Task<List<HexTile>> task = new Task<>() {
             @Override
             protected List<HexTile> call() throws Exception {
-                return HexMapService.getTiles(mapId);
+                return catalogObject.loadMap(new LoadMapInput(mapId)).tiles();
             }
         };
         UiAsyncTasks.submit(task, onSuccess, onError);
@@ -45,7 +52,7 @@ public final class MapEditorApplicationService {
         Task<Long> task = new Task<>() {
             @Override
             protected Long call() throws Exception {
-                return HexMapService.createHexMap(name, radius);
+                return catalogObject.createMap(new CreateMapInput(name, radius)).mapId();
             }
         };
         UiAsyncTasks.submit(task, onSuccess, onError);
@@ -59,7 +66,7 @@ public final class MapEditorApplicationService {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                HexMapService.updateMap(mapId, name, oldRadius, newRadius);
+                catalogObject.updateMap(new UpdateMapInput(mapId, name, oldRadius, newRadius));
                 return null;
             }
         };
@@ -74,7 +81,7 @@ public final class MapEditorApplicationService {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                HexMapService.batchUpdateTerrain(terrainChanges);
+                catalogObject.flushTerrainChanges(new FlushTerrainChangesInput(terrainChanges));
                 return null;
             }
         };
@@ -82,6 +89,10 @@ public final class MapEditorApplicationService {
     }
 
     public int removedTilesForRadiusChange(int oldRadius, int newRadius) {
-        return Math.max(0, HexMapService.hexTileCount(oldRadius) - HexMapService.hexTileCount(newRadius));
+        return Math.max(0, hexTileCount(oldRadius) - hexTileCount(newRadius));
+    }
+
+    private static int hexTileCount(int radius) {
+        return 3 * radius * (radius + 1) + 1;
     }
 }

@@ -1,12 +1,17 @@
 package features.world.hexmap.service;
 
-import database.DatabaseManager;
+import features.world.hexmap.catalog.CatalogObject;
+import features.world.hexmap.catalog.input.CreateMapInput;
+import features.world.hexmap.catalog.input.FlushTerrainChangesInput;
+import features.world.hexmap.catalog.input.LoadFirstMapInput;
+import features.world.hexmap.catalog.input.LoadInitialMapInput;
+import features.world.hexmap.catalog.input.LoadMapInput;
+import features.world.hexmap.catalog.input.LoadMapListInput;
+import features.world.hexmap.catalog.input.UpdateMapInput;
+import features.world.hexmap.catalog.input.UpdatePartyTileInput;
 import features.world.hexmap.model.HexMap;
 import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
-import features.world.hexmap.service.adapter.HexMapCampaignStateAdapter;
-
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
@@ -14,7 +19,10 @@ import java.util.Map;
  * Public facade for map-related data access.
  * UI components access hex map data through this class, while connection-aware helpers stay internal.
  */
+@SuppressWarnings("unused")
 public final class HexMapService {
+    private static final CatalogObject CATALOG_OBJECT = new CatalogObject();
+
     public record MapLoadResult(List<HexTile> tiles, Long partyTileId) {}
 
     private HexMapService() {
@@ -22,9 +30,7 @@ public final class HexMapService {
     }
 
     public static List<HexTile> getTiles(long mapId) throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return HexMapSupport.getTiles(conn, mapId);
-        }
+        return CATALOG_OBJECT.loadMap(new LoadMapInput(mapId)).tiles();
     }
 
     /**
@@ -32,23 +38,17 @@ public final class HexMapService {
      * Returns (tiles, partyTileId); partyTileId may be null.
      */
     public static MapLoadResult loadFirstMapWithParty() throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            HexMapSupport.MapLoadResult result = HexMapSupport.loadFirstMapWithParty(conn);
-            return new MapLoadResult(result.tiles(), result.partyTileId());
-        }
+        LoadInitialMapInput.LoadedInitialMapInput loaded = CATALOG_OBJECT.loadInitialMap(new LoadInitialMapInput());
+        return new MapLoadResult(loaded.tiles(), loaded.partyTileId());
     }
 
     public static List<HexTile> loadFirstMap() throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return HexMapSupport.loadFirstMap(conn);
-        }
+        return CATALOG_OBJECT.loadFirstMap(new LoadFirstMapInput()).tiles();
     }
 
     /** Persists party position immediately. */
     public static void updatePartyTile(long tileId) throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            HexMapCampaignStateAdapter.updatePartyTile(conn, tileId);
-        }
+        CATALOG_OBJECT.updatePartyTile(new UpdatePartyTileInput(tileId));
     }
 
     /** Returns the number of tiles in a filled hex grid of the given radius. */
@@ -60,29 +60,21 @@ public final class HexMapService {
 
     /** Loads all maps; owns the connection lifecycle. */
     public static List<HexMap> getAllMaps() throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return HexMapSupport.getAllMaps(conn);
-        }
+        return CATALOG_OBJECT.loadMapList(new LoadMapListInput()).maps();
     }
 
     /** Creates a hex map; owns the connection lifecycle. */
     public static long createHexMap(String name, int radius) throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return HexMapSupport.createHexMap(conn, name, radius);
-        }
+        return CATALOG_OBJECT.createMap(new CreateMapInput(name, radius)).mapId();
     }
 
     /** Updates map name and radius; owns the connection lifecycle. */
     public static void updateMap(long mapId, String newName, int oldRadius, int newRadius) throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            HexMapSupport.updateMap(conn, mapId, newName, oldRadius, newRadius);
-        }
+        CATALOG_OBJECT.updateMap(new UpdateMapInput(mapId, newName, oldRadius, newRadius));
     }
 
     /** Applies a batch of tileId->terrainType changes in a single transaction; owns the connection lifecycle. */
     public static void batchUpdateTerrain(Map<Long, HexTerrainType> tiles) throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            HexMapSupport.batchUpdateTerrain(conn, tiles);
-        }
+        CATALOG_OBJECT.flushTerrainChanges(new FlushTerrainChangesInput(tiles));
     }
 }

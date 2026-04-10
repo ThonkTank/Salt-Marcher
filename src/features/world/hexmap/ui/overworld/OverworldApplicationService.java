@@ -1,7 +1,9 @@
 package features.world.hexmap.ui.overworld;
 
+import features.world.hexmap.catalog.CatalogObject;
+import features.world.hexmap.catalog.input.LoadInitialMapInput;
+import features.world.hexmap.catalog.input.UpdatePartyTileInput;
 import features.world.hexmap.model.HexTile;
-import features.world.hexmap.service.HexMapService;
 import features.world.hexmap.service.PartyPositionSession;
 import javafx.concurrent.Task;
 import ui.async.UiAsyncTasks;
@@ -15,9 +17,11 @@ import java.util.function.Consumer;
  * UI-naher Application-Service fuer Overworld-Workflows.
  * Kapselt Hintergrund-Tasks und delegiert Persistenzlogik an den HexMapService.
  */
+@SuppressWarnings("unused")
 public final class OverworldApplicationService {
 
     public record OverworldMapState(List<HexTile> tiles, Long partyTileId, Long defaultPartyTileId) {}
+    private final CatalogObject catalogObject = new CatalogObject();
     private final AtomicReference<Consumer<Throwable>> persistErrorHandler = new AtomicReference<>(ignored -> { });
     private PartyPositionSession partyPositionSession = new PartyPositionSession(this::handlePersistError);
 
@@ -25,9 +29,9 @@ public final class OverworldApplicationService {
         Task<OverworldMapState> task = new Task<>() {
             @Override
             protected OverworldMapState call() throws Exception {
-                HexMapService.MapLoadResult mapLoadResult = HexMapService.loadFirstMapWithParty();
-                List<HexTile> tiles = mapLoadResult.tiles();
-                Long partyTileId = mapLoadResult.partyTileId();
+                LoadInitialMapInput.LoadedInitialMapInput loaded = catalogObject.loadInitialMap(new LoadInitialMapInput());
+                List<HexTile> tiles = loaded.tiles();
+                Long partyTileId = loaded.partyTileId();
                 Long defaultPartyTileId = partyTileId == null ? pickDefaultPartyTileId(tiles) : null;
                 return new OverworldMapState(tiles, partyTileId, defaultPartyTileId);
             }
@@ -43,7 +47,7 @@ public final class OverworldApplicationService {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                HexMapService.updatePartyTile(tileId);
+                catalogObject.updatePartyTile(new UpdatePartyTileInput(tileId));
                 return null;
             }
         };
