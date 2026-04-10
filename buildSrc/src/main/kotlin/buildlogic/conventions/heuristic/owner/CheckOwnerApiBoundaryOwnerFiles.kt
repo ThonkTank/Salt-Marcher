@@ -69,7 +69,11 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.items.api" ||
         sourceFile.context.packageName == "features.items.catalog" ||
         sourceFile.context.packageName == "features.items.importer" ||
+        sourceFile.context.packageName == "features.spells.api" ||
+        sourceFile.context.packageName == "features.spells.catalog" ||
         sourceFile.context.packageName == "features.spells.importer" ||
+        sourceFile.context.packageName == "features.spells.ui" ||
+        sourceFile.context.packageName == "features.spells.ui.shared.catalog" ||
         sourceFile.context.packageName == "features.creatures.model" ||
         sourceFile.context.packageName == "features.creatures.service" ||
         sourceFile.context.packageName == "features.creatures.ui.shared.catalog" ||

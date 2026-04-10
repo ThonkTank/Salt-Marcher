@@ -8,8 +8,9 @@ import features.items.catalog.input.LoadItemInput;
 import features.items.api.ItemCatalogService;
 import features.items.api.ItemViewerPane;
 import features.loottable.api.LootTableSummary;
-import features.spells.api.SpellSummary;
+import features.spells.catalog.input.LoadSpellInput;
 import features.spells.api.SpellCatalogService;
+import features.spells.api.SpellSummary;
 import features.world.hexmap.api.HexTileSummary;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -38,6 +39,7 @@ import java.util.function.Supplier;
 @SuppressWarnings("unused")
 public class InspectorPane extends VBox implements DetailsNavigator {
     private static final CatalogObject ITEM_CATALOG = new CatalogObject();
+    private static final features.spells.catalog.CatalogObject SPELL_CATALOG = new features.spells.catalog.CatalogObject();
 
     private final VBox detailContent;
     private final Label detailTitle;
@@ -330,22 +332,22 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     private void renderSpell(long spellId, long requestVersion) {
         cancelPendingTask();
         showContentNode("Spell", loadingNode("Lade Spell..."), false);
-        Task<SpellCatalogService.ServiceResult<SpellCatalogService.SpellDetails>> task = new Task<>() {
-            @Override protected SpellCatalogService.ServiceResult<SpellCatalogService.SpellDetails> call() {
-                return SpellCatalogService.getSpell(spellId);
+        Task<LoadSpellInput.LoadedSpellInput> task = new Task<>() {
+            @Override protected LoadSpellInput.LoadedSpellInput call() {
+                return SPELL_CATALOG.loadSpell(new LoadSpellInput(spellId));
             }
         };
         pendingStatBlockTask = task;
         ui.async.UiAsyncTasks.submit(task, result -> {
             if (requestVersion != renderVersion) return;
-            if (!result.isOk()) {
+            if (!result.success()) {
                 ui.async.UiErrorReporter.reportBackgroundFailure(
                         "InspectorPane.renderSpell() service failure",
-                        new IllegalStateException("SpellCatalogService status: " + result.status()));
+                        new IllegalStateException("CatalogObject.loadSpell() failed"));
                 showContentNode("Spell", loadingNode("Spell konnte nicht geladen werden."), false);
                 return;
             }
-            SpellCatalogService.SpellDetails spell = result.value();
+            SpellCatalogService.SpellDetails spell = toSpellDetails(result.spell());
             if (spell == null) {
                 showContentNode("Spell", loadingNode("Spell konnte nicht geladen werden."), false);
                 return;
@@ -356,6 +358,31 @@ public class InspectorPane extends VBox implements DetailsNavigator {
             ui.async.UiErrorReporter.reportBackgroundFailure("InspectorPane.renderSpell()", throwable);
             showContentNode("Spell", loadingNode("Spell konnte nicht geladen werden."), false);
         });
+    }
+
+    private static SpellCatalogService.SpellDetails toSpellDetails(LoadSpellInput.SpellDetailsInput spell) {
+        if (spell == null) {
+            return null;
+        }
+        return new SpellCatalogService.SpellDetails(
+                spell.spellId(),
+                spell.name(),
+                spell.source(),
+                spell.level(),
+                spell.school(),
+                spell.castingTime(),
+                spell.rangeText(),
+                spell.durationText(),
+                spell.ritual(),
+                spell.concentration(),
+                spell.componentsText(),
+                spell.materialComponentText(),
+                spell.classesText(),
+                spell.attackOrSaveText(),
+                spell.damageEffectText(),
+                spell.description(),
+                spell.higherLevelsText(),
+                spell.tags());
     }
 
     private void renderInfo(String title, String message) {

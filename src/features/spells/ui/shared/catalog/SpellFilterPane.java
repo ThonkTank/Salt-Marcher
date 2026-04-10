@@ -1,6 +1,7 @@
 package features.spells.ui.shared.catalog;
 
-import features.spells.api.SpellCatalogService;
+import features.spells.catalog.input.LoadFilterOptionsInput;
+import features.spells.catalog.input.SearchSpellsInput;
 import javafx.animation.PauseTransition;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -17,8 +18,9 @@ import ui.components.SearchableFilterButton;
 import java.util.List;
 import java.util.function.Consumer;
 
+@SuppressWarnings("unused")
 public class SpellFilterPane extends VBox {
-    private Consumer<SpellCatalogService.FilterCriteria> onFilterChanged;
+    private Consumer<SearchSpellsInput.CriteriaInput> onFilterChanged;
 
     private final TextField searchField;
     private final CheckBox ritualOnlyCheck;
@@ -30,7 +32,7 @@ public class SpellFilterPane extends VBox {
     private final SearchableFilterButton sourceFilter;
     private final FlowPane chipsPane;
 
-    public SpellFilterPane(SpellCatalogService.FilterOptions data) {
+    public SpellFilterPane(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         getStyleClass().add("filter-pane");
         setSpacing(4);
         setPadding(new Insets(6, 8, 6, 8));
@@ -75,12 +77,12 @@ public class SpellFilterPane extends VBox {
         getChildren().addAll(searchRow, toggleRow, filterRow, chipsPane);
     }
 
-    public void setOnFilterChanged(Consumer<SpellCatalogService.FilterCriteria> callback) {
+    public void setOnFilterChanged(Consumer<SearchSpellsInput.CriteriaInput> callback) {
         onFilterChanged = callback;
     }
 
-    public SpellCatalogService.FilterCriteria buildCriteria() {
-        return new SpellCatalogService.FilterCriteria(
+    public SearchSpellsInput.CriteriaInput buildCriteria() {
+        return new SearchSpellsInput.CriteriaInput(
                 normalize(searchField.getText()),
                 ritualOnlyCheck.isSelected(),
                 concentrationOnlyCheck.isSelected(),
@@ -92,7 +94,7 @@ public class SpellFilterPane extends VBox {
     }
 
     private void fireChange() {
-        SpellCatalogService.FilterCriteria criteria = buildCriteria();
+        SearchSpellsInput.CriteriaInput criteria = buildCriteria();
         rebuildChips(criteria);
         if (onFilterChanged != null) onFilterChanged.accept(criteria);
     }
@@ -109,7 +111,7 @@ public class SpellFilterPane extends VBox {
         fireChange();
     }
 
-    private void rebuildChips(SpellCatalogService.FilterCriteria criteria) {
+    private void rebuildChips(SearchSpellsInput.CriteriaInput criteria) {
         chipsPane.getChildren().clear();
         if (criteria.nameQuery() != null) {
             chipsPane.getChildren().add(makeChip("Suche: " + criteria.nameQuery(), "chip-item-search", () -> {

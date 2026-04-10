@@ -1,10 +1,18 @@
 package features.spells.api;
 
-import features.spells.service.SpellCatalogApplicationService;
+import features.spells.catalog.CatalogObject;
+import features.spells.catalog.input.LoadFilterOptionsInput;
+import features.spells.catalog.input.LoadSpellInput;
+import features.spells.catalog.input.SearchSpellsInput;
 
 import java.util.List;
 
+/**
+ * Compatibility facade for older spell catalog callers.
+ */
+@SuppressWarnings("unused")
 public final class SpellCatalogService {
+    private static final CatalogObject CATALOG_OBJECT = new CatalogObject();
 
     private SpellCatalogService() {
         throw new AssertionError("No instances");
@@ -87,14 +95,81 @@ public final class SpellCatalogService {
     }
 
     public static ServiceResult<FilterOptions> loadFilterOptions() {
-        return SpellCatalogApplicationService.loadFilterOptions();
+        LoadFilterOptionsInput.LoadedFilterOptionsInput loaded =
+                CATALOG_OBJECT.loadFilterOptions(new LoadFilterOptionsInput());
+        FilterOptions filterOptions = new FilterOptions(
+                loaded.levels(),
+                loaded.schools(),
+                loaded.classes(),
+                loaded.tags(),
+                loaded.sources());
+        return loaded.success() ? ServiceResult.ok(filterOptions) : ServiceResult.dbAccessFailed(filterOptions);
     }
 
     public static ServiceResult<PageResult> searchSpells(FilterCriteria criteria, PageRequest pageRequest) {
-        return SpellCatalogApplicationService.searchSpells(criteria, pageRequest);
+        SearchSpellsInput.SearchedSpellsInput searched = CATALOG_OBJECT.searchSpells(
+                new SearchSpellsInput(
+                        criteria != null
+                                ? new SearchSpellsInput.CriteriaInput(
+                                        criteria.nameQuery(),
+                                        criteria.ritualOnly(),
+                                        criteria.concentrationOnly(),
+                                        criteria.levels(),
+                                        criteria.schools(),
+                                        criteria.classes(),
+                                        criteria.tags(),
+                                        criteria.sources())
+                                : null,
+                        pageRequest != null
+                                ? new SearchSpellsInput.PageInput(
+                                        pageRequest.sortColumn(),
+                                        pageRequest.sortDirection(),
+                                        pageRequest.limit(),
+                                        pageRequest.offset())
+                                : null));
+        PageResult pageResult = new PageResult(
+                searched.spells().stream().map(SpellCatalogService::toSpellSummary).toList(),
+                searched.totalCount());
+        return searched.success() ? ServiceResult.ok(pageResult) : ServiceResult.dbAccessFailed(pageResult);
     }
 
     public static ServiceResult<SpellDetails> getSpell(Long spellId) {
-        return SpellCatalogApplicationService.getSpell(spellId);
+        LoadSpellInput.LoadedSpellInput loaded = CATALOG_OBJECT.loadSpell(new LoadSpellInput(spellId));
+        SpellDetails spell = loaded.spell() != null ? toSpellDetails(loaded.spell()) : null;
+        return loaded.success() ? ServiceResult.ok(spell) : ServiceResult.dbAccessFailed(spell);
+    }
+
+    private static SpellSummary toSpellSummary(SearchSpellsInput.SpellSummaryInput spell) {
+        return new SpellSummary(
+                spell.spellId(),
+                spell.name(),
+                spell.level(),
+                spell.school(),
+                spell.classesText(),
+                spell.ritual(),
+                spell.concentration(),
+                spell.source());
+    }
+
+    private static SpellDetails toSpellDetails(LoadSpellInput.SpellDetailsInput spell) {
+        return new SpellDetails(
+                spell.spellId(),
+                spell.name(),
+                spell.source(),
+                spell.level(),
+                spell.school(),
+                spell.castingTime(),
+                spell.rangeText(),
+                spell.durationText(),
+                spell.ritual(),
+                spell.concentration(),
+                spell.componentsText(),
+                spell.materialComponentText(),
+                spell.classesText(),
+                spell.attackOrSaveText(),
+                spell.damageEffectText(),
+                spell.description(),
+                spell.higherLevelsText(),
+                spell.tags());
     }
 }

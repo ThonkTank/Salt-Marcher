@@ -1,6 +1,7 @@
 package features.spells.ui.shared.catalog;
 
-import features.spells.api.SpellCatalogService;
+import features.spells.catalog.CatalogObject;
+import features.spells.catalog.input.SearchSpellsInput;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
@@ -11,7 +12,8 @@ import ui.components.catalog.AbstractCatalogBrowserPane;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class SpellBrowserPane extends AbstractCatalogBrowserPane<SpellCatalogService.SpellSummary, SpellCatalogService.FilterCriteria> {
+@SuppressWarnings("unused")
+public class SpellBrowserPane extends AbstractCatalogBrowserPane<SearchSpellsInput.SpellSummaryInput, SearchSpellsInput.CriteriaInput> {
     private static final List<SortOption> SORT_OPTIONS = List.of(
             new SortOption("Name (A-Z)", "name", "ASC"),
             new SortOption("Name (Z-A)", "name", "DESC"),
@@ -19,12 +21,13 @@ public class SpellBrowserPane extends AbstractCatalogBrowserPane<SpellCatalogSer
             new SortOption("Grad (abst.)", "level", "DESC")
     );
 
+    private static final CatalogObject CATALOG_OBJECT = new CatalogObject();
     private Consumer<Long> onRequestSpell;
 
     public SpellBrowserPane() {
         super("0 Zauber gefunden", "Keine Zauber gefunden", SORT_OPTIONS);
 
-        TableColumn<SpellCatalogService.SpellSummary, String> nameCol = new TableColumn<>("Name");
+        TableColumn<SearchSpellsInput.SpellSummaryInput, String> nameCol = new TableColumn<>("Name");
         nameCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().name()));
         nameCol.setMinWidth(170);
         nameCol.setCellFactory(col -> new TableCell<>() {
@@ -32,7 +35,7 @@ public class SpellBrowserPane extends AbstractCatalogBrowserPane<SpellCatalogSer
             {
                 btn.getStyleClass().addAll("item-link", "flat");
                 btn.setOnAction(e -> {
-                    SpellCatalogService.SpellSummary spell = itemAt(getIndex());
+                    SearchSpellsInput.SpellSummaryInput spell = itemAt(getIndex());
                     if (spell != null && onRequestSpell != null && spell.spellId() > 0) {
                         onRequestSpell.accept(spell.spellId());
                     }
@@ -54,21 +57,21 @@ public class SpellBrowserPane extends AbstractCatalogBrowserPane<SpellCatalogSer
             }
         });
 
-        TableColumn<SpellCatalogService.SpellSummary, String> levelCol = new TableColumn<>("Grad");
+        TableColumn<SearchSpellsInput.SpellSummaryInput, String> levelCol = new TableColumn<>("Grad");
         levelCol.setCellValueFactory(cd -> new SimpleStringProperty(levelText(cd.getValue().level())));
         levelCol.setMinWidth(60);
         levelCol.setMaxWidth(80);
 
-        TableColumn<SpellCatalogService.SpellSummary, String> schoolCol = new TableColumn<>("Schule");
+        TableColumn<SearchSpellsInput.SpellSummaryInput, String> schoolCol = new TableColumn<>("Schule");
         schoolCol.setCellValueFactory(cd -> new SimpleStringProperty(nullToEmpty(cd.getValue().school())));
         schoolCol.setMinWidth(110);
         schoolCol.setMaxWidth(150);
 
-        TableColumn<SpellCatalogService.SpellSummary, String> classCol = new TableColumn<>("Klassen");
+        TableColumn<SearchSpellsInput.SpellSummaryInput, String> classCol = new TableColumn<>("Klassen");
         classCol.setCellValueFactory(cd -> new SimpleStringProperty(nullToEmpty(cd.getValue().classesText())));
         classCol.setMinWidth(180);
 
-        TableColumn<SpellCatalogService.SpellSummary, String> sourceCol = new TableColumn<>("Quelle");
+        TableColumn<SearchSpellsInput.SpellSummaryInput, String> sourceCol = new TableColumn<>("Quelle");
         sourceCol.setCellValueFactory(cd -> new SimpleStringProperty(nullToEmpty(cd.getValue().source())));
         sourceCol.setMinWidth(90);
         sourceCol.setMaxWidth(130);
@@ -76,7 +79,7 @@ public class SpellBrowserPane extends AbstractCatalogBrowserPane<SpellCatalogSer
         setColumns(List.of(nameCol, levelCol, schoolCol, classCol, sourceCol));
 
         table().setOnKeyPressed(e -> {
-            SpellCatalogService.SpellSummary spell = table().getSelectionModel().getSelectedItem();
+            SearchSpellsInput.SpellSummaryInput spell = table().getSelectionModel().getSelectedItem();
             if (spell == null || spell.spellId() <= 0 || onRequestSpell == null) return;
             if (e.getCode() == KeyCode.ENTER) {
                 onRequestSpell.accept(spell.spellId());
@@ -90,20 +93,21 @@ public class SpellBrowserPane extends AbstractCatalogBrowserPane<SpellCatalogSer
     }
 
     @Override
-    protected SpellCatalogService.FilterCriteria emptyCriteria() {
-        return SpellCatalogService.FilterCriteria.empty();
+    protected SearchSpellsInput.CriteriaInput emptyCriteria() {
+        return new SearchSpellsInput.CriteriaInput(null, false, false, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     @Override
-    protected PageLoadResult<SpellCatalogService.SpellSummary> loadPage(
-            SpellCatalogService.FilterCriteria criteria,
+    protected PageLoadResult<SearchSpellsInput.SpellSummaryInput> loadPage(
+            SearchSpellsInput.CriteriaInput criteria,
             String sortColumn,
             String sortDirection,
             int limit,
             int offset) {
-        SpellCatalogService.ServiceResult<SpellCatalogService.PageResult> result = SpellCatalogService.searchSpells(
-                criteria,
-                new SpellCatalogService.PageRequest(sortColumn, sortDirection, limit, offset));
+        SearchSpellsInput.SearchedSpellsInput result = CATALOG_OBJECT.searchSpells(
+                new SearchSpellsInput(
+                        criteria,
+                        new SearchSpellsInput.PageInput(sortColumn, sortDirection, limit, offset)));
         return sanitizeResult(result);
     }
 
@@ -117,30 +121,26 @@ public class SpellBrowserPane extends AbstractCatalogBrowserPane<SpellCatalogSer
         return "SpellBrowserPane.loadPage()";
     }
 
-    private static PageLoadResult<SpellCatalogService.SpellSummary> sanitizeResult(
-            SpellCatalogService.ServiceResult<SpellCatalogService.PageResult> result) {
+    private static PageLoadResult<SearchSpellsInput.SpellSummaryInput> sanitizeResult(
+            SearchSpellsInput.SearchedSpellsInput result) {
         if (result == null) {
-            return invalidResult("SpellCatalogService returned null ServiceResult");
+            return invalidResult("CatalogObject.searchSpells() returned null result");
         }
-        SpellCatalogService.PageResult page = result.value();
-        if (page == null) {
-            return invalidResult("SpellCatalogService returned null PageResult");
+        if (result.spells() == null) {
+            return invalidResult("CatalogObject.searchSpells() returned null spells");
         }
-        if (page.spells() == null) {
-            return invalidResult("SpellCatalogService returned PageResult with null spells");
-        }
-        if (!result.isOk()) {
+        if (!result.success()) {
             return new PageLoadResult<>(
-                    page.spells(),
-                    page.totalCount(),
+                    result.spells(),
+                    result.totalCount(),
                     false,
-                    new IllegalStateException("SpellCatalogService status: " + result.status()),
+                    new IllegalStateException("CatalogObject.searchSpells() failed"),
                     false);
         }
-        return new PageLoadResult<>(page.spells(), page.totalCount(), true, null, false);
+        return new PageLoadResult<>(result.spells(), result.totalCount(), true, null, false);
     }
 
-    private static PageLoadResult<SpellCatalogService.SpellSummary> invalidResult(String message) {
+    private static PageLoadResult<SearchSpellsInput.SpellSummaryInput> invalidResult(String message) {
         return new PageLoadResult<>(List.of(), 0, false, new IllegalStateException(message), true);
     }
 

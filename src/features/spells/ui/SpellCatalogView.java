@@ -1,7 +1,7 @@
 package features.spells.ui;
 
+import features.spells.catalog.input.LoadFilterOptionsInput;
 import features.spells.api.SpellBrowserPane;
-import features.spells.api.SpellCatalogService;
 import features.spells.api.SpellFilterPane;
 import features.spells.api.SpellSummary;
 import javafx.scene.Node;
@@ -9,13 +9,14 @@ import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 import ui.shell.NavigationIcons;
 
+@SuppressWarnings("unused")
 public final class SpellCatalogView implements AppView {
     private final SpellBrowserPane browserPane = new SpellBrowserPane();
     private SpellFilterPane filterPane;
     private DetailsNavigator detailsNavigator;
     private boolean initialLoadDone = false;
 
-    public void setFilterData(SpellCatalogService.FilterOptions data) {
+    public void setFilterData(LoadFilterOptionsInput.LoadedFilterOptionsInput data) {
         filterPane = new SpellFilterPane(data);
         filterPane.setOnFilterChanged(browserPane::applyFilters);
     }
