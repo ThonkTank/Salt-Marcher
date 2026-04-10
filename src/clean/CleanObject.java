@@ -1,21 +1,18 @@
 package clean;
 
 import clean.creatures.CreaturesObject;
-import clean.creatures.input.ComposeEncounterhostInput;
+import clean.creatures.input.ComposeCatalogcontentInput;
+import clean.encounter.EncounterObject;
+import clean.encounter.input.ComposeEncounterInput;
 import clean.featuretabs.FeaturetabsObject;
 import clean.featuretabs.input.ComposeFeaturetabsInput;
 import clean.shell.ShellObject;
-import clean.shell.async.input.ComposeAsyncInput;
 import clean.shell.input.ComposeShellInput;
-import clean.shell.inspector.input.ComposeInspectorInput;
-import clean.shell.scene.input.ComposeSceneInput;
 import clean.startup.StartupObject;
 import clean.startup.input.StartApplicationInput;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /**
@@ -48,11 +45,21 @@ public final class CleanObject {
         }
 
         private void showApplication() {
-            ComposeEncounterhostInput composeEncounterhostInput = new ComposeEncounterhostInput();
-            ComposeEncounterhostInput.EncounterhostInput encounterhost =
-                    new CreaturesObject(composeEncounterhostInput).composeEncounterhost(composeEncounterhostInput);
+            ComposeEncounterInput composeEncounterInput = new ComposeEncounterInput();
+            ComposeEncounterInput.EncounterInput encounter =
+                    new EncounterObject(composeEncounterInput).composeEncounter(composeEncounterInput);
 
-            ComposeFeaturetabsInput composeFeaturetabsInput = new ComposeFeaturetabsInput(encounterhost);
+            ComposeCatalogcontentInput composeCatalogcontentInput = new ComposeCatalogcontentInput(
+                    rowActionInput -> encounter.addCreature().accept(new ComposeEncounterInput.AddCreatureInput(
+                            rowActionInput.creatureId(),
+                            rowActionInput.creatureName()
+                    )),
+                    "+Add"
+            );
+            ComposeCatalogcontentInput.CatalogcontentInput catalogcontent =
+                    new CreaturesObject(composeCatalogcontentInput).composeCatalogcontent(composeCatalogcontentInput);
+
+            ComposeFeaturetabsInput composeFeaturetabsInput = new ComposeFeaturetabsInput(catalogcontent);
             ComposeFeaturetabsInput.FeaturetabsInput featuretabs =
                     new FeaturetabsObject(composeFeaturetabsInput).composeFeaturetabs(composeFeaturetabsInput);
             ComposeShellInput composeShellInput = new ComposeShellInput(
@@ -60,7 +67,9 @@ public final class CleanObject {
                     featuretabs.initialSurfaceId()
             );
             ComposeShellInput.ShellInput shell = new ShellObject(composeShellInput).composeShell(composeShellInput);
-            bootstrapShellHooks(shell.hooks());
+            if (shell.hooks() != null) {
+                encounter.onShellReady().accept(shell.hooks());
+            }
 
             StartApplicationInput startApplicationInput = new StartApplicationInput(
                     input.primaryStage(),
@@ -68,112 +77,6 @@ public final class CleanObject {
                     shell.root()
             );
             new StartupObject(startApplicationInput).startApplication(startApplicationInput);
-        }
-
-        private void bootstrapShellHooks(ComposeShellInput.ShellHooksInput hooks) {
-            if (hooks == null) {
-                return;
-            }
-            publishInspectorInfo(hooks);
-            ComposeSceneInput.HandleInput sceneHandle = registerScene(hooks);
-            submitAsyncBootstrap(hooks, sceneHandle);
-        }
-
-        private void publishInspectorInfo(ComposeShellInput.ShellHooksInput hooks) {
-            if (hooks.inspectorNavigator() == null) {
-                return;
-            }
-            hooks.inspectorNavigator().showInfo().accept(new ComposeInspectorInput.InfoEntryInput(
-                    "Clean Shell",
-                    "clean-shell:overview",
-                    "Die Clean-Shell traegt jetzt 5 Top-Level-Featuretabs. Encounter hostet bereits den ersten sauberen Creature-Browser, waehrend Inspector, Scene und Async shell-owned bleiben."
-            ));
-        }
-
-        private ComposeSceneInput.HandleInput registerScene(ComposeShellInput.ShellHooksInput hooks) {
-            if (hooks.sceneRegistry() == null) {
-                return null;
-            }
-            VBox initialContent = new VBox(
-                    8,
-                    new Label("Clean Shell aktiv"),
-                    new Label("Die globale Szene wurde beim Start fuer die vorbereiteten Featuretabs registriert.")
-            );
-            initialContent.getStyleClass().add("card");
-            ComposeSceneInput.HandleInput handle = hooks.sceneRegistry().registerScene().apply(
-                    new ComposeSceneInput.RegistrationInput("Clean", initialContent)
-            );
-            if (handle != null) {
-                handle.activate().run();
-            }
-            return handle;
-        }
-
-        private void submitAsyncBootstrap(
-                ComposeShellInput.ShellHooksInput hooks,
-                ComposeSceneInput.HandleInput sceneHandle
-        ) {
-            if (hooks.async() == null) {
-                return;
-            }
-            hooks.async().submitBackground().accept(new ComposeAsyncInput.SubmitBackgroundInput(
-                    "Clean shell bootstrap",
-                    () -> {
-                        Thread.sleep(50L);
-                        return null;
-                    },
-                    () -> showAsyncReady(hooks, sceneHandle),
-                    throwable -> showAsyncFailure(hooks, throwable),
-                    null
-            ));
-        }
-
-        private void showAsyncReady(
-                ComposeShellInput.ShellHooksInput hooks,
-                ComposeSceneInput.HandleInput sceneHandle
-        ) {
-            if (sceneHandle != null) {
-                VBox readyContent = new VBox(
-                        8,
-                        new Label("Async bereit"),
-                        new Label("Der shell-owned Hintergrundpfad hat den globalen Clean-Status aktualisiert.")
-                );
-                readyContent.getStyleClass().add("card");
-                sceneHandle.setContent().accept(readyContent);
-                sceneHandle.activate().run();
-            }
-            if (hooks.inspectorNavigator() == null) {
-                return;
-            }
-            hooks.inspectorNavigator().showContent().accept(new ComposeInspectorInput.HostedEntryInput(
-                    "Shell Status",
-                    "clean-shell:status",
-                    this::createShellStatusContent
-            ));
-        }
-
-        private VBox createShellStatusContent() {
-            VBox hostedContent = new VBox(
-                    10,
-                    new Label("Shell bereit"),
-                    new Label("Navigation, Inspector, Scene und Async laufen ohne Legacy-Shell."),
-                    new Label("Encounter zeigt bereits den ersten Clean-Creature-Slice; Travel, Map Editor, Tabellen und Zauber bleiben als weitere Clean-Top-Level vorbereitet.")
-            );
-            hostedContent.setFillWidth(true);
-            return hostedContent;
-        }
-
-        private void showAsyncFailure(ComposeShellInput.ShellHooksInput hooks, Throwable throwable) {
-            if (hooks.inspectorNavigator() == null) {
-                return;
-            }
-            hooks.inspectorNavigator().showInfo().accept(new ComposeInspectorInput.InfoEntryInput(
-                    "Async Fehler",
-                    "clean-shell:async-error",
-                    throwable == null || throwable.getMessage() == null
-                            ? "Die Demo-Hintergrundaufgabe ist ohne Detailmeldung fehlgeschlagen."
-                            : throwable.getMessage()
-            ));
         }
     }
 

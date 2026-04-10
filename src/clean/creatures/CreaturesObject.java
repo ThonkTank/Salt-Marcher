@@ -4,36 +4,39 @@ import clean.creatures.browser.BrowserObject;
 import clean.creatures.browser.input.ComposeBrowserInput;
 import clean.creatures.catalog.CatalogObject;
 import clean.creatures.catalog.input.ComposeCatalogInput;
-import clean.creatures.input.ComposeEncounterhostInput;
+import clean.creatures.input.ComposeCatalogcontentInput;
 import clean.creatures.statblock.StatblockObject;
 import clean.creatures.statblock.input.ComposeStatblockInput;
 
 /**
- * Public clean creature root seam for reusable creature-host composition.
+ * Public clean creature root seam for reusable creature catalog composition.
  */
 @SuppressWarnings("unused")
 public final class CreaturesObject {
 
-    private final ComposeEncounterhostInput.EncounterhostInput encounterhost;
+    private final ComposeCatalogcontentInput.CatalogcontentInput catalogcontent;
 
-    public CreaturesObject(ComposeEncounterhostInput input) {
-        ComposeEncounterhostInput resolvedInput = java.util.Objects.requireNonNull(input, "input");
-        this.encounterhost = new CreaturesAssembly(resolvedInput).composeEncounterhost();
+    public CreaturesObject(ComposeCatalogcontentInput input) {
+        ComposeCatalogcontentInput resolvedInput = java.util.Objects.requireNonNull(input, "input");
+        this.catalogcontent = new CreaturesAssembly(resolvedInput).composeCatalogcontent();
     }
 
-    public ComposeEncounterhostInput.EncounterhostInput composeEncounterhost(ComposeEncounterhostInput input) {
+    public ComposeCatalogcontentInput.CatalogcontentInput composeCatalogcontent(ComposeCatalogcontentInput input) {
         if (input == null) {
             throw new IllegalArgumentException("input");
         }
-        return encounterhost;
+        return catalogcontent;
     }
 
     private static final class CreaturesAssembly {
 
-        private CreaturesAssembly(ComposeEncounterhostInput input) {
+        private final ComposeCatalogcontentInput input;
+
+        private CreaturesAssembly(ComposeCatalogcontentInput input) {
+            this.input = input;
         }
 
-        private ComposeEncounterhostInput.EncounterhostInput composeEncounterhost() {
+        private ComposeCatalogcontentInput.CatalogcontentInput composeCatalogcontent() {
             ComposeCatalogInput composeCatalogInput = new ComposeCatalogInput();
             ComposeCatalogInput.CatalogInput catalog =
                     new CatalogObject(composeCatalogInput).composeCatalog(composeCatalogInput);
@@ -45,17 +48,27 @@ public final class CreaturesObject {
             ComposeBrowserInput composeBrowserInput = new ComposeBrowserInput(
                     catalog,
                     statblock.showCreatureStatblock(),
-                    null,
-                    null
+                    this::handleRowAction,
+                    input.rowActionLabel()
             );
             ComposeBrowserInput.BrowserInput browser =
                     new BrowserObject(composeBrowserInput).composeBrowser(composeBrowserInput);
 
-            return new ComposeEncounterhostInput.EncounterhostInput(
+            return new ComposeCatalogcontentInput.CatalogcontentInput(new clean.catalog.input.ComposeCatalogInput.CatalogcontentInput(
                     browser.controlsContent(),
                     browser.mainContent(),
                     statblock.onShellReady()
-            );
+            ));
+        }
+
+        private void handleRowAction(ComposeBrowserInput.RowActionInput input) {
+            if (input == null || this.input.rowAction() == null) {
+                return;
+            }
+            this.input.rowAction().accept(new ComposeCatalogcontentInput.RowActionInput(
+                    input.creatureId(),
+                    input.creatureName()
+            ));
         }
     }
 }

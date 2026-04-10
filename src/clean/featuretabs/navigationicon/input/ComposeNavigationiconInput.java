@@ -6,11 +6,10 @@ import javafx.scene.Node;
 public record ComposeNavigationiconInput() {
 
     public record NavigationiconInput(
-            Node encounterGraphic,
+            Node catalogGraphic,
             Node travelGraphic,
             Node mapEditorGraphic,
-            Node tablesGraphic,
-            Node spellsGraphic
+            Node tablesGraphic
     ) {
     }
 }

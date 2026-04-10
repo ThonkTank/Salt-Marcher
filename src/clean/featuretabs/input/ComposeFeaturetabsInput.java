@@ -1,11 +1,11 @@
 package clean.featuretabs.input;
 
-import clean.creatures.input.ComposeEncounterhostInput;
+import clean.creatures.input.ComposeCatalogcontentInput;
 import clean.shell.input.ComposeShellInput;
 
 @SuppressWarnings("unused")
 public record ComposeFeaturetabsInput(
-        ComposeEncounterhostInput.EncounterhostInput encounterhost
+        ComposeCatalogcontentInput.CatalogcontentInput catalogcontent
 ) {
 
     public record FeaturetabsInput(

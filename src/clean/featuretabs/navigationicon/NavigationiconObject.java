@@ -37,20 +37,23 @@ public final class NavigationiconObject {
 
         private ComposeNavigationiconInput.NavigationiconInput composeNavigationicon() {
             return new ComposeNavigationiconInput.NavigationiconInput(
-                    encounter(),
+                    catalog(),
                     travel(),
                     mapEditor(),
-                    tables(),
-                    spells()
+                    tables()
             );
         }
 
-        private static Node encounter() {
-            Line bladeA = strokeLine(5, 4, 13, 14);
-            Line bladeB = strokeLine(13, 4, 5, 14);
-            Line hiltA = strokeLine(4, 10, 8, 6);
-            Line hiltB = strokeLine(10, 6, 14, 10);
-            return wrap(bladeA, bladeB, hiltA, hiltB);
+        private static Node catalog() {
+            Rectangle page = new Rectangle(4, 2.5, 10, 13);
+            applyStrokeStyle(page);
+            page.setArcWidth(2);
+            page.setArcHeight(2);
+
+            Line row1 = strokeLine(6, 6, 12, 6);
+            Line row2 = strokeLine(6, 9, 12, 9);
+            Line tab = strokeLine(6, 12, 10, 12);
+            return wrap(page, row1, row2, tab);
         }
 
         private static Node travel() {
@@ -84,25 +87,6 @@ public final class NavigationiconObject {
             Line row2 = strokeLine(6, 9, 12, 9);
             Line row3 = strokeLine(6, 12, 12, 12);
             return wrap(page, row1, row2, row3);
-        }
-
-        private static Node spells() {
-            Polyline spark = new Polyline(
-                    9, 2.5,
-                    10.5, 7.5,
-                    15.5, 9,
-                    10.5, 10.5,
-                    9, 15.5,
-                    7.5, 10.5,
-                    2.5, 9,
-                    7.5, 7.5,
-                    9, 2.5
-            );
-            applyStrokeStyle(spark);
-
-            Circle core = new Circle(9, 9, 1.7);
-            applyFillStyle(core);
-            return wrap(spark, core);
         }
 
         private static StackPane wrap(Node... nodes) {
