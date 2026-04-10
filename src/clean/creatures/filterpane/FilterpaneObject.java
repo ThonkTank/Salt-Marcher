@@ -32,7 +32,6 @@ import java.util.Set;
 /**
  * Reusable clean creature filter controls mirroring the legacy creature filter pane.
  */
-@SuppressWarnings("unused")
 public final class FilterpaneObject {
 
     private final ComposeFilterpaneInput.FilterpaneInput filterpane;

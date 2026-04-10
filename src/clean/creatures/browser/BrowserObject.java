@@ -27,7 +27,6 @@ import java.util.function.Function;
 /**
  * Reusable clean creature browser table mirroring the legacy catalog browser role.
  */
-@SuppressWarnings("unused")
 public final class BrowserObject {
 
     private final ComposeBrowserInput.BrowserInput browser;

@@ -18,7 +18,6 @@ import javafx.stage.Stage;
 /**
  * Public root seam for the isolated clean application lifecycle.
  */
-@SuppressWarnings("unused")
 public final class CleanObject {
 
     private final clean.input.ShowApplicationInput shownApplication;

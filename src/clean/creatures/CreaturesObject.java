@@ -13,7 +13,6 @@ import clean.creatures.statblock.input.ComposeStatblockInput;
 /**
  * Public clean creature root seam for reusable creature catalog composition.
  */
-@SuppressWarnings("unused")
 public final class CreaturesObject {
 
     private final ComposeCatalogcontentInput.CatalogcontentInput catalogcontent;
