@@ -49,25 +49,28 @@ public final class InspectorObject {
         }
 
         private ComposeInspectorInput.InspectorInput composeInspector() {
-            titleLabel.getStyleClass().add("panel-title");
-            backButton.getStyleClass().add("nav-button");
-            forwardButton.getStyleClass().add("nav-button");
-            clearButton.getStyleClass().add("nav-button");
+            titleLabel.getStyleClass().add("bold");
+            backButton.getStyleClass().addAll("compact", "flat");
+            forwardButton.getStyleClass().addAll("compact", "flat");
+            clearButton.getStyleClass().addAll("compact", "remove-btn");
+            backButton.setAccessibleText("Zurueck");
+            forwardButton.setAccessibleText("Vorwaerts");
+            clearButton.setAccessibleText("Details schliessen");
 
             Region spacer = new Region();
             HBox.setHgrow(spacer, Priority.ALWAYS);
             HBox header = new HBox(8, backButton, forwardButton, titleLabel, spacer, clearButton);
             header.setAlignment(Pos.CENTER_LEFT);
+            header.getStyleClass().add("stat-block-fixed-header");
 
             contentHost.getChildren().setAll(placeholder);
-            contentHost.getStyleClass().add("panel-content");
 
             ScrollPane scrollPane = new ScrollPane(contentHost);
             scrollPane.setFitToWidth(true);
             scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
             VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
-            root.getStyleClass().add("panel-shell");
+            root.getStyleClass().add("inspector-pane");
             root.getChildren().setAll(header, scrollPane);
 
             backButton.setOnAction(event -> goBack());
@@ -98,7 +101,7 @@ public final class InspectorObject {
                     input.entryKey(),
                     () -> {
                         Label messageLabel = new Label(message);
-                        messageLabel.getStyleClass().add("hero-summary");
+                        messageLabel.getStyleClass().add("text-muted");
                         messageLabel.setWrapText(true);
                         VBox content = new VBox(12, messageLabel);
                         content.setPadding(new Insets(12));
@@ -197,7 +200,7 @@ public final class InspectorObject {
 
         private static VBox createPlaceholder() {
             Label placeholderLabel = new Label("Keine Details ausgewaehlt");
-            placeholderLabel.getStyleClass().add("hero-footer");
+            placeholderLabel.getStyleClass().add("text-muted");
             placeholderLabel.setWrapText(true);
             VBox placeholder = new VBox(placeholderLabel);
             placeholder.setPadding(new Insets(12));

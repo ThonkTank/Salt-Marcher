@@ -4,7 +4,7 @@ package clean.placeholder.input;
 public record ComposePlaceholderInput(
         String surfaceId,
         String title,
-        String navigationLabel,
+        String navigationIconText,
         String summary,
         String controlsLineOne,
         String controlsLineTwo,

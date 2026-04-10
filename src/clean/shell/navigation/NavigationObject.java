@@ -7,6 +7,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -46,16 +47,16 @@ public final class NavigationObject {
             String initialSurfaceId = resolveInitialSurfaceId(surfaces, input.initialSurfaceId());
 
             Label toolbarTitle = new Label();
-            toolbarTitle.getStyleClass().add("toolbar-title");
+            toolbarTitle.getStyleClass().add("large");
             StackPane toolbarItemsHost = new StackPane();
             Region toolbarSpacer = new Region();
             HBox.setHgrow(toolbarSpacer, Priority.ALWAYS);
-            HBox toolbarContent = new HBox(12, toolbarTitle, toolbarSpacer, toolbarItemsHost);
+            HBox toolbarContent = new HBox(8, toolbarTitle, toolbarSpacer, toolbarItemsHost);
             toolbarContent.setAlignment(Pos.CENTER_LEFT);
+            HBox.setHgrow(toolbarItemsHost, Priority.NEVER);
 
-            VBox navigationContent = new VBox(8);
-            navigationContent.getStyleClass().add("navigation-list");
-            navigationContent.setPadding(new Insets(12));
+            VBox navigationContent = new VBox(4);
+            navigationContent.setAlignment(Pos.TOP_CENTER);
 
             StackPane controlsHost = new StackPane();
             StackPane mainHost = new StackPane();
@@ -110,14 +111,15 @@ public final class NavigationObject {
             };
 
             for (ComposeNavigationInput.SurfaceInput surface : surfaces) {
-                String buttonLabel = surface.navigationLabel().isBlank()
-                        ? (surface.title().isBlank() ? surface.surfaceId() : surface.title())
-                        : surface.navigationLabel();
+                String buttonLabel = surface.navigationIconText().isBlank()
+                        ? surface.surfaceId()
+                        : surface.navigationIconText();
                 ToggleButton button = new ToggleButton(buttonLabel);
-                button.getStyleClass().add("nav-button");
-                button.setMaxWidth(Double.MAX_VALUE);
+                button.getStyleClass().add("nav-btn");
                 button.setToggleGroup(toggleGroup);
                 button.setFocusTraversable(false);
+                button.setTooltip(new Tooltip(surface.title()));
+                button.setAccessibleText(surface.title());
                 if (surface.surfaceId().equals(activeSurfaceId[0])) {
                     button.setSelected(true);
                 }
@@ -158,7 +160,7 @@ public final class NavigationObject {
                 normalizedSurfaces.add(new ComposeNavigationInput.SurfaceInput(
                         surfaceId,
                         surface.title() == null ? "" : surface.title().trim(),
-                        surface.navigationLabel() == null ? "" : surface.navigationLabel().trim(),
+                        surface.navigationIconText() == null ? "" : surface.navigationIconText().trim(),
                         surface.toolbarContent(),
                         surface.controlsContent(),
                         surface.mainContent(),
@@ -200,7 +202,6 @@ public final class NavigationObject {
 
         private static VBox createPlaceholder(String text) {
             VBox placeholder = new VBox(new Label(text));
-            placeholder.getStyleClass().add("empty-panel");
             placeholder.setPadding(new Insets(12));
             return placeholder;
         }

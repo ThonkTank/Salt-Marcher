@@ -73,7 +73,7 @@ public final class CleanObject {
             return new ComposePlaceholderInput(
                     "start",
                     "Clean Start",
-                    "Start",
+                    "S",
                     "Isolierter Clean-Einstieg",
                     "Die neue Shell lebt jetzt unter clean/shell und traegt Navigation, Inspector, Szene und Async.",
                     "Sidebar, Toolbar und Cockpit stammen nicht mehr aus dem Bootstrap.",
@@ -91,7 +91,7 @@ public final class CleanObject {
             return new ComposePlaceholderInput(
                     "frameworks",
                     "Framework Slice",
-                    "Shell",
+                    "F",
                     "Dieser Demo-Surface beschreibt genau die Grundschicht, an die spaeter Features andocken.",
                     "Globaler Inspector als read-mostly Details-Flaeche.",
                     "Globale Scene-Tabs fuer persistente Aktivitaeten im unteren rechten Pane.",

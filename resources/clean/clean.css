@@ -1,142 +1,193 @@
 .clean-root {
-    -fx-background-color: linear-gradient(to bottom right, #f3ede1 0%, #e8dfcf 45%, #ddd3c0 100%);
-    -fx-font-family: "Georgia";
-}
+    -sm-bg-darkest:  #12181c;
+    -sm-bg-panel:    #1a2025;
+    -sm-bg-card:     #232b2f;
+    -sm-bg-elevated: #26282a;
 
-.toolbar-shell {
-    -fx-background-color: rgba(52, 40, 28, 0.92);
-    -fx-border-color: rgba(255, 255, 255, 0.18);
-    -fx-border-width: 0 0 1 0;
-    -fx-padding: 16 20 16 20;
-}
+    -sm-text-primary:   #ecedee;
+    -sm-text-secondary: #a4a7ab;
+    -sm-text-muted:     #969aa0;
 
-.toolbar-title {
-    -fx-text-fill: #f4efe3;
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
-}
+    -sm-accent:       #1e7fd4;
+    -sm-accent-hover: #41a9f2;
+    -sm-border-subtle: #333a3f;
 
-.toolbar-badge {
-    -fx-background-color: #d5b56d;
-    -fx-text-fill: #2f2417;
-    -fx-padding: 6 10 6 10;
-    -fx-background-radius: 999px;
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-}
-
-.navigation-shell {
-    -fx-background-color: rgba(61, 47, 34, 0.95);
-    -fx-border-color: rgba(255, 255, 255, 0.08);
-    -fx-border-width: 0 1 0 0;
-    -fx-padding: 18 12 18 12;
-    -fx-spacing: 12px;
-    -fx-pref-width: 140px;
-}
-
-.navigation-list {
-    -fx-fill-width: true;
-}
-
-.nav-button {
-    -fx-max-width: infinity;
-    -fx-background-color: rgba(255, 255, 255, 0.08);
-    -fx-text-fill: #f3ede1;
-    -fx-padding: 10 12 10 12;
-    -fx-background-radius: 10px;
-    -fx-border-radius: 10px;
-    -fx-border-color: transparent;
+    -fx-font-family: "SansSerif";
     -fx-font-size: 13px;
+    -fx-base: #12181c;
+    -fx-background: #12181c;
+    -fx-background-color: -sm-bg-darkest;
+}
+
+.split-pane {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-padding: 0;
+}
+
+.split-pane > .split-pane-divider {
+    -fx-background-color: -sm-border-subtle;
+    -fx-padding: 0 1 0 1;
+}
+
+.scroll-pane,
+.scroll-pane > .viewport {
+    -fx-background-color: -sm-bg-darkest;
+}
+
+.label {
+    -fx-text-fill: -sm-text-primary;
+}
+
+.text-muted {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+}
+
+.title {
     -fx-font-weight: bold;
-    -fx-alignment: center-left;
-}
-
-.nav-button:selected {
-    -fx-background-color: #d5b56d;
-    -fx-text-fill: #2f2417;
-}
-
-.content-row {
-    -fx-alignment: top-left;
-}
-
-.column-stack {
-    -fx-fill-width: true;
-    -fx-padding: 18px;
-    -fx-spacing: 16px;
-}
-
-.panel-shell {
-    -fx-background-color: rgba(255, 250, 240, 0.82);
-    -fx-background-radius: 18px;
-    -fx-border-radius: 18px;
-    -fx-border-color: rgba(61, 47, 34, 0.12);
-    -fx-border-width: 1px;
-    -fx-effect: dropshadow(gaussian, rgba(43, 31, 20, 0.10), 18, 0.12, 0, 8);
-    -fx-padding: 14px;
-}
-
-.panel-title {
-    -fx-text-fill: #5a4330;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-}
-
-.panel-content {
-    -fx-background-color: rgba(255, 255, 255, 0.55);
-    -fx-background-radius: 14px;
-    -fx-padding: 14px;
-}
-
-.hero-card {
-    -fx-background-color: linear-gradient(to bottom right, rgba(86, 64, 47, 0.95), rgba(52, 39, 28, 0.96));
-    -fx-background-radius: 16px;
-    -fx-padding: 20px;
-}
-
-.eyebrow-label {
-    -fx-text-fill: #d5b56d;
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-}
-
-.hero-title {
-    -fx-text-fill: #fbf6eb;
-    -fx-font-size: 34px;
-    -fx-font-weight: bold;
-}
-
-.hero-summary {
-    -fx-text-fill: #ece1d1;
-    -fx-font-size: 16px;
-    -fx-line-spacing: 3px;
-}
-
-.hero-footer {
-    -fx-text-fill: rgba(244, 239, 227, 0.78);
-    -fx-font-size: 13px;
-}
-
-.list-card,
-.empty-panel {
-    -fx-background-color: transparent;
-    -fx-spacing: 8px;
-}
-
-.section-label {
-    -fx-text-fill: #5a4330;
-    -fx-font-size: 13px;
-    -fx-font-weight: bold;
-}
-
-.bullet-label {
-    -fx-text-fill: #8a6a46;
     -fx-font-size: 15px;
+}
+
+.large {
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+.bold {
     -fx-font-weight: bold;
 }
 
-.bullet-text {
-    -fx-text-fill: #473728;
+.button {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-weight: bold;
     -fx-font-size: 13px;
-    -fx-line-spacing: 2px;
+    -fx-cursor: hand;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-padding: 6 12 6 12;
+}
+
+.button:hover {
+    -fx-background-color: derive(-sm-bg-elevated, 20%);
+}
+
+.button:focused {
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-width: 2;
+}
+
+.button.compact {
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 11px;
+}
+
+.button.flat {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.button.flat:hover {
+    -fx-background-color: derive(-sm-bg-elevated, 10%);
+}
+
+.remove-btn {
+    -fx-font-size: 16px;
+}
+
+.toolbar {
+    -fx-background-color: -sm-bg-panel;
+    -fx-padding: 6 12 6 12;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
+
+.nav-sidebar {
+    -fx-background-color: -sm-bg-panel;
+    -fx-padding: 8 4 8 4;
+    -fx-border-color: transparent -sm-border-subtle transparent transparent;
+    -fx-pref-width: 48;
+    -fx-min-width: 48;
+    -fx-max-width: 48;
+}
+
+.nav-btn {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6;
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-font-size: 18px;
+    -fx-text-fill: -sm-text-secondary;
+}
+
+.nav-btn:hover {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+
+.nav-btn:selected {
+    -fx-background-color: #165fa0;
+    -fx-text-fill: -sm-text-primary;
+}
+
+.nav-btn:focused {
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-width: 2;
+}
+
+.control-panel {
+    -fx-background-color: -sm-bg-panel;
+}
+
+.section-header {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 6 8 4 8;
+}
+
+.inspector-pane {
+    -fx-background-color: -sm-bg-darkest;
+}
+
+.stat-block-fixed-header {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 4 8 4 8;
+}
+
+.scene-pane {
+    -fx-background-color: -sm-bg-darkest;
+}
+
+.scene-tab-bar {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-border-width: 1;
+}
+
+.scene-tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4 4 0 0;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 12px;
+    -fx-padding: 4 10 4 10;
+    -fx-cursor: hand;
+}
+
+.scene-tab:hover {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+
+.scene-tab:selected {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-text-fill: -sm-text-primary;
+    -fx-border-color: -sm-border-subtle -sm-border-subtle transparent -sm-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4 4 0 0;
+    -fx-background-radius: 4 4 0 0;
 }

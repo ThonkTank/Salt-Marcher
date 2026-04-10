@@ -3,7 +3,6 @@ package clean.placeholder;
 import clean.placeholder.input.ComposePlaceholderInput;
 import clean.shell.input.ComposeShellInput;
 import javafx.scene.control.Label;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 /**
@@ -37,7 +36,7 @@ public final class PlaceholderObject {
         private ComposeShellInput.SurfaceInput composePlaceholder() {
             String surfaceId = normalizeText(input.surfaceId());
             String title = normalizeText(input.title());
-            String navigationLabel = normalizeText(input.navigationLabel());
+            String navigationIconText = normalizeText(input.navigationIconText());
             String summary = normalizeText(input.summary());
             String controlsLineOne = normalizeText(input.controlsLineOne());
             String controlsLineTwo = normalizeText(input.controlsLineTwo());
@@ -49,66 +48,73 @@ public final class PlaceholderObject {
             String stateLineTwo = normalizeText(input.stateLineTwo());
             String stateLineThree = normalizeText(input.stateLineThree());
 
-            Label badgeLabel = new Label("Demo");
-            badgeLabel.getStyleClass().add("toolbar-badge");
-            HBox toolbarContent = new HBox(badgeLabel);
-
             VBox controlsContent = new VBox(
                     8,
-                    createBulletLabel(controlsLineOne.isBlank() ? "Kein lokaler Controls-Eintrag" : controlsLineOne),
-                    createOptionalBulletLabel(controlsLineTwo),
-                    createOptionalBulletLabel(controlsLineThree)
+                    createSectionLabel("Controls"),
+                    createBodyLabel(controlsLineOne.isBlank() ? "Kein lokaler Controls-Eintrag" : controlsLineOne),
+                    createOptionalBodyLabel(controlsLineTwo),
+                    createOptionalBodyLabel(controlsLineThree)
             );
-            controlsContent.getStyleClass().add("list-card");
+            controlsContent.setFillWidth(true);
 
-            Label heroEyebrow = new Label("Clean");
-            heroEyebrow.getStyleClass().add("eyebrow-label");
-            Label heroTitle = new Label(title);
-            heroTitle.getStyleClass().add("hero-title");
-            Label heroSummary = new Label(summary);
-            heroSummary.getStyleClass().add("hero-summary");
-            heroSummary.setWrapText(true);
-            Label heroFooter = new Label("Surface-ID: " + surfaceId);
-            heroFooter.getStyleClass().add("hero-footer");
-            VBox mainContent = new VBox(12, heroEyebrow, heroTitle, heroSummary, heroFooter);
-            mainContent.getStyleClass().add("hero-card");
+            Label mainTitle = new Label(title);
+            mainTitle.getStyleClass().add("title");
+            Label mainSummary = createBodyLabel(summary);
+            Label mainSurfaceId = createMutedLabel("Surface-ID: " + surfaceId);
+            VBox mainContent = new VBox(12, mainTitle, mainSummary, mainSurfaceId);
+            mainContent.setFillWidth(true);
+            mainContent.setPadding(new javafx.geometry.Insets(12));
 
             return new ComposeShellInput.SurfaceInput(
                     surfaceId,
                     title,
-                    navigationLabel,
-                    toolbarContent,
+                    navigationIconText,
+                    null,
                     controlsContent,
                     mainContent,
-                    createOptionalCard(detailsLineOne, detailsLineTwo, detailsLineThree),
-                    createOptionalCard(stateLineOne, stateLineTwo, stateLineThree),
+                    createOptionalCard("Details", detailsLineOne, detailsLineTwo, detailsLineThree),
+                    createOptionalCard("Status", stateLineOne, stateLineTwo, stateLineThree),
                     null,
                     null
             );
         }
 
-        private static VBox createOptionalCard(String lineOne, String lineTwo, String lineThree) {
+        private static VBox createOptionalCard(String sectionTitle, String lineOne, String lineTwo, String lineThree) {
             if (lineOne.isBlank() && lineTwo.isBlank() && lineThree.isBlank()) {
                 return null;
             }
             VBox card = new VBox(
                     8,
-                    createBulletLabel(lineOne),
-                    createOptionalBulletLabel(lineTwo),
-                    createOptionalBulletLabel(lineThree)
+                    createSectionLabel(sectionTitle),
+                    createBodyLabel(lineOne),
+                    createOptionalBodyLabel(lineTwo),
+                    createOptionalBodyLabel(lineThree)
             );
-            card.getStyleClass().add("list-card");
+            card.setFillWidth(true);
+            card.setPadding(new javafx.geometry.Insets(12));
             return card;
         }
 
-        private static Label createBulletLabel(String text) {
+        private static Label createSectionLabel(String text) {
             Label label = new Label(text);
-            label.getStyleClass().add("bullet-text");
+            label.getStyleClass().addAll("section-header", "text-muted");
             return label;
         }
 
-        private static Label createOptionalBulletLabel(String text) {
-            Label label = createBulletLabel(text);
+        private static Label createBodyLabel(String text) {
+            Label label = new Label(text);
+            label.setWrapText(true);
+            return label;
+        }
+
+        private static Label createMutedLabel(String text) {
+            Label label = createBodyLabel(text);
+            label.getStyleClass().add("text-muted");
+            return label;
+        }
+
+        private static Label createOptionalBodyLabel(String text) {
+            Label label = createBodyLabel(text);
             label.setManaged(!text.isBlank());
             label.setVisible(!text.isBlank());
             return label;

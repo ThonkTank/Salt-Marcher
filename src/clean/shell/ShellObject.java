@@ -61,7 +61,7 @@ public final class ShellObject {
                 navigationSurfaces.add(new ComposeNavigationInput.SurfaceInput(
                         surface.surfaceId(),
                         surface.title(),
-                        surface.navigationLabel(),
+                        surface.navigationIconText(),
                         surface.toolbarContent(),
                         surface.controlsContent(),
                         surface.mainContent(),

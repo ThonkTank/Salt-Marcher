@@ -48,16 +48,16 @@ public final class SceneObject {
         private ComposeSceneInput.SceneInput composeScene() {
             tabBar.setAlignment(Pos.CENTER_LEFT);
             tabBar.setPadding(new Insets(4, 0, 0, 0));
+            tabBar.getStyleClass().add("scene-tab-bar");
 
-            placeholderLabel.getStyleClass().add("hero-footer");
+            placeholderLabel.getStyleClass().add("text-muted");
             placeholderLabel.setWrapText(true);
 
             VBox placeholder = new VBox(placeholderLabel);
             contentHost.getChildren().setAll(placeholder);
-            contentHost.getStyleClass().add("panel-content");
             VBox.setVgrow(contentHost, Priority.ALWAYS);
 
-            root.getStyleClass().add("panel-shell");
+            root.getStyleClass().add("scene-pane");
             root.getChildren().setAll(tabBar, contentHost);
             rebuildTabBar();
 
@@ -114,6 +114,7 @@ public final class SceneObject {
 
         private static Node createPlaceholderContent(String label) {
             Label labelNode = new Label("Szene \"" + label + "\" ist aktiv.");
+            labelNode.getStyleClass().add("text-muted");
             labelNode.setWrapText(true);
             VBox content = new VBox(labelNode);
             content.setPadding(new Insets(12));
@@ -132,7 +133,7 @@ public final class SceneObject {
             private TabEntry(String label, Node initialContent) {
                 this.label = label;
                 this.button = new ToggleButton(label);
-                this.button.getStyleClass().add("nav-button");
+                this.button.getStyleClass().add("scene-tab");
                 this.button.setToggleGroup(toggleGroup);
                 this.button.setOnAction(event -> activateTab(this));
                 this.content = initialContent;
