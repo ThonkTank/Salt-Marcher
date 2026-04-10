@@ -59,6 +59,7 @@ internal fun analyzeOwnerFile(
     if (sourceFile.context.packageName == "database" ||
         sourceFile.context.packageName == "importer" ||
         sourceFile.context.packageName == "importer.pipeline" ||
+        sourceFile.context.packageName == "features.calendar" ||
         sourceFile.context.packageName == "features.campaignstate" ||
         sourceFile.context.packageName == "features.campaignstate.api" ||
         sourceFile.context.packageName == "features.items.importer" ||

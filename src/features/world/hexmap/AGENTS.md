@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`hexmap` owns the overworld map, the overworld editor, the shared hex renderer used by both, and the local calendar behavior tied to that feature area.
+`hexmap` owns the overworld map, the overworld editor, and the shared hex renderer used by both.
 
 ## Canonical Types and APIs
 
@@ -13,7 +13,6 @@
 - `features.world.hexmap.api.HexTileSummary` — stable read DTO for shell inspector hex-tile cards.
 - `HexGridPane` — shared renderer for read-only and editing workflows.
 - `HexMapService` — async map loading and overworld persistence workflow seam.
-- `CalendarService` — Forgotten Realms calendar parsing and day conversion seam.
 
 ## Where New Code Goes
 
@@ -26,4 +25,3 @@
 
 - Do not fork separate runtime and editor renderers for the same hex surface behavior.
 - Do not degrade paint drag into per-tile persistence writes.
-- Do not repeatedly reparse calendar configuration in hot paths.

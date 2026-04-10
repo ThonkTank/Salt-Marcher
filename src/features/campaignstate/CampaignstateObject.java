@@ -1,5 +1,6 @@
 package features.campaignstate;
 
+import features.calendar.CalendarObject;
 import features.campaignstate.input.AdvanceDayInput;
 import features.campaignstate.input.AdvancePhaseInput;
 import features.campaignstate.input.ClearDungeonPositionInput;
@@ -11,8 +12,6 @@ import features.campaignstate.input.SetDungeonTilePositionInput;
 import features.campaignstate.input.UpdatePartyTileInput;
 import features.campaignstate.input.UpsertSessionInput;
 import features.campaignstate.repository.CampaignstateRepository;
-import features.campaignstate.state.AdvanceDayState;
-import features.campaignstate.state.AdvancePhaseState;
 import features.campaignstate.state.CampaignStateState;
 import features.campaignstate.state.DungeonTilePositionState;
 import features.campaignstate.state.PartyTileRadiusState;
@@ -116,10 +115,10 @@ public final class CampaignstateObject {
     }
 
     public void advanceDay(AdvanceDayInput input) throws SQLException {
-        CampaignstateRepository.advanceDay(input.connection(), AdvanceDayState.advanceDay(input));
+        new CalendarObject().advanceDay(new features.calendar.input.AdvanceDayInput(input.connection(), input.days()));
     }
 
     public void advancePhase(AdvancePhaseInput input) throws SQLException {
-        CampaignstateRepository.advancePhase(input.connection(), AdvancePhaseState.advancePhase(input));
+        new CalendarObject().advancePhase(new features.calendar.input.AdvancePhaseInput(input.connection()));
     }
 }
