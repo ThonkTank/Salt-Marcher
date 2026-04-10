@@ -3,19 +3,19 @@ package features.items.importer;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
 import shared.crawler.config.input.LoadRuntimeConfigInput;
 import shared.crawler.config.input.ResolveProjectPathInput;
 import shared.crawler.http.HttpObject;
 import shared.crawler.http.input.ComposeHttpInput;
-import shared.crawler.slug.SlugIdentity;
+import shared.crawler.slug.SlugObject;
+import shared.crawler.slug.input.CollectListingSlugsInput;
+import shared.crawler.slug.input.LoadSlugFileInput;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -96,30 +96,17 @@ public class ItemCrawler {
         System.out.println("Starting D&D Beyond Item Crawler...");
         System.out.println("Output directory: " + outputDir.toAbsolutePath());
 
-        // 1. Collect equipment slugs via pagination
-        Set<String> rawEquipmentSlugs = new LinkedHashSet<>();
-        for (int page = 1; ; page++) {
-            System.out.println("Loading equipment listing page " + page + "...");
-            List<String> pageSlugs = fetchEquipmentSlugs(page);
-            int sizeBefore = rawEquipmentSlugs.size();
-            rawEquipmentSlugs.addAll(pageSlugs);
-            int newlyAdded = rawEquipmentSlugs.size() - sizeBefore;
-
-            if (pageSlugs.isEmpty() || newlyAdded == 0) {
-                System.out.println("No new items on page " + page
-                        + " — equipment listing complete.");
-                break;
-            }
-            System.out.println("  +" + newlyAdded + " new items (total: " + rawEquipmentSlugs.size() + ")");
-        }
-
-        // Deduplication: for slugs with the same name suffix, keep the lowest ID (2014 version)
-        Set<String> equipmentSlugs = SlugIdentity.deduplicateSlugs(rawEquipmentSlugs);
-        int removed = rawEquipmentSlugs.size() - equipmentSlugs.size();
-        if (removed > 0) {
-            System.out.println("Deduplication: " + removed + " newer duplicates removed"
-                    + " (keeping 2014 versions)");
-        }
+        SlugObject slugObject = new SlugObject();
+        Set<String> equipmentSlugs = slugObject.collectListingSlugs(new CollectListingSlugsInput(
+                crawlerHttp,
+                BASE_URL + "/equipment?page=%d",
+                "equipment item",
+                "equipment items",
+                "/equipment/",
+                EQUIPMENT_SLUG_PATTERN,
+                1,
+                false
+        )).slugs();
 
         Set<CrawlEntry> entries = new LinkedHashSet<>();
         for (String slug : equipmentSlugs) {
@@ -127,11 +114,14 @@ public class ItemCrawler {
         }
 
         // 2. Load magic-item slugs from file
-        Set<String> rawMagicSlugs = loadMagicItemSlugs();
-        Set<String> magicSlugs = SlugIdentity.deduplicateSlugs(rawMagicSlugs);
-        if (!magicSlugs.isEmpty()) {
+        LoadSlugFileInput.LoadedSlugFileInput loadedMagicSlugs = slugObject.loadSlugFile(new LoadSlugFileInput(
+                magicItemSlugsFile,
+                MAGIC_SLUG_PATTERN,
+                "magic item slug"
+        ));
+        if (!loadedMagicSlugs.slugs().isEmpty()) {
             int sizeBefore = entries.size();
-            for (String slug : magicSlugs) {
+            for (String slug : loadedMagicSlugs.slugs()) {
                 entries.add(new CrawlEntry(slug, true));
             }
             System.out.println("Magic items from slug file: +" + (entries.size() - sizeBefore)
@@ -191,31 +181,6 @@ public class ItemCrawler {
         System.out.println("Output: " + outputDir.toAbsolutePath());
     }
 
-    // -------------------------------------------------------------------------
-    // Equipment listing: extract slugs via pagination
-    // -------------------------------------------------------------------------
-
-    private List<String> fetchEquipmentSlugs(int page) throws IOException, InterruptedException {
-        String url = BASE_URL + "/equipment?page=" + page;
-        String html = get(url);
-        Document doc = Jsoup.parse(html, BASE_URL);
-
-        LinkedHashSet<String> slugSet = new LinkedHashSet<>();
-        Elements links = doc.select("a[href]");
-        for (Element link : links) {
-            String href = link.attr("href");
-            if (EQUIPMENT_SLUG_PATTERN.matcher(href).matches()) {
-                slugSet.add(href.substring("/equipment/".length()));
-            }
-        }
-
-        return new ArrayList<>(slugSet);
-    }
-
-    // -------------------------------------------------------------------------
-    // Magic item slugs from file
-    // -------------------------------------------------------------------------
-
     // Security: this regex is the trust boundary for slug file content — it prevents
     // path traversal (no '/' or '..') and URL injection (no special characters).
     private static final Pattern MAGIC_SLUG_PATTERN =
@@ -224,26 +189,6 @@ public class ItemCrawler {
     /** Matches full /magic-items/{id}-{slug} hrefs as they appear in listing pages. */
     private static final Pattern MAGIC_ITEMS_HREF_PATTERN =
             Pattern.compile("^/magic-items/\\d+-[a-z0-9][a-z0-9-]*$");
-
-    private Set<String> loadMagicItemSlugs() {
-        Set<String> slugs = new LinkedHashSet<>();
-        if (!Files.exists(magicItemSlugsFile)) return slugs;
-
-        try {
-            for (String line : Files.readAllLines(magicItemSlugsFile, java.nio.charset.StandardCharsets.UTF_8)) {
-                String trimmed = line.trim();
-                if (trimmed.isEmpty() || trimmed.startsWith("#")) continue;
-                if (!MAGIC_SLUG_PATTERN.matcher(trimmed).matches()) {
-                    System.err.println("Skipping invalid slug: " + trimmed);
-                    continue;
-                }
-                slugs.add(trimmed);
-            }
-        } catch (IOException e) {
-            System.err.println("ItemCrawler.loadMagicItemSlugs(): " + e.getMessage());
-        }
-        return slugs;
-    }
 
     // -------------------------------------------------------------------------
     // Detail page: fetch and save item content
@@ -317,47 +262,16 @@ public class ItemCrawler {
         System.out.println("Building magic-item slug list...");
         System.out.println("Attempting to scrape DnD Beyond magic-items listing...");
 
-        // Paginate /magic-items?page=X and extract static links.
-        Set<String> slugs = new LinkedHashSet<>();
-        int emptyPages = 0;
-
-        // Two-strike sentinel: stop after two consecutive pages with no new slugs.
-        // Tolerates a single transient empty page before giving up.
-        for (int page = 1; emptyPages < 2; page++) {
-            String url = BASE_URL + "/magic-items?page=" + page;
-            System.out.println("  Page " + page + "...");
-
-            try {
-                String html = get(url);
-                Document doc = Jsoup.parse(html, BASE_URL);
-
-                int sizeBefore = slugs.size();
-                for (Element link : doc.select("a[href]")) {
-                    String href = link.attr("href");
-                    if (MAGIC_ITEMS_HREF_PATTERN.matcher(href).matches()) {
-                        slugs.add(href.substring("/magic-items/".length()));
-                    }
-                }
-
-                if (slugs.size() == sizeBefore) {
-                    emptyPages++;
-                    if (emptyPages >= 2) {
-                        break;
-                    }
-                } else {
-                    emptyPages = 0;
-                    System.out.println("    +" + (slugs.size() - sizeBefore)
-                            + " slugs (total: " + slugs.size() + ")");
-                }
-            } catch (IOException e) {
-                System.err.println("ItemCrawler.buildMagicItemSlugList(): " + e.getMessage());
-                emptyPages++;
-                if (emptyPages >= 2) {
-                    break;
-                }
-            }
-
-        }
+        Set<String> slugs = new SlugObject().collectListingSlugs(new CollectListingSlugsInput(
+                crawlerHttp,
+                BASE_URL + "/magic-items?page=%d",
+                "magic item",
+                "magic items",
+                "/magic-items/",
+                MAGIC_ITEMS_HREF_PATTERN,
+                2,
+                true
+        )).slugs();
 
         if (slugs.isEmpty()) {
             System.err.println("WARNING: No magic item slugs found.");

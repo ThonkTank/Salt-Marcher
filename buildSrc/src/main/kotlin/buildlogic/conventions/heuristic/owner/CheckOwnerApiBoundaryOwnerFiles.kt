@@ -62,6 +62,7 @@ internal fun analyzeOwnerFile(
         sourceFile.context.packageName == "features.spells.importer" ||
         sourceFile.context.packageName == "shared.crawler.config" ||
         sourceFile.context.packageName == "shared.crawler.http" ||
+        sourceFile.context.packageName == "shared.crawler.slug" ||
         sourceFile.context.packageName == "ui.components" ||
         sourceFile.context.packageName.startsWith("ui.components.")
     ) {

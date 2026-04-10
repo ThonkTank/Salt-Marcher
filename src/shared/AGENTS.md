@@ -8,7 +8,8 @@
 
 - `shared/crawler/config/ConfigObject` — shared runtime config seam for crawler properties, session validation, delay parsing, and project-local path resolution.
 - `shared/crawler/http/HttpObject` — shared raw crawler HTTP seam for client construction, throttling, retry, and authenticated fetches.
-- `shared/crawler/slug/*` — shared crawler slug utilities.
+- `shared/crawler/slug/SlugObject` — shared slug discovery seam for paginated listing scans and slug-file loading.
+- `shared/crawler/slug/SlugIdentity` — shared slug deduplication and identity helpers.
 - `shared/crawler/text/*` — shared crawler text helpers.
 - `shared/creatures/parser/*` — parser helpers reused by importer and creature UI or application code.
 

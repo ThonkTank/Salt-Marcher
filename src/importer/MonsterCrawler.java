@@ -3,20 +3,19 @@ package importer;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
 import shared.crawler.config.input.LoadRuntimeConfigInput;
 import shared.crawler.config.input.ResolveProjectPathInput;
 import shared.crawler.http.HttpObject;
 import shared.crawler.http.input.ComposeHttpInput;
-import shared.crawler.slug.SlugIdentity;
+import shared.crawler.slug.SlugObject;
+import shared.crawler.slug.input.CollectListingSlugsInput;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -82,29 +81,16 @@ public class MonsterCrawler {
         System.out.println("Starting D&D Beyond Monster Crawler...");
         System.out.println("Output directory: " + outputDir.toAbsolutePath());
 
-        // Collect all slugs from the listing pages first
-        Set<String> rawSlugs = new LinkedHashSet<>();
-        for (int page = 1; ; page++) {
-            System.out.println("Loading listing page " + page + "...");
-            List<String> pageSlugs = fetchMonsterSlugs(page);
-            int sizeBefore = rawSlugs.size();
-            rawSlugs.addAll(pageSlugs);
-            int newlyAdded = rawSlugs.size() - sizeBefore;
-
-            if (pageSlugs.isEmpty() || newlyAdded == 0) {
-                System.out.println("No new monsters on page " + page + " — listing complete.");
-                break;
-            }
-            System.out.println("  +" + newlyAdded + " new monsters (total: " + rawSlugs.size() + ")");
-        }
-
-        // Deduplication: for slugs with the same name suffix, keep the lowest ID (2014 version)
-        Set<String> slugs = SlugIdentity.deduplicateSlugs(rawSlugs);
-        int removed = rawSlugs.size() - slugs.size();
-        if (removed > 0) {
-            System.out.println("Deduplication: " + removed + " newer duplicates removed"
-                    + " (keeping 2014 versions)");
-        }
+        Set<String> slugs = new SlugObject().collectListingSlugs(new CollectListingSlugsInput(
+                crawlerHttp,
+                BASE_URL + "/monsters?page=%d",
+                "monster",
+                "monsters",
+                "/monsters/",
+                SLUG_PATTERN,
+                1,
+                false
+        )).slugs();
 
         if (slugs.isEmpty()) {
             System.err.println("WARNING: No monster slugs found. Possible causes:");
@@ -153,31 +139,6 @@ public class MonsterCrawler {
         System.out.println("Skipped: " + skipped + " (already exists)");
         System.out.println("Failed: " + failed);
         System.out.println("Output: " + outputDir.toAbsolutePath());
-    }
-
-    // -------------------------------------------------------------------------
-    // Listing page: extract monster slugs
-    // -------------------------------------------------------------------------
-
-    private List<String> fetchMonsterSlugs(int page) throws IOException, InterruptedException {
-        String url = BASE_URL + "/monsters?page=" + page;
-        String html = get(url);
-        Document doc = Jsoup.parse(html, BASE_URL);
-
-        // Match links like /monsters/goblin or /monsters/12345-adult-black-dragon
-        // but NOT /monsters?filter=... or /monsters/0 etc.
-        Elements links = doc.select("a[href]");
-        // LinkedHashSet: O(1) contains + insertion order preserved
-        LinkedHashSet<String> slugSet = new LinkedHashSet<>();
-
-        for (Element link : links) {
-            String href = link.attr("href");
-            if (SLUG_PATTERN.matcher(href).matches()) {
-                slugSet.add(href.substring("/monsters/".length()));
-            }
-        }
-
-        return new ArrayList<>(slugSet);
     }
 
     // -------------------------------------------------------------------------

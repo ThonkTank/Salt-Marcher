@@ -1,23 +1,20 @@
 package features.spells.importer;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import shared.crawler.config.ConfigObject;
 import shared.crawler.config.CrawlerConfigException;
 import shared.crawler.config.input.LoadRuntimeConfigInput;
 import shared.crawler.config.input.ResolveProjectPathInput;
 import shared.crawler.http.HttpObject;
 import shared.crawler.http.input.ComposeHttpInput;
-import shared.crawler.slug.SlugIdentity;
+import shared.crawler.slug.SlugObject;
+import shared.crawler.slug.input.CollectListingSlugsInput;
+import shared.crawler.slug.input.LoadSlugFileInput;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -118,7 +115,16 @@ public final class SpellCrawler {
     }
 
     public void buildSlugList() throws IOException, InterruptedException {
-        Set<String> slugs = collectSlugsFromListing();
+        Set<String> slugs = new SlugObject().collectListingSlugs(new CollectListingSlugsInput(
+                crawlerHttp,
+                BASE_URL + "/spells?page=%d",
+                "spell",
+                "spells",
+                "/spells/",
+                SPELL_HREF_PATTERN,
+                1,
+                false
+        )).slugs();
         if (slugs.isEmpty()) {
             System.err.println("No spell slugs found on listing pages.");
             return;
@@ -130,65 +136,25 @@ public final class SpellCrawler {
     }
 
     private Set<String> collectSlugs() throws IOException, InterruptedException {
-        Set<String> listingSlugs = collectSlugsFromListing();
+        SlugObject slugObject = new SlugObject();
+        Set<String> listingSlugs = slugObject.collectListingSlugs(new CollectListingSlugsInput(
+                crawlerHttp,
+                BASE_URL + "/spells?page=%d",
+                "spell",
+                "spells",
+                "/spells/",
+                SPELL_HREF_PATTERN,
+                1,
+                false
+        )).slugs();
         if (!listingSlugs.isEmpty()) {
             return listingSlugs;
         }
-        return loadSlugsFromFile();
-    }
-
-    private Set<String> collectSlugsFromListing() throws IOException, InterruptedException {
-        Set<String> rawSlugs = new LinkedHashSet<>();
-        for (int page = 1; ; page++) {
-            System.out.println("Loading spell listing page " + page + "...");
-            List<String> pageSlugs = fetchSpellSlugs(page);
-            int sizeBefore = rawSlugs.size();
-            rawSlugs.addAll(pageSlugs);
-            int newlyAdded = rawSlugs.size() - sizeBefore;
-            if (pageSlugs.isEmpty() || newlyAdded == 0) {
-                System.out.println("No new spells on page " + page + " — listing complete.");
-                break;
-            }
-            System.out.println("  +" + newlyAdded + " new spells (total: " + rawSlugs.size() + ")");
-        }
-        return SlugIdentity.deduplicateSlugs(rawSlugs);
-    }
-
-    private List<String> fetchSpellSlugs(int page) throws IOException, InterruptedException {
-        String html = get(BASE_URL + "/spells?page=" + page);
-        Document doc = Jsoup.parse(html, BASE_URL);
-        LinkedHashSet<String> slugs = new LinkedHashSet<>();
-        Elements links = doc.select("a[href]");
-        for (Element link : links) {
-            String href = link.attr("href");
-            if (SPELL_HREF_PATTERN.matcher(href).matches()) {
-                slugs.add(href.substring("/spells/".length()));
-            }
-        }
-        return new ArrayList<>(slugs);
-    }
-
-    private Set<String> loadSlugsFromFile() {
-        Set<String> slugs = new LinkedHashSet<>();
-        if (!Files.exists(slugFile)) {
-            return slugs;
-        }
-        try {
-            for (String line : Files.readAllLines(slugFile, StandardCharsets.UTF_8)) {
-                String trimmed = line.trim();
-                if (trimmed.isEmpty() || trimmed.startsWith("#")) {
-                    continue;
-                }
-                if (!SPELL_SLUG_PATTERN.matcher(trimmed).matches()) {
-                    System.err.println("Skipping invalid spell slug: " + trimmed);
-                    continue;
-                }
-                slugs.add(trimmed);
-            }
-        } catch (IOException e) {
-            System.err.println("Failed to read spell slug file: " + e.getMessage());
-        }
-        return SlugIdentity.deduplicateSlugs(slugs);
+        return slugObject.loadSlugFile(new LoadSlugFileInput(
+                slugFile,
+                SPELL_SLUG_PATTERN,
+                "spell slug"
+        )).slugs();
     }
 
     private void fetchSpellDetail(String slug, Path outFile) throws IOException, InterruptedException {
