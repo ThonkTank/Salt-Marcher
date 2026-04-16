@@ -2,28 +2,30 @@
 
 Short definitions of SaltMarcher architecture terms. Terms are defined here once and then used in the rules below.
 
-## Architecture and System Terms
+## Architecture and Boundary Terms
 
 | Term | Definition |
 | --- | --- |
 | MVCI | Presentation pattern with `Model`, `View`, `Controller`, and `Interactor`. |
 | Clean Architecture | Backend structure with strict inward-pointing dependencies. |
-| Feature | A bounded functional area with its own view, domain, and data code. |
-| Feature API | The only public backend boundary a feature exposes below the view layer. |
-| Dependency Rule | The rule that dependencies point inward and do not cross forbidden architectural boundaries. |
-| Standard Flow | The default path from UI event through presentation, domain, and data, then back to presentation state. |
+| Feature | A project-local vertical slice with its own view, domain, and data code. It is not automatically a synonym for `Subdomain` or `Subsystem`. |
+| Feature API | The only public backend boundary a feature exposes below the view layer. It publishes the operations that presentation code may invoke. |
+| Domain | The business core expressed inside a feature. It is not the only possible business boundary term in the system. |
+| Subdomain | A business sub-area inside the wider domain that is independent of the project's feature slicing. |
+| Subsystem | A technical sub-area inside the system that is independent of the project's feature slicing. |
+| Responsibility | A clearly owned concern assigned to one boundary, component, or layer. |
 | Passive Host | A shell that exposes slots and registration contracts without owning feature logic. |
 | Feature Entrypoint | The public `*ViewContribution.java` class that registers a feature with the shell. |
-| Shell Registration | The act of exposing a `ShellContributionSpec` and a `ShellScreen` through `ShellViewContribution`. |
 
 ## Presentation Terms
 
 | Term | Definition |
 | --- | --- |
-| Model | JavaFX observable state for presentation only. |
+| Model | JavaFX observable presentation state only. |
 | View | JavaFX layout, bindings, event handlers, and view-local behavior. |
 | Controller | Presentation coordinator for actions, lifecycle, background work, and FX-thread handoff. |
-| Interactor | Translation boundary between presentation state and the feature API. |
+| Interactor | The presentation-side translation boundary between presentation state and the feature API. It is not a synonym for domain use case logic. |
+| Interaction | A concrete user step such as click, type, drag, or selection. |
 | Reactive UI | UI behavior driven by observable state and bindings rather than imperative node churn. |
 | ViewBuilder | Java-based builder that constructs a JavaFX view from presentation dependencies. |
 
@@ -31,10 +33,13 @@ Short definitions of SaltMarcher architecture terms. Terms are defined here once
 
 | Term | Definition |
 | --- | --- |
-| Domain | The business core of a feature. |
+| Operation | A concrete business or technical action with a single responsibility. |
+| Use Case | A user-meaningful application task or goal that may coordinate one or more operations. |
+| Command | A state-changing operation. |
+| Query | A read-only operation that returns data and does not change system state. |
+| Domain Model | The business-shaped object model expressed by entities, value objects, and related domain concepts. |
 | Entity | A business object with behavior and invariants. |
 | Value Object | An immutable domain value with validation and meaning. |
-| Use Case | A single business action or business question. |
 | Repository Interface | A domain-owned contract for loading or persisting domain objects. |
 | Repository Implementation | A data-layer adapter that implements a repository interface and coordinates sources plus mapping. |
 | Data Layer | Technical adapters around persistence, files, HTTP, and other external systems. |
@@ -43,6 +48,15 @@ Short definitions of SaltMarcher architecture terms. Terms are defined here once
 | Remote Data Source | A data source for HTTP or other remote systems. |
 | Data Model | A storage-shaped or transport-shaped type used only in the data layer. |
 | Mapper | A translator between data models and domain objects. |
+
+## Rules and Decision Logic Terms
+
+| Term | Definition |
+| --- | --- |
+| Dependency Rule | The rule that dependencies point inward and do not cross forbidden architectural boundaries. |
+| Rule | A business or architectural constraint that must hold. |
+| Policy | A named decision rule that chooses or permits behavior. |
+| Specification | A reusable rule that tests whether something satisfies defined criteria. |
 
 ## Shell and Contribution Terms
 
@@ -58,10 +72,7 @@ Short definitions of SaltMarcher architecture terms. Terms are defined here once
 | Shell Screen | The feature-owned object that provides slot content for a registered contribution. |
 | ShellViewContribution | The shell registration contract implemented by a feature entrypoint. |
 | ShellContributionSpec | Metadata that declares the contribution category and registration details. |
-| Bootup Discovery | Generic bootstrap discovery of feature entrypoints under `src/view/<component>/` through `ShellViewDiscovery`. |
 | Shell Registry | The spec-type-based registration path from `ShellViewContribution` into `AppShell.registerTab`, `registerTopBar`, or `registerRuntimeState`. |
-| Panel Mounting | Static slot-based projection of prepared feature nodes through `ShellScreen.slotContent()`. |
-| Inspector Mounting | Dynamic inspector entry publication through `ShellRuntimeContext.inspector().push(...)`, not through `ShellScreen.slotContent()`. |
 | Contribution Type | The contribution category identified by the spec class, such as tab, top bar, or runtime state. |
 | ShellTabSpec | A tab contribution spec for left-navigation tabs. |
 | ShellTopBarSpec | A contribution spec for always-visible top-bar content. |
@@ -74,6 +85,16 @@ Short definitions of SaltMarcher architecture terms. Terms are defined here once
 | defaultLanding | A tab-only flag that marks a default landing destination. |
 | Runtime-State Tab | A global lower-right state contribution that is not owned by a specific runtime tab. |
 | Runtime-State Panel | The shared lower-right shell panel used by runtime-state content. |
+
+## Lifecycle and Flow Terms
+
+| Term | Definition |
+| --- | --- |
+| Standard Flow | The default path from user interaction through presentation, domain, and data, then back to presentation state. |
+| Shell Registration | The act of exposing a `ShellContributionSpec` and a `ShellScreen` through `ShellViewContribution`. |
+| Bootup Discovery | Generic bootstrap discovery of feature entrypoints under `src/view/<component>/` through `ShellViewDiscovery`. |
+| Panel Mounting | Static slot-based projection of prepared feature nodes through `ShellScreen.slotContent()`. |
+| Inspector Mounting | Dynamic inspector entry publication through `ShellRuntimeContext.inspector().push(...)`, not through `ShellScreen.slotContent()`. |
 
 # Rules
 
@@ -179,7 +200,7 @@ Use these placement principles for all new code:
 - Presentation uses MVCI.
 - Backend logic behind the UI uses standard Clean Architecture.
 - The shell stays passive after construction.
-- The interactor is the only translation boundary between presentation state and a feature API.
+- The interactor is the only presentation-side translation boundary between presentation state and a feature API.
 - Feature internals stay hidden behind the feature API.
 
 ### Bootstrap
@@ -218,7 +239,7 @@ Put code in `src/view/<component>/` when it exists to render and coordinate Java
 - `Model` holds JavaFX observable UI state only.
 - `View` owns layout, bindings, event handlers, and view-local behavior.
 - `Controller` owns action wiring, lifecycle hooks, background-task setup, and FX-thread handoff.
-- `interactor` translates UI intent into feature API calls and maps results back into the presentation model.
+- `interactor` translates interactions and controller requests into feature API calls and maps results back into the presentation model.
 - `View` and `Controller` must not depend on domain internals.
 
 Why this goes here:
@@ -232,7 +253,8 @@ Put code in `src/domain/<feature>/` when it expresses business meaning or busine
 
 - `entity` contains business entities and invariants.
 - `valueobject` contains immutable domain values with validation.
-- `usecase` contains one business action or question per use case.
+- `usecase` contains use case entrypoints for user-meaningful application tasks.
+- A use case may internally coordinate command and query operations without creating a separate directory split.
 - `repository` contains domain-owned persistence/query contracts.
 - `<featureName>API.java` is the only public feature boundary exposed below the view layer.
 
@@ -483,7 +505,7 @@ Runtime interaction rules:
 
 Normal feature flow:
 
-`Bootstrap builds shell -> Bootstrap discovers feature entrypoints under src/view/<component>/ -> Feature entrypoint supplies ShellContributionSpec + ShellScreen -> Bootstrap registers contribution by spec type -> Shell mounts slot content generically into the passive host -> View event -> Controller action -> Interactor -> Feature API -> Domain use case -> Domain repository interface <- Data repository implementation -> Data source -> Data model -> Mapper -> Domain result -> Interactor -> Presentation model`
+`Bootstrap builds shell -> Bootstrap discovers feature entrypoints under src/view/<component>/ -> Feature entrypoint supplies ShellContributionSpec + ShellScreen -> Bootstrap registers contribution by spec type -> Shell mounts slot content generically into the passive host -> User interaction -> Controller action -> Interactor -> Feature API -> Domain use case -> command/query operation against a domain repository interface <- Data repository implementation -> Data source -> Data model -> Mapper -> Domain model/result -> Interactor -> Presentation model`
 
 Inspector flow:
 
@@ -496,6 +518,8 @@ To keep the architecture stable, do not:
 - pass JavaFX types into `domain/` or `data/`
 - expose `data/` classes through `<featureName>API.java`
 - return data-layer models from use cases
+- treat `Feature` as an automatic synonym for `Subdomain` or `Subsystem`
+- use `Use Case` as a catch-all term for every user interaction or low-level operation
 - call domain content directly from views or controllers
 - call repositories or data sources directly from view components
 - let the shell compose, start, or mount feature components
