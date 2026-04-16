@@ -170,36 +170,6 @@ These structural constraints are mandatory:
 - Do not create feature-owned alternate shell registry directories.
 - Do not create a second shell wiring path outside the shell contribution contracts.
 
-### Minimal Feature Skeleton
-
-Use this skeleton when introducing a new top-level feature:
-
-```text
-src/
-    view/
-        encounter/
-            EncounterViewContribution.java
-            Model/
-            Controller/
-            View/
-            interactor/
-    domain/
-        encounter/
-            encounterAPI.java
-            entity/
-            valueobject/
-            usecase/
-            repository/
-    data/
-        encounter/
-            repository/
-            datasource/
-                local/
-                remote/
-            model/
-            mapper/
-```
-
 ## Placement
 
 ### Placement Principles
