@@ -100,3 +100,248 @@ Extends the Map Management Component with the following:
     ctrl-y/ctrl-x allow for undo/redo
     marquee-selection is vertex-based, like wall painting. The smallest paintable area is thus one tile.
     All in-progress editing interactions provide a visible preview of what the state would look like if the edit was concluded at this mouse position.
+
+## Normative Target Architecture
+This section is normative for the `dungeon` feature. Implementations must be evaluated against these boundaries and ownership rules, not against convenience in a single use case.
+
+### Feature Boundary
+- `dungeon` is one feature slice with one backend boundary: `src/domain/dungeon/dungeonAPI.java`.
+- A `DungeonMap` is the canonical aggregate root for exactly one authored dungeon map.
+- Editor and travel are separate presentation slices over the same dungeon truth. They must not create competing persisted models of the map.
+- `mapcore` remains a transport-neutral snapshot boundary for map rendering contracts. It is not the owner of dungeon business truth.
+
+### Canonical Truth And Derived State
+- Only authored truth and stable identities may be persisted.
+- Anything that can be deterministically rebuilt from persisted truth must be treated as derived state and must not be persisted as a second source of truth.
+- Editor runtime state and travel runtime state must not be stored inside the dungeon aggregate.
+- Inspector text, room descriptions, adjacency lists, travel exits, render overlays, and similar read models must be rebuilt from dungeon truth.
+
+### Canonical Aggregate
+The persisted core of the feature must be shaped as one aggregate per map:
+
+```text
+DungeonMap
+- DungeonMapId id
+- DungeonMapMetadata metadata
+- SpatialTopology topology
+- SpaceCatalog spaces
+- ConnectionCatalog connections
+- FeatureCatalog features
+- long revision
+```
+
+The aggregate is the transaction boundary for one map. It is not permission to collapse all concerns into one unstructured document. Internal ownership remains split by the domain partitions below.
+
+### Domain Partitions
+
+#### SpatialTopology
+Responsibility: canonical spatial truth.
+
+Owns:
+- which tiles are interior and traversable
+- which explicit internal edges exist
+- authored spatial anchors for doors, stairs, and corridor routing constraints
+
+May know:
+- geometry value objects
+- stable identifiers such as `SpaceId` and `ConnectionId` when needed to attach authored topology to domain objects
+
+Must not own:
+- room names
+- room narrative descriptors
+- inspector text
+- global adjacency graphs
+
+#### SpaceCatalog
+Responsibility: stable space identity and authored space semantics.
+
+Owns:
+- which `SpaceId` values exist
+- authored metadata for each space
+- space kind, label position, and authored descriptors
+
+May know:
+- geometry anchors
+- references to `SpaceId`
+
+Must not own:
+- tile occupancy
+- boundary walls
+- corridor geometry
+- travel state
+
+#### ConnectionCatalog
+Responsibility: authored connections between spaces.
+
+Owns:
+- which `ConnectionId` values exist
+- connection kind, authored anchors, connected spaces, traversability state, and authored notes
+- authored stair shape and stair dimensions
+
+May know:
+- `SpaceId`
+- geometry anchors
+
+Must not own:
+- derived room adjacency graphs
+- party position
+- render-only connection summaries
+- fully resolved projection paths unless they are themselves authored truth
+
+#### FeatureCatalog
+Responsibility: authored points of interest and other placed dungeon features.
+
+Owns:
+- which `FeatureId` values exist
+- feature kind, authored anchor, description, and GM notes
+- optional association to a `SpaceId`
+
+Must not own:
+- room boundaries
+- travel routing logic
+- adjacency logic
+
+#### Derived Projection Boundaries
+Responsibility: deterministic read models only.
+
+Projection builders may include:
+- `TopologyDerivation`
+- `InspectorProjectionBuilder`
+- `TravelProjectionBuilder`
+- `RenderProjectionBuilder`
+
+They may:
+- read `SpatialTopology`, `SpaceCatalog`, `ConnectionCatalog`, and `FeatureCatalog`
+- build room projections, boundaries, exits, inspector content, and render snapshots
+
+They must not:
+- persist data
+- call repositories to create second truth
+- mutate the aggregate during projection building
+
+### Single Sources Of Truth
+- Interior tile occupancy is owned only by `SpatialTopology`.
+- Explicit internal wall and socket data is owned only by `SpatialTopology`.
+- Stable space identity and authored space semantics are owned only by `SpaceCatalog`.
+- Door and stair business objects are owned only by `ConnectionCatalog`.
+- POIs, interactibles, loot anchors, and GM feature notes are owned only by `FeatureCatalog`.
+- Room boundaries, room lists, adjacency, inspector room descriptions, travel options, and render layers are derived only from the authored aggregate.
+- Tool selection, preview state, camera state, onion-slice settings, undo/redo state, party marker, facing, and active travel selection belong only to `src/view/.../Model`.
+
+### Domain Objects
+The feature must keep its shared geometry and identity vocabulary inside `src/domain/dungeon/valueobject`.
+
+Expected value objects include:
+- `DungeonMapId`
+- `SpaceId`
+- `ConnectionId`
+- `FeatureId`
+- `TileCoord`
+- `EdgeCoord`
+- `VertexCoord`
+- `TileAnchor`
+- `EdgeAnchor`
+- `VertexAnchor`
+- `LabelAnchor`
+- `ConnectionAnchor`
+- `FeatureAnchor`
+- `SpaceKind`
+- `ConnectionKind`
+- `TraversabilityState`
+- `StairShape`
+- `StairDimensions`
+- `FloorSpan`
+
+Expected entities include:
+- `DungeonMap`
+- `SpatialTopology`
+- `SpaceCatalog`
+- `ConnectionCatalog`
+- `FeatureCatalog`
+- `Space`
+- `Connection`
+- `DungeonFeature`
+
+No separate top-level `geometry` or `geometrykernel` feature root may be introduced for this shared vocabulary.
+
+### Invariants And Policies
+Hard invariants must be enforced inside the aggregate and its owned objects.
+
+Hard invariants include:
+- Every traversable interior tile belongs to exactly one `SpaceId`.
+- A `SpaceId` without any occupied interior tiles is invalid.
+- A door connection must sit on a valid derived boundary.
+- A door connection must connect exactly two different spaces.
+- A stair connection must attach to valid traversable tiles on every connected floor.
+- Explicit internal walls are valid only inside interior context.
+- Corridor routes may not cut through foreign space interiors.
+
+Policies are allowed where deterministic conflict resolution is required, but they must be modeled as policies rather than hidden second truth.
+
+Policy examples include:
+- space identity retention during split and merge
+- deterministic tie-breaking for equal-size components
+- re-anchoring doors after topology changes
+- formatting derived inspector narration
+
+Policies must choose outcomes from authored truth. They must not create parallel persisted truth.
+
+### Public API And Use Case Boundary
+- `src/domain/dungeon/dungeonAPI.java` remains the only public backend boundary below the view layer.
+- Commands may mutate only canonical dungeon truth.
+- Queries may read only and must return projections or snapshots.
+- View and controller code must never call domain internals directly.
+- Editor and travel interactors must reach the backend only through `dungeonAPI`.
+
+Expected command categories include:
+- map creation
+- area paint and erase
+- floor opening paint and erase
+- internal wall draw and erase
+- door place, update, and remove
+- stair place, update, and remove
+- corridor extension and reroute
+- space metadata updates
+- connection metadata updates
+- feature add, update, and remove
+
+Expected query categories include:
+- editor snapshot loading
+- travel snapshot loading
+- describing a space, connection, or feature
+- resolving travel options
+- building render projections
+
+### Dependency Direction
+Allowed architectural direction:
+- `src/view/dungeoneditor/interactor -> src/domain/dungeon/dungeonAPI`
+- `src/view/dungeontravel/interactor -> src/domain/dungeon/dungeonAPI`
+- `src/domain/dungeon/dungeonAPI -> usecase`
+- `usecase -> entity/valueobject/repository`
+- `src/data/dungeon -> src/domain/dungeon`
+- projection builders read aggregate state without persisting it
+
+Forbidden architectural direction:
+- `view/* -> domain internals`
+- `view/* -> data/*`
+- `shell -> dungeon internals`
+- `domain -> JavaFX`
+- `SpaceCatalog -> SpatialTopology` as a write dependency
+- `ConnectionCatalog -> FeatureCatalog`
+- projection builders writing to persistence
+
+All dependencies must remain one-way and inward-pointing. Cross-catalog coordination must happen through aggregate-owned operations and use cases, not through peer mutation.
+
+### Repository Mapping
+This target architecture must stay within the repository layout defined for active code:
+- `src/domain/dungeon/entity`
+- `src/domain/dungeon/valueobject`
+- `src/domain/dungeon/usecase`
+- `src/domain/dungeon/repository`
+- `src/data/dungeon/model`
+- `src/data/dungeon/mapper`
+- `src/data/dungeon/repository`
+- `src/data/dungeon/datasource/local`
+- `src/data/dungeon/datasource/remote`
+
+No alternate top-level architecture root may be introduced for the feature.
