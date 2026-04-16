@@ -58,6 +58,10 @@ Short definitions of SaltMarcher architecture terms. Terms are defined here once
 | Shell Screen | The feature-owned object that provides slot content for a registered contribution. |
 | ShellViewContribution | The shell registration contract implemented by a feature entrypoint. |
 | ShellContributionSpec | Metadata that declares the contribution category and registration details. |
+| Bootup Discovery | Generic bootstrap discovery of feature entrypoints under `src/view/<component>/` through `ShellViewDiscovery`. |
+| Shell Registry | The spec-type-based registration path from `ShellViewContribution` into `AppShell.registerTab`, `registerTopBar`, or `registerRuntimeState`. |
+| Panel Mounting | Static slot-based projection of prepared feature nodes through `ShellScreen.slotContent()`. |
+| Inspector Mounting | Dynamic inspector entry publication through `ShellRuntimeContext.inspector().push(...)`, not through `ShellScreen.slotContent()`. |
 | Contribution Type | The contribution category identified by the spec class, such as tab, top bar, or runtime state. |
 | ShellTabSpec | A tab contribution spec for left-navigation tabs. |
 | ShellTopBarSpec | A contribution spec for always-visible top-bar content. |
@@ -334,6 +338,150 @@ These dependencies are forbidden:
 - `domain -> JavaFX`
 - `domain -> HTTP/SQL/JSON/filesystem frameworks`
 
+### Bootup Discovery Contract
+
+The bootup discovery contract is the generic bootstrap path from `src/view/<component>/` into the shell registry.
+
+- `AppBootstrap.createShell()` creates `AppShell`.
+- `AppBootstrap` resolves contributions by calling `discoverContributions(shell.runtimeContext())`.
+- `ShellViewDiscovery.discover()` scans `src/view/<component>/` root classes.
+- Each component root must expose exactly one root class.
+- That root class must be named `<PascalComponentName>ViewContribution`.
+- The discovered class must implement `ShellViewContribution`.
+- The discovered class must expose a public no-arg constructor.
+- Discovery resolves `registrationSpec()` and `createScreen(runtimeContext)` before registration.
+
+Bootup discovery template:
+
+```text
+AppBootstrap.createShell()
+  -> new AppShell()
+  -> discovery.discover()
+  -> contribution.registrationSpec()
+  -> contribution.createScreen(shell.runtimeContext())
+  -> shell.registerTab(...) | shell.registerTopBar(...) | shell.registerRuntimeState(...)
+  -> navigateTo(startup.key()) when a startup tab is resolved
+```
+
+### Shell Registry Contract
+
+The shell registry contract is the spec-type-based dispatch from a feature entrypoint into `AppShell`.
+
+- The feature entrypoint exposes `ShellContributionSpec registrationSpec()`.
+- The feature entrypoint exposes `ShellScreen createScreen(ShellRuntimeContext runtimeContext)`.
+- `AppBootstrap.register(...)` dispatches by spec type.
+- `ShellTabSpec` maps to `AppShell.registerTab(...)`.
+- `ShellTopBarSpec` maps to `AppShell.registerTopBar(...)`.
+- `ShellRuntimeStateSpec` maps to `AppShell.registerRuntimeState(...)`.
+- Unsupported contribution types are invalid.
+
+Shell registry template:
+
+```java
+public final class ExampleViewContribution implements ShellViewContribution {
+
+    public ExampleViewContribution() {
+    }
+
+    @Override
+    public ShellContributionSpec registrationSpec() {
+        return new ShellTabSpec(
+                new ContributionKey("example"),
+                new NavigationGroupSpec("group", "Group", 10),
+                10,
+                false,
+                ShellTabMode.RUNTIME);
+    }
+
+    @Override
+    public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
+        return new ShellScreen() {
+            @Override
+            public String getTitle() {
+                return "Example";
+            }
+
+            @Override
+            public String getNavigationLabel() {
+                return "Ex";
+            }
+
+            @Override
+            public Map<ShellSlot, Node> slotContent() {
+                return Map.of(
+                        ShellSlot.COCKPIT_MAIN, createMainContent());
+            }
+        };
+    }
+
+    private Node createMainContent() {
+        return null;
+    }
+}
+```
+
+### Panel Mounting Contract
+
+The panel mounting contract is the static slot-based projection path for prepared feature UI nodes.
+
+- Static shell panel mounting happens only through `ShellScreen.slotContent()`.
+- `slotContent()` returns `Map<ShellSlot, Node>`.
+- The shell mounts prepared feature-owned nodes into fixed shell-owned slots.
+- Required and allowed slots depend on the contribution type.
+- Static panel mounting is the only allowed path for top bar, controls, main, details, and runtime-state slot content.
+
+Panel mounting templates:
+
+```java
+Map.of(
+        ShellSlot.COCKPIT_MAIN, createMainContent(),
+        ShellSlot.COCKPIT_CONTROLS, createControls())
+```
+
+```java
+Map.of(
+        ShellSlot.TOP_BAR, createTopBarContent())
+```
+
+```java
+Map.of(
+        ShellSlot.COCKPIT_STATE, createRuntimeStateContent())
+```
+
+Panel mounting matrix:
+
+- `ShellTabSpec`: `COCKPIT_MAIN` required, `COCKPIT_CONTROLS` optional
+- `ShellTabSpec` + `ShellTabMode.RUNTIME`: `COCKPIT_STATE` forbidden
+- `ShellTabSpec` + `ShellTabMode.EDITOR`: `COCKPIT_STATE` optional
+- `ShellTopBarSpec`: only `TOP_BAR`
+- `ShellRuntimeStateSpec`: only `COCKPIT_STATE`
+- `COCKPIT_DETAILS` is a valid static shell slot when feature-owned details content is needed
+
+### Inspector Mounting Contract
+
+The inspector mounting contract is the dynamic runtime path for shared inspector history entries.
+
+- Inspector mounting is dynamic, not slot-based.
+- Features access the inspector only through `ShellRuntimeContext.inspector()`.
+- The runtime port type is `InspectorSink`.
+- Inspector entries are published with `InspectorEntrySpec`.
+- Inspector content must not be mounted through `ShellScreen.slotContent()` or direct shell access.
+
+Inspector mounting template:
+
+```java
+runtimeContext.inspector().push(new InspectorEntrySpec(
+        "Example Inspector",
+        exampleKey,
+        this::createInspectorContent,
+        this::createInspectorFooter));
+```
+
+Inspector runtime helpers:
+
+- `clear()` clears the shared inspector history
+- `isShowing(entryKey)` checks whether a keyed entry is currently showing
+
 ### Registration and Slot Interaction Rules
 
 All shell registration and slot interactions must follow these rules:
@@ -358,7 +506,6 @@ Slot-specific rules:
 Runtime interaction rules:
 
 - Navigation groups are open metadata supplied by features, not closed shell enums.
-- Inspector content is pushed through `ShellRuntimeContext.inspector()`.
 - Runtime-state tabs are global and autonomous.
 - Features must not talk to `AppShell`, `AppView`, `ShellServices`, `DetailsNavigator`, `SceneRegistry`, or concrete shell panels as alternate wiring paths.
 
