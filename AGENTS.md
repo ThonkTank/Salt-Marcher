@@ -2,98 +2,114 @@
 
 Short definitions of SaltMarcher architecture terms. Terms are defined here once and then used in the rules below.
 
-## Architecture and Boundary Terms
+## Workflow Terms
 
-| Term | Definition |
-| --- | --- |
-| MVCI | Presentation pattern with `Model`, `View`, `Controller`, and `Interactor`. |
-| Clean Architecture | Backend structure with strict inward-pointing dependencies. |
-| Feature | A project-local vertical slice with its own view, domain, and data code. It is not automatically a synonym for `Subdomain` or `Subsystem`. |
-| Feature API | The only public backend boundary a feature exposes below the view layer. It publishes the operations that presentation code may invoke. |
-| Domain | The business core expressed inside a feature. It is not the only possible business boundary term in the system. |
-| Subdomain | A business sub-area inside the wider domain that is independent of the project's feature slicing. |
-| Subsystem | A technical sub-area inside the system that is independent of the project's feature slicing. |
-| Responsibility | A clearly owned concern assigned to one boundary, component, or layer. |
-| Passive Host | A shell that exposes slots and registration contracts without owning feature logic. |
-| Feature Entrypoint | The public `*ViewContribution.java` class that registers a feature with the shell. |
+| Term           | Definition                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------ |
+| Element        | Any single, atomic rendering element that may be part of a user interface.                             |
+| Interaction    | A concrete user step such as click, type, drag, or selection.                                          |
+| Interactable   | An explicitly interactive visual Element like a button or text field.                                  |
+| Selectable     | An Interactable that sets a persisted state which influences further interactions until deselected     | 
+| Tool           | A Feature Slice that allows the User to perform a set of related operations to fulfill thematically linked use cases |
+| Use Case       | A user-meaningful application task or goal that may coordinate one or more operations.                 |
+| User Flow      | An ordered sequence of user interactions and system responses that advances a use case.                |
+| Interface      | A set of UI Components and Interactions geared toward enabling a thematically linked set of Use Cases. |
+| UI Component   | A subarea of an Interface.                                                                             |
+| defaultLanding | A tab-only flag that marks a default landing destination in the user-facing navigation flow.           |
 
-## Presentation Terms
+## Architecture Terms
 
-| Term | Definition |
-| --- | --- |
-| Model | JavaFX observable presentation state only. |
-| View | JavaFX layout, bindings, event handlers, and view-local behavior. |
-| Controller | Presentation coordinator for actions, lifecycle, background work, and FX-thread handoff. |
-| Interactor | The presentation-side translation boundary between presentation state and the feature API. It is not a synonym for domain use case logic. |
-| Interaction | A concrete user step such as click, type, drag, or selection. |
-| Reactive UI | UI behavior driven by observable state and bindings rather than imperative node churn. |
-| ViewBuilder | Java-based builder that constructs a JavaFX view from presentation dependencies. |
+### Architecture and Boundary Terms
 
-## Domain and Data Terms
+| Term               | Definition                                                                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| MVCI               | Presentation pattern with `Model`, `View`, `Controller`, and `Interactor`.                                                                    |
+| Clean Architecture | Backend structure with strict inward-pointing dependencies.                                                                                   |
+| Feature            | A project-local vertical slice with its own view, domain, and data code. It is not automatically a synonym for `Subdomain` or `Subsystem`.    |
+| Feature API        | The only public backend boundary a feature exposes below the view layer. It publishes the operations that presentation code may invoke.       |
+| Domain             | The business concepts and rules expressed by the system or a feature slice. It is not the only possible business boundary term in the system. |
+| Subdomain          | A business sub-area inside the wider domain that is independent of the project's feature slicing.                                             |
+| Subsystem          | A technical sub-area inside the system that is independent of the project's feature slicing.                                                  |
+| Responsibility     | A clearly owned concern assigned to one boundary, component, or layer.                                                                        |
+| Passive Host       | A shell that exposes slots and registration contracts without owning feature logic.                                                           |
+| Shell              | The passive host UI around the application.                                                                                                   |
 
-| Term | Definition |
-| --- | --- |
-| Operation | A concrete business or technical action with a single responsibility. |
-| Use Case | A user-meaningful application task or goal that may coordinate one or more operations. |
-| Command | A state-changing operation. |
-| Query | A read-only operation that returns data and does not change system state. |
-| Domain Model | The business-shaped object model expressed by entities, value objects, and related domain concepts. |
-| Entity | A business object with behavior and invariants. |
-| Value Object | An immutable domain value with validation and meaning. |
-| Repository Interface | A domain-owned contract for loading or persisting domain objects. |
-| Repository Implementation | A data-layer adapter that implements a repository interface and coordinates sources plus mapping. |
-| Data Layer | Technical adapters around persistence, files, HTTP, and other external systems. |
-| Data Source | A concrete local or remote access adapter used by the data layer. |
-| Local Data Source | A data source for database, cache, preferences, or file-based access. |
-| Remote Data Source | A data source for HTTP or other remote systems. |
-| Data Model | A storage-shaped or transport-shaped type used only in the data layer. |
-| Mapper | A translator between data models and domain objects. |
+### Rules and Decision Logic Terms
 
-## Rules and Decision Logic Terms
+| Term            | Definition                                                                                                      |
+| --------------- | --------------------------------------------------------------------------------------------------------------- |
+| Dependency Rule | The rule that dependencies point inward and do not cross forbidden architectural boundaries.                    |
+| Rule            | A business or architectural constraint that must hold.                                                          |
+| Policy          | A named decision rule that chooses or permits behavior.                                                         |
+| Specification   | A reusable rule that tests whether something satisfies defined criteria.                                        |
+| Standard Flow   | The default path from user interaction through presentation, domain, and data, then back to presentation state. |
 
-| Term | Definition |
-| --- | --- |
-| Dependency Rule | The rule that dependencies point inward and do not cross forbidden architectural boundaries. |
-| Rule | A business or architectural constraint that must hold. |
-| Policy | A named decision rule that chooses or permits behavior. |
-| Specification | A reusable rule that tests whether something satisfies defined criteria. |
+## Implementation Terms
 
-## Shell and Contribution Terms
+### Presentation Terms
 
-| Term | Definition |
-| --- | --- |
-| Bootstrap | Application startup and generic feature discovery. |
-| Shell | The passive host UI around the application. |
-| Shell Panel | A shell-owned passive panel package or container that exposes targetable UI areas. |
-| Shell Slot | A fixed shell-owned target area such as `COCKPIT_MAIN` or `TOP_BAR`. |
-| Shell Runtime Context | The narrow shell-owned runtime boundary exposed to feature screens. |
-| Inspector | The shared shell-owned inspection history surface. |
-| InspectorSink | The runtime port returned by `ShellRuntimeContext.inspector()` for pushing inspector entries. |
-| Shell Screen | The feature-owned object that provides slot content for a registered contribution. |
-| ShellViewContribution | The shell registration contract implemented by a feature entrypoint. |
-| ShellContributionSpec | Metadata that declares the contribution category and registration details. |
-| Shell Registry | The spec-type-based registration path from `ShellViewContribution` into `AppShell.registerTab`, `registerTopBar`, or `registerRuntimeState`. |
-| Contribution Type | The contribution category identified by the spec class, such as tab, top bar, or runtime state. |
-| ShellTabSpec | A tab contribution spec for left-navigation tabs. |
-| ShellTopBarSpec | A contribution spec for always-visible top-bar content. |
-| ShellRuntimeStateSpec | A contribution spec for global shared runtime-state content. |
-| ShellTabMode | Mode metadata that controls whether a tab uses shared runtime state or feature-owned editor state. |
-| ShellTabMode.RUNTIME | Tab mode that uses the shared runtime-state panel. |
-| ShellTabMode.EDITOR | Tab mode that may provide feature-owned lower-right state content. |
-| ContributionKey | The stable technical key of a contribution. |
-| NavigationGroupSpec | Open metadata for navigation grouping and ordering. |
-| defaultLanding | A tab-only flag that marks a default landing destination. |
-| Runtime-State Tab | A global lower-right state contribution that is not owned by a specific runtime tab. |
-| Runtime-State Panel | The shared lower-right shell panel used by runtime-state content. |
+| Term        | Definition                                                                                                                                |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Model       | JavaFX observable presentation state only.                                                                                                |
+| View        | JavaFX layout, bindings, event handlers, and view-local behavior.                                                                         |
+| Controller  | Presentation coordinator for actions, lifecycle, background work, and FX-thread handoff.                                                  |
+| Interactor  | The presentation-side translation boundary between presentation state and the feature API. It is not a synonym for domain use case logic. |
+| Reactive UI | UI behavior driven by observable state and bindings rather than imperative node churn.                                                    |
+| ViewBuilder | Java-based builder that constructs a JavaFX view from presentation dependencies.                                                          |
 
-## Lifecycle and Flow Terms
+### Domain and Data Terms
 
-| Term | Definition |
-| --- | --- |
-| Standard Flow | The default path from user interaction through presentation, domain, and data, then back to presentation state. |
-| Shell Registration | The act of exposing a `ShellContributionSpec` and a `ShellScreen` through `ShellViewContribution`. |
-| Bootup Discovery | Generic bootstrap discovery of feature entrypoints under `src/view/<component>/` through `ShellViewDiscovery`. |
-| Panel Mounting | Static slot-based projection of prepared feature nodes through `ShellScreen.slotContent()`. |
+| Term                      | Definition                                                                                          |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| Operation                 | A concrete business or technical action with a clearly defined purpose.                             |
+| Command                   | A state-changing operation.                                                                         |
+| Query                     | A read-only operation that returns data and does not change system state.                           |
+| Domain Model              | The business-shaped object model expressed by entities, value objects, and related domain concepts. |
+| Entity                    | A business object with behavior and invariants.                                                     |
+| Value Object              | An immutable domain value with validation and meaning.                                              |
+| Repository Interface      | A domain-owned contract for loading or persisting domain objects.                                   |
+| Repository Implementation | A data-layer adapter that implements a repository interface and coordinates sources plus mapping.   |
+| Data Layer                | Technical adapters around persistence, files, HTTP, and other external systems.                     |
+| Data Source               | A concrete local or remote access adapter used by the data layer.                                   |
+| Local Data Source         | A data source for database, cache, preferences, or file-based access.                               |
+| Remote Data Source        | A data source for HTTP or other remote systems.                                                     |
+| Data Model                | A storage-shaped or transport-shaped type used only in the data layer.                              |
+| Mapper                    | A translator between data models and domain objects.                                                |
+
+### Shell and Contribution Terms
+
+| Term                  | Definition                                                                                                                                   |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bootstrap             | Application startup and generic feature discovery.                                                                                           |
+| Feature Entrypoint    | The public `*ViewContribution.java` class that registers a feature with the shell.                                                           |
+| Shell Panel           | A shell-owned passive panel package or container that exposes targetable UI areas.                                                           |
+| Shell Slot            | A fixed shell-owned target area such as `COCKPIT_MAIN` or `TOP_BAR`.                                                                         |
+| Shell Runtime Context | The narrow shell-owned runtime boundary exposed to feature screens.                                                                          |
+| Inspector             | The shared shell-owned inspection history surface.                                                                                           |
+| InspectorSink         | The runtime port returned by `ShellRuntimeContext.inspector()` for pushing inspector entries.                                                |
+| Shell Screen          | The feature-owned object that provides slot content for a registered contribution.                                                           |
+| ShellViewContribution | The shell registration contract implemented by a feature entrypoint.                                                                         |
+| ShellContributionSpec | Metadata that declares the contribution category and registration details.                                                                   |
+| Shell Registry        | The spec-type-based registration path from `ShellViewContribution` into `AppShell.registerTab`, `registerTopBar`, or `registerRuntimeState`. |
+| Contribution Type     | The contribution category identified by the spec class, such as tab, top bar, or runtime state.                                              |
+| ShellTabSpec          | A tab contribution spec for left-navigation tabs.                                                                                            |
+| ShellTopBarSpec       | A contribution spec for always-visible top-bar content.                                                                                      |
+| ShellRuntimeStateSpec | A contribution spec for global shared runtime-state content.                                                                                 |
+| ShellTabMode          | Mode metadata that controls whether a tab uses shared runtime state or feature-owned editor state.                                           |
+| ShellTabMode.RUNTIME  | Tab mode that uses the shared runtime-state panel.                                                                                           |
+| ShellTabMode.EDITOR   | Tab mode that may provide feature-owned lower-right state content.                                                                           |
+| ContributionKey       | The stable technical key of a contribution.                                                                                                  |
+| NavigationGroupSpec   | Open metadata for navigation grouping and ordering.                                                                                          |
+| Runtime-State Tab     | A global lower-right state contribution that is not owned by a specific runtime tab.                                                         |
+| Runtime-State Panel   | The shared lower-right shell panel used by runtime-state content.                                                                            |
+
+### Lifecycle and Runtime Mechanics Terms
+
+| Term               | Definition                                                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Shell Registration | The act of exposing a `ShellContributionSpec` and a `ShellScreen` through `ShellViewContribution`.                                |
+| Bootup Discovery   | Generic bootstrap discovery of feature entrypoints under `src/view/<component>/` through `ShellViewDiscovery`.                    |
+| Panel Mounting     | Static slot-based projection of prepared feature nodes through `ShellScreen.slotContent()`.                                       |
 | Inspector Mounting | Dynamic inspector entry publication through `ShellRuntimeContext.inspector().push(...)`, not through `ShellScreen.slotContent()`. |
 
 # Rules
