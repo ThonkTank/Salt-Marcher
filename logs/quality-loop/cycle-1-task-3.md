@@ -1,1 +1,0 @@
-Build erfolgreich. `findClusterVertexNear` ist jetzt ein One-Liner, der `findClusterVerticesNear` aufruft und das erste Ergebnis mit passender `clusterId` zurückgibt. Die doppelte O(n²)-Schleife ist eliminiert.

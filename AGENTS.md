@@ -1,273 +1,790 @@
-# AGENTS.md
+# Architecture
 
-This file defines the repository-specific operating constraints for Claude Code (claude.ai/code) and OpenAI Codex agents. Treat it as local engineering law: preserve the documented architecture, prefer repository-specific precedent over generic agent habits, and do not weaken an invariant unless the user explicitly asks for that change.
+SaltMarcher uses two complementary architectural rules at the same time:
 
-## Project Structure & Module Organization
+1. Presentation uses MVCI.
+2. Backend logic behind the UI uses standard Clean Architecture.
 
-**Language:** Java (no modules), JavaFX UI, SQLite via raw JDBC. Build via Gradle wrapper (`./gradlew`) with Java 21 toolchain and OpenJFX plugin.
+MVCI is only the presentation pattern. Domain and Data follow Clean Architecture with strict inward-pointing dependencies. View components do not talk to persistence, HTTP, files, SQL, JSON or framework-specific backend adapters directly. Features must hide internal details behind one public feature API.
 
-**Structure** (feature-first):
-- `src/features/<feature>/{model,application,repository,state,ui,api,bootstrap}` — canonical architecture by ownership layer; each feature uses only the roles it actually needs
-- `src/database/DatabaseManager` — connection factory. `getConnection()` returns a fresh Connection with `PRAGMA foreign_keys=ON` and `journal_mode=WAL`; callers own it via try-with-resources. `setupDatabase()` uses idempotent `CREATE TABLE IF NOT EXISTS` + `INSERT OR IGNORE` seeding
-- `src/importer/` and `src/shared/crawler/` — crawler/import pipeline
-- `src/ui/` — JavaFX shell/bootstrap (`src/ui/bootstrap/`) plus shared UI-only components (`src/ui/components/`)
-- `resources/salt-marcher.css` — single CSS source of truth. `data/` for runtime data and backups
+## Project Structure
 
-**AGENTS.md placement convention:** the root `AGENTS.md` is for project-wide rules only. Feature-specific architecture, workflows, invariants, package roles, and editor/runtime behavior belong in the nearest local `AGENTS.md` under that feature subtree. If a rule stops being globally true and starts describing one feature, move it out of the root file. When both files exist, apply both, with the deeper local file governing the feature-specific details. Before changing files in a subtree, check whether that subtree defines a nearer `AGENTS.md`; if it does, treat that local file as required context, not optional reference. Before handoff, re-check the `AGENTS.md` files governing the edited paths and update them whenever the implementation changed the truths they describe.
-
-**DB storage conventions:** Multi-value fields stored as delimited strings — `KEY:value,KEY:value,...` (e.g. `SavingThrows = "CON:10,INT:12"`, `Senses = "darkvision:60"`). Junction tables (`creature_biomes`, `creature_subtypes`, `item_tags`) for many-to-many. `campaign_state` is a singleton row (id=1). No name-column indexes anywhere (leading-wildcard `LIKE` can't use B-tree).
-
-## Build & Run
-
-```bash
-./gradlew build                  # compile + convention checks
-./gradlew build --console=plain 2>&1  # recompile after every code change — fix all errors before proceeding
-./gradlew run                    # start JavaFX app
-./gradlew installDesktopApp      # reinstall desktop launcher
-./gradlew crawler                # monster crawl + import
-./gradlew crawlerItemsPipeline   # item crawl + import
-./gradlew crawlerItemsSlugs      # slug-list only
-./gradlew importMonsters         # import only (no crawl)
-./gradlew importItems            # import only (no crawl)
+```text
+bootstrap/      # Application startup and generic feature discovery.
+shell/
+    host/  # Passive host shell built once at startup.
+    panel/ # Passive host panels / slots that components target.
+src/
+    view/
+        <componentName>/
+            <PascalComponentName>ViewContribution.java
+            Model/
+            Controller/
+            View/
+            interactor/
+    domain/
+        <featureName>/
+            <featureName>API.java # Only public entrypoint for view interactors or other features.
+            entity/
+            valueobject/
+            usecase/
+            repository/
+    data/
+        <featureName>/
+            repository/
+            datasource/
+                local/
+                remote/
+            model/
+            mapper/
 ```
 
-End-to-end scripts: `./scripts/crawl.sh`, `./scripts/crawl-items.sh`.
+## Build And Commit Workflow
 
-No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/.local/share}/salt-marcher/game.db` (auto-created on first run). Schema changes require deleting that DB and re-running `./scripts/crawl.sh` — there are no ALTER TABLE migrations. For ad-hoc DB inspection, prefer the vendored CLI at `./tools/sqlite3` or `./gradlew sqliteQuery --args='data/game.db .tables'`.
+Use the existing Salt Marcher GitHub repository for this codebase. `salt-marcher/` remains a legacy reference directory, while active work happens in this `SaltMarcher/` working tree against the same upstream repository.
 
-**After code changes, do not stop at `./gradlew build` alone** when the desktop app is the manual test surface. Default to running `./gradlew build` and then `./gradlew installDesktopApp` before handoff unless the user explicitly says not to reinstall the desktop app. Notes about "nicht geprüfte Vorgänge" (unchecked operations) are expected and can be ignored.
+Build and install steps are mandatory after code changes:
 
-**First run:** database is empty after clone. Run `./scripts/crawl.sh` to populate monster data (requires `crawler.properties` — copy from `crawler.properties.example` and add a valid D&D Beyond session cookie). `./scripts/crawl-items.sh` does the same for items. Without data the app starts but shows no creatures.
+- Run `./gradlew build --console=plain 2>&1` after every completed code change and fix all build failures before proceeding.
+- Do not stop at `./gradlew build` alone when the desktop app is the manual test surface.
+- By default, run `./gradlew installDesktopApp --console=plain 2>&1` after the build before handoff unless the user explicitly waives the reinstall or the task is purely planning/review work.
+- Verification claims must stay literal. Do not imply that build, install, or manual checks happened unless they were actually run.
 
-## UI Shell Architecture — Cockpit Layout
+Commit discipline is mandatory as well:
 
-The shell uses a four-panel "cockpit" layout. Views project content into fixed panels:
+- Create a focused commit for the completed change unless the user explicitly asks not to commit.
+- Use Conventional Commits such as `feat: ...`, `fix: ...`, or `refactor: ...`.
+- Keep each commit to one concern and call out packaging or workflow impacts explicitly when relevant.
 
+## Dependency Rule
+
+Presentation startup and composition live in `bootstrap/`. The shell stays passive after construction. Features describe themselves from inside `src/view/<component>/`, and bootstrap discovers those feature entrypoints generically without knowing concrete feature classes. Backend dependencies follow Clean Architecture, so domain defines the contracts and data implements them.
+
+Allowed dependencies:
+
+- `bootstrap -> shell`
+- `view/<component>/<PascalComponentName>ViewContribution -> shell.host registration contracts`
+- `view/<component>/interactor -> domain/<featureName>/<featureName>API`
+- `domain/<featureName>/<featureName>API -> usecase/`
+- `usecase/ -> repository/`
+- `data/<featureName> -> domain/<featureName>`
+
+Forbidden dependencies:
+
+- `view/View -> domain/*`
+- `view/Controller -> domain/*`
+- `view/* -> data/*`
+- `shell -> view/*`
+- `shell -> view/<component>/interactor`
+- `shell -> domain/*`
+- `shell -> data/*`
+- `shell -> domain internals`
+- `bootstrap -> view/<component>`
+- `bootstrap -> domain/*`
+- `bootstrap -> data/*`
+- `domain -> view`
+- `domain -> shell`
+- `domain -> data`
+- `domain -> JavaFX`
+- `domain -> HTTP/SQL/JSON/filesystem frameworks`
+
+The shell is passive. It is built once, exposes pre-existing slots and open registration contracts, and is not revisited for feature-specific runtime composition. Features provide their own shell registration entrypoint under `src/view/<component>/`, and `bootstrap/` discovers those entrypoints generically. `<featureName>API.java` remains the only public feature boundary below the view interactor. Repository interfaces, use cases, entities, mappers and data sources are internal feature details and are not exposed outside the feature.
+
+For view startup wiring, the only allowed shell-facing contracts are the generic types in `shell.host`: `ShellViewContribution`, `ShellContributionSpec`, `ShellScreen`, `ShellRuntimeContext`, `ContributionKey`, `NavigationGroupSpec`, `ShellTabSpec`, `ShellTopBarSpec`, `ShellRuntimeStateSpec` and `ShellTabMode`. The only currently supported runtime port from shell into feature wiring is `ShellRuntimeContext.inspector()` returning `InspectorSink`.
+
+## Layer Responsibilities
+
+### Bootstrap
+
+`bootstrap/` owns application startup and presentation composition.
+
+- It builds the shell once at startup.
+- It starts component registration without implementing feature business logic.
+- It may depend on generic shell registration contracts, but it must not import concrete feature classes from `src/view/<component>/`.
+- It must not become a second shell or a domain orchestration layer.
+
+### Shell
+
+The shell is a passive host around the application UI.
+
+- `shell/host`: Owns the passive host shell built once at startup.
+- `shell/panel`: Defines passive host panels or slots that components target.
+- The shell may define slot structure plus open registration contracts, but it must not know, start or mount feature components.
+- The shell must not contain feature enums, feature-specific registries or per-feature switch statements.
+- The shell must not implement domain rules.
+- `ShellRuntimeContext` is the shell-owned runtime boundary exposed to feature roots. It is intentionally narrow and must not grow into a general service locator.
+
+### View Layer
+
+The view layer is JavaFX-specific, globally organized by component and follows MVCI.
+
+- `Model`: JavaFX observable UI state only. No business rules, persistence or IO knowledge.
+- `View`: Layout, bindings, UI events and view-local presentation behavior.
+- `Controller`: UI orchestration, action wiring, background task setup, FX thread handoff and integration with the mounted component lifecycle.
+- `interactor`: The only bridge from a view component to domain content. It invokes feature APIs, interprets results and updates the presentation model.
+- public startup entrypoint: Exactly one public root entrypoint in `src/view/<component>/` named `<PascalComponentName>ViewContribution.java` that implements the shell registration contract, exposes a public no-arg constructor, returns one passive `ShellContributionSpec`, and creates a `ShellScreen` from `ShellRuntimeContext`.
+
+Interactor rules:
+
+- An interactor may depend on a feature's public API and on returned domain types that the API intentionally exposes.
+- `View` and `Controller` must not depend on feature APIs or other domain internals.
+- A view component must only interact with domain content through its interactor.
+- An interactor must not call `data/` classes directly.
+- An interactor must not call use cases, repository interfaces or repository implementations directly.
+- An interactor must not contain HTTP, SQL, file, JSON or persistence logic.
+- An interactor must not instantiate repository implementations, use case internals or data sources.
+
+### Domain Layer
+
+The domain layer is organized by feature and contains the business core of each feature.
+
+- `entity/`: Core business entities with domain behavior and invariants.
+- `valueobject/`: Immutable domain values with validation and domain meaning.
+- `usecase/`: Application-specific business operations. Each use case answers one clear action or question.
+- `repository/`: Interfaces required by use cases to load or persist domain objects.
+- `<featureName>API.java`: The only public feature boundary exposed to view interactors or other features.
+
+Domain rules:
+
+- No JavaFX properties, nodes, tasks or bindings.
+- No DTO/JSON/database record types as domain types.
+- No infrastructure concerns such as HTTP clients, SQL queries, file handling or serialization libraries.
+- Use cases depend on repository interfaces, never on repository implementations.
+- Internal feature details stay hidden behind `<featureName>API.java`.
+
+### Data Layer
+
+The data layer is organized by feature and contains technical adapters around external systems and storage.
+
+- `repository/`: Implements domain repository interfaces. Coordinates data sources and mapping.
+- `datasource/remote`: External APIs, web services and other remote gateways.
+- `datasource/local`: Database, cache, preferences or file-based storage.
+- `model/`: Data-transfer and persistence models shaped for APIs, files or storage.
+- `mapper/`: Translates between data models and domain entities/value objects.
+
+Data rules:
+
+- Data models may mirror JSON or storage format and may contain serialization code.
+- Repository implementations return domain types, not raw data models, to the domain layer.
+- Business rules do not live in data sources, data models or repository implementations beyond technical merge/cache concerns.
+
+## Standard Flow
+
+A normal feature flow looks like this:
+
+`Bootstrap builds shell -> Bootstrap discovers feature entrypoints under src/view/<component>/ -> Feature entrypoint supplies ShellContributionSpec + ShellScreen -> Bootstrap registers contribution by spec type -> Shell mounts slot content generically into the passive host -> View event -> Controller action -> Interactor -> Feature API -> Domain use case -> Domain repository interface <- Data repository implementation -> Data source -> Data model -> Mapper -> Domain result -> Interactor -> Presentation model`
+
+Inspector flow is the one supported runtime exception to purely static slot mounting:
+
+`View/Controller/Interactor -> ShellRuntimeContext.inspector().push(...) -> shared shell inspector history`
+
+The interactor is the only boundary translator between reactive JavaFX state and the clean backend core. Feature APIs are the public entrypoints into business logic. Data is only reached through domain repository contracts inside the feature, and data depends on domain contracts rather than the other way around. The shell remains unchanged after startup construction.
+
+## Placement Rules
+
+Use these default decisions when adding code:
+
+- If the code exists to start the application, build the shell once, or generically discover feature entrypoints without naming concrete features, put it in `bootstrap/`.
+- If the code exists to host passive slots or define shell structure without domain logic, put it in `shell/`.
+- If the code exists to render or bind JavaFX UI, put it in `src/view/<componentName>/View`.
+- If the code exists to manage JavaFX screen state, put it in `src/view/<componentName>/Model`.
+- If the code exists to wire actions, tasks or UI lifecycle, put it in `src/view/<componentName>/Controller`.
+- If the code exists to convert UI intent into feature API calls and results back into UI state, put it in `src/view/<componentName>/interactor`.
+- If the code exists to declare a component's public shell registration entrypoint, keep that one public startup surface in `src/view/<componentName>/<PascalComponentName>ViewContribution.java`.
+- If the code expresses business meaning or invariants for one feature, put it in `src/domain/<featureName>/entity` or `valueobject`.
+- If the code represents a user-triggered or system-triggered application action for one feature, put it in `src/domain/<featureName>/usecase`.
+- If business logic feels like it would need a separate `service`, move it into the owning `entity`, the relevant `valueobject`, or a single-purpose `usecase` unless that would clearly violate one of those boundaries.
+- If the code is the public boundary of a feature, put it in `src/domain/<featureName>/<featureName>API.java`.
+- If the code defines required persistence/query operations for one feature, put the interface in `src/domain/<featureName>/repository`.
+- If the code talks to a database, file, API, cache or device service for one feature, put it in `src/data/<featureName>/datasource`.
+- If the code adapts raw external data to domain objects, put it in `src/data/<featureName>/mapper`.
+- If the code implements a domain repository interface, put it in `src/data/<featureName>/repository`.
+
+## Explicit Non-Goals
+
+To keep the architecture stable, do not:
+
+- pass JavaFX types into `domain/` or `data/`
+- expose `data/` classes through `<featureName>API.java`
+- return data-layer models from use cases
+- call domain content directly from views or controllers
+- call repositories or data sources directly from view components
+- let the shell compose, start or mount feature components
+- let the shell implement feature logic
+- let the shell call feature APIs or interactors directly
+- let the shell hold closed feature enums or a manually curated feature registry
+- let controllers own application startup or slot mounting as the default convention
+- let bootstrap import concrete feature classes from `src/view/<component>/`
+- let bootstrap call feature APIs or data adapters directly
+- expose internal feature details outside `<featureName>API.java`
+- skip the interactor and let a view component talk to a feature API directly
+- skip a feature API and let the interactor talk to feature internals for convenience
+- introduce `service/` or `services/` as a domain directory or architectural escape hatch
+- introduce a second shell wiring path besides `ShellViewContribution -> ShellScreen -> ShellSlot`
+- use `AppView`, `ShellServices`, `DetailsNavigator`, `SceneRegistry` or concrete shell panel classes from `src/view/`
+- register content directly in `AppShell` from feature code
+- create feature-owned alternate registries for top bar, runtime state or inspector content
+- couple runtime state content to one specific runtime tab instead of publishing autonomous global runtime-state tabs
+
+## Feature Registration Convention
+
+- A new top-level feature must be addable by creating code only inside `src/`.
+- Each navigable feature owns exactly one public shell entrypoint in `src/view/<component>/`.
+- The entrypoint file must be named `<PascalComponentName>ViewContribution.java` and declare package `src.view.<component>`.
+- That entrypoint must be a `public final` class with a public no-arg constructor.
+- That entrypoint implements `shell.host.ShellViewContribution`, declares exactly one passive contribution spec, and returns a feature-owned `ShellScreen`.
+- Allowed contribution spec types are:
+  - `ShellTabSpec` for navigable tabs in the left bar
+  - `ShellTopBarSpec` for always-visible top bar dropdown or control content
+  - `ShellRuntimeStateSpec` for autonomous runtime-state tabs in the shared lower-right panel
+- Navigation groups are open metadata supplied by the feature. They are not closed enums maintained in `shell/`.
+- The component root under `src/view/<component>/` is reserved for that entrypoint only. All other presentation classes live under `Model/`, `Controller/`, `View/` or `interactor/`.
+- `bootstrap/` must discover these entrypoints generically. Adding a new feature must not require routine edits in `bootstrap/` or `shell/`.
+- There is exactly one allowed shell wiring path for new `src/` content: `ShellViewContribution -> ShellScreen -> ShellSlot`.
+- `ShellScreen` may only target the fixed shell-owned slots `TOP_BAR`, `COCKPIT_CONTROLS`, `COCKPIT_MAIN`, `COCKPIT_DETAILS` and `COCKPIT_STATE`.
+- Slot rules depend on the contribution spec type:
+  - `ShellTabSpec`: `COCKPIT_MAIN` is required and `COCKPIT_CONTROLS` is optional.
+  - `ShellTabSpec` with `ShellTabMode.RUNTIME`: feature code must not provide `COCKPIT_STATE`; the shell shows the shared runtime-state panel there.
+  - `ShellTabSpec` with `ShellTabMode.EDITOR`: `COCKPIT_STATE` is optional and fills the lower-right panel when present.
+  - `ShellTopBarSpec`: only `TOP_BAR` is allowed.
+  - `ShellRuntimeStateSpec`: only `COCKPIT_STATE` is allowed.
+- `defaultLanding` only applies to `ShellTabSpec`.
+- `ShellTabMode.RUNTIME` means the tab uses the shared runtime-state panel. `ShellTabMode.EDITOR` means the tab may provide its own lower-right state content.
+- Inspector content is not a static contribution type. Features push inspector entries through `ShellRuntimeContext.inspector()` and the shell owns the shared history.
+- Runtime-state tabs are global and autonomous. They appear whenever any runtime tab is active and are not owned by one specific runtime tab.
+- Features must not talk to `AppShell` directly and must not use `AppView`, `ShellServices`, `DetailsNavigator`, `SceneRegistry` or concrete shell panels as alternate wiring paths.
+
+### Minimal Feature Skeleton
+
+```text
+src/
+    view/
+        encounter/
+            EncounterViewContribution.java
+            Model/
+            Controller/
+            View/
+            interactor/
+    domain/
+        encounter/
+            encounterAPI.java
+            api/
+            entity/
+            valueobject/
+            usecase/
+            repository/
+    data/
+        encounter/
+            repository/
+            datasource/
+                local/
+                remote/
+            model/
+            mapper/
 ```
-+---toolbar------------------------------+
-| side | Controls      | Details         |
-| bar  | (top-left)    | (top-right)     |
-|      |---------------+-----------------|
-|      | Main          | State           |
-|      | (bottom-left) | (bottom-right)  |
-+------+---------------+-----------------+
+
+```java
+package src.view.encounter;
+
+import javafx.scene.Node;
+import shell.host.ContributionKey;
+import shell.host.NavigationGroupSpec;
+import shell.host.ShellContributionSpec;
+import shell.host.ShellRuntimeContext;
+import shell.host.ShellScreen;
+import shell.host.ShellTabMode;
+import shell.host.ShellTabSpec;
+import shell.host.ShellViewContribution;
+import shell.panel.ShellSlot;
+
+import java.util.Map;
+
+public final class EncounterViewContribution implements ShellViewContribution {
+
+    public EncounterViewContribution() {
+    }
+
+    @Override
+    public ShellContributionSpec registrationSpec() {
+        return new ShellTabSpec(
+                new ContributionKey("encounter"),
+                new NavigationGroupSpec("session", "Session", 10),
+                20,
+                false,
+                ShellTabMode.RUNTIME);
+    }
+
+    @Override
+    public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
+        return new ShellScreen() {
+            @Override
+            public String getTitle() {
+                return "Encounter";
+            }
+
+            @Override
+            public String getNavigationLabel() {
+                return "Enc";
+            }
+
+            @Override
+            public Map<ShellSlot, Node> slotContent() {
+                return Map.of(
+                        ShellSlot.COCKPIT_MAIN, createMainContent());
+            }
+        };
+    }
+
+    private Node createMainContent() {
+        return null; // Replace with the feature-owned main component.
+    }
+}
 ```
 
-- **Controls** — filters, sliders, tool palettes (`getControlsContent()`)
-- **Main** — primary workspace: monster table, hex map, canvas (`getMainContent()`)
-- **Details** — detail inspector: stat blocks, tile properties (`getDetailsContent()`)
-- **State** — game state: encounter roster/tracker, travel info (`getStateContent()`)
+### Contribution Cheatsheet
 
-Left column is a VBox (Controls takes natural height, Main fills rest — not resizable). Right column is a vertical SplitPane (Details / State — resizable). SplitPane items are set once and never mutated; content is swapped inside StackPane containers to preserve divider positions.
+- `ShellTabSpec` + `ShellTabMode.RUNTIME`: navigable left-bar tab, requires `COCKPIT_MAIN`, gets shared runtime-state panel, may optionally provide `COCKPIT_CONTROLS`.
+- `ShellTabSpec` + `ShellTabMode.EDITOR`: navigable left-bar tab, requires `COCKPIT_MAIN`, may optionally provide `COCKPIT_CONTROLS` and `COCKPIT_STATE`.
+- `ShellTopBarSpec`: global always-on top bar content, may only provide `TOP_BAR`.
+- `ShellRuntimeStateSpec`: global autonomous runtime-state tab, may only provide `COCKPIT_STATE`.
 
-- **AppShell** — `BorderPane`: sidebar (left) | `mainSplit` (center, horizontal SplitPane: `leftColumn` | `rightSplit`). Divider positions saved per-ViewId and restored on navigate-back
-- **AppView** interface: `getMainContent()`, `getControlsContent()`, `getDetailsContent()`, `getStateContent()`, `getTitle()`, `getToolbarItems()`, `getIconText()`, `onShow()`/`onHide()`. Only `getMainContent()` and `getTitle()` are required; all others have defaults
-- **ViewId** enum + **ViewCategory** (SESSION vs EDITOR). To add a new view: (1) add enum entry, (2) implement AppView, (3) call `shell.registerView()` in SaltMarcherApp
-- **AppShell navigation:** `navigateTo()` saves dividers → `onHide()` → `applyViewContent()` → restores dividers → `onShow()`. `refreshPanels()` re-reads all 4 panels without touching SplitPane items (safe for mode switches). `refreshToolbar()` rebuilds toolbar only
-- **SESSION views** return `null` from `getDetailsContent()`/`getStateContent()` → shell shows its own **InspectorPane** and **ScenePane**, persistent across SESSION view switches. **EDITOR views** override these to provide view-specific content
-- **InspectorPane** (shell-owned Details default): `showStatBlock(id)` toggles; `ensureStatBlock(id)` always shows; `showContent(title, node)` for arbitrary content; cancels pending async loads on new requests
-- **ScenePane**/**SceneHandle** (shell-owned State default) — tabbed bottom-right area. Views register persistent tabs via `SceneHandle`. Tab bar auto-hidden when only 1 tab. `SceneHandle.setContent(node)` swaps content
+### Additional Examples
 
-### Feature-Local AGENTS Files
+```java
+public final class GlobalToolsViewContribution implements ShellViewContribution {
+    @Override
+    public ShellContributionSpec registrationSpec() {
+        return new ShellTopBarSpec(new ContributionKey("global-tools"), 10);
+    }
 
-- `src/features/encounter/AGENTS.md` — encounter-specific interaction, generation, and combat/runtime behavior
-- `src/features/world/hexmap/AGENTS.md` — hex map and overworld-specific rendering, editing, and calendar rules
-- `src/features/world/dungeonmap/AGENTS.md` — dungeon editor architecture, model layering, and package roles
+    @Override
+    public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
+        return new ShellScreen() {
+            @Override
+            public String getTitle() {
+                return "Global Tools";
+            }
 
-## Architecture Guidelines
+            @Override
+            public Map<ShellSlot, Node> slotContent() {
+                return Map.of(ShellSlot.TOP_BAR, createTopBarMenu());
+            }
+        };
+    }
+}
+```
 
-Salt Marcher is a feature-oriented monolith.
-Code is organized primarily under `src/features/<feature>/`.
-This architecture exists to prevent drift: every capability should be defined once, owned once, and subordinated to the layer that is responsible for keeping it coherent.
+```java
+public final class PartyStateViewContribution implements ShellViewContribution {
+    @Override
+    public ShellContributionSpec registrationSpec() {
+        return new ShellRuntimeStateSpec(new ContributionKey("party-state"), "Party", 10);
+    }
 
-This root file is binding for the entire repository.
-Local `AGENTS.md` files refine these rules for a feature.
-Local `AGENTS.md` files may define additional local structure, but they must not weaken the global ownership and dependency rules.
+    @Override
+    public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
+        return new ShellScreen() {
+            @Override
+            public String getTitle() {
+                return "Party State";
+            }
 
-If a package layer, filename role, or global rule is not defined here, it is not part of the repository-wide architecture.
-Additional structure belongs only in the nearest feature-local `AGENTS.md`, or as a precise domain name that does not pretend to be a new global role.
+            @Override
+            public Map<ShellSlot, Node> slotContent() {
+                return Map.of(ShellSlot.COCKPIT_STATE, createPartyStateView());
+            }
+        };
+    }
+}
+```
 
-### Guidelines
+## MVCI View
+Reactive Programming
 
-- Give every capability one central owner.
-- Place each capability on the lowest common owner that is actually edited, described, or constrained by it.
-- Objects and types may gain capabilities through composition, inheritance, or references, but ownership of the capability stays with the central owner instead of being mirrored in consumers.
-- Treat package layers as ownership boundaries. A capability belongs to the layer that subordinates it to its owner, not to the first caller that happens to use it.
-- Decide layer and owner before naming.
-- The repository-wide hard owner and boundary suffixes are `*ApplicationService`, `*Repository`, `*State`, `*View`, `*Api`, and `*Module`.
-- Use one of those exact suffixes only when it clearly matches the file's central owner or boundary. Do not invent near-synonyms for the same job.
-- If none of the hard roles fits cleanly, use a precise domain name or helper name instead of stretching a role.
-- Helper suffixes such as `*Projection`, `*Lookup`, `*Port`, `*Session`, `*Mapper`, `*Codec`, `*Policy`, `*Factory`, `*Descriptor`, and `*Snapshot` do not declare architectural ownership.
-- `*Reconciler`, `*Maintenance`, and `*Hydrator` remain smell markers and should stay rare.
-- In `model/`, the central owner will usually be a precise domain type, not a generic role suffix. Prefer the domain name when the type itself is the canonical owner.
-- If several sibling files in one directory share the same descriptive helper suffix, treat that as a smell: either the package focus is too broad or ownership is duplicated.
-- New code must follow the target architecture immediately.
-- Touched code should move toward the target architecture at the nearest safe seam without widening scope.
-- Preserve behavior, storage assumptions, user workflows, and explicit invariants unless the task explicitly requires changing them.
-- Avoid wrappers, adapters, or intermediate packages whose only purpose is to rename existing complexity.
-- Existing code may keep older local shapes until touched. Use the target architecture as the precedent for new or edited work.
-- Do not do rename-only churn just to satisfy the naming system. Rename when it clarifies ownership, removes a misleading role signal, or accompanies a real boundary change.
-- When goals compete, use this order: preserve correctness and satisfy the user request; preserve explicit repository invariants and local `AGENTS.md` rules; keep the change small enough to verify safely; then move the touched code toward the target architecture.
+Let’s talk a little bit about “Reactive” programming. What is it?
 
-### Layers
+There’s a few ways to look at it:
 
-Reason about ownership in this order:
-- domain and editor truth live in `model/`
-- use-case and workflow logic live in `application/`
-- persistence access lives in `repository/`
-- shared transient runtime state lives in `state/`
-- feature-local presentation and interaction live in `ui/`
-- public feature boundaries live in `api/`
-- internal wiring lives in `bootstrap/`
+Static Layouts that Behave Dynamically
+    This is a really important concept. Reactive systems allow you to create a layout as static elements, meaning that you don’t actually change the Nodes that are on the screen, add new Nodes or take any away. Instead the screen Nodes are connected to data elements that control how they work. Changes in those data elements result in dynamic changes to the screen that the user sees. At the back-end of the system, there are business rules that update those data elements as nothing more than data, without any knowledge of how those data elements will impact the screen.
+State Data is a Pipeline Between the Business Logic and the View
+    This is another way to look at it. The “State” of the GUI is represented by some collection of data which is connected to the various properties of the elements of the View. Either end can potentially change some of that data, at which point it is available to the other end instantly. Both ends of the pipeline are free to interpret that data in a context which has meaning to it, without understanding what it means to the other end. So a layout may use a Boolean State element to control whether a Button is enabled, but the business logic end may interpret that same Boolean State element to mean that a date value somewhere is invalid.
 
-The default dependency direction is `ui -> application -> repository -> model`.
-`state/` may be observed by `ui/` and coordinated by `application/`, while `model/` remains the canonical truth.
-Typical read flow still starts at `ui/` and follows dependencies inward.
-If a feature defines a nearer `AGENTS.md`, that file is required context before any change in that subtree.
+In JavaFX this means that you have an Object composed of Observables of some sort. These can be Properties, Bindings, ObservableLists or any their relatives. These Observables are bound to various properties of the Node elements that make up the layout.
 
-#### `model/`
+Generic Reactive programming descriptions talk about “streams”, which is essentially the function provided by the Observables and the Binding classes.
 
-- Owns canonical business and editor truth.
-- Carries behavior on the lowest stable owner that actually enforces the invariant.
-- Stays framework- and storage-agnostic.
-- Canonical owners in `model/` are usually precise domain names without a role suffix. Do not rename them into generic owner wrappers just to satisfy a naming system.
-- Model-local helper names such as `*Ref`, `*Binding`, `*Plan`, `*Projection`, `*Policy`, and `*Session` are allowed.
+The simple truth is that JavaFX provides all of the tools to build Reactive applications and, in fact, it works best when you use it that way.
+Why Use a Framework?Permalink
 
-#### `application/`
+Frameworks are designed to limit coupling between the GUI, the business logic and the control logic. Excessive coupling is by far the biggest issue with application design, and it makes it very difficult to understand how an application works, to make changes, find and fix bugs, and to extend the application.
 
-- Owns use-case orchestration.
-- Sequences workflows, async work, transactions, reload-after-write behavior, and cross-feature coordination.
-- Coordinates repositories, state containers, and feature APIs without becoming canonical domain truth.
-- Use `*ApplicationService` for the central, user-visible workflow owner in this layer.
-- Other names in `application/` should be precise workflow helper or data names such as `*Request`, `*Result`, `*Summary`, `*Target`, `*Snapshot`, `*Descriptor`, `*Lookup`, `*Resolver`, `*Projection`, `*Committer`, `*Session`, or `*Port`.
-- Prefer removing the drift that requires `*Reconciler` or `*Maintenance` over introducing new ones.
+One of the ways to evaluate coupling is to look at how much of its functionality a component exposes to the rest of the application, and how much it “knows” about the functionality of other components of the application. The more of this that you have, the more coupling that you have.
 
-#### `repository/`
+When a component exposes some of its functionality to the rest of the application and that functionality is changed, then you have to look at all of the places that knowledge of that functionality is used, and evaluate how it needs to be changed as well. Often, you’ll find that some of those places are in functionality of other components that are also exposed to the rest of the application, so you need to track down where that knowledge is used and change them too. And so on, and so on…
 
-- Owns direct storage access.
-- Carries SQL, row mapping, query construction, persistence ordering, and storage-specific lookups.
-- Remains stateless; callers provide the `Connection`.
-- Use `*Repository` for the central storage owner in this layer. Read-only, write-only, search-focused, lookup-focused, or cache-focused variants still belong to the repository family.
-- Support types may use names such as `*Store`, `*Schema`, `*Write`, `*Mapper`, `*Codec`, or `*Hydrator`.
-- Prefer folding `*Hydrator` work back into a clearer repository or mapper seam over introducing additional hydrators.
+These couplings are also called “dependencies”. Dependencies also have direction and we can say that, “This component is dependent on this aspect of this other component”. Coupling becomes even worse when you have multiple dependencies between two components that go in either direction. A good framework should also try to manage the direction of the dependencies, in order to limit complexity of the coupling.
 
-#### `state/`
+At the end of the day, a framework is just a “Design Pattern”. That is to say, an accepted way of coding something that has already been thought out so that you don’t have to “reinvent the wheel” in your application code. Other programmers can look at your code and say, “I recognize this”, even if they’ve never seen your code before.
+Why Use MVCI?Permalink
 
-- Owns shared transient UI, editor, and workflow state.
-- Carries selection, drafts, previews, modes, and other runtime interaction truth.
-- Supports the workflow around canonical truth without replacing it.
-- Use `*State` for shared transient mutable owners in this layer.
-- Names such as `*Draft`, `*Preview`, `*Settings`, and `*Mode` describe subordinate state artifacts.
+Because it works, it dovetails nicely with Reactive JavaFX, and it’s easy to understand.
 
-#### `ui/`
+We’re not going to talk a great deal about the other frameworks here, but there are two questions that need to be addressed:
 
-- Owns feature-local presentation and interaction code.
-- Contains views, panes, dropdowns, canvases, controls, and UI controllers.
-- Talks to application services and state containers, not directly to persistence policy.
-- Use `*View` for top-level application surfaces in the shell/navigation model.
-- UI names such as `*Shell`, `*Workspace`, `*Pane`, `*Controls`, `*Canvas`, `*Dropdown`, `*Controller`, `*Navigator`, `*Registry`, `*RenderState`, `*Tool`, and UI-local `*Handle` types are local surface vocabulary.
-- Keep `*RenderState` display-only.
+Why not use Model-View-Controller?
+    For one simple reason: MVC does not allow for Reactive programming. You can bind View elements to the Model, but exclusively in a Read-Only mode. Any changes to the Model from the View have to be transmitted through the Controller. It’s a basic element of this framework. You can ignore this, but then you’re not using MVC any more.
+Why not use Model-View-ViewModel?
+    MVVM does provide for binding between the ViewModel and the View elements, so that’s a step in the right direction. However, there’s no Reactive connection allowed for between the Model and the ViewModel. You end up with a lot of methods to handle data transfer between the ViewModel and the Model which creates an enormous amount of coupling. This gets very confusing very quickly.
 
-#### `api/`
+Both of these answers sound a bit like technical nit-picking that you could probably just ignore. In practice though, these represent issues that you end up having to work around - even if you don’t realize it. It gets messy very quickly.
 
-- Is the cross-feature entrypoint.
-- Contains deliberate boundary contracts, boundary data, and explicitly exported public feature surfaces only.
-- Use `*Api` for deliberate cross-feature boundary surfaces.
-- Use `*Module` in `api/` only when the module itself is the public feature entrypoint or exported composition root.
-- Other names such as `*Port`, `*Summary`, `*Request`, `*Result`, `*Ref`, `*Handle`, and `*Lookup` describe boundary shapes.
-- When `api/` intentionally exports another central owner, keep that exact name instead of inventing an api-only wrapper.
-- Boundary-facing `*Mapper` and `*Codec` types may live here when they serve the public API seam rather than persistence.
+If you use MVCI, you really don’t have to worry about these things. They’re just not a factor. MVCI deals with it for you and you’re not going to get tangled up in unexpected consequences of your design decisions.
+What Does MVCI Look Like?Permalink
 
-#### `bootstrap/`
+MVCI has four components: a Model, a Controller, a View and an Interactor. Let’s look at what each of these do:
 
-- Owns internal composition roots and assembly-only wiring.
-- Wires collaborators and exposes feature entrypoints.
-- Use `*Module` for internal feature composition roots by default. Only place a `*Module` in `api/` when the module itself is the public feature entrypoint.
-- `SaltMarcherApp` remains the cross-feature top-level composition root.
-- `*App` and `*Preloader` are allowed for startup lifecycle code.
+The Model
+    The Model is the data representation of the “State” of the GUI. It’s just a POJO with the fields composed of JavaFX Observable types. There’s no logic, or any other code that’s not directly related to sharing the data fields.
+The View
+    The View is not just a passive layout, but a complete user interface for the framework. This means that it has all of the logic to handle user clicks and to capture and handle any GUI events. The View is passed a reference to the Model, and it binds the properties of the various Nodes contained in the layout to the properties contained in the Model.
+The Controller
+    The Controller is responsible for “how” things happen in the framework. It instantiates all of the other components, provides for integration with other parts of the application, defines “actions” for GUI events, and handles all of the threading.
+The Interactor
+    The Interactor is the presentation-side application logic component of MVCI. It translates between the JavaFX Model and the domain layer through the public Feature API of a feature. It may work with domain types that the Feature API intentionally exposes, but it does not call use cases, repositories or data adapters directly.
 
-### Existing Names
+Here’s a diagram of how it all goes together:
 
-- New code should use the hard owner and boundary roles above when one clearly fits.
-- Existing names may remain unless they actively obscure ownership or send a misleading boundary signal.
-- Prefer a precise domain or helper name over generic catch-all names such as `*Manager`, `*Helper`, `*Util`, `*Processor`, `*Support`, or `*Surface`.
+MVCI Diagram
+Dependencies in MVCIPermalink
 
-## Key Conventions
+Since managing coupling is the whole point of a framework, let’s look at how the dependencies work in MVCI.
 
-The rules in this section are decision filters, not soft preferences. When multiple approaches are possible, choose the one that preserves ownership, minimizes hidden coupling, and matches the existing repository pattern. If a proposed change requires an exception, name the exception explicitly instead of silently drifting the pattern.
+Dependencies almost always manifest themselves in non-private methods, including the constructors. Every time you see a non-private method, you’re looking at a potential dependency. It also tells you the direction of the dependency because the other components become dependent on that method. At the same time, the parameters required by a non-private method represent dependencies in the other direction, as these are things that the calling objects need to provide.
 
-### Code Style
-- 4-space indentation, `PascalCase` for classes, `camelCase` for methods and locals, lowercase packages
-- `try-with-resources` for all JDBC connections, statements, result sets
-- UI text stays German; established DnD terms (`Encounter`, `CR`, `Deadly`) remain English. Code identifiers, comments, and commit messages are English
-- Avoid `System.out` and `System.err` in feature application/repository code. Error logging elsewhere: `System.err.println` with format `ClassName.methodName(): message` (no logging framework)
-- Comments must earn their keep. Use them to preserve invariants, UX rules, non-obvious constraints, or the intended behavior of new or changed non-trivial logic; do not narrate obvious control flow or restate the code in English
+From this perspective, you can consider constructors with parameters to be dependencies from the object back to the object that constructs it. Because every class needs a constructor, having one doesn’t increase the coupling in that direction at all, but adding parameters creates dependencies back to the constructing class.
 
-### Documentation Updates
-- `AGENTS.md` files document concrete truths that exist now and durable editing rules. They are guidance, not changelogs
-- Remove or rewrite references to removed systems, rename history, and stale transition notes when they no longer affect current editing decisions
-- Keep transition notes only when they describe a live compatibility constraint or a current implementation hazard
-- During implementation, new or changed non-trivial code must document its intended behavior briefly at the owner seam that enforces it, so later contributors can understand the intent without reconstructing it from surrounding call sites
-- Prefer one concise intent comment on the stable owner over repeated narration on every branch or statement
-- Before handoff, inspect the root `AGENTS.md` and any nearer local `AGENTS.md` files governing the edited paths
-- Update those `AGENTS.md` files whenever the implementation changes documented truths, invariants, workflows, package roles, or UI behavior, and clean out stale statements that no longer describe current code or guidance
-- Treat documentation updates as part of done, not optional cleanup
+Let’s look at where the non-private methods are found in MVCI:
 
-### Repository & Application Conventions
-- Repositories are stateless (`Connection` passed in). Let repositories propagate `SQLException`; fallback behavior, retries, and user-facing degradation belong in application workflows
-- Application workflows may propagate `SQLException` from repositories and transaction boundaries, but business validation must use domain/argument exceptions (`IllegalArgumentException` or a feature-specific edit exception), not `SQLException`
-- Precise helper types such as `*Factory`, `*Generator`, `*Calculator`, `*Classifier`, `*Normalizer`, `*Assembler`, `*Coordinator`, `*Planner`, `*Matcher`, and comparable pure helpers are static-only with private constructor unless they need explicit state
-- Stateful workflow entrypoints (`*ApplicationService`, `*Session`) are instance-based
-- Some existing feature areas still use `service/` packages. Keep their public workflow entrypoints at the package root, place new code in `application/`, and move close collaborators into focused subpackages when touching that area
-- Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`. Use the `*Summary` naming pattern for lightweight selector DTOs. Keep `model/` focused on domain/editor state, not transport shapes for other features
-- Feature module APIs should expose narrow, role-specific setup methods. Do not hide unrelated wiring behind a generic `initialize(...)` entrypoint
+The Model
+    You can see from the diagram above that all of the other three components have access to the Model. In fact, this is the main dependency in MVCI as the View, the Controller and the Interactor all have it as a dependency. As a POJO, it’s going to consist entirely of a bunch of field declarations, plus all of the accompanying getters and setters to allow other objects to access those fields. I’ve never seen a reason to have any constructor parameters in a Model.
+The Controller
+    We’ll look at this a bit later, but the only non-private method in the Controller is something like a getView() method that returns a reference to the View as a Node or a Region (usually Region). In a complex application with multiple MVCI frameworks that need to share data or functionality, it is possible to have constructor parameters in Controllers, essentially creating dependencies on those external frameworks.
+The Interactor
+    The Interactor gets a reference to the Model passed to it from the Controller via a parameter in its constructor. This is generally the only parameter in the Interactor’s constructor. In order to do work, the Interactor needs to have a number of non-private methods that Controller can call. These all create dependencies on the Interactor in the Controller.
+The View
+    From the perspective of non-private methods, the View as an instance of Region has no dependencies at all (other than those of Region). However, it’s usually implemented via a Builder, and that has at least one constructor parameter - the Model. Additionally, the ViewBuilder can have constructor parameters to provide handlers for actions. These put dependencies from the ViewBuilder to the Controller. In order to create the View, the Controller must pass a reference to the Model plus any action handlers required.
 
-### Async & Threading
-- `javafx.concurrent.Task` + `new Thread()` (daemon, named `sm-<operation>` e.g. `sm-filter-load`, `sm-encounter-gen`, `sm-combat-setup`, `sm-stat-block`, `sm-save-terrain`)
-- Always set `setOnFailed` handler; guard cancellation via `if (!task.isCancelled())`. Background work without explicit failure handling is incomplete, not "good enough"
-- **Callbacks:** `Consumer`/`Runnable` pattern; pane setters follow `setOn<Event>()` naming
+What Goes Where in MVCI?Permalink
 
-### CSS & Theming
-- `resources/salt-marcher.css` is the single source of truth for design tokens (CSS variables on `.root`)
-- `ThemeColors.java` has `Color` constants mirroring CSS variables for Canvas-only drawing — must be kept in sync manually
+Now let’s look at this from the other direction. How do you know where to put various pieces of functionality? MVCI is designed to make this extremely easy, so let’s look at the main items:
 
-### UI Naming
-- `*View` = AppView impls, `*Pane` = Region subclasses, `*Dropdown` = anchored non-modal editor windows backed by `Popup`, `*Popup` = existing popup-oriented controllers, `*Controls` = left-column control panels, `*Canvas` = canvas subclasses for specific contexts
+Layout
+    Layout goes in the View. This includes creating binding between the Model and the properties of the Nodes in the layout.
+Event Handlers
+    Events are GUI elements, and their handlers go in the View. When EventHandlers need to perform actions that involve something other than the layout, they invoke “Action Performers” provided by the Controller.
+Action Performers
+    Action Performers are functional elements that perform some kind of action. These are defined in the Controller. If an Action Performer is needed by the View so that it can invoke it from an EventHandler, then it will be passed to the View via a constructor parameter.
+Threading
+    In JavaFX, threading is generally implemented using something like Task. Creation and configuration of Task objects and running them in background Threads is handled in the Controller.
+Business/Application Logic
+    Presentation-specific application logic goes into the Interactor. This includes initializing bindings in the Model, translating UI actions into domain requests and translating domain results back into presentation state. Core business rules belong in domain Entities, Value Objects and Use Cases.
+Domain Stuff
+    Domain logic lives in the Domain layer. The Interactor should call the public Feature API of a feature. That API delegates to Use Cases, which depend on Domain Repository interfaces. Technical access to persistence, files, APIs or other systems is implemented behind those interfaces in the Data layer.
+ChangeListeners
+    These can go in one of two places. If the actions performed by the ChangeListener are entirely related to the View, then put it there. Otherwise it goes in the Controller, which will probably call a method in the Interactor to do the work.
 
-### Editor & Inspector Design Rules
+The ViewBuilderPermalink
 
-**Editor windows:** must be anchored dropdown windows, not modal pop-up dialogs. Use non-modal `Popup`-based dropdowns that stay within fullscreen mode, return focus to the trigger, and render confirmations inline. Do not introduce modal flows for editor CRUD just because they are faster to wire.
+The MVCI framework doesn’t specifically call for a ViewBuilder, but I’d call this a “best practice”.
 
-**Inspector (upper-right Details):** the single global, context-spanning information surface. Static or read-mostly content (stat blocks, item descriptions, room/area descriptions, table summaries) must be shown via the shared `DetailsNavigator`/`InspectorPane` flow so back/forward history works consistently. Do not introduce feature-local "details" panels that duplicate this role; that is architectural drift, not harmless local convenience. Treat the inspector as persistent global navigation state — do not clear or replace it just because a view temporarily has no selection. Selection state and inspector state are separate concerns: only update the inspector if the same card is still the currently visible global entry.
+There’s a general rule in JavaFX:
 
-**State pane (lower-right):** view-local forms, tool settings, create/rename/delete actions, validation feedback, transient workflow hints, and interactive workflow UI belong here.
+    Extend a class to add new functionality, use a Builder when all you are doing is configuring an existing Node subclass.
 
-**Narrow inspector exceptions:** small, direct GM quick interactions on the currently open reference object (short name/notes/description edits) are allowed. Keep these lightweight, single-entity scoped, and subordinate to the inspector's primary role as a read-first reference surface.
+What does “add new functionality” mean? In this case it really boils down to adding new non-private methods. In practice, you’re usually not going to add functionality, you’re just going to configure a Node or create a layout by adding configured Nodes via getChildren(). So builders are usually the way to go.
 
-**Editor controls:** must be self-explanatory without helper prose. No explanatory copy, onboarding text, repeated summaries, or filler narration. Prefer short labels, stable grouping, and consistent ordering. In sidebars: active context first, tool-specific settings second, management actions after selectors, visibility toggles last. Render control text from enum label/value accessors instead of duplicating German strings in multiple panes.
+A “Builder” can be any method that returns a Node subclass. JavaFX provides a handy interface called Builder which just defines a single method, build(). It’s generic, so you specify the type for the returned Node subclass.
 
-## Testing & Verification
+In MVCI we’re going to create a Region subtype (like Pane, StackPane, VBox or BorderPane) that we’re going to return as an instance of Region. So in the Controller, we’ll instantiate a ViewBuilder that implements Builder<Region> and pass any dependencies, like the Model to it in its constructor. Then we’ll call ViewBuilder.build() to get the View.
 
-Do not add or change automated tests unless explicitly requested. The minimum quality gate is `./gradlew build`. If you change importer or parser flows, run the relevant crawler/import task. If you change schema or storage assumptions, rebuild `game.db` from crawled data and protect user-created data with backups or migration logic.
+What I usually do is set the ViewBuilder as a field in the Controller and instantiate it in the Controller’s constructor. Then I create a delegate method in the Controller like this:
 
-Verification claims must be literal. Do not imply that a build, install, import, migration, or manual check happened unless you actually ran it. If something was not verified, say so directly and name the missing check.
+public Region getView() {
+   return viewBuilder.build();
+}
 
-After each completed implementation pass, rerun `./gradlew build` and then `./gradlew installDesktopApp` before handoff. Skip the reinstall only when the user explicitly waives it or when the task is purely non-code planning/review work.
+If you’re paying even the tiniest bit of attention, you’ll realize that this means that there’s no reference to the View itself that’s maintained inside of the MVCI framework! So there’s no formal dependencies to or from the View anywhere inside the framework. Of course, the Bindings used in the layout to create the View create coupling between the View and the Model, but this can be completely managed by ignoring them in the View, and concentrating on the ViewBuilder and its dependencies.
 
-## Commit Guidelines
+The other important thing to note is that the Builder allows us to return a Region instead of whatever actual class was used to create the layout. Region only exposes a small number of methods that are useful for controlling its presentation in another layout. Things like Region.setMaxWidht(), or Region.setPadding(). You can get rid of those by returning Node instead.
 
-Follow Conventional Commits: `feat: add encounter recovery filter`, `refactor(ui): simplify shell navigation`. Keep each commit focused on one concern. Call out schema, crawler, or backup-format impacts explicitly. Do not hide unrelated cleanup inside a convenience commit.
+This is important because it turns your View into a “black box” screen component that you can use anywhere you can use any other Node or Region. And you can do this without worrying about about what’s going on inside it, or any of the other parts of the framework, because they don’t matter from this perspective.
+An ExamplePermalink
 
-Start-of-task protocol for every implementation request:
-1. Inspect the worktree for pre-existing local modifications.
-2. Commit those existing modifications.
-3. Push them to `main`.
-4. Only then begin the newly requested change.
+Let’s look at how you’d actually code this up. This is just a simple example with enough data in the Model and enough features to give an idea of how it all goes together and works.
+The ModelPermalink
 
-This is mandatory, not advisory. The presence of pre-existing local modifications is not a reason to pause and ask whether you should commit them; it is the trigger to perform steps 2 and 3 before starting the new task. Do not reinterpret this rule into "never commit/push existing changes" or "wait for approval because the tree is dirty". The required default action is: inspect, commit, push, then proceed.
+We’ll look at the Model first, since it’s the simplest class:
 
-Only stop and surface a blocker when you hit a concrete obstacle that prevents the protocol itself from being completed safely, for example merge conflicts, missing push credentials, sandbox restrictions that require explicit approval, or suspected secrets in the pending changes. "There are already modified files" is not a blocker; it is the condition the protocol exists to handle.
+public class Model {
 
-## Security
+    private final StringProperty property1 = new SimpleStringProperty("");
+    private final StringProperty property2 = new SimpleStringProperty("");
+    private final BooleanProperty property3 = new SimpleBooleanProperty(false);
 
-Never commit secrets. Keep crawler cookies only in local `crawler.properties` (copy from `crawler.properties.example`). Store database backups in `data/backups/db/`, not in the repository root.
+    public String getProperty1() {
+        return property1.get();
+    }
+
+    public StringProperty property1Property() {
+        return property1;
+    }
+
+    public void setProperty1(String property1) {
+        this.property1.set(property1);
+    }
+
+    public String getProperty2() {
+        return property2.get();
+    }
+
+    public StringProperty property2Property() {
+        return property2;
+    }
+
+    public void setProperty2(String property2) {
+        this.property2.set(property2);
+    }
+
+    public void bindProperty3(BooleanBinding binding) {
+        property3.bind(binding);
+    }
+
+    public ObservableBooleanValue property3Property() {
+        return property3;
+    }
+
+    public String getProperty3() {
+        return property3.get();
+    }
+
+}
+
+This is basically the JavaFX version of a “Bean”. Each field is final and private, and there are delegate methods for getting and setting the values. Finally, there are getters for references to the properties themselves. Note that there is no logic or any relationships between the fields established in the Model - it’s just a wrapper for Observable data.
+
+The field property3 is a bit different. Since this is intended to be a read-only value based upon one or more of the other fields, it does not have delegate setter for the value. The getter for the property returns a type of ObservableBooleanValue which means that it’s read only, so no program can attempt to set its value via set(). There’s a method to allow the Binding to be set on the property. We’ll see how this works in the Interactor.
+The ControllerPermalink
+
+public class Controller {
+
+    private final Model model;
+    private final Interactor interactor;
+    private final ViewBuilder viewBuilder;
+
+    public Controller() {
+        model = new Model();
+        interactor = new Interactor(model);
+        viewBuilder = new ViewBuilder(model, this::saveData);
+        setProperty1Listener();
+    }
+
+    private void saveData(Runnable postActionGuiCleanup) {
+        Task<Void> saveTask = new Task<>() {
+            @Override
+            protected Void call() {
+                interactor.saveData();
+                return null;
+            }
+        };
+        saveTask.setOnSucceeded(evt -> {
+            interactor.updateModelAfterSave();
+            postActionGuiCleanup.run();
+        });
+        Thread saveThread = new Thread(saveTask);
+        saveThread.start();
+    }
+
+    private void setProperty1Listener() {
+        model.property1Property().addListener(ob -> interactor.updateChangeCount());
+    }
+
+    public Region getView() {
+        return viewBuilder.build();
+    }
+}
+
+The constructor for the Controller is the bootstrap for the framework. It instantiates the Model first, then passes it to the constructors of the Interactor and the ViewBuilder. The Controller doesn’t actually do anything itself, but it does control how things are done. The saveData() method handles the background threading for the “Save” action, and calls Interactor methods to do the various stages of the work.
+
+The method getView() is just a delegate to the build() method of the ViewBuilder. It’ll create a new view every time you call it, which shouldn’t really cause any problems as far as the framework is concerned. You could convert this to a “lazy load” model if you wanted to limit it to a single instance of the View.
+
+Finally, just to show how it would work, there’s an InvalidationListener installed on Model.property1. You can see how it just calls a method in the Interactor to do the actual work.
+The ViewBuilderPermalink
+
+public class ViewBuilder implements Builder<Region> {
+
+    private final Model model;
+    private final Consumer<Runnable> actionHandler;
+
+    public ViewBuilder(Model model, Consumer<Runnable> actionHandler) {
+        this.model = model;
+        this.actionHandler = actionHandler;
+    }
+
+    @Override
+    public Region build() {
+        BorderPane results = new BorderPane();
+        results.setCenter(createMainBox());
+        results.setBottom(createButton());
+        results.setMinWidth(300);
+        results.setMinHeight(200);
+        return results;
+    }
+
+    private Node createMainBox() {
+        VBox results = new VBox(10,
+                new HBox(6, new Label("Value 1:"), createBoundTextField(model.property1Property())),
+                new HBox(6, new Label("Value 2:"), createBoundTextField(model.property2Property()))
+        );
+        results.setPadding(new Insets(20));
+        return results;
+    }
+
+    private Node createBoundTextField(StringProperty boundProperty) {
+        TextField results = new TextField();
+        results.textProperty().bindBidirectional(boundProperty);
+        return results;
+    }
+
+    private Node createButton() {
+        Button button = new Button("Save");
+        BooleanProperty saveRunning = new SimpleBooleanProperty(false);
+        button.disableProperty().bind(Bindings.createBooleanBinding(() -> (!model.property3Property().get() || saveRunning.get()),
+                model.property3Property(),
+                saveRunning));
+        button.setOnAction(evt -> {
+            saveRunning.set(true);
+            actionHandler.accept(() -> saveRunning.set(false));
+        });
+        HBox results = new HBox(button);
+        results.setAlignment(Pos.CENTER_RIGHT);
+        return results;
+    }
+}
+
+We’re not going to look at this too closely, because this article isn’t about creating layouts. The result is a BorderPane with a couple of Labels and TextFields in the centre, and a Button at the bottom. The two TextFields have their text properties bound to the two StringProperties in the Model, and the Disable property of the Button is bound to the BooleanProperty in the Model.
+
+The OnAction EventHandler on the Button might need some explanation. One of the big problems with Buttons is that people can double click them - or at least click them while the action is still running. Unless you’re OK with that, you need to disable a Button as soon as it’s clicked, and then enable it when the action is completed.
+
+Since we’re going to have some binding logic that disables the Button if Model.property1 is empty, we can’t directly disable the Button when it’s clicked. So we introduce a BooleanProperty that indicates that the action is running, and then we Bind the Disable property of the Button to a combination of the two properties. Then we control that property that indicates the action is running to ensure that the Button stays disabled.
+
+If you go back to the Controller, you can see how the Runnable that sets that BooleanProperty back to false is invoked when the Task has completed.
+The InteractorPermalink
+
+public class Interactor {
+
+    private final Model model;
+    private int changeCount = 0;
+    private DomainObject domainObject;
+    private SaveDataUseCase saveDataUseCase = new SaveDataUseCase();
+
+    public Interactor(Model model) {
+        this.model = model;
+        createModelBindings();
+    }
+
+    private void createModelBindings() {
+        model.bindProperty3(Bindings.createBooleanBinding(() -> !model.getProperty1().isEmpty(), model.property1Property()));
+    }
+
+    public void updateModelAfterSave() {
+        model.setProperty1("");
+        model.setProperty2(domainObject.getSomeValue());
+        changeCount = 0;
+
+    }
+
+    public void saveData() {
+        domainObject = saveDataUseCase.execute(model.getProperty1() + " --> " + changeCount);
+    }
+
+    public void updateChangeCount() {
+        changeCount++;
+    }
+}
+
+First, take a look at the constructor, and you can see how the Interactor contains the presentation-side logic to bind the value in Model.property1 to the value in Model.property3. This idea, that the save action shouldn’t be allowed if the value in Model.property1 is empty, belongs outside the View. In a larger feature, the Interactor would call a domain Use Case for the actual save and then map the result back into the Model.
+
+There’s also a method, updateChangeCount(), that supports the InvalidationListener in the Controller.
+
+Finally, we have the two methods that handle the save. The first, saveData() is the code that runs on the background thread. It can read data from the Model, but it cannot update it (that has to happen on the FXAT), while it can freely update other data stored as fields in the Interactor. The other method, updateModelAfterSave() is intended to run on the FXAT, it can freely read and write data in the Model, as well as all of the other fields in the Interactor.
+
+Note that both of these methods are intended to run specifically on either a background thread or the FXAT, but they don’t have any logic (or knowledge at all, really) about the threads contained within them.
+Domain StuffPermalink
+
+Just so that you don’t have to use your imagination to see how the Interactor interacts with domain objects, we’ve got some of that stuff too. In the actual project structure, a real save flow should go through a Domain Use Case and a Domain Repository interface, with any DAO or API implementation living in the Data layer.
+
+public class SaveDataUseCase {
+
+    public DomainObject execute(String string) {
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return new DomainObject(string + " - Saved");
+    }
+
+}
+
+The use case is very simple, it only has one method, execute(), and it just waits for 3 seconds and returns an instance of the DomainObject.
+
+public class DomainObject {
+
+    private final String someValue;
+
+    public DomainObject(String someValue) {
+        this.someValue = someValue;
+    }
+
+    public String getSomeValue() {
+        return someValue;
+    }
+}
+
+The DomainObject is just a POJO to hold a single data value.
+Using the FrameworkPermalink
+
+So, how do you get all this stuff on the screen?
+
+You need to get the JavaFX engine up and running, and that means using the Application class, and using Application.start() to configure your Stage and Scene:
+
+public class MvciApplication extends Application {
+    @Override
+    public void start(Stage stage) throws Exception {
+        stage.setScene(new Scene(new Controller().getView()));
+        stage.show();
+    }
+}
+
+This is pretty simple, instantiate the Controller and then call getView() to get the View. Put the View in a Scene which is, in turn, put into the Stage. Show the Stage. Voila!
+What it Looks LikePermalink
+
+At the beginning:
+
+Demo Start
+
+While it’s running:
+
+Demo Running
+
+When it’s done:
+
+Demo Done
+FXML PolicyPermalink
+
+FXML is not used in this project. JavaFX Views are built exclusively in Java code, typically through a ViewBuilder, and all layout, bindings and event wiring are implemented directly in code.
+ConclusionPermalink
+
+If you’re going to use JavaFX as a Reactive platform, which you should, then Model-View-Controller-Interactor is the way to go. It’s easy to understand and yet deals with all of the issues that you’re likely to encounter in a logic and straight-forward fashion.
+
+Personally, I find it so easy to implement MVCI that even when I’m writing the simplest of example code I immediately just create the 4 classes that you need and go from there. I don’t feel any temptation to skip those classes and chuck everything into one place - there’s literally no advantage to that.

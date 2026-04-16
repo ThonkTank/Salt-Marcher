@@ -1,17 +1,6 @@
-out/
-/lib/
-*.db
-game.db.bak-*
-*.db-shm
-*.db-wal
-*.db-journal
-*.class
-.vscode/
+build-harness/.gradle/
+build-harness/build/
 .gradle/
 build/
-
-# Crawler-Konfiguration (enthält Session-Cookie)
-crawler*.properties
-
-# Heruntergeladene Monster-Daten
-data/
+.codex
+src/.codex
