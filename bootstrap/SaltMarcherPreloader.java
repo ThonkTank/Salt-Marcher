@@ -64,7 +64,7 @@ public final class SaltMarcherPreloader extends Preloader {
 
         Scene scene = new Scene(root, 360, 220);
         scene.getStylesheets().add(
-                SaltMarcherPreloader.class.getResource("/saltmarcher.css").toExternalForm());
+                SaltMarcherPreloader.class.getResource("/salt-marcher.css").toExternalForm());
         return scene;
     }
 

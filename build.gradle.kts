@@ -28,9 +28,9 @@ val mainClassName = providers.gradleProperty("saltMarcherMainClass").orElse("boo
 val preloaderClassName = providers.gradleProperty("saltMarcherPreloaderClass")
     .orElse("bootstrap.SaltMarcherPreloader")
 val desktopIconRelativePath = providers.gradleProperty("saltMarcherDesktopIcon")
-    .orElse("icons/saltmarcher.svg")
+    .orElse("icons/salt-marcher.svg")
 val stylesheetRelativePath = providers.gradleProperty("saltMarcherStylesheet")
-    .orElse("saltmarcher.css")
+    .orElse("salt-marcher.css")
 
 val preloaderJvmArg = preloaderClassName.map { "-Djavafx.preloader=$it" }
 val jpackageModulePathArg = "--module-path=\$APPDIR"

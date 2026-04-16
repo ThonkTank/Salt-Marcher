@@ -10,6 +10,7 @@ import src.domain.dungeon.entity.DungeonWallPrimitive;
 import src.domain.dungeon.valueobject.DungeonCell;
 import src.domain.mapcore.api.MapCellSnapshot;
 import src.domain.mapcore.api.MapCellStyle;
+import src.domain.mapcore.api.MapEdgeSnapshot;
 import src.domain.mapcore.api.MapEdgeRef;
 import src.domain.mapcore.api.MapLayerSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
@@ -45,6 +46,10 @@ public final class BuildDungeonDerivedStateUseCase {
                 )
         );
 
+        MapSelectionRef roomSelection = new MapSelectionRef("room", room.id(), "aggregate", room.label());
+        MapSelectionRef corridorSelection = new MapSelectionRef("corridor", corridor.id(), "aggregate", corridor.label());
+        MapSelectionRef doorSelection = new MapSelectionRef("door", door.id(), "primitive", door.label());
+
         MapSurfaceSnapshot surface = new MapSurfaceSnapshot(
                 document.mapName(),
                 document.topology(),
@@ -52,16 +57,21 @@ public final class BuildDungeonDerivedStateUseCase {
                 document.height(),
                 List.of(
                         new MapLayerSnapshot("rooms", "Rooms", roomCells.stream()
-                                .map(cell -> new MapCellSnapshot(cell.toMapCellRef(), room.label(), MapCellStyle.roomStyle()))
+                                .map(cell -> new MapCellSnapshot(cell.toMapCellRef(), room.label(), MapCellStyle.roomStyle(), roomSelection))
                                 .toList()),
                         new MapLayerSnapshot("corridors", "Corridors", corridorCells.stream()
-                                .map(cell -> new MapCellSnapshot(cell.toMapCellRef(), corridor.label(), MapCellStyle.corridorStyle()))
+                                .map(cell -> new MapCellSnapshot(cell.toMapCellRef(), corridor.label(), MapCellStyle.corridorStyle(), corridorSelection))
                                 .toList())
                 ),
                 List.of(
-                        new MapSelectionRef("room", room.id(), "aggregate", room.label()),
-                        new MapSelectionRef("corridor", corridor.id(), "aggregate", corridor.label()),
-                        new MapSelectionRef("door", door.id(), "primitive", door.label())
+                        new MapEdgeSnapshot(door.edge(), "door", door.label(), doorSelection),
+                        new MapEdgeSnapshot(walls.getFirst().edge(), "wall", "North Wall", null),
+                        new MapEdgeSnapshot(walls.get(1).edge(), "wall", "South Wall", null)
+                ),
+                List.of(
+                        roomSelection,
+                        corridorSelection,
+                        doorSelection
                 )
         );
 

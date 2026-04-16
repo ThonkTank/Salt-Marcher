@@ -6,6 +6,7 @@ package src.domain.mapcore.api;
 public record MapCellSnapshot(
         MapCellRef ref,
         String label,
-        MapCellStyle style
+        MapCellStyle style,
+        MapSelectionRef selectionRef
 ) {
 }

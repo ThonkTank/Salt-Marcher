@@ -11,7 +11,11 @@ public record MapWorkspaceRenderModel(
         MapWorkspaceTopology topology,
         int width,
         int height,
-        List<MapCellViewModel> cells
+        List<MapCellViewModel> cells,
+        List<MapEdgeViewModel> edges,
+        String modeLabel,
+        String statusLabel,
+        String summaryLabel
 ) {
 
     public MapWorkspaceRenderModel {
@@ -19,5 +23,9 @@ public record MapWorkspaceRenderModel(
         width = Math.max(1, width);
         height = Math.max(1, height);
         cells = cells == null ? List.of() : List.copyOf(cells);
+        edges = edges == null ? List.of() : List.copyOf(edges);
+        modeLabel = modeLabel == null ? "" : modeLabel;
+        statusLabel = statusLabel == null ? "" : statusLabel;
+        summaryLabel = summaryLabel == null ? "" : summaryLabel;
     }
 }

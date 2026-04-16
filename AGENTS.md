@@ -1,3 +1,67 @@
+# Developer Dictionary
+
+Kleines Glossar zu den Kernbegriffen aus [AGENTS.md](/home/aaron/Schreibtisch/projects/SaltMarcher/AGENTS.md).
+
+## Architektur
+
+| Begriff | Kurz erklaert |
+| --- | --- |
+| MVCI | Presentation-Pattern mit `Model`, `View`, `Controller` und `Interactor`. |
+| Clean Architecture | Backend-Struktur mit klar nach innen gerichteten Abhaengigkeiten. |
+| Feature | Fachlicher Bereich mit eigener View-, Domain- und Data-Struktur. |
+| Feature API | Einzige oeffentliche Backend-Grenze eines Features unter `src/domain/<feature>/`. |
+| Dependency Rule | Aussen liegende Schichten duerfen nach innen zeigen, nie umgekehrt. |
+| Standard Flow | UI-Ereignis laeuft ueber Controller und Interactor in Domain und Data und wieder zurueck. |
+
+## Presentation
+
+| Begriff | Kurz erklaert |
+| --- | --- |
+| Model | JavaFX-Observables fuer reinen UI-Zustand, ohne Fachlogik. |
+| View | Layout, Bindings und UI-Ereignisse. |
+| Controller | Verdrahtet Aktionen, Lifecycle und Hintergrundarbeit auf Presentation-Seite. |
+| Interactor | Uebersetzt zwischen UI-Modell und Feature API. |
+| Reactive UI | Die View reagiert ueber Bindings auf Zustandsaenderungen statt Struktur staendig umzubauen. |
+| View Contribution | Oeffentlicher Feature-Einstiegspunkt fuer die Shell-Registrierung. |
+
+## Backend
+
+| Begriff | Kurz erklaert |
+| --- | --- |
+| Domain | Fachlicher Kern mit Regeln, Use Cases und Repository-Interfaces. |
+| Entity | Zentrales Fachobjekt mit Verhalten und Invarianten. |
+| Value Object | Unveraenderlicher Fachwert mit Bedeutung und Validierung. |
+| Use Case | Eine klar abgegrenzte fachliche Aktion oder Abfrage. |
+| Repository Interface | Von der Domain benoetigter Vertrag fuer Laden oder Speichern. |
+| Data Layer | Technische Adapter fuer Datenquellen, Persistenz und externe Systeme. |
+| Data Source | Konkreter Zugriff auf lokale oder entfernte Daten. |
+| Mapper | Uebersetzt zwischen Data-Modellen und Domain-Objekten. |
+
+## Shell und Bootstrap
+
+| Begriff | Kurz erklaert |
+| --- | --- |
+| Bootstrap | Startet die Anwendung und entdeckt Feature-Beitraege generisch. |
+| Shell | Passive Host-Oberflaeche mit festen Slots, aber ohne Feature-Logik. |
+| Shell Slot | Fester Platzhalter der Shell wie `COCKPIT_MAIN` oder `TOP_BAR`. |
+| Shell Runtime Context | Schmale Laufzeit-Schnittstelle der Shell fuer Feature-Screens. |
+| Inspector | Gemeinsamer, von der Shell verwalteter Verlauf fuer Detaileintraege. |
+| Shell Screen | Feature-seitige Beschreibung, welcher Node in welchen Slot geht. |
+
+## Contribution-Typen
+
+| Begriff | Kurz erklaert |
+| --- | --- |
+| ShellViewContribution | Vertrag, den ein Feature fuer Shell-Registrierung implementiert. |
+| ShellContributionSpec | Metadaten-Objekt, das den Beitragstyp beschreibt. |
+| ShellTabSpec | Registriert einen navigierbaren Tab in der linken Navigation. |
+| ShellTopBarSpec | Registriert dauerhaft sichtbaren Inhalt in der oberen Leiste. |
+| ShellRuntimeStateSpec | Registriert globalen Inhalt fuer den gemeinsamen Runtime-State-Bereich. |
+| ShellTabMode.RUNTIME | Tab nutzt den geteilten Runtime-State-Bereich der Shell. |
+| ShellTabMode.EDITOR | Tab darf eigenen State-Inhalt fuer den rechten unteren Bereich liefern. |
+| ContributionKey | Eindeutiger technischer Schluessel eines Beitrags. |
+| NavigationGroupSpec | Offene Metadaten fuer Gruppierung und Sortierung in der Navigation. |
+
 # Architecture
 
 SaltMarcher uses two complementary architectural rules at the same time:
@@ -788,3 +852,25 @@ ConclusionPermalink
 If you’re going to use JavaFX as a Reactive platform, which you should, then Model-View-Controller-Interactor is the way to go. It’s easy to understand and yet deals with all of the issues that you’re likely to encounter in a logic and straight-forward fashion.
 
 Personally, I find it so easy to implement MVCI that even when I’m writing the simplest of example code I immediately just create the 4 classes that you need and go from there. I don’t feel any temptation to skip those classes and chuck everything into one place - there’s literally no advantage to that.
+
+## Testing & Verification
+
+Do not add or change automated tests unless explicitly requested. The minimum quality gate is `./gradlew build`. If you change importer or parser flows, run the relevant crawler/import task. If you change schema or storage assumptions, rebuild `game.db` from crawled data and protect user-created data with backups or migration logic.
+
+Verification claims must be literal. Do not imply that a build, install, import, migration, or manual check happened unless you actually ran it. If something was not verified, say so directly and name the missing check.
+
+After each completed implementation pass, rerun `./gradlew build` and then `./gradlew installDesktopApp` before handoff. Skip the reinstall only when the user explicitly waives it or when the task is purely non-code planning/review work. Notes about "nicht gepruefte Vorgaenge" (unchecked operations) are expected and can be ignored.
+
+## Commit Guidelines
+
+Follow Conventional Commits: `feat: add encounter recovery filter`, `refactor(ui): simplify shell navigation`. Keep each commit focused on one concern. Call out schema, crawler, backup-format, packaging, or workflow impacts explicitly when relevant. Do not hide unrelated cleanup inside a convenience commit.
+
+Start-of-task protocol for every implementation request:
+1. Inspect the worktree for pre-existing local modifications.
+2. Commit those existing modifications.
+3. Push them to `main`.
+4. Only then begin the newly requested change.
+
+This is mandatory, not advisory. The presence of pre-existing local modifications is not a reason to pause and ask whether you should commit them; it is the trigger to perform steps 2 and 3 before starting the new task. Do not reinterpret this rule into "never commit/push existing changes" or "wait for approval because the tree is dirty". The required default action is: inspect, commit, push, then proceed.
+
+Only stop and surface a blocker when you hit a concrete obstacle that prevents the protocol itself from being completed safely, for example merge conflicts, missing push credentials, sandbox restrictions that require explicit approval, or suspected secrets in the pending changes. "There are already modified files" is not a blocker; it is the condition the protocol exists to handle.

@@ -6,9 +6,19 @@ package src.view.mapshared.Controller;
 public final class MapCameraController {
 
     private double zoom = 1.0;
+    private double panX;
+    private double panY;
 
     public double zoom() {
         return zoom;
+    }
+
+    public double panX() {
+        return panX;
+    }
+
+    public double panY() {
+        return panY;
     }
 
     public void zoomIn() {
@@ -17,5 +27,27 @@ public final class MapCameraController {
 
     public void zoomOut() {
         zoom = Math.max(0.7, zoom - 0.1);
+    }
+
+    public void panLeft() {
+        panX += 24.0;
+    }
+
+    public void panRight() {
+        panX -= 24.0;
+    }
+
+    public void panUp() {
+        panY += 24.0;
+    }
+
+    public void panDown() {
+        panY -= 24.0;
+    }
+
+    public void reset() {
+        zoom = 1.0;
+        panX = 0.0;
+        panY = 0.0;
     }
 }

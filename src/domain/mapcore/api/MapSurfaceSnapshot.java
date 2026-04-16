@@ -12,6 +12,7 @@ public record MapSurfaceSnapshot(
         int width,
         int height,
         List<MapLayerSnapshot> layers,
+        List<MapEdgeSnapshot> edges,
         List<MapSelectionRef> selectableTargets
 ) {
 
@@ -21,11 +22,12 @@ public record MapSurfaceSnapshot(
         width = Math.max(1, width);
         height = Math.max(1, height);
         layers = layers == null ? List.of() : List.copyOf(layers);
+        edges = edges == null ? List.of() : List.copyOf(edges);
         selectableTargets = selectableTargets == null ? List.of() : List.copyOf(selectableTargets);
     }
 
     public static MapSurfaceSnapshot empty() {
-        return new MapSurfaceSnapshot("Empty Map", MapTopologyKind.SQUARE, 1, 1, List.of(), List.of());
+        return new MapSurfaceSnapshot("Empty Map", MapTopologyKind.SQUARE, 1, 1, List.of(), List.of(), List.of());
     }
 
     public List<MapCellSnapshot> allCells() {

@@ -229,11 +229,6 @@ public final class AppShell extends BorderPane {
                 separator.setPrefHeight(1);
                 sidebar.getChildren().add(separator);
             }
-            if (!currentGroupKey.equals(previousGroupKey)) {
-                Label groupLabel = new Label(group.label());
-                groupLabel.getStyleClass().addAll("nav-group-label", "text-muted");
-                sidebar.getChildren().add(groupLabel);
-            }
             sidebar.getChildren().add(registeredTab.button());
             previousGroupKey = currentGroupKey;
         }

@@ -12,8 +12,10 @@ import src.domain.dungeon.api.DungeonSnapshot;
 import src.domain.dungeon.dungeonAPI;
 import src.domain.mapcore.api.MapCellRef;
 import src.domain.mapcore.api.MapCellSnapshot;
+import src.domain.mapcore.api.MapEdgeSnapshot;
 import src.domain.mapcore.api.MapTopologyKind;
 import src.view.mapshared.Model.MapCellViewModel;
+import src.view.mapshared.Model.MapEdgeViewModel;
 import src.view.mapshared.Model.MapWorkspaceRenderModel;
 import src.view.mapshared.Model.MapWorkspaceTopology;
 import src.view.mapshared.View.MapWorkspaceView;
@@ -56,16 +58,18 @@ public final class DungeonTravelInteractor {
     }
 
     private void buildControls() {
-        controls.setPadding(new Insets(8));
-        Label title = new Label("Travel View");
-        title.getStyleClass().add("bold");
+        controls.getStyleClass().addAll("dungeon-editor-toolbar", "dungeon-editor-sidebar");
+        controls.setPadding(new Insets(12));
         Button snap = new Button("Focus entry");
         snap.setMaxWidth(Double.MAX_VALUE);
         snap.setOnAction(event -> {
             activeCell = firstTraversableCell();
             redraw();
         });
-        controls.getChildren().setAll(title, snap);
+        controls.getChildren().setAll(
+                card("Travel", new Label("Runtime projection over the committed dungeon."), muted("Shared dungeon presentation with active party focus.")),
+                card("Actions", snap)
+        );
     }
 
     private void reload() {
@@ -110,7 +114,13 @@ public final class DungeonTravelInteractor {
                 snapshot.surface().topology() == MapTopologyKind.HEX ? MapWorkspaceTopology.HEX : MapWorkspaceTopology.SQUARE,
                 snapshot.surface().width(),
                 snapshot.surface().height(),
-                snapshot.surface().allCells().stream().map(this::toViewCell).toList()
+                snapshot.surface().allCells().stream().map(this::toViewCell).toList(),
+                snapshot.surface().edges().stream().map(this::toViewEdge).toList(),
+                "TRAVEL",
+                snapshot.mode().name(),
+                activeCell == null
+                        ? "No active travel cell"
+                        : "Party focus q=" + activeCell.q() + " r=" + activeCell.r() + "  |  " + snapshot.surface().edges().size() + " boundary overlays"
         ));
         refreshState();
     }
@@ -125,17 +135,52 @@ public final class DungeonTravelInteractor {
                 cell.style().corridor(),
                 cell.style().blocked(),
                 cell.style().interactive(),
-                current || cell.style().current()
+                current || cell.style().current(),
+                cell.selectionRef() == null ? "" : cell.selectionRef().ownerKind(),
+                cell.selectionRef() == null ? -1L : cell.selectionRef().ownerId(),
+                cell.selectionRef() == null ? "" : cell.selectionRef().partKind()
+        );
+    }
+
+    private MapEdgeViewModel toViewEdge(MapEdgeSnapshot edge) {
+        return new MapEdgeViewModel(
+                edge.ref().from().q(),
+                edge.ref().from().r(),
+                edge.ref().to().q(),
+                edge.ref().to().r(),
+                edge.kind(),
+                edge.label(),
+                edge.selectionRef() != null,
+                edge.selectionRef() == null ? "" : edge.selectionRef().ownerKind(),
+                edge.selectionRef() == null ? -1L : edge.selectionRef().ownerId(),
+                edge.selectionRef() == null ? "" : edge.selectionRef().partKind()
         );
     }
 
     private void refreshState() {
-        state.setPadding(new Insets(8));
-        Label title = new Label("Travel State");
-        title.getStyleClass().add("bold");
+        state.getStyleClass().addAll("dungeon-editor-sidebar", "scene-pane");
+        state.setPadding(new Insets(12));
         Label revision = new Label("Revision: " + snapshot.revision());
         Label position = new Label(activeCell == null ? "Position: none" : "Position: " + activeCell.q() + "," + activeCell.r());
         Label mode = new Label("Mode: " + snapshot.mode());
-        state.getChildren().setAll(title, revision, mode, position);
+        Label legend = new Label("Legend: room, corridor, active party marker, door overlays");
+        legend.setWrapText(true);
+        state.getChildren().setAll(card("Runtime State", revision, mode, position), card("Legend", legend));
+    }
+
+    private VBox card(String title, Node... content) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("editor-panel-title");
+        VBox box = new VBox(6);
+        box.getStyleClass().add("editor-card");
+        box.getChildren().add(titleLabel);
+        box.getChildren().addAll(content);
+        return box;
+    }
+
+    private Label muted(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("text-muted");
+        return label;
     }
 }

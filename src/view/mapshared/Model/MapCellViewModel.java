@@ -11,6 +11,9 @@ public record MapCellViewModel(
         boolean corridor,
         boolean blocked,
         boolean interactive,
-        boolean current
+        boolean current,
+        String ownerKind,
+        long ownerId,
+        String partKind
 ) {
 }
