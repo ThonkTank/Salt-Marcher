@@ -94,15 +94,15 @@ Extends the Map Management Component with the following:
             Each stair tiles also must each connect to a traversible tile on both floors they connect which can not have the same X/Y coordinates i.e. be directly on top of one another. The element icon reflects whether the stair tile makes a left turn, right turn or goes straight ahead. 
             Ladders have a special graphic and go down in a straight line.
         - Corridor Connection Tool Interactible: Lets the GM create or expand corridor networks.
-            Scenario 1: GM clicks two of: Door with one unoccupied side (no interior) / Corridor wall. An new corridor segment is formed between those two places. If one or both points are corridor walls, fixed corridor points are created at that point and the route they are created on is split into two distinct corridor segments. A route is calculated for the new segment (fastest connection, not overlapping any corridor interiors, slight punishment for taking corners) between both points.
-            Edgecase: Both points are on different Floors. A stairway is created at some segment of the path. The Stairway ist its own corridor segment, with fixed points at either end of it. If the stairway is moved or the shape edited, both connecting segments are rerouted to meet the new endpoints.
+            Scenario 1: GM clicks two of: Door with one unoccupied side (no interior) / Corridor wall. An new corridor segment is formed between those two places. If one or both points are corridor walls, fixed corridor endpoints are created there as authored boundary-side placements and the route they are created on is split into two distinct corridor segments. A route is calculated for the new segment (fastest connection, not overlapping any corridor interiors, slight punishment for taking corners) between both points.
+            Edgecase: Both points are on different Floors. A stairway is created at some segment of the path. The stairway is its own corridor segment, with fixed endpoints at either end of it. If the stairway is moved or the shape edited, both connecting segments are rerouted to meet the regenerated stair endpoints.
     All in-process edits may be terminated instantly via Esc.
     ctrl-y/ctrl-x allow for undo/redo
     marquee-selection is vertex-based, like wall painting. The smallest paintable area is thus one tile.
     All in-progress editing interactions provide a visible preview of what the state would look like if the edit was concluded at this mouse position.
     
-    Corridor canonical truth: Corridors persist as ordinary traversable `SpaceId` interior plus the smallest authored corridor node/segment graph needed to rebuild routes when endpoints move. Corridor networks are derived connected components of that graph, not their own persisted top-level objects.
-    Stair canonical truth: Stairs persist authored placement parameters plus the stair-owned generated topology they materialise. Landings are derived wherever stair-owned topology touches traversable non-stair floor.
+    Corridor canonical truth: Corridors persist as ordinary traversable `SpaceId` interior plus the smallest authored corridor node/segment graph and segment-owned generated topology needed to rebuild routes when endpoints move. Corridor networks are derived connected components of that graph, not their own persisted top-level objects, and corridor walls are not a separate truth layer.
+    Stair canonical truth: Stairs persist authored `StairPlacement` parameters plus the stair-owned generated topology they materialise. `StairPlacement` includes explicit horizontal orientation so stair regeneration does not depend on reverse-reading generated topology. Landings are derived wherever stair-owned topology touches traversable non-stair floor.
 
 ## Normative Target Architecture
 This section is normative for the `dungeon` feature. Implementations must be evaluated against these boundaries and ownership rules, not against convenience in a single use case.
@@ -226,7 +226,7 @@ They must not:
 
 ### Single Sources Of Truth
 - Interior tile occupancy is owned only by `SpatialTopology`.
-- Explicit internal wall and socket data is owned only by `SpatialTopology`.
+- Explicit internal wall data and authored corridor/stair boundary-side anchors are owned only by `SpatialTopology`.
 - Stable space identity and authored space semantics are owned only by `SpaceCatalog`.
 - Door and stair business objects are owned only by `ConnectionCatalog`.
 - POIs, interactibles, loot anchors, and GM feature notes are owned only by `FeatureCatalog`.
@@ -242,41 +242,55 @@ They must not:
 - Corridors and rooms are both normal `SpaceId` interiors. They do not own separate wall vocabularies.
 - Landings are always derived and are never persisted.
 - Corridor networks are derived from authored corridor nodes and segments. They do not own a separate identity layer.
-- `MapPlacement` is the shared typed placement language for connections and features.
-- The allowed `MapPlacement` carriers are tile, edge, vertex, tile footprint, door side, boundary side, and stair placement.
+- `MapPlacement` is the shared typed placement language for authored placements across connections, features, and any future label override.
+- If two authored things use the same carrier geometry, they must reuse the same `MapPlacement` carrier instead of introducing a second anchor type.
+- The allowed `MapPlacement` carriers are `TileAnchor`, `EdgeAnchor`, `VertexAnchor`, `TileFootprint`, `DoorSidePlacement`, `BoundarySidePlacement`, and `StairPlacement`.
+- `StairPlacement` includes explicit horizontal heading/orientation so stair regeneration does not depend on reverse-reading generated topology.
 
 ### Domain Objects
 The feature must keep its shared geometry and identity vocabulary inside `src/domain/dungeon/valueobject`.
 
 Expected value objects include:
+Identity:
 - `DungeonMapId`
 - `SpaceId`
 - `ConnectionId`
 - `FeatureId`
 - `CorridorNodeId`
 - `CorridorSegmentId`
-- `FloorIndex`
-- `TileCoord`
-- `EdgeCoord`
-- `VertexCoord`
-- `TileAnchor`
-- `EdgeAnchor`
-- `VertexAnchor`
-- `TileFootprint`
-- `LabelAnchor`
-- `MapPlacement`
-- `DoorSidePlacement`
-- `BoundarySidePlacement`
-- `StairPlacement`
+Semantics:
 - `SpaceKind`
 - `ConnectionKind`
 - `TraversabilityState`
 - `StairShape`
 - `StairDimensions`
 - `StairIncline`
+Geometry kernel:
+- `FloorIndex`
+- `TileCoord`
+- `EdgeCoord`
+- `VertexCoord`
 - `EdgeSide`
+- `CardinalHeading`
 - `FloorSpan`
+Shared placements:
+- `MapPlacement`
+- `TileAnchor`
+- `EdgeAnchor`
+- `VertexAnchor`
+- `TileFootprint`
+- `DoorSidePlacement`
+- `BoundarySidePlacement`
+- `StairPlacement`
+Ownership and regeneration:
 - `TopologyOwnerRef`
+
+Placement role notes:
+- `DoorSidePlacement`: stable corridor endpoint on one side of a door connection
+- `BoundarySidePlacement`: stable fixed endpoint on one side of a boundary edge
+- `StairPlacement`: authored stair parameters used to regenerate stair-owned topology
+- `TopologyOwnerRef`: owner reference used to mark generated topology eligible for selective rebuild
+- `CardinalHeading`: authored stair orientation on the horizontal plane
 
 Command-only geometry value objects include:
 - `VertexRect`
@@ -343,6 +357,7 @@ Command shapes must follow these geometry rules:
 - stair place and update use `StairPlacement`
 - corridor extension uses `DoorSidePlacement` or `BoundarySidePlacement` endpoints
 - feature add and update use `MapPlacement`
+- no command may introduce a second placement vocabulary parallel to `MapPlacement`
 
 Expected query categories include:
 - editor snapshot loading
