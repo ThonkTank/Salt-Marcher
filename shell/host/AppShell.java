@@ -1,9 +1,7 @@
 package shell.host;
 
 import javafx.scene.layout.BorderPane;
-import shell.panel.ShellNavigationSidebar;
-import shell.panel.ShellToolbarStrip;
-import shell.panel.ShellWorkspacePane;
+import org.jspecify.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,7 +20,7 @@ public final class AppShell extends BorderPane {
     private final ShellWorkspacePane workspace = new ShellWorkspacePane();
     private final ShellRuntimeContext runtimeContext;
 
-    private ContributionKey activeTabKey;
+    private @Nullable ContributionKey activeTabKey;
 
     public AppShell() {
         this(PersistenceRegistry.empty());
@@ -54,7 +52,7 @@ public final class AppShell extends BorderPane {
         assertUniqueKey(registrationSpec.key());
         ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, screen);
         topBarItems.put(registrationSpec.key(), registrationSpec);
-        toolbar.registerItem(registrationSpec, slotContent.topBar());
+        toolbar.registerItem(registrationSpec, Objects.requireNonNull(slotContent.topBar(), "top bar content"));
         refreshToolbar();
     }
 
@@ -68,7 +66,7 @@ public final class AppShell extends BorderPane {
                 registrationSpec.key(),
                 registrationSpec.tabLabel(),
                 registrationSpec.itemOrder(),
-                slotContent.runtimeState());
+                Objects.requireNonNull(slotContent.runtimeState(), "runtime state content"));
     }
 
     public void navigateTo(ContributionKey key) {
@@ -97,7 +95,7 @@ public final class AppShell extends BorderPane {
         workspace.showTab(target.slotContent(), target.registrationSpec().mode());
         navigationSidebar.select(target.registrationSpec().key());
         refreshToolbar();
-        restoreWorkspaceDividers(activeTabKey);
+        restoreWorkspaceDividers(Objects.requireNonNull(activeTabKey, "activeTabKey"));
     }
 
     private void refreshToolbar() {

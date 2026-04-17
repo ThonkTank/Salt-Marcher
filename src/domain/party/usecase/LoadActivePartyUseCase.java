@@ -14,6 +14,6 @@ public final class LoadActivePartyUseCase {
     }
 
     public List<PartyCharacter> execute() {
-        return repository.load().activeMembers();
+        return repository.load().projection().activeMembers();
     }
 }

@@ -1,4 +1,4 @@
-package shell.panel;
+package shell.host;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -9,10 +9,7 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import shell.host.ContributionKey;
-import shell.host.ShellSlotContent;
-import shell.host.ShellTabMode;
-
+import org.jspecify.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -38,8 +35,8 @@ public final class ShellWorkspacePane extends SplitPane {
     private final Map<ContributionKey, double[]> savedMainDividers = new LinkedHashMap<>();
     private final Map<ContributionKey, double[]> savedRightDividers = new LinkedHashMap<>();
 
-    private ShellTabMode activeTabMode;
-    private ShellSlotContent activeSlotContent;
+    private @Nullable ShellTabMode activeTabMode;
+    private @Nullable ShellSlotContent activeSlotContent;
 
     public ShellWorkspacePane() {
         controlsPanel.getStyleClass().add("control-panel");
@@ -80,11 +77,13 @@ public final class ShellWorkspacePane extends SplitPane {
     }
 
     public void saveDividerPositions(ContributionKey key) {
-        if (getDividerPositions().length > 0) {
-            savedMainDividers.put(key, getDividerPositions().clone());
+        double[] mainDividers = getDividerPositions();
+        if (mainDividers.length > 0) {
+            savedMainDividers.put(key, mainDividers.clone());
         }
-        if (rightSplit.getDividerPositions().length > 0) {
-            savedRightDividers.put(key, rightSplit.getDividerPositions().clone());
+        double[] rightDividers = rightSplit.getDividerPositions();
+        if (rightDividers.length > 0) {
+            savedRightDividers.put(key, rightDividers.clone());
         }
     }
 
@@ -100,7 +99,7 @@ public final class ShellWorkspacePane extends SplitPane {
         });
     }
 
-    private void applyControls(Node controls) {
+    private void applyControls(@Nullable Node controls) {
         controlsPanel.getChildren().clear();
         if (controls != null) {
             controlsPanel.getChildren().add(controls);

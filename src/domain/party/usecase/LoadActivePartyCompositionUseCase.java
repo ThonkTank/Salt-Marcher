@@ -1,7 +1,7 @@
 package src.domain.party.usecase;
 
 import src.domain.party.partyAPI;
-import src.domain.party.entity.PartyRoster;
+import src.domain.party.entity.PartyRosterProjection;
 import src.domain.party.repository.PartyRosterRepository;
 
 public final class LoadActivePartyCompositionUseCase {
@@ -13,7 +13,7 @@ public final class LoadActivePartyCompositionUseCase {
     }
 
     public partyAPI.ActivePartyComposition execute() {
-        PartyRoster roster = repository.load();
+        PartyRosterProjection roster = repository.load().projection();
         return new partyAPI.ActivePartyComposition(
                 roster.activeLevelsByComposition(),
                 roster.averageActiveLevel());

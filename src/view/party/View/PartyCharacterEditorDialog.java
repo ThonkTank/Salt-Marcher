@@ -1,5 +1,6 @@
 package src.view.party.View;
 
+import org.jspecify.annotations.Nullable;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.scene.control.ButtonBar;
@@ -17,6 +18,17 @@ import java.util.Optional;
 
 final class PartyCharacterEditorDialog {
 
+    private record FormFields(
+            TextField nameField,
+            TextField playerField,
+            TextField levelField,
+            TextField passivePerceptionField,
+            TextField armorClassField,
+            @Nullable CheckBox activePartyCheck,
+            Label errorLabel
+    ) {
+    }
+
     record CreateRequest(
             PartyInteractor.CharacterDraftInput draft,
             PartyInteractor.MembershipSelection membership
@@ -26,42 +38,36 @@ final class PartyCharacterEditorDialog {
     private PartyCharacterEditorDialog() {
     }
 
-    static Optional<CreateRequest> showCreate(Window owner) {
+    static Optional<CreateRequest> showCreate(@Nullable Window owner) {
         Dialog<CreateRequest> dialog = new Dialog<>();
         dialog.setTitle("Create Character");
         if (owner != null) {
             dialog.initOwner(owner);
         }
 
-        TextField nameField = new TextField();
-        TextField playerField = new TextField();
-        TextField levelField = createNumberField("1");
-        TextField passivePerceptionField = createNumberField("10");
-        TextField armorClassField = createNumberField("10");
-        CheckBox activePartyCheck = new CheckBox("Start in active party");
-        activePartyCheck.setSelected(true);
-        Label errorLabel = buildErrorLabel();
+        FormFields fields = new FormFields(
+                new TextField(),
+                new TextField(),
+                createNumberField("1"),
+                createNumberField("10"),
+                createNumberField("10"),
+                new CheckBox("Start in active party"),
+                buildErrorLabel());
+        CheckBox membershipCheck = java.util.Objects.requireNonNull(fields.activePartyCheck());
+        membershipCheck.setSelected(true);
 
-        dialog.getDialogPane().setContent(buildForm(
-                nameField,
-                playerField,
-                levelField,
-                passivePerceptionField,
-                armorClassField,
-                activePartyCheck,
-                errorLabel,
-                true));
+        dialog.getDialogPane().setContent(buildForm(fields, true));
 
         ButtonType createButton = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(createButton, ButtonType.CANCEL);
-        attachValidation(dialog, createButton, errorLabel, () -> {
+        attachValidation(dialog, createButton, fields.errorLabel(), () -> {
             PartyInteractor.CharacterDraftInput draft = validateDraft(
-                    nameField.getText(),
-                    playerField.getText(),
-                    levelField.getText(),
-                    passivePerceptionField.getText(),
-                    armorClassField.getText());
-            PartyInteractor.MembershipSelection membership = activePartyCheck.isSelected()
+                    fields.nameField().getText(),
+                    fields.playerField().getText(),
+                    fields.levelField().getText(),
+                    fields.passivePerceptionField().getText(),
+                    fields.armorClassField().getText());
+            PartyInteractor.MembershipSelection membership = membershipCheck.isSelected()
                     ? PartyInteractor.MembershipSelection.ACTIVE
                     : PartyInteractor.MembershipSelection.RESERVE;
             return new CreateRequest(draft, membership);
@@ -70,73 +76,58 @@ final class PartyCharacterEditorDialog {
         return dialog.showAndWait();
     }
 
-    static Optional<PartyInteractor.CharacterDraftInput> showEdit(Window owner, PartyInteractor.PartyMemberViewData details) {
+    static Optional<PartyInteractor.CharacterDraftInput> showEdit(@Nullable Window owner, PartyInteractor.PartyMemberViewData details) {
         Dialog<PartyInteractor.CharacterDraftInput> dialog = new Dialog<>();
         dialog.setTitle("Edit Character");
         if (owner != null) {
             dialog.initOwner(owner);
         }
 
-        TextField nameField = new TextField(details.name());
-        TextField playerField = new TextField(details.playerName());
-        TextField levelField = createNumberField(Integer.toString(details.level()));
-        TextField passivePerceptionField = createNumberField(Integer.toString(details.passivePerception()));
-        TextField armorClassField = createNumberField(Integer.toString(details.armorClass()));
-        Label errorLabel = buildErrorLabel();
-
-        dialog.getDialogPane().setContent(buildForm(
-                nameField,
-                playerField,
-                levelField,
-                passivePerceptionField,
-                armorClassField,
+        FormFields fields = new FormFields(
+                new TextField(details.name()),
+                new TextField(details.playerName()),
+                createNumberField(Integer.toString(details.level())),
+                createNumberField(Integer.toString(details.passivePerception())),
+                createNumberField(Integer.toString(details.armorClass())),
                 null,
-                errorLabel,
-                false));
+                buildErrorLabel());
+
+        dialog.getDialogPane().setContent(buildForm(fields, false));
 
         ButtonType saveButton = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButton, ButtonType.CANCEL);
-        attachValidation(dialog, saveButton, errorLabel, () -> validateDraft(
-                nameField.getText(),
-                playerField.getText(),
-                levelField.getText(),
-                passivePerceptionField.getText(),
-                armorClassField.getText()));
+        attachValidation(dialog, saveButton, fields.errorLabel(), () -> validateDraft(
+                fields.nameField().getText(),
+                fields.playerField().getText(),
+                fields.levelField().getText(),
+                fields.passivePerceptionField().getText(),
+                fields.armorClassField().getText()));
 
         return dialog.showAndWait();
     }
 
-    private static GridPane buildForm(
-            TextField nameField,
-            TextField playerField,
-            TextField levelField,
-            TextField passivePerceptionField,
-            TextField armorClassField,
-            CheckBox activePartyCheck,
-            Label errorLabel,
-            boolean includeMembership
-    ) {
-        nameField.setPromptText("Name");
-        playerField.setPromptText("Player");
-        levelField.setPromptText("Level");
-        passivePerceptionField.setPromptText("Passive Perception");
-        armorClassField.setPromptText("AC");
+    private static GridPane buildForm(FormFields fields, boolean includeMembership) {
+        fields.nameField().setPromptText("Name");
+        fields.playerField().setPromptText("Player");
+        fields.levelField().setPromptText("Level");
+        fields.passivePerceptionField().setPromptText("Passive Perception");
+        fields.armorClassField().setPromptText("AC");
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(8);
         grid.setPadding(new Insets(12));
 
-        addRow(grid, 0, "Name", nameField);
-        addRow(grid, 1, "Player", playerField);
-        addRow(grid, 2, "Level", levelField);
-        addRow(grid, 3, "Passive Perception", passivePerceptionField);
-        addRow(grid, 4, "AC", armorClassField);
+        addRow(grid, 0, "Name", fields.nameField());
+        addRow(grid, 1, "Player", fields.playerField());
+        addRow(grid, 2, "Level", fields.levelField());
+        addRow(grid, 3, "Passive Perception", fields.passivePerceptionField());
+        addRow(grid, 4, "AC", fields.armorClassField());
         int row = 5;
-        if (includeMembership && activePartyCheck != null) {
-            grid.add(activePartyCheck, 1, row++);
+        if (includeMembership && fields.activePartyCheck() != null) {
+            grid.add(fields.activePartyCheck(), 1, row++);
         }
-        grid.add(errorLabel, 0, row, 2, 1);
+        grid.add(fields.errorLabel(), 0, row, 2, 1);
         return grid;
     }
 
@@ -165,10 +156,11 @@ final class PartyCharacterEditorDialog {
             Label errorLabel,
             ThrowingSupplier<T> valueSupplier
     ) {
-        dialog.setResultConverter(buttonType -> buttonType == submitButton ? valueSupplier.getOrNull() : null);
+        dialog.setResultConverter(buttonType -> buttonType == submitButton ? dialog.getResult() : null);
         dialog.getDialogPane().lookupButton(submitButton).addEventFilter(ActionEvent.ACTION, event -> {
             try {
                 T value = valueSupplier.get();
+                errorLabel.setText("");
                 dialog.setResult(value);
             } catch (IllegalArgumentException exception) {
                 errorLabel.setText(exception.getMessage());
@@ -218,13 +210,5 @@ final class PartyCharacterEditorDialog {
     @FunctionalInterface
     private interface ThrowingSupplier<T> {
         T get();
-
-        default T getOrNull() {
-            try {
-                return get();
-            } catch (IllegalArgumentException exception) {
-                return null;
-            }
-        }
     }
 }

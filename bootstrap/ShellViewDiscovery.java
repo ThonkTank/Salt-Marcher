@@ -1,25 +1,16 @@
 package bootstrap;
 
+import org.jspecify.annotations.Nullable;
 import shell.host.ShellViewContribution;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.net.JarURLConnection;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.stream.Stream;
 
 /**
  * Discovers feature-owned shell contributions from {@code src.view.<component>} root classes.
@@ -27,29 +18,17 @@ import java.util.stream.Stream;
 public final class ShellViewDiscovery {
 
     private static final String VIEW_ROOT = "src/view";
+    private static final String VIEW_PACKAGE_PREFIX = "src.view.";
     private static final String CONTRIBUTION_SUFFIX = "ViewContribution";
+    private final ContributionRootClassScanner rootClassScanner = new ContributionRootClassScanner();
 
     public List<ShellViewContribution> discover() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
             classLoader = ShellViewDiscovery.class.getClassLoader();
         }
-        Map<String, List<String>> rootClassesByComponent = new TreeMap<>();
-        try {
-            Enumeration<URL> resources = classLoader.getResources(VIEW_ROOT);
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                if ("file".equals(resource.getProtocol())) {
-                    collectContributionClassNamesFromDirectory(Path.of(resource.toURI()), rootClassesByComponent);
-                    continue;
-                }
-                if ("jar".equals(resource.getProtocol())) {
-                    collectContributionClassNamesFromJar(resource, rootClassesByComponent);
-                }
-            }
-        } catch (IOException | URISyntaxException exception) {
-            throw new IllegalStateException("Could not discover shell view contributions.", exception);
-        }
+        Map<String, List<String>> rootClassesByComponent = new TreeMap<>(
+                rootClassScanner.discoverRootClasses(classLoader, VIEW_ROOT, VIEW_PACKAGE_PREFIX));
 
         List<ShellViewContribution> contributions = new ArrayList<>();
         for (Map.Entry<String, String> entry : resolveContributionClasses(rootClassesByComponent).entrySet()) {
@@ -60,59 +39,6 @@ public final class ShellViewDiscovery {
             }
         }
         return contributions;
-    }
-
-    private void collectContributionClassNamesFromDirectory(Path viewRoot, Map<String, List<String>> rootClassesByComponent)
-            throws IOException {
-        if (!Files.isDirectory(viewRoot)) {
-            return;
-        }
-
-        try (Stream<Path> componentDirs = Files.list(viewRoot)) {
-            for (Path componentDir : componentDirs.filter(Files::isDirectory).sorted().toList()) {
-                String componentName = componentDir.getFileName().toString();
-                try (Stream<Path> classFiles = Files.list(componentDir)) {
-                    for (Path classFile : classFiles
-                            .filter(Files::isRegularFile)
-                            .filter(path -> path.getFileName().toString().endsWith(".class"))
-                            .filter(path -> !path.getFileName().toString().contains("$"))
-                            .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                            .toList()) {
-                        registerRootClass(rootClassesByComponent, componentName,
-                                classFile.getFileName().toString().replaceFirst("\\.class$", ""));
-                    }
-                }
-            }
-        }
-    }
-
-    private void collectContributionClassNamesFromJar(URL resource, Map<String, List<String>> rootClassesByComponent) throws IOException {
-        JarURLConnection connection = (JarURLConnection) resource.openConnection();
-        try (JarFile jarFile = connection.getJarFile()) {
-            String prefix = connection.getEntryName();
-            if (!prefix.endsWith("/")) {
-                prefix += "/";
-            }
-
-            for (JarEntry entry : jarFile.stream().sorted(Comparator.comparing(JarEntry::getName)).toList()) {
-                String name = entry.getName();
-                if (entry.isDirectory() || !name.startsWith(prefix) || !name.endsWith(".class") || name.contains("$")) {
-                    continue;
-                }
-                String relativeName = name.substring(prefix.length());
-                String[] segments = relativeName.split("/");
-                if (segments.length != 2) {
-                    continue;
-                }
-                registerRootClass(rootClassesByComponent, segments[0], segments[1].replaceFirst("\\.class$", ""));
-            }
-        }
-    }
-
-    private void registerRootClass(Map<String, List<String>> rootClassesByComponent, String componentName, String simpleName) {
-        rootClassesByComponent
-                .computeIfAbsent(componentName, ignored -> new ArrayList<>())
-                .add("src.view." + componentName + "." + simpleName);
     }
 
     private Map<String, String> resolveContributionClasses(Map<String, List<String>> rootClassesByComponent) {
@@ -163,7 +89,7 @@ public final class ShellViewDiscovery {
         return result.toString();
     }
 
-    private ShellViewContribution instantiateContribution(ClassLoader classLoader, String className) {
+    private @Nullable ShellViewContribution instantiateContribution(ClassLoader classLoader, String className) {
         Class<?> rawType;
         try {
             rawType = Class.forName(className, true, classLoader);

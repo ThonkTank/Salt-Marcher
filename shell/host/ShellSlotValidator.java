@@ -1,7 +1,5 @@
 package shell.host;
 
-import shell.panel.ShellSlot;
-
 final class ShellSlotValidator {
 
     private ShellSlotValidator() {

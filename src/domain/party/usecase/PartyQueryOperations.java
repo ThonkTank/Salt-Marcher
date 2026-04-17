@@ -3,6 +3,7 @@ package src.domain.party.usecase;
 import src.domain.party.entity.PartyCharacter;
 import src.domain.party.partyAPI;
 import src.domain.party.repository.PartyRosterRepository;
+import src.domain.party.valueobject.PartyLevelProgression;
 
 import java.util.List;
 
@@ -61,11 +62,15 @@ public final class PartyQueryOperations {
                     new partyAPI.AdventuringDaySummary(
                             dayStatus.activeLevels(),
                             dayStatus.remainingToShortRest(),
-                            dayStatus.remainingToLongRest()));
+                            dayStatus.remainingToLongRest(),
+                            dayStatus.consumedXp(),
+                            dayStatus.totalBudgetXp(),
+                            dayStatus.consumedPercent(),
+                            dayStatus.restCadenceStatuses().stream().map(this::mapRestCadenceStatus).toList()));
         } catch (RuntimeException exception) {
             return new partyAPI.AdventuringDayResult(
                     partyAPI.ReadStatus.STORAGE_ERROR,
-                    new partyAPI.AdventuringDaySummary(List.of(), 0, 0));
+                    new partyAPI.AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of()));
         }
     }
 
@@ -80,23 +85,43 @@ public final class PartyQueryOperations {
     }
 
     private partyAPI.PartyMemberSummary mapSummary(PartyCharacter character) {
-        return new partyAPI.PartyMemberSummary(character.id(), character.name(), character.level());
+        return new partyAPI.PartyMemberSummary(
+                character.id(),
+                character.identity().name(),
+                character.progress().level());
     }
 
     private partyAPI.PartyMemberDetails mapDetails(PartyCharacter character) {
         return new partyAPI.PartyMemberDetails(
                 character.id(),
-                character.name(),
-                character.playerName(),
-                character.level(),
-                character.currentXp(),
-                character.xpToNextLevel(),
-                character.readyToLevel(),
-                character.passivePerception(),
-                character.armorClass(),
-                character.xpSinceShortRest(),
-                character.xpSinceLongRest(),
+                character.identity().name(),
+                character.identity().playerName(),
+                character.progress().level(),
+                character.progress().currentXp(),
+                PartyLevelProgression.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
+                PartyLevelProgression.readyToLevel(character.progress().level(), character.progress().currentXp()),
+                character.combat().passivePerception(),
+                character.combat().armorClass(),
+                character.progress().xpSinceShortRest(),
+                character.progress().xpSinceLongRest(),
+                character.progress().shortRestsTakenSinceLongRest(),
                 character.membership().toApi());
+    }
+
+    private partyAPI.RestCadenceStatus mapRestCadenceStatus(LoadAdventuringDaySummaryUseCase.RestCadenceStatus status) {
+        return new partyAPI.RestCadenceStatus(
+                status.characterId(),
+                switch (status.nextMilestone()) {
+                    case SHORT_REST_ONE -> partyAPI.RestMilestone.SHORT_REST_ONE;
+                    case SHORT_REST_TWO -> partyAPI.RestMilestone.SHORT_REST_TWO;
+                    case LONG_REST -> partyAPI.RestMilestone.LONG_REST;
+                },
+                status.xpDelta(),
+                switch (status.urgency()) {
+                    case NORMAL -> partyAPI.RestCadenceUrgency.NORMAL;
+                    case SOON -> partyAPI.RestCadenceUrgency.SOON;
+                    case OVERDUE -> partyAPI.RestCadenceUrgency.OVERDUE;
+                });
     }
 
     private partyAPI.PartySnapshot emptySnapshot() {

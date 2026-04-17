@@ -8,7 +8,7 @@ import shell.host.ShellRuntimeContext;
 import shell.host.ShellRuntimeStateSpec;
 import shell.host.ShellScreen;
 import shell.host.ShellViewContribution;
-import shell.panel.ShellSlot;
+import shell.host.ShellSlot;
 
 import java.util.Map;
 

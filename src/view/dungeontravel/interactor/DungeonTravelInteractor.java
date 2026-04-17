@@ -5,6 +5,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import org.jspecify.annotations.Nullable;
 import shell.host.InspectorEntrySpec;
 import shell.host.InspectorSink;
 import src.domain.dungeon.api.DungeonMapMode;
@@ -12,12 +13,11 @@ import src.domain.dungeon.api.DungeonSnapshot;
 import src.domain.dungeon.dungeonAPI;
 import src.domain.mapcore.api.MapCellRef;
 import src.domain.mapcore.api.MapCellSnapshot;
-import src.domain.mapcore.api.MapEdgeSnapshot;
 import src.domain.mapcore.api.MapTopologyKind;
 import src.view.mapshared.Model.MapCellViewModel;
-import src.view.mapshared.Model.MapEdgeViewModel;
 import src.view.mapshared.Model.MapWorkspaceRenderModel;
 import src.view.mapshared.Model.MapWorkspaceTopology;
+import src.view.mapshared.interactor.MapWorkspaceSupport;
 import src.view.mapshared.View.MapWorkspaceView;
 
 import java.util.Comparator;
@@ -34,7 +34,7 @@ public final class DungeonTravelInteractor {
     private final VBox state = new VBox(8);
 
     private DungeonSnapshot snapshot;
-    private MapCellRef activeCell;
+    private @Nullable MapCellRef activeCell;
 
     public DungeonTravelInteractor(InspectorSink inspector) {
         this.dungeon = new dungeonAPI();
@@ -67,8 +67,11 @@ public final class DungeonTravelInteractor {
             redraw();
         });
         controls.getChildren().setAll(
-                card("Travel", new Label("Runtime projection over the committed dungeon."), muted("Shared dungeon presentation with active party focus.")),
-                card("Actions", snap)
+                MapWorkspaceSupport.card(
+                        "Travel",
+                        new Label("Runtime projection over the committed dungeon."),
+                        MapWorkspaceSupport.muted("Shared dungeon presentation with active party focus.")),
+                MapWorkspaceSupport.card("Actions", snap)
         );
     }
 
@@ -78,7 +81,7 @@ public final class DungeonTravelInteractor {
         redraw();
     }
 
-    private MapCellRef firstTraversableCell() {
+    private @Nullable MapCellRef firstTraversableCell() {
         return snapshot.surface().allCells().stream()
                 .map(MapCellSnapshot::ref)
                 .sorted(Comparator.comparingInt(MapCellRef::r).thenComparingInt(MapCellRef::q))
@@ -114,8 +117,8 @@ public final class DungeonTravelInteractor {
                 snapshot.surface().topology() == MapTopologyKind.HEX ? MapWorkspaceTopology.HEX : MapWorkspaceTopology.SQUARE,
                 snapshot.surface().width(),
                 snapshot.surface().height(),
-                snapshot.surface().allCells().stream().map(this::toViewCell).toList(),
-                snapshot.surface().edges().stream().map(this::toViewEdge).toList(),
+                snapshot.surface().allCells().stream().map(cell -> MapWorkspaceSupport.toViewCell(cell, activeCell)).toList(),
+                snapshot.surface().edges().stream().map(MapWorkspaceSupport::toViewEdge).toList(),
                 "TRAVEL",
                 snapshot.mode().name(),
                 activeCell == null
@@ -123,38 +126,6 @@ public final class DungeonTravelInteractor {
                         : "Party focus q=" + activeCell.q() + " r=" + activeCell.r() + "  |  " + snapshot.surface().edges().size() + " boundary overlays"
         ));
         refreshState();
-    }
-
-    private MapCellViewModel toViewCell(MapCellSnapshot cell) {
-        boolean current = activeCell != null && activeCell.equals(cell.ref());
-        return new MapCellViewModel(
-                cell.ref().q(),
-                cell.ref().r(),
-                cell.label(),
-                cell.style().room(),
-                cell.style().corridor(),
-                cell.style().blocked(),
-                cell.style().interactive(),
-                current || cell.style().current(),
-                cell.selectionRef() == null ? "" : cell.selectionRef().ownerKind(),
-                cell.selectionRef() == null ? -1L : cell.selectionRef().ownerId(),
-                cell.selectionRef() == null ? "" : cell.selectionRef().partKind()
-        );
-    }
-
-    private MapEdgeViewModel toViewEdge(MapEdgeSnapshot edge) {
-        return new MapEdgeViewModel(
-                edge.ref().from().q(),
-                edge.ref().from().r(),
-                edge.ref().to().q(),
-                edge.ref().to().r(),
-                edge.kind(),
-                edge.label(),
-                edge.selectionRef() != null,
-                edge.selectionRef() == null ? "" : edge.selectionRef().ownerKind(),
-                edge.selectionRef() == null ? -1L : edge.selectionRef().ownerId(),
-                edge.selectionRef() == null ? "" : edge.selectionRef().partKind()
-        );
     }
 
     private void refreshState() {
@@ -165,22 +136,8 @@ public final class DungeonTravelInteractor {
         Label mode = new Label("Mode: " + snapshot.mode());
         Label legend = new Label("Legend: room, corridor, active party marker, door overlays");
         legend.setWrapText(true);
-        state.getChildren().setAll(card("Runtime State", revision, mode, position), card("Legend", legend));
-    }
-
-    private VBox card(String title, Node... content) {
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("editor-panel-title");
-        VBox box = new VBox(6);
-        box.getStyleClass().add("editor-card");
-        box.getChildren().add(titleLabel);
-        box.getChildren().addAll(content);
-        return box;
-    }
-
-    private Label muted(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().add("text-muted");
-        return label;
+        state.getChildren().setAll(
+                MapWorkspaceSupport.card("Runtime State", revision, mode, position),
+                MapWorkspaceSupport.card("Legend", legend));
     }
 }

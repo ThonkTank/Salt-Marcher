@@ -10,7 +10,7 @@ import shell.host.ShellScreen;
 import shell.host.ShellTabMode;
 import shell.host.ShellTabSpec;
 import shell.host.ShellViewContribution;
-import shell.panel.ShellSlot;
+import shell.host.ShellSlot;
 import src.view.dungeoneditor.interactor.DungeonEditorInteractor;
 
 import java.util.Map;

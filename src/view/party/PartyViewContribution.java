@@ -7,7 +7,7 @@ import shell.host.ShellRuntimeContext;
 import shell.host.ShellScreen;
 import shell.host.ShellTopBarSpec;
 import shell.host.ShellViewContribution;
-import shell.panel.ShellSlot;
+import shell.host.ShellSlot;
 import src.domain.party.partyAPI;
 import src.domain.party.repository.PartyRosterRepository;
 import src.view.party.Controller.PartyController;

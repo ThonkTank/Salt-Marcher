@@ -31,4 +31,38 @@
             <property name="threshold" value="20" />
         </properties>
     </rule>
+
+    <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
+        <properties>
+            <property name="problemDepth" value="3" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/NcssCount">
+        <properties>
+            <property name="methodReportLevel" value="30" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/LawOfDemeter">
+        <properties>
+            <property name="trustRadius" value="1" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/ExcessiveParameterList">
+        <properties>
+            <property name="minimum" value="6" />
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/TooManyMethods" />
+
+    <rule ref="category/java/design.xml/TooManyFields" />
+
+    <rule ref="category/java/design.xml/ExcessivePublicCount" />
+
+    <rule ref="category/java/design.xml/ExcessiveImports" />
+
+    <rule ref="category/java/design.xml/GodClass" />
 </ruleset>

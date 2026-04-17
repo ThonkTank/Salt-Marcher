@@ -1,6 +1,7 @@
 package src.domain.party.usecase;
 
 import src.domain.party.entity.PartyCharacter;
+import src.domain.party.entity.PartyRosterProjection;
 import src.domain.party.entity.PartyRoster;
 import src.domain.party.repository.PartyRosterRepository;
 
@@ -15,7 +16,7 @@ public final class LoadPartySnapshotUseCase {
     }
 
     public PartySnapshotProjection execute() {
-        PartyRoster roster = repository.load();
+        PartyRosterProjection roster = repository.load().projection();
         return new PartySnapshotProjection(
                 roster.activeMembers(),
                 roster.reserveMembers(),

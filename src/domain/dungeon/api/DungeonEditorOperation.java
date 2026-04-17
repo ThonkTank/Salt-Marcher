@@ -62,18 +62,31 @@ public sealed interface DungeonEditorOperation permits
     record EraseInternalWall(VertexPolyline path) implements DungeonEditorOperation {
     }
 
+    /**
+     * Creates a semantic door connection plus its authored spatial anchor.
+     */
     record PlaceDoor(EdgeAnchor anchor) implements DungeonEditorOperation {
     }
 
-    record UpdateDoor(ConnectionId connectionId, EdgeAnchor anchor, TraversabilityState traversabilityState, String authoredNote) implements DungeonEditorOperation {
+    /**
+     * Repositions only the authored door anchor in SpatialTopology.
+     * Semantic connection edits belong in UpdateConnectionMetadata.
+     */
+    record UpdateDoor(ConnectionId connectionId, EdgeAnchor anchor) implements DungeonEditorOperation {
     }
 
     record RemoveDoor(ConnectionId connectionId) implements DungeonEditorOperation {
     }
 
+    /**
+     * Creates a semantic stair connection plus its full authored spatial placement.
+     */
     record PlaceStair(ConnectionId connectionId, StairPlacement placement) implements DungeonEditorOperation {
     }
 
+    /**
+     * Repositions or reshapes only the authored stair placement in SpatialTopology.
+     */
     record UpdateStair(ConnectionId connectionId, StairPlacement placement) implements DungeonEditorOperation {
     }
 
@@ -99,6 +112,9 @@ public sealed interface DungeonEditorOperation permits
     record UpdateSpaceMetadata(SpaceId spaceId, SpaceKind spaceKind, LabelAnchor labelAnchor, String narrativeSummary) implements DungeonEditorOperation {
     }
 
+    /**
+     * Updates semantic connection metadata only and must not mutate authored placement truth.
+     */
     record UpdateConnectionMetadata(ConnectionId connectionId, TraversabilityState traversabilityState, String authoredNote) implements DungeonEditorOperation {
     }
 

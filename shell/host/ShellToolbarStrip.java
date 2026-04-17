@@ -1,4 +1,4 @@
-package shell.panel;
+package shell.host;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -6,9 +6,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import shell.host.ContributionKey;
-import shell.host.ShellTopBarSpec;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;

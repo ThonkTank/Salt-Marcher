@@ -1,5 +1,7 @@
 package src.domain.mapcore.api;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Immutable edge overlay published to shared map views.
  */
@@ -7,7 +9,7 @@ public record MapEdgeSnapshot(
         MapEdgeRef ref,
         String kind,
         String label,
-        MapSelectionRef selectionRef
+        @Nullable MapSelectionRef selectionRef
 ) {
 
     public MapEdgeSnapshot {

@@ -1,7 +1,7 @@
 package shell.host;
 
 import javafx.scene.Node;
-import shell.panel.ShellSlot;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 
@@ -25,7 +25,7 @@ public interface ShellScreen {
     /**
      * Optional graphic used for the feature's navigation entry in the left sidebar.
      */
-    default Node getNavigationGraphic() {
+    default @Nullable Node getNavigationGraphic() {
         return null;
     }
 

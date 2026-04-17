@@ -1,4 +1,4 @@
-package shell.panel;
+package shell.host;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -10,8 +10,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import shell.host.ContributionKey;
-
+import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -30,7 +29,7 @@ public final class RuntimeStatePane extends VBox {
     private final Label placeholder = new Label("Kein Runtime-Zustand verfügbar");
     private final Map<ContributionKey, StateTab> tabs = new LinkedHashMap<>();
 
-    private ContributionKey activeKey;
+    private @Nullable ContributionKey activeKey;
 
     public RuntimeStatePane() {
         getStyleClass().add("scene-pane");
@@ -72,8 +71,8 @@ public final class RuntimeStatePane extends VBox {
             return;
         }
         activeKey = key;
-        tab.button.setSelected(true);
-        contentArea.getChildren().setAll(tab.content != null ? tab.content : placeholder);
+        tab.select();
+        contentArea.getChildren().setAll(tab.contentOr(placeholder));
     }
 
     public boolean hasTabs() {
@@ -114,6 +113,14 @@ public final class RuntimeStatePane extends VBox {
             button.getStyleClass().add("scene-tab");
             button.setToggleGroup(tabGroup);
             button.setOnAction(event -> activateTab(key));
+        }
+
+        private void select() {
+            button.setSelected(true);
+        }
+
+        private Node contentOr(Node fallback) {
+            return content != null ? content : fallback;
         }
     }
 }

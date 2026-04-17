@@ -1,6 +1,6 @@
 package src.domain.party.valueobject;
 
-public final class PartyXpTables {
+public final class PartyLevelProgression {
 
     private static final int[] XP_THRESHOLDS = {
             0,
@@ -26,33 +26,9 @@ public final class PartyXpTables {
             355_000
     };
 
-    private static final int[] ADVENTURING_DAY_BUDGETS = {
-            0,
-            300,
-            600,
-            1_200,
-            1_700,
-            3_500,
-            4_000,
-            5_000,
-            6_000,
-            7_500,
-            9_000,
-            10_500,
-            11_500,
-            13_500,
-            15_000,
-            18_000,
-            20_000,
-            25_000,
-            27_000,
-            30_000,
-            40_000
-    };
-
     private static final int MAX_LEVEL = 20;
 
-    private PartyXpTables() {
+    private PartyLevelProgression() {
     }
 
     public static int minimumXpForLevel(int level) {
@@ -84,10 +60,6 @@ public final class PartyXpTables {
     public static boolean readyToLevel(int level, int currentXp) {
         int safeLevel = clampLevel(level);
         return safeLevel < MAX_LEVEL && Math.max(0, currentXp) >= nextLevelXp(safeLevel);
-    }
-
-    public static int adventuringDayXpPerCharacter(int level) {
-        return ADVENTURING_DAY_BUDGETS[clampLevel(level)];
     }
 
     public static int clampLevel(int level) {

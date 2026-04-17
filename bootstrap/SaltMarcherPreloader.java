@@ -9,13 +9,14 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Lightweight startup preloader for packaged desktop launches.
  */
 public final class SaltMarcherPreloader extends Preloader {
 
-    private Stage stage;
+    private @Nullable Stage stage;
 
     @Override
     public void start(Stage primaryStage) {
@@ -37,8 +38,13 @@ public final class SaltMarcherPreloader extends Preloader {
 
     @Override
     public void handleStateChangeNotification(StateChangeNotification notification) {
-        if (notification.getType() == StateChangeNotification.Type.BEFORE_START && stage != null) {
-            stage.hide();
+        if (stage == null) {
+            return;
+        }
+        switch (notification.getType()) {
+            case BEFORE_START -> stage.hide();
+            default -> {
+            }
         }
     }
 

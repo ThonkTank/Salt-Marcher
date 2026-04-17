@@ -1,4 +1,4 @@
-package shell.panel;
+package shell.host;
 
 /**
  * Fixed shell-owned slots that feature screens may target.

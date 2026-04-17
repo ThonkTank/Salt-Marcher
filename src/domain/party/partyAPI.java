@@ -45,6 +45,18 @@ public final class partyAPI {
         LONG_REST
     }
 
+    public enum RestMilestone {
+        SHORT_REST_ONE,
+        SHORT_REST_TWO,
+        LONG_REST
+    }
+
+    public enum RestCadenceUrgency {
+        NORMAL,
+        SOON,
+        OVERDUE
+    }
+
     public record CharacterDraft(
             String name,
             String playerName,
@@ -73,6 +85,7 @@ public final class partyAPI {
             int armorClass,
             int xpSinceShortRest,
             int xpSinceLongRest,
+            int shortRestsTakenSinceLongRest,
             MembershipState membership
     ) {
     }
@@ -128,11 +141,24 @@ public final class partyAPI {
     public record AdventuringDaySummary(
             List<Integer> activePartyLevels,
             int remainingToShortRest,
-            int remainingToLongRest
+            int remainingToLongRest,
+            int consumedXp,
+            int totalBudgetXp,
+            int consumedPercent,
+            List<RestCadenceStatus> restCadenceStatuses
     ) {
         public AdventuringDaySummary {
             activePartyLevels = activePartyLevels == null ? List.of() : List.copyOf(activePartyLevels);
+            restCadenceStatuses = restCadenceStatuses == null ? List.of() : List.copyOf(restCadenceStatuses);
         }
+    }
+
+    public record RestCadenceStatus(
+            Long characterId,
+            RestMilestone nextMilestone,
+            int xpDelta,
+            RestCadenceUrgency urgency
+    ) {
     }
 
     public record AdventuringDayResult(

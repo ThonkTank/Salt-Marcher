@@ -10,6 +10,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import org.jspecify.annotations.Nullable;
 import src.view.mapshared.Controller.MapCameraController;
 import src.view.mapshared.Controller.MapPointerController;
 import src.view.mapshared.Model.MapCellViewModel;
@@ -34,60 +35,16 @@ public final class MapWorkspaceView extends BorderPane {
     private final MapPointerController pointerController = new MapPointerController();
     private final MapTopologyRenderer squareRenderer = new SquareMapTopologyRenderer();
 
-    private MapWorkspaceRenderModel renderModel;
+    private @Nullable MapWorkspaceRenderModel renderModel;
 
     public MapWorkspaceView() {
         getStyleClass().addAll("scene-pane", "map-workspace");
         setPadding(new Insets(8));
-
-        titleLabel.getStyleClass().add("large");
-        subtitleLabel.getStyleClass().add("text-muted");
-        modeBadge.getStyleClass().add("map-mode-badge");
-        statusLabel.getStyleClass().add("map-status-label");
-        summaryLabel.getStyleClass().add("text-muted");
-        contentHost.getStyleClass().add("map-workspace-content");
-        contentHost.setAlignment(Pos.CENTER_LEFT);
-
-        Button zoomOutButton = new Button("-");
-        zoomOutButton.getStyleClass().addAll("compact", "flat");
-        zoomOutButton.setOnAction(event -> {
-            cameraController.zoomOut();
-            redraw();
-        });
-
-        Button zoomInButton = new Button("+");
-        zoomInButton.getStyleClass().addAll("compact", "flat");
-        zoomInButton.setOnAction(event -> {
-            cameraController.zoomIn();
-            redraw();
-        });
-
-        Button resetButton = new Button("Reset");
-        resetButton.getStyleClass().addAll("compact", "flat");
-        resetButton.setOnAction(event -> {
-            cameraController.reset();
-            redraw();
-        });
-
-        Button panLeftButton = panButton("\u2190", cameraController::panLeft);
-        Button panRightButton = panButton("\u2192", cameraController::panRight);
-        Button panUpButton = panButton("\u2191", cameraController::panUp);
-        Button panDownButton = panButton("\u2193", cameraController::panDown);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        HBox badgeRow = new HBox(8, modeBadge, statusLabel);
-        VBox titleBox = new VBox(4, titleLabel, subtitleLabel, badgeRow);
-        HBox cameraControls = new HBox(4, panLeftButton, panUpButton, panDownButton, panRightButton, zoomOutButton, zoomInButton, resetButton);
-        cameraControls.getStyleClass().add("map-camera-controls");
-        HBox header = new HBox(8, titleBox, spacer, cameraControls);
-        header.getStyleClass().add("map-workspace-header");
-        header.setPadding(new Insets(0, 0, 8, 0));
-        BorderPane.setMargin(summaryLabel, new Insets(8, 0, 0, 0));
-        setTop(header);
+        configureChrome();
+        setTop(buildHeader());
         setCenter(contentHost);
         setBottom(summaryLabel);
+        BorderPane.setMargin(summaryLabel, new Insets(8, 0, 0, 0));
     }
 
     public void setCellSelectionListener(Consumer<MapCellViewModel> listener) {
@@ -99,6 +56,45 @@ public final class MapWorkspaceView extends BorderPane {
         redraw();
     }
 
+    private void configureChrome() {
+        titleLabel.getStyleClass().add("large");
+        subtitleLabel.getStyleClass().add("text-muted");
+        modeBadge.getStyleClass().add("map-mode-badge");
+        statusLabel.getStyleClass().add("map-status-label");
+        summaryLabel.getStyleClass().add("text-muted");
+        contentHost.getStyleClass().add("map-workspace-content");
+        contentHost.setAlignment(Pos.CENTER_LEFT);
+    }
+
+    private HBox buildHeader() {
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox badgeRow = new HBox(8, modeBadge, statusLabel);
+        VBox titleBox = new VBox(4, titleLabel, subtitleLabel, badgeRow);
+        HBox cameraControls = buildCameraControls();
+        HBox header = new HBox(8, titleBox, spacer, cameraControls);
+        header.getStyleClass().add("map-workspace-header");
+        header.setPadding(new Insets(0, 0, 8, 0));
+        return header;
+    }
+
+    private HBox buildCameraControls() {
+        Button zoomOutButton = panButton("-", cameraController::zoomOut);
+        Button zoomInButton = panButton("+", cameraController::zoomIn);
+        Button resetButton = panButton("Reset", cameraController::reset);
+        HBox cameraControls = new HBox(
+                4,
+                panButton("\u2190", cameraController::panLeft),
+                panButton("\u2191", cameraController::panUp),
+                panButton("\u2193", cameraController::panDown),
+                panButton("\u2192", cameraController::panRight),
+                zoomOutButton,
+                zoomInButton,
+                resetButton);
+        cameraControls.getStyleClass().add("map-camera-controls");
+        return cameraControls;
+    }
+
     private void redraw() {
         if (renderModel == null) {
             return;
@@ -108,20 +104,12 @@ public final class MapWorkspaceView extends BorderPane {
         modeBadge.setText(renderModel.modeLabel());
         statusLabel.setText(renderModel.statusLabel());
         summaryLabel.setText(renderModel.summaryLabel());
-        MapTopologyRenderer renderer = resolveRenderer(renderModel);
-        Region rendered = (Region) renderer.render(renderModel, pointerController::notifyCellSelected);
+        Region rendered = (Region) squareRenderer.render(renderModel, pointerController::notifyCellSelected);
         rendered.setScaleX(cameraController.zoom());
         rendered.setScaleY(cameraController.zoom());
         rendered.setTranslateX(cameraController.panX());
         rendered.setTranslateY(cameraController.panY());
         contentHost.getChildren().setAll(rendered);
-    }
-
-    private MapTopologyRenderer resolveRenderer(MapWorkspaceRenderModel current) {
-        if (current.topology() == MapWorkspaceTopology.HEX) {
-            return squareRenderer;
-        }
-        return squareRenderer;
     }
 
     private Button panButton(String label, Runnable action) {

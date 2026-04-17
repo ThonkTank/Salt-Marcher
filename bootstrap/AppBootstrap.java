@@ -1,5 +1,6 @@
 package bootstrap;
 
+import org.jspecify.annotations.Nullable;
 import shell.host.AppShell;
 import shell.host.PersistenceContribution;
 import shell.host.PersistenceRegistry;
@@ -83,7 +84,7 @@ public final class AppBootstrap {
         throw new IllegalStateException("Unsupported shell contribution type: " + spec.getClass().getName());
     }
 
-    private ShellTabSpec resolveStartupView(List<ResolvedContribution> contributions) {
+    private @Nullable ShellTabSpec resolveStartupView(List<ResolvedContribution> contributions) {
         ShellTabSpec startup = null;
         for (ResolvedContribution contribution : contributions) {
             if (!(contribution.registrationSpec() instanceof ShellTabSpec tabSpec) || !tabSpec.defaultLanding()) {

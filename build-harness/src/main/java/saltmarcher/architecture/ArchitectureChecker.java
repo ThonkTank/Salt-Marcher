@@ -57,9 +57,9 @@ public final class ArchitectureChecker {
             "shell.host.ShellServices",
             "shell.panel.DetailsNavigator",
             "shell.panel.SceneRegistry",
-            "shell.panel.InspectorPane",
+            "shell.host.InspectorPane",
             "shell.panel.ScenePane",
-            "shell.panel.RuntimeStatePane"
+            "shell.host.RuntimeStatePane"
     );
     private static final Set<String> LEGACY_PERSISTENCE_TYPES = Set.of(
             "shell.host.RuntimeServiceProvider",

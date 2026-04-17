@@ -1,23 +1,15 @@
 package bootstrap;
 
+import org.jspecify.annotations.Nullable;
 import shell.host.PersistenceContribution;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.net.JarURLConnection;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.stream.Stream;
 
 /**
  * Discovers feature-owned persistence contributions from {@code src.data.<feature>} root classes.
@@ -25,29 +17,17 @@ import java.util.stream.Stream;
 final class PersistenceContributionDiscovery {
 
     private static final String DATA_ROOT = "src/data";
+    private static final String DATA_PACKAGE_PREFIX = "src.data.";
     private static final String CONTRIBUTION_SUFFIX = "PersistenceContribution";
+    private final ContributionRootClassScanner rootClassScanner = new ContributionRootClassScanner();
 
     List<PersistenceContribution> discover() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
             classLoader = PersistenceContributionDiscovery.class.getClassLoader();
         }
-        Map<String, List<String>> rootClassesByFeature = new TreeMap<>();
-        try {
-            Enumeration<URL> resources = classLoader.getResources(DATA_ROOT);
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                if ("file".equals(resource.getProtocol())) {
-                    collectContributionClassNamesFromDirectory(Path.of(resource.toURI()), rootClassesByFeature);
-                    continue;
-                }
-                if ("jar".equals(resource.getProtocol())) {
-                    collectContributionClassNamesFromJar(resource, rootClassesByFeature);
-                }
-            }
-        } catch (IOException | URISyntaxException exception) {
-            throw new IllegalStateException("Could not discover persistence contributions.", exception);
-        }
+        Map<String, List<String>> rootClassesByFeature = new TreeMap<>(
+                rootClassScanner.discoverRootClasses(classLoader, DATA_ROOT, DATA_PACKAGE_PREFIX));
         List<PersistenceContribution> contributions = new ArrayList<>();
         for (String className : resolveContributionClasses(rootClassesByFeature).values()) {
             PersistenceContribution contribution = instantiateContribution(classLoader, className);
@@ -56,57 +36,6 @@ final class PersistenceContributionDiscovery {
             }
         }
         return contributions;
-    }
-
-    private void collectContributionClassNamesFromDirectory(Path dataRoot, Map<String, List<String>> rootClassesByFeature)
-            throws IOException {
-        if (!Files.isDirectory(dataRoot)) {
-            return;
-        }
-        try (Stream<Path> featureDirs = Files.list(dataRoot)) {
-            for (Path featureDir : featureDirs.filter(Files::isDirectory).sorted().toList()) {
-                String featureName = featureDir.getFileName().toString();
-                try (Stream<Path> classFiles = Files.list(featureDir)) {
-                    for (Path classFile : classFiles
-                            .filter(Files::isRegularFile)
-                            .filter(path -> path.getFileName().toString().endsWith(".class"))
-                            .filter(path -> !path.getFileName().toString().contains("$"))
-                            .sorted()
-                            .toList()) {
-                        registerRootClass(rootClassesByFeature, featureName,
-                                classFile.getFileName().toString().replaceFirst("\\.class$", ""));
-                    }
-                }
-            }
-        }
-    }
-
-    private void collectContributionClassNamesFromJar(URL resource, Map<String, List<String>> rootClassesByFeature) throws IOException {
-        JarURLConnection connection = (JarURLConnection) resource.openConnection();
-        try (JarFile jarFile = connection.getJarFile()) {
-            String prefix = connection.getEntryName();
-            if (!prefix.endsWith("/")) {
-                prefix += "/";
-            }
-            for (JarEntry entry : jarFile.stream().sorted(java.util.Comparator.comparing(JarEntry::getName)).toList()) {
-                String name = entry.getName();
-                if (entry.isDirectory() || !name.startsWith(prefix) || !name.endsWith(".class") || name.contains("$")) {
-                    continue;
-                }
-                String relativeName = name.substring(prefix.length());
-                String[] segments = relativeName.split("/");
-                if (segments.length != 2) {
-                    continue;
-                }
-                registerRootClass(rootClassesByFeature, segments[0], segments[1].replaceFirst("\\.class$", ""));
-            }
-        }
-    }
-
-    private void registerRootClass(Map<String, List<String>> rootClassesByFeature, String featureName, String simpleName) {
-        rootClassesByFeature
-                .computeIfAbsent(featureName, ignored -> new ArrayList<>())
-                .add("src.data." + featureName + "." + simpleName);
     }
 
     private Map<String, String> resolveContributionClasses(Map<String, List<String>> rootClassesByFeature) {
@@ -156,7 +85,7 @@ final class PersistenceContributionDiscovery {
         return result.toString();
     }
 
-    private PersistenceContribution instantiateContribution(ClassLoader classLoader, String className) {
+    private @Nullable PersistenceContribution instantiateContribution(ClassLoader classLoader, String className) {
         Class<?> rawType;
         try {
             rawType = Class.forName(className, true, classLoader);

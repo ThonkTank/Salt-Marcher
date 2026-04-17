@@ -1,9 +1,9 @@
 package src.view.party.interactor;
 
+import org.jspecify.annotations.Nullable;
 import src.domain.party.partyAPI;
 import src.view.party.Model.PartyToolbarModel;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -11,6 +11,8 @@ public final class PartyInteractor {
 
     private final partyAPI party;
     private final PartyToolbarModel model;
+    private final PartyToolbarStateMapper stateMapper = new PartyToolbarStateMapper();
+    private final PartyMutationMessages mutationMessages = new PartyMutationMessages();
 
     public PartyInteractor(partyAPI party, PartyToolbarModel model) {
         this.party = Objects.requireNonNull(party, "party");
@@ -80,7 +82,7 @@ public final class PartyInteractor {
             return;
         }
         if (result.status() != partyAPI.MutationStatus.SUCCESS) {
-            model.showStatus(messageFor(result.status()), true);
+            model.showStatus(mutationMessages.errorFor(result.status()), true);
             return;
         }
         if (refreshState()) {
@@ -96,47 +98,8 @@ public final class PartyInteractor {
             model.showStatus("Party data could not be loaded.", true);
             return false;
         }
-        model.setPartyState(
-                mapMembers(snapshotResult.snapshot().activeMembers()),
-                mapMembers(snapshotResult.snapshot().reserveMembers()),
-                snapshotResult.snapshot().summary().averageLevel(),
-                dayResult.summary().remainingToShortRest(),
-                dayResult.summary().remainingToLongRest());
+        model.applyState(stateMapper.map(snapshotResult, dayResult));
         return true;
-    }
-
-    private String messageFor(partyAPI.MutationStatus status) {
-        if (status == null) {
-            return "Party update failed.";
-        }
-        return switch (status) {
-            case SUCCESS -> "Party updated.";
-            case NOT_FOUND -> "Character not found.";
-            case INVALID_INPUT -> "Invalid party change.";
-            case STORAGE_ERROR -> "Party storage is unavailable.";
-        };
-    }
-
-    private List<PartyMemberViewData> mapMembers(List<partyAPI.PartyMemberDetails> members) {
-        List<PartyMemberViewData> viewData = new ArrayList<>();
-        for (partyAPI.PartyMemberDetails member : members) {
-            viewData.add(new PartyMemberViewData(
-                    member.id(),
-                    member.name(),
-                    member.playerName(),
-                    member.level(),
-                    member.currentXp(),
-                    member.xpToNextLevel(),
-                    member.readyToLevel(),
-                    member.passivePerception(),
-                    member.armorClass(),
-                    member.xpSinceShortRest(),
-                    member.xpSinceLongRest(),
-                    member.membership() == partyAPI.MembershipState.ACTIVE
-                            ? MembershipSelection.ACTIVE
-                            : MembershipSelection.RESERVE));
-        }
-        return viewData;
     }
 
     public enum MembershipSelection {
@@ -178,7 +141,22 @@ public final class PartyInteractor {
             int armorClass,
             int xpSinceShortRest,
             int xpSinceLongRest,
-            MembershipSelection membership
+            int shortRestsTakenSinceLongRest,
+            MembershipSelection membership,
+            @Nullable RestStatusViewData restStatus
+    ) {
+    }
+
+    public enum RestIndicatorSeverity {
+        NORMAL,
+        SOON,
+        OVERDUE
+    }
+
+    public record RestStatusViewData(
+            String label,
+            String tooltip,
+            RestIndicatorSeverity severity
     ) {
     }
 }

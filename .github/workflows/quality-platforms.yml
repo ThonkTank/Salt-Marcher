@@ -1,0 +1,80 @@
+name: quality-platforms
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  local-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew check --console=plain
+
+  ckjm-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew ckjmMain --console=plain
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ckjm-report
+          path: build/reports/ckjm
+
+  sonarcloud:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: >
+          ./gradlew sonar --console=plain
+          -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+          -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+          -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+          -Dsonar.qualitygate.wait=true
+
+  codescene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: python3 tools/quality/codescene_delta.py
+        env:
+          CODESCENE_API_TOKEN: ${{ secrets.CODESCENE_API_TOKEN }}
+          CODESCENE_BASE_URL: ${{ vars.CODESCENE_BASE_URL }}
+          CODESCENE_PROJECT_ID: ${{ vars.CODESCENE_PROJECT_ID }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codescene-report
+          path: build/reports/codescene

@@ -1,4 +1,4 @@
-package shell.panel;
+package shell.host;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -8,11 +8,6 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import shell.host.ContributionKey;
-import shell.host.NavigationGroupSpec;
-import shell.host.ShellScreen;
-import shell.host.ShellTabSpec;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;

@@ -8,6 +8,7 @@ public record PartyCharacterRecord(
         int currentXp,
         int xpSinceLongRest,
         int xpSinceShortRest,
+        int shortRestsTakenSinceLongRest,
         int passivePerception,
         int armorClass,
         String membership

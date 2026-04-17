@@ -115,6 +115,51 @@
     -fx-background-color: derive(-sm-bg-elevated, 10%);
 }
 
+.party-day-progress {
+    -fx-pref-height: 10px;
+    -fx-max-width: Infinity;
+}
+.party-day-progress > .track {
+    -fx-background-color: rgba(37, 46, 53, 0.95);
+    -fx-background-radius: 999;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 999;
+    -fx-padding: 0.1em;
+}
+.party-day-progress > .bar {
+    -fx-background-color: linear-gradient(to right, #2f8fda, #5ac67a);
+    -fx-background-radius: 999;
+    -fx-background-insets: 0;
+}
+.party-day-progress-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-min-width: 42;
+}
+.party-rest-chip {
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+.party-rest-chip-normal {
+    -fx-background-color: rgba(44, 118, 175, 0.22);
+    -fx-border-color: rgba(78, 151, 210, 0.6);
+    -fx-text-fill: #dceeff;
+}
+.party-rest-chip-soon {
+    -fx-background-color: rgba(176, 127, 28, 0.22);
+    -fx-border-color: rgba(230, 181, 74, 0.7);
+    -fx-text-fill: #fff0bb;
+}
+.party-rest-chip-overdue {
+    -fx-background-color: rgba(156, 40, 40, 0.24);
+    -fx-border-color: rgba(226, 93, 93, 0.75);
+    -fx-text-fill: #ffd5d5;
+}
+
 .text-field {
     -fx-background-color: -sm-bg-elevated;
     -fx-text-fill: -sm-text-primary;

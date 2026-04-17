@@ -1,7 +1,7 @@
 package shell.host;
 
 import javafx.scene.Node;
-import shell.panel.ShellSlot;
+import org.jspecify.annotations.Nullable;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -38,23 +38,23 @@ public final class ShellSlotContent {
         return nodes.containsKey(slot);
     }
 
-    public Node topBar() {
+    public @Nullable Node topBar() {
         return nodes.get(ShellSlot.TOP_BAR);
     }
 
-    public Node controls() {
+    public @Nullable Node controls() {
         return nodes.get(ShellSlot.COCKPIT_CONTROLS);
     }
 
-    public Node main() {
+    public @Nullable Node main() {
         return nodes.get(ShellSlot.COCKPIT_MAIN);
     }
 
-    public Node editorState() {
+    public @Nullable Node editorState() {
         return nodes.get(ShellSlot.COCKPIT_STATE);
     }
 
-    public Node runtimeState() {
+    public @Nullable Node runtimeState() {
         return nodes.get(ShellSlot.COCKPIT_STATE);
     }
 }

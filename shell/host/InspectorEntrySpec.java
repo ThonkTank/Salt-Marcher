@@ -1,6 +1,7 @@
 package shell.host;
 
 import javafx.scene.Node;
+import org.jspecify.annotations.Nullable;
 
 import java.util.function.Supplier;
 
@@ -11,6 +12,6 @@ public record InspectorEntrySpec(
         String title,
         Object entryKey,
         Supplier<Node> contentSupplier,
-        Supplier<Node> footerSupplier
+        @Nullable Supplier<Node> footerSupplier
 ) {
 }

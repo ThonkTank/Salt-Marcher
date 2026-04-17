@@ -21,6 +21,7 @@ public final class PartyPersistenceSchema {
                     new ColumnSpec("current_xp", "INTEGER NOT NULL DEFAULT 0"),
                     new ColumnSpec("xp_since_long_rest", "INTEGER NOT NULL DEFAULT 0"),
                     new ColumnSpec("xp_since_short_rest", "INTEGER NOT NULL DEFAULT 0"),
+                    new ColumnSpec("short_rests_taken_since_long_rest", "INTEGER NOT NULL DEFAULT 0"),
                     new ColumnSpec("passive_perception", "INTEGER NOT NULL DEFAULT 10"),
                     new ColumnSpec("ac", "INTEGER NOT NULL DEFAULT 10"),
                     new ColumnSpec("in_party", "INTEGER NOT NULL DEFAULT 1")));
