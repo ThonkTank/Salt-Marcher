@@ -13,6 +13,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.DungeonEditorOperation;
 import src.domain.mapcore.api.MapSelectionRef;
+import src.view.dungeonshared.interactor.DungeonMapSelectionSupport;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
 import src.view.mapshared.interactor.MapWorkspaceSupport;
 
@@ -46,20 +47,7 @@ final class DungeonEditorStatePane {
         content.setPadding(new Insets(12));
         deleteButton.setMaxWidth(Double.MAX_VALUE);
         deleteButton.setOnAction(event -> controller.deleteLoaded());
-
-        objectList.setPrefHeight(180.0);
-        objectList.setCellFactory(ignored -> new ListCell<>() {
-            @Override
-            protected void updateItem(MapSelectionRef item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.ownerKind() + " · " + item.label());
-            }
-        });
-        objectList.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> {
-            if (!syncingSelection && after != null) {
-                onTargetSelected.accept(after);
-            }
-        });
+        DungeonMapSelectionSupport.configureSelectionList(objectList, 180.0, () -> syncingSelection, () -> onTargetSelected);
 
         controller.addListener(this::refresh);
         refresh();
@@ -221,26 +209,7 @@ final class DungeonEditorStatePane {
 
     private void syncObjectList(@Nullable BaseMapSnapshot snapshot) {
         syncingSelection = true;
-        objectList.getItems().setAll(snapshot == null ? List.of() : snapshot.selectableTargets());
-        MapSelectionRef resolvedSelection = resolveSelection(snapshot, selectedTarget);
-        selectedTarget = resolvedSelection;
-        if (resolvedSelection == null) {
-            objectList.getSelectionModel().clearSelection();
-        } else {
-            objectList.getSelectionModel().select(resolvedSelection);
-        }
+        selectedTarget = DungeonMapSelectionSupport.syncSelectionList(objectList, snapshot, selectedTarget);
         syncingSelection = false;
-    }
-
-    private @Nullable MapSelectionRef resolveSelection(@Nullable BaseMapSnapshot snapshot, @Nullable MapSelectionRef selection) {
-        if (snapshot == null || selection == null) {
-            return null;
-        }
-        return snapshot.selectableTargets().stream()
-                .filter(candidate -> candidate.ownerId() == selection.ownerId())
-                .filter(candidate -> candidate.ownerKind().equalsIgnoreCase(selection.ownerKind()))
-                .filter(candidate -> candidate.partKind().equalsIgnoreCase(selection.partKind()))
-                .findFirst()
-                .orElse(null);
     }
 }

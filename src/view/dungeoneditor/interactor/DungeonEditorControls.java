@@ -69,10 +69,7 @@ final class DungeonEditorControls extends VBox {
 
         previousLevelButton.setOnAction(event -> controller.stepFloor(-1, this.viewportSupplier.get()));
         nextLevelButton.setOnAction(event -> controller.stepFloor(1, this.viewportSupplier.get()));
-        overlayControls.setOnModeChanged(mode -> controller.updateOverlayMode(mode, this.viewportSupplier.get()));
-        overlayControls.setOnRangeChanged(range -> controller.updateOverlayRange(range, this.viewportSupplier.get()));
-        overlayControls.setOnOpacityChanged(opacity -> controller.updateOverlayOpacity(opacity, this.viewportSupplier.get()));
-        overlayControls.setOnSelectedLevelsChanged(levels -> controller.updateSelectedOverlayLevels(levels, this.viewportSupplier.get()));
+        overlayControls.bindToController(controller, this.viewportSupplier);
 
         HBox mapRow = new HBox(8, selector, newMapButton, editMapButton, graphButton);
         mapRow.setAlignment(Pos.CENTER_LEFT);

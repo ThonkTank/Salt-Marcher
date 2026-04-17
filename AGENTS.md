@@ -50,21 +50,30 @@ Use the documentation tree in this order:
 - Hypothetical method-level callchains do not belong in product or UI specs.
 - A change that introduces or alters behavior, architecture, or ownership must
   update the corresponding documentation in the same change.
+- The agent workflow below is a mandatory delivery protocol for implementation
+  work, not guidance. If a required step cannot run, stop and report the
+  blocker explicitly instead of silently continuing.
 
 ## Agent Workflow
 
-- For every implementation request, inspect the worktree for pre-existing local
-  modifications before starting the requested change.
-- If pre-existing local modifications are present, commit them and push them to
-  `main` before beginning the new work. Only stop when a concrete blocker makes
-  that protocol unsafe or impossible, such as merge conflicts, missing push
-  credentials, sandbox restrictions, or suspected secrets.
+- Before touching files for an implementation request, run an explicit
+  worktree-inspection command and treat it as required preflight, not optional
+  context gathering.
+- If pre-existing local modifications are present, do not begin the requested
+  implementation until those changes are committed and pushed to `main`, or a
+  concrete blocker has been reported that makes that protocol unsafe or
+  impossible, such as merge conflicts, missing push credentials, sandbox
+  restrictions, or suspected secrets.
 - After each completed implementation pass, rerun `./gradlew build` before
-  handoff.
+  handoff. A pass without that rerun is incomplete.
 - When the desktop app is the manual test surface, run
-  `./gradlew installDesktopApp` after the build before handoff unless the user
-  explicitly waives reinstall or the task is purely non-code planning or review
-  work.
+  `./gradlew installDesktopApp` after the successful build before handoff
+  unless the user explicitly waives reinstall or the task is purely non-code
+  planning or review work.
+- Every implementation handoff must state the literal status of the preflight
+  worktree inspection, dirty-worktree commit/push handling, `./gradlew build`,
+  and `./gradlew installDesktopApp` when applicable. If any step did not run,
+  say that directly and give the concrete reason.
 - Verification claims must be literal. Do not claim that commit, push, build,
   or install steps happened unless they actually ran.
 

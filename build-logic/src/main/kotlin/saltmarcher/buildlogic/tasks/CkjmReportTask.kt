@@ -65,7 +65,10 @@ abstract class CkjmReportTask : DefaultTask() {
         val execResult = execOperations.exec {
             workingDir = projectRoot.get().asFile
             executable = resolveJavaExecutable().toString()
-            args("-cp", (toolClasspath.files + runtimeClasspath.files).distinct().joinToString(File.pathSeparator))
+            val ckjmClasspath = (toolClasspath.files + runtimeClasspath.files + compiledClasses.files)
+                .distinct()
+                .joinToString(File.pathSeparator)
+            args("-cp", ckjmClasspath)
             args("gr.spinellis.ckjm.MetricsFilter")
             args(classFiles)
             isIgnoreExitValue = true

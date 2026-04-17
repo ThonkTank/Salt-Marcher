@@ -12,10 +12,10 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.mapcore.api.MapSelectionRef;
+import src.view.dungeonshared.interactor.DungeonMapSelectionSupport;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
 import src.view.mapshared.interactor.MapWorkspaceSupport;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -67,19 +67,7 @@ final class DungeonTravelStatePane {
             }
         });
 
-        objectList.setPrefHeight(160.0);
-        objectList.setCellFactory(ignored -> new ListCell<>() {
-            @Override
-            protected void updateItem(MapSelectionRef item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.ownerKind() + " · " + item.label());
-            }
-        });
-        objectList.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> {
-            if (!syncingSelection && after != null) {
-                onTargetSelected.accept(after);
-            }
-        });
+        DungeonMapSelectionSupport.configureSelectionList(objectList, 160.0, () -> syncingSelection, () -> onTargetSelected);
 
         createNameField.setPromptText("Dungeon Nr.X");
         createNameField.textProperty().addListener((ignored, before, after) -> refresh());
@@ -191,26 +179,7 @@ final class DungeonTravelStatePane {
 
     private void syncObjectList(@Nullable BaseMapSnapshot snapshot) {
         syncingSelection = true;
-        objectList.getItems().setAll(snapshot == null ? List.of() : snapshot.selectableTargets());
-        MapSelectionRef resolved = resolveSelection(snapshot, selectedTarget);
-        selectedTarget = resolved;
-        if (resolved == null) {
-            objectList.getSelectionModel().clearSelection();
-        } else {
-            objectList.getSelectionModel().select(resolved);
-        }
+        selectedTarget = DungeonMapSelectionSupport.syncSelectionList(objectList, snapshot, selectedTarget);
         syncingSelection = false;
-    }
-
-    private @Nullable MapSelectionRef resolveSelection(@Nullable BaseMapSnapshot snapshot, @Nullable MapSelectionRef selection) {
-        if (snapshot == null || selection == null) {
-            return null;
-        }
-        return snapshot.selectableTargets().stream()
-                .filter(candidate -> candidate.ownerId() == selection.ownerId())
-                .filter(candidate -> candidate.ownerKind().equalsIgnoreCase(selection.ownerKind()))
-                .filter(candidate -> candidate.partKind().equalsIgnoreCase(selection.partKind()))
-                .findFirst()
-                .orElse(null);
     }
 }

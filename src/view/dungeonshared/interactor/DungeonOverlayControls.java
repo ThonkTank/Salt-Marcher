@@ -18,7 +18,9 @@ import javafx.scene.layout.Region;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Compact overlay trigger with an in-place menu for placeholder floor settings.
@@ -114,6 +116,18 @@ public final class DungeonOverlayControls {
 
     public void setOnSelectedLevelsChanged(Consumer<List<Integer>> onSelectedLevelsChanged) {
         this.onSelectedLevelsChanged = onSelectedLevelsChanged == null ? ignored -> { } : onSelectedLevelsChanged;
+    }
+
+    public void bindToController(
+            DungeonMapSurfaceController controller,
+            Supplier<src.domain.dungeon.api.Viewport> viewportSupplier
+    ) {
+        Objects.requireNonNull(controller, "controller");
+        Objects.requireNonNull(viewportSupplier, "viewportSupplier");
+        setOnModeChanged(mode -> controller.updateOverlayMode(mode, viewportSupplier.get()));
+        setOnRangeChanged(range -> controller.updateOverlayRange(range, viewportSupplier.get()));
+        setOnOpacityChanged(opacity -> controller.updateOverlayOpacity(opacity, viewportSupplier.get()));
+        setOnSelectedLevelsChanged(levels -> controller.updateSelectedOverlayLevels(levels, viewportSupplier.get()));
     }
 
     public void showSettings(DungeonOverlaySettings settings, boolean disabled) {

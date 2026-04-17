@@ -43,10 +43,7 @@ final class DungeonTravelControls extends VBox {
         downLevelButton.setOnAction(event -> controller.stepFloor(-1, this.viewportSupplier.get()));
         Button upLevelButton = actionButton("Ebene +");
         upLevelButton.setOnAction(event -> controller.stepFloor(1, this.viewportSupplier.get()));
-        overlayControls.setOnModeChanged(mode -> controller.updateOverlayMode(mode, this.viewportSupplier.get()));
-        overlayControls.setOnRangeChanged(range -> controller.updateOverlayRange(range, this.viewportSupplier.get()));
-        overlayControls.setOnOpacityChanged(opacity -> controller.updateOverlayOpacity(opacity, this.viewportSupplier.get()));
-        overlayControls.setOnSelectedLevelsChanged(levels -> controller.updateSelectedOverlayLevels(levels, this.viewportSupplier.get()));
+        overlayControls.bindToController(controller, this.viewportSupplier);
 
         Region levelSpacer = new Region();
         HBox.setHgrow(levelSpacer, Priority.ALWAYS);

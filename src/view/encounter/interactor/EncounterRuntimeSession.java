@@ -1,6 +1,7 @@
 package src.view.encounter.interactor;
 
 import javafx.scene.Node;
+import shell.host.ShellRuntimeContext;
 import src.domain.creatures.creaturesAPI;
 import src.domain.encounter.encounterAPI;
 import src.view.encounter.Controller.EncounterController;
@@ -13,6 +14,16 @@ public final class EncounterRuntimeSession {
 
     private final EncounterView view;
     private final EncounterRuntimeStatePane statePane;
+
+    public static EncounterRuntimeSession from(ShellRuntimeContext runtimeContext) {
+        Objects.requireNonNull(runtimeContext, "runtimeContext");
+        return runtimeContext.session(EncounterRuntimeSession.class, () -> {
+            var persistence = runtimeContext.persistence();
+            var party = persistence.require(src.domain.party.partyAPI.Factory.class).create();
+            var creatures = persistence.require(creaturesAPI.Factory.class).create();
+            return new EncounterRuntimeSession(new encounterAPI(party, creatures), creatures);
+        });
+    }
 
     public EncounterRuntimeSession(encounterAPI encounters, creaturesAPI creatures) {
         Objects.requireNonNull(encounters, "encounters");

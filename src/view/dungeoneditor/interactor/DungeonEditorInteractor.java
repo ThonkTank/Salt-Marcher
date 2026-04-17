@@ -7,14 +7,13 @@ import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonshared.interactor.AbstractDungeonMapInteractor;
 import src.view.dungeonshared.interactor.DungeonMapPresentation;
+import src.view.dungeonshared.interactor.DungeonMapSelectionSupport;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
 import src.view.dungeonshared.interactor.DungeonSelectionInspectorSupport;
 import src.view.mapshared.Model.MapCellViewModel;
 import src.view.mapshared.Model.MapWorkspaceRenderModel;
 import src.view.mapshared.Model.MapWorkspaceSceneViewData;
 import src.view.mapshared.interactor.MapWorkspaceSupport;
-
-import java.util.Objects;
 
 /**
  * Editor coordination for the dungeon control-panel placeholder slice.
@@ -61,31 +60,12 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
     }
 
     private void onCellSelected(MapCellViewModel cellViewModel) {
-        showSelection(resolveSelection(cellViewModel));
+        showSelection(DungeonMapSelectionSupport.resolveSelection(loadedSnapshot(), cellViewModel));
     }
 
     private void showSelection(@Nullable MapSelectionRef selectionRef) {
         selectedTarget = selectionRef;
-        if (selectionRef == null) {
-            workspaceView().setSelectedTarget(null, -1L, null);
-        } else {
-            workspaceView().setSelectedTarget(selectionRef.ownerKind(), selectionRef.ownerId(), selectionRef.partKind());
-        }
-        statePane.showSelectedTarget(selectionRef);
-        inspectorSupport.showSelection(selectionRef);
-    }
-
-    private @Nullable MapSelectionRef resolveSelection(MapCellViewModel cellViewModel) {
-        BaseMapSnapshot snapshot = loadedSnapshot();
-        if (snapshot == null || cellViewModel == null) {
-            return null;
-        }
-        return snapshot.selectableTargets().stream()
-                .filter(target -> target.ownerId() == cellViewModel.ownerId())
-                .filter(target -> target.ownerKind().equalsIgnoreCase(cellViewModel.ownerKind()))
-                .filter(target -> target.partKind().equalsIgnoreCase(cellViewModel.partKind()))
-                .findFirst()
-                .orElse(null);
+        DungeonMapSelectionSupport.applySelection(workspaceView(), statePane::showSelectedTarget, inspectorSupport::showSelection, selectionRef);
     }
 
     private static MapWorkspaceRenderModel placeholderRenderModel() {
@@ -120,22 +100,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
 
     @Override
     protected void onSnapshotChanged() {
-        BaseMapSnapshot snapshot = loadedSnapshot();
-        if (snapshot == null) {
-            if (selectedTarget != null) {
-                showSelection(null);
-            }
-        } else if (selectedTarget != null) {
-            MapSelectionRef resolved = snapshot.selectableTargets().stream()
-                    .filter(target -> target.ownerId() == selectedTarget.ownerId())
-                    .filter(target -> target.ownerKind().equalsIgnoreCase(selectedTarget.ownerKind()))
-                    .filter(target -> target.partKind().equalsIgnoreCase(selectedTarget.partKind()))
-                    .findFirst()
-                    .orElse(null);
-            if (!Objects.equals(resolved, selectedTarget)) {
-                showSelection(resolved);
-            }
-        }
+        DungeonMapSelectionSupport.refreshSelection(loadedSnapshot(), selectedTarget, this::showSelection);
         controls.refresh();
         statePane.refresh();
     }

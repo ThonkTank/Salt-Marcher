@@ -284,32 +284,57 @@ public final class EncounterGenerationUseCase {
             int bossCount,
             Set<String> roles
     ) {
+        int score = 0;
+        score += scoreTargetBand(targetDifficulty, adjustedXp, thresholds, targetAdjustedXp);
+        score += scoreAdjustedXpProximity(adjustedXp, targetAdjustedXp);
+        score += achievedDifficulty == targetDifficulty ? 140 : 0;
+        score += scoreEntryCount(entries.size());
+        score += scoreRoleSynergy(roles);
+        score += scoreCompositionPenalties(entries, creatureCount, bossCount);
+        return score;
+    }
+
+    private static int scoreTargetBand(
+            EncounterDifficultyBand targetDifficulty,
+            int adjustedXp,
+            EncounterDifficultyMath.Thresholds thresholds,
+            int targetAdjustedXp
+    ) {
         int minXp = EncounterDifficultyMath.minAdjustedXp(targetDifficulty, thresholds);
         int maxXp = EncounterDifficultyMath.maxAdjustedXp(targetDifficulty, thresholds);
-        int score = 0;
-
         if (adjustedXp >= minXp && adjustedXp <= maxXp) {
-            score += 700;
-        } else {
-            int miss = adjustedXp < minXp ? minXp - adjustedXp : adjustedXp - maxXp;
-            score += Math.max(0, 500 - miss * 400 / Math.max(1, targetAdjustedXp));
+            return 700;
         }
+        int miss = adjustedXp < minXp ? minXp - adjustedXp : adjustedXp - maxXp;
+        return Math.max(0, 500 - miss * 400 / Math.max(1, targetAdjustedXp));
+    }
 
-        score += Math.max(0, 250 - Math.abs(adjustedXp - targetAdjustedXp) * 250 / Math.max(1, targetAdjustedXp));
-        score += achievedDifficulty == targetDifficulty ? 140 : 0;
-        score += switch (entries.size()) {
+    private static int scoreAdjustedXpProximity(int adjustedXp, int targetAdjustedXp) {
+        return Math.max(0, 250 - Math.abs(adjustedXp - targetAdjustedXp) * 250 / Math.max(1, targetAdjustedXp));
+    }
+
+    private static int scoreEntryCount(int entryCount) {
+        return switch (entryCount) {
             case 1 -> 40;
             case 2 -> 90;
             case 3 -> 70;
             default -> 50;
         };
-        score += roles.size() * 25;
+    }
+
+    private static int scoreRoleSynergy(Set<String> roles) {
+        int score = roles.size() * 25;
         if (roles.contains("Boss") && roles.size() > 1) {
             score += 90;
         }
         if (roles.contains("Brute") && roles.contains("Skirmisher")) {
             score += 70;
         }
+        return score;
+    }
+
+    private static int scoreCompositionPenalties(List<DraftEntry> entries, int creatureCount, int bossCount) {
+        int score = 0;
         if (bossCount > 0 && creatureCount > 4) {
             score -= 120;
         }
@@ -317,12 +342,18 @@ public final class EncounterGenerationUseCase {
             score -= 30;
         }
         for (DraftEntry entry : entries) {
-            if (entry.quantity() > 4) {
-                score -= (entry.quantity() - 4) * 35;
-            }
-            if ("Minion".equals(entry.profile().role()) && creatureCount <= 2) {
-                score -= 40;
-            }
+            score += scoreEntryPenalty(entry, creatureCount);
+        }
+        return score;
+    }
+
+    private static int scoreEntryPenalty(DraftEntry entry, int creatureCount) {
+        int score = 0;
+        if (entry.quantity() > 4) {
+            score -= (entry.quantity() - 4) * 35;
+        }
+        if ("Minion".equals(entry.profile().role()) && creatureCount <= 2) {
+            score -= 40;
         }
         return score;
     }

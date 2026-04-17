@@ -8,9 +8,6 @@ import shell.host.ShellRuntimeStateSpec;
 import shell.host.ShellScreen;
 import shell.host.ShellSlot;
 import shell.host.ShellViewContribution;
-import src.domain.creatures.creaturesAPI;
-import src.domain.encounter.encounterAPI;
-import src.domain.party.partyAPI;
 import src.view.encounter.interactor.EncounterRuntimeSession;
 
 import java.util.Map;
@@ -27,11 +24,7 @@ public final class EncounterstateViewContribution implements ShellViewContributi
 
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
-        EncounterRuntimeSession session = runtimeContext.session(EncounterRuntimeSession.class, () -> {
-            partyAPI party = runtimeContext.persistence().require(partyAPI.Factory.class).create();
-            creaturesAPI creatures = runtimeContext.persistence().require(creaturesAPI.Factory.class).create();
-            return new EncounterRuntimeSession(new encounterAPI(party, creatures), creatures);
-        });
+        EncounterRuntimeSession session = EncounterRuntimeSession.from(runtimeContext);
         return new ShellScreen() {
             @Override
             public String getTitle() {
