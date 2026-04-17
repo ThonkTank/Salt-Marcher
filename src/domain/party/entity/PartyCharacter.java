@@ -36,7 +36,7 @@ public final class PartyCharacter {
         this.name = normalizeName(name);
         this.playerName = normalizeOptional(playerName);
         this.level = PartyXpTables.clampLevel(level);
-        this.currentXp = PartyXpTables.normalizeCurrentXpForLevel(this.level, currentXp);
+        this.currentXp = Math.max(0, currentXp);
         this.xpSinceLongRest = Math.max(0, xpSinceLongRest);
         this.xpSinceShortRest = Math.max(0, xpSinceShortRest);
         this.passivePerception = clampStat(passivePerception);

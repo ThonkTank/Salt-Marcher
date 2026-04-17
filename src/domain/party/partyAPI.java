@@ -9,7 +9,6 @@ import src.domain.party.usecase.LoadActivePartyCompositionUseCase;
 import src.domain.party.usecase.LoadActivePartyUseCase;
 import src.domain.party.usecase.LoadAdventuringDaySummaryUseCase;
 import src.domain.party.usecase.LoadPartySnapshotUseCase;
-import src.domain.party.usecase.PartyRosterStore;
 import src.domain.party.usecase.PerformPartyRestUseCase;
 import src.domain.party.usecase.SetPartyMembershipUseCase;
 import src.domain.party.usecase.UpdateCharacterUseCase;
@@ -24,9 +23,6 @@ import java.util.List;
  */
 public final class partyAPI {
 
-    private static final PartyRosterRepository ROSTER_REPOSITORY =
-            PartyRosterStore.empty();
-
     private final LoadPartySnapshotUseCase loadPartySnapshotUseCase;
     private final LoadActivePartyUseCase loadActivePartyUseCase;
     private final LoadActivePartyCompositionUseCase loadActivePartyCompositionUseCase;
@@ -38,17 +34,18 @@ public final class partyAPI {
     private final AwardPartyXpUseCase awardPartyXpUseCase;
     private final PerformPartyRestUseCase performPartyRestUseCase;
 
-    public partyAPI() {
-        this.loadPartySnapshotUseCase = new LoadPartySnapshotUseCase(ROSTER_REPOSITORY);
-        this.loadActivePartyUseCase = new LoadActivePartyUseCase(ROSTER_REPOSITORY);
-        this.loadActivePartyCompositionUseCase = new LoadActivePartyCompositionUseCase(ROSTER_REPOSITORY);
-        this.loadAdventuringDaySummaryUseCase = new LoadAdventuringDaySummaryUseCase(ROSTER_REPOSITORY);
-        this.createCharacterUseCase = new CreateCharacterUseCase(ROSTER_REPOSITORY);
-        this.updateCharacterUseCase = new UpdateCharacterUseCase(ROSTER_REPOSITORY);
-        this.deleteCharacterUseCase = new DeleteCharacterUseCase(ROSTER_REPOSITORY);
-        this.setPartyMembershipUseCase = new SetPartyMembershipUseCase(ROSTER_REPOSITORY);
-        this.awardPartyXpUseCase = new AwardPartyXpUseCase(ROSTER_REPOSITORY);
-        this.performPartyRestUseCase = new PerformPartyRestUseCase(ROSTER_REPOSITORY);
+    public partyAPI(PartyRosterRepository rosterRepository) {
+        PartyRosterRepository repository = java.util.Objects.requireNonNull(rosterRepository, "rosterRepository");
+        this.loadPartySnapshotUseCase = new LoadPartySnapshotUseCase(repository);
+        this.loadActivePartyUseCase = new LoadActivePartyUseCase(repository);
+        this.loadActivePartyCompositionUseCase = new LoadActivePartyCompositionUseCase(repository);
+        this.loadAdventuringDaySummaryUseCase = new LoadAdventuringDaySummaryUseCase(repository);
+        this.createCharacterUseCase = new CreateCharacterUseCase(repository);
+        this.updateCharacterUseCase = new UpdateCharacterUseCase(repository);
+        this.deleteCharacterUseCase = new DeleteCharacterUseCase(repository);
+        this.setPartyMembershipUseCase = new SetPartyMembershipUseCase(repository);
+        this.awardPartyXpUseCase = new AwardPartyXpUseCase(repository);
+        this.performPartyRestUseCase = new PerformPartyRestUseCase(repository);
     }
 
     public enum ReadStatus {

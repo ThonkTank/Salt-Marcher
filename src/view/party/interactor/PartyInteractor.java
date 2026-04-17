@@ -1,6 +1,7 @@
 package src.view.party.interactor;
 
 import src.domain.party.partyAPI;
+import src.domain.party.repository.PartyRosterRepository;
 import src.view.party.Model.PartyToolbarModel;
 
 import java.util.ArrayList;
@@ -12,8 +13,8 @@ public final class PartyInteractor {
     private final partyAPI party;
     private final PartyToolbarModel model;
 
-    public PartyInteractor(PartyToolbarModel model) {
-        this.party = new partyAPI();
+    public PartyInteractor(partyAPI party, PartyToolbarModel model) {
+        this.party = Objects.requireNonNull(party, "party");
         this.model = Objects.requireNonNull(model, "model");
     }
 

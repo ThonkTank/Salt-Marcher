@@ -68,6 +68,7 @@ sourceSets {
 }
 
 dependencies {
+    implementation("org.xerial:sqlite-jdbc:3.46.1.3")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.0")
 }

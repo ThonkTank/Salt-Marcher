@@ -1,6 +1,8 @@
 package bootstrap;
 
 import shell.host.AppShell;
+import shell.host.RuntimeServiceProvider;
+import shell.host.RuntimeServiceRegistry;
 import shell.host.ShellContributionSpec;
 import shell.host.ShellRuntimeContext;
 import shell.host.ShellRuntimeStateSpec;
@@ -12,6 +14,7 @@ import shell.host.ShellViewContribution;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ServiceLoader;
 
 /**
  * Generic application bootstrap that discovers feature-owned view contributions from {@code src/}.
@@ -29,7 +32,7 @@ public final class AppBootstrap {
     }
 
     public AppShell createShell() {
-        AppShell shell = new AppShell();
+        AppShell shell = new AppShell(discoverRuntimeServices());
 
         List<ResolvedContribution> contributions = discoverContributions(shell.runtimeContext());
         for (ResolvedContribution contribution : contributions) {
@@ -41,6 +44,14 @@ public final class AppBootstrap {
             shell.navigateTo(startup.key());
         }
         return shell;
+    }
+
+    private RuntimeServiceRegistry discoverRuntimeServices() {
+        RuntimeServiceRegistry.Builder builder = new RuntimeServiceRegistry.Builder();
+        for (RuntimeServiceProvider provider : ServiceLoader.load(RuntimeServiceProvider.class)) {
+            provider.register(builder);
+        }
+        return builder.build();
     }
 
     private List<ResolvedContribution> discoverContributions(ShellRuntimeContext runtimeContext) {

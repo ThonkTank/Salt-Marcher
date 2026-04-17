@@ -8,6 +8,8 @@ import shell.host.ShellScreen;
 import shell.host.ShellTopBarSpec;
 import shell.host.ShellViewContribution;
 import shell.panel.ShellSlot;
+import src.domain.party.partyAPI;
+import src.domain.party.repository.PartyRosterRepository;
 import src.view.party.Controller.PartyController;
 import src.view.party.Model.PartyToolbarModel;
 import src.view.party.View.PartyToolbarView;
@@ -25,7 +27,8 @@ public final class PartyViewContribution implements ShellViewContribution {
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
         PartyToolbarModel model = new PartyToolbarModel();
-        PartyInteractor interactor = new PartyInteractor(model);
+        PartyRosterRepository repository = runtimeContext.services().require(PartyRosterRepository.class);
+        PartyInteractor interactor = new PartyInteractor(new partyAPI(repository), model);
         PartyController controller = new PartyController(interactor);
         PartyToolbarView view = new PartyToolbarView(model, controller);
         controller.initialize();

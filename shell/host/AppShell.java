@@ -46,7 +46,7 @@ public final class AppShell extends BorderPane {
 
     private final InspectorPane inspectorPane = new InspectorPane();
     private final RuntimeStatePane runtimeStatePane = new RuntimeStatePane();
-    private final ShellRuntimeContext runtimeContext = new ShellRuntimeContext(inspectorPane);
+    private final ShellRuntimeContext runtimeContext;
     private final Node editorStatePlaceholder = createPlaceholderPane("Status", "Kein lokaler Zustand");
     private final Node emptyRuntimeStatePlaceholder = createPlaceholderPane("Runtime State", "Keine Runtime-State-Tabs registriert");
 
@@ -62,6 +62,11 @@ public final class AppShell extends BorderPane {
     private ContributionKey activeTabKey;
 
     public AppShell() {
+        this(RuntimeServiceRegistry.empty());
+    }
+
+    public AppShell(RuntimeServiceRegistry runtimeServices) {
+        this.runtimeContext = new ShellRuntimeContext(inspectorPane, runtimeServices);
         sidebar.getStyleClass().add("nav-sidebar");
         sidebar.setAlignment(Pos.TOP_CENTER);
 
