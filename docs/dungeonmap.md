@@ -140,6 +140,53 @@ The aggregate is the transaction boundary for one map. It is not permission to c
 #### SpatialTopology
 Responsibility: canonical spatial truth.
 
+`SpatialTopology` ist kein bloßes Sammelwort für "alles Räumliche", sondern ein eigenständiges abgeschlossenes Domänenkonstrukt. Es hält genau die kanonische räumliche Wahrheit, aus der Boundarys, Räume, Korridore, Treppenmaterialisierung und andere Projektionen deterministisch abgeleitet werden.
+
+Die Struktur muss semantisch mindestens äquivalent zu folgender Form sein:
+
+```text
+SpatialTopology
+- Map<TileCoord, SpaceId> interiorByTile
+- Set<EdgeCoord> explicitInternalWalls
+- Map<CorridorNodeId, MapPlacement> corridorNodePlacements
+- Map<CorridorSegmentId, CorridorSegmentTopology> corridorSegments
+- Map<ConnectionId, EdgeAnchor> doorAnchors
+- Map<ConnectionId, StairPlacement> stairPlacements
+- Map<TopologyOwnerRef, OwnedTopologySlice> generatedTopologyByOwner
+```
+
+```text
+CorridorSegmentTopology
+- MapPlacement from
+- MapPlacement to
+```
+
+```text
+OwnedTopologySlice
+- Set<TileCoord> interiorTiles
+- Set<EdgeCoord> internalEdges
+```
+
+Semantik der Felder:
+
+- `interiorByTile` ist die einzige kanonische Truth dafür, welche konkreten Tiles begehbares Innengebiet sind und zu welchem `SpaceId` sie gehören.
+- `explicitInternalWalls` ist die einzige kanonische Truth für authored Innenwände. Boundary-Wände werden **nicht** hier gespeichert, sondern aus Tile-Kontexten abgeleitet.
+- `corridorNodePlacements` hält die kleinste authored Knotenmenge für Korridornetze. Die Placements liegen in derselben gemeinsamen Placement-Sprache wie Türen, Treppen und Features.
+- `corridorSegments` hält die authored Segmentverbindungen zwischen genau zwei Endpunkten. Die materialisierte Segmentgeometrie liegt nicht hier direkt, sondern in den owner-getaggten generated slices.
+- `doorAnchors` hält die authored Kantenposition jeder Türverbindung. Traversability, Notes und Connection-Typ gehören weiterhin in `ConnectionCatalog`, nicht hierher.
+- `stairPlacements` hält die authored Treppenparameter je Treppenverbindung. Die daraus entstehende Treppentopologie ist generated topology, nicht authored topology.
+- `generatedTopologyByOwner` hält nur selektiv regenerierbare Topologie, also Treppen- und Korridorgeometrie, jeweils über `TopologyOwnerRef` einem konkreten Owner zugeordnet.
+
+Dadurch ist `SpatialTopology` fachlich sauber abgeschlossen:
+
+- Böden sind die von `interiorByTile` beschriebenen traversierbaren Interior-Tiles.
+- Wände sind entweder explizite authored Innenwände aus `explicitInternalWalls` oder abgeleitete Boundary-Kanten aus `interiorByTile`.
+- Türen sind topologisch ihre `doorAnchors`; ihre Business-Semantik lebt im `ConnectionCatalog`.
+- Korridore sind `SpaceId`-gebundene Interior-Fläche plus authored Node-/Segmentgraph plus segment-owned generated topology.
+- Treppen sind authored `stairPlacements` plus connection-owned generated topology.
+
+Nicht Teil von `SpatialTopology` sind Namen, Beschreibungen, Adjazenzlisten, Travel-Optionen oder Inspector-Texte. Diese bleiben entweder in den anderen Katalogen oder in abgeleiteten Projektionen.
+
 Owns:
 - which tiles are interior and traversable
 - which explicit internal edges exist
