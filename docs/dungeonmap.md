@@ -402,38 +402,328 @@ No alternate top-level architecture root may be introduced for the feature.
 
 ### VO-Ansätze nach fachlichen Bereichen
 
-Ich werte hier **nur die 2D-koordinatenabhängigen VOs** aus. Die Datei verlangt floor-aware concrete coordinates, nennt die relevanten Geometrie-/Placement-VOs explizit und reserviert zusätzlich `VertexRect` und `VertexPolyline` als command-only Geometrie-VOs. Reine IDs, Enums und vertikale Hilfs-VOs wie `DungeonMapId`, `SpaceId`, `ConnectionKind`, `FloorSpan`, `CardinalHeading`, `EdgeSide`, `TopologyOwnerRef` sind zwar Teil der Konzeption, aber **keine eigenen Tile/Edge/Corner-Träger** und deshalb nicht sinnvoll als Zeilen dieser Matrix.   
+Abschnitt 1 ist die normative Vollständigkeitsliste aller VOs, die für das in dieser Spezifikation beschriebene Verhalten benötigt werden. Er umfasst explizit benannte und bisher nur implizit beschriebene VOs gleichermaßen. Er umfasst persistierte, abgeleitete, query-seitige und rein operationslokale VOs; Lebenszyklus, Persistierung, Caching oder Flüchtigkeit sind **kein** Ausschlusskriterium.
 
-**Annahmen für die Matrix**
+Für alle technischen Definitionen in Abschnitt 1 gelten dieselben Grundregeln:
+
+* Jeder konkrete Mapbezug ist floor-aware und trägt `FloorIndex` explizit.
+* Die technische Darstellung ist als immutable Java-VO zu lesen: `record`, `enum` oder `sealed interface` mit klaren Trägern.
+* `MapPlacement` bleibt die gemeinsame Placement-Sprache für authored Anchors und Footprints.
+* Die Unterpunkte `Administrativ`, `Verhalten` und `Topologisch` benennen jeweils denselben VO aus drei Blickwinkeln, nicht drei verschiedene Typen.
+* Die Demo-Implementation ist für diese Liste irrelevant; maßgeblich ist nur die Spezifikation in diesem Dokument.
+
+#### 1. Verhaltenszentrierte VOs
+
+- `BoundarySidePlacement`
+  - Semantisches Konzept: stabile authored Platzierung auf genau einer Seite einer konkreten Boundary-Kante, typischerweise für feste Korridorendpunkte.
+  - Technische Definition: `record BoundarySidePlacement(EdgeAnchor boundary, EdgeSide side) implements MapPlacement`
+  - Administrativ: keine eigene Identität; referenziert die Boundary über `EdgeAnchor`.
+  - Verhalten: markiert eindeutig, welche Boundary-Seite als benutzbare Endpoint-Seite gilt.
+  - Topologisch: `boundary` benennt die konkrete floor-aware Kante, `side` wählt deren Halbseite.
+- `CardinalHeading`
+  - Semantisches Konzept: horizontale Hauptrichtung für authored Ausrichtung.
+  - Technische Definition: `enum CardinalHeading { NORTH, EAST, SOUTH, WEST }`
+  - Administrativ: keine zusätzliche ID; der Enumwert ist selbst die Referenz.
+  - Verhalten: steuert Richtungsangaben, Stair-Orientierung und relative Beschreibungen.
+  - Topologisch: beschreibt eine orthogonale Richtung auf dem 2D-Raster, nie einen Floorwechsel.
+- `ConnectionDescription`
+  - Semantisches Konzept: abgeleitete, UI-taugliche Beschreibung einer einzelnen Verbindung für Inspector und Travel.
+  - Technische Definition: `record ConnectionDescription(ConnectionId id, ConnectionKind kind, String title, String description, TraversabilityState traversability, SpaceId targetSpaceId, CardinalHeading relativeHeading, String gmNotes)`
+  - Administrativ: `id` und `targetSpaceId` verknüpfen die Beschreibung stabil mit Domänenobjekten.
+  - Verhalten: trägt die lesbare Exit-/Door-/Stair-Beschreibung inklusive Traversierbarkeit und GM-Hinweis.
+  - Topologisch: `relativeHeading` beschreibt die aus Projektion abgeleitete Richtung zum Zielraum.
+- `ConnectionId`
+  - Semantisches Konzept: stabile Identität einer authored Verbindung.
+  - Technische Definition: `record ConnectionId(long value)`
+  - Administrativ: `value` ist die persistierbare Lookup-Identität.
+  - Verhalten: ordnet Änderungen, Projektionen und Travel-Optionen derselben Verbindung zu.
+  - Topologisch: keine eigene Geometrie; referenziert Topologie nur indirekt.
+- `ConnectionKind`
+  - Semantisches Konzept: fachliche Art einer Verbindung.
+  - Technische Definition: `enum ConnectionKind { DOOR, STAIR }`
+  - Administrativ: der Enumwert ist der fachliche Discriminator.
+  - Verhalten: entscheidet, welche Regeln, Editor-Optionen und Projektionen für die Verbindung gelten.
+  - Topologisch: beeinflusst, ob eine Verbindung auf einer Boundary-Kante oder als vertikale Verbindung materialisiert.
+- `ConnectionProfile`
+  - Semantisches Konzept: authored Fachprofil einer Verbindung unabhängig von ihrer Projektion.
+  - Technische Definition: `record ConnectionProfile(ConnectionKind kind, TraversabilityState traversability, String title, String description, String authoredNote)`
+  - Administrativ: keine eigene ID; wird von `ConnectionId`-getragenen Objekten verwendet.
+  - Verhalten: enthält gameplay-relevante Verbindungseigenschaften und authored Text.
+  - Topologisch: keine eigene Geometrie; die Lage kommt aus Placement-VOs.
+- `CorridorNodeId`
+  - Semantisches Konzept: stabile Identität eines authored Korridorknotens.
+  - Technische Definition: `record CorridorNodeId(long value)`
+  - Administrativ: `value` ist der persistierbare Lookup-Schlüssel.
+  - Verhalten: identifiziert einen authored Routing-Knoten unabhängig von abgeleiteter Geometrie.
+  - Topologisch: verweist indirekt auf einen Punkt im authored Korridorgraphen.
+- `CorridorRoute`
+  - Semantisches Konzept: operationslokales Ergebnis einer Korridor-Routenberechnung zwischen zwei authored Endpunkten.
+  - Technische Definition: `record CorridorRoute(MapPlacement from, MapPlacement to, VertexPolyline centerLine, TileFootprint interiorFootprint)`
+  - Administrativ: `from` und `to` referenzieren die beiden authored Route-Enden.
+  - Verhalten: hält genau die berechnete Korridorführung fest, die danach materialisiert oder verworfen werden kann.
+  - Topologisch: `centerLine` beschreibt den orthogonalen Verlauf, `interiorFootprint` die daraus resultierenden Innen-Tiles.
+- `CorridorSegmentId`
+  - Semantisches Konzept: stabile Identität eines authored Korridorsegments.
+  - Technische Definition: `record CorridorSegmentId(long value)`
+  - Administrativ: `value` ist die persistierbare Segment-Referenz.
+  - Verhalten: grenzt ein authored Segment von anderen Segmenten desselben Netzwerks ab.
+  - Topologisch: referenziert indirekt die segmenteigene generierte Topologie.
+- `DoorReanchorDecision`
+  - Semantisches Konzept: operationslokale Entscheidung, auf welche neue Boundary-Kante eine Tür nach Topologieänderung umgehängt wird.
+  - Technische Definition: `record DoorReanchorDecision(ConnectionId connectionId, EdgeAnchor newAnchor, String reason)`
+  - Administrativ: `connectionId` bindet die Entscheidung an genau eine Türverbindung.
+  - Verhalten: dokumentiert den deterministisch gewählten Reanchoring-Ausgang.
+  - Topologisch: `newAnchor` benennt die konkrete neue Türkante.
+- `DoorSidePlacement`
+  - Semantisches Konzept: stabile authored Platzierung auf genau einer Seite einer konkreten Tür.
+  - Technische Definition: `record DoorSidePlacement(EdgeAnchor door, EdgeSide side) implements MapPlacement`
+  - Administrativ: keine eigene ID; referenziert die Türseite über `door`.
+  - Verhalten: markiert, auf welcher Seite der Tür sich ein Korridorendpunkt oder Eintrittsbezug befindet.
+  - Topologisch: `door` benennt die konkrete floor-aware Türkante, `side` wählt eine ihrer Halbseiten.
+- `DungeonMapId`
+  - Semantisches Konzept: stabile Identität eines Dungeon-Maps-Aggregats.
+  - Technische Definition: `record DungeonMapId(long value)`
+  - Administrativ: `value` ist der persistierbare Primärschlüssel.
+  - Verhalten: trennt Kommandos, Queries und Projektionen verschiedener Maps.
+  - Topologisch: keine Geometrie.
+- `DungeonMapMetadata`
+  - Semantisches Konzept: authored Metadaten des Dungeon-Maps-Aggregats.
+  - Technische Definition: `record DungeonMapMetadata(String name)`
+  - Administrativ: `name` ist der stabile Nutzername der Map.
+  - Verhalten: steuert Auswahl, Anzeige und Benennung geladener Maps.
+  - Topologisch: keine Geometrie.
+- `EdgeAnchor`
+  - Semantisches Konzept: authored Platzierung auf genau einer konkreten Kante.
+  - Technische Definition: `record EdgeAnchor(EdgeCoord edge) implements MapPlacement`
+  - Administrativ: keine eigene ID; die referenzierte Kante ist die Lookup-Basis.
+  - Verhalten: dient als gemeinsamer Träger für Türen und andere edge-basierte Platzierungen.
+  - Topologisch: `edge` ist die konkrete floor-aware Rasterkante.
+- `EdgeCoord`
+  - Semantisches Konzept: eindeutige Adresse einer einzelnen Rasterkante.
+  - Technische Definition: `record EdgeCoord(FloorIndex floor, int x, int y, EdgeAxis axis)` mit `enum EdgeAxis { HORIZONTAL, VERTICAL }`
+  - Administrativ: kein separater Schlüssel nötig; die Koordinaten sind die Identität.
+  - Verhalten: ermöglicht die Adressierung von Wänden, Boundaries und Door-Ankern.
+  - Topologisch: `floor`, `x`, `y` und `axis` bestimmen genau eine orthogonale Kante.
+- `EdgeSide`
+  - Semantisches Konzept: Auswahl einer von zwei Halbseiten einer orientierten Kante.
+  - Technische Definition: `enum EdgeSide { NEGATIVE, POSITIVE }`
+  - Administrativ: der Enumwert ist selbst der Discriminator.
+  - Verhalten: bestimmt, welche Seite einer Tür- oder Boundary-Kante gemeint ist.
+  - Topologisch: wählt relativ zu einer orientierten Kante genau eine ihrer beiden Seiten.
+- `EditorSnapshot`
+  - Semantisches Konzept: abgeleiteter Query-Snapshot für den Editor ohne editorlokalen UI-State.
+  - Technische Definition: `record EditorSnapshot(DungeonMapMetadata metadata, RenderProjection renderProjection, List<SpaceBoundary> spaceBoundaries, List<ConnectionDescription> connections, List<FeatureDescription> features)`
+  - Administrativ: `metadata` identifiziert und benennt die geladene Map.
+  - Verhalten: bündelt genau die fachlichen Read-Model-Daten, die der Editor zum Anzeigen und Bearbeiten braucht.
+  - Topologisch: `renderProjection` und `spaceBoundaries` transportieren die abgeleitete Geometrie.
+- `FeatureDescription`
+  - Semantisches Konzept: abgeleitete, lesbare Beschreibung eines Dungeon-Features.
+  - Technische Definition: `record FeatureDescription(FeatureId id, FeatureKind kind, String title, String description, MapPlacement placement, Optional<SpaceId> spaceId, String gmNotes)`
+  - Administrativ: `id` und optionales `spaceId` verknüpfen die Beschreibung mit stabilen Domänenobjekten.
+  - Verhalten: trägt Feature-Typ, Spielertext und GM-Text für Inspector und ähnliche Read-Modelle.
+  - Topologisch: `placement` benennt die authored oder projizierte Lage des Features.
+- `FeatureId`
+  - Semantisches Konzept: stabile Identität eines authored Features.
+  - Technische Definition: `record FeatureId(long value)`
+  - Administrativ: `value` ist der persistierbare Primärschlüssel.
+  - Verhalten: ordnet Updates, Projektionen und Verweise demselben Feature zu.
+  - Topologisch: keine Geometrie.
+- `FeatureKind`
+  - Semantisches Konzept: fachliche Kategorie eines Dungeon-Features.
+  - Technische Definition: `enum FeatureKind { LOOT, ENEMY, INTERACTIBLE, HAZARD, SET_DRESSING }`
+  - Administrativ: der Enumwert ist der fachliche Typ-Discriminator.
+  - Verhalten: steuert Beschreibung, Inspector-Darstellung und spätere Interaktionslogik.
+  - Topologisch: keine Geometrie; Lage kommt aus `MapPlacement`.
+- `FeatureProfile`
+  - Semantisches Konzept: authored Fachprofil eines Features.
+  - Technische Definition: `record FeatureProfile(FeatureKind kind, String name, String playerDescription, String gmNotes)`
+  - Administrativ: keine eigene ID; wird in einem `FeatureId`-getragenen Objekt verwendet.
+  - Verhalten: bündelt fachliche Beschreibung und GM-Information eines Features.
+  - Topologisch: keine eigene Geometrie.
+- `FloorIndex`
+  - Semantisches Konzept: konkrete Dungeon-Etage.
+  - Technische Definition: `record FloorIndex(int value)`
+  - Administrativ: `value` ist die persistierbare Etagenreferenz.
+  - Verhalten: trennt Hauptfloor, Onion-Slice-Floors und mehrstöckige Topologie sauber.
+  - Topologisch: ist die verpflichtende vertikale Komponente jeder konkreten Mapkoordinate.
+- `FloorSpan`
+  - Semantisches Konzept: vertikale Reichweite über mehrere Floors ohne vollständige Ortsangabe.
+  - Technische Definition: `record FloorSpan(FloorIndex startFloor, FloorIndex endFloor)`
+  - Administrativ: keine eigene ID; `startFloor` und `endFloor` definieren die Reichweite.
+  - Verhalten: beschreibt, welche Floors eine Treppe verbindet.
+  - Topologisch: modelliert nur die vertikale Spannweite und ersetzt nie eine konkrete floor-aware Position.
+- `MapPlacement`
+  - Semantisches Konzept: gemeinsame Placement-Sprache für authored geometrische Träger.
+  - Technische Definition: `sealed interface MapPlacement permits TileAnchor, EdgeAnchor, VertexAnchor, TileFootprint, DoorSidePlacement, BoundarySidePlacement, StairPlacement`
+  - Administrativ: die konkrete Implementation bestimmt, welcher Träger referenziert wird.
+  - Verhalten: verhindert konkurrierende Parallelsprachen für Placements.
+  - Topologisch: kapselt tile-, edge-, vertex- und footprint-basierte Platzierungen unter einem Typ.
+- `RenderProjection`
+  - Semantisches Konzept: abgeleitete Render-Sicht auf die Dungeon-Topologie.
+  - Technische Definition: `record RenderProjection(FloorIndex mainFloor, Map<FloorIndex, List<SpaceBoundary>> boundariesByFloor, List<ConnectionDescription> connections, List<FeatureDescription> features)`
+  - Administrativ: `mainFloor` benennt die zentrale Darstellungsebene der Projektion.
+  - Verhalten: liefert genau die fachliche Sicht, aus der Canvas- und Inspector-nahe Darstellungen gebaut werden.
+  - Topologisch: `boundariesByFloor` enthält sichtbare Geometrie nach Floor gruppiert, einschließlich Onion-Slice-Ebenen.
+- `SensoryProfile`
+  - Semantisches Konzept: authored oder abgeleitetes sensorisches Profil eines Raums.
+  - Technische Definition: `record SensoryProfile(String sizeAndShape, String lightLevel, String sounds, String smells, String physicalMakeup)`
+  - Administrativ: keine eigene ID; wird als Bestandteil von Raumprofilen und Raumbeschreibungen verwendet.
+  - Verhalten: bündelt genau die in der Spezifikation geforderte Raumwahrnehmung.
+  - Topologisch: enthält selbst keine Koordinaten, wird aber aus Topologie und authored Angaben gespeist.
+- `SpaceBoundary`
+  - Semantisches Konzept: abgeleitete Boundary eines einzelnen `SpaceId`.
+  - Technische Definition: `record SpaceBoundary(SpaceId spaceId, Set<EdgeCoord> boundaryEdges)`
+  - Administrativ: `spaceId` bindet die Boundary an genau einen Raum oder Korridor.
+  - Verhalten: beschreibt, wo ein Raum endet und über welche Kanten Exits liegen können.
+  - Topologisch: `boundaryEdges` ist die konkrete Menge der abgeleiteten Kanten.
+- `SpaceDescription`
+  - Semantisches Konzept: abgeleitete Inspector-Beschreibung eines Raums oder Korridors.
+  - Technische Definition: `record SpaceDescription(SpaceId id, String title, SensoryProfile sensory, List<ConnectionDescription> connections, List<FeatureDescription> features)`
+  - Administrativ: `id` verknüpft die Beschreibung mit dem stabilen `SpaceId`.
+  - Verhalten: fasst den ganzen für Spieler und GM relevanten Raumtext zusammen.
+  - Topologisch: bezieht sich indirekt auf die aus Topologie abgeleiteten Grenzen und Richtungen seiner Unterobjekte.
+- `SpaceId`
+  - Semantisches Konzept: stabile Identität eines authored Raums oder Korridors.
+  - Technische Definition: `record SpaceId(long value)`
+  - Administrativ: `value` ist der persistierbare Primärschlüssel.
+  - Verhalten: identifiziert konsistent denselben Space über Split, Merge, Inspector und Travel.
+  - Topologisch: verweist indirekt auf die ihm zugeordnete Interior-Topologie.
+- `SpaceKind`
+  - Semantisches Konzept: fachliche Grundart eines `SpaceId`.
+  - Technische Definition: `enum SpaceKind { ROOM, CORRIDOR }`
+  - Administrativ: der Enumwert ist der Typ-Discriminator.
+  - Verhalten: bestimmt, welche Regeln, Beschreibungen und Editoroperationen auf den Space passen.
+  - Topologisch: beeinflusst nicht die Geometrieform selbst, aber deren Interpretation.
+- `SpaceMergeDecision`
+  - Semantisches Konzept: operationslokale Entscheidung, welcher `SpaceId` eine Merge-Situation überlebt.
+  - Technische Definition: `record SpaceMergeDecision(Set<SpaceId> mergedSpaces, SpaceId retainedSpaceId, Set<SpaceId> retiredSpaceIds)`
+  - Administrativ: hält die betroffenen und den beibehaltenen Identitätsträger explizit fest.
+  - Verhalten: dokumentiert die deterministische Merge-Auflösung.
+  - Topologisch: bezieht sich auf eine Topologieänderung, enthält aber nur Identitätsentscheidung.
+- `SpaceProfile`
+  - Semantisches Konzept: authored Fachprofil eines `SpaceId`.
+  - Technische Definition: `record SpaceProfile(SpaceKind kind, String name, MapPlacement labelPlacement, SensoryProfile sensoryProfile, String authoredSummary)`
+  - Administrativ: keine eigene ID; wird innerhalb eines `SpaceId`-getragenen Objekts gehalten.
+  - Verhalten: bündelt Raumname, authored Beschreibungsanteile und Space-Art.
+  - Topologisch: `labelPlacement` legt die semantische Label-Position im gemeinsamen Placement-System fest.
+- `SpaceSplitResolution`
+  - Semantisches Konzept: operationslokale Auflösung einer Split-Situation nach Löschen oder Umformen von Topologie.
+  - Technische Definition: `record SpaceSplitResolution(SpaceId retainedSpaceId, SpaceId createdSpaceId, Set<TileCoord> retainedTiles, Set<TileCoord> createdTiles)`
+  - Administrativ: benennt explizit, welche Identität erhalten bleibt und welche neu entsteht.
+  - Verhalten: hält die deterministische Split-Entscheidung fest.
+  - Topologisch: `retainedTiles` und `createdTiles` beschreiben die resultierende Partition der Interior-Tiles.
+- `StairDimensions`
+  - Semantisches Konzept: authored Parameterisierung der Grundform einer Treppe.
+  - Technische Definition: `sealed interface StairDimensions permits StairDimensions.LadderDimensions, StairDimensions.RadiusDimensions, StairDimensions.RectDimensions`
+  - Administrativ: die konkrete Unterform ist der fachliche Format-Discriminator.
+  - Verhalten: legt fest, welche Maße für die gewählte `StairShape` gelten.
+  - Topologisch: `LadderDimensions` trägt keine Flächenmaße, `RadiusDimensions(int radius)` modelliert Kreis oder Quadrat, `RectDimensions(int width, int depth)` modelliert Rechtecke.
+- `StairIncline`
+  - Semantisches Konzept: authored Steigungsmaß einer Treppe.
+  - Technische Definition: `record StairIncline(int horizontalTilesPerVerticalStep)`
+  - Administrativ: keine eigene ID; der numerische Wert ist die komplette Definition.
+  - Verhalten: bestimmt, wie schnell eine Treppe horizontal Strecke pro Höhenwechsel verbraucht.
+  - Topologisch: beschreibt das Verhältnis von horizontalem Rasterweg zu vertikalem Floorwechsel.
+- `StairLanding`
+  - Semantisches Konzept: abgeleitete Landing dort, wo treppeneigene Topologie auf normale begehbare Fläche trifft.
+  - Technische Definition: `record StairLanding(FloorIndex floor, TileFootprint footprint, CardinalHeading facing)`
+  - Administrativ: keine eigene ID; wird aus einer konkreten Treppenmaterialisierung abgeleitet.
+  - Verhalten: markiert benutzbare Übergangspunkte zwischen Treppe und normalem Space.
+  - Topologisch: `footprint` benennt die Landing-Tiles, `facing` ihre Anschlussrichtung.
+- `StairMaterialization`
+  - Semantisches Konzept: operationslokales Ergebnis der Regeneration einer Treppe aus authored Parametern.
+  - Technische Definition: `record StairMaterialization(StairPlacement placement, TileFootprint occupiedTiles, List<StairLanding> landings, TopologyOwnerRef ownerRef)`
+  - Administrativ: `ownerRef` markiert die generierte Topologie als selektiv ersetzbar.
+  - Verhalten: hält fest, welche konkrete Treppentopologie aus einer authored Platzierung entsteht.
+  - Topologisch: `occupiedTiles` und `landings` beschreiben die resultierende materialisierte Form.
+- `StairPlacement`
+  - Semantisches Konzept: authored vollständige Platzierung einer Treppe.
+  - Technische Definition: `record StairPlacement(TileAnchor entry, CardinalHeading heading, StairShape shape, StairDimensions dimensions, FloorSpan floors, StairIncline incline) implements MapPlacement`
+  - Administrativ: keine eigene ID; wird von einer `ConnectionId`-getragenen Treppe genutzt.
+  - Verhalten: enthält alle authored Parameter, die für Regeneration und Bearbeitung nötig sind.
+  - Topologisch: `entry`, `heading`, `dimensions`, `floors` und `incline` bestimmen die vollständige mehrstöckige Treppengeometrie.
+- `StairShape`
+  - Semantisches Konzept: authored Grundform einer Treppe.
+  - Technische Definition: `enum StairShape { LADDER, SQUARE, RECTANGLE, CIRCLE }`
+  - Administrativ: der Enumwert ist der Form-Discriminator.
+  - Verhalten: bestimmt, welche Dimensionierungsregeln und welche Render-/Editorlogik gelten.
+  - Topologisch: legt fest, welche Formklasse der Treppen-Footprint hat.
+- `TileAnchor`
+  - Semantisches Konzept: authored Platzierung auf genau einer Tile-Innenfläche.
+  - Technische Definition: `record TileAnchor(TileCoord tile) implements MapPlacement`
+  - Administrativ: keine eigene ID; die konkrete Tile ist die Referenz.
+  - Verhalten: dient als kleinster authored Flächenanker.
+  - Topologisch: `tile` benennt genau eine floor-aware Zelle.
+- `TileCoord`
+  - Semantisches Konzept: eindeutige Adresse einer einzelnen traversierbaren oder nicht traversierbaren Tile.
+  - Technische Definition: `record TileCoord(FloorIndex floor, int x, int y)`
+  - Administrativ: kein separater Schlüssel nötig; die Koordinate ist die Identität.
+  - Verhalten: adressiert Interior, Landings und andere tile-basierte Operationen.
+  - Topologisch: `floor`, `x` und `y` bestimmen genau eine Rasterzelle.
+- `TileFootprint`
+  - Semantisches Konzept: konkrete Menge zusammengehöriger Tiles als Placement- oder Ergebnisgeometrie.
+  - Technische Definition: `record TileFootprint(Set<TileCoord> tiles) implements MapPlacement`
+  - Administrativ: keine eigene ID; die Tile-Menge ist die komplette Definition.
+  - Verhalten: dient als authored oder abgeleiteter Flächenträger für Features, Treppen oder Operationsresultate.
+  - Topologisch: `tiles` benennt alle floor-aware Zellen, die zum Footprint gehören.
+- `TopologyOwnerRef`
+  - Semantisches Konzept: fachliche Besitzerreferenz für selektiv regenerierbare Topologie.
+  - Technische Definition: `sealed interface TopologyOwnerRef permits TopologyOwnerRef.CorridorSegmentOwner, TopologyOwnerRef.StairConnectionOwner`
+  - Administrativ: die konkrete Unterform trägt die stabile Owner-ID wie `CorridorSegmentId` oder `ConnectionId`.
+  - Verhalten: trennt Topologie, die bei Corridor-Reroute oder Stair-Rebuild ersetzt werden darf, von fremder Topologie.
+  - Topologisch: beschreibt Besitz an generierter Topologie, nicht selbst die Geometrie.
+- `TravelOption`
+  - Semantisches Konzept: abgeleitete auswählbare Reiseoption aus einem Raum heraus.
+  - Technische Definition: `record TravelOption(ConnectionId connectionId, SpaceId targetSpaceId, String label, TraversabilityState traversability, MapPlacement arrivalPlacement)`
+  - Administrativ: `connectionId` und `targetSpaceId` binden die Option an stabile Domainobjekte.
+  - Verhalten: enthält genau die Information, die für Travel-Buttons und direkte Bewegung gebraucht wird.
+  - Topologisch: `arrivalPlacement` benennt, wo die Partei nach Ausführung der Option landet.
+- `TravelSnapshot`
+  - Semantisches Konzept: abgeleiteter Query-Snapshot für Travel ohne viewlokalen Parteienzustand.
+  - Technische Definition: `record TravelSnapshot(DungeonMapMetadata metadata, SpaceId currentSpaceId, SpaceDescription currentSpace, List<TravelOption> options, RenderProjection renderProjection)`
+  - Administrativ: `metadata` und `currentSpaceId` identifizieren Map und aktuell beschriebenen Space.
+  - Verhalten: bündelt die für Reiseentscheidung und Travel-Inspector nötigen Domainreadmodels.
+  - Topologisch: `renderProjection` und `currentSpace` tragen die aktuelle räumliche Sicht.
+- `TraversabilityState`
+  - Semantisches Konzept: gameplay-relevanter Durchquerbarkeitszustand einer Verbindung.
+  - Technische Definition: `enum TraversabilityState { OPEN, LOCKED, BLOCKED }`
+  - Administrativ: der Enumwert ist selbst der Status-Discriminator.
+  - Verhalten: entscheidet, ob und wie eine Verbindung im Spiel benutzt werden kann.
+  - Topologisch: keine eigene Geometrie; wirkt auf die Nutzung vorhandener Topologie.
+- `VertexAnchor`
+  - Semantisches Konzept: authored Platzierung auf genau einem Rastervertex.
+  - Technische Definition: `record VertexAnchor(VertexCoord vertex) implements MapPlacement`
+  - Administrativ: keine eigene ID; der Vertex ist die Referenz.
+  - Verhalten: dient als Anker für vertex-basierte Bearbeitungsoperationen.
+  - Topologisch: `vertex` benennt genau einen floor-aware Rasterpunkt.
+- `VertexCoord`
+  - Semantisches Konzept: eindeutige Adresse eines einzelnen Rastervertex.
+  - Technische Definition: `record VertexCoord(FloorIndex floor, int x, int y)`
+  - Administrativ: kein separater Schlüssel nötig; die Koordinate ist die Identität.
+  - Verhalten: adressiert Ecken, Kontrollpunkte und Rect-/Polyline-Grenzen.
+  - Topologisch: `floor`, `x` und `y` bestimmen genau einen Rasterpunkt.
+- `VertexPolyline`
+  - Semantisches Konzept: authored orthogonaler Linienzug entlang von Rasterkanten.
+  - Technische Definition: `record VertexPolyline(FloorIndex floor, List<VertexCoord> controlPoints)`
+  - Administrativ: keine eigene ID; die Punktliste ist die komplette Definition.
+  - Verhalten: trägt Liniengeometrie für Wall-Draw- und Wall-Erase-Kommandos.
+  - Topologisch: die aufeinanderfolgenden `controlPoints` definieren eine orthogonale Polyline auf einem Floor.
+- `VertexRect`
+  - Semantisches Konzept: authored vertex-basiertes Rechteck für flächige Paint-Operationen.
+  - Technische Definition: `record VertexRect(FloorIndex floor, VertexCoord northWest, VertexCoord southEast)`
+  - Administrativ: keine eigene ID; die beiden Eckpunkte sind die komplette Definition.
+  - Verhalten: trägt die Auswahlgeometrie für Area- und Floor-Paint-Kommandos.
+  - Topologisch: `northWest` und `southEast` begrenzen ein achsenparalleles Tile-Rechteck auf genau einem Floor.
+
+Die folgenden Abschnitte 2 und 3 sind **vergleichende Geometrieanalysen**. Sie beschreiben alternative Darstellungsformen für Grid-Geometrie und sind nicht die normative VO-Liste.
+
+**Annahmen für die vergleichenden Abschnitte 2 und 3**
 
 * Annahme: quadratisches Raster, `y+` nach unten.
 * Annahme: `EdgeCoord_E(f,x,y,H)` = horizontale Kante von Vertex `(x,y)` nach `(x+1,y)`.
 * Annahme: `EdgeCoord_E(f,x,y,V)` = vertikale Kante von Vertex `(x,y)` nach `(x,y+1)`.
 * Annahme: `EdgeSide.NEGATIVE/POSITIVE` meint die beiden Halbseiten einer orientierten Kante: bei `H` = oben/unten, bei `V` = links/rechts.
-* Jede konkrete Definition ist **floor-aware** und trägt daher `FloorIndex` mit. Das ist nicht optional. 
-
-#### 1. Verhaltenszentrierte VOs
-
-- `DoorSidePlacement`
-  - `Tile-System`: `record DoorSidePlacement_T(FloorIndex f, TileCoord_T sideTile, CardinalHeading doorEdgeOnTile)`  
-    `// genau die Tile auf der gewählten Türseite`  
-    `Inv: angegebene Tile-Seite trägt die Tür`  
-    `Bsp: sideTile=(2,10,7), doorEdgeOnTile=E`
-  - `Edge-System`: `record DoorSidePlacement_E(FloorIndex f, EdgeAnchor_E door, EdgeSide side)`  
-    `// Türkante + gewählte Halbseite`  
-    `Bsp: door=V(11,7), side=NEGATIVE`
-  - `Corner-System`: `record DoorSidePlacement_V(FloorIndex f, EdgeAnchor_V door, EdgeSide side)`  
-    `// Türkante als Vertexpaar + gewählte Halbseite`  
-    `Bsp: door=(11,7)->(11,8), side=POSITIVE`
-- `BoundarySidePlacement`
-  - `Tile-System`: `record BoundarySidePlacement_T(FloorIndex f, TileCoord_T interiorTile, CardinalHeading boundaryOnTile)`  
-    `// fixe Endpoint-Platzierung auf einer Boundary-Seite`  
-    `Bsp: interiorTile=(2,10,7), boundaryOnTile=N`
-  - `Edge-System`: `record BoundarySidePlacement_E(FloorIndex f, EdgeAnchor_E boundary, EdgeSide side)`  
-    `// Boundary-Kante + Halbseite`  
-    `Bsp: boundary=H(10,7), side=POSITIVE`
-  - `Corner-System`: `record BoundarySidePlacement_V(FloorIndex f, EdgeAnchor_V boundary, EdgeSide side)`  
-    `Bsp: boundary=(10,7)->(11,7), side=NEGATIVE`
+* Jede konkrete Definition ist **floor-aware** und trägt daher `FloorIndex` mit. Das ist nicht optional.
 
 #### 2. Geometrische Grid-Formen
 
@@ -615,7 +905,7 @@ Abbildung:
 * Wand = `VertexPolylineGeometry`
 * Boden / Raum / Korridor / Stair-Footprint = `RectSetGeometry`
 
-#### 3.  Atomare Geometrieelemente
+#### 3. Atomare Geometrieelemente in alternativen Repräsentationsschemata
 
 - `TileCoord`
   - `Tile-System`: `record TileCoord_T(FloorIndex f, int x, int y)`  
