@@ -537,3 +537,140 @@ Ich werte hier **nur die 2D-koordinatenabhängigen VOs** aus. Die Datei verlangt
   - `Corner-System`: `record VertexPolyline_V(FloorIndex f, List<VertexCoord_V> controlPoints)`  
     `Inv: size>=2, Segmente orthogonal`  
     `Bsp: [(10,7),(14,7),(14,9)]`
+
+Ich werte im Folgenden **mögliche geometrische Definitions-Sets für instanziierte Endgeometrie** aus. Es geht ausdrücklich **nicht** um Authoring-, Routing- oder Regenerations-VOs, sondern nur um die Frage, mit welchen geometrischen VOs sich die auf der Map materialisierte Form definieren lässt. Alle Sets sind als alternative Beschreibungsformen derselben Endgeometrie zu verstehen.
+
+**Annahmen für die Definitions-Sets**
+
+* Annahme: quadratisches Raster, `y+` nach unten.
+* Annahme: jede konkrete geometrische Instanz ist **floor-aware** und trägt daher `FloorIndex f`.
+* Annahme: Wände und andere lineare Strukturen verlaufen orthogonal entlang des Rasters.
+* Annahme: Flächen dürfen Löcher haben.
+* Annahme: zusammengesetzte Formen dürfen aus mehreren disjunkten Teilen bestehen; ein solches Multipart-Objekt ist bei Bedarf ein Wrapper über mehrere Instanzen desselben primitiven Geometrietyps.
+
+### Set A: Vollständige Komponentenliste
+Kernidee: Eine Form wird über die vollständige Menge ihrer atomaren Rasterkomponenten beschrieben.
+
+- `TileSetGeometry`
+  - `record TileSetGeometry(FloorIndex f, Set<TileCoord> tiles)`  
+    `record TileCoord(int x, int y)`  
+    `// Tile (x,y) bezeichnet genau die Zelle [x,x+1) × [y,y+1)`  
+    `Inv: tiles != empty`  
+    `Bsp: tiles={(10,7),(11,7),(10,8),(11,8)}`
+- `EdgeSetGeometry`
+  - `record EdgeSetGeometry(FloorIndex f, Set<EdgeCoord> edges)`  
+    `record EdgeCoord(int x, int y, EdgeAxis axis)`  
+    `enum EdgeAxis { H, V }`  
+    `// H(x,y) = Kante von Vertex (x,y) nach (x+1,y)`  
+    `// V(x,y) = Kante von Vertex (x,y) nach (x,y+1)`  
+    `Inv: edges != empty`  
+    `Bsp: edges={H(10,7),H(11,7),V(10,7)}`
+
+Abbildung:
+* Wand = `EdgeSetGeometry`
+* Boden / Raum / Korridor / Stair-Footprint = `TileSetGeometry`
+
+### Set B: Boundary-Komponentenliste
+Kernidee: Eine Form wird über ihre Randkanten beschrieben. Flächeninneres ergibt sich aus den geschlossenen Randkanten.
+
+- `EdgeBoundaryGeometry`
+  - `record EdgeBoundaryGeometry(FloorIndex f, Set<EdgeCoord> boundaryEdges)`  
+    `record EdgeCoord(int x, int y, EdgeAxis axis)`  
+    `enum EdgeAxis { H, V }`  
+    `// H(x,y) = Kante von Vertex (x,y) nach (x+1,y)`  
+    `// V(x,y) = Kante von Vertex (x,y) nach (x,y+1)`  
+    `Inv: boundaryEdges != empty`  
+    `Inv: für Flächen bildet boundaryEdges eine oder mehrere geschlossene orthogonale Ringe`  
+    `Inv: verschiedene Ringe schneiden sich nicht`  
+    `Bsp: boundaryEdges={H(10,7),H(11,7),H(10,9),H(11,9),V(10,7),V(10,8),V(12,7),V(12,8)}`
+
+Abbildung:
+* Wand = offene oder geschlossene `EdgeBoundaryGeometry`
+* Boden / Raum / Korridor / Stair-Footprint = geschlossene `EdgeBoundaryGeometry`, Inneres daraus abgeleitet
+
+### Set C: Polygon + Polyline
+Kernidee: Linien und Flächen werden als geordnete Vertex-Züge beschrieben.
+
+- `VertexCoord`
+  - `record VertexCoord(int x, int y)`  
+    `// genau ein Rastervertex`  
+    `Bsp: (10,7)`
+- `VertexPolylineGeometry`
+  - `record VertexPolylineGeometry(FloorIndex f, List<VertexCoord> vertices)`  
+    `Inv: vertices.size() >= 2`  
+    `Inv: jedes Segment zwischen aufeinanderfolgenden Vertexen ist orthogonal`  
+    `Inv: jedes Segment hat Manhattan-Länge >= 1`  
+    `Inv: keine Nullsegmente`  
+    `// Geometrie besteht aus allen Segmenten zwischen vertices[i] und vertices[i+1]`  
+    `Bsp: vertices=[(10,7),(14,7),(14,9)]`
+- `VertexPolygonGeometry`
+  - `record VertexPolygonGeometry(FloorIndex f, VertexRing outerRing, List<VertexRing> holes)`  
+    `record VertexRing(List<VertexCoord> vertices)`  
+    `Inv: outerRing.vertices.size() >= 4`  
+    `Inv: jedes Ring-Segment ist orthogonal`  
+    `Inv: erster und letzter Vertex sind implizit verbunden`  
+    `Inv: jeder Ring ist einfach, also ohne Selbstschnitt`  
+    `Inv: holes liegen vollständig innerhalb des outerRing und schneiden weder einander noch den outerRing`  
+    `Bsp: outerRing=[(10,7),(13,7),(13,9),(10,9)], holes=[]`
+
+Abbildung:
+* Wand = `VertexPolylineGeometry`
+* Boden / Raum / Korridor / Stair-Footprint = `VertexPolygonGeometry`
+
+### Set D: Minimale Eckpunktliste
+Kernidee: Gespeichert werden nur Eck- und Biegepunkte; gerade Zwischenstücke sind implizit.
+
+- `VertexCoord`
+  - `record VertexCoord(int x, int y)`  
+    `// genau ein Rastervertex`  
+    `Bsp: (10,7)`
+- `OrthogonalControlPolyline`
+  - `record OrthogonalControlPolyline(FloorIndex f, List<VertexCoord> controlPoints)`  
+    `Inv: controlPoints.size() >= 2`  
+    `Inv: benachbarte Punkte unterscheiden sich in genau einer Achse`  
+    `Inv: keine drei aufeinanderfolgenden Punkte sind kollinear`  
+    `// zwischen zwei benachbarten controlPoints verläuft implizit genau ein gerades orthogonales Segment`  
+    `Bsp: controlPoints=[(10,7),(14,7),(14,9)]`
+- `OrthogonalControlPolygon`
+  - `record OrthogonalControlPolygon(FloorIndex f, ControlRing outerRing, List<ControlRing> holes)`  
+    `record ControlRing(List<VertexCoord> corners)`  
+    `Inv: outerRing.corners.size() >= 4`  
+    `Inv: benachbarte corners unterscheiden sich in genau einer Achse`  
+    `Inv: keine drei aufeinanderfolgenden corners sind kollinear`  
+    `Inv: erster und letzter corner sind implizit verbunden`  
+    `Inv: resultierender Ring ist einfach und orthogonal`  
+    `Inv: holes liegen vollständig innerhalb des outerRing und schneiden weder einander noch den outerRing`  
+    `Bsp: outerRing=[(10,7),(13,7),(13,9),(10,9)], holes=[]`
+
+Abbildung:
+* Wand = `OrthogonalControlPolyline`
+* Boden / Raum / Korridor / Stair-Footprint = `OrthogonalControlPolygon`
+
+### Set E: Rechteckzerlegung
+Kernidee: Flächen werden als Vereinigung orthogonaler Rechtecke beschrieben; lineare Strukturen als Linienzug.
+
+- `VertexCoord`
+  - `record VertexCoord(int x, int y)`  
+    `// genau ein Rastervertex`  
+    `Bsp: (10,7)`
+- `AxisAlignedRect`
+  - `record AxisAlignedRect(VertexCoord nw, VertexCoord se)`  
+    `Inv: nw.x < se.x && nw.y < se.y`  
+    `// Rechteck umfasst alle Tiles mit x in [nw.x, se.x) und y in [nw.y, se.y)`  
+    `Bsp: nw=(10,7), se=(13,9)`
+- `RectSetGeometry`
+  - `record RectSetGeometry(FloorIndex f, Set<AxisAlignedRect> rects)`  
+    `Inv: rects != empty`  
+    `// Geometrie ist die Vereinigungsfläche aller rects`  
+    `Bsp: rects={Rect((10,7),(13,8)), Rect((10,8),(12,9))}`
+- `VertexPolylineGeometry`
+  - `record VertexPolylineGeometry(FloorIndex f, List<VertexCoord> vertices)`  
+    `Inv: vertices.size() >= 2`  
+    `Inv: jedes Segment zwischen aufeinanderfolgenden Vertexen ist orthogonal`  
+    `Inv: jedes Segment hat Manhattan-Länge >= 1`  
+    `Inv: keine Nullsegmente`  
+    `Bsp: vertices=[(10,7),(14,7),(14,9)]`
+
+Abbildung:
+* Wand = `VertexPolylineGeometry`
+* Boden / Raum / Korridor / Stair-Footprint = `RectSetGeometry`
