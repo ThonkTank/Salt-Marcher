@@ -100,6 +100,29 @@ Extends the Map Management Component with the following:
     ctrl-y/ctrl-x allow for undo/redo
     marquee-selection is vertex-based, like wall painting. The smallest paintable area is thus one tile.
     All in-progress editing interactions provide a visible preview of what the state would look like if the edit was concluded at this mouse position.
+    
+    Zwischenlager, bis wir eine offiziellere Definition haben, welche inhaltlich deckungsgleich ist:
+    "Wie soll die kanonische Wahrheit von Korridoren modelliert werden?
+    answer: None of the above
+    note: Als normale Spaces (Korridore sind wie Cluster normale traversierbare Tile-Mengen; Segment-
+          und Socket-Logik wird zusätzlich klein modelliert), zumidest für die topologie persistenz.
+          Erstellt wird diese Topologie aus einer A* Route, die zwischen den beiden Ankerpunkten des
+          Korridors berechnet wird. Welche Korridor Segmente welche Anker verbinden, und über welche
+          Teile der dungeon Topologie sie ownership tragen, muss explizit ebenfalls persistiert werden,
+          damit diese Topologie neu berechnet und erstellt werden kann, wenn einer der beiden Anker
+          verschoben wird sodass die Route und damit auch die Topologie neu berechnet werden müssen.
+          Noch eine kurze, zusätzliche Begriffserklärung: Korridor netzwerke sind die Gesammtheit eines
+          verbundenen Anker sets und ihrer Routen, während ein Korridor Segment nur eine einzelne
+          Strecke zwischen zwei Ankern ist. Z.b. ein Netzwerk könnte aus den Ankern Tür1, Tür2, Tür3,
+          Punkt1 und den einzelnen Segmenten Tür1-Punkt1, Tür2-Punkt1 und Tür3-Punkt1 bestehen.
+  • Wie soll die kanonische Wahrheit von Treppen aussehen?
+    answer: None of the above
+    note: Wie korridore wird hier eine bestimmte Topologie aus konkreten Objekten (Wände, Böden,
+          Treppenkacheln) persistiert, zusammen mit einer ownership kennzeichnung damit wir wissen,
+          welche Teile der Dungeon Topologie neu erstellt werden müssen, wenn der User Form, Radius,
+          Ankerpunkt oder andere Parameter ändert, welche diese Topologie definieren. Diese Parameter
+          müssen natürlich ebenfalls definiert werden. Landings sind reine Ableitung: Überall, wo sich
+          eine Treppe mit einer begehbaren Bodenfläche schneidet entsteht ein Landing."
 
 ## Normative Target Architecture
 This section is normative for the `dungeon` feature. Implementations must be evaluated against these boundaries and ownership rules, not against convenience in a single use case.
