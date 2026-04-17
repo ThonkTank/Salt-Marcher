@@ -121,8 +121,20 @@ public final class PartyRoster {
     }
 
     public MutationResult awardXp(List<Long> ids, int xpPerCharacter) {
-        if (ids == null || ids.isEmpty() || xpPerCharacter <= 0) {
+        Set<Long> requestedIds = sanitizeRequestedIds(ids, xpPerCharacter);
+        if (requestedIds.isEmpty()) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
+        }
+        AwardXpResult awardResult = applyXpToMatchingCharacters(requestedIds, xpPerCharacter);
+        if (!awardResult.updatedAny()) {
+            return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
+        }
+        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, awardResult.characters()));
+    }
+
+    private Set<Long> sanitizeRequestedIds(List<Long> ids, int xpPerCharacter) {
+        if (ids == null || ids.isEmpty() || xpPerCharacter <= 0) {
+            return Set.of();
         }
         Set<Long> requestedIds = new LinkedHashSet<>();
         for (Long id : ids) {
@@ -130,10 +142,10 @@ public final class PartyRoster {
                 requestedIds.add(id);
             }
         }
-        if (requestedIds.isEmpty()) {
-            return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
-        }
+        return requestedIds;
+    }
 
+    private AwardXpResult applyXpToMatchingCharacters(Set<Long> requestedIds, int xpPerCharacter) {
         boolean updatedAny = false;
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters.size());
         for (PartyCharacter character : characters) {
@@ -144,10 +156,7 @@ public final class PartyRoster {
                 nextCharacters.add(character);
             }
         }
-        if (!updatedAny) {
-            return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
-        }
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
+        return new AwardXpResult(nextCharacters, updatedAny);
     }
 
     public MutationResult performRest(PartyRestType restType) {
@@ -183,6 +192,12 @@ public final class PartyRoster {
     public record MutationResult(
             PartyMutationStatus status,
             PartyRoster roster
+    ) {
+    }
+
+    private record AwardXpResult(
+            List<PartyCharacter> characters,
+            boolean updatedAny
     ) {
     }
 }

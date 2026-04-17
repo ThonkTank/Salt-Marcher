@@ -1,51 +1,26 @@
 package src.domain.party;
 
-import src.domain.party.entity.PartyCharacter;
 import src.domain.party.repository.PartyRosterRepository;
-import src.domain.party.usecase.AwardPartyXpUseCase;
-import src.domain.party.usecase.CreateCharacterUseCase;
-import src.domain.party.usecase.DeleteCharacterUseCase;
-import src.domain.party.usecase.LoadActivePartyCompositionUseCase;
-import src.domain.party.usecase.LoadActivePartyUseCase;
-import src.domain.party.usecase.LoadAdventuringDaySummaryUseCase;
-import src.domain.party.usecase.LoadPartySnapshotUseCase;
-import src.domain.party.usecase.PerformPartyRestUseCase;
-import src.domain.party.usecase.SetPartyMembershipUseCase;
-import src.domain.party.usecase.UpdateCharacterUseCase;
+import src.domain.party.usecase.PartyMutationOperations;
+import src.domain.party.usecase.PartyQueryOperations;
 import src.domain.party.valueobject.PartyMembership;
-import src.domain.party.valueobject.PartyMutationStatus;
 import src.domain.party.valueobject.PartyRestType;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Public backend facade for party management.
  */
 public final class partyAPI {
 
-    private final LoadPartySnapshotUseCase loadPartySnapshotUseCase;
-    private final LoadActivePartyUseCase loadActivePartyUseCase;
-    private final LoadActivePartyCompositionUseCase loadActivePartyCompositionUseCase;
-    private final LoadAdventuringDaySummaryUseCase loadAdventuringDaySummaryUseCase;
-    private final CreateCharacterUseCase createCharacterUseCase;
-    private final UpdateCharacterUseCase updateCharacterUseCase;
-    private final DeleteCharacterUseCase deleteCharacterUseCase;
-    private final SetPartyMembershipUseCase setPartyMembershipUseCase;
-    private final AwardPartyXpUseCase awardPartyXpUseCase;
-    private final PerformPartyRestUseCase performPartyRestUseCase;
+    private final PartyQueryOperations queries;
+    private final PartyMutationOperations mutations;
 
     public partyAPI(PartyRosterRepository rosterRepository) {
-        PartyRosterRepository repository = java.util.Objects.requireNonNull(rosterRepository, "rosterRepository");
-        this.loadPartySnapshotUseCase = new LoadPartySnapshotUseCase(repository);
-        this.loadActivePartyUseCase = new LoadActivePartyUseCase(repository);
-        this.loadActivePartyCompositionUseCase = new LoadActivePartyCompositionUseCase(repository);
-        this.loadAdventuringDaySummaryUseCase = new LoadAdventuringDaySummaryUseCase(repository);
-        this.createCharacterUseCase = new CreateCharacterUseCase(repository);
-        this.updateCharacterUseCase = new UpdateCharacterUseCase(repository);
-        this.deleteCharacterUseCase = new DeleteCharacterUseCase(repository);
-        this.setPartyMembershipUseCase = new SetPartyMembershipUseCase(repository);
-        this.awardPartyXpUseCase = new AwardPartyXpUseCase(repository);
-        this.performPartyRestUseCase = new PerformPartyRestUseCase(repository);
+        PartyRosterRepository repository = Objects.requireNonNull(rosterRepository, "rosterRepository");
+        this.queries = new PartyQueryOperations(repository);
+        this.mutations = new PartyMutationOperations(repository);
     }
 
     public enum ReadStatus {
@@ -172,121 +147,42 @@ public final class partyAPI {
     }
 
     public PartySnapshotResult loadSnapshot() {
-        try {
-            PartySnapshot snapshot = mapSnapshot(loadPartySnapshotUseCase.execute());
-            return new PartySnapshotResult(ReadStatus.SUCCESS, snapshot);
-        } catch (RuntimeException exception) {
-            return new PartySnapshotResult(ReadStatus.STORAGE_ERROR, emptySnapshot());
-        }
+        return queries.loadSnapshot();
     }
 
     public ActivePartyResult loadActiveParty() {
-        try {
-            return new ActivePartyResult(
-                    ReadStatus.SUCCESS,
-                    loadActivePartyUseCase.execute().stream().map(this::mapSummary).toList());
-        } catch (RuntimeException exception) {
-            return new ActivePartyResult(ReadStatus.STORAGE_ERROR, List.of());
-        }
+        return queries.loadActiveParty();
     }
 
     public ActivePartyCompositionResult loadActivePartyComposition() {
-        try {
-            ActivePartyComposition composition = loadActivePartyCompositionUseCase.execute();
-            return new ActivePartyCompositionResult(ReadStatus.SUCCESS, composition);
-        } catch (RuntimeException exception) {
-            return new ActivePartyCompositionResult(
-                    ReadStatus.STORAGE_ERROR,
-                    new ActivePartyComposition(List.of(), 1));
-        }
+        return queries.loadActivePartyComposition();
     }
 
     public AdventuringDayResult loadAdventuringDaySummary() {
-        try {
-            LoadAdventuringDaySummaryUseCase.AdventuringDayStatus dayStatus = loadAdventuringDaySummaryUseCase.execute();
-            return new AdventuringDayResult(
-                    ReadStatus.SUCCESS,
-                    new AdventuringDaySummary(
-                            dayStatus.activeLevels(),
-                            dayStatus.remainingToShortRest(),
-                            dayStatus.remainingToLongRest()));
-        } catch (RuntimeException exception) {
-            return new AdventuringDayResult(
-                    ReadStatus.STORAGE_ERROR,
-                    new AdventuringDaySummary(List.of(), 0, 0));
-        }
+        return queries.loadAdventuringDaySummary();
     }
 
     public MutationResult createCharacter(CharacterDraft draft, MembershipState membership) {
-        return new MutationResult(mapMutationStatus(
-                createCharacterUseCase.execute(draft, PartyMembership.fromApi(membership))));
+        return mutations.createCharacter(draft, PartyMembership.fromApi(membership));
     }
 
     public MutationResult updateCharacter(long id, CharacterDraft draft) {
-        return new MutationResult(mapMutationStatus(updateCharacterUseCase.execute(id, draft)));
+        return mutations.updateCharacter(id, draft);
     }
 
     public MutationResult deleteCharacter(long id) {
-        return new MutationResult(mapMutationStatus(deleteCharacterUseCase.execute(id)));
+        return mutations.deleteCharacter(id);
     }
 
     public MutationResult setMembership(long id, MembershipState membership) {
-        return new MutationResult(mapMutationStatus(
-                setPartyMembershipUseCase.execute(id, PartyMembership.fromApi(membership))));
+        return mutations.setMembership(id, PartyMembership.fromApi(membership));
     }
 
     public MutationResult awardXp(List<Long> ids, int xpPerCharacter) {
-        return new MutationResult(mapMutationStatus(awardPartyXpUseCase.execute(ids, xpPerCharacter)));
+        return mutations.awardXp(ids, xpPerCharacter);
     }
 
     public MutationResult performRest(RestType restType) {
-        return new MutationResult(mapMutationStatus(
-                performPartyRestUseCase.execute(PartyRestType.fromApi(restType))));
-    }
-
-    private PartySnapshot mapSnapshot(LoadPartySnapshotUseCase.PartySnapshotProjection projection) {
-        return new PartySnapshot(
-                projection.activeMembers().stream().map(this::mapDetails).toList(),
-                projection.reserveMembers().stream().map(this::mapDetails).toList(),
-                new PartySummary(
-                        projection.activeMembers().size(),
-                        projection.reserveMembers().size(),
-                        projection.averageLevel()));
-    }
-
-    private PartyMemberSummary mapSummary(PartyCharacter character) {
-        return new PartyMemberSummary(character.id(), character.name(), character.level());
-    }
-
-    private PartyMemberDetails mapDetails(PartyCharacter character) {
-        return new PartyMemberDetails(
-                character.id(),
-                character.name(),
-                character.playerName(),
-                character.level(),
-                character.currentXp(),
-                character.xpToNextLevel(),
-                character.readyToLevel(),
-                character.passivePerception(),
-                character.armorClass(),
-                character.xpSinceShortRest(),
-                character.xpSinceLongRest(),
-                character.membership().toApi());
-    }
-
-    private PartySnapshot emptySnapshot() {
-        return new PartySnapshot(List.of(), List.of(), new PartySummary(0, 0, 1));
-    }
-
-    private MutationStatus mapMutationStatus(PartyMutationStatus status) {
-        if (status == null) {
-            return MutationStatus.STORAGE_ERROR;
-        }
-        return switch (status) {
-            case SUCCESS -> MutationStatus.SUCCESS;
-            case NOT_FOUND -> MutationStatus.NOT_FOUND;
-            case INVALID_INPUT -> MutationStatus.INVALID_INPUT;
-            case STORAGE_ERROR -> MutationStatus.STORAGE_ERROR;
-        };
+        return mutations.performRest(PartyRestType.fromApi(restType));
     }
 }
