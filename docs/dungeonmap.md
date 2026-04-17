@@ -412,75 +412,28 @@ Ich werte hier **nur die 2D-koordinatenabhängigen VOs** aus. Die Datei verlangt
 * Annahme: `EdgeSide.NEGATIVE/POSITIVE` meint die beiden Halbseiten einer orientierten Kante: bei `H` = oben/unten, bei `V` = links/rechts.
 * Jede konkrete Definition ist **floor-aware** und trägt daher `FloorIndex` mit. Das ist nicht optional. 
 
-#### 1. Atomare Geometrieelemente bzw. grundlegende Koordinatentypen
+#### 1. Verhaltenszentrierte VOs
 
-- `TileCoord`
-  - `Tile-System`: `record TileCoord_T(FloorIndex f, int x, int y)`  
-    `// genau eine Tile-Innenfläche`  
-    `Bsp: (2,10,7)`
-  - `Edge-System`: `record TileCoord_E(FloorIndex f, EdgeCoord_E north, EdgeCoord_E west)`  
-    `// Tile wird durch ihre NW-Kanten identifiziert`  
-    `Inv: north=H(x,y), west=V(x,y), beide teilen NW-Vertex`  
-    `Bsp: north=H(10,7), west=V(10,7)`
-  - `Corner-System`: `record TileCoord_V(FloorIndex f, VertexCoord_V nw)`  
-    `// Tile = Zelle zwischen nw und nw+(1,1)`  
-    `Bsp: nw=(10,7)`
-- `EdgeCoord`
-  - `Tile-System`: `record EdgeCoord_T(FloorIndex f, int x, int y, CardinalHeading side)`  
-    `Inv: canonical only {N,W}`  
-    `// Kante als Seite einer Tile`  
-    `Bsp: (2,10,7,W)`
-  - `Edge-System`: `record EdgeCoord_E(FloorIndex f, int x, int y, EdgeAxis axis)`  
-    `// axis ∈ {H,V}`  
-    `Bsp: V(10,7)`
-  - `Corner-System`: `record EdgeCoord_V(FloorIndex f, VertexCoord_V a, VertexCoord_V b)`  
-    `Inv: manhattan(a,b)==1, canonical order a<=b`  
-    `Bsp: (10,7)->(10,8)`
-- `VertexCoord`
-  - `Tile-System`: `record VertexCoord_T(FloorIndex f, int x, int y)`  
-    `// canonical: NW-Corner von Tile(x,y)`  
-    `Bsp: (2,10,7)`
-  - `Edge-System`: `record VertexCoord_E(FloorIndex f, EdgeCoord_E north, EdgeCoord_E west)`  
-    `Inv: north=H(x,y), west=V(x,y), gleicher Ursprung`  
-    `Bsp: north=H(10,7), west=V(10,7)`
-  - `Corner-System`: `record VertexCoord_V(FloorIndex f, int x, int y)`  
-    `// genau ein Gittervertex`  
-    `Bsp: (2,10,7)`
-- `MapPlacement`
-  - `Tile-System`: `sealed interface MapPlacement_T permits TileAnchor_T, EdgeAnchor_T, VertexAnchor_T, TileFootprint_T, DoorSidePlacement_T, BoundarySidePlacement_T, StairPlacement_T`  
-    `Bsp: new EdgeAnchor_T(2,10,7,W)`
-  - `Edge-System`: `sealed interface MapPlacement_E permits TileAnchor_E, EdgeAnchor_E, VertexAnchor_E, TileFootprint_E, DoorSidePlacement_E, BoundarySidePlacement_E, StairPlacement_E`  
-    `Bsp: new BoundarySidePlacement_E(2,V(11,7),NEGATIVE)`
-  - `Corner-System`: `sealed interface MapPlacement_V permits TileAnchor_V, EdgeAnchor_V, VertexAnchor_V, TileFootprint_V, DoorSidePlacement_V, BoundarySidePlacement_V, StairPlacement_V`  
-    `Bsp: new VertexAnchor_V(2,10,7)`
-- `TileAnchor`
-  - `Tile-System`: `record TileAnchor_T(FloorIndex f, int x, int y)`  
-    `// authored placement auf Tile-Innenfläche`  
-    `Bsp: (2,10,7)`
-  - `Edge-System`: `record TileAnchor_E(FloorIndex f, EdgeCoord_E north, EdgeCoord_E west)`  
-    `Inv wie TileCoord_E`  
-    `Bsp: north=H(10,7), west=V(10,7)`
-  - `Corner-System`: `record TileAnchor_V(FloorIndex f, VertexCoord_V nw)`  
-    `// authored placement auf Zelle ab nw`  
-    `Bsp: nw=(10,7)`
-- `EdgeAnchor`
-  - `Tile-System`: `record EdgeAnchor_T(FloorIndex f, int x, int y, CardinalHeading side)`  
-    `Inv: canonical only {N,W}`  
-    `Bsp: (2,10,7,W)`
-  - `Edge-System`: `record EdgeAnchor_E(FloorIndex f, int x, int y, EdgeAxis axis)`  
-    `Bsp: H(10,7)`
-  - `Corner-System`: `record EdgeAnchor_V(FloorIndex f, VertexCoord_V a, VertexCoord_V b)`  
-    `Inv: orthogonal adjacent`  
-    `Bsp: (10,7)->(11,7)`
-- `VertexAnchor`
-  - `Tile-System`: `record VertexAnchor_T(FloorIndex f, int x, int y)`  
-    `// canonical NW-Corner von Tile(x,y)`  
-    `Bsp: (2,10,7)`
-  - `Edge-System`: `record VertexAnchor_E(FloorIndex f, EdgeCoord_E north, EdgeCoord_E west)`  
-    `Inv wie VertexCoord_E`  
-    `Bsp: north=H(10,7), west=V(10,7)`
-  - `Corner-System`: `record VertexAnchor_V(FloorIndex f, int x, int y)`  
-    `Bsp: (2,10,7)`
+- `DoorSidePlacement`
+  - `Tile-System`: `record DoorSidePlacement_T(FloorIndex f, TileCoord_T sideTile, CardinalHeading doorEdgeOnTile)`  
+    `// genau die Tile auf der gewählten Türseite`  
+    `Inv: angegebene Tile-Seite trägt die Tür`  
+    `Bsp: sideTile=(2,10,7), doorEdgeOnTile=E`
+  - `Edge-System`: `record DoorSidePlacement_E(FloorIndex f, EdgeAnchor_E door, EdgeSide side)`  
+    `// Türkante + gewählte Halbseite`  
+    `Bsp: door=V(11,7), side=NEGATIVE`
+  - `Corner-System`: `record DoorSidePlacement_V(FloorIndex f, EdgeAnchor_V door, EdgeSide side)`  
+    `// Türkante als Vertexpaar + gewählte Halbseite`  
+    `Bsp: door=(11,7)->(11,8), side=POSITIVE`
+- `BoundarySidePlacement`
+  - `Tile-System`: `record BoundarySidePlacement_T(FloorIndex f, TileCoord_T interiorTile, CardinalHeading boundaryOnTile)`  
+    `// fixe Endpoint-Platzierung auf einer Boundary-Seite`  
+    `Bsp: interiorTile=(2,10,7), boundaryOnTile=N`
+  - `Edge-System`: `record BoundarySidePlacement_E(FloorIndex f, EdgeAnchor_E boundary, EdgeSide side)`  
+    `// Boundary-Kante + Halbseite`  
+    `Bsp: boundary=H(10,7), side=POSITIVE`
+  - `Corner-System`: `record BoundarySidePlacement_V(FloorIndex f, EdgeAnchor_V boundary, EdgeSide side)`  
+    `Bsp: boundary=(10,7)->(11,7), side=NEGATIVE`
 
 #### 2. Geometrische Grid-Formen
 
@@ -662,25 +615,72 @@ Abbildung:
 * Wand = `VertexPolylineGeometry`
 * Boden / Raum / Korridor / Stair-Footprint = `RectSetGeometry`
 
-#### 3. Verhaltenszentrierte VOs
+#### 3.  Atomare Geometrieelemente
 
-- `DoorSidePlacement`
-  - `Tile-System`: `record DoorSidePlacement_T(FloorIndex f, TileCoord_T sideTile, CardinalHeading doorEdgeOnTile)`  
-    `// genau die Tile auf der gewählten Türseite`  
-    `Inv: angegebene Tile-Seite trägt die Tür`  
-    `Bsp: sideTile=(2,10,7), doorEdgeOnTile=E`
-  - `Edge-System`: `record DoorSidePlacement_E(FloorIndex f, EdgeAnchor_E door, EdgeSide side)`  
-    `// Türkante + gewählte Halbseite`  
-    `Bsp: door=V(11,7), side=NEGATIVE`
-  - `Corner-System`: `record DoorSidePlacement_V(FloorIndex f, EdgeAnchor_V door, EdgeSide side)`  
-    `// Türkante als Vertexpaar + gewählte Halbseite`  
-    `Bsp: door=(11,7)->(11,8), side=POSITIVE`
-- `BoundarySidePlacement`
-  - `Tile-System`: `record BoundarySidePlacement_T(FloorIndex f, TileCoord_T interiorTile, CardinalHeading boundaryOnTile)`  
-    `// fixe Endpoint-Platzierung auf einer Boundary-Seite`  
-    `Bsp: interiorTile=(2,10,7), boundaryOnTile=N`
-  - `Edge-System`: `record BoundarySidePlacement_E(FloorIndex f, EdgeAnchor_E boundary, EdgeSide side)`  
-    `// Boundary-Kante + Halbseite`  
-    `Bsp: boundary=H(10,7), side=POSITIVE`
-  - `Corner-System`: `record BoundarySidePlacement_V(FloorIndex f, EdgeAnchor_V boundary, EdgeSide side)`  
-    `Bsp: boundary=(10,7)->(11,7), side=NEGATIVE`
+- `TileCoord`
+  - `Tile-System`: `record TileCoord_T(FloorIndex f, int x, int y)`  
+    `// genau eine Tile-Innenfläche`  
+    `Bsp: (2,10,7)`
+  - `Edge-System`: `record TileCoord_E(FloorIndex f, EdgeCoord_E north, EdgeCoord_E west)`  
+    `// Tile wird durch ihre NW-Kanten identifiziert`  
+    `Inv: north=H(x,y), west=V(x,y), beide teilen NW-Vertex`  
+    `Bsp: north=H(10,7), west=V(10,7)`
+  - `Corner-System`: `record TileCoord_V(FloorIndex f, VertexCoord_V nw)`  
+    `// Tile = Zelle zwischen nw und nw+(1,1)`  
+    `Bsp: nw=(10,7)`
+- `EdgeCoord`
+  - `Tile-System`: `record EdgeCoord_T(FloorIndex f, int x, int y, CardinalHeading side)`  
+    `Inv: canonical only {N,W}`  
+    `// Kante als Seite einer Tile`  
+    `Bsp: (2,10,7,W)`
+  - `Edge-System`: `record EdgeCoord_E(FloorIndex f, int x, int y, EdgeAxis axis)`  
+    `// axis ∈ {H,V}`  
+    `Bsp: V(10,7)`
+  - `Corner-System`: `record EdgeCoord_V(FloorIndex f, VertexCoord_V a, VertexCoord_V b)`  
+    `Inv: manhattan(a,b)==1, canonical order a<=b`  
+    `Bsp: (10,7)->(10,8)`
+- `VertexCoord`
+  - `Tile-System`: `record VertexCoord_T(FloorIndex f, int x, int y)`  
+    `// canonical: NW-Corner von Tile(x,y)`  
+    `Bsp: (2,10,7)`
+  - `Edge-System`: `record VertexCoord_E(FloorIndex f, EdgeCoord_E north, EdgeCoord_E west)`  
+    `Inv: north=H(x,y), west=V(x,y), gleicher Ursprung`  
+    `Bsp: north=H(10,7), west=V(10,7)`
+  - `Corner-System`: `record VertexCoord_V(FloorIndex f, int x, int y)`  
+    `// genau ein Gittervertex`  
+    `Bsp: (2,10,7)`
+- `MapPlacement`
+  - `Tile-System`: `sealed interface MapPlacement_T permits TileAnchor_T, EdgeAnchor_T, VertexAnchor_T, TileFootprint_T, DoorSidePlacement_T, BoundarySidePlacement_T, StairPlacement_T`  
+    `Bsp: new EdgeAnchor_T(2,10,7,W)`
+  - `Edge-System`: `sealed interface MapPlacement_E permits TileAnchor_E, EdgeAnchor_E, VertexAnchor_E, TileFootprint_E, DoorSidePlacement_E, BoundarySidePlacement_E, StairPlacement_E`  
+    `Bsp: new BoundarySidePlacement_E(2,V(11,7),NEGATIVE)`
+  - `Corner-System`: `sealed interface MapPlacement_V permits TileAnchor_V, EdgeAnchor_V, VertexAnchor_V, TileFootprint_V, DoorSidePlacement_V, BoundarySidePlacement_V, StairPlacement_V`  
+    `Bsp: new VertexAnchor_V(2,10,7)`
+- `TileAnchor`
+  - `Tile-System`: `record TileAnchor_T(FloorIndex f, int x, int y)`  
+    `// authored placement auf Tile-Innenfläche`  
+    `Bsp: (2,10,7)`
+  - `Edge-System`: `record TileAnchor_E(FloorIndex f, EdgeCoord_E north, EdgeCoord_E west)`  
+    `Inv wie TileCoord_E`  
+    `Bsp: north=H(10,7), west=V(10,7)`
+  - `Corner-System`: `record TileAnchor_V(FloorIndex f, VertexCoord_V nw)`  
+    `// authored placement auf Zelle ab nw`  
+    `Bsp: nw=(10,7)`
+- `EdgeAnchor`
+  - `Tile-System`: `record EdgeAnchor_T(FloorIndex f, int x, int y, CardinalHeading side)`  
+    `Inv: canonical only {N,W}`  
+    `Bsp: (2,10,7,W)`
+  - `Edge-System`: `record EdgeAnchor_E(FloorIndex f, int x, int y, EdgeAxis axis)`  
+    `Bsp: H(10,7)`
+  - `Corner-System`: `record EdgeAnchor_V(FloorIndex f, VertexCoord_V a, VertexCoord_V b)`  
+    `Inv: orthogonal adjacent`  
+    `Bsp: (10,7)->(11,7)`
+- `VertexAnchor`
+  - `Tile-System`: `record VertexAnchor_T(FloorIndex f, int x, int y)`  
+    `// canonical NW-Corner von Tile(x,y)`  
+    `Bsp: (2,10,7)`
+  - `Edge-System`: `record VertexAnchor_E(FloorIndex f, EdgeCoord_E north, EdgeCoord_E west)`  
+    `Inv wie VertexCoord_E`  
+    `Bsp: north=H(10,7), west=V(10,7)`
+  - `Corner-System`: `record VertexAnchor_V(FloorIndex f, int x, int y)`  
+    `Bsp: (2,10,7)`
