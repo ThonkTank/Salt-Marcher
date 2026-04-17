@@ -101,28 +101,8 @@ Extends the Map Management Component with the following:
     marquee-selection is vertex-based, like wall painting. The smallest paintable area is thus one tile.
     All in-progress editing interactions provide a visible preview of what the state would look like if the edit was concluded at this mouse position.
     
-    Zwischenlager, bis wir eine offiziellere Definition haben, welche inhaltlich deckungsgleich ist:
-    "Wie soll die kanonische Wahrheit von Korridoren modelliert werden?
-    answer: None of the above
-    note: Als normale Spaces (Korridore sind wie Cluster normale traversierbare Tile-Mengen; Segment-
-          und Socket-Logik wird zusätzlich klein modelliert), zumidest für die topologie persistenz.
-          Erstellt wird diese Topologie aus einer A* Route, die zwischen den beiden Ankerpunkten des
-          Korridors berechnet wird. Welche Korridor Segmente welche Anker verbinden, und über welche
-          Teile der dungeon Topologie sie ownership tragen, muss explizit ebenfalls persistiert werden,
-          damit diese Topologie neu berechnet und erstellt werden kann, wenn einer der beiden Anker
-          verschoben wird sodass die Route und damit auch die Topologie neu berechnet werden müssen.
-          Noch eine kurze, zusätzliche Begriffserklärung: Korridor netzwerke sind die Gesammtheit eines
-          verbundenen Anker sets und ihrer Routen, während ein Korridor Segment nur eine einzelne
-          Strecke zwischen zwei Ankern ist. Z.b. ein Netzwerk könnte aus den Ankern Tür1, Tür2, Tür3,
-          Punkt1 und den einzelnen Segmenten Tür1-Punkt1, Tür2-Punkt1 und Tür3-Punkt1 bestehen.
-  • Wie soll die kanonische Wahrheit von Treppen aussehen?
-    answer: None of the above
-    note: Wie korridore wird hier eine bestimmte Topologie aus konkreten Objekten (Wände, Böden,
-          Treppenkacheln) persistiert, zusammen mit einer ownership kennzeichnung damit wir wissen,
-          welche Teile der Dungeon Topologie neu erstellt werden müssen, wenn der User Form, Radius,
-          Ankerpunkt oder andere Parameter ändert, welche diese Topologie definieren. Diese Parameter
-          müssen natürlich ebenfalls definiert werden. Landings sind reine Ableitung: Überall, wo sich
-          eine Treppe mit einer begehbaren Bodenfläche schneidet entsteht ein Landing."
+    Corridor canonical truth: Corridors persist as ordinary traversable `SpaceId` interior plus the smallest authored corridor node/segment graph needed to rebuild routes when endpoints move. Corridor networks are derived connected components of that graph, not their own persisted top-level objects.
+    Stair canonical truth: Stairs persist authored placement parameters plus the stair-owned generated topology they materialise. Landings are derived wherever stair-owned topology touches traversable non-stair floor.
 
 ## Normative Target Architecture
 This section is normative for the `dungeon` feature. Implementations must be evaluated against these boundaries and ownership rules, not against convenience in a single use case.
@@ -163,6 +143,8 @@ Responsibility: canonical spatial truth.
 Owns:
 - which tiles are interior and traversable
 - which explicit internal edges exist
+- authored corridor node and segment ownership
+- stair-owned and corridor-owned generated topology tagged by owner
 - authored spatial anchors for doors, stairs, and corridor routing constraints
 
 May know:
@@ -198,8 +180,8 @@ Responsibility: authored connections between spaces.
 
 Owns:
 - which `ConnectionId` values exist
-- connection kind, authored anchors, connected spaces, traversability state, and authored notes
-- authored stair shape and stair dimensions
+- connection kind, typed placement, connected spaces, traversability state, and authored notes
+- authored stair shape, stair dimensions, floor span, and incline
 
 May know:
 - `SpaceId`
@@ -251,6 +233,18 @@ They must not:
 - Room boundaries, room lists, adjacency, inspector room descriptions, travel options, and render layers are derived only from the authored aggregate.
 - Tool selection, preview state, camera state, onion-slice settings, undo/redo state, party marker, facing, and active travel selection belong only to `src/view/.../Model`.
 
+### Geometry And Placement Rules
+- Every concrete map coordinate is floor-aware.
+- `FloorSpan` expresses vertical reach only. It never replaces a concrete floor-aware coordinate.
+- Boundary walls are derived from neighboring tile context only.
+- A boundary exists when the two tile contexts on an edge differ: interior vs non-interior or `SpaceId A` vs `SpaceId B`.
+- Explicit wall truth exists only for authored internal walls inside already-traversable interior.
+- Corridors and rooms are both normal `SpaceId` interiors. They do not own separate wall vocabularies.
+- Landings are always derived and are never persisted.
+- Corridor networks are derived from authored corridor nodes and segments. They do not own a separate identity layer.
+- `MapPlacement` is the shared typed placement language for connections and features.
+- The allowed `MapPlacement` carriers are tile, edge, vertex, tile footprint, door side, boundary side, and stair placement.
+
 ### Domain Objects
 The feature must keep its shared geometry and identity vocabulary inside `src/domain/dungeon/valueobject`.
 
@@ -259,21 +253,34 @@ Expected value objects include:
 - `SpaceId`
 - `ConnectionId`
 - `FeatureId`
+- `CorridorNodeId`
+- `CorridorSegmentId`
+- `FloorIndex`
 - `TileCoord`
 - `EdgeCoord`
 - `VertexCoord`
 - `TileAnchor`
 - `EdgeAnchor`
 - `VertexAnchor`
+- `TileFootprint`
 - `LabelAnchor`
-- `ConnectionAnchor`
-- `FeatureAnchor`
+- `MapPlacement`
+- `DoorSidePlacement`
+- `BoundarySidePlacement`
+- `StairPlacement`
 - `SpaceKind`
 - `ConnectionKind`
 - `TraversabilityState`
 - `StairShape`
 - `StairDimensions`
+- `StairIncline`
+- `EdgeSide`
 - `FloorSpan`
+- `TopologyOwnerRef`
+
+Command-only geometry value objects include:
+- `VertexRect`
+- `VertexPolyline`
 
 Expected entities include:
 - `DungeonMap`
@@ -298,6 +305,7 @@ Hard invariants include:
 - A stair connection must attach to valid traversable tiles on every connected floor.
 - Explicit internal walls are valid only inside interior context.
 - Corridor routes may not cut through foreign space interiors.
+- Corridor reroute and stair rebuild may only replace topology owned by their matching `TopologyOwnerRef`.
 
 Policies are allowed where deterministic conflict resolution is required, but they must be modeled as policies rather than hidden second truth.
 
@@ -327,6 +335,14 @@ Expected command categories include:
 - space metadata updates
 - connection metadata updates
 - feature add, update, and remove
+
+Command shapes must follow these geometry rules:
+- area and floor paint use `VertexRect`
+- wall draw and erase use `VertexPolyline`
+- door place uses `EdgeAnchor`
+- stair place and update use `StairPlacement`
+- corridor extension uses `DoorSidePlacement` or `BoundarySidePlacement` endpoints
+- feature add and update use `MapPlacement`
 
 Expected query categories include:
 - editor snapshot loading
