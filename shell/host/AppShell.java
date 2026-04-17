@@ -62,11 +62,11 @@ public final class AppShell extends BorderPane {
     private ContributionKey activeTabKey;
 
     public AppShell() {
-        this(RuntimeServiceRegistry.empty());
+        this(PersistenceRegistry.empty());
     }
 
-    public AppShell(RuntimeServiceRegistry runtimeServices) {
-        this.runtimeContext = new ShellRuntimeContext(inspectorPane, runtimeServices);
+    public AppShell(PersistenceRegistry persistenceRegistry) {
+        this.runtimeContext = new ShellRuntimeContext(inspectorPane, persistenceRegistry);
         sidebar.getStyleClass().add("nav-sidebar");
         sidebar.setAlignment(Pos.TOP_CENTER);
 

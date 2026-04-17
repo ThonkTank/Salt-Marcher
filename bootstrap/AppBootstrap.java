@@ -1,7 +1,8 @@
 package bootstrap;
 
 import shell.host.AppShell;
-import shell.host.RuntimeServiceRegistry;
+import shell.host.PersistenceContribution;
+import shell.host.PersistenceRegistry;
 import shell.host.ShellContributionSpec;
 import shell.host.ShellRuntimeContext;
 import shell.host.ShellRuntimeStateSpec;
@@ -20,19 +21,19 @@ import java.util.List;
 public final class AppBootstrap {
 
     private final ShellViewDiscovery discovery;
-    private final RuntimeServiceDiscovery runtimeServiceDiscovery;
+    private final PersistenceContributionDiscovery persistenceContributionDiscovery;
 
     public AppBootstrap() {
-        this(new ShellViewDiscovery(), new RuntimeServiceDiscovery());
+        this(new ShellViewDiscovery(), new PersistenceContributionDiscovery());
     }
 
-    AppBootstrap(ShellViewDiscovery discovery, RuntimeServiceDiscovery runtimeServiceDiscovery) {
+    AppBootstrap(ShellViewDiscovery discovery, PersistenceContributionDiscovery persistenceContributionDiscovery) {
         this.discovery = discovery;
-        this.runtimeServiceDiscovery = runtimeServiceDiscovery;
+        this.persistenceContributionDiscovery = persistenceContributionDiscovery;
     }
 
     public AppShell createShell() {
-        AppShell shell = new AppShell(discoverRuntimeServices());
+        AppShell shell = new AppShell(discoverPersistence());
 
         List<ResolvedContribution> contributions = discoverContributions(shell.runtimeContext());
         for (ResolvedContribution contribution : contributions) {
@@ -46,8 +47,12 @@ public final class AppBootstrap {
         return shell;
     }
 
-    private RuntimeServiceRegistry discoverRuntimeServices() {
-        return runtimeServiceDiscovery.discover();
+    private PersistenceRegistry discoverPersistence() {
+        PersistenceRegistry.Builder builder = new PersistenceRegistry.Builder();
+        for (PersistenceContribution contribution : persistenceContributionDiscovery.discover()) {
+            contribution.register(builder);
+        }
+        return builder.build();
     }
 
     private List<ResolvedContribution> discoverContributions(ShellRuntimeContext runtimeContext) {

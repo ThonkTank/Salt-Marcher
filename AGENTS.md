@@ -75,6 +75,9 @@ Short definitions of SaltMarcher architecture terms. Terms are defined here once
 | Remote Data Source        | A data source for HTTP or other remote systems.                                                     |
 | Data Model                | A storage-shaped or transport-shaped type used only in the data layer.                              |
 | Mapper                    | A translator between data models and domain objects.                                                |
+| Persistence Contribution  | The public `*PersistenceContribution.java` class that registers a feature's exported persistence capabilities. |
+| Persistence Registry      | The passive shell-owned typed registry of persistence capabilities assembled during bootstrap.       |
+| Persistence Schema        | The canonical feature-owned in-code declaration of persisted tables, columns, and additive schema expectations. |
 
 ### Shell and Contribution Terms
 
@@ -102,6 +105,7 @@ Short definitions of SaltMarcher architecture terms. Terms are defined here once
 | NavigationGroupSpec   | Open metadata for navigation grouping and ordering.                                                                                          |
 | Runtime-State Tab     | A global lower-right state contribution that is not owned by a specific runtime tab.                                                         |
 | Runtime-State Panel   | The shared lower-right shell panel used by runtime-state content.                                                                            |
+| Persistence Lookup    | The runtime lookup path from `ShellRuntimeContext.persistence()` into the shared `PersistenceRegistry`.                                     |
 
 ### Lifecycle and Runtime Mechanics Terms
 
@@ -109,6 +113,7 @@ Short definitions of SaltMarcher architecture terms. Terms are defined here once
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
 | Shell Registration | The act of exposing a `ShellContributionSpec` and a `ShellScreen` through `ShellViewContribution`.                                |
 | Bootup Discovery   | Generic bootstrap discovery of feature entrypoints under `src/view/<component>/` through `ShellViewDiscovery`.                    |
+| Persistence Discovery | Generic bootstrap discovery of persistence entrypoints under `src/data/<feature>/` through `PersistenceContributionDiscovery`.     |
 | Panel Mounting     | Static slot-based projection of prepared feature nodes through `ShellScreen.slotContent()`.                                       |
 | Inspector Mounting | Dynamic inspector entry publication through `ShellRuntimeContext.inspector().push(...)`, not through `ShellScreen.slotContent()`. |
 
@@ -160,6 +165,7 @@ src/
             repository/
     data/
         <featureName>/
+            <PascalFeatureName>PersistenceContribution.java
             repository/
             datasource/
                 local/
@@ -184,6 +190,18 @@ Only these feature directories are allowed for new work:
 - `src/data/<feature>/model`
 - `src/data/<feature>/mapper`
 
+### Required Persistence Entrypoint
+
+Every feature that exports persistence capabilities must expose exactly one data root entrypoint:
+
+- It lives at `src/data/<feature>/<PascalFeatureName>PersistenceContribution.java`.
+- It declares package `src.data.<feature>`.
+- It is a `public final` class.
+- It exposes a public no-arg constructor.
+- It implements `shell.host.PersistenceContribution`.
+- It registers exported capabilities through `PersistenceRegistry.Builder`.
+- Its feature must expose exactly one `src/data/<feature>/model/<PascalFeatureName>PersistenceSchema.java`.
+
 ### Required Feature Entrypoint
 
 Every navigable or shell-registered feature must expose exactly one feature entrypoint:
@@ -201,6 +219,7 @@ Every navigable or shell-registered feature must expose exactly one feature entr
 These structural constraints are mandatory:
 
 - The component root under `src/view/<component>/` is reserved for the feature entrypoint file only.
+- The feature root under `src/data/<feature>/` is reserved for the persistence entrypoint file only.
 - All other presentation classes must live under `Model/`, `Controller/`, `View/`, or `interactor/`.
 - `<featureName>API.java` is the only public backend boundary under `src/domain/<feature>/`.
 - Do not introduce `service/` or `services/` as a domain directory.
@@ -283,16 +302,19 @@ Why this goes here:
 
 Put code in `src/data/<feature>/` when it talks to persistence, files, HTTP, caches, or other external systems.
 
+- `<PascalFeatureName>PersistenceContribution.java` is the only public data root entrypoint and registers exported persistence capabilities.
 - `repository` contains repository implementations.
 - `datasource/local` contains local technical adapters.
 - `datasource/remote` contains remote technical adapters.
 - `model` contains storage-shaped and transport-shaped data types.
+- `<PascalFeatureName>PersistenceSchema.java` in `model/` is the canonical persisted schema declaration for that feature.
 - `mapper` converts between data models and domain objects.
 
 Why this goes here:
 
 - Infrastructure concerns must stay outside the domain.
 - Data models and transport concerns should not leak upward into domain or presentation code.
+- Persistence export wiring must remain feature-owned and discoverable without manual bootstrap edits.
 
 ### UI Construction Rules
 
@@ -369,6 +391,28 @@ AppBootstrap.createShell()
   -> contribution.createScreen(shell.runtimeContext())
   -> shell.registerTab(...) | shell.registerTopBar(...) | shell.registerRuntimeState(...)
   -> navigateTo(startup.key()) when a startup tab is resolved
+```
+
+### Persistence Discovery Contract
+
+The persistence discovery contract is the generic bootstrap path from `src/data/<feature>/` into the shared persistence registry.
+
+- `AppBootstrap.createShell()` resolves persistence before feature screens are created.
+- `PersistenceContributionDiscovery.discover()` scans `src/data/<feature>/` root classes.
+- Each persistence-exporting feature root must expose exactly one root class.
+- That root class must be named `<PascalFeatureName>PersistenceContribution`.
+- The discovered class must implement `PersistenceContribution`.
+- The discovered class must expose a public no-arg constructor.
+- The feature must expose exactly one `<PascalFeatureName>PersistenceSchema` in `src/data/<feature>/model/`.
+
+Persistence discovery template:
+
+```text
+AppBootstrap.createShell()
+  -> persistenceContributionDiscovery.discover()
+  -> contribution.register(persistenceRegistryBuilder)
+  -> new AppShell(persistenceRegistry)
+  -> feature view reads runtimeContext.persistence().require(...)
 ```
 
 ### Shell Registry Contract
@@ -516,12 +560,17 @@ Runtime interaction rules:
 - Navigation groups are open metadata supplied by features, not closed shell enums.
 - Runtime-state tabs are global and autonomous.
 - Features must not talk to `AppShell`, `AppView`, `ShellServices`, `DetailsNavigator`, `SceneRegistry`, or concrete shell panels as alternate wiring paths.
+- Features must read exported persistence capabilities only through `ShellRuntimeContext.persistence()`.
 
 ### Standard Interaction Flows
 
 Normal feature flow:
 
 `Bootstrap builds shell -> Bootstrap discovers feature entrypoints under src/view/<component>/ -> Feature entrypoint supplies ShellContributionSpec + ShellScreen -> Bootstrap registers contribution by spec type -> Shell mounts slot content generically into the passive host -> User interaction -> Controller action -> Interactor -> Feature API -> Domain use case -> command/query operation against a domain repository interface <- Data repository implementation -> Data source -> Data model -> Mapper -> Domain model/result -> Interactor -> Presentation model`
+
+Persistence bootstrap flow:
+
+`Bootstrap discovers persistence contributions under src/data/<feature>/ -> Persistence contribution registers typed capabilities into PersistenceRegistry -> AppShell exposes the registry through ShellRuntimeContext.persistence() -> Feature root resolves repository interfaces from the passive registry`
 
 Inspector flow:
 
@@ -545,14 +594,17 @@ To keep the architecture stable, do not:
 - let controllers own application startup or slot mounting as the default convention
 - let bootstrap import concrete feature classes from `src/view/<component>/`
 - let bootstrap call feature APIs or data adapters directly
+- let bootstrap require routine edits outside `src/` when a new feature exports persistence capabilities
 - expose internal feature details outside `<featureName>API.java`
 - skip the interactor and let a view component talk to a feature API directly
 - skip a feature API and let the interactor talk to feature internals for convenience
 - introduce `service/` or `services/` as a domain directory or architectural escape hatch
 - introduce a second shell wiring path besides `ShellViewContribution -> ShellScreen -> ShellSlot`
+- use legacy runtime-service persistence wiring such as `RuntimeServiceProvider` or `RuntimeServiceRegistry`
 - use `AppView`, `ShellServices`, `DetailsNavigator`, `SceneRegistry`, or concrete shell panel classes from `src/view/`
 - register content directly in `AppShell` from feature code
 - create feature-owned alternate registries for top bar, runtime state, or inspector content
+- place additional exported persistence wiring files directly under `src/data/<feature>/` besides `<PascalFeatureName>PersistenceContribution.java`
 - couple runtime-state content to one specific runtime tab instead of publishing autonomous global runtime-state tabs
 
 ## Workflow

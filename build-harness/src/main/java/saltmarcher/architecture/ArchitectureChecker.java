@@ -33,6 +33,8 @@ public final class ArchitectureChecker {
             Pattern.compile("(?m)^\\s*import\\s+(?:static\\s+)?([A-Za-z_][\\w.*]*)\\s*;");
     private static final Pattern SHELL_CONTRIBUTION_PATTERN =
             Pattern.compile("\\bimplements\\b[^\\{;]*\\b(?:shell\\.host\\.)?ShellViewContribution\\b");
+    private static final Pattern PERSISTENCE_CONTRIBUTION_PATTERN =
+            Pattern.compile("\\bimplements\\b[^\\{;]*\\b(?:shell\\.host\\.)?PersistenceContribution\\b");
     private static final Pattern SHELL_SCREEN_PATTERN =
             Pattern.compile("\\b(?:shell\\.host\\.)?ShellScreen\\b");
     private static final Set<String> DOMAIN_BANNED_TOKENS = Set.of(
@@ -59,6 +61,10 @@ public final class ArchitectureChecker {
             "shell.panel.ScenePane",
             "shell.panel.RuntimeStatePane"
     );
+    private static final Set<String> LEGACY_PERSISTENCE_TYPES = Set.of(
+            "shell.host.RuntimeServiceProvider",
+            "shell.host.RuntimeServiceRegistry"
+    );
 
     private final Path repoRoot;
 
@@ -78,6 +84,7 @@ public final class ArchitectureChecker {
 
         validateDomainFeatureBoundaries(sourceFiles, violations);
         validateViewRootEntrypoints(sourceFiles, violations);
+        validatePersistenceEntrypoints(sourceFiles, violations);
 
         for (SourceFile sourceFile : sourceFiles) {
             List<SourceFile> projectDependencies = resolveProjectDependencies(sourceFile, typeIndex);
@@ -219,9 +226,13 @@ public final class ArchitectureChecker {
 
     private void validateDataLayout(SourceFile sourceFile, List<Violation> violations) {
         List<String> segments = sourceFile.relativeSegments();
+        if (segments.size() == 4) {
+            return;
+        }
         if (segments.size() < 5) {
             violations.add(new Violation(sourceFile.relativePath(), "data-layout",
-                    "Data sources must live under src/data/<feature>/repository, datasource, model or mapper."));
+                    "Data sources must live under src/data/<feature>/<Feature>PersistenceContribution.java,"
+                            + " repository, datasource, model or mapper."));
             return;
         }
 
@@ -236,7 +247,8 @@ public final class ArchitectureChecker {
                 }
             }
             default -> violations.add(new Violation(sourceFile.relativePath(), "data-layout",
-                    "Only repository/, datasource/local/, datasource/remote/, model/ and mapper/ are allowed in data features."))
+                    "Only a data root contribution, repository/, datasource/local/, datasource/remote/, model/ and mapper/"
+                            + " are allowed in data features."))
             ;
         }
     }
@@ -293,7 +305,7 @@ public final class ArchitectureChecker {
             }
 
             for (SourceFile root : roots) {
-                String expectedFileName = toContributionClassName(componentName) + ".java";
+                String expectedFileName = toPascalCaseSuffix(componentName, "ViewContribution") + ".java";
                 if (!root.fileName().equals(expectedFileName)) {
                     violations.add(new Violation(root.relativePath(), "view-root-name",
                             "Root view entrypoint must be named '" + expectedFileName + "'."));
@@ -305,6 +317,70 @@ public final class ArchitectureChecker {
                 if (!SHELL_SCREEN_PATTERN.matcher(root.content()).find() || !root.content().contains("createScreen(")) {
                     violations.add(new Violation(root.relativePath(), "view-root-wiring-path",
                             "Root view entrypoint must use the single wiring path ShellViewContribution -> ShellScreen -> ShellSlot."));
+                }
+            }
+        }
+    }
+
+    private void validatePersistenceEntrypoints(List<SourceFile> sourceFiles, List<Violation> violations) {
+        Map<String, List<SourceFile>> rootsByFeature = new TreeMap<>();
+        Map<String, List<SourceFile>> schemasByFeature = new TreeMap<>();
+        for (SourceFile sourceFile : sourceFiles) {
+            if (sourceFile.kind() == SourceKind.DATA_ROOT) {
+                rootsByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
+            }
+            if (sourceFile.kind() == SourceKind.DATA_SCHEMA) {
+                schemasByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
+            }
+        }
+
+        Set<String> featureNames = new TreeSet<>();
+        featureNames.addAll(rootsByFeature.keySet());
+        featureNames.addAll(schemasByFeature.keySet());
+
+        for (String featureName : featureNames) {
+            List<SourceFile> roots = rootsByFeature.getOrDefault(featureName, List.of()).stream()
+                    .sorted(Comparator.comparing(SourceFile::relativePath))
+                    .toList();
+            List<SourceFile> schemas = schemasByFeature.getOrDefault(featureName, List.of()).stream()
+                    .sorted(Comparator.comparing(SourceFile::relativePath))
+                    .toList();
+            String expectedRootFileName = toPascalCaseSuffix(featureName, "PersistenceContribution") + ".java";
+            String expectedSchemaFileName = toPascalCaseSuffix(featureName, "PersistenceSchema") + ".java";
+
+            if (!schemas.isEmpty() && roots.isEmpty()) {
+                violations.add(new Violation("src/data/" + featureName, "persistence-root-entrypoint",
+                        "Persisting data feature '" + featureName + "' must expose exactly one root persistence contribution named '"
+                                + expectedRootFileName + "'."));
+            }
+            if (roots.size() > 1) {
+                String files = roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
+                violations.add(new Violation("src/data/" + featureName, "persistence-root-entrypoint",
+                        "Each persistently wired data feature must expose exactly one root entrypoint. Found: " + files));
+            }
+            for (SourceFile root : roots) {
+                if (!root.fileName().equals(expectedRootFileName)) {
+                    violations.add(new Violation(root.relativePath(), "persistence-root-name",
+                            "Root persistence entrypoint must be named '" + expectedRootFileName + "'."));
+                }
+                if (!PERSISTENCE_CONTRIBUTION_PATTERN.matcher(root.content()).find()) {
+                    violations.add(new Violation(root.relativePath(), "persistence-root-contract",
+                            "Root persistence entrypoint must implement shell.host.PersistenceContribution."));
+                }
+            }
+
+            if (!roots.isEmpty() && schemas.size() != 1) {
+                String details = schemas.isEmpty()
+                        ? "none found"
+                        : schemas.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
+                violations.add(new Violation("src/data/" + featureName, "persistence-schema-contract",
+                        "Persistently wired data feature '" + featureName + "' must expose exactly one schema file named '"
+                                + expectedSchemaFileName + "'. Found: " + details));
+            }
+            for (SourceFile schema : schemas) {
+                if (!schema.fileName().equals(expectedSchemaFileName)) {
+                    violations.add(new Violation(schema.relativePath(), "persistence-schema-name",
+                            "Persistence schema must be named '" + expectedSchemaFileName + "'."));
                 }
             }
         }
@@ -386,6 +462,13 @@ public final class ArchitectureChecker {
                 }
             }
         }
+        for (String legacyType : LEGACY_PERSISTENCE_TYPES) {
+            if (sourceFile.content().contains(legacyType)) {
+                violations.add(new Violation(sourceFile.relativePath(), "legacy-runtime-service-path",
+                        "Legacy runtime-service persistence wiring is forbidden. Use shell.host.PersistenceContribution and"
+                                + " shell.host.PersistenceRegistry instead."));
+            }
+        }
     }
 
     private boolean violatesLayerRule(SourceFile source, SourceFile target) {
@@ -445,7 +528,7 @@ public final class ArchitectureChecker {
         return repoRoot.relativize(path.toAbsolutePath().normalize()).toString().replace('\\', '/');
     }
 
-    private static String toContributionClassName(String componentName) {
+    private static String toPascalCaseSuffix(String componentName, String suffix) {
         StringBuilder result = new StringBuilder();
         boolean capitalizeNext = true;
         for (char character : componentName.toCharArray()) {
@@ -460,7 +543,7 @@ public final class ArchitectureChecker {
                 result.append(character);
             }
         }
-        result.append("ViewContribution");
+        result.append(suffix);
         return result.toString();
     }
 
@@ -498,9 +581,11 @@ public final class ArchitectureChecker {
         DOMAIN_VALUEOBJECT,
         DOMAIN_USECASE,
         DOMAIN_REPOSITORY,
+        DATA_ROOT,
         DATA_REPOSITORY,
         DATA_DATASOURCE_LOCAL,
         DATA_DATASOURCE_REMOTE,
+        DATA_SCHEMA,
         DATA_MODEL,
         DATA_MAPPER,
         UNKNOWN;
@@ -519,7 +604,8 @@ public final class ArchitectureChecker {
         }
 
         boolean isData() {
-            return EnumSet.of(DATA_REPOSITORY, DATA_DATASOURCE_LOCAL, DATA_DATASOURCE_REMOTE, DATA_MODEL, DATA_MAPPER)
+            return EnumSet.of(DATA_ROOT, DATA_REPOSITORY, DATA_DATASOURCE_LOCAL, DATA_DATASOURCE_REMOTE, DATA_SCHEMA, DATA_MODEL,
+                            DATA_MAPPER)
                     .contains(this);
         }
 
@@ -616,12 +702,15 @@ public final class ArchitectureChecker {
                     };
                 }
                 case "data" -> {
+                    if (segments.size() == 4) {
+                        yield SourceKind.DATA_ROOT;
+                    }
                     if (segments.size() < 5) {
                         yield SourceKind.UNKNOWN;
                     }
                     yield switch (segments.get(3)) {
                         case "repository" -> SourceKind.DATA_REPOSITORY;
-                        case "model" -> SourceKind.DATA_MODEL;
+                        case "model" -> fileName.endsWith("PersistenceSchema.java") ? SourceKind.DATA_SCHEMA : SourceKind.DATA_MODEL;
                         case "mapper" -> SourceKind.DATA_MAPPER;
                         case "datasource" -> {
                             if (segments.size() < 6) {

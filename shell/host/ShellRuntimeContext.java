@@ -8,18 +8,18 @@ import java.util.Objects;
 public final class ShellRuntimeContext {
 
     private final InspectorSink inspector;
-    private final RuntimeServiceRegistry services;
+    private final PersistenceRegistry persistence;
 
-    public ShellRuntimeContext(InspectorSink inspector, RuntimeServiceRegistry services) {
+    public ShellRuntimeContext(InspectorSink inspector, PersistenceRegistry persistence) {
         this.inspector = Objects.requireNonNull(inspector, "inspector");
-        this.services = Objects.requireNonNull(services, "services");
+        this.persistence = Objects.requireNonNull(persistence, "persistence");
     }
 
     public InspectorSink inspector() {
         return inspector;
     }
 
-    public RuntimeServiceRegistry services() {
-        return services;
+    public PersistenceRegistry persistence() {
+        return persistence;
     }
 }

@@ -6,18 +6,18 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Typed lookup registry for runtime services assembled during bootstrap.
+ * Typed lookup registry for persistence capabilities assembled during bootstrap.
  */
-public final class RuntimeServiceRegistry {
+public final class PersistenceRegistry {
 
     private final Map<Class<?>, Object> services;
 
-    private RuntimeServiceRegistry(Map<Class<?>, Object> services) {
+    private PersistenceRegistry(Map<Class<?>, Object> services) {
         this.services = Map.copyOf(services);
     }
 
-    public static RuntimeServiceRegistry empty() {
-        return new RuntimeServiceRegistry(Map.of());
+    public static PersistenceRegistry empty() {
+        return new PersistenceRegistry(Map.of());
     }
 
     public <T> Optional<T> find(Class<T> serviceType) {
@@ -45,8 +45,8 @@ public final class RuntimeServiceRegistry {
             return this;
         }
 
-        public RuntimeServiceRegistry build() {
-            return new RuntimeServiceRegistry(services);
+        public PersistenceRegistry build() {
+            return new PersistenceRegistry(services);
         }
     }
 }

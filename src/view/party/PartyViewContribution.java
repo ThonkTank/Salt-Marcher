@@ -27,7 +27,7 @@ public final class PartyViewContribution implements ShellViewContribution {
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
         PartyToolbarModel model = new PartyToolbarModel();
-        PartyRosterRepository repository = runtimeContext.services().require(PartyRosterRepository.class);
+        PartyRosterRepository repository = runtimeContext.persistence().require(PartyRosterRepository.class);
         PartyInteractor interactor = new PartyInteractor(new partyAPI(repository), model);
         PartyController controller = new PartyController(interactor);
         PartyToolbarView view = new PartyToolbarView(model, controller);

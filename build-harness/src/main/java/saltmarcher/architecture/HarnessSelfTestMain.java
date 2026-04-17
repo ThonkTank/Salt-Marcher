@@ -22,6 +22,7 @@ public final class HarnessSelfTestMain {
         expectSuccess(fixturesRoot.resolve("good-top-bar"), failures);
         expectSuccess(fixturesRoot.resolve("good-runtime-state"), failures);
         expectSuccess(fixturesRoot.resolve("good-editor-tab"), failures);
+        expectSuccess(fixturesRoot.resolve("good-persistence-contribution"), failures);
         expectFailure(fixturesRoot.resolve("bad-controller-to-domain"), "layer-dependency", failures);
         expectFailure(fixturesRoot.resolve("bad-bootstrap-to-view"), "bootstrap-view-coupling", failures);
         expectFailure(fixturesRoot.resolve("bad-interactor-to-usecase"), "interactor-boundary", failures);
@@ -31,6 +32,10 @@ public final class HarnessSelfTestMain {
         expectFailure(fixturesRoot.resolve("bad-duplicate-view-root"), "view-root-entrypoint", failures);
         expectFailure(fixturesRoot.resolve("bad-wrong-view-root-name"), "view-root-name", failures);
         expectFailure(fixturesRoot.resolve("bad-legacy-view-wiring"), "view-legacy-wiring-path", failures);
+        expectFailure(fixturesRoot.resolve("bad-missing-persistence-root"), "persistence-root-entrypoint", failures);
+        expectFailure(fixturesRoot.resolve("bad-wrong-persistence-root-name"), "persistence-root-name", failures);
+        expectFailure(fixturesRoot.resolve("bad-legacy-runtime-service-provider"), "legacy-runtime-service-path", failures);
+        expectFailure(fixturesRoot.resolve("bad-missing-persistence-schema"), "persistence-schema-contract", failures);
 
         if (!failures.isEmpty()) {
             System.err.println("Harness self-test failed:");
