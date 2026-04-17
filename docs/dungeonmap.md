@@ -400,6 +400,8 @@ This target architecture must stay within the repository layout defined for acti
 
 No alternate top-level architecture root may be introduced for the feature.
 
+### VO-Ansätze nach fachlichen Bereichen
+
 Ich werte hier **nur die 2D-koordinatenabhängigen VOs** aus. Die Datei verlangt floor-aware concrete coordinates, nennt die relevanten Geometrie-/Placement-VOs explizit und reserviert zusätzlich `VertexRect` und `VertexPolyline` als command-only Geometrie-VOs. Reine IDs, Enums und vertikale Hilfs-VOs wie `DungeonMapId`, `SpaceId`, `ConnectionKind`, `FloorSpan`, `CardinalHeading`, `EdgeSide`, `TopologyOwnerRef` sind zwar Teil der Konzeption, aber **keine eigenen Tile/Edge/Corner-Träger** und deshalb nicht sinnvoll als Zeilen dieser Matrix.   
 
 **Annahmen für die Matrix**
@@ -409,6 +411,8 @@ Ich werte hier **nur die 2D-koordinatenabhängigen VOs** aus. Die Datei verlangt
 * Annahme: `EdgeCoord_E(f,x,y,V)` = vertikale Kante von Vertex `(x,y)` nach `(x,y+1)`.
 * Annahme: `EdgeSide.NEGATIVE/POSITIVE` meint die beiden Halbseiten einer orientierten Kante: bei `H` = oben/unten, bei `V` = links/rechts.
 * Jede konkrete Definition ist **floor-aware** und trägt daher `FloorIndex` mit. Das ist nicht optional. 
+
+#### 1. Atomare Geometrieelemente bzw. grundlegende Koordinatentypen
 
 - `TileCoord`
   - `Tile-System`: `record TileCoord_T(FloorIndex f, int x, int y)`  
@@ -477,6 +481,9 @@ Ich werte hier **nur die 2D-koordinatenabhängigen VOs** aus. Die Datei verlangt
     `Bsp: north=H(10,7), west=V(10,7)`
   - `Corner-System`: `record VertexAnchor_V(FloorIndex f, int x, int y)`  
     `Bsp: (2,10,7)`
+
+#### 2. Geometrische Grid-Formen
+
 - `TileFootprint`
   - `Tile-System`: `record TileFootprint_T(FloorIndex f, TileAnchor_T anchor, Set<Int2> offsets)`  
     `// offsets relativ zur Anchor-Tile`  
@@ -487,26 +494,6 @@ Ich werte hier **nur die 2D-koordinatenabhängigen VOs** aus. Die Datei verlangt
   - `Corner-System`: `record TileFootprint_V(FloorIndex f, VertexAnchor_V nw, Set<Int2> offsets)`  
     `// offsets sind Zellen relativ zu nw`  
     `Bsp: nw=(10,7), offsets={(0,0),(1,0),(0,1),(1,1)}`
-- `DoorSidePlacement`
-  - `Tile-System`: `record DoorSidePlacement_T(FloorIndex f, TileCoord_T sideTile, CardinalHeading doorEdgeOnTile)`  
-    `// genau die Tile auf der gewählten Türseite`  
-    `Inv: angegebene Tile-Seite trägt die Tür`  
-    `Bsp: sideTile=(2,10,7), doorEdgeOnTile=E`
-  - `Edge-System`: `record DoorSidePlacement_E(FloorIndex f, EdgeAnchor_E door, EdgeSide side)`  
-    `// Türkante + gewählte Halbseite`  
-    `Bsp: door=V(11,7), side=NEGATIVE`
-  - `Corner-System`: `record DoorSidePlacement_V(FloorIndex f, EdgeAnchor_V door, EdgeSide side)`  
-    `// Türkante als Vertexpaar + gewählte Halbseite`  
-    `Bsp: door=(11,7)->(11,8), side=POSITIVE`
-- `BoundarySidePlacement`
-  - `Tile-System`: `record BoundarySidePlacement_T(FloorIndex f, TileCoord_T interiorTile, CardinalHeading boundaryOnTile)`  
-    `// fixe Endpoint-Platzierung auf einer Boundary-Seite`  
-    `Bsp: interiorTile=(2,10,7), boundaryOnTile=N`
-  - `Edge-System`: `record BoundarySidePlacement_E(FloorIndex f, EdgeAnchor_E boundary, EdgeSide side)`  
-    `// Boundary-Kante + Halbseite`  
-    `Bsp: boundary=H(10,7), side=POSITIVE`
-  - `Corner-System`: `record BoundarySidePlacement_V(FloorIndex f, EdgeAnchor_V boundary, EdgeSide side)`  
-    `Bsp: boundary=(10,7)->(11,7), side=NEGATIVE`
 - `StairPlacement`
   - `Tile-System`: `record StairPlacement_T(TileAnchor_T entry, CardinalHeading heading, StairShape shape, StairDimensions dims, FloorSpan span, StairIncline incline)`  
     `// entry bestimmt konkreten Startfloor; span nur vertikale Reichweite`  
@@ -548,7 +535,7 @@ Ich werte im Folgenden **mögliche geometrische Definitions-Sets für instanziie
 * Annahme: Flächen dürfen Löcher haben.
 * Annahme: zusammengesetzte Formen dürfen aus mehreren disjunkten Teilen bestehen; ein solches Multipart-Objekt ist bei Bedarf ein Wrapper über mehrere Instanzen desselben primitiven Geometrietyps.
 
-### Set A: Vollständige Komponentenliste
+##### Set A: Vollständige Komponentenliste
 Kernidee: Eine Form wird über die vollständige Menge ihrer atomaren Rasterkomponenten beschrieben.
 
 - `TileSetGeometry`
@@ -570,7 +557,7 @@ Abbildung:
 * Wand = `EdgeSetGeometry`
 * Boden / Raum / Korridor / Stair-Footprint = `TileSetGeometry`
 
-### Set B: Boundary-Komponentenliste
+##### Set B: Boundary-Komponentenliste
 Kernidee: Eine Form wird über ihre Randkanten beschrieben. Flächeninneres ergibt sich aus den geschlossenen Randkanten.
 
 - `EdgeBoundaryGeometry`
@@ -588,7 +575,7 @@ Abbildung:
 * Wand = offene oder geschlossene `EdgeBoundaryGeometry`
 * Boden / Raum / Korridor / Stair-Footprint = geschlossene `EdgeBoundaryGeometry`, Inneres daraus abgeleitet
 
-### Set C: Polygon + Polyline
+##### Set C: Polygon + Polyline
 Kernidee: Linien und Flächen werden als geordnete Vertex-Züge beschrieben.
 
 - `VertexCoord`
@@ -617,7 +604,7 @@ Abbildung:
 * Wand = `VertexPolylineGeometry`
 * Boden / Raum / Korridor / Stair-Footprint = `VertexPolygonGeometry`
 
-### Set D: Minimale Eckpunktliste
+##### Set D: Minimale Eckpunktliste
 Kernidee: Gespeichert werden nur Eck- und Biegepunkte; gerade Zwischenstücke sind implizit.
 
 - `VertexCoord`
@@ -646,7 +633,7 @@ Abbildung:
 * Wand = `OrthogonalControlPolyline`
 * Boden / Raum / Korridor / Stair-Footprint = `OrthogonalControlPolygon`
 
-### Set E: Rechteckzerlegung
+##### Set E: Rechteckzerlegung
 Kernidee: Flächen werden als Vereinigung orthogonaler Rechtecke beschrieben; lineare Strukturen als Linienzug.
 
 - `VertexCoord`
@@ -674,3 +661,26 @@ Kernidee: Flächen werden als Vereinigung orthogonaler Rechtecke beschrieben; li
 Abbildung:
 * Wand = `VertexPolylineGeometry`
 * Boden / Raum / Korridor / Stair-Footprint = `RectSetGeometry`
+
+#### 3. Verhaltenszentrierte VOs
+
+- `DoorSidePlacement`
+  - `Tile-System`: `record DoorSidePlacement_T(FloorIndex f, TileCoord_T sideTile, CardinalHeading doorEdgeOnTile)`  
+    `// genau die Tile auf der gewählten Türseite`  
+    `Inv: angegebene Tile-Seite trägt die Tür`  
+    `Bsp: sideTile=(2,10,7), doorEdgeOnTile=E`
+  - `Edge-System`: `record DoorSidePlacement_E(FloorIndex f, EdgeAnchor_E door, EdgeSide side)`  
+    `// Türkante + gewählte Halbseite`  
+    `Bsp: door=V(11,7), side=NEGATIVE`
+  - `Corner-System`: `record DoorSidePlacement_V(FloorIndex f, EdgeAnchor_V door, EdgeSide side)`  
+    `// Türkante als Vertexpaar + gewählte Halbseite`  
+    `Bsp: door=(11,7)->(11,8), side=POSITIVE`
+- `BoundarySidePlacement`
+  - `Tile-System`: `record BoundarySidePlacement_T(FloorIndex f, TileCoord_T interiorTile, CardinalHeading boundaryOnTile)`  
+    `// fixe Endpoint-Platzierung auf einer Boundary-Seite`  
+    `Bsp: interiorTile=(2,10,7), boundaryOnTile=N`
+  - `Edge-System`: `record BoundarySidePlacement_E(FloorIndex f, EdgeAnchor_E boundary, EdgeSide side)`  
+    `// Boundary-Kante + Halbseite`  
+    `Bsp: boundary=H(10,7), side=POSITIVE`
+  - `Corner-System`: `record BoundarySidePlacement_V(FloorIndex f, EdgeAnchor_V boundary, EdgeSide side)`  
+    `Bsp: boundary=(10,7)->(11,7), side=NEGATIVE`
