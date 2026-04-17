@@ -12,12 +12,14 @@ import java.nio.file.attribute.PosixFilePermission
 import java.util.EnumSet
 import org.gradle.api.GradleException
 import org.gradle.api.plugins.JavaApplication
+import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.Sync
 import org.gradle.jvm.application.tasks.CreateStartScripts
 
 plugins {
     java
     application
+    pmd
     id("org.openjfx.javafxplugin") version "0.1.0"
 }
 
@@ -71,6 +73,21 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.46.1.3")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.0")
+}
+
+pmd {
+    toolVersion = "7.23.0"
+    isConsoleOutput = true
+    isIgnoreFailures = false
+    ruleSets = listOf()
+    ruleSetFiles = files(layout.projectDirectory.file("config/pmd/complexity-ruleset.xml"))
+}
+
+tasks.withType<Pmd>().configureEach {
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+    }
 }
 
 extensions.configure<JavaApplication> {
