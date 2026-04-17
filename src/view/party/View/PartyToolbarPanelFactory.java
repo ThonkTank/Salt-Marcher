@@ -27,7 +27,7 @@ final class PartyToolbarPanelFactory {
         panel.setPadding(new Insets(12));
         panel.setPrefWidth(440);
         panel.setMaxWidth(440);
-        panel.setStyle("-fx-background-color: -fx-base; -fx-border-color: -fx-box-border; -fx-border-radius: 6; -fx-background-radius: 6;");
+        panel.getStyleClass().add("party-toolbar-panel");
         panel.getChildren().addAll(
                 buildHeader(closePopup),
                 buildProgressRow(model, parts.budgetProgressBar(), parts.budgetPercentLabel()),
@@ -48,7 +48,7 @@ final class PartyToolbarPanelFactory {
 
     private HBox buildHeader(Runnable closePopup) {
         Label titleLabel = new Label("Party Management");
-        titleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold;");
+        titleLabel.getStyleClass().add("party-toolbar-title");
         Button closeButton = new Button("Close");
         closeButton.setOnAction(event -> closePopup.run());
         Region spacer = new Region();
@@ -69,7 +69,7 @@ final class PartyToolbarPanelFactory {
 
     private Label buildSectionTitle(String text) {
         Label label = new Label(text);
-        label.setStyle("-fx-font-weight: bold;");
+        label.getStyleClass().add("bold");
         return label;
     }
 

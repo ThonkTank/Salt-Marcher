@@ -7,16 +7,48 @@ integration, and branch-protection expectations.
 # Quality Platforms Standard
 
 SaltMarcher uses four additional quality-platform integrations on top of the
-existing local PMD, Lizard, CPD, and architecture harness checks:
+existing compiler, CPD, and repository policy checks:
 
-- `ArchUnit` runs as part of `./gradlew test` and enforces package-level cycle
-  freedom in `src.domain`, `src.view`, `src.data`, and `shell`.
+- `ArchUnit` runs through `./gradlew architectureTest` and enforces package-
+  level dependency boundaries between `bootstrap`, `shell`, `src.view`,
+  `src.domain`, and `src.data`, including cross-feature API-only access below
+  the view layer.
+- `PMD architecture` runs through `./gradlew pmdArchitectureMain` and enforces
+  Java source conventions for feature entrypoints, slot usage, and forbidden
+  framework or wiring patterns.
+- `build-harness` runs through `./gradlew :build-harness:check` and enforces
+  repository topology, package-path alignment, and documentation-correlated
+  root-entrypoint presence.
 - `CKJM ext` runs through `./gradlew ckjmMain` and produces OO-metric reports
   under `build/reports/ckjm/`.
+- `Lizard` runs through `./gradlew lizardMain` and is part of the blocking
+  local `check` pipeline.
 - `SonarCloud` runs in GitHub Actions through the Gradle `sonar` task and is
   intended to be a required PR check.
 - `CodeScene` runs in GitHub Actions through `tools/quality/codescene_delta.py`
   and is intended to be a required PR check.
+
+The task wiring for local quality lives in the included build
+`build-logic/` through the `saltmarcher.quality-conventions` plugin. The root
+build keeps application and packaging behavior, while the convention plugin
+owns check aggregation, Error Prone configuration, and typed Gradle task
+implementations for repository-policy and metric gates.
+
+## Verification Policy
+
+SaltMarcher does not use behavior-coupled automated tests as a safety strategy.
+
+- Do not add JUnit or similar automated tests for feature behavior, internal
+  orchestration, UI helpers, or other change-coupled logic whose assertions
+  must be migrated alongside normal behavior changes.
+- Use the existing structural and build gates for automated confidence:
+  compiler checks, `architectureTest`, `pmdArchitectureMain`,
+  `:build-harness:check`, and the quality platforms named in this document.
+- Use manual testing for behavior verification and workflow validation.
+- Do not expand the compile/build/check pipeline with new automated gates unless
+  the user explicitly requests that expansion.
+- `./gradlew test` is not a general-purpose home for behavior-regression
+  suites.
 
 ## Operating Model
 
@@ -34,13 +66,67 @@ SaltMarcher should use `branch -> pull request -> auto-merge` for changes into
 
 ## Local Usage
 
-- `./gradlew test --console=plain`
+- `./gradlew compileJava --console=plain`
+- `./gradlew architectureTest --console=plain`
+- `./gradlew pmdArchitectureMain --console=plain`
+- `./gradlew :build-harness:check --console=plain`
+- `./gradlew checkArchitecture --console=plain`
+- `./gradlew cpdMain --console=plain`
 - `./gradlew ckjmMain --console=plain`
+- `./gradlew lizardMain --console=plain`
 - `./gradlew check --console=plain`
 
-`ckjmMain` is intentionally report-only in v1. It should inform refactoring
-priorities, not block the build until the project has metric-specific
-calibration.
+`check` is the blocking local aggregate. It includes compiler checks,
+`checkArchitecture`, repository-policy checks, `cpdMain`, `lizardMain`, and
+`ckjmMain`.
+
+## Boundary Ownership
+
+- `ArchUnit` covers bytecode-visible dependency direction:
+  - `bootstrap` stays outside feature code
+  - `shell` stays outside feature code
+  - `Model`, `View`, and `Controller` stay out of `domain` and `data`
+  - `interactor` reaches backend only through feature API boundaries
+  - `domain` stays independent from `view`, `shell`, `bootstrap`, and `data`
+  - `data` adapters stay out of presentation and shell code
+- `PMD architecture` covers Java source policies:
+  - root-entrypoint naming and `public final` / public no-arg requirements
+  - required entrypoint methods such as `registrationSpec()`,
+    `createScreen(...)`, and `register(...)`
+  - shell contribution spec selection and slot-matrix validation
+  - view bans on legacy shell wiring types
+  - domain bans on UI and infrastructure framework tokens
+  - inline JavaFX styling bans such as `setStyle(...)`
+  - bans on legacy runtime-service persistence wiring
+- `build-harness` covers repository topology and documentation-correlated
+  presence rules:
+  - repository layout and package-path alignment
+  - `src/domain/<feature>/<feature>API.java` presence for domain features
+  - missing feature root entrypoints in `src/view/<component>/` and
+    `src/data/<feature>/`
+  - exactly one persistence schema per persistence-exporting feature
+- `build-logic` convention tasks cover repository-wide policy and metric rules
+  that are easier to express as Gradle-owned verification:
+  - centralized stylesheet placement under top-level `resources/`
+  - compiled artifact bans under active source roots
+  - desktop packaging metadata and resource presence
+  - CPD duplicate detection
+  - Lizard complexity verification
+  - CKJM metrics reporting and blocking thresholds
+
+## Review-Only Governance
+
+Not every documented architecture rule is a compile-time invariant.
+
+- Documentation ownership, source-of-truth conflicts, and same-change doc
+  updates remain review responsibilities.
+- GitHub branch protection, required checks, and auto-merge remain repository
+  configuration, not Gradle behavior.
+- Positive runtime access rules such as preferring
+  `ShellRuntimeContext.persistence()` and `ShellRuntimeContext.inspector()`
+  remain review rules until a dedicated check owns them.
+- When a rule becomes mechanically checkable, this document should name the
+  owning gate explicitly instead of implying blanket enforcement.
 
 ## GitHub Actions
 

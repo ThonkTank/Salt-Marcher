@@ -12,15 +12,19 @@ import src.domain.dungeon.repository.DungeonMapRepository;
 public final class CreateDungeonMapUseCase {
 
     private final DungeonMapRepository repository;
+    private final DungeonDocumentStore documentStore;
 
-    public CreateDungeonMapUseCase(DungeonMapRepository repository) {
+    public CreateDungeonMapUseCase(DungeonMapRepository repository, DungeonDocumentStore documentStore) {
         this.repository = repository;
+        this.documentStore = documentStore;
     }
 
     public CreateDungeonMapResult execute(CreateDungeonMapCommand command) {
         DungeonMapId mapId = repository.nextId();
-        DungeonMap dungeonMap = DungeonMap.empty(mapId, normalizeName(command));
+        String mapName = normalizeName(command);
+        DungeonMap dungeonMap = DungeonMap.empty(mapId, mapName);
         repository.save(dungeonMap);
+        documentStore.ensureMap(mapId, mapName);
         return new CreateDungeonMapResult(mapId);
     }
 

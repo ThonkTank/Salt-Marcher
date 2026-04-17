@@ -7,8 +7,10 @@ import org.jspecify.annotations.Nullable;
 import src.domain.mapcore.api.MapCellRef;
 import src.domain.mapcore.api.MapCellSnapshot;
 import src.domain.mapcore.api.MapEdgeSnapshot;
+import src.domain.mapcore.api.MapRenderPayload;
 import src.view.mapshared.Model.MapCellViewModel;
 import src.view.mapshared.Model.MapEdgeViewModel;
+import src.view.mapshared.Model.MapWorkspaceSceneViewData;
 
 /**
  * Shared view-layer helpers for dungeon workspace projection and sidebar cards.
@@ -50,6 +52,23 @@ public final class MapWorkspaceSupport {
         );
     }
 
+    public static MapWorkspaceSceneViewData toSceneViewData(@Nullable MapRenderPayload payload, int currentFloor) {
+        if (payload == null) {
+            return MapWorkspaceSceneViewData.empty();
+        }
+        return new MapWorkspaceSceneViewData(
+                payload.topology().name(),
+                payload.cells().stream()
+                        .filter(cell -> cell.ref().level() == currentFloor)
+                        .map(cell -> toViewCell(cell, null))
+                        .toList(),
+                payload.edges().stream()
+                        .filter(edge -> edge.ref().from().level() == currentFloor && edge.ref().to().level() == currentFloor)
+                        .map(MapWorkspaceSupport::toViewEdge)
+                        .toList()
+        );
+    }
+
     public static VBox card(String title, Node... content) {
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("editor-panel-title");
@@ -63,6 +82,12 @@ public final class MapWorkspaceSupport {
     public static Label muted(String text) {
         Label label = new Label(text);
         label.getStyleClass().add("text-muted");
+        return label;
+    }
+
+    public static Label sectionLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll("section-header", "text-muted");
         return label;
     }
 }

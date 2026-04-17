@@ -19,7 +19,7 @@ final class PartyMemberCardFactory {
 
     Node buildActiveMemberRow(PartyInteractor.PartyMemberViewData member, PartyController controller) {
         Label nameLabel = new Label(member.name());
-        nameLabel.setStyle("-fx-font-weight: bold;");
+        nameLabel.getStyleClass().add("bold");
         Node restChip = buildRestChip(member.restStatus());
         Label detailsLabel = mutedLabel(buildPrimaryDetails(member));
         Label xpLabel = new Label(buildXpDetails(member));
@@ -45,7 +45,7 @@ final class PartyMemberCardFactory {
 
     Node buildReserveMemberRow(PartyInteractor.PartyMemberViewData member, PartyController controller) {
         Label nameLabel = new Label(member.name());
-        nameLabel.setStyle("-fx-font-weight: bold;");
+        nameLabel.getStyleClass().add("bold");
         Label detailsLabel = mutedLabel(buildPrimaryDetails(member));
 
         Button activateButton = new Button("Activate");
@@ -70,7 +70,7 @@ final class PartyMemberCardFactory {
 
     private Node wrapCard(VBox content) {
         content.setPadding(new Insets(10));
-        content.setStyle("-fx-background-color: derive(-fx-base, 8%); -fx-border-color: -fx-box-border; -fx-border-radius: 4; -fx-background-radius: 4;");
+        content.getStyleClass().add("party-member-card");
         return content;
     }
 

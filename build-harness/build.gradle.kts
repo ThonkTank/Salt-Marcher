@@ -10,7 +10,7 @@ java {
 
 tasks.register<JavaExec>("architectureCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Checks the repository layout and source-level dependency rules."
+    description = "Checks repository layout, package-path alignment, and documented root-entrypoint presence."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass = "saltmarcher.architecture.ArchitectureCheckMain"
     args = listOf(projectDir.parentFile.absolutePath)

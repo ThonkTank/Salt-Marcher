@@ -21,6 +21,18 @@
     -sm-accent:       #1e7fd4;
     -sm-accent-hover: #41a9f2;
     -sm-border-subtle: #333a3f;
+    -sm-chip-type-bg:      #1a2a3e;
+    -sm-chip-type-border:  #305590;
+    -sm-chip-biome-bg:     #1a3025;
+    -sm-chip-biome-border: #307045;
+    -sm-chip-size-bg:      #2a1a30;
+    -sm-chip-size-border:  #553070;
+    -sm-chip-align-bg:     #30251a;
+    -sm-chip-align-border: #705530;
+    -sm-chip-sub-bg:       #1a3030;
+    -sm-chip-sub-border:   #307070;
+    -sm-chip-cr-bg:        #1a2530;
+    -sm-chip-cr-border:    #305070;
 
     -sm-stat-red:       #922610;
     -sm-stat-red-light: #e08060;
@@ -114,6 +126,20 @@
 .button.flat:hover {
     -fx-background-color: derive(-sm-bg-elevated, 10%);
 }
+.button.accent {
+    -fx-background-color: -sm-accent;
+}
+.button.accent:hover {
+    -fx-background-color: -sm-accent-hover;
+}
+.button.neutral-action {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
+}
+.button.neutral-action:hover {
+    -fx-background-color: derive(-sm-bg-card, 12%);
+}
 
 .party-day-progress {
     -fx-pref-height: 10px;
@@ -136,6 +162,29 @@
     -fx-font-weight: bold;
     -fx-text-fill: -sm-text-secondary;
     -fx-min-width: 42;
+}
+.party-toolbar-panel {
+    -fx-background-color: -fx-base;
+    -fx-border-color: -fx-box-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+.party-toolbar-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+.party-member-card {
+    -fx-background-color: derive(-fx-base, 8%);
+    -fx-border-color: -fx-box-border;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.status-label-success {
+    -fx-text-fill: #205d20;
+}
+.status-label-error,
+.party-error-label {
+    -fx-text-fill: #9a1b1b;
 }
 .party-rest-chip {
     -fx-padding: 2 8 2 8;
@@ -417,6 +466,9 @@
 .dungeon-editor-toolbar {
     -fx-spacing: 8;
 }
+.editor-toolbar-group {
+    -fx-spacing: 4;
+}
 .dungeon-editor-sidebar {
     -fx-spacing: 12;
 }
@@ -432,6 +484,96 @@
     -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-text-fill: -sm-text-primary;
+}
+.toolbar-action-button {
+    -fx-min-height: 28;
+}
+.tool-btn {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-padding: 5 9;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-cursor: hand;
+    -fx-alignment: center-left;
+    -fx-min-height: 28;
+}
+.tool-btn:hover {
+    -fx-background-color: -sm-bg-card;
+    -fx-text-fill: -sm-text-primary;
+}
+.tool-btn:selected {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+.tool-btn:focused {
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-width: 2;
+}
+.tool-btn:disabled {
+    -fx-opacity: 0.72;
+}
+.dungeon-editor-toolbar .toolbar-action-button:focused {
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+
+.filter-pane {
+    -fx-background-color: -sm-bg-darkest;
+}
+.quick-search-field {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-prompt-text-fill: -sm-text-muted;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 4 8;
+    -fx-font-size: 13px;
+}
+.quick-search-field:focused {
+    -fx-border-color: -sm-accent-hover;
+}
+.filter-dropdown {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
+}
+.filter-trigger {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 3 8;
+    -fx-font-size: 11px;
+}
+.filter-trigger:hover {
+    -fx-text-fill: -sm-text-primary;
+    -fx-background-color: -sm-bg-card;
+}
+.filter-trigger-active {
+    -fx-border-color: -sm-accent;
+    -fx-text-fill: -sm-accent-hover;
+}
+.chip {
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 11px;
+    -fx-text-fill: -sm-text-primary;
+}
+.chip-size    { -fx-background-color: -sm-chip-size-bg;  -fx-border-color: -sm-chip-size-border; }
+.chip-type    { -fx-background-color: -sm-chip-type-bg;  -fx-border-color: -sm-chip-type-border; }
+.chip-subtype { -fx-background-color: -sm-chip-sub-bg;   -fx-border-color: -sm-chip-sub-border; }
+.chip-biome   { -fx-background-color: -sm-chip-biome-bg; -fx-border-color: -sm-chip-biome-border; }
+.chip-align   { -fx-background-color: -sm-chip-align-bg; -fx-border-color: -sm-chip-align-border; }
+.chip-cr      { -fx-background-color: -sm-chip-cr-bg;    -fx-border-color: -sm-chip-cr-border; }
+.chip-remove-btn {
+    -fx-padding: 0 0 0 4;
 }
 
 .scroll-bar {

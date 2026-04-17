@@ -1,22 +1,12 @@
 package src.view.mapshared.View;
 
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
-import javafx.scene.control.Button;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
+import src.domain.mapcore.api.MapSelectionRef;
 import src.view.mapshared.Controller.MapCameraController;
 import src.view.mapshared.Controller.MapPointerController;
 import src.view.mapshared.Model.MapCellViewModel;
@@ -41,24 +31,88 @@ public final class MapWorkspaceView extends BorderPane {
     private final MapCameraController cameraController = new MapCameraController();
     private final MapPointerController pointerController = new MapPointerController();
     private final MapTopologyRenderer squareRenderer = new SquareMapTopologyRenderer();
+    private final Canvas renderSurface = squareRenderer.createCanvas();
 
     private Consumer<MapViewport> viewportListener = ignored -> {
     };
     private IntConsumer floorStepListener = ignored -> {
     };
     private @Nullable MapWorkspaceRenderModel renderModel;
-    private double lastDragX;
-    private double lastDragY;
-    private boolean middleDragActive;
+    private @Nullable SelectionKey selectedTarget;
 
     public MapWorkspaceView() {
         getStyleClass().addAll("scene-pane", "map-workspace");
         setPadding(new Insets(8));
-        configureChrome();
-        setTop(buildHeader());
+        MapWorkspaceChrome.configureLabels(titleLabel, subtitleLabel, modeBadge, statusLabel, summaryLabel);
+        MapWorkspaceChrome.configureContentHost(contentHost);
+        contentHost.getChildren().setAll(renderSurface);
+        setTop(MapWorkspaceChrome.buildHeader(
+                new MapWorkspaceHeaderLabels(titleLabel, subtitleLabel, modeBadge, statusLabel),
+                cameraController,
+                new MapWorkspaceCanvasMetrics() {
+                    @Override
+                    public double width() {
+                        return contentHost.getWidth() > 1.0 ? contentHost.getWidth() : 960.0;
+                    }
+
+                    @Override
+                    public double height() {
+                        return contentHost.getHeight() > 1.0 ? contentHost.getHeight() : 640.0;
+                    }
+                },
+                this::afterViewportChanged
+        ));
         setCenter(contentHost);
         setBottom(summaryLabel);
         BorderPane.setMargin(summaryLabel, new Insets(8, 0, 0, 0));
+        new MapWorkspaceInteractionHandler(
+                contentHost,
+                cameraController,
+                new MapWorkspaceInteractionCallbacks() {
+                    @Override
+                    public void onPrimaryClick(double canvasX, double canvasY) {
+                        MapCellViewModel hit = findCellAtCanvasPosition(canvasX, canvasY);
+                        if (hit != null && hit.interactive()) {
+                            pointerController.notifyCellSelected(highlightedCell(hit));
+                        }
+                    }
+
+                    @Override
+                    public void onViewportChanged() {
+                        afterViewportChanged();
+                    }
+
+                    @Override
+                    public void onViewportGeometryChanged() {
+                        redraw();
+                    }
+
+                    @Override
+                    public void onFloorStep(int delta) {
+                        floorStepListener.accept(delta);
+                    }
+
+                    @Override
+                    public boolean mapLoaded() {
+                        return renderModel != null && renderModel.mapLoaded();
+                    }
+
+                    @Override
+                    public MapWorkspaceCanvasMetrics canvasMetrics() {
+                        return new MapWorkspaceCanvasMetrics() {
+                            @Override
+                            public double width() {
+                                return contentHost.getWidth() > 1.0 ? contentHost.getWidth() : 960.0;
+                            }
+
+                            @Override
+                            public double height() {
+                                return contentHost.getHeight() > 1.0 ? contentHost.getHeight() : 640.0;
+                            }
+                        };
+                    }
+                }
+        );
     }
 
     public void setCellSelectionListener(Consumer<MapCellViewModel> listener) {
@@ -76,7 +130,10 @@ public final class MapWorkspaceView extends BorderPane {
     }
 
     public MapViewport currentViewport() {
-        return cameraController.currentViewport(resolveCanvasWidth(), resolveCanvasHeight());
+        return cameraController.currentViewport(
+                contentHost.getWidth() > 1.0 ? contentHost.getWidth() : 960.0,
+                contentHost.getHeight() > 1.0 ? contentHost.getHeight() : 640.0
+        );
     }
 
     public void show(MapWorkspaceRenderModel nextRenderModel) {
@@ -84,150 +141,87 @@ public final class MapWorkspaceView extends BorderPane {
         redraw();
     }
 
-    private void configureChrome() {
-        titleLabel.getStyleClass().add("large");
-        subtitleLabel.getStyleClass().add("text-muted");
-        modeBadge.getStyleClass().add("map-mode-badge");
-        statusLabel.getStyleClass().add("map-status-label");
-        summaryLabel.getStyleClass().add("text-muted");
-        contentHost.getStyleClass().add("map-workspace-content");
-        contentHost.setAlignment(Pos.CENTER);
-        contentHost.setFocusTraversable(true);
-        contentHost.addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleMousePressed);
-        contentHost.addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
-        contentHost.addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
-        contentHost.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
-        contentHost.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
-        contentHost.widthProperty().addListener((ignored, before, after) -> handleViewportGeometryChanged());
-        contentHost.heightProperty().addListener((ignored, before, after) -> handleViewportGeometryChanged());
+    public void setSelectedTarget(@Nullable MapSelectionRef selectionRef) {
+        selectedTarget = selectionRef == null ? null : new SelectionKey(
+                selectionRef.ownerKind(),
+                selectionRef.ownerId(),
+                selectionRef.partKind()
+        );
+        redraw();
     }
 
-    private HBox buildHeader() {
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox badgeRow = new HBox(8, modeBadge, statusLabel);
-        VBox titleBox = new VBox(4, titleLabel, subtitleLabel, badgeRow);
-        HBox cameraControls = buildCameraControls();
-        HBox header = new HBox(8, titleBox, spacer, cameraControls);
-        header.getStyleClass().add("map-workspace-header");
-        header.setPadding(new Insets(0, 0, 8, 0));
-        return header;
-    }
-
-    private HBox buildCameraControls() {
-        Button zoomOutButton = panButton("-", () -> cameraController.zoomOutAt(resolveCanvasWidth() / 2.0, resolveCanvasHeight() / 2.0, resolveCanvasWidth(), resolveCanvasHeight()));
-        Button zoomInButton = panButton("+", () -> cameraController.zoomInAt(resolveCanvasWidth() / 2.0, resolveCanvasHeight() / 2.0, resolveCanvasWidth(), resolveCanvasHeight()));
-        Button resetButton = panButton("Reset", cameraController::reset);
-        HBox cameraControls = new HBox(
-                4,
-                panButton("\u2190", () -> cameraController.panByTiles(-1.5, 0.0)),
-                panButton("\u2191", () -> cameraController.panByTiles(0.0, -1.5)),
-                panButton("\u2193", () -> cameraController.panByTiles(0.0, 1.5)),
-                panButton("\u2192", () -> cameraController.panByTiles(1.5, 0.0)),
-                zoomOutButton,
-                zoomInButton,
-                resetButton);
-        cameraControls.getStyleClass().add("map-camera-controls");
-        return cameraControls;
+    public void resetView() {
+        cameraController.reset();
+        afterViewportChanged();
     }
 
     private void redraw() {
         if (renderModel == null) {
             return;
         }
+        MapViewport viewport = currentViewport();
         titleLabel.setText(renderModel.title());
         subtitleLabel.setText(renderModel.subtitle() + "  Zoom " + String.format("%.1f", cameraController.zoom()) + "x");
         modeBadge.setText(renderModel.modeLabel());
         statusLabel.setText(renderModel.statusLabel());
         summaryLabel.setText(renderModel.summaryLabel());
-        Node rendered = squareRenderer.render(renderModel, currentViewport());
-        contentHost.getChildren().setAll(rendered);
+        squareRenderer.render(renderSurface, renderModel, viewport);
     }
 
-    private Button panButton(String label, Runnable action) {
-        Button button = new Button(label);
-        button.getStyleClass().addAll("compact", "flat");
-        button.setOnAction(event -> {
-            action.run();
-            notifyViewportChanged();
-            redraw();
-        });
-        return button;
-    }
-
-    private void handleMousePressed(MouseEvent event) {
-        contentHost.requestFocus();
-        if (event.getButton() == MouseButton.MIDDLE) {
-            middleDragActive = true;
-            lastDragX = event.getX();
-            lastDragY = event.getY();
-            event.consume();
+    private @Nullable MapCellViewModel findCellAtCanvasPosition(double canvasX, double canvasY) {
+        if (renderModel == null || !renderModel.mapLoaded()) {
+            return null;
         }
+        double scale = cameraController.pixelsPerTile();
+        MapViewport viewport = currentViewport();
+        int q = (int) Math.floor(screenToWorldX(canvasX, viewport, scale));
+        int r = (int) Math.floor(screenToWorldY(canvasY, viewport, scale));
+        for (MapCellViewModel source : renderModel.scene().cells()) {
+            if (source.q() == q && source.r() == r) {
+                return source;
+            }
+        }
+        return null;
     }
 
-    private void handleMouseDragged(MouseEvent event) {
-        if (!middleDragActive) {
-            return;
+    private MapCellViewModel highlightedCell(MapCellViewModel source) {
+        boolean selected = selectedTarget != null
+                && selectedTarget.matches(source.ownerKind(), source.ownerId(), source.partKind());
+        if (!selected && !source.current()) {
+            return source;
         }
-        double dx = event.getX() - lastDragX;
-        double dy = event.getY() - lastDragY;
-        double tilesX = dx / cameraController.pixelsPerTile();
-        double tilesY = dy / cameraController.pixelsPerTile();
-        cameraController.panByTiles(-tilesX, -tilesY);
-        lastDragX = event.getX();
-        lastDragY = event.getY();
-        notifyViewportChanged();
-        redraw();
-        event.consume();
+        return new MapCellViewModel(
+                source.q(),
+                source.r(),
+                source.label(),
+                source.room(),
+                source.corridor(),
+                source.blocked(),
+                source.interactive(),
+                true,
+                source.ownerKind(),
+                source.ownerId(),
+                source.partKind()
+        );
     }
 
-    private void handleMouseReleased(MouseEvent event) {
-        if (event.getButton() == MouseButton.MIDDLE) {
-            middleDragActive = false;
-            event.consume();
-        }
+    private double worldToScreenX(int q, MapViewport viewport, double scale) {
+        return (q - viewport.centerX()) * scale + viewport.canvasWidth() / 2.0;
     }
 
-    private void handleScroll(ScrollEvent event) {
-        if (event.getDeltaY() > 0.0) {
-            cameraController.zoomInAt(event.getX(), event.getY(), resolveCanvasWidth(), resolveCanvasHeight());
-        } else if (event.getDeltaY() < 0.0) {
-            cameraController.zoomOutAt(event.getX(), event.getY(), resolveCanvasWidth(), resolveCanvasHeight());
-        }
-        notifyViewportChanged();
-        redraw();
-        event.consume();
+    private double worldToScreenY(int r, MapViewport viewport, double scale) {
+        return (r - viewport.centerY()) * scale + viewport.canvasHeight() / 2.0;
     }
 
-    private void handleKeyPressed(KeyEvent event) {
-        if (event.getCode() == KeyCode.A) {
-            cameraController.panByTiles(-1.5, 0.0);
-        } else if (event.getCode() == KeyCode.D) {
-            cameraController.panByTiles(1.5, 0.0);
-        } else if (event.getCode() == KeyCode.W) {
-            cameraController.panByTiles(0.0, -1.5);
-        } else if (event.getCode() == KeyCode.S) {
-            cameraController.panByTiles(0.0, 1.5);
-        } else if (event.getCode() == KeyCode.TAB) {
-            floorStepListener.accept(1);
-            event.consume();
-            return;
-        } else if (event.getCode() == KeyCode.CAPS) {
-            floorStepListener.accept(-1);
-            event.consume();
-            return;
-        } else {
-            return;
-        }
-        notifyViewportChanged();
-        redraw();
-        event.consume();
+    private double screenToWorldX(double canvasX, MapViewport viewport, double scale) {
+        return viewport.centerX() + (canvasX - viewport.canvasWidth() / 2.0) / scale;
     }
 
-    private void handleViewportGeometryChanged() {
-        if (renderModel == null) {
-            return;
-        }
+    private double screenToWorldY(double canvasY, MapViewport viewport, double scale) {
+        return viewport.centerY() + (canvasY - viewport.canvasHeight() / 2.0) / scale;
+    }
+
+    private void afterViewportChanged() {
         notifyViewportChanged();
         redraw();
     }
@@ -238,11 +232,12 @@ public final class MapWorkspaceView extends BorderPane {
         }
     }
 
-    private double resolveCanvasWidth() {
-        return contentHost.getWidth() > 1.0 ? contentHost.getWidth() : 960.0;
-    }
+    private record SelectionKey(String ownerKind, long ownerId, String partKind) {
 
-    private double resolveCanvasHeight() {
-        return contentHost.getHeight() > 1.0 ? contentHost.getHeight() : 640.0;
+        private boolean matches(String otherKind, long otherId, String otherPartKind) {
+            return ownerId == otherId
+                    && Objects.equals(ownerKind, otherKind)
+                    && Objects.equals(partKind, otherPartKind);
+        }
     }
 }

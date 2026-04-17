@@ -1,7 +1,7 @@
 package src.domain.dungeon.api;
 
 /**
- * Query for loading a viewport-scoped map snapshot.
+ * Query for loading one map snapshot together with the caller's current viewport.
  */
 public record LoadMapSnapshotQuery(
         DungeonMapId mapId,

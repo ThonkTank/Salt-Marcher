@@ -27,6 +27,10 @@ public record DungeonDocument(
         return new DungeonDocument("Dungeon Bastion", MapTopologyKind.SQUARE, 10, 8, 2, 2, 1);
     }
 
+    public DungeonDocument withMapName(String nextMapName) {
+        return new DungeonDocument(nextMapName, topology, width, height, roomAnchorQ, roomAnchorR, revision);
+    }
+
     public DungeonDocument moveRoomAnchor(int deltaQ, int deltaR) {
         int nextQ = Math.max(1, Math.min(width - 4, roomAnchorQ + deltaQ));
         int nextR = Math.max(1, Math.min(height - 4, roomAnchorR + deltaR));

@@ -76,6 +76,7 @@ public final class PartyToolbarView {
         budgetProgressBar.progressProperty().bind(model.budget().budgetProgressProperty());
         budgetProgressBar.getStyleClass().add("party-day-progress");
         statusLabel.textProperty().bind(model.status().statusTextProperty());
+        statusLabel.getStyleClass().add("status-label");
         statusLabel.visibleProperty().bind(model.status().statusVisibleProperty());
         statusLabel.managedProperty().bind(model.status().statusVisibleProperty());
         model.status().statusErrorProperty().addListener((obs, oldValue, newValue) -> updateStatusStyle());
@@ -156,8 +157,9 @@ public final class PartyToolbarView {
     }
 
     private void updateStatusStyle() {
-        statusLabel.setStyle(model.status().statusErrorProperty().get()
-                ? "-fx-text-fill: #9a1b1b;"
-                : "-fx-text-fill: #205d20;");
+        statusLabel.getStyleClass().removeAll("status-label-error", "status-label-success");
+        statusLabel.getStyleClass().add(model.status().statusErrorProperty().get()
+                ? "status-label-error"
+                : "status-label-success");
     }
 }

@@ -6,16 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -29,42 +22,6 @@ public final class ArchitectureChecker {
 
     private static final Pattern PACKAGE_PATTERN =
             Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_][\\w.]*)\\s*;");
-    private static final Pattern IMPORT_PATTERN =
-            Pattern.compile("(?m)^\\s*import\\s+(?:static\\s+)?([A-Za-z_][\\w.*]*)\\s*;");
-    private static final Pattern SHELL_CONTRIBUTION_PATTERN =
-            Pattern.compile("\\bimplements\\b[^\\{;]*\\b(?:shell\\.host\\.)?ShellViewContribution\\b");
-    private static final Pattern PERSISTENCE_CONTRIBUTION_PATTERN =
-            Pattern.compile("\\bimplements\\b[^\\{;]*\\b(?:shell\\.host\\.)?PersistenceContribution\\b");
-    private static final Pattern SHELL_SCREEN_PATTERN =
-            Pattern.compile("\\b(?:shell\\.host\\.)?ShellScreen\\b");
-    private static final Set<String> DOMAIN_BANNED_TOKENS = Set.of(
-            "javafx.",
-            "javax.json",
-            "jakarta.json",
-            "com.fasterxml.jackson",
-            "org.json",
-            "java.sql.",
-            "javax.sql.",
-            "java.net.http",
-            "okhttp3.",
-            "retrofit2.",
-            "java.io.",
-            "java.nio.file."
-    );
-    private static final Set<String> VIEW_LEGACY_SHELL_TYPES = Set.of(
-            "shell.host.AppShell",
-            "shell.host.AppView",
-            "shell.host.ShellServices",
-            "shell.panel.DetailsNavigator",
-            "shell.panel.SceneRegistry",
-            "shell.host.InspectorPane",
-            "shell.panel.ScenePane",
-            "shell.host.RuntimeStatePane"
-    );
-    private static final Set<String> LEGACY_PERSISTENCE_TYPES = Set.of(
-            "shell.host.RuntimeServiceProvider",
-            "shell.host.RuntimeServiceRegistry"
-    );
 
     private final Path repoRoot;
 
@@ -75,7 +32,6 @@ public final class ArchitectureChecker {
     public Result check() {
         List<Violation> violations = new ArrayList<>();
         List<SourceFile> sourceFiles = loadSourceFiles(violations);
-        Map<String, SourceFile> typeIndex = buildTypeIndex(sourceFiles);
 
         for (SourceFile sourceFile : sourceFiles) {
             validatePathLayout(sourceFile, violations);
@@ -85,12 +41,6 @@ public final class ArchitectureChecker {
         validateDomainFeatureBoundaries(sourceFiles, violations);
         validateViewRootEntrypoints(sourceFiles, violations);
         validatePersistenceEntrypoints(sourceFiles, violations);
-
-        for (SourceFile sourceFile : sourceFiles) {
-            List<SourceFile> projectDependencies = resolveProjectDependencies(sourceFile, typeIndex);
-            validateDependencies(sourceFile, projectDependencies, violations);
-            validateTextualRules(sourceFile, violations);
-        }
 
         List<Violation> ordered = violations.stream()
                 .sorted(Comparator.comparing(Violation::source)
@@ -126,14 +76,6 @@ public final class ArchitectureChecker {
         return files.stream()
                 .sorted(Comparator.comparing(SourceFile::relativePath))
                 .toList();
-    }
-
-    private static Map<String, SourceFile> buildTypeIndex(List<SourceFile> sourceFiles) {
-        Map<String, SourceFile> typeIndex = new LinkedHashMap<>();
-        for (SourceFile sourceFile : sourceFiles) {
-            typeIndex.putIfAbsent(sourceFile.qualifiedTypeName(), sourceFile);
-        }
-        return typeIndex;
     }
 
     private void validatePathLayout(SourceFile sourceFile, List<Violation> violations) {
@@ -203,10 +145,9 @@ public final class ArchitectureChecker {
         }
 
         if (segments.size() == 4) {
-            String fileName = sourceFile.fileName();
             String feature = segments.get(2);
             String expected = feature + "API.java";
-            if (!fileName.equals(expected)) {
+            if (!sourceFile.fileName().equals(expected)) {
                 violations.add(new Violation(sourceFile.relativePath(), "domain-layout",
                         "Only <feature>API.java may live directly under src/domain/<feature>/."));
             }
@@ -248,8 +189,7 @@ public final class ArchitectureChecker {
             }
             default -> violations.add(new Violation(sourceFile.relativePath(), "data-layout",
                     "Only a data root contribution, repository/, datasource/local/, datasource/remote/, model/ and mapper/"
-                            + " are allowed in data features."))
-            ;
+                            + " are allowed in data features."));
         }
     }
 
@@ -271,14 +211,16 @@ public final class ArchitectureChecker {
     }
 
     private void validateDomainFeatureBoundaries(List<SourceFile> sourceFiles, List<Violation> violations) {
-        Map<String, Boolean> apiRoots = new HashMap<>();
+        Set<String> apiRoots = sourceFiles.stream()
+                .filter(sourceFile -> sourceFile.kind() == SourceKind.DOMAIN_API_ROOT)
+                .map(SourceFile::featureName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(TreeSet::new));
+
         for (SourceFile sourceFile : sourceFiles) {
-            if (sourceFile.kind() == SourceKind.DOMAIN_API_ROOT) {
-                apiRoots.put(sourceFile.featureName(), Boolean.TRUE);
-            }
-        }
-        for (SourceFile sourceFile : sourceFiles) {
-            if (sourceFile.kind().isDomain() && sourceFile.featureName() != null && !apiRoots.containsKey(sourceFile.featureName())) {
+            if (sourceFile.kind().isDomain()
+                    && sourceFile.featureName() != null
+                    && !apiRoots.contains(sourceFile.featureName())) {
                 violations.add(new Violation(sourceFile.relativePath(), "feature-api-root",
                         "Feature '" + sourceFile.featureName() + "' is missing " + sourceFile.featureName() + "API.java at its root."));
             }
@@ -286,45 +228,30 @@ public final class ArchitectureChecker {
     }
 
     private void validateViewRootEntrypoints(List<SourceFile> sourceFiles, List<Violation> violations) {
-        Map<String, List<SourceFile>> rootsByComponent = new TreeMap<>();
+        TreeMap<String, List<SourceFile>> rootsByComponent = new TreeMap<>();
         for (SourceFile sourceFile : sourceFiles) {
             if (sourceFile.kind() == SourceKind.VIEW_ROOT) {
                 rootsByComponent.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
             }
         }
 
-        for (Map.Entry<String, List<SourceFile>> entry : rootsByComponent.entrySet()) {
-            String componentName = entry.getKey();
-            List<SourceFile> roots = entry.getValue().stream()
+        for (String componentName : collectViewComponents(sourceFiles)) {
+            List<SourceFile> roots = rootsByComponent.getOrDefault(componentName, List.of()).stream()
                     .sorted(Comparator.comparing(SourceFile::relativePath))
                     .toList();
             if (roots.size() != 1) {
-                String files = roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
+                String files = roots.isEmpty()
+                        ? "none found"
+                        : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
                 violations.add(new Violation("src/view/" + componentName, "view-root-entrypoint",
-                        "Each component must expose exactly one root entrypoint. Found: " + files));
-            }
-
-            for (SourceFile root : roots) {
-                String expectedFileName = toPascalCaseSuffix(componentName, "ViewContribution") + ".java";
-                if (!root.fileName().equals(expectedFileName)) {
-                    violations.add(new Violation(root.relativePath(), "view-root-name",
-                            "Root view entrypoint must be named '" + expectedFileName + "'."));
-                }
-                if (!SHELL_CONTRIBUTION_PATTERN.matcher(root.content()).find()) {
-                    violations.add(new Violation(root.relativePath(), "view-root-contract",
-                            "Root view entrypoint must implement shell.host.ShellViewContribution."));
-                }
-                if (!SHELL_SCREEN_PATTERN.matcher(root.content()).find() || !root.content().contains("createScreen(")) {
-                    violations.add(new Violation(root.relativePath(), "view-root-wiring-path",
-                            "Root view entrypoint must use the single wiring path ShellViewContribution -> ShellScreen -> ShellSlot."));
-                }
+                        "Each documented or root-owning component must expose exactly one root entrypoint. Found: " + files));
             }
         }
     }
 
     private void validatePersistenceEntrypoints(List<SourceFile> sourceFiles, List<Violation> violations) {
-        Map<String, List<SourceFile>> rootsByFeature = new TreeMap<>();
-        Map<String, List<SourceFile>> schemasByFeature = new TreeMap<>();
+        TreeMap<String, List<SourceFile>> rootsByFeature = new TreeMap<>();
+        TreeMap<String, List<SourceFile>> schemasByFeature = new TreeMap<>();
         for (SourceFile sourceFile : sourceFiles) {
             if (sourceFile.kind() == SourceKind.DATA_ROOT) {
                 rootsByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
@@ -334,217 +261,72 @@ public final class ArchitectureChecker {
             }
         }
 
-        Set<String> featureNames = new TreeSet<>();
-        featureNames.addAll(rootsByFeature.keySet());
-        featureNames.addAll(schemasByFeature.keySet());
-
-        for (String featureName : featureNames) {
+        for (String featureName : collectDataFeatures(sourceFiles)) {
             List<SourceFile> roots = rootsByFeature.getOrDefault(featureName, List.of()).stream()
                     .sorted(Comparator.comparing(SourceFile::relativePath))
                     .toList();
             List<SourceFile> schemas = schemasByFeature.getOrDefault(featureName, List.of()).stream()
                     .sorted(Comparator.comparing(SourceFile::relativePath))
                     .toList();
-            String expectedRootFileName = toPascalCaseSuffix(featureName, "PersistenceContribution") + ".java";
-            String expectedSchemaFileName = toPascalCaseSuffix(featureName, "PersistenceSchema") + ".java";
 
-            if (!schemas.isEmpty() && roots.isEmpty()) {
+            if (roots.size() != 1) {
+                String files = roots.isEmpty()
+                        ? "none found"
+                        : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
                 violations.add(new Violation("src/data/" + featureName, "persistence-root-entrypoint",
-                        "Persisting data feature '" + featureName + "' must expose exactly one root persistence contribution named '"
-                                + expectedRootFileName + "'."));
-            }
-            if (roots.size() > 1) {
-                String files = roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
-                violations.add(new Violation("src/data/" + featureName, "persistence-root-entrypoint",
-                        "Each persistently wired data feature must expose exactly one root entrypoint. Found: " + files));
-            }
-            for (SourceFile root : roots) {
-                if (!root.fileName().equals(expectedRootFileName)) {
-                    violations.add(new Violation(root.relativePath(), "persistence-root-name",
-                            "Root persistence entrypoint must be named '" + expectedRootFileName + "'."));
-                }
-                if (!PERSISTENCE_CONTRIBUTION_PATTERN.matcher(root.content()).find()) {
-                    violations.add(new Violation(root.relativePath(), "persistence-root-contract",
-                            "Root persistence entrypoint must implement shell.host.PersistenceContribution."));
-                }
+                        "Persistently wired data feature '" + featureName + "' must expose exactly one root persistence contribution."
+                                + " Found: " + files));
             }
 
-            if (!roots.isEmpty() && schemas.size() != 1) {
-                String details = schemas.isEmpty()
+            if (schemas.size() != 1) {
+                String files = schemas.isEmpty()
                         ? "none found"
                         : schemas.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
                 violations.add(new Violation("src/data/" + featureName, "persistence-schema-contract",
-                        "Persistently wired data feature '" + featureName + "' must expose exactly one schema file named '"
-                                + expectedSchemaFileName + "'. Found: " + details));
-            }
-            for (SourceFile schema : schemas) {
-                if (!schema.fileName().equals(expectedSchemaFileName)) {
-                    violations.add(new Violation(schema.relativePath(), "persistence-schema-name",
-                            "Persistence schema must be named '" + expectedSchemaFileName + "'."));
-                }
+                        "Persistently wired data feature '" + featureName + "' must expose exactly one schema declaration."
+                                + " Found: " + files));
             }
         }
     }
 
-    private List<SourceFile> resolveProjectDependencies(SourceFile sourceFile, Map<String, SourceFile> typeIndex) {
-        Set<SourceFile> dependencies = new LinkedHashSet<>();
-        for (String imported : sourceFile.imports()) {
-            if (imported.endsWith(".*")) {
-                String packagePrefix = imported.substring(0, imported.length() - 2);
-                typeIndex.values().stream()
-                        .filter(candidate -> candidate.packageName().equals(packagePrefix))
-                        .forEach(dependencies::add);
-                continue;
-            }
-            SourceFile dependency = typeIndex.get(imported);
-            if (dependency != null) {
-                dependencies.add(dependency);
-            }
-        }
-
-        for (SourceFile candidate : typeIndex.values()) {
-            if (candidate.equals(sourceFile)) {
-                continue;
-            }
-            if (sourceFile.content().contains(candidate.qualifiedTypeName())) {
-                dependencies.add(candidate);
-            }
-        }
-
-        return dependencies.stream()
-                .sorted(Comparator.comparing(SourceFile::relativePath))
-                .toList();
+    private Set<String> collectViewComponents(List<SourceFile> sourceFiles) {
+        Set<String> components = sourceFiles.stream()
+                .filter(sourceFile -> sourceFile.kind() == SourceKind.VIEW_ROOT)
+                .map(SourceFile::featureName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(TreeSet::new));
+        components.addAll(collectDocumentedFeatures(repoRoot.resolve("src/view"), "UI.md"));
+        return components;
     }
 
-    private void validateDependencies(SourceFile sourceFile, List<SourceFile> dependencies, List<Violation> violations) {
-        for (SourceFile dependency : dependencies) {
-            if (createsBootstrapViewCoupling(sourceFile, dependency)) {
-                violations.add(new Violation(sourceFile.relativePath(), "bootstrap-view-coupling",
-                        "Bootstrap must stay generic and must not depend on concrete view classes such as "
-                                + dependency.relativePath()));
-            }
-            if (violatesLayerRule(sourceFile, dependency)) {
-                violations.add(new Violation(sourceFile.relativePath(), "layer-dependency",
-                        "Forbidden dependency on " + dependency.relativePath()));
-            }
-            if (violatesInteractorBoundary(sourceFile, dependency)) {
-                violations.add(new Violation(sourceFile.relativePath(), "interactor-boundary",
-                        "Interactor may only access <feature>API.java and domain/<feature>/api types, but references "
-                                + dependency.relativePath()));
-            }
-            if (violatesFeatureVisibility(sourceFile, dependency)) {
-                violations.add(new Violation(sourceFile.relativePath(), "feature-visibility",
-                        "Only " + dependency.featureName() + "API.java and " + dependency.featureName()
-                                + "/api types may be referenced from outside feature '" + dependency.featureName() + "'."));
-            }
-            if (createsDomainFeatureCrossReference(sourceFile, dependency)) {
-                violations.add(new Violation(sourceFile.relativePath(), "data-feature-isolation",
-                        "Data feature '" + sourceFile.featureName() + "' must not depend on another feature's domain internals: "
-                                + dependency.relativePath()));
-            }
-        }
+    private Set<String> collectDataFeatures(List<SourceFile> sourceFiles) {
+        Set<String> features = sourceFiles.stream()
+                .filter(sourceFile -> sourceFile.kind() == SourceKind.DATA_ROOT || sourceFile.kind() == SourceKind.DATA_SCHEMA)
+                .map(SourceFile::featureName)
+                .filter(Objects::nonNull)
+                .filter(featureName -> !featureName.equals("persistencecore"))
+                .collect(Collectors.toCollection(TreeSet::new));
+        features.addAll(collectDocumentedFeatures(repoRoot.resolve("src/data"), "PERSISTENCE.md"));
+        return features;
     }
 
-    private void validateTextualRules(SourceFile sourceFile, List<Violation> violations) {
-        if (sourceFile.kind().isViewAny()) {
-            for (String legacyType : VIEW_LEGACY_SHELL_TYPES) {
-                if (sourceFile.content().contains(legacyType)) {
-                    violations.add(new Violation(sourceFile.relativePath(), "view-legacy-wiring-path",
-                            "View code must not use legacy shell wiring type '" + legacyType + "'."));
-                }
-            }
+    private static Set<String> collectDocumentedFeatures(Path root, String markerFileName) {
+        if (!Files.isDirectory(root)) {
+            return Set.of();
         }
-        if (sourceFile.kind().isDomain()) {
-            for (String token : DOMAIN_BANNED_TOKENS) {
-                if (sourceFile.content().contains(token)) {
-                    violations.add(new Violation(sourceFile.relativePath(), "domain-framework-ban",
-                            "Domain code must not reference '" + token + "'."));
-                }
-            }
+        try (Stream<Path> paths = Files.list(root)) {
+            return paths
+                    .filter(Files::isDirectory)
+                    .filter(path -> Files.isRegularFile(path.resolve(markerFileName)))
+                    .map(path -> path.getFileName().toString())
+                    .collect(Collectors.toCollection(TreeSet::new));
+        } catch (IOException exception) {
+            return Set.of();
         }
-        for (String legacyType : LEGACY_PERSISTENCE_TYPES) {
-            if (sourceFile.content().contains(legacyType)) {
-                violations.add(new Violation(sourceFile.relativePath(), "legacy-runtime-service-path",
-                        "Legacy runtime-service persistence wiring is forbidden. Use shell.host.PersistenceContribution and"
-                                + " shell.host.PersistenceRegistry instead."));
-            }
-        }
-    }
-
-    private boolean violatesLayerRule(SourceFile source, SourceFile target) {
-        SourceKind sourceKind = source.kind();
-        SourceKind targetKind = target.kind();
-
-        if (sourceKind == SourceKind.BOOTSTRAP && targetKind.isDomainOrData()) {
-            return true;
-        }
-        if (sourceKind.isShell() && !targetKind.isShell()) {
-            return true;
-        }
-        if ((sourceKind == SourceKind.VIEW || sourceKind == SourceKind.CONTROLLER) && targetKind.isDomainOrData()) {
-            return true;
-        }
-        if (sourceKind.isViewAny() && targetKind.isData()) {
-            return true;
-        }
-        if (sourceKind.isDomain() && (targetKind.isViewAny() || targetKind.isShell() || targetKind.isData())) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean createsBootstrapViewCoupling(SourceFile source, SourceFile target) {
-        return source.kind() == SourceKind.BOOTSTRAP && target.kind().isViewAny();
-    }
-
-    private boolean violatesInteractorBoundary(SourceFile source, SourceFile target) {
-        if (source.kind() != SourceKind.INTERACTOR || !target.kind().isDomain()) {
-            return false;
-        }
-        return !(target.kind() == SourceKind.DOMAIN_API_ROOT || target.kind() == SourceKind.DOMAIN_API_EXPORTED);
-    }
-
-    private boolean violatesFeatureVisibility(SourceFile source, SourceFile target) {
-        if (!target.kind().isDomain()) {
-            return false;
-        }
-        if (Objects.equals(source.featureName(), target.featureName())) {
-            return false;
-        }
-        if (source.kind().isSameFeatureDomain(target.featureName())) {
-            return false;
-        }
-        return !(target.kind() == SourceKind.DOMAIN_API_ROOT || target.kind() == SourceKind.DOMAIN_API_EXPORTED);
-    }
-
-    private boolean createsDomainFeatureCrossReference(SourceFile source, SourceFile target) {
-        if (!source.kind().isData() || !target.kind().isDomain()) {
-            return false;
-        }
-        return !Objects.equals(source.featureName(), target.featureName());
     }
 
     private String relativize(Path path) {
         return repoRoot.relativize(path.toAbsolutePath().normalize()).toString().replace('\\', '/');
-    }
-
-    private static String toPascalCaseSuffix(String componentName, String suffix) {
-        StringBuilder result = new StringBuilder();
-        boolean capitalizeNext = true;
-        for (char character : componentName.toCharArray()) {
-            if (!Character.isLetterOrDigit(character)) {
-                capitalizeNext = true;
-                continue;
-            }
-            if (capitalizeNext) {
-                result.append(Character.toUpperCase(character));
-                capitalizeNext = false;
-            } else {
-                result.append(character);
-            }
-        }
-        result.append(suffix);
-        return result.toString();
     }
 
     public record Result(List<Violation> violations) {
@@ -590,45 +372,21 @@ public final class ArchitectureChecker {
         DATA_MAPPER,
         UNKNOWN;
 
-        boolean isShell() {
-            return this == SHELL_HOST || this == SHELL_PANEL;
-        }
-
-        boolean isViewAny() {
-            return EnumSet.of(VIEW_ROOT, VIEW, CONTROLLER, MODEL, INTERACTOR).contains(this);
-        }
-
         boolean isDomain() {
-            return EnumSet.of(DOMAIN_API_ROOT, DOMAIN_API_EXPORTED, DOMAIN_ENTITY, DOMAIN_VALUEOBJECT, DOMAIN_USECASE, DOMAIN_REPOSITORY)
-                    .contains(this);
-        }
-
-        boolean isData() {
-            return EnumSet.of(DATA_ROOT, DATA_REPOSITORY, DATA_DATASOURCE_LOCAL, DATA_DATASOURCE_REMOTE, DATA_SCHEMA, DATA_MODEL,
-                            DATA_MAPPER)
-                    .contains(this);
-        }
-
-        boolean isDomainOrData() {
-            return isDomain() || isData();
-        }
-
-        boolean isSameFeatureDomain(String featureName) {
-            return isDomain();
+            return switch (this) {
+                case DOMAIN_API_ROOT, DOMAIN_API_EXPORTED, DOMAIN_ENTITY, DOMAIN_VALUEOBJECT, DOMAIN_USECASE, DOMAIN_REPOSITORY -> true;
+                default -> false;
+            };
         }
     }
 
     private record SourceFile(
-            Path absolutePath,
             String relativePath,
             List<String> relativeSegments,
             String fileName,
             String packageName,
-            List<String> imports,
-            String content,
             SourceKind kind,
-            String featureName,
-            String qualifiedTypeName
+            String featureName
     ) {
         static SourceFile parse(Path repoRoot, Path path) throws IOException {
             String content = Files.readString(path, StandardCharsets.UTF_8);
@@ -636,28 +394,14 @@ public final class ArchitectureChecker {
             List<String> relativeSegments = Arrays.asList(relativePath.split("/"));
             String fileName = path.getFileName().toString();
             String packageName = extractPackage(content);
-            List<String> imports = extractImports(content);
             SourceKind kind = classify(relativeSegments, fileName);
             String featureName = extractFeatureName(relativeSegments);
-            String qualifiedTypeName = packageName.isBlank()
-                    ? fileName.replace(".java", "")
-                    : packageName + "." + fileName.replace(".java", "");
-            return new SourceFile(path, relativePath, relativeSegments, fileName, packageName, imports, content, kind, featureName,
-                    qualifiedTypeName);
+            return new SourceFile(relativePath, relativeSegments, fileName, packageName, kind, featureName);
         }
 
         private static String extractPackage(String content) {
             Matcher matcher = PACKAGE_PATTERN.matcher(content);
             return matcher.find() ? matcher.group(1) : "";
-        }
-
-        private static List<String> extractImports(String content) {
-            Matcher matcher = IMPORT_PATTERN.matcher(content);
-            List<String> imports = new ArrayList<>();
-            while (matcher.find()) {
-                imports.add(matcher.group(1));
-            }
-            return imports;
         }
 
         private static SourceKind classify(List<String> segments, String fileName) {
@@ -733,10 +477,8 @@ public final class ArchitectureChecker {
             if (segments.size() < 3) {
                 return null;
             }
-            if ("src".equals(segments.get(0)) && Set.of("domain", "data").contains(segments.get(1))) {
-                return segments.get(2);
-            }
-            if ("src".equals(segments.get(0)) && "view".equals(segments.get(1))) {
+            if ("src".equals(segments.get(0))
+                    && Set.of("domain", "data", "view").contains(segments.get(1))) {
                 return segments.get(2);
             }
             return null;

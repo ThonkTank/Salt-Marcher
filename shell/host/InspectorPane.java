@@ -24,6 +24,7 @@ public class InspectorPane extends VBox implements InspectorSink {
     private final ScrollPane detailScroll = new ScrollPane(detailContent);
     private final VBox footerHost = new VBox();
     private final Label placeholder = new Label("Keine Details ausgewählt");
+    private final Node placeholderHost = ShellContentLayout.shellOwned(placeholder);
     private final Button backBtn = new Button("\u2039");
     private final Button forwardBtn = new Button("\u203a");
     private final Button closeBtn = new Button("\u00d7");
@@ -34,17 +35,22 @@ public class InspectorPane extends VBox implements InspectorSink {
         setPrefWidth(380);
         setMinWidth(320);
         getStyleClass().add("inspector-pane");
+        setMinHeight(0);
+        setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         detailTitle.getStyleClass().add("bold");
         getChildren().add(createHeader());
 
         detailScroll.setFitToWidth(true);
         detailScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        ShellContentLayout.makeShrinkable(detailScroll);
+        ShellContentLayout.makeShrinkable(detailContent);
         VBox.setVgrow(detailScroll, Priority.ALWAYS);
 
         footerHost.getStyleClass().add("inspector-footer-host");
         footerHost.setVisible(false);
         footerHost.setManaged(false);
+        ShellContentLayout.makeShrinkable(footerHost);
 
         placeholder.getStyleClass().add("text-muted");
         placeholder.setMaxWidth(Double.MAX_VALUE);
@@ -108,12 +114,13 @@ public class InspectorPane extends VBox implements InspectorSink {
 
     private void showState(String title, Node content, @Nullable Node footer) {
         detailTitle.setText(title);
-        detailContent.getChildren().setAll(content);
+        detailContent.getChildren().clear();
+        detailContent.getChildren().add(ShellContentLayout.shellOwned(content));
         detailScroll.setContent(detailContent);
 
         footerHost.getChildren().clear();
         if (footer != null) {
-            footerHost.getChildren().add(footer);
+            footerHost.getChildren().add(ShellContentLayout.shellOwned(footer));
             footerHost.setVisible(true);
             footerHost.setManaged(true);
         } else {
@@ -124,7 +131,7 @@ public class InspectorPane extends VBox implements InspectorSink {
 
     private void showPlaceholder() {
         detailTitle.setText("");
-        detailContent.getChildren().setAll(placeholder);
+        detailContent.getChildren().setAll(placeholderHost);
         detailScroll.setContent(detailContent);
         footerHost.getChildren().clear();
         footerHost.setVisible(false);

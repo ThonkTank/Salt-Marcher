@@ -11,19 +11,12 @@ import java.util.function.Consumer;
 
 final class SquareMapCellFactory {
 
-    private final SquareMapLayoutMetrics layout;
-
-    SquareMapCellFactory(SquareMapLayoutMetrics layout) {
-        this.layout = layout;
+    SquareMapCellFactory() {
     }
 
-    Node create(@Nullable MapCellViewModel snapshot, int q, int r, Consumer<MapCellViewModel> onCellSelected) {
+    Node create(@Nullable MapCellViewModel snapshot, Consumer<MapCellViewModel> onCellSelected) {
         StackPane cell = new StackPane();
         cell.getStyleClass().add("dungeon-map-cell");
-        cell.relocate(layout.originX(q), layout.originY(r));
-        cell.setMinSize(layout.cellSize(), layout.cellSize());
-        cell.setPrefSize(layout.cellSize(), layout.cellSize());
-        cell.setMaxSize(layout.cellSize(), layout.cellSize());
         applyCellStyleClass(cell, snapshot);
         Label glyph = new Label(cellText(snapshot));
         glyph.getStyleClass().add("dungeon-map-cell-glyph");

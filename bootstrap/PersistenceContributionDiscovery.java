@@ -69,7 +69,8 @@ final class PersistenceContributionDiscovery {
     private String expectedContributionSimpleName(String featureName) {
         StringBuilder result = new StringBuilder();
         boolean capitalizeNext = true;
-        for (char character : featureName.toCharArray()) {
+        for (int index = 0; index < featureName.length(); index++) {
+            char character = featureName.charAt(index);
             if (!Character.isLetterOrDigit(character)) {
                 capitalizeNext = true;
                 continue;

@@ -42,16 +42,25 @@ public final class ShellWorkspacePane extends SplitPane {
         controlsPanel.getStyleClass().add("control-panel");
         controlsPanel.setPrefWidth(240);
         controlsPanel.setMinWidth(200);
+        controlsPanel.setMinHeight(0);
         controlsPanel.setMaxHeight(Double.MAX_VALUE);
+        controlsPanel.setMaxWidth(Double.MAX_VALUE);
+        controlsPanel.setFillWidth(true);
 
         VBox.setVgrow(controlsPanel, Priority.NEVER);
         VBox.setVgrow(mainPanel, Priority.ALWAYS);
         VBox leftColumn = new VBox(controlsPanel, mainPanel);
+        leftColumn.setFillWidth(true);
+        ShellContentLayout.makeShrinkable(leftColumn);
+        ShellContentLayout.makeShrinkable(mainPanel);
 
+        ShellContentLayout.makeShrinkable(detailsContainer);
+        ShellContentLayout.makeShrinkable(stateContainer);
         detailsContainer.getChildren().add(inspectorPane);
-        stateContainer.getChildren().add(emptyRuntimeStatePlaceholder);
+        stateContainer.getChildren().add(ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
 
         rightSplit.setOrientation(Orientation.VERTICAL);
+        ShellContentLayout.makeShrinkable(rightSplit);
         rightSplit.getItems().addAll(detailsContainer, stateContainer);
 
         setOrientation(Orientation.HORIZONTAL);
@@ -71,7 +80,8 @@ public final class ShellWorkspacePane extends SplitPane {
         this.activeSlotContent = Objects.requireNonNull(slotContent, "slotContent");
         this.activeTabMode = Objects.requireNonNull(mode, "mode");
         applyControls(slotContent.controls());
-        mainPanel.getChildren().setAll(slotContent.main());
+        mainPanel.getChildren().clear();
+        mainPanel.getChildren().add(ShellContentLayout.shellOwned(Objects.requireNonNull(slotContent.main(), "main")));
         detailsContainer.getChildren().setAll(inspectorPane);
         refreshStatePanel();
     }
@@ -102,8 +112,9 @@ public final class ShellWorkspacePane extends SplitPane {
     private void applyControls(@Nullable Node controls) {
         controlsPanel.getChildren().clear();
         if (controls != null) {
-            controlsPanel.getChildren().add(controls);
-            VBox.setVgrow(controls, Priority.ALWAYS);
+            Node hostedControls = ShellContentLayout.shellOwned(controls);
+            controlsPanel.getChildren().add(hostedControls);
+            VBox.setVgrow(hostedControls, Priority.ALWAYS);
         }
         controlsPanel.setVisible(controls != null);
         controlsPanel.setManaged(controls != null);
@@ -111,15 +122,26 @@ public final class ShellWorkspacePane extends SplitPane {
 
     private void refreshStatePanel() {
         if (activeTabMode == null) {
-            stateContainer.getChildren().setAll(emptyRuntimeStatePlaceholder);
+            stateContainer.getChildren().clear();
+            stateContainer.getChildren().add(ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
             return;
         }
         if (activeTabMode == ShellTabMode.RUNTIME) {
-            stateContainer.getChildren().setAll(runtimeStatePane.hasTabs() ? runtimeStatePane : emptyRuntimeStatePlaceholder);
+            Node runtimeState = activeSlotContent == null ? null : activeSlotContent.runtimeState();
+            if (runtimeState != null) {
+                stateContainer.getChildren().clear();
+                stateContainer.getChildren().add(ShellContentLayout.shellOwned(runtimeState));
+                return;
+            }
+            stateContainer.getChildren().clear();
+            stateContainer.getChildren().add(ShellContentLayout.shellOwned(
+                    runtimeStatePane.hasTabs() ? runtimeStatePane : emptyRuntimeStatePlaceholder));
             return;
         }
         Node editorState = activeSlotContent == null ? null : activeSlotContent.editorState();
-        stateContainer.getChildren().setAll(editorState != null ? editorState : editorStatePlaceholder);
+        stateContainer.getChildren().clear();
+        stateContainer.getChildren().add(ShellContentLayout.shellOwned(
+                editorState != null ? editorState : editorStatePlaceholder));
     }
 
     private static Node createPlaceholderPane(String titleText, String bodyText) {

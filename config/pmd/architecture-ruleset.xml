@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="SaltMarcher Architecture Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+    <description>
+        Source-level architecture and entrypoint rules for SaltMarcher production Java sources.
+    </description>
+
+    <rule name="SaltMarcherEntrypointRule"
+          language="java"
+          message="SaltMarcher root entrypoint or slot rule violation"
+          class="saltmarcher.quality.pmd.SaltMarcherEntrypointRule">
+        <priority>1</priority>
+    </rule>
+
+    <rule name="SaltMarcherSourcePolicyRule"
+          language="java"
+          message="SaltMarcher source policy violation"
+          class="saltmarcher.quality.pmd.SaltMarcherSourcePolicyRule">
+        <priority>1</priority>
+    </rule>
+</ruleset>

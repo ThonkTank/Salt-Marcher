@@ -13,15 +13,20 @@ import java.util.List;
 public final class SearchDungeonMapsUseCase {
 
     private final DungeonMapRepository repository;
+    private final DungeonDocumentStore documentStore;
 
-    public SearchDungeonMapsUseCase(DungeonMapRepository repository) {
+    public SearchDungeonMapsUseCase(DungeonMapRepository repository, DungeonDocumentStore documentStore) {
         this.repository = repository;
+        this.documentStore = documentStore;
     }
 
     public List<DungeonMapSummary> execute(SearchMapsQuery query) {
         String searchTerm = query == null ? "" : query.query();
         return repository.searchByName(searchTerm).stream()
-                .map(map -> new DungeonMapSummary(map.metadata().mapId(), map.metadata().mapName(), map.revision()))
+                .map(map -> new DungeonMapSummary(
+                        map.metadata().mapId(),
+                        map.metadata().mapName(),
+                        documentStore.revisionFor(map.metadata().mapId(), map.revision())))
                 .sorted(Comparator.comparing(DungeonMapSummary::mapName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }

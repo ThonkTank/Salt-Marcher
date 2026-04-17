@@ -76,15 +76,15 @@ final class ContributionRootClassScanner {
             Map<String, List<String>> rootClassesBySegment
     ) throws IOException {
         for (String relativeName : jarClassEntrySource.listRootClassEntries(resource)) {
-            String[] segments = relativeName.split("/");
-            if (segments.length != 2) {
+            int separatorIndex = relativeName.indexOf('/');
+            if (separatorIndex <= 0 || separatorIndex != relativeName.lastIndexOf('/')) {
                 continue;
             }
             registerRootClass(
                     rootClassesBySegment,
                     packagePrefix,
-                    segments[0],
-                    segments[1].replaceFirst("\\.class$", ""));
+                    relativeName.substring(0, separatorIndex),
+                    relativeName.substring(separatorIndex + 1).replaceFirst("\\.class$", ""));
         }
     }
 

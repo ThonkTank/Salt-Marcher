@@ -43,25 +43,34 @@ Allowed contribution types:
 
 ## Slot Rules
 
-`ShellScreen.slotContent()` may target only:
+Feature contributions may target only:
 
 - `TOP_BAR`
 - `COCKPIT_CONTROLS`
 - `COCKPIT_MAIN`
-- `COCKPIT_DETAILS`
 - `COCKPIT_STATE`
 
 Contribution-specific rules:
 
 - `ShellTabSpec` requires `COCKPIT_MAIN`
 - `ShellTabSpec` may provide `COCKPIT_CONTROLS`
+- `ShellTabSpec` must not provide `TOP_BAR` or `COCKPIT_DETAILS`
 - `ShellTabSpec` with `ShellTabMode.RUNTIME` must not provide `COCKPIT_STATE`
 - `ShellTabSpec` with `ShellTabMode.EDITOR` may provide `COCKPIT_STATE`
-- `ShellTopBarSpec` may provide only `TOP_BAR`
-- `ShellRuntimeStateSpec` may provide only `COCKPIT_STATE`
+- `ShellTopBarSpec` must provide only `TOP_BAR`
+- `ShellRuntimeStateSpec` must provide only `COCKPIT_STATE`
 
 Inspector content is dynamic and must flow through
-`ShellRuntimeContext.inspector()`, not through slot content.
+`ShellRuntimeContext.inspector()`. `COCKPIT_DETAILS` remains shell-owned and
+must not be filled through feature `slotContent()`.
+
+The shell owns cockpit resize behavior.
+
+- slot roots are treated as content, not as layout authorities
+- the shell may wrap or normalize slot roots so `COCKPIT_MAIN` absorbs
+  remaining space while controls, state, and details keep shell-owned bounds
+- features must not rely on custom root min/max sizing to influence cockpit
+  resizing behavior
 
 ## Discovery Contracts
 
@@ -86,6 +95,16 @@ Bootstrap discovers features and persistence contributions generically.
 - Features publish inspector entries through `ShellRuntimeContext.inspector()`
 - Features must not talk to `AppShell` or concrete shell panels as alternate
   wiring paths
+
+## Verification Notes
+
+- `architectureTest` enforces dependency direction and cross-feature API-only
+  access between `view`, `domain`, and `data`.
+- `pmdArchitectureMain` enforces entrypoint contracts, contribution spec
+  selection, slot-matrix rules, and bans on legacy shell wiring types.
+- Positive runtime-access preferences for `ShellRuntimeContext.persistence()`
+  and `ShellRuntimeContext.inspector()` remain review-owned until a dedicated
+  check models them directly.
 
 ## References
 

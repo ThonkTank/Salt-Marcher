@@ -7,10 +7,10 @@ import src.view.mapshared.Model.MapViewport;
  */
 public final class MapCameraController {
 
-    public static final double BASE_TILE_PIXELS = 48.0;
+    public static final double BASE_TILE_PIXELS = 32.0;
 
-    private static final double MIN_ZOOM = 0.4;
-    private static final double MAX_ZOOM = 3.0;
+    private static final double MIN_ZOOM = 0.1;
+    private static final double MAX_ZOOM = 4.0;
 
     private double centerX;
     private double centerY;
@@ -20,25 +20,9 @@ public final class MapCameraController {
         return zoom;
     }
 
-    public double centerX() {
-        return centerX;
-    }
-
-    public double centerY() {
-        return centerY;
-    }
-
     public void panByTiles(double deltaX, double deltaY) {
         centerX += deltaX;
         centerY += deltaY;
-    }
-
-    public void zoomInAt(double canvasX, double canvasY, double canvasWidth, double canvasHeight) {
-        zoomAround(canvasX, canvasY, canvasWidth, canvasHeight, 1.1);
-    }
-
-    public void zoomOutAt(double canvasX, double canvasY, double canvasWidth, double canvasHeight) {
-        zoomAround(canvasX, canvasY, canvasWidth, canvasHeight, 1.0 / 1.1);
     }
 
     public void zoomAround(double canvasX, double canvasY, double canvasWidth, double canvasHeight, double factor) {

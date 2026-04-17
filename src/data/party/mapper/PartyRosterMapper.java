@@ -1,5 +1,6 @@
 package src.data.party.mapper;
 
+import java.util.Locale;
 import src.data.party.model.PartyCharacterRecord;
 import src.data.party.model.PartyRosterRecord;
 import src.domain.party.entity.PartyCharacter;
@@ -66,7 +67,7 @@ public final class PartyRosterMapper {
             return PartyMembership.RESERVE;
         }
         try {
-            return PartyMembership.valueOf(rawMembership.trim().toUpperCase());
+            return PartyMembership.valueOf(rawMembership.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException exception) {
             return PartyMembership.RESERVE;
         }

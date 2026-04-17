@@ -1,24 +1,40 @@
 package src.view.orders;
 
+import javafx.scene.Node;
+import javafx.scene.control.Label;
+import shell.host.ContributionKey;
 import shell.host.NavigationGroupSpec;
+import shell.host.ShellContributionSpec;
+import shell.host.ShellRuntimeContext;
 import shell.host.ShellScreen;
+import shell.host.ShellSlot;
+import shell.host.ShellTabMode;
+import shell.host.ShellTabSpec;
 import shell.host.ShellViewContribution;
-import shell.host.ViewKey;
-import shell.host.ViewRegistrationSpec;
-import src.view.orders.View.OrdersView;
+
+import java.util.Map;
 
 public final class OrdersViewContribution implements ShellViewContribution {
-    @Override
-    public ViewRegistrationSpec registrationSpec() {
-        return new ViewRegistrationSpec(
-                new ViewKey("orders"),
-                new NavigationGroupSpec("session", "Session", 10),
-                20,
-                true);
+    public OrdersViewContribution() {
     }
 
     @Override
-    public ShellScreen createScreen() {
-        return new OrdersView();
+    public ShellContributionSpec registrationSpec() {
+        return new ShellTabSpec(
+                new ContributionKey("orders"),
+                new NavigationGroupSpec("session", "Session", 10),
+                20,
+                true,
+                ShellTabMode.RUNTIME);
+    }
+
+    @Override
+    public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
+        return new ShellScreen() {
+            @Override
+            public Map<ShellSlot, Node> slotContent() {
+                return Map.of(ShellSlot.COCKPIT_MAIN, new Label("Orders"));
+            }
+        };
     }
 }

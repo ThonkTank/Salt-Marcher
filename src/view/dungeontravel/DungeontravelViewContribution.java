@@ -1,6 +1,7 @@
 package src.view.dungeontravel;
 
 import javafx.scene.Node;
+import javafx.scene.layout.VBox;
 import shell.host.ContributionKey;
 import shell.host.NavigationGroupSpec;
 import shell.host.NavigationIcons;
@@ -19,6 +20,9 @@ import java.util.Map;
  * Travel/runtime tab root for dungeon navigation.
  */
 public final class DungeontravelViewContribution implements ShellViewContribution {
+
+    public DungeontravelViewContribution() {
+    }
 
     @Override
     public ShellContributionSpec registrationSpec() {
@@ -53,7 +57,7 @@ public final class DungeontravelViewContribution implements ShellViewContributio
             @Override
             public Map<ShellSlot, Node> slotContent() {
                 return Map.of(
-                        ShellSlot.COCKPIT_CONTROLS, interactor.controls(),
+                        ShellSlot.COCKPIT_CONTROLS, new VBox(12, interactor.controls(), interactor.state()),
                         ShellSlot.COCKPIT_MAIN, interactor.workspace()
                 );
             }

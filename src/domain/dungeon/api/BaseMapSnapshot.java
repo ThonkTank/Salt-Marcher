@@ -1,6 +1,9 @@
 package src.domain.dungeon.api;
 
 import src.domain.mapcore.api.MapRenderPayload;
+import src.domain.mapcore.api.MapSelectionRef;
+
+import java.util.List;
 
 /**
  * View-facing dungeon map snapshot for the shared canvas surface.
@@ -13,7 +16,8 @@ public record BaseMapSnapshot(
         OnionConfig onionConfig,
         Viewport viewport,
         MapRenderPayload renderPayload,
-        boolean topologyEmpty
+        boolean topologyEmpty,
+        List<MapSelectionRef> selectableTargets
 ) {
 
     public BaseMapSnapshot {
@@ -23,5 +27,6 @@ public record BaseMapSnapshot(
         onionConfig = onionConfig == null ? OnionConfig.defaults() : onionConfig;
         viewport = viewport == null ? Viewport.defaultViewport() : viewport;
         renderPayload = renderPayload == null ? MapRenderPayload.empty() : renderPayload;
+        selectableTargets = selectableTargets == null ? List.of() : List.copyOf(selectableTargets);
     }
 }

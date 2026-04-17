@@ -73,7 +73,8 @@ public final class ShellViewDiscovery {
     private String expectedContributionSimpleName(String componentName) {
         StringBuilder result = new StringBuilder();
         boolean capitalizeNext = true;
-        for (char character : componentName.toCharArray()) {
+        for (int index = 0; index < componentName.length(); index++) {
+            char character = componentName.charAt(index);
             if (!Character.isLetterOrDigit(character)) {
                 capitalizeNext = true;
                 continue;

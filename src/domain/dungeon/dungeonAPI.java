@@ -7,21 +7,17 @@ import src.domain.dungeon.api.DeleteDungeonMapCommand;
 import src.domain.dungeon.api.DeleteDungeonMapResult;
 import src.domain.dungeon.api.DungeonEditorOperation;
 import src.domain.dungeon.api.DungeonInspectorSnapshot;
+import src.domain.dungeon.api.DungeonMapId;
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.DungeonOperationResult;
 import src.domain.dungeon.api.DungeonSnapshot;
 import src.domain.dungeon.api.LoadMapSnapshotQuery;
 import src.domain.dungeon.api.SearchMapsQuery;
 import src.domain.dungeon.repository.DungeonMapRepository;
-import src.domain.dungeon.usecase.ApplyDungeonEditorOperationUseCase;
-import src.domain.dungeon.usecase.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.usecase.CreateDungeonMapUseCase;
-import src.domain.dungeon.usecase.DeleteDungeonMapUseCase;
 import src.domain.dungeon.usecase.DungeonDocumentStore;
+import src.domain.dungeon.usecase.DungeonMutationOperations;
 import src.domain.dungeon.usecase.DungeonMapStore;
-import src.domain.dungeon.usecase.LoadDungeonSnapshotUseCase;
-import src.domain.dungeon.usecase.LoadMapSnapshotUseCase;
-import src.domain.dungeon.usecase.SearchDungeonMapsUseCase;
+import src.domain.dungeon.usecase.DungeonQueryOperations;
 
 import java.util.List;
 
@@ -31,50 +27,45 @@ import java.util.List;
 public final class dungeonAPI {
 
     private static final DungeonMapRepository MAP_REPOSITORY = new DungeonMapStore();
+    private static final DungeonDocumentStore DOCUMENT_STORE = DungeonDocumentStore.shared();
 
-    private final LoadDungeonSnapshotUseCase loadSnapshotUseCase;
-    private final ApplyDungeonEditorOperationUseCase applyOperationUseCase;
-    private final SearchDungeonMapsUseCase searchDungeonMapsUseCase;
-    private final CreateDungeonMapUseCase createDungeonMapUseCase;
-    private final DeleteDungeonMapUseCase deleteDungeonMapUseCase;
-    private final LoadMapSnapshotUseCase loadMapSnapshotUseCase;
+    private final DungeonQueryOperations queries;
+    private final DungeonMutationOperations mutations;
 
     public dungeonAPI() {
-        DungeonDocumentStore store = DungeonDocumentStore.demo();
-        BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
-        this.loadSnapshotUseCase = new LoadDungeonSnapshotUseCase(store, derive);
-        this.applyOperationUseCase = new ApplyDungeonEditorOperationUseCase(store, derive);
-        this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(MAP_REPOSITORY);
-        this.createDungeonMapUseCase = new CreateDungeonMapUseCase(MAP_REPOSITORY);
-        this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(MAP_REPOSITORY);
-        this.loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(MAP_REPOSITORY);
+        this.queries = new DungeonQueryOperations(DOCUMENT_STORE, MAP_REPOSITORY);
+        this.mutations = new DungeonMutationOperations(DOCUMENT_STORE, MAP_REPOSITORY);
     }
 
     public DungeonSnapshot loadSnapshot() {
-        return loadSnapshotUseCase.execute();
+        return queries.loadSnapshot();
     }
 
     public DungeonOperationResult applyOperation(DungeonEditorOperation operation) {
-        return applyOperationUseCase.execute(operation);
+        return mutations.applyOperation(operation);
     }
 
     public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
-        return loadSnapshotUseCase.describeSelection(ownerKind, ownerId);
+        return queries.describeSelection(ownerKind, ownerId);
     }
 
     public List<DungeonMapSummary> searchMaps(SearchMapsQuery query) {
-        return searchDungeonMapsUseCase.execute(query);
+        return queries.searchMaps(query);
     }
 
     public CreateDungeonMapResult createMap(CreateDungeonMapCommand command) {
-        return createDungeonMapUseCase.execute(command);
+        return mutations.createMap(command);
     }
 
     public DeleteDungeonMapResult deleteMap(DeleteDungeonMapCommand command) {
-        return deleteDungeonMapUseCase.execute(command);
+        return mutations.deleteMap(command);
     }
 
     public BaseMapSnapshot loadMapSnapshot(LoadMapSnapshotQuery query) {
-        return loadMapSnapshotUseCase.execute(query);
+        return queries.loadMapSnapshot(query);
+    }
+
+    public void activateMap(DungeonMapId mapId, String mapName) {
+        DOCUMENT_STORE.activateMap(mapId, mapName);
     }
 }

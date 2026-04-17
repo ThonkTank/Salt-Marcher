@@ -27,6 +27,7 @@ public final class RuntimeStatePane extends VBox {
     private final StackPane contentArea = new StackPane();
     private final ToggleGroup tabGroup = new ToggleGroup();
     private final Label placeholder = new Label("Kein Runtime-Zustand verfügbar");
+    private final Node placeholderHost = ShellContentLayout.shellOwned(placeholder);
     private final Map<ContributionKey, StateTab> tabs = new LinkedHashMap<>();
 
     private @Nullable ContributionKey activeKey;
@@ -35,6 +36,8 @@ public final class RuntimeStatePane extends VBox {
         getStyleClass().add("scene-pane");
         setPrefWidth(380);
         setMinWidth(280);
+        setMinHeight(0);
+        setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         tabBar.getStyleClass().add("scene-tab-bar");
         tabBar.setAlignment(Pos.CENTER_LEFT);
@@ -46,8 +49,9 @@ public final class RuntimeStatePane extends VBox {
         placeholder.setAlignment(Pos.CENTER);
 
         contentArea.setAlignment(Pos.TOP_LEFT);
+        ShellContentLayout.makeShrinkable(contentArea);
         VBox.setVgrow(contentArea, Priority.ALWAYS);
-        contentArea.getChildren().setAll(placeholder);
+        contentArea.getChildren().setAll(placeholderHost);
 
         getChildren().addAll(tabBar, contentArea);
         rebuildTabBar();
@@ -72,7 +76,7 @@ public final class RuntimeStatePane extends VBox {
         }
         activeKey = key;
         tab.select();
-        contentArea.getChildren().setAll(tab.contentOr(placeholder));
+        contentArea.getChildren().setAll(tab.contentOr(placeholderHost));
     }
 
     public boolean hasTabs() {
@@ -108,7 +112,7 @@ public final class RuntimeStatePane extends VBox {
             this.key = key;
             this.label = label;
             this.itemOrder = itemOrder;
-            this.content = content;
+            this.content = ShellContentLayout.shellOwned(content);
             this.button = new ToggleButton(label);
             button.getStyleClass().add("scene-tab");
             button.setToggleGroup(tabGroup);

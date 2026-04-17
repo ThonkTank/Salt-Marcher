@@ -14,6 +14,12 @@ import java.util.Objects;
  */
 public final class partyAPI {
 
+    @FunctionalInterface
+    public interface Factory {
+
+        partyAPI create();
+    }
+
     private final PartyQueryOperations queries;
     private final PartyMutationOperations mutations;
 

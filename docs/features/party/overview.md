@@ -1,14 +1,11 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-17
-Source of Truth: Entry point for the party feature documentation set.
+Source of Truth: Compatibility stub; canonical party feature documentation now
+lives in co-located files under `src/`.
 
 # Party Feature Overview
 
-## Purpose
+This path is retained only as a compatibility stub.
 
-The party feature owns party composition and party persistence behavior.
-
-## Documentation Set
-
-- [Party Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/features/party/persistence.md:1)
+Use [Party Feature README](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/party/README.md:1).

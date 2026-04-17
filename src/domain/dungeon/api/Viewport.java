@@ -1,7 +1,7 @@
 package src.domain.dungeon.api;
 
 /**
- * View-local viewport copied into map snapshot queries.
+ * View-local viewport copied into map snapshot requests and responses.
  */
 public record Viewport(
         double centerX,

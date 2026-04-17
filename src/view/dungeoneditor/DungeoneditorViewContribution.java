@@ -20,6 +20,9 @@ import java.util.Map;
  */
 public final class DungeoneditorViewContribution implements ShellViewContribution {
 
+    public DungeoneditorViewContribution() {
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellTabSpec(

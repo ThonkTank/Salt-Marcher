@@ -22,6 +22,7 @@ public final class SaltMarcherApp extends Application {
                 SaltMarcherApp.class.getResource("/salt-marcher.css").toExternalForm());
 
         primaryStage.setTitle("SaltMarcher");
+        DesktopWindowIcons.applyTo(primaryStage);
         primaryStage.setScene(scene);
         primaryStage.setMinWidth(900);
         primaryStage.setMinHeight(500);

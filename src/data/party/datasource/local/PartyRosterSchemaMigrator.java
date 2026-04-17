@@ -1,5 +1,6 @@
 package src.data.party.datasource.local;
 
+import src.data.persistencecore.datasource.local.SqliteSchemaColumnSupport;
 import src.data.party.model.PartyPersistenceSchema;
 
 import java.sql.Connection;
@@ -29,7 +30,7 @@ final class PartyRosterSchemaMigrator {
 
     private void ensureShortRestCadenceColumn(Connection connection) throws SQLException {
         String columnName = "short_rests_taken_since_long_rest";
-        if (tableManager.hasColumn(connection, PartyPersistenceSchema.PLAYER_CHARACTERS.name(), columnName)) {
+        if (SqliteSchemaColumnSupport.hasColumn(connection, PartyPersistenceSchema.PLAYER_CHARACTERS.name(), columnName)) {
             return;
         }
         tableManager.ensureColumn(connection, PartyPersistenceSchema.PLAYER_CHARACTERS, columnName);

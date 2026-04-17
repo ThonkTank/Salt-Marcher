@@ -23,6 +23,7 @@ public final class SaltMarcherPreloader extends Preloader {
         stage = primaryStage;
         stage.initStyle(StageStyle.UNDECORATED);
         stage.setTitle("SaltMarcher");
+        DesktopWindowIcons.applyTo(stage);
         stage.setScene(createScene());
         stage.setResizable(false);
         stage.centerOnScreen();

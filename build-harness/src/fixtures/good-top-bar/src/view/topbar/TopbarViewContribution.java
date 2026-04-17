@@ -13,6 +13,9 @@ import shell.host.ShellSlot;
 import java.util.Map;
 
 public final class TopbarViewContribution implements ShellViewContribution {
+    public TopbarViewContribution() {
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellTopBarSpec(new ContributionKey("global-tools"), 10);

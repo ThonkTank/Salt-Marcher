@@ -15,6 +15,9 @@ import shell.host.ShellSlot;
 import java.util.Map;
 
 public final class EditorViewContribution implements ShellViewContribution {
+    public EditorViewContribution() {
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellTabSpec(

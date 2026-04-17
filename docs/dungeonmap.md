@@ -2,7 +2,7 @@ Status: Deprecated
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-17
 Source of Truth: Legacy entry point retained for compatibility; canonical
-dungeon-map documentation now lives under `docs/features/dungeonmap/`.
+dungeon-map documentation now lives in co-located files under `src/`.
 
 # Dungeon Map Documentation
 
@@ -10,8 +10,9 @@ This legacy path is retained as a pointer only.
 
 Use these documents instead:
 
-- [Dungeon Map Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/features/dungeonmap/overview.md:1)
-- [Dungeon Map Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/features/dungeonmap/spec.md:1)
-- [Dungeon Map Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/features/dungeonmap/domain.md:1)
-- [Dungeon Map UI Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/features/dungeonmap/ui.md:1)
-- [Dungeon Map Delivery Notes](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/features/dungeonmap/delivery.md:1)
+- [Dungeon Feature README](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/README.md:1)
+- [Dungeon Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/SPEC.md:1)
+- [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/DOMAIN.md:1)
+- [Dungeon Delivery Notes](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/DELIVERY.md:1)
+- [Dungeon Editor UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/dungeoneditor/UI.md:1)
+- [Dungeon Travel UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/dungeontravel/UI.md:1)

@@ -145,7 +145,7 @@ final class PartyCharacterEditorDialog {
 
     private static Label buildErrorLabel() {
         Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: #9a1b1b;");
+        errorLabel.getStyleClass().add("party-error-label");
         errorLabel.setWrapText(true);
         return errorLabel;
     }

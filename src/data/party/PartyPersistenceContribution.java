@@ -4,6 +4,7 @@ import shell.host.PersistenceContribution;
 import shell.host.PersistenceRegistry;
 import src.data.party.datasource.local.SqlitePartyLocalDataSource;
 import src.data.party.repository.SqlitePartyRosterRepository;
+import src.domain.party.partyAPI;
 import src.domain.party.repository.PartyRosterRepository;
 
 /**
@@ -11,10 +12,17 @@ import src.domain.party.repository.PartyRosterRepository;
  */
 public final class PartyPersistenceContribution implements PersistenceContribution {
 
+    public PartyPersistenceContribution() {
+    }
+
     @Override
     public void register(PersistenceRegistry.Builder builder) {
+        PartyRosterRepository repository = new SqlitePartyRosterRepository(new SqlitePartyLocalDataSource());
         builder.register(
                 PartyRosterRepository.class,
-                new SqlitePartyRosterRepository(new SqlitePartyLocalDataSource()));
+                repository);
+        builder.register(
+                partyAPI.Factory.class,
+                () -> new partyAPI(repository));
     }
 }

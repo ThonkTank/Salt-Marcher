@@ -1,6 +1,6 @@
 package src.view.mapshared.View;
 
-import javafx.scene.Node;
+import javafx.scene.canvas.Canvas;
 import src.view.mapshared.Model.MapViewport;
 import src.view.mapshared.Model.MapWorkspaceRenderModel;
 
@@ -9,5 +9,7 @@ import src.view.mapshared.Model.MapWorkspaceRenderModel;
  */
 public interface MapTopologyRenderer {
 
-    Node render(MapWorkspaceRenderModel renderModel, MapViewport viewport);
+    Canvas createCanvas();
+
+    void render(Canvas canvas, MapWorkspaceRenderModel renderModel, MapViewport viewport);
 }

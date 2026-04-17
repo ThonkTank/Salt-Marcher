@@ -26,6 +26,20 @@ Allowed `Status` values:
 - `Active`: current maintained documentation
 - `Deprecated`: superseded or retained only for compatibility
 
+## Placement Rule
+
+Feature documentation is co-located by default. Put the canonical document at
+the nearest stable code root that owns the topic.
+
+- feature-wide meaning and behavior go under `src/domain/<feature>/`
+- UI behavior for one component goes under `src/view/<component>/`
+- persistence and storage rules go under `src/data/<feature>/`
+- system-wide architecture stays centralized under `docs/`
+
+If a topic spans multiple feature roots, the canonical copy lives at the lowest
+common owner, usually `src/domain/<feature>/`, and sibling documents link to it
+instead of restating it.
+
 ## Canonical Document Types
 
 ### Project-wide
@@ -41,19 +55,22 @@ Allowed `Status` values:
 
 ### Feature-specific
 
-- `docs/features/<feature>/overview.md`
+- `src/domain/<feature>/README.md`
   Map of the feature documentation set.
-- `docs/features/<feature>/spec.md`
+- `src/domain/<feature>/SPEC.md`
   Behavior, user flows, and acceptance criteria.
-- `docs/features/<feature>/domain.md`
+- `src/domain/<feature>/DOMAIN.md`
   Canonical truth, ownership, invariants, and derived state.
-- `docs/features/<feature>/ui.md`
-  UI composition, interactions, and user-visible states.
-- `docs/features/<feature>/delivery.md`
+- `src/view/<component>/UI.md`
+  UI composition, interactions, and user-visible states for one component.
+- `src/data/<feature>/PERSISTENCE.md`
+  Persistence contracts, schema ownership, migration rules, and exported
+  capabilities.
+- `src/domain/<feature>/DELIVERY.md`
   Temporary implementation notes, phasing, and risks.
 
 Additional feature documents are allowed when the topic is distinct and stable,
-for example `persistence.md` or `testing.md`.
+for example `TESTING.md`, but fixed filenames above are preferred.
 
 ## Scope Rules
 
@@ -63,6 +80,8 @@ for example `persistence.md` or `testing.md`.
 - ADRs must record one decision only.
 - Delivery documents are temporary and must not become canonical architecture
   sources.
+- Central `docs/features/...` content may exist only as compatibility stubs and
+  must not remain canonical.
 
 ## Writing Rules
 
@@ -73,6 +92,7 @@ for example `persistence.md` or `testing.md`.
   file.
 - Split a document once it becomes hard to scan or exceeds roughly 350 lines.
 - Keep one language per document. German and English are both allowed.
+- Prefer fixed filenames at the owning root over free-form naming.
 
 ## Duplication Rules
 
@@ -81,6 +101,17 @@ for example `persistence.md` or `testing.md`.
 - Summaries must link to the canonical document.
 - If two documents disagree, the one marked as `Source of Truth` for that topic
   wins and the other must be corrected.
+- Compatibility stubs must declare `Deprecated` and point at the co-located
+  canonical document.
+
+## Enforcement Notes
+
+Documentation governance is broader than compile-time enforcement.
+
+- Mechanical checks may lint structure when a dedicated docs gate exists.
+- Canonical ownership disputes, conflicting truth, and same-change update
+  expectations remain review responsibilities unless a specific check is named
+  elsewhere.
 
 ## Review Rules
 
@@ -126,6 +157,25 @@ Use:
 - aggregates or core objects
 - ownership boundaries
 - invariants
+- references
+
+### UI Template
+
+Use:
+
+- component purpose
+- visible surfaces
+- interactions
+- visible states
+- shortcuts or inspector behavior when relevant
+
+### Persistence Template
+
+Use:
+
+- root contract
+- schema ownership
+- migration or stability rules
 - references
 
 ### ADR Template

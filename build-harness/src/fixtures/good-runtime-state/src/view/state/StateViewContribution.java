@@ -13,6 +13,9 @@ import shell.host.ShellSlot;
 import java.util.Map;
 
 public final class StateViewContribution implements ShellViewContribution {
+    public StateViewContribution() {
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellRuntimeStateSpec(new ContributionKey("party-state"), "Party", 10);

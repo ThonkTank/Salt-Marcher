@@ -16,7 +16,8 @@ Use the documentation tree in this order:
 2. `docs/architecture/overview.md` for the system shape and major boundaries.
 3. `docs/architecture/standards/*.md` for reusable standards.
 4. `docs/adr/*.md` for individual architecture decisions.
-5. `docs/features/<feature>/*.md` for feature-specific behavior and design.
+5. co-located feature documents under `src/domain/<feature>/`,
+   `src/view/<component>/`, and `src/data/<feature>/`.
 
 ## Core Terms
 
@@ -34,7 +35,12 @@ Use the documentation tree in this order:
 
 - `AGENTS.md` contains project-wide rules only.
 - System-wide architecture decisions are recorded as ADRs under `docs/adr/`.
-- Feature requirements and designs live under `docs/features/<feature>/`.
+- Feature requirements and design documents live next to the owning feature
+  code by default.
+- Behavior-coupled automated tests are not part of the project strategy; use
+  the quality-platform gates plus manual testing instead.
+- New compile/build/check gates require explicit user request. Detailed
+  verification policy lives in `docs/architecture/standards/quality-platforms.md`.
 - Every non-ADR document outside `AGENTS.md` must declare `Status`, `Owner`,
   `Last Reviewed`, and `Source of Truth`.
 - Documents must clearly distinguish current state from target state.
@@ -45,6 +51,23 @@ Use the documentation tree in this order:
 - A change that introduces or alters behavior, architecture, or ownership must
   update the corresponding documentation in the same change.
 
+## Agent Workflow
+
+- For every implementation request, inspect the worktree for pre-existing local
+  modifications before starting the requested change.
+- If pre-existing local modifications are present, commit them and push them to
+  `main` before beginning the new work. Only stop when a concrete blocker makes
+  that protocol unsafe or impossible, such as merge conflicts, missing push
+  credentials, sandbox restrictions, or suspected secrets.
+- After each completed implementation pass, rerun `./gradlew build` before
+  handoff.
+- When the desktop app is the manual test surface, run
+  `./gradlew installDesktopApp` after the build before handoff unless the user
+  explicitly waives reinstall or the task is purely non-code planning or review
+  work.
+- Verification claims must be literal. Do not claim that commit, push, build,
+  or install steps happened unless they actually ran.
+
 ## Document Types
 
 - `docs/architecture/overview.md`
@@ -54,15 +77,17 @@ Use the documentation tree in this order:
   registration, and quality tooling.
 - `docs/adr/NNN-*.md`
   One architecture decision per file.
-- `docs/features/<feature>/overview.md`
+- `src/domain/<feature>/README.md`
   Entry point for a feature's documentation set.
-- `docs/features/<feature>/spec.md`
+- `src/domain/<feature>/SPEC.md`
   Product and behavior specification.
-- `docs/features/<feature>/domain.md`
+- `src/domain/<feature>/DOMAIN.md`
   Canonical domain model, ownership, invariants, and derived-state rules.
-- `docs/features/<feature>/ui.md`
-  UI structure, interaction model, and user-visible states.
-- `docs/features/<feature>/delivery.md`
+- `src/view/<component>/UI.md`
+  UI structure, interaction model, and user-visible states for one component.
+- `src/data/<feature>/PERSISTENCE.md`
+  Persistence contracts, schema ownership, and adapter rules.
+- `src/domain/<feature>/DELIVERY.md`
   Temporary implementation plan, risks, and phased rollout notes.
 
 ## References

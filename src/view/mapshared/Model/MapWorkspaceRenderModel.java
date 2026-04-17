@@ -1,9 +1,5 @@
 package src.view.mapshared.Model;
 
-import src.domain.mapcore.api.MapRenderPayload;
-
-import java.util.List;
-
 /**
  * View-local workspace render payload.
  */
@@ -15,7 +11,7 @@ public record MapWorkspaceRenderModel(
         String summaryLabel,
         boolean mapLoaded,
         String overlayMessage,
-        MapRenderPayload renderPayload
+        MapWorkspaceSceneViewData scene
 ) {
 
     public MapWorkspaceRenderModel {
@@ -25,6 +21,6 @@ public record MapWorkspaceRenderModel(
         statusLabel = statusLabel == null ? "" : statusLabel;
         summaryLabel = summaryLabel == null ? "" : summaryLabel;
         overlayMessage = overlayMessage == null ? "" : overlayMessage;
-        renderPayload = renderPayload == null ? MapRenderPayload.empty() : renderPayload;
+        scene = scene == null ? MapWorkspaceSceneViewData.empty() : scene;
     }
 }

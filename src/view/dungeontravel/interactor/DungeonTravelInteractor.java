@@ -1,269 +1,126 @@
 package src.view.dungeontravel.interactor;
 
-import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.ListView;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import shell.host.InspectorSink;
 import src.domain.dungeon.api.BaseMapSnapshot;
-import src.domain.dungeon.api.CreateDungeonMapCommand;
-import src.domain.dungeon.api.CreateDungeonMapResult;
-import src.domain.dungeon.api.DeleteDungeonMapCommand;
-import src.domain.dungeon.api.DungeonMapId;
-import src.domain.dungeon.api.DungeonMapSummary;
-import src.domain.dungeon.api.LoadMapSnapshotQuery;
-import src.domain.dungeon.api.OnionConfig;
-import src.domain.dungeon.api.SearchMapsQuery;
-import src.domain.dungeon.api.Viewport;
-import src.domain.dungeon.dungeonAPI;
-import src.domain.mapcore.api.MapRenderPayload;
-import src.view.mapshared.Model.MapViewport;
+import src.domain.mapcore.api.MapSelectionRef;
+import src.view.dungeonshared.interactor.AbstractDungeonMapInteractor;
+import src.view.dungeonshared.interactor.DungeonMapPresentation;
+import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
+import src.view.dungeonshared.interactor.DungeonSelectionInspectorSupport;
+import src.view.mapshared.Model.MapCellViewModel;
 import src.view.mapshared.Model.MapWorkspaceRenderModel;
-import src.view.mapshared.View.MapWorkspaceView;
+import src.view.mapshared.Model.MapWorkspaceSceneViewData;
 import src.view.mapshared.interactor.MapWorkspaceSupport;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 /**
- * Travel/runtime coordination for the first real dungeon map slice.
+ * Travel/runtime coordination for the dungeon control-panel placeholder slice.
  */
-public final class DungeonTravelInteractor {
+public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor {
 
-    private final dungeonAPI dungeon;
-    private final MapWorkspaceView workspaceView;
-    private final VBox controls = new VBox(8);
-    private final VBox state = new VBox(8);
-    private final TextField searchField = new TextField();
-    private final ListView<DungeonMapSummary> mapList = new ListView<>();
-    private final TextField createNameField = new TextField();
-    private final Button loadButton = new Button("Load map");
-    private final Button createButton = new Button("Create map");
-    private final Button deleteButton = new Button("Delete loaded");
-    private final Spinner<Integer> floorSpinner = new Spinner<>(0, 0, 0);
-
-    private final OnionConfig onionConfig = OnionConfig.defaults();
-
-    private @Nullable DungeonMapId loadedMapId;
-    private @Nullable BaseMapSnapshot loadedSnapshot;
-    private boolean loadingMap;
+    private final DungeonTravelControls controls;
+    private final DungeonTravelStatePane statePane;
+    private final DungeonSelectionInspectorSupport inspectorSupport;
+    private @Nullable MapSelectionRef selectedTarget;
 
     public DungeonTravelInteractor(InspectorSink inspector) {
-        this.dungeon = new dungeonAPI();
-        this.workspaceView = new MapWorkspaceView();
-        this.workspaceView.setViewportListener(ignored -> reloadLoadedMap());
-        this.workspaceView.setFloorStepListener(this::stepFloor);
-        buildControls();
-        refreshSearchResults();
-        showPlaceholder();
+        super(new DungeonMapPresentation(
+                DungeonTravelInteractor::placeholderRenderModel,
+                DungeonTravelInteractor::loadedRenderModel
+        ), DungeonMapSurfaceController.shared());
+        this.controls = new DungeonTravelControls(mapController(), () -> workspaceView().currentViewport().zoom(), this::currentViewport);
+        this.statePane = new DungeonTravelStatePane(mapController(), this::currentViewport);
+        this.inspectorSupport = new DungeonSelectionInspectorSupport(mapController(), inspector);
+        statePane.setOnTargetSelected(this::showSelection);
+        workspaceView().setViewportListener(ignored -> controls.refresh());
+        workspaceView().setFloorStepListener(delta -> mapController().stepFloor(delta, currentViewport()));
+        workspaceView().setCellSelectionListener(this::onCellSelected);
+        workspaceView().setSelectedTarget(null);
+        finishInitialization();
     }
 
     public Node controls() {
-        return controls;
-    }
-
-    public Node workspace() {
-        return workspaceView;
+        return controls.content();
     }
 
     public Node state() {
-        return state;
+        return statePane.content();
     }
 
-    private void buildControls() {
-        controls.getStyleClass().addAll("dungeon-editor-toolbar", "dungeon-editor-sidebar");
-        controls.setPadding(new Insets(12));
-        controls.setFillWidth(true);
-
-        searchField.setPromptText("Search maps");
-        searchField.textProperty().addListener((ignored, before, after) -> refreshSearchResults());
-
-        mapList.setPrefHeight(220.0);
-        mapList.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> syncButtonState());
-        mapList.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                loadSelectedMap();
-            }
-        });
-
-        loadButton.setMaxWidth(Double.MAX_VALUE);
-        loadButton.setOnAction(event -> loadSelectedMap());
-
-        createNameField.setPromptText("Dungeon Nr.X");
-        createNameField.textProperty().addListener((ignored, before, after) -> syncButtonState());
-        createButton.setMaxWidth(Double.MAX_VALUE);
-        createButton.setOnAction(event -> createAndLoadMap());
-
-        deleteButton.setMaxWidth(Double.MAX_VALUE);
-        deleteButton.setOnAction(event -> deleteLoadedMap());
-
-        floorSpinner.setEditable(false);
-        floorSpinner.setPrefWidth(Double.MAX_VALUE);
-        floorSpinner.valueProperty().addListener((ignored, before, after) -> {
-            if (!loadingMap && loadedMapId != null && after != null && after == 0) {
-                reloadLoadedMap();
-            }
-        });
-
-        controls.getChildren().setAll(
-                MapWorkspaceSupport.card(
-                        "Map Search",
-                        MapWorkspaceSupport.muted("Shared map metadata is visible in travel too"),
-                        searchField,
-                        mapList,
-                        loadButton),
-                MapWorkspaceSupport.card(
-                        "Map Create",
-                        MapWorkspaceSupport.muted("Travel shares the same authored map repository"),
-                        createNameField,
-                        createButton),
-                MapWorkspaceSupport.card(
-                        "Floor",
-                        MapWorkspaceSupport.muted("Floor hotkeys are active on the focused canvas"),
-                        floorSpinner,
-                        deleteButton)
-        );
-
-        createNameField.setText(defaultMapName());
-        syncButtonState();
+    private void onCellSelected(MapCellViewModel cellViewModel) {
+        showSelection(resolveSelection(cellViewModel));
     }
 
-    private void refreshSearchResults() {
-        List<DungeonMapSummary> matches = dungeon.searchMaps(new SearchMapsQuery(searchField.getText()));
-        mapList.getItems().setAll(matches);
-        restoreSelection(matches);
-        if (createNameField.getText().isBlank()) {
-            createNameField.setText(defaultMapName());
+    private void showSelection(@Nullable MapSelectionRef selectionRef) {
+        selectedTarget = selectionRef;
+        workspaceView().setSelectedTarget(selectionRef);
+        statePane.showSelectedTarget(selectionRef);
+        inspectorSupport.showSelection(selectionRef);
+    }
+
+    private @Nullable MapSelectionRef resolveSelection(MapCellViewModel cellViewModel) {
+        BaseMapSnapshot snapshot = loadedSnapshot();
+        if (snapshot == null || cellViewModel == null) {
+            return null;
         }
-        syncButtonState();
+        return snapshot.selectableTargets().stream()
+                .filter(target -> target.ownerId() == cellViewModel.ownerId())
+                .filter(target -> target.ownerKind().equalsIgnoreCase(cellViewModel.ownerKind()))
+                .filter(target -> target.partKind().equalsIgnoreCase(cellViewModel.partKind()))
+                .findFirst()
+                .orElse(null);
     }
 
-    private void restoreSelection(List<DungeonMapSummary> matches) {
-        if (loadedMapId == null) {
-            return;
-        }
-        for (DungeonMapSummary match : matches) {
-            if (match.mapId().equals(loadedMapId)) {
-                mapList.getSelectionModel().select(match);
-                return;
-            }
-        }
-    }
-
-    private void loadSelectedMap() {
-        DungeonMapSummary selected = mapList.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            return;
-        }
-        loadMap(selected.mapId());
-    }
-
-    private void createAndLoadMap() {
-        CreateDungeonMapResult result = dungeon.createMap(new CreateDungeonMapCommand(createNameField.getText()));
-        createNameField.setText(defaultMapName());
-        refreshSearchResults();
-        loadMap(result.mapId());
-    }
-
-    private void deleteLoadedMap() {
-        if (loadedMapId == null) {
-            return;
-        }
-        dungeon.deleteMap(new DeleteDungeonMapCommand(loadedMapId));
-        loadedMapId = null;
-        loadedSnapshot = null;
-        refreshSearchResults();
-        showPlaceholder();
-    }
-
-    private void loadMap(DungeonMapId mapId) {
-        loadingMap = true;
-        try {
-            loadedSnapshot = dungeon.loadMapSnapshot(new LoadMapSnapshotQuery(mapId, 0, onionConfig, toDomainViewport(workspaceView.currentViewport())));
-            loadedMapId = loadedSnapshot.mapId();
-            floorSpinner.getValueFactory().setValue(loadedSnapshot.currentFloor());
-            mapList.getItems().stream()
-                    .filter(item -> item.mapId().equals(loadedMapId))
-                    .findFirst()
-                    .ifPresent(match -> mapList.getSelectionModel().select(match));
-            workspaceView.show(toLoadedRenderModel(loadedSnapshot));
-            syncButtonState();
-        } finally {
-            loadingMap = false;
-        }
-    }
-
-    private void reloadLoadedMap() {
-        if (loadedMapId == null) {
-            return;
-        }
-        loadMap(loadedMapId);
-    }
-
-    private void stepFloor(int delta) {
-        if (loadedMapId == null) {
-            return;
-        }
-        floorSpinner.getValueFactory().setValue(0);
-        reloadLoadedMap();
-    }
-
-    private void showPlaceholder() {
-        workspaceView.show(new MapWorkspaceRenderModel(
+    private static MapWorkspaceRenderModel placeholderRenderModel() {
+        return new MapWorkspaceRenderModel(
                 "Dungeon Travel",
                 "Shared camera and unbounded square grid",
                 "TRAVEL",
                 "No map loaded",
-                "Travel uses the same real map metadata and camera surface as the editor.",
+                "Use the control panel to load or create a dungeon.",
                 false,
                 "No map selected.",
-                MapRenderPayload.empty()
-        ));
-        syncButtonState();
-    }
-
-    private MapWorkspaceRenderModel toLoadedRenderModel(BaseMapSnapshot snapshot) {
-        return new MapWorkspaceRenderModel(
-                snapshot.mapName(),
-                "Travel canvas over persisted map metadata",
-                "TRAVEL",
-                "Revision " + snapshot.revision() + "  |  Floor " + snapshot.currentFloor(),
-                "Room logic and party marker stay out of this first slice.",
-                true,
-                snapshot.topologyEmpty() ? "Map loaded. No topology authored yet." : "",
-                snapshot.renderPayload()
+                MapWorkspaceSceneViewData.empty()
         );
     }
 
-    private void syncButtonState() {
-        loadButton.setDisable(mapList.getSelectionModel().getSelectedItem() == null);
-        deleteButton.setDisable(loadedMapId == null);
-        createButton.setDisable(createNameField.getText().trim().isBlank());
+    private static MapWorkspaceRenderModel loadedRenderModel(BaseMapSnapshot snapshot) {
+        MapWorkspaceSceneViewData scene = MapWorkspaceSupport.toSceneViewData(snapshot.renderPayload(), snapshot.currentFloor());
+        String overlayMessage = scene.cells().isEmpty()
+                ? "Für Ebene z=" + snapshot.currentFloor() + " existiert noch keine Runtime-Placeholder-Geometrie."
+                : "";
+        return new MapWorkspaceRenderModel(
+                snapshot.mapName(),
+                "Travel canvas over committed dungeon placeholder truth",
+                "TRAVEL",
+                "Revision " + snapshot.revision() + "  |  Floor " + snapshot.currentFloor(),
+                "Pan/zoom sind lokal. Party-Token und Travel-Actions bleiben angedockte Placeholder, bis die Runtime-Domain bereit ist.",
+                true,
+                overlayMessage,
+                scene
+        );
     }
 
-    private String defaultMapName() {
-        Set<String> names = new HashSet<>();
-        for (DungeonMapSummary summary : dungeon.searchMaps(new SearchMapsQuery(""))) {
-            names.add(summary.mapName());
+    @Override
+    protected void onSnapshotChanged() {
+        BaseMapSnapshot snapshot = loadedSnapshot();
+        if (snapshot == null) {
+            if (selectedTarget != null) {
+                showSelection(null);
+            }
+        } else if (selectedTarget != null) {
+            MapSelectionRef resolved = snapshot.selectableTargets().stream()
+                    .filter(target -> target.ownerId() == selectedTarget.ownerId())
+                    .filter(target -> target.ownerKind().equalsIgnoreCase(selectedTarget.ownerKind()))
+                    .filter(target -> target.partKind().equalsIgnoreCase(selectedTarget.partKind()))
+                    .findFirst()
+                    .orElse(null);
+            if (resolved != selectedTarget) {
+                showSelection(resolved);
+            }
         }
-        int next = 1;
-        while (names.contains("Dungeon Nr." + next)) {
-            next++;
-        }
-        return "Dungeon Nr." + next;
-    }
-
-    private Viewport toDomainViewport(MapViewport viewport) {
-        return new Viewport(
-                viewport.centerX(),
-                viewport.centerY(),
-                viewport.canvasWidth(),
-                viewport.canvasHeight(),
-                viewport.zoom());
+        controls.refresh();
+        statePane.refresh();
     }
 }
