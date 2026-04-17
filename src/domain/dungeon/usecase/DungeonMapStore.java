@@ -1,4 +1,4 @@
-package src.data.dungeon.repository;
+package src.domain.dungeon.usecase;
 
 import src.domain.dungeon.api.DungeonMapId;
 import src.domain.dungeon.entity.DungeonMap;
@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Shared in-memory authored dungeon map repository for the first real slice.
+ * Domain-owned in-memory repository used by the first real dungeon map slice.
  */
-public final class InMemoryDungeonRepository implements DungeonMapRepository {
+public final class DungeonMapStore implements DungeonMapRepository {
 
     private static final Map<Long, DungeonMap> MAPS = new LinkedHashMap<>();
     private static long nextId = 1L;

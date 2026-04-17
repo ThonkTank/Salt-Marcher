@@ -1,53 +1,71 @@
 package src.view.mapshared.Controller;
 
+import src.view.mapshared.Model.MapViewport;
+
 /**
- * Tiny view-local camera state owner for the shared map workspace.
+ * View-local camera state owner for the shared map workspace.
  */
 public final class MapCameraController {
 
+    public static final double BASE_TILE_PIXELS = 48.0;
+
+    private static final double MIN_ZOOM = 0.4;
+    private static final double MAX_ZOOM = 3.0;
+
+    private double centerX;
+    private double centerY;
     private double zoom = 1.0;
-    private double panX;
-    private double panY;
 
     public double zoom() {
         return zoom;
     }
 
-    public double panX() {
-        return panX;
+    public double centerX() {
+        return centerX;
     }
 
-    public double panY() {
-        return panY;
+    public double centerY() {
+        return centerY;
     }
 
-    public void zoomIn() {
-        zoom = Math.min(2.0, zoom + 0.1);
+    public void panByTiles(double deltaX, double deltaY) {
+        centerX += deltaX;
+        centerY += deltaY;
     }
 
-    public void zoomOut() {
-        zoom = Math.max(0.7, zoom - 0.1);
+    public void zoomInAt(double canvasX, double canvasY, double canvasWidth, double canvasHeight) {
+        zoomAround(canvasX, canvasY, canvasWidth, canvasHeight, 1.1);
     }
 
-    public void panLeft() {
-        panX += 24.0;
+    public void zoomOutAt(double canvasX, double canvasY, double canvasWidth, double canvasHeight) {
+        zoomAround(canvasX, canvasY, canvasWidth, canvasHeight, 1.0 / 1.1);
     }
 
-    public void panRight() {
-        panX -= 24.0;
+    public void zoomAround(double canvasX, double canvasY, double canvasWidth, double canvasHeight, double factor) {
+        double oldScale = pixelsPerTile();
+        double worldX = centerX + (canvasX - canvasWidth / 2.0) / oldScale;
+        double worldY = centerY + (canvasY - canvasHeight / 2.0) / oldScale;
+        zoom = clampZoom(zoom * factor);
+        double newScale = pixelsPerTile();
+        centerX = worldX - (canvasX - canvasWidth / 2.0) / newScale;
+        centerY = worldY - (canvasY - canvasHeight / 2.0) / newScale;
     }
 
-    public void panUp() {
-        panY += 24.0;
+    public MapViewport currentViewport(double canvasWidth, double canvasHeight) {
+        return new MapViewport(centerX, centerY, canvasWidth, canvasHeight, zoom);
     }
 
-    public void panDown() {
-        panY -= 24.0;
+    public double pixelsPerTile() {
+        return BASE_TILE_PIXELS * zoom;
     }
 
     public void reset() {
+        centerX = 0.0;
+        centerY = 0.0;
         zoom = 1.0;
-        panX = 0.0;
-        panY = 0.0;
+    }
+
+    private double clampZoom(double value) {
+        return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
     }
 }
