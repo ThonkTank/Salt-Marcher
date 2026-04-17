@@ -76,15 +76,16 @@ final class RuntimeServiceDiscovery {
             if (!prefix.endsWith("/")) {
                 prefix += "/";
             }
+            final String jarPrefix = prefix;
             List<JarEntry> entries = jarFile.stream()
                     .filter(entry -> !entry.isDirectory())
-                    .filter(entry -> entry.getName().startsWith(prefix))
+                    .filter(entry -> entry.getName().startsWith(jarPrefix))
                     .filter(entry -> entry.getName().endsWith(".class"))
                     .filter(entry -> !entry.getName().contains("$"))
                     .sorted(Comparator.comparing(JarEntry::getName))
                     .toList();
             for (JarEntry entry : entries) {
-                String relativeName = entry.getName().substring(prefix.length()).replace('/', '.');
+                String relativeName = entry.getName().substring(jarPrefix.length()).replace('/', '.');
                 instantiateProvider(classLoader, "src.data." + relativeName.replaceFirst("\\.class$", ""), builder);
             }
         }
