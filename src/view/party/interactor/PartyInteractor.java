@@ -1,7 +1,6 @@
 package src.view.party.interactor;
 
 import src.domain.party.partyAPI;
-import src.domain.party.repository.PartyRosterRepository;
 import src.view.party.Model.PartyToolbarModel;
 
 import java.util.ArrayList;
