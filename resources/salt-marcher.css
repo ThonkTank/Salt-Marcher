@@ -348,15 +348,15 @@
     -fx-background-color: -sm-bg-darkest;
 }
 .map-workspace-header {
-    -fx-background-color: -sm-bg-panel;
-    -fx-background-radius: 6 6 0 0;
+    -fx-background-color: rgba(26, 32, 37, 0.94);
+    -fx-background-radius: 8 8 0 0;
     -fx-border-color: transparent transparent -sm-border-subtle transparent;
-    -fx-padding: 10;
+    -fx-padding: 12;
 }
 .map-workspace-content {
-    -fx-padding: 12;
+    -fx-padding: 8;
     -fx-background-color: linear-gradient(to bottom, #151b20, #0f1418);
-    -fx-background-radius: 0 0 8 8;
+    -fx-background-radius: 0 0 10 10;
 }
 .map-mode-badge {
     -fx-background-color: rgba(30, 127, 212, 0.22);
@@ -379,10 +379,10 @@
 }
 .dungeon-map-scene {
     -fx-background-color: linear-gradient(to bottom, #182025, #12181c);
-    -fx-background-radius: 10;
+    -fx-background-radius: 12;
     -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 10;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 18, 0.16, 0, 8);
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.36), 24, 0.18, 0, 10);
 }
 .dungeon-map-grid-line {
     -fx-stroke: -sm-dungeon-grid;
@@ -467,7 +467,7 @@
     -fx-spacing: 8;
 }
 .editor-toolbar-group {
-    -fx-spacing: 4;
+    -fx-spacing: 6;
 }
 .dungeon-editor-sidebar {
     -fx-spacing: 12;
@@ -477,7 +477,7 @@
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
-    -fx-padding: 10;
+    -fx-padding: 12;
     -fx-spacing: 6;
 }
 .editor-panel-title {

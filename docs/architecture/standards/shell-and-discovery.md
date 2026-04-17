@@ -93,6 +93,8 @@ Bootstrap discovers features and persistence contributions generically.
 
 - Features read persistence through `ShellRuntimeContext.persistence()`
 - Features publish inspector entries through `ShellRuntimeContext.inspector()`
+- Features that need one shared runtime session across multiple shell
+  contributions use `ShellRuntimeContext.session(...)`
 - Features must not talk to `AppShell` or concrete shell panels as alternate
   wiring paths
 

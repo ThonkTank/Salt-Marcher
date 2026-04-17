@@ -16,32 +16,42 @@ and commit-oriented interactions.
 
 ### Editor Canvas
 
-The editor extends the base map canvas with authored editing affordances.
+The editor extends the shared dungeon canvas with authoring affordances and the
+visual language of the original Salt Marcher dungeon map.
 
-Expected editor-specific interactions:
+Visible presentation rules:
 
-- select clusters, rooms, connections, and features
-- drag selected affordances where editing is allowed
-- preview pending edits directly on the canvas
-- commit or cancel the active gesture
+- dark canvas background with tiered grid lines and visible axes
+- room and corridor cells rendered directly on the canvas rather than as
+  separate tile widgets
+- walls and doors rendered as canvas overlays in the original color palette
+- aggregated room or corridor labels rendered inside the map surface
+- selection highlighted on the canvas and mirrored into the shell inspector
+
+Current editor interactions:
+
+- select visible authored objects by clicking the canvas
 - pan and zoom with editor-local camera state
+- move between floors from the left control panel or keyboard shortcuts
 
 ### Editor Management
 
-The editor extends map management with authoring operations.
+The editor keeps the original control grouping while staying inside the current
+shared-shell architecture.
 
-Expected controls:
+Visible controls:
 
 - top-left `Dungeon` group with map selector, `Neuen Dungeon`,
-  `Dungeon bearbeiten`, and a view-mode placeholder button
-- top-left level row with current floor label, floor step placeholders, and an
-  overlay placeholder trigger
+  `Dungeon bearbeiten`, and a graph-mode placeholder button
+- top-left level row with current floor label, floor step controls, and an
+  overlay trigger
 - top-left `Werkzeug` group with the reference-order tool buttons
-- right state panel with loaded-map metadata and `Delete loaded`
+- right state panel with dungeon metadata, current selection, tool summary, and
+  mutation feedback
 
 ### Tool Model
 
-The editor supports at least these tool families:
+The editor presents at least these tool families:
 
 - neutral selection
 - area paint
@@ -51,25 +61,25 @@ The editor supports at least these tool families:
 - stair placement
 - corridor connection
 
-Each tool defines:
+Each tool defines visible intent and docking state:
 
 - user intent
-- input form
-- preview behavior
-- commit trigger
+- available capability summary
+- whether an existing domain capability is already wired
 
-The tool does not define the domain repair or topology conflict logic.
+The local implementation does not back-port the original editor engine. Tool
+buttons preserve the original presentation order, but only current
+domain-backed capabilities are interactive.
 
 ## Interaction Rules
 
 - only one editing tool is active at a time
 - the visible top-left tool buttons keep the reference layout even when a tool
   is still a placeholder
-- visible preview is shown for in-progress edits
 - pan and zoom redraw the current editor surface without reloading the map
-- `Esc` cancels the active edit
-- undo and redo replay committed editor history
 - selection and focus update inspector content consistently
+- canvas styling stays aligned with the original dungeon map palette even when
+  local domain data is still placeholder-shaped
 
 ## References
 

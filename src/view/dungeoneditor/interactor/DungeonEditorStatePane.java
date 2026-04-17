@@ -27,7 +27,7 @@ final class DungeonEditorStatePane {
     private final Supplier<String> viewportSummarySupplier;
     private final Supplier<src.domain.dungeon.api.Viewport> viewportSupplier;
     private final VBox content = new VBox(12);
-    private final Button deleteButton = new Button("Delete loaded");
+    private final Button deleteButton = new Button("Dungeon loeschen");
     private final ListView<MapSelectionRef> objectList = new ListView<>();
     private Consumer<MapSelectionRef> onTargetSelected = ignored -> { };
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
@@ -91,7 +91,6 @@ final class DungeonEditorStatePane {
                 loadedMapCard(snapshot),
                 objectSelectionCard(snapshot),
                 toolDockCard(),
-                historyCard(),
                 mutationFeedbackCard()
         );
     }
@@ -99,17 +98,17 @@ final class DungeonEditorStatePane {
     private VBox loadedMapCard(@Nullable BaseMapSnapshot snapshot) {
         if (snapshot == null) {
             return MapWorkspaceSupport.card(
-                    "Loaded Map",
-                    new Label("None"),
-                    MapWorkspaceSupport.muted("Empty dungeon aggregates can be created from the toolbar."));
+                    "Dungeon",
+                    new Label("Kein Dungeon geladen"),
+                    MapWorkspaceSupport.muted("Waehle oder erstelle einen Dungeon links im Cockpit."));
         }
-        Label mapId = new Label("Map ID: " + snapshot.mapId().value());
-        Label revision = new Label("Revision: " + snapshot.revision());
-        Label floor = new Label("Current floor: " + snapshot.currentFloor());
+        Label mapId = new Label("ID " + snapshot.mapId().value());
+        Label revision = new Label("Revision " + snapshot.revision());
+        Label floor = new Label("Ebene z=" + snapshot.currentFloor());
         Label viewport = new Label(viewportSummarySupplier.get());
         viewport.setWrapText(true);
         return MapWorkspaceSupport.card(
-                "Loaded Map",
+                "Dungeon",
                 mapId,
                 revision,
                 floor,
@@ -124,10 +123,10 @@ final class DungeonEditorStatePane {
                 : MapWorkspaceSupport.muted("Aktiv: " + selectedTarget.ownerKind() + " · " + selectedTarget.label());
         if (snapshot == null || snapshot.selectableTargets().isEmpty()) {
             return MapWorkspaceSupport.card(
-                    "Map Objects",
-                    MapWorkspaceSupport.muted("Für den geladenen Placeholder sind noch keine selektierbaren Objekte sichtbar."));
+                    "Auswahl",
+                    MapWorkspaceSupport.muted("Noch keine selektierbaren Objekte auf der aktiven Ebene."));
         }
-        return MapWorkspaceSupport.card("Map Objects", objectList, hint);
+        return MapWorkspaceSupport.card("Auswahl", objectList, hint);
     }
 
     private VBox toolDockCard() {
@@ -144,29 +143,13 @@ final class DungeonEditorStatePane {
         return card;
     }
 
-    private VBox historyCard() {
-        Button commitButton = new Button("Commit");
-        commitButton.setDisable(true);
-        Button cancelButton = new Button("Cancel");
-        cancelButton.setDisable(true);
-        Button undoButton = new Button("Undo");
-        undoButton.setDisable(true);
-        Button redoButton = new Button("Redo");
-        redoButton.setDisable(true);
-        HBox row = new HBox(8, commitButton, cancelButton, undoButton, redoButton);
-        return MapWorkspaceSupport.card(
-                "History",
-                row,
-                MapWorkspaceSupport.muted("Preview-, Commit- und History-Semantik sind als stabile Andockstelle vorbereitet."));
-    }
-
     private VBox mutationFeedbackCard() {
         VBox card = MapWorkspaceSupport.card(
-                "Mutation Feedback",
+                "Meldungen",
                 new Label(controller.lastMutationSummary()));
         List<String> messages = controller.lastMutationMessages();
         if (messages.isEmpty()) {
-            card.getChildren().add(MapWorkspaceSupport.muted("Noch keine zusätzlichen Meldungen."));
+            card.getChildren().add(MapWorkspaceSupport.muted("Keine weiteren Rueckmeldungen."));
         } else {
             for (String message : messages) {
                 Label line = new Label(message);
@@ -195,8 +178,8 @@ final class DungeonEditorStatePane {
         HBox.setHgrow(down, Priority.ALWAYS);
         VBox box = new VBox(8,
                 MapWorkspaceSupport.muted(canMoveRoom
-                        ? "Die vorhandene Domain-Capability `MoveRoomAnchor` ist verdrahtet."
-                        : "Wähle einen Raum aus, um die vorhandene Placeholder-Capability zu testen."),
+                        ? "Die vorhandene Room-Anchor-Capability ist aktiv."
+                        : "Waehle einen Raum aus, um die vorhandene Room-Anchor-Capability zu testen."),
                 row1,
                 row2);
         return box;
@@ -216,19 +199,19 @@ final class DungeonEditorStatePane {
         return switch (tool) {
             case SELECT -> MapWorkspaceSupport.card(
                     "Selection",
-                    MapWorkspaceSupport.muted("Selection nutzt die vorhandenen selectable targets und den Domain-Inspector."));
+                    MapWorkspaceSupport.muted("Selection nutzt die vorhandenen selectable targets und den Shell-Inspector."));
             case WALL -> capabilityList("DrawInternalWall", "EraseInternalWall");
             case DOOR -> capabilityList("PlaceDoor", "UpdateDoor", "RemoveDoor", "UpdateConnectionMetadata");
             case CORRIDOR -> capabilityList("ExtendCorridor", "RerouteCorridor");
             case STAIR -> capabilityList("PlaceStair", "UpdateStair", "RemoveConnection");
-            case TRANSITION -> capabilityList("UI placeholder only", "Produktionsreife Docking-Stelle für künftige Domain-Capability");
+            case TRANSITION -> capabilityList("UI placeholder only", "Docking-Stelle fuer spaetere Transition-Capability");
             case ROOM -> capabilityList("PaintArea", "EraseArea", "PaintFloorOpening", "EraseFloorOpening");
         };
     }
 
     private VBox capabilityList(String... capabilities) {
         VBox box = new VBox(4);
-        box.getChildren().add(MapWorkspaceSupport.muted("Angedockte Capability-Oberfläche:"));
+        box.getChildren().add(MapWorkspaceSupport.muted("Angedockte Capability-Oberflaeche:"));
         for (String capability : capabilities) {
             Label line = new Label(capability);
             box.getChildren().add(line);

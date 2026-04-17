@@ -13,6 +13,7 @@ import javafx.stage.Popup;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 final class SearchableFilterButton extends Button {
@@ -147,9 +148,10 @@ final class SearchableFilterButton extends Button {
     }
 
     private void filterCheckboxes(String query) {
-        String normalized = query == null ? "" : query.trim().toLowerCase();
+        String normalized = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         for (CheckBox checkbox : checkboxes) {
-            boolean matches = normalized.isEmpty() || checkbox.getText().toLowerCase().contains(normalized);
+            boolean matches = normalized.isEmpty()
+                    || checkbox.getText().toLowerCase(Locale.ROOT).contains(normalized);
             checkbox.setVisible(matches);
             checkbox.setManaged(matches);
         }

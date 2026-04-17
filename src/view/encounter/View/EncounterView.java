@@ -1,6 +1,5 @@
 package src.view.encounter.View;
 
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -27,14 +26,12 @@ public final class EncounterView {
     private final EncounterController controller;
     private final VBox controls;
     private final VBox workspace;
-    private final VBox state;
 
     public EncounterView(EncounterModel model, EncounterController controller) {
         this.model = Objects.requireNonNull(model, "model");
         this.controller = Objects.requireNonNull(controller, "controller");
         this.controls = buildControls();
         this.workspace = buildWorkspace();
-        this.state = buildState();
     }
 
     public Node controls() {
@@ -43,10 +40,6 @@ public final class EncounterView {
 
     public Node workspace() {
         return workspace;
-    }
-
-    public Node state() {
-        return state;
     }
 
     private VBox buildControls() {
@@ -136,42 +129,6 @@ public final class EncounterView {
         VBox.setVgrow(detail, Priority.ALWAYS);
 
         VBox pane = new VBox(10, partySummary, thresholds, dailyBudget, resultSummary, table, detail);
-        pane.setPadding(new Insets(12));
-        return pane;
-    }
-
-    private VBox buildState() {
-        Label locked = new Label();
-        locked.textProperty().bind(model.lockSummaryProperty());
-        locked.setWrapText(true);
-
-        Label excluded = new Label();
-        excluded.textProperty().bind(model.excludeSummaryProperty());
-        excluded.setWrapText(true);
-
-        Label status = new Label();
-        status.textProperty().bind(model.statusTextProperty());
-        status.setWrapText(true);
-
-        Button lockSelected = new Button("Lock Selected");
-        lockSelected.disableProperty().bind(Bindings.isNull(model.selectedAlternativeProperty()));
-        lockSelected.setMaxWidth(Double.MAX_VALUE);
-        lockSelected.setOnAction(event -> controller.lockSelected());
-
-        Button clearLocks = new Button("Clear Locks");
-        clearLocks.setMaxWidth(Double.MAX_VALUE);
-        clearLocks.setOnAction(event -> controller.clearLocks());
-
-        Button excludeSelected = new Button("Exclude Selected");
-        excludeSelected.disableProperty().bind(Bindings.isNull(model.selectedAlternativeProperty()));
-        excludeSelected.setMaxWidth(Double.MAX_VALUE);
-        excludeSelected.setOnAction(event -> controller.excludeSelected());
-
-        Button clearExclusions = new Button("Clear Exclusions");
-        clearExclusions.setMaxWidth(Double.MAX_VALUE);
-        clearExclusions.setOnAction(event -> controller.clearExclusions());
-
-        VBox pane = new VBox(10, locked, excluded, status, lockSelected, clearLocks, excludeSelected, clearExclusions);
         pane.setPadding(new Insets(12));
         return pane;
     }

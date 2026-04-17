@@ -7,8 +7,13 @@ final class ShellSlotValidator {
 
     static ShellSlotContent validate(ShellContributionSpec registrationSpec, ShellScreen screen) {
         ShellSlotContent slotContent = ShellSlotContent.from(screen);
-        if (registrationSpec instanceof ShellTabSpec) {
+        if (registrationSpec instanceof ShellTabSpec tabSpec) {
             requireSlot(slotContent, registrationSpec.key(), ShellSlot.COCKPIT_MAIN);
+            if (tabSpec.mode() == ShellTabMode.RUNTIME) {
+                forbidSlots(slotContent, registrationSpec.key(),
+                        ShellSlot.TOP_BAR, ShellSlot.COCKPIT_DETAILS, ShellSlot.COCKPIT_STATE);
+                return slotContent;
+            }
             forbidSlots(slotContent, registrationSpec.key(), ShellSlot.TOP_BAR, ShellSlot.COCKPIT_DETAILS);
             return slotContent;
         }

@@ -1,15 +1,12 @@
-package src.view.encounter;
+package src.view.encounterstate;
 
 import javafx.scene.Node;
 import shell.host.ContributionKey;
-import shell.host.NavigationGroupSpec;
-import shell.host.NavigationIcons;
 import shell.host.ShellContributionSpec;
 import shell.host.ShellRuntimeContext;
+import shell.host.ShellRuntimeStateSpec;
 import shell.host.ShellScreen;
 import shell.host.ShellSlot;
-import shell.host.ShellTabMode;
-import shell.host.ShellTabSpec;
 import shell.host.ShellViewContribution;
 import src.domain.creatures.creaturesAPI;
 import src.domain.encounter.encounterAPI;
@@ -18,19 +15,14 @@ import src.view.encounter.interactor.EncounterRuntimeSession;
 
 import java.util.Map;
 
-public final class EncounterViewContribution implements ShellViewContribution {
+public final class EncounterstateViewContribution implements ShellViewContribution {
 
-    public EncounterViewContribution() {
+    public EncounterstateViewContribution() {
     }
 
     @Override
     public ShellContributionSpec registrationSpec() {
-        return new ShellTabSpec(
-                new ContributionKey("encounter"),
-                new NavigationGroupSpec("world", "World", 20),
-                30,
-                false,
-                ShellTabMode.RUNTIME);
+        return new ShellRuntimeStateSpec(new ContributionKey("encounter-state"), "Encounter", 10);
     }
 
     @Override
@@ -43,24 +35,12 @@ public final class EncounterViewContribution implements ShellViewContribution {
         return new ShellScreen() {
             @Override
             public String getTitle() {
-                return "Encounter Builder";
-            }
-
-            @Override
-            public String getNavigationLabel() {
-                return "Encounter";
-            }
-
-            @Override
-            public Node getNavigationGraphic() {
-                return NavigationIcons.encounter();
+                return "Encounter State";
             }
 
             @Override
             public Map<ShellSlot, Node> slotContent() {
-                return Map.of(
-                        ShellSlot.COCKPIT_CONTROLS, session.controls(),
-                        ShellSlot.COCKPIT_MAIN, session.workspace());
+                return Map.of(ShellSlot.COCKPIT_STATE, session.state());
             }
         };
     }

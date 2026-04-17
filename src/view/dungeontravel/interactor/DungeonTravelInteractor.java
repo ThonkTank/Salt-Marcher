@@ -14,6 +14,8 @@ import src.view.mapshared.Model.MapWorkspaceRenderModel;
 import src.view.mapshared.Model.MapWorkspaceSceneViewData;
 import src.view.mapshared.interactor.MapWorkspaceSupport;
 
+import java.util.Objects;
+
 /**
  * Travel/runtime coordination for the dungeon control-panel placeholder slice.
  */
@@ -36,7 +38,7 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
         workspaceView().setViewportListener(ignored -> controls.refresh());
         workspaceView().setFloorStepListener(delta -> mapController().stepFloor(delta, currentViewport()));
         workspaceView().setCellSelectionListener(this::onCellSelected);
-        workspaceView().setSelectedTarget(null);
+        workspaceView().setSelectedTarget(null, -1L, null);
         finishInitialization();
     }
 
@@ -54,7 +56,11 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
 
     private void showSelection(@Nullable MapSelectionRef selectionRef) {
         selectedTarget = selectionRef;
-        workspaceView().setSelectedTarget(selectionRef);
+        if (selectionRef == null) {
+            workspaceView().setSelectedTarget(null, -1L, null);
+        } else {
+            workspaceView().setSelectedTarget(selectionRef.ownerKind(), selectionRef.ownerId(), selectionRef.partKind());
+        }
         statePane.showSelectedTarget(selectionRef);
         inspectorSupport.showSelection(selectionRef);
     }
@@ -75,12 +81,12 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
     private static MapWorkspaceRenderModel placeholderRenderModel() {
         return new MapWorkspaceRenderModel(
                 "Dungeon Travel",
-                "Shared camera and unbounded square grid",
+                "Originalnaeherer Runtime-Workspace mit lokaler Kamera",
                 "TRAVEL",
-                "No map loaded",
-                "Use the control panel to load or create a dungeon.",
+                "Kein Dungeon geladen",
+                "Lade oder erstelle links einen Dungeon.",
                 false,
-                "No map selected.",
+                "Kein Dungeon ausgewaehlt.",
                 MapWorkspaceSceneViewData.empty()
         );
     }
@@ -92,10 +98,10 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
                 : "";
         return new MapWorkspaceRenderModel(
                 snapshot.mapName(),
-                "Travel canvas over committed dungeon placeholder truth",
+                "Runtime-Canvas im Look des Originals",
                 "TRAVEL",
-                "Revision " + snapshot.revision() + "  |  Floor " + snapshot.currentFloor(),
-                "Pan/zoom sind lokal. Party-Token und Travel-Actions bleiben angedockte Placeholder, bis die Runtime-Domain bereit ist.",
+                "Revision " + snapshot.revision() + "  |  Ebene " + snapshot.currentFloor(),
+                "Pan und Zoom bleiben lokal. Runtime-Fokus und Overlay folgen dem Original-Look; Travel-Actions bleiben an die aktuelle Domain gebunden.",
                 true,
                 overlayMessage,
                 scene
@@ -116,7 +122,7 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
                     .filter(target -> target.partKind().equalsIgnoreCase(selectedTarget.partKind()))
                     .findFirst()
                     .orElse(null);
-            if (resolved != selectedTarget) {
+            if (!Objects.equals(resolved, selectedTarget)) {
                 showSelection(resolved);
             }
         }

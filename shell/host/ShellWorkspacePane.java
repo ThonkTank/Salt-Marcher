@@ -127,12 +127,6 @@ public final class ShellWorkspacePane extends SplitPane {
             return;
         }
         if (activeTabMode == ShellTabMode.RUNTIME) {
-            Node runtimeState = activeSlotContent == null ? null : activeSlotContent.runtimeState();
-            if (runtimeState != null) {
-                stateContainer.getChildren().clear();
-                stateContainer.getChildren().add(ShellContentLayout.shellOwned(runtimeState));
-                return;
-            }
             stateContainer.getChildren().clear();
             stateContainer.getChildren().add(ShellContentLayout.shellOwned(
                     runtimeStatePane.hasTabs() ? runtimeStatePane : emptyRuntimeStatePlaceholder));

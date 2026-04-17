@@ -6,7 +6,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
-import src.domain.mapcore.api.MapSelectionRef;
 import src.view.mapshared.Controller.MapCameraController;
 import src.view.mapshared.Controller.MapPointerController;
 import src.view.mapshared.Model.MapCellViewModel;
@@ -141,12 +140,12 @@ public final class MapWorkspaceView extends BorderPane {
         redraw();
     }
 
-    public void setSelectedTarget(@Nullable MapSelectionRef selectionRef) {
-        selectedTarget = selectionRef == null ? null : new SelectionKey(
-                selectionRef.ownerKind(),
-                selectionRef.ownerId(),
-                selectionRef.partKind()
-        );
+    public void setSelectedTarget(@Nullable String ownerKind, long ownerId, @Nullable String partKind) {
+        if (ownerKind == null || ownerKind.isBlank()) {
+            selectedTarget = null;
+        } else {
+            selectedTarget = new SelectionKey(ownerKind, ownerId, partKind == null ? "" : partKind);
+        }
         redraw();
     }
 
@@ -203,14 +202,6 @@ public final class MapWorkspaceView extends BorderPane {
                 source.ownerId(),
                 source.partKind()
         );
-    }
-
-    private double worldToScreenX(int q, MapViewport viewport, double scale) {
-        return (q - viewport.centerX()) * scale + viewport.canvasWidth() / 2.0;
-    }
-
-    private double worldToScreenY(int r, MapViewport viewport, double scale) {
-        return (r - viewport.centerY()) * scale + viewport.canvasHeight() / 2.0;
     }
 
     private double screenToWorldX(double canvasX, MapViewport viewport, double scale) {

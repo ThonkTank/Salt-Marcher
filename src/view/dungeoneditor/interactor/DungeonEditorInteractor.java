@@ -14,6 +14,8 @@ import src.view.mapshared.Model.MapWorkspaceRenderModel;
 import src.view.mapshared.Model.MapWorkspaceSceneViewData;
 import src.view.mapshared.interactor.MapWorkspaceSupport;
 
+import java.util.Objects;
+
 /**
  * Editor coordination for the dungeon control-panel placeholder slice.
  */
@@ -40,7 +42,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
         workspaceView().setViewportListener(ignored -> statePane.refresh());
         workspaceView().setFloorStepListener(delta -> mapController().stepFloor(delta, currentViewport()));
         workspaceView().setCellSelectionListener(this::onCellSelected);
-        workspaceView().setSelectedTarget(null);
+        workspaceView().setSelectedTarget(null, -1L, null);
         finishInitialization();
     }
 
@@ -64,7 +66,11 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
 
     private void showSelection(@Nullable MapSelectionRef selectionRef) {
         selectedTarget = selectionRef;
-        workspaceView().setSelectedTarget(selectionRef);
+        if (selectionRef == null) {
+            workspaceView().setSelectedTarget(null, -1L, null);
+        } else {
+            workspaceView().setSelectedTarget(selectionRef.ownerKind(), selectionRef.ownerId(), selectionRef.partKind());
+        }
         statePane.showSelectedTarget(selectionRef);
         inspectorSupport.showSelection(selectionRef);
     }
@@ -85,12 +91,12 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
     private static MapWorkspaceRenderModel placeholderRenderModel() {
         return new MapWorkspaceRenderModel(
                 "Dungeon Editor",
-                "Shared camera and unbounded square grid",
+                "Originalnaeherer Grid-Workspace mit lokaler Kamera",
                 "EDITOR",
-                "No map loaded",
-                "Select or create a dungeon from the toolbar.",
+                "Kein Dungeon geladen",
+                "Waehle oder erstelle einen Dungeon ueber die linken Controls.",
                 false,
-                "No map selected.",
+                "Kein Dungeon ausgewaehlt.",
                 MapWorkspaceSceneViewData.empty()
         );
     }
@@ -102,10 +108,10 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
                 : "";
         return new MapWorkspaceRenderModel(
                 snapshot.mapName(),
-                "Editor canvas over committed dungeon placeholder truth",
+                "Editor-Canvas im Look des Originals",
                 "EDITOR",
-                "Revision " + snapshot.revision() + "  |  Floor " + snapshot.currentFloor(),
-                "Pan/zoom sind lokal. Tool-Docks sind vollständig sichtbar, aber nur vorhandene Domain-Capabilities sind verdrahtet.",
+                "Revision " + snapshot.revision() + "  |  Ebene " + snapshot.currentFloor(),
+                "Pan und Zoom bleiben lokal. Sichtbare Werkzeuge folgen dem Original-Look, nutzen aber nur die vorhandenen Domain-Capabilities.",
                 true,
                 overlayMessage,
                 scene
@@ -126,7 +132,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
                     .filter(target -> target.partKind().equalsIgnoreCase(selectedTarget.partKind()))
                     .findFirst()
                     .orElse(null);
-            if (resolved != selectedTarget) {
+            if (!Objects.equals(resolved, selectedTarget)) {
                 showSelection(resolved);
             }
         }

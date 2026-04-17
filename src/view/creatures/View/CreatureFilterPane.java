@@ -11,6 +11,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import org.jspecify.annotations.Nullable;
 import src.view.creatures.Model.CreatureFilterOptionsViewData;
 import src.view.creatures.Model.CreaturesFilterSelectionModel;
 
@@ -20,20 +21,20 @@ import java.util.Objects;
 public final class CreatureFilterPane extends VBox {
 
     private final CreaturesFilterSelectionModel selection;
-    private final Runnable onFilterChanged;
+    private final @Nullable Runnable onFilterChanged;
     private final FilterPaneConfig config;
-    private final SearchableFilterButton sizeFilter;
-    private final SearchableFilterButton typeFilter;
-    private final SearchableFilterButton subtypeFilter;
-    private final SearchableFilterButton biomeFilter;
-    private final SearchableFilterButton alignmentFilter;
+    private final @Nullable SearchableFilterButton sizeFilter;
+    private final @Nullable SearchableFilterButton typeFilter;
+    private final @Nullable SearchableFilterButton subtypeFilter;
+    private final @Nullable SearchableFilterButton biomeFilter;
+    private final @Nullable SearchableFilterButton alignmentFilter;
     private final FlowPane chipsPane = new FlowPane(4, 2);
 
     public CreatureFilterPane(
             CreatureFilterOptionsViewData options,
             CreaturesFilterSelectionModel selection,
             FilterPaneConfig config,
-            Runnable onFilterChanged
+            @Nullable Runnable onFilterChanged
     ) {
         this.selection = Objects.requireNonNull(selection, "selection");
         this.config = Objects.requireNonNull(config, "config");
@@ -162,7 +163,7 @@ public final class CreatureFilterPane extends VBox {
         addFilterChips(selection.selectedAlignments(), "chip-align", alignmentFilter);
     }
 
-    private void addFilterChips(List<String> values, String styleClass, SearchableFilterButton button) {
+    private void addFilterChips(List<String> values, String styleClass, @Nullable SearchableFilterButton button) {
         if (button == null) {
             return;
         }
@@ -187,13 +188,13 @@ public final class CreatureFilterPane extends VBox {
         return chip;
     }
 
-    private static void addIfPresent(FlowPane row, SearchableFilterButton button) {
+    private static void addIfPresent(FlowPane row, @Nullable SearchableFilterButton button) {
         if (button != null) {
             row.getChildren().add(button);
         }
     }
 
-    private static void syncSelection(ObservableList<String> target, SearchableFilterButton button) {
+    private static void syncSelection(ObservableList<String> target, @Nullable SearchableFilterButton button) {
         if (button == null) {
             target.clear();
             return;
@@ -201,7 +202,7 @@ public final class CreatureFilterPane extends VBox {
         target.setAll(button.selectedValues());
     }
 
-    private static void clearSelection(SearchableFilterButton button) {
+    private static void clearSelection(@Nullable SearchableFilterButton button) {
         if (button != null) {
             button.clearSelection();
         }

@@ -17,29 +17,31 @@ actions rather than authoring.
 ### Top-Left Controls
 
 The travel top-left panel mirrors the compact runtime structure from the
-reference application.
+reference application while remaining inside the current shared-shell slots.
 
 Visible elements:
 
 - zoom summary
 - current dungeon or load state summary
-- level row with current floor label, floor step placeholders, and an overlay
-  placeholder trigger
+- level row with current floor label, floor step controls, and an overlay
+  trigger
 
 ### Travel Canvas
 
-The travel canvas reuses the dungeon render but emphasizes runtime state.
+The travel canvas reuses the shared dungeon renderer and adopts the original
+Salt Marcher visual identity.
 
 Visible elements:
 
-- party token with facing
-- current traversable layout
-- active travel focus
+- dark canvas background with tiered grid lines and visible axes
+- room and corridor geometry rendered directly on the canvas
+- wall and door overlays in the original palette
+- aggregated room or corridor labels
+- active runtime focus highlighted through the same canvas selection language
 
 Core interactions:
 
-- select or drag the party marker
-- move focus to the current or next room
+- select the active runtime focus from the canvas or state list
 - pan and zoom with travel-local camera state
 
 Camera changes redraw the current travel workspace without reloading the map.
@@ -57,14 +59,22 @@ It presents:
 
 ### Runtime State Panel
 
-The runtime state panel owns dungeon map management for travel.
+The runtime state panel is a separate runtime-state contribution in the shared
+shell runtime-state area. The travel tab itself leaves that area free.
 
-Expected contents:
+The travel runtime state contribution owns dungeon map management and
+lightweight runtime focus context for travel.
+
+Visible contents:
 
 - map search
 - map list and explicit load action
 - map creation
 - delete loaded map
+- travel summary card for active dungeon, floor, overlay mode, and current
+  focus
+- inspector list that mirrors selectable runtime targets into the shell
+  inspector
 
 ## References
 

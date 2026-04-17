@@ -29,8 +29,8 @@ resources/   static resources and centralized stylesheets
 
 - `bootstrap/` creates the shell and discovers feature and persistence
   contributions generically.
-- `shell/` owns passive runtime surfaces such as navigation, slots, and
-  inspector history.
+- `shell/` owns passive runtime surfaces such as navigation, slots, inspector
+  history, and shared runtime-session state used by multiple contributions.
 - `src/view/<component>/` owns presentation behavior and user interaction.
 - `src/domain/<feature>/` owns business meaning, invariants, and feature APIs.
 - `src/data/<feature>/` owns persistence and external-system adapters.
@@ -62,6 +62,8 @@ persistence through persistence contributions.
 - `ShellViewContribution` provides `ShellContributionSpec` and `ShellScreen`.
 - `PersistenceContribution` registers typed persistence capabilities into the
   shared registry.
+- `ShellRuntimeContext` provides shell-owned shared services such as
+  persistence, inspector access, and per-shell runtime sessions.
 - Bootstrap discovers both generically. Adding a feature should not require
   routine shell or bootstrap edits.
 
@@ -93,3 +95,4 @@ JavaFX styling is centralized under `resources/`.
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/quality-platforms.md:1)
 - [ADR 001: Documentation Governance](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/001-documentation-governance.md:1)
 - [ADR 002: Passive Shell And Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
+- [ADR 004: Shared Runtime Session Store](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/004-shared-runtime-session-store.md:1)

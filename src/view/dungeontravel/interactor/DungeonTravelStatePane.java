@@ -28,9 +28,9 @@ final class DungeonTravelStatePane {
     private final TextField searchField = new TextField();
     private final ListView<DungeonMapSummary> mapList = new ListView<>();
     private final TextField createNameField = new TextField();
-    private final Button loadButton = new Button("Load map");
-    private final Button createButton = new Button("Create map");
-    private final Button deleteButton = new Button("Delete loaded");
+    private final Button loadButton = new Button("Dungeon laden");
+    private final Button createButton = new Button("Dungeon anlegen");
+    private final Button deleteButton = new Button("Dungeon loeschen");
     private final ListView<MapSelectionRef> objectList = new ListView<>();
     private Consumer<MapSelectionRef> onTargetSelected = ignored -> { };
     private @Nullable MapSelectionRef selectedTarget;
@@ -45,7 +45,7 @@ final class DungeonTravelStatePane {
         content.getStyleClass().setAll("dungeon-editor-sidebar", "scene-pane");
         content.setPadding(new Insets(12));
 
-        searchField.setPromptText("Search maps");
+        searchField.setPromptText("Dungeon suchen");
         mapList.setPrefHeight(180.0);
         mapList.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> {
             if (syncingSelection) {
@@ -128,7 +128,7 @@ final class DungeonTravelStatePane {
 
     private VBox mapSearchCard() {
         return MapWorkspaceSupport.card(
-                "Map Search",
+                "Dungeon",
                 searchField,
                 mapList,
                 loadButton);
@@ -136,7 +136,7 @@ final class DungeonTravelStatePane {
 
     private VBox mapCreateCard() {
         return MapWorkspaceSupport.card(
-                "Map Create",
+                "Verwaltung",
                 createNameField,
                 createButton,
                 deleteButton);
@@ -145,18 +145,18 @@ final class DungeonTravelStatePane {
     private VBox runtimeStateCard(@Nullable BaseMapSnapshot snapshot) {
         if (snapshot == null) {
             return MapWorkspaceSupport.card(
-                    "Travel State",
-                    MapWorkspaceSupport.muted("Lade einen Dungeon, um Room-, Exit- und Travel-Placeholder zu sehen."));
+                    "Reiseansicht",
+                    MapWorkspaceSupport.muted("Lade einen Dungeon, um Runtime-Fokus und Overlay-Ebenen zu sehen."));
         }
         VBox card = MapWorkspaceSupport.card(
-                "Travel State",
+                "Reiseansicht",
                 new Label("Aktiver Dungeon: " + snapshot.mapName()),
-                new Label("Floor: z=" + snapshot.currentFloor()),
+                new Label("Ebene z=" + snapshot.currentFloor()),
                 new Label("Overlay: " + controller.overlaySettings().mode().label()),
                 MapWorkspaceSupport.muted(selectedTarget == null
                         ? "Kein Raumfokus ausgewählt."
                         : "Fokus: " + selectedTarget.ownerKind() + " · " + selectedTarget.label()),
-                MapWorkspaceSupport.muted("Party-Token, Facing, Exits und Travel-Actions bleiben produktionsreife Andockstellen, bis die Runtime-Domain sie liefert."));
+                MapWorkspaceSupport.muted("Travel-Actions und Party-Token bleiben angedockt, bis die Runtime-Domain sie liefert."));
         for (String message : controller.lastMutationMessages()) {
             Label line = new Label(message);
             line.setWrapText(true);
@@ -168,13 +168,13 @@ final class DungeonTravelStatePane {
     private VBox objectListCard(@Nullable BaseMapSnapshot snapshot) {
         if (snapshot == null || snapshot.selectableTargets().isEmpty()) {
             return MapWorkspaceSupport.card(
-                    "Room Inspector",
+                    "Inspector",
                     MapWorkspaceSupport.muted("Keine selektierbaren Runtime-Objekte vorhanden."));
         }
         return MapWorkspaceSupport.card(
-                "Room Inspector",
+                "Inspector",
                 objectList,
-                MapWorkspaceSupport.muted("Details landen im shell-owned Inspector. Travel-Actions bleiben Placeholder."));
+                MapWorkspaceSupport.muted("Details landen im Shell-Inspector."));
     }
 
     private void syncMapList() {

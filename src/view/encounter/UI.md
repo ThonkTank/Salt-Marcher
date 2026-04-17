@@ -40,6 +40,10 @@ The detail panel shows:
 
 ## State Panel
 
+The state panel is rendered as an independent runtime-state contribution in the
+shared shell runtime-state area. It is not embedded into the encounter tab's
+left controls column.
+
 Visible elements:
 
 - locked-composition summary

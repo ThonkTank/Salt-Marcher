@@ -15,6 +15,7 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -202,7 +203,7 @@ public final class DungeonOverlayControls {
                 .orElse("-");
     }
 
-    private static List<Integer> parseLevels(String raw) {
+    private static @Nullable List<Integer> parseLevels(String raw) {
         if (raw == null || raw.isBlank()) {
             return List.of();
         }

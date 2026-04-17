@@ -29,6 +29,7 @@ public final class RuntimeStatePane extends VBox {
     private final Label placeholder = new Label("Kein Runtime-Zustand verfügbar");
     private final Node placeholderHost = ShellContentLayout.shellOwned(placeholder);
     private final Map<ContributionKey, StateTab> tabs = new LinkedHashMap<>();
+    private boolean manualSelectionMade;
 
     private @Nullable ContributionKey activeKey;
 
@@ -64,8 +65,11 @@ public final class RuntimeStatePane extends VBox {
         }
         tabs.put(key, new StateTab(key, label, itemOrder, content));
         rebuildTabBar();
-        if (activeKey == null) {
-            activateTab(key);
+        if (!manualSelectionMade) {
+            List<StateTab> sortedTabs = getSortedTabs();
+            if (!sortedTabs.isEmpty()) {
+                activateTab(sortedTabs.getFirst().key);
+            }
         }
     }
 
@@ -116,7 +120,10 @@ public final class RuntimeStatePane extends VBox {
             this.button = new ToggleButton(label);
             button.getStyleClass().add("scene-tab");
             button.setToggleGroup(tabGroup);
-            button.setOnAction(event -> activateTab(key));
+            button.setOnAction(event -> {
+                manualSelectionMade = true;
+                activateTab(key);
+            });
         }
 
         private void select() {
