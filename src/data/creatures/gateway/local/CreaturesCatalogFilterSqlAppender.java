@@ -1,7 +1,7 @@
 package src.data.creatures.gateway.local;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.query.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.List;
 import java.util.Locale;
@@ -80,29 +80,6 @@ final class CreaturesCatalogFilterSqlAppender {
         }
         sql.append(" AND ").append(columnName).append(" ").append(operator).append(" ?");
         params.add(value);
-    }
-
-    private static void appendEquals(StringBuilder sql, List<Object> params, String columnName, @Nullable String value) {
-        if (value == null || value.isBlank()) {
-            return;
-        }
-        sql.append(" AND LOWER(").append(columnName).append(") = LOWER(?)");
-        params.add(value.trim());
-    }
-
-    private static void appendInSubquery(
-            StringBuilder sql,
-            List<Object> params,
-            String tableName,
-            String valueColumn,
-            @Nullable String value
-    ) {
-        if (value == null || value.isBlank()) {
-            return;
-        }
-        sql.append(" AND id IN (SELECT creature_id FROM ").append(tableName).append(" WHERE LOWER(")
-                .append(valueColumn).append(") = LOWER(?))");
-        params.add(value.trim());
     }
 
     private static List<String> normalizeValues(List<String> values) {

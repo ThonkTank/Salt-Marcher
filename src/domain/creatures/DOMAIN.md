@@ -8,6 +8,8 @@ and domain rationale.
 
 ## Context Shape
 
+Context Type: Supporting Read-Model Context
+
 - `creatures` is an explicit supporting read-model context.
 - Its public backend boundary is
   `src/domain/creatures/CreaturesApplicationService.java`.
@@ -29,6 +31,8 @@ and domain rationale.
 
 - `application/` may normalize queries, page results, and reshape catalog
   truth into exported `api/` records
+- `catalog/` owns the internal catalog query port used by application use
+  cases and implemented by the data adapter
 - read-model helpers are allowed as long as they do not become policy owners
 - if the feature begins to rank, choose, validate, or define creature policy
   beyond query normalization, it must be promoted into the richer

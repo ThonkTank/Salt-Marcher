@@ -8,6 +8,8 @@ contracts, and supporting-context rationale.
 
 ## Context Shape
 
+Context Type: Supporting Read-Model Context
+
 - `mapcore` is an explicit supporting read-model context.
 - Its public backend boundary is
   `src/domain/mapcore/MapcoreApplicationService.java`.

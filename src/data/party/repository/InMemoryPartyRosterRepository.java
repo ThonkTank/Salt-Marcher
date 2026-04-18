@@ -6,7 +6,11 @@ import java.util.Objects;
 
 public final class InMemoryPartyRosterRepository extends AbstractPartyRosterRepository {
 
-    public InMemoryPartyRosterRepository(InMemoryPartyRosterGateway gateway) {
+    public InMemoryPartyRosterRepository() {
+        this(new InMemoryPartyRosterGateway());
+    }
+
+    InMemoryPartyRosterRepository(InMemoryPartyRosterGateway gateway) {
         super(requiredGateway(gateway)::load, requiredGateway(gateway)::save);
     }
 

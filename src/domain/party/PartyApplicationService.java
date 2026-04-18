@@ -8,11 +8,11 @@ import src.domain.party.api.MembershipState;
 import src.domain.party.api.MutationResult;
 import src.domain.party.api.PartySnapshotResult;
 import src.domain.party.api.RestType;
-import src.domain.party.repository.PartyRosterRepository;
+import src.domain.party.roster.PartyRosterRepository;
 import src.domain.party.application.PartyMutationOperations;
 import src.domain.party.application.PartyQueryOperations;
-import src.domain.party.valueobject.PartyMembership;
-import src.domain.party.valueobject.PartyRestType;
+import src.domain.party.roster.PartyMembership;
+import src.domain.party.roster.PartyRestType;
 
 import java.util.List;
 import java.util.Objects;

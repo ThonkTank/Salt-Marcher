@@ -12,7 +12,7 @@ import src.domain.creatures.api.CreatureCatalogPage;
 import src.domain.creatures.api.CreatureCatalogRow;
 import src.domain.creatures.api.CreatureDetail;
 import src.domain.creatures.api.EncounterCandidate;
-import src.domain.creatures.query.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 public final class CreatureCatalogMapper {
 
@@ -40,46 +40,53 @@ public final class CreatureCatalogMapper {
         if (record == null) {
             return null;
         }
+        CreatureDetailRecord.Identity identity = record.identity();
+        CreatureDetailRecord.HitDice hitDice = record.hitDice();
+        CreatureDetailRecord.Armor armor = record.armor();
+        CreatureDetailRecord.Movement movement = record.movement();
+        CreatureDetailRecord.AbilityScores abilityScores = record.abilityScores();
+        CreatureDetailRecord.Proficiency proficiency = record.proficiency();
+        CreatureDetailRecord.Traits traits = record.traits();
         return new CreatureDetail(
-                record.id(),
-                safeText(record.name()),
-                safeText(record.size()),
-                safeText(record.creatureType()),
-                record.subtypes(),
-                record.biomes(),
-                safeText(record.alignment()),
-                safeText(record.challengeRating()),
-                record.xp(),
-                record.hitPoints(),
-                record.hitDiceExpression(),
-                record.hitDiceCount(),
-                record.hitDiceSides(),
-                record.hitDiceModifier(),
-                record.armorClass(),
-                record.armorClassNotes(),
-                record.walkSpeed(),
-                record.flySpeed(),
-                record.swimSpeed(),
-                record.climbSpeed(),
-                record.burrowSpeed(),
-                record.strength(),
-                record.dexterity(),
-                record.constitution(),
-                record.intelligence(),
-                record.wisdom(),
-                record.charisma(),
-                record.initiativeBonus(),
-                record.proficiencyBonus(),
-                record.savingThrows(),
-                record.skills(),
-                record.damageVulnerabilities(),
-                record.damageResistances(),
-                record.damageImmunities(),
-                record.conditionImmunities(),
-                record.senses(),
-                record.passivePerception(),
-                record.languages(),
-                record.legendaryActionCount(),
+                identity.id(),
+                safeText(identity.name()),
+                safeText(identity.size()),
+                safeText(identity.creatureType()),
+                identity.subtypes(),
+                identity.biomes(),
+                safeText(identity.alignment()),
+                safeText(identity.challengeRating()),
+                identity.xp(),
+                hitDice.hitPoints(),
+                hitDice.expression(),
+                hitDice.count(),
+                hitDice.sides(),
+                hitDice.modifier(),
+                armor.armorClass(),
+                armor.notes(),
+                movement.walkSpeed(),
+                movement.flySpeed(),
+                movement.swimSpeed(),
+                movement.climbSpeed(),
+                movement.burrowSpeed(),
+                abilityScores.strength(),
+                abilityScores.dexterity(),
+                abilityScores.constitution(),
+                abilityScores.intelligence(),
+                abilityScores.wisdom(),
+                abilityScores.charisma(),
+                proficiency.initiativeBonus(),
+                proficiency.proficiencyBonus(),
+                traits.savingThrows(),
+                traits.skills(),
+                traits.damageVulnerabilities(),
+                traits.damageResistances(),
+                traits.damageImmunities(),
+                traits.conditionImmunities(),
+                traits.senses(),
+                traits.passivePerception(),
+                traits.languages(),
+                traits.legendaryActionCount(),
                 record.actions().stream().map(CreatureCatalogMapper::toDomain).toList());
     }
 

@@ -7,7 +7,7 @@ import src.domain.creatures.api.CreatureFilterOptionsResult;
 import src.domain.creatures.api.EncounterCandidatesResult;
 import src.domain.creatures.api.EncounterCandidateQuery;
 import src.domain.creatures.application.CreatureQueryOperations;
-import src.domain.creatures.query.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.Objects;
 

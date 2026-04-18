@@ -4,7 +4,7 @@ import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureCatalogRecord;
 import src.domain.creatures.api.CreatureCatalogSortField;
 import src.domain.creatures.api.CreatureSortDirection;
-import src.domain.creatures.query.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

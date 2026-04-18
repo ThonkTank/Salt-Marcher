@@ -5,7 +5,7 @@ import src.domain.creatures.api.CreatureCatalogPage;
 import src.domain.creatures.api.CreatureCatalogSortField;
 import src.domain.creatures.api.CreatureCatalogQuery;
 import src.domain.creatures.api.CreatureSortDirection;
-import src.domain.creatures.query.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.List;
 import java.util.Objects;

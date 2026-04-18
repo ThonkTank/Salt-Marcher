@@ -88,9 +88,9 @@ public final class CreaturesView {
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) ->
                 viewModel.selectCreature(newValue == null ? null : newValue.id()));
 
-        previousButton.setOnAction(event -> viewModel.previousPage());
+        previousButton.setOnAction(event -> viewModel.pageBy(-1));
 
-        nextButton.setOnAction(event -> viewModel.nextPage());
+        nextButton.setOnAction(event -> viewModel.pageBy(1));
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);

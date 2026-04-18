@@ -1,8 +1,8 @@
 package src.domain.party.application;
 
 import src.domain.party.api.ActivePartyComposition;
-import src.domain.party.entity.PartyRosterProjection;
-import src.domain.party.repository.PartyRosterRepository;
+import src.domain.party.roster.PartyRosterProjection;
+import src.domain.party.roster.PartyRosterRepository;
 
 public final class LoadActivePartyCompositionUseCase {
 

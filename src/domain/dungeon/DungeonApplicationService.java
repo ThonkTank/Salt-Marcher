@@ -34,7 +34,7 @@ public final class DungeonApplicationService {
         this(DungeonDefaultApplicationServices.instance());
     }
 
-    public DungeonApplicationService(
+    DungeonApplicationService(
             DungeonQueryOperations queries,
             DungeonMutationOperations mutations,
             DungeonDocumentStore documentStore

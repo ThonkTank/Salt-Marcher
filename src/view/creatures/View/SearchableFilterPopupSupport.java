@@ -51,7 +51,7 @@ final class SearchableFilterPopupSupport {
                 popupContent.requestFocus();
             }
         }));
-        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> handlePopupKeyPressed(event, popup, label, refocusButton));
+        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> handlePopupKeyPressed(event, popup, refocusButton));
     }
 
     private static @Nullable TextField createSearchField(
@@ -107,7 +107,6 @@ final class SearchableFilterPopupSupport {
     private static void handlePopupKeyPressed(
             KeyEvent event,
             Popup popup,
-            String label,
             Runnable refocusButton
     ) {
         if (event.getCode() == KeyCode.ESCAPE) {

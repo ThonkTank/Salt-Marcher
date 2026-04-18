@@ -2,7 +2,6 @@ package src.view.party.ViewModel;
 
 import src.domain.party.PartyApplicationService;
 import src.domain.party.api.AdventuringDayResult;
-import src.domain.party.api.CharacterDraft;
 import src.domain.party.api.MembershipState;
 import src.domain.party.api.MutationResult;
 import src.domain.party.api.MutationStatus;
@@ -53,33 +52,19 @@ public final class PartyToolbarViewModel {
         refreshState();
     }
 
-    public void createCharacter(
-            String name,
-            String playerName,
-            int level,
-            int passivePerception,
-            int armorClass,
-            boolean activeMembership
-    ) {
+    public void createCharacter(PartyCharacterMutationRequest request) {
         applyMutation(
                 party.createCharacter(
-                        new CharacterDraft(name, playerName, level, passivePerception, armorClass),
-                        activeMembership ? MembershipState.ACTIVE : MembershipState.RESERVE),
+                        request.toDomainDraft(),
+                        request.activeMembership() ? MembershipState.ACTIVE : MembershipState.RESERVE),
                 "Character created.");
     }
 
-    public void updateCharacter(
-            long id,
-            String name,
-            String playerName,
-            int level,
-            int passivePerception,
-            int armorClass
-    ) {
+    public void updateCharacter(long id, PartyCharacterMutationRequest request) {
         applyMutation(
                 party.updateCharacter(
                         id,
-                        new CharacterDraft(name, playerName, level, passivePerception, armorClass)),
+                        request.toDomainDraft()),
                 "Character updated.");
     }
 

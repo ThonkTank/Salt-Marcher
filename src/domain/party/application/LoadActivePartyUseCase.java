@@ -1,7 +1,7 @@
 package src.domain.party.application;
 
-import src.domain.party.entity.PartyCharacter;
-import src.domain.party.repository.PartyRosterRepository;
+import src.domain.party.roster.PartyCharacter;
+import src.domain.party.roster.PartyRosterRepository;
 
 import java.util.List;
 

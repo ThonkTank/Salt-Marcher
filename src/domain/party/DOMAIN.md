@@ -7,6 +7,8 @@ Source of Truth: Party feature ownership, write model, and domain invariants.
 
 ## Context Shape
 
+Context Type: Policy-Owning Bounded Context
+
 - `party` is a policy-owning bounded context.
 - Its public backend boundary is
   `src/domain/party/PartyApplicationService.java`.
@@ -36,13 +38,15 @@ The authored write model is the persisted party roster:
 Current state:
 
 - `PartyRoster` already carries a substantial share of party mutation behavior
-  directly in the domain model.
+  directly in the `roster/` domain module.
+- `roster/` owns the party aggregate, repository contract, membership, XP, and
+  rest policy types.
 - `application/` mainly coordinates repository access and exported result
   mapping.
 
 Target state:
 
-- keep party mutation rules on the roster aggregate and related value objects
+- keep party mutation rules on the roster aggregate and related roster policies
 - keep root and internal application services thin
 
 ## References

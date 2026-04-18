@@ -7,7 +7,7 @@ import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.domain.creatures.api.CreatureCatalogPage;
 import src.domain.creatures.api.CreatureDetail;
 import src.domain.creatures.api.EncounterCandidate;
-import src.domain.creatures.query.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.List;
 import java.util.Objects;
@@ -16,7 +16,11 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogQ
 
     private final SqliteCreatureCatalogLocalGateway gateway;
 
-    public SqliteCreatureCatalogQueryAdapter(SqliteCreatureCatalogLocalGateway gateway) {
+    public SqliteCreatureCatalogQueryAdapter() {
+        this(new SqliteCreatureCatalogLocalGateway());
+    }
+
+    SqliteCreatureCatalogQueryAdapter(SqliteCreatureCatalogLocalGateway gateway) {
         this.gateway = Objects.requireNonNull(gateway, "gateway");
     }
 

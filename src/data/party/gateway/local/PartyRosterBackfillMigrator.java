@@ -1,8 +1,8 @@
 package src.data.party.gateway.local;
 
 import src.data.party.model.PartyPersistenceSchema;
-import src.domain.party.valueobject.PartyAdventuringDayBudget;
-import src.domain.party.valueobject.PartyLevelProgression;
+import src.domain.party.roster.PartyAdventuringDayBudget;
+import src.domain.party.roster.PartyLevelProgression;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

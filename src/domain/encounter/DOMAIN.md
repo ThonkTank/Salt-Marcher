@@ -8,6 +8,8 @@ invariants.
 
 ## Feature Boundary
 
+Context Type: Policy-Owning Bounded Context
+
 - `encounter` is a runtime composition feature.
 - It does not own party truth or creature truth.
 - It consumes foreign application services only:
@@ -22,15 +24,14 @@ Current state:
   candidate narrowing, locking rules, and ranking behavior for generated
   encounters.
 - `application/` now owns orchestration and foreign-service coordination,
-  while stateless balancing, targeting, ranking, and role/tag heuristics still
-  live in dedicated encounter model code that remains migration debt toward
-  named domain modules.
+  while the `generation/` domain module owns stateless balancing, targeting,
+  ranking, and role/tag heuristics for encounter generation.
 
 Target state:
 
 - orchestration remains in `application/`
-- stable encounter policies continue to move toward richer domain objects and
-  explicit domain services instead of procedural helper concentration
+- stable encounter policies remain in named domain modules and continue to move
+  toward richer domain objects where invariants justify that shape
 
 ## Write Model And Derived State
 

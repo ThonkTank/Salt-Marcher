@@ -168,21 +168,30 @@ final class DungeonTravelStatePane {
     }
 
     private void syncMapList() {
-        syncingSelection = true;
         var state = controller.state();
-        mapList.getItems().setAll(state.visibleMaps());
-        DungeonMapSummary selected = state.selectedSummary();
-        if (selected == null) {
-            mapList.getSelectionModel().clearSelection();
-        } else {
-            mapList.getSelectionModel().select(selected);
-        }
-        syncingSelection = false;
+        withSelectionSync(() -> {
+            mapList.getItems().setAll(state.visibleMaps());
+            DungeonMapSummary selected = state.selectedSummary();
+            if (selected == null) {
+                mapList.getSelectionModel().clearSelection();
+            } else {
+                mapList.getSelectionModel().select(selected);
+            }
+        });
     }
 
     private void syncObjectList(@Nullable BaseMapSnapshot snapshot) {
+        withSelectionSync(() ->
+                selectedTarget = DungeonMapSelectionSupport.syncSelectionList(objectList, snapshot, selectedTarget));
+    }
+
+    @SuppressWarnings("PMD.UnusedAssignment")
+    private void withSelectionSync(Runnable action) {
         syncingSelection = true;
-        selectedTarget = DungeonMapSelectionSupport.syncSelectionList(objectList, snapshot, selectedTarget);
-        syncingSelection = false;
+        try {
+            action.run();
+        } finally {
+            syncingSelection = false;
+        }
     }
 }

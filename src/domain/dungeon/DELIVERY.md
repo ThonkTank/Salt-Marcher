@@ -22,6 +22,9 @@ Recommended rollout:
   contracts before broad editor rollout.
 - Room and connection projections can drift if ownership rules are not enforced
   consistently.
+- Advanced editor operation carriers must be introduced only with implemented
+  domain policies, and their public API signatures must use API-owned carrier
+  types rather than internal domain-module model types.
 
 ## Open Delivery Questions
 

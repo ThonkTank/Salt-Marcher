@@ -120,11 +120,11 @@ public final class CreatureFilterPane extends VBox {
     }
 
     private void syncSelections() {
-        syncSelection(selectedSizes, sizeFilter);
-        syncSelection(selectedTypes, typeFilter);
-        syncSelection(selectedSubtypes, subtypeFilter);
-        syncSelection(selectedBiomes, biomeFilter);
-        syncSelection(selectedAlignments, alignmentFilter);
+        CreatureFilterPaneSupport.syncSelection(selectedSizes, sizeFilter);
+        CreatureFilterPaneSupport.syncSelection(selectedTypes, typeFilter);
+        CreatureFilterPaneSupport.syncSelection(selectedSubtypes, subtypeFilter);
+        CreatureFilterPaneSupport.syncSelection(selectedBiomes, biomeFilter);
+        CreatureFilterPaneSupport.syncSelection(selectedAlignments, alignmentFilter);
     }
 
     private void fireChange() {
@@ -155,7 +155,7 @@ public final class CreatureFilterPane extends VBox {
             if (minimum != null || maximum != null) {
                 String label = "CR: " + (minimum == null ? "0" : minimum)
                         + "-" + (maximum == null ? "30" : maximum);
-                chipsPane.getChildren().add(makeChip(label, "chip-cr", () -> {
+                chipsPane.getChildren().add(CreatureFilterPaneSupport.makeChip(label, "chip-cr", () -> {
                     selectedChallengeRatingMin.set(null);
                     selectedChallengeRatingMax.set(null);
                     fireChange();
@@ -169,10 +169,6 @@ public final class CreatureFilterPane extends VBox {
         CreatureFilterPaneSupport.addFilterChips(chipsPane, selectedAlignments, "chip-align", alignmentFilter, this::syncAndFire);
     }
 
-    private HBox makeChip(String text, String styleClass, Runnable onRemove) {
-        return CreatureFilterPaneSupport.makeChip(text, styleClass, onRemove);
-    }
-
     private CreatureFilterSelection currentSelection() {
         return new CreatureFilterSelection(
                 searchText.get(),
@@ -183,10 +179,6 @@ public final class CreatureFilterPane extends VBox {
                 List.copyOf(selectedSubtypes),
                 List.copyOf(selectedBiomes),
                 List.copyOf(selectedAlignments));
-    }
-
-    private static void syncSelection(ObservableList<String> target, @Nullable SearchableFilterButton button) {
-        CreatureFilterPaneSupport.syncSelection(target, button);
     }
 
     private javafx.scene.control.Button clearButton() {

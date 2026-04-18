@@ -6,7 +6,11 @@ import java.util.Objects;
 
 public final class SqlitePartyRosterRepository extends AbstractPartyRosterRepository {
 
-    public SqlitePartyRosterRepository(SqlitePartyLocalGateway gateway) {
+    public SqlitePartyRosterRepository() {
+        this(new SqlitePartyLocalGateway());
+    }
+
+    SqlitePartyRosterRepository(SqlitePartyLocalGateway gateway) {
         super(requiredGateway(gateway)::load, requiredGateway(gateway)::save);
     }
 

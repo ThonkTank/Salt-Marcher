@@ -84,25 +84,25 @@ final class DungeonEditorControls extends VBox {
     }
 
     void showActiveTool(DungeonEditorTool tool) {
-        syncingToolSelection = true;
-        ToggleButton button = toolButtons.get(tool == null ? DungeonEditorTool.SELECT : tool);
-        if (button != null) {
-            toolGroup.selectToggle(button);
-        }
-        syncingToolSelection = false;
+        withToolSelectionSync(() -> {
+            ToggleButton button = toolButtons.get(tool == null ? DungeonEditorTool.SELECT : tool);
+            if (button != null) {
+                toolGroup.selectToggle(button);
+            }
+        });
     }
 
     void refresh() {
-        syncingSelection = true;
         var state = controller.state();
-        selector.getItems().setAll(state.visibleMaps());
-        DungeonMapSummary selected = state.selectedSummary();
-        if (selected == null) {
-            selector.getSelectionModel().clearSelection();
-        } else {
-            selector.getSelectionModel().select(selected);
-        }
-        syncingSelection = false;
+        withSelectionSync(() -> {
+            selector.getItems().setAll(state.visibleMaps());
+            DungeonMapSummary selected = state.selectedSummary();
+            if (selected == null) {
+                selector.getSelectionModel().clearSelection();
+            } else {
+                selector.getSelectionModel().select(selected);
+            }
+        });
 
         BaseMapSnapshot snapshot = state.loadedSnapshot();
         selector.setDisable(state.visibleMaps().isEmpty());
@@ -140,6 +140,26 @@ final class DungeonEditorControls extends VBox {
             }
             controller.selectMap(after.mapId());
         });
+    }
+
+    @SuppressWarnings("PMD.UnusedAssignment")
+    private void withSelectionSync(Runnable action) {
+        syncingSelection = true;
+        try {
+            action.run();
+        } finally {
+            syncingSelection = false;
+        }
+    }
+
+    @SuppressWarnings("PMD.UnusedAssignment")
+    private void withToolSelectionSync(Runnable action) {
+        syncingToolSelection = true;
+        try {
+            action.run();
+        } finally {
+            syncingToolSelection = false;
+        }
     }
 
     private VBox buildDungeonGroup(Button newMapButton, Button editMapButton, Button graphButton) {

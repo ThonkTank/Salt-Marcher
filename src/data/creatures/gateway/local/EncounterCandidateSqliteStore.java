@@ -1,7 +1,7 @@
 package src.data.creatures.gateway.local;
 
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.query.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

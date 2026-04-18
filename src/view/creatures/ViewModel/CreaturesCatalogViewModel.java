@@ -5,11 +5,9 @@ import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.api.CreatureCatalogPage;
 import src.domain.creatures.api.CreatureCatalogPageResult;
 import src.domain.creatures.api.CreatureCatalogQuery;
-import src.domain.creatures.api.CreatureCatalogRow;
 import src.domain.creatures.api.CreatureCatalogSortField;
 import src.domain.creatures.api.CreatureDetail;
 import src.domain.creatures.api.CreatureDetailResult;
-import src.domain.creatures.api.CreatureFilterOptions;
 import src.domain.creatures.api.CreatureFilterOptionsResult;
 import src.domain.creatures.api.CreatureLookupStatus;
 import src.domain.creatures.api.CreatureQueryStatus;
@@ -56,13 +54,8 @@ public final class CreaturesCatalogViewModel {
         refreshPage();
     }
 
-    public void previousPage() {
-        currentOffset = Math.max(0, currentOffset - PAGE_SIZE);
-        refreshPage();
-    }
-
-    public void nextPage() {
-        currentOffset += PAGE_SIZE;
+    public void pageBy(int pageDelta) {
+        currentOffset = Math.max(0, currentOffset + PAGE_SIZE * pageDelta);
         refreshPage();
     }
 
@@ -85,12 +78,12 @@ public final class CreaturesCatalogViewModel {
         }
         CreatureDetail detail = result.detail();
         inspectorPublisher.show(detail, inspectorKey);
-        clearStatus();
+        updateStatus("", false);
     }
 
     private void loadFilterOptions() {
         CreatureFilterOptionsResult result = creatures.loadFilterOptions();
-        snapshot = snapshot.withFilterOptions(toViewData(result.options()));
+        snapshot = snapshot.withFilterOptions(CreaturesCatalogViewMapper.toViewData(result.options()));
         if (result.status() != CreatureReadStatus.SUCCESS) {
             snapshot = snapshot.withStatus(new CreaturesStatusViewData(
                     "Filter options could not be loaded. Catalog fallback is available.",
@@ -136,7 +129,7 @@ public final class CreaturesCatalogViewModel {
             refreshPage();
             return;
         }
-        snapshot = snapshot.withPage(toViewData(page));
+        snapshot = snapshot.withPage(CreaturesCatalogViewMapper.toViewData(page));
         if (page.totalCount() == 0) {
             snapshot = snapshot.withStatus(new CreaturesStatusViewData("No creatures match the current filters.", true, false));
             notifyListeners();
@@ -151,57 +144,9 @@ public final class CreaturesCatalogViewModel {
         notifyListeners();
     }
 
-    private void clearStatus() {
-        snapshot = snapshot.withStatus(CreaturesStatusViewData.hidden());
-        notifyListeners();
-    }
-
     private void notifyListeners() {
         for (Runnable listener : listeners) {
             listener.run();
         }
-    }
-
-    private static CreaturesCatalogViewData.Page toViewData(CreatureCatalogPage page) {
-        int total = page.totalCount();
-        int offset = page.pageOffset();
-        int endExclusive = Math.min(total, offset + page.rows().size());
-        String summary = total == 0
-                ? "No creatures found."
-                : "Showing " + (offset + 1) + "-" + endExclusive + " of " + total + " creatures";
-        return new CreaturesCatalogViewData.Page(
-                page.rows().stream().map(CreaturesCatalogViewModel::toViewData).toList(),
-                summary,
-                offset > 0,
-                offset + page.pageSize() < total
-        );
-    }
-
-    private static CreaturesCatalogViewData.Row toViewData(CreatureCatalogRow row) {
-        return new CreaturesCatalogViewData.Row(
-                row.id(),
-                row.name(),
-                row.challengeRating(),
-                row.creatureType(),
-                row.size(),
-                row.alignment(),
-                row.xp(),
-                row.hitPoints(),
-                row.armorClass()
-        );
-    }
-
-    private static CreatureFilterOptionsViewData toViewData(@Nullable CreatureFilterOptions options) {
-        if (options == null) {
-            return CreatureFilterOptionsViewData.empty();
-        }
-        return new CreatureFilterOptionsViewData(
-                options.sizes(),
-                options.types(),
-                options.subtypes(),
-                options.biomes(),
-                options.alignments(),
-                options.challengeRatings()
-        );
     }
 }

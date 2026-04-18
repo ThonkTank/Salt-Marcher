@@ -5,6 +5,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextInputDialog;
 import javafx.stage.Window;
+import src.view.party.ViewModel.PartyCharacterMutationRequest;
 import src.view.party.ViewModel.PartyToolbarViewModel;
 import src.view.party.ViewModel.PartyViewData;
 
@@ -17,13 +18,9 @@ final class PartyToolbarDialogs {
 
     static void showCreateDialog(PartyToolbarViewModel viewModel, @Nullable Window owner) {
         Optional<PartyCharacterEditorDialog.CreateRequest> request = PartyCharacterEditorDialog.showCreate(owner);
-        request.ifPresent(value -> viewModel.createCharacter(
-                value.draft().name(),
-                value.draft().playerName(),
-                value.draft().level(),
-                value.draft().passivePerception(),
-                value.draft().armorClass(),
-                value.startInActiveParty()));
+        request.ifPresent(value -> viewModel.createCharacter(toViewModelRequest(
+                value.draft(),
+                value.startInActiveParty())));
     }
 
     static void showEditDialog(
@@ -34,11 +31,7 @@ final class PartyToolbarDialogs {
         Optional<PartyCharacterEditorDialog.CharacterDraft> draft = PartyCharacterEditorDialog.showEdit(owner, member);
         draft.ifPresent(value -> viewModel.updateCharacter(
                 member.id(),
-                value.name(),
-                value.playerName(),
-                value.level(),
-                value.passivePerception(),
-                value.armorClass()));
+                toViewModelRequest(value, member.membership() == PartyViewData.MembershipSelection.ACTIVE)));
     }
 
     static void confirmDelete(
@@ -80,5 +73,18 @@ final class PartyToolbarDialogs {
         } catch (NumberFormatException exception) {
             // Invalid input is ignored here; controller refresh will preserve current state.
         }
+    }
+
+    private static PartyCharacterMutationRequest toViewModelRequest(
+            PartyCharacterEditorDialog.CharacterDraft draft,
+            boolean activeMembership
+    ) {
+        return new PartyCharacterMutationRequest(
+                draft.name(),
+                draft.playerName(),
+                draft.level(),
+                draft.passivePerception(),
+                draft.armorClass(),
+                activeMembership);
     }
 }

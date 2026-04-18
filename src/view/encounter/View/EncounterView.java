@@ -136,21 +136,31 @@ public final class EncounterView {
 
     private void refreshFromViewModel() {
         EncounterSnapshot snapshot = viewModel.snapshot();
-        refreshing = true;
-        difficulty.getItems().setAll(snapshot.difficultyOptions());
-        difficulty.setValue(snapshot.selectedDifficulty());
-        table.getItems().setAll(snapshot.alternatives());
-        if (snapshot.selectedAlternative() == null) {
-            table.getSelectionModel().clearSelection();
-        } else if (!Objects.equals(table.getSelectionModel().getSelectedItem(), snapshot.selectedAlternative())) {
-            table.getSelectionModel().select(snapshot.selectedAlternative());
-        }
+        withRefreshing(() -> {
+            difficulty.getItems().setAll(snapshot.difficultyOptions());
+            difficulty.setValue(snapshot.selectedDifficulty());
+            table.getItems().setAll(snapshot.alternatives());
+            if (snapshot.selectedAlternative() == null) {
+                table.getSelectionModel().clearSelection();
+            } else if (!Objects.equals(table.getSelectionModel().getSelectedItem(), snapshot.selectedAlternative())) {
+                table.getSelectionModel().select(snapshot.selectedAlternative());
+            }
+        });
         partySummary.setText(snapshot.text().partySummary());
         thresholds.setText(snapshot.text().thresholdsSummary());
         dailyBudget.setText(snapshot.text().dailyBudgetSummary());
         resultSummary.setText(snapshot.text().resultSummary());
         detail.setText(snapshot.text().detailText());
-        refreshing = false;
+    }
+
+    @SuppressWarnings("PMD.UnusedAssignment")
+    private void withRefreshing(Runnable action) {
+        refreshing = true;
+        try {
+            action.run();
+        } finally {
+            refreshing = false;
+        }
     }
 
     private static Node labeledControl(String label, Node control) {

@@ -123,8 +123,17 @@ final class DungeonEditorStatePane {
     }
 
     private void syncObjectList(@Nullable BaseMapSnapshot snapshot) {
+        withSelectionSync(() ->
+                selectedTarget = DungeonMapSelectionSupport.syncSelectionList(objectList, snapshot, selectedTarget));
+    }
+
+    @SuppressWarnings("PMD.UnusedAssignment")
+    private void withSelectionSync(Runnable action) {
         syncingSelection = true;
-        selectedTarget = DungeonMapSelectionSupport.syncSelectionList(objectList, snapshot, selectedTarget);
-        syncingSelection = false;
+        try {
+            action.run();
+        } finally {
+            syncingSelection = false;
+        }
     }
 }

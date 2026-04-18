@@ -7,9 +7,9 @@ import src.domain.creatures.api.CreatureLookupStatus;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.api.EncounterCreature;
 import src.domain.encounter.api.GeneratedEncounter;
-import src.domain.encounter.service.EncounterDraft;
-import src.domain.encounter.service.EncounterDraftEntry;
-import src.domain.encounter.service.EncounterRoleClassifier;
+import src.domain.encounter.generation.EncounterDraft;
+import src.domain.encounter.generation.EncounterDraftEntry;
+import src.domain.encounter.generation.EncounterRoleClassifier;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

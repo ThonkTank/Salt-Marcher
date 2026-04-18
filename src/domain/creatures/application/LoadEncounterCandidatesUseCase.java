@@ -2,7 +2,7 @@ package src.domain.creatures.application;
 
 import src.domain.creatures.api.EncounterCandidate;
 import src.domain.creatures.api.EncounterCandidateQuery;
-import src.domain.creatures.query.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.List;
 import java.util.Objects;

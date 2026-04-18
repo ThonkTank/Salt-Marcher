@@ -8,7 +8,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Separator;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -18,19 +17,15 @@ import javafx.stage.Window;
 import org.jspecify.annotations.Nullable;
 import src.view.party.ViewModel.PartyToolbarSnapshot;
 import src.view.party.ViewModel.PartyToolbarViewModel;
-import src.view.party.ViewModel.PartyViewData;
 
-import java.util.Locale;
 import java.util.Objects;
 
 public final class PartyToolbarView {
 
     private final PartyToolbarViewModel viewModel;
+    private final PartyToolbarMemberListRenderer memberListRenderer;
     private final Button triggerButton = new Button();
     private final Popup popup = new Popup();
-    private final VBox activeMembersBox = new VBox(8);
-    private final VBox reserveMembersBox = new VBox(8);
-    private final TextField reserveSearchField = new TextField();
     private final Label summaryLabel = new Label();
     private final Label daySummaryLabel = new Label();
     private final Label budgetPercentLabel = new Label();
@@ -39,12 +34,11 @@ public final class PartyToolbarView {
     private final Button shortRestButton = new Button("Short Rest");
     private final Button longRestButton = new Button("Long Rest");
     private final HBox budgetRow = new HBox(10, budgetProgressBar, budgetPercentLabel);
-    private final PartyMemberCardFactory cardFactory = new PartyMemberCardFactory();
 
     public PartyToolbarView(PartyToolbarViewModel viewModel) {
         this.viewModel = Objects.requireNonNull(viewModel, "viewModel");
+        this.memberListRenderer = new PartyToolbarMemberListRenderer(this.viewModel, this::ownerWindow);
         configurePopup();
-        configureMemberLists();
         this.viewModel.addChangeListener(this::refreshFromViewModel);
         refreshFromViewModel();
     }
@@ -64,11 +58,6 @@ public final class PartyToolbarView {
         statusLabel.getStyleClass().add("status-label");
         budgetRow.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(budgetProgressBar, Priority.ALWAYS);
-    }
-
-    private void configureMemberLists() {
-        reserveSearchField.setPromptText("Filter reserve...");
-        reserveSearchField.textProperty().addListener((obs, oldValue, newValue) -> rebuildReserveMembers());
     }
 
     public Node node() {
@@ -135,48 +124,17 @@ public final class PartyToolbarView {
                 header,
                 budgetRow,
                 activeLabel,
-                activeMembersBox,
+                memberListRenderer.activeMembers(),
                 restActions,
                 new Separator(),
                 reserveHeader,
-                reserveSearchField,
-                reserveMembersBox,
+                memberListRenderer.reserveSearch(),
+                memberListRenderer.reserveMembers(),
                 new Separator(),
                 summaryLabel,
                 daySummaryLabel,
                 statusLabel);
         return panel;
-    }
-
-    private void rebuildActiveMembers() {
-        activeMembersBox.getChildren().clear();
-        if (viewModel.snapshot().activeMembers().isEmpty()) {
-            activeMembersBox.getChildren().add(cardFactory.mutedLabel("No active party members."));
-            return;
-        }
-        for (PartyViewData.PartyMemberViewData member : viewModel.snapshot().activeMembers()) {
-            activeMembersBox.getChildren().add(cardFactory.buildActiveMemberRow(member, viewModel, this::ownerWindow));
-        }
-    }
-
-    private void rebuildReserveMembers() {
-        reserveMembersBox.getChildren().clear();
-        String filter = reserveSearchField.getText() == null ? "" : reserveSearchField.getText().trim().toLowerCase(Locale.ROOT);
-        var filteredMembers = viewModel.snapshot().reserveMembers().stream()
-                .filter(member -> filter.isEmpty()
-                        || member.name().toLowerCase(Locale.ROOT).contains(filter)
-                        || member.playerName().toLowerCase(Locale.ROOT).contains(filter))
-                .toList();
-        if (filteredMembers.isEmpty()) {
-            reserveMembersBox.getChildren().add(cardFactory.mutedLabel(
-                    viewModel.snapshot().reserveMembers().isEmpty()
-                            ? "No reserve characters."
-                            : "No reserve characters match the filter."));
-            return;
-        }
-        for (PartyViewData.PartyMemberViewData member : filteredMembers) {
-            reserveMembersBox.getChildren().add(cardFactory.buildReserveMemberRow(member, viewModel, this::ownerWindow));
-        }
     }
 
     private @Nullable Window ownerWindow() {
@@ -197,15 +155,7 @@ public final class PartyToolbarView {
         statusLabel.setText(snapshot.status().text());
         statusLabel.setVisible(snapshot.status().visible());
         statusLabel.setManaged(snapshot.status().visible());
-        updateStatusStyle(snapshot.status());
-        rebuildActiveMembers();
-        rebuildReserveMembers();
-    }
-
-    private void updateStatusStyle(PartyToolbarSnapshot.Status status) {
-        statusLabel.getStyleClass().removeAll("status-label-error", "status-label-success");
-        statusLabel.getStyleClass().add(status.error()
-                ? "status-label-error"
-                : "status-label-success");
+        PartyToolbarStatusStyle.apply(statusLabel, snapshot.status());
+        memberListRenderer.refresh();
     }
 }

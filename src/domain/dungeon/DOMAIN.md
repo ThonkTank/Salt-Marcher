@@ -8,6 +8,8 @@ for the dungeon feature.
 
 ## Feature Boundary
 
+Context Type: Policy-Owning Bounded Context
+
 - `dungeon` is one feature slice with one application-service boundary.
 - A `DungeonMap` is the aggregate root for one authored dungeon map.
 - Editor and travel are separate presentation slices over the same dungeon
