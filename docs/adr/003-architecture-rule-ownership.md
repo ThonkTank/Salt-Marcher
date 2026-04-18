@@ -1,5 +1,9 @@
 # ADR 003: Architecture Rule Ownership By Enforcement Layer
 
+Superseded in part by [ADR 006: jQAssistant Owns MVCI Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/006-jqassistant-owns-mvci-enforcement.md:1)
+for MVCI-specific ownership. This ADR still describes the non-MVCI split
+between `ArchUnit`, `PMD`, and `build-harness`.
+
 - Status: Accepted
 - Date: 2026-04-17
 

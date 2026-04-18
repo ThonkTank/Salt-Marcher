@@ -6,8 +6,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
-import src.view.mapshared.Controller.MapCameraController;
-import src.view.mapshared.Controller.MapPointerController;
 import src.view.mapshared.Model.MapCellViewModel;
 import src.view.mapshared.Model.MapViewport;
 import src.view.mapshared.Model.MapWorkspaceRenderModel;
@@ -37,7 +35,7 @@ public final class MapWorkspaceView extends BorderPane {
     private IntConsumer floorStepListener = ignored -> {
     };
     private @Nullable MapWorkspaceRenderModel renderModel;
-    private @Nullable SelectionKey selectedTarget;
+    private MapWorkspaceSelectionSupport.@Nullable SelectionKey selectedTarget;
 
     public MapWorkspaceView() {
         getStyleClass().addAll("scene-pane", "map-workspace");
@@ -51,12 +49,12 @@ public final class MapWorkspaceView extends BorderPane {
                 new MapWorkspaceCanvasMetrics() {
                     @Override
                     public double width() {
-                        return contentHost.getWidth() > 1.0 ? contentHost.getWidth() : 960.0;
+                        return MapWorkspaceViewportSupport.width(contentHost);
                     }
 
                     @Override
                     public double height() {
-                        return contentHost.getHeight() > 1.0 ? contentHost.getHeight() : 640.0;
+                        return MapWorkspaceViewportSupport.height(contentHost);
                     }
                 },
                 this::afterViewportChanged
@@ -70,9 +68,14 @@ public final class MapWorkspaceView extends BorderPane {
                 new MapWorkspaceInteractionCallbacks() {
                     @Override
                     public void onPrimaryClick(double canvasX, double canvasY) {
-                        MapCellViewModel hit = findCellAtCanvasPosition(canvasX, canvasY);
+                        MapCellViewModel hit = MapWorkspaceSelectionSupport.findCellAtCanvasPosition(
+                                renderModel,
+                                currentViewport(),
+                                canvasX,
+                                canvasY,
+                                cameraController.pixelsPerTile());
                         if (hit != null && hit.interactive()) {
-                            pointerController.notifyCellSelected(highlightedCell(hit));
+                            pointerController.notifyCellSelected(MapWorkspaceSelectionSupport.highlightedCell(hit, selectedTarget));
                         }
                     }
 
@@ -101,12 +104,12 @@ public final class MapWorkspaceView extends BorderPane {
                         return new MapWorkspaceCanvasMetrics() {
                             @Override
                             public double width() {
-                                return contentHost.getWidth() > 1.0 ? contentHost.getWidth() : 960.0;
+                                return MapWorkspaceViewportSupport.width(contentHost);
                             }
 
                             @Override
                             public double height() {
-                                return contentHost.getHeight() > 1.0 ? contentHost.getHeight() : 640.0;
+                                return MapWorkspaceViewportSupport.height(contentHost);
                             }
                         };
                     }
@@ -129,10 +132,7 @@ public final class MapWorkspaceView extends BorderPane {
     }
 
     public MapViewport currentViewport() {
-        return cameraController.currentViewport(
-                contentHost.getWidth() > 1.0 ? contentHost.getWidth() : 960.0,
-                contentHost.getHeight() > 1.0 ? contentHost.getHeight() : 640.0
-        );
+        return MapWorkspaceViewportSupport.currentViewport(cameraController, contentHost);
     }
 
     public void show(MapWorkspaceRenderModel nextRenderModel) {
@@ -144,7 +144,7 @@ public final class MapWorkspaceView extends BorderPane {
         if (ownerKind == null || ownerKind.isBlank()) {
             selectedTarget = null;
         } else {
-            selectedTarget = new SelectionKey(ownerKind, ownerId, partKind == null ? "" : partKind);
+            selectedTarget = new MapWorkspaceSelectionSupport.SelectionKey(ownerKind, ownerId, partKind == null ? "" : partKind);
         }
         redraw();
     }
@@ -167,68 +167,8 @@ public final class MapWorkspaceView extends BorderPane {
         squareRenderer.render(renderSurface, renderModel, viewport);
     }
 
-    private @Nullable MapCellViewModel findCellAtCanvasPosition(double canvasX, double canvasY) {
-        if (renderModel == null || !renderModel.mapLoaded()) {
-            return null;
-        }
-        double scale = cameraController.pixelsPerTile();
-        MapViewport viewport = currentViewport();
-        int q = (int) Math.floor(screenToWorldX(canvasX, viewport, scale));
-        int r = (int) Math.floor(screenToWorldY(canvasY, viewport, scale));
-        for (MapCellViewModel source : renderModel.scene().cells()) {
-            if (source.q() == q && source.r() == r) {
-                return source;
-            }
-        }
-        return null;
-    }
-
-    private MapCellViewModel highlightedCell(MapCellViewModel source) {
-        boolean selected = selectedTarget != null
-                && selectedTarget.matches(source.ownerKind(), source.ownerId(), source.partKind());
-        if (!selected && !source.current()) {
-            return source;
-        }
-        return new MapCellViewModel(
-                source.q(),
-                source.r(),
-                source.label(),
-                source.room(),
-                source.corridor(),
-                source.blocked(),
-                source.interactive(),
-                true,
-                source.ownerKind(),
-                source.ownerId(),
-                source.partKind()
-        );
-    }
-
-    private double screenToWorldX(double canvasX, MapViewport viewport, double scale) {
-        return viewport.centerX() + (canvasX - viewport.canvasWidth() / 2.0) / scale;
-    }
-
-    private double screenToWorldY(double canvasY, MapViewport viewport, double scale) {
-        return viewport.centerY() + (canvasY - viewport.canvasHeight() / 2.0) / scale;
-    }
-
     private void afterViewportChanged() {
-        notifyViewportChanged();
+        MapWorkspaceViewportSupport.notifyViewportChanged(renderModel, viewportListener, currentViewport());
         redraw();
-    }
-
-    private void notifyViewportChanged() {
-        if (renderModel != null && renderModel.mapLoaded()) {
-            viewportListener.accept(currentViewport());
-        }
-    }
-
-    private record SelectionKey(String ownerKind, long ownerId, String partKind) {
-
-        private boolean matches(String otherKind, long otherId, String otherPartKind) {
-            return ownerId == otherId
-                    && Objects.equals(ownerKind, otherKind)
-                    && Objects.equals(partKind, otherPartKind);
-        }
     }
 }

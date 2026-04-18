@@ -11,7 +11,7 @@ import shell.host.ShellSlot;
 import shell.host.ShellTabMode;
 import shell.host.ShellTabSpec;
 import shell.host.ShellViewContribution;
-import src.view.encounter.interactor.EncounterRuntimeSession;
+import src.view.encountershared.assembly.EncounterRuntimeSession;
 
 import java.util.Map;
 

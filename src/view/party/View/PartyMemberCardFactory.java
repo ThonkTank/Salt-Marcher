@@ -1,6 +1,4 @@
 package src.view.party.View;
-
-import org.jspecify.annotations.Nullable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -12,15 +10,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import src.view.party.Controller.PartyController;
-import src.view.party.interactor.PartyInteractor;
-import src.view.party.interactor.PartyInteractor.RestStatusViewData;
+import src.view.party.Model.PartyViewData;
 
 final class PartyMemberCardFactory {
 
-    Node buildActiveMemberRow(PartyInteractor.PartyMemberViewData member, PartyController controller) {
+    Node buildActiveMemberRow(PartyViewData.PartyMemberViewData member, PartyController controller) {
         Label nameLabel = new Label(member.name());
         nameLabel.getStyleClass().add("bold");
-        Node restChip = buildRestChip(member.restStatus());
+        Node restChip = member.restStatus() == null ? null : buildRestChip(member.restStatus());
         Label detailsLabel = mutedLabel(buildPrimaryDetails(member));
         Label xpLabel = new Label(buildXpDetails(member));
         xpLabel.setWrapText(true);
@@ -43,7 +40,7 @@ final class PartyMemberCardFactory {
         return wrapCard(new VBox(6, headerRow, detailsLabel, xpLabel, actionRow));
     }
 
-    Node buildReserveMemberRow(PartyInteractor.PartyMemberViewData member, PartyController controller) {
+    Node buildReserveMemberRow(PartyViewData.PartyMemberViewData member, PartyController controller) {
         Label nameLabel = new Label(member.name());
         nameLabel.getStyleClass().add("bold");
         Label detailsLabel = mutedLabel(buildPrimaryDetails(member));
@@ -74,10 +71,7 @@ final class PartyMemberCardFactory {
         return content;
     }
 
-    private @Nullable Node buildRestChip(@Nullable RestStatusViewData restStatus) {
-        if (restStatus == null) {
-            return null;
-        }
+    private Node buildRestChip(PartyViewData.RestStatusViewData restStatus) {
         Label chip = new Label(restStatus.label());
         chip.getStyleClass().add("party-rest-chip");
         chip.getStyleClass().add(switch (restStatus.severity()) {
@@ -89,7 +83,7 @@ final class PartyMemberCardFactory {
         return chip;
     }
 
-    private String buildPrimaryDetails(PartyInteractor.PartyMemberViewData member) {
+    private String buildPrimaryDetails(PartyViewData.PartyMemberViewData member) {
         String player = member.playerName().isBlank() ? "No player" : member.playerName();
         return player
                 + " | Lv " + member.level()
@@ -97,7 +91,7 @@ final class PartyMemberCardFactory {
                 + " | PP " + member.passivePerception();
     }
 
-    private String buildXpDetails(PartyInteractor.PartyMemberViewData member) {
+    private String buildXpDetails(PartyViewData.PartyMemberViewData member) {
         if (member.readyToLevel()) {
             return "XP " + member.currentXp() + " | Ready to level";
         }

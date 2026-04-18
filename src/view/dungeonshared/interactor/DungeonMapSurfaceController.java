@@ -1,196 +1,80 @@
 package src.view.dungeonshared.interactor;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.api.BaseMapSnapshot;
-import src.domain.dungeon.api.CreateDungeonMapCommand;
-import src.domain.dungeon.api.CreateDungeonMapResult;
-import src.domain.dungeon.api.DeleteDungeonMapCommand;
 import src.domain.dungeon.api.DungeonEditorOperation;
 import src.domain.dungeon.api.DungeonInspectorSnapshot;
-import src.domain.dungeon.api.DungeonMapId;
-import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.DungeonOperationResult;
-import src.domain.dungeon.api.LoadMapSnapshotQuery;
-import src.domain.dungeon.api.OnionConfig;
-import src.domain.dungeon.api.SearchMapsQuery;
+import src.domain.dungeon.api.BaseMapSnapshot;
+import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.Viewport;
 import src.domain.dungeon.dungeonAPI;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 /**
  * Shared controller for dungeon map selection, loading, creation, deletion, and placeholder edit hooks.
  */
-public final class DungeonMapSurfaceController {
+// PMD suppression is local: this shared controller is the single facade for map-surface actions and state; see src/view/dungeoneditor/UI.md.
+@SuppressWarnings("PMD.TooManyMethods")
+public final class DungeonMapSurfaceController extends AbstractDungeonMapCatalogController {
 
     private static final DungeonMapSurfaceController SHARED = new DungeonMapSurfaceController(new dungeonAPI());
 
-    private final dungeonAPI dungeon;
-    private final List<Runnable> listeners = new ArrayList<>();
-
-    private String searchText = "";
-    private List<DungeonMapSummary> visibleMaps = List.of();
-    private @Nullable DungeonMapId selectedMapId;
-    private @Nullable DungeonMapId loadedMapId;
-    private @Nullable BaseMapSnapshot loadedSnapshot;
-    private int currentFloor;
-    private DungeonOverlaySettings overlaySettings = DungeonOverlaySettings.defaults();
-    private String lastMutationSummary = "Noch keine Editor-Aktion ausgelöst.";
-    private List<String> lastMutationMessages = List.of();
-
     private DungeonMapSurfaceController(dungeonAPI dungeon) {
-        this.dungeon = Objects.requireNonNull(dungeon, "dungeon");
+        super(dungeon);
     }
 
     public static DungeonMapSurfaceController shared() {
         return SHARED;
     }
 
-    public void addListener(Runnable listener) {
-        listeners.add(Objects.requireNonNull(listener, "listener"));
-    }
-
-    public void refreshMaps() {
-        visibleMaps = dungeon.searchMaps(new SearchMapsQuery(searchText));
-        ensureSelection();
-        notifyListeners();
+    public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
+        return dungeon.describeSelection(ownerKind, ownerId);
     }
 
     public List<DungeonMapSummary> visibleMaps() {
         return visibleMaps;
     }
 
-    public List<String> lastMutationMessages() {
-        return lastMutationMessages;
-    }
-
-    public String lastMutationSummary() {
-        return lastMutationSummary;
-    }
-
-    public DungeonOverlaySettings overlaySettings() {
-        return overlaySettings;
-    }
-
-    public int currentFloor() {
-        return currentFloor;
-    }
-
-    public String searchText() {
-        return searchText;
-    }
-
-    public void setSearchText(String value) {
-        String nextValue = value == null ? "" : value;
-        if (searchText.equals(nextValue)) {
-            return;
-        }
-        searchText = nextValue;
-        refreshMaps();
-    }
-
-    public @Nullable DungeonMapId selectedMapId() {
-        return selectedMapId;
-    }
-
+    @Override
     public @Nullable DungeonMapSummary selectedSummary() {
-        if (selectedMapId == null) {
-            return null;
-        }
-        for (DungeonMapSummary summary : visibleMaps) {
-            if (summary.mapId().equals(selectedMapId)) {
-                return summary;
-            }
-        }
-        return null;
-    }
-
-    public void selectMap(@Nullable DungeonMapId mapId) {
-        if (Objects.equals(selectedMapId, mapId)) {
-            return;
-        }
-        selectedMapId = mapId;
-        notifyListeners();
-    }
-
-    public boolean canLoadSelected() {
-        return selectedSummary() != null;
-    }
-
-    public boolean hasLoadedMap() {
-        return loadedMapId != null;
-    }
-
-    public boolean canApplyEditorOperation() {
-        return loadedMapId != null;
+        return super.selectedSummary();
     }
 
     public @Nullable BaseMapSnapshot loadedSnapshot() {
         return loadedSnapshot;
     }
 
-    public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
-        return dungeon.describeSelection(ownerKind, ownerId);
+    public boolean hasLoadedMap() {
+        return loadedSnapshot != null;
     }
 
-    public void loadSelected(Viewport viewport) {
-        DungeonMapSummary selected = selectedSummary();
-        if (selected != null) {
-            loadMap(selected.mapId(), viewport);
-        }
+    public boolean canLoadSelected() {
+        return selectedSummary() != null;
     }
 
-    public void loadMap(DungeonMapId mapId, Viewport viewport) {
-        DungeonMapSummary selected = visibleMaps.stream()
-                .filter(summary -> summary.mapId().equals(mapId))
-                .findFirst()
-                .orElse(null);
-        dungeon.activateMap(mapId, selected == null ? "Dungeon Map" : selected.mapName());
-        BaseMapSnapshot snapshot = dungeon.loadMapSnapshot(new LoadMapSnapshotQuery(
-                mapId,
-                currentFloor,
-                onionConfig(),
-                viewport));
-        loadedSnapshot = snapshot;
-        loadedMapId = snapshot.mapId();
-        selectedMapId = snapshot.mapId();
-        currentFloor = snapshot.currentFloor();
-        visibleMaps = dungeon.searchMaps(new SearchMapsQuery(searchText));
-        ensureSelection();
-        notifyListeners();
+    public boolean canApplyEditorOperation() {
+        return loadedSnapshot != null;
     }
 
-    public void reloadLoaded(Viewport viewport) {
-        if (loadedMapId != null) {
-            loadMap(loadedMapId, viewport);
-        }
+    public DungeonOverlaySettings overlaySettings() {
+        return overlaySettings;
     }
 
-    public void createMap(String mapName, Viewport viewport) {
-        String resolvedName = mapName == null || mapName.isBlank() ? defaultMapName() : mapName.trim();
-        CreateDungeonMapResult result = dungeon.createMap(new CreateDungeonMapCommand(resolvedName));
-        lastMutationSummary = "Dungeon angelegt.";
-        lastMutationMessages = List.of("Neue Placeholder-Geometrie wurde für " + resolvedName + " vorbereitet.");
-        loadMap(result.mapId(), viewport);
+    public String statusText() {
+        return state().statusText();
     }
 
-    public void deleteLoaded() {
-        if (loadedMapId == null) {
-            return;
-        }
-        dungeon.deleteMap(new DeleteDungeonMapCommand(loadedMapId));
-        loadedMapId = null;
-        loadedSnapshot = null;
-        currentFloor = 0;
-        lastMutationSummary = "Geladener Dungeon gelöscht.";
-        lastMutationMessages = List.of();
-        visibleMaps = dungeon.searchMaps(new SearchMapsQuery(searchText));
-        ensureSelection();
-        notifyListeners();
+    public int currentFloor() {
+        return currentFloor;
+    }
+
+    public String lastMutationSummary() {
+        return lastMutationSummary;
+    }
+
+    public List<String> lastMutationMessages() {
+        return lastMutationMessages;
     }
 
     public void stepFloor(int delta, Viewport viewport) {
@@ -202,24 +86,25 @@ public final class DungeonMapSurfaceController {
         reloadLoaded(viewport);
     }
 
-    public void updateOverlayMode(DungeonOverlayMode mode, Viewport viewport) {
-        overlaySettings = overlaySettings.withMode(mode);
+    public void updateOverlay(DungeonOverlaySettings settings, Viewport viewport) {
+        overlaySettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
         reloadLoaded(viewport);
+    }
+
+    public void updateOverlayMode(DungeonOverlayMode mode, Viewport viewport) {
+        updateOverlay(overlaySettings.withMode(mode), viewport);
     }
 
     public void updateOverlayRange(int range, Viewport viewport) {
-        overlaySettings = overlaySettings.withLevelRange(range);
-        reloadLoaded(viewport);
+        updateOverlay(overlaySettings.withLevelRange(range), viewport);
     }
 
     public void updateOverlayOpacity(double opacity, Viewport viewport) {
-        overlaySettings = overlaySettings.withOpacity(opacity);
-        reloadLoaded(viewport);
+        updateOverlay(overlaySettings.withOpacity(opacity), viewport);
     }
 
     public void updateSelectedOverlayLevels(List<Integer> selectedLevels, Viewport viewport) {
-        overlaySettings = overlaySettings.withSelectedLevels(selectedLevels);
-        reloadLoaded(viewport);
+        updateOverlay(overlaySettings.withSelectedLevels(selectedLevels), viewport);
     }
 
     public void applyEditorOperation(DungeonEditorOperation operation, Viewport viewport) {
@@ -232,60 +117,5 @@ public final class DungeonMapSurfaceController {
                 : result.reactionMessages().getFirst();
         lastMutationMessages = mergeMessages(result.validationMessages(), result.reactionMessages());
         reloadLoaded(viewport);
-    }
-
-    public String defaultMapName() {
-        Set<String> names = new HashSet<>();
-        for (DungeonMapSummary summary : dungeon.searchMaps(new SearchMapsQuery(""))) {
-            names.add(summary.mapName());
-        }
-        int next = 1;
-        while (names.contains("Dungeon Nr." + next)) {
-            next++;
-        }
-        return "Dungeon Nr." + next;
-    }
-
-    public String statusText() {
-        if (loadedSnapshot == null) {
-            return visibleMaps.isEmpty() ? "Keine Dungeons." : "Kein Dungeon geladen.";
-        }
-        return loadedSnapshot.mapName() + " · Revision " + loadedSnapshot.revision() + " · Ebene z=" + loadedSnapshot.currentFloor();
-    }
-
-    private OnionConfig onionConfig() {
-        return switch (overlaySettings.mode()) {
-            case OFF -> new OnionConfig(0.0, 0);
-            case NEARBY -> new OnionConfig(overlaySettings.opacity(), overlaySettings.levelRange());
-            case SELECTED -> new OnionConfig(overlaySettings.opacity(), Math.max(overlaySettings.selectedLevels().size(), 1));
-        };
-    }
-
-    private List<String> mergeMessages(List<String> validationMessages, List<String> reactionMessages) {
-        List<String> merged = new ArrayList<>();
-        merged.addAll(validationMessages == null ? List.of() : validationMessages);
-        merged.addAll(reactionMessages == null ? List.of() : reactionMessages);
-        return List.copyOf(merged);
-    }
-
-    private void ensureSelection() {
-        if (selectedMapId != null && selectedSummary() != null) {
-            return;
-        }
-        if (loadedMapId != null) {
-            for (DungeonMapSummary summary : visibleMaps) {
-                if (summary.mapId().equals(loadedMapId)) {
-                    selectedMapId = loadedMapId;
-                    return;
-                }
-            }
-        }
-        selectedMapId = visibleMaps.isEmpty() ? null : visibleMaps.getFirst().mapId();
-    }
-
-    private void notifyListeners() {
-        for (Runnable listener : List.copyOf(listeners)) {
-            listener.run();
-        }
     }
 }

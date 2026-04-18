@@ -1,15 +1,11 @@
 package src.view.creatures.View;
 
 import javafx.geometry.Bounds;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,75 +30,24 @@ final class SearchableFilterButton extends Button {
         setAccessibleText(label + " geschlossen");
         setOnAction(event -> togglePopup());
 
-        VBox popupContent = new VBox(4);
-        popupContent.getStyleClass().add("filter-dropdown");
-        popupContent.setPadding(new Insets(8));
-
-        TextField searchField = null;
-        if (options.size() > SEARCH_FIELD_THRESHOLD) {
-            searchField = new TextField();
-            searchField.setPromptText(label + " suchen...");
-            searchField.getStyleClass().add("quick-search-field");
-            TextField focusTarget = searchField;
-            searchField.textProperty().addListener((ignored, before, after) -> filterCheckboxes(focusTarget.getText()));
-            popupContent.getChildren().add(searchField);
-        }
-
-        VBox checkboxList = new VBox(2);
-        for (String option : options) {
-            CheckBox checkbox = new CheckBox(option);
-            checkbox.setSelected(selectedValues.contains(option));
-            checkbox.setOnAction(event -> {
-                updateTriggerText();
-                if (this.onChange != null) {
-                    this.onChange.run();
-                }
-            });
-            checkboxes.add(checkbox);
-            checkboxList.getChildren().add(checkbox);
-        }
-
-        ScrollPane scrollPane = new ScrollPane(checkboxList);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setMaxHeight(280);
-        scrollPane.setPrefWidth(200);
-        scrollPane.setMinWidth(160);
-        popupContent.getChildren().add(scrollPane);
+        SearchableFilterPopupSupport.PopupContent popupContent = SearchableFilterPopupSupport.buildPopupContent(
+                label,
+                SEARCH_FIELD_THRESHOLD,
+                options,
+                selectedValues,
+                checkboxes,
+                this::filterCheckboxes,
+                this::fireSelectionChanged);
 
         popup = new Popup();
         popup.setAutoHide(true);
-        popup.getContent().add(popupContent);
-
-        TextField focusTarget = searchField;
-        popup.setOnShown(event -> javafx.application.Platform.runLater(() -> {
-            if (focusTarget != null) {
-                focusTarget.requestFocus();
-            } else {
-                popupContent.requestFocus();
-            }
-        }));
-        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                popup.hide();
-                requestFocus();
-                event.consume();
-                return;
-            }
-            if (event.getCode() == KeyCode.TAB) {
-                javafx.application.Platform.runLater(() -> {
-                    if (!popup.isShowing()) {
-                        return;
-                    }
-                    javafx.scene.Scene popupScene = popup.getScene();
-                    if (popupScene == null || popupScene.getFocusOwner() == null) {
-                        popup.hide();
-                        setAccessibleText(label + " geschlossen");
-                        requestFocus();
-                    }
-                });
-            }
-        });
+        popup.getContent().add(popupContent.content());
+        SearchableFilterPopupSupport.installPopupHandlers(
+                popup,
+                label,
+                popupContent.focusTarget(),
+                popupContent.content(),
+                this::refocusButton);
         updateTriggerText();
     }
 
@@ -169,5 +114,17 @@ final class SearchableFilterButton extends Button {
         if (!popup.isShowing()) {
             setAccessibleText(getText());
         }
+    }
+
+    private void fireSelectionChanged() {
+        updateTriggerText();
+        if (this.onChange != null) {
+            this.onChange.run();
+        }
+    }
+
+    private void refocusButton() {
+        setAccessibleText(label + " geschlossen");
+        requestFocus();
     }
 }

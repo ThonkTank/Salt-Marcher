@@ -1,6 +1,7 @@
 package src.view.party.interactor;
 
 import src.domain.party.partyAPI;
+import src.view.party.Model.PartyViewData;
 import src.view.party.Model.PartyToolbarState;
 
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ import java.util.Map;
 final class PartyToolbarStateMapper {
 
     PartyToolbarState map(partyAPI.PartySnapshotResult snapshotResult, partyAPI.AdventuringDayResult dayResult) {
-        Map<Long, PartyInteractor.RestStatusViewData> restStatuses = mapRestStatuses(dayResult.summary().restCadenceStatuses());
+        Map<Long, PartyViewData.RestStatusViewData> restStatuses = mapRestStatuses(dayResult.summary().restCadenceStatuses());
         return new PartyToolbarState(
                 mapMembers(snapshotResult.snapshot().activeMembers(), restStatuses),
                 mapMembers(snapshotResult.snapshot().reserveMembers(), Map.of()),
@@ -24,13 +25,13 @@ final class PartyToolbarStateMapper {
                 dayResult.summary().consumedPercent());
     }
 
-    private List<PartyInteractor.PartyMemberViewData> mapMembers(
+    private List<PartyViewData.PartyMemberViewData> mapMembers(
             List<partyAPI.PartyMemberDetails> members,
-            Map<Long, PartyInteractor.RestStatusViewData> restStatuses
+            Map<Long, PartyViewData.RestStatusViewData> restStatuses
     ) {
-        List<PartyInteractor.PartyMemberViewData> viewData = new ArrayList<>();
+        List<PartyViewData.PartyMemberViewData> viewData = new ArrayList<>();
         for (partyAPI.PartyMemberDetails member : members) {
-            viewData.add(new PartyInteractor.PartyMemberViewData(
+            viewData.add(new PartyViewData.PartyMemberViewData(
                     member.id(),
                     member.name(),
                     member.playerName(),
@@ -44,17 +45,17 @@ final class PartyToolbarStateMapper {
                     member.xpSinceLongRest(),
                     member.shortRestsTakenSinceLongRest(),
                     member.membership() == partyAPI.MembershipState.ACTIVE
-                            ? PartyInteractor.MembershipSelection.ACTIVE
-                            : PartyInteractor.MembershipSelection.RESERVE,
+                            ? PartyViewData.MembershipSelection.ACTIVE
+                            : PartyViewData.MembershipSelection.RESERVE,
                     restStatuses.get(member.id())));
         }
         return viewData;
     }
 
-    private Map<Long, PartyInteractor.RestStatusViewData> mapRestStatuses(List<partyAPI.RestCadenceStatus> statuses) {
-        Map<Long, PartyInteractor.RestStatusViewData> viewData = new HashMap<>();
+    private Map<Long, PartyViewData.RestStatusViewData> mapRestStatuses(List<partyAPI.RestCadenceStatus> statuses) {
+        Map<Long, PartyViewData.RestStatusViewData> viewData = new HashMap<>();
         for (partyAPI.RestCadenceStatus status : statuses) {
-            viewData.put(status.characterId(), new PartyInteractor.RestStatusViewData(
+            viewData.put(status.characterId(), new PartyViewData.RestStatusViewData(
                     shortLabelFor(status.nextMilestone()),
                     tooltipFor(status.nextMilestone(), status.xpDelta()),
                     severityFor(status.urgency())));
@@ -85,14 +86,14 @@ final class PartyToolbarStateMapper {
         return label + " " + Math.abs(xpDelta) + " XP overdue";
     }
 
-    private PartyInteractor.RestIndicatorSeverity severityFor(partyAPI.RestCadenceUrgency urgency) {
+    private PartyViewData.RestIndicatorSeverity severityFor(partyAPI.RestCadenceUrgency urgency) {
         if (urgency == null) {
-            return PartyInteractor.RestIndicatorSeverity.NORMAL;
+            return PartyViewData.RestIndicatorSeverity.NORMAL;
         }
         return switch (urgency) {
-            case NORMAL -> PartyInteractor.RestIndicatorSeverity.NORMAL;
-            case SOON -> PartyInteractor.RestIndicatorSeverity.SOON;
-            case OVERDUE -> PartyInteractor.RestIndicatorSeverity.OVERDUE;
+            case NORMAL -> PartyViewData.RestIndicatorSeverity.NORMAL;
+            case SOON -> PartyViewData.RestIndicatorSeverity.SOON;
+            case OVERDUE -> PartyViewData.RestIndicatorSeverity.OVERDUE;
         };
     }
 }

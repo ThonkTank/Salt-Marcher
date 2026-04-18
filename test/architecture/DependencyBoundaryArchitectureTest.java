@@ -23,20 +23,6 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
         cacheMode = CacheMode.PER_CLASS)
 public final class DependencyBoundaryArchitectureTest {
 
-    private static final String[] PRESENTATION_SURFACE_PACKAGES = {
-            "src.view..Model",
-            "src.view..Model..",
-            "src.view..View",
-            "src.view..View..",
-            "src.view..Controller",
-            "src.view..Controller.."
-    };
-
-    private static final String[] INTERACTOR_PACKAGES = {
-            "src.view..interactor",
-            "src.view..interactor.."
-    };
-
     private static final String[] DOMAIN_INTERNAL_PACKAGES = {
             "src.domain..entity..",
             "src.domain..usecase..",
@@ -46,33 +32,6 @@ public final class DependencyBoundaryArchitectureTest {
 
     private DependencyBoundaryArchitectureTest() {
     }
-
-    @ArchTest
-    static final ArchRule modelsViewsAndControllersMustNotReachDomainOrData =
-            noClasses()
-                    .that()
-                    .resideInAnyPackage(PRESENTATION_SURFACE_PACKAGES)
-                    .should()
-                    .dependOnClassesThat()
-                    .resideInAnyPackage("src.domain..", "src.data..");
-
-    @ArchTest
-    static final ArchRule interactorsMustNotReachData =
-            noClasses()
-                    .that()
-                    .resideInAnyPackage(INTERACTOR_PACKAGES)
-                    .should()
-                    .dependOnClassesThat()
-                    .resideInAnyPackage("src.data..");
-
-    @ArchTest
-    static final ArchRule interactorsMustUseFeatureApiBoundaries =
-            noClasses()
-                    .that()
-                    .resideInAnyPackage(INTERACTOR_PACKAGES)
-                    .should()
-                    .dependOnClassesThat()
-                    .resideInAnyPackage(DOMAIN_INTERNAL_PACKAGES);
 
     @ArchTest
     static final ArchRule featureEntrypointsMustNotReachDomainInternalsOrData =

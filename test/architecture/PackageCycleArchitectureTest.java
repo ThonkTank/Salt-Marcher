@@ -2,10 +2,13 @@ package architecture;
 
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.junit.CacheMode;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.library.dependencies.SliceAssignment;
+import com.tngtech.archunit.library.dependencies.SliceIdentifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 
 @AnalyzeClasses(
@@ -17,6 +20,27 @@ import com.tngtech.archunit.core.importer.ImportOption;
         cacheMode = CacheMode.PER_CLASS)
 public final class PackageCycleArchitectureTest {
 
+    private static final SliceAssignment VIEW_COMPONENT_SLICE_ASSIGNMENT = new SliceAssignment() {
+        @Override
+        public SliceIdentifier getIdentifierOf(JavaClass javaClass) {
+            String packageName = javaClass.getPackageName();
+            if (!packageName.startsWith("src.view.")) {
+                return SliceIdentifier.ignore();
+            }
+            String rootName = packageName.substring("src.view.".length());
+            int nextDot = rootName.indexOf('.');
+            if (nextDot >= 0) {
+                rootName = rootName.substring(0, nextDot);
+            }
+            return SliceIdentifier.of(normalizedViewRoot(rootName));
+        }
+
+        @Override
+        public String getDescription() {
+            return "src.view root package, with trailing shared normalized to the base root";
+        }
+    };
+
     private PackageCycleArchitectureTest() {
     }
 
@@ -26,7 +50,7 @@ public final class PackageCycleArchitectureTest {
 
     @ArchTest
     static final ArchRule viewComponentsMustBeCycleFree =
-            slices().matching("src.view.(*)..").should().beFreeOfCycles();
+            slices().assignedFrom(VIEW_COMPONENT_SLICE_ASSIGNMENT).should().beFreeOfCycles();
 
     @ArchTest
     static final ArchRule dataFeaturesMustBeCycleFree =
@@ -35,4 +59,11 @@ public final class PackageCycleArchitectureTest {
     @ArchTest
     static final ArchRule shellPackagesMustBeCycleFree =
             slices().matching("shell.(*)..").should().beFreeOfCycles();
+
+    private static String normalizedViewRoot(String rootName) {
+        if (rootName.endsWith("shared") && rootName.length() > "shared".length()) {
+            return rootName.substring(0, rootName.length() - "shared".length());
+        }
+        return rootName;
+    }
 }

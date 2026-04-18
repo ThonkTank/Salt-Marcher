@@ -4,11 +4,17 @@ import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.Viewport;
+import src.domain.mapcore.api.MapSelectionRef;
+import src.view.mapshared.Model.MapCellViewModel;
 import src.view.mapshared.View.MapWorkspaceView;
+
+import java.util.function.Consumer;
 
 /**
  * Shared map-list workflow for dungeon editor and travel tabs.
  */
+// PMD suppression is local: this shared base intentionally owns the reusable dungeon workspace contract; see src/view/dungeoneditor/UI.md.
+@SuppressWarnings("PMD.TooManyMethods")
 public abstract class AbstractDungeonMapInteractor {
 
     private final MapWorkspaceView workspaceView = new MapWorkspaceView();
@@ -35,11 +41,34 @@ public abstract class AbstractDungeonMapInteractor {
     }
 
     protected final @Nullable BaseMapSnapshot loadedSnapshot() {
-        return mapController.loadedSnapshot();
+        return mapController.state().loadedSnapshot();
     }
 
     protected final DungeonMapSurfaceController mapController() {
         return mapController;
+    }
+
+    protected final @Nullable MapSelectionRef resolveSelection(@Nullable MapCellViewModel cellViewModel) {
+        return DungeonMapSelectionSupport.resolveSelection(loadedSnapshot(), cellViewModel);
+    }
+
+    protected final void applySelection(
+            Consumer<MapSelectionRef> stateSelectionConsumer,
+            DungeonSelectionPublisher selectionPublisher,
+            @Nullable MapSelectionRef selectionRef
+    ) {
+        DungeonMapSelectionSupport.applySelection(
+                workspaceView(),
+                stateSelectionConsumer,
+                ref -> publishSelection(selectionPublisher, ref),
+                selectionRef);
+    }
+
+    protected final void refreshSelection(
+            @Nullable MapSelectionRef selectedTarget,
+            Consumer<MapSelectionRef> selectionConsumer
+    ) {
+        DungeonMapSelectionSupport.refreshSelection(loadedSnapshot(), selectedTarget, selectionConsumer);
     }
 
     protected final Viewport currentViewport() {
@@ -53,11 +82,24 @@ public abstract class AbstractDungeonMapInteractor {
     }
 
     private void refreshWorkspace() {
-        BaseMapSnapshot snapshot = mapController.loadedSnapshot();
+        BaseMapSnapshot snapshot = mapController.state().loadedSnapshot();
         workspaceView.show(snapshot == null
                 ? presentation.placeholderRenderModel().get()
                 : presentation.loadedRenderModel().apply(snapshot));
         onSnapshotChanged();
+    }
+
+    private void publishSelection(
+            DungeonSelectionPublisher selectionPublisher,
+            @Nullable MapSelectionRef selectionRef
+    ) {
+        if (selectionRef == null) {
+            selectionPublisher.clear();
+            return;
+        }
+        selectionPublisher.showSelection(
+                selectionRef,
+                mapController().describeSelection(selectionRef.ownerKind(), selectionRef.ownerId()));
     }
 
     protected void onSnapshotChanged() {

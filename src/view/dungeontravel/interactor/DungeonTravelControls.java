@@ -11,6 +11,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
+import src.view.dungeonshared.interactor.DungeonOverlayBindings;
 import src.view.dungeonshared.interactor.DungeonOverlayControls;
 
 import java.util.Objects;
@@ -43,7 +44,7 @@ final class DungeonTravelControls extends VBox {
         downLevelButton.setOnAction(event -> controller.stepFloor(-1, this.viewportSupplier.get()));
         Button upLevelButton = actionButton("Ebene +");
         upLevelButton.setOnAction(event -> controller.stepFloor(1, this.viewportSupplier.get()));
-        overlayControls.bindToController(controller, this.viewportSupplier);
+        DungeonOverlayBindings.bind(overlayControls, controller, this.viewportSupplier);
 
         Region levelSpacer = new Region();
         HBox.setHgrow(levelSpacer, Priority.ALWAYS);
@@ -60,11 +61,12 @@ final class DungeonTravelControls extends VBox {
     }
 
     void refresh() {
-        BaseMapSnapshot snapshot = controller.loadedSnapshot();
+        var state = controller.state();
+        BaseMapSnapshot snapshot = state.loadedSnapshot();
         zoomLabel.setText("Zoom: " + Math.round(zoomSupplier.getAsDouble() * 100.0) + "%");
-        mapLabel.setText(controller.statusText());
-        levelLabel.setText("Ebene z=" + (snapshot == null ? controller.currentFloor() : snapshot.currentFloor()));
-        overlayControls.showSettings(controller.overlaySettings(), !controller.hasLoadedMap());
+        mapLabel.setText(state.statusText());
+        levelLabel.setText("Ebene z=" + (snapshot == null ? state.currentFloor() : snapshot.currentFloor()));
+        overlayControls.showSettings(state.overlaySettings(), !state.hasLoadedMap());
     }
 
     private static Button actionButton(String text) {

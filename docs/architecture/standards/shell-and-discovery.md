@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-18
 Source of Truth: Shell contribution model, discovery contracts, slot rules, and
 dependency boundaries between bootstrap, shell, view, domain, and data.
 
@@ -95,6 +95,15 @@ Bootstrap discovers features and persistence contributions generically.
 - Features publish inspector entries through `ShellRuntimeContext.inspector()`
 - Features that need one shared runtime session across multiple shell
   contributions use `ShellRuntimeContext.session(...)`
+- The root `*ViewContribution` may touch shell contracts, but routine slice
+  wiring should delegate immediately into the component's `assembly/` bucket
+- Shell-facing runtime composition belongs in the root entrypoint or the
+  component's `assembly/` bucket, never in `Controller/`, `View/`, `Model/`,
+  or `interactor/`
+- Domain feature APIs, persistence factories, and inspector sinks should enter
+  a component through `assembly/`, not through `Controller/` or `interactor/`
+- Slot content returned to the shell should come from `assembly/` or `View/`,
+  not from scene-graph-producing `interactor/` types
 - Features must not talk to `AppShell` or concrete shell panels as alternate
   wiring paths
 
@@ -112,4 +121,6 @@ Bootstrap discovers features and persistence contributions generically.
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
+- [View MVCI Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/view-mvci.md:1)
 - [ADR 002: Passive Shell And Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
+- [ADR 005: Strict MVCI Roles In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-strict-view-mvci-and-assembly-bucket.md:1)

@@ -4,14 +4,10 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
-import src.domain.dungeon.api.DungeonEditorOperation;
 import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonshared.interactor.DungeonMapSelectionSupport;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
@@ -72,9 +68,10 @@ final class DungeonEditorStatePane {
     }
 
     void refresh() {
-        BaseMapSnapshot snapshot = controller.loadedSnapshot();
+        var state = controller.state();
+        BaseMapSnapshot snapshot = state.loadedSnapshot();
         syncObjectList(snapshot);
-        deleteButton.setDisable(!controller.hasLoadedMap());
+        deleteButton.setDisable(!state.hasLoadedMap());
         content.getChildren().setAll(
                 loadedMapCard(snapshot),
                 objectSelectionCard(snapshot),
@@ -118,93 +115,11 @@ final class DungeonEditorStatePane {
     }
 
     private VBox toolDockCard() {
-        Label title = new Label(activeTool.label());
-        title.getStyleClass().add("bold");
-        Label summary = new Label(activeTool.summary());
-        summary.setWrapText(true);
-        VBox card = MapWorkspaceSupport.card("Werkzeug", title, summary);
-        if (activeTool == DungeonEditorTool.ROOM) {
-            card.getChildren().add(roomMoveControls());
-        } else {
-            card.getChildren().add(placeholderDock(activeTool));
-        }
-        return card;
+        return DungeonEditorStateSupport.toolDockCard(activeTool, controller, selectedTarget, viewportSupplier);
     }
 
     private VBox mutationFeedbackCard() {
-        VBox card = MapWorkspaceSupport.card(
-                "Meldungen",
-                new Label(controller.lastMutationSummary()));
-        List<String> messages = controller.lastMutationMessages();
-        if (messages.isEmpty()) {
-            card.getChildren().add(MapWorkspaceSupport.muted("Keine weiteren Rueckmeldungen."));
-        } else {
-            for (String message : messages) {
-                Label line = new Label(message);
-                line.setWrapText(true);
-                card.getChildren().add(line);
-            }
-        }
-        return card;
-    }
-
-    private VBox roomMoveControls() {
-        boolean canMoveRoom = controller.canApplyEditorOperation()
-                && selectedTarget != null
-                && "room".equalsIgnoreCase(selectedTarget.ownerKind());
-        Button up = moveButton("Raum hoch", 0, -1, canMoveRoom);
-        Button down = moveButton("Raum runter", 0, 1, canMoveRoom);
-        Button left = moveButton("Raum links", -1, 0, canMoveRoom);
-        Button right = moveButton("Raum rechts", 1, 0, canMoveRoom);
-        HBox row1 = new HBox(8, left, right);
-        HBox row2 = new HBox(8, up, down);
-        row1.setMaxWidth(Double.MAX_VALUE);
-        row2.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(left, Priority.ALWAYS);
-        HBox.setHgrow(right, Priority.ALWAYS);
-        HBox.setHgrow(up, Priority.ALWAYS);
-        HBox.setHgrow(down, Priority.ALWAYS);
-        VBox box = new VBox(8,
-                MapWorkspaceSupport.muted(canMoveRoom
-                        ? "Die vorhandene Room-Anchor-Capability ist aktiv."
-                        : "Waehle einen Raum aus, um die vorhandene Room-Anchor-Capability zu testen."),
-                row1,
-                row2);
-        return box;
-    }
-
-    private Button moveButton(String text, int deltaQ, int deltaR, boolean enabled) {
-        Button button = new Button(text);
-        button.setDisable(!enabled);
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setOnAction(event -> controller.applyEditorOperation(
-                new DungeonEditorOperation.MoveRoomAnchor(deltaQ, deltaR),
-                viewportSupplier.get()));
-        return button;
-    }
-
-    private VBox placeholderDock(DungeonEditorTool tool) {
-        return switch (tool) {
-            case SELECT -> MapWorkspaceSupport.card(
-                    "Selection",
-                    MapWorkspaceSupport.muted("Selection nutzt die vorhandenen selectable targets und den Shell-Inspector."));
-            case WALL -> capabilityList("DrawInternalWall", "EraseInternalWall");
-            case DOOR -> capabilityList("PlaceDoor", "UpdateDoor", "RemoveDoor", "UpdateConnectionMetadata");
-            case CORRIDOR -> capabilityList("ExtendCorridor", "RerouteCorridor");
-            case STAIR -> capabilityList("PlaceStair", "UpdateStair", "RemoveConnection");
-            case TRANSITION -> capabilityList("UI placeholder only", "Docking-Stelle fuer spaetere Transition-Capability");
-            case ROOM -> capabilityList("PaintArea", "EraseArea", "PaintFloorOpening", "EraseFloorOpening");
-        };
-    }
-
-    private VBox capabilityList(String... capabilities) {
-        VBox box = new VBox(4);
-        box.getChildren().add(MapWorkspaceSupport.muted("Angedockte Capability-Oberflaeche:"));
-        for (String capability : capabilities) {
-            Label line = new Label(capability);
-            box.getChildren().add(line);
-        }
-        return box;
+        return DungeonEditorStateSupport.mutationFeedbackCard(controller);
     }
 
     private void syncObjectList(@Nullable BaseMapSnapshot snapshot) {

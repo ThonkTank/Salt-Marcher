@@ -1,12 +1,10 @@
 package src.view.party.Model;
 
-import src.view.party.interactor.PartyInteractor;
-
 import java.util.List;
 
 public record PartyToolbarState(
-        List<PartyInteractor.PartyMemberViewData> activeMembers,
-        List<PartyInteractor.PartyMemberViewData> reserveMembers,
+        List<PartyViewData.PartyMemberViewData> activeMembers,
+        List<PartyViewData.PartyMemberViewData> reserveMembers,
         int averageLevel,
         int remainingToShortRest,
         int remainingToLongRest,

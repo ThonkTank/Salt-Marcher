@@ -1,6 +1,6 @@
-build-harness/.gradle/
-build-harness/build/
 .gradle/
 build/
 .codex
 src/.codex
+tools/**/.gradle/
+tools/**/build/

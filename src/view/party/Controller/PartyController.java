@@ -21,12 +21,38 @@ public final class PartyController {
         interactor.refresh();
     }
 
-    public void createCharacter(PartyInteractor.CharacterDraftInput draft, PartyInteractor.MembershipSelection membership) {
-        interactor.createCharacter(draft, membership);
+    public void createCharacter(
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass,
+            boolean activeMembership
+    ) {
+        interactor.createCharacter(
+                name,
+                playerName,
+                level,
+                passivePerception,
+                armorClass,
+                activeMembership);
     }
 
-    public void updateCharacter(long id, PartyInteractor.CharacterDraftInput draft) {
-        interactor.updateCharacter(id, draft);
+    public void updateCharacter(
+            long id,
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass
+    ) {
+        interactor.updateCharacter(
+                id,
+                name,
+                playerName,
+                level,
+                passivePerception,
+                armorClass);
     }
 
     public void deleteCharacter(long id) {
@@ -34,11 +60,11 @@ public final class PartyController {
     }
 
     public void moveToActive(long id) {
-        interactor.setMembership(id, PartyInteractor.MembershipSelection.ACTIVE);
+        interactor.moveToActive(id);
     }
 
     public void moveToReserve(long id) {
-        interactor.setMembership(id, PartyInteractor.MembershipSelection.RESERVE);
+        interactor.moveToReserve(id);
     }
 
     public void awardXp(long id, int xpAmount) {
@@ -46,10 +72,10 @@ public final class PartyController {
     }
 
     public void performShortRest() {
-        interactor.performRest(PartyInteractor.RestSelection.SHORT_REST);
+        interactor.performShortRest();
     }
 
     public void performLongRest() {
-        interactor.performRest(PartyInteractor.RestSelection.LONG_REST);
+        interactor.performLongRest();
     }
 }

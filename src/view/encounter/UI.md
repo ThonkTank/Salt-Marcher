@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-18
 Source of Truth: UI structure, interactions, and user-visible states for the
 encounter component.
 
@@ -16,7 +16,7 @@ balanced encounter suggestions.
 Visible elements:
 
 - difficulty selector
-- shared creature-filter pane with optional type, subtype, and biome
+- local encounter creature-filter pane with optional type, subtype, and biome
   multi-select controls
 - active creature-filter chips
 - generate action
@@ -43,6 +43,11 @@ The detail panel shows:
 The state panel is rendered as an independent runtime-state contribution in the
 shared shell runtime-state area. It is not embedded into the encounter tab's
 left controls column.
+
+The encounter tab contribution and the separate runtime-state contribution
+share one runtime-session assembly in `src/view/encountershared/assembly/`.
+The state panel node itself is view-owned under `src/view/encounter/View/`
+while the shared assembly wires both runtime surfaces to the same session.
 
 Visible elements:
 

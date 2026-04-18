@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - run: python3 tools/quality/codescene_delta.py
+      - run: python3 tools/quality/scripts/codescene_delta.py
         env:
           CODESCENE_API_TOKEN: ${{ secrets.CODESCENE_API_TOKEN }}
           CODESCENE_BASE_URL: ${{ vars.CODESCENE_BASE_URL }}

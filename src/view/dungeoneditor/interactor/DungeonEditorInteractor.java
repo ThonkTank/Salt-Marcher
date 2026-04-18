@@ -2,14 +2,12 @@ package src.view.dungeoneditor.interactor;
 
 import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
-import shell.host.InspectorSink;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonshared.interactor.AbstractDungeonMapInteractor;
 import src.view.dungeonshared.interactor.DungeonMapPresentation;
-import src.view.dungeonshared.interactor.DungeonMapSelectionSupport;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
-import src.view.dungeonshared.interactor.DungeonSelectionInspectorSupport;
+import src.view.dungeonshared.interactor.DungeonSelectionPublisher;
 import src.view.mapshared.Model.MapCellViewModel;
 import src.view.mapshared.Model.MapWorkspaceRenderModel;
 import src.view.mapshared.Model.MapWorkspaceSceneViewData;
@@ -22,18 +20,18 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
 
     private final DungeonEditorControls controls;
     private final DungeonEditorStatePane statePane;
-    private final DungeonSelectionInspectorSupport inspectorSupport;
+    private final DungeonSelectionPublisher selectionPublisher;
     private @Nullable MapSelectionRef selectedTarget;
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
 
-    public DungeonEditorInteractor(InspectorSink inspector) {
+    public DungeonEditorInteractor(DungeonSelectionPublisher selectionPublisher) {
         super(new DungeonMapPresentation(
                 DungeonEditorInteractor::placeholderRenderModel,
                 DungeonEditorInteractor::loadedRenderModel
         ), DungeonMapSurfaceController.shared());
         this.controls = new DungeonEditorControls(mapController(), this::currentViewport);
         this.statePane = new DungeonEditorStatePane(mapController(), this::viewportSummary, this::currentViewport);
-        this.inspectorSupport = new DungeonSelectionInspectorSupport(mapController(), inspector);
+        this.selectionPublisher = selectionPublisher;
         controls.setOnToolChanged(this::setActiveTool);
         controls.showActiveTool(activeTool);
         statePane.setActiveTool(activeTool);
@@ -60,12 +58,12 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
     }
 
     private void onCellSelected(MapCellViewModel cellViewModel) {
-        showSelection(DungeonMapSelectionSupport.resolveSelection(loadedSnapshot(), cellViewModel));
+        showSelection(resolveSelection(cellViewModel));
     }
 
     private void showSelection(@Nullable MapSelectionRef selectionRef) {
         selectedTarget = selectionRef;
-        DungeonMapSelectionSupport.applySelection(workspaceView(), statePane::showSelectedTarget, inspectorSupport::showSelection, selectionRef);
+        applySelection(statePane::showSelectedTarget, selectionPublisher, selectionRef);
     }
 
     private static MapWorkspaceRenderModel placeholderRenderModel() {
@@ -100,7 +98,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
 
     @Override
     protected void onSnapshotChanged() {
-        DungeonMapSelectionSupport.refreshSelection(loadedSnapshot(), selectedTarget, this::showSelection);
+        refreshSelection(selectedTarget, this::showSelection);
         controls.refresh();
         statePane.refresh();
     }

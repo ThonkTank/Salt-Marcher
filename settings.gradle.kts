@@ -1,8 +1,8 @@
 pluginManagement {
-    includeBuild("build-logic")
+    includeBuild("tools/gradle/build-logic")
 }
 
 rootProject.name = "SaltMarcher"
 
-includeBuild("build-harness")
-includeBuild("quality-rules")
+includeBuild("tools/gradle/build-harness")
+includeBuild("tools/quality/rules/quality-rules")

@@ -6,6 +6,7 @@ import src.domain.creatures.api.CreatureCatalogQuery;
 import src.domain.creatures.api.CreatureCatalogRow;
 import src.domain.creatures.api.CreatureFilterOptions;
 import src.domain.creatures.creaturesAPI;
+import src.view.creatures.Model.CreaturesCatalogViewData;
 import src.view.creatures.Model.CreatureFilterOptionsViewData;
 import src.view.creatures.Model.CreaturesModel;
 
@@ -78,13 +79,13 @@ final class CreatureCatalogCoordinator {
                 currentOffset
         ));
         if (result.status() == creaturesAPI.QueryStatus.INVALID_QUERY) {
-            model.catalog().applyPage(new CreaturesInteractor.CreatureCatalogPageViewData(List.of(), "Invalid CR range.", false, false));
+            model.catalog().applyPage(new CreaturesCatalogViewData.Page(List.of(), "Invalid CR range.", false, false));
             model.status().show("The selected CR range is invalid.", true);
             currentOffset = 0;
             return;
         }
         if (result.status() != creaturesAPI.QueryStatus.SUCCESS) {
-            model.catalog().applyPage(new CreaturesInteractor.CreatureCatalogPageViewData(List.of(), "Catalog unavailable.", false, false));
+            model.catalog().applyPage(new CreaturesCatalogViewData.Page(List.of(), "Catalog unavailable.", false, false));
             model.status().show("Creature catalog could not be loaded.", true);
             return;
         }
@@ -102,14 +103,14 @@ final class CreatureCatalogCoordinator {
         model.status().clear();
     }
 
-    private static CreaturesInteractor.CreatureCatalogPageViewData toViewData(CreatureCatalogPage page) {
+    private static CreaturesCatalogViewData.Page toViewData(CreatureCatalogPage page) {
         int total = page.totalCount();
         int offset = page.pageOffset();
         int endExclusive = Math.min(total, offset + page.rows().size());
         String summary = total == 0
                 ? "No creatures found."
                 : "Showing " + (offset + 1) + "-" + endExclusive + " of " + total + " creatures";
-        return new CreaturesInteractor.CreatureCatalogPageViewData(
+        return new CreaturesCatalogViewData.Page(
                 page.rows().stream().map(CreatureCatalogCoordinator::toViewData).toList(),
                 summary,
                 offset > 0,
@@ -117,8 +118,8 @@ final class CreatureCatalogCoordinator {
         );
     }
 
-    private static CreaturesInteractor.CreatureCatalogRowViewData toViewData(CreatureCatalogRow row) {
-        return new CreaturesInteractor.CreatureCatalogRowViewData(
+    private static CreaturesCatalogViewData.Row toViewData(CreatureCatalogRow row) {
+        return new CreaturesCatalogViewData.Row(
                 row.id(),
                 row.name(),
                 row.challengeRating(),

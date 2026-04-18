@@ -6,8 +6,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.StackPane;
-import src.view.mapshared.Controller.MapCameraController;
-
 final class MapWorkspaceInteractionHandler {
 
     private final MapCameraController cameraController;

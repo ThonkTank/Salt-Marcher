@@ -2,22 +2,21 @@ package src.view.party.Model;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import src.view.party.interactor.PartyInteractor;
 
 public final class PartyToolbarModel {
 
-    private final ObservableList<PartyInteractor.PartyMemberViewData> activeMembers = FXCollections.observableArrayList();
-    private final ObservableList<PartyInteractor.PartyMemberViewData> reserveMembers = FXCollections.observableArrayList();
+    private final ObservableList<PartyViewData.PartyMemberViewData> activeMembers = FXCollections.observableArrayList();
+    private final ObservableList<PartyViewData.PartyMemberViewData> reserveMembers = FXCollections.observableArrayList();
     private final PartyToolbarDisplaySection display = new PartyToolbarDisplaySection();
     private final PartyToolbarBudgetSection budget = new PartyToolbarBudgetSection();
     private final PartyToolbarStatusSection status = new PartyToolbarStatusSection();
     private final PartyToolbarRestControls restControls = new PartyToolbarRestControls();
 
-    public ObservableList<PartyInteractor.PartyMemberViewData> activeMembers() {
+    public ObservableList<PartyViewData.PartyMemberViewData> activeMembers() {
         return activeMembers;
     }
 
-    public ObservableList<PartyInteractor.PartyMemberViewData> reserveMembers() {
+    public ObservableList<PartyViewData.PartyMemberViewData> reserveMembers() {
         return reserveMembers;
     }
 

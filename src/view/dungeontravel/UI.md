@@ -62,6 +62,9 @@ It presents:
 The runtime state panel is a separate runtime-state contribution in the shared
 shell runtime-state area. The travel tab itself leaves that area free.
 
+The travel tab contribution and the separate runtime-state contribution share
+one runtime-session assembly in `src/view/dungeontravelshared/assembly/`.
+
 The travel runtime state contribution owns dungeon map management and
 lightweight runtime focus context for travel.
 

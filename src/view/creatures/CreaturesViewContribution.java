@@ -12,6 +12,7 @@ import shell.host.ShellTabMode;
 import shell.host.ShellTabSpec;
 import shell.host.ShellViewContribution;
 import src.domain.creatures.creaturesAPI;
+import src.view.creatures.assembly.CreatureInspectorShellAdapter;
 import src.view.creatures.Controller.CreaturesController;
 import src.view.creatures.Model.CreaturesModel;
 import src.view.creatures.View.CreaturesView;
@@ -42,7 +43,10 @@ public final class CreaturesViewContribution implements ShellViewContribution {
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
         CreaturesModel model = new CreaturesModel();
         creaturesAPI creatures = runtimeContext.persistence().require(creaturesAPI.Factory.class).create();
-        CreaturesInteractor interactor = new CreaturesInteractor(creatures, model, runtimeContext.inspector());
+        CreaturesInteractor interactor = new CreaturesInteractor(
+                creatures,
+                model,
+                new CreatureInspectorShellAdapter(runtimeContext.inspector()));
         CreaturesController controller = new CreaturesController(interactor);
         controller.initialize();
         CreaturesView view = new CreaturesView(model, controller);

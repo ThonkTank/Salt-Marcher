@@ -12,8 +12,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import src.view.creatures.Controller.CreaturesController;
+import src.view.creatures.Model.CreaturesCatalogViewData;
 import src.view.creatures.Model.CreaturesModel;
-import src.view.creatures.interactor.CreaturesInteractor;
 
 import java.util.Objects;
 
@@ -23,7 +23,7 @@ public final class CreaturesView {
     private final CreaturesController controller;
     private final VBox controls = new VBox(10);
     private final VBox workspace = new VBox(10);
-    private final TableView<CreaturesInteractor.CreatureCatalogRowViewData> table = new TableView<>();
+    private final TableView<CreaturesCatalogViewData.Row> table = new TableView<>();
     private final Label pageSummaryLabel = new Label();
     private final Label statusLabel = new Label();
 
@@ -78,11 +78,11 @@ public final class CreaturesView {
         table.setPlaceholder(new Label("No creatures found."));
         table.setItems(catalog.rows());
         table.getColumns().setAll(
-                textColumn("Name", CreaturesInteractor.CreatureCatalogRowViewData::name),
-                textColumn("CR", CreaturesInteractor.CreatureCatalogRowViewData::challengeRating),
-                textColumn("Type", CreaturesInteractor.CreatureCatalogRowViewData::creatureType),
-                textColumn("Size", CreaturesInteractor.CreatureCatalogRowViewData::size),
-                textColumn("Alignment", CreaturesInteractor.CreatureCatalogRowViewData::alignment),
+                textColumn("Name", CreaturesCatalogViewData.Row::name),
+                textColumn("CR", CreaturesCatalogViewData.Row::challengeRating),
+                textColumn("Type", CreaturesCatalogViewData.Row::creatureType),
+                textColumn("Size", CreaturesCatalogViewData.Row::size),
+                textColumn("Alignment", CreaturesCatalogViewData.Row::alignment),
                 numberColumn("XP", row -> row.xp()),
                 numberColumn("HP", row -> row.hitPoints()),
                 numberColumn("AC", row -> row.armorClass())
@@ -125,20 +125,20 @@ public final class CreaturesView {
                 : "status-label-success");
     }
 
-    private static TableColumn<CreaturesInteractor.CreatureCatalogRowViewData, String> textColumn(
+    private static TableColumn<CreaturesCatalogViewData.Row, String> textColumn(
             String title,
-            java.util.function.Function<CreaturesInteractor.CreatureCatalogRowViewData, String> valueFactory
+            java.util.function.Function<CreaturesCatalogViewData.Row, String> valueFactory
     ) {
-        TableColumn<CreaturesInteractor.CreatureCatalogRowViewData, String> column = new TableColumn<>(title);
+        TableColumn<CreaturesCatalogViewData.Row, String> column = new TableColumn<>(title);
         column.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(valueFactory.apply(cell.getValue())));
         return column;
     }
 
-    private static TableColumn<CreaturesInteractor.CreatureCatalogRowViewData, Number> numberColumn(
+    private static TableColumn<CreaturesCatalogViewData.Row, Number> numberColumn(
             String title,
-            java.util.function.ToIntFunction<CreaturesInteractor.CreatureCatalogRowViewData> valueFactory
+            java.util.function.ToIntFunction<CreaturesCatalogViewData.Row> valueFactory
     ) {
-        TableColumn<CreaturesInteractor.CreatureCatalogRowViewData, Number> column = new TableColumn<>(title);
+        TableColumn<CreaturesCatalogViewData.Row, Number> column = new TableColumn<>(title);
         column.setCellValueFactory(cell -> new javafx.beans.property.SimpleIntegerProperty(valueFactory.applyAsInt(cell.getValue())));
         return column;
     }

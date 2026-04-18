@@ -12,8 +12,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import src.view.party.Controller.PartyController;
+import src.view.party.Model.PartyViewData;
 import src.view.party.Model.PartyToolbarModel;
-import src.view.party.interactor.PartyInteractor;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -129,7 +129,7 @@ public final class PartyToolbarView {
             activeMembersBox.getChildren().add(cardFactory.mutedLabel("No active party members."));
             return;
         }
-        for (PartyInteractor.PartyMemberViewData member : model.activeMembers()) {
+        for (PartyViewData.PartyMemberViewData member : model.activeMembers()) {
             activeMembersBox.getChildren().add(cardFactory.buildActiveMemberRow(member, controller));
         }
     }
@@ -147,7 +147,7 @@ public final class PartyToolbarView {
                     model.reserveMembers().isEmpty() ? "No reserve characters." : "No reserve characters match the filter."));
             return;
         }
-        for (PartyInteractor.PartyMemberViewData member : filteredMembers) {
+        for (PartyViewData.PartyMemberViewData member : filteredMembers) {
             reserveMembersBox.getChildren().add(cardFactory.buildReserveMemberRow(member, controller));
         }
     }

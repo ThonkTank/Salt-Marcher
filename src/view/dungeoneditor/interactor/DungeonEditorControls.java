@@ -16,6 +16,7 @@ import javafx.util.StringConverter;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
+import src.view.dungeonshared.interactor.DungeonOverlayBindings;
 import src.view.dungeonshared.interactor.DungeonOverlayControls;
 import src.view.mapshared.interactor.MapWorkspaceSupport;
 
@@ -69,44 +70,11 @@ final class DungeonEditorControls extends VBox {
 
         previousLevelButton.setOnAction(event -> controller.stepFloor(-1, this.viewportSupplier.get()));
         nextLevelButton.setOnAction(event -> controller.stepFloor(1, this.viewportSupplier.get()));
-        overlayControls.bindToController(controller, this.viewportSupplier);
+        DungeonOverlayBindings.bind(overlayControls, controller, this.viewportSupplier);
 
-        HBox mapRow = new HBox(8, selector, newMapButton, editMapButton, graphButton);
-        mapRow.setAlignment(Pos.CENTER_LEFT);
-        mapRow.setMaxWidth(Double.MAX_VALUE);
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, spacer, overlayControls.trigger());
-        levelRow.setAlignment(Pos.CENTER_LEFT);
-        levelRow.setMaxWidth(Double.MAX_VALUE);
-
-        VBox dungeonGroup = new VBox(6,
-                MapWorkspaceSupport.sectionLabel("Dungeon"),
-                mapRow,
-                statusLabel,
-                levelRow);
-        dungeonGroup.getStyleClass().add("editor-toolbar-group");
-
-        HBox toolsRow = new HBox(6);
-        toolsRow.setAlignment(Pos.CENTER_LEFT);
-        for (DungeonEditorTool tool : DungeonEditorTool.values()) {
-            ToggleButton button = toolToggle(tool.label());
-            button.setToggleGroup(toolGroup);
-            button.setOnAction(event -> {
-                if (syncingToolSelection) {
-                    return;
-                }
-                onToolChanged.accept(tool);
-            });
-            toolButtons.put(tool, button);
-            toolsRow.getChildren().add(button);
-        }
-
-        VBox toolGroupBox = new VBox(6, MapWorkspaceSupport.sectionLabel("Werkzeug"), toolsRow);
-        toolGroupBox.getStyleClass().add("editor-toolbar-group");
-
-        getChildren().addAll(dungeonGroup, toolGroupBox);
+        getChildren().addAll(
+                buildDungeonGroup(newMapButton, editMapButton, graphButton),
+                buildToolGroup());
         controller.addListener(this::refresh);
         refresh();
     }
@@ -126,8 +94,9 @@ final class DungeonEditorControls extends VBox {
 
     void refresh() {
         syncingSelection = true;
-        selector.getItems().setAll(controller.visibleMaps());
-        DungeonMapSummary selected = controller.selectedSummary();
+        var state = controller.state();
+        selector.getItems().setAll(state.visibleMaps());
+        DungeonMapSummary selected = state.selectedSummary();
         if (selected == null) {
             selector.getSelectionModel().clearSelection();
         } else {
@@ -135,13 +104,13 @@ final class DungeonEditorControls extends VBox {
         }
         syncingSelection = false;
 
-        BaseMapSnapshot snapshot = controller.loadedSnapshot();
-        selector.setDisable(controller.visibleMaps().isEmpty());
-        previousLevelButton.setDisable(!controller.hasLoadedMap());
-        nextLevelButton.setDisable(!controller.hasLoadedMap());
-        overlayControls.showSettings(controller.overlaySettings(), !controller.hasLoadedMap());
-        statusLabel.setText(controller.statusText());
-        levelLabel.setText("Ebene z=" + (snapshot == null ? controller.currentFloor() : snapshot.currentFloor()));
+        BaseMapSnapshot snapshot = state.loadedSnapshot();
+        selector.setDisable(state.visibleMaps().isEmpty());
+        previousLevelButton.setDisable(!state.hasLoadedMap());
+        nextLevelButton.setDisable(!state.hasLoadedMap());
+        overlayControls.showSettings(state.overlaySettings(), !state.hasLoadedMap());
+        statusLabel.setText(state.statusText());
+        levelLabel.setText("Ebene z=" + (snapshot == null ? state.currentFloor() : snapshot.currentFloor()));
     }
 
     private void configureSelector() {
@@ -171,6 +140,49 @@ final class DungeonEditorControls extends VBox {
             }
             controller.selectMap(after.mapId());
         });
+    }
+
+    private VBox buildDungeonGroup(Button newMapButton, Button editMapButton, Button graphButton) {
+        HBox mapRow = new HBox(8, selector, newMapButton, editMapButton, graphButton);
+        mapRow.setAlignment(Pos.CENTER_LEFT);
+        mapRow.setMaxWidth(Double.MAX_VALUE);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, spacer, overlayControls.trigger());
+        levelRow.setAlignment(Pos.CENTER_LEFT);
+        levelRow.setMaxWidth(Double.MAX_VALUE);
+
+        VBox dungeonGroup = new VBox(6,
+                MapWorkspaceSupport.sectionLabel("Dungeon"),
+                mapRow,
+                statusLabel,
+                levelRow);
+        dungeonGroup.getStyleClass().add("editor-toolbar-group");
+        return dungeonGroup;
+    }
+
+    private VBox buildToolGroup() {
+        HBox toolsRow = new HBox(6);
+        toolsRow.setAlignment(Pos.CENTER_LEFT);
+        for (DungeonEditorTool tool : DungeonEditorTool.values()) {
+            toolsRow.getChildren().add(buildToolButton(tool));
+        }
+        VBox toolGroupBox = new VBox(6, MapWorkspaceSupport.sectionLabel("Werkzeug"), toolsRow);
+        toolGroupBox.getStyleClass().add("editor-toolbar-group");
+        return toolGroupBox;
+    }
+
+    private ToggleButton buildToolButton(DungeonEditorTool tool) {
+        ToggleButton button = toolToggle(tool.label());
+        button.setToggleGroup(toolGroup);
+        button.setOnAction(event -> {
+            if (!syncingToolSelection) {
+                onToolChanged.accept(tool);
+            }
+        });
+        toolButtons.put(tool, button);
+        return button;
     }
 
     private static Button actionButton(String text) {

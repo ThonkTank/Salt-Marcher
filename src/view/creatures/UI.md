@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-18
 Source of Truth: UI structure, interactions, and user-visible states for the
 creatures catalog component.
 
@@ -21,9 +21,9 @@ Visible elements:
 - active filter chips with per-chip removal
 - global filter reset
 
-The creatures filter pane is the canonical filter-control presentation for
-creature-backed runtime tabs. Encounter may reuse the same filter component
-with a reduced set of enabled filters.
+The creatures filter pane is the filter-control presentation for the creatures
+catalog itself. Other runtime tabs own their local filter views unless they
+cross an explicit public view boundary.
 
 ## Workspace
 

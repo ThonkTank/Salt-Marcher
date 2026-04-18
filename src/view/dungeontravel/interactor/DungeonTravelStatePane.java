@@ -97,15 +97,16 @@ final class DungeonTravelStatePane {
     }
 
     void refresh() {
-        BaseMapSnapshot snapshot = controller.loadedSnapshot();
+        var state = controller.state();
+        BaseMapSnapshot snapshot = state.loadedSnapshot();
         syncMapList();
         syncObjectList(snapshot);
         if (createNameField.getText().isBlank()) {
             createNameField.setText(controller.defaultMapName());
         }
-        loadButton.setDisable(!controller.canLoadSelected());
+        loadButton.setDisable(!state.canLoadSelected());
         createButton.setDisable(createNameField.getText().trim().isEmpty());
-        deleteButton.setDisable(!controller.hasLoadedMap());
+        deleteButton.setDisable(!state.hasLoadedMap());
         content.getChildren().setAll(
                 mapSearchCard(),
                 mapCreateCard(),
@@ -133,19 +134,20 @@ final class DungeonTravelStatePane {
     private VBox runtimeStateCard(@Nullable BaseMapSnapshot snapshot) {
         if (snapshot == null) {
             return MapWorkspaceSupport.card(
-                    "Reiseansicht",
-                    MapWorkspaceSupport.muted("Lade einen Dungeon, um Runtime-Fokus und Overlay-Ebenen zu sehen."));
+                "Reiseansicht",
+                MapWorkspaceSupport.muted("Lade einen Dungeon, um Runtime-Fokus und Overlay-Ebenen zu sehen."));
         }
+        var state = controller.state();
         VBox card = MapWorkspaceSupport.card(
                 "Reiseansicht",
                 new Label("Aktiver Dungeon: " + snapshot.mapName()),
                 new Label("Ebene z=" + snapshot.currentFloor()),
-                new Label("Overlay: " + controller.overlaySettings().mode().label()),
+                new Label("Overlay: " + state.overlaySettings().mode().label()),
                 MapWorkspaceSupport.muted(selectedTarget == null
                         ? "Kein Raumfokus ausgewählt."
                         : "Fokus: " + selectedTarget.ownerKind() + " · " + selectedTarget.label()),
                 MapWorkspaceSupport.muted("Travel-Actions und Party-Token bleiben angedockt, bis die Runtime-Domain sie liefert."));
-        for (String message : controller.lastMutationMessages()) {
+        for (String message : state.lastMutationMessages()) {
             Label line = new Label(message);
             line.setWrapText(true);
             card.getChildren().add(line);
@@ -167,8 +169,9 @@ final class DungeonTravelStatePane {
 
     private void syncMapList() {
         syncingSelection = true;
-        mapList.getItems().setAll(controller.visibleMaps());
-        DungeonMapSummary selected = controller.selectedSummary();
+        var state = controller.state();
+        mapList.getItems().setAll(state.visibleMaps());
+        DungeonMapSummary selected = state.selectedSummary();
         if (selected == null) {
             mapList.getSelectionModel().clearSelection();
         } else {

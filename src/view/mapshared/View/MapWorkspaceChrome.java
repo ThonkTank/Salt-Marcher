@@ -9,8 +9,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import src.view.mapshared.Controller.MapCameraController;
-
 final class MapWorkspaceChrome {
 
     private static final double ZOOM_STEP_FACTOR = 1.1;

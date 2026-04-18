@@ -12,7 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Window;
-import src.view.party.interactor.PartyInteractor;
+import src.view.party.Model.PartyViewData;
 
 import java.util.Optional;
 
@@ -29,9 +29,18 @@ final class PartyCharacterEditorDialog {
     ) {
     }
 
+    record CharacterDraft(
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass
+    ) {
+    }
+
     record CreateRequest(
-            PartyInteractor.CharacterDraftInput draft,
-            PartyInteractor.MembershipSelection membership
+            CharacterDraft draft,
+            boolean startInActiveParty
     ) {
     }
 
@@ -61,23 +70,20 @@ final class PartyCharacterEditorDialog {
         ButtonType createButton = new ButtonType("Create", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(createButton, ButtonType.CANCEL);
         attachValidation(dialog, createButton, fields.errorLabel(), () -> {
-            PartyInteractor.CharacterDraftInput draft = validateDraft(
+            CharacterDraft draft = validateDraft(
                     fields.nameField().getText(),
                     fields.playerField().getText(),
                     fields.levelField().getText(),
                     fields.passivePerceptionField().getText(),
                     fields.armorClassField().getText());
-            PartyInteractor.MembershipSelection membership = membershipCheck.isSelected()
-                    ? PartyInteractor.MembershipSelection.ACTIVE
-                    : PartyInteractor.MembershipSelection.RESERVE;
-            return new CreateRequest(draft, membership);
+            return new CreateRequest(draft, membershipCheck.isSelected());
         });
 
         return dialog.showAndWait();
     }
 
-    static Optional<PartyInteractor.CharacterDraftInput> showEdit(@Nullable Window owner, PartyInteractor.PartyMemberViewData details) {
-        Dialog<PartyInteractor.CharacterDraftInput> dialog = new Dialog<>();
+    static Optional<CharacterDraft> showEdit(@Nullable Window owner, PartyViewData.PartyMemberViewData details) {
+        Dialog<CharacterDraft> dialog = new Dialog<>();
         dialog.setTitle("Edit Character");
         if (owner != null) {
             dialog.initOwner(owner);
@@ -169,7 +175,7 @@ final class PartyCharacterEditorDialog {
         });
     }
 
-    private static PartyInteractor.CharacterDraftInput validateDraft(
+    private static CharacterDraft validateDraft(
             String name,
             String playerName,
             String levelText,
@@ -183,7 +189,7 @@ final class PartyCharacterEditorDialog {
         int level = parseBoundedInteger(levelText, "Level", 1, 20);
         int passivePerception = parseBoundedInteger(passivePerceptionText, "Passive Perception", 1, 99);
         int armorClass = parseBoundedInteger(armorClassText, "AC", 1, 99);
-        return new PartyInteractor.CharacterDraftInput(
+        return new CharacterDraft(
                 safeName,
                 playerName == null ? "" : playerName.trim(),
                 level,

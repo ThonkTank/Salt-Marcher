@@ -1,8 +1,6 @@
 package src.view.dungeonshared.interactor;
 
-import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.RadioMenuItem;
@@ -18,9 +16,7 @@ import javafx.scene.layout.Region;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Compact overlay trigger with an in-place menu for placeholder floor settings.
@@ -66,9 +62,9 @@ public final class DungeonOverlayControls {
                 nearbyMode,
                 selectedMode,
                 new SeparatorMenuItem(),
-                menuItem(row("Umfang", rangeSpinner)),
-                menuItem(row("Stärke", opacitySlider, opacityLabel)),
-                menuItem(row("Ebenen", selectedLevelsField))
+                DungeonOverlayMenuFactory.menuItem(DungeonOverlayMenuFactory.row("Umfang", rangeSpinner)),
+                DungeonOverlayMenuFactory.menuItem(DungeonOverlayMenuFactory.row("Stärke", opacitySlider, opacityLabel)),
+                DungeonOverlayMenuFactory.menuItem(DungeonOverlayMenuFactory.row("Ebenen", selectedLevelsField))
         );
 
         modeGroup.selectedToggleProperty().addListener((ignored, before, after) -> {
@@ -118,18 +114,6 @@ public final class DungeonOverlayControls {
         this.onSelectedLevelsChanged = onSelectedLevelsChanged == null ? ignored -> { } : onSelectedLevelsChanged;
     }
 
-    public void bindToController(
-            DungeonMapSurfaceController controller,
-            Supplier<src.domain.dungeon.api.Viewport> viewportSupplier
-    ) {
-        Objects.requireNonNull(controller, "controller");
-        Objects.requireNonNull(viewportSupplier, "viewportSupplier");
-        setOnModeChanged(mode -> controller.updateOverlayMode(mode, viewportSupplier.get()));
-        setOnRangeChanged(range -> controller.updateOverlayRange(range, viewportSupplier.get()));
-        setOnOpacityChanged(opacity -> controller.updateOverlayOpacity(opacity, viewportSupplier.get()));
-        setOnSelectedLevelsChanged(levels -> controller.updateSelectedOverlayLevels(levels, viewportSupplier.get()));
-    }
-
     public void showSettings(DungeonOverlaySettings settings, boolean disabled) {
         DungeonOverlaySettings resolved = settings == null ? DungeonOverlaySettings.defaults() : settings;
         syncing = true;
@@ -137,7 +121,7 @@ public final class DungeonOverlayControls {
         selectMode(resolved.mode());
         rangeSpinner.getValueFactory().setValue(resolved.levelRange());
         opacitySlider.setValue(resolved.opacity() * 100.0);
-        selectedLevelsField.setText(formatLevels(resolved.selectedLevels()));
+        selectedLevelsField.setText(DungeonOverlayLevelCodec.format(resolved.selectedLevels()));
         updateOpacityLabel();
         updateEnabledState(resolved.mode(), disabled);
         trigger.setText(summaryText(resolved));
@@ -149,12 +133,12 @@ public final class DungeonOverlayControls {
         if (syncing) {
             return;
         }
-        List<Integer> parsed = parseLevels(selectedLevelsField.getText());
+        List<Integer> parsed = DungeonOverlayLevelCodec.parse(selectedLevelsField.getText());
         if (parsed == null) {
-            selectedLevelsField.setText(formatLevels(displayedSettings.selectedLevels()));
+            selectedLevelsField.setText(DungeonOverlayLevelCodec.format(displayedSettings.selectedLevels()));
             return;
         }
-        selectedLevelsField.setText(formatLevels(parsed));
+        selectedLevelsField.setText(DungeonOverlayLevelCodec.format(parsed));
         onSelectedLevelsChanged.accept(parsed);
     }
 
@@ -163,22 +147,6 @@ public final class DungeonOverlayControls {
         item.setToggleGroup(modeGroup);
         item.setUserData(mode);
         return item;
-    }
-
-    private CustomMenuItem menuItem(Node content) {
-        CustomMenuItem item = new CustomMenuItem(content, false);
-        item.getStyleClass().add("dungeon-overlay-menu-item");
-        return item;
-    }
-
-    private HBox row(String label, Region... content) {
-        Label title = new Label(label);
-        title.getStyleClass().add("text-muted");
-        HBox row = new HBox(8);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.getChildren().add(title);
-        row.getChildren().addAll(content);
-        return row;
     }
 
     private void selectMode(DungeonOverlayMode mode) {
@@ -206,31 +174,7 @@ public final class DungeonOverlayControls {
         return switch (settings.mode()) {
             case OFF -> "Overlay: Aus";
             case NEARBY -> "Overlay: Nachbarn ±" + settings.levelRange();
-            case SELECTED -> "Overlay: z=" + formatLevels(settings.selectedLevels());
+            case SELECTED -> "Overlay: z=" + DungeonOverlayLevelCodec.format(settings.selectedLevels());
         };
-    }
-
-    private static String formatLevels(List<Integer> levels) {
-        return (levels == null ? List.<Integer>of() : levels).stream()
-                .map(String::valueOf)
-                .reduce((left, right) -> left + ", " + right)
-                .orElse("-");
-    }
-
-    private static @Nullable List<Integer> parseLevels(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return List.of();
-        }
-        try {
-            return List.of(raw.split("[,\\s]+")).stream()
-                    .map(String::trim)
-                    .filter(token -> !token.isBlank())
-                    .map(Integer::parseInt)
-                    .distinct()
-                    .sorted()
-                    .toList();
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
     }
 }

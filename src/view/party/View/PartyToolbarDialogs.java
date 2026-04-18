@@ -6,7 +6,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextInputDialog;
 import javafx.stage.Window;
 import src.view.party.Controller.PartyController;
-import src.view.party.interactor.PartyInteractor;
+import src.view.party.Model.PartyViewData;
 
 import java.util.Optional;
 
@@ -17,15 +17,27 @@ final class PartyToolbarDialogs {
 
     static void showCreateDialog(PartyController controller, @Nullable Window owner) {
         Optional<PartyCharacterEditorDialog.CreateRequest> request = PartyCharacterEditorDialog.showCreate(owner);
-        request.ifPresent(value -> controller.createCharacter(value.draft(), value.membership()));
+        request.ifPresent(value -> controller.createCharacter(
+                value.draft().name(),
+                value.draft().playerName(),
+                value.draft().level(),
+                value.draft().passivePerception(),
+                value.draft().armorClass(),
+                value.startInActiveParty()));
     }
 
-    static void showEditDialog(PartyController controller, PartyInteractor.PartyMemberViewData member, @Nullable Window owner) {
-        Optional<PartyInteractor.CharacterDraftInput> draft = PartyCharacterEditorDialog.showEdit(owner, member);
-        draft.ifPresent(value -> controller.updateCharacter(member.id(), value));
+    static void showEditDialog(PartyController controller, PartyViewData.PartyMemberViewData member, @Nullable Window owner) {
+        Optional<PartyCharacterEditorDialog.CharacterDraft> draft = PartyCharacterEditorDialog.showEdit(owner, member);
+        draft.ifPresent(value -> controller.updateCharacter(
+                member.id(),
+                value.name(),
+                value.playerName(),
+                value.level(),
+                value.passivePerception(),
+                value.armorClass()));
     }
 
-    static void confirmDelete(PartyController controller, PartyInteractor.PartyMemberViewData member, @Nullable Window owner) {
+    static void confirmDelete(PartyController controller, PartyViewData.PartyMemberViewData member, @Nullable Window owner) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
                 "Delete \"" + member.name() + "\"?",
                 ButtonType.OK,
@@ -39,7 +51,7 @@ final class PartyToolbarDialogs {
         }
     }
 
-    static void promptForXp(PartyController controller, PartyInteractor.PartyMemberViewData member, @Nullable Window owner) {
+    static void promptForXp(PartyController controller, PartyViewData.PartyMemberViewData member, @Nullable Window owner) {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Award XP");
         dialog.setHeaderText("Award XP to " + member.name());

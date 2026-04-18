@@ -1,13 +1,10 @@
 package src.view.creatures.interactor;
 
 import org.jspecify.annotations.Nullable;
-import shell.host.InspectorEntrySpec;
-import shell.host.InspectorSink;
 import src.domain.creatures.api.CreatureDetail;
 import src.domain.creatures.creaturesAPI;
 import src.view.creatures.Model.CreaturesModel;
 
-import java.util.List;
 import java.util.Objects;
 
 public final class CreaturesInteractor {
@@ -15,13 +12,13 @@ public final class CreaturesInteractor {
     private final creaturesAPI creatures;
     private final CreaturesModel model;
     private final CreatureCatalogCoordinator catalogCoordinator;
-    private final InspectorSink inspector;
+    private final CreatureInspectorPublisher inspectorPublisher;
 
-    public CreaturesInteractor(creaturesAPI creatures, CreaturesModel model, InspectorSink inspector) {
+    public CreaturesInteractor(creaturesAPI creatures, CreaturesModel model, CreatureInspectorPublisher inspectorPublisher) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.model = Objects.requireNonNull(model, "model");
         this.catalogCoordinator = new CreatureCatalogCoordinator(this.creatures, this.model);
-        this.inspector = Objects.requireNonNull(inspector, "inspector");
+        this.inspectorPublisher = Objects.requireNonNull(inspectorPublisher, "inspectorPublisher");
     }
 
     public void initialize() {
@@ -49,7 +46,7 @@ public final class CreaturesInteractor {
             return;
         }
         Object inspectorKey = "creatures:" + creatureId;
-        if (inspector.isShowing(inspectorKey)) {
+        if (inspectorPublisher.isShowing(inspectorKey)) {
             return;
         }
         creaturesAPI.CreatureDetailResult result = creatures.loadCreatureDetail(creatureId);
@@ -62,36 +59,7 @@ public final class CreaturesInteractor {
             return;
         }
         CreatureDetail detail = result.detail();
-        inspector.push(new InspectorEntrySpec(
-                detail.name(),
-                inspectorKey,
-                () -> CreatureInspectorContentFactory.build(detail),
-                null
-        ));
+        inspectorPublisher.show(detail, inspectorKey);
         model.status().clear();
-    }
-
-    public record CreatureCatalogRowViewData(
-            long id,
-            String name,
-            String challengeRating,
-            String creatureType,
-            String size,
-            String alignment,
-            int xp,
-            int hitPoints,
-            int armorClass
-    ) {
-    }
-
-    public record CreatureCatalogPageViewData(
-            List<CreatureCatalogRowViewData> rows,
-            String pageSummaryText,
-            boolean previousPageAvailable,
-            boolean nextPageAvailable
-    ) {
-        public CreatureCatalogPageViewData {
-            rows = rows == null ? List.of() : List.copyOf(rows);
-        }
     }
 }

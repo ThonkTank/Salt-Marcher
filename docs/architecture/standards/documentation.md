@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-18
 Source of Truth: Documentation taxonomy, required metadata, and review rules for
 all project documentation outside `AGENTS.md`.
 
@@ -52,6 +52,8 @@ instead of restating it.
   Reusable standards. One topic per file.
 - `docs/adr/NNN-*.md`
   One architecture decision per file.
+- `docs/compat/**`
+  Deprecated compatibility stubs that point to canonical documents elsewhere.
 
 ### Feature-specific
 
@@ -80,7 +82,7 @@ for example `TESTING.md`, but fixed filenames above are preferred.
 - ADRs must record one decision only.
 - Delivery documents are temporary and must not become canonical architecture
   sources.
-- Central `docs/features/...` content may exist only as compatibility stubs and
+- Central `docs/compat/...` content may exist only as compatibility stubs and
   must not remain canonical.
 
 ## Writing Rules

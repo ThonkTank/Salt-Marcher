@@ -1,0 +1,504 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <group id="saltmarcher:mvci" severity="blocker">
+        <includeConstraint refId="saltmarcher:ControllerRestrictedDependencies"/>
+        <includeConstraint refId="saltmarcher:ViewRestrictedDependencies"/>
+        <includeConstraint refId="saltmarcher:ModelRestrictedDependencies"/>
+        <includeConstraint refId="saltmarcher:InteractorRestrictedViewDependencies"/>
+        <includeConstraint refId="saltmarcher:InteractorMustUseDomainApisOnly"/>
+        <includeConstraint refId="saltmarcher:InteractorMustNotUseSceneGraph"/>
+        <includeConstraint refId="saltmarcher:NoPrivateForeignComponentDependencies"/>
+        <includeConstraint refId="saltmarcher:AllowedViewBuckets"/>
+        <includeConstraint refId="saltmarcher:AssemblyPlacement"/>
+        <includeConstraint refId="saltmarcher:ViewRootEntrypointCount"/>
+        <includeConstraint refId="saltmarcher:ViewPackagePathConsistency"/>
+    </group>
+
+    <concept id="saltmarcher:SourcePath">
+        <description>Derives stable relative source paths for scanned bootstrap, shell, and src files.</description>
+        <cypher><![CDATA[
+            MATCH (root:File:Directory)
+            WHERE root.fileName IN ['bootstrap', 'shell', 'src']
+            MATCH path = (root)-[:CONTAINS*]->(file:File)
+            WITH
+              file,
+              [segment IN nodes(path) | segment.fileName] AS segments
+            SET
+              file:SaltMarcher:SourcePath,
+              file.relativePath = reduce(relativePath = '', segment IN segments |
+                CASE
+                  WHEN relativePath = '' THEN segment
+                  ELSE relativePath + '/' + segment
+                END)
+            RETURN
+              file AS SourceFile
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:ViewComponent">
+        <description>Labels view root packages as SaltMarcher view components.</description>
+        <cypher><![CDATA[
+            MATCH (componentPackage:Package)
+            WHERE componentPackage.fqn =~ 'src\\.view\\.[^.]+'
+            SET
+              componentPackage:SaltMarcher:ViewComponent,
+              componentPackage.component = split(componentPackage.fqn, '.')[2]
+            RETURN
+              componentPackage AS ViewComponent
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:SharedViewComponent">
+        <requiresConcept refId="saltmarcher:ViewComponent"/>
+        <description>Labels direct-reuse view components whose root name ends with shared.</description>
+        <cypher><![CDATA[
+            MATCH (componentPackage:Package:SaltMarcher:ViewComponent)
+            WHERE componentPackage.component ENDS WITH 'shared'
+            SET
+              componentPackage:SharedViewComponent
+            RETURN
+              componentPackage AS SharedViewComponent
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:MvciBucket">
+        <description>Labels SaltMarcher MVCI bucket packages below src.view.&lt;component&gt;.</description>
+        <cypher><![CDATA[
+            MATCH (bucketPackage:Package)
+            WHERE bucketPackage.fqn =~ 'src\\.view\\.[^.]+\\.(Model|View|Controller|interactor|assembly)(\\..*)?'
+            WITH
+              bucketPackage,
+              split(bucketPackage.fqn, '.') AS segments
+            SET
+              bucketPackage:SaltMarcher:MvciBucket,
+              bucketPackage.component = segments[2],
+              bucketPackage.bucket = segments[3]
+            RETURN
+              bucketPackage AS MvciBucket
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:ViewType">
+        <description>Annotates compiled SaltMarcher view-layer types with component, bucket, and relative source path metadata.</description>
+        <cypher><![CDATA[
+            MATCH (packageNode:Package)-[:CONTAINS]->(type:Java:Type)
+            WHERE packageNode.fqn =~ 'src\\.view\\.[^.]+(\\..*)?'
+            WITH
+              packageNode,
+              type,
+              split(packageNode.fqn, '.') AS segments
+            SET
+              type:SaltMarcher:ViewType,
+              type.component = segments[2],
+              type.bucket = CASE
+                WHEN size(segments) >= 4 AND segments[3] IN ['Model', 'View', 'Controller', 'interactor', 'assembly']
+                  THEN segments[3]
+                ELSE 'ROOT'
+              END,
+              type.relativePath = replace(packageNode.fqn, '.', '/') + '/' + coalesce(type.sourceFileName, type.name + '.java')
+            RETURN
+              type AS ViewType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:RootEntrypoint">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>Labels root *ViewContribution entrypoints for each view component.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewType)
+            WHERE
+              type.bucket = 'ROOT'
+              AND type.name ENDS WITH 'ViewContribution'
+            SET
+              type:SaltMarcher:RootEntrypoint
+            RETURN
+              type AS RootEntrypoint
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:AssemblyClass">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>Labels assembly-owned classes and assembly-only naming contracts.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewType)
+            WHERE
+              type.bucket = 'assembly'
+              OR type.name ENDS WITH 'RuntimeSession'
+              OR type.name ENDS WITH 'ScreenAssembly'
+              OR type.name ENDS WITH 'ShellAdapter'
+            SET
+              type:SaltMarcher:AssemblyClass
+            RETURN
+              type AS AssemblyClass
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:DomainApiType">
+        <description>Labels SaltMarcher domain API boundary types.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE
+              type.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+API'
+              OR type.fqn =~ 'src\\.domain\\.[^.]+\\.api\\..+'
+            SET
+              type:SaltMarcher:DomainApi
+            RETURN
+              type AS DomainApi
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:DomainApiDependency">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <requiresConcept refId="saltmarcher:DomainApiType"/>
+        <description>Captures interactor dependencies that already point at domain API boundaries.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:DomainApi)
+            WHERE source.bucket = 'interactor'
+            MERGE (source)-[:DEPENDS_ON_DOMAIN_API]->(target)
+            RETURN
+              source AS Interactor,
+              target AS DomainApi
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:SceneGraphTypeUsage">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>Captures view-layer dependencies on JavaFX scene graph types.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType)-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE
+              target.fqn STARTS WITH 'javafx.scene.'
+              OR target.fqn STARTS WITH 'javafx.stage.'
+            MERGE (source)-[:USES_SCENE_GRAPH]->(target)
+            RETURN
+              source AS Source,
+              target AS SceneGraphType
+        ]]></cypher>
+    </concept>
+
+    <constraint id="saltmarcher:ControllerRestrictedDependencies">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>Controller darf nur das eigene interactor-Bucket und freigegebene Basistypen sehen.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType {bucket: 'Controller'})-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE
+              source <> target
+              AND (
+                target.fqn STARTS WITH 'shell.'
+                OR target.fqn STARTS WITH 'src.domain.'
+                OR target.fqn STARTS WITH 'src.data.'
+                OR target.fqn STARTS WITH 'javafx.'
+                OR (
+                  target:SaltMarcher:ViewType
+                  AND (
+                    target.component <> source.component
+                    OR target.bucket <> 'interactor'
+                  )
+                )
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'Controller darf nur eigenes interactor plus Basis-Typen sehen' AS Boundary,
+              'Controller -> eigenes interactor oder Basis-Typen' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Verschiebe die Abhaengigkeit hinter das eigene interactor-Bucket.' AS Details
+            ORDER BY
+              Source,
+              Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewRestrictedDependencies">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>View darf nur eigenes Model, eigenes Controller und explizite shared-Komponenten sehen.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType {bucket: 'View'})-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE
+              source <> target
+              AND (
+                target.fqn STARTS WITH 'src.domain.'
+                OR target.fqn STARTS WITH 'src.data.'
+                OR target.fqn STARTS WITH 'shell.'
+                OR (
+                  target:SaltMarcher:ViewType
+                  AND NOT (
+                    (target.component = source.component AND target.bucket IN ['Model', 'Controller', 'View'])
+                    OR target.component ENDS WITH 'shared'
+                  )
+                )
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'View darf nur eigenes Model, eigenes Controller und shared-Komponenten sehen' AS Boundary,
+              'View -> eigenes Model/eigenes Controller/eigene View/shared' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Verlege Backend- oder private Fremdkomponenten-Zugriffe aus dem View.' AS Details
+            ORDER BY
+              Source,
+              Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ModelRestrictedDependencies">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>Model darf keine anderen MVCI-Buckets, kein domain, kein data und kein shell sehen.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType {bucket: 'Model'})-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE
+              source <> target
+              AND (
+                target.fqn STARTS WITH 'src.domain.'
+                OR target.fqn STARTS WITH 'src.data.'
+                OR target.fqn STARTS WITH 'shell.'
+                OR (
+                  target:SaltMarcher:ViewType
+                  AND NOT (
+                    target.component = source.component
+                    AND target.bucket = 'Model'
+                  )
+                )
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'Model darf keine anderen MVCI-Buckets oder Backend-Schichten sehen' AS Boundary,
+              'Model -> eigenes Model oder Basis-Typen' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Halte Presentation State frei von View-, Controller-, Interactor- und Backend-Kopplung.' AS Details
+            ORDER BY
+              Source,
+              Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:InteractorRestrictedViewDependencies">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>Interactor darf nur eigenes Model, eigenes interactor und Domain-APIs sehen; keine View-, Controller- oder Assembly-Buckets.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType {bucket: 'interactor'})-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE
+              source <> target
+              AND (
+                target.fqn STARTS WITH 'shell.'
+                OR target.fqn STARTS WITH 'src.data.'
+                OR (
+                  target:SaltMarcher:ViewType
+                  AND NOT (
+                    target.component = source.component
+                    AND target.bucket IN ['Model', 'interactor']
+                  )
+                )
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'Interactor darf keine View-, Controller-, Assembly-, Shell- oder Data-Abhaengigkeiten haben' AS Boundary,
+              'Interactor -> eigenes Model/eigenes interactor/domain API/Basis-Typen' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Verschiebe UI- und Wiring-Abhaengigkeiten aus dem interactor.' AS Details
+            ORDER BY
+              Source,
+              Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:InteractorMustUseDomainApisOnly">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <requiresConcept refId="saltmarcher:DomainApiType"/>
+        <description>Interactor darf Domain nur ueber Feature-APIs sehen, nicht ueber Domain-Interna.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType {bucket: 'interactor'})-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE
+              target.fqn STARTS WITH 'src.domain.'
+              AND NOT target:SaltMarcher:DomainApi
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'Interactor darf Domain nur ueber Feature-APIs sehen' AS Boundary,
+              'Interactor -> src.domain.<feature>.*API oder src.domain.<feature>.api.*' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Ziehe die Abhaengigkeit auf die Domain-API-Grenze hoch.' AS Details
+            ORDER BY
+              Source,
+              Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:InteractorMustNotUseSceneGraph">
+        <requiresConcept refId="saltmarcher:SceneGraphTypeUsage"/>
+        <description>Interactor darf keine Scene-Graph-Typen kennen oder exponieren.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType {bucket: 'interactor'})-[:USES_SCENE_GRAPH]->(target:Java:Type)
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              target.fqn AS Target,
+              'Interactor darf keine Scene-Graph-Typen kennen oder exponieren' AS Boundary,
+              'Interactor -> kein javafx.scene/javafx.stage' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Halte JavaFX Scene-Graph-Typen im View- oder Assembly-Bucket.' AS Details
+            ORDER BY
+              Source,
+              Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:NoPrivateForeignComponentDependencies">
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>Normale Komponenten duerfen keine privaten MVCI-Buckets fremder Komponenten direkt importieren.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:ViewType)
+            WHERE
+              source.component <> target.component
+              AND NOT source.component ENDS WITH 'shared'
+              AND NOT target.component ENDS WITH 'shared'
+              AND target.bucket <> 'ROOT'
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              target.relativePath AS Target,
+              'Normale Komponenten duerfen keine privaten MVCI-Buckets fremder Komponenten sehen' AS Boundary,
+              'Komponente -> eigene Buckets oder *shared-Komponenten' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Verschiebe Wiederverwendung in eine dedizierte *shared-Komponente.' AS Details
+            ORDER BY
+              Source,
+              Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:AllowedViewBuckets">
+        <requiresConcept refId="saltmarcher:SourcePath"/>
+        <description>Unter src/view/&lt;component&gt;/ sind nur die erlaubten MVCI-Buckets und genau ein Root-Entrypoint erlaubt.</description>
+        <cypher><![CDATA[
+            MATCH (file:File:SaltMarcher:SourcePath)
+            WHERE
+              file.relativePath =~ 'src/view/[^/]+/.+\\.java'
+              AND NOT file.relativePath =~ 'src/view/[^/]+/[^/]+ViewContribution\\.java'
+              AND NOT file.relativePath =~ 'src/view/[^/]+/(Model|View|Controller|interactor|assembly)(/.+)?/[^/]+\\.java'
+            RETURN DISTINCT
+              file.relativePath AS Source,
+              file.relativePath AS Target,
+              'View-Komponenten duerfen nur MVCI-Buckets und einen Root-Entrypoint enthalten' AS Boundary,
+              'src/view/<component>/{<Component>ViewContribution.java,Model,View,Controller,interactor,assembly}' AS ExpectedDirection,
+              file.relativePath AS ActualDirection,
+              'Lege die Datei in einen erlaubten MVCI-Bucket oder in den Root-Entrypoint um.' AS Details
+            ORDER BY
+              Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:AssemblyPlacement">
+        <requiresConcept refId="saltmarcher:SourcePath"/>
+        <description>*RuntimeSession, *ShellAdapter und *ScreenAssembly muessen unter assembly/ liegen.</description>
+        <cypher><![CDATA[
+            MATCH (file:File:SaltMarcher:SourcePath)
+            WHERE
+              file.relativePath STARTS WITH 'src/view/'
+              AND file.fileName =~ '.*(RuntimeSession|ShellAdapter|ScreenAssembly)\\.java'
+              AND NOT file.relativePath CONTAINS '/assembly/'
+            RETURN DISTINCT
+              file.relativePath AS Source,
+              file.relativePath AS Target,
+              '*RuntimeSession, *ShellAdapter und *ScreenAssembly gehoeren in assembly/' AS Boundary,
+              'src/view/<component>/assembly/**' AS ExpectedDirection,
+              file.relativePath AS ActualDirection,
+              'Verschiebe den Wiring- oder Session-Typ in das assembly-Bucket.' AS Details
+            ORDER BY
+              Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewRootEntrypointCount">
+        <requiresConcept refId="saltmarcher:SourcePath"/>
+        <requiresConcept refId="saltmarcher:RootEntrypoint"/>
+        <description>Jede View-Komponente braucht genau einen Root-Entrypoint im Komponenten-Root.</description>
+        <cypher><![CDATA[
+            MATCH (file:File:SaltMarcher:SourcePath)
+            WHERE file.relativePath =~ 'src/view/[^/]+/.+\\.java'
+            WITH DISTINCT split(file.relativePath, '/')[2] AS component
+            OPTIONAL MATCH (root:Java:Type:SaltMarcher:RootEntrypoint {component: component})
+            WITH
+              component,
+              count(root) AS rootCount,
+              collect(root.relativePath) AS rootPaths
+            WHERE rootCount <> 1
+            WITH
+              component,
+              rootCount,
+              reduce(pathList = '', path IN rootPaths |
+                CASE
+                  WHEN path IS NULL THEN pathList
+                  WHEN pathList = '' THEN path
+                  ELSE pathList + ', ' + path
+                END) AS actualRoots
+            RETURN
+              'src/view/' + component AS Source,
+              CASE
+                WHEN actualRoots = '' THEN '(none)'
+                ELSE actualRoots
+              END AS Target,
+              'Jede View-Komponente braucht genau einen Root-Entrypoint' AS Boundary,
+              'genau 1x src/view/<component>/<Component>ViewContribution.java' AS ExpectedDirection,
+              'count=' + toString(rootCount) AS ActualDirection,
+              'Lege genau einen Root-Entrypoint im Komponenten-Root an.' AS Details
+            ORDER BY
+              Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Boundary"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewPackagePathConsistency">
+        <requiresConcept refId="saltmarcher:SourcePath"/>
+        <requiresConcept refId="saltmarcher:ViewType"/>
+        <description>View-Bucket, Paket und Quellpfad muessen fuer kompilierte View-Typen konsistent sein.</description>
+        <cypher><![CDATA[
+            MATCH (file:File:SaltMarcher:SourcePath)
+            WHERE
+              file.relativePath =~ 'src/view/[^/]+/.+\\.java'
+            WITH
+              file,
+              split(file.relativePath, '/') AS segments
+            WITH
+              file,
+              reduce(expectedPackage = '', index IN range(0, size(segments) - 2) |
+                CASE
+                  WHEN expectedPackage = '' THEN segments[index]
+                  ELSE expectedPackage + '.' + segments[index]
+                END
+              ) AS expectedPackage
+            OPTIONAL MATCH (type:Java:Type:SaltMarcher:ViewType)
+            WHERE
+              type.sourceFileName = file.fileName
+              AND NOT type.fqn CONTAINS '$'
+              AND type.fqn STARTS WITH expectedPackage + '.'
+            WITH
+              file,
+              expectedPackage,
+              collect(type.fqn) AS matchingTypes
+            WHERE size(matchingTypes) = 0
+            RETURN DISTINCT
+              file.relativePath AS Source,
+              expectedPackage AS Target,
+              'View-Bucket und Paket muessen mit dem Quellpfad konsistent sein' AS Boundary,
+              'Quellpfad und Paket muessen denselben src.view-Pfad beschreiben' AS ExpectedDirection,
+              file.relativePath AS ActualDirection,
+              'Richte Paketdeklaration und Bucket-Pfad aufeinander aus.' AS Details
+            ORDER BY
+              Source,
+              Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, Boundary"/>
+    </constraint>
+</jqassistant-rules>

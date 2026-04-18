@@ -10,6 +10,7 @@ import shell.host.ShellScreen;
 import shell.host.ShellTabMode;
 import shell.host.ShellTabSpec;
 import shell.host.ShellViewContribution;
+import src.view.dungeonshared.assembly.DungeonSelectionInspectorShellAdapter;
 import shell.host.ShellSlot;
 import src.view.dungeoneditor.interactor.DungeonEditorInteractor;
 
@@ -36,7 +37,8 @@ public final class DungeoneditorViewContribution implements ShellViewContributio
 
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
-        DungeonEditorInteractor interactor = new DungeonEditorInteractor(runtimeContext.inspector());
+        DungeonEditorInteractor interactor = new DungeonEditorInteractor(
+                new DungeonSelectionInspectorShellAdapter(runtimeContext.inspector()));
         return new ShellScreen() {
             @Override
             public String getTitle() {

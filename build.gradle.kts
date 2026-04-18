@@ -99,14 +99,14 @@ pmd {
     isConsoleOutput = true
     isIgnoreFailures = false
     ruleSets = listOf()
-    ruleSetFiles = files(layout.projectDirectory.file("config/pmd/complexity-ruleset.xml"))
+    ruleSetFiles = files(layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"))
 }
 
 sonar {
     properties {
         property("sonar.sources", "bootstrap,shell,src")
         property("sonar.tests", "test")
-        property("sonar.exclusions", "build/**,build-harness/**,salt-marcher/**")
+        property("sonar.exclusions", "build/**,tools/gradle/build-harness/**,salt-marcher/**")
         sonarOrganization.orNull?.let { property("sonar.organization", it) }
         sonarProjectKey.orNull?.let { property("sonar.projectKey", it) }
     }
@@ -126,7 +126,7 @@ tasks.test {
     exclude("architecture/**")
 }
 
-val architectureRulesetFile = layout.projectDirectory.file("config/pmd/architecture-ruleset.xml")
+val architectureRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/architecture-ruleset.xml")
 
 val architectureTest by tasks.registering(Test::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP

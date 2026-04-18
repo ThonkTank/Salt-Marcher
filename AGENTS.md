@@ -48,6 +48,9 @@ Use the documentation tree in this order:
   one place.
 - Documents above roughly 350 lines must be split by purpose.
 - Hypothetical method-level callchains do not belong in product or UI specs.
+- Work on agent-facing instruction artifacts must use the repo-owned
+  `agent-instruction-engineering` skill and follow the canonical agent
+  instruction standard.
 - A change that introduces or alters behavior, architecture, or ownership must
   update the corresponding documentation in the same change.
 - The agent workflow below is a mandatory delivery protocol for implementation
@@ -59,11 +62,15 @@ Use the documentation tree in this order:
 - Before touching files for an implementation request, run an explicit
   worktree-inspection command and treat it as required preflight, not optional
   context gathering.
-- If pre-existing local modifications are present, do not begin the requested
-  implementation until those changes are committed and pushed to `main`, or a
-  concrete blocker has been reported that makes that protocol unsafe or
-  impossible, such as merge conflicts, missing push credentials, sandbox
-  restrictions, or suspected secrets.
+- If pre-existing local modifications are present, handle them explicitly as a
+  dirty-worktree preservation step before the requested implementation. This
+  step exists to save the current state, not to forbid implementation by
+  default.
+- Dirty-worktree preservation may commit and push the existing changes when
+  that is the requested or safest way to preserve them.
+- If preservation cannot complete exactly as requested, report the concrete
+  blocker explicitly together with the preserved local state instead of
+  silently continuing.
 - After each completed implementation pass, rerun `./gradlew build` before
   handoff. A pass without that rerun is incomplete.
 - When the desktop app is the manual test surface, run
@@ -103,6 +110,7 @@ Use the documentation tree in this order:
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/documentation.md:1)
+- [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/agent-instructions.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
 - [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
 - [ADR 001: Documentation Governance](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/001-documentation-governance.md:1)

@@ -5,12 +5,12 @@ import javafx.scene.Node;
 import javafx.scene.layout.VBox;
 import src.domain.creatures.api.CreatureDetail;
 
-final class CreatureInspectorContentFactory {
+public final class CreatureInspectorContentFactory {
 
     private CreatureInspectorContentFactory() {
     }
 
-    static Node build(CreatureDetail detail) {
+    public static Node build(CreatureDetail detail) {
         CreatureDetailFormatter formatter = new CreatureDetailFormatter(detail);
         VBox content = new VBox(10);
         content.setPadding(new Insets(12));

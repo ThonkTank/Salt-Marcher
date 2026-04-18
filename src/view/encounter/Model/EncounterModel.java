@@ -2,32 +2,20 @@ package src.view.encounter.Model;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import src.view.creatures.Model.CreatureFilterOptionsViewData;
-import src.view.creatures.Model.CreaturesFilterSelectionModel;
 
 import java.util.List;
 
 public final class EncounterModel {
 
     private final ObservableList<String> difficultyOptions =
-            FXCollections.observableArrayList("EASY", "MEDIUM", "HARD", "DEADLY");
+            javafx.collections.FXCollections.observableArrayList("EASY", "MEDIUM", "HARD", "DEADLY");
     private final ObjectProperty<String> selectedDifficulty = new SimpleObjectProperty<>("MEDIUM");
-    private final CreaturesFilterSelectionModel filterSelection = new CreaturesFilterSelectionModel();
-    private CreatureFilterOptionsViewData filterOptions = CreatureFilterOptionsViewData.empty();
-    private final ObservableList<EncounterAlternativeViewData> alternatives = FXCollections.observableArrayList();
-    private final ObjectProperty<EncounterAlternativeViewData> selectedAlternative = new SimpleObjectProperty<>();
-    private final StringProperty partySummary = new SimpleStringProperty("No active party.");
-    private final StringProperty thresholdsSummary = new SimpleStringProperty("");
-    private final StringProperty dailyBudgetSummary = new SimpleStringProperty("");
-    private final StringProperty lockSummary = new SimpleStringProperty("Locked: none");
-    private final StringProperty excludeSummary = new SimpleStringProperty("Excluded: none");
-    private final StringProperty statusText = new SimpleStringProperty("");
-    private final StringProperty resultSummary = new SimpleStringProperty("No encounters generated yet.");
-    private final StringProperty detailText = new SimpleStringProperty("Generate an encounter to inspect the composition.");
+    private final EncounterFilterSelectionModel filterSelection = new EncounterFilterSelectionModel();
+    private final ObjectProperty<EncounterFilterOptionsViewData> filterOptions =
+            new SimpleObjectProperty<>(EncounterFilterOptionsViewData.empty());
+    private final EncounterAlternativeState alternativeState = new EncounterAlternativeState();
+    private final EncounterTextState textState = new EncounterTextState();
 
     public ObservableList<String> difficultyOptions() {
         return difficultyOptions;
@@ -37,59 +25,32 @@ public final class EncounterModel {
         return selectedDifficulty;
     }
 
-    public CreaturesFilterSelectionModel filterSelection() {
+    public EncounterFilterSelectionModel filterSelection() {
         return filterSelection;
     }
 
-    public CreatureFilterOptionsViewData filterOptions() {
+    public ObjectProperty<EncounterFilterOptionsViewData> filterOptionsProperty() {
         return filterOptions;
     }
 
-    public ObservableList<EncounterAlternativeViewData> alternatives() {
-        return alternatives;
+    public EncounterFilterOptionsViewData filterOptions() {
+        return filterOptions.get();
     }
 
-    public ObjectProperty<EncounterAlternativeViewData> selectedAlternativeProperty() {
-        return selectedAlternative;
+    public EncounterAlternativeState alternatives() {
+        return alternativeState;
     }
 
-    public StringProperty partySummaryProperty() {
-        return partySummary;
-    }
-
-    public StringProperty thresholdsSummaryProperty() {
-        return thresholdsSummary;
-    }
-
-    public StringProperty dailyBudgetSummaryProperty() {
-        return dailyBudgetSummary;
-    }
-
-    public StringProperty lockSummaryProperty() {
-        return lockSummary;
-    }
-
-    public StringProperty excludeSummaryProperty() {
-        return excludeSummary;
-    }
-
-    public StringProperty statusTextProperty() {
-        return statusText;
-    }
-
-    public StringProperty resultSummaryProperty() {
-        return resultSummary;
-    }
-
-    public StringProperty detailTextProperty() {
-        return detailText;
+    public EncounterTextState texts() {
+        return textState;
     }
 
     public void applyFilterOptions(List<String> types, List<String> subtypes, List<String> biomes) {
-        filterOptions = new CreatureFilterOptionsViewData(List.of(), types, subtypes, biomes, List.of(), List.of());
-        retainOnly(filterSelection.selectedTypes(), filterOptions.types());
-        retainOnly(filterSelection.selectedSubtypes(), filterOptions.subtypes());
-        retainOnly(filterSelection.selectedBiomes(), filterOptions.biomes());
+        filterOptions.set(new EncounterFilterOptionsViewData(types, subtypes, biomes));
+        EncounterFilterOptionsViewData options = filterOptions.get();
+        retainOnly(filterSelection.selectedTypes(), options.types());
+        retainOnly(filterSelection.selectedSubtypes(), options.subtypes());
+        retainOnly(filterSelection.selectedBiomes(), options.biomes());
     }
 
     private static void retainOnly(ObservableList<String> target, List<String> allowedValues) {

@@ -1,12 +1,13 @@
 package src.view.party.interactor;
 
-import org.jspecify.annotations.Nullable;
 import src.domain.party.partyAPI;
 import src.view.party.Model.PartyToolbarModel;
 
 import java.util.List;
 import java.util.Objects;
 
+// PMD suppression is local: the party toolbar exposes one flat MVCI action surface to its controller; see src/view/party/UI.md.
+@SuppressWarnings("PMD.TooManyMethods")
 public final class PartyInteractor {
 
     private final partyAPI party;
@@ -28,29 +29,43 @@ public final class PartyInteractor {
         refreshState();
     }
 
-    public void createCharacter(CharacterDraftInput draft, MembershipSelection membership) {
+    public void createCharacter(
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass,
+            boolean activeMembership
+    ) {
         applyMutation(
                 party.createCharacter(
                         new partyAPI.CharacterDraft(
-                                draft.name(),
-                                draft.playerName(),
-                                draft.level(),
-                                draft.passivePerception(),
-                                draft.armorClass()),
-                        membership.toApi()),
+                                name,
+                                playerName,
+                                level,
+                                passivePerception,
+                                armorClass),
+                        activeMembership ? partyAPI.MembershipState.ACTIVE : partyAPI.MembershipState.RESERVE),
                 "Character created.");
     }
 
-    public void updateCharacter(long id, CharacterDraftInput draft) {
+    public void updateCharacter(
+            long id,
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass
+    ) {
         applyMutation(
                 party.updateCharacter(
                         id,
                         new partyAPI.CharacterDraft(
-                                draft.name(),
-                                draft.playerName(),
-                                draft.level(),
-                                draft.passivePerception(),
-                                draft.armorClass())),
+                                name,
+                                playerName,
+                                level,
+                                passivePerception,
+                                armorClass)),
                 "Character updated.");
     }
 
@@ -58,22 +73,24 @@ public final class PartyInteractor {
         applyMutation(party.deleteCharacter(id), "Character deleted.");
     }
 
-    public void setMembership(long id, MembershipSelection membership) {
-        String successMessage = membership == MembershipSelection.ACTIVE
-                ? "Character moved to active party."
-                : "Character moved to reserve.";
-        applyMutation(party.setMembership(id, membership.toApi()), successMessage);
+    public void moveToActive(long id) {
+        applyMutation(party.setMembership(id, partyAPI.MembershipState.ACTIVE), "Character moved to active party.");
+    }
+
+    public void moveToReserve(long id) {
+        applyMutation(party.setMembership(id, partyAPI.MembershipState.RESERVE), "Character moved to reserve.");
     }
 
     public void awardXp(List<Long> ids, int xpPerCharacter) {
         applyMutation(party.awardXp(ids, xpPerCharacter), "XP awarded.");
     }
 
-    public void performRest(RestSelection restType) {
-        String successMessage = restType == RestSelection.LONG_REST
-                ? "Long rest applied."
-                : "Short rest applied.";
-        applyMutation(party.performRest(restType.toApi()), successMessage);
+    public void performShortRest() {
+        applyMutation(party.performRest(partyAPI.RestType.SHORT_REST), "Short rest applied.");
+    }
+
+    public void performLongRest() {
+        applyMutation(party.performRest(partyAPI.RestType.LONG_REST), "Long rest applied.");
     }
 
     private void applyMutation(partyAPI.MutationResult result, String successMessage) {
@@ -100,63 +117,5 @@ public final class PartyInteractor {
         }
         model.applyState(stateMapper.map(snapshotResult, dayResult));
         return true;
-    }
-
-    public enum MembershipSelection {
-        ACTIVE,
-        RESERVE;
-
-        private partyAPI.MembershipState toApi() {
-            return this == ACTIVE ? partyAPI.MembershipState.ACTIVE : partyAPI.MembershipState.RESERVE;
-        }
-    }
-
-    public enum RestSelection {
-        SHORT_REST,
-        LONG_REST;
-
-        private partyAPI.RestType toApi() {
-            return this == LONG_REST ? partyAPI.RestType.LONG_REST : partyAPI.RestType.SHORT_REST;
-        }
-    }
-
-    public record CharacterDraftInput(
-            String name,
-            String playerName,
-            int level,
-            int passivePerception,
-            int armorClass
-    ) {
-    }
-
-    public record PartyMemberViewData(
-            Long id,
-            String name,
-            String playerName,
-            int level,
-            int currentXp,
-            int xpToNextLevel,
-            boolean readyToLevel,
-            int passivePerception,
-            int armorClass,
-            int xpSinceShortRest,
-            int xpSinceLongRest,
-            int shortRestsTakenSinceLongRest,
-            MembershipSelection membership,
-            @Nullable RestStatusViewData restStatus
-    ) {
-    }
-
-    public enum RestIndicatorSeverity {
-        NORMAL,
-        SOON,
-        OVERDUE
-    }
-
-    public record RestStatusViewData(
-            String label,
-            String tooltip,
-            RestIndicatorSeverity severity
-    ) {
     }
 }

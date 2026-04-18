@@ -15,8 +15,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import src.view.encounter.Controller.EncounterController;
 import src.view.encounter.Model.EncounterModel;
-import src.view.creatures.View.CreatureFilterPane;
-import src.view.creatures.View.FilterPaneConfig;
 
 import java.util.Objects;
 
@@ -49,11 +47,7 @@ public final class EncounterView {
         ComboBox<String> difficulty = new ComboBox<>(model.difficultyOptions());
         difficulty.valueProperty().bindBidirectional(model.selectedDifficultyProperty());
         difficulty.setMaxWidth(Double.MAX_VALUE);
-        CreatureFilterPane filterPane = new CreatureFilterPane(
-                model.filterOptions(),
-                model.filterSelection(),
-                FilterPaneConfig.encounterDefaults(),
-                null);
+        EncounterFilterPane filterPane = new EncounterFilterPane(model);
 
         Button generate = new Button("Generate");
         generate.getStyleClass().add("neutral-action");
@@ -87,22 +81,34 @@ public final class EncounterView {
 
     private VBox buildWorkspace() {
         Label partySummary = new Label();
-        partySummary.textProperty().bind(model.partySummaryProperty());
+        partySummary.textProperty().bind(model.texts().partySummaryProperty());
         partySummary.setWrapText(true);
 
         Label thresholds = new Label();
-        thresholds.textProperty().bind(model.thresholdsSummaryProperty());
+        thresholds.textProperty().bind(model.texts().thresholdsSummaryProperty());
         thresholds.setWrapText(true);
 
         Label dailyBudget = new Label();
-        dailyBudget.textProperty().bind(model.dailyBudgetSummaryProperty());
+        dailyBudget.textProperty().bind(model.texts().dailyBudgetSummaryProperty());
         dailyBudget.setWrapText(true);
 
         Label resultSummary = new Label();
-        resultSummary.textProperty().bind(model.resultSummaryProperty());
+        resultSummary.textProperty().bind(model.texts().resultSummaryProperty());
         resultSummary.setWrapText(true);
 
-        TableView<EncounterModel.EncounterAlternativeViewData> table = new TableView<>(model.alternatives());
+        TableView<EncounterModel.EncounterAlternativeViewData> table = buildAlternativesTable();
+        TextArea detail = buildDetailArea();
+        VBox.setVgrow(table, Priority.ALWAYS);
+        VBox.setVgrow(detail, Priority.ALWAYS);
+
+        VBox pane = new VBox(10, partySummary, thresholds, dailyBudget, resultSummary, table, detail);
+        pane.setPadding(new Insets(12));
+        return pane;
+    }
+
+    private TableView<EncounterModel.EncounterAlternativeViewData> buildAlternativesTable() {
+        TableView<EncounterModel.EncounterAlternativeViewData> table =
+                new TableView<>(model.alternatives().alternatives());
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         TableColumn<EncounterModel.EncounterAlternativeViewData, String> title = new TableColumn<>("Encounter");
         title.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().title()));
@@ -113,24 +119,23 @@ public final class EncounterView {
         TableColumn<EncounterModel.EncounterAlternativeViewData, String> composition = new TableColumn<>("Composition");
         composition.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().creatureSummary()));
         table.getColumns().setAll(title, difficulty, adjustedXp, composition);
-        table.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> model.selectedAlternativeProperty().set(after));
-        model.selectedAlternativeProperty().addListener((ignored, before, after) -> {
+        table.getSelectionModel().selectedItemProperty()
+                .addListener((ignored, before, after) -> model.alternatives().selectedAlternativeProperty().set(after));
+        model.alternatives().selectedAlternativeProperty().addListener((ignored, before, after) -> {
             if (after != null && !Objects.equals(table.getSelectionModel().getSelectedItem(), after)) {
                 table.getSelectionModel().select(after);
             }
         });
+        return table;
+    }
 
+    private TextArea buildDetailArea() {
         TextArea detail = new TextArea();
-        detail.textProperty().bind(model.detailTextProperty());
+        detail.textProperty().bind(model.texts().detailTextProperty());
         detail.setEditable(false);
         detail.setWrapText(true);
         detail.setPrefRowCount(12);
-        VBox.setVgrow(table, Priority.ALWAYS);
-        VBox.setVgrow(detail, Priority.ALWAYS);
-
-        VBox pane = new VBox(10, partySummary, thresholds, dailyBudget, resultSummary, table, detail);
-        pane.setPadding(new Insets(12));
-        return pane;
+        return detail;
     }
 
     private static Node labeledControl(String label, Node control) {

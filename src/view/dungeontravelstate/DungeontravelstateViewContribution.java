@@ -8,7 +8,7 @@ import shell.host.ShellRuntimeStateSpec;
 import shell.host.ShellScreen;
 import shell.host.ShellSlot;
 import shell.host.ShellViewContribution;
-import src.view.dungeontravel.interactor.DungeonTravelRuntimeSession;
+import src.view.dungeontravelshared.assembly.DungeonTravelRuntimeSession;
 
 import java.util.Map;
 
@@ -24,9 +24,7 @@ public final class DungeontravelstateViewContribution implements ShellViewContri
 
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
-        DungeonTravelRuntimeSession session = runtimeContext.session(
-                DungeonTravelRuntimeSession.class,
-                () -> new DungeonTravelRuntimeSession(runtimeContext.inspector()));
+        DungeonTravelRuntimeSession session = DungeonTravelRuntimeSession.from(runtimeContext);
         return new ShellScreen() {
             @Override
             public String getTitle() {

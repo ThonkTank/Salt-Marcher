@@ -2,14 +2,12 @@ package src.view.dungeontravel.interactor;
 
 import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
-import shell.host.InspectorSink;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonshared.interactor.AbstractDungeonMapInteractor;
 import src.view.dungeonshared.interactor.DungeonMapPresentation;
-import src.view.dungeonshared.interactor.DungeonMapSelectionSupport;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
-import src.view.dungeonshared.interactor.DungeonSelectionInspectorSupport;
+import src.view.dungeonshared.interactor.DungeonSelectionPublisher;
 import src.view.mapshared.Model.MapCellViewModel;
 import src.view.mapshared.Model.MapWorkspaceRenderModel;
 import src.view.mapshared.Model.MapWorkspaceSceneViewData;
@@ -22,17 +20,17 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
 
     private final DungeonTravelControls controls;
     private final DungeonTravelStatePane statePane;
-    private final DungeonSelectionInspectorSupport inspectorSupport;
+    private final DungeonSelectionPublisher selectionPublisher;
     private @Nullable MapSelectionRef selectedTarget;
 
-    public DungeonTravelInteractor(InspectorSink inspector) {
+    public DungeonTravelInteractor(DungeonSelectionPublisher selectionPublisher) {
         super(new DungeonMapPresentation(
                 DungeonTravelInteractor::placeholderRenderModel,
                 DungeonTravelInteractor::loadedRenderModel
         ), DungeonMapSurfaceController.shared());
         this.controls = new DungeonTravelControls(mapController(), () -> workspaceView().currentViewport().zoom(), this::currentViewport);
         this.statePane = new DungeonTravelStatePane(mapController(), this::currentViewport);
-        this.inspectorSupport = new DungeonSelectionInspectorSupport(mapController(), inspector);
+        this.selectionPublisher = selectionPublisher;
         statePane.setOnTargetSelected(this::showSelection);
         workspaceView().setViewportListener(ignored -> controls.refresh());
         workspaceView().setFloorStepListener(delta -> mapController().stepFloor(delta, currentViewport()));
@@ -50,12 +48,12 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
     }
 
     private void onCellSelected(MapCellViewModel cellViewModel) {
-        showSelection(DungeonMapSelectionSupport.resolveSelection(loadedSnapshot(), cellViewModel));
+        showSelection(resolveSelection(cellViewModel));
     }
 
     private void showSelection(@Nullable MapSelectionRef selectionRef) {
         selectedTarget = selectionRef;
-        DungeonMapSelectionSupport.applySelection(workspaceView(), statePane::showSelectedTarget, inspectorSupport::showSelection, selectionRef);
+        applySelection(statePane::showSelectedTarget, selectionPublisher, selectionRef);
     }
 
     private static MapWorkspaceRenderModel placeholderRenderModel() {
@@ -90,7 +88,7 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
 
     @Override
     protected void onSnapshotChanged() {
-        DungeonMapSelectionSupport.refreshSelection(loadedSnapshot(), selectedTarget, this::showSelection);
+        refreshSelection(selectedTarget, this::showSelection);
         controls.refresh();
         statePane.refresh();
     }
