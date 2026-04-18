@@ -17,11 +17,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import shell.api.ContributionKey;
 
 /**
  * Shared lower-right runtime-state panel with autonomous tab navigation.
  */
-public final class RuntimeStatePane extends VBox {
+final class RuntimeStatePane extends VBox {
 
     private final HBox tabBar = new HBox(2);
     private final StackPane contentArea = new StackPane();

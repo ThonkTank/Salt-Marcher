@@ -1,0 +1,7 @@
+interface:
+  display_name: "Domain Layer"
+  short_description: "Enforce SaltMarcher domain-layer boundaries"
+  default_prompt: "Use $domain-layer before planning, implementing, refactoring, or reviewing work under src/domain/** so the change follows the SaltMarcher domain-layer standard."
+
+policy:
+  allow_implicit_invocation: true

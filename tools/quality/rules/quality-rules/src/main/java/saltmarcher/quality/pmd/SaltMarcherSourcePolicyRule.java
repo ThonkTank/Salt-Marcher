@@ -1,10 +1,16 @@
 package saltmarcher.quality.pmd;
 
 import java.util.Set;
+import java.util.regex.Pattern;
 import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
 
 public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
+
+    private static final Pattern ROOT_APPLICATION_SERVICE_COMPOSITION_PATTERN = Pattern.compile(
+            "\\bnew\\s+[A-Z][A-Za-z0-9_]*(?:Repository|QueryAdapter|QueryPort|Gateway|Store|ConnectionFactory|Migrator|TableManager)\\s*\\(");
+    private static final Pattern ROOT_APPLICATION_SERVICE_STATIC_BACKEND_PATTERN = Pattern.compile(
+            "(?m)^\\s*private\\s+static\\s+final\\s+.*(?:Repository|QueryPort|QueryAdapter|Gateway|Store|Factory|ConnectionFactory)\\b");
 
     private static final Set<String> DOMAIN_BANNED_TOKENS = Set.of(
             "javafx.",
@@ -65,15 +71,39 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
                             "Domain code must not reference '" + token + "'.");
                 }
             }
+
+            if (sourceFacts.isDomainRoot()) {
+                if (ROOT_APPLICATION_SERVICE_COMPOSITION_PATTERN.matcher(sourceFacts.text()).find()
+                        || sourceFacts.text().contains(".shared(")
+                        || sourceFacts.text().contains(".getInstance(")
+                        || ROOT_APPLICATION_SERVICE_STATIC_BACKEND_PATTERN.matcher(sourceFacts.text()).find()) {
+                    asCtx(data).addViolationWithMessage(node,
+                            "Root application services must stay thin and must not instantiate or cache repository/query/gateway/store infrastructure directly.");
+                }
+            }
+        }
+
+        if (sourceFacts.isDataRoot()) {
+            for (String registeredType : sourceFacts.registeredServiceTypes()) {
+                if (isForbiddenDataRootRegistration(registeredType, sourceFacts.featureName())) {
+                    asCtx(data).addViolationWithMessage(node,
+                            "Root service entrypoint may register only own-feature domain boundary types."
+                                    + " Found registration for '" + registeredType + "'.");
+                }
+            }
         }
 
         for (String legacyType : LEGACY_PERSISTENCE_TYPES) {
             if (sourceFacts.text().contains(legacyType)) {
                 asCtx(data).addViolationWithMessage(node,
-                        "Legacy runtime-service persistence wiring is forbidden. Use shell.host.PersistenceContribution and shell.host.PersistenceRegistry instead.");
+                        "Legacy runtime-service wiring is forbidden. Use shell.api.ServiceContribution and shell.api.ServiceRegistry instead.");
             }
         }
 
         return data;
+    }
+
+    private static boolean isForbiddenDataRootRegistration(String registeredType, String featureName) {
+        return !registeredType.startsWith("src.domain." + featureName + ".");
     }
 }

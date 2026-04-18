@@ -1,19 +1,14 @@
 package src.view.dungeontravel;
 
-import javafx.scene.Node;
-import shell.host.ContributionKey;
-import shell.host.NavigationGroupSpec;
-import shell.host.NavigationIcons;
-import shell.host.ShellContributionSpec;
-import shell.host.ShellRuntimeContext;
-import shell.host.ShellScreen;
-import shell.host.ShellTabMode;
-import shell.host.ShellTabSpec;
-import shell.host.ShellViewContribution;
-import shell.host.ShellSlot;
-import src.view.dungeontravelshared.assembly.DungeonTravelRuntimeSession;
-
-import java.util.Map;
+import shell.api.ContributionKey;
+import shell.api.NavigationGroupSpec;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellRuntimeContext;
+import shell.api.ShellScreen;
+import shell.api.ShellTabMode;
+import shell.api.ShellTabSpec;
+import shell.api.ShellViewContribution;
+import src.view.dungeontravel.assembly.DungeonTravelAssembly;
 
 /**
  * Travel/runtime tab root for dungeon navigation.
@@ -24,42 +19,20 @@ public final class DungeontravelViewContribution implements ShellViewContributio
     }
 
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public ShellContributionSpec registrationSpec() {
         return new ShellTabSpec(
                 new ContributionKey("dungeon-travel"),
                 new NavigationGroupSpec("world", "World", 20),
                 20,
                 false,
+                DungeonTravelAssembly.navigationGraphicSupplier(),
                 ShellTabMode.RUNTIME
         );
     }
 
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
-        DungeonTravelRuntimeSession session = DungeonTravelRuntimeSession.from(runtimeContext);
-        return new ShellScreen() {
-            @Override
-            public String getTitle() {
-                return "Dungeon Travel";
-            }
-
-            @Override
-            public String getNavigationLabel() {
-                return "Travel";
-            }
-
-            @Override
-            public Node getNavigationGraphic() {
-                return NavigationIcons.dungeon();
-            }
-
-            @Override
-            public Map<ShellSlot, Node> slotContent() {
-                return Map.of(
-                        ShellSlot.COCKPIT_CONTROLS, session.controls(),
-                        ShellSlot.COCKPIT_MAIN, session.workspace()
-                );
-            }
-        };
+        return DungeonTravelAssembly.createScreen(runtimeContext);
     }
 }

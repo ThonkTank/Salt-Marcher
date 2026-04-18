@@ -1,0 +1,7 @@
+interface:
+  display_name: "View Layer MVVM"
+  short_description: "Enforce SaltMarcher MVVM view-layer boundaries"
+  default_prompt: "Use $view-layer-mvvm before planning, implementing, refactoring, or reviewing work under src/view/** so the change follows the SaltMarcher MVVM view-layer standard."
+
+policy:
+  allow_implicit_invocation: true

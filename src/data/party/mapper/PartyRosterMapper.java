@@ -1,6 +1,5 @@
 package src.data.party.mapper;
 
-import java.util.Locale;
 import src.data.party.model.PartyCharacterRecord;
 import src.data.party.model.PartyRosterRecord;
 import src.domain.party.entity.PartyCharacter;
@@ -16,18 +15,12 @@ public final class PartyRosterMapper {
     }
 
     public static PartyRoster toDomain(PartyRosterRecord record) {
-        if (record == null) {
-            return new PartyRoster(1L, java.util.List.of());
-        }
         return new PartyRoster(
                 record.nextCharacterId(),
                 record.characters().stream().map(PartyRosterMapper::toDomainCharacter).toList());
     }
 
     public static PartyRosterRecord toRecord(PartyRoster roster) {
-        if (roster == null) {
-            return PartyRosterRecord.empty();
-        }
         return new PartyRosterRecord(
                 roster.nextCharacterId(),
                 roster.characters().stream().map(PartyRosterMapper::toRecordCharacter).toList());
@@ -44,7 +37,7 @@ public final class PartyRosterMapper {
                         record.xpSinceShortRest(),
                         record.shortRestsTakenSinceLongRest()),
                 new PartyCharacterCombatProfile(record.passivePerception(), record.armorClass()),
-                parseMembership(record.membership()));
+                PartyMembership.fromPersistence(record.membership()));
     }
 
     private static PartyCharacterRecord toRecordCharacter(PartyCharacter character) {
@@ -62,14 +55,4 @@ public final class PartyRosterMapper {
                 character.membership().name());
     }
 
-    private static PartyMembership parseMembership(String rawMembership) {
-        if (rawMembership == null || rawMembership.isBlank()) {
-            return PartyMembership.RESERVE;
-        }
-        try {
-            return PartyMembership.valueOf(rawMembership.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            return PartyMembership.RESERVE;
-        }
-    }
 }

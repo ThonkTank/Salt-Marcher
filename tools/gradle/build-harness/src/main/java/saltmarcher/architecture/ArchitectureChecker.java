@@ -22,7 +22,48 @@ public final class ArchitectureChecker {
 
     private static final Pattern PACKAGE_PATTERN =
             Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_][\\w.]*)\\s*;");
-
+    private static final Pattern SELF_TEST_FILE_PATTERN =
+            Pattern.compile(".*SelfTest.*\\.java$");
+    private static final Set<String> DOMAIN_TOLERATED_LEGACY_BUCKETS =
+            Set.of("entity", "service", "valueobject", "repository", "query");
+    private static final Set<String> DOMAIN_FORBIDDEN_ROLE_BUCKETS =
+            Set.of(
+                    "aggregate",
+                    "aggregates",
+                    "application",
+                    "applications",
+                    "controller",
+                    "controllers",
+                    "datasource",
+                    "datasources",
+                    "entity",
+                    "entities",
+                    "event",
+                    "events",
+                    "factory",
+                    "factories",
+                    "gateway",
+                    "gateways",
+                    "interactor",
+                    "interactors",
+                    "mapper",
+                    "mappers",
+                    "model",
+                    "models",
+                    "query",
+                    "queries",
+                    "repository",
+                    "repositories",
+                    "service",
+                    "services",
+                    "specification",
+                    "specifications",
+                    "usecase",
+                    "usecases",
+                    "valueobject",
+                    "valueobjects",
+                    "view",
+                    "viewmodel");
     private final Path repoRoot;
 
     public ArchitectureChecker(Path repoRoot) {
@@ -31,6 +72,7 @@ public final class ArchitectureChecker {
 
     public Result check() {
         List<Violation> violations = new ArrayList<>();
+        validateBuildHarnessPolicy(violations);
         List<SourceFile> sourceFiles = loadSourceFiles(violations);
 
         for (SourceFile sourceFile : sourceFiles) {
@@ -47,6 +89,28 @@ public final class ArchitectureChecker {
                         .thenComparing(Violation::details))
                 .toList();
         return new Result(ordered);
+    }
+
+    private void validateBuildHarnessPolicy(List<Violation> violations) {
+        Path fixturesRoot = repoRoot.resolve("tools/gradle/build-harness/src/fixtures");
+        if (Files.exists(fixturesRoot)) {
+            violations.add(new Violation(relativize(fixturesRoot), "build-harness-no-selftests",
+                    "build-harness fixtures are forbidden. Enforce repository policy directly in architectureCheck instead of fixture-based selftests."));
+        }
+
+        Path mainJavaRoot = repoRoot.resolve("tools/gradle/build-harness/src/main/java");
+        if (!Files.isDirectory(mainJavaRoot)) {
+            return;
+        }
+        try (Stream<Path> stream = Files.walk(mainJavaRoot)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(path -> SELF_TEST_FILE_PATTERN.matcher(path.getFileName().toString()).matches())
+                    .forEach(path -> violations.add(new Violation(relativize(path), "build-harness-no-selftests",
+                            "build-harness self-test mains are forbidden. Keep verification in architectureCheck instead of a separate meta-test layer.")));
+        } catch (IOException exception) {
+            violations.add(new Violation(relativize(mainJavaRoot), "scan-root",
+                    "Could not scan build-harness policy root: " + exception.getMessage()));
+        }
     }
 
     private List<SourceFile> loadSourceFiles(List<Violation> violations) {
@@ -88,9 +152,9 @@ public final class ArchitectureChecker {
         }
 
         if ("shell".equals(segments.getFirst())) {
-            if (segments.size() < 2 || !Set.of("host", "panel").contains(segments.get(1))) {
+            if (segments.size() < 2 || !Set.of("api", "host").contains(segments.get(1))) {
                 violations.add(new Violation(sourceFile.relativePath(), "shell-layout",
-                        "Shell sources must live under shell/host or shell/panel."));
+                        "Shell sources must live under shell/api or shell/host."));
             }
             return;
         }
@@ -131,49 +195,63 @@ public final class ArchitectureChecker {
 
         if (segments.size() == 4) {
             String feature = segments.get(2);
-            String expected = feature + "API.java";
+            String expected = expectedDomainRootFileName(feature);
             if (!sourceFile.fileName().equals(expected)) {
                 violations.add(new Violation(sourceFile.relativePath(), "domain-layout",
-                        "Only <feature>API.java may live directly under src/domain/<feature>/."));
+                        "Only <PascalFeatureName>ApplicationService.java may live directly under src/domain/<feature>/."));
             }
             return;
         }
 
         String bucket = segments.get(3);
-        if (!Set.of("api", "entity", "valueobject", "usecase", "repository").contains(bucket)) {
-            violations.add(new Violation(sourceFile.relativePath(), "domain-layout",
-                    "Only api/, entity/, valueobject/, usecase/ and repository/ are allowed in a feature."));
-        }
-        if (bucket.equals("service") || bucket.equals("services")) {
+        if (bucket.equals("services")) {
             violations.add(new Violation(sourceFile.relativePath(), "domain-no-service",
-                    "Domain service/ or services/ directories are forbidden."));
+                    "Domain services/ directories are forbidden. Use api/, application/, a named domain module,"
+                            + " or a tolerated legacy role bucket during migration."));
+        }
+        if (!isAllowedDomainBucket(bucket)) {
+            violations.add(new Violation(sourceFile.relativePath(), "domain-layout",
+                    "Only api/, application/, named domain modules, and tolerated legacy root role buckets"
+                            + " (entity/, service/, valueobject/, repository/, query/) are allowed in a domain feature."));
         }
     }
 
     private void validateDataLayout(SourceFile sourceFile, List<Violation> violations) {
         List<String> segments = sourceFile.relativeSegments();
         if (segments.size() == 4) {
+            String expected = expectedDataRootFileName(segments.get(2));
+            if (!sourceFile.fileName().equals(expected)) {
+                violations.add(new Violation(sourceFile.relativePath(), "data-layout",
+                        "Only <PascalFeatureName>ServiceContribution.java may live directly under src/data/<feature>/."));
+            }
+            return;
+        }
+        if ("persistencecore".equals(segments.get(2))) {
+            if (segments.size() < 5 || !Set.of("sqlite", "model").contains(segments.get(3))) {
+                violations.add(new Violation(sourceFile.relativePath(), "data-layout",
+                        "Persistencecore sources must live under src/data/persistencecore/sqlite or src/data/persistencecore/model."));
+            }
             return;
         }
         if (segments.size() < 5) {
             violations.add(new Violation(sourceFile.relativePath(), "data-layout",
-                    "Data sources must live under src/data/<feature>/<Feature>PersistenceContribution.java,"
-                            + " repository, datasource, model or mapper."));
+                    "Data sources must live under src/data/<feature>/<Feature>ServiceContribution.java,"
+                            + " repository, query, gateway, model or mapper."));
             return;
         }
 
         String bucket = segments.get(3);
         switch (bucket) {
-            case "repository", "model", "mapper" -> {
+            case "repository", "query", "model", "mapper" -> {
             }
-            case "datasource" -> {
+            case "gateway" -> {
                 if (segments.size() < 6 || !Set.of("local", "remote").contains(segments.get(4))) {
                     violations.add(new Violation(sourceFile.relativePath(), "data-layout",
-                            "Data sources must live under datasource/local or datasource/remote."));
+                            "Gateways must live under gateway/local or gateway/remote."));
                 }
             }
             default -> violations.add(new Violation(sourceFile.relativePath(), "data-layout",
-                    "Only a data root contribution, repository/, datasource/local/, datasource/remote/, model/ and mapper/"
+                    "Only a data root contribution, repository/, query/, gateway/local/, gateway/remote/, model/ and mapper/"
                             + " are allowed in data features."));
         }
     }
@@ -196,20 +274,68 @@ public final class ArchitectureChecker {
     }
 
     private void validateDomainFeatureBoundaries(List<SourceFile> sourceFiles, List<Violation> violations) {
-        Set<String> apiRoots = sourceFiles.stream()
-                .filter(sourceFile -> sourceFile.kind() == SourceKind.DOMAIN_API_ROOT)
-                .map(SourceFile::featureName)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(TreeSet::new));
-
+        TreeMap<String, List<SourceFile>> rootsByFeature = new TreeMap<>();
         for (SourceFile sourceFile : sourceFiles) {
-            if (sourceFile.kind().isDomain()
-                    && sourceFile.featureName() != null
-                    && !apiRoots.contains(sourceFile.featureName())) {
-                violations.add(new Violation(sourceFile.relativePath(), "feature-api-root",
-                        "Feature '" + sourceFile.featureName() + "' is missing " + sourceFile.featureName() + "API.java at its root."));
+            if (sourceFile.kind() == SourceKind.DOMAIN_API_ROOT) {
+                rootsByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
             }
         }
+
+        for (String featureName : collectDomainFeatures(sourceFiles)) {
+            List<SourceFile> roots = rootsByFeature.getOrDefault(featureName, List.of()).stream()
+                    .sorted(Comparator.comparing(SourceFile::relativePath))
+                    .toList();
+            if (roots.size() == 1) {
+                continue;
+            }
+            String files = roots.isEmpty()
+                    ? "none found"
+                    : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
+            violations.add(new Violation("src/domain/" + featureName, "application-service-root",
+                    "Domain feature '" + featureName + "' must expose exactly one root application service."
+                            + " Expected " + expectedDomainRootFileName(featureName) + ". Found: " + files));
+        }
+    }
+
+    private static String expectedDomainRootFileName(String feature) {
+        if (feature == null || feature.isBlank()) {
+            return "ApplicationService.java";
+        }
+        return feature.substring(0, 1).toUpperCase(Locale.ROOT)
+                + feature.substring(1)
+                + "ApplicationService.java";
+    }
+
+    private static boolean isAllowedDomainBucket(String bucket) {
+        return bucket.equals("api")
+                || bucket.equals("application")
+                || DOMAIN_TOLERATED_LEGACY_BUCKETS.contains(bucket)
+                || isNamedDomainModule(bucket);
+    }
+
+    private static boolean isNamedDomainModule(String bucket) {
+        if (!bucket.matches("[a-z][a-z0-9_]*")) {
+            return false;
+        }
+        return !DOMAIN_FORBIDDEN_ROLE_BUCKETS.contains(bucket);
+    }
+
+    private static String expectedDataRootFileName(String feature) {
+        if (feature == null || feature.isBlank()) {
+            return "ServiceContribution.java";
+        }
+        return feature.substring(0, 1).toUpperCase(Locale.ROOT)
+                + feature.substring(1)
+                + "ServiceContribution.java";
+    }
+
+    private static String expectedDataSchemaFileName(String feature) {
+        if (feature == null || feature.isBlank()) {
+            return "PersistenceSchema.java";
+        }
+        return feature.substring(0, 1).toUpperCase(Locale.ROOT)
+                + feature.substring(1)
+                + "PersistenceSchema.java";
     }
 
     private void validatePersistenceEntrypoints(List<SourceFile> sourceFiles, List<Violation> violations) {
@@ -252,30 +378,21 @@ public final class ArchitectureChecker {
         }
     }
 
+    private Set<String> collectDomainFeatures(List<SourceFile> sourceFiles) {
+        return sourceFiles.stream()
+                .filter(sourceFile -> sourceFile.kind().isDomain())
+                .map(SourceFile::featureName)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(TreeSet::new));
+    }
+
     private Set<String> collectDataFeatures(List<SourceFile> sourceFiles) {
-        Set<String> features = sourceFiles.stream()
-                .filter(sourceFile -> sourceFile.kind() == SourceKind.DATA_ROOT || sourceFile.kind() == SourceKind.DATA_SCHEMA)
+        return sourceFiles.stream()
+                .filter(SourceFile::isUnderDataFeatureRoot)
                 .map(SourceFile::featureName)
                 .filter(Objects::nonNull)
                 .filter(featureName -> !featureName.equals("persistencecore"))
                 .collect(Collectors.toCollection(TreeSet::new));
-        features.addAll(collectDocumentedFeatures(repoRoot.resolve("src/data"), "PERSISTENCE.md"));
-        return features;
-    }
-
-    private static Set<String> collectDocumentedFeatures(Path root, String markerFileName) {
-        if (!Files.isDirectory(root)) {
-            return Set.of();
-        }
-        try (Stream<Path> paths = Files.list(root)) {
-            return paths
-                    .filter(Files::isDirectory)
-                    .filter(path -> Files.isRegularFile(path.resolve(markerFileName)))
-                    .map(path -> path.getFileName().toString())
-                    .collect(Collectors.toCollection(TreeSet::new));
-        } catch (IOException exception) {
-            return Set.of();
-        }
     }
 
     private String relativize(Path path) {
@@ -313,14 +430,18 @@ public final class ArchitectureChecker {
         INTERACTOR,
         DOMAIN_API_ROOT,
         DOMAIN_API_EXPORTED,
+        DOMAIN_APPLICATION,
         DOMAIN_ENTITY,
+        DOMAIN_SERVICE,
+        DOMAIN_QUERY,
         DOMAIN_VALUEOBJECT,
-        DOMAIN_USECASE,
         DOMAIN_REPOSITORY,
         DATA_ROOT,
         DATA_REPOSITORY,
-        DATA_DATASOURCE_LOCAL,
-        DATA_DATASOURCE_REMOTE,
+        DATA_QUERY,
+        DATA_GATEWAY_LOCAL,
+        DATA_GATEWAY_REMOTE,
+        DATA_PERSISTENCECORE_SQLITE,
         DATA_SCHEMA,
         DATA_MODEL,
         DATA_MAPPER,
@@ -328,7 +449,16 @@ public final class ArchitectureChecker {
 
         boolean isDomain() {
             return switch (this) {
-                case DOMAIN_API_ROOT, DOMAIN_API_EXPORTED, DOMAIN_ENTITY, DOMAIN_VALUEOBJECT, DOMAIN_USECASE, DOMAIN_REPOSITORY -> true;
+                case DOMAIN_API_ROOT, DOMAIN_API_EXPORTED, DOMAIN_APPLICATION, DOMAIN_ENTITY,
+                        DOMAIN_SERVICE, DOMAIN_QUERY, DOMAIN_VALUEOBJECT, DOMAIN_REPOSITORY -> true;
+                default -> false;
+            };
+        }
+
+        boolean isDataFeature() {
+            return switch (this) {
+                case DATA_ROOT, DATA_REPOSITORY, DATA_QUERY, DATA_GATEWAY_LOCAL, DATA_GATEWAY_REMOTE,
+                        DATA_SCHEMA, DATA_MODEL, DATA_MAPPER -> true;
                 default -> false;
             };
         }
@@ -394,31 +524,47 @@ public final class ArchitectureChecker {
                     }
                     yield switch (segments.get(3)) {
                         case "api" -> SourceKind.DOMAIN_API_EXPORTED;
+                        case "application" -> SourceKind.DOMAIN_APPLICATION;
                         case "entity" -> SourceKind.DOMAIN_ENTITY;
+                        case "service" -> SourceKind.DOMAIN_SERVICE;
+                        case "query" -> SourceKind.DOMAIN_QUERY;
                         case "valueobject" -> SourceKind.DOMAIN_VALUEOBJECT;
-                        case "usecase" -> SourceKind.DOMAIN_USECASE;
                         case "repository" -> SourceKind.DOMAIN_REPOSITORY;
                         default -> SourceKind.UNKNOWN;
                     };
                 }
                 case "data" -> {
                     if (segments.size() == 4) {
-                        yield SourceKind.DATA_ROOT;
+                        yield fileName.equals(expectedDataRootFileName(extractFeatureName(segments)))
+                                ? SourceKind.DATA_ROOT
+                                : SourceKind.UNKNOWN;
                     }
                     if (segments.size() < 5) {
                         yield SourceKind.UNKNOWN;
                     }
+                    if ("persistencecore".equals(segments.get(2))) {
+                        yield switch (segments.get(3)) {
+                            case "sqlite" -> SourceKind.DATA_PERSISTENCECORE_SQLITE;
+                            case "model" -> fileName.equals(expectedDataSchemaFileName(extractFeatureName(segments)))
+                                    ? SourceKind.DATA_SCHEMA
+                                    : SourceKind.DATA_MODEL;
+                            default -> SourceKind.UNKNOWN;
+                        };
+                    }
                     yield switch (segments.get(3)) {
                         case "repository" -> SourceKind.DATA_REPOSITORY;
-                        case "model" -> fileName.endsWith("PersistenceSchema.java") ? SourceKind.DATA_SCHEMA : SourceKind.DATA_MODEL;
+                        case "query" -> SourceKind.DATA_QUERY;
+                        case "model" -> fileName.equals(expectedDataSchemaFileName(extractFeatureName(segments)))
+                                ? SourceKind.DATA_SCHEMA
+                                : SourceKind.DATA_MODEL;
                         case "mapper" -> SourceKind.DATA_MAPPER;
-                        case "datasource" -> {
+                        case "gateway" -> {
                             if (segments.size() < 6) {
                                 yield SourceKind.UNKNOWN;
                             }
                             yield switch (segments.get(4)) {
-                                case "local" -> SourceKind.DATA_DATASOURCE_LOCAL;
-                                case "remote" -> SourceKind.DATA_DATASOURCE_REMOTE;
+                                case "local" -> SourceKind.DATA_GATEWAY_LOCAL;
+                                case "remote" -> SourceKind.DATA_GATEWAY_REMOTE;
                                 default -> SourceKind.UNKNOWN;
                             };
                         }
@@ -438,6 +584,13 @@ public final class ArchitectureChecker {
                 return segments.get(2);
             }
             return null;
+        }
+
+        private boolean isUnderDataFeatureRoot() {
+            return relativeSegments.size() >= 3
+                    && "src".equals(relativeSegments.get(0))
+                    && "data".equals(relativeSegments.get(1))
+                    && !"persistencecore".equals(relativeSegments.get(2));
         }
     }
 }

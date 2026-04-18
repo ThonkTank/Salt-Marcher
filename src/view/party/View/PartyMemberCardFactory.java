@@ -1,4 +1,5 @@
 package src.view.party.View;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -9,12 +10,19 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import src.view.party.Controller.PartyController;
-import src.view.party.Model.PartyViewData;
+import javafx.stage.Window;
+import src.view.party.ViewModel.PartyToolbarViewModel;
+import src.view.party.ViewModel.PartyViewData;
+
+import java.util.function.Supplier;
 
 final class PartyMemberCardFactory {
 
-    Node buildActiveMemberRow(PartyViewData.PartyMemberViewData member, PartyController controller) {
+    Node buildActiveMemberRow(
+            PartyViewData.PartyMemberViewData member,
+            PartyToolbarViewModel viewModel,
+            Supplier<Window> ownerSupplier
+    ) {
         Label nameLabel = new Label(member.name());
         nameLabel.getStyleClass().add("bold");
         Node restChip = member.restStatus() == null ? null : buildRestChip(member.restStatus());
@@ -23,11 +31,11 @@ final class PartyMemberCardFactory {
         xpLabel.setWrapText(true);
 
         Button xpButton = new Button("Award XP");
-        xpButton.setOnAction(event -> PartyToolbarDialogs.promptForXp(controller, member, null));
+        xpButton.setOnAction(event -> PartyToolbarDialogs.promptForXp(viewModel, member, ownerSupplier.get()));
         Button editButton = new Button("Edit");
-        editButton.setOnAction(event -> PartyToolbarDialogs.showEditDialog(controller, member, null));
+        editButton.setOnAction(event -> PartyToolbarDialogs.showEditDialog(viewModel, member, ownerSupplier.get()));
         Button reserveButton = new Button("Reserve");
-        reserveButton.setOnAction(event -> controller.moveToReserve(member.id()));
+        reserveButton.setOnAction(event -> viewModel.moveToReserve(member.id()));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox headerRow = new HBox(8, nameLabel, spacer);
@@ -40,17 +48,21 @@ final class PartyMemberCardFactory {
         return wrapCard(new VBox(6, headerRow, detailsLabel, xpLabel, actionRow));
     }
 
-    Node buildReserveMemberRow(PartyViewData.PartyMemberViewData member, PartyController controller) {
+    Node buildReserveMemberRow(
+            PartyViewData.PartyMemberViewData member,
+            PartyToolbarViewModel viewModel,
+            Supplier<Window> ownerSupplier
+    ) {
         Label nameLabel = new Label(member.name());
         nameLabel.getStyleClass().add("bold");
         Label detailsLabel = mutedLabel(buildPrimaryDetails(member));
 
         Button activateButton = new Button("Activate");
-        activateButton.setOnAction(event -> controller.moveToActive(member.id()));
+        activateButton.setOnAction(event -> viewModel.moveToActive(member.id()));
         Button editButton = new Button("Edit");
-        editButton.setOnAction(event -> PartyToolbarDialogs.showEditDialog(controller, member, null));
+        editButton.setOnAction(event -> PartyToolbarDialogs.showEditDialog(viewModel, member, ownerSupplier.get()));
         Button deleteButton = new Button("Delete");
-        deleteButton.setOnAction(event -> PartyToolbarDialogs.confirmDelete(controller, member, null));
+        deleteButton.setOnAction(event -> PartyToolbarDialogs.confirmDelete(viewModel, member, ownerSupplier.get()));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox actionRow = new HBox(8, activateButton, editButton, spacer, deleteButton);

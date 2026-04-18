@@ -1,19 +1,32 @@
 package src.domain.party.valueobject;
 
-import src.domain.party.partyAPI;
+import src.domain.party.api.MembershipState;
+
+import java.util.Locale;
 
 public enum PartyMembership {
     ACTIVE,
     RESERVE;
 
-    public static PartyMembership fromApi(partyAPI.MembershipState membershipState) {
+    public static PartyMembership fromApi(MembershipState membershipState) {
         if (membershipState == null) {
             return RESERVE;
         }
-        return membershipState == partyAPI.MembershipState.ACTIVE ? ACTIVE : RESERVE;
+        return membershipState == MembershipState.ACTIVE ? ACTIVE : RESERVE;
     }
 
-    public partyAPI.MembershipState toApi() {
-        return this == ACTIVE ? partyAPI.MembershipState.ACTIVE : partyAPI.MembershipState.RESERVE;
+    public MembershipState toApi() {
+        return this == ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
+    }
+
+    public static PartyMembership fromPersistence(String rawMembership) {
+        if (rawMembership == null || rawMembership.isBlank()) {
+            return RESERVE;
+        }
+        try {
+            return PartyMembership.valueOf(rawMembership.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return RESERVE;
+        }
     }
 }

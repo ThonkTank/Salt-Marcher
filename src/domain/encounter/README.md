@@ -10,7 +10,7 @@ Source of Truth: Entry point and document map for the encounter feature.
 The encounter feature owns runtime encounter generation for the currently
 active party. It composes party state and creature catalog data into
 rule-oriented encounter suggestions without persisting generated encounters as
-canonical truth.
+write-model state.
 
 ## Documentation Set
 

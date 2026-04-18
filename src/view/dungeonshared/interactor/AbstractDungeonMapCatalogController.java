@@ -10,14 +10,14 @@ import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.LoadMapSnapshotQuery;
 import src.domain.dungeon.api.SearchMapsQuery;
 import src.domain.dungeon.api.Viewport;
-import src.domain.dungeon.dungeonAPI;
+import src.domain.dungeon.DungeonApplicationService;
 
 import java.util.HashSet;
 import java.util.Set;
 
 abstract class AbstractDungeonMapCatalogController extends AbstractDungeonMapSurfaceController {
 
-    protected AbstractDungeonMapCatalogController(dungeonAPI dungeon) {
+    protected AbstractDungeonMapCatalogController(DungeonApplicationService dungeon) {
         super(dungeon);
     }
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-18
 Source of Truth: Entry point and document map for the creatures feature.
 
 # Creatures Feature README
@@ -10,8 +10,18 @@ Source of Truth: Entry point and document map for the creatures feature.
 The creatures feature owns read-only creature catalog access for reference and
 encounter-generation workflows.
 
+Its public backend surface is split into:
+
+- `src/domain/creatures/CreaturesApplicationService.java` as the creatures
+  application-service root
+- `src/domain/creatures/api/` for public query, result, status, and payload
+  types consumed by view and domain callers
+- `src/domain/creatures/application/` plus the owning domain modules for the
+  feature's exported supporting read-model coordination and contracts
+
 ## Documentation Set
 
+- [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/creatures/DOMAIN.md:1)
 - [Creatures Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/PERSISTENCE.md:1)
 - [Creatures UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/creatures/UI.md:1)
 

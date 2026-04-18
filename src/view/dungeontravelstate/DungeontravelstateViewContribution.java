@@ -1,16 +1,12 @@
 package src.view.dungeontravelstate;
 
-import javafx.scene.Node;
-import shell.host.ContributionKey;
-import shell.host.ShellContributionSpec;
-import shell.host.ShellRuntimeContext;
-import shell.host.ShellRuntimeStateSpec;
-import shell.host.ShellScreen;
-import shell.host.ShellSlot;
-import shell.host.ShellViewContribution;
-import src.view.dungeontravelshared.assembly.DungeonTravelRuntimeSession;
-
-import java.util.Map;
+import shell.api.ContributionKey;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellRuntimeContext;
+import shell.api.ShellRuntimeStateSpec;
+import shell.api.ShellScreen;
+import shell.api.ShellViewContribution;
+import src.view.dungeontravelstate.assembly.DungeonTravelStateAssembly;
 
 public final class DungeontravelstateViewContribution implements ShellViewContribution {
 
@@ -24,17 +20,6 @@ public final class DungeontravelstateViewContribution implements ShellViewContri
 
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
-        DungeonTravelRuntimeSession session = DungeonTravelRuntimeSession.from(runtimeContext);
-        return new ShellScreen() {
-            @Override
-            public String getTitle() {
-                return "Dungeon Travel State";
-            }
-
-            @Override
-            public Map<ShellSlot, Node> slotContent() {
-                return Map.of(ShellSlot.COCKPIT_STATE, session.state());
-            }
-        };
+        return DungeonTravelStateAssembly.createScreen(runtimeContext);
     }
 }

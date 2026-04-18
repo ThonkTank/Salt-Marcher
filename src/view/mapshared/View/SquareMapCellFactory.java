@@ -5,7 +5,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
-import src.view.mapshared.Model.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapCellViewModel;
 
 import java.util.function.Consumer;
 

@@ -1,0 +1,160 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <group id="saltmarcher:view-architecture" severity="blocker">
+        <includeConstraint refId="saltmarcher:MvvmAllowedViewBuckets"/>
+        <includeConstraint refId="saltmarcher:MvvmNoLegacyBuckets"/>
+        <includeConstraint refId="saltmarcher:MvvmRootOnlyViewContribution"/>
+        <includeConstraint refId="saltmarcher:MvvmAssemblyPlacement"/>
+        <includeConstraint refId="saltmarcher:MvvmViewRootEntrypointCount"/>
+        <includeConstraint refId="saltmarcher:MvvmNoPrivateForeignComponentDependencies"/>
+    </group>
+
+    <concept id="saltmarcher:MvvmViewType">
+        <description>Annotates compiled SaltMarcher view-layer types for the canonical MVVM harness.</description>
+        <cypher><![CDATA[
+            MATCH (packageNode:Package)-[:CONTAINS]->(type:Java:Type)
+            WHERE packageNode.fqn =~ 'src\\.view\\.[^.]+(\\..*)?'
+            WITH
+              packageNode,
+              type,
+              split(packageNode.fqn, '.') AS segments
+            SET
+              type:SaltMarcher:MvvmViewType,
+              type.component = segments[2],
+              type.bucket = CASE
+                WHEN size(segments) = 3 THEN 'ROOT'
+                WHEN segments[3] IN ['assembly', 'api', 'View', 'ViewModel', 'Model', 'Controller', 'interactor']
+                  THEN segments[3]
+                ELSE 'OTHER'
+              END,
+              type.relativePath = replace(packageNode.fqn, '.', '/') + '/' + coalesce(type.sourceFileName, type.name + '.java')
+            RETURN
+              type AS MvvmViewType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:MvvmRootEntrypoint">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Labels canonical root *ViewContribution entrypoints.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
+            WHERE type.bucket = 'ROOT' AND type.name ENDS WITH 'ViewContribution'
+            SET type:SaltMarcher:MvvmRootEntrypoint
+            RETURN type AS MvvmRootEntrypoint
+        ]]></cypher>
+    </concept>
+
+    <constraint id="saltmarcher:MvvmAllowedViewBuckets">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Canonical MVVM topology allows only assembly, api, View, and ViewModel below each component.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
+            WHERE type.bucket = 'OTHER'
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              'src/view/<component>/{assembly,api,View,ViewModel}' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Unbekanntes Bucket ausserhalb der kanonischen MVVM-Topologie.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmNoLegacyBuckets">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Legacy buckets are migration debt and must disappear from the canonical topology.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
+            WHERE type.bucket IN ['Model', 'Controller', 'interactor']
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              'assembly/api/View/ViewModel' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Legacy-Bucket in der kanonischen MVVM-Topologie. Verschiebe die Verantwortung in die neuen Buckets.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmRootOnlyViewContribution">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Component roots may only host *ViewContribution classes.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
+            WHERE
+              type.bucket = 'ROOT'
+              AND NOT type.name CONTAINS '$'
+              AND NOT type.name ENDS WITH 'ViewContribution'
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              'src/view/<component>/<Component>ViewContribution.java' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Root-Typen ausserhalb des Shell-Entrypoints gehoeren in Buckets.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmAssemblyPlacement">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>*Assembly and *ShellAdapter types belong in assembly.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
+            WHERE
+              (type.name ENDS WITH 'Assembly'
+               OR type.name ENDS WITH 'ShellAdapter')
+              AND type.bucket <> 'assembly'
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              'src/view/<component>/assembly/**' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Assembly- und Shell-Adapter-Typen muessen im assembly-Bucket leben.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmViewRootEntrypointCount">
+        <requiresConcept refId="saltmarcher:MvvmRootEntrypoint"/>
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Every component requires exactly one root entrypoint.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
+            WITH DISTINCT type.component AS component
+            OPTIONAL MATCH (root:Java:Type:SaltMarcher:MvvmRootEntrypoint {component: component})
+            WITH component, collect(DISTINCT root.name) AS roots
+            WHERE size(roots) <> 1
+            RETURN
+              'src/view/' + component AS Source,
+              '1x <Component>ViewContribution' AS ExpectedDirection,
+              coalesce(reduce(actual = '', rootName IN roots |
+                CASE WHEN actual = '' THEN rootName ELSE actual + ', ' + rootName END), '(none)') AS ActualDirection,
+              'Jede View-Komponente hat genau einen Shell-Entrypoint.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmNoPrivateForeignComponentDependencies">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Cross-component view reuse may only happen through foreign api packages.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:MvvmViewType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:MvvmViewType)
+            WHERE
+              source <> target
+              AND source.component <> target.component
+              AND target.bucket <> 'api'
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'Komponente -> fremdes api/' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Komponentenuebergreifende View-Wiederverwendung darf nur ueber api/ laufen.' AS Details
+            ORDER BY Source, Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
+    </constraint>
+
+</jqassistant-rules>

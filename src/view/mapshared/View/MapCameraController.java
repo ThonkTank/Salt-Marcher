@@ -1,6 +1,6 @@
 package src.view.mapshared.View;
 
-import src.view.mapshared.Model.MapViewport;
+import src.view.mapshared.ViewModel.MapViewport;
 
 /**
  * View-local camera state owner for the shared map workspace.

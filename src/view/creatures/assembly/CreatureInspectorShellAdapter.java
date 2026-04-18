@@ -1,11 +1,10 @@
 package src.view.creatures.assembly;
 
 import java.util.Objects;
-import shell.host.InspectorEntrySpec;
-import shell.host.InspectorSink;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
 import src.domain.creatures.api.CreatureDetail;
-import src.view.creatures.interactor.CreatureInspectorContentFactory;
-import src.view.creatures.interactor.CreatureInspectorPublisher;
+import src.view.creatures.ViewModel.CreatureInspectorPublisher;
 
 public final class CreatureInspectorShellAdapter implements CreatureInspectorPublisher {
 

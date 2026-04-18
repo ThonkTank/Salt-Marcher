@@ -7,7 +7,9 @@ import src.domain.dungeon.api.DungeonOperationResult;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.Viewport;
-import src.domain.dungeon.dungeonAPI;
+import src.domain.dungeon.DungeonApplicationService;
+import src.view.dungeonshared.ViewModel.DungeonOverlayMode;
+import src.view.dungeonshared.ViewModel.DungeonOverlaySettings;
 
 import java.util.List;
 
@@ -18,9 +20,9 @@ import java.util.List;
 @SuppressWarnings("PMD.TooManyMethods")
 public final class DungeonMapSurfaceController extends AbstractDungeonMapCatalogController {
 
-    private static final DungeonMapSurfaceController SHARED = new DungeonMapSurfaceController(new dungeonAPI());
+    private static final DungeonMapSurfaceController SHARED = new DungeonMapSurfaceController(new DungeonApplicationService());
 
-    private DungeonMapSurfaceController(dungeonAPI dungeon) {
+    private DungeonMapSurfaceController(DungeonApplicationService dungeon) {
         super(dungeon);
     }
 

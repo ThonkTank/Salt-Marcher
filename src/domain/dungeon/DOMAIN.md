@@ -1,23 +1,44 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
-Source of Truth: Canonical truth, ownership boundaries, and domain invariants
+Last Reviewed: 2026-04-18
+Source of Truth: Write model, ownership boundaries, and domain invariants
 for the dungeon feature.
 
 # Dungeon Domain Model
 
 ## Feature Boundary
 
-- `dungeon` is one feature slice with one backend boundary.
-- A `DungeonMap` is the canonical aggregate root for one authored dungeon map.
+- `dungeon` is one feature slice with one application-service boundary.
+- A `DungeonMap` is the aggregate root for one authored dungeon map.
 - Editor and travel are separate presentation slices over the same dungeon
-  truth.
+  write model.
 - Render-oriented map snapshots are read models, not the owner of dungeon
   business truth.
 
-## Canonical Truth And Derived State
+## Architecture Status
 
-Only authored truth and stable identities may persist.
+Target state:
+
+- `DungeonMap` is the aggregate root and mutation boundary for one authored
+  map.
+- topology repair, merge and split behaviour, identity preservation, and
+  derived-state rebuild rules stay in the dungeon domain instead of leaking
+  into view or data.
+
+Current implementation gap:
+
+- the current code still leans on `DungeonDocument` plus `application/` pipelines
+  for much of the active mutation flow
+- the placeholder runtime still uses domain-local in-memory default collaborators
+  instead of a dedicated outer adapter composition
+- several core types remain thinner record-style carriers than the target
+  aggregate model
+- this feature is a policy-owning bounded context because editor mutations and
+  identity-preserving repairs are rule-bearing domain work
+
+## Write Model And Derived State
+
+Only authored write-model state and stable identities may persist.
 
 Derived state must not become a second source of truth. This includes:
 
@@ -121,7 +142,7 @@ It owns:
 - One dungeon map has one canonical aggregate root.
 - Travel and editor do not fork persisted map truth.
 - Persist only authored truth and stable identity.
-- Generated topology must be reproducible from canonical truth.
+- Generated topology must be reproducible from the write model.
 - Domain ownership must stay explicit; geometry, semantics, and read models do
   not collapse into one undifferentiated structure.
 
@@ -139,6 +160,7 @@ These policies are part of domain behavior. They are not UI tool definitions.
 
 ## References
 
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1)
 - [Dungeon Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/SPEC.md:1)
 - [Dungeon Editor UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/dungeoneditor/UI.md:1)
 - [Dungeon Travel UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/dungeontravel/UI.md:1)

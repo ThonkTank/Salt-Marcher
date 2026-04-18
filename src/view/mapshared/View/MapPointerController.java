@@ -1,6 +1,6 @@
 package src.view.mapshared.View;
 
-import src.view.mapshared.Model.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapCellViewModel;
 
 import java.util.function.Consumer;
 

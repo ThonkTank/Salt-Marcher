@@ -2,8 +2,8 @@ package src.view.mapshared.View;
 
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
-import src.view.mapshared.Model.MapViewport;
-import src.view.mapshared.Model.MapWorkspaceRenderModel;
+import src.view.mapshared.ViewModel.MapViewport;
+import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
 
 import java.util.function.Consumer;
 

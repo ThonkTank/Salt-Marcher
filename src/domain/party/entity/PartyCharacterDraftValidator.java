@@ -1,10 +1,10 @@
 package src.domain.party.entity;
 
-import src.domain.party.partyAPI;
+import src.domain.party.api.CharacterDraft;
 
 final class PartyCharacterDraftValidator {
 
-    boolean isValid(partyAPI.CharacterDraft draft) {
+    boolean isValid(CharacterDraft draft) {
         return draft != null
                 && draft.name() != null
                 && !draft.name().trim().isEmpty()

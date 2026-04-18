@@ -5,8 +5,10 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.Viewport;
 import src.domain.mapcore.api.MapSelectionRef;
-import src.view.mapshared.Model.MapCellViewModel;
+import src.view.dungeonshared.api.DungeonSelectionInspectorEntry;
+import src.view.dungeonshared.api.DungeonSelectionPublisher;
 import src.view.mapshared.View.MapWorkspaceView;
+import src.view.mapshared.ViewModel.MapCellViewModel;
 
 import java.util.function.Consumer;
 
@@ -97,9 +99,13 @@ public abstract class AbstractDungeonMapInteractor {
             selectionPublisher.clear();
             return;
         }
-        selectionPublisher.showSelection(
-                selectionRef,
-                mapController().describeSelection(selectionRef.ownerKind(), selectionRef.ownerId()));
+        var snapshot = mapController().describeSelection(selectionRef.ownerKind(), selectionRef.ownerId());
+        selectionPublisher.showSelection(new DungeonSelectionInspectorEntry(
+                selectionRef.label(),
+                "dungeon:" + selectionRef.ownerKind() + ":" + selectionRef.ownerId() + ":" + selectionRef.partKind(),
+                snapshot.title(),
+                snapshot.summary(),
+                snapshot.facts()));
     }
 
     protected void onSnapshotChanged() {

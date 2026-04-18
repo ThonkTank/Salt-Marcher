@@ -4,6 +4,7 @@ import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Supplier;
+import shell.api.InspectorEntrySpec;
 
 final class InspectorHistory {
 

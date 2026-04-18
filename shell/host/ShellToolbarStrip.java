@@ -12,11 +12,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import shell.api.ContributionKey;
+import shell.api.ShellTopBarSpec;
 
 /**
  * Passive shell top bar with title and sorted contribution content.
  */
-public final class ShellToolbarStrip extends HBox {
+final class ShellToolbarStrip extends HBox {
 
     private final Label title = new Label();
     private final Region spacer = new Region();

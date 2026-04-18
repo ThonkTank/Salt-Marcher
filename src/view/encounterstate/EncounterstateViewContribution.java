@@ -1,16 +1,12 @@
 package src.view.encounterstate;
 
-import javafx.scene.Node;
-import shell.host.ContributionKey;
-import shell.host.ShellContributionSpec;
-import shell.host.ShellRuntimeContext;
-import shell.host.ShellRuntimeStateSpec;
-import shell.host.ShellScreen;
-import shell.host.ShellSlot;
-import shell.host.ShellViewContribution;
-import src.view.encountershared.assembly.EncounterRuntimeSession;
-
-import java.util.Map;
+import shell.api.ContributionKey;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellRuntimeContext;
+import shell.api.ShellRuntimeStateSpec;
+import shell.api.ShellScreen;
+import shell.api.ShellViewContribution;
+import src.view.encounterstate.assembly.EncounterstateAssembly;
 
 public final class EncounterstateViewContribution implements ShellViewContribution {
 
@@ -24,17 +20,6 @@ public final class EncounterstateViewContribution implements ShellViewContributi
 
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
-        EncounterRuntimeSession session = EncounterRuntimeSession.from(runtimeContext);
-        return new ShellScreen() {
-            @Override
-            public String getTitle() {
-                return "Encounter State";
-            }
-
-            @Override
-            public Map<ShellSlot, Node> slotContent() {
-                return Map.of(ShellSlot.COCKPIT_STATE, session.state());
-            }
-        };
+        return EncounterstateAssembly.createScreen(runtimeContext);
     }
 }

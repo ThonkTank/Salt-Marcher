@@ -1,0 +1,281 @@
+package src.domain.encounter.application;
+
+import org.jspecify.annotations.Nullable;
+import src.domain.creatures.api.CreatureDetail;
+import src.domain.creatures.api.CreatureDetailResult;
+import src.domain.creatures.api.CreatureLookupStatus;
+import src.domain.creatures.api.CreatureQueryStatus;
+import src.domain.creatures.api.EncounterCandidatesResult;
+import src.domain.creatures.api.EncounterCandidateQuery;
+import src.domain.creatures.CreaturesApplicationService;
+import src.domain.encounter.api.EncounterBudgetSummary;
+import src.domain.encounter.api.EncounterGenerationRequest;
+import src.domain.encounter.service.EncounterCandidateProfile;
+import src.domain.encounter.service.EncounterDifficultyMath;
+import src.domain.encounter.service.EncounterDifficultyTargets;
+import src.domain.encounter.service.EncounterDraft;
+import src.domain.encounter.service.EncounterDraftFactory;
+import src.domain.party.api.ActivePartyCompositionResult;
+import src.domain.party.api.AdventuringDayResult;
+import src.domain.party.api.ReadStatus;
+import src.domain.party.PartyApplicationService;
+
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+
+// PMD suppression is local: encounter generation intentionally centralizes domain adapters here; see src/domain/encounter/DOMAIN.md.
+@SuppressWarnings("PMD.CouplingBetweenObjects")
+final class EncounterGenerationLoader {
+
+    private EncounterGenerationLoader() {
+    }
+
+    static EncounterGenerationPreparation prepare(
+            PartyApplicationService party,
+            CreaturesApplicationService creatures,
+            EncounterGenerationRequest request,
+            int searchLimit
+    ) {
+        PartyLoadResult partyLoad = loadPartyState(party);
+        if (!partyLoad.success()) {
+            return partyLoad.failure();
+        }
+        EncounterBudgetSummary budget = partyLoad.requireBudget();
+        EncounterDifficultyMath.Thresholds thresholds = partyLoad.requireThresholds();
+
+        LockedCreatures lockedCreatures = loadLockedCreatures(creatures, request, budget);
+        if (!lockedCreatures.success()) {
+            return lockedCreatures.failure();
+        }
+
+        CandidateLoadResult candidates = loadUnlockedCandidates(
+                creatures,
+                request,
+                thresholds,
+                lockedCreatures.lockedProfiles().keySet(),
+                searchLimit);
+        if (!candidates.success()) {
+            return candidates.failure();
+        }
+        if (lockedCreatures.lockedProfiles().isEmpty() && candidates.unlockedProfiles().isEmpty()) {
+                return EncounterGenerationPreparation.failure(
+                    EncounterGenerationUseCase.GenerateStatus.NO_CREATURES,
+                    budget,
+                    "No creatures matched the current filters.");
+        }
+
+        List<EncounterDraft> drafts = EncounterDraftFactory.createDrafts(new EncounterDraftFactory.EncounterDraftRequest(
+                request.targetDifficulty(),
+                thresholds,
+                partyLoad.partySize(),
+                lockedCreatures.lockedProfiles().values(),
+                lockedCreatures.lockedQuantities(),
+                candidates.unlockedProfiles()));
+        if (drafts.isEmpty()) {
+            return EncounterGenerationPreparation.failure(
+                    EncounterGenerationUseCase.GenerateStatus.NO_CREATURES,
+                    budget,
+                    "No encounter compositions fit the current request.");
+        }
+        return EncounterGenerationPreparation.success(budget, drafts);
+    }
+
+    private static PartyLoadResult loadPartyState(PartyApplicationService party) {
+        ActivePartyCompositionResult compositionResult = party.loadActivePartyComposition();
+        AdventuringDayResult dayResult = party.loadAdventuringDaySummary();
+        if (compositionResult.status() != ReadStatus.SUCCESS || dayResult.status() != ReadStatus.SUCCESS) {
+            return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR, "Party data could not be loaded.");
+        }
+        List<Integer> partyLevels = compositionResult.composition().activePartyLevels();
+        if (partyLevels.isEmpty()) {
+            return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.NO_ACTIVE_PARTY, "No active party is available.");
+        }
+        EncounterDifficultyMath.Thresholds thresholds = EncounterDifficultyMath.thresholdsFor(partyLevels);
+        EncounterBudgetSummary budget = EncounterDifficultyMath.summarizeBudget(partyLevels, dayResult.summary());
+        return PartyLoadResult.success(thresholds, budget, partyLevels.size());
+    }
+
+    private static LockedCreatures loadLockedCreatures(
+            CreaturesApplicationService creatures,
+            EncounterGenerationRequest request,
+            EncounterBudgetSummary budget
+    ) {
+        Map<Long, Integer> lockedQuantities = toLockedQuantityMap(request.lockedCreatures());
+        Map<Long, EncounterCandidateProfile> lockedProfiles = loadLockedProfiles(creatures, lockedQuantities);
+        if (lockedProfiles.size() != lockedQuantities.size()) {
+            return LockedCreatures.failure(budget, "A locked creature could not be loaded.");
+        }
+        return LockedCreatures.success(lockedQuantities, lockedProfiles);
+    }
+
+    private static CandidateLoadResult loadUnlockedCandidates(
+            CreaturesApplicationService creatures,
+            EncounterGenerationRequest request,
+            EncounterDifficultyMath.Thresholds thresholds,
+            java.util.Set<Long> lockedCreatureIds,
+            int searchLimit
+    ) {
+        LinkedHashSet<Long> excludedCreatureIds = new LinkedHashSet<>(request.excludedCreatureIds());
+        excludedCreatureIds.removeAll(lockedCreatureIds);
+        EncounterCandidatesResult candidateResult = creatures.loadEncounterCandidates(new EncounterCandidateQuery(
+                request.creatureTypes(),
+                request.creatureSubtypes(),
+                request.biomes(),
+                0,
+                EncounterDifficultyTargets.candidateMaxXp(thresholds),
+                searchLimit));
+        if (candidateResult.status() == CreatureQueryStatus.INVALID_QUERY) {
+            return CandidateLoadResult.failure("Encounter filters are invalid.", EncounterGenerationUseCase.GenerateStatus.INVALID_REQUEST);
+        }
+        if (candidateResult.status() != CreatureQueryStatus.SUCCESS) {
+            return CandidateLoadResult.failure("Creature data could not be loaded.", EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR);
+        }
+        List<EncounterCandidateProfile> unlockedProfiles = candidateResult.candidates().stream()
+                .filter(candidate -> !excludedCreatureIds.contains(candidate.id()))
+                .map(candidate -> EncounterCandidateProfile.fromCandidate(candidate, null))
+                .filter(candidate -> !lockedCreatureIds.contains(candidate.id()))
+                .toList();
+        return CandidateLoadResult.success(unlockedProfiles);
+    }
+
+    private static Map<Long, Integer> toLockedQuantityMap(List<src.domain.encounter.api.EncounterLock> locks) {
+        LinkedHashMap<Long, Integer> quantities = new LinkedHashMap<>();
+        for (src.domain.encounter.api.EncounterLock lock : locks) {
+            if (lock == null || lock.creatureId() <= 0) {
+                continue;
+            }
+            quantities.merge(lock.creatureId(), Math.max(1, lock.quantity()), Integer::sum);
+        }
+        return quantities;
+    }
+
+    private static Map<Long, EncounterCandidateProfile> loadLockedProfiles(
+        CreaturesApplicationService creatures,
+        Map<Long, Integer> lockedQuantities
+    ) {
+        LinkedHashMap<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
+        for (Long creatureId : lockedQuantities.keySet()) {
+            CreatureDetailResult detailResult = creatures.loadCreatureDetail(creatureId);
+            if (detailResult.status() != CreatureLookupStatus.SUCCESS || detailResult.detail() == null) {
+                continue;
+            }
+            CreatureDetail detail = detailResult.detail();
+            profiles.put(creatureId, EncounterCandidateProfile.fromDetail(detail));
+        }
+        return profiles;
+    }
+
+    private record PartyLoadResult(
+            EncounterGenerationUseCase.GenerateStatus status,
+            EncounterDifficultyMath.@Nullable Thresholds thresholds,
+            @Nullable EncounterBudgetSummary budget,
+            int partySize,
+            String message
+    ) {
+
+        private boolean success() {
+            return status == EncounterGenerationUseCase.GenerateStatus.SUCCESS;
+        }
+
+        private EncounterGenerationPreparation failure() {
+            return EncounterGenerationPreparation.failure(status, budget, message);
+        }
+
+        private EncounterDifficultyMath.Thresholds requireThresholds() {
+            if (thresholds == null) {
+                throw new IllegalStateException("Party thresholds missing for successful load.");
+            }
+            return thresholds;
+        }
+
+        private EncounterBudgetSummary requireBudget() {
+            if (budget == null) {
+                throw new IllegalStateException("Party budget missing for successful load.");
+            }
+            return budget;
+        }
+
+        private static PartyLoadResult success(
+                EncounterDifficultyMath.Thresholds thresholds,
+                EncounterBudgetSummary budget,
+                int partySize
+        ) {
+            return new PartyLoadResult(
+                    EncounterGenerationUseCase.GenerateStatus.SUCCESS,
+                    thresholds,
+                    budget,
+                    partySize,
+                    "");
+        }
+
+        private static PartyLoadResult failure(
+                EncounterGenerationUseCase.GenerateStatus status,
+                String message
+        ) {
+            return new PartyLoadResult(status, null, null, 0, message);
+        }
+    }
+
+    private record LockedCreatures(
+            EncounterGenerationUseCase.GenerateStatus status,
+            @Nullable EncounterBudgetSummary budget,
+            Map<Long, Integer> lockedQuantities,
+            Map<Long, EncounterCandidateProfile> lockedProfiles,
+            String message
+    ) {
+
+        private boolean success() {
+            return status == EncounterGenerationUseCase.GenerateStatus.SUCCESS;
+        }
+
+        private EncounterGenerationPreparation failure() {
+            return EncounterGenerationPreparation.failure(status, budget, message);
+        }
+
+        private static LockedCreatures success(
+                Map<Long, Integer> lockedQuantities,
+                Map<Long, EncounterCandidateProfile> lockedProfiles
+        ) {
+            return new LockedCreatures(
+                    EncounterGenerationUseCase.GenerateStatus.SUCCESS,
+                    null,
+                    lockedQuantities,
+                    lockedProfiles,
+                    "");
+        }
+
+        private static LockedCreatures failure(EncounterBudgetSummary budget, String message) {
+            return new LockedCreatures(
+                    EncounterGenerationUseCase.GenerateStatus.INVALID_REQUEST,
+                    budget,
+                    Map.of(),
+                    Map.of(),
+                    message);
+        }
+    }
+
+    private record CandidateLoadResult(
+            EncounterGenerationUseCase.GenerateStatus status,
+            List<EncounterCandidateProfile> unlockedProfiles,
+            String message
+    ) {
+
+        private boolean success() {
+            return status == EncounterGenerationUseCase.GenerateStatus.SUCCESS;
+        }
+
+        private EncounterGenerationPreparation failure() {
+            return EncounterGenerationPreparation.failure(status, null, message);
+        }
+
+        private static CandidateLoadResult success(List<EncounterCandidateProfile> unlockedProfiles) {
+            return new CandidateLoadResult(EncounterGenerationUseCase.GenerateStatus.SUCCESS, unlockedProfiles, "");
+        }
+
+        private static CandidateLoadResult failure(String message, EncounterGenerationUseCase.GenerateStatus status) {
+            return new CandidateLoadResult(status, List.of(), message);
+        }
+    }
+}

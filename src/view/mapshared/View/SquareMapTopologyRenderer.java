@@ -4,10 +4,10 @@ import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.text.TextAlignment;
-import src.view.mapshared.Model.MapCellViewModel;
-import src.view.mapshared.Model.MapEdgeViewModel;
-import src.view.mapshared.Model.MapViewport;
-import src.view.mapshared.Model.MapWorkspaceRenderModel;
+import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapEdgeViewModel;
+import src.view.mapshared.ViewModel.MapViewport;
+import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
 
 import java.util.LinkedHashMap;
 

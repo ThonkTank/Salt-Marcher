@@ -6,9 +6,9 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
-import src.view.mapshared.Model.MapCellViewModel;
-import src.view.mapshared.Model.MapViewport;
-import src.view.mapshared.Model.MapWorkspaceRenderModel;
+import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapViewport;
+import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
 
 import java.util.Objects;
 import java.util.function.IntConsumer;

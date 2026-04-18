@@ -1,0 +1,23 @@
+package src.domain.creatures.application;
+
+import org.jspecify.annotations.Nullable;
+import src.domain.creatures.api.CreatureDetail;
+import src.domain.creatures.query.CreatureCatalogQueryPort;
+
+import java.util.Objects;
+
+final class LoadCreatureDetailUseCase {
+
+    private final CreatureCatalogQueryPort queryPort;
+
+    LoadCreatureDetailUseCase(CreatureCatalogQueryPort queryPort) {
+        this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
+    }
+
+    @Nullable CreatureDetail execute(long creatureId) {
+        if (creatureId <= 0) {
+            return null;
+        }
+        return queryPort.loadCreatureDetail(creatureId);
+    }
+}

@@ -14,7 +14,7 @@ feature business logic.
 SaltMarcher uses a passive shell and generic discovery:
 
 - bootstrap discovers feature UI through `ShellViewContribution`
-- bootstrap discovers exported persistence through `PersistenceContribution`
+- bootstrap discovers exported runtime services through `ServiceContribution`
 - the shell owns slots, registration contracts, runtime context, and inspector
   surfaces
 - features register themselves through open contracts instead of closed shell
@@ -24,9 +24,10 @@ SaltMarcher uses a passive shell and generic discovery:
 
 - Feature UI composition stays decoupled from the shell implementation.
 - Adding features is localized to `src/` plus documentation updates.
-- Shell-owned runtime surfaces such as inspector and persistence lookup remain
+- Shell-owned runtime surfaces such as inspector and service lookup remain
   stable integration points.
-- Feature code must respect slot and runtime-context rules.
+- Feature code must respect the binding shell workbench contract and the
+  generic discovery/bootstrap rules.
 
 ## Alternatives Considered
 
@@ -44,4 +45,5 @@ passive host.
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
-- [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
+- [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-workbench.md:1)
+- [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)

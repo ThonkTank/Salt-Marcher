@@ -179,6 +179,10 @@
     -fx-border-radius: 4;
     -fx-background-radius: 4;
 }
+.status-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
 .status-label-success {
     -fx-text-fill: #205d20;
 }
@@ -516,6 +520,9 @@
 .dungeon-editor-toolbar .toolbar-action-button:focused {
     -fx-border-color: transparent;
     -fx-border-width: 0;
+}
+.dungeon-overlay-menu-item {
+    -fx-background-color: -sm-bg-elevated;
 }
 
 .filter-pane {

@@ -1,6 +1,5 @@
 package src.view.encounter.View;
 
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -13,23 +12,35 @@ import javafx.scene.control.TextArea;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import src.view.encounter.Controller.EncounterController;
-import src.view.encounter.Model.EncounterModel;
+import src.view.encounter.ViewModel.EncounterSnapshot;
+import src.view.encounter.ViewModel.EncounterViewModel;
 
 import java.util.Objects;
 
 public final class EncounterView {
 
-    private final EncounterModel model;
-    private final EncounterController controller;
+    private final EncounterViewModel viewModel;
     private final VBox controls;
     private final VBox workspace;
+    private final ComboBox<String> difficulty = new ComboBox<>();
+    private final EncounterFilterPane filterPane;
+    private final Button generateButton = new Button("Generate");
+    private final Button rerollButton = new Button("Reroll");
+    private final Label partySummary = new Label();
+    private final Label thresholds = new Label();
+    private final Label dailyBudget = new Label();
+    private final Label resultSummary = new Label();
+    private final TableView<EncounterSnapshot.AlternativeViewData> table = new TableView<>();
+    private final TextArea detail = new TextArea();
+    private boolean refreshing;
 
-    public EncounterView(EncounterModel model, EncounterController controller) {
-        this.model = Objects.requireNonNull(model, "model");
-        this.controller = Objects.requireNonNull(controller, "controller");
+    public EncounterView(EncounterViewModel viewModel) {
+        this.viewModel = Objects.requireNonNull(viewModel, "viewModel");
+        this.filterPane = new EncounterFilterPane(viewModel);
         this.controls = buildControls();
         this.workspace = buildWorkspace();
+        this.viewModel.addChangeListener(this::refreshFromViewModel);
+        refreshFromViewModel();
     }
 
     public Node controls() {
@@ -44,20 +55,20 @@ public final class EncounterView {
         Label title = new Label("Encounter");
         title.getStyleClass().add("editor-panel-title");
 
-        ComboBox<String> difficulty = new ComboBox<>(model.difficultyOptions());
-        difficulty.valueProperty().bindBidirectional(model.selectedDifficultyProperty());
         difficulty.setMaxWidth(Double.MAX_VALUE);
-        EncounterFilterPane filterPane = new EncounterFilterPane(model);
+        difficulty.valueProperty().addListener((ignored, before, after) -> {
+            if (!refreshing) {
+                viewModel.setSelectedDifficulty(after);
+            }
+        });
 
-        Button generate = new Button("Generate");
-        generate.getStyleClass().add("neutral-action");
-        generate.setMaxWidth(Double.MAX_VALUE);
-        generate.setOnAction(event -> controller.generate());
+        generateButton.getStyleClass().add("neutral-action");
+        generateButton.setMaxWidth(Double.MAX_VALUE);
+        generateButton.setOnAction(event -> viewModel.generate());
 
-        Button reroll = new Button("Reroll");
-        reroll.getStyleClass().add("neutral-action");
-        reroll.setMaxWidth(Double.MAX_VALUE);
-        reroll.setOnAction(event -> controller.reroll());
+        rerollButton.getStyleClass().add("neutral-action");
+        rerollButton.setMaxWidth(Double.MAX_VALUE);
+        rerollButton.setOnAction(event -> viewModel.reroll());
 
         Label difficultyHeader = new Label("DIFFICULTY");
         difficultyHeader.getStyleClass().addAll("section-header", "text-muted");
@@ -72,32 +83,24 @@ public final class EncounterView {
                 new Separator(),
                 filterHeader,
                 filterPane,
-                generate,
-                reroll);
+                generateButton,
+                rerollButton);
         pane.getStyleClass().addAll("dungeon-editor-toolbar", "dungeon-editor-sidebar");
         pane.setPadding(new Insets(12));
         return pane;
     }
 
     private VBox buildWorkspace() {
-        Label partySummary = new Label();
-        partySummary.textProperty().bind(model.texts().partySummaryProperty());
         partySummary.setWrapText(true);
 
-        Label thresholds = new Label();
-        thresholds.textProperty().bind(model.texts().thresholdsSummaryProperty());
         thresholds.setWrapText(true);
 
-        Label dailyBudget = new Label();
-        dailyBudget.textProperty().bind(model.texts().dailyBudgetSummaryProperty());
         dailyBudget.setWrapText(true);
 
-        Label resultSummary = new Label();
-        resultSummary.textProperty().bind(model.texts().resultSummaryProperty());
         resultSummary.setWrapText(true);
 
-        TableView<EncounterModel.EncounterAlternativeViewData> table = buildAlternativesTable();
-        TextArea detail = buildDetailArea();
+        configureAlternativesTable();
+        configureDetailArea();
         VBox.setVgrow(table, Priority.ALWAYS);
         VBox.setVgrow(detail, Priority.ALWAYS);
 
@@ -106,36 +109,48 @@ public final class EncounterView {
         return pane;
     }
 
-    private TableView<EncounterModel.EncounterAlternativeViewData> buildAlternativesTable() {
-        TableView<EncounterModel.EncounterAlternativeViewData> table =
-                new TableView<>(model.alternatives().alternatives());
+    private void configureAlternativesTable() {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        TableColumn<EncounterModel.EncounterAlternativeViewData, String> title = new TableColumn<>("Encounter");
-        title.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().title()));
-        TableColumn<EncounterModel.EncounterAlternativeViewData, String> difficulty = new TableColumn<>("Band");
-        difficulty.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().difficultyLabel()));
-        TableColumn<EncounterModel.EncounterAlternativeViewData, Integer> adjustedXp = new TableColumn<>("Adjusted XP");
-        adjustedXp.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().adjustedXp()));
-        TableColumn<EncounterModel.EncounterAlternativeViewData, String> composition = new TableColumn<>("Composition");
-        composition.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().creatureSummary()));
-        table.getColumns().setAll(title, difficulty, adjustedXp, composition);
+        TableColumn<EncounterSnapshot.AlternativeViewData, String> title = new TableColumn<>("Encounter");
+        title.setCellValueFactory(cell -> javafx.beans.binding.Bindings.createStringBinding(cell.getValue()::title));
+        TableColumn<EncounterSnapshot.AlternativeViewData, String> difficultyColumn = new TableColumn<>("Band");
+        difficultyColumn.setCellValueFactory(cell -> javafx.beans.binding.Bindings.createStringBinding(cell.getValue()::difficultyLabel));
+        TableColumn<EncounterSnapshot.AlternativeViewData, Number> adjustedXp = new TableColumn<>("Adjusted XP");
+        adjustedXp.setCellValueFactory(cell -> javafx.beans.binding.Bindings.createIntegerBinding(cell.getValue()::adjustedXp));
+        TableColumn<EncounterSnapshot.AlternativeViewData, String> composition = new TableColumn<>("Composition");
+        composition.setCellValueFactory(cell -> javafx.beans.binding.Bindings.createStringBinding(cell.getValue()::creatureSummary));
+        table.getColumns().setAll(title, difficultyColumn, adjustedXp, composition);
         table.getSelectionModel().selectedItemProperty()
-                .addListener((ignored, before, after) -> model.alternatives().selectedAlternativeProperty().set(after));
-        model.alternatives().selectedAlternativeProperty().addListener((ignored, before, after) -> {
-            if (after != null && !Objects.equals(table.getSelectionModel().getSelectedItem(), after)) {
-                table.getSelectionModel().select(after);
-            }
-        });
-        return table;
+                .addListener((ignored, before, after) -> {
+                    if (!refreshing) {
+                        viewModel.selectAlternative(after);
+                    }
+                });
     }
 
-    private TextArea buildDetailArea() {
-        TextArea detail = new TextArea();
-        detail.textProperty().bind(model.texts().detailTextProperty());
+    private void configureDetailArea() {
         detail.setEditable(false);
         detail.setWrapText(true);
         detail.setPrefRowCount(12);
-        return detail;
+    }
+
+    private void refreshFromViewModel() {
+        EncounterSnapshot snapshot = viewModel.snapshot();
+        refreshing = true;
+        difficulty.getItems().setAll(snapshot.difficultyOptions());
+        difficulty.setValue(snapshot.selectedDifficulty());
+        table.getItems().setAll(snapshot.alternatives());
+        if (snapshot.selectedAlternative() == null) {
+            table.getSelectionModel().clearSelection();
+        } else if (!Objects.equals(table.getSelectionModel().getSelectedItem(), snapshot.selectedAlternative())) {
+            table.getSelectionModel().select(snapshot.selectedAlternative());
+        }
+        partySummary.setText(snapshot.text().partySummary());
+        thresholds.setText(snapshot.text().thresholdsSummary());
+        dailyBudget.setText(snapshot.text().dailyBudgetSummary());
+        resultSummary.setText(snapshot.text().resultSummary());
+        detail.setText(snapshot.text().detailText());
+        refreshing = false;
     }
 
     private static Node labeledControl(String label, Node control) {

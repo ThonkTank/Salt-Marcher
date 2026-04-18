@@ -1,7 +1,7 @@
 package bootstrap;
 
 import org.jspecify.annotations.Nullable;
-import shell.host.ShellViewContribution;
+import shell.api.ShellViewContribution;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

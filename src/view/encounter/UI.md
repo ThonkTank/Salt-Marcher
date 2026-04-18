@@ -44,10 +44,17 @@ The state panel is rendered as an independent runtime-state contribution in the
 shared shell runtime-state area. It is not embedded into the encounter tab's
 left controls column.
 
-The encounter tab contribution and the separate runtime-state contribution
-share one runtime-session assembly in `src/view/encountershared/assembly/`.
-The state panel node itself is view-owned under `src/view/encounter/View/`
-while the shared assembly wires both runtime surfaces to the same session.
+The encounter tab contribution delegates into `src/view/encounter/assembly/`
+and the runtime-state contribution delegates into
+`src/view/encounterstate/assembly/`.
+
+Both assemblies share one cached runtime session through the public
+`src/view/encounter/api/EncounterRuntimeSession` boundary.
+
+Presentation state and encounter actions are owned by
+`src/view/encounter/ViewModel/EncounterViewModel`. The state panel node itself
+remains view-owned under `src/view/encounter/View/` while both assemblies wire
+the same view model and runtime surfaces into the shell session.
 
 Visible elements:
 

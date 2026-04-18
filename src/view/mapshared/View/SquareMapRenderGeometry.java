@@ -1,6 +1,6 @@
 package src.view.mapshared.View;
 
-import src.view.mapshared.Model.MapViewport;
+import src.view.mapshared.ViewModel.MapViewport;
 
 import java.util.Locale;
 

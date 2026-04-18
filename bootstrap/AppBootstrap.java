@@ -2,15 +2,15 @@ package bootstrap;
 
 import org.jspecify.annotations.Nullable;
 import shell.host.AppShell;
-import shell.host.PersistenceContribution;
-import shell.host.PersistenceRegistry;
-import shell.host.ShellContributionSpec;
-import shell.host.ShellRuntimeContext;
-import shell.host.ShellRuntimeStateSpec;
-import shell.host.ShellScreen;
-import shell.host.ShellTabSpec;
-import shell.host.ShellTopBarSpec;
-import shell.host.ShellViewContribution;
+import shell.api.ServiceContribution;
+import shell.api.ServiceRegistry;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellRuntimeContext;
+import shell.api.ShellRuntimeStateSpec;
+import shell.api.ShellScreen;
+import shell.api.ShellTabSpec;
+import shell.api.ShellTopBarSpec;
+import shell.api.ShellViewContribution;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -22,19 +22,19 @@ import java.util.List;
 public final class AppBootstrap {
 
     private final ShellViewDiscovery discovery;
-    private final PersistenceContributionDiscovery persistenceContributionDiscovery;
+    private final ServiceContributionDiscovery serviceContributionDiscovery;
 
     public AppBootstrap() {
-        this(new ShellViewDiscovery(), new PersistenceContributionDiscovery());
+        this(new ShellViewDiscovery(), new ServiceContributionDiscovery());
     }
 
-    AppBootstrap(ShellViewDiscovery discovery, PersistenceContributionDiscovery persistenceContributionDiscovery) {
+    AppBootstrap(ShellViewDiscovery discovery, ServiceContributionDiscovery serviceContributionDiscovery) {
         this.discovery = discovery;
-        this.persistenceContributionDiscovery = persistenceContributionDiscovery;
+        this.serviceContributionDiscovery = serviceContributionDiscovery;
     }
 
     public AppShell createShell() {
-        AppShell shell = new AppShell(discoverPersistence());
+        AppShell shell = new AppShell(discoverServices());
 
         List<ResolvedContribution> contributions = discoverContributions(shell.runtimeContext());
         for (ResolvedContribution contribution : contributions) {
@@ -48,9 +48,9 @@ public final class AppBootstrap {
         return shell;
     }
 
-    private PersistenceRegistry discoverPersistence() {
-        PersistenceRegistry.Builder builder = new PersistenceRegistry.Builder();
-        for (PersistenceContribution contribution : persistenceContributionDiscovery.discover()) {
+    private ServiceRegistry discoverServices() {
+        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        for (ServiceContribution contribution : serviceContributionDiscovery.discover()) {
             contribution.register(builder);
         }
         return builder.build();

@@ -11,28 +11,30 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import src.view.creatures.Controller.CreaturesController;
-import src.view.creatures.Model.CreaturesCatalogViewData;
-import src.view.creatures.Model.CreaturesModel;
+import src.view.creatures.ViewModel.CreatureFilterOptionsViewData;
+import src.view.creatures.ViewModel.CreaturesCatalogSnapshot;
+import src.view.creatures.ViewModel.CreaturesCatalogViewData;
+import src.view.creatures.ViewModel.CreaturesCatalogViewModel;
 
 import java.util.Objects;
 
 public final class CreaturesView {
 
-    private final CreaturesModel model;
-    private final CreaturesController controller;
+    private final CreaturesCatalogViewModel viewModel;
     private final VBox controls = new VBox(10);
     private final VBox workspace = new VBox(10);
     private final TableView<CreaturesCatalogViewData.Row> table = new TableView<>();
     private final Label pageSummaryLabel = new Label();
     private final Label statusLabel = new Label();
+    private final Button previousButton = new Button("Previous");
+    private final Button nextButton = new Button("Next");
 
-    public CreaturesView(CreaturesModel model, CreaturesController controller) {
-        this.model = Objects.requireNonNull(model, "model");
-        this.controller = Objects.requireNonNull(controller, "controller");
+    public CreaturesView(CreaturesCatalogViewModel viewModel) {
+        this.viewModel = Objects.requireNonNull(viewModel, "viewModel");
+        this.viewModel.addChangeListener(this::refreshFromViewModel);
         buildControls();
         buildWorkspace();
-        bindStatus();
+        refreshFromViewModel();
     }
 
     public Node controls() {
@@ -44,7 +46,6 @@ public final class CreaturesView {
     }
 
     private void buildControls() {
-        var filters = model.filters();
         controls.setPadding(new Insets(12));
         controls.getStyleClass().addAll("dungeon-editor-toolbar", "dungeon-editor-sidebar");
 
@@ -52,16 +53,15 @@ public final class CreaturesView {
         title.getStyleClass().add("editor-panel-title");
 
         CreatureFilterPane filterPane = new CreatureFilterPane(
-                new src.view.creatures.Model.CreatureFilterOptionsViewData(
-                        filters.options().sizeOptions(),
-                        filters.options().typeOptions(),
-                        filters.options().subtypeOptions(),
-                        filters.options().biomeOptions(),
-                        filters.options().alignmentOptions(),
-                        filters.options().challengeRatingOptions()),
-                filters.selection(),
+                new CreatureFilterOptionsViewData(
+                        viewModel.snapshot().filterOptions().sizes(),
+                        viewModel.snapshot().filterOptions().types(),
+                        viewModel.snapshot().filterOptions().subtypes(),
+                        viewModel.snapshot().filterOptions().biomes(),
+                        viewModel.snapshot().filterOptions().alignments(),
+                        viewModel.snapshot().filterOptions().challengeRatings()),
                 FilterPaneConfig.catalogDefaults(),
-                controller::applyFilters);
+                viewModel::applyFilters);
         controls.getChildren().setAll(
                 title,
                 filterPane
@@ -69,14 +69,12 @@ public final class CreaturesView {
     }
 
     private void buildWorkspace() {
-        var catalog = model.catalog();
         workspace.setPadding(new Insets(12));
         workspace.getStyleClass().add("scene-pane");
         VBox.setVgrow(table, Priority.ALWAYS);
 
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setPlaceholder(new Label("No creatures found."));
-        table.setItems(catalog.rows());
         table.getColumns().setAll(
                 textColumn("Name", CreaturesCatalogViewData.Row::name),
                 textColumn("CR", CreaturesCatalogViewData.Row::challengeRating),
@@ -88,17 +86,12 @@ public final class CreaturesView {
                 numberColumn("AC", row -> row.armorClass())
         );
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) ->
-                controller.selectCreature(newValue == null ? null : newValue.id()));
+                viewModel.selectCreature(newValue == null ? null : newValue.id()));
 
-        Button previousButton = new Button("Previous");
-        previousButton.disableProperty().bind(catalog.previousPageAvailableProperty().not());
-        previousButton.setOnAction(event -> controller.previousPage());
+        previousButton.setOnAction(event -> viewModel.previousPage());
 
-        Button nextButton = new Button("Next");
-        nextButton.disableProperty().bind(catalog.nextPageAvailableProperty().not());
-        nextButton.setOnAction(event -> controller.nextPage());
+        nextButton.setOnAction(event -> viewModel.nextPage());
 
-        pageSummaryLabel.textProperty().bind(catalog.pageSummaryTextProperty());
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
@@ -108,19 +101,22 @@ public final class CreaturesView {
         workspace.getChildren().setAll(table, footer, statusLabel);
     }
 
-    private void bindStatus() {
-        var status = model.status();
-        statusLabel.textProperty().bind(status.statusTextProperty());
+    private void refreshFromViewModel() {
+        CreaturesCatalogSnapshot snapshot = viewModel.snapshot();
+        table.getItems().setAll(snapshot.page().rows());
+        previousButton.setDisable(!snapshot.page().previousPageAvailable());
+        nextButton.setDisable(!snapshot.page().nextPageAvailable());
+        pageSummaryLabel.setText(snapshot.page().pageSummaryText());
+        statusLabel.setText(snapshot.status().text());
         statusLabel.getStyleClass().add("status-label");
-        statusLabel.visibleProperty().bind(status.statusVisibleProperty());
-        statusLabel.managedProperty().bind(status.statusVisibleProperty());
-        status.statusErrorProperty().addListener((obs, oldValue, newValue) -> updateStatusStyle());
-        updateStatusStyle();
+        statusLabel.setVisible(snapshot.status().visible());
+        statusLabel.setManaged(snapshot.status().visible());
+        updateStatusStyle(snapshot.status().error());
     }
 
-    private void updateStatusStyle() {
+    private void updateStatusStyle(boolean error) {
         statusLabel.getStyleClass().removeAll("status-label-error", "status-label-success");
-        statusLabel.getStyleClass().add(model.status().statusErrorProperty().get()
+        statusLabel.getStyleClass().add(error
                 ? "status-label-error"
                 : "status-label-success");
     }

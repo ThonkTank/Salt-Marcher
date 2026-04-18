@@ -43,7 +43,7 @@ Provide a runtime encounter builder that:
 ## Acceptance Criteria
 
 - the encounter feature depends only on public party and creature APIs
-- generated encounters remain derived runtime output, not canonical truth
+- generated encounters remain derived runtime output, not write-model state
 - a party with no active members yields a clear empty-state message
 - generator output includes adjusted XP and a difficulty-band label
 - lock and exclude actions change subsequent rerolls without requiring shell

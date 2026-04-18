@@ -13,11 +13,13 @@ import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Supplier;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
 
 /**
  * Top-right shared history-aware inspector for read-mostly detail content.
  */
-public class InspectorPane extends VBox implements InspectorSink {
+final class InspectorPane extends VBox implements InspectorSink {
 
     private final Label detailTitle = new Label();
     private final VBox detailContent = new VBox();

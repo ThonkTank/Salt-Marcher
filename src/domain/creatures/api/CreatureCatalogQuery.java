@@ -1,7 +1,6 @@
 package src.domain.creatures.api;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.creaturesAPI;
 
 import java.util.List;
 
@@ -14,8 +13,8 @@ public record CreatureCatalogQuery(
         List<String> subtypes,
         List<String> biomes,
         List<String> alignments,
-        creaturesAPI.CatalogSortField sortField,
-        creaturesAPI.SortDirection sortDirection,
+        CreatureCatalogSortField sortField,
+        CreatureSortDirection sortDirection,
         int pageSize,
         int pageOffset
 ) {
@@ -37,8 +36,8 @@ public record CreatureCatalogQuery(
                 List.of(),
                 List.of(),
                 List.of(),
-                creaturesAPI.CatalogSortField.NAME,
-                creaturesAPI.SortDirection.ASCENDING,
+                CreatureCatalogSortField.NAME,
+                CreatureSortDirection.ASCENDING,
                 50,
                 0
         );

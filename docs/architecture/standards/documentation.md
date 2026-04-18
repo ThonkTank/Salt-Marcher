@@ -154,11 +154,13 @@ Use:
 
 Use:
 
-- canonical truth
+- the write model and the source of domain decisions
+- aggregate roots or core objects, including mutation entrypoints when relevant
 - derived state
-- aggregates or core objects
+- domain-owned ports and external dependency boundaries
 - ownership boundaries
 - invariants
+- explicit current-state versus target-state framing when implementation lags
 - references
 
 ### UI Template

@@ -1,8 +1,8 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-18
-Source of Truth: Quality-platform operating model, local usage, GitHub Actions
-integration, and branch-protection expectations.
+Source of Truth: Quality-platform operating model, task entrypoints, local
+usage, GitHub Actions integration, and branch-protection expectations.
 
 # Quality Platforms Standard
 
@@ -11,17 +11,28 @@ existing compiler, CPD, and repository policy checks:
 
 - `ArchUnit` runs through `./gradlew architectureTest` and enforces package-
   level dependency boundaries between `bootstrap`, `shell`, `src.view`,
-  `src.domain`, and `src.data`, plus cross-feature API-only access below the
-  view layer outside MVCI ownership.
-- `jQAssistant` runs through `./gradlew checkMvci` and is the single owner for
-  mechanical MVCI dependency, cross-component view reuse, and view-topology
-  contracts.
+  `src.domain`, and `src.data`, plus cross-feature application-service-only
+  access below the view layer outside dedicated view-architecture ownership,
+  and cycle freedom across domain, view, data, and shell slices.
+- `jQAssistant` runs through `./gradlew checkViewArchitecture` and is also
+  invoked automatically from `./gradlew compileJava` so canonical MVVM
+  topology failures already break the compile entrypoint.
+- `Error Prone` runs through `./gradlew compileJava` and owns compiler-precise
+  MVVM checks such as root-delegation bans, `View`/`assembly` dependency
+  bans, `ViewModel` framework bans, root `ShellRuntimeContext.services()`
+  bans, shell API allowlist checks on view roots, `assembly/`, and data
+  `*ServiceContribution` roots, state-placement bans, reflection-bypass bans,
+  `api/` dependency bans, `api/` signature-leak checks, public domain
+  boundary signature purity against outer-layer and foreign private domain
+  leaks, data-gateway return-type bans on domain exposure, and repository/query
+  public-signature bans on leaking internal data implementation types.
 - `PMD architecture` runs through `./gradlew pmdArchitectureMain` and enforces
-  Java source conventions for feature entrypoints, slot usage, and forbidden
-  framework or wiring patterns.
+  Java source conventions for feature entrypoints, thin stateless root
+  surfaces, and forbidden framework or wiring patterns.
 - `build-harness` runs through `./gradlew :build-harness:check` and enforces
-  repository topology, package-path alignment, and persistence- or
-  documentation-correlated non-MVCI presence rules.
+  repository topology, package-path alignment, and non-view-architecture
+  presence rules on active code surfaces directly, without fixture-based
+  selftests.
 - `CKJM ext` runs through `./gradlew ckjmMain` and produces OO-metric reports
   under `build/reports/ckjm/`.
 - `Lizard` runs through `./gradlew lizardMain` and is part of the blocking
@@ -37,14 +48,25 @@ The task wiring for local quality lives in the included build
 plugin. The root build keeps application and packaging behavior, while the
 convention plugin owns check aggregation, Error Prone configuration, and typed
 Gradle task implementations for repository-policy and metric gates.
-SaltMarcher MVCI rules live in `tools/quality/jqassistant/rules/` and are
-configured by `tools/quality/jqassistant/config.yml`.
+SaltMarcher view-architecture rules live in
+`tools/quality/jqassistant/rules/` and are configured by
+`tools/quality/jqassistant/config.yml`.
 
-The binding passive-view MVCI model is defined in
-[View MVCI Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/view-mvci.md:1).
-Not every part of that model is already encoded mechanically. This document
-must therefore distinguish between current gate coverage and review-owned
-future coverage.
+The binding MVVM model is defined in
+[Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/view-mvvm.md:1).
+The binding system-wide layer and dependency model is defined in
+[System Layer Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/system-layer-architecture.md:1).
+The binding shell workbench model is defined in
+[Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-workbench.md:1),
+and discovery/bootstrap mechanics are defined in
+[Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1).
+The binding DDD-primary domain-layer model is defined in
+[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1).
+The binding data-layer adapter model is defined in
+[Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/data-layer.md:1).
+The canonical rule-shape split, owner model, and status vocabulary for
+build-blocking architecture rules live in the
+[Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
 
 ## Verification Policy
 
@@ -53,8 +75,12 @@ SaltMarcher does not use behavior-coupled automated tests as a safety strategy.
 - Do not add JUnit or similar automated tests for feature behavior, internal
   orchestration, UI helpers, or other change-coupled logic whose assertions
   must be migrated alongside normal behavior changes.
+- Do not add fixture-based selftests or meta-test suites inside verification
+  harnesses such as `build-harness`; express those policies directly in the
+  owning gate instead.
 - Use the existing structural and build gates for automated confidence:
-  compiler checks, `checkMvci`, `architectureTest`, `pmdArchitectureMain`,
+  compiler checks, `checkViewArchitecture`, `architectureTest`,
+  `pmdArchitectureMain`,
   `:build-harness:check`, and the quality platforms named in this document.
 - Use manual testing for behavior verification and workflow validation.
 - Do not expand the compile/build/check pipeline with new automated gates unless
@@ -79,11 +105,17 @@ SaltMarcher should use `branch -> pull request -> auto-merge` for changes into
 ## Local Usage
 
 - `./gradlew compileJava --console=plain`
-- `./gradlew checkMvci --console=plain`
+  This runs compiler-precise view and data architecture checks and then the
+  blocking MVVM jQAssistant analyze step after a successful Java compile.
+- `./gradlew checkViewArchitecture --console=plain`
 - `./gradlew architectureTest --console=plain`
 - `./gradlew pmdArchitectureMain --console=plain`
 - `./gradlew :build-harness:check --console=plain`
 - `./gradlew checkArchitecture --console=plain`
+- `./gradlew checkCentralizedStylesheets --console=plain`
+- `./gradlew checkDefinedStyleClassSelectors --console=plain`
+- `./gradlew checkNoCompiledArtifactsInSource --console=plain`
+- `./gradlew checkDesktopPackagingInputs --console=plain`
 - `./gradlew jqassistantEffectiveRules --console=plain`
 - `./gradlew cpdMain --console=plain`
 - `./gradlew ckjmMain --console=plain`
@@ -91,70 +123,81 @@ SaltMarcher should use `branch -> pull request -> auto-merge` for changes into
 - `./gradlew check --console=plain`
 
 `check` is the blocking local aggregate. It includes compiler checks,
-`checkMvci`, `checkArchitecture`, repository-policy checks, `cpdMain`,
+`checkViewArchitecture`, `checkArchitecture`, repository-policy checks,
+`cpdMain`,
 `lizardMain`, and `ckjmMain`.
 
-## Boundary Ownership
+## Architecture Harness Relationship
 
-- `ArchUnit` covers bytecode-visible dependency direction:
-  - `bootstrap` stays outside feature code
-  - `shell` stays outside feature code
-  - `domain` stays independent from `view`, `shell`, `bootstrap`, and `data`
-  - `data` adapters stay out of presentation and shell code
-- `PMD architecture` covers Java source policies:
-  - root-entrypoint naming and `public final` / public no-arg requirements
-  - required entrypoint methods such as `registrationSpec()`,
-    `createScreen(...)`, and `register(...)`
-  - shell contribution spec selection and slot-matrix validation
-  - view bans on legacy shell wiring types
-  - domain bans on UI and infrastructure framework tokens
-  - inline JavaFX styling bans such as `setStyle(...)`
-  - bans on legacy runtime-service persistence wiring
-- `jQAssistant` currently covers MVCI and view-topology ownership:
-  - controller, view, model, and interactor bucket boundaries
-  - interactor bans on scene-graph and non-API domain dependencies
-  - cross-component private-bucket bans and `*shared` reuse rules
-  - allowed `src/view/<component>/` buckets
-  - placement of `*RuntimeSession`, `*ScreenAssembly`, and `*ShellAdapter`
-  - exactly-one view root entrypoint and bucket/package consistency
-- `jQAssistant` is also the designated future owner for the remaining passive-
-  view MVCI rules that are source of truth today but not yet fully mechanized:
-  - root-entrypoint dependency restriction to `shell.*` plus own `assembly/`
-  - plain-state ban on `javafx.*` in `Model/`
-  - controller ban on `Model/` types
-  - `api/` as the only public cross-component view boundary
-  - public-signature bans on leaking private bucket types through `api/`
-  - full scene-graph confinement to `View/` and `assembly/`
-- `build-harness` covers repository topology and documentation-correlated
-  non-MVCI presence rules:
-  - repository layout and package-path alignment
-  - `src/domain/<feature>/<feature>API.java` presence for domain features
-  - missing persistence root entrypoints in `src/data/<feature>/`
-  - exactly one persistence schema per persistence-exporting feature
-- `build-logic` convention tasks cover repository-wide policy and metric rules
-  that are easier to express as Gradle-owned verification:
-  - centralized stylesheet placement under top-level `resources/`
-  - compiled artifact bans under active source roots
-  - desktop packaging metadata and resource presence
-  - CPD duplicate detection
-  - Lizard complexity verification
-  - CKJM metrics reporting and blocking thresholds
+This document describes how the quality platforms are operated. The harness
+standard above defines which engine owns which class of architecture rule.
 
-## Review-Only Governance
+Operationally, the architecture harness enters local quality through these
+tasks:
 
-Not every documented architecture rule is a compile-time invariant.
+- `compileJava`
+  - runs `Error Prone`, including blocking compiler-precise view and data
+    architecture rules plus the blocking programmatic visual-styling ban
+  - finalizes with the blocking canonical `jQAssistant` MVVM analysis after a
+    successful Java compile
+- `checkViewArchitecture`
+  - runs the explicit canonical MVVM topology analysis
+- `checkArchitecture`
+  - aggregates `architectureTest`, `pmdArchitectureMain`, and
+    `:build-harness:check`
+- `checkCentralizedStylesheets`
+  - runs the blocking centralized stylesheet placement verifier
+- `checkDefinedStyleClassSelectors`
+  - runs the blocking Java-to-central-selector resolution verifier
+- `checkNoCompiledArtifactsInSource`
+  - runs the blocking compiled-artifact source-root verifier
+- `checkDesktopPackagingInputs`
+  - runs the blocking desktop packaging input verifier
+- `check`
+  - runs the architecture harness plus adjacent blocking quality gates
 
-- Documentation ownership, source-of-truth conflicts, and same-change doc
-  updates remain review responsibilities.
+## Adjacent Blocking Quality Platforms
+
+Not every blocking quality task is the primary owner of an architecture rule.
+
+- `build-logic` convention tasks own repository-wide build and resource policy
+  checks such as centralized stylesheet placement, compiled-artifact bans under
+  active source roots, and desktop packaging input validation.
+- `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
+  `checkNoCompiledArtifactsInSource`, and `checkDesktopPackagingInputs` are
+  blocking typed Gradle verifiers, but they are not aggregated under
+  `checkArchitecture`.
+- `CPD`, `Lizard`, and `CKJM ext` are blocking local quality platforms, but
+  they are not the canonical owner of SaltMarcher layer-model rules.
+- `SonarCloud` and `CodeScene` are CI-quality platforms intended as required PR
+  checks, but they are not the primary local owner of architectural boundary
+  contracts.
+
+## Review Governance
+
+- Documentation ownership, source-of-truth conflicts, and same-change
+  documentation updates remain review responsibilities.
 - GitHub branch protection, required checks, and auto-merge remain repository
   configuration, not Gradle behavior.
-- Positive runtime access rules such as preferring
-  `ShellRuntimeContext.persistence()` and `ShellRuntimeContext.inspector()`
-  remain review rules until a dedicated check owns them.
-- The stronger passive-view rules named in the view MVCI standard remain
-  review-owned until `checkMvci` is expanded to cover them explicitly.
-- When a rule becomes mechanically checkable, this document should name the
-  owning gate explicitly instead of implying blanket enforcement.
+- The stronger system-layer rules do not all have the same status. Use the
+  harness standard as the canonical classification:
+  - already enforced: top-level inward dependency direction, view access to
+    backend boundaries only through public `*ApplicationService` roots and
+    public `api/`, root-only shell bridging in view, root-only shell
+    registration in data, the `shell.api` / `shell.host` split including the
+    bootstrap-only access rule for `shell.host.AppShell`, public domain
+    boundary signatures staying free of outer-layer types and foreign private
+    domain types, and the structurally expressible subset of boundary-carrier
+    purity
+  - current candidate: same-feature internal carrier purity on domain-owned
+    public backend boundaries, with the preferred future owner being
+    `Error Prone` on `compileJava`
+  - still review-owned: seam minimization to the smallest intentional public
+    boundary, semantically needless pass-through wrappers, and coordination
+    duplication or shell-passivity drift that is not reducible to stable
+    structure
+- Review-only architectural rules stay review-owned until the harness standard
+  names a primary mechanical owner and a blocking task for them explicitly.
 
 ## GitHub Actions
 

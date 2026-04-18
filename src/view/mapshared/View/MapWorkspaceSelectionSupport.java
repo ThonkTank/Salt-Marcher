@@ -1,9 +1,9 @@
 package src.view.mapshared.View;
 
 import org.jspecify.annotations.Nullable;
-import src.view.mapshared.Model.MapCellViewModel;
-import src.view.mapshared.Model.MapViewport;
-import src.view.mapshared.Model.MapWorkspaceRenderModel;
+import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapViewport;
+import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
 
 final class MapWorkspaceSelectionSupport {
 

@@ -1,126 +1,146 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-18
-Source of Truth: Shell contribution model, discovery contracts, slot rules, and
-dependency boundaries between bootstrap, shell, view, domain, and data.
+Source of Truth: Shell bootstrap responsibilities, discovery contracts,
+instantiation rules, registration order, and startup resolution for passive
+shell contributions.
 
-# Shell And Discovery Standard
+# Shell Discovery And Bootstrap Standard
 
 ## Goal
 
-The shell stays passive. Features register themselves through open contracts,
-and bootstrap discovers them generically.
+Bootstrap must discover and register shell-facing features generically without
+becoming a feature registry.
 
-## Dependency Rule
+This document defines bootstrap mechanics only. The binding shell role model,
+fixed surface contract, lifecycle vocabulary, and forbidden shell-composition
+patterns live in the dedicated
+[Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-workbench.md:1).
 
-Dependencies point inward:
+## Bootstrap Responsibilities
 
-- presentation reaches backend content through interactors and feature APIs
-- domain defines business rules and repository contracts
-- data implements domain-owned contracts
+`AppBootstrap` is responsible for:
 
-Forbidden directions:
+- discovering exported service contributions
+- building the shared shell service registry
+- constructing `AppShell` with that registry
+- discovering shell view contributions
+- resolving each contribution into registration metadata plus `ShellScreen`
+- registering each resolved contribution into the shell by contribution-spec
+  type
+- selecting the startup tab and navigating to it
 
-- view directly to data
-- shell to feature logic
-- bootstrap to feature-specific classes as routine wiring
-- domain to shell, JavaFX, or infrastructure frameworks
-
-## Shell Contribution Model
-
-Feature UI enters the shell through `ShellViewContribution`.
-
-Each contribution provides:
-
-- `registrationSpec()`
-- `createScreen(runtimeContext)`
-
-Allowed contribution types:
-
-- `ShellTabSpec`
-- `ShellTopBarSpec`
-- `ShellRuntimeStateSpec`
-
-## Slot Rules
-
-Feature contributions may target only:
-
-- `TOP_BAR`
-- `COCKPIT_CONTROLS`
-- `COCKPIT_MAIN`
-- `COCKPIT_STATE`
-
-Contribution-specific rules:
-
-- `ShellTabSpec` requires `COCKPIT_MAIN`
-- `ShellTabSpec` may provide `COCKPIT_CONTROLS`
-- `ShellTabSpec` must not provide `TOP_BAR` or `COCKPIT_DETAILS`
-- `ShellTabSpec` with `ShellTabMode.RUNTIME` must not provide `COCKPIT_STATE`
-- `ShellTabSpec` with `ShellTabMode.EDITOR` may provide `COCKPIT_STATE`
-- `ShellTopBarSpec` must provide only `TOP_BAR`
-- `ShellRuntimeStateSpec` must provide only `COCKPIT_STATE`
-
-Inspector content is dynamic and must flow through
-`ShellRuntimeContext.inspector()`. `COCKPIT_DETAILS` remains shell-owned and
-must not be filled through feature `slotContent()`.
-
-The shell owns cockpit resize behavior.
-
-- slot roots are treated as content, not as layout authorities
-- the shell may wrap or normalize slot roots so `COCKPIT_MAIN` absorbs
-  remaining space while controls, state, and details keep shell-owned bounds
-- features must not rely on custom root min/max sizing to influence cockpit
-  resizing behavior
+Bootstrap must stay generic. Routine feature addition must not require manual
+feature registries, explicit bootstrap imports, or per-feature shell wiring.
 
 ## Discovery Contracts
 
-Bootstrap discovers features and persistence contributions generically.
+Bootstrap discovers feature and service contributions generically.
 
 ### Feature Discovery
 
 - scans `src/view/<component>/` root classes
-- expects one root contribution class per component
+- expects exactly one root contribution class named
+  `<PascalComponentName>ViewContribution`
+- expects that class to implement `ShellViewContribution`
 - expects a public no-arg constructor
-- registers the contribution by its spec type
+- instantiates discovered contributions reflectively and generically
 
-### Persistence Discovery
+### Service Discovery
 
 - scans `src/data/<feature>/` root classes
-- expects one persistence contribution per exporting feature
-- registers exported capabilities into the shared `PersistenceRegistry`
+- expects exactly one root service contribution class named
+  `<PascalFeatureName>ServiceContribution`
+- expects that class to implement `ServiceContribution`
+- expects a public no-arg constructor
+- registers exported capabilities into the shared shell service registry
 
-## Runtime Access Rules
+## Instantiation Rules
 
-- Features read persistence through `ShellRuntimeContext.persistence()`
-- Features publish inspector entries through `ShellRuntimeContext.inspector()`
-- Features that need one shared runtime session across multiple shell
-  contributions use `ShellRuntimeContext.session(...)`
-- The root `*ViewContribution` may touch shell contracts, but routine slice
-  wiring should delegate immediately into the component's `assembly/` bucket
-- Shell-facing runtime composition belongs in the root entrypoint or the
-  component's `assembly/` bucket, never in `Controller/`, `View/`, `Model/`,
-  or `interactor/`
-- Domain feature APIs, persistence factories, and inspector sinks should enter
-  a component through `assembly/`, not through `Controller/` or `interactor/`
-- Slot content returned to the shell should come from `assembly/` or `View/`,
-  not from scene-graph-producing `interactor/` types
-- Features must not talk to `AppShell` or concrete shell panels as alternate
-  wiring paths
+Instantiation is shell-owned and generic:
+
+- discovery loads contribution classes through the application classloader
+- interfaces and abstract classes are ignored as non-instantiable roots
+- missing or non-public no-arg constructors are bootstrap errors
+- unsupported contribution-spec types are bootstrap errors
+
+The shell workbench model allows future lazy `ShellScreen` realization, but
+current bootstrap behavior eagerly resolves each discovered
+`ShellViewContribution` into:
+
+- `registrationSpec()`
+- `createScreen(runtimeContext)`
+
+That eagerness is current behavior, not the long-term contract.
+
+## Registration Order
+
+Bootstrap registers contributions after resolution.
+
+Current registration behavior:
+
+- service contributions are discovered first and populate
+  the shell service registry
+- the shell is constructed with that registry
+- view contributions are discovered next
+- resolved view contributions are sorted by contribution key value before
+  registration
+- each contribution is registered by spec type:
+  - `ShellTabSpec`
+  - `ShellTopBarSpec`
+  - `ShellRuntimeStateSpec`
+
+The key sort is a deterministic registration-order rule. It is not a user-
+visible navigation-order contract.
+
+## Startup Resolution
+
+Startup landing is resolved only from `ShellTabSpec` contributions.
+
+Rules:
+
+- exactly one tab may declare `defaultLanding=true`
+- multiple default-landing tabs are bootstrap errors
+- if no tab declares `defaultLanding=true`, startup falls back to the first tab
+  in sorted navigation order:
+  - navigation group order
+  - navigation group label
+  - tab `viewOrder`
+  - contribution key
+
+## Responsibilities Excluded From This Document
+
+This standard does not redefine:
+
+- shell workbench role ownership
+- fixed slot semantics
+- lifecycle meaning of shell activation hooks
+- the allowed feature-facing shell API surface
+- forbidden shell-composition patterns beyond bootstrap mechanics
 
 ## Verification Notes
 
-- `architectureTest` enforces dependency direction and cross-feature API-only
-  access between `view`, `domain`, and `data`.
-- `pmdArchitectureMain` enforces entrypoint contracts, contribution spec
-  selection, slot-matrix rules, and bans on legacy shell wiring types.
-- Positive runtime-access preferences for `ShellRuntimeContext.persistence()`
-  and `ShellRuntimeContext.inspector()` remain review-owned until a dedicated
-  check models them directly.
+The canonical owner model, rule-status vocabulary, and blocking-task mapping
+for these checks live in the
+[Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+
+- `build-harness` and `pmdArchitectureMain` enforce root-entrypoint naming,
+  placement, and constructor contracts used by generic discovery.
+- `pmdArchitectureMain` enforces supported contribution-spec selection, thin
+  stateless root contracts, and the minimal public surface of contribution
+  roots.
+- `architectureTest` enforces that bootstrap may depend on `shell.host.AppShell`
+  but feature code must stay on `shell.api/**`.
+- bootstrap registration order, startup fallback ordering, and eager current
+  realization remain code-defined behavior reviewed against this document.
+- no new gate is introduced by this split; enforcement ownership stays where it
+  already exists.
 
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
+- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
-- [View MVCI Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/view-mvci.md:1)
-- [ADR 002: Passive Shell And Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
-- [ADR 005: Strict MVCI Roles In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-strict-view-mvci-and-assembly-bucket.md:1)
+- [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-workbench.md:1)
+- [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
+- [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)

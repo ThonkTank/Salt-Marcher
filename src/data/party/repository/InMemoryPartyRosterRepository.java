@@ -1,27 +1,16 @@
 package src.data.party.repository;
 
-import src.data.party.datasource.local.InMemoryPartyRosterDataSource;
-import src.data.party.mapper.PartyRosterMapper;
-import src.domain.party.entity.PartyRoster;
-import src.domain.party.repository.PartyRosterRepository;
+import src.data.party.gateway.local.InMemoryPartyRosterGateway;
 
 import java.util.Objects;
 
-public final class InMemoryPartyRosterRepository implements PartyRosterRepository {
+public final class InMemoryPartyRosterRepository extends AbstractPartyRosterRepository {
 
-    private final InMemoryPartyRosterDataSource dataSource;
-
-    public InMemoryPartyRosterRepository(InMemoryPartyRosterDataSource dataSource) {
-        this.dataSource = Objects.requireNonNull(dataSource, "dataSource");
+    public InMemoryPartyRosterRepository(InMemoryPartyRosterGateway gateway) {
+        super(requiredGateway(gateway)::load, requiredGateway(gateway)::save);
     }
 
-    @Override
-    public PartyRoster load() {
-        return PartyRosterMapper.toDomain(dataSource.load());
-    }
-
-    @Override
-    public void save(PartyRoster roster) {
-        dataSource.save(PartyRosterMapper.toRecord(roster));
+    private static InMemoryPartyRosterGateway requiredGateway(InMemoryPartyRosterGateway gateway) {
+        return Objects.requireNonNull(gateway, "gateway");
     }
 }

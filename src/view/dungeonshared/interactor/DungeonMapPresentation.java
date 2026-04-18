@@ -1,7 +1,7 @@
 package src.view.dungeonshared.interactor;
 
 import src.domain.dungeon.api.BaseMapSnapshot;
-import src.view.mapshared.Model.MapWorkspaceRenderModel;
+import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
 
 import java.util.function.Function;
 import java.util.function.Supplier;

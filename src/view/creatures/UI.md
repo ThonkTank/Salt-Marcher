@@ -35,6 +35,9 @@ Visible elements:
 - status message for empty, success, and error states
 
 Selecting a creature opens the inspector detail surface for that creature.
+The root contribution delegates all slice wiring into `assembly/`.
+Presentation state and actions are owned under `ViewModel/`, while shell
+adaptation for inspector publishing remains in `assembly/`.
 
 ## User-Visible States
 

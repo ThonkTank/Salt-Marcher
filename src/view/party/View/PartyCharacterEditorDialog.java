@@ -12,7 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Window;
-import src.view.party.Model.PartyViewData;
+import src.view.party.ViewModel.PartyViewData;
 
 import java.util.Optional;
 

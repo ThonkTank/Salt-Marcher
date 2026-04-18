@@ -5,7 +5,10 @@ import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.DungeonMapId;
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.OnionConfig;
-import src.domain.dungeon.dungeonAPI;
+import src.domain.dungeon.DungeonApplicationService;
+import src.view.dungeonshared.ViewModel.DungeonMapSurfaceState;
+import src.view.dungeonshared.ViewModel.DungeonOverlayMode;
+import src.view.dungeonshared.ViewModel.DungeonOverlaySettings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +16,7 @@ import java.util.Objects;
 
 abstract class AbstractDungeonMapSurfaceController {
 
-    protected final dungeonAPI dungeon;
+    protected final DungeonApplicationService dungeon;
     protected final List<Runnable> listeners = new ArrayList<>();
 
     protected String searchText = "";
@@ -26,7 +29,7 @@ abstract class AbstractDungeonMapSurfaceController {
     protected String lastMutationSummary = "Noch keine Editor-Aktion ausgelöst.";
     protected List<String> lastMutationMessages = List.of();
 
-    protected AbstractDungeonMapSurfaceController(dungeonAPI dungeon) {
+    protected AbstractDungeonMapSurfaceController(DungeonApplicationService dungeon) {
         this.dungeon = Objects.requireNonNull(dungeon, "dungeon");
     }
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-18
 Source of Truth: Persistence path and schema ownership rules for the `party`
 feature.
 
@@ -10,13 +10,17 @@ This document is normative for the `party` feature's persistence path.
 
 ## Root Contract
 
-- `src/data/party/PartyPersistenceContribution.java` is the only root
-  persistence entrypoint for the feature.
+- `src/data/party/PartyServiceContribution.java` is the only root service
+  entrypoint for the feature.
 - Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers all exported persistence capabilities through
-  `shell.host.PersistenceRegistry`.
-- View code reads those capabilities only through
-  `ShellRuntimeContext.persistence()`.
+- The contribution registers all exported backend capabilities through the
+  shell-owned service registry, `shell.api.ServiceRegistry`.
+- The exported party runtime surface includes both
+  `PartyApplicationService.class` for direct assembly consumption and
+  `PartyApplicationService.Factory.class` for callers that still need the
+  legacy factory contract during migration.
+- View assembly code reads those capabilities only through the shell-owned
+  runtime-capability lookup on `ShellRuntimeContext.services()`.
 
 ## Mandatory Schema
 
@@ -25,7 +29,7 @@ This document is normative for the `party` feature's persistence path.
 - The schema currently owns:
   - `player_characters`
   - `party_roster_metadata`
-- `SqlitePartyLocalDataSource` must derive table creation and additive column
+- `SqlitePartyLocalGateway` must derive table creation and additive column
   migration from this schema artifact instead of spreading canonical
   definitions across unrelated classes.
 

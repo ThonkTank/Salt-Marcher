@@ -2,14 +2,15 @@ package shell.host;
 
 import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
-
 import java.util.EnumMap;
 import java.util.Map;
+import shell.api.ShellScreen;
+import shell.api.ShellSlot;
 
 /**
  * Sanitized slot content published by a shell screen.
  */
-public final class ShellSlotContent {
+final class ShellSlotContent {
 
     private final Map<ShellSlot, Node> nodes;
 

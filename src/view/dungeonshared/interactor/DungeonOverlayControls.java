@@ -14,6 +14,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import org.jspecify.annotations.Nullable;
+import src.view.dungeonshared.ViewModel.DungeonOverlayMode;
+import src.view.dungeonshared.ViewModel.DungeonOverlaySettings;
 
 import java.util.List;
 import java.util.function.Consumer;

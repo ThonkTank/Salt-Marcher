@@ -6,6 +6,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.process.ExecSpec
 import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
+import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
 import saltmarcher.buildlogic.tasks.CheckDesktopPackagingInputsTask
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
 import saltmarcher.buildlogic.tasks.CkjmReportTask
@@ -76,6 +77,7 @@ val jqassistantDistribution by configurations.creating {
 dependencies {
     errorprone("com.google.errorprone:error_prone_core:2.48.0")
     errorprone("com.uber.nullaway:nullaway:0.13.1")
+    errorprone("saltmarcher.quality:quality-rules-errorprone:1.0-SNAPSHOT")
 
     add("cpdCli", "net.sourceforge.pmd:pmd-cli:7.23.0")
     add("cpdCli", "net.sourceforge.pmd:pmd-java:7.23.0")
@@ -95,19 +97,33 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.named<JavaCompile>("compileJava") {
+    dependsOn(gradle.includedBuild("quality-rules-errorprone").task(":jar"))
     options.errorprone.enabled.set(true)
     options.errorprone.disableWarningsInGeneratedCode.set(true)
     options.errorprone.disable("StringConcatToTextBlock")
     options.errorprone.error("EqualsNull")
+    options.errorprone.error("DataAdapterPublicSignatureLeak")
+    options.errorprone.error("DataGatewayReturnTypeBoundary")
+    options.errorprone.error("DomainPublicBoundarySignaturePurity")
+    options.errorprone.error("FeatureShellApiAllowlist")
     options.errorprone.error("NullAway")
     options.errorprone.error("ReferenceEquality")
     options.errorprone.error("StringCaseLocaleUsage")
     options.errorprone.error("StringSplitter")
+    options.errorprone.error("ViewAssemblyDependencies")
+    options.errorprone.error("ViewApiDependencies")
+    options.errorprone.error("ViewApiPublicSignatureLeak")
+    options.errorprone.error("ViewModelOwnershipNaming")
+    options.errorprone.error("ViewModelFrameworkIndependence")
+    options.errorprone.error("ViewProgrammaticStyling")
+    options.errorprone.error("ViewReflectionBypass")
+    options.errorprone.error("ViewRestrictedDependencies")
+    options.errorprone.error("ViewRootDelegation")
     options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
     options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
 }
 
-fun ExecSpec.configureJqassistantInvocation(vararg arguments: String) {
+fun ExecSpec.configureJqassistantInvocation(configFile: RegularFile, vararg arguments: String) {
     workingDir = layout.projectDirectory.asFile
     environment("JQASSISTANT_OPTS", jqassistantJvmOpens)
     commandLine(
@@ -115,7 +131,7 @@ fun ExecSpec.configureJqassistantInvocation(vararg arguments: String) {
         jqassistantCliFile.get().asFile.absolutePath,
         *arguments,
         "-C",
-        jqassistantConfigFile.asFile.absolutePath
+        configFile.asFile.absolutePath
     )
 }
 
@@ -128,9 +144,9 @@ val installJqassistant by tasks.registering(Sync::class) {
     into(jqassistantInstallDir)
 }
 
-val jqassistantScanMvci by tasks.registering(Exec::class) {
+val jqassistantScanViewArchitecture by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Scan SaltMarcher bytecode and source topology for MVCI analysis."
+    description = "Scan SaltMarcher bytecode and source topology for view-architecture analysis."
     dependsOn(installJqassistant, tasks.named("classes"))
     inputs.file(jqassistantConfigFile)
     inputs.dir(jqassistantRulesDir)
@@ -138,50 +154,85 @@ val jqassistantScanMvci by tasks.registering(Exec::class) {
     inputs.files(sourceJavaRoots)
     outputs.dir(layout.buildDirectory.dir("jqassistant/store"))
     doFirst {
-        configureJqassistantInvocation("scan")
+        configureJqassistantInvocation(jqassistantConfigFile, "scan")
     }
 }
 
-val jqassistantAnalyzeMvci by tasks.registering(Exec::class) {
+val jqassistantAnalyzeViewArchitecture by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Analyze SaltMarcher MVCI constraints with jQAssistant."
-    dependsOn(jqassistantScanMvci)
+    description = "Analyze SaltMarcher MVVM view-architecture constraints with jQAssistant."
+    dependsOn(jqassistantScanViewArchitecture)
     inputs.file(jqassistantConfigFile)
     inputs.dir(jqassistantRulesDir)
     outputs.dir(jqassistantReportsDir)
     doFirst {
+        delete(jqassistantReportsDir)
+        delete(layout.buildDirectory.dir("reports/jqassistant-mvvm-preview"))
         jqassistantReportsDir.get().asFile.mkdirs()
         jqassistantJunitReportsDir.get().asFile.mkdirs()
-        configureJqassistantInvocation("analyze")
+        configureJqassistantInvocation(jqassistantConfigFile, "analyze")
     }
+}
+
+val compileJavaViewArchitectureBlocker by tasks.registering(Exec::class) {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the canonical MVVM jQAssistant blocker as part of compileJava."
+    dependsOn(installJqassistant)
+    inputs.file(jqassistantConfigFile)
+    inputs.dir(jqassistantRulesDir)
+    inputs.dir(layout.buildDirectory.dir("classes/java/main"))
+    inputs.files(sourceJavaRoots)
+    outputs.dir(jqassistantReportsDir)
+    onlyIf("compileJava completed successfully in this build") {
+        val compileJavaState = tasks.named<JavaCompile>("compileJava").get().state
+        compileJavaState.executed && compileJavaState.failure == null
+    }
+    doFirst {
+        delete(jqassistantReportsDir)
+        jqassistantReportsDir.get().asFile.mkdirs()
+        jqassistantJunitReportsDir.get().asFile.mkdirs()
+        workingDir = layout.projectDirectory.asFile
+        environment("JQASSISTANT_OPTS", jqassistantJvmOpens)
+        val jqassistantCli = jqassistantCliFile.get().asFile.absolutePath
+        val configPath = jqassistantConfigFile.asFile.absolutePath
+        commandLine(
+            "/bin/bash",
+            "-lc",
+            "'$jqassistantCli' scan -C '$configPath' && '$jqassistantCli' analyze -C '$configPath'"
+        )
+    }
+}
+
+tasks.named<JavaCompile>("compileJava") {
+    finalizedBy(compileJavaViewArchitectureBlocker)
 }
 
 val jqassistantEffectiveRules by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Print the effective SaltMarcher jQAssistant MVCI rules."
+    description = "Print the effective SaltMarcher MVVM view-architecture rules."
     dependsOn(installJqassistant)
     inputs.file(jqassistantConfigFile)
     inputs.dir(jqassistantRulesDir)
     doFirst {
-        configureJqassistantInvocation("effective-rules")
+        configureJqassistantInvocation(jqassistantConfigFile, "effective-rules")
     }
 }
 
 val jqassistantServer by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Start the local jQAssistant Neo4j server for MVCI rule development."
+    description = "Start the local jQAssistant Neo4j server for MVVM view-architecture rule development."
     dependsOn(installJqassistant, tasks.named("classes"))
     inputs.file(jqassistantConfigFile)
     inputs.dir(jqassistantRulesDir)
     doFirst {
-        configureJqassistantInvocation("server")
+        configureJqassistantInvocation(jqassistantConfigFile, "server")
     }
 }
 
-val checkMvci by tasks.registering {
+val checkViewArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run SaltMarcher MVCI checks via jQAssistant."
-    dependsOn(jqassistantAnalyzeMvci)
+    description = "Run the canonical SaltMarcher MVVM view-architecture blocker via jQAssistant."
+    dependsOn(jqassistantAnalyzeViewArchitecture)
 }
 
 val renderDesktopIconPng by tasks.registering(RenderDesktopIconTask::class) {
@@ -245,7 +296,7 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
 
 val checkArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs non-MVCI architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
+    description = "Runs non-view-architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
     dependsOn("architectureTest")
     dependsOn("pmdArchitectureMain")
     dependsOn(gradle.includedBuild("build-harness").task(":check"))
@@ -272,6 +323,20 @@ val checkCentralizedStylesheets by tasks.registering(CheckCentralizedStylesheets
     styleExtensions.set(stylesheetExtensions)
 }
 
+val checkDefinedStyleClassSelectors by tasks.registering(CheckDefinedStyleClassSelectorsTask::class) {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Fail if Java-authored style classes are missing from centralized resources/*.css selectors."
+    javaSourceFiles.from(sourceRoots.asFileTree.matching {
+        include("**/*.java")
+        exclude("**/build/**")
+    })
+    stylesheetFiles.from(
+        layout.projectDirectory.dir("resources").asFileTree.matching {
+            stylesheetExtensions.forEach { extension -> include("**/*.$extension") }
+        }
+    )
+}
+
 val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputsTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validate main class, icon, stylesheet, and launcher metadata required for desktop packaging."
@@ -290,9 +355,10 @@ val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputs
 }
 
 tasks.named("check") {
-    dependsOn(checkMvci)
+    dependsOn(checkViewArchitecture)
     dependsOn(checkArchitecture)
     dependsOn(checkCentralizedStylesheets)
+    dependsOn(checkDefinedStyleClassSelectors)
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkDesktopPackagingInputs)
     dependsOn(cpdMain)
@@ -303,6 +369,7 @@ tasks.named("check") {
 tasks.named("build") {
     dependsOn(checkArchitecture)
     dependsOn(checkCentralizedStylesheets)
+    dependsOn(checkDefinedStyleClassSelectors)
     dependsOn(checkDesktopPackagingInputs)
 }
 

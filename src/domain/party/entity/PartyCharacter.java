@@ -1,6 +1,6 @@
 package src.domain.party.entity;
 
-import src.domain.party.partyAPI;
+import src.domain.party.api.CharacterDraft;
 import src.domain.party.valueobject.PartyMembership;
 import src.domain.party.valueobject.PartyRestType;
 
@@ -48,7 +48,7 @@ public final class PartyCharacter {
         return membership;
     }
 
-    public PartyCharacter update(partyAPI.CharacterDraft draft) {
+    public PartyCharacter update(CharacterDraft draft) {
         return new PartyCharacter(
                 id,
                 new PartyCharacterIdentity(draft.name(), draft.playerName()),

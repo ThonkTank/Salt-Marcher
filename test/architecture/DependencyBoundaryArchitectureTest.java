@@ -23,13 +23,6 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
         cacheMode = CacheMode.PER_CLASS)
 public final class DependencyBoundaryArchitectureTest {
 
-    private static final String[] DOMAIN_INTERNAL_PACKAGES = {
-            "src.domain..entity..",
-            "src.domain..usecase..",
-            "src.domain..repository..",
-            "src.domain..valueobject.."
-    };
-
     private DependencyBoundaryArchitectureTest() {
     }
 
@@ -46,14 +39,19 @@ public final class DependencyBoundaryArchitectureTest {
 
     @ArchTest
     static final ArchRule featureEntrypointsMustOnlyUseFeatureApisAtBackendBoundary =
-            noClasses()
+            classes()
                     .that()
                     .resideInAPackage("src.view..")
                     .and()
                     .haveSimpleNameEndingWith("ViewContribution")
-                    .should()
-                    .dependOnClassesThat()
-                    .resideInAnyPackage(DOMAIN_INTERNAL_PACKAGES);
+                    .should(onlyDependOnDomainPublicBoundaries());
+
+    @ArchTest
+    static final ArchRule viewImplementationMustOnlyUseDomainRootsAndApis =
+            classes()
+                    .that()
+                    .resideInAPackage("src.view..")
+                    .should(onlyDependOnDomainPublicBoundaries());
 
     @ArchTest
     static final ArchRule domainMustStayIndependentFromOuterLayers =
@@ -77,9 +75,11 @@ public final class DependencyBoundaryArchitectureTest {
                     .that()
                     .resideInAnyPackage(
                             "src.data..repository..",
-                            "src.data..datasource..",
+                            "src.data..query..",
+                            "src.data..gateway..",
                             "src.data..model..",
-                            "src.data..mapper..")
+                            "src.data..mapper..",
+                            "src.data..persistencecore..")
                     .should()
                     .dependOnClassesThat()
                     .resideInAnyPackage("src.view..", "shell..", "bootstrap..");
@@ -89,11 +89,41 @@ public final class DependencyBoundaryArchitectureTest {
             classes()
                     .that()
                     .resideInAnyPackage(
+                            "src.data..",
                             "src.data..repository..",
-                            "src.data..datasource..",
+                            "src.data..query..",
+                            "src.data..gateway..",
                             "src.data..model..",
-                            "src.data..mapper..")
+                            "src.data..mapper..",
+                            "src.data..persistencecore..")
+                    .and()
+                    .doNotResideInAnyPackage("src.data.persistencecore..")
                     .should(onlyDependOnForeignDomainApis());
+
+    @ArchTest
+    static final ArchRule dataFeaturesMustNotReachForeignPrivateDataBuckets =
+            classes()
+                    .that()
+                    .resideInAPackage("src.data..")
+                    .and()
+                    .doNotResideInAnyPackage("src.data.persistencecore..")
+                    .should(onlyDependOnOwnDataFeatureOrPersistencecore());
+
+    @ArchTest
+    static final ArchRule persistencecoreMustStayIndependentFromFeatureSpecificDataPackages =
+            classes()
+                    .that()
+                    .resideInAPackage("src.data.persistencecore..")
+                    .should(notDependOnFeatureSpecificDataPackages());
+
+    @ArchTest
+    static final ArchRule persistencecoreMustNotDependOnDomainTypes =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.data.persistencecore..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("src.domain..");
 
     @ArchTest
     static final ArchRule shellMustNotReachFeatureInteractorsDomainOrData =
@@ -113,8 +143,33 @@ public final class DependencyBoundaryArchitectureTest {
                     .dependOnClassesThat()
                     .resideInAnyPackage("src.view..", "src.domain..", "src.data..");
 
+    @ArchTest
+    static final ArchRule nonBootstrapCodeMustNotReachShellHostInternals =
+            noClasses()
+                    .that()
+                    .resideInAnyPackage("src..", "shell.api..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("shell.host..");
+
+    @ArchTest
+    static final ArchRule shellApiMustStayIndependentFromHostAndFeatureLayers =
+            noClasses()
+                    .that()
+                    .resideInAPackage("shell.api..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAnyPackage("shell.host..", "bootstrap..", "src.view..", "src.domain..", "src.data..");
+
+    @ArchTest
+    static final ArchRule bootstrapMustOnlyUseAppShellFromShellHost =
+            classes()
+                    .that()
+                    .resideInAPackage("bootstrap..")
+                    .should(onlyDependOnAppShellFromShellHost());
+
     private static ArchCondition<JavaClass> onlyDependOnForeignDomainApis() {
-        return new ArchCondition<>("only depend on same-feature domain internals or foreign feature APIs") {
+        return new ArchCondition<>("only depend on same-feature domain internals or foreign feature public boundaries") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 String sourceFeature = domainFeatureName(item.getPackageName());
@@ -131,10 +186,34 @@ public final class DependencyBoundaryArchitectureTest {
                     if (targetFeature == null || targetFeature.equals(sourceFeature)) {
                         continue;
                     }
-                    if (isFeatureApi(targetPackage, target.getSimpleName(), targetFeature)) {
+                    if (isFeaturePublicBoundary(targetPackage, targetFeature)) {
                         continue;
                     }
                     String message = item.getName() + " depends on foreign domain internal " + target.getName();
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> onlyDependOnDomainPublicBoundaries() {
+        return new ArchCondition<>("only depend on domain application-service roots or api carriers") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetPackage = target.getPackageName();
+                    if (!targetPackage.startsWith("src.domain.")) {
+                        continue;
+                    }
+                    String targetFeature = domainFeatureName(targetPackage);
+                    if (targetFeature == null) {
+                        continue;
+                    }
+                    if (isFeaturePublicBoundary(targetPackage, targetFeature)) {
+                        continue;
+                    }
+                    String message = item.getName() + " depends on domain internal " + target.getName();
                     events.add(SimpleConditionEvent.violated(item, message));
                 }
             }
@@ -150,8 +229,88 @@ public final class DependencyBoundaryArchitectureTest {
         return separatorIndex >= 0 ? remainder.substring(0, separatorIndex) : remainder;
     }
 
-    private static boolean isFeatureApi(String packageName, String simpleName, String featureName) {
+    private static ArchCondition<JavaClass> onlyDependOnOwnDataFeatureOrPersistencecore() {
+        return new ArchCondition<>("only depend on same-feature data implementation or persistencecore within src.data") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                String sourceFeature = dataFeatureName(item.getPackageName());
+                if (sourceFeature == null || sourceFeature.equals("persistencecore")) {
+                    return;
+                }
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetPackage = target.getPackageName();
+                    if (!targetPackage.startsWith("src.data.")) {
+                        continue;
+                    }
+                    String targetFeature = dataFeatureName(targetPackage);
+                    if (targetFeature == null
+                            || targetFeature.equals(sourceFeature)
+                            || targetFeature.equals("persistencecore")) {
+                        continue;
+                    }
+                    String message = item.getName() + " depends on foreign data implementation " + target.getName();
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnFeatureSpecificDataPackages() {
+        return new ArchCondition<>("not depend on feature-specific data packages from persistencecore") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetPackage = target.getPackageName();
+                    if (!targetPackage.startsWith("src.data.")
+                            || isPersistencecorePackage(targetPackage)) {
+                        continue;
+                    }
+                    String message = item.getName()
+                            + " makes persistencecore depend on feature-specific data type "
+                            + target.getName();
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
+    }
+
+    private static boolean isFeaturePublicBoundary(String packageName, String featureName) {
         return packageName.equals("src.domain." + featureName)
                 || packageName.startsWith("src.domain." + featureName + ".api");
+    }
+
+    private static String dataFeatureName(String packageName) {
+        if (!packageName.startsWith("src.data.")) {
+            return null;
+        }
+        String remainder = packageName.substring("src.data.".length());
+        int separatorIndex = remainder.indexOf('.');
+        return separatorIndex >= 0 ? remainder.substring(0, separatorIndex) : remainder;
+    }
+
+    private static boolean isPersistencecorePackage(String packageName) {
+        return packageName.equals("src.data.persistencecore")
+                || packageName.startsWith("src.data.persistencecore.");
+    }
+
+    private static ArchCondition<JavaClass> onlyDependOnAppShellFromShellHost() {
+        return new ArchCondition<>("only depend on shell.host.AppShell from shell.host") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    if (!target.getPackageName().startsWith("shell.host.")) {
+                        continue;
+                    }
+                    if ("shell.host.AppShell".equals(target.getName())) {
+                        continue;
+                    }
+                    String message = item.getName() + " depends on internal shell host type " + target.getName();
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
     }
 }

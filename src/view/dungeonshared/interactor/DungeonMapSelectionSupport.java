@@ -5,7 +5,7 @@ import javafx.scene.control.ListView;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
-import src.view.mapshared.Model.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapCellViewModel;
 import src.view.mapshared.View.MapWorkspaceView;
 
 import java.util.List;

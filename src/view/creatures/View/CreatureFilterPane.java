@@ -1,6 +1,11 @@
 package src.view.creatures.View;
 
 import javafx.animation.PauseTransition;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.FlowPane;
@@ -9,16 +14,24 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import org.jspecify.annotations.Nullable;
-import src.view.creatures.Model.CreatureFilterOptionsViewData;
-import src.view.creatures.Model.CreaturesFilterSelectionModel;
+import src.view.creatures.ViewModel.CreatureFilterSelection;
+import src.view.creatures.ViewModel.CreatureFilterOptionsViewData;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public final class CreatureFilterPane extends VBox {
 
-    private final CreaturesFilterSelectionModel selection;
-    private final @Nullable Runnable onFilterChanged;
+    private final StringProperty searchText = new SimpleStringProperty("");
+    private final ObjectProperty<String> selectedChallengeRatingMin = new SimpleObjectProperty<>();
+    private final ObjectProperty<String> selectedChallengeRatingMax = new SimpleObjectProperty<>();
+    private final ObservableList<String> selectedSizes = FXCollections.observableArrayList();
+    private final ObservableList<String> selectedTypes = FXCollections.observableArrayList();
+    private final ObservableList<String> selectedSubtypes = FXCollections.observableArrayList();
+    private final ObservableList<String> selectedBiomes = FXCollections.observableArrayList();
+    private final ObservableList<String> selectedAlignments = FXCollections.observableArrayList();
+    private final @Nullable Consumer<CreatureFilterSelection> onFilterChanged;
     private final FilterPaneConfig config;
     private final @Nullable SearchableFilterButton sizeFilter;
     private final @Nullable SearchableFilterButton typeFilter;
@@ -29,11 +42,9 @@ public final class CreatureFilterPane extends VBox {
 
     public CreatureFilterPane(
             CreatureFilterOptionsViewData options,
-            CreaturesFilterSelectionModel selection,
             FilterPaneConfig config,
-            @Nullable Runnable onFilterChanged
+            @Nullable Consumer<CreatureFilterSelection> onFilterChanged
     ) {
-        this.selection = Objects.requireNonNull(selection, "selection");
         this.config = Objects.requireNonNull(config, "config");
         this.onFilterChanged = onFilterChanged;
 
@@ -42,19 +53,19 @@ public final class CreatureFilterPane extends VBox {
         setPadding(new javafx.geometry.Insets(6, 8, 6, 8));
 
         sizeFilter = config.showSize()
-                ? new SearchableFilterButton("Größe", options.sizes(), selection.selectedSizes(), this::syncAndFire)
+                ? new SearchableFilterButton("Größe", options.sizes(), selectedSizes, this::syncAndFire)
                 : null;
         typeFilter = config.showType()
-                ? new SearchableFilterButton("Typ", options.types(), selection.selectedTypes(), this::syncAndFire)
+                ? new SearchableFilterButton("Typ", options.types(), selectedTypes, this::syncAndFire)
                 : null;
         subtypeFilter = config.showSubtype()
-                ? new SearchableFilterButton("Unterart", options.subtypes(), selection.selectedSubtypes(), this::syncAndFire)
+                ? new SearchableFilterButton("Unterart", options.subtypes(), selectedSubtypes, this::syncAndFire)
                 : null;
         biomeFilter = config.showBiome()
-                ? new SearchableFilterButton("Umgebung", options.biomes(), selection.selectedBiomes(), this::syncAndFire)
+                ? new SearchableFilterButton("Umgebung", options.biomes(), selectedBiomes, this::syncAndFire)
                 : null;
         alignmentFilter = config.showAlignment()
-                ? new SearchableFilterButton("Gesinnung", options.alignments(), selection.selectedAlignments(), this::syncAndFire)
+                ? new SearchableFilterButton("Gesinnung", options.alignments(), selectedAlignments, this::syncAndFire)
                 : null;
 
         VBox rows = new VBox(4);
@@ -75,8 +86,8 @@ public final class CreatureFilterPane extends VBox {
         if (config.showChallengeRating()) {
             filterRow.getChildren().add(new ChallengeRatingRangeControl(
                     options.challengeRatings(),
-                    selection.selectedChallengeRatingMinProperty(),
-                    selection.selectedChallengeRatingMaxProperty(),
+                    selectedChallengeRatingMin,
+                    selectedChallengeRatingMax,
                     this::fireChange));
         }
         CreatureFilterPaneSupport.addIfPresent(filterRow, sizeFilter);
@@ -92,7 +103,7 @@ public final class CreatureFilterPane extends VBox {
         TextField searchField = new TextField();
         searchField.setPromptText("Monster suchen...");
         searchField.setMaxWidth(Double.MAX_VALUE);
-        searchField.textProperty().bindBidirectional(selection.searchTextProperty());
+        searchField.textProperty().bindBidirectional(searchText);
 
         PauseTransition debounce = new PauseTransition(Duration.millis(300));
         debounce.setOnFinished(event -> fireChange());
@@ -109,24 +120,24 @@ public final class CreatureFilterPane extends VBox {
     }
 
     private void syncSelections() {
-        syncSelection(selection.selectedSizes(), sizeFilter);
-        syncSelection(selection.selectedTypes(), typeFilter);
-        syncSelection(selection.selectedSubtypes(), subtypeFilter);
-        syncSelection(selection.selectedBiomes(), biomeFilter);
-        syncSelection(selection.selectedAlignments(), alignmentFilter);
+        syncSelection(selectedSizes, sizeFilter);
+        syncSelection(selectedTypes, typeFilter);
+        syncSelection(selectedSubtypes, subtypeFilter);
+        syncSelection(selectedBiomes, biomeFilter);
+        syncSelection(selectedAlignments, alignmentFilter);
     }
 
     private void fireChange() {
         rebuildChips();
         if (onFilterChanged != null) {
-            onFilterChanged.run();
+            onFilterChanged.accept(currentSelection());
         }
     }
 
     private void clearAll() {
-        selection.searchTextProperty().set("");
-        selection.selectedChallengeRatingMinProperty().set(null);
-        selection.selectedChallengeRatingMaxProperty().set(null);
+        searchText.set("");
+        selectedChallengeRatingMin.set(null);
+        selectedChallengeRatingMax.set(null);
         CreatureFilterPaneSupport.clearSelection(sizeFilter);
         CreatureFilterPaneSupport.clearSelection(typeFilter);
         CreatureFilterPaneSupport.clearSelection(subtypeFilter);
@@ -139,27 +150,39 @@ public final class CreatureFilterPane extends VBox {
     private void rebuildChips() {
         chipsPane.getChildren().clear();
         if (config.showChallengeRating()) {
-            String minimum = selection.selectedChallengeRatingMinProperty().get();
-            String maximum = selection.selectedChallengeRatingMaxProperty().get();
+            String minimum = selectedChallengeRatingMin.get();
+            String maximum = selectedChallengeRatingMax.get();
             if (minimum != null || maximum != null) {
                 String label = "CR: " + (minimum == null ? "0" : minimum)
                         + "-" + (maximum == null ? "30" : maximum);
                 chipsPane.getChildren().add(makeChip(label, "chip-cr", () -> {
-                    selection.selectedChallengeRatingMinProperty().set(null);
-                    selection.selectedChallengeRatingMaxProperty().set(null);
+                    selectedChallengeRatingMin.set(null);
+                    selectedChallengeRatingMax.set(null);
                     fireChange();
                 }));
             }
         }
-        CreatureFilterPaneSupport.addFilterChips(chipsPane, selection.selectedSizes(), "chip-size", sizeFilter, this::syncAndFire);
-        CreatureFilterPaneSupport.addFilterChips(chipsPane, selection.selectedTypes(), "chip-type", typeFilter, this::syncAndFire);
-        CreatureFilterPaneSupport.addFilterChips(chipsPane, selection.selectedSubtypes(), "chip-subtype", subtypeFilter, this::syncAndFire);
-        CreatureFilterPaneSupport.addFilterChips(chipsPane, selection.selectedBiomes(), "chip-biome", biomeFilter, this::syncAndFire);
-        CreatureFilterPaneSupport.addFilterChips(chipsPane, selection.selectedAlignments(), "chip-align", alignmentFilter, this::syncAndFire);
+        CreatureFilterPaneSupport.addFilterChips(chipsPane, selectedSizes, "chip-size", sizeFilter, this::syncAndFire);
+        CreatureFilterPaneSupport.addFilterChips(chipsPane, selectedTypes, "chip-type", typeFilter, this::syncAndFire);
+        CreatureFilterPaneSupport.addFilterChips(chipsPane, selectedSubtypes, "chip-subtype", subtypeFilter, this::syncAndFire);
+        CreatureFilterPaneSupport.addFilterChips(chipsPane, selectedBiomes, "chip-biome", biomeFilter, this::syncAndFire);
+        CreatureFilterPaneSupport.addFilterChips(chipsPane, selectedAlignments, "chip-align", alignmentFilter, this::syncAndFire);
     }
 
     private HBox makeChip(String text, String styleClass, Runnable onRemove) {
         return CreatureFilterPaneSupport.makeChip(text, styleClass, onRemove);
+    }
+
+    private CreatureFilterSelection currentSelection() {
+        return new CreatureFilterSelection(
+                searchText.get(),
+                selectedChallengeRatingMin.get(),
+                selectedChallengeRatingMax.get(),
+                List.copyOf(selectedSizes),
+                List.copyOf(selectedTypes),
+                List.copyOf(selectedSubtypes),
+                List.copyOf(selectedBiomes),
+                List.copyOf(selectedAlignments));
     }
 
     private static void syncSelection(ObservableList<String> target, @Nullable SearchableFilterButton button) {

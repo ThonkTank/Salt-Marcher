@@ -22,13 +22,15 @@ Use the documentation tree in this order:
 ## Core Terms
 
 - `Feature`: a project-local vertical slice with view, domain, and data code.
-- `Feature API`: the public backend boundary of a feature below the view layer.
+- `Application Service`: the public backend boundary of a feature below the
+  view layer.
 - `Shell Contribution`: a feature entrypoint that registers UI content with the
   passive shell.
-- `Persistence Contribution`: a feature entrypoint that registers exported
-  persistence capabilities.
-- `Canonical Truth`: the authored state that is allowed to persist.
-- `Derived State`: any state rebuilt deterministically from canonical truth.
+- `Service Contribution`: a feature entrypoint that registers exported runtime
+  services with the passive shell.
+- `Write Model`: the authored state a feature owns and is allowed to persist.
+- `Read Model`: a read-only projection, lookup shape, or query-facing result.
+- `Derived State`: any state rebuilt deterministically from the write model.
 - `Source of Truth`: the single document that is authoritative for a topic.
 
 ## Hard Rules
@@ -39,6 +41,8 @@ Use the documentation tree in this order:
   code by default.
 - Behavior-coupled automated tests are not part of the project strategy; use
   the quality-platform gates plus manual testing instead.
+- Verification harnesses must not carry fixture-based selftest suites or
+  meta-test layers; enforce repository policy directly in the owning gate.
 - New compile/build/check gates require explicit user request. Detailed
   verification policy lives in `docs/architecture/standards/quality-platforms.md`.
 - Every non-ADR document outside `AGENTS.md` must declare `Status`, `Owner`,
@@ -51,6 +55,12 @@ Use the documentation tree in this order:
 - Work on agent-facing instruction artifacts must use the repo-owned
   `agent-instruction-engineering` skill and follow the canonical agent
   instruction standard.
+- Work under `src/domain/**` must follow the canonical domain-layer standard
+  before changes are made or reviewed. The repo-owned `domain-layer` skill is
+  supporting guidance only and must not override the canonical standard.
+- Work under `src/view/**` must use the repo-owned `view-layer-mvvm` skill and
+  follow the canonical MVVM view-layer standard before changes are made or
+  reviewed.
 - A change that introduces or alters behavior, architecture, or ownership must
   update the corresponding documentation in the same change.
 - The agent workflow below is a mandatory delivery protocol for implementation
@@ -111,6 +121,8 @@ Use the documentation tree in this order:
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/agent-instructions.md:1)
+- [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
+- [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
 - [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
 - [ADR 001: Documentation Governance](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/001-documentation-governance.md:1)

@@ -1,20 +1,12 @@
 package src.view.party;
 
-import javafx.scene.Node;
-import shell.host.ContributionKey;
-import shell.host.ShellContributionSpec;
-import shell.host.ShellRuntimeContext;
-import shell.host.ShellScreen;
-import shell.host.ShellTopBarSpec;
-import shell.host.ShellViewContribution;
-import shell.host.ShellSlot;
-import src.domain.party.partyAPI;
-import src.view.party.Controller.PartyController;
-import src.view.party.Model.PartyToolbarModel;
-import src.view.party.View.PartyToolbarView;
-import src.view.party.interactor.PartyInteractor;
-
-import java.util.Map;
+import shell.api.ContributionKey;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellRuntimeContext;
+import shell.api.ShellScreen;
+import shell.api.ShellTopBarSpec;
+import shell.api.ShellViewContribution;
+import src.view.party.assembly.PartyToolbarAssembly;
 
 public final class PartyViewContribution implements ShellViewContribution {
 
@@ -28,22 +20,6 @@ public final class PartyViewContribution implements ShellViewContribution {
 
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
-        PartyToolbarModel model = new PartyToolbarModel();
-        partyAPI party = runtimeContext.persistence().require(partyAPI.Factory.class).create();
-        PartyInteractor interactor = new PartyInteractor(party, model);
-        PartyController controller = new PartyController(interactor);
-        PartyToolbarView view = new PartyToolbarView(model, controller);
-        controller.initialize();
-        return new ShellScreen() {
-            @Override
-            public String getTitle() {
-                return "Party";
-            }
-
-            @Override
-            public Map<ShellSlot, Node> slotContent() {
-                return Map.of(ShellSlot.TOP_BAR, view.node());
-            }
-        };
+        return PartyToolbarAssembly.createScreen(runtimeContext);
     }
 }

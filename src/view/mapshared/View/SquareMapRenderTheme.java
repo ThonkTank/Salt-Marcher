@@ -3,7 +3,7 @@ package src.view.mapshared.View;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import src.view.mapshared.Model.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapCellViewModel;
 
 final class SquareMapRenderTheme {
 

@@ -8,9 +8,9 @@ import src.domain.mapcore.api.MapCellRef;
 import src.domain.mapcore.api.MapCellSnapshot;
 import src.domain.mapcore.api.MapEdgeSnapshot;
 import src.domain.mapcore.api.MapRenderPayload;
-import src.view.mapshared.Model.MapCellViewModel;
-import src.view.mapshared.Model.MapEdgeViewModel;
-import src.view.mapshared.Model.MapWorkspaceSceneViewData;
+import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapEdgeViewModel;
+import src.view.mapshared.ViewModel.MapWorkspaceSceneViewData;
 
 /**
  * Shared view-layer helpers for dungeon workspace projection and sidebar cards.

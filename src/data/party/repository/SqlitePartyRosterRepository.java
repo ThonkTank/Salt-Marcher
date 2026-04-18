@@ -1,27 +1,16 @@
 package src.data.party.repository;
 
-import src.data.party.datasource.local.SqlitePartyLocalDataSource;
-import src.data.party.mapper.PartyRosterMapper;
-import src.domain.party.entity.PartyRoster;
-import src.domain.party.repository.PartyRosterRepository;
+import src.data.party.gateway.local.SqlitePartyLocalGateway;
 
 import java.util.Objects;
 
-public final class SqlitePartyRosterRepository implements PartyRosterRepository {
+public final class SqlitePartyRosterRepository extends AbstractPartyRosterRepository {
 
-    private final SqlitePartyLocalDataSource dataSource;
-
-    public SqlitePartyRosterRepository(SqlitePartyLocalDataSource dataSource) {
-        this.dataSource = Objects.requireNonNull(dataSource, "dataSource");
+    public SqlitePartyRosterRepository(SqlitePartyLocalGateway gateway) {
+        super(requiredGateway(gateway)::load, requiredGateway(gateway)::save);
     }
 
-    @Override
-    public PartyRoster load() {
-        return PartyRosterMapper.toDomain(dataSource.load());
-    }
-
-    @Override
-    public void save(PartyRoster roster) {
-        dataSource.save(PartyRosterMapper.toRecord(roster));
+    private static SqlitePartyLocalGateway requiredGateway(SqlitePartyLocalGateway gateway) {
+        return Objects.requireNonNull(gateway, "gateway");
     }
 }

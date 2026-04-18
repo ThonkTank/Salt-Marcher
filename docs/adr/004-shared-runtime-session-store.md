@@ -27,7 +27,7 @@ SaltMarcher adds a typed per-shell runtime-session store on
   without direct knowledge of each other.
 - Feature state remains runtime-local and separate from canonical persistence.
 - The shell runtime context becomes the single passive integration point for
-  persistence, inspector access, and shared runtime sessions.
+  runtime-capability lookup, inspector access, and shared runtime sessions.
 
 ## Alternatives Considered
 
@@ -43,4 +43,6 @@ passive-shell boundary.
 ## Related Documents
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
-- [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
+- [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-workbench.md:1)
+- [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
+- [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)

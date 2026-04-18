@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-18
 Source of Truth: Encounter feature ownership, runtime truth model, and domain
 invariants.
 
@@ -10,13 +10,31 @@ invariants.
 
 - `encounter` is a runtime composition feature.
 - It does not own party truth or creature truth.
-- It consumes foreign feature APIs only:
-  - `src.domain.party.partyAPI`
-  - `src.domain.creatures.creaturesAPI`
+- It consumes foreign application services only:
+  - `src.domain.party.PartyApplicationService`
+  - `src.domain.creatures.CreaturesApplicationService`
 
-## Canonical Truth And Derived State
+## Architecture Status
 
-The encounter feature does not persist canonical authored truth in v1.
+Current state:
+
+- `encounter` is a policy-owning bounded context. It owns balancing,
+  candidate narrowing, locking rules, and ranking behavior for generated
+  encounters.
+- `application/` now owns orchestration and foreign-service coordination,
+  while stateless balancing, targeting, ranking, and role/tag heuristics still
+  live in dedicated encounter model code that remains migration debt toward
+  named domain modules.
+
+Target state:
+
+- orchestration remains in `application/`
+- stable encounter policies continue to move toward richer domain objects and
+  explicit domain services instead of procedural helper concentration
+
+## Write Model And Derived State
+
+The encounter feature does not persist authored write-model state in v1.
 
 It derives:
 
@@ -45,3 +63,9 @@ excluded inside the runtime tab, but those controls remain local session state.
   truth
 - the feature may enrich final suggestions with creature-detail tags without
   changing creature ownership
+
+## References
+
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1)
+- [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/encounter/SPEC.md:1)
+- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/encounter/UI.md:1)

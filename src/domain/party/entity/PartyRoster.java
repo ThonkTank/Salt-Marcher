@@ -1,6 +1,6 @@
 package src.domain.party.entity;
 
-import src.domain.party.partyAPI;
+import src.domain.party.api.CharacterDraft;
 import src.domain.party.valueobject.PartyMembership;
 import src.domain.party.valueobject.PartyMutationStatus;
 import src.domain.party.valueobject.PartyRestType;
@@ -34,7 +34,7 @@ public final class PartyRoster {
         return PartyRosterProjection.from(characters);
     }
 
-    public MutationResult createCharacter(partyAPI.CharacterDraft draft, PartyMembership membership) {
+    public MutationResult createCharacter(CharacterDraft draft, PartyMembership membership) {
         if (!draftValidator.isValid(draft) || membership == null) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }
@@ -53,7 +53,7 @@ public final class PartyRoster {
         return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId + 1, nextCharacters));
     }
 
-    public MutationResult updateCharacter(long id, partyAPI.CharacterDraft draft) {
+    public MutationResult updateCharacter(long id, CharacterDraft draft) {
         if (!draftValidator.isValid(draft)) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }

@@ -1,19 +1,10 @@
 package saltmarcher.quality.pmd;
 
-import java.util.List;
 import java.util.Set;
 import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
 
 public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
-
-    private static final Set<String> ALLOWED_SHELL_SLOTS = Set.of(
-            "TOP_BAR",
-            "COCKPIT_CONTROLS",
-            "COCKPIT_MAIN",
-            "COCKPIT_DETAILS",
-            "COCKPIT_STATE"
-    );
 
     @Override
     public Object visit(ASTCompilationUnit node, Object data) {
@@ -22,7 +13,7 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
             checkViewRoot(node, data, sourceFacts);
         }
         if (sourceFacts.isDataRoot()) {
-            checkPersistenceRoot(node, data, sourceFacts);
+            checkServiceRoot(node, data, sourceFacts);
         }
         if (sourceFacts.isDataModel() && sourceFacts.fileName().contains("PersistenceSchema")) {
             checkPersistenceSchema(node, data, sourceFacts);
@@ -43,7 +34,7 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
         }
         if (!sourceFacts.text().contains("ShellViewContribution")) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root view entrypoint must implement shell.host.ShellViewContribution.");
+                    "Root view entrypoint must implement shell.api.ShellViewContribution.");
         }
         if (!sourceFacts.hasRegistrationSpecMethod()) {
             asCtx(data).addViolationWithMessage(node,
@@ -53,66 +44,52 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
             asCtx(data).addViolationWithMessage(node,
                     "Root view entrypoint must declare ShellScreen createScreen(ShellRuntimeContext).");
         }
-        if (!sourceFacts.hasSlotContentMethod()) {
+        if (sourceFacts.hasInstanceFields()) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root view entrypoint must declare ShellScreen.slotContent().");
+                    "Root view entrypoint must stay stateless and must not declare instance fields.");
         }
+        validateExposedMembers(node, data, sourceFacts, Set.of(
+                sourceFacts.simpleName(),
+                "registrationSpec",
+                "createScreen"));
 
         ContributionSpecKind specKind = detectContributionSpecKind(sourceFacts.text());
         if (specKind == ContributionSpecKind.UNKNOWN) {
             asCtx(data).addViolationWithMessage(node,
                     "Root view entrypoint must construct exactly one allowed contribution spec type.");
-            return;
-        }
-
-        Set<String> usedSlots = sourceFacts.usedShellSlots();
-        for (String slot : usedSlots) {
-            if (!ALLOWED_SHELL_SLOTS.contains(slot)) {
-                asCtx(data).addViolationWithMessage(node,
-                        "Root view entrypoint uses unsupported shell slot '" + slot + "'.");
-            }
         }
         if (sourceFacts.text().contains("defaultLanding") && specKind != ContributionSpecKind.TAB) {
             asCtx(data).addViolationWithMessage(node, "defaultLanding only applies to ShellTabSpec contributions.");
         }
-        switch (specKind) {
-            case TAB -> validateTabSlots(node, data, usedSlots, sourceFacts.text());
-            case TOP_BAR -> {
-                if (!usedSlots.equals(Set.of("TOP_BAR"))) {
-                    asCtx(data).addViolationWithMessage(node, "ShellTopBarSpec must provide only TOP_BAR content.");
-                }
-            }
-            case RUNTIME_STATE -> {
-                if (!usedSlots.equals(Set.of("COCKPIT_STATE"))) {
-                    asCtx(data).addViolationWithMessage(node,
-                            "ShellRuntimeStateSpec must provide only COCKPIT_STATE content.");
-                }
-            }
-            case UNKNOWN -> {
-            }
-        }
     }
 
-    private void checkPersistenceRoot(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
-        if (!sourceFacts.fileName().equals(sourceFacts.expectedPersistenceRootFileName())) {
+    private void checkServiceRoot(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
+        if (!sourceFacts.fileName().equals(sourceFacts.expectedServiceRootFileName())) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root persistence entrypoint must be named '" + sourceFacts.expectedPersistenceRootFileName() + "'.");
+                    "Root service entrypoint must be named '" + sourceFacts.expectedServiceRootFileName() + "'.");
         }
         if (!sourceFacts.hasExplicitPublicFinalClass()) {
-            asCtx(data).addViolationWithMessage(node, "Root persistence entrypoint must be declared public final.");
+            asCtx(data).addViolationWithMessage(node, "Root service entrypoint must be declared public final.");
         }
         if (!sourceFacts.hasExplicitPublicNoArgConstructor()) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root persistence entrypoint must declare a public no-arg constructor.");
+                    "Root service entrypoint must declare a public no-arg constructor.");
         }
-        if (!sourceFacts.text().contains("PersistenceContribution")) {
+        if (!sourceFacts.text().contains("ServiceContribution")) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root persistence entrypoint must implement shell.host.PersistenceContribution.");
+                    "Root service entrypoint must implement shell.api.ServiceContribution.");
         }
-        if (!sourceFacts.hasPersistenceRegisterMethod()) {
+        if (!sourceFacts.hasServiceRegisterMethod()) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root persistence entrypoint must declare register(PersistenceRegistry.Builder).");
+                    "Root service entrypoint must declare register(ServiceRegistry.Builder).");
         }
+        if (sourceFacts.hasInstanceFields()) {
+            asCtx(data).addViolationWithMessage(node,
+                    "Root service entrypoint must stay stateless and must not declare instance fields.");
+        }
+        validateExposedMembers(node, data, sourceFacts, Set.of(
+                sourceFacts.simpleName(),
+                "register"));
     }
 
     private void checkPersistenceSchema(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
@@ -122,17 +99,17 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
         }
     }
 
-    private void validateTabSlots(ASTCompilationUnit node, Object data, Set<String> usedSlots, String sourceText) {
-        if (!usedSlots.contains("COCKPIT_MAIN")) {
-            asCtx(data).addViolationWithMessage(node, "ShellTabSpec must provide COCKPIT_MAIN content.");
-        }
-        if (usedSlots.contains("TOP_BAR") || usedSlots.contains("COCKPIT_DETAILS")) {
+    private void validateExposedMembers(
+            ASTCompilationUnit node,
+            Object data,
+            SaltMarcherSourceFacts sourceFacts,
+            Set<String> allowedNames) {
+        for (String declaration : sourceFacts.exposedExecutableDeclarations()) {
+            if (allowedNames.stream().anyMatch(name -> declaration.contains(name + "("))) {
+                continue;
+            }
             asCtx(data).addViolationWithMessage(node,
-                    "ShellTabSpec must not provide TOP_BAR or COCKPIT_DETAILS content.");
-        }
-        if (sourceText.contains("ShellTabMode.RUNTIME") && usedSlots.contains("COCKPIT_STATE")) {
-            asCtx(data).addViolationWithMessage(node,
-                    "ShellTabSpec with ShellTabMode.RUNTIME must not provide COCKPIT_STATE content.");
+                    "Root entrypoint exposes unsupported public/protected member declaration '" + declaration + "'.");
         }
     }
 

@@ -14,11 +14,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
+import shell.api.ContributionKey;
+import shell.api.ShellTabMode;
 
 /**
  * Passive shell workspace for controls, main content, inspector, and state surfaces.
  */
-public final class ShellWorkspacePane extends SplitPane {
+final class ShellWorkspacePane extends SplitPane {
 
     private static final double DEFAULT_MAIN_DIVIDER = 0.62;
     private static final double DEFAULT_RIGHT_DIVIDER = 0.45;

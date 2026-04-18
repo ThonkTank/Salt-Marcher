@@ -15,11 +15,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import shell.api.ContributionKey;
+import shell.api.NavigationGroupSpec;
+import shell.api.ShellScreen;
+import shell.api.ShellTabSpec;
 
 /**
  * Passive left navigation that renders tabs discovered by the shell.
  */
-public final class ShellNavigationSidebar extends VBox {
+final class ShellNavigationSidebar extends VBox {
 
     private final Map<ContributionKey, NavigationItem> items = new LinkedHashMap<>();
     private final ToggleGroup navGroup = new ToggleGroup();
@@ -33,7 +37,7 @@ public final class ShellNavigationSidebar extends VBox {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
         Objects.requireNonNull(screen, "screen");
         Objects.requireNonNull(onSelect, "onSelect");
-        ToggleButton button = createButton(screen, registrationSpec.key(), onSelect);
+        ToggleButton button = createButton(registrationSpec, screen, onSelect);
         items.put(registrationSpec.key(), new NavigationItem(registrationSpec, screen.getTitle(), button));
         rebuild();
     }
@@ -45,19 +49,22 @@ public final class ShellNavigationSidebar extends VBox {
         }
     }
 
-    private ToggleButton createButton(ShellScreen screen, ContributionKey key, Consumer<ContributionKey> onSelect) {
+    private ToggleButton createButton(
+            ShellTabSpec registrationSpec,
+            ShellScreen screen,
+            Consumer<ContributionKey> onSelect) {
         ToggleButton button = new ToggleButton(screen.getNavigationLabel());
         button.getStyleClass().add("nav-btn");
         button.setToggleGroup(navGroup);
         button.setTooltip(new Tooltip(screen.getTitle()));
         button.setAccessibleText(screen.getTitle());
-        Node graphic = screen.getNavigationGraphic();
+        Node graphic = registrationSpec.navigationGraphic();
         if (graphic != null) {
             button.setGraphic(graphic);
             button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
             button.setGraphicTextGap(0);
         }
-        button.setOnAction(event -> onSelect.accept(key));
+        button.setOnAction(event -> onSelect.accept(registrationSpec.key()));
         return button;
     }
 

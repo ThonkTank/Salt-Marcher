@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-18
 Source of Truth: UI composition, interactions, and user-visible states for the
 dungeon editor component.
 
@@ -11,6 +11,12 @@ dungeon editor component.
 The dungeon editor is the authoring-oriented surface for changing dungeon truth.
 It extends the shared map presentation with editing controls, preview behavior,
 and commit-oriented interactions.
+
+Shell registration is owned by `DungeoneditorViewContribution`.
+
+Shell-facing composition and inspector publication stay inside
+`src/view/dungeoneditor/assembly/`, while the reusable runtime-session facade
+is exposed through `src/view/dungeoneditor/api/`.
 
 ## Editor Surface
 

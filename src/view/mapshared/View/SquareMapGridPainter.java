@@ -1,7 +1,7 @@
 package src.view.mapshared.View;
 
 import javafx.scene.canvas.GraphicsContext;
-import src.view.mapshared.Model.MapViewport;
+import src.view.mapshared.ViewModel.MapViewport;
 
 final class SquareMapGridPainter {
 

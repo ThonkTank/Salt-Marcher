@@ -10,15 +10,16 @@ architecture documentation set.
 
 SaltMarcher is structured as a passive-shell JavaFX application with feature
 slices under `src/`. The shell exposes registration contracts and fixed target
-areas. Features provide UI contributions and backend capabilities through those
-contracts instead of through feature-specific wiring in bootstrap.
+areas. Features provide UI contributions and shell-owned runtime capability
+registration through those contracts instead of through feature-specific wiring
+in bootstrap.
 
 ## Repository Shape
 
 ```text
 bootstrap/   application startup and generic discovery
 shell/       passive host shell and slot contracts
-src/view/    presentation code by component with strict MVCI roles
+src/view/    presentation code by component with strict MVVM roles
 src/domain/  domain logic by feature
 src/data/    infrastructure adapters by feature
 resources/   static resources and centralized stylesheets
@@ -28,21 +29,33 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 
 ## System Model
 
-- `bootstrap/` creates the shell and discovers feature and persistence
+- `bootstrap/` creates the shell and discovers feature and service
   contributions generically.
-- `shell/` owns passive runtime surfaces such as navigation, slots, inspector
-  history, and shared runtime-session state used by multiple contributions.
+- `shell/` owns passive workbench surfaces such as navigation, top bar,
+  workspace hosting, inspector/details hosting, runtime-state hosting, and
+  shared runtime-session state used by multiple contributions.
 - `src/view/<component>/` owns presentation behavior and user interaction.
   The detailed role model, dependency rules, reuse boundary, and enforcement
-  targets live only in the dedicated view MVCI standard.
-- `src/domain/<feature>/` owns business meaning, invariants, and feature APIs.
-- `src/data/<feature>/` owns persistence and external-system adapters.
+  targets live only in the dedicated MVVM standard.
+- `src/domain/<feature>/` owns business meaning, invariants, policy decisions,
+  aggregates, application services, exported boundary types, and named domain
+  modules inside one bounded context. The detailed DDD model, aggregate rules,
+  supporting-read-model exception, and enforcement targets live only in the
+  dedicated domain-layer standard.
+- `src/data/<feature>/` owns persistence and external-system adapters. The
+  detailed role model, including data adapters for domain-owned repository and
+  projection contracts, `gateway/` for internal source adapters, and shared
+  infrastructure rules, live only in the dedicated data-layer standard.
 - `src/data/persistencecore/` holds shared SQLite infrastructure reused by
-  multiple persistence features without becoming a feature API of its own.
+  multiple persistence features without becoming an application-service
+  boundary of its own.
 - `tools/gradle/` owns included Gradle builds such as the convention plugin and
   build harness.
 - `tools/quality/` owns quality-platform configuration, custom rule projects,
   jQAssistant rules, engineering helper scripts, and repo-owned Codex skills.
+- `docs/architecture/standards/architecture-enforcement-harness.md` defines
+  how the documented layer models map to mechanical owners, blocking tasks, and
+  review-only boundaries.
 
 Feature documentation follows the same ownership model. System-wide documents
 stay in `docs/`, compatibility stubs live in `docs/compat/`, and feature
@@ -50,39 +63,59 @@ documents live next to the feature code they describe.
 
 ## Dependency Direction
 
-Dependencies point inward:
+SaltMarcher uses a system-layer model with repository roots
+`bootstrap`, `shell`, `view`, `domain`, and `data`.
+
+Dependencies point inward toward the application core:
 
 - bootstrap depends on shell contracts.
-- view code reaches backend content through MVCI roles, shell assembly, and
-  feature APIs.
-- domain code defines business rules and repository contracts.
-- data code implements domain-owned contracts.
+- view code reaches backend content through MVVM roles, shell composition, and
+  domain application services.
+- domain code owns business rules and domain-owned ports.
+- data code implements domain-owned contracts and externalizes infrastructure
+  details.
 
 The shell must remain passive. It may define slots and registration contracts,
 but it must not own feature logic.
 
+Below the view layer, the only public client-facing backend boundary is a
+feature's `*ApplicationService`. The shell-owned runtime registry remains a
+composition seam used to assemble or obtain those application services and
+other runtime capabilities; it is not a second public backend layer.
+
+The detailed top-level layer responsibilities, public cross-layer seams,
+boundary-crossing rules, and explicit root-only exceptions live only in the
+dedicated system-layer standard.
+The detailed shell workbench role model, fixed surface contract, lifecycle
+expectations, and forbidden composition patterns live only in the dedicated
+shell-workbench standard. Discovery, instantiation, registration order, and
+startup resolution live only in the shell discovery/bootstrap standard.
+
 ## Registration Model
 
 The application registers feature UI through shell contributions and exported
-persistence through persistence contributions.
+runtime capabilities through service contributions.
 
-- `ShellViewContribution` provides `ShellContributionSpec` and `ShellScreen`.
-- `PersistenceContribution` registers typed persistence capabilities into the
-  shared registry.
-- `ShellRuntimeContext` provides shell-owned shared services such as
-  persistence, inspector access, and per-shell runtime sessions.
+- `shell/api/ShellViewContribution` provides `ShellContributionSpec` and
+  `ShellScreen`.
+- `shell/api/ServiceContribution` registers typed backend capabilities and
+  application-service factories into the shared shell service registry,
+  `ServiceRegistry`.
+- `shell/api/ShellRuntimeContext` provides shell-owned shared services such as
+  runtime-capability lookup, inspector access, and per-shell runtime sessions.
+- `*ViewContribution` remains a thin root that delegates routine shell-facing
+  composition into `assembly/`.
 - Bootstrap discovers both generically. Adding a feature should not require
   routine shell or bootstrap edits.
 
-The view layer follows a passive-view MVCI model with:
+The view layer follows an MVVM model with:
 
 - shell composition in `assembly/`
-- plain presentation state in `Model/`
+- presentation state and actions in `ViewModel/`
 - scene-graph ownership in `View/`
-- domain orchestration in `interactor/`
 - optional public cross-component reuse through `api/`
 
-Detailed rules live only in the dedicated MVCI standard.
+Detailed rules live only in the dedicated MVVM standard.
 
 ## Presentation Styling
 
@@ -108,14 +141,24 @@ JavaFX styling is centralized under `resources/`.
 - `src/data/<feature>/PERSISTENCE.md` for persistence ownership and rules
 
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/documentation.md:1)
+- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1)
+- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/data-layer.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
-- [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
-- [View MVCI Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/view-mvci.md:1)
+- [System Layer Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/system-layer-architecture.md:1)
+- [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-workbench.md:1)
+- [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
+- [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/view-mvvm.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/styling.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/quality-platforms.md:1)
 - [ADR 001: Documentation Governance](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/001-documentation-governance.md:1)
-- [ADR 002: Passive Shell And Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
+- [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
 - [ADR 004: Shared Runtime Session Store](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/004-shared-runtime-session-store.md:1)
-- [ADR 005: Strict MVCI Roles In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-strict-view-mvci-and-assembly-bucket.md:1)
+- [ADR 005: MVVM And Assembly Boundary In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-view-mvvm-and-assembly-boundary.md:1)
 - [ADR 007: Shared View API Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/007-shared-view-api-boundary.md:1)
 - [ADR 008: Top-Level Repository Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/008-top-level-repository-taxonomy.md:1)
+- [ADR 009: Domain-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/009-domain-layer-architecture-model.md:1)
+- [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
+- [ADR 010: Data-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/010-data-layer-architecture-model.md:1)
+- [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
+- [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)

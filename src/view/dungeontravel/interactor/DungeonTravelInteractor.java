@@ -4,14 +4,14 @@ import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
+import src.view.dungeonshared.api.DungeonSelectionPublisher;
 import src.view.dungeonshared.interactor.AbstractDungeonMapInteractor;
 import src.view.dungeonshared.interactor.DungeonMapPresentation;
 import src.view.dungeonshared.interactor.DungeonMapSurfaceController;
-import src.view.dungeonshared.interactor.DungeonSelectionPublisher;
-import src.view.mapshared.Model.MapCellViewModel;
-import src.view.mapshared.Model.MapWorkspaceRenderModel;
-import src.view.mapshared.Model.MapWorkspaceSceneViewData;
 import src.view.mapshared.interactor.MapWorkspaceSupport;
+import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
+import src.view.mapshared.ViewModel.MapWorkspaceSceneViewData;
 
 /**
  * Travel/runtime coordination for the dungeon control-panel placeholder slice.
@@ -41,6 +41,10 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
 
     public Node controls() {
         return controls.content();
+    }
+
+    public Node workspaceNode() {
+        return workspace();
     }
 
     public Node state() {

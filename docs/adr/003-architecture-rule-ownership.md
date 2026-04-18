@@ -1,8 +1,8 @@
 # ADR 003: Architecture Rule Ownership By Enforcement Layer
 
-Superseded in part by [ADR 006: jQAssistant Owns MVCI Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/006-jqassistant-owns-mvci-enforcement.md:1)
-for MVCI-specific ownership. This ADR still describes the non-MVCI split
-between `ArchUnit`, `PMD`, and `build-harness`.
+Superseded in part by [ADR 006: jQAssistant Owns View-Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/006-jqassistant-owns-view-architecture-enforcement.md:1)
+for view-architecture-specific ownership. This ADR still describes the
+non-view-architecture split between `ArchUnit`, `PMD`, and `build-harness`.
 
 - Status: Accepted
 - Date: 2026-04-17
@@ -27,7 +27,7 @@ SaltMarcher assigns each architecture rule to one primary enforcement layer:
 - `PMD architecture` owns Java source-level conventions and forbidden usage
   patterns.
 - `build-harness` owns repository topology, package-path alignment, and
-  documentation-correlated root-entrypoint presence checks.
+  code-surface root-entrypoint presence checks.
 - Review remains the owner for rules that are not yet expressible cleanly in
   those layers.
 
@@ -45,9 +45,9 @@ The blocking aggregate task is `checkArchitecture`, which runs:
   dependency direction or source-policy bans.
 - Standards documents must name the owning gate explicitly when they claim a
   rule is enforced.
-- Some rules, such as positive `ShellRuntimeContext.persistence()` and
-  `ShellRuntimeContext.inspector()` usage preferences, remain review-only until
-  a dedicated check is worth the cost.
+- Some rules, such as preferring assembly-scoped `ShellRuntimeContext`
+  service lookup and `ShellRuntimeContext.inspector()` usage, remain
+  review-only until a dedicated check is worth the cost.
 
 ## Alternatives Considered
 
@@ -71,4 +71,4 @@ than the current project needs.
 
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/quality-platforms.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
-- [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
+- [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)

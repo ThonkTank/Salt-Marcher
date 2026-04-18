@@ -1,5 +1,14 @@
 package shell.host;
 
+import shell.api.ContributionKey;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellScreen;
+import shell.api.ShellSlot;
+import shell.api.ShellTabMode;
+import shell.api.ShellTabSpec;
+import shell.api.ShellRuntimeStateSpec;
+import shell.api.ShellTopBarSpec;
+
 final class ShellSlotValidator {
 
     private ShellSlotValidator() {
