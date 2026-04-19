@@ -163,12 +163,11 @@ root method contracts, or compiler-precise public-signature bans.
 ### `jQAssistant`
 
 `jQAssistant` owns graph-shaped architecture rules where the current enforced
-view model spans buckets and files: transitional MVVM bucket topology,
-view-component root count, graph-shaped cross-component boundaries, and
-transitional bucket placement such as `assembly`-only wiring types. It is not
-the owner for general domain or data topology, nor for compiler-precise
-signature and framework checks that produce better diagnostics inside
-`compileJava`.
+view model spans buckets and files: declarative MVVM bucket topology,
+view-component root count, declared Shared View Component shape, and
+graph-shaped cross-component boundaries. It is not the owner for general domain
+or data topology, nor for compiler-precise signature and framework checks that
+produce better diagnostics inside `compileJava`.
 
 ### Gradle-Owned Verification Tasks
 

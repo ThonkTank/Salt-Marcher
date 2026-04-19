@@ -391,9 +391,9 @@ Mechanical trace against the data-layer standard:
   not name concrete `src.view`, `src.domain`, or `src.data` feature packages
   via `PMD architecture` (`pmdArchitectureMain`).
 - `system-shell-runtime-seam-placement`: feature-facing shell API use is
-  currently limited to view roots, transitional view `assembly/`, and data
-  `*ServiceContribution` roots through `Error Prone` (`compileJava`) and PMD
-  root-contract checks (`pmdArchitectureMain`).
+  currently limited to view roots and data `*ServiceContribution` roots
+  through `Error Prone` (`compileJava`) and PMD root-contract checks
+  (`pmdArchitectureMain`).
 - `system-service-contribution-placement`: service contribution roots are
   allowed only at the shell API contract and data feature roots via
   `build-harness` (`:build-harness:check`).
@@ -407,9 +407,10 @@ Mechanical trace against the data-layer standard:
   must not expose domain-facing return types, and public/protected
   repository/query adapter signatures must not leak internal data
   infrastructure types via `Error Prone` (`compileJava`).
-- `system-view-boundary-carrier-purity`: transitional public view `api/`
-  signatures must not leak private view bucket types via `Error Prone`
-  `ViewApiPublicSignatureLeak` (`compileJava`).
+- `system-view-boundary-carrier-purity`: declared Shared View Component
+  `api/` packages are the only public view-to-view boundary; private foreign
+  view buckets are blocked by jQAssistant and compiler-precise view dependency
+  rules.
 - `system-foreign-private-bucket-bans`: cross-feature access to private view,
   domain, and data buckets is blocked by the owning view, domain, and data
   rule sets through `jQAssistant`, `ArchUnit`, and `Error Prone`.

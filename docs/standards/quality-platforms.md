@@ -256,15 +256,14 @@ standard defines which engine owns which class of architecture rule.
 Operationally, architecture checks enter local quality through:
 
 - `compileJava`
-  Runs Error Prone architecture checks. Some current view checks still reflect
-  the transitional pre-ADR-017 `assembly/` topology until explicit checker
-  migration work updates them.
+  Runs Error Prone architecture checks, including compiler-precise MVVM
+  dependency rules and declared Shared View Component API access.
 - `architectureTest`
   Runs ArchUnit dependency and cycle checks, including view-component cycle
   freedom.
 - `checkViewArchitecture`
-  Runs explicit jQAssistant view-topology analysis for the current
-  transitional MVVM checks.
+  Runs explicit jQAssistant view-topology analysis for normal view components
+  and declared Shared View Components.
 - `checkArchitecture`
   Aggregates ArchUnit, PMD architecture rules, and the build-harness.
 - `check`

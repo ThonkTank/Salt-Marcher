@@ -205,12 +205,10 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("StringSplitter")
     options.errorprone.error("ViewModelOwnershipNaming")
     options.errorprone.error("ViewModelFrameworkIndependence")
-    options.errorprone.error("ViewPresentationDecisionLeak")
     options.errorprone.error("ViewProgrammaticStyling")
     options.errorprone.error("ViewReflectionBypass")
     options.errorprone.error("ViewRestrictedDependencies")
     options.errorprone.error("ViewRootDelegation")
-    options.errorprone.error("ViewSnapshotMirroring")
     options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
     options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
 }

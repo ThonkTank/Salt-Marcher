@@ -59,7 +59,8 @@ public final class EncounterViewContribution implements ShellViewContribution {
             public Map<ShellSlot, Node> slotContent() {
                 return Map.of(
                         ShellSlot.COCKPIT_CONTROLS, session.controls(),
-                        ShellSlot.COCKPIT_MAIN, session.workspace());
+                        ShellSlot.COCKPIT_MAIN, session.workspace(),
+                        ShellSlot.COCKPIT_STATE, session.state());
             }
         };
     }
