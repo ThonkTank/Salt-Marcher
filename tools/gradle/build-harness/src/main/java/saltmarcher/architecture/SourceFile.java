@@ -74,7 +74,8 @@ record SourceFile(
                     yield SourceKind.VIEW_PANEL;
                 }
                 if (segments.size() == 5 && Set.of("tabs", "topbar", "state", "details").contains(segments.get(2))) {
-                    if (fileName.endsWith("Contribution.java")) {
+                    if (Set.of("tabs", "topbar", "state").contains(segments.get(2))
+                            && fileName.endsWith("Contribution.java")) {
                         yield SourceKind.VIEW_CONTRIBUTION;
                     }
                     if (fileName.endsWith("ViewModel.java")) {

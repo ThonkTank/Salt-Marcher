@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
+Last Reviewed: 2026-04-20
 Source of Truth: Mechanical ownership, execution model, rule-status vocabulary,
 and review-only boundary for build-blocking architecture enforcement on active
 code surfaces.
@@ -146,11 +146,12 @@ information or public-signature awareness: MVVM dependency bans, view-model
 framework independence, shell API allowlists, public domain-boundary signature
 purity, public domain api carrier shape, domain service/factory statelessness,
 service-registry registration placement, presentation-state placement,
-JavaFX API placement between `view/models`, `view/views`, and transitional
-legacy view code, visual-styling exceptions, reflection-bypass bans, and public
-API signature leaks from private buckets, including compiler-visible data
-adapter collaborator boundaries. It is not the owner for repository topology or
-broad package graph rules.
+JavaFX API placement between contributions, ViewModels, passive views,
+reusable generic views, and transitional legacy view code, visual-styling
+exceptions, reflection-bypass bans, and public API signature leaks from
+private buckets, including compiler-visible data adapter collaborator
+boundaries. It is not the owner for repository topology or broad package graph
+rules.
 
 ### `ArchUnit`
 
@@ -163,11 +164,11 @@ root method contracts, or compiler-precise public-signature bans.
 ### `jQAssistant`
 
 `jQAssistant` owns graph-shaped architecture rules where the current enforced
-view model spans buckets and files: cockpit MVVM bucket topology, one model per
-view-model contribution, one passive panel per view file, and graph-shaped
-cross-component boundaries. It is not the owner for general domain or data
-topology, nor for compiler-precise signature and framework checks that produce
-better diagnostics inside `compileJava`.
+view model spans buckets and files: cockpit MVVM contribution topology,
+co-located ViewModel placement, one passive view per view file, and
+graph-shaped cross-component boundaries. It is not the owner for general
+domain or data topology, nor for compiler-precise signature and framework
+checks that produce better diagnostics inside `compileJava`.
 
 ### Gradle-Owned Verification Tasks
 

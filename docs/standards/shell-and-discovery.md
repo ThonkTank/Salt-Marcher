@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
+Last Reviewed: 2026-04-20
 Source of Truth: Shell bootstrap responsibilities, discovery contracts,
 instantiation rules, registration order, and startup resolution for passive
 shell contributions.
@@ -9,11 +9,11 @@ shell contributions.
 
 ## Goal
 
-Bootstrap must discover and register shell-facing view contributions and
-backend service contributions generically without becoming a feature registry.
+Bootstrap must discover and register shell-facing UI contributions and backend
+service contributions generically without becoming a feature registry.
 
-This document defines bootstrap mechanics only. The binding shell role model,
-fixed cockpit surfaces, lifecycle vocabulary, and forbidden shell-composition
+This document defines bootstrap mechanics only. The shell role model, fixed
+cockpit surfaces, lifecycle vocabulary, and forbidden shell-composition
 patterns live in the dedicated
 [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1).
 
@@ -24,7 +24,7 @@ patterns live in the dedicated
 - discovering exported service contributions
 - building the shared shell service registry
 - constructing `AppShell` with that registry
-- discovering shell-facing left-tab, top-bar, and runtime-state contributions
+- discovering shell-facing UI contributions
 - resolving each discovered contribution into passive registration metadata
   plus surface bindings
 - registering each resolved contribution into the shell by contribution kind
@@ -35,27 +35,30 @@ feature registries, explicit bootstrap imports, or per-feature shell wiring.
 
 ## Discovery Contracts
 
-Bootstrap discovers backend service contributions and view contributions
+Bootstrap discovers backend service contributions and UI contributions
 generically.
 
-### View Contribution Discovery
+### UI Contribution Discovery
 
 Target discovery:
 
-- scans `src/view/tabs/*`, `src/view/topbar/*`, and `src/view/state/*`
-- expects each contribution segment to expose exactly one concrete
-  `*Contribution` root class
-- expects discovered roots to implement `shell.api.ShellContribution`
-- expects a public no-arg constructor unless a future generic registration
-  contract explicitly defines another construction shape
+- scans `src/view/tabs/<entry>/`, `src/view/topbar/<entry>/`, and
+  `src/view/state/<entry>/`
+- considers only direct concrete classes named `*Contribution`
+- expects each contribution to implement `shell.api.ShellContribution`
+- expects a public no-arg constructor unless a future registration contract
+  explicitly defines another generic construction shape
 - instantiates discovered contributions reflectively and generically
-- does not scan `src/view/details/*`
 
-Detail entries are not startup contributions. They are published through the
-shell-owned details/history API.
+Contribution roots mean:
 
-Old `src/view/<component>/<Component>ViewContribution` roots and
-`ShellViewContribution` names are migration debt.
+- `src/view/tabs/<entry>/`: one left-bar tab contribution
+- `src/view/topbar/<entry>/`: one top-bar dropdown-window contribution
+- `src/view/state/<entry>/`: one global runtime state-panel tab contribution
+
+`src/view/details/<entry>/` is not a bootstrap discovery root. Detail content
+is published through the shell-owned details/history API from the owning
+contribution instead of being discovered as an independent startup root.
 
 ### Service Discovery
 
@@ -89,16 +92,15 @@ Target registration behavior:
 - service contributions are discovered first and populate the shell service
   registry
 - the shell is constructed with that registry
-- view contributions are discovered next
-- resolved view contributions are sorted by contribution key before
-  registration
+- UI contributions are discovered next
+- resolved UI contributions are sorted by contribution key before registration
 - each contribution is registered by contribution kind:
   - left-bar tab
-  - state-pane tab
+  - global runtime state-panel tab
   - top-bar dropdown window
 
-The key sort is a deterministic registration-order rule. It is not a
-user-visible navigation-order contract.
+The key sort is a deterministic registration-order rule. It is not a user-
+visible navigation-order contract.
 
 ## Startup Resolution
 
@@ -115,16 +117,36 @@ Rules:
   - tab view order
   - contribution key
 
-State-pane tabs and top-bar dropdown windows are never startup landing targets.
+Runtime state-panel tabs and top-bar dropdown windows are never startup
+landing targets. Encounter is a runtime state-panel tab, so it must not
+participate in startup navigation selection.
+
+## Responsibilities Excluded From This Document
+
+This standard does not redefine:
+
+- shell workbench role ownership
+- fixed cockpit surface semantics
+- state-pane precedence
+- lifecycle meaning of shell activation hooks
+- the allowed feature-facing shell API surface
+- MVVM contribution, ViewModel, View, and Model placement rules
+- forbidden shell-composition patterns beyond bootstrap mechanics
 
 ## Verification Notes
+
+The canonical owner model, rule-status vocabulary, and blocking-task mapping
+for these checks live in the
+[Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1).
+Concrete rule IDs and checker names are recorded in the
+[Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1).
 
 Current checks enforce the target discovery shape where it has a stable static
 surface:
 
-- contribution discovery from `src/view/tabs/*`, `src/view/topbar/*`, and
-  `src/view/state/*`
-- one shell-registered `*Contribution` per contribution segment
+- UI contribution discovery from `src/view/tabs`, `src/view/topbar`, and
+  `src/view/state`
+- one shell-registered `*Contribution` per contribution root
 - generic contribution instantiation
 - supported contribution-kind selection
 - single startup default among left-bar tab contributions
@@ -142,4 +164,5 @@ unless they become stable build-time policy surfaces.
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
+- [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)

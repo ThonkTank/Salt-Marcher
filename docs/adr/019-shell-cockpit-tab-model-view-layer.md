@@ -1,7 +1,12 @@
-# ADR 019: Shell Cockpit Tab Model View Layer
+# ADR 019: Shell Cockpit MVVM Contribution View Layer
 
-- Status: Accepted
+- Status: Superseded by [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - Date: 2026-04-19
+
+This ADR is a historical record of SaltMarcher's cockpit-oriented MVVM step.
+ADR 020 keeps the fixed cockpit surface model but splits shell/workbench
+adaptation into `*Contribution` classes and presentation state/actions into
+`*ViewModel` classes.
 
 ## Context
 
@@ -20,24 +25,30 @@ SaltMarcher has a fixed cockpit:
 - top-bar dropdown windows
 
 The target view architecture should make those fixed surfaces explicit. It
-should also make views more passive: a view file should be one panel fragment,
-while the tab-level model owns registration, binding, and domain wiring.
+should also make views more passive: a view file should be one panel fragment.
 
 ## Decision
 
-SaltMarcher adopts the shell cockpit tab-model view layer as the target view
+SaltMarcher adopts the shell cockpit contribution view layer as the target view
 architecture.
 
 - The shell owns fixed cockpit surfaces and the public contracts by which
-  models attach content to them.
-- `src/view/models/` owns the MVVM ViewModel role. Each file defines exactly
-  one shell-registered tab model, state-tab model, or top-bar dropdown window
-  model.
-- `src/view/views/` owns the MVVM View role. Each file defines exactly one
-  passive panel-content fragment for one shell surface.
-- Tab models instantiate and bind passive panel views, wire view emitters to
-  model actions, call relevant domain `*ApplicationService` roots, and map
-  domain results into presentation state.
+  contributions attach content to them.
+- `src/view/tabs/<entry>/` owns one left-bar tab contribution, its ViewModel,
+  and its contribution-owned passive Views.
+- `src/view/topbar/<entry>/` owns one top-bar dropdown-window contribution, its
+  ViewModel, and its dropdown View.
+- `src/view/state/<entry>/` owns one global runtime state-panel tab
+  contribution, its ViewModel, and its state View.
+- `src/view/details/<entry>/` owns detail-entry ViewModels and Views published
+  through the shell-owned details/history API. Detail entries are not
+  bootstrap-discovered contributions.
+- `src/view/views/` owns reusable generic passive Views only.
+- Contributions instantiate and bind passive Views, wire view emitters to
+  ViewModel actions, perform shell runtime lookup, and return shell slot
+  bindings.
+- ViewModels own presentation state, call relevant domain
+  `*ApplicationService` roots, and map domain results into presentation state.
 - Passive panel views do not know feature meaning. They expose listeners or
   bind targets for model state and emitters for technical user gestures.
 - The MVVM `Model` role remains `src/domain/**`, exposed to presentation code
@@ -45,7 +56,8 @@ architecture.
 - The details pane remains shell-owned and is populated through public
   details/history contracts.
 - The state pane uses explicit precedence: active left-bar tab content wins
-  while present; otherwise shell-registered state-pane tabs are shown.
+  while present; otherwise shell-registered global runtime state-panel tabs are
+  shown. Encounter is such a runtime state-panel tab, not a left-bar tab.
 
 This decision supersedes ADR 017 as the target view architecture. ADR 017 and
 ADR 018 remain historical records of the intermediate component-local model and
@@ -53,15 +65,16 @@ shared-component exception.
 
 ## Consequences
 
-- Existing `*ViewContribution`, `View/`, `ViewModel/`, component-local view
-  folders, shared view `api/` packages, and FXML-root composition language are
-  migration debt where they differ from this model.
+- Existing `*ViewContribution`, model-shaped shell adapter contracts,
+  component-local view folders, shared view `api/` packages, and FXML-root
+  composition language are migration debt where they differ from this model.
 - The shell standard must define cockpit-surface ownership and state-pane
   precedence.
-- The repository structure standard must define `src/view/models` and
-  `src/view/views` as the target view topology.
-- The discovery standard must move from component-root discovery toward model
-  discovery under `src/view/models`.
+- The repository structure standard must define the contribution-root view
+  topology.
+- The discovery standard must move from component-root discovery toward
+  `*Contribution` discovery under `src/view/tabs`, `src/view/topbar`, and
+  `src/view/state`.
 - Architecture checks can lag the standards during migration, but enforcement
   documentation must state the mismatch rather than presenting old checks as
   target truth.
@@ -76,11 +89,12 @@ Rejected because it still treats a generic component as the organizing unit.
 SaltMarcher needs the fixed cockpit surfaces and tab ownership model to be the
 first-class architecture vocabulary.
 
-### Treat `view/views` as one view per feature
+### Treat `src/view/views` as one view per feature
 
 Rejected because SaltMarcher's shell surfaces are panel-level. A view file is
 one panel-content fragment, such as a dungeon render canvas for the main panel
-or a dungeon control panel for the control slot.
+or a dungeon control panel for the control slot. Feature-owned views stay next
+to their contribution; `src/view/views` is only for reusable generic Views.
 
 ### Let passive views call application services
 

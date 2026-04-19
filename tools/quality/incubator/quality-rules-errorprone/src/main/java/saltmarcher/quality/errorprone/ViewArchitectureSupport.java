@@ -184,7 +184,8 @@ final class ViewArchitectureSupport {
         if (Set.of("tabs", "topbar", "state", "details").contains(segments[0]) && segments.length >= 3) {
             for (int index = 2; index < segments.length; index++) {
                 String simpleName = segments[index].replaceFirst("\\$.*$", "");
-                if (simpleName.endsWith("Contribution")) {
+                if (Set.of("tabs", "topbar", "state").contains(segments[0])
+                        && simpleName.endsWith("Contribution")) {
                     return new ViewTypeInfo(segments[0], "CONTRIBUTION");
                 }
                 if (simpleName.endsWith("ViewModel")) {

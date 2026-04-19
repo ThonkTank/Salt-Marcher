@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
+Last Reviewed: 2026-04-20
 Source of Truth: Quality-platform operating model, non-architecture quality gate inventory, task entrypoints, local usage, GitHub Actions integration, and branch-protection expectations.
 
 # Quality Platforms Standard
@@ -259,14 +259,14 @@ Operationally, architecture checks enter local quality through:
 
 - `compileJava`
   Runs Error Prone architecture checks, including compiler-precise MVVM
-  dependency rules for `src/view/models`, `src/view/views`, shell API use,
-  passive panel restrictions, and legacy view-package bans.
+  dependency rules for contribution roots, ViewModels, passive views, shell
+  API use, passive panel restrictions, and legacy view-package bans.
 - `architectureTest`
   Runs ArchUnit dependency and cycle checks, including target view package,
   dependency, and cycle freedom rules.
 - `checkViewArchitecture`
-  Runs explicit jQAssistant view-topology analysis for `src/view/models` and
-  `src/view/views`.
+  Runs explicit jQAssistant view-topology analysis for contribution roots,
+  co-located ViewModels, co-located passive views, and reusable generic views.
 - `checkArchitecture`
   Aggregates ArchUnit, PMD architecture rules, and the build-harness.
 - `check`

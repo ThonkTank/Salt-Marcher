@@ -27,7 +27,7 @@
               type:SaltMarcher:MvvmViewType,
               type.viewBucket = CASE
                 WHEN size(segments) >= 4 AND segments[2] = 'views' THEN 'VIEW'
-                WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND segments[4] CONTAINS 'Contribution' THEN 'CONTRIBUTION'
+                WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state'] AND segments[4] CONTAINS 'Contribution' THEN 'CONTRIBUTION'
                 WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND segments[4] CONTAINS 'ViewModel' THEN 'MODEL'
                 WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND segments[4] CONTAINS 'View' THEN 'VIEW'
                 ELSE 'LEGACY'

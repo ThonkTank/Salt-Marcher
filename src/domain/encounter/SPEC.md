@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-20
 Source of Truth: User-facing behavior and acceptance criteria for the encounter
 feature.
 
@@ -23,8 +23,10 @@ Provide a runtime encounter builder that:
 
 ## Primary User Flow
 
-1. The user opens the encounter tab.
-2. The tab reads the active party and current creature filter options.
+1. The user opens the encounter runtime state-panel tab when the active
+   left-bar tab is not claiming the state pane.
+2. The runtime state-panel tab reads the active party and current creature
+   filter options.
 3. The user selects a difficulty and optional type, subtype, or biome filters.
 4. The user generates encounter alternatives.
 5. The user inspects a selected alternative, then rerolls, locks, or excludes

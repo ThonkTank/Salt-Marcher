@@ -7,7 +7,7 @@
 
 This ADR remains the shell workbench model. Its `assembly/`-specific and
 component-root view composition details are superseded by
-[ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1).
+[ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1).
 
 SaltMarcher already uses a passive shell with generic discovery, fixed slot
 surfaces, and shell-scoped runtime services. However, the architecture has so
@@ -40,9 +40,8 @@ architecture model.
 - `ShellContributionSpec` and its concrete types are pure registration
   metadata. `ShellTabSpec` may carry a feature-owned navigation-graphic
   supplier as part of that registration metadata.
-- `ShellViewContribution` is the current Java API name for the legacy thin
-  stateless contribution root. The target places shell-facing view composition
-  in tab models under `src/view/models`.
+- Shell-facing view composition belongs in `*Contribution` classes under
+  `src/view/tabs`, `src/view/topbar`, and `src/view/state`.
 - `ShellScreen` is the current Java API name for prepared contribution
   content. Only `ShellTabSpec` contributions are navigable workbench parts;
   top-bar and auxiliary contributions project content into fixed shell-owned
@@ -79,8 +78,9 @@ framework as-is:
 - Features must treat the shell as a fixed typed workbench contract rather than
   an open-ended named-region system.
 - The target responsibility split is: shell registration, composition, and
-  binding in tab models; passive panel behavior in `view/views`; business
-  behavior in domain application services.
+  binding in contributions; presentation state and actions in ViewModels;
+  passive JavaFX behavior in Views; business behavior in domain application
+  services.
 - Feature code must not import `AppShell` or concrete shell pane classes as
   extension points.
 - Contribution roots are expected to remain stateless and safe for future
@@ -115,7 +115,8 @@ shell boundary would become less passive.
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
-- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
 - [ADR 004: Shared Runtime Session Store](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/004-shared-runtime-session-store.md:1)

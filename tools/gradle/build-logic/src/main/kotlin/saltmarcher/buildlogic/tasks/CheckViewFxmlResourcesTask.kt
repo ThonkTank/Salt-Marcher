@@ -41,13 +41,15 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
             .forEach { file ->
                 val path = file.toPath().normalize()
                 val relative = projectRootPath.relativize(path).toString().replace('\\', '/')
-                validatePlacement(path.toFile(), path.startsWith(expectedRoot), relative, violations)
+                validatePlacement(path.toFile(), expectedRoot.toFile(), path.startsWith(expectedRoot), relative, violations)
                 validateContent(file, relative, violations)
             }
 
         if (violations.isNotEmpty()) {
             throw GradleException(
-                "View FXML resources must live under resources/view/ and must not contain inline scripts.\n" +
+                "View FXML resources must live under resources/view/tabs/<entry>/, " +
+                    "resources/view/topbar/<entry>/, resources/view/state/<entry>/, " +
+                    "resources/view/details/<entry>/, or resources/view/views/ and must not contain inline scripts.\n" +
                     "Violations:\n" + violations.sorted().joinToString(separator = "\n") { " - $it" }
             )
         }
@@ -55,14 +57,19 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
 
     private fun validatePlacement(
         file: File,
+        expectedRoot: File,
         underExpectedRoot: Boolean,
         relative: String,
         violations: MutableList<String>
     ) {
         val path = file.toPath().normalize()
         if (!underExpectedRoot || path.parent == null || path.parent.fileName == null) {
-            violations.add("$relative -> expected resources/view/<area-or-shared>/*.fxml")
+            violations.add("$relative -> expected resources/view/{tabs,topbar,state,details}/<entry>/*.fxml or resources/view/views/*.fxml")
             return
+        }
+        val rootRelative = expectedRoot.toPath().normalize().relativize(path)
+        if (!hasAllowedViewResourceRoot(rootRelative.map { it.toString() })) {
+            violations.add("$relative -> expected resources/view/{tabs,topbar,state,details}/<entry>/*.fxml or resources/view/views/*.fxml")
         }
         if (!Files.isDirectory(path.parent)) {
             violations.add("$relative -> parent directory is not a readable passive-view resource directory")
@@ -89,6 +96,17 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
     }
 
     private companion object {
+        private val CONTRIBUTION_RESOURCE_AREAS = setOf("tabs", "topbar", "state", "details")
         private val FX_CONTROLLER_PATTERN = Regex("fx:controller\\s*=\\s*\"([^\"]+)\"")
+
+        private fun hasAllowedViewResourceRoot(segments: List<String>): Boolean {
+            if (segments.size < 2) {
+                return false
+            }
+            if (segments.first() == "views") {
+                return true
+            }
+            return segments.first() in CONTRIBUTION_RESOURCE_AREAS && segments.size >= 3
+        }
     }
 }

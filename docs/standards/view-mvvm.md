@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
+Last Reviewed: 2026-04-20
 Source of Truth: SaltMarcher cockpit MVVM target model, contribution,
 ViewModel, passive-view, and domain-model role boundaries for `src/view/**`.
 
@@ -20,11 +20,11 @@ The roles are:
 
 - `Model`: `src/domain/**`, exposed through root `*ApplicationService`
   boundaries and domain `api/` carriers.
-- `ViewModel`: one presentation model next to its owning contribution, named
-  `*ViewModel`.
-- `View`: one passive panel or dropdown view next to its owning contribution,
-  named `*View`; reusable generic views may live directly under
-  `src/view/views/`.
+- `ViewModel`: one presentation model next to its owning contribution or detail
+  entry, named `*ViewModel`.
+- `View`: one passive panel, dropdown, or detail view next to its owning
+  contribution or detail entry, named `*View`; reusable generic views may live
+  directly under `src/view/views/`.
 - `Contribution`: one discovered shell adapter named `*Contribution`; it owns
   shell registration, service lookup, view instantiation, and binding.
 - `Shell`: the passive cockpit host, fixed surfaces, activation lifecycle,
@@ -32,7 +32,8 @@ The roles are:
 
 ## Target Topology
 
-Active view code is organized by shell contribution kind:
+Active view code is organized by shell contribution kind, shell-owned detail
+entry, or reusable view role:
 
 ```text
 src/view/
@@ -55,7 +56,6 @@ src/view/
       <PascalEntry>View.java
   details/
     <entry>/
-      <PascalEntry>Contribution.java
       <PascalEntry>ViewModel.java
       <PascalEntry>View.java
   views/
@@ -72,9 +72,9 @@ Rules:
   contribution.
 - `src/view/state/<entry>/` defines one global runtime state-panel tab
   contribution.
-- `src/view/details/<entry>/` is reserved for shell-owned details entries when
-  the shell API exposes them as discovered contributions. Current feature
-  details are published through `InspectorSink`.
+- `src/view/details/<entry>/` defines detail-pane entry content published
+  through the shell-owned details/history API. It is not a discovered shell
+  contribution root.
 - `src/view/views/` is only for reusable generic passive views shared by
   multiple contribution roots. Owned views stay next to their contribution.
 - Existing component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
@@ -129,6 +129,11 @@ Responsibilities:
 - keep bootstrap generic so adding a new contribution does not require shell or
   bootstrap directory edits
 
+Only `src/view/tabs/*`, `src/view/topbar/*`, and `src/view/state/*`
+contribution roots are bootstrap-discovered. Detail-pane entries do not own
+top-level startup contributions; they are published through the shell-owned
+details/history API.
+
 Allowed dependencies:
 
 - `shell.api.*` public contribution, binding, slot, context, and details
@@ -153,7 +158,7 @@ Forbidden behavior:
 ## ViewModel Role
 
 A ViewModel owns presentation state and user-intent handling for one
-contribution.
+contribution or detail entry.
 
 Responsibilities:
 
@@ -169,8 +174,8 @@ Allowed dependencies:
 - JavaFX beans and collections
 - root `src.domain.<feature>.<Feature>ApplicationService`
 - `src.domain.<feature>.api.*` carrier records, enums, and sealed carriers
-- other ViewModel types only when they belong to the same contribution root and
-  are explicitly part of the presentation model
+- other ViewModel types only when they belong to the same contribution or
+  detail root and are explicitly part of the presentation model
 - general-purpose JDK types
 
 Forbidden dependencies and behavior:
@@ -185,7 +190,8 @@ Forbidden dependencies and behavior:
 
 ## View Role
 
-A View is passive JavaFX content for one shell surface or dropdown.
+A View is passive JavaFX content for one shell surface, dropdown, detail entry,
+or reusable fragment.
 
 Responsibilities:
 
@@ -281,6 +287,8 @@ shape:
   `src/view/state`, `src/view/details`, or reusable `src/view/views`.
 - Contribution roots define one `*Contribution`, one `*ViewModel`, and the
   passive `*View` files needed by that contribution.
+- Detail entries define `*ViewModel` and `*View` content only; they do not
+  define bootstrap-discovered `*Contribution` roots.
 - Contributions may use the allowed shell API subset, own ViewModels, own
   Views, JavaFX `Node`, and domain application-service boundaries.
 - ViewModels may use JavaFX beans/collections and domain application-service
@@ -301,6 +309,6 @@ graph, or file-tree rules remains review-owned.
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
-- [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - [Fowler Presentation Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/fowler-presentation-model.md:1)
 - [JavaFX Properties And Binding](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/oracle-javafx-properties-binding.md:1)

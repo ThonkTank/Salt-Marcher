@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
+Last Reviewed: 2026-04-20
 Source of Truth: System-wide architecture summary and entry point into the
 architecture documentation set.
 
@@ -10,8 +10,8 @@ architecture documentation set.
 
 SaltMarcher is structured as a passive-shell JavaFX application with feature
 slices under `src/`. The shell exposes fixed cockpit surfaces, registration
-contracts, and shell-owned runtime services. View models register tabs and bind
-passive panel views into those shell surfaces instead of using feature-specific
+contracts, and shell-owned runtime services. View-layer contributions register
+UI entrypoints and bind passive Views to ViewModels without feature-specific
 wiring in bootstrap or concrete shell host classes.
 
 ## Repository Shape
@@ -19,7 +19,7 @@ wiring in bootstrap or concrete shell host classes.
 ```text
 bootstrap/   application startup and generic discovery
 shell/       passive cockpit host and shell contracts
-src/view/    tab models plus passive panel views
+src/view/    cockpit contributions, ViewModels, and passive Views
 src/domain/  domain logic by feature
 src/data/    infrastructure adapters by feature
 resources/   static resources and centralized stylesheets
@@ -29,18 +29,23 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 
 ## System Model
 
-- `bootstrap/` creates the shell and discovers service contributions and view
-  model contributions generically.
+- `bootstrap/` creates the shell and discovers service contributions and UI
+  contributions generically.
 - `shell/` owns passive cockpit surfaces: top-left controls, primary main
   panel, top-right details/history, bottom-right state pane, top-bar dropdown
   windows, navigation, activation, and shared runtime-session state.
-- `src/view/models/` owns shell-facing tab and window ViewModels. A model file
-  defines one tab, state tab, or top-bar dropdown window; it registers with the
-  shell, instantiates passive panel views, binds those views to presentation
-  state, and calls domain application services.
-- `src/view/views/` owns passive JavaFX panel content. A view file defines one
-  panel fragment for one shell surface; it exposes listeners for model state
-  and emitters for user gestures.
+- `src/view/tabs/<entry>/` owns one left-bar tab contribution, its ViewModel,
+  and its contribution-owned passive Views.
+- `src/view/topbar/<entry>/` owns one top-bar dropdown-window contribution, its
+  ViewModel, and its dropdown View.
+- `src/view/state/<entry>/` owns one global runtime state-panel tab
+  contribution, its ViewModel, and its state View. These tabs are shown when
+  the active left-bar tab does not claim `COCKPIT_STATE`.
+- `src/view/details/<entry>/` is reserved for detail-entry ViewModels and
+  views. Detail entries are published through shell-owned details/history APIs,
+  not bootstrap discovery.
+- `src/view/views/` owns reusable generic passive JavaFX views shared by
+  multiple contribution roots.
 - `src/domain/<feature>/` owns business meaning, invariants, policy decisions,
   aggregates, application services, exported boundary types, and named domain
   modules inside one bounded context.
@@ -81,48 +86,52 @@ documents live next to the feature code they describe.
 
 ## Dependency Direction
 
-SaltMarcher uses a system-layer model with repository roots
-`bootstrap`, `shell`, `view`, `domain`, and `data`.
+SaltMarcher uses a system-layer model with repository roots `bootstrap`,
+`shell`, `view`, `domain`, and `data`.
 
 Dependencies point inward toward the application core:
 
 - bootstrap depends on shell contracts.
 - shell owns generic cockpit hosting and must not import feature code.
-- view models reach backend content through shell public contracts and domain
-  application services.
-- passive views render model state and emit user events without shell, domain,
-  data, or ApplicationService dependencies.
+- view contributions reach shell public contracts, own ViewModels, own Views,
+  and domain application services.
+- ViewModels own presentation state and call domain application services.
+- passive Views render ViewModel state and emit user gestures without shell,
+  domain, data, or ApplicationService dependencies.
 - domain code owns business rules and domain-owned ports.
 - data code implements domain-owned contracts and externalizes infrastructure
   details.
 
 Below the view layer, the only public client-facing backend boundary is a
 feature's `*ApplicationService`. The shell-owned runtime registry remains a
-composition seam used to assemble or obtain those application services and
+composition facility used to assemble or obtain those application services and
 other runtime capabilities; it is not a second public backend layer.
 
 ## Registration Model
 
-The application registers feature UI through view models and exported runtime
-capabilities through service contributions.
+The application registers feature UI through UI contributions and exported
+runtime capabilities through service contributions.
 
 - shell public contracts provide registration metadata, fixed surface binding,
   lifecycle hooks, details/history publication, and runtime context.
-- `src/view/models/**` contributes left-bar tabs, state-pane tabs, and top-bar
-  dropdown windows.
+- `src/view/tabs/**` contributes left-bar tabs.
+- `src/view/topbar/**` contributes top-bar dropdown windows.
+- `src/view/state/**` contributes global runtime state-panel tabs.
 - `shell/api/ServiceContribution` registers typed backend capabilities and
   application-service factories into the shared shell service registry,
   `ServiceRegistry`.
 - `shell/api/ShellRuntimeContext` provides shell-owned shared services such as
   runtime-capability lookup, details/history publishing, and per-shell runtime
   sessions.
-- Bootstrap discovers view models and data service contributions generically.
-  Adding a feature should not require routine shell or bootstrap edits.
+- Bootstrap discovers UI contributions and data service contributions
+  generically. Adding a feature should not require routine shell or bootstrap
+  edits.
 
-The view layer target follows SaltMarcher cockpit MVVM: `view/models` owns
-tab/window ViewModels and shell binding; `view/views` owns passive panel
-fragments; the domain layer is the MVVM Model behind each feature's root
-application service. Detailed rules live only in the dedicated MVVM standard.
+The view layer target follows SaltMarcher cockpit MVVM: contributions own shell
+registration and binding; ViewModels own presentation state and actions; Views
+own passive JavaFX content; the domain layer is the MVVM Model behind each
+feature's root application service. Detailed rules live only in the dedicated
+MVVM standard.
 
 ## Presentation Styling
 
@@ -144,8 +153,8 @@ JavaFX styling is centralized under `resources/`.
 - `docs/compat/` for deprecated compatibility stubs that point at canonical
   co-located documents
 - `src/domain/<feature>/README.md` for feature entry documentation
-- `src/view/models/<topic>.md` or `src/view/views/<topic>.md` for target UI
-  behavior; legacy `src/view/<component>/UI.md` files remain migration state
+- `src/view/<area>/<entry>/<topic>.md` for contribution-owned UI behavior
+- `src/view/views/<topic>.md` for reusable generic view behavior
 - `src/data/<feature>/PERSISTENCE.md` for persistence ownership and rules
 
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
@@ -165,4 +174,4 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
 - [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)
-- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)

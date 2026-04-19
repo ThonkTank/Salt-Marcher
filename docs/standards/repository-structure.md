@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
+Last Reviewed: 2026-04-20
 Source of Truth: Repository structure, feature layout, and public entrypoint
 rules for active application code.
 
@@ -11,8 +11,10 @@ rules for active application code.
 Feature code must stay inside `src/`, and application startup and shell hosting
 must stay outside feature slices.
 
-The active view target is organized by SaltMarcher's cockpit model: tab models
-under `src/view/models` and passive panel views under `src/view/views`.
+The active view target is organized by SaltMarcher's cockpit contribution
+model: discovered contribution roots under `src/view/tabs`,
+`src/view/topbar`, and `src/view/state`; reserved detail roots under
+`src/view/details`; and reusable generic passive views under `src/view/views`.
 
 ## Repository Layout
 
@@ -56,23 +58,34 @@ Additional constraints:
 ```text
 src/
   view/
-    models/
-      <PascalTabName>TabModel.java
-      <PascalWindowName>WindowModel.java
-      ...
+    tabs/
+      <entry>/
+        <PascalEntry>Contribution.java
+        <PascalEntry>ViewModel.java
+        <PascalEntry>ControlsView.java
+        <PascalEntry>MainView.java
+        <PascalEntry>StateView.java
+    topbar/
+      <entry>/
+        <PascalEntry>Contribution.java
+        <PascalEntry>ViewModel.java
+        <PascalEntry>View.java
+    state/
+      <entry>/
+        <PascalEntry>Contribution.java
+        <PascalEntry>ViewModel.java
+        <PascalEntry>View.java
+    details/
+      <entry>/
+        <PascalEntry>ViewModel.java
+        <PascalEntry>View.java
     views/
-      <PascalPanelName>ControlPanel.java
-      <PascalPanelName>MainPanel.java
-      <PascalPanelName>StatePanel.java
-      <PascalPanelName>DetailsContent.java
-      <PascalWindowName>DropdownWindow.java
-      ...
+      <PascalReusableView>.java
   domain/
     <feature>/
       <PascalFeatureName>ApplicationService.java
       api/              carrier types only
       application/
-      <domain-module>/
       <domain-module>/
   data/
     <feature>/
@@ -85,7 +98,8 @@ src/
       model/
       mapper/
     persistencecore/
-      shared infrastructure reused by multiple persistence features
+      sqlite/
+      model/
 resources/
   view/
     optional passive-view resources
@@ -93,22 +107,32 @@ resources/
 
 ## Public Entrypoints
 
-Every shell-registered view contribution is represented by one model file:
+Every shell-registered UI contribution is represented by one contribution
+root:
 
-- `src/view/models/<PascalContributionName>Model.java`
-- public concrete type unless an explicit future registration contract says
-  otherwise
-- implements the public shell registration contract for exactly one
-  contribution kind
-- defines one tab model, one state-tab model, or one top-bar dropdown window
-  model
+- `src/view/tabs/<entry>/<PascalEntry>Contribution.java` for one left-bar tab
+- `src/view/topbar/<entry>/<PascalEntry>Contribution.java` for one top-bar
+  dropdown window
+- `src/view/state/<entry>/<PascalEntry>Contribution.java` for one global
+  runtime state-panel tab
+- `src/view/details/<entry>/` owns detail-entry ViewModels and passive views
+  published through shell-owned details/history APIs; it is not scanned for
+  bootstrap-discovered contributions
 
-Every passive panel view is represented by one view file:
+A contribution class is `public final`, has a public no-arg constructor,
+implements `shell.api.ShellContribution`, and defines exactly one shell
+contribution.
 
-- `src/view/views/<PascalPanelName>.java`
-- defines exactly one panel-content fragment for one fixed shell surface
-- exposes model-bindable listeners and user-event emitters
-- does not expose domain or shell entrypoints
+Every contribution-owned or detail-owned ViewModel is represented by one
+`*ViewModel.java` file in the same root. It owns presentation state and
+user-intent handling, not shell discovery or view instantiation.
+
+Every contribution-owned or detail-owned passive view is represented by one
+`*View.java` file in the same root. It defines exactly one panel, dropdown,
+state, or detail fragment for one shell surface.
+
+Reusable generic passive views may live directly under `src/view/views/`.
+Feature-owned views must not be moved there simply to share a package.
 
 Every service-exporting data feature exposes exactly one service-registration
 entrypoint:
@@ -134,34 +158,44 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - The concrete per-rule status and owner mapping for repository-structure
   rules lives in the
   [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1).
-- the included build at `tools/gradle/build-harness/` owns repository topology,
-  package-path alignment, `src/` direct-child topology, included-build
-  placement, and service-entrypoint presence rules below `src/data/`.
+- The included build at `tools/gradle/build-harness/` owns repository
+  topology, package-path alignment, `src/` direct-child topology,
+  included-build placement, and service-entrypoint presence rules below
+  `src/data/`.
 - Existing `checkViewArchitecture`, PMD, ArchUnit, Error Prone, and
-  `build-harness` view checks enforce direct `src/view/models` contribution
-  models and `src/view/views` passive panel views for active target code.
+  `build-harness` view checks enforce contribution-root placement for active
+  target view code.
 - A feature root may contain Markdown documents with the standard co-located
   filenames without counting as alternate Java entrypoints.
-- The binding shell-workbench standard defines the semantic responsibilities of
+- The shell-workbench standard defines the semantic responsibilities of
   `AppShell`, registration contracts, cockpit surfaces, state-pane precedence,
   and allowed shell-facing API surface.
-- The binding domain-layer standard defines the semantic responsibilities of
-  `api/`, `application/`, and named domain modules inside one bounded context.
-- The binding data-layer standard defines the semantic responsibilities of
-  `repository/`, `query/`, `gateway/`, `model/`, `mapper/`, and
+- The domain-layer standard defines the semantic responsibilities of `api/`,
+  `application/`, and named domain modules inside one bounded context.
+- The data-layer standard defines the semantic responsibilities of
+  `repository/`, `query/`, `gateway/`, `model/`, `mapper`, and
   `persistencecore/`.
 
 ## Packaging Rules
 
-- Target view models live under `src/view/models`.
-- Target passive panel views live under `src/view/views`.
-- A `view/models` file owns exactly one shell-registered tab, state tab, or
-  top-bar dropdown window model.
-- A `view/views` file owns exactly one passive panel-content fragment for one
-  shell surface.
-- View models may depend on shell public contracts, passive views, JavaFX
-  beans/collections, and domain application-service boundaries.
-- Passive panel views may depend on JavaFX UI APIs and narrow listener/emitter
+- Active target view code lives under `src/view/tabs`, `src/view/topbar`,
+  `src/view/state`, `src/view/details`, or reusable `src/view/views`.
+- Contribution-owned Java files are direct files under
+  `src/view/<area>/<entry>/`.
+- Reusable generic view Java files are direct files under `src/view/views/`.
+- A contribution root under `tabs`, `topbar`, or `state` owns exactly one
+  shell-registered contribution.
+- A detail root owns ViewModel and view content only, not a shell-registered
+  contribution.
+- A `*ViewModel` file owns presentation state for its contribution.
+- A `*View` file owns exactly one passive panel, dropdown, state, or detail
+  fragment.
+- Contributions may depend on shell public contracts, own ViewModels, own
+  Views, JavaFX `Node`, and domain application-service boundaries.
+- ViewModels may depend on JavaFX beans/collections and domain
+  application-service boundaries, but not shell, views, data, or concrete
+  shell host types.
+- Passive views may depend on JavaFX UI APIs and narrow listener/emitter
   contracts but must not depend on shell, domain, data, or ApplicationService
   types.
 - Existing `src/view/<component>/`, `*ViewContribution.java`, `View/`,
@@ -180,10 +214,10 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   modules in the ubiquitous language of that bounded context.
 - Legacy root role buckets under `src/domain/**` are forbidden by the
   architecture harness.
-- Data implementation classes live under `repository/`, `query/`, `gateway/`,
-  `model/`, or `mapper/`.
-- `src/data/<feature>/*ServiceContribution.java` is a registration root,
-  not a public business boundary.
+- Data implementation classes live under `repository/`, `query/`,
+  `gateway/`, `model/`, or `mapper/`.
+- `src/data/<feature>/*ServiceContribution.java` is a registration root, not a
+  public business boundary.
 - `repository/` is reserved for canonical-truth persistence adapters.
 - `query/` is reserved for exported read-only query adapters.
 - `gateway/local/` and `gateway/remote/` are internal concrete-source
@@ -203,4 +237,4 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/styling.md:1)
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
-- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)

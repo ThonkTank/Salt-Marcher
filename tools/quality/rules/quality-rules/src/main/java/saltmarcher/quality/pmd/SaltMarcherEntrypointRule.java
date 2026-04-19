@@ -44,7 +44,8 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
             asCtx(data).addViolationWithMessage(node,
                     "View shell contribution must declare a public no-arg constructor for shell discovery.");
         }
-        if (!sourceFacts.text().contains("ShellContribution")) {
+        if (!sourceFacts.text().contains("implements ShellContribution")
+                && !sourceFacts.text().contains("implements shell.api.ShellContribution")) {
             asCtx(data).addViolationWithMessage(node,
                     "View shell contribution must implement shell.api.ShellContribution.");
         }
@@ -68,9 +69,11 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     }
 
     private void checkViewPanel(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
-        if (VIEW_PANEL_SUFFIXES.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
+        boolean reusableGenericView = sourceFacts.relativePath().startsWith("src/view/views/")
+                && sourceFacts.simpleName().endsWith("View");
+        if (!reusableGenericView && VIEW_PANEL_SUFFIXES.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
             asCtx(data).addViolationWithMessage(node,
-                    "Passive panel views must end with ControlsView, MainView, DetailsView, StateView, or TopBarView.");
+                    "Passive panel views must end with ControlsView, MainView, DetailsView, StateView, or TopBarView; reusable generic views under src/view/views must end with View.");
         }
         if (!sourceFacts.hasExplicitPublicFinalClass()) {
             asCtx(data).addViolationWithMessage(node, "Passive panel view must be declared public final.");

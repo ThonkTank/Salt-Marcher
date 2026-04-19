@@ -1,14 +1,14 @@
 # ADR 018: Shared View Component Boundary
 
-- Status: Superseded by [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- Status: Superseded by [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - Date: 2026-04-19
 
 ## Supersession Note
 
 This ADR is a historical record of the shared-component exception under the
 component-local MVVM model. The current target architecture is the cockpit
-tab-model view layer defined by ADR 019 and the MVVM standard. Reuse should be
-reconsidered as passive panel-view contracts instead of preserving broad
+contribution view layer defined by ADR 020 and the MVVM standard. Reuse should
+be reconsidered as passive view contracts instead of preserving broad
 component-local `api/`, `View/`, and `ViewModel/` buckets as target topology.
 
 ## Context
@@ -68,4 +68,4 @@ a later ADR splits it into its own declared shared component.
 
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
 - [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
-- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)

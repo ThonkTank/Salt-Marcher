@@ -17,7 +17,9 @@ Use the documentation tree in this order:
 3. `docs/standards/*.md` for reusable standards.
 4. `docs/adr/*.md` for individual architecture decisions.
 5. co-located feature documents under `src/domain/<feature>/`,
-   `src/view/models/`, `src/view/views/`, and `src/data/<feature>/`.
+   `src/view/tabs/<tab>/`, `src/view/topbar/<window>/`,
+   `src/view/state/<state>/`, `src/view/details/<entry>/`,
+   `src/view/views/`, and `src/data/<feature>/`.
 
 ## Core Terms
 
@@ -129,9 +131,11 @@ Use the documentation tree in this order:
   Product and behavior specification.
 - `src/domain/<feature>/DOMAIN.md`
   Canonical domain model, ownership, invariants, and derived-state rules.
-- `src/view/models/<topic>.md` or `src/view/views/<topic>.md`
-  UI structure, interaction model, and user-visible states for one tab model,
-  state tab, dropdown window, or panel view.
+- `src/view/tabs/<tab>/UI.md`, `src/view/topbar/<window>/UI.md`,
+  `src/view/state/<state>/UI.md`, `src/view/details/<entry>/UI.md`, or
+  `src/view/views/<topic>.md`
+  UI structure, interaction model, and user-visible states for one tab,
+  runtime state-panel tab, dropdown window, detail entry, or reusable view.
 - `src/data/<feature>/PERSISTENCE.md`
   Persistence contracts, schema ownership, and adapter rules.
 - `src/domain/<feature>/DELIVERY.md`
@@ -148,4 +152,5 @@ Use the documentation tree in this order:
 - [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [ADR 001: Documentation Governance](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/001-documentation-governance.md:1)
 - [ADR 002: Passive Shell And Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
-- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)

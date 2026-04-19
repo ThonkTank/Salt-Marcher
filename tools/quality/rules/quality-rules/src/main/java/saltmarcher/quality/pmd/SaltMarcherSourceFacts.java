@@ -98,7 +98,7 @@ final class SaltMarcherSourceFacts {
     }
 
     boolean isViewContributionSource() {
-        return isViewSlotAreaSource() && simpleName.endsWith("Contribution");
+        return isDiscoverableViewContributionArea() && simpleName.endsWith("Contribution");
     }
 
     boolean isViewModelSource() {
@@ -121,6 +121,12 @@ final class SaltMarcherSourceFacts {
         return isViewSource()
                 && segments.size() == 5
                 && Set.of("tabs", "topbar", "state", "details").contains(segments.get(2));
+    }
+
+    private boolean isDiscoverableViewContributionArea() {
+        return isViewSource()
+                && segments.size() == 5
+                && Set.of("tabs", "topbar", "state").contains(segments.get(2));
     }
 
     boolean isDomainSource() {

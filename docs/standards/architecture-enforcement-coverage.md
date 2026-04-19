@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
+Last Reviewed: 2026-04-20
 Source of Truth: Per-surface architecture rule status, mechanical owner, and
 blocking-task mapping for active code surfaces.
 
@@ -17,14 +17,17 @@ review-only boundary remain defined in the
 
 ## View Layer
 
-The target view architecture is the cockpit MVVM model from ADR 019:
-`src/view/models` owns tab and window ViewModels, while `src/view/views` owns
-passive panel-content fragments.
+The target view architecture is the cockpit MVVM model from ADR 020:
+shell-discovered `*Contribution` adapters live under `src/view/tabs/*`,
+`src/view/topbar/*`, and `src/view/state/*`; co-located `*ViewModel` files own
+presentation state and actions; co-located `*View` files own passive JavaFX
+controls; reusable generic views live under `src/view/views`.
 
 `Enforced`:
 
 - `view-target-package-layout`: active Java view code may live only as direct
-  files under `src/view/models` or `src/view/views` through `build-harness`
+  files under `src/view/tabs/*`, `src/view/topbar/*`, `src/view/state/*`,
+  `src/view/details/*`, or reusable `src/view/views` through `build-harness`
   `view-layout` (`:build-harness:check`), jQAssistant
   `saltmarcher:MvvmAllowedViewBuckets` and
   `saltmarcher:MvvmNoLegacyBuckets` (`checkViewArchitecture`), ArchUnit
@@ -37,38 +40,53 @@ passive panel-content fragments.
   `saltmarcher:MvvmAllowedViewBuckets` and
   `saltmarcher:MvvmNoLegacyBuckets` (`checkViewArchitecture`), and ArchUnit
   `viewLayerMustNotUseViewContributionImplementations` (`architectureTest`).
-- `view-model-one-contribution-per-file`: `src/view/models` files define one
-  top-level shell contribution model and use `*TabModel` or `*WindowModel`
-  naming through jQAssistant `saltmarcher:MvvmOneModelPerFile`,
+- `view-contribution-entrypoint-shape`: shell-facing view entrypoints use
+  `*Contribution`, implement `shell.api.ShellContribution`, expose
+  `registrationSpec()` and `bind(ShellRuntimeContext)`, and are discovered only
+  from `tabs`, `topbar`, and `state` roots through build-harness
+  `shell-view-contribution-placement` (`:build-harness:check`), jQAssistant
   `saltmarcher:MvvmRootOnlyViewContribution`, and
   `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`), plus PMD
-  `SaltMarcherEntrypointRule` for source-local model root shape
+  `SaltMarcherEntrypointRule` for source-local contribution shape
   (`pmdArchitectureMain`).
-- `view-passive-panel-one-fragment-per-file`: `src/view/views` files define one
-  top-level passive panel view and use fixed-surface naming through jQAssistant
+- `view-model-one-type-per-file`: co-located `*ViewModel` files define exactly
+  one top-level ViewModel through jQAssistant `saltmarcher:MvvmOneModelPerFile`
+  (`checkViewArchitecture`) and Error Prone `ViewModelOwnershipNaming`
+  (`compileJava`).
+- `view-passive-panel-one-fragment-per-file`: co-located `*View` files and
+  reusable generic `src/view/views` files define one top-level passive view
+  and use fixed-surface or reusable-view naming through jQAssistant
   `saltmarcher:MvvmOnePanelViewPerFile` and
   `saltmarcher:MvvmPanelViewName` (`checkViewArchitecture`), plus PMD
   `SaltMarcherEntrypointRule` for source-local panel shape
   (`pmdArchitectureMain`).
-- `view-model-dependency-boundary`: contribution models may use shell public
-  contracts, passive views, JavaFX bindable state and nodes, domain root
+- `view-contribution-dependency-boundary`: contributions may use shell public
+  contracts, own ViewModels, passive views, JavaFX scene `Node`, domain root
   application services, and domain `api` carriers, but not data, bootstrap,
   shell host internals, legacy view topology, or private domain internals
   through Error Prone `ViewModelFrameworkIndependence` and
   `FeatureShellApiAllowlist` (`compileJava`), jQAssistant
   `saltmarcher:MvvmModelDependencies` (`checkViewArchitecture`), and
-  ArchUnit `viewModelsMustNotReachBootstrapDataOrShellHost` and
-  `viewModelsMustOnlyUseFeatureApisAtBackendBoundary` (`architectureTest`).
+  ArchUnit `viewContributionsAndViewModelsMustNotReachBootstrapDataOrShellHost`
+  and `viewContributionsAndViewModelsMustOnlyUseFeatureApisAtBackendBoundary`
+  (`architectureTest`).
+- `view-model-dependency-boundary`: ViewModels may use JavaFX
+  beans/collections, JDK types, and domain public boundaries, but not shell,
+  concrete views, data, bootstrap, shell host internals, or domain internals
+  through Error Prone `ViewModelFrameworkIndependence` (`compileJava`) and
+  jQAssistant `saltmarcher:MvvmViewModelDependencies`
+  (`checkViewArchitecture`).
 - `view-passive-panel-dependency-boundary`: passive panel views may use JavaFX,
   JDK types, and passive view helpers, but not shell, domain, data, bootstrap,
-  contribution models, or legacy view topology through Error Prone
+  contributions, ViewModels, ApplicationServices, or legacy view topology
+  through Error Prone
   `ViewRestrictedDependencies` (`compileJava`), jQAssistant
   `saltmarcher:MvvmNoPrivateForeignComponentDependencies`
   (`checkViewArchitecture`), and
-  ArchUnit `passiveViewsMustNotReachModelShellDomainDataOrBootstrap`
+  ArchUnit `passiveViewsMustNotReachContributionShellDomainDataOrBootstrap`
   (`architectureTest`).
 - `view-presentation-state-placement`: presentation-owned model/state carrier
-  types must live in `src/view/models` through Error Prone
+  types must live next to their owning view contribution through Error Prone
   `ViewModelOwnershipNaming` (`compileJava`).
 - `view-reflection-bypass-ban`: reflective reach-through under `src/view/**`,
   including `Class.forName(...)`, `ClassLoader.loadClass(...)`,
@@ -79,17 +97,17 @@ passive panel-content fragments.
 
 Mechanical trace:
 
-- Java view code lives under direct `src/view/models` or `src/view/views`
-  files.
-- A `view/models` file defines exactly one shell-registered tab model,
-  state-tab model, or top-bar dropdown window model.
-- A `view/views` file defines exactly one passive panel-content fragment for
-  one fixed shell surface.
-- `view/models` may use shell public contracts, `view/views`, JavaFX beans and
-  collections, domain application-service roots, and domain `api` carriers.
-- `view/models` must not use `src.data.*` or concrete `shell.host.*` types.
-- `view/views` may use JavaFX UI APIs and narrow listener/emitter contracts,
-  but not shell, domain, data, or ApplicationService types.
+- Java view code lives under direct files in `src/view/tabs/*`,
+  `src/view/topbar/*`, `src/view/state/*`, `src/view/details/*`, or reusable
+  `src/view/views`.
+- A contribution file defines one shell-discovered adapter; detail entries do
+  not define bootstrap-discovered contributions.
+- A ViewModel file defines one presentation state/action holder and imports no
+  shell APIs or concrete view classes.
+- A view file defines one passive JavaFX fragment and imports no shell, domain,
+  data, ApplicationService, Contribution, or ViewModel types.
+- Contributions may use shell public contracts, own ViewModels, passive views,
+  JavaFX `Node`, domain application-service roots, and domain `api` carriers.
 - Details/history publication goes through shell-owned contracts.
 - State-pane precedence is explicit: active left-bar tab content wins while
   present; otherwise registered state-pane tabs are shown.
@@ -105,12 +123,14 @@ Mechanical trace:
 
 `Review-Only`:
 
-- Whether touched legacy view code moves toward `src/view/models` and
-  `src/view/views` rather than preserving component-local topology.
-- Whether a model file truly defines one tab/window contribution and owns shell
-  registration, panel binding, ApplicationService wiring, and cross-panel
-  presentation policy.
-- Whether a view file truly defines one passive panel fragment and only exposes
+- Whether touched legacy view code moves toward contribution folders with
+  co-located ViewModels and passive views rather than preserving component-
+  local topology.
+- Whether a contribution truly stays a shell/workbench adapter and keeps
+  presentation policy in the ViewModel.
+- Whether a ViewModel owns state, actions, command availability, loading,
+  failure, retry, and stale-result semantics instead of leaving them in views.
+- Whether a view file truly defines one passive fragment and only exposes
   listeners, bind targets, and technical user-event emitters.
 - Whether passive views avoid feature meaning, shell policy, domain behavior,
   and ApplicationService calls.
@@ -396,7 +416,7 @@ Mechanical trace against the data-layer standard:
   not name concrete `src.view`, `src.domain`, or `src.data` feature packages
   via `PMD architecture` (`pmdArchitectureMain`).
 - `system-shell-runtime-seam-placement`: feature-facing shell API use is
-  limited to `src/view/models` contribution models and data
+  limited to shell-facing view contribution roots and data
   `*ServiceContribution` roots through `Error Prone` (`compileJava`) and PMD
   root-contract checks (`pmdArchitectureMain`).
 - `system-service-contribution-placement`: service contribution roots are
@@ -413,9 +433,10 @@ Mechanical trace against the data-layer standard:
   repository/query adapter signatures must not leak internal data
   infrastructure types via `Error Prone` (`compileJava`).
 - `system-view-boundary-carrier-purity`: target view-to-view dependencies are
-  model-to-passive-view bindings under `src/view/models` and
-  `src/view/views`; broad component-local view `api/` packages are blocked by
-  the target view layout and dependency checks.
+  contribution-to-ViewModel and contribution-to-passive-view bindings inside
+  contribution roots, plus reusable generic view use from passive views; broad
+  component-local view `api/` packages are blocked by the target view layout
+  and dependency checks.
 - `system-foreign-private-bucket-bans`: cross-feature access to private view,
   domain, and data buckets is blocked by the owning view, domain, and data
   rule sets through `jQAssistant`, `ArchUnit`, and `Error Prone`.
@@ -449,11 +470,12 @@ Mechanical trace against the data-layer standard:
   fixed runtime gateway methods `inspector()`, `services()`, and `session(...)`
   through PMD `SaltMarcherSourcePolicyRule` (`pmdArchitectureMain`).
 - `shell-feature-facing-api-allowlist`: shell APIs are allowed from
-  `src/view/models` contribution models and data service roots only through
+  shell-facing view contribution roots and data service roots only through
   Error Prone `FeatureShellApiAllowlist` (`compileJava`).
 - `shell-view-root-delegation-boundary`: old component-local view roots are
-  blocked and shell-facing view wiring belongs under `src/view/models` through
-  Error Prone `ViewRootDelegation` (`compileJava`).
+  blocked and shell-facing view wiring belongs in `*Contribution` classes under
+  `src/view/tabs`, `src/view/topbar`, and `src/view/state` through Error Prone
+  `ViewRootDelegation` (`compileJava`).
 - `shell-service-registry-registration-placement`: direct
   `ServiceRegistry.Builder.register(...)` calls must stay in data feature
   `*ServiceContribution` roots through Error Prone
@@ -489,9 +511,11 @@ Runtime guards outside the build-blocking harness:
 
 `Enforced`:
 
-- `shell-view-model-discovery-contract`: view contribution models are found as
-  direct files under `src/view/models`, with one concrete shell contribution
-  model per file, through jQAssistant `saltmarcher:MvvmOneModelPerFile`,
+- `shell-view-contribution-discovery-contract`: view contributions are found
+  as direct `*Contribution.java` files under `src/view/tabs/<entry>`,
+  `src/view/topbar/<entry>`, and `src/view/state/<entry>`, with one concrete
+  shell contribution per root, through jQAssistant
+  `saltmarcher:MvvmOneModelPerFile`,
   `saltmarcher:MvvmRootOnlyViewContribution`, and
   `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`),
   `build-harness` view layout and
@@ -503,17 +527,17 @@ Runtime guards outside the build-blocking harness:
   through `build-harness` `persistence-root-entrypoint` and
   `service-contribution-placement` (`:build-harness:check`) plus PMD
   `SaltMarcherEntrypointRule` (`pmdArchitectureMain`).
-- `shell-root-instantiation-contract`: view contribution models and service
+- `shell-root-instantiation-contract`: view contributions and service
   contribution roots must be concrete `public final` classes with public no-arg
   constructors and required root methods through PMD `SaltMarcherEntrypointRule`
   (`pmdArchitectureMain`).
-- `shell-supported-contribution-spec-selection`: view contribution models
-  construct exactly one supported shell contribution spec and `defaultLanding`
-  appears only on `ShellTabSpec` models through PMD
+- `shell-supported-contribution-spec-selection`: view contributions construct
+  exactly one supported shell contribution spec and `defaultLanding` appears
+  only on `ShellTabSpec` tab contributions through PMD
   `SaltMarcherEntrypointRule` (`pmdArchitectureMain`).
-- `shell-startup-default-landing-uniqueness`: model-authored `ShellTabSpec`
-  metadata must use literal `defaultLanding` values and at most one tab may
-  declare `defaultLanding=true` through `build-harness`
+- `shell-startup-default-landing-uniqueness`: contribution-authored
+  `ShellTabSpec` metadata must use literal `defaultLanding` values and at most
+  one tab may declare `defaultLanding=true` through `build-harness`
   `shell-tab-default-landing-literal` and `shell-default-landing-uniqueness`
   (`:build-harness:check`).
 - `shell-generic-bootstrap-wiring`: bootstrap and shell code must not name
@@ -583,10 +607,11 @@ Runtime guards outside the build-blocking harness:
   rules `root-layout`, `src-layout`, `shell-layout`, `view-layout`,
   `domain-layout`, `data-layout`, `package-declaration`, and
   `package-path-match` (`:build-harness:check`).
-- `repository-view-feature-layout`: target view model and passive panel
-  placement under direct `src/view/models` and `src/view/views` files is
-  enforced by `build-harness`, jQAssistant MVVM rules, ArchUnit dependency
-  rules, PMD root/panel contracts, and Error Prone dependency checks
+- `repository-view-feature-layout`: target contribution-root placement,
+  co-located ViewModel placement, co-located passive view placement, and
+  reusable generic `src/view/views` placement are enforced by
+  `build-harness`, jQAssistant MVVM rules, ArchUnit dependency rules, PMD
+  root/panel contracts, and Error Prone dependency checks
   (`:build-harness:check`, `checkViewArchitecture`, `architectureTest`,
   `pmdArchitectureMain`, and `compileJava`).
 - `repository-domain-feature-layout`: domain root application-service

@@ -1,11 +1,8 @@
 package bootstrap;
 
-import org.jspecify.annotations.Nullable;
-import shell.api.ShellContribution;
-
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -14,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarFile;
+import org.jspecify.annotations.Nullable;
+import shell.api.ShellContribution;
 
 /**
  * Discovers shell contributions from the view-layer contribution roots.
@@ -126,7 +125,7 @@ public final class ShellViewDiscovery {
         try {
             rawType = Class.forName(className, true, classLoader);
         } catch (ClassNotFoundException exception) {
-            throw new IllegalStateException("Could not load shell contribution model " + className + ".", exception);
+            throw new IllegalStateException("Could not load shell contribution " + className + ".", exception);
         }
 
         if (!ShellContribution.class.isAssignableFrom(rawType)
