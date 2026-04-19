@@ -1,7 +1,7 @@
 package bootstrap;
 
 import org.jspecify.annotations.Nullable;
-import shell.api.ShellContributionModel;
+import shell.api.ShellContribution;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -16,24 +16,26 @@ import java.util.List;
 import java.util.jar.JarFile;
 
 /**
- * Discovers shell contribution models from {@code src.view.models}.
+ * Discovers shell contributions from the view-layer contribution roots.
  */
 public final class ShellViewDiscovery {
 
-    private static final String MODEL_ROOT = "src/view/models";
-    private static final String MODEL_PACKAGE_PREFIX = "src.view.models.";
+    private static final List<ContributionRoot> CONTRIBUTION_ROOTS = List.of(
+            new ContributionRoot("src/view/tabs", "src.view.tabs."),
+            new ContributionRoot("src/view/topbar", "src.view.topbar."),
+            new ContributionRoot("src/view/state", "src.view.state."));
     private static final String CLASS_SUFFIX = ".class";
     private static final String FILE_PROTOCOL = "file";
     private static final String JAR_PROTOCOL = "jar";
 
-    public List<ShellContributionModel> discover() {
+    public List<ShellContribution> discover() {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
             classLoader = ShellViewDiscovery.class.getClassLoader();
         }
-        List<ShellContributionModel> contributions = new ArrayList<>();
-        for (String className : discoverModelClassNames(classLoader)) {
-            ShellContributionModel contribution = instantiateContribution(classLoader, className);
+        List<ShellContribution> contributions = new ArrayList<>();
+        for (String className : discoverContributionClassNames(classLoader)) {
+            ShellContribution contribution = instantiateContribution(classLoader, className);
             if (contribution != null) {
                 contributions.add(contribution);
             }
@@ -41,41 +43,58 @@ public final class ShellViewDiscovery {
         return contributions;
     }
 
-    private List<String> discoverModelClassNames(ClassLoader classLoader) {
+    private List<String> discoverContributionClassNames(ClassLoader classLoader) {
         List<String> classNames = new ArrayList<>();
         try {
-            Enumeration<URL> resources = classLoader.getResources(MODEL_ROOT);
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                if (FILE_PROTOCOL.equals(resource.getProtocol())) {
-                    collectFromDirectory(Path.of(resource.toURI()), classNames);
-                } else if (JAR_PROTOCOL.equals(resource.getProtocol())) {
-                    collectFromJar(resource, classNames);
+            for (ContributionRoot root : CONTRIBUTION_ROOTS) {
+                Enumeration<URL> resources = classLoader.getResources(root.resourceRoot());
+                while (resources.hasMoreElements()) {
+                    URL resource = resources.nextElement();
+                    if (FILE_PROTOCOL.equals(resource.getProtocol())) {
+                        collectFromDirectory(Path.of(resource.toURI()), root, classNames);
+                    } else if (JAR_PROTOCOL.equals(resource.getProtocol())) {
+                        collectFromJar(resource, root, classNames);
+                    }
                 }
             }
         } catch (IOException | URISyntaxException exception) {
-            throw new IllegalStateException("Could not discover shell contribution models under " + MODEL_ROOT + ".", exception);
+            throw new IllegalStateException("Could not discover shell contributions under src/view.", exception);
         }
         return classNames.stream().distinct().sorted().toList();
     }
 
-    private void collectFromDirectory(Path modelDirectory, List<String> classNames) throws IOException {
-        if (!Files.isDirectory(modelDirectory)) {
+    private void collectFromDirectory(Path rootDirectory, ContributionRoot root, List<String> classNames) throws IOException {
+        if (!Files.isDirectory(rootDirectory)) {
             return;
         }
-        try (var files = Files.list(modelDirectory)) {
-            for (Path classFile : files
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(CLASS_SUFFIX))
-                    .filter(path -> !path.getFileName().toString().contains("$"))
+        try (var featureDirectories = Files.list(rootDirectory)) {
+            for (Path featureDirectory : featureDirectories
+                    .filter(Files::isDirectory)
                     .toList()) {
-                String simpleName = classFile.getFileName().toString().replaceFirst("\\.class$", "");
-                classNames.add(MODEL_PACKAGE_PREFIX + simpleName);
+                collectContributionClasses(featureDirectory, root, classNames);
             }
         }
     }
 
-    private void collectFromJar(URL resource, List<String> classNames) throws IOException {
+    private void collectContributionClasses(
+            Path contributionDirectory,
+            ContributionRoot root,
+            List<String> classNames) throws IOException {
+        try (var files = Files.list(contributionDirectory)) {
+            for (Path classFile : files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(CLASS_SUFFIX))
+                    .filter(path -> path.getFileName().toString().endsWith("Contribution" + CLASS_SUFFIX))
+                    .filter(path -> !path.getFileName().toString().contains("$"))
+                    .toList()) {
+                String simpleName = classFile.getFileName().toString().replaceFirst("\\.class$", "");
+                String featureName = contributionDirectory.getFileName().toString();
+                classNames.add(root.packagePrefix() + featureName + "." + simpleName);
+            }
+        }
+    }
+
+    private void collectFromJar(URL resource, ContributionRoot root, List<String> classNames) throws IOException {
         String rawPath = resource.getPath();
         int separatorIndex = rawPath.indexOf("!");
         if (separatorIndex < 0) {
@@ -85,16 +104,24 @@ public final class ShellViewDiscovery {
         try (JarFile jar = new JarFile(jarPath)) {
             jar.stream()
                     .map(java.util.zip.ZipEntry::getName)
-                    .filter(name -> name.startsWith(MODEL_ROOT + "/"))
+                    .filter(name -> name.startsWith(root.resourceRoot() + "/"))
                     .filter(name -> name.endsWith(CLASS_SUFFIX))
+                    .filter(name -> name.endsWith("Contribution" + CLASS_SUFFIX))
                     .filter(name -> name.indexOf('$') < 0)
-                    .filter(name -> name.substring(MODEL_ROOT.length() + 1).indexOf('/') < 0)
-                    .map(name -> MODEL_PACKAGE_PREFIX + name.substring(MODEL_ROOT.length() + 1).replaceFirst("\\.class$", ""))
+                    .filter(name -> {
+                        String relativeName = name.substring(root.resourceRoot().length() + 1);
+                        return relativeName.indexOf('/') > 0
+                                && relativeName.indexOf('/') == relativeName.lastIndexOf('/');
+                    })
+                    .map(name -> root.packagePrefix()
+                            + name.substring(root.resourceRoot().length() + 1)
+                                    .replace('/', '.')
+                                    .replaceFirst("\\.class$", ""))
                     .forEach(classNames::add);
         }
     }
 
-    private @Nullable ShellContributionModel instantiateContribution(ClassLoader classLoader, String className) {
+    private @Nullable ShellContribution instantiateContribution(ClassLoader classLoader, String className) {
         Class<?> rawType;
         try {
             rawType = Class.forName(className, true, classLoader);
@@ -102,16 +129,19 @@ public final class ShellViewDiscovery {
             throw new IllegalStateException("Could not load shell contribution model " + className + ".", exception);
         }
 
-        if (!ShellContributionModel.class.isAssignableFrom(rawType)
+        if (!ShellContribution.class.isAssignableFrom(rawType)
                 || rawType.isInterface()
                 || Modifier.isAbstract(rawType.getModifiers())) {
             return null;
         }
 
         try {
-            return (ShellContributionModel) rawType.getDeclaredConstructor().newInstance();
+            return (ShellContribution) rawType.getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException exception) {
-            throw new IllegalStateException("Shell contribution model " + className + " must expose a public no-arg constructor.", exception);
+            throw new IllegalStateException("Shell contribution " + className + " must expose a public no-arg constructor.", exception);
         }
+    }
+
+    private record ContributionRoot(String resourceRoot, String packagePrefix) {
     }
 }

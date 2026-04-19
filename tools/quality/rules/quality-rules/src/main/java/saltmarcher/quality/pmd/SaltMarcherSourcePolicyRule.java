@@ -137,7 +137,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
         if (sourceFacts.isViewSource()) {
             if (sourceFacts.isLegacyViewSource()) {
                 asCtx(data).addViolationWithMessage(node,
-                        "View code must migrate to src/view/models or src/view/views; old component-local View/ViewModel/api roots are forbidden.");
+                        "View code must migrate to src/view/tabs, src/view/topbar, src/view/state, src/view/details, or reusable src/view/views; old component-local roots are forbidden.");
             }
             for (String legacyType : VIEW_LEGACY_SHELL_TYPES) {
                 if (sourceFacts.text().contains(legacyType)) {

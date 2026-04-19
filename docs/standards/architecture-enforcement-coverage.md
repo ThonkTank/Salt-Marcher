@@ -26,26 +26,28 @@ passive panel-content fragments.
 - `view-target-package-layout`: active Java view code may live only as direct
   files under `src/view/models` or `src/view/views` through `build-harness`
   `view-layout` (`:build-harness:check`), jQAssistant
-  `saltmarcher:ViewLayerAllowedPackages` (`checkViewArchitecture`), ArchUnit
+  `saltmarcher:MvvmAllowedViewBuckets` and
+  `saltmarcher:MvvmNoLegacyBuckets` (`checkViewArchitecture`), ArchUnit
   `viewLayerMustUseModelsOrViewsPackages` (`architectureTest`), PMD
   `SaltMarcherSourcePolicyRule` (`pmdArchitectureMain`), and Error Prone
   `ViewRootDelegation` (`compileJava`).
 - `view-no-view-contribution-roots`: `*ViewContribution` implementations are
   forbidden under `src/view/**` through `build-harness`
   `shell-view-contribution-placement` (`:build-harness:check`), jQAssistant
-  `saltmarcher:ViewLayerNoViewContributionImplementations`
-  (`checkViewArchitecture`), and ArchUnit
+  `saltmarcher:MvvmAllowedViewBuckets` and
+  `saltmarcher:MvvmNoLegacyBuckets` (`checkViewArchitecture`), and ArchUnit
   `viewLayerMustNotUseViewContributionImplementations` (`architectureTest`).
 - `view-model-one-contribution-per-file`: `src/view/models` files define one
   top-level shell contribution model and use `*TabModel` or `*WindowModel`
-  naming through jQAssistant `saltmarcher:ViewLayerOneModelPerFile` and
-  `saltmarcher:ViewLayerModelName` (`checkViewArchitecture`), plus PMD
+  naming through jQAssistant `saltmarcher:MvvmOneModelPerFile`,
+  `saltmarcher:MvvmRootOnlyViewContribution`, and
+  `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`), plus PMD
   `SaltMarcherEntrypointRule` for source-local model root shape
   (`pmdArchitectureMain`).
 - `view-passive-panel-one-fragment-per-file`: `src/view/views` files define one
   top-level passive panel view and use fixed-surface naming through jQAssistant
-  `saltmarcher:ViewLayerOnePanelViewPerFile` and
-  `saltmarcher:ViewLayerPanelViewName` (`checkViewArchitecture`), plus PMD
+  `saltmarcher:MvvmOnePanelViewPerFile` and
+  `saltmarcher:MvvmPanelViewName` (`checkViewArchitecture`), plus PMD
   `SaltMarcherEntrypointRule` for source-local panel shape
   (`pmdArchitectureMain`).
 - `view-model-dependency-boundary`: contribution models may use shell public
@@ -54,14 +56,15 @@ passive panel-content fragments.
   shell host internals, legacy view topology, or private domain internals
   through Error Prone `ViewModelFrameworkIndependence` and
   `FeatureShellApiAllowlist` (`compileJava`), jQAssistant
-  `saltmarcher:ViewLayerModelDependencies` (`checkViewArchitecture`), and
+  `saltmarcher:MvvmModelDependencies` (`checkViewArchitecture`), and
   ArchUnit `viewModelsMustNotReachBootstrapDataOrShellHost` and
   `viewModelsMustOnlyUseFeatureApisAtBackendBoundary` (`architectureTest`).
 - `view-passive-panel-dependency-boundary`: passive panel views may use JavaFX,
   JDK types, and passive view helpers, but not shell, domain, data, bootstrap,
   contribution models, or legacy view topology through Error Prone
   `ViewRestrictedDependencies` (`compileJava`), jQAssistant
-  `saltmarcher:ViewLayerPanelViewDependencies` (`checkViewArchitecture`), and
+  `saltmarcher:MvvmNoPrivateForeignComponentDependencies`
+  (`checkViewArchitecture`), and
   ArchUnit `passiveViewsMustNotReachModelShellDomainDataOrBootstrap`
   (`architectureTest`).
 - `view-presentation-state-placement`: presentation-owned model/state carrier
@@ -488,8 +491,10 @@ Runtime guards outside the build-blocking harness:
 
 - `shell-view-model-discovery-contract`: view contribution models are found as
   direct files under `src/view/models`, with one concrete shell contribution
-  model per file, through jQAssistant `saltmarcher:ViewLayerOneModelPerFile`
-  (`checkViewArchitecture`), `build-harness` view layout and
+  model per file, through jQAssistant `saltmarcher:MvvmOneModelPerFile`,
+  `saltmarcher:MvvmRootOnlyViewContribution`, and
+  `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`),
+  `build-harness` view layout and
   `shell-view-contribution-placement` (`:build-harness:check`), PMD
   `SaltMarcherEntrypointRule` (`pmdArchitectureMain`), and ArchUnit
   `viewLayerMustUseModelsOrViewsPackages` (`architectureTest`).

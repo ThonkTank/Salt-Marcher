@@ -5,8 +5,8 @@ import shell.host.AppShell;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
+import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
-import shell.api.ShellContributionModel;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellRuntimeStateSpec;
 import shell.api.ShellTabSpec;
@@ -17,7 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Generic application bootstrap that discovers feature-owned shell contribution models from {@code src/}.
+ * Generic application bootstrap that discovers feature-owned shell contributions from {@code src/}.
  */
 public final class AppBootstrap {
 
@@ -58,7 +58,7 @@ public final class AppBootstrap {
 
     private List<ResolvedContribution> discoverContributions(ShellRuntimeContext runtimeContext) {
         List<ResolvedContribution> resolved = new ArrayList<>();
-        for (ShellContributionModel contribution : discovery.discover()) {
+        for (ShellContribution contribution : discovery.discover()) {
             resolved.add(new ResolvedContribution(
                     contribution.registrationSpec(),
                     contribution.bind(runtimeContext)));

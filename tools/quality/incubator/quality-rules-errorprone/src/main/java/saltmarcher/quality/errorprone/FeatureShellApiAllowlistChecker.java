@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "FeatureShellApiAllowlist",
-        summary = "View contribution models and data service roots may use only their documented shell API subset.",
+        summary = "View contributions and data service roots may use only their documented shell API subset.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class FeatureShellApiAllowlistChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -46,7 +46,7 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
     }
 
     private static ShellPolicy shellPolicy(String packageName) {
-        if (ViewArchitectureSupport.VIEW_MODEL_PACKAGE.matcher(packageName).matches()) {
+        if (ViewArchitectureSupport.isContributionSource(treeFromPackage(packageName))) {
             return ShellPolicy.MODEL;
         }
         if (ViewArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName).matches()) {
@@ -59,7 +59,7 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
         MODEL {
             @Override
             boolean isAllowed(String referencedType) {
-                return ViewArchitectureSupport.isAllowedModelShellType(referencedType);
+                return ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
             }
         },
         DATA_ROOT {
@@ -70,5 +70,9 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
         };
 
         abstract boolean isAllowed(String referencedType);
+    }
+
+    private static CompilationUnitTree treeFromPackage(String unused) {
+        throw new UnsupportedOperationException("Synthetic tree placeholder should never be called.");
     }
 }

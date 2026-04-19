@@ -6,7 +6,7 @@ import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
 
 public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
 
-    private static final Set<String> VIEW_MODEL_SUFFIXES = Set.of("TabModel", "WindowModel");
+    private static final Set<String> VIEW_CONTRIBUTION_SUFFIXES = Set.of("Contribution");
     private static final Set<String> VIEW_PANEL_SUFFIXES = Set.of(
             "ControlsView",
             "MainView",
@@ -17,8 +17,8 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     @Override
     public Object visit(ASTCompilationUnit node, Object data) {
         SaltMarcherSourceFacts sourceFacts = SaltMarcherSourceFacts.from(node);
-        if (sourceFacts.isViewModelSource()) {
-            checkViewModelContribution(node, data, sourceFacts);
+        if (sourceFacts.isViewContributionSource()) {
+            checkViewContribution(node, data, sourceFacts);
         }
         if (sourceFacts.isViewPanelSource()) {
             checkViewPanel(node, data, sourceFacts);
@@ -32,35 +32,35 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
         return data;
     }
 
-    private void checkViewModelContribution(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
-        if (VIEW_MODEL_SUFFIXES.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
+    private void checkViewContribution(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
+        if (VIEW_CONTRIBUTION_SUFFIXES.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
             asCtx(data).addViolationWithMessage(node,
-                    "View contribution models under src/view/models must be named *TabModel or *WindowModel.");
+                    "View shell contributions must be named *Contribution.");
         }
         if (!sourceFacts.hasExplicitPublicFinalClass()) {
-            asCtx(data).addViolationWithMessage(node, "View contribution model must be declared public final.");
+            asCtx(data).addViolationWithMessage(node, "View shell contribution must be declared public final.");
         }
         if (!sourceFacts.hasExplicitPublicNoArgConstructor()) {
             asCtx(data).addViolationWithMessage(node,
-                    "View contribution model must declare a public no-arg constructor for shell discovery.");
+                    "View shell contribution must declare a public no-arg constructor for shell discovery.");
         }
-        if (!sourceFacts.text().contains("ShellContributionModel")) {
+        if (!sourceFacts.text().contains("ShellContribution")) {
             asCtx(data).addViolationWithMessage(node,
-                    "View contribution model must implement shell.api.ShellContributionModel.");
+                    "View shell contribution must implement shell.api.ShellContribution.");
         }
         if (!sourceFacts.hasRegistrationSpecMethod()) {
             asCtx(data).addViolationWithMessage(node,
-                    "View contribution model must declare ShellContributionSpec registrationSpec().");
+                    "View shell contribution must declare ShellContributionSpec registrationSpec().");
         }
         if (!sourceFacts.hasBindMethod()) {
             asCtx(data).addViolationWithMessage(node,
-                    "View contribution model must declare ShellBinding bind(ShellRuntimeContext).");
+                    "View shell contribution must declare ShellBinding bind(ShellRuntimeContext).");
         }
 
         ContributionSpecKind specKind = detectContributionSpecKind(sourceFacts.text());
         if (specKind == ContributionSpecKind.UNKNOWN) {
             asCtx(data).addViolationWithMessage(node,
-                    "View contribution model must construct exactly one allowed shell contribution spec type.");
+                    "View shell contribution must construct exactly one allowed shell contribution spec type.");
         }
         if (sourceFacts.text().contains("defaultLanding") && specKind != ContributionSpecKind.TAB) {
             asCtx(data).addViolationWithMessage(node, "defaultLanding only applies to ShellTabSpec contributions.");
@@ -70,12 +70,12 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     private void checkViewPanel(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
         if (VIEW_PANEL_SUFFIXES.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
             asCtx(data).addViolationWithMessage(node,
-                    "Passive panel views under src/view/views must end with ControlsView, MainView, DetailsView, StateView, or TopBarView.");
+                    "Passive panel views must end with ControlsView, MainView, DetailsView, StateView, or TopBarView.");
         }
         if (!sourceFacts.hasExplicitPublicFinalClass()) {
             asCtx(data).addViolationWithMessage(node, "Passive panel view must be declared public final.");
         }
-        if (sourceFacts.text().contains("ShellContributionModel")
+        if (sourceFacts.text().contains("ShellContribution")
                 || sourceFacts.hasRegistrationSpecMethod()
                 || sourceFacts.hasBindMethod()) {
             asCtx(data).addViolationWithMessage(node,

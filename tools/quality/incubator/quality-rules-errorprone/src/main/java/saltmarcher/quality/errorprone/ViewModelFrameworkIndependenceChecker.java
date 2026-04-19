@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "ViewModelFrameworkIndependence",
-        summary = "View contribution models may use shell contracts, passive views, and domain public boundaries, but not old view topology or data.",
+        summary = "ViewModels stay independent from shell and view classes; contributions own shell/view wiring.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -18,13 +18,15 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        if (!ViewArchitectureSupport.VIEW_MODEL_PACKAGE.matcher(packageName).matches()) {
+        boolean contribution = ViewArchitectureSupport.isContributionSource(tree);
+        boolean viewModel = ViewArchitectureSupport.isViewModelSource(tree);
+        if (!contribution && !viewModel) {
             return Description.NO_MATCH;
         }
 
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            collectForbiddenReferences(referencedType, forbiddenReferences);
+            collectForbiddenReferences(referencedType, contribution, forbiddenReferences);
         }
 
         if (forbiddenReferences.isEmpty()) {
@@ -37,21 +39,26 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
                 .build();
     }
 
-    private static void collectForbiddenReferences(String qualifiedName, Set<String> forbiddenReferences) {
+    private static void collectForbiddenReferences(
+            String qualifiedName,
+            boolean contribution,
+            Set<String> forbiddenReferences) {
         if (qualifiedName == null || qualifiedName.isBlank()) {
             return;
         }
-        if (isForbidden(qualifiedName)) {
+        if (isForbidden(qualifiedName, contribution)) {
             forbiddenReferences.add(qualifiedName);
         }
     }
 
-    private static boolean isForbidden(String referencedType) {
+    private static boolean isForbidden(String referencedType, boolean contribution) {
         if (referencedType.startsWith("javafx.")) {
-            return !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType);
+            return contribution
+                    ? !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType)
+                    : !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
         }
         if (referencedType.startsWith("shell.")) {
-            return !ViewArchitectureSupport.isAllowedModelShellType(referencedType);
+            return !contribution || !ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
         }
         if (referencedType.startsWith("src.data.")) {
             return true;
@@ -63,6 +70,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
-        return !"MODEL".equals(viewType.bucket()) && !"VIEW".equals(viewType.bucket());
+        if (contribution) {
+            return !"MODEL".equals(viewType.bucket()) && !"VIEW".equals(viewType.bucket());
+        }
+        return !"MODEL".equals(viewType.bucket());
     }
 }

@@ -97,16 +97,30 @@ final class SaltMarcherSourceFacts {
         return startsWith("src", "view");
     }
 
+    boolean isViewContributionSource() {
+        return isViewSlotAreaSource() && simpleName.endsWith("Contribution");
+    }
+
     boolean isViewModelSource() {
-        return isViewSource() && segments.size() == 4 && segments.get(2).equals("models");
+        return isViewSlotAreaSource() && simpleName.endsWith("ViewModel");
     }
 
     boolean isViewPanelSource() {
-        return isViewSource() && segments.size() == 4 && segments.get(2).equals("views");
+        return isViewSource()
+                && ((segments.size() == 4 && segments.get(2).equals("views"))
+                || (isViewSlotAreaSource()
+                && simpleName.endsWith("View")
+                && !simpleName.endsWith("ViewModel")));
     }
 
     boolean isLegacyViewSource() {
-        return isViewSource() && !isViewModelSource() && !isViewPanelSource();
+        return isViewSource() && !isViewContributionSource() && !isViewModelSource() && !isViewPanelSource();
+    }
+
+    private boolean isViewSlotAreaSource() {
+        return isViewSource()
+                && segments.size() == 5
+                && Set.of("tabs", "topbar", "state", "details").contains(segments.get(2));
     }
 
     boolean isDomainSource() {
@@ -141,6 +155,9 @@ final class SaltMarcherSourceFacts {
 
     String featureName() {
         if (startsWith("src", "view") || startsWith("src", "domain") || startsWith("src", "data")) {
+            if (startsWith("src", "view") && segments.size() >= 4) {
+                return segments.get(3);
+            }
             return segments.size() >= 3 ? segments.get(2) : "";
         }
         return "";

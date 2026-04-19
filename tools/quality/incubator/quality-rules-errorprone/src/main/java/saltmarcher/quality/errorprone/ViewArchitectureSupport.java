@@ -27,19 +27,21 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 
 final class ViewArchitectureSupport {
 
-    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.models$");
+    static final Pattern VIEW_CONTRIBUTION_PACKAGE = Pattern.compile("^src\\.view\\.(tabs|topbar|state)\\.[^.]+$");
+    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(tabs|topbar|state|details)\\.[^.]+$");
     static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.views$");
-    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(models|views)(\\.|$)).+");
+    static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile("^src\\.view\\.(tabs|topbar|state|details)\\.[^.]+$");
+    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(tabs|topbar|state|details|views)(\\.|$)).+");
     static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
 
-    private static final Set<String> MODEL_ALLOWED_SHELL_TYPES = Set.of(
+    private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ContributionKey",
             "shell.api.InspectorEntrySpec",
             "shell.api.InspectorSink",
             "shell.api.NavigationGraphicSupport",
             "shell.api.NavigationGroupSpec",
             "shell.api.ShellBinding",
-            "shell.api.ShellContributionModel",
+            "shell.api.ShellContribution",
             "shell.api.ShellContributionSpec",
             "shell.api.ShellRuntimeContext",
             "shell.api.ShellRuntimeStateSpec",
@@ -57,6 +59,34 @@ final class ViewArchitectureSupport {
 
     static String packageName(CompilationUnitTree tree) {
         return tree.getPackageName() == null ? "" : tree.getPackageName().toString();
+    }
+
+    static boolean isContributionSource(CompilationUnitTree tree) {
+        return VIEW_CONTRIBUTION_PACKAGE.matcher(packageName(tree)).matches()
+                && sourceFileName(tree).endsWith("Contribution.java");
+    }
+
+    static boolean isViewModelSource(CompilationUnitTree tree) {
+        return VIEW_MODEL_PACKAGE.matcher(packageName(tree)).matches()
+                && sourceFileName(tree).endsWith("ViewModel.java");
+    }
+
+    static boolean isPanelViewSource(CompilationUnitTree tree) {
+        String packageName = packageName(tree);
+        String sourceFileName = sourceFileName(tree);
+        return (VIEW_PANEL_PACKAGE.matcher(packageName).matches()
+                || VIEW_SLOT_PACKAGE.matcher(packageName).matches())
+                && sourceFileName.endsWith("View.java")
+                && !sourceFileName.endsWith("ViewModel.java");
+    }
+
+    private static String sourceFileName(CompilationUnitTree tree) {
+        if (tree.getSourceFile() == null) {
+            return "";
+        }
+        String name = tree.getSourceFile().getName().replace('\\', '/');
+        int separator = name.lastIndexOf('/');
+        return separator < 0 ? name : name.substring(separator + 1);
     }
 
     static Set<String> collectReferencedTypes(CompilationUnitTree tree) {
@@ -154,6 +184,18 @@ final class ViewArchitectureSupport {
         if ("views".equals(segments[0])) {
             return new ViewTypeInfo("views", "VIEW");
         }
+        if (Set.of("tabs", "topbar", "state", "details").contains(segments[0]) && segments.length >= 3) {
+            String simpleName = segments[segments.length - 1];
+            if (simpleName.endsWith("Contribution")) {
+                return new ViewTypeInfo(segments[0], "CONTRIBUTION");
+            }
+            if (simpleName.endsWith("ViewModel")) {
+                return new ViewTypeInfo(segments[0], "MODEL");
+            }
+            if (simpleName.endsWith("View")) {
+                return new ViewTypeInfo(segments[0], "VIEW");
+            }
+        }
         return new ViewTypeInfo(segments[0], "LEGACY");
     }
 
@@ -162,8 +204,8 @@ final class ViewArchitectureSupport {
         return viewType != null && "LEGACY".equals(viewType.bucket());
     }
 
-    static boolean isAllowedModelShellType(String referencedType) {
-        return isAllowedShellType(referencedType, MODEL_ALLOWED_SHELL_TYPES);
+    static boolean isAllowedContributionShellType(String referencedType) {
+        return isAllowedShellType(referencedType, CONTRIBUTION_ALLOWED_SHELL_TYPES);
     }
 
     static boolean isAllowedDataRootShellType(String referencedType) {
