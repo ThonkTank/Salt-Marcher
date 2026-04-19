@@ -25,10 +25,10 @@ abstract class AbstractDungeonMapSurfaceController {
     protected AbstractDungeonMapSurfaceController(DungeonApplicationService dungeon) {
         this.dungeon = Objects.requireNonNull(dungeon, "dungeon");
     }
-    public void addListener(Runnable listener) {
+    void addListener(Runnable listener) {
         listeners.add(Objects.requireNonNull(listener, "listener"));
     }
-    public DungeonMapSurfaceState state() {
+    DungeonMapSurfaceState state() {
         return new DungeonMapSurfaceState(
                 visibleMaps,
                 selectedSummary(),

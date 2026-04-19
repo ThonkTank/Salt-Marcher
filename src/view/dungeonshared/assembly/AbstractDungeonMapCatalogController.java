@@ -16,12 +16,12 @@ abstract class AbstractDungeonMapCatalogController extends AbstractDungeonMapSur
     protected AbstractDungeonMapCatalogController(DungeonApplicationService dungeon) {
         super(dungeon);
     }
-    public void refreshMaps() {
+    void refreshMaps() {
         visibleMaps = dungeon.searchMaps(new SearchMapsQuery(searchText));
         ensureSelection();
         notifyListeners();
     }
-    public void setSearchText(String value) {
+    void setSearchText(String value) {
         String nextValue = value == null ? "" : value;
         if (searchText.equals(nextValue)) {
             return;
@@ -29,20 +29,20 @@ abstract class AbstractDungeonMapCatalogController extends AbstractDungeonMapSur
         searchText = nextValue;
         refreshMaps();
     }
-    public void selectMap(@Nullable DungeonMapId mapId) {
+    void selectMap(@Nullable DungeonMapId mapId) {
         if (java.util.Objects.equals(selectedMapId, mapId)) {
             return;
         }
         selectedMapId = mapId;
         notifyListeners();
     }
-    public void loadSelected(Viewport viewport) {
+    void loadSelected(Viewport viewport) {
         DungeonMapSummary selected = selectedSummary();
         if (selected != null) {
             loadMap(selected.mapId(), viewport);
         }
     }
-    public void loadMap(DungeonMapId mapId, Viewport viewport) {
+    void loadMap(DungeonMapId mapId, Viewport viewport) {
         DungeonMapSummary selected = visibleMaps.stream()
                 .filter(summary -> summary.mapId().equals(mapId))
                 .findFirst()
@@ -61,19 +61,19 @@ abstract class AbstractDungeonMapCatalogController extends AbstractDungeonMapSur
         ensureSelection();
         notifyListeners();
     }
-    public void reloadLoaded(Viewport viewport) {
+    void reloadLoaded(Viewport viewport) {
         if (loadedMapId != null) {
             loadMap(loadedMapId, viewport);
         }
     }
-    public void createMap(String mapName, Viewport viewport) {
+    void createMap(String mapName, Viewport viewport) {
         String resolvedName = mapName == null || mapName.isBlank() ? defaultMapName() : mapName.trim();
         CreateDungeonMapResult result = dungeon.createMap(new CreateDungeonMapCommand(resolvedName));
         lastMutationSummary = "Dungeon angelegt.";
         lastMutationMessages = java.util.List.of("Neue Placeholder-Geometrie wurde für " + resolvedName + " vorbereitet.");
         loadMap(result.mapId(), viewport);
     }
-    public void deleteLoaded() {
+    void deleteLoaded() {
         if (loadedMapId == null) {
             return;
         }
@@ -87,7 +87,7 @@ abstract class AbstractDungeonMapCatalogController extends AbstractDungeonMapSur
         ensureSelection();
         notifyListeners();
     }
-    public String defaultMapName() {
+    String defaultMapName() {
         Set<String> names = new HashSet<>();
         for (DungeonMapSummary summary : dungeon.searchMaps(new SearchMapsQuery(""))) {
             names.add(summary.mapName());

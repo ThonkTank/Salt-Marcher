@@ -7,11 +7,11 @@ import java.util.function.Consumer;
 final class MapPointerController {
     private Consumer<MapCellViewModel> cellSelectionListener = ignored -> {
     };
-    public void setCellSelectionListener(Consumer<MapCellViewModel> cellSelectionListener) {
+    void setCellSelectionListener(Consumer<MapCellViewModel> cellSelectionListener) {
         this.cellSelectionListener = cellSelectionListener == null ? ignored -> {
         } : cellSelectionListener;
     }
-    public void notifyCellSelected(MapCellViewModel cellViewModel) {
+    void notifyCellSelected(MapCellViewModel cellViewModel) {
         cellSelectionListener.accept(cellViewModel);
     }
 }

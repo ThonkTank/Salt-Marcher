@@ -6,7 +6,6 @@ import src.domain.dungeon.api.DungeonSnapshot;
 import src.domain.dungeon.map.DungeonAggregate;
 import src.domain.dungeon.map.DungeonDerivedState;
 import src.domain.dungeon.map.DungeonPrimitive;
-import src.domain.dungeon.map.DungeonDocumentStore;
 
 import java.util.ArrayList;
 import java.util.List;

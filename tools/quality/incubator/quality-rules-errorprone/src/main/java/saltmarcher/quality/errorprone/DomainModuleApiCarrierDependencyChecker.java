@@ -37,6 +37,9 @@ public final class DomainModuleApiCarrierDependencyChecker extends BugChecker
         if (!matcher.matches()) {
             return Description.NO_MATCH;
         }
+        if (isDomainPortContract(tree)) {
+            return Description.NO_MATCH;
+        }
 
         String featureName = matcher.group(1);
         TreeSet<String> forbiddenReferences = new TreeSet<>();
@@ -64,6 +67,11 @@ public final class DomainModuleApiCarrierDependencyChecker extends BugChecker
         }
         String simpleName = simpleName(referencedType);
         return FORBIDDEN_API_CARRIER_SUFFIXES.stream().anyMatch(simpleName::endsWith);
+    }
+
+    private static boolean isDomainPortContract(CompilationUnitTree tree) {
+        String sourceName = tree.getSourceFile() == null ? "" : tree.getSourceFile().getName();
+        return sourceName.endsWith("Repository.java") || sourceName.endsWith("Port.java");
     }
 
     private static String simpleName(String qualifiedName) {

@@ -16,7 +16,7 @@ import src.domain.dungeon.api.SearchMapsQuery;
 import src.domain.dungeon.application.DungeonMutationOperations;
 import src.domain.dungeon.application.DungeonQueryOperations;
 import src.domain.dungeon.application.DungeonDefaultApplicationServices;
-import src.domain.dungeon.map.DungeonDocumentStore;
+import src.domain.dungeon.application.DungeonDocumentStore;
 
 import java.util.List;
 import java.util.Objects;

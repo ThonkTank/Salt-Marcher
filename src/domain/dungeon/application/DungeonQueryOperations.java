@@ -6,7 +6,6 @@ import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.DungeonSnapshot;
 import src.domain.dungeon.api.LoadMapSnapshotQuery;
 import src.domain.dungeon.api.SearchMapsQuery;
-import src.domain.dungeon.map.DungeonDocumentStore;
 import src.domain.dungeon.map.DungeonMapRepository;
 
 import java.util.List;

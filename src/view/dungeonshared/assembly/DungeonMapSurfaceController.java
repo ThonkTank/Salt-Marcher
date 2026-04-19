@@ -30,6 +30,22 @@ public final class DungeonMapSurfaceController extends AbstractDungeonMapCatalog
     public static DungeonMapSurfaceController shared() {
         return SHARED;
     }
+    @Override
+    public void addListener(Runnable listener) {
+        super.addListener(listener);
+    }
+    @Override
+    public void setSearchText(String value) {
+        super.setSearchText(value);
+    }
+    @Override
+    public void deleteLoaded() {
+        super.deleteLoaded();
+    }
+    @Override
+    public String defaultMapName() {
+        return super.defaultMapName();
+    }
     public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
         return dungeon.describeSelection(ownerKind, ownerId);
     }

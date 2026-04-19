@@ -10,14 +10,14 @@ final class MapCameraController {
     private double centerX;
     private double centerY;
     private double zoom = 1.0;
-    public double zoom() {
+    double zoom() {
         return zoom;
     }
-    public void panByTiles(double deltaX, double deltaY) {
+    void panByTiles(double deltaX, double deltaY) {
         centerX += deltaX;
         centerY += deltaY;
     }
-    public void zoomAround(double canvasX, double canvasY, double canvasWidth, double canvasHeight, double factor) {
+    void zoomAround(double canvasX, double canvasY, double canvasWidth, double canvasHeight, double factor) {
         double oldScale = pixelsPerTile();
         double worldX = centerX + (canvasX - canvasWidth / 2.0) / oldScale;
         double worldY = centerY + (canvasY - canvasHeight / 2.0) / oldScale;
@@ -26,16 +26,16 @@ final class MapCameraController {
         centerX = worldX - (canvasX - canvasWidth / 2.0) / newScale;
         centerY = worldY - (canvasY - canvasHeight / 2.0) / newScale;
     }
-    public MapViewport currentViewport(double canvasWidth, double canvasHeight) {
+    MapViewport currentViewport(double canvasWidth, double canvasHeight) {
         return new MapViewport(centerX, centerY, canvasWidth, canvasHeight, zoom);
     }
-    public double pixelsPerTile() {
+    double pixelsPerTile() {
         return baseTilePixels() * zoom;
     }
     static double baseTilePixels() {
         return BASE_TILE_PIXELS;
     }
-    public void reset() {
+    void reset() {
         centerX = 0.0;
         centerY = 0.0;
         zoom = 1.0;

@@ -70,7 +70,7 @@ public final class PartyMutationOperations {
 
     private static PartyCharacterDraft toDomainDraft(CharacterDraft draft) {
         if (draft == null) {
-            return null;
+            return new PartyCharacterDraft("", "", 0, 0, 0);
         }
         return new PartyCharacterDraft(
                 draft.name(),
