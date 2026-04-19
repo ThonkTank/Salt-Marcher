@@ -69,28 +69,41 @@ Use the documentation tree in this order:
 
 ## Agent Workflow
 
+- Local implementation work happens on `wip/*` branches. `main` is stable
+  integration history and must not receive `WIP`, `checkpoint`, or
+  dirty-worktree preservation commits.
 - Before touching files for an implementation request, run an explicit
   worktree-inspection command and treat it as required preflight, not optional
   context gathering.
-- If pre-existing local modifications are present, handle them explicitly as a
-  dirty-worktree preservation step before the requested implementation. This
-  step exists to save the current state, not to forbid implementation by
-  default.
-- Dirty-worktree preservation may commit and push the existing changes when
-  that is the requested or safest way to preserve them.
-- If preservation cannot complete exactly as requested, report the concrete
-  blocker explicitly together with the preserved local state instead of
+- If the worktree has pre-existing local modifications at the start of an
+  implementation request, commit the complete current state before making new
+  edits. This start-of-task WIP commit is mandatory because it turns prior work
+  into the visible baseline and keeps the new implementation isolated in the
+  subsequent diff.
+- Start-of-task WIP commits must stay on `wip/*` branches and use an explicit
+  preservation message such as `wip(<scope>): preserve current state before
+  <task>`. If the current branch is `main`, create or switch to a `wip/*`
+  branch before making the preservation commit.
+- Push WIP branches only when the user requests remote preservation or when the
+  current request explicitly requires sharing the WIP state.
+- If the start-of-task WIP commit cannot complete exactly as required, report
+  the concrete blocker together with the preserved local state instead of
   silently continuing.
 - After each completed implementation pass, rerun `./gradlew build` before
-  handoff. A pass without that rerun is incomplete.
+  handoff. A pass without that rerun is incomplete and must remain WIP.
 - When the desktop app is the manual test surface, run
   `./gradlew installDesktopApp` after the successful build before handoff
   unless the user explicitly waives reinstall or the task is purely non-code
   planning or review work.
+- Stable handoff or release commits must be separate from WIP preservation
+  commits. A stable commit may be created only after the required build and any
+  applicable install step have completed successfully, and it must not use a
+  `wip`, `WIP`, or `checkpoint` message.
 - Every implementation handoff must state the literal status of the preflight
-  worktree inspection, dirty-worktree commit/push handling, `./gradlew build`,
-  and `./gradlew installDesktopApp` when applicable. If any step did not run,
-  say that directly and give the concrete reason.
+  worktree inspection, start-of-task WIP commit, WIP push handling,
+  `./gradlew build`, stable commit handling, and `./gradlew installDesktopApp`
+  when applicable. If any step did not run, say that directly and give the
+  concrete reason.
 - Verification claims must be literal. Do not claim that commit, push, build,
   or install steps happened unless they actually ran.
 
