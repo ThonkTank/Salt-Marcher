@@ -1,16 +1,16 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.text.TextAlignment;
-import src.view.mapshared.ViewModel.MapCellViewModel;
-import src.view.mapshared.ViewModel.MapViewport;
-import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
+import src.view.mapcanvas.api.MapCanvasCell;
+import src.view.mapcanvas.api.MapCanvasViewport;
+import src.view.mapcanvas.api.MapCanvasRenderModel;
 import java.util.LinkedHashMap;
 import java.util.Map;
 final class SquareMapLabelPainter {
     private SquareMapLabelPainter() {
     }
-    static void paintLabels(GraphicsContext graphics, MapWorkspaceRenderModel renderModel, MapViewport viewport) {
+    static void paintLabels(GraphicsContext graphics, MapCanvasRenderModel renderModel, MapCanvasViewport viewport) {
         double scale = MapCameraController.baseTilePixels() * viewport.zoom();
         if (scale < 18.0) {
             return;
@@ -23,9 +23,9 @@ final class SquareMapLabelPainter {
             paintLabelGroup(graphics, viewport, scale, group);
         }
     }
-    private static Map<String, LabelGroup> collectLabelGroups(MapWorkspaceRenderModel renderModel) {
+    private static Map<String, LabelGroup> collectLabelGroups(MapCanvasRenderModel renderModel) {
         Map<String, LabelGroup> groups = new LinkedHashMap<>();
-        for (MapCellViewModel cell : renderModel.scene().cells()) {
+        for (MapCanvasCell cell : renderModel.scene().cells()) {
             if (cell.label() == null || cell.label().isBlank() || cell.ownerKind() == null || cell.ownerKind().isBlank()) {
                 continue;
             }
@@ -37,7 +37,7 @@ final class SquareMapLabelPainter {
     }
     private static void paintLabelGroup(
             GraphicsContext graphics,
-            MapViewport viewport,
+            MapCanvasViewport viewport,
             double scale,
             LabelGroup group
     ) {
@@ -61,7 +61,7 @@ final class SquareMapLabelPainter {
             double screenY,
             double width,
             double height,
-            MapViewport viewport
+            MapCanvasViewport viewport
     ) {
         return screenX + width / 2.0 < 0.0
                 || screenY + height / 2.0 < 0.0

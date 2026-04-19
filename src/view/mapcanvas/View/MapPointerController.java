@@ -1,17 +1,17 @@
-package src.view.mapshared.View;
-import src.view.mapshared.ViewModel.MapCellViewModel;
+package src.view.mapcanvas.View;
+import src.view.mapcanvas.api.MapCanvasCell;
 import java.util.function.Consumer;
 /**
  * Owns raw view-local pointer dispatch for shared cell selections.
  */
 final class MapPointerController {
-    private Consumer<MapCellViewModel> cellSelectionListener = ignored -> {
+    private Consumer<MapCanvasCell> cellSelectionListener = ignored -> {
     };
-    void setCellSelectionListener(Consumer<MapCellViewModel> cellSelectionListener) {
+    void setCellSelectionListener(Consumer<MapCanvasCell> cellSelectionListener) {
         this.cellSelectionListener = cellSelectionListener == null ? ignored -> {
         } : cellSelectionListener;
     }
-    void notifyCellSelected(MapCellViewModel cellViewModel) {
+    void notifyCellSelected(MapCanvasCell cellViewModel) {
         cellSelectionListener.accept(cellViewModel);
     }
 }

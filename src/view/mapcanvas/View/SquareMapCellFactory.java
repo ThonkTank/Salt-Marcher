@@ -1,13 +1,13 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
-import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapcanvas.api.MapCanvasCell;
 import java.util.function.Consumer;
 final class SquareMapCellFactory {
-    Node create(@Nullable MapCellViewModel snapshot, Consumer<MapCellViewModel> onCellSelected) {
+    Node create(@Nullable MapCanvasCell snapshot, Consumer<MapCanvasCell> onCellSelected) {
         StackPane cell = new StackPane();
         cell.getStyleClass().add("dungeon-map-cell");
         applyCellStyleClass(cell, snapshot);
@@ -22,7 +22,7 @@ final class SquareMapCellFactory {
         configureSelection(cell, snapshot, onCellSelected);
         return cell;
     }
-    private void configureSelection(StackPane cell, @Nullable MapCellViewModel snapshot, Consumer<MapCellViewModel> onCellSelected) {
+    private void configureSelection(StackPane cell, @Nullable MapCanvasCell snapshot, Consumer<MapCanvasCell> onCellSelected) {
         if (snapshot == null) {
             cell.setDisable(true);
             return;
@@ -38,7 +38,7 @@ final class SquareMapCellFactory {
         });
         cell.setDisable(!snapshot.interactive());
     }
-    private void applyCellStyleClass(StackPane cell, @Nullable MapCellViewModel snapshot) {
+    private void applyCellStyleClass(StackPane cell, @Nullable MapCanvasCell snapshot) {
         cell.getStyleClass().removeAll(
                 "dungeon-map-cell-empty",
                 "dungeon-map-cell-current",
@@ -68,7 +68,7 @@ final class SquareMapCellFactory {
         }
         cell.getStyleClass().add("dungeon-map-cell-open");
     }
-    private String cellText(@Nullable MapCellViewModel snapshot) {
+    private String cellText(@Nullable MapCanvasCell snapshot) {
         if (snapshot == null) {
             return "";
         }
@@ -83,7 +83,7 @@ final class SquareMapCellFactory {
         }
         return "...";
     }
-    private String cellCaption(@Nullable MapCellViewModel snapshot) {
+    private String cellCaption(@Nullable MapCanvasCell snapshot) {
         if (snapshot == null || snapshot.label() == null || snapshot.label().isBlank()) {
             return "";
         }

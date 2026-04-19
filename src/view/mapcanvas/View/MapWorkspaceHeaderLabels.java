@@ -1,4 +1,4 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.scene.control.Label;
 final class MapWorkspaceHeaderLabels {
     private final Label titleLabel;

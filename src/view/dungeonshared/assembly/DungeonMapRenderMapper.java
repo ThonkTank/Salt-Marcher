@@ -5,18 +5,18 @@ import src.domain.mapcore.api.MapCellRef;
 import src.domain.mapcore.api.MapCellSnapshot;
 import src.domain.mapcore.api.MapEdgeSnapshot;
 import src.domain.mapcore.api.MapRenderPayload;
-import src.view.mapshared.ViewModel.MapCellViewModel;
-import src.view.mapshared.ViewModel.MapEdgeViewModel;
-import src.view.mapshared.ViewModel.MapWorkspaceSceneViewData;
+import src.view.mapcanvas.api.MapCanvasCell;
+import src.view.mapcanvas.api.MapCanvasEdge;
+import src.view.mapcanvas.api.MapCanvasScene;
 
 final class DungeonMapRenderMapper {
 
     private DungeonMapRenderMapper() {
     }
 
-    static MapCellViewModel toViewCell(MapCellSnapshot cell, @Nullable MapCellRef activeCell) {
+    static MapCanvasCell toViewCell(MapCellSnapshot cell, @Nullable MapCellRef activeCell) {
         boolean current = activeCell != null && activeCell.equals(cell.ref());
-        return new MapCellViewModel(
+        return new MapCanvasCell(
                 cell.ref().q(),
                 cell.ref().r(),
                 cell.label(),
@@ -30,8 +30,8 @@ final class DungeonMapRenderMapper {
                 cell.selectionRef() == null ? "" : cell.selectionRef().partKind());
     }
 
-    static MapEdgeViewModel toViewEdge(MapEdgeSnapshot edge) {
-        return new MapEdgeViewModel(
+    static MapCanvasEdge toViewEdge(MapEdgeSnapshot edge) {
+        return new MapCanvasEdge(
                 edge.ref().from().q(),
                 edge.ref().from().r(),
                 edge.ref().to().q(),
@@ -44,11 +44,11 @@ final class DungeonMapRenderMapper {
                 edge.selectionRef() == null ? "" : edge.selectionRef().partKind());
     }
 
-    static MapWorkspaceSceneViewData toSceneViewData(@Nullable MapRenderPayload payload, int currentFloor) {
+    static MapCanvasScene toSceneViewData(@Nullable MapRenderPayload payload, int currentFloor) {
         if (payload == null) {
-            return MapWorkspaceSceneViewData.empty();
+            return MapCanvasScene.empty();
         }
-        return new MapWorkspaceSceneViewData(
+        return new MapCanvasScene(
                 payload.topology().name(),
                 payload.cells().stream()
                         .filter(cell -> cell.ref().level() == currentFloor)

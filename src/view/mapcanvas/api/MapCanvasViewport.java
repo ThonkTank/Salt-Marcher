@@ -1,9 +1,9 @@
-package src.view.mapshared.ViewModel;
+package src.view.mapcanvas.api;
 
 /**
  * View-local camera viewport for the shared dungeon map canvas.
  */
-public record MapViewport(
+public record MapCanvasViewport(
         double centerX,
         double centerY,
         double canvasWidth,
@@ -11,13 +11,13 @@ public record MapViewport(
         double zoom
 ) {
 
-    public MapViewport {
+    public MapCanvasViewport {
         canvasWidth = Math.max(1.0, canvasWidth);
         canvasHeight = Math.max(1.0, canvasHeight);
         zoom = Math.max(0.1, zoom);
     }
 
-    public static MapViewport defaultViewport() {
-        return new MapViewport(0.0, 0.0, 960.0, 640.0, 1.0);
+    public static MapCanvasViewport defaultViewport() {
+        return new MapCanvasViewport(0.0, 0.0, 960.0, 640.0, 1.0);
     }
 }

@@ -1,4 +1,4 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;

@@ -9,8 +9,8 @@ import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
 import src.view.dungeonshared.View.DungeonTravelControls;
 import src.view.dungeonshared.View.DungeonTravelStatePane;
 import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
-import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
-import src.view.mapshared.ViewModel.MapWorkspaceSceneViewData;
+import src.view.mapcanvas.api.MapCanvasRenderModel;
+import src.view.mapcanvas.api.MapCanvasScene;
 /**
  * Travel/runtime coordination for the dungeon control-panel placeholder slice.
  */
@@ -26,8 +26,8 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
         ), DungeonMapSurfaceController.shared());
         DungeonSelectionPublisher checkedSelectionPublisher =
                 Objects.requireNonNull(selectionPublisher, "selectionPublisher");
-        this.controls = new DungeonTravelControls(mapController(), () -> workspaceSession().currentViewport().zoom(), this::currentMapViewport);
-        this.statePane = new DungeonTravelStatePane(mapController(), this::currentMapViewport);
+        this.controls = new DungeonTravelControls(mapController(), () -> workspaceSession().currentViewport().zoom(), this::currentMapCanvasViewport);
+        this.statePane = new DungeonTravelStatePane(mapController(), this::currentMapCanvasViewport);
         this.selectionHandler = selectionRef -> showSelection(checkedSelectionPublisher, selectionRef);
         statePane.setOnTargetSelected(selection -> showSelection(
                 checkedSelectionPublisher,
@@ -53,8 +53,8 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
         applySelection(selectionPublisher, selectionRef);
         statePane.showSelectedTarget(DungeonMapSelectionMapper.toView(selectionRef));
     }
-    private static MapWorkspaceRenderModel placeholderRenderModel() {
-        return new MapWorkspaceRenderModel(
+    private static MapCanvasRenderModel placeholderRenderModel() {
+        return new MapCanvasRenderModel(
                 "Dungeon Travel",
                 "Originalnaeherer Runtime-Workspace mit lokaler Kamera",
                 "TRAVEL",
@@ -62,15 +62,15 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
                 "Lade oder erstelle links einen Dungeon.",
                 false,
                 "Kein Dungeon ausgewaehlt.",
-                MapWorkspaceSceneViewData.empty()
+                MapCanvasScene.empty()
         );
     }
-    private static MapWorkspaceRenderModel loadedRenderModel(BaseMapSnapshot snapshot) {
-        MapWorkspaceSceneViewData scene = DungeonMapRenderMapper.toSceneViewData(snapshot.renderPayload(), snapshot.currentFloor());
+    private static MapCanvasRenderModel loadedRenderModel(BaseMapSnapshot snapshot) {
+        MapCanvasScene scene = DungeonMapRenderMapper.toSceneViewData(snapshot.renderPayload(), snapshot.currentFloor());
         String overlayMessage = scene.cells().isEmpty()
                 ? "Für Ebene z=" + snapshot.currentFloor() + " existiert noch keine Runtime-Placeholder-Geometrie."
                 : "";
-        return new MapWorkspaceRenderModel(
+        return new MapCanvasRenderModel(
                 snapshot.mapName(),
                 "Runtime-Canvas im Look des Originals",
                 "TRAVEL",
@@ -87,7 +87,7 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
         controls.refresh();
         statePane.refresh();
     }
-    private DungeonViewportViewModel currentMapViewport() {
+    private DungeonViewportViewModel currentMapCanvasViewport() {
         var viewport = workspaceSession().currentViewport();
         return new DungeonViewportViewModel(
                 viewport.centerX(),

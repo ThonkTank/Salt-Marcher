@@ -1,4 +1,4 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 record SquareMapLayoutMetrics(double cellSize, double gap, double padding) {
     double totalWidth(int width) {
         return padding * 2 + width * cellSize + Math.max(0, width - 1) * gap;

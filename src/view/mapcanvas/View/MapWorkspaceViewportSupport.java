@@ -1,8 +1,8 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
-import src.view.mapshared.ViewModel.MapViewport;
-import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
+import src.view.mapcanvas.api.MapCanvasViewport;
+import src.view.mapcanvas.api.MapCanvasRenderModel;
 import java.util.function.Consumer;
 final class MapWorkspaceViewportSupport {
     private static final double DEFAULT_WIDTH = 960.0;
@@ -15,13 +15,13 @@ final class MapWorkspaceViewportSupport {
     static double height(StackPane contentHost) {
         return contentHost.getHeight() > 1.0 ? contentHost.getHeight() : DEFAULT_HEIGHT;
     }
-    static MapViewport currentViewport(MapCameraController cameraController, StackPane contentHost) {
+    static MapCanvasViewport currentViewport(MapCameraController cameraController, StackPane contentHost) {
         return cameraController.currentViewport(width(contentHost), height(contentHost));
     }
     static void notifyViewportChanged(
-            @Nullable MapWorkspaceRenderModel renderModel,
-            Consumer<MapViewport> viewportListener,
-            MapViewport viewport
+            @Nullable MapCanvasRenderModel renderModel,
+            Consumer<MapCanvasViewport> viewportListener,
+            MapCanvasViewport viewport
     ) {
         if (renderModel != null && renderModel.mapLoaded()) {
             viewportListener.accept(viewport);

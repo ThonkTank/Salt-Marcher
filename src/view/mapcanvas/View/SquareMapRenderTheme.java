@@ -1,8 +1,8 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapcanvas.api.MapCanvasCell;
 final class SquareMapRenderTheme {
     static final Color BACKGROUND = Color.web("#12181c");
     static final Color GRID_MINOR = Color.web("#667782", 0.18);
@@ -34,7 +34,7 @@ final class SquareMapRenderTheme {
     static final int[] GRID_STEPS = {1, 5, 10, 25};
     private SquareMapRenderTheme() {
     }
-    static Color fillFor(MapCellViewModel cell) {
+    static Color fillFor(MapCanvasCell cell) {
         if (cell.current()) {
             return CURRENT_FILL;
         }
@@ -49,7 +49,7 @@ final class SquareMapRenderTheme {
         }
         return OPEN_FILL;
     }
-    static Color strokeFor(MapCellViewModel cell) {
+    static Color strokeFor(MapCanvasCell cell) {
         if (cell.current()) {
             return CURRENT_STROKE;
         }

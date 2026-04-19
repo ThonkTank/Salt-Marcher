@@ -1,9 +1,9 @@
-package src.view.mapshared.ViewModel;
+package src.view.mapcanvas.api;
 
 /**
  * View-local cell payload used by shared map rendering.
  */
-public record MapCellViewModel(
+public record MapCanvasCell(
         int q,
         int r,
         String label,

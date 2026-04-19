@@ -1,5 +1,5 @@
-package src.view.mapshared.View;
-import src.view.mapshared.ViewModel.MapViewport;
+package src.view.mapcanvas.View;
+import src.view.mapcanvas.api.MapCanvasViewport;
 /**
  * View-local camera state owner for the shared map workspace.
  */
@@ -26,8 +26,8 @@ final class MapCameraController {
         centerX = worldX - (canvasX - canvasWidth / 2.0) / newScale;
         centerY = worldY - (canvasY - canvasHeight / 2.0) / newScale;
     }
-    MapViewport currentViewport(double canvasWidth, double canvasHeight) {
-        return new MapViewport(centerX, centerY, canvasWidth, canvasHeight, zoom);
+    MapCanvasViewport currentViewport(double canvasWidth, double canvasHeight) {
+        return new MapCanvasViewport(centerX, centerY, canvasWidth, canvasHeight, zoom);
     }
     double pixelsPerTile() {
         return baseTilePixels() * zoom;

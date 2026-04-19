@@ -1,23 +1,23 @@
-package src.view.mapshared.ViewModel;
+package src.view.mapcanvas.api;
 
 import java.util.List;
 
 /**
  * View-local scene payload used by the shared map workspace.
  */
-public record MapWorkspaceSceneViewData(
+public record MapCanvasScene(
         String topology,
-        List<MapCellViewModel> cells,
-        List<MapEdgeViewModel> edges
+        List<MapCanvasCell> cells,
+        List<MapCanvasEdge> edges
 ) {
 
-    public MapWorkspaceSceneViewData {
+    public MapCanvasScene {
         topology = topology == null || topology.isBlank() ? "SQUARE" : topology;
         cells = cells == null ? List.of() : List.copyOf(cells);
         edges = edges == null ? List.of() : List.copyOf(edges);
     }
 
-    public static MapWorkspaceSceneViewData empty() {
-        return new MapWorkspaceSceneViewData("SQUARE", List.of(), List.of());
+    public static MapCanvasScene empty() {
+        return new MapCanvasScene("SQUARE", List.of(), List.of());
     }
 }

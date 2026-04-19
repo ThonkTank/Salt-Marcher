@@ -120,7 +120,7 @@ public final class ViewProgrammaticStylingChecker extends BugChecker
     }
 
     private static boolean isAllowedCanvasRenderingPackage(String packageName) {
-        return packageName.equals("src.view.mapshared.View")
-                || packageName.startsWith("src.view.mapshared.View.");
+        return packageName.equals("src.view.mapcanvas.View")
+                || packageName.startsWith("src.view.mapcanvas.View.");
     }
 }

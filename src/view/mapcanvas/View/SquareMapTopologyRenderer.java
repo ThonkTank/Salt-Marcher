@@ -1,29 +1,29 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.text.TextAlignment;
-import src.view.mapshared.ViewModel.MapCellViewModel;
-import src.view.mapshared.ViewModel.MapEdgeViewModel;
-import src.view.mapshared.ViewModel.MapViewport;
-import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
+import src.view.mapcanvas.api.MapCanvasCell;
+import src.view.mapcanvas.api.MapCanvasEdge;
+import src.view.mapcanvas.api.MapCanvasViewport;
+import src.view.mapcanvas.api.MapCanvasRenderModel;
 /**
  * Canvas renderer aligned with the original Salt Marcher dungeon presentation.
  */
 final class SquareMapTopologyRenderer implements MapTopologyRenderer {
     @Override
     public Canvas createCanvas() {
-        Canvas canvas = new Canvas(MapViewport.defaultViewport().canvasWidth(), MapViewport.defaultViewport().canvasHeight());
+        Canvas canvas = new Canvas(MapCanvasViewport.defaultViewport().canvasWidth(), MapCanvasViewport.defaultViewport().canvasHeight());
         canvas.getStyleClass().add("dungeon-map-scene");
         return canvas;
     }
     @Override
-    public void render(Canvas canvas, MapWorkspaceRenderModel renderModel, MapViewport viewport) {
+    public void render(Canvas canvas, MapCanvasRenderModel renderModel, MapCanvasViewport viewport) {
         canvas.setWidth(viewport.canvasWidth());
         canvas.setHeight(viewport.canvasHeight());
         paint(canvas.getGraphicsContext2D(), renderModel, viewport);
     }
-    private void paint(GraphicsContext graphics, MapWorkspaceRenderModel renderModel, MapViewport viewport) {
+    private void paint(GraphicsContext graphics, MapCanvasRenderModel renderModel, MapCanvasViewport viewport) {
         graphics.setFill(SquareMapRenderTheme.BACKGROUND);
         graphics.fillRect(0.0, 0.0, viewport.canvasWidth(), viewport.canvasHeight());
         SquareMapGridPainter.paintGrid(graphics, viewport);
@@ -33,12 +33,12 @@ final class SquareMapTopologyRenderer implements MapTopologyRenderer {
         paintHud(graphics, viewport);
         paintOverlayMessage(graphics, renderModel, viewport);
     }
-    private void paintCells(GraphicsContext graphics, MapWorkspaceRenderModel renderModel, MapViewport viewport) {
+    private void paintCells(GraphicsContext graphics, MapCanvasRenderModel renderModel, MapCanvasViewport viewport) {
         double scale = MapCameraController.baseTilePixels() * viewport.zoom();
         double inset = Math.max(1.5, Math.min(5.0, scale * 0.08));
         double size = Math.max(6.0, scale - inset * 2.0);
         double arc = Math.max(4.0, size * 0.18);
-        for (MapCellViewModel cell : renderModel.scene().cells()) {
+        for (MapCanvasCell cell : renderModel.scene().cells()) {
             double x = SquareMapRenderGeometry.worldToScreenX(cell.q(), viewport, scale) + inset;
             double y = SquareMapRenderGeometry.worldToScreenY(cell.r(), viewport, scale) + inset;
             if (x + size < -8.0 || y + size < -8.0 || x > viewport.canvasWidth() + 8.0 || y > viewport.canvasHeight() + 8.0) {
@@ -56,9 +56,9 @@ final class SquareMapTopologyRenderer implements MapTopologyRenderer {
             }
         }
     }
-    private void paintEdges(GraphicsContext graphics, MapWorkspaceRenderModel renderModel, MapViewport viewport) {
+    private void paintEdges(GraphicsContext graphics, MapCanvasRenderModel renderModel, MapCanvasViewport viewport) {
         double scale = MapCameraController.baseTilePixels() * viewport.zoom();
-        for (MapEdgeViewModel edge : renderModel.scene().edges()) {
+        for (MapCanvasEdge edge : renderModel.scene().edges()) {
             double fromX = SquareMapRenderGeometry.worldToScreenX(edge.fromQ(), viewport, scale) + scale / 2.0;
             double fromY = SquareMapRenderGeometry.worldToScreenY(edge.fromR(), viewport, scale) + scale / 2.0;
             double toX = SquareMapRenderGeometry.worldToScreenX(edge.toQ(), viewport, scale) + scale / 2.0;
@@ -75,7 +75,7 @@ final class SquareMapTopologyRenderer implements MapTopologyRenderer {
             graphics.strokeLine(fromX, fromY, toX, toY);
         }
     }
-    private void paintDoorMarker(GraphicsContext graphics, MapEdgeViewModel edge, double centerX, double centerY) {
+    private void paintDoorMarker(GraphicsContext graphics, MapCanvasEdge edge, double centerX, double centerY) {
         double radius = 10.0;
         graphics.setFill(SquareMapRenderTheme.LABEL_FILL);
         graphics.fillOval(centerX - radius, centerY - radius, radius * 2.0, radius * 2.0);
@@ -89,7 +89,7 @@ final class SquareMapTopologyRenderer implements MapTopologyRenderer {
         String marker = edge.label().isBlank() ? "D" : SquareMapRenderGeometry.abbreviate(edge.label(), 2);
         graphics.fillText(marker, centerX, centerY + 0.5);
     }
-    private void paintHud(GraphicsContext graphics, MapViewport viewport) {
+    private void paintHud(GraphicsContext graphics, MapCanvasViewport viewport) {
         graphics.setFill(SquareMapRenderTheme.HUD_TEXT);
         graphics.setFont(SquareMapRenderTheme.HUD_FONT);
         graphics.setTextAlign(TextAlignment.RIGHT);
@@ -97,7 +97,7 @@ final class SquareMapTopologyRenderer implements MapTopologyRenderer {
         String reference = String.format("x %.1f  y %.1f  z %.0f%%", viewport.centerX(), viewport.centerY(), viewport.zoom() * 100.0);
         graphics.fillText(reference, viewport.canvasWidth() - 18.0, viewport.canvasHeight() - 16.0);
     }
-    private void paintOverlayMessage(GraphicsContext graphics, MapWorkspaceRenderModel renderModel, MapViewport viewport) {
+    private void paintOverlayMessage(GraphicsContext graphics, MapCanvasRenderModel renderModel, MapCanvasViewport viewport) {
         if (renderModel.overlayMessage().isBlank()) {
             return;
         }

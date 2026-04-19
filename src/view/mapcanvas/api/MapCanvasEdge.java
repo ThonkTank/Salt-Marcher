@@ -1,9 +1,9 @@
-package src.view.mapshared.ViewModel;
+package src.view.mapcanvas.api;
 
 /**
  * View-local edge overlay payload for shared dungeon rendering.
  */
-public record MapEdgeViewModel(
+public record MapCanvasEdge(
         int fromQ,
         int fromR,
         int toQ,

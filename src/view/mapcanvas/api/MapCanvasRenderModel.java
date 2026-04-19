@@ -1,9 +1,9 @@
-package src.view.mapshared.ViewModel;
+package src.view.mapcanvas.api;
 
 /**
  * View-local workspace render payload.
  */
-public record MapWorkspaceRenderModel(
+public record MapCanvasRenderModel(
         String title,
         String subtitle,
         String modeLabel,
@@ -11,16 +11,16 @@ public record MapWorkspaceRenderModel(
         String summaryLabel,
         boolean mapLoaded,
         String overlayMessage,
-        MapWorkspaceSceneViewData scene
+        MapCanvasScene scene
 ) {
 
-    public MapWorkspaceRenderModel {
+    public MapCanvasRenderModel {
         title = title == null || title.isBlank() ? "Dungeon Map" : title;
         subtitle = subtitle == null ? "" : subtitle;
         modeLabel = modeLabel == null ? "" : modeLabel;
         statusLabel = statusLabel == null ? "" : statusLabel;
         summaryLabel = summaryLabel == null ? "" : summaryLabel;
         overlayMessage = overlayMessage == null ? "" : overlayMessage;
-        scene = scene == null ? MapWorkspaceSceneViewData.empty() : scene;
+        scene = scene == null ? MapCanvasScene.empty() : scene;
     }
 }

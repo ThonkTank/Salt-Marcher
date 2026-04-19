@@ -1,13 +1,13 @@
-package src.view.mapshared.View;
-import src.view.mapshared.ViewModel.MapViewport;
+package src.view.mapcanvas.View;
+import src.view.mapcanvas.api.MapCanvasViewport;
 import java.util.Locale;
 final class SquareMapRenderGeometry {
     private SquareMapRenderGeometry() {
     }
-    static double worldToScreenX(double worldX, MapViewport viewport, double scale) {
+    static double worldToScreenX(double worldX, MapCanvasViewport viewport, double scale) {
         return (worldX - viewport.centerX()) * scale + viewport.canvasWidth() / 2.0;
     }
-    static double worldToScreenY(double worldY, MapViewport viewport, double scale) {
+    static double worldToScreenY(double worldY, MapCanvasViewport viewport, double scale) {
         return (worldY - viewport.centerY()) * scale + viewport.canvasHeight() / 2.0;
     }
     static String abbreviate(String text, int maxLength) {

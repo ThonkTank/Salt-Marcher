@@ -9,9 +9,9 @@ import src.view.dungeonshared.View.DungeonEditorStatePane;
 import src.view.dungeonshared.ViewModel.DungeonEditorTool;
 import src.view.dungeonshared.ViewModel.DungeonSelectionItemViewModel;
 import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
-import src.view.mapshared.ViewModel.MapCellViewModel;
-import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
-import src.view.mapshared.ViewModel.MapWorkspaceSceneViewData;
+import src.view.mapcanvas.api.MapCanvasCell;
+import src.view.mapcanvas.api.MapCanvasRenderModel;
+import src.view.mapcanvas.api.MapCanvasScene;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 /**
@@ -29,9 +29,9 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
                 DungeonEditorInteractor::placeholderRenderModel,
                 DungeonEditorInteractor::loadedRenderModel
         ), DungeonMapSurfaceController.shared());
-        this.controls = new DungeonEditorControls(mapController(), this::currentMapViewport);
+        this.controls = new DungeonEditorControls(mapController(), this::currentMapCanvasViewport);
         this.controlsNode = () -> controls;
-        this.statePane = new DungeonEditorStatePane(mapController(), this::viewportSummary, this::currentMapViewport);
+        this.statePane = new DungeonEditorStatePane(mapController(), this::viewportSummary, this::currentMapCanvasViewport);
         this.selectionSink = selectionRef -> applySelection(selectionPublisher, selectionRef);
         controls.setOnToolChanged(this::setActiveTool);
         controls.showActiveTool(activeTool);
@@ -57,7 +57,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
         controls.showActiveTool(activeTool);
         statePane.setActiveTool(activeTool);
     }
-    private void onCellSelected(MapCellViewModel cellViewModel) {
+    private void onCellSelected(MapCanvasCell cellViewModel) {
         showSelection(resolveSelection(cellViewModel));
     }
     private void showSelection(@Nullable MapSelectionRef selectionRef) {
@@ -68,8 +68,8 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
     private void showSelection( DungeonSelectionItemViewModel selection) {
         showSelection(DungeonMapSelectionMapper.toDomain(loadedSnapshot(), selection));
     }
-    private static MapWorkspaceRenderModel placeholderRenderModel() {
-        return new MapWorkspaceRenderModel(
+    private static MapCanvasRenderModel placeholderRenderModel() {
+        return new MapCanvasRenderModel(
                 "Dungeon Editor",
                 "Originalnaeherer Grid-Workspace mit lokaler Kamera",
                 "EDITOR",
@@ -77,15 +77,15 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
                 "Waehle oder erstelle einen Dungeon ueber die linken Controls.",
                 false,
                 "Kein Dungeon ausgewaehlt.",
-                MapWorkspaceSceneViewData.empty()
+                MapCanvasScene.empty()
         );
     }
-    private static MapWorkspaceRenderModel loadedRenderModel(BaseMapSnapshot snapshot) {
-        MapWorkspaceSceneViewData scene = DungeonMapRenderMapper.toSceneViewData(snapshot.renderPayload(), snapshot.currentFloor());
+    private static MapCanvasRenderModel loadedRenderModel(BaseMapSnapshot snapshot) {
+        MapCanvasScene scene = DungeonMapRenderMapper.toSceneViewData(snapshot.renderPayload(), snapshot.currentFloor());
         String overlayMessage = scene.cells().isEmpty()
                 ? "Für Ebene z=" + snapshot.currentFloor() + " existiert noch keine gerenderte Placeholder-Geometrie."
                 : "";
-        return new MapWorkspaceRenderModel(
+        return new MapCanvasRenderModel(
                 snapshot.mapName(),
                 "Editor-Canvas im Look des Originals",
                 "EDITOR",
@@ -103,7 +103,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
         statePane.refresh();
     }
     private String viewportSummary() {
-        var viewport = currentMapViewport();
+        var viewport = currentMapCanvasViewport();
         return String.format(
                 "center=(%.2f, %.2f)  size=(%.0f x %.0f)  zoom=%.2f",
                 viewport.centerX(),
@@ -112,7 +112,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
                 viewport.canvasHeight(),
                 viewport.zoom());
     }
-    private DungeonViewportViewModel currentMapViewport() {
+    private DungeonViewportViewModel currentMapCanvasViewport() {
         var viewport = workspaceSession().currentViewport();
         return new DungeonViewportViewModel(
                 viewport.centerX(),

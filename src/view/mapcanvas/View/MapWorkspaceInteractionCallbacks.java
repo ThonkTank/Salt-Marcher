@@ -1,4 +1,4 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 interface MapWorkspaceInteractionCallbacks {
     void onPrimaryClick(double canvasX, double canvasY);
     void onViewportChanged();

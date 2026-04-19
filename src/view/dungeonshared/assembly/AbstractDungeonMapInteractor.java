@@ -6,8 +6,8 @@ import src.domain.dungeon.api.Viewport;
 import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonshared.ViewModel.DungeonSelectionInspectorEntry;
 import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
-import src.view.mapshared.ViewModel.MapCellViewModel;
-import src.view.mapshared.View.MapWorkspaceSession;
+import src.view.mapcanvas.api.MapCanvasCell;
+import src.view.mapcanvas.View.MapCanvasHandle;
 import java.util.function.Consumer;
 /**
  * Shared map-list workflow for dungeon editor and travel tabs.
@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 // PMD suppression is local: this shared base intentionally owns the reusable dungeon workspace contract; see src/view/dungeoneditor/UI.md.
 @SuppressWarnings("PMD.TooManyMethods")
 public abstract class AbstractDungeonMapInteractor {
-    private final MapWorkspaceSession workspaceSession = MapWorkspaceSession.create();
+    private final MapCanvasHandle workspaceSession = MapCanvasHandle.create();
     private final DungeonMapPresentation presentation;
     private final DungeonMapSurfaceController mapController;
     protected AbstractDungeonMapInteractor(DungeonMapPresentation presentation, DungeonMapSurfaceController mapController) {
@@ -30,7 +30,7 @@ public abstract class AbstractDungeonMapInteractor {
     public final Node workspace() {
         return workspaceSession.node();
     }
-    protected final MapWorkspaceSession workspaceSession() {
+    protected final MapCanvasHandle workspaceSession() {
         return workspaceSession;
     }
     protected final @Nullable BaseMapSnapshot loadedSnapshot() {
@@ -39,7 +39,7 @@ public abstract class AbstractDungeonMapInteractor {
     protected final DungeonMapSurfaceController mapController() {
         return mapController;
     }
-    protected final @Nullable MapSelectionRef resolveSelection(@Nullable MapCellViewModel cellViewModel) {
+    protected final @Nullable MapSelectionRef resolveSelection(@Nullable MapCanvasCell cellViewModel) {
         return DungeonMapSelectionMapper.resolveSelection(loadedSnapshot(), cellViewModel);
     }
     protected final void applySelection(

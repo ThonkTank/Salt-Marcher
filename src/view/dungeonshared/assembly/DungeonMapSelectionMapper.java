@@ -6,8 +6,8 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonshared.ViewModel.DungeonSelectionItemViewModel;
-import src.view.mapshared.ViewModel.MapCellViewModel;
-import src.view.mapshared.View.MapWorkspaceSession;
+import src.view.mapcanvas.api.MapCanvasCell;
+import src.view.mapcanvas.View.MapCanvasHandle;
 
 final class DungeonMapSelectionMapper {
 
@@ -15,7 +15,7 @@ final class DungeonMapSelectionMapper {
     }
 
     static void applySelection(
-            MapWorkspaceSession workspaceSession,
+            MapCanvasHandle workspaceSession,
             Consumer<MapSelectionRef> inspectorSelectionConsumer,
             @Nullable MapSelectionRef selectionRef
     ) {
@@ -52,7 +52,7 @@ final class DungeonMapSelectionMapper {
 
     static @Nullable MapSelectionRef resolveSelection(
             @Nullable BaseMapSnapshot snapshot,
-            @Nullable MapCellViewModel cellViewModel
+            @Nullable MapCanvasCell cellViewModel
     ) {
         if (snapshot == null || cellViewModel == null) {
             return null;

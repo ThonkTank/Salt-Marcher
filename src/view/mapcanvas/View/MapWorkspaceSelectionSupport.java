@@ -1,14 +1,14 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import org.jspecify.annotations.Nullable;
-import src.view.mapshared.ViewModel.MapCellViewModel;
-import src.view.mapshared.ViewModel.MapViewport;
-import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
+import src.view.mapcanvas.api.MapCanvasCell;
+import src.view.mapcanvas.api.MapCanvasViewport;
+import src.view.mapcanvas.api.MapCanvasRenderModel;
 final class MapWorkspaceSelectionSupport {
     private MapWorkspaceSelectionSupport() {
     }
-    static @Nullable MapCellViewModel findCellAtCanvasPosition(
-            @Nullable MapWorkspaceRenderModel renderModel,
-            MapViewport viewport,
+    static @Nullable MapCanvasCell findCellAtCanvasPosition(
+            @Nullable MapCanvasRenderModel renderModel,
+            MapCanvasViewport viewport,
             double canvasX,
             double canvasY,
             double scale
@@ -18,20 +18,20 @@ final class MapWorkspaceSelectionSupport {
         }
         int q = (int) Math.floor(screenToWorldX(canvasX, viewport, scale));
         int r = (int) Math.floor(screenToWorldY(canvasY, viewport, scale));
-        for (MapCellViewModel source : renderModel.scene().cells()) {
+        for (MapCanvasCell source : renderModel.scene().cells()) {
             if (source.q() == q && source.r() == r) {
                 return source;
             }
         }
         return null;
     }
-    static MapCellViewModel highlightedCell(MapCellViewModel source, @Nullable SelectionKey selectedTarget) {
+    static MapCanvasCell highlightedCell(MapCanvasCell source, @Nullable SelectionKey selectedTarget) {
         boolean selected = selectedTarget != null
                 && selectedTarget.matches(source.ownerKind(), source.ownerId(), source.partKind());
         if (!selected && !source.current()) {
             return source;
         }
-        return new MapCellViewModel(
+        return new MapCanvasCell(
                 source.q(),
                 source.r(),
                 source.label(),
@@ -45,10 +45,10 @@ final class MapWorkspaceSelectionSupport {
                 source.partKind()
         );
     }
-    private static double screenToWorldX(double canvasX, MapViewport viewport, double scale) {
+    private static double screenToWorldX(double canvasX, MapCanvasViewport viewport, double scale) {
         return viewport.centerX() + (canvasX - viewport.canvasWidth() / 2.0) / scale;
     }
-    private static double screenToWorldY(double canvasY, MapViewport viewport, double scale) {
+    private static double screenToWorldY(double canvasY, MapCanvasViewport viewport, double scale) {
         return viewport.centerY() + (canvasY - viewport.canvasHeight() / 2.0) / scale;
     }
     record SelectionKey(String ownerKind, long ownerId, String partKind) {

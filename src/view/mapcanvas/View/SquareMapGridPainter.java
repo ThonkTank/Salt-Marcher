@@ -1,10 +1,10 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.scene.canvas.GraphicsContext;
-import src.view.mapshared.ViewModel.MapViewport;
+import src.view.mapcanvas.api.MapCanvasViewport;
 final class SquareMapGridPainter {
     private SquareMapGridPainter() {
     }
-    static void paintGrid(GraphicsContext graphics, MapViewport viewport) {
+    static void paintGrid(GraphicsContext graphics, MapCanvasViewport viewport) {
         double scale = MapCameraController.baseTilePixels() * viewport.zoom();
         for (int index = 0; index < SquareMapRenderTheme.gridStepCount(); index++) {
             int gridStep = SquareMapRenderTheme.gridStep(index);
@@ -16,7 +16,7 @@ final class SquareMapGridPainter {
         }
         paintAxis(graphics, viewport, scale);
     }
-    private static void paintGridTier(GraphicsContext graphics, MapViewport viewport, double scale, int spacingSquares, int tier) {
+    private static void paintGridTier(GraphicsContext graphics, MapCanvasViewport viewport, double scale, int spacingSquares, int tier) {
         int minColumn = (int) Math.floor(viewport.centerX() - viewport.canvasWidth() / (2.0 * scale)) - spacingSquares;
         int maxColumn = (int) Math.ceil(viewport.centerX() + viewport.canvasWidth() / (2.0 * scale)) + spacingSquares;
         int minRow = (int) Math.floor(viewport.centerY() - viewport.canvasHeight() / (2.0 * scale)) - spacingSquares;
@@ -38,7 +38,7 @@ final class SquareMapGridPainter {
             graphics.strokeLine(0.0, y, viewport.canvasWidth(), y);
         }
     }
-    private static void paintAxis(GraphicsContext graphics, MapViewport viewport, double scale) {
+    private static void paintAxis(GraphicsContext graphics, MapCanvasViewport viewport, double scale) {
         graphics.setStroke(SquareMapRenderTheme.GRID_AXIS);
         graphics.setLineWidth(2.6);
         double axisX = SquareMapRenderGeometry.worldToScreenX(0.0, viewport, scale);

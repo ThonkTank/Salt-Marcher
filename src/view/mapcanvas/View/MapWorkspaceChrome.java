@@ -1,4 +1,4 @@
-package src.view.mapshared.View;
+package src.view.mapcanvas.View;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
