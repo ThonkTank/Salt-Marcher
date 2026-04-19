@@ -93,7 +93,8 @@ val jqassistantHomeDir = jqassistantInstallDir.map {
     it.dir("jqassistant-commandline-neo4jv5-${jqassistantVersionProvider.get()}")
 }
 val jqassistantCliFile = jqassistantHomeDir.map { it.file("bin/jqassistant") }
-val jqassistantConfigFile = layout.projectDirectory.file("tools/quality/jqassistant/config.yml")
+val jqassistantSourceConfigFile = layout.projectDirectory.file("tools/quality/jqassistant/config.yml")
+val jqassistantGeneratedConfigFile = layout.buildDirectory.file("tools/jqassistant/config.yml")
 val jqassistantRulesDir = layout.projectDirectory.dir("tools/quality/jqassistant/rules")
 val jqassistantStoreRoot = File(
     System.getProperty("java.io.tmpdir"),
@@ -110,6 +111,10 @@ val jqassistantJvmOpens = listOf(
     "--add-opens", "java.base/java.io=ALL-UNNAMED",
     "--add-opens", "java.base/java.nio=ALL-UNNAMED"
 ).joinToString(" ")
+
+fun File.absoluteInvariantPath(): String {
+    return absolutePath.replace(File.separatorChar, '/')
+}
 
 val cpdCli by configurations.creating {
     isCanBeConsumed = false
@@ -226,18 +231,43 @@ val installJqassistant by tasks.registering(Sync::class) {
     into(jqassistantInstallDir)
 }
 
+val prepareJqassistantConfig by tasks.registering {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Materialize jQAssistant configuration with invocation-local build output paths."
+    inputs.file(jqassistantSourceConfigFile)
+    outputs.file(jqassistantGeneratedConfigFile)
+
+    doLast {
+        val buildRootPath = layout.buildDirectory.get().asFile.absoluteInvariantPath()
+        val generatedConfigText = jqassistantSourceConfigFile.asFile.readText()
+            .replace("file:build/jqassistant/store", "file:$buildRootPath/jqassistant/store")
+            .replace("java:classpath::build/classes/java/main", "java:classpath::$buildRootPath/classes/java/main")
+            .replace(
+                "xml.report.file: build/reports/jqassistant/jqassistant-report.xml",
+                "xml.report.file: $buildRootPath/reports/jqassistant/jqassistant-report.xml"
+            )
+            .replace(
+                "junit.report.directory: build/reports/jqassistant/junit",
+                "junit.report.directory: $buildRootPath/reports/jqassistant/junit"
+            )
+        val generatedConfigFile = jqassistantGeneratedConfigFile.get().asFile
+        generatedConfigFile.parentFile.mkdirs()
+        generatedConfigFile.writeText(generatedConfigText)
+    }
+}
+
 val jqassistantScanViewArchitecture by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Scan SaltMarcher bytecode and source topology for view-architecture analysis."
     enforceFreshGateResult()
-    dependsOn(installJqassistant, tasks.named("classes"))
-    inputs.file(jqassistantConfigFile)
+    dependsOn(installJqassistant, prepareJqassistantConfig, tasks.named("classes"))
+    inputs.file(jqassistantGeneratedConfigFile)
     inputs.dir(jqassistantRulesDir)
     inputs.dir(layout.buildDirectory.dir("classes/java/main"))
     inputs.files(sourceJavaRoots)
     outputs.dir(jqassistantCheckStoreDir)
     doFirst {
-        configureJqassistantInvocation(jqassistantConfigFile, jqassistantCheckStoreDir.get(), "scan")
+        configureJqassistantInvocation(jqassistantGeneratedConfigFile.get(), jqassistantCheckStoreDir.get(), "scan")
     }
 }
 
@@ -246,7 +276,7 @@ val jqassistantAnalyzeViewArchitecture by tasks.registering(Exec::class) {
     description = "Analyze SaltMarcher MVVM view-architecture constraints with jQAssistant."
     enforceFreshGateResult()
     dependsOn(jqassistantScanViewArchitecture)
-    inputs.file(jqassistantConfigFile)
+    inputs.file(jqassistantGeneratedConfigFile)
     inputs.dir(jqassistantRulesDir)
     outputs.dir(jqassistantReportsDir)
     doFirst {
@@ -254,29 +284,29 @@ val jqassistantAnalyzeViewArchitecture by tasks.registering(Exec::class) {
         delete(layout.buildDirectory.dir("reports/jqassistant-mvvm-preview"))
         jqassistantReportsDir.get().asFile.mkdirs()
         jqassistantJunitReportsDir.get().asFile.mkdirs()
-        configureJqassistantInvocation(jqassistantConfigFile, jqassistantCheckStoreDir.get(), "analyze")
+        configureJqassistantInvocation(jqassistantGeneratedConfigFile.get(), jqassistantCheckStoreDir.get(), "analyze")
     }
 }
 
 val jqassistantEffectiveRules by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Print the effective SaltMarcher MVVM view-architecture rules."
-    dependsOn(installJqassistant)
-    inputs.file(jqassistantConfigFile)
+    dependsOn(installJqassistant, prepareJqassistantConfig)
+    inputs.file(jqassistantGeneratedConfigFile)
     inputs.dir(jqassistantRulesDir)
     doFirst {
-        configureJqassistantInvocation(jqassistantConfigFile, "effective-rules")
+        configureJqassistantInvocation(jqassistantGeneratedConfigFile.get(), "effective-rules")
     }
 }
 
 val jqassistantServer by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Start the local jQAssistant Neo4j server for MVVM view-architecture rule development."
-    dependsOn(installJqassistant, tasks.named("classes"))
-    inputs.file(jqassistantConfigFile)
+    dependsOn(installJqassistant, prepareJqassistantConfig, tasks.named("classes"))
+    inputs.file(jqassistantGeneratedConfigFile)
     inputs.dir(jqassistantRulesDir)
     doFirst {
-        configureJqassistantInvocation(jqassistantConfigFile, "server")
+        configureJqassistantInvocation(jqassistantGeneratedConfigFile.get(), "server")
     }
 }
 
