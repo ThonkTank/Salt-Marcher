@@ -23,52 +23,61 @@ passive panel-content fragments.
 
 `Enforced`:
 
-- Current mechanical checks still enforce portions of the superseded ADR 017
-  topology and ADR 018 shared-component exception:
-  - `view-topology-allowlist` via `jQAssistant`
-    `saltmarcher:MvvmAllowedViewBuckets` (`checkViewArchitecture`)
-  - `view-legacy-bucket-ban` via `jQAssistant`
-    `saltmarcher:MvvmNoLegacyBuckets` (`checkViewArchitecture`)
-  - `view-root-only-view-contribution` via `jQAssistant`
-    `saltmarcher:MvvmRootOnlyViewContribution` (`checkViewArchitecture`)
-  - `view-root-count` via `jQAssistant`
-    `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`)
-  - `view-cross-component-public-api-only` via `jQAssistant`
-    `saltmarcher:MvvmNoPrivateForeignComponentDependencies`
-    (`checkViewArchitecture`)
-  - `view-root-contracts` via PMD `SaltMarcherEntrypointRule`
-    (`pmdArchitectureMain`)
-  - `view-root-delegation-boundary` via Error Prone `ViewRootDelegation`
-    (`compileJava`)
-  - `view-shell-api-allowlist` via Error Prone `FeatureShellApiAllowlist`
-    (`compileJava`)
-  - `view-rendering-boundary` via Error Prone `ViewRestrictedDependencies`
-    (`compileJava`)
-  - `view-viewmodel-framework-independence` via Error Prone
-    `ViewModelFrameworkIndependence` (`compileJava`)
-  - `view-presentation-state-placement` via Error Prone
-    `ViewModelOwnershipNaming` (`compileJava`)
-  - `view-reflection-bypass-ban` via Error Prone `ViewReflectionBypass`
-    (`compileJava`)
-  - `view-component-cycle-freedom` via ArchUnit
-    `viewComponentsMustStayCycleFree` (`architectureTest`)
+- `view-target-package-layout`: active Java view code may live only as direct
+  files under `src/view/models` or `src/view/views` through `build-harness`
+  `view-layout` (`:build-harness:check`), jQAssistant
+  `saltmarcher:ViewLayerAllowedPackages` (`checkViewArchitecture`), ArchUnit
+  `viewLayerMustUseModelsOrViewsPackages` (`architectureTest`), PMD
+  `SaltMarcherSourcePolicyRule` (`pmdArchitectureMain`), and Error Prone
+  `ViewRootDelegation` (`compileJava`).
+- `view-no-view-contribution-roots`: `*ViewContribution` implementations are
+  forbidden under `src/view/**` through `build-harness`
+  `shell-view-contribution-placement` (`:build-harness:check`), jQAssistant
+  `saltmarcher:ViewLayerNoViewContributionImplementations`
+  (`checkViewArchitecture`), and ArchUnit
+  `viewLayerMustNotUseViewContributionImplementations` (`architectureTest`).
+- `view-model-one-contribution-per-file`: `src/view/models` files define one
+  top-level shell contribution model and use `*TabModel` or `*WindowModel`
+  naming through jQAssistant `saltmarcher:ViewLayerOneModelPerFile` and
+  `saltmarcher:ViewLayerModelName` (`checkViewArchitecture`), plus PMD
+  `SaltMarcherEntrypointRule` for source-local model root shape
+  (`pmdArchitectureMain`).
+- `view-passive-panel-one-fragment-per-file`: `src/view/views` files define one
+  top-level passive panel view and use fixed-surface naming through jQAssistant
+  `saltmarcher:ViewLayerOnePanelViewPerFile` and
+  `saltmarcher:ViewLayerPanelViewName` (`checkViewArchitecture`), plus PMD
+  `SaltMarcherEntrypointRule` for source-local panel shape
+  (`pmdArchitectureMain`).
+- `view-model-dependency-boundary`: contribution models may use shell public
+  contracts, passive views, JavaFX bindable state and nodes, domain root
+  application services, and domain `api` carriers, but not data, bootstrap,
+  shell host internals, legacy view topology, or private domain internals
+  through Error Prone `ViewModelFrameworkIndependence` and
+  `FeatureShellApiAllowlist` (`compileJava`), jQAssistant
+  `saltmarcher:ViewLayerModelDependencies` (`checkViewArchitecture`), and
+  ArchUnit `viewModelsMustNotReachBootstrapDataOrShellHost` and
+  `viewModelsMustOnlyUseFeatureApisAtBackendBoundary` (`architectureTest`).
+- `view-passive-panel-dependency-boundary`: passive panel views may use JavaFX,
+  JDK types, and passive view helpers, but not shell, domain, data, bootstrap,
+  contribution models, or legacy view topology through Error Prone
+  `ViewRestrictedDependencies` (`compileJava`), jQAssistant
+  `saltmarcher:ViewLayerPanelViewDependencies` (`checkViewArchitecture`), and
+  ArchUnit `passiveViewsMustNotReachModelShellDomainDataOrBootstrap`
+  (`architectureTest`).
+- `view-presentation-state-placement`: presentation-owned model/state carrier
+  types must live in `src/view/models` through Error Prone
+  `ViewModelOwnershipNaming` (`compileJava`).
+- `view-reflection-bypass-ban`: reflective reach-through under `src/view/**`,
+  including `Class.forName(...)`, `ClassLoader.loadClass(...)`,
+  `MethodHandles.Lookup.findClass(...)`, and direct `java.lang.reflect.*`
+  references, is blocked by Error Prone `ViewReflectionBypass` (`compileJava`).
+- `view-component-cycle-freedom`: view packages remain cycle-free through
+  ArchUnit `viewComponentsMustStayCycleFree` (`architectureTest`).
 
-Current-state mechanical trace:
+Mechanical trace:
 
-- The existing jQAssistant and PMD rules still expect normal component
-  topology under `src/view/<component>/` with `*ViewContribution`, `View/`, and
-  `ViewModel`, plus declared shared component `api/` exceptions.
-- Error Prone still models root contribution, `View/`, and `ViewModel`
-  dependency placement.
-- Reflection bypasses under `src/view/**`, including `Class.forName(...)`,
-  `ClassLoader.loadClass(...)`, `MethodHandles.Lookup.findClass(...)`, and
-  direct `java.lang.reflect.*` references, are blocked by Error Prone.
-- These enforced rules are current-state blockers during migration. They are
-  not the target view topology.
-
-Target mechanical trace:
-
-- Java view code lives under `src/view/models` or `src/view/views`.
+- Java view code lives under direct `src/view/models` or `src/view/views`
+  files.
 - A `view/models` file defines exactly one shell-registered tab model,
   state-tab model, or top-bar dropdown window model.
 - A `view/views` file defines exactly one passive panel-content fragment for
@@ -84,6 +93,12 @@ Target mechanical trace:
 - Legacy component-local buckets are absent from migrated target code.
 - `src.domain.<feature>.api/**` stays carrier-only, while the callable model
   boundary is the root application service.
+
+`Candidate`:
+
+- No current View Layer candidate checks are accepted. Additional checks require
+  a stable source, compiler, bytecode, graph, or file-tree shape before
+  promotion.
 
 `Review-Only`:
 
@@ -106,6 +121,10 @@ Target mechanical trace:
 - Whether asynchronous presentation work keeps blocking I/O off the UI thread
   and leaves loading, failure, cancellation, retry, and stale-result semantics
   under model ownership.
+- Whether branch-local widget mutation based on model carriers is truly a
+  presentation-policy leak; broad `ViewPresentationDecisionLeak` and
+  `ViewSnapshotMirroring` style checks remain review-owned because they are
+  heuristic rather than stable blockers.
 - Runtime callback-flow semantics and lifecycle behavior that cannot be
   expressed as stable source, bytecode, or graph rules today.
 
@@ -374,9 +393,9 @@ Mechanical trace against the data-layer standard:
   not name concrete `src.view`, `src.domain`, or `src.data` feature packages
   via `PMD architecture` (`pmdArchitectureMain`).
 - `system-shell-runtime-seam-placement`: feature-facing shell API use is
-  currently limited to view roots and data `*ServiceContribution` roots
-  through `Error Prone` (`compileJava`) and PMD root-contract checks
-  (`pmdArchitectureMain`).
+  limited to `src/view/models` contribution models and data
+  `*ServiceContribution` roots through `Error Prone` (`compileJava`) and PMD
+  root-contract checks (`pmdArchitectureMain`).
 - `system-service-contribution-placement`: service contribution roots are
   allowed only at the shell API contract and data feature roots via
   `build-harness` (`:build-harness:check`).
@@ -392,8 +411,8 @@ Mechanical trace against the data-layer standard:
   infrastructure types via `Error Prone` (`compileJava`).
 - `system-view-boundary-carrier-purity`: target view-to-view dependencies are
   model-to-passive-view bindings under `src/view/models` and
-  `src/view/views`; current shared-component `api/` checks remain
-  current-state blockers until migrated.
+  `src/view/views`; broad component-local view `api/` packages are blocked by
+  the target view layout and dependency checks.
 - `system-foreign-private-bucket-bans`: cross-feature access to private view,
   domain, and data buckets is blocked by the owning view, domain, and data
   rule sets through `jQAssistant`, `ArchUnit`, and `Error Prone`.
@@ -426,31 +445,29 @@ Mechanical trace against the data-layer standard:
 - `shell-runtime-context-api-shape`: `ShellRuntimeContext` exposes only the
   fixed runtime gateway methods `inspector()`, `services()`, and `session(...)`
   through PMD `SaltMarcherSourcePolicyRule` (`pmdArchitectureMain`).
-- `shell-feature-facing-api-allowlist`: current checks allow shell APIs from
-  legacy view roots, transitional view `assembly/`, and data service roots
-  through Error Prone `FeatureShellApiAllowlist` (`compileJava`). Target checks
-  should move shell API use to `src/view/models` and data service roots.
-- `shell-view-root-delegation-boundary`: current transitional checks still
-  reason about `createScreen(...)` and legacy root delegation through Error
-  Prone `ViewRootDelegation` (`compileJava`). Target checks should replace
-  this with model-owned cockpit binding and passive panel-view restrictions.
+- `shell-feature-facing-api-allowlist`: shell APIs are allowed from
+  `src/view/models` contribution models and data service roots only through
+  Error Prone `FeatureShellApiAllowlist` (`compileJava`).
+- `shell-view-root-delegation-boundary`: old component-local view roots are
+  blocked and shell-facing view wiring belongs under `src/view/models` through
+  Error Prone `ViewRootDelegation` (`compileJava`).
 - `shell-service-registry-registration-placement`: direct
   `ServiceRegistry.Builder.register(...)` calls must stay in data feature
   `*ServiceContribution` roots through Error Prone
   `ServiceRegistryRegistrationPlacement` (`compileJava`).
 - `shell-fixed-slot-api`, `shell-contribution-spec-family`,
   `shell-contribution-spec-metadata-purity`,
-  `shell-contribution-spec-api-shape`, `shell-screen-api-shape`,
-  and `shell-details-inspector-only` are enforced through PMD
+  `shell-contribution-spec-api-shape`, `shell-binding-api-shape`, and
+  `shell-details-inspector-only` are enforced through PMD
   `SaltMarcherSourcePolicyRule` (`pmdArchitectureMain`).
-- `shell-screen-lifecycle-hook-ownership`: `ShellScreen.onShow()` and
-  `ShellScreen.onHide()` may be invoked only by `shell.host.AppShell` through
-  Error Prone `ShellLifecycleHookOwnership` (`compileJava`).
+- `shell-binding-lifecycle-hook-ownership`: `ShellBinding.onActivate()` and
+  `ShellBinding.onDeactivate()` may be invoked only by `shell.host.AppShell`
+  through Error Prone `ShellLifecycleHookOwnership` (`compileJava`).
 
 Runtime guards outside the build-blocking harness:
 
 - `AppShell` routes contribution registration through `ShellSlotValidator`, so
-  invalid `ShellContributionSpec` to `ShellScreen.slotContent()` mappings are
+  invalid `ShellContributionSpec` to `ShellBinding.slotContent()` mappings are
   rejected at shell-registration time. This protects the full dynamic slot
   matrix but is not classified as a build-blocking harness owner because
   `slotContent()` is runtime factory output.
@@ -459,41 +476,39 @@ Runtime guards outside the build-blocking harness:
 
 - Full workbench role vocabulary, whether `AppShell` remains passive beyond
   dependency direction, semantic feature/business-logic exclusion from shell
-  host code, lazy-realization readiness, `ShellScreen` as legacy API naming,
-  cockpit surface ownership, details/history publication, state-pane
-  precedence, open-ended named-region composition risks that do not introduce a
-  new static API surface, and the semantic remainder of feature-specific
-  alternate wiring paths around `ShellRuntimeContext`.
+  host code, lazy-realization readiness, cockpit surface ownership,
+  details/history publication, state-pane precedence, open-ended named-region
+  composition risks that do not introduce a new static API surface, and the
+  semantic remainder of feature-specific alternate wiring paths around
+  `ShellRuntimeContext`.
 
 ## Shell Discovery And Bootstrap
 
 `Enforced`:
 
-- `shell-view-root-discovery-contract`: current checks still find view
-  contribution roots at
-  `src/view/<component>/<PascalComponentName>ViewContribution.java` through
-  `jQAssistant` `saltmarcher:MvvmRootOnlyViewContribution` and
-  `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`),
-  `build-harness` `shell-view-contribution-placement`
-  (`:build-harness:check`), and PMD `SaltMarcherEntrypointRule`
-  (`pmdArchitectureMain`). Target discovery should move to one contribution
-  model per file under `src/view/models`.
+- `shell-view-model-discovery-contract`: view contribution models are found as
+  direct files under `src/view/models`, with one concrete shell contribution
+  model per file, through jQAssistant `saltmarcher:ViewLayerOneModelPerFile`
+  (`checkViewArchitecture`), `build-harness` view layout and
+  `shell-view-contribution-placement` (`:build-harness:check`), PMD
+  `SaltMarcherEntrypointRule` (`pmdArchitectureMain`), and ArchUnit
+  `viewLayerMustUseModelsOrViewsPackages` (`architectureTest`).
 - `shell-service-root-discovery-contract`: service contribution roots are found
   only at `src/data/<feature>/<PascalFeatureName>ServiceContribution.java`
   through `build-harness` `persistence-root-entrypoint` and
   `service-contribution-placement` (`:build-harness:check`) plus PMD
   `SaltMarcherEntrypointRule` (`pmdArchitectureMain`).
-- `shell-root-instantiation-contract`: view and service contribution roots must
-  be concrete `public final` classes with public no-arg constructors,
-  required root methods, stateless shape, and no extra public/protected members
-  through PMD `SaltMarcherEntrypointRule` (`pmdArchitectureMain`).
-- `shell-supported-contribution-spec-selection`: view roots construct exactly
-  one supported shell contribution spec and `defaultLanding` appears only on
-  `ShellTabSpec` roots through PMD `SaltMarcherEntrypointRule`
+- `shell-root-instantiation-contract`: view contribution models and service
+  contribution roots must be concrete `public final` classes with public no-arg
+  constructors and required root methods through PMD `SaltMarcherEntrypointRule`
   (`pmdArchitectureMain`).
-- `shell-startup-default-landing-uniqueness`: root `ShellTabSpec` metadata must
-  use literal `defaultLanding` values and at most one tab may declare
-  `defaultLanding=true` through `build-harness`
+- `shell-supported-contribution-spec-selection`: view contribution models
+  construct exactly one supported shell contribution spec and `defaultLanding`
+  appears only on `ShellTabSpec` models through PMD
+  `SaltMarcherEntrypointRule` (`pmdArchitectureMain`).
+- `shell-startup-default-landing-uniqueness`: model-authored `ShellTabSpec`
+  metadata must use literal `defaultLanding` values and at most one tab may
+  declare `defaultLanding=true` through `build-harness`
   `shell-tab-default-landing-literal` and `shell-default-landing-uniqueness`
   (`:build-harness:check`).
 - `shell-generic-bootstrap-wiring`: bootstrap and shell code must not name
@@ -563,11 +578,12 @@ Runtime guards outside the build-blocking harness:
   rules `root-layout`, `src-layout`, `shell-layout`, `view-layout`,
   `domain-layout`, `data-layout`, `package-declaration`, and
   `package-path-match` (`:build-harness:check`).
-- `repository-view-feature-layout`: current view component root-only placement
-  and transitional `assembly/`, optional `api/`, `View/`, and `ViewModel/`
-  buckets are enforced by `jQAssistant` MVVM rules and PMD root contracts
-  (`checkViewArchitecture`, `pmdArchitectureMain`). Target repository checks
-  should enforce `src/view/models` and `src/view/views` instead.
+- `repository-view-feature-layout`: target view model and passive panel
+  placement under direct `src/view/models` and `src/view/views` files is
+  enforced by `build-harness`, jQAssistant MVVM rules, ArchUnit dependency
+  rules, PMD root/panel contracts, and Error Prone dependency checks
+  (`:build-harness:check`, `checkViewArchitecture`, `architectureTest`,
+  `pmdArchitectureMain`, and `compileJava`).
 - `repository-domain-feature-layout`: domain root application-service
   presence, direct `api/` and `application/` allowances, named-module package
   shape, role-bucket bans, backend-port placement, and required context markers

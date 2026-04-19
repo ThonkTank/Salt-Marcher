@@ -15,7 +15,6 @@ public final class CreaturesControlsView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Creatures");
-        title.getStyleClass().add("section-header");
         getChildren().addAll(title, loadButton);
     }
 

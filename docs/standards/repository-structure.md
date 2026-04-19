@@ -137,10 +137,9 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - the included build at `tools/gradle/build-harness/` owns repository topology,
   package-path alignment, `src/` direct-child topology, included-build
   placement, and service-entrypoint presence rules below `src/data/`.
-- Existing `checkViewArchitecture`, PMD, ArchUnit, and Error Prone view checks
-  still enforce portions of the previous component-local topology. Treat that
-  as checker migration debt until target view-model and panel-view checks are
-  implemented.
+- Existing `checkViewArchitecture`, PMD, ArchUnit, Error Prone, and
+  `build-harness` view checks enforce direct `src/view/models` contribution
+  models and `src/view/views` passive panel views for active target code.
 - A feature root may contain Markdown documents with the standard co-located
   filenames without counting as alternate Java entrypoints.
 - The binding shell-workbench standard defines the semantic responsibilities of

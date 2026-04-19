@@ -15,7 +15,6 @@ public final class DungeonEditorControlsView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Dungeon Editor");
-        title.getStyleClass().add("section-header");
         getChildren().addAll(title, createButton);
     }
 

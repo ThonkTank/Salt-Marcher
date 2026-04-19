@@ -15,7 +15,6 @@ public final class DungeonTravelControlsView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Dungeon Travel");
-        title.getStyleClass().add("section-header");
         getChildren().addAll(title, refreshButton);
     }
 

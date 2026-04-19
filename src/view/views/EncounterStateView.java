@@ -14,7 +14,6 @@ public final class EncounterStateView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Encounter state");
-        title.getStyleClass().add("section-header");
         state.setWrapText(true);
         getChildren().addAll(title, state);
     }

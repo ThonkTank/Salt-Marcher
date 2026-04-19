@@ -14,7 +14,6 @@ public final class DungeonEditorMainView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Dungeon workspace");
-        title.getStyleClass().add("section-header");
         status.setWrapText(true);
         getChildren().addAll(title, status);
     }

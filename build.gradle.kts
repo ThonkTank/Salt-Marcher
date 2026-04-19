@@ -170,6 +170,7 @@ val pmdArchitectureMain by tasks.registering(Pmd::class) {
     description = "Run SaltMarcher source-level architecture rules against production Java sources."
     dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
 
+    ignoreFailures = false
     ruleSets = listOf()
     ruleSetFiles = files(architectureRulesetFile)
     source = files("bootstrap", "shell", "src").asFileTree

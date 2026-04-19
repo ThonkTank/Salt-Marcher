@@ -306,10 +306,11 @@ specific compatibility plan says otherwise.
 
 ## Verification Notes
 
-Current checks still enforce portions of the previous declarative MVVM model.
-The enforcement coverage standard records that current-state mapping.
+Current checks enforce the target mechanical parts that have a stable static
+shape. The enforcement coverage standard records the concrete rule IDs, owners,
+and blocking tasks.
 
-Target mechanical checks should eventually cover:
+Target mechanical checks cover:
 
 - Java view code lives under `src/view/models` or `src/view/views`.
 - `view/models` files define one shell-registered tab, state tab, or top-bar
@@ -324,8 +325,8 @@ Target mechanical checks should eventually cover:
 - State-pane precedence is modelled explicitly.
 - Legacy component-local buckets are absent from migrated target code.
 
-New mechanical gates require explicit user request before being added to the
-local build/check pipeline.
+Semantic placement quality that cannot be expressed as stable source, bytecode,
+graph, or file-tree rules remains review-owned.
 
 ## References
 

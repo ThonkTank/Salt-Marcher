@@ -13,7 +13,6 @@ public final class PartyTopBarView extends HBox {
     public PartyTopBarView() {
         setSpacing(8);
         setPadding(new Insets(4, 8, 4, 8));
-        getStyleClass().add("topbar-party");
         getChildren().addAll(refreshButton, summary);
     }
 

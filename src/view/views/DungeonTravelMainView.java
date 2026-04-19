@@ -14,7 +14,6 @@ public final class DungeonTravelMainView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Travel workspace");
-        title.getStyleClass().add("section-header");
         status.setWrapText(true);
         getChildren().addAll(title, status);
     }

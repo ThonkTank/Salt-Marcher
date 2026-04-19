@@ -17,20 +17,19 @@
     <concept id="saltmarcher:MvvmViewType">
         <description>Annotates compiled SaltMarcher view-layer types for the cockpit tab-model MVVM harness.</description>
         <cypher><![CDATA[
-            MATCH (packageNode:Package)-[:CONTAINS]->(type:Java:Type)
-            WHERE packageNode.fqn =~ 'src\\.view(\\..*)?'
+            MATCH (type:Java:Type)
+            WHERE type.fqn =~ 'src\\.view\\..*'
             WITH
-              packageNode,
               type,
-              split(packageNode.fqn, '.') AS segments
+              split(type.fqn, '.') AS segments
             SET
               type:SaltMarcher:MvvmViewType,
               type.viewBucket = CASE
-                WHEN size(segments) = 3 AND segments[2] = 'models' THEN 'MODEL'
-                WHEN size(segments) = 3 AND segments[2] = 'views' THEN 'VIEW'
+                WHEN size(segments) >= 4 AND segments[2] = 'models' THEN 'MODEL'
+                WHEN size(segments) >= 4 AND segments[2] = 'views' THEN 'VIEW'
                 ELSE 'LEGACY'
               END,
-              type.relativePath = replace(packageNode.fqn, '.', '/') + '/' + coalesce(type.sourceFileName, type.name + '.java')
+              type.relativePath = replace(type.fqn, '.', '/') + '.java'
             RETURN
               type AS MvvmViewType
         ]]></cypher>

@@ -15,7 +15,6 @@ public final class EncounterControlsView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Encounter Builder");
-        title.getStyleClass().add("section-header");
         getChildren().addAll(title, generateButton);
     }
 

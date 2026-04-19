@@ -53,9 +53,10 @@ Target discovery:
 
 Current migration state:
 
-- active code may still expose `src/view/<component>/<Component>ViewContribution`
-  roots implementing `ShellViewContribution`
-- that shape is current-state compatibility, not the target discovery model
+- old `src/view/<component>/<Component>ViewContribution` roots implementing
+  `ShellViewContribution` are migration debt
+- active target code is discovered from `src/view/models` through
+  `ShellContributionModel`
 
 ### Service Discovery
 
@@ -135,8 +136,8 @@ for these checks live in the
 Concrete rule IDs and checker names are recorded in the
 [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1).
 
-Current checks still enforce the pre-tab-model `*ViewContribution` discovery
-shape. Target mechanical checks should eventually cover:
+Current checks enforce the target model-discovery shape where it has a stable
+static surface:
 
 - model discovery from `src/view/models`
 - one shell-registered contribution model per model file
@@ -145,9 +146,8 @@ shape. Target mechanical checks should eventually cover:
 - single startup default among left-bar tab models
 - generic bootstrap and shell wiring with no concrete feature imports
 
-No new gate is introduced by this standards migration; enforcement ownership
-stays in the existing quality-platform entrypoints until explicit checker
-migration work is requested.
+Runtime discovery ordering and reflection error wording remain review-owned
+unless they become stable build-time policy surfaces.
 
 ## References
 

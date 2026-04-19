@@ -14,7 +14,6 @@ public final class DungeonTravelStateView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Travel state");
-        title.getStyleClass().add("section-header");
         body.setWrapText(true);
         getChildren().addAll(title, body);
     }

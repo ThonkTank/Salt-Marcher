@@ -14,7 +14,6 @@ public final class EncounterMainView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Encounter result");
-        title.getStyleClass().add("section-header");
         result.setWrapText(true);
         getChildren().addAll(title, result);
     }

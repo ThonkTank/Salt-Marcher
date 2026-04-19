@@ -84,7 +84,7 @@ public final class ShellViewDiscovery {
         String jarPath = rawPath.substring(0, separatorIndex).replaceFirst("^file:", "");
         try (JarFile jar = new JarFile(jarPath)) {
             jar.stream()
-                    .map(entry -> entry.getName())
+                    .map(java.util.zip.ZipEntry::getName)
                     .filter(name -> name.startsWith(MODEL_ROOT + "/"))
                     .filter(name -> name.endsWith(CLASS_SUFFIX))
                     .filter(name -> name.indexOf('$') < 0)

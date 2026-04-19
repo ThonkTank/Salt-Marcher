@@ -75,9 +75,9 @@ Rules:
 - feature logic, presentation policy, JavaFX panel behavior, and business logic
   stay out of the shell
 
-The current Java API still contains `ShellViewContribution` and `ShellScreen`.
-Those names are current-state APIs and migration debt where they imply
-component-root composition rather than tab-model-owned cockpit binding.
+The current Java API uses `ShellContributionModel` and `ShellBinding` for
+model-owned cockpit binding. `ShellViewContribution` and `ShellScreen` are
+legacy names and must not be reintroduced as target view wiring.
 
 ### `ShellRuntimeContext`
 
@@ -181,10 +181,11 @@ Shell realization must be safe for shell-managed caching and lazy first use.
 
 Current state:
 
-- `AppBootstrap` eagerly creates every `ShellScreen` during shell creation.
-- `AppShell` activates screens through `navigateTo(...)`.
-- `ShellScreen.onShow()` and `ShellScreen.onHide()` provide the current
-  activation lifecycle hooks.
+- `AppBootstrap` eagerly discovers and binds every `ShellContributionModel`
+  during shell creation.
+- `AppShell` activates tabs through `navigateTo(...)`.
+- `ShellBinding.onActivate()` and `ShellBinding.onDeactivate()` provide the
+  current activation lifecycle hooks.
 
 Target-compatible rule:
 
@@ -202,13 +203,13 @@ Current Java API names map imperfectly onto the target cockpit model:
 - `shell/host/ShellWorkspacePane.java` hosts the primary work surface, details
   pane, and state pane below `AppShell`
 - `shell/api/ShellRuntimeContext.java` is the shell-scoped runtime gateway
-- `shell/api/ShellScreen.java` is the current API type used for prepared slot
-  content during migration
+- `shell/api/ShellContributionModel.java` is the shell-facing model contract
+- `shell/api/ShellBinding.java` is the bound slot-content and lifecycle
+  contract
 - `shell/api/ShellSlot.java` already names the fixed cockpit surfaces
 
-Current feature roots may still compose screens through
-`*ViewContribution`. That is migration debt relative to the tab-model target,
-not precedent.
+Feature roots must not compose screens through `*ViewContribution`. That shape
+is migration debt relative to the tab-model target, not precedent.
 
 ## Verification Notes
 
@@ -218,8 +219,8 @@ The concrete Passive Workbench Shell rule-status and blocking-task matrix lives
 in the
 [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1).
 
-Current mechanical coverage still reflects the pre-tab-model API shape in
-several places. Target mechanical checks should eventually cover:
+Current mechanical coverage enforces the target shell-facing API shape where it
+has a stable static surface:
 
 - shell APIs are used by `view/models`, not passive `view/views`
 - concrete `shell.host` types do not leak into feature code

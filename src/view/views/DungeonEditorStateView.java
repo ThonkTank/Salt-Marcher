@@ -14,7 +14,6 @@ public final class DungeonEditorStateView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Editor state");
-        title.getStyleClass().add("section-header");
         body.setWrapText(true);
         getChildren().addAll(title, body);
     }

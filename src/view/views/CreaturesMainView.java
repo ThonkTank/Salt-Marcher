@@ -14,7 +14,6 @@ public final class CreaturesMainView extends VBox {
         getStyleClass().add("surface-root");
 
         Label title = new Label("Creature catalog");
-        title.getStyleClass().add("section-header");
         body.setWrapText(true);
         getChildren().addAll(title, body);
     }
