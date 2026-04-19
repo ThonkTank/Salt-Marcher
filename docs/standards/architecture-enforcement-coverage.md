@@ -17,112 +17,95 @@ review-only boundary remain defined in the
 
 ## View Layer
 
-Current view checks enforce the declarative MVVM topology from ADR 017 plus the
-Shared View Component boundary from ADR 018.
+The target view architecture is the cockpit MVVM model from ADR 019:
+`src/view/models` owns tab and window ViewModels, while `src/view/views` owns
+passive panel-content fragments.
 
 `Enforced`:
 
-- `view-topology-allowlist` via `jQAssistant`
-  `saltmarcher:MvvmAllowedViewBuckets` (`checkViewArchitecture`).
-- `view-legacy-bucket-ban` via `jQAssistant`
-  `saltmarcher:MvvmNoLegacyBuckets` (`checkViewArchitecture`).
-- `view-root-only-view-contribution` via `jQAssistant`
-  `saltmarcher:MvvmRootOnlyViewContribution` (`checkViewArchitecture`).
-- `view-root-count` via `jQAssistant`
-  `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`).
-- `view-cross-component-public-api-only` via `jQAssistant`
-  `saltmarcher:MvvmNoPrivateForeignComponentDependencies`
-  (`checkViewArchitecture`).
-- `view-root-contracts` via PMD `SaltMarcherEntrypointRule`
-  (`pmdArchitectureMain`).
-- `view-root-delegation-boundary` via Error Prone `ViewRootDelegation`
-  (`compileJava`). Root view contributions may use the documented shell API
-  subset, own `View/` and `ViewModel/`, domain application-service boundaries,
-  and declared shared component `api/` packages.
-- `view-shell-api-allowlist` via Error Prone `FeatureShellApiAllowlist`
-  (`compileJava`).
-- `view-rendering-boundary` via Error Prone `ViewRestrictedDependencies`
-  (`compileJava`).
-- `view-viewmodel-framework-independence` via Error Prone
-  `ViewModelFrameworkIndependence` (`compileJava`).
-- `view-presentation-state-placement` via Error Prone
-  `ViewModelOwnershipNaming` (`compileJava`).
-- `view-reflection-bypass-ban` via Error Prone `ViewReflectionBypass`
-  (`compileJava`).
-- `view-component-cycle-freedom` via ArchUnit
-  `viewComponentsMustStayCycleFree` (`architectureTest`).
+- Current mechanical checks still enforce portions of the superseded ADR 017
+  topology and ADR 018 shared-component exception:
+  - `view-topology-allowlist` via `jQAssistant`
+    `saltmarcher:MvvmAllowedViewBuckets` (`checkViewArchitecture`)
+  - `view-legacy-bucket-ban` via `jQAssistant`
+    `saltmarcher:MvvmNoLegacyBuckets` (`checkViewArchitecture`)
+  - `view-root-only-view-contribution` via `jQAssistant`
+    `saltmarcher:MvvmRootOnlyViewContribution` (`checkViewArchitecture`)
+  - `view-root-count` via `jQAssistant`
+    `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`)
+  - `view-cross-component-public-api-only` via `jQAssistant`
+    `saltmarcher:MvvmNoPrivateForeignComponentDependencies`
+    (`checkViewArchitecture`)
+  - `view-root-contracts` via PMD `SaltMarcherEntrypointRule`
+    (`pmdArchitectureMain`)
+  - `view-root-delegation-boundary` via Error Prone `ViewRootDelegation`
+    (`compileJava`)
+  - `view-shell-api-allowlist` via Error Prone `FeatureShellApiAllowlist`
+    (`compileJava`)
+  - `view-rendering-boundary` via Error Prone `ViewRestrictedDependencies`
+    (`compileJava`)
+  - `view-viewmodel-framework-independence` via Error Prone
+    `ViewModelFrameworkIndependence` (`compileJava`)
+  - `view-presentation-state-placement` via Error Prone
+    `ViewModelOwnershipNaming` (`compileJava`)
+  - `view-reflection-bypass-ban` via Error Prone `ViewReflectionBypass`
+    (`compileJava`)
+  - `view-component-cycle-freedom` via ArchUnit
+    `viewComponentsMustStayCycleFree` (`architectureTest`)
 
-Current mechanical trace against the declarative MVVM checks:
+Current-state mechanical trace:
 
-- Normal component topology in
-  `src/view/<component>/{<Component>ViewContribution.java,View,ViewModel}` and
-  declared Shared View Component topology in
-  `src/view/<component>/{api,View,ViewModel}` are enforced by the jQAssistant
-  MVVM topology rules.
-- `assembly/`, `Model/`, `Controller`, `interactor`, and non-shared view
-  `api/` buckets are blocked by jQAssistant.
-- The component-root rule of exactly one `*ViewContribution`, plus root naming,
-  constructor, implemented shell interface, required methods, statelessness, and
-  supported contribution spec construction for normal components is enforced by
-  jQAssistant and PMD. Declared Shared View Components are enforced as having
-  zero `*ViewContribution` roots.
-- Inward source dependency direction is enforced by Error Prone for root,
-  `View/`, and `ViewModel/` packages, with ArchUnit and jQAssistant covering
-  broader component cycles and cross-component private bucket access.
-- `View/` is the only bucket allowed to own JavaFX scene-graph implementation
-  broadly, and `ViewModel/` may use JavaFX beans and collections only.
-- Public view reuse is mechanically public only through declared foreign shared
-  `api/` packages. Private foreign `View/` and `ViewModel/` packages remain
-  blocked.
-- Presentation-state carrier placement is mechanically name-based for
-  `*ViewModel`, `*ViewData`, `*State`, `*Status`, `*Section`, and `*Model`
-  style names outside `ViewModel/` or declared shared `api/`.
+- The existing jQAssistant and PMD rules still expect normal component
+  topology under `src/view/<component>/` with `*ViewContribution`, `View/`, and
+  `ViewModel`, plus declared shared component `api/` exceptions.
+- Error Prone still models root contribution, `View/`, and `ViewModel`
+  dependency placement.
 - Reflection bypasses under `src/view/**`, including `Class.forName(...)`,
   `ClassLoader.loadClass(...)`, `MethodHandles.Lookup.findClass(...)`, and
   direct `java.lang.reflect.*` references, are blocked by Error Prone.
+- These enforced rules are current-state blockers during migration. They are
+  not the target view topology.
 
 Target mechanical trace:
 
-- FXML files live under `resources/view/<component>/`.
-- Target view components use only root `*ViewContribution`, `View/`, and
-  `ViewModel/` buckets.
-- Declared Shared View Components use only `api/`, `View/`, and `ViewModel/`
-  buckets and have no root `*ViewContribution`.
-- `View/` may use JavaFX UI, scene, stage, fxml, bean, and collection APIs,
-  but not shell, domain, or data APIs.
-- `ViewModel/` may use JavaFX bean and collection APIs, but not scene, stage,
-  fxml, shell, data, own `View/`, or foreign private view packages.
-- Root view contributions are the only shell-facing composition adapters for
-  view components.
-- Foreign view imports are allowed only to declared shared component `api/`.
+- Java view code lives under `src/view/models` or `src/view/views`.
+- A `view/models` file defines exactly one shell-registered tab model,
+  state-tab model, or top-bar dropdown window model.
+- A `view/views` file defines exactly one passive panel-content fragment for
+  one fixed shell surface.
+- `view/models` may use shell public contracts, `view/views`, JavaFX beans and
+  collections, domain application-service roots, and domain `api` carriers.
+- `view/models` must not use `src.data.*` or concrete `shell.host.*` types.
+- `view/views` may use JavaFX UI APIs and narrow listener/emitter contracts,
+  but not shell, domain, data, or ApplicationService types.
+- Details/history publication goes through shell-owned contracts.
+- State-pane precedence is explicit: active left-bar tab content wins while
+  present; otherwise registered state-pane tabs are shown.
+- Legacy component-local buckets are absent from migrated target code.
 - `src.domain.<feature>.api/**` stays carrier-only, while the callable model
   boundary is the root application service.
 
 `Review-Only`:
 
-- Whether remaining non-shared view `api/` and `assembly/` packages are
-  migration debt and whether touched code moves toward declarative MVVM.
-- Whether root entrypoints are semantically thin beyond the mechanically
-  encoded shape, dependency, and delegation checks.
-- Whether root view contributions remain thin shell/composition adapters
-  instead of accumulating presentation or business logic.
-- Whether `View/` logic is simple binding/projection and gesture forwarding
-  rather than duplicated presentation policy.
-- Whether `ViewModel/` is the single owner of user-triggered actions,
-  domain-response mapping, cross-widget presentation decisions, and shared
-  presentation state.
+- Whether touched legacy view code moves toward `src/view/models` and
+  `src/view/views` rather than preserving component-local topology.
+- Whether a model file truly defines one tab/window contribution and owns shell
+  registration, panel binding, ApplicationService wiring, and cross-panel
+  presentation policy.
+- Whether a view file truly defines one passive panel fragment and only exposes
+  listeners, bind targets, and technical user-event emitters.
+- Whether passive views avoid feature meaning, shell policy, domain behavior,
+  and ApplicationService calls.
+- Whether details/history content is published through shell-owned APIs.
+- Whether state-pane precedence is preserved.
 - Whether command availability, disabled reasons, results, and user-visible
-  failures are owned by `ViewModel/` rather than inferred in widgets.
+  failures are owned by models rather than inferred in widgets.
 - Whether long-lived listeners, subscriptions, callbacks, and observers have
   explicit removal, disposal, weak-listener use, or a documented shell-lifetime
   rationale.
 - Whether asynchronous presentation work keeps blocking I/O off the UI thread
   and leaves loading, failure, cancellation, retry, and stale-result semantics
-  under `ViewModel/` ownership.
-- Whether shell-specific type usage below the root entrypoint
-  is semantically acceptable when the distinction is about intent rather than
-  referenced type shape.
-- Whether changes to legacy surfaces move toward the MVVM target model.
+  under model ownership.
 - Runtime callback-flow semantics and lifecycle behavior that cannot be
   expressed as stable source, bytecode, or graph rules today.
 
@@ -407,10 +390,10 @@ Mechanical trace against the data-layer standard:
   must not expose domain-facing return types, and public/protected
   repository/query adapter signatures must not leak internal data
   infrastructure types via `Error Prone` (`compileJava`).
-- `system-view-boundary-carrier-purity`: declared Shared View Component
-  `api/` packages are the only public view-to-view boundary; private foreign
-  view buckets are blocked by jQAssistant and compiler-precise view dependency
-  rules.
+- `system-view-boundary-carrier-purity`: target view-to-view dependencies are
+  model-to-passive-view bindings under `src/view/models` and
+  `src/view/views`; current shared-component `api/` checks remain
+  current-state blockers until migrated.
 - `system-foreign-private-bucket-bans`: cross-feature access to private view,
   domain, and data buckets is blocked by the owning view, domain, and data
   rule sets through `jQAssistant`, `ArchUnit`, and `Error Prone`.
@@ -443,14 +426,14 @@ Mechanical trace against the data-layer standard:
 - `shell-runtime-context-api-shape`: `ShellRuntimeContext` exposes only the
   fixed runtime gateway methods `inspector()`, `services()`, and `session(...)`
   through PMD `SaltMarcherSourcePolicyRule` (`pmdArchitectureMain`).
-- `shell-feature-facing-api-allowlist`: view roots, transitional view
-  `assembly/`, and data service roots may use only their documented shell API
-  subsets through Error Prone `FeatureShellApiAllowlist` (`compileJava`).
-- `shell-view-root-delegation-boundary`: current transitional checks require
-  view roots to delegate `createScreen(...)` into own-feature `assembly/` and
-  block direct runtime lookup, JavaFX construction, domain/data wiring, or
-  private view composition through Error Prone `ViewRootDelegation`
-  (`compileJava`).
+- `shell-feature-facing-api-allowlist`: current checks allow shell APIs from
+  legacy view roots, transitional view `assembly/`, and data service roots
+  through Error Prone `FeatureShellApiAllowlist` (`compileJava`). Target checks
+  should move shell API use to `src/view/models` and data service roots.
+- `shell-view-root-delegation-boundary`: current transitional checks still
+  reason about `createScreen(...)` and legacy root delegation through Error
+  Prone `ViewRootDelegation` (`compileJava`). Target checks should replace
+  this with model-owned cockpit binding and passive panel-view restrictions.
 - `shell-service-registry-registration-placement`: direct
   `ServiceRegistry.Builder.register(...)` calls must stay in data feature
   `*ServiceContribution` roots through Error Prone
@@ -476,24 +459,25 @@ Runtime guards outside the build-blocking harness:
 
 - Full workbench role vocabulary, whether `AppShell` remains passive beyond
   dependency direction, semantic feature/business-logic exclusion from shell
-  host code, lazy-realization readiness, `ShellScreen` as legacy API naming
-  rather than a universal navigable-screen concept, contribution-spec-to-slot
-  semantics beyond runtime validation, open-ended named-region composition
-  risks that do not introduce a new static API surface, and the semantic
-  remainder of feature-specific alternate wiring paths around
-  `ShellRuntimeContext`.
+  host code, lazy-realization readiness, `ShellScreen` as legacy API naming,
+  cockpit surface ownership, details/history publication, state-pane
+  precedence, open-ended named-region composition risks that do not introduce a
+  new static API surface, and the semantic remainder of feature-specific
+  alternate wiring paths around `ShellRuntimeContext`.
 
 ## Shell Discovery And Bootstrap
 
 `Enforced`:
 
-- `shell-view-root-discovery-contract`: view contribution roots are found only
-  at `src/view/<component>/<PascalComponentName>ViewContribution.java` through
+- `shell-view-root-discovery-contract`: current checks still find view
+  contribution roots at
+  `src/view/<component>/<PascalComponentName>ViewContribution.java` through
   `jQAssistant` `saltmarcher:MvvmRootOnlyViewContribution` and
   `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`),
   `build-harness` `shell-view-contribution-placement`
   (`:build-harness:check`), and PMD `SaltMarcherEntrypointRule`
-  (`pmdArchitectureMain`).
+  (`pmdArchitectureMain`). Target discovery should move to one contribution
+  model per file under `src/view/models`.
 - `shell-service-root-discovery-contract`: service contribution roots are found
   only at `src/data/<feature>/<PascalFeatureName>ServiceContribution.java`
   through `build-harness` `persistence-root-entrypoint` and
@@ -522,7 +506,7 @@ Runtime guards outside the build-blocking harness:
 
 - The exact application-classloader scan mechanics, reflection error wording,
   ignored interface/abstract roots, service-before-view sequencing, shell
-  construction sequencing, registration-by-spec dispatch, key-sort
+  construction sequencing, registration-by-kind dispatch, key-sort
   registration order, startup fallback ordering, eager current realization,
   minimal public seams, pass-through wrapper redundancy, and cross-layer
   coordination ownership when those judgments are semantic or
@@ -582,7 +566,8 @@ Runtime guards outside the build-blocking harness:
 - `repository-view-feature-layout`: current view component root-only placement
   and transitional `assembly/`, optional `api/`, `View/`, and `ViewModel/`
   buckets are enforced by `jQAssistant` MVVM rules and PMD root contracts
-  (`checkViewArchitecture`, `pmdArchitectureMain`).
+  (`checkViewArchitecture`, `pmdArchitectureMain`). Target repository checks
+  should enforce `src/view/models` and `src/view/views` instead.
 - `repository-domain-feature-layout`: domain root application-service
   presence, direct `api/` and `application/` allowances, named-module package
   shape, role-bucket bans, backend-port placement, and required context markers

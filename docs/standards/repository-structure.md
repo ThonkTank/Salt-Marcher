@@ -11,6 +11,9 @@ rules for active application code.
 Feature code must stay inside `src/`, and application startup and shell hosting
 must stay outside feature slices.
 
+The active view target is organized by SaltMarcher's cockpit model: tab models
+under `src/view/models` and passive panel views under `src/view/views`.
+
 ## Repository Layout
 
 ```text
@@ -53,14 +56,17 @@ Additional constraints:
 ```text
 src/
   view/
-    <component>/
-      <PascalComponentName>ViewContribution.java
-      View/
-      ViewModel/
-    <shared-component>/
-      api/
-      View/
-      ViewModel/
+    models/
+      <PascalTabName>TabModel.java
+      <PascalWindowName>WindowModel.java
+      ...
+    views/
+      <PascalPanelName>ControlPanel.java
+      <PascalPanelName>MainPanel.java
+      <PascalPanelName>StatePanel.java
+      <PascalPanelName>DetailsContent.java
+      <PascalWindowName>DropdownWindow.java
+      ...
   domain/
     <feature>/
       <PascalFeatureName>ApplicationService.java
@@ -68,10 +74,6 @@ src/
       application/
       <domain-module>/
       <domain-module>/
-resources/
-  view/
-    <component>/
-      *.fxml
   data/
     <feature>/
       <PascalFeatureName>ServiceContribution.java
@@ -84,17 +86,29 @@ resources/
       mapper/
     persistencecore/
       shared infrastructure reused by multiple persistence features
+resources/
+  view/
+    optional passive-view resources
 ```
 
 ## Public Entrypoints
 
-Every navigable or shell-registered feature exposes exactly one feature
-entrypoint:
+Every shell-registered view contribution is represented by one model file:
 
-- `src/view/<component>/<PascalComponentName>ViewContribution.java`
-- `public final`
-- public no-arg constructor
-- implements `shell.api.ShellViewContribution`
+- `src/view/models/<PascalContributionName>Model.java`
+- public concrete type unless an explicit future registration contract says
+  otherwise
+- implements the public shell registration contract for exactly one
+  contribution kind
+- defines one tab model, one state-tab model, or one top-bar dropdown window
+  model
+
+Every passive panel view is represented by one view file:
+
+- `src/view/views/<PascalPanelName>.java`
+- defines exactly one panel-content fragment for one fixed shell surface
+- exposes model-bindable listeners and user-event emitters
+- does not expose domain or shell entrypoints
 
 Every service-exporting data feature exposes exactly one service-registration
 entrypoint:
@@ -123,59 +137,37 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - the included build at `tools/gradle/build-harness/` owns repository topology,
   package-path alignment, `src/` direct-child topology, included-build
   placement, and service-entrypoint presence rules below `src/data/`.
-- `checkViewArchitecture` owns the target MVVM view-structure blocker below
-  `src/view/`, including the distinction between normal shell-facing view
-  components and declared Shared View Components.
-- `pmdArchitectureMain` owns Java source contracts for those roots, including
-  naming, `public final`, public no-arg constructors, and required interfaces
-  or methods.
+- Existing `checkViewArchitecture`, PMD, ArchUnit, and Error Prone view checks
+  still enforce portions of the previous component-local topology. Treat that
+  as checker migration debt until target view-model and panel-view checks are
+  implemented.
 - A feature root may contain Markdown documents with the standard co-located
   filenames without counting as alternate Java entrypoints.
 - The binding shell-workbench standard defines the semantic responsibilities of
-  `AppShell`, contribution specs, contribution roots, shell screens, and the
-  allowed shell-facing API surface. Current repository and source checks
-  enforce entrypoint topology and some shell contracts, not the full workbench
-  role model.
+  `AppShell`, registration contracts, cockpit surfaces, state-pane precedence,
+  and allowed shell-facing API surface.
 - The binding domain-layer standard defines the semantic responsibilities of
   `api/`, `application/`, and named domain modules inside one bounded context.
-  Current repository checks enforce that strict target topology for
-  `src/domain/**`, including direct role-bucket bans, named-module package
-  shape, and obvious backend-port contract placement outside exported `api/`.
 - The binding data-layer standard defines the semantic responsibilities of
   `repository/`, `query/`, `gateway/`, `model/`, `mapper/`, and
   `persistencecore/`.
-  Current repository checks enforce the topology, not the full behavioural
-  role model.
-- The intent wording says that each persistence-exporting feature owns exactly
-  one schema declaration.
-  The current `build-harness` implementation is stricter and effectively
-  expects one schema declaration for every current non-`persistencecore` data
-  feature.
-  Treat that mismatch as migration debt until the checker can distinguish data
-  features that intentionally do not export persistence schema truth.
-- The binding MVVM standard defines declarative JavaFX MVVM as the target view
-  topology, including declared Shared View Components with public `api/`
-  packages and no shell contribution root.
 
 ## Packaging Rules
 
-- The root of `src/view/<component>/` is reserved for the feature contribution.
-- The root of `src/data/<feature>/` is reserved for the service
-  contribution.
-- Markdown documentation files with the standard co-located names are allowed
-  in those roots and do not count as alternate code entrypoints.
-- Target presentation classes live under `View/` or `ViewModel/`.
-- FXML view files live under `resources/view/<component>/`.
-- The root `*ViewContribution` is the shell-facing composition adapter for one
-  component.
-- Declared Shared View Components may expose `api/`, `View/`, and
-  `ViewModel/`, but no root `*ViewContribution`.
-- Normal shell-facing components must not expose view `api/` packages.
-- Existing `assembly/`, non-shared view `api/`, `Model/`, `Controller/`, and
-  `interactor/` buckets under `src/view/**` are migration debt, not target
-  topology.
-- `ViewModel/` is the home for presentation state, actions, and presentation
-  policy.
+- Target view models live under `src/view/models`.
+- Target passive panel views live under `src/view/views`.
+- A `view/models` file owns exactly one shell-registered tab, state tab, or
+  top-bar dropdown window model.
+- A `view/views` file owns exactly one passive panel-content fragment for one
+  shell surface.
+- View models may depend on shell public contracts, passive views, JavaFX
+  beans/collections, and domain application-service boundaries.
+- Passive panel views may depend on JavaFX UI APIs and narrow listener/emitter
+  contracts but must not depend on shell, domain, data, or ApplicationService
+  types.
+- Existing `src/view/<component>/`, `*ViewContribution.java`, `View/`,
+  `ViewModel/`, `assembly/`, non-shared view `api/`, `Model/`, `Controller/`,
+  and `interactor/` structures are migration debt, not target topology.
 - The root `*ApplicationService` is the only public client-facing backend
   boundary below the view layer.
 - Domain `api/` is carrier-only and must not define callable service, facade,
@@ -212,13 +204,4 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/styling.md:1)
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
-- [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
-- [ADR 005: MVVM And Assembly Boundary In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-view-mvvm-and-assembly-boundary.md:1)
-- [ADR 007: Shared View API Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/007-shared-view-api-boundary.md:1)
-- [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
-- [ADR 018: Shared View Component Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/018-shared-view-component-boundary.md:1)
-- [ADR 008: Top-Level Repository Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/008-top-level-repository-taxonomy.md:1)
-- [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
-- [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)
-- [ADR 010: Data-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/010-data-layer-architecture-model.md:1)
-- [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
+- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)

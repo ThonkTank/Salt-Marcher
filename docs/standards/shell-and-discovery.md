@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: Shell bootstrap responsibilities, discovery contracts,
 instantiation rules, registration order, and startup resolution for passive
 shell contributions.
@@ -9,11 +9,11 @@ shell contributions.
 
 ## Goal
 
-Bootstrap must discover and register shell-facing features generically without
-becoming a feature registry.
+Bootstrap must discover and register shell-facing view models and backend
+service contributions generically without becoming a feature registry.
 
 This document defines bootstrap mechanics only. The binding shell role model,
-fixed surface contract, lifecycle vocabulary, and forbidden shell-composition
+fixed cockpit surfaces, lifecycle vocabulary, and forbidden shell-composition
 patterns live in the dedicated
 [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1).
 
@@ -24,10 +24,11 @@ patterns live in the dedicated
 - discovering exported service contributions
 - building the shared shell service registry
 - constructing `AppShell` with that registry
-- discovering shell view contributions
-- resolving each contribution into registration metadata plus `ShellScreen`
-- registering each resolved contribution into the shell by contribution-spec
-  type
+- discovering shell-facing tab models, state-tab models, and top-bar dropdown
+  window models
+- resolving each discovered model into passive registration metadata plus
+  surface bindings
+- registering each resolved model into the shell by contribution kind
 - selecting the startup tab and navigating to it
 
 Bootstrap must stay generic. Routine feature addition must not require manual
@@ -35,16 +36,26 @@ feature registries, explicit bootstrap imports, or per-feature shell wiring.
 
 ## Discovery Contracts
 
-Bootstrap discovers feature and service contributions generically.
+Bootstrap discovers backend service contributions and view models generically.
 
-### Feature Discovery
+### View Model Discovery
 
-- scans `src/view/<component>/` root classes
-- expects exactly one root contribution class named
-  `<PascalComponentName>ViewContribution`
-- expects that class to implement `ShellViewContribution`
-- expects a public no-arg constructor
-- instantiates discovered contributions reflectively and generically
+Target discovery:
+
+- scans `src/view/models/`
+- expects each concrete model file to define exactly one tab model, state-tab
+  model, or top-bar dropdown window model
+- expects discovered models to implement the public shell registration
+  contract for their contribution kind
+- expects a public no-arg constructor unless the future registration contract
+  explicitly defines another generic construction shape
+- instantiates discovered models reflectively and generically
+
+Current migration state:
+
+- active code may still expose `src/view/<component>/<Component>ViewContribution`
+  roots implementing `ShellViewContribution`
+- that shape is current-state compatibility, not the target discovery model
 
 ### Service Discovery
 
@@ -61,59 +72,57 @@ Instantiation is shell-owned and generic:
 
 - discovery loads contribution classes through the application classloader
 - interfaces and abstract classes are ignored as non-instantiable roots
-- missing or non-public no-arg constructors are bootstrap errors
-- unsupported contribution-spec types are bootstrap errors
+- missing or non-public generic constructors are bootstrap errors
+- unsupported contribution kinds are bootstrap errors
 
-The shell workbench model allows future lazy `ShellScreen` realization, but
-current bootstrap behavior eagerly resolves each discovered
-`ShellViewContribution` into:
-
-- `registrationSpec()`
-- `createScreen(runtimeContext)`
-
-That eagerness is current behavior, not the long-term contract.
+The shell workbench model allows future lazy realization. Current bootstrap
+behavior may eagerly resolve discovered contribution roots into registration
+metadata and prepared screen content. That eagerness is current behavior, not
+the long-term contract.
 
 ## Registration Order
 
 Bootstrap registers contributions after resolution.
 
-Current registration behavior:
+Target registration behavior:
 
-- service contributions are discovered first and populate
-  the shell service registry
+- service contributions are discovered first and populate the shell service
+  registry
 - the shell is constructed with that registry
-- view contributions are discovered next
-- resolved view contributions are sorted by contribution key value before
-  registration
-- each contribution is registered by spec type:
-  - `ShellTabSpec`
-  - `ShellTopBarSpec`
-  - `ShellRuntimeStateSpec`
+- view models are discovered next
+- resolved view models are sorted by contribution key before registration
+- each model is registered by contribution kind:
+  - left-bar tab model
+  - state-pane tab model
+  - top-bar dropdown window model
 
 The key sort is a deterministic registration-order rule. It is not a user-
 visible navigation-order contract.
 
 ## Startup Resolution
 
-Startup landing is resolved only from `ShellTabSpec` contributions.
+Startup landing is resolved only from left-bar tab models.
 
 Rules:
 
-- exactly one tab may declare `defaultLanding=true`
-- multiple default-landing tabs are bootstrap errors
+- exactly one tab model may declare `defaultLanding=true`
+- multiple default-landing tab models are bootstrap errors
 - if no tab declares `defaultLanding=true`, startup falls back to the first tab
   in sorted navigation order:
   - navigation group order
   - navigation group label
-  - tab `viewOrder`
+  - tab view order
   - contribution key
+
+State-pane tabs and top-bar dropdown windows are never startup landing targets.
 
 ## Responsibilities Excluded From This Document
 
 This standard does not redefine:
 
 - shell workbench role ownership
-- fixed slot semantics
+- fixed cockpit surface semantics
+- state-pane precedence
 - lifecycle meaning of shell activation hooks
 - the allowed feature-facing shell API surface
 - forbidden shell-composition patterns beyond bootstrap mechanics
@@ -126,24 +135,19 @@ for these checks live in the
 Concrete rule IDs and checker names are recorded in the
 [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1).
 
-- `build-harness`, `jQAssistant`, and `pmdArchitectureMain` enforce view
-  contribution and service contribution root placement, naming, required
-  methods, constructor contracts, stateless root shape, and minimal public root
-  surfaces used by generic discovery.
-- `pmdArchitectureMain` enforces supported contribution-spec selection and
-  keeps `defaultLanding` limited to tab contributions.
-- `build-harness` enforces literal `ShellTabSpec.defaultLanding` values and
-  the single-default-landing startup rule.
-- `pmdArchitectureMain` and `architectureTest` enforce generic bootstrap and
-  shell wiring: bootstrap and shell must not name concrete feature packages,
-  bootstrap may depend on `shell.host.AppShell`, and feature code must stay on
-  `shell.api/**`.
-- registration order, startup fallback ordering, classloader/reflection
-  mechanics, ignored abstract or interface roots, and eager current realization
-  remain code-defined behavior reviewed against this document.
-- no new gate is introduced; enforcement ownership stays in the existing
-  `compileJava`, `pmdArchitectureMain`, `architectureTest`,
-  `checkViewArchitecture`, and `:build-harness:check` entrypoints.
+Current checks still enforce the pre-tab-model `*ViewContribution` discovery
+shape. Target mechanical checks should eventually cover:
+
+- model discovery from `src/view/models`
+- one shell-registered contribution model per model file
+- generic model instantiation
+- supported contribution-kind selection
+- single startup default among left-bar tab models
+- generic bootstrap and shell wiring with no concrete feature imports
+
+No new gate is introduced by this standards migration; enforcement ownership
+stays in the existing quality-platform entrypoints until explicit checker
+migration work is requested.
 
 ## References
 
@@ -154,3 +158,4 @@ Concrete rule IDs and checker names are recorded in the
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
+- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)

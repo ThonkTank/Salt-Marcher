@@ -1,7 +1,7 @@
 interface:
   display_name: "View Layer MVVM"
-  short_description: "Enforce SaltMarcher MVVM view-layer boundaries"
-  default_prompt: "Use $view-layer-mvvm before planning, implementing, refactoring, or reviewing work under src/view/** so the change follows the SaltMarcher MVVM view-layer standard."
+  short_description: "Enforce SaltMarcher cockpit MVVM view-layer boundaries"
+  default_prompt: "Use $view-layer-mvvm before planning, implementing, refactoring, or reviewing work under src/view/** so the change follows SaltMarcher's cockpit MVVM standard with view/models tab models and view/views passive panel content."
 
 policy:
   allow_implicit_invocation: true

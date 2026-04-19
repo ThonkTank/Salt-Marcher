@@ -1,7 +1,13 @@
 # ADR 017: Declarative MVVM View Boundary
 
-- Status: Accepted
+- Status: Superseded by [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
 - Date: 2026-04-19
+
+## Supersession Note
+
+This ADR is a historical record of SaltMarcher's intermediate component-local
+MVVM model. The current target architecture is the cockpit tab-model view layer
+defined by ADR 019 and the MVVM standard.
 
 ## Context
 

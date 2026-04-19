@@ -1,6 +1,6 @@
 ---
 name: view-layer-mvvm
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**` or view FXML resources, including `*ViewContribution`, `View/`, `ViewModel/`, `resources/view/**`, and adjacent `UI.md`. This skill defines SaltMarcher's declarative JavaFX MVVM target.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**`, shell-facing view-model registration, passive panel views, view resources, or adjacent `UI.md`. This skill defines SaltMarcher's cockpit MVVM target with `src/view/models` tab models and `src/view/views` passive panel content.
 ---
 
 # View Layer MVVM
@@ -8,11 +8,12 @@ description: Use before planning, implementing, refactoring, or reviewing anythi
 ## Overview
 
 Use this skill to implement SaltMarcher view code according to the canonical
-declarative JavaFX MVVM architecture. Treat it as binding execution guidance
-for work under `src/view/**` and `resources/view/**`.
+cockpit MVVM architecture. Treat it as binding execution guidance for work
+under `src/view/**` and view resources.
 
-Existing legacy view structure is not precedent. Current `assembly/`, view
-`api/`, `Model/`, `Controller/`, and `interactor/` buckets are migration debt.
+Existing legacy view structure is not precedent. Current component folders,
+`*ViewContribution`, `View/`, `ViewModel/`, `assembly/`, view `api/`,
+`Model/`, `Controller/`, and `interactor/` buckets are migration debt.
 
 ## Canonical Truth
 
@@ -24,102 +25,124 @@ Existing legacy view structure is not precedent. Current `assembly/`, view
 
 ## Required Workflow
 
-Before editing a view component:
+Before editing a view surface:
 
-1. Assign every touched type one role: root contribution, `View`, or
-   `ViewModel`.
-2. For new or substantially refactored view roots, plan FXML under
-   `resources/view/<component>/`.
-3. Check imports against the allowed Java/JavaFX API surface before writing
-   code.
-4. Move ambiguous logic to the role that owns it instead of copying existing
+1. Assign every touched type one role: shell host, `view/models` model,
+   `view/views` passive panel, domain model, or data adapter.
+2. For every touched `view/models` type, identify the one shell contribution it
+   represents: left-bar tab, state-pane tab, or top-bar dropdown window.
+3. For every touched `view/views` type, identify the one shell surface it
+   renders into: control panel, main panel, details content, state panel, or
+   dropdown window.
+4. Check imports against the allowed API surface before writing code.
+5. Move ambiguous logic to the role that owns it instead of copying existing
    legacy placement.
 
 When reviewing view-layer changes:
 
-1. Check that UI structure and JavaFX control code stay in `View/` or FXML.
-2. Check that presentation state and actions stay in `ViewModel/`.
-3. Check that business behavior stays behind root domain application services.
-4. Treat new `assembly/`, view `api/`, `Model/`, `Controller/`, or
-   `interactor/` buckets as findings.
+1. Check that shell registration, ApplicationService wiring, panel
+   instantiation, and cross-panel presentation policy stay in `view/models`.
+2. Check that JavaFX controls, rendering, widget-local state, and technical
+   user-event emitters stay in `view/views`.
+3. Check that passive views do not import shell, domain, data, or
+   ApplicationService types.
+4. Check that business behavior stays behind root domain application services.
+5. Treat new component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
+   `Model/`, `Controller/`, or `interactor/` buckets as findings.
 
 ## Required Placement Rules
 
-### Root Entrypoint
+### Shell
 
-`<Component>ViewContribution.java` is the shell-facing composition adapter.
+The shell owns the fixed cockpit frame and public contracts.
 
-- Put `registrationSpec()` and `createScreen(...)` there.
-- Create or obtain the component `ViewModel` there.
-- Load the FXML-backed view there or delegate FXML loading to a small own
-  `View/` factory.
-- Adapt view nodes into `ShellScreen` slots there.
-- Do not put business rules, presentation policy, or JavaFX layout
-  construction there.
+- Keep navigation, top-bar dropdown hosting, empty control/main panel hosting,
+  details/history hosting, state-pane precedence, activation, and layout
+  persistence in shell host code.
+- Do not import feature models, feature views, domain services, or data
+  adapters into shell host code.
+- Do not encode feature-specific behavior in shell contracts.
 
-### `View/`
+### `src/view/models`
 
-`View/` owns FXML controllers and JavaFX UI behavior.
+`view/models` owns the ViewModel role.
 
-- Put `@FXML` controllers, UI-only helpers, dialogs, popups, menus, cell
-  factories, and control adapters there.
-- Bind controls to `ViewModel/` properties and observable collections.
-- Forward user gestures into the `ViewModel`.
-- Keep widget-local ephemeral state there when it is local to one control
-  subtree.
-- Do not call domain APIs, data APIs, or shell APIs there.
+- Put one shell-registered tab model, state-tab model, or top-bar dropdown
+  window model in each file.
+- Put shell registration metadata, shell surface binding, passive panel
+  instantiation, panel binding, ApplicationService lookup, and cross-panel
+  presentation state there.
+- Own enablement, visibility, selected state, labels, validation messages,
+  loading state, failure state, retry state, and stale-result state.
+- Bind passive view listeners to model state.
+- Bind passive view emitters to model actions and domain application-service
+  calls.
+- Publish details/history content through shell-owned contracts.
+- Use JavaFX beans and collections for bindable state when needed.
+- Do not import `src.data.*` or concrete `shell.host.*` types.
+- Do not push business invariants into models when they belong in domain code.
 
-### `ViewModel/`
+### `src/view/views`
 
-`ViewModel/` owns bindable presentation state and actions.
+`view/views` owns the View role.
 
-- Put view-consumable properties, observable lists, records, enums, status
-  values, selected-item state, and action methods there.
-- Own enablement, visibility, labels, validation messages, loading state,
-  failure state, retry state, and stale-result state.
-- Call injected root domain application services there.
-- Use only `javafx.beans.*` and `javafx.collections.*` from JavaFX.
-- Do not reference `javafx.scene.*`, `javafx.stage.*`, `javafx.fxml.*`,
-  shell types, data-layer types, or own `View/`.
+- Put one passive panel-content fragment in each file.
+- Put JavaFX controls, rendering, FXML controllers or loaders, menus, dialogs,
+  cells, skins, drawing code, and widget-local state there.
+- Expose listeners, bind targets, setters, callbacks, or observable hooks that
+  a model can bind to model-owned state.
+- Expose emitters for technical user gestures.
+- Do not know what the feature is doing. A view may emit "button pressed" or
+  "cell selected"; it must not know that the event generates an encounter,
+  mutates a dungeon, or calls a specific ApplicationService.
+- Do not import `shell.*`, `src.domain.*`, `src.data.*`, or ApplicationService
+  types.
 
 ## Default Placement Heuristics
 
-- If code declares controls, layout, dialogs, popups, cell factories, or
-  widget event handlers, it belongs in FXML or `View/`.
+- If code declares shell contribution metadata, chooses panel content for a
+  tab, coordinates multiple panels, or calls an ApplicationService, it belongs
+  in `view/models`.
+- If code declares controls, layout, canvas drawing, dialogs, popups, cell
+  factories, or widget event handlers, it belongs in `view/views`.
 - If code decides what should be shown, enabled, selected, labelled, loaded, or
-  reported to the user, it belongs in `ViewModel/`.
+  reported across panels, it belongs in `view/models`.
 - If code owns business meaning or invariants, it belongs in `src/domain/**`
   behind a root application service.
-- If code composes shell slots, loads FXML roots, or creates a view model, it
-  belongs in the root `*ViewContribution`.
+- If code hosts fixed cockpit surfaces or arbitrates state-pane precedence, it
+  belongs in `shell`.
 
 ## Forbidden Moves
 
-- Do not add new `assembly/`, `api/`, `Model/`, `Controller/`, or
-  `interactor/` buckets for target view work.
-- Do not import `src.domain.*`, `src.data.*`, or `shell.*` into `View/`.
-- Do not import JavaFX scene, stage, or fxml APIs into `ViewModel/`.
-- Do not let `ViewModel/` return `Node`, `Control`, `Scene`, `Stage`, or other
-  scene graph/window types.
-- Do not let shell types appear below the root entrypoint.
-- Do not import another component's private view packages.
+- Do not add new component-local `View/`, `ViewModel/`, `assembly/`, `api/`,
+  `Model/`, `Controller/`, or `interactor/` buckets for target view work.
+- Do not import shell, domain, data, or ApplicationService types into
+  `view/views`.
+- Do not import concrete `shell.host.*` types into `view/models`.
+- Do not let a passive view decide cross-panel presentation policy.
+- Do not let shell host code import feature models or views.
 - Do not store the only copy of shared presentation decisions inside widgets,
-  callbacks, or controller-local fields.
+  callbacks, or view-local fields.
+- Do not treat `COCKPIT_DETAILS` as direct feature-owned slot content; publish
+  details/history through shell-owned contracts.
+- Do not let active-tab state content and registered state tabs both own the
+  state pane at the same time.
 
-## FXML Rules
+## View Resource Rules
 
-- Prefer FXML for new and substantially refactored view roots.
-- Keep FXML under `resources/view/<component>/`.
+- FXML is optional implementation detail for a passive panel view, not the
+  architectural unit of composition.
+- Keep view resources under `resources/view/` when resources are needed.
 - Do not use inline FXML scripts.
-- `fx:controller` classes are `View/` classes.
-- `@FXML` methods may translate events into view-model actions, but they must
-  not own business or cross-widget presentation decisions.
+- FXML controllers are passive view classes and follow the `view/views` rules.
+- FXML event methods may emit technical user events, but they must not own
+  feature or business decisions.
 
 ## Correctness Rule
 
-Correct view code follows the declarative MVVM target even when nearby legacy
-code does not. Legacy layouts are migration debt. They never justify a new
-placement decision.
+Correct view code follows the cockpit MVVM target even when nearby legacy code
+does not. Legacy layouts are migration debt. They never justify a new placement
+decision.
 
 ## References
 

@@ -59,8 +59,8 @@ Use the documentation tree in this order:
   before changes are made or reviewed. The repo-owned `domain-layer` skill is
   supporting guidance only and must not override the canonical standard.
 - Work under `src/view/**` must use the repo-owned `view-layer-mvvm` skill and
-  follow the canonical MVVM view-layer standard before changes are made or
-  reviewed.
+  follow the canonical cockpit MVVM view-layer standard before changes are made
+  or reviewed.
 - A change that introduces or alters behavior, architecture, or ownership must
   update the corresponding documentation in the same change.
 - The agent workflow below is a mandatory delivery protocol for implementation
@@ -147,4 +147,4 @@ Use the documentation tree in this order:
 - [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [ADR 001: Documentation Governance](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/001-documentation-governance.md:1)
 - [ADR 002: Passive Shell And Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
-- [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
