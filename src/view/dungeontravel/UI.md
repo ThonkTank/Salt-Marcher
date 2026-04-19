@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: UI composition, interactions, and user-visible states for the
 dungeon travel component.
 
@@ -63,13 +63,13 @@ The runtime state panel is a separate runtime-state contribution in the shared
 shell runtime-state area. The travel tab itself leaves that area free.
 
 The travel tab contribution and the separate runtime-state contribution share
-one runtime-session API in `src/view/dungeontravel/api/`, which owns creation
-of the shared runtime session.
+one runtime-session API in
+`src/view/dungeonshared/api/DungeonTravelRuntimeSession`.
 
 Shell-facing wiring stays local to `src/view/dungeontravel/assembly/` and
-`src/view/dungeontravelstate/assembly/`.
+`src/view/dungeonshared/assembly/`.
 
-The travel runtime state contribution owns dungeon map management and
+The `dungeonshared` runtime-state contribution owns dungeon map management and
 lightweight runtime focus context for travel.
 
 Visible contents:

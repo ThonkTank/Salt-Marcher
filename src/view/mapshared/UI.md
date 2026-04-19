@@ -1,8 +1,8 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
-Source of Truth: Private shared-map view ownership and MVVM role boundaries for
-the reusable canvas workspace under `src/view/mapshared/**`.
+Last Reviewed: 2026-04-19
+Source of Truth: Shared-map view ownership and MVVM role boundaries for the
+reusable canvas workspace under `src/view/mapshared/**`.
 
 # Mapshared UI
 
@@ -17,14 +17,14 @@ components render inside their own screens.
   helpers.
 - `ViewModel/` owns the reusable render payloads and camera/view data that the
   canvas consumes.
-- The current repo still carries some projection helpers in `interactor/` as
-  migration debt. Those helpers do not define a public reuse boundary and
-  should continue moving toward canonical MVVM buckets.
+- `assembly/` owns component construction and adapts the workspace into the
+  shell-facing shared view surface.
+- `api/` owns the intentional public workspace boundary consumed by other view
+  components.
 
 ## Boundary Rules
 
-- `mapshared` is private shared view infrastructure, not a public cross-slice
-  API.
-- Foreign components may reuse the workspace only through direct composition
-  inside the owning shared runtime code, not by importing a public
-  `mapshared/api` surface.
+- Foreign components may reuse the workspace only through
+  `src/view/mapshared/api/**`.
+- Private `View/`, `ViewModel/`, and `assembly/` types remain internal to
+  `mapshared`.
