@@ -15,9 +15,6 @@ import src.view.dungeoneditor.assembly.DungeonEditorAssembly;
  */
 public final class DungeoneditorViewContribution implements ShellViewContribution {
 
-    public DungeoneditorViewContribution() {
-    }
-
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public ShellContributionSpec registrationSpec() {

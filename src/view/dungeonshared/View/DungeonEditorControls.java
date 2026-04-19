@@ -181,13 +181,13 @@ public final class DungeonEditorControls extends VBox {
     private static Button actionButton(String text) {
         Button button = new Button(text);
         button.getStyleClass().add("toolbar-action-button");
-        button.setMinWidth(Region.USE_PREF_SIZE);
+        button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
     private static ToggleButton toolToggle(String text) {
         ToggleButton button = new ToggleButton(text);
         button.getStyleClass().add("tool-btn");
-        button.setMinWidth(Region.USE_PREF_SIZE);
+        button.setMinWidth(USE_PREF_SIZE);
         return button;
     }
 }

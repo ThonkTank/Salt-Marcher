@@ -52,6 +52,6 @@ final class SquareMapGridPainter {
     }
     private static int align(int value, int spacing) {
         int remainder = Math.floorMod(value, spacing);
-        return remainder == 0 ? value : value + (spacing - remainder);
+        return remainder == 0 ? value : value + spacing - remainder;
     }
 }

@@ -14,6 +14,7 @@ import javafx.scene.layout.GridPane;
 import javafx.stage.Window;
 import src.view.party.ViewModel.PartyViewData;
 
+import java.util.Objects;
 import java.util.Optional;
 
 final class PartyCharacterEditorDialog {
@@ -62,7 +63,7 @@ final class PartyCharacterEditorDialog {
                 createNumberField("10"),
                 new CheckBox("Start in active party"),
                 buildErrorLabel());
-        CheckBox membershipCheck = java.util.Objects.requireNonNull(fields.activePartyCheck());
+        CheckBox membershipCheck = Objects.requireNonNull(fields.activePartyCheck());
         membershipCheck.setSelected(true);
 
         dialog.getDialogPane().setContent(buildForm(fields, true));
@@ -131,7 +132,8 @@ final class PartyCharacterEditorDialog {
         addRow(grid, 4, "AC", fields.armorClassField());
         int row = 5;
         if (includeMembership && fields.activePartyCheck() != null) {
-            grid.add(fields.activePartyCheck(), 1, row++);
+            grid.add(fields.activePartyCheck(), 1, row);
+            row++;
         }
         grid.add(fields.errorLabel(), 0, row, 2, 1);
         return grid;
@@ -162,7 +164,7 @@ final class PartyCharacterEditorDialog {
             Label errorLabel,
             ThrowingSupplier<T> valueSupplier
     ) {
-        dialog.setResultConverter(buttonType -> buttonType == submitButton ? dialog.getResult() : null);
+        dialog.setResultConverter(buttonType -> Objects.equals(buttonType, submitButton) ? dialog.getResult() : null);
         dialog.getDialogPane().lookupButton(submitButton).addEventFilter(ActionEvent.ACTION, event -> {
             try {
                 T value = valueSupplier.get();
@@ -209,7 +211,7 @@ final class PartyCharacterEditorDialog {
             }
             return value;
         } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException(label + " must be a number.");
+            throw new IllegalArgumentException(label + " must be a number.", exception);
         }
     }
 

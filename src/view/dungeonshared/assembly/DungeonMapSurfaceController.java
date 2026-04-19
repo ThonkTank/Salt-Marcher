@@ -7,7 +7,6 @@ import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.Viewport;
 import src.domain.dungeon.DungeonApplicationService;
-import src.view.dungeonshared.ViewModel.DungeonEditorTool;
 import src.view.dungeonshared.ViewModel.DungeonLoadedMapViewModel;
 import src.view.dungeonshared.ViewModel.DungeonMapSurfaceViewModel;
 import src.view.dungeonshared.ViewModel.DungeonMapSurfaceViewState;

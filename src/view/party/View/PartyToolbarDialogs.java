@@ -10,6 +10,7 @@ import src.view.party.ViewModel.PartyToolbarViewModel;
 import src.view.party.ViewModel.PartyViewData;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 final class PartyToolbarDialogs {
 
@@ -68,10 +69,17 @@ final class PartyToolbarDialogs {
         if (rawValue.isEmpty()) {
             return;
         }
+        OptionalInt xp = parseXp(rawValue.get());
+        if (xp.isPresent()) {
+            viewModel.awardXp(member.id(), xp.getAsInt());
+        }
+    }
+
+    private static OptionalInt parseXp(String rawValue) {
         try {
-            viewModel.awardXp(member.id(), Integer.parseInt(rawValue.get().trim()));
-        } catch (NumberFormatException exception) {
-            // Invalid input is ignored here; controller refresh will preserve current state.
+            return OptionalInt.of(Integer.parseInt(rawValue.trim()));
+        } catch (NumberFormatException ignored) {
+            return OptionalInt.empty();
         }
     }
 

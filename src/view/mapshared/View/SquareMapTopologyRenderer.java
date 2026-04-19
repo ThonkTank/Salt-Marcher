@@ -7,7 +7,6 @@ import src.view.mapshared.ViewModel.MapCellViewModel;
 import src.view.mapshared.ViewModel.MapEdgeViewModel;
 import src.view.mapshared.ViewModel.MapViewport;
 import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
-import java.util.LinkedHashMap;
 /**
  * Canvas renderer aligned with the original Salt Marcher dungeon presentation.
  */

@@ -54,7 +54,7 @@ public final class MapWorkspaceView extends BorderPane {
         ));
         setCenter(contentHost);
         setBottom(summaryLabel);
-        BorderPane.setMargin(summaryLabel, new Insets(8, 0, 0, 0));
+        setMargin(summaryLabel, new Insets(8, 0, 0, 0));
         new MapWorkspaceInteractionHandler(
                 contentHost,
                 cameraController,

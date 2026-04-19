@@ -7,8 +7,6 @@ import org.jspecify.annotations.Nullable;
 import src.view.mapshared.ViewModel.MapCellViewModel;
 import java.util.function.Consumer;
 final class SquareMapCellFactory {
-    SquareMapCellFactory() {
-    }
     Node create(@Nullable MapCellViewModel snapshot, Consumer<MapCellViewModel> onCellSelected) {
         StackPane cell = new StackPane();
         cell.getStyleClass().add("dungeon-map-cell");

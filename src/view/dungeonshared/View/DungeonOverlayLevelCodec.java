@@ -1,6 +1,6 @@
 package src.view.dungeonshared.View;
-import org.jspecify.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 final class DungeonOverlayLevelCodec {
     private DungeonOverlayLevelCodec() {
     }
@@ -10,20 +10,20 @@ final class DungeonOverlayLevelCodec {
                 .reduce((left, right) -> left + ", " + right)
                 .orElse("-");
     }
-    static @Nullable List<Integer> parse(String raw) {
+    static Optional<List<Integer>> parse(String raw) {
         if (raw == null || raw.isBlank()) {
-            return List.of();
+            return Optional.of(List.of());
         }
         try {
-            return List.of(raw.split("[,\\s]+")).stream()
+            return Optional.of(List.of(raw.split("[,\\s]+")).stream()
                     .map(String::trim)
                     .filter(token -> !token.isBlank())
                     .map(Integer::parseInt)
                     .distinct()
                     .sorted()
-                    .toList();
+                    .toList());
         } catch (NumberFormatException ignored) {
-            return null;
+            return Optional.empty();
         }
     }
 }

@@ -12,9 +12,6 @@ import src.view.encounter.assembly.EncounterAssembly;
 
 public final class EncounterViewContribution implements ShellViewContribution {
 
-    public EncounterViewContribution() {
-    }
-
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public ShellContributionSpec registrationSpec() {

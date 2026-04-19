@@ -12,8 +12,8 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import org.jspecify.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import src.view.dungeonshared.ViewModel.DungeonOverlayMode;
 import src.view.dungeonshared.ViewModel.DungeonOverlaySettings;
@@ -118,13 +118,14 @@ public final class DungeonOverlayControls {
         if (syncing) {
             return;
         }
-        List<Integer> parsed = DungeonOverlayLevelCodec.parse(selectedLevelsField.getText());
-        if (parsed == null) {
+        Optional<List<Integer>> parsed = DungeonOverlayLevelCodec.parse(selectedLevelsField.getText());
+        if (parsed.isEmpty()) {
             selectedLevelsField.setText(DungeonOverlayLevelCodec.format(displayedSettings.selectedLevels()));
             return;
         }
-        selectedLevelsField.setText(DungeonOverlayLevelCodec.format(parsed));
-        onSelectedLevelsChanged.accept(parsed);
+        List<Integer> selectedLevels = parsed.get();
+        selectedLevelsField.setText(DungeonOverlayLevelCodec.format(selectedLevels));
+        onSelectedLevelsChanged.accept(selectedLevels);
     }
     private RadioMenuItem modeItem(DungeonOverlayMode mode) {
         RadioMenuItem item = new RadioMenuItem(mode.label());

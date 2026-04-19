@@ -8,7 +8,6 @@ import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonshared.api.DungeonSelectionPublisher;
 import src.view.dungeonshared.View.DungeonTravelControls;
 import src.view.dungeonshared.View.DungeonTravelStatePane;
-import src.view.dungeonshared.ViewModel.DungeonSelectionItemViewModel;
 import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
 import src.view.mapshared.api.MapWorkspaceRenderModel;
 import src.view.mapshared.api.MapWorkspaceSceneViewData;
@@ -30,7 +29,9 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
         this.controls = new DungeonTravelControls(mapController(), () -> workspaceSession().currentViewport().zoom(), this::currentMapViewport);
         this.statePane = new DungeonTravelStatePane(mapController(), this::currentMapViewport);
         this.selectionHandler = selectionRef -> showSelection(checkedSelectionPublisher, selectionRef);
-        statePane.setOnTargetSelected(selection -> showSelection(checkedSelectionPublisher, selection));
+        statePane.setOnTargetSelected(selection -> showSelection(
+                checkedSelectionPublisher,
+                DungeonMapSelectionMapper.toDomain(loadedSnapshot(), selection)));
         workspaceSession().setViewportListener(ignored -> controls.refresh());
         workspaceSession().setFloorStepListener(delta -> mapController().stepFloor(delta, currentViewport()));
         workspaceSession().setCellSelectionListener(cellViewModel ->
@@ -51,9 +52,6 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
         selectedTarget = selectionRef;
         applySelection(selectionPublisher, selectionRef);
         statePane.showSelectedTarget(DungeonMapSelectionMapper.toView(selectionRef));
-    }
-    private void showSelection(DungeonSelectionPublisher selectionPublisher,  DungeonSelectionItemViewModel selection) {
-        showSelection(selectionPublisher, DungeonMapSelectionMapper.toDomain(loadedSnapshot(), selection));
     }
     private static MapWorkspaceRenderModel placeholderRenderModel() {
         return new MapWorkspaceRenderModel(

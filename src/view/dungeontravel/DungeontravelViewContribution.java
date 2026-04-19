@@ -15,9 +15,6 @@ import src.view.dungeontravel.assembly.DungeonTravelAssembly;
  */
 public final class DungeontravelViewContribution implements ShellViewContribution {
 
-    public DungeontravelViewContribution() {
-    }
-
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public ShellContributionSpec registrationSpec() {

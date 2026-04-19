@@ -48,8 +48,8 @@ final class ChallengeRatingRangeControl extends HBox {
         Label dash = new Label("\u2013");
         dash.getStyleClass().add("text-muted");
 
-        HBox.setHgrow(minimumBox, Priority.ALWAYS);
-        HBox.setHgrow(maximumBox, Priority.ALWAYS);
+        setHgrow(minimumBox, Priority.ALWAYS);
+        setHgrow(maximumBox, Priority.ALWAYS);
         getChildren().addAll(minimumBox, dash, maximumBox);
     }
 }
