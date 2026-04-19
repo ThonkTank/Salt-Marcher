@@ -15,8 +15,8 @@ import shell.api.ShellSlot;
 import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import shell.api.ShellViewContribution;
-import src.view.dungeonmap.View.DungeonSelectionInspectorContent;
-import src.view.dungeonmap.View.DungeonTravelRuntimeSession;
+import src.view.dungeonmap.api.DungeonSelectionInspectorContent;
+import src.view.dungeonmap.api.DungeonTravelRuntimeSession;
 import src.view.dungeonmap.api.DungeonSelectionInspectorEntry;
 import src.view.dungeonmap.api.DungeonSelectionPublisher;
 import src.view.dungeontravel.View.DungeonTravelNavigationGraphic;
@@ -65,7 +65,8 @@ public final class DungeontravelViewContribution implements ShellViewContributio
             public Map<ShellSlot, Node> slotContent() {
                 return Map.of(
                         ShellSlot.COCKPIT_CONTROLS, session.controls(),
-                        ShellSlot.COCKPIT_MAIN, session.workspace()
+                        ShellSlot.COCKPIT_MAIN, session.workspace(),
+                        ShellSlot.COCKPIT_STATE, session.state()
                 );
             }
         };

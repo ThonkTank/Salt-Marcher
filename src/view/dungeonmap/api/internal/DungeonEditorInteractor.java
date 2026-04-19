@@ -1,5 +1,6 @@
-package src.view.dungeonmap.ViewModel.internal;
+package src.view.dungeonmap.api.internal;
 import javafx.scene.Node;
+import javafx.scene.control.Label;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
@@ -10,6 +11,7 @@ import src.view.dungeonmap.api.DungeonEditorTool;
 import src.view.dungeonmap.api.DungeonSelectionItemViewModel;
 import src.view.dungeonmap.api.DungeonViewportViewModel;
 import src.view.mapcanvas.api.MapCanvasCell;
+import src.view.mapcanvas.api.MapCanvasLayer;
 import src.view.mapcanvas.api.MapCanvasRenderModel;
 import src.view.mapcanvas.api.MapCanvasScene;
 import java.util.function.Consumer;
@@ -41,6 +43,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
         workspaceSession().setFloorStepListener(delta -> mapController().stepFloor(delta, currentViewport()));
         workspaceSession().setCellSelectionListener(this::onCellSelected);
         workspaceSession().setSelectedTarget(null, -1L, null);
+        workspaceSession().setLayerContent(MapCanvasLayer.TOOL_OVERLAY, toolOverlay());
         finishInitialization();
     }
     public Node controls() {
@@ -95,6 +98,13 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
                 overlayMessage,
                 scene
         );
+    }
+    private static Node toolOverlay() {
+        Label overlay = new Label("Editor tool layer");
+        overlay.getStyleClass().addAll("mode-badge", "tool-layer");
+        overlay.setLayoutX(16.0);
+        overlay.setLayoutY(16.0);
+        return overlay;
     }
     @Override
     protected void onSnapshotChanged() {

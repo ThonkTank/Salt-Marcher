@@ -42,7 +42,7 @@ The architectural goals are:
 
 ## Target Topology
 
-The target view-component layout is:
+The target shell-facing view-component layout is:
 
 ```text
 src/view/
@@ -70,8 +70,35 @@ Rules:
   presentation-only value types.
 - FXML files live under `resources/view/<component>/`.
 - New or substantially refactored view code targets this topology.
-- Existing `assembly/`, view `api/`, `Model/`, `Controller/`, and
+- Normal shell-facing components must not declare view `api/` packages.
+- Existing `assembly/`, non-shared view `api/`, `Model/`, `Controller/`, and
   `interactor/` buckets are migration debt, not precedent for new work.
+
+Declared Shared View Components are reusable JavaFX/FXML components with public
+component APIs instead of shell contribution roots:
+
+```text
+src/view/
+  <shared-component>/
+    api/
+    View/
+    ViewModel/
+resources/
+  view/
+    <shared-component>/
+      *.fxml
+```
+
+Rules:
+
+- Declared shared components do not contain `*ViewContribution.java`.
+- `api/` is the only public cross-component view boundary for a declared
+  shared component.
+- `View/` and `ViewModel/` remain private even when a component is shared.
+- Declared shared components for the dungeon canvas target are `mapcanvas` and
+  `dungeonmap`.
+- `dungeoncontrols` is modeled as part of `dungeonmap` until a later ADR
+  declares it as a separate shared component.
 
 ## Dependency Direction
 
@@ -81,6 +108,8 @@ The source dependency direction is:
 *ViewContribution -> View + ViewModel + shell public API + domain root service
 View              -> ViewModel
 ViewModel         -> domain root service + domain api carriers
+normal component -> declared shared component api
+shared component -> own View/ViewModel/api only, plus allowed model APIs
 domain            -> no view, shell, JavaFX, or data implementation types
 ```
 
@@ -90,6 +119,10 @@ activation hooks. Source dependencies still follow the direction above.
 Cross-feature backend access below the view layer goes through the foreign
 feature's root `*ApplicationService` and its `api/` carrier types. No view code
 may import foreign domain modules or data adapters.
+
+Cross-component view reuse goes only through declared Shared View Component
+`api/` packages. Foreign private `View/` and `ViewModel/` packages remain
+private implementation detail.
 
 ## Runtime Interaction
 
@@ -164,6 +197,7 @@ Allowed dependencies:
   `javafx.css.*`, and other JavaFX UI APIs
 - `javafx.beans.*` and `javafx.collections.*`
 - own `View/` and `ViewModel/`
+- declared shared component `api/` packages
 - general-purpose JDK types
 
 Forbidden dependencies:
@@ -202,6 +236,7 @@ Allowed dependencies:
 
 - own `ViewModel/`
 - `javafx.beans.*` and `javafx.collections.*` for bindable presentation state
+- declared shared component `api/` packages
 - root `src.domain.<feature>.<Feature>ApplicationService`
 - `src.domain.<feature>.api.*` carrier records, enums, and sealed carrier
   abstractions
@@ -257,6 +292,28 @@ model behind one root application service.
 - Existing programmatic JavaFX views are migration debt until converted; they
   may be touched only when the change moves them toward the target model.
 
+## Shared View Components
+
+Shared View Components are reusable view-layer components, not shell-facing
+features. They may own JavaFX controls, FXML controllers, reusable ViewModels,
+handles, factories, render models, callbacks, and extension slot contracts.
+
+Generic shared components may accept tab-specific Nodes, overlays, callbacks,
+or actions through their public API, but they must not interpret the business
+meaning of those extensions. Tab-specific view models own visibility,
+enablement, labels, selected state, and action behavior for the content they
+provide.
+
+For the dungeon canvas target:
+
+- `mapcanvas` owns grid/cell/edge/label/selection rendering, camera, viewport,
+  and fixed overlay layers such as actor, tool, selection, and HUD overlays.
+- `dungeonmap` owns dungeon-specific render mapping, map controls, selection,
+  and named extension slots for editor/travel canvas and control content.
+- Editor and Travel may import `src.view.mapcanvas.api.*` and
+  `src.view.dungeonmap.api.*`; they must not import the shared components'
+  private `View/` or `ViewModel/` packages.
+
 ## Lifecycle, Commands, And Async Work
 
 - Long-lived listeners, subscriptions, callbacks, or observers must have
@@ -281,8 +338,12 @@ model behind one root application service.
 - `View/` owning presentation decisions that multiple controls depend on
 - `View/` or `ViewModel/` importing shell API
 - `src/domain/**` importing JavaFX, shell, view, or data implementation types
-- new `assembly/`, `api/`, `Model/`, `Controller/`, or `interactor/` buckets
-  under `src/view/<component>/`
+- new `assembly/`, non-shared `api/`, `Model/`, `Controller/`, or
+  `interactor/` buckets under `src/view/<component>/`
+- normal shell-facing components exposing view `api/` packages
+- declared shared components exposing `*ViewContribution`
+- importing foreign shared component `View/` or `ViewModel/` packages instead
+  of the declared shared component `api/`
 - reflective reach-through such as `Class.forName(...)`,
   `ClassLoader.loadClass(...)`, or equivalent lookup-based bypasses under
   `src/view/**`
@@ -290,8 +351,9 @@ model behind one root application service.
 ## Migration Debt
 
 Current active code still contains programmatic JavaFX views, `assembly/`
-composition packages, view `api/` packages, and legacy `Model/`, `Controller/`,
-and `interactor/` buckets. Those structures describe current state only.
+composition packages, non-shared view `api/` packages, and legacy `Model/`,
+`Controller/`, and `interactor/` buckets. Those structures describe current
+state only.
 
 The target model is the declarative MVVM shape above. Standards work may update
 documentation before source code and checker migration. Implementation work
@@ -314,6 +376,11 @@ Target mechanical checks should eventually cover:
 - `ViewModel/` imports only root application services and domain `api/`
   carriers from `src.domain.*`
 - root view contributions are the only shell-facing composition adapters
+- normal components have exactly one root `*ViewContribution` and no view
+  `api/`
+- declared shared components have `api/`, `View/`, `ViewModel/`, and no root
+  `*ViewContribution`
+- foreign view imports are allowed only to declared shared component `api/`
 - legacy view buckets are absent from target components
 
 New mechanical gates require explicit user request before being added to the
@@ -328,6 +395,7 @@ local build/check pipeline.
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
 - [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+- [ADR 018: Shared View Component Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/018-shared-view-component-boundary.md:1)
 - [Microsoft MVVM Reference](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/microsoft-maui-mvvm.md:1)
 - [Fowler Presentation Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/fowler-presentation-model.md:1)
 - [Oracle JavaFX FXML Introduction](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/oracle-javafx-fxml-introduction.md:1)

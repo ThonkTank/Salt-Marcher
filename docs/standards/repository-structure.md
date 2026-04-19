@@ -57,6 +57,10 @@ src/
       <PascalComponentName>ViewContribution.java
       View/
       ViewModel/
+    <shared-component>/
+      api/
+      View/
+      ViewModel/
   domain/
     <feature>/
       <PascalFeatureName>ApplicationService.java
@@ -119,9 +123,9 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - the included build at `tools/gradle/build-harness/` owns repository topology,
   package-path alignment, `src/` direct-child topology, included-build
   placement, and service-entrypoint presence rules below `src/data/`.
-- `checkViewArchitecture` currently owns the transitional view-structure
-  blocker below `src/view/`; the declarative MVVM target requires later checker
-  migration before this wording can become target enforcement again.
+- `checkViewArchitecture` owns the target MVVM view-structure blocker below
+  `src/view/`, including the distinction between normal shell-facing view
+  components and declared Shared View Components.
 - `pmdArchitectureMain` owns Java source contracts for those roots, including
   naming, `public final`, public no-arg constructors, and required interfaces
   or methods.
@@ -150,8 +154,8 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   Treat that mismatch as migration debt until the checker can distinguish data
   features that intentionally do not export persistence schema truth.
 - The binding MVVM standard defines declarative JavaFX MVVM as the target view
-  topology. Current `checkViewArchitecture` coverage still reflects the older
-  transitional view topology until explicit checker migration work updates it.
+  topology, including declared Shared View Components with public `api/`
+  packages and no shell contribution root.
 
 ## Packaging Rules
 
@@ -164,7 +168,10 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - FXML view files live under `resources/view/<component>/`.
 - The root `*ViewContribution` is the shell-facing composition adapter for one
   component.
-- Existing `assembly/`, view `api/`, `Model/`, `Controller/`, and
+- Declared Shared View Components may expose `api/`, `View/`, and
+  `ViewModel/`, but no root `*ViewContribution`.
+- Normal shell-facing components must not expose view `api/` packages.
+- Existing `assembly/`, non-shared view `api/`, `Model/`, `Controller/`, and
   `interactor/` buckets under `src/view/**` are migration debt, not target
   topology.
 - `ViewModel/` is the home for presentation state, actions, and presentation
@@ -209,6 +216,7 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - [ADR 005: MVVM And Assembly Boundary In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-view-mvvm-and-assembly-boundary.md:1)
 - [ADR 007: Shared View API Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/007-shared-view-api-boundary.md:1)
 - [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+- [ADR 018: Shared View Component Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/018-shared-view-component-boundary.md:1)
 - [ADR 008: Top-Level Repository Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/008-top-level-repository-taxonomy.md:1)
 - [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
 - [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)

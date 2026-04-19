@@ -35,13 +35,18 @@ final class ViewArchitectureSupport {
     static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
 
     private static final Set<String> KNOWN_BUCKETS = Set.of("assembly", "api", "View", "ViewModel", "Model", "Controller", "interactor");
+    private static final Set<String> DECLARED_SHARED_VIEW_COMPONENTS = Set.of("mapcanvas", "dungeonmap");
     private static final Set<String> ROOT_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ContributionKey",
+            "shell.api.InspectorEntrySpec",
+            "shell.api.InspectorSink",
             "shell.api.NavigationGroupSpec",
             "shell.api.ShellContributionSpec",
             "shell.api.ShellRuntimeContext",
             "shell.api.ShellRuntimeStateSpec",
             "shell.api.ShellScreen",
+            "shell.api.ServiceRegistry",
+            "shell.api.ShellSlot",
             "shell.api.ShellTabMode",
             "shell.api.ShellTabSpec",
             "shell.api.ShellTopBarSpec",
@@ -139,7 +144,9 @@ final class ViewArchitectureSupport {
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null
                 && viewType.component().equals(component)
-                && ("View".equals(viewType.bucket()) || "ViewModel".equals(viewType.bucket()));
+                && ("View".equals(viewType.bucket())
+                || "ViewModel".equals(viewType.bucket())
+                || isDeclaredSharedApi(viewType));
     }
 
     static boolean isOwnViewModelReference(String referencedType, String component) {
@@ -147,6 +154,20 @@ final class ViewArchitectureSupport {
         return viewType != null
                 && viewType.component().equals(component)
                 && "ViewModel".equals(viewType.bucket());
+    }
+
+    static boolean isDeclaredSharedViewComponent(String component) {
+        return DECLARED_SHARED_VIEW_COMPONENTS.contains(component);
+    }
+
+    static boolean isDeclaredSharedApi(ViewTypeInfo viewType) {
+        return viewType != null
+                && isDeclaredSharedViewComponent(viewType.component())
+                && "api".equals(viewType.bucket());
+    }
+
+    static boolean isDeclaredSharedApiReference(String referencedType) {
+        return isDeclaredSharedApi(parseViewType(referencedType));
     }
 
     static ViewTypeInfo parseViewType(String referencedType) {

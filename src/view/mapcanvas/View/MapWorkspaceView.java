@@ -2,6 +2,7 @@ package src.view.mapcanvas.View;
 import javafx.geometry.Insets;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Label;
+import javafx.scene.Node;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;

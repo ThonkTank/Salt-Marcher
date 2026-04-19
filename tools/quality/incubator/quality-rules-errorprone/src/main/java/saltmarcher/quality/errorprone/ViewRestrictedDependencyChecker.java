@@ -51,9 +51,14 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
-        if (viewType.component().equals(component)) {
-            return !"View".equals(viewType.bucket()) && !"ViewModel".equals(viewType.bucket());
+        if (ViewArchitectureSupport.isDeclaredSharedApi(viewType)) {
+            return false;
         }
-        return true;
+        if (viewType.component().equals(component)) {
+            return !"View".equals(viewType.bucket())
+                    && !"ViewModel".equals(viewType.bucket())
+                    && !ViewArchitectureSupport.isDeclaredSharedApi(viewType);
+        }
+        return !ViewArchitectureSupport.isDeclaredSharedApi(viewType);
     }
 }

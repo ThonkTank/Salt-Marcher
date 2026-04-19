@@ -1,4 +1,4 @@
-package src.view.dungeonmap.ViewModel.internal;
+package src.view.dungeonmap.api.internal;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -7,7 +7,7 @@ import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonmap.api.DungeonSelectionItemViewModel;
 import src.view.mapcanvas.api.MapCanvasCell;
-import src.view.mapcanvas.View.MapCanvasHandle;
+import src.view.mapcanvas.api.MapCanvasHandle;
 
 final class DungeonMapSelectionMapper {
 

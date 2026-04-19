@@ -63,9 +63,13 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
-        if (viewType.component().equals(component)) {
-            return !"ViewModel".equals(viewType.bucket());
+        if (ViewArchitectureSupport.isDeclaredSharedApi(viewType)) {
+            return false;
         }
-        return true;
+        if (viewType.component().equals(component)) {
+            return !"ViewModel".equals(viewType.bucket())
+                    && !ViewArchitectureSupport.isDeclaredSharedApi(viewType);
+        }
+        return !ViewArchitectureSupport.isDeclaredSharedApi(viewType);
     }
 }

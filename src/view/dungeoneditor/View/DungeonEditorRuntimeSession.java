@@ -3,7 +3,7 @@ package src.view.dungeoneditor.View;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.Node;
-import src.view.dungeonmap.View.DungeonEditorRuntimeNodes;
+import src.view.dungeonmap.api.DungeonEditorRuntimeNodes;
 import src.view.dungeonmap.api.DungeonSelectionPublisher;
 
 public final class DungeonEditorRuntimeSession {

@@ -17,7 +17,7 @@ import shell.api.ShellTabSpec;
 import shell.api.ShellViewContribution;
 import src.view.dungeoneditor.View.DungeonEditorNavigationGraphic;
 import src.view.dungeoneditor.View.DungeonEditorRuntimeSession;
-import src.view.dungeonmap.View.DungeonSelectionInspectorContent;
+import src.view.dungeonmap.api.DungeonSelectionInspectorContent;
 import src.view.dungeonmap.api.DungeonSelectionInspectorEntry;
 import src.view.dungeonmap.api.DungeonSelectionPublisher;
 

@@ -58,11 +58,15 @@ public final class ViewRootDelegationChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
+        if (ViewArchitectureSupport.isDeclaredSharedApi(viewType)) {
+            return false;
+        }
         if (viewType.component().equals(component)) {
             return !"ROOT".equals(viewType.bucket())
                     && !"View".equals(viewType.bucket())
-                    && !"ViewModel".equals(viewType.bucket());
+                    && !"ViewModel".equals(viewType.bucket())
+                    && !ViewArchitectureSupport.isDeclaredSharedApi(viewType);
         }
-        return true;
+        return !ViewArchitectureSupport.isDeclaredSharedApi(viewType);
     }
 }

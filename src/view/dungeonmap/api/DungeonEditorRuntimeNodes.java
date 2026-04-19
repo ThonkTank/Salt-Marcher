@@ -1,9 +1,9 @@
-package src.view.dungeonmap.View;
+package src.view.dungeonmap.api;
 
 import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.Node;
-import src.view.dungeonmap.ViewModel.internal.DungeonEditorInteractor;
+import src.view.dungeonmap.api.internal.DungeonEditorInteractor;
 import src.view.dungeonmap.api.DungeonSelectionPublisher;
 
 public final class DungeonEditorRuntimeNodes {

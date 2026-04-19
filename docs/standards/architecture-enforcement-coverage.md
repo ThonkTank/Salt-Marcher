@@ -17,9 +17,8 @@ review-only boundary remain defined in the
 
 ## View Layer
 
-Current view checks still enforce the transitional topology that existed before
-ADR 017. They remain listed here as current blockers until explicit checker
-migration work updates them to the declarative MVVM target.
+Current view checks enforce the declarative MVVM topology from ADR 017 plus the
+Shared View Component boundary from ADR 018.
 
 `Enforced`:
 
@@ -31,89 +30,78 @@ migration work updates them to the declarative MVVM target.
   `saltmarcher:MvvmRootOnlyViewContribution` (`checkViewArchitecture`).
 - `view-root-count` via `jQAssistant`
   `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`).
-- `view-assembly-naming-placement` via `jQAssistant`
-  `saltmarcher:MvvmAssemblyPlacement` (`checkViewArchitecture`).
 - `view-cross-component-public-api-only` via `jQAssistant`
   `saltmarcher:MvvmNoPrivateForeignComponentDependencies`
   (`checkViewArchitecture`).
 - `view-root-contracts` via PMD `SaltMarcherEntrypointRule`
   (`pmdArchitectureMain`).
 - `view-root-delegation-boundary` via Error Prone `ViewRootDelegation`
-  (`compileJava`). This requires `createScreen(ShellRuntimeContext)` to return
-  a `ShellScreen` obtained from own-component `assembly/` logic, and blocks
-  direct root references to JavaFX, domain, data, own private view buckets other
-  than `assembly/`, foreign view components, direct `ShellScreen` construction,
-  and direct `ShellRuntimeContext.inspector()`, `services()`, or `session(...)`
-  lookup.
+  (`compileJava`). Root view contributions may use the documented shell API
+  subset, own `View/` and `ViewModel/`, domain application-service boundaries,
+  and declared shared component `api/` packages.
 - `view-shell-api-allowlist` via Error Prone `FeatureShellApiAllowlist`
   (`compileJava`).
-- `view-assembly-dependency-boundary` via Error Prone
-  `ViewAssemblyDependencies` (`compileJava`).
 - `view-rendering-boundary` via Error Prone `ViewRestrictedDependencies`
   (`compileJava`).
-- `view-scene-graph-placement` via Error Prone `ViewSceneGraphPlacement`
-  (`compileJava`). This keeps JavaFX scene-graph construction out of
-  `assembly/`, while still allowing `javafx.scene.Node` as the shell slot
-  boundary type.
 - `view-viewmodel-framework-independence` via Error Prone
   `ViewModelFrameworkIndependence` (`compileJava`).
-- `view-api-dependency-boundary` via Error Prone `ViewApiDependencies`
-  (`compileJava`).
 - `view-presentation-state-placement` via Error Prone
   `ViewModelOwnershipNaming` (`compileJava`).
 - `view-reflection-bypass-ban` via Error Prone `ViewReflectionBypass`
   (`compileJava`).
-- `view-api-signature-no-private-leaks` via Error Prone
-  `ViewApiPublicSignatureLeak` (`compileJava`).
 - `view-component-cycle-freedom` via ArchUnit
   `viewComponentsMustStayCycleFree` (`architectureTest`).
 
-Current mechanical trace against the transitional MVVM checks:
+Current mechanical trace against the declarative MVVM checks:
 
-- Component topology in `src/view/<component>/{assembly,api,View,ViewModel}`
-  and the ban on `Model/`, `Controller/`, and `interactor/` buckets are enforced
-  by the jQAssistant MVVM topology rules.
+- Normal component topology in
+  `src/view/<component>/{<Component>ViewContribution.java,View,ViewModel}` and
+  declared Shared View Component topology in
+  `src/view/<component>/{api,View,ViewModel}` are enforced by the jQAssistant
+  MVVM topology rules.
+- `assembly/`, `Model/`, `Controller`, `interactor`, and non-shared view
+  `api/` buckets are blocked by jQAssistant.
 - The component-root rule of exactly one `*ViewContribution`, plus root naming,
   constructor, implemented shell interface, required methods, statelessness, and
-  supported contribution spec construction, is enforced by jQAssistant and PMD.
+  supported contribution spec construction for normal components is enforced by
+  jQAssistant and PMD. Declared Shared View Components are enforced as having
+  zero `*ViewContribution` roots.
 - Inward source dependency direction is enforced by Error Prone for root,
-  `assembly/`, `View/`, `ViewModel/`, and `api/` packages, with ArchUnit and
-  jQAssistant covering broader component cycles and cross-component private
-  bucket access.
-- `assembly/` is the only shell-facing composition boundary in mechanically
-  visible type references: shell API access is allowlisted there and at roots,
-  while `View/` and `ViewModel/` shell references are blocked.
+  `View/`, and `ViewModel/` packages, with ArchUnit and jQAssistant covering
+  broader component cycles and cross-component private bucket access.
 - `View/` is the only bucket allowed to own JavaFX scene-graph implementation
-  broadly; `assembly/` may reference only `javafx.scene.Node` as the shell slot
-  boundary type, and `ViewModel/` may not reference JavaFX at all.
-- Public view reuse is mechanically public only through foreign `api/` packages;
-  `*shared` component naming does not weaken the cross-component private-bucket
-  ban, and public `api/` signatures may not leak private bucket types.
+  broadly, and `ViewModel/` may use JavaFX beans and collections only.
+- Public view reuse is mechanically public only through declared foreign shared
+  `api/` packages. Private foreign `View/` and `ViewModel/` packages remain
+  blocked.
 - Presentation-state carrier placement is mechanically name-based for
   `*ViewModel`, `*ViewData`, `*State`, `*Status`, `*Section`, and `*Model`
-  style names outside `ViewModel/` or intentional `api/`.
+  style names outside `ViewModel/` or declared shared `api/`.
 - Reflection bypasses under `src/view/**`, including `Class.forName(...)`,
   `ClassLoader.loadClass(...)`, `MethodHandles.Lookup.findClass(...)`, and
   direct `java.lang.reflect.*` references, are blocked by Error Prone.
 
-Target mechanical trace after ADR 017 migration:
+Target mechanical trace:
 
 - FXML files live under `resources/view/<component>/`.
 - Target view components use only root `*ViewContribution`, `View/`, and
   `ViewModel/` buckets.
+- Declared Shared View Components use only `api/`, `View/`, and `ViewModel/`
+  buckets and have no root `*ViewContribution`.
 - `View/` may use JavaFX UI, scene, stage, fxml, bean, and collection APIs,
   but not shell, domain, or data APIs.
 - `ViewModel/` may use JavaFX bean and collection APIs, but not scene, stage,
   fxml, shell, data, own `View/`, or foreign private view packages.
 - Root view contributions are the only shell-facing composition adapters for
   view components.
+- Foreign view imports are allowed only to declared shared component `api/`.
 - `src.domain.<feature>.api/**` stays carrier-only, while the callable model
   boundary is the root application service.
 
 `Review-Only`:
 
-- Whether remaining view `api/` and `assembly/` packages are migration debt and
-  whether touched code moves toward declarative MVVM.
+- Whether remaining non-shared view `api/` and `assembly/` packages are
+  migration debt and whether touched code moves toward declarative MVVM.
 - Whether root entrypoints are semantically thin beyond the mechanically
   encoded shape, dependency, and delegation checks.
 - Whether root view contributions remain thin shell/composition adapters
@@ -558,7 +546,7 @@ Runtime guards outside the build-blocking harness:
   string-literal selector arguments passed through recognized helper methods
   that forward parameters into `getStyleClass()`.
 - `styling-no-programmatic-visual-styling`: active application code outside
-  `src/view/mapshared/View/**` must not author visual styling through JavaFX
+  `src/view/mapcanvas/View/**` must not author visual styling through JavaFX
   paint, font, border, background, shape-paint, text-paint, or direct canvas
   styling APIs via Error Prone `ViewProgrammaticStyling` (`compileJava`).
 

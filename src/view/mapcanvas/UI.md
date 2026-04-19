@@ -1,27 +1,32 @@
 Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-19
-Source of Truth: Shared-map view ownership and MVVM role boundaries for the
-reusable canvas workspace under `src/view/mapshared/**`.
+Source of Truth: Shared map-canvas component ownership, extension layers, and
+MVVM role boundaries for `src/view/mapcanvas/**`.
 
-# Mapshared UI
+# Mapcanvas UI
 
 ## Purpose
 
-`mapshared` owns the reusable canvas workspace that editor- and travel-facing
-components render inside their own screens.
+`mapcanvas` owns the reusable map canvas foundation used by dungeon-facing
+views. It renders grid, cells, edges, labels, selection, and camera state while
+owning the pan/zoom/layout transforms for all canvas-managed overlays.
 
 ## Ownership
 
-- `View/` owns the JavaFX canvas, camera interaction, hit testing, and render
-  helpers, including the current workspace-session facade.
-- `ViewModel/` owns the reusable render payloads and camera/view data that the
-  canvas consumes.
+- `api/` owns the reusable render model, viewport, topology, layers, handle,
+  and callback-facing contracts consumed by other view components.
+- `View/` owns the JavaFX canvas, camera interaction, hit testing, layer host
+  layout, and render helpers.
+- `ViewModel/` is reserved for reusable canvas presentation state when the
+  component needs state that is independent of JavaFX scene graph nodes.
 
-## Boundary Status
+## Extension Layers
 
-- The former `api/` and `assembly/` buckets have been removed.
-- Current dungeon shared code still reuses the workspace session and render
-  payloads directly during the first MVVM-topology migration pass.
-- A later pass should either absorb this workspace into the owning dungeon
-  view component or define a target-approved shared-view boundary.
+- The public cross-component boundary is `src.view.mapcanvas.api.*`.
+- Consumers may provide layer content only through the handle/API, not by
+  importing `View/` implementation classes.
+- Fixed layers are below-grid, below-content, above-content, selection overlay,
+  actor overlay, tool overlay, and HUD overlay.
+- Travel-owned party tokens belong in the actor overlay.
+- Editor-owned preview and authoring markers belong in the tool overlay.

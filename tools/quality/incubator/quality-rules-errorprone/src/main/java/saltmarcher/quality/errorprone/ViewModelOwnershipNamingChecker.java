@@ -26,6 +26,10 @@ public final class ViewModelOwnershipNamingChecker extends BugChecker implements
                 || ViewArchitectureSupport.VIEW_MODEL_PACKAGE.matcher(packageName).matches()) {
             return Description.NO_MATCH;
         }
+        ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(packageName + ".PackageMarker");
+        if (ViewArchitectureSupport.isDeclaredSharedApi(viewType)) {
+            return Description.NO_MATCH;
+        }
         String simpleName = tree.getSimpleName().toString();
         if (!PRESENTATION_TYPE_NAME.matcher(simpleName).matches()) {
             return Description.NO_MATCH;

@@ -1,4 +1,4 @@
-package src.view.dungeonmap.ViewModel.internal;
+package src.view.dungeonmap.api.internal;
 import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
@@ -7,7 +7,7 @@ import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonmap.api.DungeonSelectionInspectorEntry;
 import src.view.dungeonmap.api.DungeonSelectionPublisher;
 import src.view.mapcanvas.api.MapCanvasCell;
-import src.view.mapcanvas.View.MapCanvasHandle;
+import src.view.mapcanvas.api.MapCanvasHandle;
 import java.util.function.Consumer;
 /**
  * Shared map-list workflow for dungeon editor and travel tabs.

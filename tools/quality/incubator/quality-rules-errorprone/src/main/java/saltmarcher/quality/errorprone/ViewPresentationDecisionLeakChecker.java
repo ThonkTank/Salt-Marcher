@@ -11,7 +11,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.SwitchExpressionTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.source.tree.Tree;
-import com.sun.source.util.TreePathScanner;
+import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.Set;
 
@@ -47,7 +47,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
         String component = matcher.group(1);
 
         Tree[] violatingTree = {null};
-        new TreePathScanner<Void, Void>() {
+        new TreeScanner<Void, Void>() {
             @Override
             public Void visitIf(IfTree ifTree, Void unused) {
                 if (violatingTree[0] == null
@@ -95,7 +95,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
             return false;
         }
         boolean[] found = {false};
-        new TreePathScanner<Void, Void>() {
+        new TreeScanner<Void, Void>() {
             @Override
             public Void scan(Tree currentTree, Void unused) {
                 if (currentTree != null && isPresentationCarrier(currentTree, component)) {
@@ -113,7 +113,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
             return false;
         }
         boolean[] found = {false};
-        new TreePathScanner<Void, Void>() {
+        new TreeScanner<Void, Void>() {
             @Override
             public Void visitMethodInvocation(MethodInvocationTree methodInvocationTree, Void unused) {
                 Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodInvocationTree);

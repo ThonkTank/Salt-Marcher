@@ -156,6 +156,9 @@ The canonical intentional public boundaries are:
   `*ApplicationService` roots and foreign `api/` types.
 - Foreign domain internals, foreign private view buckets, and foreign private
   data buckets are not valid shortcuts.
+- Cross-component view reuse goes only through declared Shared View Component
+  `api/` packages; foreign shared `View/` and `ViewModel/` packages remain
+  private.
 
 ## Allowed Exceptions
 
@@ -188,7 +191,8 @@ boundaries.
   `src/domain/**`
 - shell implementation classes leaking below the view contribution boundary
 - cross-feature imports of foreign private `View/`, `ViewModel/`, `assembly/`,
-  view `api/`, domain modules, `gateway/`, `model/`, or `mapper/` buckets
+  non-shared view `api/`, domain modules, `gateway/`, `model/`, or `mapper/`
+  buckets
 - duplicate rule ownership across shell, view, domain, and data instead of one
   authoritative owner plus translation at boundaries
 
@@ -211,11 +215,10 @@ Current mechanical ownership:
   the bootstrap-only access rule for `shell.host.AppShell`,
   foreign-domain-public-boundary-only access below the view layer, and
   feature-cycle freedom across domain, view, data, and shell package slices.
-- `./gradlew checkViewArchitecture` currently owns the transitional MVVM
-  topology that predates declarative MVVM, while
+- `./gradlew checkViewArchitecture` owns the declarative MVVM topology,
+  including normal view components and declared Shared View Components, while
   `./gradlew compileJava` owns compiler-precise view-layer dependency bans,
-  shell API allowlists, and public view `api/` signature leak checks until the
-  checks are migrated to the target topology.
+  shell API allowlists, and declared shared view API dependency checks.
 - `./gradlew compileJava` owns compiler-precise domain boundary purity:
   public operational members on domain application-service roots and public
   domain `api/` signatures must stay free of outer-layer types, foreign

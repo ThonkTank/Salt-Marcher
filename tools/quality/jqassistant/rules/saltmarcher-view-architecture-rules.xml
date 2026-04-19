@@ -22,6 +22,7 @@
             SET
               type:SaltMarcher:MvvmViewType,
               type.component = segments[2],
+              type.sharedViewComponent = segments[2] IN ['mapcanvas', 'dungeonmap'],
               type.bucket = CASE
                 WHEN size(segments) = 3 THEN 'ROOT'
                 WHEN segments[3] IN ['assembly', 'api', 'View', 'ViewModel', 'Model', 'Controller', 'interactor']
@@ -47,15 +48,28 @@
 
     <constraint id="saltmarcher:MvvmAllowedViewBuckets">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Declarative MVVM topology allows only View and ViewModel below each component root.</description>
+        <description>Declarative MVVM topology allows normal components and declared shared components to use only their target buckets.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE type.bucket = 'OTHER'
+            WHERE
+              type.bucket = 'OTHER'
+              OR (
+                NOT type.sharedViewComponent
+                AND type.bucket <> 'ROOT'
+                AND NOT type.bucket IN ['View', 'ViewModel']
+              )
+              OR (
+                type.sharedViewComponent
+                AND NOT type.bucket IN ['api', 'View', 'ViewModel']
+              )
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/<component>/{View,ViewModel}' AS ExpectedDirection,
+              CASE
+                WHEN type.sharedViewComponent THEN 'src/view/<shared-component>/{api,View,ViewModel}'
+                ELSE 'src/view/<component>/{<Component>ViewContribution.java,View,ViewModel}'
+              END AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Bucket ausserhalb der deklarativen MVVM-Zieltopologie.' AS Details
+              'Bucket ausserhalb der deklarativen MVVM-Zieltopologie fuer normale oder deklarierte Shared View Components.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -66,12 +80,17 @@
         <description>Legacy and transitional buckets are migration debt and must disappear from the target topology.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE type.bucket IN ['assembly', 'api', 'Model', 'Controller', 'interactor']
+            WHERE
+              type.bucket IN ['assembly', 'Model', 'Controller', 'interactor']
+              OR (type.bucket = 'api' AND NOT type.sharedViewComponent)
             RETURN DISTINCT
               type.relativePath AS Source,
-              'View/ViewModel' AS ExpectedDirection,
+              CASE
+                WHEN type.sharedViewComponent THEN 'api/View/ViewModel'
+                ELSE 'View/ViewModel'
+              END AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Legacy- oder Transitional-Bucket in der deklarativen MVVM-Zieltopologie. Verschiebe die Verantwortung in View/ oder ViewModel/.' AS Details
+              'Legacy- oder unerlaubter Transitional-Bucket in der deklarativen MVVM-Zieltopologie.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -85,12 +104,18 @@
             WHERE
               type.bucket = 'ROOT'
               AND NOT type.name CONTAINS '$'
-              AND NOT type.name ENDS WITH 'ViewContribution'
+              AND (
+                type.sharedViewComponent
+                OR NOT type.name ENDS WITH 'ViewContribution'
+              )
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/<component>/<Component>ViewContribution.java' AS ExpectedDirection,
+              CASE
+                WHEN type.sharedViewComponent THEN 'kein Java-Root-Typ in deklarierter Shared View Component'
+                ELSE 'src/view/<component>/<Component>ViewContribution.java'
+              END AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Root-Typen ausserhalb des Shell-Entrypoints gehoeren in Buckets.' AS Details
+              'Normale Komponenten haben nur den Shell-Entrypoint im Root; Shared View Components haben keinen Shell-Entrypoint.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -102,16 +127,25 @@
         <description>Every component requires exactly one root entrypoint.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WITH DISTINCT type.component AS component
+            WITH DISTINCT type.component AS component, type.sharedViewComponent AS sharedViewComponent
             OPTIONAL MATCH (root:Java:Type:SaltMarcher:MvvmRootEntrypoint {component: component})
             WITH component, collect(DISTINCT root.name) AS roots
-            WHERE size(roots) <> 1
+            WITH
+              component,
+              [rootName IN roots WHERE rootName IS NOT NULL] AS roots,
+              component IN ['mapcanvas', 'dungeonmap'] AS sharedViewComponent
+            WHERE
+              (sharedViewComponent AND size(roots) <> 0)
+              OR (NOT sharedViewComponent AND size(roots) <> 1)
             RETURN
               'src/view/' + component AS Source,
-              '1x <Component>ViewContribution' AS ExpectedDirection,
+              CASE
+                WHEN sharedViewComponent THEN '0x <Component>ViewContribution'
+                ELSE '1x <Component>ViewContribution'
+              END AS ExpectedDirection,
               coalesce(reduce(actual = '', rootName IN roots |
                 CASE WHEN actual = '' THEN rootName ELSE actual + ', ' + rootName END), '(none)') AS ActualDirection,
-              'Jede View-Komponente hat genau einen Shell-Entrypoint.' AS Details
+              'Normale Komponenten haben genau einen Shell-Entrypoint; deklarierte Shared View Components haben keinen.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -125,12 +159,13 @@
             WHERE
               source <> target
               AND source.component <> target.component
+              AND NOT (target.sharedViewComponent AND target.bucket = 'api')
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'keine fremden src/view/<component> Pakete' AS ExpectedDirection,
+              'nur deklarierte fremde Shared-Component-api Pakete' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
-              'Komponentenuebergreifende View-Abhaengigkeiten gehoeren nicht zur deklarativen MVVM-Zieltopologie.' AS Details
+              'Komponentenuebergreifende View-Abhaengigkeiten duerfen nur auf deklarierte Shared-Component-api Pakete zeigen.' AS Details
             ORDER BY Source, Target
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>

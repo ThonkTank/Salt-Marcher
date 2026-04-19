@@ -43,7 +43,7 @@ for styling checks live in the
     arguments passed through recognized helper methods that forward parameters
     into `getStyleClass()`.
   - `styling-no-programmatic-visual-styling`: active application code outside
-    `src/view/mapshared/View/**` must not author visual styling through
+    `src/view/mapcanvas/View/**` must not author visual styling through
     JavaFX paint, font, border, background, or direct canvas styling APIs via
     `Error Prone` (`./gradlew compileJava`).
 - `Review-Only`
@@ -55,7 +55,7 @@ for styling checks live in the
     literals remain review-owned.
 
 The documented direct-rendering exception is limited to
-`src/view/mapshared/View/**`, where the shared canvas renderer currently owns
+`src/view/mapcanvas/View/**`, where the shared canvas renderer currently owns
 the original Salt Marcher map palette directly instead of routing those values
 through stylesheet selectors.
 

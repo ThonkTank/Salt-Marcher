@@ -1,4 +1,4 @@
-package src.view.dungeonmap.View;
+package src.view.dungeonmap.api;
 
 import javafx.geometry.Insets;
 import javafx.scene.Node;

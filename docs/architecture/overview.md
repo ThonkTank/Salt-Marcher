@@ -176,6 +176,7 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 005: MVVM And Assembly Boundary In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-view-mvvm-and-assembly-boundary.md:1)
 - [ADR 007: Shared View API Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/007-shared-view-api-boundary.md:1)
 - [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+- [ADR 018: Shared View Component Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/018-shared-view-component-boundary.md:1)
 - [ADR 008: Top-Level Repository Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/008-top-level-repository-taxonomy.md:1)
 - [ADR 009: Domain-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/009-domain-layer-architecture-model.md:1)
 - [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
