@@ -122,6 +122,12 @@ activation hooks. Source dependencies still follow the direction above.
 Cross-feature backend access goes only through the foreign feature's root
 `*ApplicationService` and exported domain `api/` carrier types.
 
+JDK dependencies in view-layer roles are allowed only when they are ordinary
+language, value, collection, optional, functional, or formatting support for the
+owning role. Direct file-system, network, SQL, process, reflection, classloader,
+timer, executor, thread, persistence, or other infrastructure ownership is not a
+general-purpose JDK dependency for Contributions, ViewModels, or Views.
+
 ## Contribution Role
 
 A contribution is the shell adapter for one discovered UI entrypoint.
@@ -152,7 +158,8 @@ Allowed dependencies:
 - root `src.domain.<feature>.<Feature>ApplicationService`
 - `src.domain.<feature>.api.*` carrier records, enums, and sealed carriers
 - JavaFX `Node` and collection types needed to return bound slot content
-- general-purpose JDK types
+- ordinary JDK language, value, collection, optional, functional, and formatting
+  types that do not own infrastructure access
 
 Forbidden behavior:
 
@@ -182,9 +189,10 @@ Allowed dependencies:
 - JavaFX beans and collections
 - root `src.domain.<feature>.<Feature>ApplicationService`
 - `src.domain.<feature>.api.*` carrier records, enums, and sealed carriers
-- other ViewModel types only when they belong to the same contribution or
-  detail root and are explicitly part of the presentation model
-- general-purpose JDK types
+- private nested presentation helper or carrier types declared inside the owning
+  `*ViewModel` when they do not become a second ViewModel for the root
+- ordinary JDK language, value, collection, optional, functional, and formatting
+  types that do not own infrastructure access
 
 Forbidden dependencies and behavior:
 
@@ -193,6 +201,7 @@ Forbidden dependencies and behavior:
 - `src.data.*`
 - foreign private domain internals outside root application services and
   domain `api` carriers
+- additional top-level `*ViewModel` types in the same contribution or detail root
 - view instantiation, slot binding, or bootstrap discovery
 - widget-specific layout and rendering decisions
 
@@ -273,6 +282,7 @@ model behind one root application service.
 
 - A contribution root defining more than one shell contribution.
 - A ViewModel instantiating JavaFX views or using shell APIs.
+- A contribution or detail root defining more than one top-level `*ViewModel`.
 - A View importing shell, domain, data, or ApplicationService types.
 - A contribution-owned tab View duplicating a reusable generic surface instead
   of extending the generic View under `src/view/views`.

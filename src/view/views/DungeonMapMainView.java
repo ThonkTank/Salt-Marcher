@@ -9,6 +9,7 @@ public class DungeonMapMainView extends VBox {
 
     private final Label status = new Label();
 
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonMapMainView(String titleText) {
         setSpacing(8);
         setPadding(new Insets(16));

@@ -7,6 +7,7 @@ import javafx.scene.layout.VBox;
 
 public class DungeonControlPanelView extends VBox {
 
+    @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonControlPanelView(String titleText) {
         setSpacing(10);
         setPadding(new Insets(12));
