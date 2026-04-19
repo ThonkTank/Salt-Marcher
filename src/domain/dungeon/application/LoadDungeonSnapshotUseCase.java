@@ -13,17 +13,17 @@ import java.util.List;
 /**
  * Loads the current committed dungeon snapshot.
  */
-public final class LoadDungeonSnapshotUseCase {
+final class LoadDungeonSnapshotUseCase {
 
     private final DungeonDocumentStore store;
     private final BuildDungeonDerivedStateUseCase derive;
 
-    public LoadDungeonSnapshotUseCase(DungeonDocumentStore store, BuildDungeonDerivedStateUseCase derive) {
+    LoadDungeonSnapshotUseCase(DungeonDocumentStore store, BuildDungeonDerivedStateUseCase derive) {
         this.store = store;
         this.derive = derive;
     }
 
-    public DungeonSnapshot execute() {
+    DungeonSnapshot execute() {
         DungeonDerivedState derived = derive.execute(store.load());
         List<String> aggregateSummaries = derived.aggregates().stream()
                 .map(this::aggregateSummary)
@@ -41,7 +41,7 @@ public final class LoadDungeonSnapshotUseCase {
         );
     }
 
-    public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
+    DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
         DungeonDerivedState derived = derive.execute(store.load());
         for (DungeonAggregate aggregate : derived.aggregates()) {
             if (aggregate.id() == ownerId && ownerKind != null && ownerKind.equalsIgnoreCase(aggregate.label().contains("Corridor") ? "corridor" : "room")) {

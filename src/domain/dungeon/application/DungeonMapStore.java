@@ -16,14 +16,14 @@ import java.util.Optional;
  */
 public final class DungeonMapStore implements DungeonMapRepository {
 
-    private static final Map<Long, DungeonMap> MAPS = new LinkedHashMap<>();
-    private static long nextId = 1L;
+    private final Map<Long, DungeonMap> maps = new LinkedHashMap<>();
+    private long nextId = 1L;
 
     @Override
     public synchronized List<DungeonMap> searchByName(String query) {
         String normalized = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         List<DungeonMap> matches = new ArrayList<>();
-        for (DungeonMap dungeonMap : MAPS.values()) {
+        for (DungeonMap dungeonMap : maps.values()) {
             String candidate = dungeonMap.metadata().mapName().toLowerCase(Locale.ROOT);
             if (normalized.isBlank() || candidate.contains(normalized)) {
                 matches.add(dungeonMap);
@@ -34,19 +34,19 @@ public final class DungeonMapStore implements DungeonMapRepository {
 
     @Override
     public synchronized Optional<DungeonMap> findById(DungeonMapId mapId) {
-        return Optional.ofNullable(MAPS.get(mapId.value()));
+        return Optional.ofNullable(maps.get(mapId.value()));
     }
 
     @Override
     public synchronized DungeonMap save(DungeonMap dungeonMap) {
-        MAPS.put(dungeonMap.metadata().mapId().value(), dungeonMap);
+        maps.put(dungeonMap.metadata().mapId().value(), dungeonMap);
         nextId = Math.max(nextId, dungeonMap.metadata().mapId().value() + 1L);
         return dungeonMap;
     }
 
     @Override
     public synchronized void delete(DungeonMapId mapId) {
-        MAPS.remove(mapId.value());
+        maps.remove(mapId.value());
     }
 
     @Override

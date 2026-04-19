@@ -106,27 +106,27 @@ final class DomainFeatureRules implements ArchitectureRule {
             ArchitectureContext context,
             Set<String> domainFeatures,
             ViolationSink violations) {
-        Path overview = context.repoRoot().resolve("docs/architecture/overview.md");
-        String overviewPath = "docs/architecture/overview.md";
-        if (!Files.isRegularFile(overview)) {
-            violations.add(overviewPath, "domain-context-map-complete",
-                    "Architecture overview must define a '## Domain Context Map' section covering every domain feature.");
+        Path contextMapDocument = context.repoRoot().resolve("docs/standards/domain-layer.md");
+        String contextMapPath = "docs/standards/domain-layer.md";
+        if (!Files.isRegularFile(contextMapDocument)) {
+            violations.add(contextMapPath, "domain-context-map-complete",
+                    "Domain layer standard must define a '## Domain Context Map' section covering every domain feature.");
             return;
         }
 
         String content;
         try {
-            content = Files.readString(overview, StandardCharsets.UTF_8);
+            content = Files.readString(contextMapDocument, StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            violations.add(overviewPath, "file-readable",
-                    "Could not read architecture overview: " + exception.getMessage());
+            violations.add(contextMapPath, "file-readable",
+                    "Could not read domain layer standard: " + exception.getMessage());
             return;
         }
 
         String section = sectionBody(content, "## Domain Context Map");
         if (section.trim().isBlank()) {
-            violations.add(overviewPath, "domain-context-map-complete",
-                    "Architecture overview must include a non-empty '## Domain Context Map' section.");
+            violations.add(contextMapPath, "domain-context-map-complete",
+                    "Domain layer standard must include a non-empty '## Domain Context Map' section.");
             return;
         }
 
@@ -134,14 +134,14 @@ final class DomainFeatureRules implements ArchitectureRule {
             Pattern featureLine = Pattern.compile("(?m)^\\s*-\\s+`" + Pattern.quote(featureName) + "`\\s*:\\s*(.+)$");
             Matcher matcher = featureLine.matcher(section);
             if (!matcher.find()) {
-                violations.add(overviewPath, "domain-context-map-complete",
+                violations.add(contextMapPath, "domain-context-map-complete",
                         "Domain context map must include a bullet for src/domain/" + featureName
                                 + " using '- `" + featureName + "`: ...'.");
                 continue;
             }
             String declaredContextType = declaredDomainContextType(context, featureName);
             if (declaredContextType != null && !matcher.group(1).contains(declaredContextType)) {
-                violations.add(overviewPath, "domain-context-map-role-matches",
+                violations.add(contextMapPath, "domain-context-map-role-matches",
                         "Domain context map bullet for src/domain/" + featureName
                                 + " must include its declared context type '" + declaredContextType + "'.");
             }

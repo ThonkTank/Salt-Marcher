@@ -12,17 +12,17 @@ import java.util.List;
 /**
  * Owns the fixed dungeon editor mutation pipeline.
  */
-public final class ApplyDungeonEditorOperationUseCase {
+final class ApplyDungeonEditorOperationUseCase {
 
     private final DungeonDocumentStore store;
     private final BuildDungeonDerivedStateUseCase derive;
 
-    public ApplyDungeonEditorOperationUseCase(DungeonDocumentStore store, BuildDungeonDerivedStateUseCase derive) {
+    ApplyDungeonEditorOperationUseCase(DungeonDocumentStore store, BuildDungeonDerivedStateUseCase derive) {
         this.store = store;
         this.derive = derive;
     }
 
-    public DungeonOperationResult execute(DungeonEditorOperation operation) {
+    DungeonOperationResult execute(DungeonEditorOperation operation) {
         DungeonDocument current = store.load();
         DungeonDocument mutated = current.apply(operation);
         List<String> validationMessages = mutated.validationMessages();

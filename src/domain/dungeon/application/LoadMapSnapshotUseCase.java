@@ -10,13 +10,13 @@ import src.domain.mapcore.api.MapSurfaceSnapshot;
 /**
  * Loads the snapshot for one authored map and carries the requested viewport through.
  */
-public final class LoadMapSnapshotUseCase {
+final class LoadMapSnapshotUseCase {
 
     private final DungeonMapRepository repository;
     private final DungeonDocumentStore documentStore;
     private final BuildDungeonDerivedStateUseCase derive;
 
-    public LoadMapSnapshotUseCase(
+    LoadMapSnapshotUseCase(
             DungeonMapRepository repository,
             DungeonDocumentStore documentStore,
             BuildDungeonDerivedStateUseCase derive
@@ -26,7 +26,7 @@ public final class LoadMapSnapshotUseCase {
         this.derive = derive;
     }
 
-    public BaseMapSnapshot execute(LoadMapSnapshotQuery query) {
+    BaseMapSnapshot execute(LoadMapSnapshotQuery query) {
         DungeonMap dungeonMap = repository.findById(query.mapId())
                 .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + query.mapId().value()));
         documentStore.activateMap(query.mapId(), dungeonMap.metadata().mapName());

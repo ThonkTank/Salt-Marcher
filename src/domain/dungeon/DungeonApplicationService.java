@@ -13,74 +13,44 @@ import src.domain.dungeon.api.DungeonOperationResult;
 import src.domain.dungeon.api.DungeonSnapshot;
 import src.domain.dungeon.api.LoadMapSnapshotQuery;
 import src.domain.dungeon.api.SearchMapsQuery;
-import src.domain.dungeon.application.DungeonMutationOperations;
-import src.domain.dungeon.application.DungeonQueryOperations;
 import src.domain.dungeon.application.DungeonDefaultApplicationServices;
-import src.domain.dungeon.application.DungeonDocumentStore;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Public dungeon feature facade used by editor and travel interactors.
  */
 public final class DungeonApplicationService {
 
-    private final DungeonQueryOperations queries;
-    private final DungeonMutationOperations mutations;
-    private final DungeonDocumentStore documentStore;
-
-    public DungeonApplicationService() {
-        this(DungeonDefaultApplicationServices.instance());
-    }
-
-    DungeonApplicationService(
-            DungeonQueryOperations queries,
-            DungeonMutationOperations mutations,
-            DungeonDocumentStore documentStore
-    ) {
-        this.queries = Objects.requireNonNull(queries, "queries");
-        this.mutations = Objects.requireNonNull(mutations, "mutations");
-        this.documentStore = Objects.requireNonNull(documentStore, "documentStore");
-    }
-
-    private DungeonApplicationService(DungeonDefaultApplicationServices defaults) {
-        this(
-                defaults.queries(),
-                defaults.mutations(),
-                defaults.documentStore()
-        );
-    }
-
     public DungeonSnapshot loadSnapshot() {
-        return queries.loadSnapshot();
+        return DungeonDefaultApplicationServices.loadSnapshot();
     }
 
     public DungeonOperationResult applyOperation(DungeonEditorOperation operation) {
-        return mutations.applyOperation(operation);
+        return DungeonDefaultApplicationServices.applyOperation(operation);
     }
 
     public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
-        return queries.describeSelection(ownerKind, ownerId);
+        return DungeonDefaultApplicationServices.describeSelection(ownerKind, ownerId);
     }
 
     public List<DungeonMapSummary> searchMaps(SearchMapsQuery query) {
-        return queries.searchMaps(query);
+        return DungeonDefaultApplicationServices.searchMaps(query);
     }
 
     public CreateDungeonMapResult createMap(CreateDungeonMapCommand command) {
-        return mutations.createMap(command);
+        return DungeonDefaultApplicationServices.createMap(command);
     }
 
     public DeleteDungeonMapResult deleteMap(DeleteDungeonMapCommand command) {
-        return mutations.deleteMap(command);
+        return DungeonDefaultApplicationServices.deleteMap(command);
     }
 
     public BaseMapSnapshot loadMapSnapshot(LoadMapSnapshotQuery query) {
-        return queries.loadMapSnapshot(query);
+        return DungeonDefaultApplicationServices.loadMapSnapshot(query);
     }
 
     public void activateMap(DungeonMapId mapId, String mapName) {
-        documentStore.activateMap(mapId, mapName);
+        DungeonDefaultApplicationServices.activateMap(mapId, mapName);
     }
 }

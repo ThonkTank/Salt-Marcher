@@ -9,17 +9,17 @@ import src.domain.dungeon.map.DungeonMapRepository;
 /**
  * Creates an empty authored dungeon map aggregate.
  */
-public final class CreateDungeonMapUseCase {
+final class CreateDungeonMapUseCase {
 
     private final DungeonMapRepository repository;
     private final DungeonDocumentStore documentStore;
 
-    public CreateDungeonMapUseCase(DungeonMapRepository repository, DungeonDocumentStore documentStore) {
+    CreateDungeonMapUseCase(DungeonMapRepository repository, DungeonDocumentStore documentStore) {
         this.repository = repository;
         this.documentStore = documentStore;
     }
 
-    public CreateDungeonMapResult execute(CreateDungeonMapCommand command) {
+    CreateDungeonMapResult execute(CreateDungeonMapCommand command) {
         DungeonMapId mapId = repository.nextId();
         String mapName = normalizeName(command);
         DungeonMap dungeonMap = DungeonMap.empty(mapId, mapName);

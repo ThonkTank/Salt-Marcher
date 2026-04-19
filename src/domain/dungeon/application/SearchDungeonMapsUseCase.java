@@ -10,17 +10,17 @@ import java.util.List;
 /**
  * Searches authored dungeon map metadata.
  */
-public final class SearchDungeonMapsUseCase {
+final class SearchDungeonMapsUseCase {
 
     private final DungeonMapRepository repository;
     private final DungeonDocumentStore documentStore;
 
-    public SearchDungeonMapsUseCase(DungeonMapRepository repository, DungeonDocumentStore documentStore) {
+    SearchDungeonMapsUseCase(DungeonMapRepository repository, DungeonDocumentStore documentStore) {
         this.repository = repository;
         this.documentStore = documentStore;
     }
 
-    public List<DungeonMapSummary> execute(SearchMapsQuery query) {
+    List<DungeonMapSummary> execute(SearchMapsQuery query) {
         String searchTerm = query == null ? "" : query.query();
         return repository.searchByName(searchTerm).stream()
                 .map(map -> new DungeonMapSummary(

@@ -131,8 +131,8 @@ Mechanical trace against the MVVM standard:
   contract exclusion from `api/` and `application/`, and the required
   `DOMAIN.md` context marker plus supporting read-model rationale, promotion
   triggers, policy-context tactical sections, aggregate-root markers, the
-  overview context-map listing for every domain feature, and context-map role
-  text matching each feature's declared context marker.
+  domain-layer-standard context-map listing for every domain feature, and
+  context-map role text matching each feature's declared context marker.
 - `domain-outer-layer-independence`,
   `domain-foreign-feature-public-seams-only`, and
   `domain-feature-cycle-freedom`, and `domain-subpackage-cycle-freedom` via

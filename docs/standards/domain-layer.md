@@ -171,6 +171,31 @@ The required machine-readable marker is exactly one of:
 - `Context Type: Policy-Owning Bounded Context`
 - `Context Type: Supporting Read-Model Context`
 
+## Domain Context Map
+
+Every active `src/domain/<feature>` appears in this map with the same context
+type declared by the feature's `DOMAIN.md`.
+
+- `creatures`: Supporting Read-Model Context. Exports creature catalog search,
+  detail lookup, filter options, and encounter-candidate projections to
+  downstream policy contexts. It does not own encounter balancing or creature
+  write-model policy.
+- `dungeon`: Policy-Owning Bounded Context. Owns authored dungeon-map truth,
+  identity-preserving map mutation policy, derived-state rebuild rules, and
+  repository contracts for persisted maps. It publishes map snapshots and
+  summaries through its application-service and `api/` boundary.
+- `encounter`: Policy-Owning Bounded Context with no persisted v1 write model.
+  Consumes `party` and `creatures` through their application services and
+  public API carriers, then owns runtime encounter balancing, candidate
+  ranking, locks, and generated-encounter policy.
+- `mapcore`: Supporting Read-Model Context. Exports topology-neutral map
+  projection contracts shared by map-owning contexts. It does not own authored
+  dungeon, travel, or map mutation policy.
+- `party`: Policy-Owning Bounded Context. Owns party roster truth, membership,
+  XP progression, rest cadence, and adventuring-day policy. Downstream contexts
+  consume party state only through the party application-service and `api/`
+  carriers.
+
 ### Default: Policy-Owning Bounded Context
 
 This is the default expectation for a domain feature.
@@ -256,9 +281,9 @@ Supporting read-model contexts must include non-empty sections named exactly:
 - `## Read-Model Boundary`
 - `## Promotion Triggers`
 
-The system-wide context map lives in the architecture overview. Each domain
-feature must appear there with its role and integration relationship to the
-other bounded contexts.
+The domain context map in this standard is the canonical system-wide map for
+domain features. Each domain feature must appear there with its role and
+integration relationship to the other bounded contexts.
 
 ## Forbidden Patterns
 
@@ -311,7 +336,7 @@ Current mechanical ownership:
     contexts need a non-empty `## Read-Model Boundary` section
   - `domain-context-map-complete` via `build-harness`
     (`./gradlew :build-harness:check`): every `src/domain/<feature>` appears in
-    the overview's `## Domain Context Map`
+    this standard's `## Domain Context Map`
   - `domain-context-map-role-matches` via `build-harness`
     (`./gradlew :build-harness:check`): every context-map feature bullet
     includes the same context type declared by the feature's `DOMAIN.md`
@@ -403,7 +428,6 @@ Review-owned rules:
 
 ## References
 
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
 - [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
