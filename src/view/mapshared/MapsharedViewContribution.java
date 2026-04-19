@@ -10,6 +10,10 @@ import src.view.mapshared.assembly.MapsharedAssembly;
 
 public final class MapsharedViewContribution implements ShellViewContribution {
 
+    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
+    public MapsharedViewContribution() {
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellRuntimeStateSpec(new ContributionKey("map-shared-state"), "Map", 90);

@@ -10,6 +10,10 @@ import src.view.encounterstate.assembly.EncounterstateAssembly;
 
 public final class EncounterstateViewContribution implements ShellViewContribution {
 
+    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
+    public EncounterstateViewContribution() {
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellRuntimeStateSpec(new ContributionKey("encounter-state"), "Encounter", 10);

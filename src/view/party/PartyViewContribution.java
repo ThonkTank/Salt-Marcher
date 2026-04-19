@@ -10,6 +10,10 @@ import src.view.party.assembly.PartyToolbarAssembly;
 
 public final class PartyViewContribution implements ShellViewContribution {
 
+    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
+    public PartyViewContribution() {
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellTopBarSpec(new ContributionKey("party"), 20);

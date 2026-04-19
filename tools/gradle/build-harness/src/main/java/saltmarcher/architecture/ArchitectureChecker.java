@@ -162,9 +162,9 @@ public final class ArchitectureChecker {
 
     private void validateActiveJavaRootAllowlist(List<Violation> violations) {
         try (Stream<Path> stream = Files.walk(repoRoot)) {
-            stream.filter(Files::isRegularFile)
+            stream.filter(path -> !isIgnoredRepositoryScanPath(path))
+                    .filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith(".java"))
-                    .filter(path -> !isIgnoredRepositoryScanPath(path))
                     .forEach(path -> {
                         List<String> segments = relativeSegments(path);
                         if (segments.isEmpty()) {
@@ -252,7 +252,8 @@ public final class ArchitectureChecker {
         try (Stream<Path> stream = Files.walk(path)) {
             return stream
                     .filter(candidate -> !candidate.equals(path))
-                    .anyMatch(candidate -> Files.isRegularFile(candidate) && !isIgnoredRepositoryScanPath(candidate));
+                    .filter(candidate -> !isIgnoredRepositoryScanPath(candidate))
+                    .anyMatch(Files::isRegularFile);
         } catch (IOException exception) {
             return true;
         }

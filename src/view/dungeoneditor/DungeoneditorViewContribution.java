@@ -15,6 +15,10 @@ import src.view.dungeoneditor.assembly.DungeonEditorAssembly;
  */
 public final class DungeoneditorViewContribution implements ShellViewContribution {
 
+    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
+    public DungeoneditorViewContribution() {
+    }
+
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public ShellContributionSpec registrationSpec() {

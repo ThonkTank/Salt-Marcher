@@ -15,6 +15,10 @@ import src.view.creatures.assembly.CreaturesAssembly;
  */
 public final class CreaturesViewContribution implements ShellViewContribution {
 
+    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
+    public CreaturesViewContribution() {
+    }
+
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public ShellContributionSpec registrationSpec() {

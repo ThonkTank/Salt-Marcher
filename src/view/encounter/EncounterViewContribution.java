@@ -12,6 +12,10 @@ import src.view.encounter.assembly.EncounterAssembly;
 
 public final class EncounterViewContribution implements ShellViewContribution {
 
+    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
+    public EncounterViewContribution() {
+    }
+
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public ShellContributionSpec registrationSpec() {

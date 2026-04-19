@@ -15,6 +15,10 @@ import src.view.dungeontravel.assembly.DungeonTravelAssembly;
  */
 public final class DungeontravelViewContribution implements ShellViewContribution {
 
+    @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
+    public DungeontravelViewContribution() {
+    }
+
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public ShellContributionSpec registrationSpec() {

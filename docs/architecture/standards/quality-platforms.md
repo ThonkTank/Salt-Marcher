@@ -98,10 +98,12 @@ non-public types, null sentinels, and local naming/style hygiene. The rule file
 must list individual rules explicitly rather than importing whole PMD
 categories.
 
-`pmdMain` includes a strict PMD CLI pass that fails on both violations and PMD
-analysis errors. This prevents parser or type-resolution failures from being
-treated as a clean quality pass. `pmdTest` is disabled; PMD non-architecture
-smell policy applies to production source roots, not architecture test sources.
+`pmdMain` finalizes with a strict PMD CLI pass that fails on both violations
+and PMD analysis errors. Full `check` and `build` invocations depend on both
+PMD passes directly so a failure in either pass does not hide diagnostics from
+the other. This prevents parser or type-resolution failures from being treated
+as a clean quality pass. `pmdTest` is disabled; PMD non-architecture smell
+policy applies to production source roots, not architecture test sources.
 
 SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
 effort `MAX`, and confidence `MEDIUM`. `spotbugsTest` is disabled because

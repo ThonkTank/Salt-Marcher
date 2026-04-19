@@ -341,7 +341,7 @@ val pmdStrictMain by tasks.registering(PmdSourceCheckTask::class) {
 }
 
 tasks.named<Pmd>("pmdMain") {
-    dependsOn(pmdStrictMain)
+    finalizedBy(pmdStrictMain)
     source = sourceJavaRoots.asFileTree
     include("**/*.java")
     classpath = configurations.named("compileClasspath").get()
@@ -435,6 +435,7 @@ tasks.named("check") {
     dependsOn("compileJava")
     dependsOn("test")
     dependsOn("pmdMain")
+    dependsOn(pmdStrictMain)
     dependsOn("architectureTest")
     dependsOn("pmdArchitectureMain")
     dependsOn(gradle.includedBuild("build-harness").task(":check"))
@@ -443,6 +444,7 @@ tasks.named("check") {
     dependsOn(checkDefinedStyleClassSelectors)
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkDesktopPackagingInputs)
+    dependsOn("spotbugsMain")
     dependsOn(cpdMain)
     dependsOn(lizardMain)
     dependsOn(ckjmMain)
