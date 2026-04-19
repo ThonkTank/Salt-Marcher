@@ -28,18 +28,8 @@ public interface CreatureCatalogQueryPort {
         }
 
         @Override
-        public List<String> sizes() {
-            return copyStrings(sizes);
-        }
-
-        @Override
-        public List<String> types() {
-            return copyStrings(types);
-        }
-
-        @Override
-        public List<String> subtypes() {
-            return copyStrings(subtypes);
+        public List<String> alignments() {
+            return copyStrings(alignments);
         }
 
         @Override
@@ -48,8 +38,18 @@ public interface CreatureCatalogQueryPort {
         }
 
         @Override
-        public List<String> alignments() {
-            return copyStrings(alignments);
+        public List<String> sizes() {
+            return copyStrings(sizes);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return copyStrings(subtypes);
+        }
+
+        @Override
+        public List<String> types() {
+            return copyStrings(types);
         }
     }
 
