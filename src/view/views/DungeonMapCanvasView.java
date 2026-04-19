@@ -5,12 +5,12 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-public class DungeonMapMainView extends VBox {
+public class DungeonMapCanvasView extends VBox {
 
     private final Label status = new Label();
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
-    public DungeonMapMainView(String titleText) {
+    public DungeonMapCanvasView(String titleText) {
         setSpacing(8);
         setPadding(new Insets(16));
         getStyleClass().add("surface-root");

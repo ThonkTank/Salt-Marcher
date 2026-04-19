@@ -2,7 +2,6 @@ import java.io.File
 import java.util.UUID
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.Task
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Sync
@@ -100,9 +99,8 @@ val stylesheetExtensions = listOf("css", "scss", "sass", "less", "styl")
 
 val sourceRoots = files("bootstrap", "shell", "src")
 val sourceJavaRoots = sourceRoots.filter { it.exists() }
-val mainClassesDirs = extensions.getByType<SourceSetContainer>()
-    .named("main")
-    .map { sourceSet -> sourceSet.output.classesDirs }
+val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
+val localMainJavaClassesDir = layout.projectDirectory.dir("build/classes/java/main")
 val generatedWindowIconDir = layout.buildDirectory.dir("generated/window-icon")
 val lizardRequirementsFile = layout.projectDirectory.file("tools/quality/config/lizard/requirements.txt")
 val lizardVenvDir = layout.buildDirectory.dir("tools/lizard-venv")
@@ -136,6 +134,11 @@ val jqassistantJvmOpens = listOf(
 
 fun File.absoluteInvariantPath(): String {
     return absolutePath.replace(File.separatorChar, '/')
+}
+
+fun mainJavaClassesDirectoryForTooling(): File {
+    val taskDestination = mainJavaClassesDir.get().asFile
+    return if (taskDestination.exists()) taskDestination else localMainJavaClassesDir.asFile
 }
 
 // Tool configurations
@@ -266,14 +269,10 @@ val prepareJqassistantConfig by tasks.registering {
 
     doLast {
         val buildRootPath = layout.buildDirectory.get().asFile.absoluteInvariantPath()
-        val mainClasspathEntries = mainClassesDirs.get().files
-            .sortedBy { classpathRoot -> classpathRoot.absolutePath }
-            .joinToString(separator = "\n") { classpathRoot ->
-                "        - java:classpath::${classpathRoot.absoluteInvariantPath()}"
-            }
+        val mainClasspathEntry = "        - java:classpath::${mainJavaClassesDirectoryForTooling().absoluteInvariantPath()}"
         val generatedConfigText = jqassistantSourceConfigFile.asFile.readText()
             .replace("file:build/jqassistant/store", "file:$buildRootPath/jqassistant/store")
-            .replace("        - java:classpath::build/classes/java/main", mainClasspathEntries)
+            .replace("        - java:classpath::build/classes/java/main", mainClasspathEntry)
             .replace(
                 "xml.report.file: build/reports/jqassistant/jqassistant-report.xml",
                 "xml.report.file: $buildRootPath/reports/jqassistant/jqassistant-report.xml"
@@ -295,7 +294,8 @@ val jqassistantScanViewArchitecture by tasks.registering(Exec::class) {
     dependsOn(installJqassistant, prepareJqassistantConfig, tasks.named("classes"))
     inputs.file(jqassistantGeneratedConfigFile)
     inputs.dir(jqassistantRulesDir)
-    inputs.files(mainClassesDirs)
+    inputs.dir(mainJavaClassesDir)
+    inputs.dir(localMainJavaClassesDir)
     inputs.files(sourceJavaRoots)
     outputs.dir(jqassistantCheckStoreDir)
     doFirst {
@@ -426,7 +426,8 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
     description = "Run CKJM ext OO metrics against compiled production classes and write reports."
     dependsOn(tasks.named("classes"))
     projectRoot.set(layout.projectDirectory)
-    compiledClasses.from(mainClassesDirs)
+    compiledClasses.from(mainJavaClassesDir)
+    compiledClasses.from(localMainJavaClassesDir)
     toolClasspath.from(ckjmToolClasspath)
     runtimeClasspath.from(configurations.named("runtimeClasspath"))
     reportFile.set(ckjmReportFile)
