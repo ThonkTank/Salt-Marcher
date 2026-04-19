@@ -26,10 +26,10 @@ final class EncounterDraftEnumerator {
     private static Map<Long, EncounterCandidateProfile> profileLookup(EncounterDraftBuildRequest request) {
         Map<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
         for (EncounterCandidateProfile locked : request.lockedProfiles()) {
-            profiles.put(locked.id(), locked);
+            profiles.put(locked.id, locked);
         }
         for (EncounterCandidateProfile profile : request.pool()) {
-            profiles.put(profile.id(), profile);
+            profiles.put(profile.id, profile);
         }
         return profiles;
     }
@@ -51,7 +51,7 @@ final class EncounterDraftEnumerator {
     ) {
         for (int firstCount = 1; firstCount <= EncounterProfileCopies.maxAdditionalCopies(first); firstCount++) {
             Map<Long, Integer> single = new LinkedHashMap<>(baseCounts);
-            single.merge(first.id(), firstCount, Integer::sum);
+            single.merge(first.id, firstCount, Integer::sum);
             collector.add(single);
         }
     }
@@ -87,23 +87,31 @@ final class EncounterDraftEnumerator {
         int firstLimit = Math.min(MAX_FIRST_DUAL_COPIES, EncounterProfileCopies.maxAdditionalCopies(first));
         int secondLimit = Math.min(MAX_SECOND_DUAL_COPIES, EncounterProfileCopies.maxAdditionalCopies(second));
         for (int firstCount = 1; firstCount <= firstLimit; firstCount++) {
-            appendSecondProfileCounts(collector, baseCounts, first, second, firstCount, secondLimit);
+            appendSecondProfileCounts(
+                    collector,
+                    baseCounts,
+                    new DualProfileCountRequest(first, second, firstCount, secondLimit));
         }
     }
 
     private static void appendSecondProfileCounts(
             EncounterDraftCollector collector,
             Map<Long, Integer> baseCounts,
+            DualProfileCountRequest request
+    ) {
+        for (int secondCount = 1; secondCount <= request.secondLimit(); secondCount++) {
+            Map<Long, Integer> dual = new LinkedHashMap<>(baseCounts);
+            dual.merge(request.first().id, request.firstCount(), Integer::sum);
+            dual.merge(request.second().id, secondCount, Integer::sum);
+            collector.add(dual);
+        }
+    }
+
+    private record DualProfileCountRequest(
             EncounterCandidateProfile first,
             EncounterCandidateProfile second,
             int firstCount,
             int secondLimit
     ) {
-        for (int secondCount = 1; secondCount <= secondLimit; secondCount++) {
-            Map<Long, Integer> dual = new LinkedHashMap<>(baseCounts);
-            dual.merge(first.id(), firstCount, Integer::sum);
-            dual.merge(second.id(), secondCount, Integer::sum);
-            collector.add(dual);
-        }
     }
 }

@@ -1,72 +1,44 @@
 package src.domain.encounter.generation;
 
-import org.jspecify.annotations.Nullable;
-import src.domain.creatures.api.CreatureDetail;
-import src.domain.creatures.api.EncounterCandidate;
-public record EncounterCandidateProfile(
-        long id,
-        String name,
-        String challengeRating,
-        int xp,
-        int hitPoints,
-        int armorClass,
-        int initiativeBonus,
-        int legendaryActionCount,
-        String role
-) {
+public final class EncounterCandidateProfile {
 
-    public static EncounterCandidateProfile fromCandidate(EncounterCandidate candidate, @Nullable CreatureDetail detail) {
-        EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(candidate, detail);
-        return new EncounterCandidateProfile(
-                candidate.id(),
-                candidate.name(),
-                candidate.challengeRating(),
-                candidate.xp(),
-                candidate.hitPoints(),
-                candidate.armorClass(),
-                candidate.initiativeBonus(),
-                candidate.legendaryActionCount(),
-                classification.role());
+    final long id;
+    final String name;
+    final String challengeRating;
+    final EncounterCandidateCombatStats combatStats;
+    final String role;
+
+    EncounterCandidateProfile(
+            long id,
+            String name,
+            String challengeRating,
+            EncounterCandidateCombatStats combatStats,
+            String role
+    ) {
+        this.id = id;
+        this.name = name;
+        this.challengeRating = challengeRating;
+        this.combatStats = combatStats;
+        this.role = role;
     }
 
-    public static EncounterCandidateProfile fromDetail(CreatureDetail detail) {
-        EncounterCandidate candidate = new EncounterCandidate(
-                detail.id(),
-                detail.name(),
-                detail.creatureType(),
-                detail.challengeRating(),
-                detail.xp(),
-                detail.hitPoints(),
-                detail.hitDiceCount(),
-                detail.hitDiceSides(),
-                detail.hitDiceModifier(),
-                detail.armorClass(),
-                detail.initiativeBonus(),
-                detail.legendaryActionCount());
-        return fromCandidate(candidate, detail);
+    int xp() {
+        return combatStats.xp();
     }
 
-    public EncounterCandidate toCandidate() {
-        return new EncounterCandidate(
-                id,
-                name,
-                "",
-                challengeRating,
-                xp,
-                hitPoints,
-                null,
-                null,
-                null,
-                armorClass,
-                initiativeBonus,
-                legendaryActionCount);
+    int hitPoints() {
+        return combatStats.hitPoints();
     }
 
-    public int componentDistance(int targetXp) {
-        int half = Math.max(1, targetXp / 2);
-        int third = Math.max(1, targetXp / 3);
-        return Math.min(
-                Math.abs(xp - targetXp),
-                Math.min(Math.abs(xp - half), Math.abs(xp - third)));
+    int armorClass() {
+        return combatStats.armorClass();
+    }
+
+    int initiativeBonus() {
+        return combatStats.initiativeBonus();
+    }
+
+    int legendaryActionCount() {
+        return combatStats.legendaryActionCount();
     }
 }

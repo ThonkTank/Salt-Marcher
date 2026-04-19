@@ -32,7 +32,7 @@ final class EncounterSearchPool {
             int targetXp
     ) {
         return profiles.stream()
-                .sorted(Comparator.comparingInt(profile -> profile.componentDistance(targetXp)))
+                .sorted(Comparator.comparingInt(profile -> EncounterCandidateProfiles.componentDistance(profile, targetXp)))
                 .limit(FIT_POOL_LIMIT)
                 .toList();
     }
@@ -40,7 +40,7 @@ final class EncounterSearchPool {
     private static List<EncounterCandidateProfile> lowestXp(List<EncounterCandidateProfile> profiles) {
         return profiles.stream()
                 .sorted(Comparator.comparingInt(EncounterCandidateProfile::xp)
-                        .thenComparing(EncounterCandidateProfile::name, String.CASE_INSENSITIVE_ORDER))
+                        .thenComparing(profile -> profile.name, String.CASE_INSENSITIVE_ORDER))
                 .limit(LOW_XP_POOL_LIMIT)
                 .toList();
     }
@@ -50,7 +50,7 @@ final class EncounterSearchPool {
             List<EncounterCandidateProfile> profiles
     ) {
         for (EncounterCandidateProfile profile : profiles) {
-            merged.put(profile.id(), profile);
+            merged.put(profile.id, profile);
         }
     }
 }

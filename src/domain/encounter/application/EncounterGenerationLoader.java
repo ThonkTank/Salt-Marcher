@@ -11,6 +11,7 @@ import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.api.EncounterBudgetSummary;
 import src.domain.encounter.api.EncounterGenerationRequest;
 import src.domain.encounter.generation.EncounterCandidateProfile;
+import src.domain.encounter.generation.EncounterCandidateProfiles;
 import src.domain.encounter.generation.EncounterDifficultyMath;
 import src.domain.encounter.generation.EncounterDifficultyTargets;
 import src.domain.encounter.generation.EncounterDraft;
@@ -135,8 +136,8 @@ final class EncounterGenerationLoader {
         }
         List<EncounterCandidateProfile> unlockedProfiles = candidateResult.candidates().stream()
                 .filter(candidate -> !excludedCreatureIds.contains(candidate.id()))
-                .map(candidate -> EncounterCandidateProfile.fromCandidate(candidate, null))
                 .filter(candidate -> !lockedCreatureIds.contains(candidate.id()))
+                .map(candidate -> EncounterCandidateProfiles.fromCandidate(candidate, null))
                 .toList();
         return CandidateLoadResult.success(unlockedProfiles);
     }
@@ -163,7 +164,7 @@ final class EncounterGenerationLoader {
                 continue;
             }
             CreatureDetail detail = detailResult.detail();
-            profiles.put(creatureId, EncounterCandidateProfile.fromDetail(detail));
+            profiles.put(creatureId, EncounterCandidateProfiles.fromDetail(detail));
         }
         return profiles;
     }

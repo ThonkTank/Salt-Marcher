@@ -185,6 +185,25 @@ Architecture-focused entrypoints:
 - `./gradlew checkViewArchitecture --console=plain`
   Runs the explicit jQAssistant MVVM topology analysis.
 
+### Parallel Local Invocation Isolation
+
+Local Gradle gates support concurrent agent runs by isolating mutable
+project-local Gradle output when an isolation id is available.
+
+`CODEX_THREAD_ID` is the default isolation id for Codex-managed invocations.
+Other local agents that run Gradle gates concurrently must set a unique
+`SALTMARCHER_GRADLE_ISOLATION_ID`.
+
+Isolated invocations keep the normal entrypoints, including
+`./gradlew build --console=plain`, but write build outputs under
+`build/isolated-gradle/<isolation-id>/` and project-cache state under
+`.gradle/isolated-gradle/<isolation-id>/`. The shared Gradle user home remains
+unchanged so dependency caches stay reusable.
+
+CI is not isolated by default because CI jobs do not provide these local agent
+isolation environment variables. Required GitHub Actions report paths therefore
+remain the conventional `build/` paths.
+
 For invocations that request any local quality or architecture gate named in
 this section, the convention plugin enables Gradle continue-on-failure behavior
 automatically. A run still fails when any blocking check fails, but independent

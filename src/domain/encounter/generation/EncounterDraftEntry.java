@@ -8,15 +8,15 @@ public record EncounterDraftEntry(
 ) {
 
     public long creatureId() {
-        return profile.id();
+        return profile.id;
     }
 
     public String creatureName() {
-        return profile.name();
+        return profile.name;
     }
 
     public String challengeRating() {
-        return profile.challengeRating();
+        return profile.challengeRating;
     }
 
     public int xp() {
@@ -24,10 +24,10 @@ public record EncounterDraftEntry(
     }
 
     String role() {
-        return profile.role();
+        return profile.role;
     }
 
     public EncounterCandidate toCandidate() {
-        return profile.toCandidate();
+        return EncounterCandidateProfiles.toCandidate(profile);
     }
 }

@@ -2,6 +2,8 @@ pluginManagement {
     includeBuild("tools/gradle/build-logic")
 }
 
+apply(from = "tools/gradle/build-isolation.settings.gradle.kts")
+
 rootProject.name = "SaltMarcher"
 
 includeBuild("tools/gradle/build-harness")

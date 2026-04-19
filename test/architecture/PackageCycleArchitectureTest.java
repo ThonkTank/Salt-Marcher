@@ -12,7 +12,7 @@ import com.tngtech.archunit.library.dependencies.SliceIdentifier;
 import com.tngtech.archunit.core.importer.ImportOption;
 
 @AnalyzeClasses(
-        packages = {"src.domain", "src.view", "src.data", "shell"},
+        packages = {"bootstrap", "shell", "src.domain", "src.view", "src.data"},
         importOptions = {
                 ImportOption.DoNotIncludeTests.class,
                 ImportOption.DoNotIncludeJars.class

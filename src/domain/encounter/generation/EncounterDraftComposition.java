@@ -64,10 +64,10 @@ record EncounterDraftComposition(
             int quantity = Math.max(1, requestedQuantity);
             creatureCount += quantity;
             totalBaseXp += profile.xp() * quantity;
-            if (EncounterRoleNames.BOSS.equals(profile.role())) {
+            if (EncounterRoleNames.BOSS.equals(profile.role)) {
                 bossCount += quantity;
             }
-            roles.add(profile.role());
+            roles.add(profile.role);
             entries.add(new EncounterDraftEntry(profile, quantity));
         }
 

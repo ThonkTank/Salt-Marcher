@@ -94,6 +94,10 @@ Use the documentation tree in this order:
   If you are working inside `src/` or another subdirectory, set the command
   working directory to the repository root instead of using `../gradlew`. A pass
   without that rerun is incomplete and must remain WIP.
+- Codex-managed Gradle invocations automatically use per-agent build and
+  project-cache directories when `CODEX_THREAD_ID` is present. Non-Codex agents
+  that run local Gradle gates concurrently must set a unique
+  `SALTMARCHER_GRADLE_ISOLATION_ID`; do not reuse another agent's isolation id.
 - When the desktop app is the manual test surface, run
   `./gradlew installDesktopApp` after the successful build before handoff
   unless the user explicitly waives reinstall or the task is purely non-code
