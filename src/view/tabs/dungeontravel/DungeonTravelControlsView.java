@@ -1,21 +1,15 @@
 package src.view.tabs.dungeontravel;
 
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
+import src.view.views.DungeonControlPanelView;
 
-public final class DungeonTravelControlsView extends VBox {
+public final class DungeonTravelControlsView extends DungeonControlPanelView {
 
     private final Button refreshButton = new Button("Refresh");
 
     public DungeonTravelControlsView() {
-        setSpacing(10);
-        setPadding(new Insets(12));
-        getStyleClass().add("surface-root");
-
-        Label title = new Label("Dungeon Travel");
-        getChildren().addAll(title, refreshButton);
+        super("Dungeon Travel");
+        addControl(refreshButton);
     }
 
     public void onRefresh(Runnable action) {

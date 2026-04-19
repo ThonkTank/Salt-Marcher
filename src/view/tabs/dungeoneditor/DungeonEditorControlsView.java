@@ -1,21 +1,15 @@
 package src.view.tabs.dungeoneditor;
 
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
+import src.view.views.DungeonControlPanelView;
 
-public final class DungeonEditorControlsView extends VBox {
+public final class DungeonEditorControlsView extends DungeonControlPanelView {
 
     private final Button createButton = new Button("New map");
 
     public DungeonEditorControlsView() {
-        setSpacing(10);
-        setPadding(new Insets(12));
-        getStyleClass().add("surface-root");
-
-        Label title = new Label("Dungeon Editor");
-        getChildren().addAll(title, createButton);
+        super("Dungeon Editor");
+        addControl(createButton);
     }
 
     public void onCreateMap(Runnable action) {

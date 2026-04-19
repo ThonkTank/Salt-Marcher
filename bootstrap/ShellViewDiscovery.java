@@ -80,17 +80,34 @@ public final class ShellViewDiscovery {
             ContributionRoot root,
             List<String> classNames) throws IOException {
         try (var files = Files.list(contributionDirectory)) {
+            Path contributionDirectoryName = contributionDirectory.getFileName();
+            if (contributionDirectoryName == null) {
+                return;
+            }
+            String featureName = contributionDirectoryName.toString();
             for (Path classFile : files
                     .filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(CLASS_SUFFIX))
-                    .filter(path -> path.getFileName().toString().endsWith("Contribution" + CLASS_SUFFIX))
-                    .filter(path -> !path.getFileName().toString().contains("$"))
+                    .filter(ShellViewDiscovery::isTopLevelContributionClass)
                     .toList()) {
-                String simpleName = classFile.getFileName().toString().replaceFirst("\\.class$", "");
-                String featureName = contributionDirectory.getFileName().toString();
+                Path classFileName = classFile.getFileName();
+                if (classFileName == null) {
+                    continue;
+                }
+                String simpleName = classFileName.toString().replaceFirst("\\.class$", "");
                 classNames.add(root.packagePrefix() + featureName + "." + simpleName);
             }
         }
+    }
+
+    private static boolean isTopLevelContributionClass(Path path) {
+        Path fileName = path.getFileName();
+        if (fileName == null) {
+            return false;
+        }
+        String classFileName = fileName.toString();
+        return classFileName.endsWith(CLASS_SUFFIX)
+                && classFileName.endsWith("Contribution" + CLASS_SUFFIX)
+                && !classFileName.contains("$");
     }
 
     private void collectFromJar(URL resource, ContributionRoot root, List<String> classNames) throws IOException {

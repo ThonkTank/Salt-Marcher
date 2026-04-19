@@ -92,7 +92,7 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
                             + " must end with one of " + allowedSuffixes
                             + "; reusable generic views under src/view/views must end with View.");
         }
-        if (!sourceFacts.hasExplicitPublicFinalClass()) {
+        if (!reusableGenericView && !sourceFacts.hasExplicitPublicFinalClass()) {
             asCtx(data).addViolationWithMessage(node, "Passive panel view must be declared public final.");
         }
         if (sourceFacts.text().contains("ShellContribution")

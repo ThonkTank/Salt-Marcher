@@ -23,8 +23,10 @@ The roles are:
 - `ViewModel`: one presentation model next to its owning contribution or detail
   entry, named `*ViewModel`.
 - `View`: one passive panel, dropdown, or detail view next to its owning
-  contribution or detail entry, named `*View`; reusable generic views may live
-  directly under `src/view/views/`.
+  contribution or detail entry, named for its fixed shell surface
+  (`*ControlsView`, `*MainView`, `*StateView`, `*TopBarView`, or
+  `*DetailsView`); reusable generic views may live directly under
+  `src/view/views/` and end with `*View`.
 - `Contribution`: one discovered shell adapter named `*Contribution`; it owns
   shell registration, service lookup, view instantiation, and binding.
 - `Shell`: the passive cockpit host, fixed surfaces, activation lifecycle,
@@ -48,21 +50,25 @@ src/view/
     <entry>/
       <PascalEntry>Contribution.java
       <PascalEntry>ViewModel.java
-      <PascalEntry>View.java
+      <PascalEntry>TopBarView.java
   state/
     <entry>/
       <PascalEntry>Contribution.java
       <PascalEntry>ViewModel.java
-      <PascalEntry>View.java
+      <PascalEntry>StateView.java
   details/
     <entry>/
       <PascalEntry>ViewModel.java
-      <PascalEntry>View.java
+      <PascalEntry>DetailsView.java
   views/
     <PascalReusableView>.java
 resources/
   view/
-    <optional-view-resource>.fxml
+    tabs/<entry>/<PascalEntry><Surface>.fxml
+    topbar/<entry>/<PascalEntry>TopBarView.fxml
+    state/<entry>/<PascalEntry>StateView.fxml
+    details/<entry>/<PascalEntry>DetailsView.fxml
+    views/<PascalReusableView>.fxml
 ```
 
 Rules:
@@ -76,7 +82,9 @@ Rules:
   through the shell-owned details/history API. It is not a discovered shell
   contribution root.
 - `src/view/views/` is only for reusable generic passive views shared by
-  multiple contribution roots. Owned views stay next to their contribution.
+  multiple contribution roots. Owned views stay next to their contribution and
+  may extend reusable generic views when a shared surface such as a dungeon map
+  canvas or dungeon control panel needs tab-specific specialization.
 - Existing component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
   `Model/`, `Controller/`, and `interactor/` buckets are migration debt.
 
@@ -203,6 +211,8 @@ Responsibilities:
   and temporary text still being edited inside one control subtree
 - own UI-only helpers such as cell factories, skins, drawing code, menus,
   dialogs, and control adapters when local to the view
+- provide reusable generic base views under `src/view/views/` when multiple
+  contribution-owned views share one cockpit surface structure
 
 Allowed dependencies:
 
@@ -264,6 +274,8 @@ model behind one root application service.
 - A contribution root defining more than one shell contribution.
 - A ViewModel instantiating JavaFX views or using shell APIs.
 - A View importing shell, domain, data, or ApplicationService types.
+- A contribution-owned tab View duplicating a reusable generic surface instead
+  of extending the generic View under `src/view/views`.
 - Shell host code importing feature contributions, ViewModels, or Views.
 - Domain code importing JavaFX, shell, view, or data implementation types.
 - Reintroducing component-local `View/`, `ViewModel/`, `assembly/`,
@@ -289,19 +301,23 @@ shape:
   passive `*View` files needed by that contribution.
 - Detail entries define `*ViewModel` and `*View` content only; they do not
   define bootstrap-discovered `*Contribution` roots.
-- Reusable `src/view/views` Java files are passive `*View` files.
+- Reusable `src/view/views` Java files are passive `*View` files and may be
+  base Views for contribution-owned concrete Views.
 - Contributions may use the allowed shell API subset, co-located ViewModels,
   co-located Views, reusable generic passive Views, JavaFX `Node`, and domain
-  application-service boundaries.
+  application-service boundaries; each contribution root must construct the
+  shell spec matching its area (`tabs` -> `ShellTabSpec`, `topbar` ->
+  `ShellTopBarSpec`, `state` -> `ShellRuntimeStateSpec`).
 - ViewModels may use JavaFX beans/collections and domain application-service
   boundaries, but not shell, views, data, concrete shell host types, or
   foreign view-root ViewModels.
 - Views may use JavaFX UI APIs but not shell, domain, data, or
   ApplicationService types; contribution-owned Views may reference only
-  co-located passive Views or reusable generic passive Views.
-- Optional FXML resources live under `resources/view/{tabs,topbar,state,details}`
-  or `resources/view/views`, use view-layer controllers only, and do not use
-  inline scripts.
+  co-located passive Views or reusable generic passive/base Views.
+- Optional FXML resources live directly under
+  `resources/view/{tabs,topbar,state,details}/<entry>/` or
+  `resources/view/views`, use passive View controllers matching the same
+  area-specific suffixes, and do not use inline scripts.
 - State-pane precedence is modeled explicitly.
 - Legacy component-local buckets are absent from migrated target code.
 

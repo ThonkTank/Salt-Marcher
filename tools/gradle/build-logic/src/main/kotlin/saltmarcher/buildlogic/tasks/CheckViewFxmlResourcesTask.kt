@@ -92,6 +92,34 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
         )
         if (allowedPrefixes.none(controller::startsWith)) {
             violations.add("$relative -> fx:controller must start with one of ${allowedPrefixes.joinToString()}")
+            return
+        }
+        validateControllerName(controller, relative, violations)
+    }
+
+    private fun validateControllerName(controller: String, relative: String, violations: MutableList<String>) {
+        val controllerSegments = controller.split('.')
+        if (controllerSegments.size < 4 || controllerSegments[0] != "src" || controllerSegments[1] != "view") {
+            violations.add("$relative -> fx:controller must point to a concrete src.view passive View class")
+            return
+        }
+        val area = controllerSegments[2]
+        val simpleName = controllerSegments.last().substringBefore('$')
+        val validController = when (area) {
+            "views" -> simpleName.endsWith("View") && !simpleName.endsWith("ViewModel") && controllerSegments.size == 4
+            "tabs" -> controllerSegments.size == 5 &&
+                listOf("ControlsView", "MainView", "StateView").any(simpleName::endsWith)
+            "topbar" -> controllerSegments.size == 5 && simpleName.endsWith("TopBarView")
+            "state" -> controllerSegments.size == 5 && simpleName.endsWith("StateView")
+            "details" -> controllerSegments.size == 5 && simpleName.endsWith("DetailsView")
+            else -> false
+        }
+        if (!validController) {
+            violations.add(
+                "$relative -> fx:controller must match its passive view area: " +
+                    "tabs use *ControlsView/*MainView/*StateView, topbar uses *TopBarView, " +
+                    "state uses *StateView, details uses *DetailsView, reusable views use *View"
+            )
         }
     }
 
@@ -104,9 +132,9 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
                 return false
             }
             if (segments.first() == "views") {
-                return true
+                return segments.size == 2
             }
-            return segments.first() in CONTRIBUTION_RESOURCE_AREAS && segments.size >= 3
+            return segments.first() in CONTRIBUTION_RESOURCE_AREAS && segments.size == 3
         }
     }
 }

@@ -144,6 +144,7 @@ language-level architecture rules.
 | `./gradlew checkDefinedStyleClassSelectors` | `Blocking Local Gate` | Style classes authored from Java through `getStyleClass()` calls must resolve to selectors in centralized `resources/*.css` files. |
 | `./gradlew checkNoCompiledArtifactsInSource` | `Blocking Local Gate` | `.class` files must not exist under active source roots. |
 | `./gradlew checkDesktopPackagingInputs` | `Blocking Local Gate` | Desktop main/preloader class sources, icon paths, stylesheet path, launcher name, and `StartupWMClass` must be present and valid. |
+| `./gradlew checkViewFxmlResources` | `Blocking Local Gate` | View FXML files must live under the MVVM view-resource tree, avoid inline scripts, and use passive View controllers matching the owning view area. |
 
 The styling rules behind the stylesheet and selector gates are defined in the
 [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/styling.md:1).
@@ -175,8 +176,9 @@ reported.
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `spotbugsMain`, `pmdArchitectureMain`, `cpdMain`, `lizardMain`, `ckjmMain`,
 `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
-`checkNoCompiledArtifactsInSource`, `checkDesktopPackagingInputs`, and
-`jqassistantEffectiveRules`, each run through `./gradlew <task>
+`checkNoCompiledArtifactsInSource`, `checkDesktopPackagingInputs`,
+`checkViewFxmlResources`, and `jqassistantEffectiveRules`, each run through
+`./gradlew <task>
 --console=plain`.
 
 Architecture-focused entrypoints:
@@ -266,7 +268,8 @@ Operationally, architecture checks enter local quality through:
   dependency, and cycle freedom rules.
 - `checkViewArchitecture`
   Runs explicit jQAssistant view-topology analysis for contribution roots,
-  co-located ViewModels, co-located passive views, and reusable generic views.
+  co-located ViewModels, co-located passive views, and reusable generic views,
+  plus the view FXML resource boundary check.
 - `checkArchitecture`
   Aggregates ArchUnit, PMD architecture rules, and the build-harness.
 - `check`

@@ -113,7 +113,11 @@ Views own the MVVM View role.
 
 - Put contribution-owned passive Views next to their contribution or detail
   entry.
-- Put reusable generic passive Views directly under `src/view/views/`.
+- Put reusable generic passive Views and base Views directly under
+  `src/view/views/`.
+- Let contribution-owned concrete Views extend reusable generic Views when two
+  tabs share one cockpit surface, such as the dungeon map canvas or dungeon
+  control panel.
 - Put JavaFX controls, rendering, FXML controllers or loaders, menus, dialogs,
   cells, skins, drawing code, and widget-local state there.
 - Expose bind targets, properties, setters, callbacks, or observable hooks that
@@ -145,7 +149,9 @@ Views own the MVVM View role.
 - If code decides what should be shown, enabled, selected, labelled, loaded, or
   reported across a contribution's Views, it belongs in the ViewModel.
 - If code declares controls, layout, canvas drawing, dialogs, popups, cell
-  factories, or widget event handlers, it belongs in a View.
+  factories, or widget event handlers, it belongs in a View. Shared surface
+  structure belongs in reusable `src/view/views`; tab-specific controls stay in
+  the contribution-owned concrete View.
 - If code owns business meaning or invariants, it belongs in `src/domain/**`
   behind a root application service.
 - If code hosts fixed cockpit surfaces or arbitrates state-pane precedence, it

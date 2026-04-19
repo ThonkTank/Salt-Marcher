@@ -3,8 +3,7 @@ package src.view.state.encounter;
 import java.util.List;
 import java.util.Objects;
 import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.api.EncounterDifficultyBand;
 import src.domain.encounter.api.EncounterGenerationRequest;
@@ -12,14 +11,14 @@ import src.domain.encounter.api.EncounterGenerationRequest;
 public final class EncounterRuntimeStateViewModel {
 
     private final EncounterApplicationService encounters;
-    private final StringProperty state = new SimpleStringProperty("");
+    private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
 
     public EncounterRuntimeStateViewModel(EncounterApplicationService encounters) {
         this.encounters = Objects.requireNonNull(encounters, "encounters");
     }
 
     public ReadOnlyStringProperty stateProperty() {
-        return state;
+        return state.getReadOnlyProperty();
     }
 
     public void generate() {

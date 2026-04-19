@@ -2,26 +2,25 @@ package src.view.tabs.dungeoneditor;
 
 import java.util.Objects;
 import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.dungeon.DungeonApplicationService;
 
 public final class DungeonEditorViewModel {
 
     private final DungeonApplicationService dungeon;
-    private final StringProperty status = new SimpleStringProperty("");
-    private final StringProperty state = new SimpleStringProperty("");
+    private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("");
+    private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
 
     public DungeonEditorViewModel(DungeonApplicationService dungeon) {
         this.dungeon = Objects.requireNonNull(dungeon, "dungeon");
     }
 
     public ReadOnlyStringProperty statusProperty() {
-        return status;
+        return status.getReadOnlyProperty();
     }
 
     public ReadOnlyStringProperty stateProperty() {
-        return state;
+        return state.getReadOnlyProperty();
     }
 
     public void refresh() {

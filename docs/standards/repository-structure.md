@@ -81,6 +81,7 @@ src/
         <PascalEntry>View.java
     views/
       <PascalReusableView>.java
+      <PascalReusableBaseView>.java
   domain/
     <feature>/
       <PascalFeatureName>ApplicationService.java
@@ -131,8 +132,10 @@ Every contribution-owned or detail-owned passive view is represented by one
 `*View.java` file in the same root. It defines exactly one panel, dropdown,
 state, or detail fragment for one shell surface.
 
-Reusable generic passive views may live directly under `src/view/views/`.
-Feature-owned views must not be moved there simply to share a package.
+Reusable generic passive views and base views may live directly under
+`src/view/views/`. Feature-owned concrete views must not be moved there simply
+to share a package; they stay in the owning contribution root and may extend
+the reusable generic view.
 
 Every service-exporting data feature exposes exactly one service-registration
 entrypoint:
@@ -183,7 +186,8 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   `src/view/state`, `src/view/details`, or reusable `src/view/views`.
 - Contribution-owned Java files are direct files under
   `src/view/<area>/<entry>/`.
-- Reusable generic view Java files are direct files under `src/view/views/`.
+- Reusable generic view and base-view Java files are direct files under
+  `src/view/views/`.
 - A contribution root under `tabs`, `topbar`, or `state` owns exactly one
   shell-registered contribution.
 - A detail root owns ViewModel and view content only, not a shell-registered

@@ -129,16 +129,20 @@
               NOT type.name CONTAINS '$'
               AND NOT (
                 (type.fqn =~ 'src\\.view\\.views\\..*' AND type.name ENDS WITH 'View')
-                OR
-                type.name ENDS WITH 'ControlsView'
-                OR type.name ENDS WITH 'MainView'
-                OR type.name ENDS WITH 'DetailsView'
-                OR type.name ENDS WITH 'StateView'
-                OR type.name ENDS WITH 'TopBarView'
+                OR (type.fqn =~ 'src\\.view\\.tabs\\.[^.]+\\..*'
+                  AND (type.name ENDS WITH 'ControlsView'
+                    OR type.name ENDS WITH 'MainView'
+                    OR type.name ENDS WITH 'StateView'))
+                OR (type.fqn =~ 'src\\.view\\.topbar\\.[^.]+\\..*'
+                  AND type.name ENDS WITH 'TopBarView')
+                OR (type.fqn =~ 'src\\.view\\.state\\.[^.]+\\..*'
+                  AND type.name ENDS WITH 'StateView')
+                OR (type.fqn =~ 'src\\.view\\.details\\.[^.]+\\..*'
+                  AND type.name ENDS WITH 'DetailsView')
               )
             RETURN DISTINCT
               type.relativePath AS Source,
-              '*ControlsView, *MainView, *DetailsView, *StateView, or *TopBarView' AS ExpectedDirection,
+              'area-specific passive view suffix: tabs use *ControlsView/*MainView/*StateView, topbar uses *TopBarView, state uses *StateView, details use *DetailsView, reusable views use *View' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Passive view names must identify the shell surface they render.' AS Details
             ORDER BY Source
@@ -183,16 +187,33 @@
 
     <constraint id="saltmarcher:MvvmNoPrivateForeignComponentDependencies">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Passive panel views do not depend on contributions or ViewModels.</description>
+        <description>Passive panel views depend only on same-root or reusable passive views.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:MvvmViewType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE source.viewBucket = 'VIEW' AND target.viewBucket <> 'VIEW'
+            WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
+            WHERE source.viewBucket = 'VIEW'
+              AND (
+                target.viewBucket <> 'VIEW'
+                OR (
+                  target.fqn =~ 'src\\.view\\.(tabs|topbar|state|details)\\..*'
+                  AND NOT (
+                    size(sourceSegments) >= 4
+                    AND size(targetSegments) >= 4
+                    AND sourceSegments[2] = targetSegments[2]
+                    AND sourceSegments[3] = targetSegments[3]
+                  )
+                )
+                OR (
+                  source.fqn =~ 'src\\.view\\.views\\..*'
+                  AND NOT (target.fqn =~ 'src\\.view\\.views\\..*')
+                )
+              )
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'passive views may depend only on other passive views' AS ExpectedDirection,
+              'passive views may depend only on same-root passive views or reusable src.view.views passive views' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
-              'Passive views must remain shell-free, domain-free, and ViewModel-free.' AS Details
+              'Passive views must remain shell-free, domain-free, ViewModel-free, and foreign-view-root-free.' AS Details
             ORDER BY Source, Target
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
@@ -203,6 +224,7 @@
         <description>Contributions may bind passive views, use shell API, and call only domain public boundaries.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'CONTRIBUTION'})-[:DEPENDS_ON]->(target:Java:Type)
+            WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
             WHERE
               target.fqn =~ 'bootstrap\\..*'
               OR target.fqn =~ 'src\\.data\\..*'
@@ -215,12 +237,23 @@
               )
               OR (
                 target.fqn =~ 'src\\.view\\..*'
-                AND NOT target.viewBucket IN ['CONTRIBUTION', 'MODEL', 'VIEW']
+                AND (
+                  NOT (target.viewBucket IN ['CONTRIBUTION', 'MODEL', 'VIEW'])
+                  OR (
+                    target.fqn =~ 'src\\.view\\.(tabs|topbar|state|details)\\..*'
+                    AND NOT (
+                      size(sourceSegments) >= 4
+                      AND size(targetSegments) >= 4
+                      AND sourceSegments[2] = targetSegments[2]
+                      AND sourceSegments[3] = targetSegments[3]
+                    )
+                  )
+                )
               )
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'shell.api, owning ViewModels, passive views, and domain public boundaries only' AS ExpectedDirection,
+              'shell.api, same-root ViewModels, same-root or reusable passive views, and domain public boundaries only' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
               'Contributions must not depend on old view topology, data, bootstrap, shell internals, or domain internals.' AS Details
             ORDER BY Source, Target
@@ -233,6 +266,7 @@
         <description>ViewModels stay independent from shell APIs and concrete views.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'MODEL'})-[:DEPENDS_ON]->(target:Java:Type)
+            WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
             WHERE
               target.fqn =~ 'bootstrap\\..*'
               OR target.fqn =~ 'src\\.data\\..*'
@@ -244,12 +278,20 @@
               )
               OR (
                 target.fqn =~ 'src\\.view\\..*'
-                AND NOT target.viewBucket = 'MODEL'
+                AND (
+                  NOT (target.viewBucket = 'MODEL')
+                  OR NOT (
+                    size(sourceSegments) >= 4
+                    AND size(targetSegments) >= 4
+                    AND sourceSegments[2] = targetSegments[2]
+                    AND sourceSegments[3] = targetSegments[3]
+                  )
+                )
               )
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'JavaFX bindable state, sibling ViewModels, and domain public boundaries only' AS ExpectedDirection,
+              'JavaFX bindable state, same-root ViewModels, and domain public boundaries only' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
               'ViewModels must not depend on shell APIs, concrete views, data, bootstrap, or domain internals.' AS Details
             ORDER BY Source, Target

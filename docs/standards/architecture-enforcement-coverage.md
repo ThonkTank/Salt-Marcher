@@ -57,7 +57,9 @@ controls; reusable generic views live under `src/view/views`.
 - `view-contribution-entrypoint-shape`: shell-facing view entrypoints use
   `*Contribution`, implement `shell.api.ShellContribution`, expose
   `registrationSpec()` and `bind(ShellRuntimeContext)`, and are discovered only
-  from `tabs`, `topbar`, and `state` roots through build-harness
+  from `tabs`, `topbar`, and `state` roots; each entrypoint constructs the
+  shell contribution spec matching its area (`ShellTabSpec`,
+  `ShellTopBarSpec`, or `ShellRuntimeStateSpec`) through build-harness
   `shell-view-contribution-placement` (`:build-harness:check`), jQAssistant
   `saltmarcher:MvvmRootOnlyViewContribution`, and
   `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`), plus PMD
@@ -69,10 +71,15 @@ controls; reusable generic views live under `src/view/views`.
   (`compileJava`).
 - `view-passive-panel-one-fragment-per-file`: co-located `*View` files and
   reusable generic `src/view/views` files define one top-level passive view
-  and use fixed-surface or reusable-view naming through jQAssistant
+  and use area-specific fixed-surface or reusable-view naming (`tabs`:
+  `*ControlsView`, `*MainView`, or `*StateView`; `topbar`: `*TopBarView`;
+  `state`: `*StateView`; `details`: `*DetailsView`; reusable views: `*View`)
+  through jQAssistant
   `saltmarcher:MvvmOnePanelViewPerFile` and
   `saltmarcher:MvvmPanelViewName` (`checkViewArchitecture`), plus PMD
-  `SaltMarcherEntrypointRule` for source-local panel shape
+  `SaltMarcherEntrypointRule` for source-local panel shape; co-located fixed
+  surface views must be `public final`, while reusable `src/view/views` views
+  may be non-final base views for co-located passive panels
   (`pmdArchitectureMain`).
 - `view-contribution-dependency-boundary`: contributions may use shell public
   contracts, their co-located ViewModel, co-located passive views, reusable
@@ -102,9 +109,11 @@ controls; reusable generic views live under `src/view/views`.
   (`checkViewArchitecture`), and
   ArchUnit `passiveViewsMustNotReachContributionShellDomainDataOrBootstrap`
   (`architectureTest`).
-- `view-presentation-state-placement`: presentation-owned model/state carrier
-  types must live next to their owning view contribution through Error Prone
-  `ViewModelOwnershipNaming` (`compileJava`).
+- `view-presentation-state-placement`: top-level presentation-owned
+  model/state carrier types under `src/view/**` must live in the owning
+  `*ViewModel.java` surface; nested widget-local state classes inside passive
+  views are allowed as local UI implementation details. This is enforced
+  through Error Prone `ViewModelOwnershipNaming` (`compileJava`).
 - `view-reflection-bypass-ban`: reflective reach-through under `src/view/**`,
   including `Class.forName(...)`, `ClassLoader.loadClass(...)`,
   `MethodHandles.Lookup.findClass(...)`, and direct `java.lang.reflect.*`
@@ -115,10 +124,9 @@ controls; reusable generic views live under `src/view/views`.
   under `resources/view/tabs/<entry>/`, `resources/view/topbar/<entry>/`,
   `resources/view/state/<entry>/`, `resources/view/details/<entry>/`, or
   direct reusable `resources/view/views/`; inline FXML scripts are forbidden;
-  `fx:controller` must point to `src.view.tabs`, `src.view.topbar`,
-  `src.view.state`, `src.view.details`, or `src.view.views`. This is enforced
-  by Gradle-owned `checkViewFxmlResources` (`checkViewArchitecture` and
-  `check`).
+  `fx:controller` must point to a passive View class with the same area-specific
+  naming contract as Java views. This is enforced by Gradle-owned
+  `checkViewFxmlResources` (`checkViewArchitecture` and `check`).
 
 Mechanical trace:
 
@@ -136,8 +144,8 @@ Mechanical trace:
 - Contributions may use shell public contracts, co-located ViewModels,
   co-located passive views, reusable generic passive views, JavaFX `Node`,
   domain application-service roots, and domain `api` carriers.
-- Optional FXML resources stay in the view resource tree and do not use inline
-  scripts.
+- Optional FXML resources stay in the view resource tree, use matching passive
+  View controllers, and do not use inline scripts.
 - Details/history publication goes through shell-owned contracts.
 - State-pane precedence is explicit: active left-bar tab content wins while
   present; otherwise registered state-pane tabs are shown.

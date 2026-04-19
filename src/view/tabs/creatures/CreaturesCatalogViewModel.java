@@ -2,21 +2,20 @@ package src.view.tabs.creatures;
 
 import java.util.Objects;
 import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.creatures.CreaturesApplicationService;
 
 public final class CreaturesCatalogViewModel {
 
     private final CreaturesApplicationService creatures;
-    private final StringProperty summary = new SimpleStringProperty("");
+    private final ReadOnlyStringWrapper summary = new ReadOnlyStringWrapper("");
 
     public CreaturesCatalogViewModel(CreaturesApplicationService creatures) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
     }
 
     public ReadOnlyStringProperty summaryProperty() {
-        return summary;
+        return summary.getReadOnlyProperty();
     }
 
     public void load() {
