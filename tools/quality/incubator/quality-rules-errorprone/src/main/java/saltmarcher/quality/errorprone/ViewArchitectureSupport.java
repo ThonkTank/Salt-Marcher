@@ -53,6 +53,15 @@ final class ViewArchitectureSupport {
     private static final Set<String> DATA_ROOT_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ServiceContribution",
             "shell.api.ServiceRegistry");
+    private static final Set<String> FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES = Set.of(
+            "java.lang.ClassLoader",
+            "java.lang.Process",
+            "java.lang.ProcessBuilder",
+            "java.lang.Runtime",
+            "java.lang.Thread",
+            "java.lang.ThreadGroup",
+            "java.util.Timer",
+            "java.util.TimerTask");
 
     private ViewArchitectureSupport() {
     }
@@ -157,6 +166,22 @@ final class ViewArchitectureSupport {
     static boolean isAllowedModelJavafxType(String referencedType) {
         return isAllowedViewModelJavafxType(referencedType)
                 || referencedType.equals("javafx.scene.Node");
+    }
+
+    static boolean isForbiddenViewInfrastructureJdkType(String referencedType) {
+        if (referencedType == null) {
+            return false;
+        }
+        return referencedType.startsWith("java.io.")
+                || referencedType.startsWith("java.lang.invoke.")
+                || referencedType.startsWith("java.lang.reflect.")
+                || referencedType.startsWith("java.net.")
+                || referencedType.startsWith("java.nio.file.")
+                || referencedType.startsWith("java.sql.")
+                || referencedType.startsWith("java.util.concurrent.")
+                || FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES.contains(referencedType)
+                || FORBIDDEN_VIEW_JDK_INFRASTRUCTURE_TYPES.stream()
+                        .anyMatch(forbiddenType -> referencedType.startsWith(forbiddenType + "$"));
     }
 
     static boolean isTargetViewModelReference(String referencedType) {

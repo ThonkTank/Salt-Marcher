@@ -317,13 +317,15 @@ shape:
   co-located Views, reusable generic passive Views, JavaFX `Node`, and domain
   application-service boundaries; each contribution root must construct the
   shell spec matching its area (`tabs` -> `ShellTabSpec`, `topbar` ->
-  `ShellTopBarSpec`, `state` -> `ShellRuntimeStateSpec`).
+  `ShellTopBarSpec`, `state` -> `ShellRuntimeStateSpec`), and must not use
+  direct JDK infrastructure APIs.
 - ViewModels may use JavaFX beans/collections and domain application-service
   boundaries, but not shell, views, data, concrete shell host types, or
-  foreign view-root ViewModels.
+  foreign view-root ViewModels, and must not use direct JDK infrastructure APIs.
 - Views may use JavaFX UI APIs but not shell, domain, data, or
   ApplicationService types; contribution-owned Views may reference only
-  co-located passive Views or reusable generic passive/base Views.
+  co-located passive Views or reusable generic passive/base Views, and must not
+  use direct JDK infrastructure APIs.
 - Optional FXML resources live directly under
   `resources/view/{tabs,topbar,state,details}/<entry>/` or
   `resources/view/views`, use passive View controllers matching the same

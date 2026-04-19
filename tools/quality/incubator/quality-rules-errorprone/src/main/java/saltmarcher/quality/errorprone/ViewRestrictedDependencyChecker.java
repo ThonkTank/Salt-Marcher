@@ -40,6 +40,9 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
     }
 
     private static boolean isForbiddenReference(String referencedType, String sourcePackageName) {
+        if (ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType)) {
+            return true;
+        }
         if (referencedType.startsWith("shell.")
                 || referencedType.startsWith("src.domain.")
                 || referencedType.startsWith("src.data.")) {

@@ -84,8 +84,9 @@ controls; reusable generic views live under `src/view/views`.
 - `view-contribution-dependency-boundary`: contributions may use shell public
   contracts, their co-located ViewModel, co-located passive views, reusable
   generic passive views, JavaFX scene `Node`, domain root application services,
-  and domain `api` carriers, but not data, bootstrap, shell host internals,
-  legacy view topology, foreign view roots, or private domain internals
+  domain `api` carriers, and ordinary non-infrastructure JDK support types, but
+  not data, bootstrap, shell host internals, legacy view topology, foreign view
+  roots, private domain internals, or direct JDK infrastructure ownership
   through Error Prone `ViewModelFrameworkIndependence` and
   `FeatureShellApiAllowlist` (`compileJava`), jQAssistant
   `saltmarcher:MvvmModelDependencies` (`checkViewArchitecture`), and
@@ -93,17 +94,20 @@ controls; reusable generic views live under `src/view/views`.
   and `viewContributionsAndViewModelsMustOnlyUseFeatureApisAtBackendBoundary`
   (`architectureTest`).
 - `view-model-dependency-boundary`: ViewModels may use JavaFX
-  beans/collections, JDK types, same-root ViewModels, and domain public
-  boundaries, but not shell, concrete views, data, bootstrap, shell host
-  internals, foreign view roots, or domain internals through Error Prone
-  `ViewModelFrameworkIndependence` (`compileJava`) and jQAssistant
+  beans/collections, ordinary non-infrastructure JDK support types, private
+  nested presentation helper types inside the owning `*ViewModel`, and domain
+  public boundaries, but not shell, concrete views, data, bootstrap, shell host
+  internals, foreign view roots, direct JDK infrastructure ownership, or domain
+  internals through Error Prone `ViewModelFrameworkIndependence` (`compileJava`)
+  and jQAssistant
   `saltmarcher:MvvmViewModelDependencies`
   (`checkViewArchitecture`).
 - `view-passive-panel-dependency-boundary`: passive panel views may use JavaFX,
-  JDK types, co-located passive view helpers, and reusable generic passive
-  views, but not shell, domain, data, bootstrap, contributions, ViewModels,
-  ApplicationServices, foreign view roots, or legacy view topology through
-  Error Prone
+  ordinary non-infrastructure JDK listener/callback/property support,
+  co-located passive view helpers, and reusable generic passive views, but not
+  shell, domain, data, bootstrap, contributions, ViewModels,
+  ApplicationServices, foreign view roots, legacy view topology, or direct JDK
+  infrastructure ownership through Error Prone
   `ViewRestrictedDependencies` (`compileJava`), jQAssistant
   `saltmarcher:MvvmNoPrivateForeignComponentDependencies`
   (`checkViewArchitecture`), and
@@ -137,13 +141,15 @@ Mechanical trace:
   co-located ViewModel, and at least one passive View; detail entries do not
   define bootstrap-discovered contributions.
 - A ViewModel file defines one presentation state/action holder and imports no
-  shell APIs, concrete view classes, or foreign view-root ViewModels.
+  shell APIs, concrete view classes, foreign view-root ViewModels, or direct JDK
+  infrastructure types.
 - A view file defines one passive JavaFX fragment and imports no shell, domain,
   data, ApplicationService, Contribution, ViewModel, or foreign view-root view
-  types.
+  types, and no direct JDK infrastructure types.
 - Contributions may use shell public contracts, co-located ViewModels,
   co-located passive views, reusable generic passive views, JavaFX `Node`,
-  domain application-service roots, and domain `api` carriers.
+  domain application-service roots, domain `api` carriers, and ordinary
+  non-infrastructure JDK support types.
 - Optional FXML resources stay in the view resource tree, use matching passive
   View controllers, and do not use inline scripts.
 - Details/history publication goes through shell-owned contracts.

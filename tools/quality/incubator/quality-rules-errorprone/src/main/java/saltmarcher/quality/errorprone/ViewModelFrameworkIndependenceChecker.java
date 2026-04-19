@@ -53,6 +53,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
     }
 
     private static boolean isForbidden(String referencedType, boolean contribution, String sourcePackageName) {
+        if (ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType)) {
+            return true;
+        }
         if (referencedType.startsWith("javafx.")) {
             return contribution
                     ? !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType)
