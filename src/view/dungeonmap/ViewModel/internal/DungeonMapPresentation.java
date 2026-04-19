@@ -1,4 +1,4 @@
-package src.view.dungeonshared.assembly;
+package src.view.dungeonmap.ViewModel.internal;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.view.mapcanvas.api.MapCanvasRenderModel;
 import java.util.function.Function;

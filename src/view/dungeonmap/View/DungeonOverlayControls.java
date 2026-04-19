@@ -1,4 +1,4 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
@@ -17,8 +17,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import src.view.dungeonshared.ViewModel.DungeonOverlayMode;
-import src.view.dungeonshared.ViewModel.DungeonOverlaySettings;
+import src.view.dungeonmap.api.DungeonOverlayMode;
+import src.view.dungeonmap.api.DungeonOverlaySettings;
 /**
  * Compact overlay trigger with an in-place menu for placeholder floor settings.
  */

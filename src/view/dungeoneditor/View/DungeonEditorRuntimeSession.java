@@ -3,8 +3,8 @@ package src.view.dungeoneditor.View;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.Node;
-import src.view.dungeonshared.View.DungeonEditorRuntimeNodes;
-import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
+import src.view.dungeonmap.View.DungeonEditorRuntimeNodes;
+import src.view.dungeonmap.api.DungeonSelectionPublisher;
 
 public final class DungeonEditorRuntimeSession {
 

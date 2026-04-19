@@ -1,4 +1,4 @@
-package src.view.dungeonshared.assembly;
+package src.view.dungeonmap.ViewModel.internal;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.DungeonEditorOperation;
 import src.domain.dungeon.api.DungeonInspectorSnapshot;
@@ -7,14 +7,14 @@ import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.Viewport;
 import src.domain.dungeon.DungeonApplicationService;
-import src.view.dungeonshared.ViewModel.DungeonLoadedMapViewModel;
-import src.view.dungeonshared.ViewModel.DungeonMapSurfaceViewModel;
-import src.view.dungeonshared.ViewModel.DungeonMapSurfaceViewState;
-import src.view.dungeonshared.ViewModel.DungeonMapSummaryViewModel;
-import src.view.dungeonshared.ViewModel.DungeonOverlayMode;
-import src.view.dungeonshared.ViewModel.DungeonOverlaySettings;
-import src.view.dungeonshared.ViewModel.DungeonSelectionItemViewModel;
-import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
+import src.view.dungeonmap.api.DungeonLoadedMapViewModel;
+import src.view.dungeonmap.api.DungeonMapSurfaceViewModel;
+import src.view.dungeonmap.api.DungeonMapSurfaceViewState;
+import src.view.dungeonmap.api.DungeonMapSummaryViewModel;
+import src.view.dungeonmap.api.DungeonOverlayMode;
+import src.view.dungeonmap.api.DungeonOverlaySettings;
+import src.view.dungeonmap.api.DungeonSelectionItemViewModel;
+import src.view.dungeonmap.api.DungeonViewportViewModel;
 import java.util.List;
 /**
  * Shared controller for dungeon map selection, loading, creation, deletion, and placeholder edit hooks.

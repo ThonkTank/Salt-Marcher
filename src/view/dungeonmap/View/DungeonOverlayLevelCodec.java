@@ -1,4 +1,4 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 import java.util.List;
 import java.util.Optional;
 final class DungeonOverlayLevelCodec {

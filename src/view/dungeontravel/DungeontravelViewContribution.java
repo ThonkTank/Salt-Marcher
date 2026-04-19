@@ -15,10 +15,10 @@ import shell.api.ShellSlot;
 import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import shell.api.ShellViewContribution;
-import src.view.dungeonshared.View.DungeonSelectionInspectorContent;
-import src.view.dungeonshared.View.DungeonTravelRuntimeSession;
-import src.view.dungeonshared.ViewModel.DungeonSelectionInspectorEntry;
-import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
+import src.view.dungeonmap.View.DungeonSelectionInspectorContent;
+import src.view.dungeonmap.View.DungeonTravelRuntimeSession;
+import src.view.dungeonmap.api.DungeonSelectionInspectorEntry;
+import src.view.dungeonmap.api.DungeonSelectionPublisher;
 import src.view.dungeontravel.View.DungeonTravelNavigationGraphic;
 
 /**

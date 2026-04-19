@@ -17,9 +17,9 @@ import shell.api.ShellTabSpec;
 import shell.api.ShellViewContribution;
 import src.view.dungeoneditor.View.DungeonEditorNavigationGraphic;
 import src.view.dungeoneditor.View.DungeonEditorRuntimeSession;
-import src.view.dungeonshared.View.DungeonSelectionInspectorContent;
-import src.view.dungeonshared.ViewModel.DungeonSelectionInspectorEntry;
-import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
+import src.view.dungeonmap.View.DungeonSelectionInspectorContent;
+import src.view.dungeonmap.api.DungeonSelectionInspectorEntry;
+import src.view.dungeonmap.api.DungeonSelectionPublisher;
 
 /**
  * Editor tab root for dungeon map work.

@@ -1,4 +1,4 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -8,9 +8,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import src.view.dungeonshared.ViewModel.DungeonLoadedMapViewModel;
-import src.view.dungeonshared.ViewModel.DungeonMapSurfaceViewModel;
-import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
+import src.view.dungeonmap.api.DungeonLoadedMapViewModel;
+import src.view.dungeonmap.api.DungeonMapSurfaceViewModel;
+import src.view.dungeonmap.api.DungeonViewportViewModel;
 import java.util.Objects;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;

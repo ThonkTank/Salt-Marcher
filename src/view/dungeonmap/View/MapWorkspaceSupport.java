@@ -1,4 +1,4 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;

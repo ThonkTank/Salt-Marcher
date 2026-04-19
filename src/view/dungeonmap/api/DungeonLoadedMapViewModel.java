@@ -1,4 +1,4 @@
-package src.view.dungeonshared.ViewModel;
+package src.view.dungeonmap.api;
 
 import java.util.List;
 

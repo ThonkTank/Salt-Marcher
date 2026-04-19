@@ -1,4 +1,4 @@
-package src.view.dungeonshared.assembly;
+package src.view.dungeonmap.ViewModel.internal;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.CreateDungeonMapCommand;

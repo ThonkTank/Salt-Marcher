@@ -1,10 +1,10 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 
 import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.Node;
-import src.view.dungeonshared.assembly.DungeonTravelInteractor;
-import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
+import src.view.dungeonmap.ViewModel.internal.DungeonTravelInteractor;
+import src.view.dungeonmap.api.DungeonSelectionPublisher;
 
 public final class DungeonTravelRuntimeSession {
 

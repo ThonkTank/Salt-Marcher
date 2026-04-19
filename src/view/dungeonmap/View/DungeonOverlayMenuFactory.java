@@ -1,4 +1,4 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.CustomMenuItem;

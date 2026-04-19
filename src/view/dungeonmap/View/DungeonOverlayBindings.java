@@ -1,8 +1,8 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 import java.util.Objects;
 import java.util.function.Supplier;
-import src.view.dungeonshared.ViewModel.DungeonMapSurfaceViewModel;
-import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
+import src.view.dungeonmap.api.DungeonMapSurfaceViewModel;
+import src.view.dungeonmap.api.DungeonViewportViewModel;
 public final class DungeonOverlayBindings {
     private DungeonOverlayBindings() {
     }

@@ -1,14 +1,14 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
-import src.view.dungeonshared.ViewModel.DungeonEditorTool;
-import src.view.dungeonshared.ViewModel.DungeonMapSurfaceViewModel;
-import src.view.dungeonshared.ViewModel.DungeonSelectionItemViewModel;
-import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
+import src.view.dungeonmap.api.DungeonEditorTool;
+import src.view.dungeonmap.api.DungeonMapSurfaceViewModel;
+import src.view.dungeonmap.api.DungeonSelectionItemViewModel;
+import src.view.dungeonmap.api.DungeonViewportViewModel;
 import java.util.List;
 import java.util.function.Supplier;
 final class DungeonEditorStateSupport {

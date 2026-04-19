@@ -1,4 +1,4 @@
-package src.view.dungeonshared.View;
+package src.view.dungeonmap.View;
 
 import java.util.List;
 import java.util.Objects;
@@ -8,8 +8,8 @@ import java.util.function.Supplier;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import org.jspecify.annotations.Nullable;
-import src.view.dungeonshared.ViewModel.DungeonLoadedMapViewModel;
-import src.view.dungeonshared.ViewModel.DungeonSelectionItemViewModel;
+import src.view.dungeonmap.api.DungeonLoadedMapViewModel;
+import src.view.dungeonmap.api.DungeonSelectionItemViewModel;
 
 public final class DungeonMapSelectionSupport {
 

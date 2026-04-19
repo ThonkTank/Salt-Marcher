@@ -1,14 +1,14 @@
-package src.view.dungeonshared.assembly;
+package src.view.dungeonmap.ViewModel.internal;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
-import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
-import src.view.dungeonshared.View.DungeonTravelControls;
-import src.view.dungeonshared.View.DungeonTravelStatePane;
-import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
+import src.view.dungeonmap.api.DungeonSelectionPublisher;
+import src.view.dungeonmap.View.DungeonTravelControls;
+import src.view.dungeonmap.View.DungeonTravelStatePane;
+import src.view.dungeonmap.api.DungeonViewportViewModel;
 import src.view.mapcanvas.api.MapCanvasRenderModel;
 import src.view.mapcanvas.api.MapCanvasScene;
 /**

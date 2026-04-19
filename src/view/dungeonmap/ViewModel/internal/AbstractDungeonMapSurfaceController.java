@@ -1,12 +1,12 @@
-package src.view.dungeonshared.assembly;
+package src.view.dungeonmap.ViewModel.internal;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.DungeonMapId;
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.OnionConfig;
 import src.domain.dungeon.DungeonApplicationService;
-import src.view.dungeonshared.ViewModel.DungeonMapSurfaceState;
-import src.view.dungeonshared.ViewModel.DungeonOverlaySettings;
+import src.view.dungeonmap.api.DungeonMapSurfaceState;
+import src.view.dungeonmap.api.DungeonOverlaySettings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
