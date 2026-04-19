@@ -26,6 +26,16 @@ Context Type: Supporting Read-Model Context
 - This exception is justified because the context exists to publish shared map
   projection contracts across bounded contexts, not to own authored map truth.
 
+## Promotion Triggers
+
+Promote `mapcore` to a policy-owning bounded context before adding any of:
+
+- authored map mutation operations
+- persisted map truth or map lifecycle rules
+- topology repair, merge, split, routing, or traversal policy
+- map-editor decisions that choose or validate authored state
+- repository contracts over map write-model truth
+
 ## Allowed Domain Shape
 
 - `api/` owns shared read payloads and coordinate references.

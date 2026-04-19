@@ -7,12 +7,7 @@ import java.util.List;
 public record EncounterDraft(
         String title,
         EncounterDifficultyBand achievedDifficulty,
-        int creatureCount,
-        int totalBaseXp,
-        int adjustedXp,
-        double multiplier,
-        int score,
-        int targetAdjustedXp,
+        EncounterDraftMetrics metrics,
         List<EncounterDraftEntry> entries
 ) {
 }

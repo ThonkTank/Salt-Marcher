@@ -3,6 +3,7 @@ package src.domain.party.application;
 import src.domain.party.api.CharacterDraft;
 import src.domain.party.api.MutationResult;
 import src.domain.party.api.MutationStatus;
+import src.domain.party.roster.PartyCharacterDraft;
 import src.domain.party.roster.PartyRosterRepository;
 import src.domain.party.roster.PartyMembership;
 import src.domain.party.roster.PartyMutationStatus;
@@ -32,11 +33,11 @@ public final class PartyMutationOperations {
     }
 
     public MutationResult createCharacter(CharacterDraft draft, PartyMembership membership) {
-        return new MutationResult(mapMutationStatus(createCharacterUseCase.execute(draft, membership)));
+        return new MutationResult(mapMutationStatus(createCharacterUseCase.execute(toDomainDraft(draft), membership)));
     }
 
     public MutationResult updateCharacter(long id, CharacterDraft draft) {
-        return new MutationResult(mapMutationStatus(updateCharacterUseCase.execute(id, draft)));
+        return new MutationResult(mapMutationStatus(updateCharacterUseCase.execute(id, toDomainDraft(draft))));
     }
 
     public MutationResult deleteCharacter(long id) {
@@ -65,5 +66,17 @@ public final class PartyMutationOperations {
             case INVALID_INPUT -> MutationStatus.INVALID_INPUT;
             case STORAGE_ERROR -> MutationStatus.STORAGE_ERROR;
         };
+    }
+
+    private static PartyCharacterDraft toDomainDraft(CharacterDraft draft) {
+        if (draft == null) {
+            return null;
+        }
+        return new PartyCharacterDraft(
+                draft.name(),
+                draft.playerName(),
+                draft.level(),
+                draft.passivePerception(),
+                draft.armorClass());
     }
 }

@@ -35,6 +35,8 @@ Target state:
 
 ## Write Model And Derived State
 
+Write Model: None
+
 The encounter feature does not persist authored write-model state in v1.
 
 It derives:
@@ -47,13 +49,55 @@ It derives:
 Generated encounters are ephemeral derived state. They may be locked or
 excluded inside the runtime tab, but those controls remain local session state.
 
-## Core Invariants
+## Aggregate Model
+
+Write Model: None
+
+The v1 encounter context has no persisted aggregate root. Its policy boundary
+is the `generation/` module, which owns deterministic encounter generation,
+difficulty targeting, ranking, and role/tag heuristics over current public party
+and creature inputs.
+
+## Ephemeral Policy Rationale
+
+Encounter generation owns rule-bearing runtime decisions, but v1 does not need
+an authored encounter write model because generated encounters are suggestions
+inside the active runtime session. If locks, exclusions, encounter plans, or
+accepted encounters become persisted authored truth, this context must introduce
+a real aggregate root before those mutations are stored.
+
+## Commands And Invariants
+
+Commands entering the policy model are:
+
+- generate encounter
+- apply locked creature inputs
+- exclude runtime candidates
+- rank generated alternatives
+
+Core invariants:
 
 - the active party is the balancing baseline
 - encounter math is computed from public party data, not duplicated persistence
 - foreign feature internals remain hidden behind their API boundaries
 - generator ranking must be deterministic for the same inputs
 - locked creatures remain mandatory inputs until cleared by the user
+
+## Consistency Model
+
+Encounter generation reads party and creature context snapshots through public
+application-service boundaries. It does not save party or creature state, and it
+does not persist generated encounter state in v1. Runtime locks and exclusions
+are session-local controls over the next generation command.
+
+## Ubiquitous Language
+
+- `EncounterDifficultyBand`: requested difficulty intent.
+- `EncounterDifficultyTargets`: budget thresholds for the active party.
+- `EncounterDraft`: candidate generated encounter before export.
+- `EncounterCandidateProfile`: creature candidate enriched for generation.
+- `EncounterLock`: runtime mandatory creature input.
+- `GeneratedEncounter`: exported generated encounter suggestion.
 
 ## Domain Policies
 

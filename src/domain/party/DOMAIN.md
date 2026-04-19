@@ -24,7 +24,28 @@ The authored write model is the persisted party roster:
 - level and XP progression
 - combat profile values owned by the party feature
 
-## Core Invariants
+## Aggregate Model
+
+Aggregate Root: PartyRoster
+
+`PartyRoster` is the transaction boundary for one party roster. It owns the
+character collection, next character identity, membership assignment, XP awards,
+and rest-driven progression transitions. `PartyCharacter` is an entity inside
+that aggregate, and roster value objects own identity, progress, combat profile,
+membership, rest type, and mutation status vocabulary.
+
+## Commands And Invariants
+
+Commands entering the aggregate are:
+
+- create character
+- update character
+- delete character
+- set membership
+- award XP
+- perform rest
+
+Core invariants:
 
 - character identity remains stable across roster mutations
 - active and reserve membership is owned by the party aggregate, not by view
@@ -32,6 +53,21 @@ The authored write model is the persisted party roster:
 - XP and level progression remain internally consistent after award and rest
   operations
 - external mutation enters through the owning roster aggregate
+
+## Consistency Model
+
+One roster mutation changes one `PartyRoster` aggregate instance and is saved by
+the party repository contract. Other contexts consume party state through the
+application service and exported read carriers instead of sharing roster
+internals.
+
+## Ubiquitous Language
+
+- `PartyRoster`: authored party aggregate.
+- `PartyCharacter`: identity-bearing character inside the roster.
+- `PartyMembership`: active or reserve participation state.
+- `PartyCharacterProgress`: level, XP, and rest-cadence progress.
+- `PartyRestType`: short-rest or long-rest roster transition.
 
 ## Architecture Status
 

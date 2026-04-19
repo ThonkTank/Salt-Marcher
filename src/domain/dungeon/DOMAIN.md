@@ -55,6 +55,10 @@ Derived state must not become a second source of truth. This includes:
 
 ## Canonical Aggregate
 
+## Aggregate Model
+
+Aggregate Root: DungeonMap
+
 The persisted core of one dungeon map is shaped as:
 
 ```text
@@ -146,7 +150,16 @@ It owns:
 - authored semantics and notes
 - feature-to-space or feature-to-room attachment semantics
 
-## Core Invariants
+## Commands And Invariants
+
+Commands entering the map model include:
+
+- create map
+- delete map
+- apply editor operation
+- rebuild derived state from authored truth
+
+Core invariants:
 
 - One dungeon map has one canonical aggregate root.
 - Travel and editor do not fork persisted map truth.
@@ -154,6 +167,25 @@ It owns:
 - Generated topology must be reproducible from the write model.
 - Domain ownership must stay explicit; geometry, semantics, and read models do
   not collapse into one undifferentiated structure.
+
+## Consistency Model
+
+One map mutation targets one `DungeonMap` aggregate instance and increments its
+authored revision. Render snapshots, inspector details, route exits, and derived
+graphs are deterministic read models rebuilt from the authored map state.
+Cross-context consumers use dungeon application-service operations and `api/`
+carriers instead of reaching into `map/`.
+
+## Ubiquitous Language
+
+- `DungeonMap`: authored map aggregate root.
+- `SpatialTopology`: canonical spatial truth.
+- `SpaceCatalog`: stable space identity and shared space semantics.
+- `RoomCatalog`: room identity and authored room-level semantics.
+- `ConnectionCatalog`: stable semantic links between areas.
+- `FeatureCatalog`: authored non-space, non-connection features.
+- `Derived State`: reproducible projections for rendering, inspector, and
+  travel.
 
 ## Domain Policies
 

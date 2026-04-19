@@ -206,6 +206,60 @@ truly its job.
 - Use eventual consistency outside the aggregate boundary unless a true
   invariant requires immediate consistency.
 
+## Tactical Object Shape
+
+Professional DDD object structure is explicit in SaltMarcher rather than
+implicit review taste.
+
+- Aggregate roots own externally visible state transitions and consistency
+  checks for their transactional boundary. Application use cases load, delegate
+  to the aggregate, save, and map results.
+- Entities own stable identity plus state-coupled behavior. Child entities do
+  not become alternate external mutation entrypoints for an aggregate.
+- Value objects are identity-free immutable records or final classes. They own
+  value-local validation, normalization, or rejection at construction/factory
+  time unless a use-case boundary intentionally converts invalid user input into
+  an exported failure result first.
+- Domain services and factories are allowed only for behavior that does not
+  naturally belong to one aggregate, entity, or value object. They must be
+  stateless and named in the ubiquitous language.
+- `api/` types are boundary carriers. Named domain modules must not depend on
+  same-feature API command, query, result, draft, snapshot, page, detail,
+  options, or payload carriers as invariant inputs. Translate those carriers at
+  the root or application boundary before entering the model.
+- Read-model helper objects may stay projection-oriented only inside a
+  supporting read-model context or inside explicitly derived-state code. When a
+  projection starts ranking, validating, balancing, or choosing policy, promote
+  the context or module into the richer policy-owning model.
+
+## Domain Document Contract
+
+Every `DOMAIN.md` remains a binding feature-local model contract, not a
+free-form note.
+
+Policy-owning bounded contexts must include non-empty sections named exactly:
+
+- `## Aggregate Model`
+- `## Commands And Invariants`
+- `## Consistency Model`
+- `## Ubiquitous Language`
+
+They must also declare either:
+
+- `Aggregate Root: <TypeName>` for at least one existing aggregate-root type in
+  a named domain module, or
+- `Write Model: None` plus a non-empty `## Ephemeral Policy Rationale` when
+  the context owns runtime policy but no persisted write model.
+
+Supporting read-model contexts must include non-empty sections named exactly:
+
+- `## Read-Model Boundary`
+- `## Promotion Triggers`
+
+The system-wide context map lives in the architecture overview. Each domain
+feature must appear there with its role and integration relationship to the
+other bounded contexts.
+
 ## Forbidden Patterns
 
 - business rules implemented in `view` or `data`
@@ -252,6 +306,20 @@ Current mechanical ownership:
     (`./gradlew :build-harness:check`): every domain feature needs exactly one
     `Context Type: ...` marker in `DOMAIN.md`, and supporting read-model
     contexts need a non-empty `## Read-Model Boundary` section
+  - `domain-context-map-complete` via `build-harness`
+    (`./gradlew :build-harness:check`): every `src/domain/<feature>` appears in
+    the overview's `## Domain Context Map`
+  - `domain-policy-context-required-sections` via `build-harness`
+    (`./gradlew :build-harness:check`): policy-owning `DOMAIN.md` files define
+    aggregate model, commands and invariants, consistency model, and ubiquitous
+    language sections
+  - `domain-aggregate-marker-shape` via `build-harness`
+    (`./gradlew :build-harness:check`): policy-owning contexts declare an
+    existing aggregate root in a named domain module, or explicitly declare
+    `Write Model: None` with an ephemeral-policy rationale
+  - `domain-supporting-context-promotion-triggers` via `build-harness`
+    (`./gradlew :build-harness:check`): supporting read-model contexts declare
+    promotion triggers
   - `domain-outer-layer-independence` via `ArchUnit`
     (`./gradlew architectureTest`)
   - `domain-foreign-feature-public-seams-only` via `ArchUnit`
@@ -273,14 +341,38 @@ Current mechanical ownership:
     domain-owned port interfaces and public domain boundaries, but they must
     not expose outer-layer types, foreign private domain types, or same-feature
     concrete application and model collaborators
+  - `domain-module-no-api-carrier-dependency` via `Error Prone`
+    (`./gradlew compileJava`): named domain modules may not depend on
+    same-feature API command, query, result, draft, snapshot, page, detail,
+    options, or payload carriers
+  - `domain-public-concrete-type-shape` via `Error Prone`
+    (`./gradlew compileJava`): public concrete named-module domain types must
+    be records, enums, final classes, or sealed abstractions
+  - `domain-module-field-purity` via `Error Prone`
+    (`./gradlew compileJava`): public concrete named-module domain types must
+    not expose non-final instance fields or mutable public static fields
+  - `domain-subpackage-cycle-freedom` via `ArchUnit`
+    (`./gradlew architectureTest`): direct subpackages under each domain
+    feature, including named modules, must stay cycle-free
+
+Candidate mechanical checks:
+
+- `domain-application-no-policy-helper-methods` via PMD source policy:
+  application use cases should not grow private helpers named like domain
+  policy (`validate`, `normalize`, `mutate`, `react`, `score`, `rank`,
+  `calculate`) unless the helper is clearly boundary mapping or query
+  normalization.
+- `domain-no-setter-style-mutation` via PMD source policy: domain mutation
+  operations should be named as domain commands rather than JavaBean setters;
+  documented aggregate commands such as `setMembership` remain acceptable.
 
 Review-owned rules:
 
 - object-centred placement quality
 - named-module cohesion and ubiquitous-language naming beyond package shape
 - application-layer thinness beyond direct infrastructure-composition patterns
-- `api/` carrier-only discipline beyond public signature structure and obvious
-  backend-port contract placement
+- `api/` carrier-only discipline beyond the enforced same-feature
+  command/query/result/draft/snapshot/page/detail/options/payload carrier ban
 - whether business rules have semantically leaked into `view` or `data`
 - aggregate-root-only mutation semantics
 - whether true invariants are modelled inside one aggregate

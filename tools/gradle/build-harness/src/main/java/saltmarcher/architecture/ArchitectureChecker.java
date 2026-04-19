@@ -28,6 +28,10 @@ public final class ArchitectureChecker {
             Pattern.compile(".*SelfTest.*\\.java$");
     private static final Pattern MARKDOWN_HEADING_PATTERN =
             Pattern.compile("(?m)^##\\s+.+$");
+    private static final Pattern AGGREGATE_ROOT_MARKER_PATTERN =
+            Pattern.compile("(?m)^\\s*Aggregate Root:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
+    private static final Pattern WRITE_MODEL_NONE_PATTERN =
+            Pattern.compile("(?m)^\\s*Write Model:\\s+None\\s*$");
     private static final Pattern BACKEND_PORT_CONTRACT_FILE_PATTERN =
             Pattern.compile(".*(?:Repository|Port)\\.java$");
     private static final Pattern SCHEMA_TABLE_NAME_PATTERN =
@@ -36,6 +40,11 @@ public final class ArchitectureChecker {
             Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellTabSpec\\s*\\(");
     private static final Set<String> DOMAIN_CONTEXT_TYPES =
             Set.of("Policy-Owning Bounded Context", "Supporting Read-Model Context");
+    private static final List<String> POLICY_CONTEXT_REQUIRED_SECTIONS = List.of(
+            "## Aggregate Model",
+            "## Commands And Invariants",
+            "## Consistency Model",
+            "## Ubiquitous Language");
     private static final Set<String> ACTIVE_JAVA_ROOT_ALLOWLIST =
             Set.of("bootstrap", "shell", "src", "test", "tools", "salt-marcher");
     private static final Set<String> IGNORED_REPOSITORY_SCAN_SEGMENTS =
@@ -115,9 +124,12 @@ public final class ArchitectureChecker {
             validatePackageMatchesPath(sourceFile, violations);
         }
 
+        Set<String> domainFeatures = collectDomainFeatures(sourceFiles);
+
         validateDomainFeatureBoundaries(sourceFiles, violations);
         validateDomainFeatureDirectories(violations);
-        validateDomainContextDocuments(collectDomainFeatures(sourceFiles), violations);
+        validateDomainContextMap(domainFeatures, violations);
+        validateDomainContextDocuments(domainFeatures, violations);
         validateShellApiPublicSurface(sourceFiles, violations);
         validateViewContributionPlacementAndStartup(sourceFiles, violations);
         validateServiceContributionPlacement(sourceFiles, violations);
@@ -473,6 +485,41 @@ public final class ArchitectureChecker {
         }
     }
 
+    private void validateDomainContextMap(Set<String> domainFeatures, List<Violation> violations) {
+        Path overview = repoRoot.resolve("docs/architecture/overview.md");
+        String overviewPath = "docs/architecture/overview.md";
+        if (!Files.isRegularFile(overview)) {
+            violations.add(new Violation(overviewPath, "domain-context-map-complete",
+                    "Architecture overview must define a '## Domain Context Map' section covering every domain feature."));
+            return;
+        }
+
+        String content;
+        try {
+            content = Files.readString(overview, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            violations.add(new Violation(overviewPath, "file-readable",
+                    "Could not read architecture overview: " + exception.getMessage()));
+            return;
+        }
+
+        String section = sectionBody(content, "## Domain Context Map");
+        if (section.trim().isBlank()) {
+            violations.add(new Violation(overviewPath, "domain-context-map-complete",
+                    "Architecture overview must include a non-empty '## Domain Context Map' section."));
+            return;
+        }
+
+        for (String featureName : domainFeatures) {
+            Pattern featureLine = Pattern.compile("(?m)^\\s*-\\s+`" + Pattern.quote(featureName) + "`\\s*:");
+            if (!featureLine.matcher(section).find()) {
+                violations.add(new Violation(overviewPath, "domain-context-map-complete",
+                        "Domain context map must include a bullet for src/domain/" + featureName
+                                + " using '- `" + featureName + "`: ...'."));
+            }
+        }
+    }
+
     private void validateDomainContextDocuments(Set<String> domainFeatures, List<Violation> violations) {
         for (String featureName : domainFeatures) {
             Path document = repoRoot.resolve("src/domain").resolve(featureName).resolve("DOMAIN.md");
@@ -505,6 +552,76 @@ public final class ArchitectureChecker {
                 violations.add(new Violation(documentPath, "domain-supporting-context-rationale",
                         "Supporting read-model contexts must include a non-empty '## Read-Model Boundary' rationale section."));
             }
+            if ("Supporting Read-Model Context".equals(declaredTypes.getFirst())
+                    && !hasNonEmptySection(content, "## Promotion Triggers")) {
+                violations.add(new Violation(documentPath, "domain-supporting-context-promotion-triggers",
+                        "Supporting read-model contexts must include a non-empty '## Promotion Triggers' section."));
+            }
+            if ("Policy-Owning Bounded Context".equals(declaredTypes.getFirst())) {
+                validatePolicyContextDocument(featureName, documentPath, content, violations);
+            }
+        }
+    }
+
+    private void validatePolicyContextDocument(
+            String featureName,
+            String documentPath,
+            String content,
+            List<Violation> violations) {
+        for (String heading : POLICY_CONTEXT_REQUIRED_SECTIONS) {
+            if (!hasNonEmptySection(content, heading)) {
+                violations.add(new Violation(documentPath, "domain-policy-context-required-sections",
+                        "Policy-owning bounded contexts must include a non-empty '" + heading + "' section."));
+            }
+        }
+
+        List<String> aggregateRoots = aggregateRootMarkers(content);
+        boolean writeModelNone = WRITE_MODEL_NONE_PATTERN.matcher(content).find();
+        if (aggregateRoots.isEmpty()) {
+            if (!writeModelNone || !hasNonEmptySection(content, "## Ephemeral Policy Rationale")) {
+                violations.add(new Violation(documentPath, "domain-aggregate-marker-shape",
+                        "Policy-owning contexts must declare 'Aggregate Root: <TypeName>' for an existing named-module type,"
+                                + " or declare 'Write Model: None' plus a non-empty '## Ephemeral Policy Rationale'."));
+            }
+            return;
+        }
+
+        for (String aggregateRoot : aggregateRoots) {
+            if (!domainNamedModuleTypeExists(featureName, aggregateRoot)) {
+                violations.add(new Violation(documentPath, "domain-aggregate-marker-shape",
+                        "Declared aggregate root '" + aggregateRoot
+                                + "' must exist as a Java type under src/domain/" + featureName
+                                + "/<named-domain-module>/, not under api/, application/, or the feature root."));
+            }
+        }
+    }
+
+    private static List<String> aggregateRootMarkers(String content) {
+        Matcher matcher = AGGREGATE_ROOT_MARKER_PATTERN.matcher(content);
+        List<String> aggregateRoots = new ArrayList<>();
+        while (matcher.find()) {
+            aggregateRoots.add(matcher.group(1));
+        }
+        return aggregateRoots.stream().sorted().toList();
+    }
+
+    private boolean domainNamedModuleTypeExists(String featureName, String simpleTypeName) {
+        Path featureRoot = repoRoot.resolve("src/domain").resolve(featureName);
+        if (!Files.isDirectory(featureRoot)) {
+            return false;
+        }
+        try (Stream<Path> stream = Files.walk(featureRoot)) {
+            return stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().equals(simpleTypeName + ".java"))
+                    .map(this::relativeSegments)
+                    .anyMatch(segments -> segments.size() >= 5
+                            && "src".equals(segments.get(0))
+                            && "domain".equals(segments.get(1))
+                            && featureName.equals(segments.get(2))
+                            && !Set.of("api", "application").contains(segments.get(3)));
+        } catch (IOException ignored) {
+            return false;
         }
     }
 
@@ -521,9 +638,13 @@ public final class ArchitectureChecker {
     }
 
     private static boolean hasNonEmptySection(String content, String heading) {
+        return !sectionBody(content, heading).trim().isBlank();
+    }
+
+    private static String sectionBody(String content, String heading) {
         int headingIndex = content.indexOf(heading);
         if (headingIndex < 0) {
-            return false;
+            return "";
         }
         int bodyStart = headingIndex + heading.length();
         Matcher nextHeading = MARKDOWN_HEADING_PATTERN.matcher(content);
@@ -531,7 +652,7 @@ public final class ArchitectureChecker {
         if (nextHeading.find(bodyStart)) {
             bodyEnd = nextHeading.start();
         }
-        return !content.substring(bodyStart, bodyEnd).trim().isBlank();
+        return content.substring(bodyStart, bodyEnd);
     }
 
     private void validateShellApiPublicSurface(List<SourceFile> sourceFiles, List<Violation> violations) {

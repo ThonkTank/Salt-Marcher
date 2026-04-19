@@ -1,7 +1,5 @@
 package src.domain.party.roster;
 
-import src.domain.party.api.CharacterDraft;
-
 import java.util.Objects;
 
 public final class PartyCharacter {
@@ -46,7 +44,7 @@ public final class PartyCharacter {
         return membership;
     }
 
-    public PartyCharacter update(CharacterDraft draft) {
+    public PartyCharacter update(PartyCharacterDraft draft) {
         return new PartyCharacter(
                 id,
                 new PartyCharacterIdentity(draft.name(), draft.playerName()),

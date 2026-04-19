@@ -9,6 +9,7 @@ import src.domain.encounter.api.EncounterCreature;
 import src.domain.encounter.api.GeneratedEncounter;
 import src.domain.encounter.generation.EncounterDraft;
 import src.domain.encounter.generation.EncounterDraftEntry;
+import src.domain.encounter.generation.EncounterDraftMetrics;
 import src.domain.encounter.generation.EncounterRoleClassifier;
 
 import java.util.ArrayList;
@@ -32,15 +33,16 @@ final class EncounterResultAssembler {
         Map<Long, CreatureDetail> detailCache = new LinkedHashMap<>();
         List<GeneratedEncounter> encounters = new ArrayList<>();
         for (EncounterDraft draft : drafts.stream().limit(alternativeCount).toList()) {
+            EncounterDraftMetrics metrics = draft.metrics();
             List<EncounterCreature> creatures = new ArrayList<>();
             for (EncounterDraftEntry entry : draft.entries()) {
-                CreatureDetail detail = detailCache.computeIfAbsent(entry.profile().id(), this::loadCreatureDetailOrNull);
-                EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(entry.profile().toCandidate(), detail);
+                CreatureDetail detail = detailCache.computeIfAbsent(entry.creatureId(), this::loadCreatureDetailOrNull);
+                EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(entry.toCandidate(), detail);
                 creatures.add(new EncounterCreature(
-                        entry.profile().id(),
-                        entry.profile().name(),
-                        entry.profile().challengeRating(),
-                        entry.profile().xp(),
+                        entry.creatureId(),
+                        entry.creatureName(),
+                        entry.challengeRating(),
+                        entry.xp(),
                         entry.quantity(),
                         classification.role(),
                         classification.tags()));
@@ -48,10 +50,10 @@ final class EncounterResultAssembler {
             encounters.add(new GeneratedEncounter(
                     draft.title(),
                     draft.achievedDifficulty(),
-                    draft.creatureCount(),
-                    draft.totalBaseXp(),
-                    draft.adjustedXp(),
-                    draft.multiplier(),
+                    metrics.creatureCount(),
+                    metrics.totalBaseXp(),
+                    metrics.adjustedXp(),
+                    metrics.multiplier(),
                     highlightsFor(draft, creatures),
                     creatures));
         }
@@ -67,8 +69,9 @@ final class EncounterResultAssembler {
     }
 
     private static List<String> highlightsFor(EncounterDraft draft, List<EncounterCreature> creatures) {
+        EncounterDraftMetrics metrics = draft.metrics();
         List<String> highlights = new ArrayList<>();
-        highlights.add("Adjusted XP " + draft.adjustedXp() + " vs target " + draft.targetAdjustedXp());
+        highlights.add("Adjusted XP " + metrics.adjustedXp() + " vs target " + metrics.targetAdjustedXp());
         if (creatures.stream().anyMatch(creature -> "Boss".equals(creature.role()))) {
             highlights.add("Includes a boss-style anchor.");
         }
@@ -76,7 +79,7 @@ final class EncounterResultAssembler {
         if (distinctRoles >= MINIMUM_BLENDED_ROLE_COUNT) {
             highlights.add("Blends " + distinctRoles + " combat roles.");
         }
-        if (draft.creatureCount() >= ACTION_ECONOMY_CREATURE_COUNT) {
+        if (metrics.creatureCount() >= ACTION_ECONOMY_CREATURE_COUNT) {
             highlights.add("Leans on action economy through numbers.");
         }
         if (highlights.size() == BASE_HIGHLIGHT_COUNT) {

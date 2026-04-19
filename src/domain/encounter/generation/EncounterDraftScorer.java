@@ -2,7 +2,6 @@ package src.domain.encounter.generation;
 
 import src.domain.encounter.api.EncounterDifficultyBand;
 
-import java.util.List;
 import java.util.Set;
 
 final class EncounterDraftScorer {
@@ -10,35 +9,34 @@ final class EncounterDraftScorer {
     private static final int LARGE_CREATURE_GROUP = 6;
     private static final int LARGE_QUANTITY_STACK = 4;
     private static final int MAX_CREATURES_WITH_BOSS = 4;
-    private static final String BOSS_ROLE = "Boss";
-    private static final String BRUTE_ROLE = "Brute";
-    private static final String MINION_ROLE = "Minion";
-    private static final String SKIRMISHER_ROLE = "Skirmisher";
-
     private EncounterDraftScorer() {
     }
 
     static int score(ScoreInput input) {
         int score = 0;
-        score += scoreTargetBand(input.targetDifficulty(), input.adjustedXp(), input.thresholds(), input.targetAdjustedXp());
-        score += scoreAdjustedXpProximity(input.adjustedXp(), input.targetAdjustedXp());
-        score += input.achievedDifficulty() == input.targetDifficulty() ? 140 : 0;
-        score += scoreEntryCount(input.entries().size());
-        score += scoreRoleSynergy(input.roles());
-        score += scoreCompositionPenalties(input.entries(), input.creatureCount(), input.bossCount());
+        ScoreContext context = input.context();
+        EncounterDraftComposition composition = input.composition();
+        EncounterDraftXpProfile xp = context.xpProfile();
+        score += scoreTargetBand(context.targetDifficulty(), xp.adjustedXp(), context.thresholds(), xp.targetAdjustedXp());
+        score += scoreAdjustedXpProximity(xp.adjustedXp(), xp.targetAdjustedXp());
+        score += context.achievedDifficulty() == context.targetDifficulty() ? 140 : 0;
+        score += scoreEntryCount(composition.entries().size());
+        score += scoreRoleSynergy(composition.roles());
+        score += scoreCompositionPenalties(composition);
         return score;
     }
 
     record ScoreInput(
-            List<EncounterDraftEntry> entries,
+            EncounterDraftComposition composition,
+            ScoreContext context
+    ) {
+    }
+
+    record ScoreContext(
             EncounterDifficultyBand targetDifficulty,
             EncounterDifficultyBand achievedDifficulty,
-            int adjustedXp,
             EncounterDifficultyMath.Thresholds thresholds,
-            int targetAdjustedXp,
-            int creatureCount,
-            int bossCount,
-            Set<String> roles
+            EncounterDraftXpProfile xpProfile
     ) {
     }
 
@@ -72,24 +70,25 @@ final class EncounterDraftScorer {
 
     private static int scoreRoleSynergy(Set<String> roles) {
         int score = roles.size() * 25;
-        if (roles.contains(BOSS_ROLE) && roles.size() > 1) {
+        if (roles.contains(EncounterRoleNames.BOSS) && roles.size() > 1) {
             score += 90;
         }
-        if (roles.contains(BRUTE_ROLE) && roles.contains(SKIRMISHER_ROLE)) {
+        if (roles.contains(EncounterRoleNames.BRUTE) && roles.contains(EncounterRoleNames.SKIRMISHER)) {
             score += 70;
         }
         return score;
     }
 
-    private static int scoreCompositionPenalties(List<EncounterDraftEntry> entries, int creatureCount, int bossCount) {
+    private static int scoreCompositionPenalties(EncounterDraftComposition composition) {
         int score = 0;
-        if (bossCount > 0 && creatureCount > MAX_CREATURES_WITH_BOSS) {
+        int creatureCount = composition.stats().creatureCount();
+        if (composition.stats().bossCount() > 0 && creatureCount > MAX_CREATURES_WITH_BOSS) {
             score -= 120;
         }
         if (creatureCount >= LARGE_CREATURE_GROUP) {
             score -= 30;
         }
-        for (EncounterDraftEntry entry : entries) {
+        for (EncounterDraftEntry entry : composition.entries()) {
             score += scoreEntryPenalty(entry, creatureCount);
         }
         return score;
@@ -100,7 +99,7 @@ final class EncounterDraftScorer {
         if (entry.quantity() > LARGE_QUANTITY_STACK) {
             score -= (entry.quantity() - LARGE_QUANTITY_STACK) * 35;
         }
-        if (MINION_ROLE.equals(entry.profile().role()) && creatureCount <= 2) {
+        if (EncounterRoleNames.MINION.equals(entry.role()) && creatureCount <= 2) {
             score -= 40;
         }
         return score;

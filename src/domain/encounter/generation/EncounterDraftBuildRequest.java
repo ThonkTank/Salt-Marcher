@@ -1,0 +1,17 @@
+package src.domain.encounter.generation;
+
+import src.domain.encounter.api.EncounterDifficultyBand;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+record EncounterDraftBuildRequest(
+        EncounterDifficultyBand targetDifficulty,
+        EncounterDifficultyMath.Thresholds thresholds,
+        int partySize,
+        Collection<EncounterCandidateProfile> lockedProfiles,
+        Map<Long, Integer> lockedQuantities,
+        List<EncounterCandidateProfile> pool
+) {
+}

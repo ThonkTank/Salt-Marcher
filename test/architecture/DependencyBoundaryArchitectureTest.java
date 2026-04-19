@@ -94,6 +94,13 @@ public final class DependencyBoundaryArchitectureTest {
                     .beFreeOfCycles();
 
     @ArchTest
+    static final ArchRule domainSubpackagesMustStayCycleFree =
+            slices()
+                    .matching("src.domain.(*).(*)..")
+                    .should()
+                    .beFreeOfCycles();
+
+    @ArchTest
     static final ArchRule dataMustNotReachPresentationShellOrBootstrap =
             noClasses()
                     .that()

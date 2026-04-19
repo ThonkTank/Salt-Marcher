@@ -120,16 +120,21 @@ Mechanical trace against the MVVM standard:
 - `domain-root-presence`, `domain-top-level-role-bucket-ban`,
   `domain-module-name-shape`, `domain-api-no-backend-port-contracts`,
   `domain-application-no-backend-port-contracts`,
-  `domain-context-document-presence`, `domain-context-shape-declared`, and
-  `domain-supporting-context-rationale` via `build-harness`
+  `domain-context-document-presence`, `domain-context-shape-declared`,
+  `domain-supporting-context-rationale`, `domain-context-map-complete`,
+  `domain-policy-context-required-sections`, `domain-aggregate-marker-shape`,
+  and `domain-supporting-context-promotion-triggers` via `build-harness`
   (`:build-harness:check`). These checks cover root application-service
   presence, the direct `api/` and `application/` allowances, lower-case named
   domain-module package shape, bans on technical role buckets, backend-port
   contract exclusion from `api/` and `application/`, and the required
-  `DOMAIN.md` context marker plus supporting read-model rationale.
+  `DOMAIN.md` context marker plus supporting read-model rationale, promotion
+  triggers, policy-context tactical sections, aggregate-root markers, and the
+  overview context-map listing for every domain feature.
 - `domain-outer-layer-independence`,
   `domain-foreign-feature-public-seams-only`, and
-  `domain-feature-cycle-freedom` via `ArchUnit` (`architectureTest`).
+  `domain-feature-cycle-freedom`, and `domain-subpackage-cycle-freedom` via
+  `ArchUnit` (`architectureTest`).
 - `domain-framework-and-infra-leakage` and
   `domain-root-no-direct-infra-composition` via `PMD architecture`
   (`pmdArchitectureMain`).
@@ -143,14 +148,30 @@ Mechanical trace against the MVVM standard:
   interfaces and public domain boundaries, but must not expose outer-layer
   types, foreign private domain types, or same-feature concrete application
   and model collaborators via `Error Prone` (`compileJava`).
+- `domain-module-no-api-carrier-dependency`: named domain modules may not
+  depend on same-feature API command, query, result, draft, snapshot, page,
+  detail, options, or payload carriers via `Error Prone` (`compileJava`).
+- `domain-public-concrete-type-shape`: public concrete named-module domain
+  types must be records, enums, final classes, or sealed abstractions via
+  `Error Prone` (`compileJava`).
+- `domain-module-field-purity`: public concrete named-module domain types must
+  not expose non-final instance fields or mutable public static fields via
+  `Error Prone` (`compileJava`).
+
+`Candidate`:
+
+- `domain-application-no-policy-helper-methods` via PMD source policy for
+  application-layer helpers named like domain policy.
+- `domain-no-setter-style-mutation` via PMD source policy for JavaBean-style
+  mutation naming in domain modules.
 
 `Review-Only`:
 
 - Object-centred placement, named-module cohesion and ubiquitous-language
-  naming beyond package-shape checks, application-layer thinness beyond direct
-  infrastructure composition, `api/` carrier-only discipline beyond obvious
-  backend-port contract placement, semantic business-rule leakage, aggregate
-  mutation semantics,
+  naming beyond package-shape checks and required document sections,
+  application-layer thinness beyond direct infrastructure composition,
+  `api/` carrier-only discipline beyond the same-feature carrier dependency
+  ban, semantic business-rule leakage, aggregate mutation semantics,
   true-invariant placement inside one aggregate, small and coherent aggregate
   boundaries, reference-by-identity and eventual-consistency choices, broad
   mutable object graphs across aggregates, one-aggregate-per-transaction,

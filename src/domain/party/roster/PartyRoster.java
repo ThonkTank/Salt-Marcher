@@ -1,7 +1,5 @@
 package src.domain.party.roster;
 
-import src.domain.party.api.CharacterDraft;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +33,7 @@ public final class PartyRoster {
         return PartyRosterProjection.from(characters);
     }
 
-    public MutationResult createCharacter(CharacterDraft draft, PartyMembership membership) {
+    public MutationResult createCharacter(PartyCharacterDraft draft, PartyMembership membership) {
         if (!draftValidator.isValid(draft) || membership == null) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }
@@ -54,7 +52,7 @@ public final class PartyRoster {
         return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId + 1, nextCharacters));
     }
 
-    public MutationResult updateCharacter(long id, CharacterDraft draft) {
+    public MutationResult updateCharacter(long id, PartyCharacterDraft draft) {
         if (!draftValidator.isValid(draft)) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }

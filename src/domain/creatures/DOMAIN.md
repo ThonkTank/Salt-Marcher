@@ -27,6 +27,16 @@ Context Type: Supporting Read-Model Context
   lookup and projection surfaces over foreign creature truth, not to own the
   write-model policy of encounter generation
 
+## Promotion Triggers
+
+Promote `creatures` to a policy-owning bounded context before adding any of:
+
+- authored creature creation or editing policy
+- creature validation beyond query/default normalization
+- encounter balancing, ranking, or candidate-choice policy
+- persisted creature lifecycle or ownership rules
+- mutable catalog truth owned by this feature rather than imported lookup data
+
 ## Allowed Domain Shape
 
 - `application/` may normalize queries, page results, and reshape catalog

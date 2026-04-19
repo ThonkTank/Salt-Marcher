@@ -61,6 +61,28 @@ Feature documentation follows the same ownership model. System-wide documents
 stay in `docs/`, compatibility stubs live in `docs/compat/`, and feature
 documents live next to the feature code they describe.
 
+## Domain Context Map
+
+- `creatures`: Supporting Read-Model Context. Exports creature catalog search,
+  detail lookup, filter options, and encounter-candidate projections to
+  downstream policy contexts. It does not own encounter balancing or creature
+  write-model policy.
+- `dungeon`: Policy-Owning Bounded Context. Owns authored dungeon-map truth,
+  identity-preserving map mutation policy, derived-state rebuild rules, and
+  repository contracts for persisted maps. It publishes map snapshots and
+  summaries through its application-service and `api/` boundary.
+- `encounter`: Policy-Owning Bounded Context with no persisted v1 write model.
+  Consumes `party` and `creatures` through their application services and public
+  API carriers, then owns runtime encounter balancing, candidate ranking, locks,
+  and generated-encounter policy.
+- `mapcore`: Supporting Read-Model Context. Exports topology-neutral map
+  projection contracts shared by map-owning contexts. It does not own authored
+  dungeon, travel, or map mutation policy.
+- `party`: Policy-Owning Bounded Context. Owns party roster truth, membership,
+  XP progression, rest cadence, and adventuring-day policy. Downstream contexts
+  consume party state only through the party application-service and `api/`
+  carriers.
+
 ## Dependency Direction
 
 SaltMarcher uses a system-layer model with repository roots

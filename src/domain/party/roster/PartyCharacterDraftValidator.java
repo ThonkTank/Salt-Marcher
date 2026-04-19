@@ -1,10 +1,8 @@
 package src.domain.party.roster;
 
-import src.domain.party.api.CharacterDraft;
-
 final class PartyCharacterDraftValidator {
 
-    boolean isValid(CharacterDraft draft) {
+    boolean isValid(PartyCharacterDraft draft) {
         return draft != null
                 && draft.name() != null
                 && !draft.name().trim().isEmpty()
