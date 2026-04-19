@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: Centralized JavaFX styling rules and blocking checks for active
 application code.
 
@@ -38,7 +38,10 @@ for styling checks live in the
   - `styling-central-selector-definition`: style classes used from active Java
     code must resolve to selectors defined in centralized `resources/*.css`
     files via Gradle-owned verification tasks
-    (`./gradlew checkDefinedStyleClassSelectors`).
+    (`./gradlew checkDefinedStyleClassSelectors`). The mechanical scope is
+    direct `getStyleClass()` string literals plus string-literal selector
+    arguments passed through recognized helper methods that forward parameters
+    into `getStyleClass()`.
   - `styling-no-programmatic-visual-styling`: active application code outside
     `src/view/mapshared/View/**` must not author visual styling through
     JavaFX paint, font, border, background, or direct canvas styling APIs via
@@ -48,6 +51,8 @@ for styling checks live in the
     is genuinely shared presentation vocabulary rather than a needless
     one-off name remains review-owned even when the selector is centrally
     defined and mechanically resolvable.
+  - Runtime-computed selector names that are not visible as Java string
+    literals remain review-owned.
 
 The documented direct-rendering exception is limited to
 `src/view/mapshared/View/**`, where the shared canvas renderer currently owns

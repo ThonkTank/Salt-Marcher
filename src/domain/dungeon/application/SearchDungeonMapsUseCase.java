@@ -2,8 +2,8 @@ package src.domain.dungeon.application;
 
 import src.domain.dungeon.api.DungeonMapSummary;
 import src.domain.dungeon.api.SearchMapsQuery;
-import src.domain.dungeon.repository.DungeonDocumentStore;
-import src.domain.dungeon.repository.DungeonMapRepository;
+import src.domain.dungeon.map.DungeonDocumentStore;
+import src.domain.dungeon.map.DungeonMapRepository;
 
 import java.util.Comparator;
 import java.util.List;

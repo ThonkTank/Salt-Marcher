@@ -13,6 +13,18 @@ import java.util.Set;
 
 public final class EncounterDraftFactory {
 
+    private static final int FIT_POOL_LIMIT = 24;
+    private static final int LOW_XP_POOL_LIMIT = 16;
+    private static final int DRAFT_LIMIT = 30;
+    private static final int MAX_FIRST_DUAL_COPIES = 3;
+    private static final int MAX_SECOND_DUAL_COPIES = 4;
+    private static final int MAX_CREATURES_PER_DRAFT = 8;
+    private static final int MAX_BOSSES_PER_DRAFT = 1;
+    private static final int HIGH_XP_COPY_LIMIT = 1_800;
+    private static final int MID_XP_COPY_LIMIT = 450;
+    private static final int LOW_XP_COPY_LIMIT = 100;
+    private static final String BOSS_ROLE = "Boss";
+
     private EncounterDraftFactory() {
     }
 
@@ -38,14 +50,14 @@ public final class EncounterDraftFactory {
         int targetXp = EncounterDifficultyTargets.targetAdjustedXp(targetDifficulty, thresholds);
         List<EncounterCandidateProfile> byFit = unlockedProfiles.stream()
                 .sorted(Comparator.comparingInt(profile -> profile.componentDistance(targetXp)))
-                .limit(24)
+                .limit(FIT_POOL_LIMIT)
                 .toList();
         List<EncounterCandidateProfile> byLowXp = unlockedProfiles.stream()
                 .sorted(Comparator.comparingInt(EncounterCandidateProfile::xp)
                         .thenComparing(EncounterCandidateProfile::name, String.CASE_INSENSITIVE_ORDER))
-                .limit(16)
+                .limit(LOW_XP_POOL_LIMIT)
                 .toList();
-        LinkedHashMap<Long, EncounterCandidateProfile> merged = new LinkedHashMap<>();
+        Map<Long, EncounterCandidateProfile> merged = new LinkedHashMap<>();
         for (EncounterCandidateProfile profile : byFit) {
             merged.put(profile.id(), profile);
         }
@@ -56,7 +68,7 @@ public final class EncounterDraftFactory {
     }
 
     private static List<EncounterDraft> enumerateDrafts(DraftBuildRequest request) {
-        LinkedHashMap<Long, EncounterCandidateProfile> profileLookup = new LinkedHashMap<>();
+        Map<Long, EncounterCandidateProfile> profileLookup = new LinkedHashMap<>();
         for (EncounterCandidateProfile locked : request.lockedProfiles()) {
             profileLookup.put(locked.id(), locked);
         }
@@ -64,8 +76,8 @@ public final class EncounterDraftFactory {
             profileLookup.put(profile.id(), profile);
         }
 
-        LinkedHashMap<String, EncounterDraft> drafts = new LinkedHashMap<>();
-        LinkedHashMap<Long, Integer> baseCounts = new LinkedHashMap<>(request.lockedQuantities());
+        Map<String, EncounterDraft> drafts = new LinkedHashMap<>();
+        Map<Long, Integer> baseCounts = new LinkedHashMap<>(request.lockedQuantities());
         maybeAddDraft(drafts, baseCounts, profileLookup, request);
         appendSingleCreatureDrafts(drafts, baseCounts, profileLookup, request);
         appendDualCreatureDrafts(drafts, baseCounts, profileLookup, request);
@@ -73,7 +85,7 @@ public final class EncounterDraftFactory {
                 .sorted(Comparator.comparingInt(EncounterDraft::score).reversed()
                         .thenComparingInt(draft -> Math.abs(draft.adjustedXp() - draft.targetAdjustedXp()))
                         .thenComparing(EncounterDraft::title, String.CASE_INSENSITIVE_ORDER))
-                .limit(30)
+                .limit(DRAFT_LIMIT)
                 .toList();
     }
 
@@ -85,7 +97,7 @@ public final class EncounterDraftFactory {
     ) {
         for (EncounterCandidateProfile first : request.pool()) {
             for (int firstCount = 1; firstCount <= maxAdditionalCopies(first); firstCount++) {
-                LinkedHashMap<Long, Integer> single = new LinkedHashMap<>(baseCounts);
+                Map<Long, Integer> single = new LinkedHashMap<>(baseCounts);
                 single.merge(first.id(), firstCount, Integer::sum);
                 maybeAddDraft(drafts, single, profileLookup, request);
             }
@@ -102,9 +114,13 @@ public final class EncounterDraftFactory {
             EncounterCandidateProfile first = request.pool().get(i);
             for (int j = i + 1; j < request.pool().size(); j++) {
                 EncounterCandidateProfile second = request.pool().get(j);
-                for (int firstCount = 1; firstCount <= Math.min(3, maxAdditionalCopies(first)); firstCount++) {
-                    for (int secondCount = 1; secondCount <= Math.min(4, maxAdditionalCopies(second)); secondCount++) {
-                        LinkedHashMap<Long, Integer> dual = new LinkedHashMap<>(baseCounts);
+                for (int firstCount = 1;
+                     firstCount <= Math.min(MAX_FIRST_DUAL_COPIES, maxAdditionalCopies(first));
+                     firstCount++) {
+                    for (int secondCount = 1;
+                         secondCount <= Math.min(MAX_SECOND_DUAL_COPIES, maxAdditionalCopies(second));
+                         secondCount++) {
+                        Map<Long, Integer> dual = new LinkedHashMap<>(baseCounts);
                         dual.merge(first.id(), firstCount, Integer::sum);
                         dual.merge(second.id(), secondCount, Integer::sum);
                         maybeAddDraft(drafts, dual, profileLookup, request);
@@ -162,16 +178,16 @@ public final class EncounterDraftFactory {
     }
 
     private static int maxAdditionalCopies(EncounterCandidateProfile profile) {
-        if ("Boss".equals(profile.role()) || profile.legendaryActionCount() > 0) {
+        if (BOSS_ROLE.equals(profile.role()) || profile.legendaryActionCount() > 0) {
             return 1;
         }
-        if (profile.xp() >= 1_800) {
+        if (profile.xp() >= HIGH_XP_COPY_LIMIT) {
             return 2;
         }
-        if (profile.xp() >= 450) {
+        if (profile.xp() >= MID_XP_COPY_LIMIT) {
             return 3;
         }
-        if (profile.xp() >= 100) {
+        if (profile.xp() >= LOW_XP_COPY_LIMIT) {
             return 4;
         }
         return 6;
@@ -241,13 +257,15 @@ public final class EncounterDraftFactory {
                 int quantity = Math.max(1, countEntry.getValue());
                 creatureCount += quantity;
                 totalBaseXp += profile.xp() * quantity;
-                if ("Boss".equals(profile.role())) {
+                if (BOSS_ROLE.equals(profile.role())) {
                     bossCount += quantity;
                 }
                 roles.add(profile.role());
                 entries.add(new EncounterDraftEntry(profile, quantity));
             }
-            boolean valid = creatureCount <= 8 && bossCount <= 1 && totalBaseXp > 0;
+            boolean valid = creatureCount <= MAX_CREATURES_PER_DRAFT
+                    && bossCount <= MAX_BOSSES_PER_DRAFT
+                    && totalBaseXp > 0;
             return new DraftComposition(valid, entries, totalBaseXp, creatureCount, bossCount, roles);
         }
 

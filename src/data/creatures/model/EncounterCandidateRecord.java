@@ -3,17 +3,25 @@ package src.data.creatures.model;
 import org.jspecify.annotations.Nullable;
 
 public record EncounterCandidateRecord(
-        long id,
-        String name,
-        String creatureType,
-        String challengeRating,
-        int xp,
-        int hitPoints,
-        @Nullable Integer hitDiceCount,
-        @Nullable Integer hitDiceSides,
-        @Nullable Integer hitDiceModifier,
-        int armorClass,
-        int initiativeBonus,
-        int legendaryActionCount
+        Identity identity,
+        Challenge challenge,
+        Durability durability,
+        Combat combat
 ) {
+    public record Identity(long id, String name, String creatureType) {
+    }
+
+    public record Challenge(String challengeRating, int xp) {
+    }
+
+    public record Durability(
+            int hitPoints,
+            @Nullable Integer hitDiceCount,
+            @Nullable Integer hitDiceSides,
+            @Nullable Integer hitDiceModifier
+    ) {
+    }
+
+    public record Combat(int armorClass, int initiativeBonus, int legendaryActionCount) {
+    }
 }

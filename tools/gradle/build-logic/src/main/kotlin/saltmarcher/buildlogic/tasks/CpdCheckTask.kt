@@ -23,6 +23,10 @@ import javax.inject.Inject
 @DisableCachingByDefault(because = "Verification task whose result is a pass/fail report.")
 abstract class CpdCheckTask : DefaultTask() {
 
+    init {
+        outputs.upToDateWhen { false }
+    }
+
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val sourceRoots: ConfigurableFileCollection

@@ -29,11 +29,13 @@ public interface ShellScreen {
      * Called each time this screen becomes active.
      */
     default void onShow() {
+        // Default hook is intentionally empty; screens opt in when activation work is needed.
     }
 
     /**
      * Called when navigating away from this screen.
      */
     default void onHide() {
+        // Default hook is intentionally empty; screens opt in when deactivation work is needed.
     }
 }

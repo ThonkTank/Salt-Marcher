@@ -18,7 +18,7 @@ public record DungeonSnapshot(
 
     public DungeonSnapshot {
         mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName;
-        mode = mode == null ? DungeonMapMode.EDITOR : mode;
+        mode = mode == null ? DungeonMapMode.defaultMode() : mode;
         surface = surface == null ? MapSurfaceSnapshot.empty() : surface;
         aggregateSummaries = aggregateSummaries == null ? List.of() : List.copyOf(aggregateSummaries);
         relationSummaries = relationSummaries == null ? List.of() : List.copyOf(relationSummaries);

@@ -69,9 +69,8 @@ Rules:
   contracts, domain services, factories, domain events, and other tactical DDD
   building blocks as needed by that concept.
 - Top-level role buckets such as `entity/`, `valueobject/`, `service/`,
-  `repository/`, and `query/` are legacy migration debt under the current repo
-  state. They are not the canonical target model.
-- `services/` remains forbidden.
+  `services/`, `repository/`, and `query/` are forbidden under the target
+  model.
 
 ## Interaction Flow
 
@@ -167,6 +166,11 @@ within one bounded context.
 
 Every feature must state its domain shape explicitly in `DOMAIN.md`.
 
+The required machine-readable marker is exactly one of:
+
+- `Context Type: Policy-Owning Bounded Context`
+- `Context Type: Supporting Read-Model Context`
+
 ### Default: Policy-Owning Bounded Context
 
 This is the default expectation for a domain feature.
@@ -225,45 +229,68 @@ Current mechanical ownership:
 - `Enforced`
   - `domain-root-presence` via `build-harness`
     (`./gradlew :build-harness:check`)
-  - `domain-structural-allowlist` via `build-harness`
-    (`./gradlew :build-harness:check`):
-    `api/`, `application/`, named domain modules, and explicitly tolerated
-    legacy root role buckets are structurally allowed; `services/` remains
-    forbidden
+  - `domain-top-level-role-bucket-ban` via `build-harness`
+    (`./gradlew :build-harness:check`): top-level technical role buckets such
+    as `entity/`, `valueobject/`, `repository/`, `query/`, `service/`, and
+    `services/` are forbidden
+  - `domain-module-name-shape` via `build-harness`
+    (`./gradlew :build-harness:check`): named domain modules must use
+    lower-case package directory names matching `[a-z][a-z0-9_]*`; together
+    with the role-bucket ban this enforces that only `api/`, `application/`,
+    and named domain modules are valid direct domain buckets
+  - `domain-api-no-backend-port-contracts` via `build-harness`
+    (`./gradlew :build-harness:check`): backend port contracts such as
+    `*Repository` and `*Port` belong in named domain modules rather than
+    exported `api/`
+  - `domain-application-no-backend-port-contracts` via `build-harness`
+    (`./gradlew :build-harness:check`): backend port contracts such as
+    `*Repository` and `*Port` belong in named domain modules rather than the
+    thin use-case coordination package
+  - `domain-context-document-presence`,
+    `domain-context-shape-declared`, and
+    `domain-supporting-context-rationale` via `build-harness`
+    (`./gradlew :build-harness:check`): every domain feature needs exactly one
+    `Context Type: ...` marker in `DOMAIN.md`, and supporting read-model
+    contexts need a non-empty `## Read-Model Boundary` section
   - `domain-outer-layer-independence` via `ArchUnit`
     (`./gradlew architectureTest`)
   - `domain-foreign-feature-public-seams-only` via `ArchUnit`
+    (`./gradlew architectureTest`)
+  - `domain-feature-cycle-freedom` via `ArchUnit`
     (`./gradlew architectureTest`)
   - `domain-framework-and-infra-leakage` via `PMD architecture`
     (`./gradlew pmdArchitectureMain`)
   - `domain-root-no-direct-infra-composition` via `PMD architecture`
     (`./gradlew pmdArchitectureMain`)
-- `Candidate`
-  - `domain-ddd-target-topology-only`: the harness still tolerates legacy root
-    role buckets as migration debt, but they are not the target model. The
-    preferred future owner remains `build-harness`
-    (`./gradlew :build-harness:check`).
-- `Enforced`
-  - `domain-public-boundary-no-outer-or-foreign-private-signature-leaks` via
-    `Error Prone` (`./gradlew compileJava`): public domain boundary signatures
-    must stay free of outer-layer types and foreign private domain types
-- `Candidate`
-  - `domain-public-boundary-same-feature-internal-carrier-purity`: same-feature
-    internal domain types should eventually disappear from public backend
-    boundary signatures once the remaining migration debt is retired. The
-    canonical status for that stricter rule lives in the harness system-layer
-    section.
+  - `domain-public-boundary-no-private-or-outer-signature-leaks` via
+    `Error Prone` (`./gradlew compileJava`): public operational members on
+    root application services and public `api/` signatures must stay free of
+    outer-layer types, foreign private domain types, and same-feature internal
+    domain-module types
+  - `domain-root-constructor-port-composition` via `Error Prone`
+    (`./gradlew compileJava`): public/protected root application-service
+    constructors are composition seams and may accept same-feature
+    domain-owned port interfaces and public domain boundaries, but they must
+    not expose outer-layer types, foreign private domain types, or same-feature
+    concrete application and model collaborators
 
 Review-owned rules:
 
 - object-centred placement quality
-- named-module cohesion and ubiquitous-language naming
+- named-module cohesion and ubiquitous-language naming beyond package shape
+- application-layer thinness beyond direct infrastructure-composition patterns
+- `api/` carrier-only discipline beyond public signature structure and obvious
+  backend-port contract placement
+- whether business rules have semantically leaked into `view` or `data`
 - aggregate-root-only mutation semantics
+- whether true invariants are modelled inside one aggregate
+- whether aggregate boundaries are small and conceptually coherent
+- reference-by-identity and eventual-consistency choices across aggregate
+  boundaries
+- broad mutable object graphs across aggregates
 - one-aggregate-per-transaction as a modelling judgment
 - whether a supporting read-model context is actually justified
-- whether a feature states and justifies its context classification in
-  `DOMAIN.md`, because documentation artifacts are outside the current harness
-  scope
+- whether a declared context classification is substantively correct
 
 ## References
 
@@ -271,6 +298,7 @@ Review-owned rules:
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1)
 - [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
+- [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)
 - [Fowler: Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/domain-driven-design/fowler-domain-model.md:1)
 - [Fowler: Anemic Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/domain-driven-design/fowler-anemic-domain-model.md:1)
 - [Fowler: Service Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/application-layer/fowler-service-layer.md:1)

@@ -24,22 +24,22 @@ final class ShellToolbarStrip extends HBox {
     private final Region spacer = new Region();
     private final Map<ContributionKey, ToolbarItem> items = new LinkedHashMap<>();
 
-    public ShellToolbarStrip() {
+    ShellToolbarStrip() {
         super(8);
         getStyleClass().add("toolbar");
         setAlignment(Pos.CENTER_LEFT);
-        title.getStyleClass().add("large");
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        ShellFx.addStyleClass(title, "title-large");
+        setHgrow(spacer, Priority.ALWAYS);
         getChildren().addAll(title, spacer);
     }
 
-    public void registerItem(ShellTopBarSpec registrationSpec, Node content) {
+    void registerItem(ShellTopBarSpec registrationSpec, Node content) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
         items.put(registrationSpec.key(), new ToolbarItem(registrationSpec, content));
         rebuild();
     }
 
-    public void showTitle(String titleText) {
+    void showTitle(String titleText) {
         title.setText(titleText == null ? "" : titleText);
         rebuild();
     }

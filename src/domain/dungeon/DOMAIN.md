@@ -11,6 +11,7 @@ for the dungeon feature.
 Context Type: Policy-Owning Bounded Context
 
 - `dungeon` is one feature slice with one application-service boundary.
+- `map/` is the named domain module for authored dungeon-map model internals.
 - A `DungeonMap` is the aggregate root for one authored dungeon map.
 - Editor and travel are separate presentation slices over the same dungeon
   write model.
@@ -70,6 +71,12 @@ DungeonMap
 
 The aggregate is the transaction boundary for one map. Internal ownership still
 remains partitioned.
+
+## Domain Module
+
+`map/` owns the cohesive dungeon-map model. It contains the aggregate root,
+supporting entities, value objects, repository contracts over authored map
+truth, and deterministic derived-state helpers for the current implementation.
 
 ## Domain Partitions
 

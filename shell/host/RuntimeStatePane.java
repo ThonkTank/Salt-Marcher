@@ -10,7 +10,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -32,34 +31,32 @@ final class RuntimeStatePane extends VBox {
     private final Map<ContributionKey, StateTab> tabs = new LinkedHashMap<>();
     private boolean manualSelectionMade;
 
-    private @Nullable ContributionKey activeKey;
-
-    public RuntimeStatePane() {
-        getStyleClass().add("scene-pane");
+    RuntimeStatePane() {
+        getStyleClass().add("surface-root");
         setPrefWidth(380);
         setMinWidth(280);
         setMinHeight(0);
         setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        tabBar.getStyleClass().add("scene-tab-bar");
+        ShellFx.addStyleClass(tabBar, "scene-tab-bar");
         tabBar.setAlignment(Pos.CENTER_LEFT);
         tabBar.setPadding(new Insets(4, 8, 4, 8));
 
-        placeholder.getStyleClass().add("text-muted");
+        ShellFx.addStyleClass(placeholder, "text-muted");
         placeholder.setMaxWidth(Double.MAX_VALUE);
         placeholder.setMaxHeight(Double.MAX_VALUE);
         placeholder.setAlignment(Pos.CENTER);
 
         contentArea.setAlignment(Pos.TOP_LEFT);
         ShellContentLayout.makeShrinkable(contentArea);
-        VBox.setVgrow(contentArea, Priority.ALWAYS);
-        contentArea.getChildren().setAll(placeholderHost);
+        setVgrow(contentArea, Priority.ALWAYS);
+        ShellFx.setChildren(contentArea, placeholderHost);
 
         getChildren().addAll(tabBar, contentArea);
         rebuildTabBar();
     }
 
-    public void registerTab(ContributionKey key, String label, int itemOrder, Node content) {
+    void registerTab(ContributionKey key, String label, int itemOrder, Node content) {
         Objects.requireNonNull(key, "key");
         if (tabs.containsKey(key)) {
             throw new IllegalArgumentException("Duplicate runtime state key: " + key.value());
@@ -74,24 +71,23 @@ final class RuntimeStatePane extends VBox {
         }
     }
 
-    public void activateTab(ContributionKey key) {
+    void activateTab(ContributionKey key) {
         StateTab tab = tabs.get(key);
         if (tab == null) {
             return;
         }
-        activeKey = key;
         tab.select();
-        contentArea.getChildren().setAll(tab.contentOr(placeholderHost));
+        ShellFx.setChildren(contentArea, tab.contentOr(placeholderHost));
     }
 
-    public boolean hasTabs() {
+    boolean hasTabs() {
         return !tabs.isEmpty();
     }
 
     private void rebuildTabBar() {
-        tabBar.getChildren().clear();
+        ShellFx.clearChildren(tabBar);
         for (StateTab tab : getSortedTabs()) {
-            tabBar.getChildren().add(tab.button);
+            ShellFx.addChild(tabBar, tab.button);
         }
         tabBar.setVisible(tabs.size() > 1);
         tabBar.setManaged(tabs.size() > 1);
@@ -101,7 +97,7 @@ final class RuntimeStatePane extends VBox {
         List<StateTab> sorted = new ArrayList<>(tabs.values());
         sorted.sort(Comparator
                 .comparingInt((StateTab tab) -> tab.itemOrder)
-                .thenComparing(tab -> tab.label, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(StateTab::label, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(tab -> tab.key.value()));
         return sorted;
     }
@@ -119,12 +115,16 @@ final class RuntimeStatePane extends VBox {
             this.itemOrder = itemOrder;
             this.content = ShellContentLayout.shellOwned(content);
             this.button = new ToggleButton(label);
-            button.getStyleClass().add("scene-tab");
+            ShellFx.addStyleClass(button, "scene-tab");
             button.setToggleGroup(tabGroup);
             button.setOnAction(event -> {
                 manualSelectionMade = true;
                 activateTab(key);
             });
+        }
+
+        private String label() {
+            return label;
         }
 
         private void select() {

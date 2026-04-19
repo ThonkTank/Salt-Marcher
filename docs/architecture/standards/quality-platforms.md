@@ -1,218 +1,264 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
-Source of Truth: Quality-platform operating model, task entrypoints, local
-usage, GitHub Actions integration, and branch-protection expectations.
+Last Reviewed: 2026-04-19
+Source of Truth: Quality-platform operating model, non-architecture quality gate inventory, task entrypoints, local usage, GitHub Actions integration, and branch-protection expectations.
 
 # Quality Platforms Standard
 
-SaltMarcher uses additional quality-platform integrations on top of the
-existing compiler, CPD, and repository policy checks:
+## Goal
 
-- `ArchUnit` runs through `./gradlew architectureTest` and enforces package-
-  level dependency boundaries between `bootstrap`, `shell`, `src.view`,
-  `src.domain`, and `src.data`, plus cross-feature application-service-only
-  access below the view layer outside dedicated view-architecture ownership,
-  and cycle freedom across domain, view, data, and shell slices.
-- `jQAssistant` runs through `./gradlew checkViewArchitecture` and is also
-  invoked automatically from `./gradlew compileJava` so canonical MVVM
-  topology failures already break the compile entrypoint.
-- `Error Prone` runs through `./gradlew compileJava` and owns compiler-precise
-  MVVM checks such as root-delegation bans, `View`/`assembly` dependency
-  bans, `ViewModel` framework bans, root `ShellRuntimeContext.services()`
-  bans, shell API allowlist checks on view roots, `assembly/`, and data
-  `*ServiceContribution` roots, state-placement bans, reflection-bypass bans,
-  `api/` dependency bans, `api/` signature-leak checks, public domain
-  boundary signature purity against outer-layer and foreign private domain
-  leaks, data-gateway return-type bans on domain exposure, and repository/query
-  public-signature bans on leaking internal data implementation types.
-- `PMD architecture` runs through `./gradlew pmdArchitectureMain` and enforces
-  Java source conventions for feature entrypoints, thin stateless root
-  surfaces, and forbidden framework or wiring patterns.
-- `build-harness` runs through `./gradlew :build-harness:check` and enforces
-  repository topology, package-path alignment, and non-view-architecture
-  presence rules on active code surfaces directly, without fixture-based
-  selftests.
-- `CKJM ext` runs through `./gradlew ckjmMain` and produces OO-metric reports
-  under `build/reports/ckjm/`.
-- `Lizard` runs through `./gradlew lizardMain` and is part of the blocking
-  local `check` pipeline.
-- `SonarCloud` runs in GitHub Actions through the Gradle `sonar` task and is
-  intended to be a required PR check.
-- `CodeScene` runs in GitHub Actions through
-  `tools/quality/scripts/codescene_delta.py`
-  and is intended to be a required PR check.
+SaltMarcher uses one documented operating model for local and CI quality gates
+that are not primarily architecture-rule ownership.
 
-The task wiring for local quality lives in the included build
-`tools/gradle/build-logic/` through the `saltmarcher.quality-conventions`
-plugin. The root build keeps application and packaging behavior, while the
-convention plugin owns check aggregation, Error Prone configuration, and typed
-Gradle task implementations for repository-policy and metric gates.
-SaltMarcher view-architecture rules live in
-`tools/quality/jqassistant/rules/` and are configured by
-`tools/quality/jqassistant/config.yml`.
+This standard defines local quality gates, pull-request blockers, ownership for
+non-architecture quality concerns, current thresholds and service policies, and
+quality concerns that remain review-owned.
 
-The binding MVVM model is defined in
-[Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/view-mvvm.md:1).
-The binding system-wide layer and dependency model is defined in
-[System Layer Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/system-layer-architecture.md:1).
-The binding shell workbench model is defined in
-[Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-workbench.md:1),
-and discovery/bootstrap mechanics are defined in
-[Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1).
-The binding DDD-primary domain-layer model is defined in
-[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1).
-The binding data-layer adapter model is defined in
-[Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/data-layer.md:1).
-The canonical rule-shape split, owner model, and status vocabulary for
-build-blocking architecture rules live in the
+It does not replace the architecture standards as the source of architectural
+intent, and it does not replace `architecture-enforcement-harness.md` as the
+source of truth for architecture rule ownership, rule status, or rule-shape
+classification.
+
+## Scope
+
+This standard covers quality-platform operation for active application code and
+build-owned repository surfaces: compiler hygiene, PMD non-architecture smells,
+duplicate-code detection, cyclomatic-complexity analysis, OO metrics,
+repository-wide resource/artifact/packaging validation, GitHub Actions,
+branch-protection expectations, SonarCloud, and CodeScene.
+
+The architecture harness enters local quality through the same Gradle
+aggregates, but its owner model lives in the
 [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+
+## Gate Status Vocabulary
+
+Every quality platform named here belongs to exactly one operating status:
+`Blocking Local Gate` for failing local Gradle tasks, `Required CI Gate` for
+GitHub Actions jobs intended for branch protection, `Informational Report` for
+artifacts without project-specific blocking thresholds, or `Review-Owned` for
+binding guidance that needs human judgment.
+
+External services may be both `Required CI Gate` and `Review-Owned` for
+different parts of their output. CodeScene quality-gate failures block CI,
+while non-blocking warnings still require human judgment.
+
+## Local Gate Inventory
+
+### Compiler Hygiene
+
+`./gradlew compileJava` is a `Blocking Local Gate`.
+
+It owns Java compilation and compiler-integrated hygiene checks on production
+source roots `bootstrap/`, `shell/`, and `src/`.
+
+The build enables `Error Prone`, `NullAway`, and project-local Error Prone
+checks during `compileJava`. Architecture-specific Error Prone checks are
+classified by the architecture harness. Non-architecture compiler hygiene
+checks currently promoted to errors are:
+
+- `EqualsNull`
+- `NullAway`
+- `ReferenceEquality`
+- `StringCaseLocaleUsage`
+- `StringSplitter`
+
+`compileJava` does not run the jQAssistant MVVM blocker. Graph-shaped MVVM
+analysis enters local quality through `checkViewArchitecture`, which is wired
+directly into the central `check` aggregate. This keeps focused compilation
+verification independent from graph analysis while ensuring `build` still runs
+the full architecture harness through `check`.
+
+### Complexity, Duplication, And Metrics
+
+| Platform | Status | Entrypoint | Current policy |
+| --- | --- | --- | --- |
+| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` as a source-only check on production Java sources. |
+| SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
+| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 80`; writes `build/reports/cpd/main.txt`. |
+| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`; writes `build/reports/lizard/main.txt`. |
+| CKJM ext | `Blocking Local Gate` | `./gradlew ckjmMain` | Runs on compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, and fails when OO metric thresholds are exceeded. |
+
+PMD non-architecture currently enforces explicit metric thresholds:
+
+- Cognitive complexity: `15`
+- Method cyclomatic complexity: `10`
+- Class cyclomatic complexity: `80`
+- NPath complexity: `200`
+- Coupling between objects: `20`
+- Deep nested `if` depth: `3`
+- Method NCSS count: `30`
+- Excessive parameter list minimum: `6`
+
+The same PMD ruleset enables PMD's default thresholds and rule defaults for the
+explicitly listed Java quickstart rules plus stricter source-smell rules for
+exception handling, resource handling, unnecessary suppressions, magic
+literals, low-branch switches, mutable static state, public members on
+non-public types, null sentinels, and local naming/style hygiene. The rule file
+must list individual rules explicitly rather than importing whole PMD
+categories.
+
+`pmdMain` includes a strict PMD CLI pass that fails on both violations and PMD
+analysis errors. This prevents parser or type-resolution failures from being
+treated as a clean quality pass. `pmdTest` is disabled; PMD non-architecture
+smell policy applies to production source roots, not architecture test sources.
+
+SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
+effort `MAX`, and confidence `MEDIUM`. `spotbugsTest` is disabled because
+behavior-coupled automated tests are not part of the project strategy.
+
+CKJM blocks on these thresholds:
+
+- Weighted methods per class (`WMC`): `50`
+- Depth of inheritance tree (`DIT`): `5`
+- Number of children (`NOC`): `3`
+- Coupling between objects (`CBO`): `14`
+- Response for class (`RFC`): `50`
+- Lack of cohesion in methods (`LCOM`): `50`
+- Afferent couplings (`Ca`): `14`
+- Number of public methods (`NPM`): `30`
+
+Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
+of the jQAssistant MVVM blocker; they may be run together for quality
+investigation without pulling in the view-architecture graph analysis.
+
+Checkstyle metrics and Semgrep are deferred unless current tooling cannot
+express a concrete rule.
+
+`./gradlew pmdArchitectureMain` is intentionally separate. It belongs to the
+architecture harness and runs source-level architecture policy rules.
+
+### Repository And Resource Policy
+
+Typed Gradle verification tasks in `tools/gradle/build-logic/` own
+repository-wide resource, artifact, and packaging policies that are not
+language-level architecture rules.
+
+| Entrypoint | Status | Current policy |
+| --- | --- | --- |
+| `./gradlew checkCentralizedStylesheets` | `Blocking Local Gate` | Stylesheet files with supported stylesheet extensions must live directly under top-level `resources/`. |
+| `./gradlew checkDefinedStyleClassSelectors` | `Blocking Local Gate` | Style classes authored from Java through `getStyleClass()` calls must resolve to selectors in centralized `resources/*.css` files. |
+| `./gradlew checkNoCompiledArtifactsInSource` | `Blocking Local Gate` | `.class` files must not exist under active source roots. |
+| `./gradlew checkDesktopPackagingInputs` | `Blocking Local Gate` | Desktop main/preloader class sources, icon paths, stylesheet path, launcher name, and `StartupWMClass` must be present and valid. |
+
+The styling rules behind the stylesheet and selector gates are defined in the
+[Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/styling.md:1).
+
+## Aggregates And Entry Points
+
+`./gradlew check --console=plain` is the local full quality blocker and the
+single central aggregate for repository-owned Gradle checks.
+
+It includes:
+
+- Java compiler hygiene through `compileJava`
+- default PMD quality checks through `pmdMain`
+- architecture-harness checks through `architectureTest`,
+  `pmdArchitectureMain`, `:build-harness:check`, and `checkViewArchitecture`
+- repository and resource policy checks
+- bytecode bug and security-smell analysis through `spotbugsMain`
+- duplicate-code detection through `cpdMain`
+- cyclomatic-complexity detection through `lizardMain`
+- CKJM metric thresholding through `ckjmMain`
+
+`./gradlew build --console=plain` remains the implementation-handoff build
+required by `AGENTS.md`. It reaches the same full check set through Gradle's
+standard `build -> check` lifecycle; SaltMarcher-specific checks must be wired
+to `check`, not duplicated on `build`. A completed implementation pass is
+incomplete until that build has been rerun or a concrete blocker has been
+reported.
+
+Focused investigation entrypoints are `compileJava`, `pmdMain`,
+`spotbugsMain`, `pmdArchitectureMain`, `cpdMain`, `lizardMain`, `ckjmMain`,
+`checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
+`checkNoCompiledArtifactsInSource`, `checkDesktopPackagingInputs`, and
+`jqassistantEffectiveRules`, each run through `./gradlew <task>
+--console=plain`.
+
+Architecture-focused entrypoints:
+
+- `./gradlew checkArchitecture --console=plain`
+  Aggregates `architectureTest`, `pmdArchitectureMain`, and
+  `:build-harness:check`.
+- `./gradlew checkViewArchitecture --console=plain`
+  Runs the explicit jQAssistant MVVM topology analysis.
+
+For invocations that request any local quality or architecture gate named in
+this section, the convention plugin enables Gradle continue-on-failure behavior
+automatically. A run still fails when any blocking check fails, but independent
+checks that are not blocked by failed dependencies must continue and report
+their failures together.
+
+This does not make bytecode-dependent gates source-only. `spotbugsMain`,
+`ckjmMain`, and `checkViewArchitecture` still require current compiled classes;
+if `compileJava` fails, those checks may be skipped because their prerequisite
+failed rather than because another independent check failed.
+
+Local blocking Gradle gates must produce diagnostics from the current
+invocation. `compileJava`, PMD, SpotBugs, ArchUnit-backed test entrypoints,
+jQAssistant, CPD, Lizard, CKJM, build-harness architecture checks, and
+Gradle-owned resource policy checks must not report success by being skipped as
+`UP-TO-DATE` or restored from the build cache. Tool installation, dependency
+resolution, packaging, and generated-resource preparation tasks may remain
+incremental because they are not the gate result itself.
 
 ## Verification Policy
 
-SaltMarcher does not use behavior-coupled automated tests as a safety strategy.
+SaltMarcher uses structural and build gates for automated confidence, and
+manual testing for behavior verification.
 
 - Do not add JUnit or similar automated tests for feature behavior, internal
   orchestration, UI helpers, or other change-coupled logic whose assertions
   must be migrated alongside normal behavior changes.
 - Do not add fixture-based selftests or meta-test suites inside verification
-  harnesses such as `build-harness`; express those policies directly in the
-  owning gate instead.
-- Use the existing structural and build gates for automated confidence:
-  compiler checks, `checkViewArchitecture`, `architectureTest`,
-  `pmdArchitectureMain`,
-  `:build-harness:check`, and the quality platforms named in this document.
-- Use manual testing for behavior verification and workflow validation.
-- Do not expand the compile/build/check pipeline with new automated gates unless
-  the user explicitly requests that expansion.
+  harnesses such as `build-harness`; express repository policies directly in
+  the owning gate instead.
+- Do not expand the compile/build/check pipeline with new automated gates
+  unless the user explicitly requests that expansion.
+- Treat only the CKJM thresholds named here as mechanical blockers.
+- Use manual testing for workflow behavior, desktop interaction, UI judgment,
+  and product acceptance.
 - `./gradlew test` is not a general-purpose home for behavior-regression
   suites.
 
-## Operating Model
-
-SaltMarcher should use `branch -> pull request -> auto-merge` for changes into
-`main`.
-
-- Direct pushes to `main` should be disabled.
-- Required reviews are optional in this setup; the primary merge blockers are
-  quality checks.
-- Auto-merge should be enabled so that a green PR can land without a manual
-  merge click.
-- `quality-platforms / local-quality`, `quality-platforms / sonarcloud`, and
-  `quality-platforms / codescene` are the intended blocking checks for that
-  flow.
-
-## Local Usage
-
-- `./gradlew compileJava --console=plain`
-  This runs compiler-precise view and data architecture checks and then the
-  blocking MVVM jQAssistant analyze step after a successful Java compile.
-- `./gradlew checkViewArchitecture --console=plain`
-- `./gradlew architectureTest --console=plain`
-- `./gradlew pmdArchitectureMain --console=plain`
-- `./gradlew :build-harness:check --console=plain`
-- `./gradlew checkArchitecture --console=plain`
-- `./gradlew checkCentralizedStylesheets --console=plain`
-- `./gradlew checkDefinedStyleClassSelectors --console=plain`
-- `./gradlew checkNoCompiledArtifactsInSource --console=plain`
-- `./gradlew checkDesktopPackagingInputs --console=plain`
-- `./gradlew jqassistantEffectiveRules --console=plain`
-- `./gradlew cpdMain --console=plain`
-- `./gradlew ckjmMain --console=plain`
-- `./gradlew lizardMain --console=plain`
-- `./gradlew check --console=plain`
-
-`check` is the blocking local aggregate. It includes compiler checks,
-`checkViewArchitecture`, `checkArchitecture`, repository-policy checks,
-`cpdMain`,
-`lizardMain`, and `ckjmMain`.
-
 ## Architecture Harness Relationship
 
-This document describes how the quality platforms are operated. The harness
-standard above defines which engine owns which class of architecture rule.
+This standard describes how quality platforms are operated. The harness
+standard defines which engine owns which class of architecture rule.
 
-Operationally, the architecture harness enters local quality through these
-tasks:
+Operationally, architecture checks enter local quality through:
 
 - `compileJava`
-  - runs `Error Prone`, including blocking compiler-precise view and data
-    architecture rules plus the blocking programmatic visual-styling ban
-  - finalizes with the blocking canonical `jQAssistant` MVVM analysis after a
-    successful Java compile
+  Runs Error Prone architecture checks, including positive root
+  `createScreen(...)` delegation into the owning view `assembly/`.
+- `architectureTest`
+  Runs ArchUnit dependency and cycle checks, including view-component cycle
+  freedom.
 - `checkViewArchitecture`
-  - runs the explicit canonical MVVM topology analysis
+  Runs explicit jQAssistant MVVM topology analysis.
 - `checkArchitecture`
-  - aggregates `architectureTest`, `pmdArchitectureMain`, and
-    `:build-harness:check`
-- `checkCentralizedStylesheets`
-  - runs the blocking centralized stylesheet placement verifier
-- `checkDefinedStyleClassSelectors`
-  - runs the blocking Java-to-central-selector resolution verifier
-- `checkNoCompiledArtifactsInSource`
-  - runs the blocking compiled-artifact source-root verifier
-- `checkDesktopPackagingInputs`
-  - runs the blocking desktop packaging input verifier
+  Aggregates ArchUnit, PMD architecture rules, and the build-harness.
 - `check`
-  - runs the architecture harness plus adjacent blocking quality gates
+  Runs the architecture harness plus adjacent non-architecture quality gates.
+  Its jQAssistant coverage comes from the explicit `checkViewArchitecture`
+  dependency.
 
-## Adjacent Blocking Quality Platforms
-
-Not every blocking quality task is the primary owner of an architecture rule.
-
-- `build-logic` convention tasks own repository-wide build and resource policy
-  checks such as centralized stylesheet placement, compiled-artifact bans under
-  active source roots, and desktop packaging input validation.
-- `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
-  `checkNoCompiledArtifactsInSource`, and `checkDesktopPackagingInputs` are
-  blocking typed Gradle verifiers, but they are not aggregated under
-  `checkArchitecture`.
-- `CPD`, `Lizard`, and `CKJM ext` are blocking local quality platforms, but
-  they are not the canonical owner of SaltMarcher layer-model rules.
-- `SonarCloud` and `CodeScene` are CI-quality platforms intended as required PR
-  checks, but they are not the primary local owner of architectural boundary
-  contracts.
-
-## Review Governance
-
-- Documentation ownership, source-of-truth conflicts, and same-change
-  documentation updates remain review responsibilities.
-- GitHub branch protection, required checks, and auto-merge remain repository
-  configuration, not Gradle behavior.
-- The stronger system-layer rules do not all have the same status. Use the
-  harness standard as the canonical classification:
-  - already enforced: top-level inward dependency direction, view access to
-    backend boundaries only through public `*ApplicationService` roots and
-    public `api/`, root-only shell bridging in view, root-only shell
-    registration in data, the `shell.api` / `shell.host` split including the
-    bootstrap-only access rule for `shell.host.AppShell`, public domain
-    boundary signatures staying free of outer-layer types and foreign private
-    domain types, and the structurally expressible subset of boundary-carrier
-    purity
-  - current candidate: same-feature internal carrier purity on domain-owned
-    public backend boundaries, with the preferred future owner being
-    `Error Prone` on `compileJava`
-  - still review-owned: seam minimization to the smallest intentional public
-    boundary, semantically needless pass-through wrappers, and coordination
-    duplication or shell-passivity drift that is not reducible to stable
-    structure
-- Review-only architectural rules stay review-owned until the harness standard
-  names a primary mechanical owner and a blocking task for them explicitly.
+Architecture rule status must not be reclassified here. If a layer standard and
+the harness standard disagree about whether a rule is mechanically enforced,
+the harness standard is the canonical classification.
 
 ## GitHub Actions
 
-The workflow lives in [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
-and defines four jobs:
+The workflow lives in
+[.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
+and defines four jobs.
 
-- `local-quality`: runs `./gradlew check`
-- `ckjm-report`: runs `./gradlew ckjmMain` and uploads reports
-- `sonarcloud`: runs Gradle-backed SonarCloud analysis and waits for the quality
-  gate
-- `codescene`: triggers a CodeScene delta analysis and uploads the result
-  documents
-
-Configure the following repository secrets and variables before enabling branch
-protection and auto-merge:
+| Job | Status | Current policy |
+| --- | --- | --- |
+| `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the CI mirror of the local full blocker. |
+| `quality-platforms / ckjm-report` | `Blocking Local Gate` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM threshold failures fail the job. |
+| `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
+| `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
 
 ### SonarCloud
 
@@ -225,25 +271,18 @@ Repository variables:
 - `SONAR_ORGANIZATION`
 - `SONAR_PROJECT_KEY`
 
-Recommended service-side setup:
-
-- Bind the SonarCloud project to this GitHub repository.
-- Use `main` as the reference branch / New Code baseline.
-- Create a dedicated quality gate for SaltMarcher new code.
-- Fail on:
-  - new issues
-  - duplicated lines density on new code above `3%`
-  - security hotspots reviewed below `100%`
-- Do not make coverage a blocking condition yet unless test coverage becomes a
-  maintained target.
-- Ensure the GitHub repository binding is active so the workflow's
-  `GITHUB_TOKEN` can be used for PR context.
-
-Recommended required check:
-
-- `quality-platforms / sonarcloud`
+Recommended service-side setup: bind the project to this repository; use
+`main` as the New Code baseline; create a SaltMarcher new-code quality gate;
+fail on new issues, duplicated lines density above `3%`, and security hotspots
+reviewed below `100%`; keep coverage non-blocking unless it becomes a
+maintained target; keep GitHub binding active for PR context.
 
 ### CodeScene
+
+The helper script triggers CodeScene delta analysis, waits for a result, writes
+`build/reports/codescene/delta-analysis.json` and
+`build/reports/codescene/delta-analysis.md`, and fails when returned
+`quality-gates` are truthy.
 
 Repository secret:
 
@@ -257,48 +296,52 @@ Repository variables:
 Optional variables:
 
 - `CODESCENE_REPOSITORY`
-  Use this when the repository name in CodeScene differs from the GitHub repo
-  slug tail.
 - `CODESCENE_DELTA_ENDPOINT`
-  Override the default inferred endpoint if your CodeScene instance exposes a
-  custom delta-analysis URL.
 - `CODESCENE_BASIC_USER`
-  Set this when your CodeScene instance expects HTTP Basic auth instead of
-  Bearer auth for delta-analysis calls.
 - `CODESCENE_OFFLINE_MODE=true`
-  Append `offline-mode=offline` to the delta-analysis request when your instance
-  runs in offline mode.
+- `CODESCENE_TIMEOUT_SECONDS`
+- `CODESCENE_POLL_SECONDS`
 
-Recommended service-side setup:
-
-- Bind the CodeScene project to this repository and use `main` as the reference
-  branch.
-- Enable Delta Analysis for pull requests and pushes to `main`.
-- Configure hard gates for:
-  - hotspot goals violations
-  - code health decline
-  - low code health in new code below `8.0`
-- Treat absence of expected change pattern as a warning, not a merge blocker.
-
-Recommended required check:
-
-- `quality-platforms / codescene`
-
-The helper script writes raw and human-readable outputs to
-`build/reports/codescene/`.
+Recommended service-side setup: bind the project to this repository with
+`main` as reference branch; enable Delta Analysis for pull requests and pushes
+to `main`; hard-gate hotspot goal violations, code health decline, and new-code
+health below `8.0`; treat absent expected change patterns as warnings.
 
 ## Branch Protection
 
-After the secrets and service-side project bindings are in place, configure
-`main` as follows:
+SaltMarcher should use `branch -> pull request -> auto-merge` for changes into
+`main`.
+
+Configure `main` as follows after service secrets and project bindings are in
+place:
 
 - Require a pull request before merging.
 - Disable direct pushes to `main`.
 - Enable auto-merge.
 - Keep required reviews optional unless the team later decides otherwise.
-- `quality-platforms / local-quality`
-- `quality-platforms / sonarcloud`
-- `quality-platforms / codescene`
+- Require `quality-platforms / local-quality`.
+- Require `quality-platforms / sonarcloud`.
+- Require `quality-platforms / codescene`.
+- Require `quality-platforms / ckjm-report`.
 
-`ckjm-report` should remain informational until the team defines project-specific
-thresholds for CKJM metrics like `RFC`, `CBO`, `LCOM`, and `WMC`.
+## Review Governance
+
+The quality platforms do not replace human review.
+
+- Documentation ownership, source-of-truth conflicts, and same-change
+  documentation updates remain review responsibilities.
+- GitHub branch protection, required checks, secrets, variables, and service
+  project bindings remain repository configuration, not Gradle behavior.
+- Whether a PMD, CPD, Lizard, SonarCloud, or CodeScene finding is a symptom of
+  a larger design problem remains review-owned even when the immediate gate is
+  mechanically enforced.
+- Maintainability concerns without stable mechanical shape remain review-owned
+  until this standard names a platform, a blocking task or CI job, and the
+  threshold or service policy that makes them mechanical.
+
+## References
+
+- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
+- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1)
+- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/documentation.md:1)
+- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/styling.md:1)

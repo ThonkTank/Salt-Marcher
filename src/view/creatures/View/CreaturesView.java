@@ -47,10 +47,10 @@ public final class CreaturesView {
 
     private void buildControls() {
         controls.setPadding(new Insets(12));
-        controls.getStyleClass().addAll("dungeon-editor-toolbar", "dungeon-editor-sidebar");
+        controls.getStyleClass().addAll("control-toolbar", "control-stack");
 
         Label title = new Label("Creatures");
-        title.getStyleClass().add("editor-panel-title");
+        title.getStyleClass().add("panel-title");
 
         CreatureFilterPane filterPane = new CreatureFilterPane(
                 new CreatureFilterOptionsViewData(
@@ -70,7 +70,7 @@ public final class CreaturesView {
 
     private void buildWorkspace() {
         workspace.setPadding(new Insets(12));
-        workspace.getStyleClass().add("scene-pane");
+        workspace.getStyleClass().add("surface-root");
         VBox.setVgrow(table, Priority.ALWAYS);
 
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);

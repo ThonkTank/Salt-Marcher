@@ -121,7 +121,7 @@ final class ViewArchitectureSupport {
     }
 
     static boolean isAllowedDomainBoundary(String referencedType) {
-        return referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService(\\$.*)?$")
+        return referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$")
                 || referencedType.matches("^src\\.domain\\.[^.]+\\.api\\..+");
     }
 

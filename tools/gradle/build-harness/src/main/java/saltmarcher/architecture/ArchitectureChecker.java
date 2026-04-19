@@ -22,10 +22,44 @@ public final class ArchitectureChecker {
 
     private static final Pattern PACKAGE_PATTERN =
             Pattern.compile("(?m)^\\s*package\\s+([A-Za-z_][\\w.]*)\\s*;");
+    private static final Pattern INCLUDED_BUILD_PATTERN =
+            Pattern.compile("\\bincludeBuild\\s*\\(\\s*\"([^\"]+)\"\\s*\\)");
     private static final Pattern SELF_TEST_FILE_PATTERN =
             Pattern.compile(".*SelfTest.*\\.java$");
-    private static final Set<String> DOMAIN_TOLERATED_LEGACY_BUCKETS =
-            Set.of("entity", "service", "valueobject", "repository", "query");
+    private static final Pattern MARKDOWN_HEADING_PATTERN =
+            Pattern.compile("(?m)^##\\s+.+$");
+    private static final Pattern BACKEND_PORT_CONTRACT_FILE_PATTERN =
+            Pattern.compile(".*(?:Repository|Port)\\.java$");
+    private static final Pattern SCHEMA_TABLE_NAME_PATTERN =
+            Pattern.compile("\\btable\\s*\\(\\s*\"([^\"]+)\"");
+    private static final Pattern SHELL_TAB_SPEC_CONSTRUCTOR_PATTERN =
+            Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellTabSpec\\s*\\(");
+    private static final Set<String> DOMAIN_CONTEXT_TYPES =
+            Set.of("Policy-Owning Bounded Context", "Supporting Read-Model Context");
+    private static final Set<String> ACTIVE_JAVA_ROOT_ALLOWLIST =
+            Set.of("bootstrap", "shell", "src", "test", "tools", "salt-marcher");
+    private static final Set<String> IGNORED_REPOSITORY_SCAN_SEGMENTS =
+            Set.of(".codex", ".git", ".gradle", "build");
+    private static final Set<String> SRC_DIRECT_CHILD_ALLOWLIST =
+            Set.of("view", "domain", "data");
+    private static final Set<String> SHELL_API_PUBLIC_SURFACE_ALLOWLIST =
+            Set.of(
+                    "ContributionKey.java",
+                    "InspectorEntrySpec.java",
+                    "InspectorSink.java",
+                    "NavigationGraphicSupport.java",
+                    "NavigationGroupSpec.java",
+                    "ServiceContribution.java",
+                    "ServiceRegistry.java",
+                    "ShellContributionSpec.java",
+                    "ShellRuntimeContext.java",
+                    "ShellRuntimeStateSpec.java",
+                    "ShellScreen.java",
+                    "ShellSlot.java",
+                    "ShellTabMode.java",
+                    "ShellTabSpec.java",
+                    "ShellTopBarSpec.java",
+                    "ShellViewContribution.java");
     private static final Set<String> DOMAIN_FORBIDDEN_ROLE_BUCKETS =
             Set.of(
                     "aggregate",
@@ -73,6 +107,7 @@ public final class ArchitectureChecker {
     public Result check() {
         List<Violation> violations = new ArrayList<>();
         validateBuildHarnessPolicy(violations);
+        validateRepositoryTopology(violations);
         List<SourceFile> sourceFiles = loadSourceFiles(violations);
 
         for (SourceFile sourceFile : sourceFiles) {
@@ -81,7 +116,13 @@ public final class ArchitectureChecker {
         }
 
         validateDomainFeatureBoundaries(sourceFiles, violations);
+        validateDomainFeatureDirectories(violations);
+        validateDomainContextDocuments(collectDomainFeatures(sourceFiles), violations);
+        validateShellApiPublicSurface(sourceFiles, violations);
+        validateViewContributionPlacementAndStartup(sourceFiles, violations);
+        validateServiceContributionPlacement(sourceFiles, violations);
         validatePersistenceEntrypoints(sourceFiles, violations);
+        validateSchemaTableNameOwnership(sourceFiles, violations);
 
         List<Violation> ordered = violations.stream()
                 .sorted(Comparator.comparing(Violation::source)
@@ -110,6 +151,110 @@ public final class ArchitectureChecker {
         } catch (IOException exception) {
             violations.add(new Violation(relativize(mainJavaRoot), "scan-root",
                     "Could not scan build-harness policy root: " + exception.getMessage()));
+        }
+    }
+
+    private void validateRepositoryTopology(List<Violation> violations) {
+        validateActiveJavaRootAllowlist(violations);
+        validateSrcDirectChildAllowlist(violations);
+        validateIncludedBuildTaxonomy(violations);
+    }
+
+    private void validateActiveJavaRootAllowlist(List<Violation> violations) {
+        try (Stream<Path> stream = Files.walk(repoRoot)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".java"))
+                    .filter(path -> !isIgnoredRepositoryScanPath(path))
+                    .forEach(path -> {
+                        List<String> segments = relativeSegments(path);
+                        if (segments.isEmpty()) {
+                            return;
+                        }
+                        String root = segments.getFirst();
+                        if (!ACTIVE_JAVA_ROOT_ALLOWLIST.contains(root)) {
+                            violations.add(new Violation(relativize(path), "repository-active-java-root-allowlist",
+                                    "Java source files must live under bootstrap/, shell/, src/, test/, tools/,"
+                                            + " or legacy salt-marcher/. Do not create alternate active feature-code roots."));
+                        }
+                    });
+        } catch (IOException exception) {
+            violations.add(new Violation(".", "scan-root",
+                    "Could not scan repository Java source roots: " + exception.getMessage()));
+        }
+    }
+
+    private void validateSrcDirectChildAllowlist(List<Violation> violations) {
+        Path srcRoot = repoRoot.resolve("src");
+        if (!Files.isDirectory(srcRoot)) {
+            return;
+        }
+        try (Stream<Path> stream = Files.list(srcRoot)) {
+            stream.filter(path -> !SRC_DIRECT_CHILD_ALLOWLIST.contains(path.getFileName().toString()))
+                    .filter(this::hasRepositoryContent)
+                    .forEach(path -> violations.add(new Violation(relativize(path), "repository-src-direct-child-allowlist",
+                            "The src/ root may contain only view/, domain/, and data/ as non-empty direct children."
+                                    + " Active feature code must be added inside one of those layer roots.")));
+        } catch (IOException exception) {
+            violations.add(new Violation(relativize(srcRoot), "scan-root",
+                    "Could not scan src/ direct children: " + exception.getMessage()));
+        }
+    }
+
+    private void validateIncludedBuildTaxonomy(List<Violation> violations) {
+        Path settingsFile = repoRoot.resolve("settings.gradle.kts");
+        if (!Files.isRegularFile(settingsFile)) {
+            return;
+        }
+
+        String content;
+        try {
+            content = Files.readString(settingsFile, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            violations.add(new Violation("settings.gradle.kts", "file-readable",
+                    "Could not read Gradle settings file: " + exception.getMessage()));
+            return;
+        }
+
+        Matcher matcher = INCLUDED_BUILD_PATTERN.matcher(content);
+        while (matcher.find()) {
+            String includedBuild = matcher.group(1);
+            Path normalized = Path.of(includedBuild).normalize();
+            if (normalized.isAbsolute() || normalized.startsWith("..")) {
+                violations.add(new Violation("settings.gradle.kts", "repository-included-build-taxonomy",
+                        "Included Gradle builds must use repository-relative paths under tools/gradle/ or tools/quality/. Found: "
+                                + includedBuild));
+                continue;
+            }
+            String normalizedPath = normalized.toString().replace('\\', '/');
+            if (!normalizedPath.startsWith("tools/gradle/")
+                    && !normalizedPath.startsWith("tools/quality/")) {
+                violations.add(new Violation("settings.gradle.kts", "repository-included-build-taxonomy",
+                        "Included Gradle builds must live under tools/gradle/ or tools/quality/. Found: "
+                                + includedBuild));
+            }
+        }
+    }
+
+    private boolean isIgnoredRepositoryScanPath(Path path) {
+        return relativeSegments(path).stream().anyMatch(IGNORED_REPOSITORY_SCAN_SEGMENTS::contains);
+    }
+
+    private boolean hasRepositoryContent(Path path) {
+        if (isIgnoredRepositoryScanPath(path)) {
+            return false;
+        }
+        if (Files.isRegularFile(path)) {
+            return true;
+        }
+        if (!Files.isDirectory(path)) {
+            return false;
+        }
+        try (Stream<Path> stream = Files.walk(path)) {
+            return stream
+                    .filter(candidate -> !candidate.equals(path))
+                    .anyMatch(candidate -> Files.isRegularFile(candidate) && !isIgnoredRepositoryScanPath(candidate));
+        } catch (IOException exception) {
+            return true;
         }
     }
 
@@ -197,22 +342,23 @@ public final class ArchitectureChecker {
             String feature = segments.get(2);
             String expected = expectedDomainRootFileName(feature);
             if (!sourceFile.fileName().equals(expected)) {
-                violations.add(new Violation(sourceFile.relativePath(), "domain-layout",
+                violations.add(new Violation(sourceFile.relativePath(), "domain-root-presence",
                         "Only <PascalFeatureName>ApplicationService.java may live directly under src/domain/<feature>/."));
             }
             return;
         }
 
         String bucket = segments.get(3);
-        if (bucket.equals("services")) {
-            violations.add(new Violation(sourceFile.relativePath(), "domain-no-service",
-                    "Domain services/ directories are forbidden. Use api/, application/, a named domain module,"
-                            + " or a tolerated legacy role bucket during migration."));
+        validateDomainBucket(sourceFile.relativePath(), bucket, violations);
+        if (bucket.equals("api")
+                && BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
+            violations.add(new Violation(sourceFile.relativePath(), "domain-api-no-backend-port-contracts",
+                    "Domain api/ packages are exported boundary-carrier surfaces. Backend port contracts such as *Repository or *Port belong in a named domain module."));
         }
-        if (!isAllowedDomainBucket(bucket)) {
-            violations.add(new Violation(sourceFile.relativePath(), "domain-layout",
-                    "Only api/, application/, named domain modules, and tolerated legacy root role buckets"
-                            + " (entity/, service/, valueobject/, repository/, query/) are allowed in a domain feature."));
+        if (bucket.equals("application")
+                && BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
+            violations.add(new Violation(sourceFile.relativePath(), "domain-application-no-backend-port-contracts",
+                    "Domain application/ packages coordinate use cases. Backend port contracts such as *Repository or *Port belong in a named domain module."));
         }
     }
 
@@ -291,9 +437,122 @@ public final class ArchitectureChecker {
             String files = roots.isEmpty()
                     ? "none found"
                     : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
-            violations.add(new Violation("src/domain/" + featureName, "application-service-root",
+            violations.add(new Violation("src/domain/" + featureName, "domain-root-presence",
                     "Domain feature '" + featureName + "' must expose exactly one root application service."
                             + " Expected " + expectedDomainRootFileName(featureName) + ". Found: " + files));
+        }
+    }
+
+    private void validateDomainFeatureDirectories(List<Violation> violations) {
+        Path domainRoot = repoRoot.resolve("src/domain");
+        if (!Files.isDirectory(domainRoot)) {
+            return;
+        }
+        try (Stream<Path> stream = Files.list(domainRoot)) {
+            stream.filter(Files::isDirectory)
+                    .sorted()
+                    .forEach(featureRoot -> validateDomainFeatureDirectory(featureRoot, violations));
+        } catch (IOException exception) {
+            violations.add(new Violation(relativize(domainRoot), "scan-root",
+                    "Could not scan domain feature root: " + exception.getMessage()));
+        }
+    }
+
+    private void validateDomainFeatureDirectory(Path featureRoot, List<Violation> violations) {
+        try (Stream<Path> stream = Files.list(featureRoot)) {
+            stream.filter(Files::isDirectory)
+                    .sorted()
+                    .forEach(directory -> {
+                        String bucket = directory.getFileName().toString();
+                        validateDomainBucket(relativize(directory), bucket, violations);
+                    });
+        } catch (IOException exception) {
+            violations.add(new Violation(relativize(featureRoot), "scan-root",
+                    "Could not scan domain feature directory: " + exception.getMessage()));
+        }
+    }
+
+    private void validateDomainContextDocuments(Set<String> domainFeatures, List<Violation> violations) {
+        for (String featureName : domainFeatures) {
+            Path document = repoRoot.resolve("src/domain").resolve(featureName).resolve("DOMAIN.md");
+            String documentPath = "src/domain/" + featureName + "/DOMAIN.md";
+            if (!Files.isRegularFile(document)) {
+                violations.add(new Violation(documentPath, "domain-context-document-presence",
+                        "Every domain feature must declare its context type in DOMAIN.md."));
+                continue;
+            }
+
+            String content;
+            try {
+                content = Files.readString(document, StandardCharsets.UTF_8);
+            } catch (IOException exception) {
+                violations.add(new Violation(documentPath, "file-readable",
+                        "Could not read domain context document: " + exception.getMessage()));
+                continue;
+            }
+
+            List<String> declaredTypes = declaredDomainContextTypes(content);
+            if (declaredTypes.size() != 1) {
+                violations.add(new Violation(documentPath, "domain-context-shape-declared",
+                        "DOMAIN.md must contain exactly one context marker: 'Context Type: Policy-Owning Bounded Context'"
+                                + " or 'Context Type: Supporting Read-Model Context'."));
+                continue;
+            }
+
+            if ("Supporting Read-Model Context".equals(declaredTypes.getFirst())
+                    && !hasNonEmptySection(content, "## Read-Model Boundary")) {
+                violations.add(new Violation(documentPath, "domain-supporting-context-rationale",
+                        "Supporting read-model contexts must include a non-empty '## Read-Model Boundary' rationale section."));
+            }
+        }
+    }
+
+    private static List<String> declaredDomainContextTypes(String content) {
+        List<String> result = new ArrayList<>();
+        for (String type : DOMAIN_CONTEXT_TYPES) {
+            Matcher matcher = Pattern.compile("(?m)^\\s*Context Type:\\s+" + Pattern.quote(type) + "\\s*$")
+                    .matcher(content);
+            while (matcher.find()) {
+                result.add(type);
+            }
+        }
+        return result.stream().sorted().toList();
+    }
+
+    private static boolean hasNonEmptySection(String content, String heading) {
+        int headingIndex = content.indexOf(heading);
+        if (headingIndex < 0) {
+            return false;
+        }
+        int bodyStart = headingIndex + heading.length();
+        Matcher nextHeading = MARKDOWN_HEADING_PATTERN.matcher(content);
+        int bodyEnd = content.length();
+        if (nextHeading.find(bodyStart)) {
+            bodyEnd = nextHeading.start();
+        }
+        return !content.substring(bodyStart, bodyEnd).trim().isBlank();
+    }
+
+    private void validateShellApiPublicSurface(List<SourceFile> sourceFiles, List<Violation> violations) {
+        TreeSet<String> actualFiles = sourceFiles.stream()
+                .filter(sourceFile -> sourceFile.relativeSegments().size() == 3)
+                .filter(sourceFile -> sourceFile.relativeSegments().get(0).equals("shell"))
+                .filter(sourceFile -> sourceFile.relativeSegments().get(1).equals("api"))
+                .map(SourceFile::fileName)
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        TreeSet<String> missingFiles = new TreeSet<>(SHELL_API_PUBLIC_SURFACE_ALLOWLIST);
+        missingFiles.removeAll(actualFiles);
+        for (String missingFile : missingFiles) {
+            violations.add(new Violation("shell/api/" + missingFile, "shell-api-public-surface-allowlist",
+                    "The public shell workbench contract must keep the fixed shell/api surface. Missing expected API file."));
+        }
+
+        TreeSet<String> extraFiles = new TreeSet<>(actualFiles);
+        extraFiles.removeAll(SHELL_API_PUBLIC_SURFACE_ALLOWLIST);
+        for (String extraFile : extraFiles) {
+            violations.add(new Violation("shell/api/" + extraFile, "shell-api-public-surface-allowlist",
+                    "Do not add new public shell/api extension points without updating the passive workbench contract and enforcement coverage."));
         }
     }
 
@@ -306,18 +565,33 @@ public final class ArchitectureChecker {
                 + "ApplicationService.java";
     }
 
-    private static boolean isAllowedDomainBucket(String bucket) {
-        return bucket.equals("api")
-                || bucket.equals("application")
-                || DOMAIN_TOLERATED_LEGACY_BUCKETS.contains(bucket)
-                || isNamedDomainModule(bucket);
+    private static void validateDomainBucket(String source, String bucket, List<Violation> violations) {
+        if (bucket.equals("api") || bucket.equals("application")) {
+            return;
+        }
+        if (DOMAIN_FORBIDDEN_ROLE_BUCKETS.contains(bucket)) {
+            violations.add(new Violation(source, "domain-top-level-role-bucket-ban",
+                    "Top-level technical role buckets are forbidden under src/domain/<feature>/. Use api/, application/, or a named domain module."));
+            return;
+        }
+        if (!isNamedDomainModule(bucket)) {
+            violations.add(new Violation(source, "domain-module-name-shape",
+                    "Named domain modules under src/domain/<feature>/ must use lower-case package names matching [a-z][a-z0-9_]*."));
+        }
     }
 
     private static boolean isNamedDomainModule(String bucket) {
-        if (!bucket.matches("[a-z][a-z0-9_]*")) {
-            return false;
+        return bucket.matches("[a-z][a-z0-9_]*")
+                && !DOMAIN_FORBIDDEN_ROLE_BUCKETS.contains(bucket);
+    }
+
+    private static String expectedViewRootFileName(String component) {
+        if (component == null || component.isBlank()) {
+            return "ViewContribution.java";
         }
-        return !DOMAIN_FORBIDDEN_ROLE_BUCKETS.contains(bucket);
+        return component.substring(0, 1).toUpperCase(Locale.ROOT)
+                + component.substring(1)
+                + "ViewContribution.java";
     }
 
     private static String expectedDataRootFileName(String feature) {
@@ -378,12 +652,220 @@ public final class ArchitectureChecker {
         }
     }
 
+    private void validateViewContributionPlacementAndStartup(List<SourceFile> sourceFiles, List<Violation> violations) {
+        List<SourceFile> defaultLandingRoots = new ArrayList<>();
+        for (SourceFile sourceFile : sourceFiles) {
+            if (sourceFile.fileName().endsWith("ViewContribution.java")
+                    && !sourceFile.relativePath().equals("shell/api/ShellViewContribution.java")
+                    && !sourceFile.isCanonicalViewRootContribution()) {
+                violations.add(new Violation(sourceFile.relativePath(), "shell-view-contribution-placement",
+                        "Shell view contribution roots must live at src/view/<component>/<PascalComponentName>ViewContribution.java."));
+            }
+
+            if (sourceFile.kind() != SourceKind.VIEW_ROOT) {
+                continue;
+            }
+            for (List<String> arguments : shellTabSpecArgumentLists(sourceFile.content())) {
+                if (arguments.size() < 4) {
+                    violations.add(new Violation(sourceFile.relativePath(), "shell-tab-default-landing-literal",
+                            "ShellTabSpec root metadata must expose a literal defaultLanding argument."));
+                    continue;
+                }
+                String defaultLanding = arguments.get(3).trim();
+                if (defaultLanding.equals("true")) {
+                    defaultLandingRoots.add(sourceFile);
+                    continue;
+                }
+                if (!defaultLanding.equals("false")) {
+                    violations.add(new Violation(sourceFile.relativePath(), "shell-tab-default-landing-literal",
+                            "ShellTabSpec defaultLanding must be the literal true or false so startup uniqueness can be enforced."));
+                }
+            }
+        }
+
+        if (defaultLandingRoots.size() > 1) {
+            String files = defaultLandingRoots.stream()
+                    .map(SourceFile::relativePath)
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+            violations.add(new Violation("src/view", "shell-default-landing-uniqueness",
+                    "At most one ShellTabSpec root may declare defaultLanding=true. Found: " + files));
+        }
+    }
+
+    private static List<List<String>> shellTabSpecArgumentLists(String sourceText) {
+        List<List<String>> arguments = new ArrayList<>();
+        Matcher matcher = SHELL_TAB_SPEC_CONSTRUCTOR_PATTERN.matcher(sourceText);
+        while (matcher.find()) {
+            int openParenthesis = matcher.end() - 1;
+            int closeParenthesis = findClosingParenthesis(sourceText, openParenthesis);
+            if (closeParenthesis < 0) {
+                arguments.add(List.of());
+                continue;
+            }
+            arguments.add(splitTopLevelArguments(sourceText.substring(openParenthesis + 1, closeParenthesis)));
+        }
+        return arguments;
+    }
+
+    private static int findClosingParenthesis(String sourceText, int openParenthesis) {
+        int depth = 0;
+        boolean inString = false;
+        boolean inCharacter = false;
+        boolean escaped = false;
+        for (int index = openParenthesis; index < sourceText.length(); index++) {
+            char character = sourceText.charAt(index);
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (inString || inCharacter) {
+                if (character == '\\') {
+                    escaped = true;
+                    continue;
+                }
+                if (inString && character == '"') {
+                    inString = false;
+                }
+                if (inCharacter && character == '\'') {
+                    inCharacter = false;
+                }
+                continue;
+            }
+            if (character == '"') {
+                inString = true;
+                continue;
+            }
+            if (character == '\'') {
+                inCharacter = true;
+                continue;
+            }
+            if (character == '(') {
+                depth++;
+                continue;
+            }
+            if (character == ')') {
+                depth--;
+                if (depth == 0) {
+                    return index;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static List<String> splitTopLevelArguments(String argumentsText) {
+        List<String> arguments = new ArrayList<>();
+        int start = 0;
+        int depth = 0;
+        boolean inString = false;
+        boolean inCharacter = false;
+        boolean escaped = false;
+        for (int index = 0; index < argumentsText.length(); index++) {
+            char character = argumentsText.charAt(index);
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (inString || inCharacter) {
+                if (character == '\\') {
+                    escaped = true;
+                    continue;
+                }
+                if (inString && character == '"') {
+                    inString = false;
+                }
+                if (inCharacter && character == '\'') {
+                    inCharacter = false;
+                }
+                continue;
+            }
+            if (character == '"') {
+                inString = true;
+                continue;
+            }
+            if (character == '\'') {
+                inCharacter = true;
+                continue;
+            }
+            if (character == '(' || character == '[' || character == '{') {
+                depth++;
+                continue;
+            }
+            if (character == ')' || character == ']' || character == '}') {
+                depth--;
+                continue;
+            }
+            if (character == ',' && depth == 0) {
+                arguments.add(argumentsText.substring(start, index).trim());
+                start = index + 1;
+            }
+        }
+        arguments.add(argumentsText.substring(start).trim());
+        return arguments;
+    }
+
+    private void validateServiceContributionPlacement(List<SourceFile> sourceFiles, List<Violation> violations) {
+        for (SourceFile sourceFile : sourceFiles) {
+            if (!sourceFile.fileName().endsWith("ServiceContribution.java")) {
+                continue;
+            }
+            if (sourceFile.relativePath().equals("shell/api/ServiceContribution.java")
+                    || sourceFile.kind() == SourceKind.DATA_ROOT) {
+                continue;
+            }
+            violations.add(new Violation(sourceFile.relativePath(), "service-contribution-placement",
+                    "ServiceContribution roots are a data-feature registration boundary. Place them at src/data/<feature>/<Feature>ServiceContribution.java."));
+        }
+    }
+
+    private void validateSchemaTableNameOwnership(List<SourceFile> sourceFiles, List<Violation> violations) {
+        TreeMap<String, Set<String>> tableNamesByFeature = new TreeMap<>();
+        for (SourceFile sourceFile : sourceFiles) {
+            if (sourceFile.kind() != SourceKind.DATA_SCHEMA) {
+                continue;
+            }
+            Matcher matcher = SCHEMA_TABLE_NAME_PATTERN.matcher(sourceFile.content());
+            while (matcher.find()) {
+                tableNamesByFeature
+                        .computeIfAbsent(sourceFile.featureName(), ignored -> new TreeSet<>())
+                        .add(matcher.group(1));
+            }
+        }
+
+        for (SourceFile sourceFile : sourceFiles) {
+            if (!sourceFile.isUnderDataFeatureRoot() || sourceFile.kind() == SourceKind.DATA_SCHEMA) {
+                continue;
+            }
+            Set<String> tableNames = tableNamesByFeature.getOrDefault(sourceFile.featureName(), Set.of());
+            for (String tableName : tableNames) {
+                if (sourceFile.content().contains("\"" + tableName + "\"")) {
+                    violations.add(new Violation(sourceFile.relativePath(), "data-schema-table-name-owned-by-schema",
+                            "Table name literal '" + tableName
+                                    + "' must be owned by the feature persistence schema. Reference the schema constant instead of duplicating the literal."));
+                }
+            }
+        }
+    }
+
     private Set<String> collectDomainFeatures(List<SourceFile> sourceFiles) {
-        return sourceFiles.stream()
-                .filter(sourceFile -> sourceFile.kind().isDomain())
+        TreeSet<String> features = sourceFiles.stream()
+                .filter(SourceFile::isUnderDomainFeatureRoot)
                 .map(SourceFile::featureName)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(TreeSet::new));
+        Path domainRoot = repoRoot.resolve("src/domain");
+        if (!Files.isDirectory(domainRoot)) {
+            return features;
+        }
+        try (Stream<Path> stream = Files.list(domainRoot)) {
+            stream.filter(Files::isDirectory)
+                    .map(path -> path.getFileName().toString())
+                    .forEach(features::add);
+        } catch (IOException ignored) {
+            // A scan-root violation is emitted by the directory validation pass.
+        }
+        return features;
     }
 
     private Set<String> collectDataFeatures(List<SourceFile> sourceFiles) {
@@ -397,6 +879,14 @@ public final class ArchitectureChecker {
 
     private String relativize(Path path) {
         return repoRoot.relativize(path.toAbsolutePath().normalize()).toString().replace('\\', '/');
+    }
+
+    private List<String> relativeSegments(Path path) {
+        String relativePath = relativize(path);
+        if (relativePath.isBlank()) {
+            return List.of();
+        }
+        return Arrays.asList(relativePath.split("/"));
     }
 
     public record Result(List<Violation> violations) {
@@ -469,6 +959,7 @@ public final class ArchitectureChecker {
             String relativePath,
             List<String> relativeSegments,
             String fileName,
+            String content,
             String packageName,
             SourceKind kind,
             String featureName
@@ -481,7 +972,7 @@ public final class ArchitectureChecker {
             String packageName = extractPackage(content);
             SourceKind kind = classify(relativeSegments, fileName);
             String featureName = extractFeatureName(relativeSegments);
-            return new SourceFile(relativePath, relativeSegments, fileName, packageName, kind, featureName);
+            return new SourceFile(relativePath, relativeSegments, fileName, content, packageName, kind, featureName);
         }
 
         private static String extractPackage(String content) {
@@ -591,6 +1082,16 @@ public final class ArchitectureChecker {
                     && "src".equals(relativeSegments.get(0))
                     && "data".equals(relativeSegments.get(1))
                     && !"persistencecore".equals(relativeSegments.get(2));
+        }
+
+        private boolean isUnderDomainFeatureRoot() {
+            return relativeSegments.size() >= 3
+                    && "src".equals(relativeSegments.get(0))
+                    && "domain".equals(relativeSegments.get(1));
+        }
+
+        private boolean isCanonicalViewRootContribution() {
+            return kind == SourceKind.VIEW_ROOT && fileName.equals(expectedViewRootFileName(featureName));
         }
     }
 }

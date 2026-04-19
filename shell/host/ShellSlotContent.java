@@ -23,7 +23,7 @@ final class ShellSlotContent {
         if (provided == null || provided.isEmpty()) {
             return new ShellSlotContent(Map.of());
         }
-        EnumMap<ShellSlot, Node> sanitized = new EnumMap<>(ShellSlot.class);
+        Map<ShellSlot, Node> sanitized = new EnumMap<>(ShellSlot.class);
         for (Map.Entry<ShellSlot, Node> entry : provided.entrySet()) {
             if (entry.getKey() == null) {
                 throw new IllegalArgumentException("Shell screen must not declare a null slot key.");
@@ -39,23 +39,23 @@ final class ShellSlotContent {
         return nodes.containsKey(slot);
     }
 
-    public @Nullable Node topBar() {
+    @Nullable Node topBar() {
         return nodes.get(ShellSlot.TOP_BAR);
     }
 
-    public @Nullable Node controls() {
+    @Nullable Node controls() {
         return nodes.get(ShellSlot.COCKPIT_CONTROLS);
     }
 
-    public @Nullable Node main() {
+    @Nullable Node main() {
         return nodes.get(ShellSlot.COCKPIT_MAIN);
     }
 
-    public @Nullable Node editorState() {
+    @Nullable Node editorState() {
         return nodes.get(ShellSlot.COCKPIT_STATE);
     }
 
-    public @Nullable Node runtimeState() {
+    @Nullable Node runtimeState() {
         return nodes.get(ShellSlot.COCKPIT_STATE);
     }
 }

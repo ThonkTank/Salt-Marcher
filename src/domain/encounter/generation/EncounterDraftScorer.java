@@ -7,6 +7,14 @@ import java.util.Set;
 
 final class EncounterDraftScorer {
 
+    private static final int LARGE_CREATURE_GROUP = 6;
+    private static final int LARGE_QUANTITY_STACK = 4;
+    private static final int MAX_CREATURES_WITH_BOSS = 4;
+    private static final String BOSS_ROLE = "Boss";
+    private static final String BRUTE_ROLE = "Brute";
+    private static final String MINION_ROLE = "Minion";
+    private static final String SKIRMISHER_ROLE = "Skirmisher";
+
     private EncounterDraftScorer() {
     }
 
@@ -64,10 +72,10 @@ final class EncounterDraftScorer {
 
     private static int scoreRoleSynergy(Set<String> roles) {
         int score = roles.size() * 25;
-        if (roles.contains("Boss") && roles.size() > 1) {
+        if (roles.contains(BOSS_ROLE) && roles.size() > 1) {
             score += 90;
         }
-        if (roles.contains("Brute") && roles.contains("Skirmisher")) {
+        if (roles.contains(BRUTE_ROLE) && roles.contains(SKIRMISHER_ROLE)) {
             score += 70;
         }
         return score;
@@ -75,10 +83,10 @@ final class EncounterDraftScorer {
 
     private static int scoreCompositionPenalties(List<EncounterDraftEntry> entries, int creatureCount, int bossCount) {
         int score = 0;
-        if (bossCount > 0 && creatureCount > 4) {
+        if (bossCount > 0 && creatureCount > MAX_CREATURES_WITH_BOSS) {
             score -= 120;
         }
-        if (creatureCount >= 6) {
+        if (creatureCount >= LARGE_CREATURE_GROUP) {
             score -= 30;
         }
         for (EncounterDraftEntry entry : entries) {
@@ -89,10 +97,10 @@ final class EncounterDraftScorer {
 
     private static int scoreEntryPenalty(EncounterDraftEntry entry, int creatureCount) {
         int score = 0;
-        if (entry.quantity() > 4) {
-            score -= (entry.quantity() - 4) * 35;
+        if (entry.quantity() > LARGE_QUANTITY_STACK) {
+            score -= (entry.quantity() - LARGE_QUANTITY_STACK) * 35;
         }
-        if ("Minion".equals(entry.profile().role()) && creatureCount <= 2) {
+        if (MINION_ROLE.equals(entry.profile().role()) && creatureCount <= 2) {
             score -= 40;
         }
         return score;

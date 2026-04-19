@@ -11,7 +11,9 @@ import src.domain.creatures.catalog.CreatureCatalogQueryPort;
  */
 public final class CreaturesServiceContribution implements ServiceContribution {
 
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public CreaturesServiceContribution() {
+        // Required by passive service contribution discovery.
     }
 
     @Override

@@ -3,11 +3,9 @@ package bootstrap;
 import org.jspecify.annotations.Nullable;
 import shell.api.ShellViewContribution;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -20,6 +18,7 @@ public final class ShellViewDiscovery {
     private static final String VIEW_ROOT = "src/view";
     private static final String VIEW_PACKAGE_PREFIX = "src.view.";
     private static final String CONTRIBUTION_SUFFIX = "ViewContribution";
+    private static final int REQUIRED_ROOT_CLASS_COUNT = 1;
     private final ContributionRootClassScanner rootClassScanner = new ContributionRootClassScanner();
 
     public List<ShellViewContribution> discover() {
@@ -51,10 +50,10 @@ public final class ShellViewDiscovery {
                     .filter(className -> className.endsWith("." + expectedSimpleName))
                     .toList();
 
-            if (matchingClasses.size() != 1) {
+            if (matchingClasses.size() != REQUIRED_ROOT_CLASS_COUNT) {
                 throw invalidContribution(componentName, expectedSimpleName, rootClasses);
             }
-            if (rootClasses.size() != 1) {
+            if (rootClasses.size() != REQUIRED_ROOT_CLASS_COUNT) {
                 throw new IllegalStateException("Component '" + componentName
                         + "' must expose exactly one root class under src/view/" + componentName + "/. "
                         + "Expected only '" + matchingClasses.getFirst() + "' but found: " + rootClasses);

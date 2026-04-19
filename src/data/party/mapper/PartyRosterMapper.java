@@ -29,29 +29,34 @@ public final class PartyRosterMapper {
     private static PartyCharacter toDomainCharacter(PartyCharacterRecord record) {
         return new PartyCharacter(
                 record.id(),
-                new PartyCharacterIdentity(record.name(), record.playerName()),
+                new PartyCharacterIdentity(record.identity().name(), record.identity().playerName()),
                 new PartyCharacterProgress(
-                        record.level(),
-                        record.currentXp(),
-                        record.xpSinceLongRest(),
-                        record.xpSinceShortRest(),
-                        record.shortRestsTakenSinceLongRest()),
-                new PartyCharacterCombatProfile(record.passivePerception(), record.armorClass()),
+                        record.progress().level(),
+                        record.progress().currentXp(),
+                        record.progress().xpSinceLongRest(),
+                        record.progress().xpSinceShortRest(),
+                        record.progress().shortRestsTakenSinceLongRest()),
+                new PartyCharacterCombatProfile(
+                        record.combat().passivePerception(),
+                        record.combat().armorClass()),
                 PartyMembership.fromPersistence(record.membership()));
     }
 
     private static PartyCharacterRecord toRecordCharacter(PartyCharacter character) {
         return new PartyCharacterRecord(
                 character.id(),
-                character.identity().name(),
-                character.identity().playerName(),
-                character.progress().level(),
-                character.progress().currentXp(),
-                character.progress().xpSinceLongRest(),
-                character.progress().xpSinceShortRest(),
-                character.progress().shortRestsTakenSinceLongRest(),
-                character.combat().passivePerception(),
-                character.combat().armorClass(),
+                new PartyCharacterRecord.Identity(
+                        character.identity().name(),
+                        character.identity().playerName()),
+                new PartyCharacterRecord.Progress(
+                        character.progress().level(),
+                        character.progress().currentXp(),
+                        character.progress().xpSinceLongRest(),
+                        character.progress().xpSinceShortRest(),
+                        character.progress().shortRestsTakenSinceLongRest()),
+                new PartyCharacterRecord.Combat(
+                        character.combat().passivePerception(),
+                        character.combat().armorClass()),
                 character.membership().name());
     }
 

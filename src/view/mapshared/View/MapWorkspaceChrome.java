@@ -1,5 +1,4 @@
 package src.view.mapshared.View;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -10,12 +9,9 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 final class MapWorkspaceChrome {
-
     private static final double ZOOM_STEP_FACTOR = 1.1;
-
     private MapWorkspaceChrome() {
     }
-
     static void configureLabels(
             Label titleLabel,
             Label subtitleLabel,
@@ -23,19 +19,17 @@ final class MapWorkspaceChrome {
             Label statusLabel,
             Label summaryLabel
     ) {
-        titleLabel.getStyleClass().add("large");
+        titleLabel.getStyleClass().add("title-large");
         subtitleLabel.getStyleClass().add("text-muted");
         modeBadge.getStyleClass().add("map-mode-badge");
         statusLabel.getStyleClass().add("map-status-label");
         summaryLabel.getStyleClass().add("text-muted");
     }
-
     static void configureContentHost(StackPane contentHost) {
         contentHost.getStyleClass().add("map-workspace-content");
         contentHost.setAlignment(Pos.CENTER);
         contentHost.setFocusTraversable(true);
     }
-
     static HBox buildHeader(
             MapWorkspaceHeaderLabels labels,
             MapCameraController cameraController,
@@ -55,7 +49,6 @@ final class MapWorkspaceChrome {
         header.setPadding(new Insets(0, 0, 8, 0));
         return header;
     }
-
     private static HBox buildCameraControls(
             MapCameraController cameraController,
             MapWorkspaceCanvasMetrics canvasMetrics,
@@ -86,7 +79,6 @@ final class MapWorkspaceChrome {
         cameraControls.getStyleClass().add("map-camera-controls");
         return cameraControls;
     }
-
     private static Button cameraButton(String label, Runnable action, Runnable onCameraChanged) {
         Button button = new Button(label);
         button.getStyleClass().addAll("compact", "flat");

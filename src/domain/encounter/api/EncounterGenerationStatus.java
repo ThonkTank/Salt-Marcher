@@ -5,5 +5,9 @@ public enum EncounterGenerationStatus {
     NO_ACTIVE_PARTY,
     NO_CREATURES,
     INVALID_REQUEST,
-    STORAGE_ERROR
+    STORAGE_ERROR;
+
+    public static EncounterGenerationStatus defaultFailure() {
+        return STORAGE_ERROR;
+    }
 }

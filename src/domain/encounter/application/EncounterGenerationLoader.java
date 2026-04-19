@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // PMD suppression is local: encounter generation intentionally centralizes domain adapters here; see src/domain/encounter/DOMAIN.md.
 @SuppressWarnings("PMD.CouplingBetweenObjects")
@@ -114,10 +115,10 @@ final class EncounterGenerationLoader {
             CreaturesApplicationService creatures,
             EncounterGenerationRequest request,
             EncounterDifficultyMath.Thresholds thresholds,
-            java.util.Set<Long> lockedCreatureIds,
+            Set<Long> lockedCreatureIds,
             int searchLimit
     ) {
-        LinkedHashSet<Long> excludedCreatureIds = new LinkedHashSet<>(request.excludedCreatureIds());
+        Set<Long> excludedCreatureIds = new LinkedHashSet<>(request.excludedCreatureIds());
         excludedCreatureIds.removeAll(lockedCreatureIds);
         EncounterCandidatesResult candidateResult = creatures.loadEncounterCandidates(new EncounterCandidateQuery(
                 request.creatureTypes(),
@@ -141,7 +142,7 @@ final class EncounterGenerationLoader {
     }
 
     private static Map<Long, Integer> toLockedQuantityMap(List<src.domain.encounter.api.EncounterLock> locks) {
-        LinkedHashMap<Long, Integer> quantities = new LinkedHashMap<>();
+        Map<Long, Integer> quantities = new LinkedHashMap<>();
         for (src.domain.encounter.api.EncounterLock lock : locks) {
             if (lock == null || lock.creatureId() <= 0) {
                 continue;
@@ -155,7 +156,7 @@ final class EncounterGenerationLoader {
         CreaturesApplicationService creatures,
         Map<Long, Integer> lockedQuantities
     ) {
-        LinkedHashMap<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
+        Map<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
         for (Long creatureId : lockedQuantities.keySet()) {
             CreatureDetailResult detailResult = creatures.loadCreatureDetail(creatureId);
             if (detailResult.status() != CreatureLookupStatus.SUCCESS || detailResult.detail() == null) {
@@ -176,7 +177,7 @@ final class EncounterGenerationLoader {
     ) {
 
         private boolean success() {
-            return status == EncounterGenerationUseCase.GenerateStatus.SUCCESS;
+            return status.isSuccessful();
         }
 
         private EncounterGenerationPreparation failure() {
@@ -203,7 +204,7 @@ final class EncounterGenerationLoader {
                 int partySize
         ) {
             return new PartyLoadResult(
-                    EncounterGenerationUseCase.GenerateStatus.SUCCESS,
+                    EncounterGenerationUseCase.GenerateStatus.successfulStatus(),
                     thresholds,
                     budget,
                     partySize,
@@ -227,7 +228,7 @@ final class EncounterGenerationLoader {
     ) {
 
         private boolean success() {
-            return status == EncounterGenerationUseCase.GenerateStatus.SUCCESS;
+            return status.isSuccessful();
         }
 
         private EncounterGenerationPreparation failure() {
@@ -239,7 +240,7 @@ final class EncounterGenerationLoader {
                 Map<Long, EncounterCandidateProfile> lockedProfiles
         ) {
             return new LockedCreatures(
-                    EncounterGenerationUseCase.GenerateStatus.SUCCESS,
+                    EncounterGenerationUseCase.GenerateStatus.successfulStatus(),
                     null,
                     lockedQuantities,
                     lockedProfiles,
@@ -263,7 +264,7 @@ final class EncounterGenerationLoader {
     ) {
 
         private boolean success() {
-            return status == EncounterGenerationUseCase.GenerateStatus.SUCCESS;
+            return status.isSuccessful();
         }
 
         private EncounterGenerationPreparation failure() {
@@ -271,7 +272,7 @@ final class EncounterGenerationLoader {
         }
 
         private static CandidateLoadResult success(List<EncounterCandidateProfile> unlockedProfiles) {
-            return new CandidateLoadResult(EncounterGenerationUseCase.GenerateStatus.SUCCESS, unlockedProfiles, "");
+            return new CandidateLoadResult(EncounterGenerationUseCase.GenerateStatus.successfulStatus(), unlockedProfiles, "");
         }
 
         private static CandidateLoadResult failure(String message, EncounterGenerationUseCase.GenerateStatus status) {

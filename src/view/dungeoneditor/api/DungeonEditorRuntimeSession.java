@@ -2,7 +2,7 @@ package src.view.dungeoneditor.api;
 
 import java.util.Objects;
 import javafx.scene.Node;
-import src.view.dungeoneditor.interactor.DungeonEditorInteractor;
+import src.view.dungeonshared.api.DungeonEditorRuntimeNodes;
 import src.view.dungeonshared.api.DungeonSelectionPublisher;
 
 public final class DungeonEditorRuntimeSession {
@@ -18,9 +18,9 @@ public final class DungeonEditorRuntimeSession {
     }
 
     public static DungeonEditorRuntimeSession create(DungeonSelectionPublisher selectionPublisher) {
-        DungeonEditorInteractor interactor =
-                new DungeonEditorInteractor(Objects.requireNonNull(selectionPublisher, "selectionPublisher"));
-        return new DungeonEditorRuntimeSession(interactor.controls(), interactor.workspaceNode(), interactor.state());
+        DungeonEditorRuntimeNodes nodes =
+                DungeonEditorRuntimeNodes.create(Objects.requireNonNull(selectionPublisher, "selectionPublisher"));
+        return new DungeonEditorRuntimeSession(nodes.controls(), nodes.workspace(), nodes.state());
     }
 
     public Node controls() {

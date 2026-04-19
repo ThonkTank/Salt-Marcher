@@ -5,5 +5,9 @@ package src.domain.dungeon.api;
  */
 public enum DungeonMapMode {
     EDITOR,
-    TRAVEL
+    TRAVEL;
+
+    public static DungeonMapMode defaultMode() {
+        return EDITOR;
+    }
 }

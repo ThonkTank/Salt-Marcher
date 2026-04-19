@@ -66,7 +66,6 @@ final class SearchableFilterPopupSupport {
         }
         TextField searchField = new TextField();
         searchField.setPromptText(label + " suchen...");
-        searchField.getStyleClass().add("quick-search-field");
         searchField.textProperty().addListener((ignored, before, after) -> queryChanged.accept(after));
         popupContent.getChildren().add(searchField);
         return searchField;

@@ -1,3 +1,6 @@
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
+import com.github.spotbugs.snom.SpotBugsTask
 import java.io.File
 import java.nio.file.FileVisitOption
 import java.nio.file.FileVisitResult
@@ -20,6 +23,7 @@ plugins {
     java
     application
     pmd
+    id("com.github.spotbugs") version "6.5.0"
     id("saltmarcher.quality-conventions")
     id("org.openjfx.javafxplugin") version "0.1.0"
     id("org.sonarqube") version "7.2.3.7755"
@@ -88,6 +92,7 @@ dependencies {
     pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
     pmd("net.sourceforge.pmd:pmd-java:7.23.0")
     pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
+    spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -100,6 +105,29 @@ pmd {
     isIgnoreFailures = false
     ruleSets = listOf()
     ruleSetFiles = files(layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"))
+}
+
+spotbugs {
+    ignoreFailures = false
+    effort = Effort.MAX
+    reportLevel = Confidence.MEDIUM
+}
+
+tasks.withType<SpotBugsTask>().configureEach {
+    outputs.upToDateWhen { false }
+    outputs.doNotCacheIf("Quality and architecture gate diagnostics must be produced by the current invocation.") { true }
+    reports {
+        create("html") {
+            required.set(true)
+        }
+        create("xml") {
+            required.set(true)
+        }
+    }
+}
+
+tasks.matching { it.name == "spotbugsTest" }.configureEach {
+    enabled = false
 }
 
 sonar {

@@ -12,12 +12,12 @@ public record MapRenderPayload(
 ) {
 
     public MapRenderPayload {
-        topology = topology == null ? MapTopologyKind.SQUARE : topology;
+        topology = topology == null ? MapTopologyKind.defaultTopology() : topology;
         cells = cells == null ? List.of() : List.copyOf(cells);
         edges = edges == null ? List.of() : List.copyOf(edges);
     }
 
     public static MapRenderPayload empty() {
-        return new MapRenderPayload(MapTopologyKind.SQUARE, List.of(), List.of());
+        return new MapRenderPayload(MapTopologyKind.defaultTopology(), List.of(), List.of());
     }
 }

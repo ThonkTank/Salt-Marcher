@@ -4,14 +4,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.Node;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.Rectangle;
-import static shell.api.NavigationGraphicSupport.strokeLine;
-import static shell.api.NavigationGraphicSupport.wrap;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellScreen;
 import shell.api.ShellSlot;
-import src.view.dungeontravel.api.DungeonTravelRuntimeSession;
+import src.view.dungeontravel.View.DungeonTravelNavigationGraphic;
+import src.view.dungeonshared.api.DungeonTravelRuntimeSession;
 
 public final class DungeonTravelAssembly {
 
@@ -46,20 +43,7 @@ public final class DungeonTravelAssembly {
     }
 
     public static Supplier navigationGraphicSupplier() {
-        return DungeonTravelAssembly::navigationGraphic;
-    }
-
-    private static Node navigationGraphic() {
-        Rectangle outer = new Rectangle(3, 3, 12, 12);
-        outer.getStyleClass().add("nav-icon-stroke");
-        outer.setArcWidth(2);
-        outer.setArcHeight(2);
-        outer.setFill(null);
-
-        Line wallV = strokeLine(9, 3, 9, 11);
-        Line wallH = strokeLine(3, 9, 12, 9);
-        Line door = strokeLine(12, 9, 15, 9);
-        return wrap(outer, wallV, wallH, door);
+        return DungeonTravelNavigationGraphic::create;
     }
 
 }

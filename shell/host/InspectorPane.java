@@ -33,32 +33,32 @@ final class InspectorPane extends VBox implements InspectorSink {
 
     private final InspectorHistory history = new InspectorHistory();
 
-    public InspectorPane() {
+    InspectorPane() {
         setPrefWidth(380);
         setMinWidth(320);
-        getStyleClass().add("inspector-pane");
+        getStyleClass().add("surface-root");
         setMinHeight(0);
         setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        detailTitle.getStyleClass().add("bold");
-        getChildren().add(createHeader());
+        ShellFx.addStyleClass(detailTitle, "bold");
+        ShellFx.addChild(this, createHeader());
 
         detailScroll.setFitToWidth(true);
         detailScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         ShellContentLayout.makeShrinkable(detailScroll);
         ShellContentLayout.makeShrinkable(detailContent);
-        VBox.setVgrow(detailScroll, Priority.ALWAYS);
+        setVgrow(detailScroll, Priority.ALWAYS);
 
-        footerHost.getStyleClass().add("inspector-footer-host");
+        ShellFx.addStyleClass(footerHost, "inspector-footer-host");
         footerHost.setVisible(false);
         footerHost.setManaged(false);
         ShellContentLayout.makeShrinkable(footerHost);
 
-        placeholder.getStyleClass().add("text-muted");
+        ShellFx.addStyleClass(placeholder, "text-muted");
         placeholder.setMaxWidth(Double.MAX_VALUE);
         placeholder.setWrapText(true);
 
-        getChildren().addAll(detailScroll, footerHost);
+        ShellFx.addChildren(this, detailScroll, footerHost);
         showPlaceholder();
     }
 
@@ -94,6 +94,7 @@ final class InspectorPane extends VBox implements InspectorSink {
         showState(entry.title(), content, footer);
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private @Nullable Node safeNode(Supplier<Node> supplier, @Nullable String fallbackText) {
         try {
             Node node = supplier.get();
@@ -107,7 +108,7 @@ final class InspectorPane extends VBox implements InspectorSink {
             return null;
         }
         Label label = new Label(fallbackText);
-        label.getStyleClass().add("text-muted");
+        ShellFx.addStyleClass(label, "text-muted");
         label.setWrapText(true);
         VBox box = new VBox(label);
         box.setPadding(new Insets(12));
@@ -116,13 +117,13 @@ final class InspectorPane extends VBox implements InspectorSink {
 
     private void showState(String title, Node content, @Nullable Node footer) {
         detailTitle.setText(title);
-        detailContent.getChildren().clear();
-        detailContent.getChildren().add(ShellContentLayout.shellOwned(content));
+        ShellFx.clearChildren(detailContent);
+        ShellFx.addChild(detailContent, ShellContentLayout.shellOwned(content));
         detailScroll.setContent(detailContent);
 
-        footerHost.getChildren().clear();
+        ShellFx.clearChildren(footerHost);
         if (footer != null) {
-            footerHost.getChildren().add(ShellContentLayout.shellOwned(footer));
+            ShellFx.addChild(footerHost, ShellContentLayout.shellOwned(footer));
             footerHost.setVisible(true);
             footerHost.setManaged(true);
         } else {
@@ -133,9 +134,9 @@ final class InspectorPane extends VBox implements InspectorSink {
 
     private void showPlaceholder() {
         detailTitle.setText("");
-        detailContent.getChildren().setAll(placeholderHost);
+        ShellFx.setChildren(detailContent, placeholderHost);
         detailScroll.setContent(detailContent);
-        footerHost.getChildren().clear();
+        ShellFx.clearChildren(footerHost);
         footerHost.setVisible(false);
         footerHost.setManaged(false);
     }
@@ -147,21 +148,21 @@ final class InspectorPane extends VBox implements InspectorSink {
     }
 
     private HBox createHeader() {
-        backBtn.getStyleClass().addAll("compact", "flat");
+        ShellFx.addStyleClasses(backBtn, "compact", "flat");
         backBtn.setAccessibleText("Zurück");
         backBtn.setOnAction(event -> {
             history.goBack();
             renderState();
         });
 
-        forwardBtn.getStyleClass().addAll("compact", "flat");
+        ShellFx.addStyleClasses(forwardBtn, "compact", "flat");
         forwardBtn.setAccessibleText("Vorwärts");
         forwardBtn.setOnAction(event -> {
             history.goForward();
             renderState();
         });
 
-        closeBtn.getStyleClass().addAll("compact", "remove-btn");
+        ShellFx.addStyleClasses(closeBtn, "compact", "remove-btn");
         closeBtn.setAccessibleText("Details schliessen");
         closeBtn.setOnAction(event -> {
             history.clear();
@@ -174,7 +175,7 @@ final class InspectorPane extends VBox implements InspectorSink {
         HBox detailHeader = new HBox(4, backBtn, forwardBtn, detailTitle, spacer, closeBtn);
         detailHeader.setAlignment(Pos.CENTER_LEFT);
         detailHeader.setPadding(new Insets(4, 8, 4, 8));
-        detailHeader.getStyleClass().add("stat-block-fixed-header");
+        ShellFx.addStyleClass(detailHeader, "stat-block-fixed-header");
         return detailHeader;
     }
 }

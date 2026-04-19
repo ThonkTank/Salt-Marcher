@@ -18,6 +18,10 @@ import java.util.Map;
 
 final class EncounterResultAssembler {
 
+    private static final int MINIMUM_BLENDED_ROLE_COUNT = 2;
+    private static final int ACTION_ECONOMY_CREATURE_COUNT = 5;
+    private static final int BASE_HIGHLIGHT_COUNT = 1;
+
     private final CreaturesApplicationService creatures;
 
     EncounterResultAssembler(CreaturesApplicationService creatures) {
@@ -69,13 +73,13 @@ final class EncounterResultAssembler {
             highlights.add("Includes a boss-style anchor.");
         }
         long distinctRoles = creatures.stream().map(EncounterCreature::role).distinct().count();
-        if (distinctRoles >= 2) {
+        if (distinctRoles >= MINIMUM_BLENDED_ROLE_COUNT) {
             highlights.add("Blends " + distinctRoles + " combat roles.");
         }
-        if (draft.creatureCount() >= 5) {
+        if (draft.creatureCount() >= ACTION_ECONOMY_CREATURE_COUNT) {
             highlights.add("Leans on action economy through numbers.");
         }
-        if (highlights.size() == 1) {
+        if (highlights.size() == BASE_HIGHLIGHT_COUNT) {
             highlights.add("Compact composition that stays close to the requested band.");
         }
         return highlights;

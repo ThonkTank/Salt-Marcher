@@ -28,12 +28,12 @@ final class ShellNavigationSidebar extends VBox {
     private final Map<ContributionKey, NavigationItem> items = new LinkedHashMap<>();
     private final ToggleGroup navGroup = new ToggleGroup();
 
-    public ShellNavigationSidebar() {
+    ShellNavigationSidebar() {
         getStyleClass().add("nav-sidebar");
         setAlignment(Pos.TOP_CENTER);
     }
 
-    public void registerTab(ShellTabSpec registrationSpec, ShellScreen screen, Consumer<ContributionKey> onSelect) {
+    void registerTab(ShellTabSpec registrationSpec, ShellScreen screen, Consumer<ContributionKey> onSelect) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
         Objects.requireNonNull(screen, "screen");
         Objects.requireNonNull(onSelect, "onSelect");
@@ -42,7 +42,7 @@ final class ShellNavigationSidebar extends VBox {
         rebuild();
     }
 
-    public void select(ContributionKey key) {
+    void select(ContributionKey key) {
         NavigationItem item = items.get(key);
         if (item != null) {
             item.button().setSelected(true);
@@ -52,9 +52,9 @@ final class ShellNavigationSidebar extends VBox {
     private ToggleButton createButton(
             ShellTabSpec registrationSpec,
             ShellScreen screen,
-            Consumer<ContributionKey> onSelect) {
+        Consumer<ContributionKey> onSelect) {
         ToggleButton button = new ToggleButton(screen.getNavigationLabel());
-        button.getStyleClass().add("nav-btn");
+        ShellFx.addStyleClass(button, "nav-btn");
         button.setToggleGroup(navGroup);
         button.setTooltip(new Tooltip(screen.getTitle()));
         button.setAccessibleText(screen.getTitle());
@@ -76,7 +76,7 @@ final class ShellNavigationSidebar extends VBox {
             String currentGroupKey = group.key();
             if (previousGroupKey != null && !previousGroupKey.equals(currentGroupKey)) {
                 Region separator = new Region();
-                separator.getStyleClass().add("nav-separator");
+                ShellFx.addStyleClass(separator, "nav-separator");
                 separator.setMinHeight(1);
                 separator.setPrefHeight(1);
                 getChildren().add(separator);

@@ -1,6 +1,5 @@
 package src.domain.encounter;
 
-import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.api.EncounterDifficultyBand;
 import src.domain.encounter.api.EncounterGenerationResult;
@@ -16,6 +15,7 @@ import java.util.Objects;
  * Public encounter-generator facade that composes party and creature
  * application services.
  */
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public final class EncounterApplicationService {
 
     private final EncounterGenerationUseCase generator;
@@ -29,7 +29,7 @@ public final class EncounterApplicationService {
     public EncounterGenerationResult generate(EncounterGenerationRequest request) {
         try {
             EncounterGenerationUseCase.GenerateResult result = generator.execute(request == null
-                    ? new EncounterGenerationRequest(List.of(), List.of(), List.of(), EncounterDifficultyBand.MEDIUM, 5, List.of(), List.of())
+                    ? new EncounterGenerationRequest(List.of(), List.of(), List.of(), EncounterDifficultyBand.defaultBand(), 5, List.of(), List.of())
                     : request);
             return new EncounterGenerationResult(
                     mapStatus(result.status()),
@@ -37,7 +37,7 @@ public final class EncounterApplicationService {
                     result.encounters(),
                     result.message());
         } catch (RuntimeException exception) {
-            return new EncounterGenerationResult(EncounterGenerationStatus.STORAGE_ERROR, null, List.of(), "Encounter generation failed.");
+            return new EncounterGenerationResult(EncounterGenerationStatus.defaultFailure(), null, List.of(), "Encounter generation failed.");
         }
     }
 

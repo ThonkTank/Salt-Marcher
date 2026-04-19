@@ -123,23 +123,33 @@ This standard does not redefine:
 The canonical owner model, rule-status vocabulary, and blocking-task mapping
 for these checks live in the
 [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+Concrete rule IDs and checker names are recorded in the
+[Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1).
 
-- `build-harness` and `pmdArchitectureMain` enforce root-entrypoint naming,
-  placement, and constructor contracts used by generic discovery.
-- `pmdArchitectureMain` enforces supported contribution-spec selection, thin
-  stateless root contracts, and the minimal public surface of contribution
-  roots.
-- `architectureTest` enforces that bootstrap may depend on `shell.host.AppShell`
-  but feature code must stay on `shell.api/**`.
-- bootstrap registration order, startup fallback ordering, and eager current
-  realization remain code-defined behavior reviewed against this document.
-- no new gate is introduced by this split; enforcement ownership stays where it
-  already exists.
+- `build-harness`, `jQAssistant`, and `pmdArchitectureMain` enforce view
+  contribution and service contribution root placement, naming, required
+  methods, constructor contracts, stateless root shape, and minimal public root
+  surfaces used by generic discovery.
+- `pmdArchitectureMain` enforces supported contribution-spec selection and
+  keeps `defaultLanding` limited to tab contributions.
+- `build-harness` enforces literal `ShellTabSpec.defaultLanding` values and
+  the single-default-landing startup rule.
+- `pmdArchitectureMain` and `architectureTest` enforce generic bootstrap and
+  shell wiring: bootstrap and shell must not name concrete feature packages,
+  bootstrap may depend on `shell.host.AppShell`, and feature code must stay on
+  `shell.api/**`.
+- registration order, startup fallback ordering, classloader/reflection
+  mechanics, ignored abstract or interface roots, and eager current realization
+  remain code-defined behavior reviewed against this document.
+- no new gate is introduced; enforcement ownership stays in the existing
+  `compileJava`, `pmdArchitectureMain`, `architectureTest`,
+  `checkViewArchitecture`, and `:build-harness:check` entrypoints.
 
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1)
+- [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-workbench.md:1)
 - [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)

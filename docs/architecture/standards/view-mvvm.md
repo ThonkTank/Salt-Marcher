@@ -261,30 +261,42 @@ target model.
 The canonical owner model, rule-status vocabulary, and blocking-task mapping
 for these checks live in the
 [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+Concrete rule IDs and checker names are recorded in the
+[Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1).
 
 - `Enforced`
-  - `jQAssistant` on `checkViewArchitecture` and `compileJava` owns canonical
+  - `jQAssistant` on `checkViewArchitecture` owns canonical
     MVVM topology: allowed buckets only, legacy-bucket bans, root-only
     `*ViewContribution` types, exactly one root per component, naming-based
     `*Assembly` / `*ShellAdapter` placement, and cross-component public-boundary
     checks through foreign `api/`
+  - `ArchUnit` on `architectureTest` owns view-component cycle freedom
   - `PMD architecture` on `pmdArchitectureMain` owns root-entrypoint contracts:
     naming, `public final`, public no-arg constructor, implemented shell
-    interface, and required root methods
+    interface, required root methods, stateless root shape, allowed
+    contribution-spec construction, and no extra public/protected root members
   - `Error Prone` on `compileJava` owns compiler-precise MVVM bans:
-    root-entrypoint delegation and `ShellScreen` construction bans; direct root
-    use of `ShellRuntimeContext.inspector()` / `services()` / `session(...)`;
+    positive root `createScreen(...)` delegation into own `assembly/`;
+    `ShellScreen` construction bans; direct root use of
+    `ShellRuntimeContext.inspector()` / `services()` / `session(...)`;
     documented shell API allowlist checks for roots and `assembly/`; restricted
     dependency rules for `assembly/`, `View/`, `ViewModel/`, and `api/`;
+    scene-graph placement that allows `assembly/` to expose
+    `javafx.scene.Node` only as a shell slot boundary type;
     presentation-state naming and placement bans; reflective reach-through
     bans; and public-signature bans on leaking private view bucket types
 - `Review-Only`
+  - whether an `api/` package represents intentional reuse rather than
+    convenience exposure
+  - whether cross-component reuse copied DTOs or wrappers instead of defining
+    the smallest intended `api/`
   - the semantic remainder of shell-specific type usage below the root
     entrypoint or `assembly/` when the distinction is about intent rather than
     referenced type shape
   - `ViewModel/` as the single owner of cross-widget presentation decisions
   - deeper semantic checks that distinguish simple binding from duplicated
     presentation policy
+  - whether changes to legacy surfaces move toward the MVVM target model
   - runtime-behaviour questions that depend on callback flow rather than
     source dependency shape
 

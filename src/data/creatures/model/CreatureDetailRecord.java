@@ -17,6 +17,11 @@ public record CreatureDetailRecord(
         actions = immutableCopy(actions);
     }
 
+    @Override
+    public List<CreatureActionRecord> actions() {
+        return List.copyOf(actions);
+    }
+
     public record Identity(
             long id,
             String name,
@@ -31,6 +36,16 @@ public record CreatureDetailRecord(
         public Identity {
             subtypes = immutableCopy(subtypes);
             biomes = immutableCopy(biomes);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return List.copyOf(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return List.copyOf(biomes);
         }
     }
 

@@ -18,7 +18,7 @@ public record MapSurfaceSnapshot(
 
     public MapSurfaceSnapshot {
         mapName = mapName == null || mapName.isBlank() ? "Untitled Map" : mapName;
-        topology = topology == null ? MapTopologyKind.SQUARE : topology;
+        topology = topology == null ? MapTopologyKind.defaultTopology() : topology;
         width = Math.max(1, width);
         height = Math.max(1, height);
         layers = layers == null ? List.of() : List.copyOf(layers);
@@ -27,7 +27,7 @@ public record MapSurfaceSnapshot(
     }
 
     public static MapSurfaceSnapshot empty() {
-        return new MapSurfaceSnapshot("Empty Map", MapTopologyKind.SQUARE, 1, 1, List.of(), List.of(), List.of());
+        return new MapSurfaceSnapshot("Empty Map", MapTopologyKind.defaultTopology(), 1, 1, List.of(), List.of(), List.of());
     }
 
     public List<MapCellSnapshot> allCells() {

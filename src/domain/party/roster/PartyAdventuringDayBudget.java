@@ -42,7 +42,7 @@ public final class PartyAdventuringDayBudget {
     }
 
     public static int afterSecondShortRest(int level) {
-        return Math.max(0, (int) Math.round((perCharacter(level) * 2.0) / 3.0));
+        return Math.max(0, (int) Math.round(perCharacter(level) * 2.0 / 3.0));
     }
 
     public static int finalSegment(int level) {

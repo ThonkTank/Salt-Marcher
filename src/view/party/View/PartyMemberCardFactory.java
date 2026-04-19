@@ -79,7 +79,7 @@ final class PartyMemberCardFactory {
 
     private Node wrapCard(VBox content) {
         content.setPadding(new Insets(10));
-        content.getStyleClass().add("party-member-card");
+        content.getStyleClass().addAll("card-surface", "entity-card");
         return content;
     }
 

@@ -128,7 +128,7 @@ public final class LoadAdventuringDaySummaryUseCase {
                     (int) Math.round(remainingToLongRest / activeMemberCount),
                     consumedXp,
                     totalBudgetXp,
-                    totalBudgetXp <= 0 ? 0 : (int) Math.round((consumedXp * 100.0) / totalBudgetXp),
+                    totalBudgetXp <= 0 ? 0 : (int) Math.round(consumedXp * 100.0 / totalBudgetXp),
                     restCadenceStatuses);
         }
     }

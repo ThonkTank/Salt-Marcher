@@ -60,6 +60,12 @@ public final class DataAdapterPublicSignatureLeakChecker extends BugChecker impl
                 collectTypeLeak("field " + field.getSimpleName(), field.asType(), leaks);
             }
         }
+        for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
+            if (constructor.getModifiers().contains(Modifier.PUBLIC)
+                    || constructor.getModifiers().contains(Modifier.PROTECTED)) {
+                collectExecutableLeaks("constructor " + typeElement.getSimpleName(), constructor, leaks);
+            }
+        }
         for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
             if (method.getModifiers().contains(Modifier.PUBLIC) || method.getModifiers().contains(Modifier.PROTECTED)) {
                 collectExecutableLeaks(String.valueOf(method.getSimpleName()), method, leaks);

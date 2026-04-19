@@ -25,23 +25,23 @@ public final class CreatureFilterValuesRecord {
     }
 
     public List<String> sizes() {
-        return sizes;
+        return List.copyOf(sizes);
     }
 
     public List<String> types() {
-        return types;
+        return List.copyOf(types);
     }
 
     public List<String> subtypes() {
-        return subtypes;
+        return List.copyOf(subtypes);
     }
 
     public List<String> biomes() {
-        return biomes;
+        return List.copyOf(biomes);
     }
 
     public List<String> alignments() {
-        return alignments;
+        return List.copyOf(alignments);
     }
 
     private static List<String> immutableCopy(List<String> values) {

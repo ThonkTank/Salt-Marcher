@@ -1,8 +1,12 @@
+import java.io.File
+import java.util.UUID
 import net.ltgt.gradle.errorprone.errorprone
+import org.gradle.api.Task
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.testing.Test
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.process.ExecSpec
 import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
@@ -12,11 +16,49 @@ import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
 import saltmarcher.buildlogic.tasks.CkjmReportTask
 import saltmarcher.buildlogic.tasks.CpdCheckTask
 import saltmarcher.buildlogic.tasks.LizardCheckTask
+import saltmarcher.buildlogic.tasks.PmdSourceCheckTask
 import saltmarcher.buildlogic.tasks.RenderDesktopIconTask
 import saltmarcher.buildlogic.tasks.SetupLizardTask
 
 plugins {
     id("net.ltgt.errorprone")
+}
+
+val continueOnFailureEntrypoints = setOf(
+    "build",
+    "check",
+    "compileJava",
+    "test",
+    "architectureTest",
+    "checkArchitecture",
+    "checkViewArchitecture",
+    "pmdMain",
+    "pmdStrictMain",
+    "pmdArchitectureMain",
+    "spotbugsMain",
+    "cpdMain",
+    "lizardMain",
+    "ckjmMain",
+    "checkCentralizedStylesheets",
+    "checkDefinedStyleClassSelectors",
+    "checkNoCompiledArtifactsInSource",
+    "checkDesktopPackagingInputs",
+    "jqassistantEffectiveRules"
+)
+
+val requestedTaskNames = gradle.startParameter.taskNames
+    .map { taskName -> taskName.substringAfterLast(":") }
+    .toSet()
+
+if (requestedTaskNames.any { it in continueOnFailureEntrypoints }) {
+    gradle.startParameter.setContinueOnFailure(true)
+}
+
+val freshGateResultReason = "Quality and architecture gate diagnostics must be produced by the current invocation."
+
+fun Task.enforceFreshGateResult() {
+    outputs.upToDateWhen { false }
+    outputs.doNotCacheIf(freshGateResultReason) { true }
 }
 
 val desktopIconSourceRelativePathProvider = providers.gradleProperty("saltMarcherDesktopIconSource")
@@ -53,6 +95,13 @@ val jqassistantHomeDir = jqassistantInstallDir.map {
 val jqassistantCliFile = jqassistantHomeDir.map { it.file("bin/jqassistant") }
 val jqassistantConfigFile = layout.projectDirectory.file("tools/quality/jqassistant/config.yml")
 val jqassistantRulesDir = layout.projectDirectory.dir("tools/quality/jqassistant/rules")
+val jqassistantStoreRoot = File(
+    System.getProperty("java.io.tmpdir"),
+    "saltmarcher-jqassistant-${UUID.randomUUID()}"
+)
+val jqassistantCheckStoreDir = layout.dir(providers.provider {
+    jqassistantStoreRoot.resolve("check-view-architecture-store")
+})
 val jqassistantReportsDir = layout.buildDirectory.dir("reports/jqassistant")
 val jqassistantJunitReportsDir = jqassistantReportsDir.map { it.dir("junit") }
 val jqassistantJvmOpens = listOf(
@@ -63,6 +112,10 @@ val jqassistantJvmOpens = listOf(
 ).joinToString(" ")
 
 val cpdCli by configurations.creating {
+    isCanBeConsumed = false
+}
+
+val pmdCli by configurations.creating {
     isCanBeConsumed = false
 }
 
@@ -82,6 +135,9 @@ dependencies {
     add("cpdCli", "net.sourceforge.pmd:pmd-cli:7.23.0")
     add("cpdCli", "net.sourceforge.pmd:pmd-java:7.23.0")
 
+    add("pmdCli", "net.sourceforge.pmd:pmd-cli:7.23.0")
+    add("pmdCli", "net.sourceforge.pmd:pmd-java:7.23.0")
+
     add("ckjmToolClasspath", "gr.spinellis.ckjm:ckjm_ext:2.10")
     add("ckjmToolClasspath", "org.apache.bcel:bcel:6.11.0")
     add("ckjmToolClasspath", "org.apache.ant:ant:1.10.15")
@@ -97,17 +153,21 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.named<JavaCompile>("compileJava") {
+    enforceFreshGateResult()
     dependsOn(gradle.includedBuild("quality-rules-errorprone").task(":jar"))
     options.errorprone.enabled.set(true)
     options.errorprone.disableWarningsInGeneratedCode.set(true)
     options.errorprone.disable("StringConcatToTextBlock")
     options.errorprone.error("EqualsNull")
     options.errorprone.error("DataAdapterPublicSignatureLeak")
+    options.errorprone.error("DataAdapterRoleContract")
     options.errorprone.error("DataGatewayReturnTypeBoundary")
     options.errorprone.error("DomainPublicBoundarySignaturePurity")
     options.errorprone.error("FeatureShellApiAllowlist")
     options.errorprone.error("NullAway")
     options.errorprone.error("ReferenceEquality")
+    options.errorprone.error("ServiceRegistryRegistrationPlacement")
+    options.errorprone.error("ShellLifecycleHookOwnership")
     options.errorprone.error("StringCaseLocaleUsage")
     options.errorprone.error("StringSplitter")
     options.errorprone.error("ViewAssemblyDependencies")
@@ -119,6 +179,7 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("ViewReflectionBypass")
     options.errorprone.error("ViewRestrictedDependencies")
     options.errorprone.error("ViewRootDelegation")
+    options.errorprone.error("ViewSceneGraphPlacement")
     options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
     options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
 }
@@ -135,6 +196,23 @@ fun ExecSpec.configureJqassistantInvocation(configFile: RegularFile, vararg argu
     )
 }
 
+fun ExecSpec.configureJqassistantInvocation(
+    configFile: RegularFile,
+    storeDirectory: Directory,
+    vararg arguments: String) {
+    workingDir = layout.projectDirectory.asFile
+    environment("JQASSISTANT_OPTS", jqassistantJvmOpens)
+    commandLine(
+        "/bin/bash",
+        jqassistantCliFile.get().asFile.absolutePath,
+        *arguments,
+        "-C",
+        configFile.asFile.absolutePath,
+        "-D",
+        "jqassistant.store.uri=file:${storeDirectory.asFile.absolutePath}"
+    )
+}
+
 val installJqassistant by tasks.registering(Sync::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Install the jQAssistant command-line distribution into the build directory."
@@ -147,20 +225,22 @@ val installJqassistant by tasks.registering(Sync::class) {
 val jqassistantScanViewArchitecture by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Scan SaltMarcher bytecode and source topology for view-architecture analysis."
+    enforceFreshGateResult()
     dependsOn(installJqassistant, tasks.named("classes"))
     inputs.file(jqassistantConfigFile)
     inputs.dir(jqassistantRulesDir)
     inputs.dir(layout.buildDirectory.dir("classes/java/main"))
     inputs.files(sourceJavaRoots)
-    outputs.dir(layout.buildDirectory.dir("jqassistant/store"))
+    outputs.dir(jqassistantCheckStoreDir)
     doFirst {
-        configureJqassistantInvocation(jqassistantConfigFile, "scan")
+        configureJqassistantInvocation(jqassistantConfigFile, jqassistantCheckStoreDir.get(), "scan")
     }
 }
 
 val jqassistantAnalyzeViewArchitecture by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Analyze SaltMarcher MVVM view-architecture constraints with jQAssistant."
+    enforceFreshGateResult()
     dependsOn(jqassistantScanViewArchitecture)
     inputs.file(jqassistantConfigFile)
     inputs.dir(jqassistantRulesDir)
@@ -170,41 +250,8 @@ val jqassistantAnalyzeViewArchitecture by tasks.registering(Exec::class) {
         delete(layout.buildDirectory.dir("reports/jqassistant-mvvm-preview"))
         jqassistantReportsDir.get().asFile.mkdirs()
         jqassistantJunitReportsDir.get().asFile.mkdirs()
-        configureJqassistantInvocation(jqassistantConfigFile, "analyze")
+        configureJqassistantInvocation(jqassistantConfigFile, jqassistantCheckStoreDir.get(), "analyze")
     }
-}
-
-val compileJavaViewArchitectureBlocker by tasks.registering(Exec::class) {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the canonical MVVM jQAssistant blocker as part of compileJava."
-    dependsOn(installJqassistant)
-    inputs.file(jqassistantConfigFile)
-    inputs.dir(jqassistantRulesDir)
-    inputs.dir(layout.buildDirectory.dir("classes/java/main"))
-    inputs.files(sourceJavaRoots)
-    outputs.dir(jqassistantReportsDir)
-    onlyIf("compileJava completed successfully in this build") {
-        val compileJavaState = tasks.named<JavaCompile>("compileJava").get().state
-        compileJavaState.executed && compileJavaState.failure == null
-    }
-    doFirst {
-        delete(jqassistantReportsDir)
-        jqassistantReportsDir.get().asFile.mkdirs()
-        jqassistantJunitReportsDir.get().asFile.mkdirs()
-        workingDir = layout.projectDirectory.asFile
-        environment("JQASSISTANT_OPTS", jqassistantJvmOpens)
-        val jqassistantCli = jqassistantCliFile.get().asFile.absolutePath
-        val configPath = jqassistantConfigFile.asFile.absolutePath
-        commandLine(
-            "/bin/bash",
-            "-lc",
-            "'$jqassistantCli' scan -C '$configPath' && '$jqassistantCli' analyze -C '$configPath'"
-        )
-    }
-}
-
-tasks.named<JavaCompile>("compileJava") {
-    finalizedBy(compileJavaViewArchitectureBlocker)
 }
 
 val jqassistantEffectiveRules by tasks.registering(Exec::class) {
@@ -282,6 +329,28 @@ val cpdMain by tasks.registering(CpdCheckTask::class) {
     reportFile.set(cpdReportFile)
 }
 
+val pmdStrictMain by tasks.registering(PmdSourceCheckTask::class) {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run strict PMD source-smell checks against production Java sources."
+    projectRoot.set(layout.projectDirectory)
+    sourceRoots.from(sourceJavaRoots)
+    toolClasspath.from(pmdCli)
+    auxClasspath.from(configurations.named("compileClasspath"))
+    rulesetFile.set(layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"))
+    reportFile.set(layout.buildDirectory.file("reports/pmd/main-strict.txt"))
+}
+
+tasks.named<Pmd>("pmdMain") {
+    dependsOn(pmdStrictMain)
+    source = sourceJavaRoots.asFileTree
+    include("**/*.java")
+    classpath = configurations.named("compileClasspath").get()
+}
+
+tasks.named<Pmd>("pmdTest") {
+    enabled = false
+}
+
 val ckjmMain by tasks.registering(CkjmReportTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Run CKJM ext OO metrics against compiled production classes and write reports."
@@ -292,6 +361,14 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
     runtimeClasspath.from(configurations.named("runtimeClasspath"))
     reportFile.set(ckjmReportFile)
     summaryFile.set(ckjmSummaryFile)
+    maxWeightedMethodsPerClass.set(50)
+    maxDepthOfInheritanceTree.set(5)
+    maxNumberOfChildren.set(3)
+    maxCouplingBetweenObjects.set(14)
+    maxResponseForClass.set(50)
+    maxLackOfCohesionInMethods.set(50)
+    maxAfferentCouplings.set(14)
+    maxNumberOfPublicMethods.set(30)
 }
 
 val checkArchitecture by tasks.registering {
@@ -355,8 +432,13 @@ val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputs
 }
 
 tasks.named("check") {
+    dependsOn("compileJava")
+    dependsOn("test")
+    dependsOn("pmdMain")
+    dependsOn("architectureTest")
+    dependsOn("pmdArchitectureMain")
+    dependsOn(gradle.includedBuild("build-harness").task(":check"))
     dependsOn(checkViewArchitecture)
-    dependsOn(checkArchitecture)
     dependsOn(checkCentralizedStylesheets)
     dependsOn(checkDefinedStyleClassSelectors)
     dependsOn(checkNoCompiledArtifactsInSource)
@@ -366,20 +448,50 @@ tasks.named("check") {
     dependsOn(ckjmMain)
 }
 
-tasks.named("build") {
-    dependsOn(checkArchitecture)
-    dependsOn(checkCentralizedStylesheets)
-    dependsOn(checkDefinedStyleClassSelectors)
-    dependsOn(checkDesktopPackagingInputs)
-}
-
 tasks.matching { it.name == "pmdArchitectureMain" }.configureEach {
     dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
 }
 
+tasks.withType<Test>().configureEach {
+    enforceFreshGateResult()
+}
+
 tasks.withType<Pmd>().configureEach {
+    enforceFreshGateResult()
     reports {
         html.required.set(true)
         xml.required.set(true)
     }
+}
+
+tasks.withType<PmdSourceCheckTask>().configureEach {
+    enforceFreshGateResult()
+}
+
+tasks.withType<CpdCheckTask>().configureEach {
+    enforceFreshGateResult()
+}
+
+tasks.withType<LizardCheckTask>().configureEach {
+    enforceFreshGateResult()
+}
+
+tasks.withType<CkjmReportTask>().configureEach {
+    enforceFreshGateResult()
+}
+
+tasks.withType<CheckCentralizedStylesheetsTask>().configureEach {
+    enforceFreshGateResult()
+}
+
+tasks.withType<CheckDefinedStyleClassSelectorsTask>().configureEach {
+    enforceFreshGateResult()
+}
+
+tasks.withType<CheckNoCompiledArtifactsTask>().configureEach {
+    enforceFreshGateResult()
+}
+
+tasks.withType<CheckDesktopPackagingInputsTask>().configureEach {
+    enforceFreshGateResult()
 }

@@ -19,6 +19,10 @@ public enum PartyMembership {
         return this == ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
     }
 
+    public boolean isActive() {
+        return this == ACTIVE;
+    }
+
     public static PartyMembership fromPersistence(String rawMembership) {
         if (rawMembership == null || rawMembership.isBlank()) {
             return RESERVE;

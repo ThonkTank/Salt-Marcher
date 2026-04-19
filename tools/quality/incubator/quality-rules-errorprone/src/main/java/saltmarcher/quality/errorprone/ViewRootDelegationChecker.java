@@ -7,6 +7,7 @@ import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
@@ -32,6 +33,8 @@ public final class ViewRootDelegationChecker extends BugChecker
         String component = matcher.group(1);
 
         Set<String> violations = new LinkedHashSet<>();
+        boolean[] hasCreateScreen = {false};
+        boolean[] delegatesCreateScreenToAssembly = {false};
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
             if (isForbiddenReference(referencedType, component)) {
                 violations.add("reference -> " + referencedType);
@@ -39,12 +42,31 @@ public final class ViewRootDelegationChecker extends BugChecker
         }
 
         new TreePathScanner<Void, Void>() {
+            private boolean insideCreateScreen;
+
+            @Override
+            public Void visitMethod(MethodTree methodTree, Void unused) {
+                boolean previousInsideCreateScreen = insideCreateScreen;
+                if (isCreateScreenMethod(methodTree)) {
+                    hasCreateScreen[0] = true;
+                    insideCreateScreen = true;
+                }
+                try {
+                    return super.visitMethod(methodTree, unused);
+                } finally {
+                    insideCreateScreen = previousInsideCreateScreen;
+                }
+            }
+
             @Override
             public Void visitMethodInvocation(MethodInvocationTree methodInvocationTree, Void unused) {
                 Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodInvocationTree);
                 if (symbol != null) {
                     String owner = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
                     String methodName = symbol.getSimpleName().toString();
+                    if (insideCreateScreen && isOwnAssemblyReference(owner, component)) {
+                        delegatesCreateScreenToAssembly[0] = true;
+                    }
                     if ("shell.api.ShellRuntimeContext".equals(owner)
                             && FORBIDDEN_RUNTIME_CONTEXT_METHODS.contains(methodName)) {
                         violations.add("runtime access -> ShellRuntimeContext." + methodName + "()");
@@ -55,11 +77,14 @@ public final class ViewRootDelegationChecker extends BugChecker
 
             @Override
             public Void visitNewClass(NewClassTree newClassTree, Void unused) {
+                String constructedType = null;
+                if (ASTHelpers.getType(newClassTree) != null && ASTHelpers.getType(newClassTree).tsym instanceof Symbol.ClassSymbol classSymbol) {
+                    constructedType = classSymbol.getQualifiedName().toString();
+                }
+                if (insideCreateScreen && isOwnAssemblyReference(constructedType, component)) {
+                    delegatesCreateScreenToAssembly[0] = true;
+                }
                 if (newClassTree.getClassBody() != null) {
-                    String constructedType = null;
-                    if (ASTHelpers.getType(newClassTree) != null && ASTHelpers.getType(newClassTree).tsym instanceof Symbol.ClassSymbol classSymbol) {
-                        constructedType = classSymbol.getQualifiedName().toString();
-                    }
                     if ("shell.api.ShellScreen".equals(constructedType)) {
                         violations.add("direct shell screen construction -> " + constructedType);
                     }
@@ -67,6 +92,12 @@ public final class ViewRootDelegationChecker extends BugChecker
                 return super.visitNewClass(newClassTree, unused);
             }
         }.scan(tree, null);
+
+        if (hasCreateScreen[0] && !delegatesCreateScreenToAssembly[0]) {
+            violations.add("createScreen delegation -> no call to src.view."
+                    + component
+                    + ".assembly.*");
+        }
 
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
@@ -92,5 +123,15 @@ public final class ViewRootDelegationChecker extends BugChecker
             return !"assembly".equals(viewType.bucket()) && !"ROOT".equals(viewType.bucket());
         }
         return true;
+    }
+
+    private static boolean isCreateScreenMethod(MethodTree methodTree) {
+        return methodTree.getName().contentEquals("createScreen")
+                && methodTree.getParameters().size() == 1;
+    }
+
+    private static boolean isOwnAssemblyReference(String referencedType, String component) {
+        return referencedType != null
+                && referencedType.startsWith("src.view." + component + ".assembly.");
     }
 }

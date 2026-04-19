@@ -1,6 +1,5 @@
 package src.data.party.gateway.local;
 
-import src.data.party.model.PartyPersistenceSchema;
 import src.domain.party.roster.PartyAdventuringDayBudget;
 import src.domain.party.roster.PartyLevelProgression;
 
@@ -13,10 +12,18 @@ import java.util.List;
 
 final class PartyRosterBackfillMigrator {
 
+    private static final String SELECT_LEVEL_AND_CURRENT_XP_SQL =
+            "SELECT id, level, current_xp FROM player_characters";
+    private static final String UPDATE_CURRENT_XP_SQL =
+            "UPDATE player_characters SET current_xp = ? WHERE id = ?";
+    private static final String SELECT_SHORT_REST_CADENCE_INPUTS_SQL =
+            "SELECT id, level, xp_since_long_rest, xp_since_short_rest FROM player_characters";
+    private static final String UPDATE_SHORT_REST_CADENCE_SQL =
+            "UPDATE player_characters SET short_rests_taken_since_long_rest = ? WHERE id = ?";
+
     void normalizeExistingXp(Connection connection) throws SQLException {
         List<IntColumnUpdate> updates = new ArrayList<>();
-        String sql = "SELECT id, level, current_xp FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
-        try (PreparedStatement statement = connection.prepareStatement(sql);
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_LEVEL_AND_CURRENT_XP_SQL);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 int normalizedXp = Math.max(
@@ -27,17 +34,12 @@ final class PartyRosterBackfillMigrator {
                 }
             }
         }
-        executeUpdates(
-                connection,
-                "UPDATE " + PartyPersistenceSchema.PLAYER_CHARACTERS.name() + " SET current_xp = ? WHERE id = ?",
-                updates);
+        updateCurrentXp(connection, updates);
     }
 
     void backfillShortRestCadence(Connection connection) throws SQLException {
         List<IntColumnUpdate> updates = new ArrayList<>();
-        String selectSql = "SELECT id, level, xp_since_long_rest, xp_since_short_rest FROM "
-                + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
-        try (PreparedStatement statement = connection.prepareStatement(selectSql);
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_SHORT_REST_CADENCE_INPUTS_SQL);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 updates.add(new IntColumnUpdate(
@@ -48,25 +50,34 @@ final class PartyRosterBackfillMigrator {
                                 resultSet.getInt("xp_since_short_rest"))));
             }
         }
-        executeUpdates(
-                connection,
-                "UPDATE " + PartyPersistenceSchema.PLAYER_CHARACTERS.name()
-                        + " SET short_rests_taken_since_long_rest = ? WHERE id = ?",
-                updates);
+        updateShortRestCadence(connection, updates);
     }
 
-    private void executeUpdates(Connection connection, String sql, List<IntColumnUpdate> updates) throws SQLException {
+    private void updateCurrentXp(Connection connection, List<IntColumnUpdate> updates) throws SQLException {
         if (updates.isEmpty()) {
             return;
         }
-        try (PreparedStatement update = connection.prepareStatement(sql)) {
-            for (IntColumnUpdate entry : updates) {
-                update.setInt(1, entry.value());
-                update.setLong(2, entry.id());
-                update.addBatch();
-            }
-            update.executeBatch();
+        try (PreparedStatement update = connection.prepareStatement(UPDATE_CURRENT_XP_SQL)) {
+            executeUpdates(update, updates);
         }
+    }
+
+    private void updateShortRestCadence(Connection connection, List<IntColumnUpdate> updates) throws SQLException {
+        if (updates.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement update = connection.prepareStatement(UPDATE_SHORT_REST_CADENCE_SQL)) {
+            executeUpdates(update, updates);
+        }
+    }
+
+    private void executeUpdates(PreparedStatement update, List<IntColumnUpdate> updates) throws SQLException {
+        for (IntColumnUpdate entry : updates) {
+            update.setInt(1, entry.value());
+            update.setLong(2, entry.id());
+            update.addBatch();
+        }
+        update.executeBatch();
     }
 
     private int inferShortRestsTakenSinceLongRest(int level, int xpSinceLongRest, int xpSinceShortRest) {

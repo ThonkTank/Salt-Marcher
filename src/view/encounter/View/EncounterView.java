@@ -53,7 +53,7 @@ public final class EncounterView {
 
     private VBox buildControls() {
         Label title = new Label("Encounter");
-        title.getStyleClass().add("editor-panel-title");
+        title.getStyleClass().add("panel-title");
 
         difficulty.setMaxWidth(Double.MAX_VALUE);
         difficulty.valueProperty().addListener((ignored, before, after) -> {
@@ -85,7 +85,7 @@ public final class EncounterView {
                 filterPane,
                 generateButton,
                 rerollButton);
-        pane.getStyleClass().addAll("dungeon-editor-toolbar", "dungeon-editor-sidebar");
+        pane.getStyleClass().addAll("control-toolbar", "control-stack");
         pane.setPadding(new Insets(12));
         return pane;
     }

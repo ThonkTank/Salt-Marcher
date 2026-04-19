@@ -2,9 +2,9 @@ package src.domain.dungeon.application;
 
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.LoadMapSnapshotQuery;
-import src.domain.dungeon.entity.DungeonMap;
-import src.domain.dungeon.repository.DungeonDocumentStore;
-import src.domain.dungeon.repository.DungeonMapRepository;
+import src.domain.dungeon.map.DungeonMap;
+import src.domain.dungeon.map.DungeonDocumentStore;
+import src.domain.dungeon.map.DungeonMapRepository;
 import src.domain.mapcore.api.MapRenderPayload;
 import src.domain.mapcore.api.MapSurfaceSnapshot;
 

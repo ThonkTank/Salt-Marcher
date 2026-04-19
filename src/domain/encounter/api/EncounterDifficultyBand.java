@@ -4,5 +4,9 @@ public enum EncounterDifficultyBand {
     EASY,
     MEDIUM,
     HARD,
-    DEADLY
+    DEADLY;
+
+    public static EncounterDifficultyBand defaultBand() {
+        return MEDIUM;
+    }
 }

@@ -1,15 +1,11 @@
 package src.view.mapshared.View;
-
 import org.jspecify.annotations.Nullable;
 import src.view.mapshared.ViewModel.MapCellViewModel;
 import src.view.mapshared.ViewModel.MapViewport;
 import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
-
 final class MapWorkspaceSelectionSupport {
-
     private MapWorkspaceSelectionSupport() {
     }
-
     static @Nullable MapCellViewModel findCellAtCanvasPosition(
             @Nullable MapWorkspaceRenderModel renderModel,
             MapViewport viewport,
@@ -29,7 +25,6 @@ final class MapWorkspaceSelectionSupport {
         }
         return null;
     }
-
     static MapCellViewModel highlightedCell(MapCellViewModel source, @Nullable SelectionKey selectedTarget) {
         boolean selected = selectedTarget != null
                 && selectedTarget.matches(source.ownerKind(), source.ownerId(), source.partKind());
@@ -50,17 +45,13 @@ final class MapWorkspaceSelectionSupport {
                 source.partKind()
         );
     }
-
     private static double screenToWorldX(double canvasX, MapViewport viewport, double scale) {
         return viewport.centerX() + (canvasX - viewport.canvasWidth() / 2.0) / scale;
     }
-
     private static double screenToWorldY(double canvasY, MapViewport viewport, double scale) {
         return viewport.centerY() + (canvasY - viewport.canvasHeight() / 2.0) / scale;
     }
-
     record SelectionKey(String ownerKind, long ownerId, String partKind) {
-
         private boolean matches(String otherKind, long otherId, String otherPartKind) {
             return ownerId == otherId
                     && java.util.Objects.equals(ownerKind, otherKind)

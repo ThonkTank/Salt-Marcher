@@ -12,4 +12,8 @@ public enum PartyRestType {
         }
         return restType == RestType.LONG_REST ? LONG_REST : SHORT_REST;
     }
+
+    public boolean isShortRest() {
+        return this == SHORT_REST;
+    }
 }

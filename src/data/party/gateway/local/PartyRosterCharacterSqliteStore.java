@@ -1,7 +1,6 @@
 package src.data.party.gateway.local;
 
 import src.data.party.model.PartyCharacterRecord;
-import src.data.party.model.PartyPersistenceSchema;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,28 +13,52 @@ import java.util.Set;
 
 final class PartyRosterCharacterSqliteStore {
 
+    private static final String LOAD_CHARACTERS_SQL =
+            "SELECT id, name, player_name, level, current_xp, xp_since_long_rest, xp_since_short_rest,"
+                    + " short_rests_taken_since_long_rest, passive_perception, ac, in_party FROM player_characters"
+                    + " ORDER BY id";
+    private static final String LOAD_CHARACTER_IDS_SQL =
+            "SELECT id FROM player_characters";
+    private static final String DELETE_CHARACTER_SQL =
+            "DELETE FROM player_characters WHERE id = ?";
+    private static final String UPSERT_CHARACTER_SQL =
+            "INSERT INTO player_characters("
+                    + "id, name, player_name, level, current_xp, xp_since_long_rest, xp_since_short_rest,"
+                    + " short_rests_taken_since_long_rest, passive_perception, ac, in_party)"
+                    + " VALUES(?,?,?,?,?,?,?,?,?,?,?)"
+                    + " ON CONFLICT(id) DO UPDATE SET"
+                    + " name = excluded.name,"
+                    + " player_name = excluded.player_name,"
+                    + " level = excluded.level,"
+                    + " current_xp = excluded.current_xp,"
+                    + " xp_since_long_rest = excluded.xp_since_long_rest,"
+                    + " xp_since_short_rest = excluded.xp_since_short_rest,"
+                    + " short_rests_taken_since_long_rest = excluded.short_rests_taken_since_long_rest,"
+                    + " passive_perception = excluded.passive_perception,"
+                    + " ac = excluded.ac,"
+                    + " in_party = excluded.in_party";
+
     private final PartyRosterSqliteValueBinder valueBinder = new PartyRosterSqliteValueBinder();
 
     List<PartyCharacterRecord> loadCharacters(Connection connection) throws SQLException {
         List<PartyCharacterRecord> characters = new ArrayList<>();
-        String sql = "SELECT id, name, player_name, level, current_xp, xp_since_long_rest, xp_since_short_rest,"
-                + " short_rests_taken_since_long_rest, passive_perception, ac, in_party FROM "
-                + PartyPersistenceSchema.PLAYER_CHARACTERS.name()
-                + " ORDER BY id";
-        try (PreparedStatement statement = connection.prepareStatement(sql);
+        try (PreparedStatement statement = connection.prepareStatement(LOAD_CHARACTERS_SQL);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 characters.add(new PartyCharacterRecord(
                         resultSet.getLong("id"),
-                        resultSet.getString("name"),
-                        resultSet.getString("player_name"),
-                        resultSet.getInt("level"),
-                        resultSet.getInt("current_xp"),
-                        resultSet.getInt("xp_since_long_rest"),
-                        resultSet.getInt("xp_since_short_rest"),
-                        resultSet.getInt("short_rests_taken_since_long_rest"),
-                        resultSet.getInt("passive_perception"),
-                        resultSet.getInt("ac"),
+                        new PartyCharacterRecord.Identity(
+                                resultSet.getString("name"),
+                                resultSet.getString("player_name")),
+                        new PartyCharacterRecord.Progress(
+                                resultSet.getInt("level"),
+                                resultSet.getInt("current_xp"),
+                                resultSet.getInt("xp_since_long_rest"),
+                                resultSet.getInt("xp_since_short_rest"),
+                                resultSet.getInt("short_rests_taken_since_long_rest")),
+                        new PartyCharacterRecord.Combat(
+                                resultSet.getInt("passive_perception"),
+                                resultSet.getInt("ac")),
                         resultSet.getInt("in_party") == 1 ? "ACTIVE" : "RESERVE"));
             }
         }
@@ -49,8 +72,7 @@ final class PartyRosterCharacterSqliteStore {
         }
 
         List<Long> idsToDelete = new ArrayList<>();
-        String loadIdsSql = "SELECT id FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
-        try (PreparedStatement statement = connection.prepareStatement(loadIdsSql);
+        try (PreparedStatement statement = connection.prepareStatement(LOAD_CHARACTER_IDS_SQL);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 long id = resultSet.getLong("id");
@@ -63,8 +85,7 @@ final class PartyRosterCharacterSqliteStore {
         if (idsToDelete.isEmpty()) {
             return;
         }
-        String deleteSql = "DELETE FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name() + " WHERE id = ?";
-        try (PreparedStatement delete = connection.prepareStatement(deleteSql)) {
+        try (PreparedStatement delete = connection.prepareStatement(DELETE_CHARACTER_SQL)) {
             for (Long id : idsToDelete) {
                 delete.setLong(1, id);
                 delete.addBatch();
@@ -77,22 +98,7 @@ final class PartyRosterCharacterSqliteStore {
         if (characters.isEmpty()) {
             return;
         }
-        String sql = "INSERT INTO " + PartyPersistenceSchema.PLAYER_CHARACTERS.name() + "("
-                + "id, name, player_name, level, current_xp, xp_since_long_rest, xp_since_short_rest,"
-                + " short_rests_taken_since_long_rest, passive_perception, ac, in_party)"
-                + " VALUES(?,?,?,?,?,?,?,?,?,?,?)"
-                + " ON CONFLICT(id) DO UPDATE SET"
-                + " name = excluded.name,"
-                + " player_name = excluded.player_name,"
-                + " level = excluded.level,"
-                + " current_xp = excluded.current_xp,"
-                + " xp_since_long_rest = excluded.xp_since_long_rest,"
-                + " xp_since_short_rest = excluded.xp_since_short_rest,"
-                + " short_rests_taken_since_long_rest = excluded.short_rests_taken_since_long_rest,"
-                + " passive_perception = excluded.passive_perception,"
-                + " ac = excluded.ac,"
-                + " in_party = excluded.in_party";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(UPSERT_CHARACTER_SQL)) {
             for (PartyCharacterRecord character : characters) {
                 valueBinder.bindCharacter(statement, character);
                 statement.addBatch();

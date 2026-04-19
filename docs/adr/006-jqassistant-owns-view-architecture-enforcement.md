@@ -19,7 +19,8 @@ duplication, but it left two problems open:
 ## Decision
 
 SaltMarcher uses a layered enforcement model for view architecture, with
-`compileJava` as the first blocking entrypoint.
+compiler-precise rules enforced during `compileJava` and graph-shaped MVVM
+rules enforced through the central `check` aggregate.
 
 - `jQAssistant` owns graph-shaped view rules:
   - component topology
@@ -43,9 +44,10 @@ The rollout of the owner split and blocking entrypoints is complete:
 
 - `checkViewArchitecture` remains the explicit reporting task for canonical
   MVVM view architecture.
-- `compileJava` invokes the canonical MVVM jQAssistant analysis after a
-  successful Java compile, so graph-shaped view violations already fail at the
-  compile entrypoint.
+- The central `check` aggregate runs canonical MVVM jQAssistant analysis
+  through `checkViewArchitecture`; `build` reaches it through Gradle's standard
+  `build -> check` lifecycle.
+- Focused `compileJava` invocations do not run jQAssistant graph analysis.
 - The former preview-only rules are folded into that single blocking task.
 - Legacy-compatible structural dialects are removed instead of being kept as
   parallel rule sets.

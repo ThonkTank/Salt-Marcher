@@ -18,8 +18,12 @@ final class LoadEncounterCandidatesUseCase {
             LoadStatus status,
             List<EncounterCandidate> candidates
     ) {
-        public LoadResult {
+        LoadResult {
             candidates = candidates == null ? List.of() : List.copyOf(candidates);
+        }
+
+        boolean invalidQuery() {
+            return status == LoadStatus.INVALID_QUERY;
         }
     }
 

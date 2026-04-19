@@ -1,19 +1,14 @@
 package src.view.mapshared.View;
-
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
 import src.view.mapshared.ViewModel.MapCellViewModel;
-
 import java.util.function.Consumer;
-
 final class SquareMapCellFactory {
-
     SquareMapCellFactory() {
     }
-
     Node create(@Nullable MapCellViewModel snapshot, Consumer<MapCellViewModel> onCellSelected) {
         StackPane cell = new StackPane();
         cell.getStyleClass().add("dungeon-map-cell");
@@ -29,7 +24,6 @@ final class SquareMapCellFactory {
         configureSelection(cell, snapshot, onCellSelected);
         return cell;
     }
-
     private void configureSelection(StackPane cell, @Nullable MapCellViewModel snapshot, Consumer<MapCellViewModel> onCellSelected) {
         if (snapshot == null) {
             cell.setDisable(true);
@@ -46,7 +40,6 @@ final class SquareMapCellFactory {
         });
         cell.setDisable(!snapshot.interactive());
     }
-
     private void applyCellStyleClass(StackPane cell, @Nullable MapCellViewModel snapshot) {
         cell.getStyleClass().removeAll(
                 "dungeon-map-cell-empty",
@@ -77,7 +70,6 @@ final class SquareMapCellFactory {
         }
         cell.getStyleClass().add("dungeon-map-cell-open");
     }
-
     private String cellText(@Nullable MapCellViewModel snapshot) {
         if (snapshot == null) {
             return "";
@@ -93,7 +85,6 @@ final class SquareMapCellFactory {
         }
         return "...";
     }
-
     private String cellCaption(@Nullable MapCellViewModel snapshot) {
         if (snapshot == null || snapshot.label() == null || snapshot.label().isBlank()) {
             return "";

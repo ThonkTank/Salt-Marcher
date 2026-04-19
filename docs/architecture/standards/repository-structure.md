@@ -110,9 +110,12 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - The canonical owner model, rule-status vocabulary, and blocking-task mapping
   for these checks live in the
   [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+- The concrete per-rule status and owner mapping for repository-structure
+  rules lives in the
+  [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1).
 - the included build at `tools/gradle/build-harness/` owns repository topology,
-  package-path alignment, and service-entrypoint presence rules below
-  `src/data/`.
+  package-path alignment, `src/` direct-child topology, included-build
+  placement, and service-entrypoint presence rules below `src/data/`.
 - `checkViewArchitecture` owns the canonical MVVM view-structure blocker below
   `src/view/`.
 - `pmdArchitectureMain` owns Java source contracts for those roots, including
@@ -127,9 +130,9 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   role model.
 - The binding domain-layer standard defines the semantic responsibilities of
   `api/`, `application/`, and named domain modules inside one bounded context.
-  Some current repository checks still encode the previous root bucket model
-  for `src/domain/**`; that topology is migration debt and is not the
-  canonical target structure.
+  Current repository checks enforce that strict target topology for
+  `src/domain/**`, including direct role-bucket bans, named-module package
+  shape, and obvious backend-port contract placement outside exported `api/`.
 - The binding data-layer standard defines the semantic responsibilities of
   `repository/`, `query/`, `gateway/`, `model/`, `mapper/`, and
   `persistencecore/`.
@@ -171,9 +174,8 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   under a domain feature root.
 - Additional directories under `src/domain/<feature>/` must be named domain
   modules in the ubiquitous language of that bounded context.
-- Legacy root role buckets under `src/domain/**` remain possible in the
-  current repo only as migration debt; they are not the canonical target
-  structure.
+- Legacy root role buckets under `src/domain/**` are forbidden by the
+  architecture harness.
 - Data implementation classes live under `repository/`, `query/`, `gateway/`,
   `model/`, or `mapper/`.
 - `src/data/<feature>/*ServiceContribution.java` is a registration root,
@@ -202,5 +204,6 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - [ADR 007: Shared View API Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/007-shared-view-api-boundary.md:1)
 - [ADR 008: Top-Level Repository Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/008-top-level-repository-taxonomy.md:1)
 - [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
+- [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)
 - [ADR 010: Data-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/010-data-layer-architecture-model.md:1)
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)

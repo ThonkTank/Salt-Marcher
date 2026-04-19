@@ -35,7 +35,7 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 
 @BugPattern(
         name = "DomainPublicBoundarySignaturePurity",
-        summary = "Public domain boundary signatures must stay free of outer-layer and foreign private domain types.",
+        summary = "Public domain boundary signatures must stay free of outer-layer and private domain types.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         implements BugChecker.ClassTreeMatcher {
@@ -70,8 +70,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         String packageName = state.getPath().getCompilationUnit().getPackageName() == null
                 ? ""
                 : state.getPath().getCompilationUnit().getPackageName().toString();
-        String ownFeature = boundaryFeature(packageName);
-        if (ownFeature == null) {
+        if (boundaryFeature(packageName) == null) {
             return Description.NO_MATCH;
         }
 
@@ -85,36 +84,43 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
 
         List<String> leaks = new ArrayList<>();
 
-        collectTypeLeak("extends", typeElement.getSuperclass(), ownFeature, leaks);
+        collectTypeLeak("extends", typeElement.getSuperclass(), leaks);
         for (TypeMirror implementedInterface : typeElement.getInterfaces()) {
-            collectTypeLeak("implements", implementedInterface, ownFeature, leaks);
+            collectTypeLeak("implements", implementedInterface, leaks);
         }
         for (TypeParameterElement typeParameter : typeElement.getTypeParameters()) {
             for (TypeMirror bound : typeParameter.getBounds()) {
-                collectTypeLeak("type bound of " + typeParameter.getSimpleName(), bound, ownFeature, leaks);
+                collectTypeLeak("type bound of " + typeParameter.getSimpleName(), bound, leaks);
             }
         }
         if (typeElement.getKind() == ElementKind.RECORD) {
             for (RecordComponentElement recordComponent : typeElement.getRecordComponents()) {
-                collectTypeLeak("record component " + recordComponent.getSimpleName(), recordComponent.asType(), ownFeature, leaks);
+                collectTypeLeak("record component " + recordComponent.getSimpleName(), recordComponent.asType(), leaks);
             }
         }
 
         for (VariableElement field : ElementFilter.fieldsIn(typeElement.getEnclosedElements())) {
             if (isPublicOrProtected(field)) {
-                collectTypeLeak("field " + field.getSimpleName(), field.asType(), ownFeature, leaks);
+                collectTypeLeak("field " + field.getSimpleName(), field.asType(), leaks);
             }
         }
         for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
             if (isPublicOrProtected(method)) {
-                collectExecutableLeaks(String.valueOf(method.getSimpleName()), method, ownFeature, leaks);
+                collectExecutableLeaks(String.valueOf(method.getSimpleName()), method, leaks);
             }
         }
 
         if (DOMAIN_API_PACKAGE.matcher(packageName).matches()) {
             for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
                 if (isPublicOrProtected(constructor)) {
-                    collectExecutableLeaks("constructor " + typeElement.getSimpleName(), constructor, ownFeature, leaks);
+                    collectExecutableLeaks("constructor " + typeElement.getSimpleName(), constructor, leaks);
+                }
+            }
+        }
+        if (isRootApplicationService(typeElement, packageName)) {
+            for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
+                if (isPublicOrProtected(constructor)) {
+                    collectRootConstructorCompositionLeaks(typeElement, constructor, leaks);
                 }
             }
         }
@@ -124,7 +130,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         }
         return buildDescription(tree)
                 .setMessage("Public domain boundary type '" + typeElement.getQualifiedName()
-                        + "' leaks outer-layer or foreign private domain types in its signature: "
+                        + "' leaks outer-layer or private domain types in its signature: "
                         + String.join("; ", leaks))
                 .build();
     }
@@ -145,6 +151,10 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         if (DOMAIN_API_PACKAGE.matcher(packageName).matches()) {
             return true;
         }
+        return isRootApplicationService(typeElement, packageName);
+    }
+
+    private static boolean isRootApplicationService(TypeElement typeElement, String packageName) {
         if (!DOMAIN_ROOT_PACKAGE.matcher(packageName).matches()) {
             return false;
         }
@@ -167,34 +177,66 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
     private static void collectExecutableLeaks(
             String executableName,
             ExecutableElement executable,
-            String ownFeature,
             List<String> leaks) {
-        collectTypeLeak("return type of " + executableName, executable.getReturnType(), ownFeature, leaks);
+        collectTypeLeak("return type of " + executableName, executable.getReturnType(), leaks);
         for (VariableElement parameter : executable.getParameters()) {
-            collectTypeLeak("parameter " + parameter.getSimpleName() + " of " + executableName, parameter.asType(), ownFeature, leaks);
+            collectTypeLeak("parameter " + parameter.getSimpleName() + " of " + executableName, parameter.asType(), leaks);
         }
         for (TypeMirror thrownType : executable.getThrownTypes()) {
-            collectTypeLeak("throws clause of " + executableName, thrownType, ownFeature, leaks);
+            collectTypeLeak("throws clause of " + executableName, thrownType, leaks);
         }
         for (TypeParameterElement typeParameter : executable.getTypeParameters()) {
             for (TypeMirror bound : typeParameter.getBounds()) {
-                collectTypeLeak("type bound of " + typeParameter.getSimpleName() + " in " + executableName, bound, ownFeature, leaks);
+                collectTypeLeak("type bound of " + typeParameter.getSimpleName() + " in " + executableName, bound, leaks);
             }
         }
         TypeMirror executableType = executable.asType();
         if (executableType instanceof ExecutableType) {
-            collectTypeLeak("executable signature of " + executableName, executableType, ownFeature, leaks);
+            collectTypeLeak("executable signature of " + executableName, executableType, leaks);
         }
     }
 
-    private static void collectTypeLeak(String position, TypeMirror typeMirror, String ownFeature, List<String> leaks) {
+    private static void collectRootConstructorCompositionLeaks(
+            TypeElement rootType,
+            ExecutableElement constructor,
+            List<String> leaks) {
+        String rootFeature = domainFeatureName(rootType.getQualifiedName().toString());
+        if (rootFeature == null) {
+            return;
+        }
+        for (VariableElement parameter : constructor.getParameters()) {
+            collectRootConstructorCompositionLeak(
+                    "constructor parameter " + parameter.getSimpleName(),
+                    parameter.asType(),
+                    rootFeature,
+                    leaks);
+        }
+        for (TypeMirror thrownType : constructor.getThrownTypes()) {
+            collectRootConstructorCompositionLeak(
+                    "constructor throws clause of " + rootType.getSimpleName(),
+                    thrownType,
+                    rootFeature,
+                    leaks);
+        }
+        for (TypeParameterElement typeParameter : constructor.getTypeParameters()) {
+            for (TypeMirror bound : typeParameter.getBounds()) {
+                collectRootConstructorCompositionLeak(
+                        "constructor type bound of " + typeParameter.getSimpleName(),
+                        bound,
+                        rootFeature,
+                        leaks);
+            }
+        }
+    }
+
+    private static void collectTypeLeak(String position, TypeMirror typeMirror, List<String> leaks) {
         if (typeMirror == null) {
             return;
         }
         typeMirror.accept(new SimpleTypeVisitor14<Void, Void>() {
             @Override
             public Void visitDeclared(DeclaredType declaredType, Void unused) {
-                addLeakIfNeeded(position, declaredType.asElement(), ownFeature, leaks);
+                addLeakIfNeeded(position, declaredType.asElement(), leaks);
                 for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
                     typeArgument.accept(this, null);
                 }
@@ -261,7 +303,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
 
             @Override
             public Void visitError(ErrorType errorType, Void unused) {
-                addLeakIfNeeded(position, errorType.asElement(), ownFeature, leaks);
+                addLeakIfNeeded(position, errorType.asElement(), leaks);
                 return null;
             }
 
@@ -287,16 +329,141 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         }, null);
     }
 
-    private static void addLeakIfNeeded(String position, Element element, String ownFeature, List<String> leaks) {
+    private static void collectRootConstructorCompositionLeak(
+            String position,
+            TypeMirror typeMirror,
+            String rootFeature,
+            List<String> leaks) {
+        if (typeMirror == null) {
+            return;
+        }
+        typeMirror.accept(new SimpleTypeVisitor14<Void, Void>() {
+            @Override
+            public Void visitDeclared(DeclaredType declaredType, Void unused) {
+                addRootConstructorLeakIfNeeded(position, declaredType.asElement(), rootFeature, leaks);
+                for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
+                    typeArgument.accept(this, null);
+                }
+                return null;
+            }
+
+            @Override
+            public Void visitArray(ArrayType arrayType, Void unused) {
+                arrayType.getComponentType().accept(this, null);
+                return null;
+            }
+
+            @Override
+            public Void visitTypeVariable(TypeVariable typeVariable, Void unused) {
+                typeVariable.getUpperBound().accept(this, null);
+                TypeMirror lowerBound = typeVariable.getLowerBound();
+                if (lowerBound != null) {
+                    lowerBound.accept(this, null);
+                }
+                return null;
+            }
+
+            @Override
+            public Void visitWildcard(WildcardType wildcardType, Void unused) {
+                if (wildcardType.getExtendsBound() != null) {
+                    wildcardType.getExtendsBound().accept(this, null);
+                }
+                if (wildcardType.getSuperBound() != null) {
+                    wildcardType.getSuperBound().accept(this, null);
+                }
+                return null;
+            }
+
+            @Override
+            public Void visitIntersection(IntersectionType intersectionType, Void unused) {
+                for (TypeMirror bound : intersectionType.getBounds()) {
+                    bound.accept(this, null);
+                }
+                return null;
+            }
+
+            @Override
+            public Void visitUnion(UnionType unionType, Void unused) {
+                for (TypeMirror alternative : unionType.getAlternatives()) {
+                    alternative.accept(this, null);
+                }
+                return null;
+            }
+
+            @Override
+            public Void visitError(ErrorType errorType, Void unused) {
+                addRootConstructorLeakIfNeeded(position, errorType.asElement(), rootFeature, leaks);
+                return null;
+            }
+
+            @Override
+            protected Void defaultAction(TypeMirror ignored, Void unused) {
+                return null;
+            }
+
+            @Override
+            public Void visitNoType(NoType noType, Void unused) {
+                return null;
+            }
+
+            @Override
+            public Void visitPrimitive(PrimitiveType primitiveType, Void unused) {
+                return null;
+            }
+
+            @Override
+            public Void visitNull(NullType nullType, Void unused) {
+                return null;
+            }
+        }, null);
+    }
+
+    private static void addLeakIfNeeded(String position, Element element, List<String> leaks) {
         if (element instanceof TypeElement typeElement) {
             String fqn = typeElement.getQualifiedName().toString();
-            if (isForbiddenLeak(fqn, ownFeature)) {
+            if (isForbiddenLeak(fqn)) {
                 leaks.add(position + " -> " + fqn);
             }
         }
     }
 
-    private static boolean isForbiddenLeak(String fqn, String ownFeature) {
+    private static void addRootConstructorLeakIfNeeded(
+            String position,
+            Element element,
+            String rootFeature,
+            List<String> leaks) {
+        if (element instanceof TypeElement typeElement) {
+            String fqn = typeElement.getQualifiedName().toString();
+            if (isForbiddenRootConstructorCompositionType(typeElement, fqn, rootFeature)) {
+                leaks.add(position + " -> " + fqn);
+            }
+        }
+    }
+
+    private static boolean isForbiddenLeak(String fqn) {
+        if (fqn == null || fqn.isBlank()) {
+            return false;
+        }
+        for (String outerPrefix : OUTER_LAYER_PREFIXES) {
+            if (fqn.startsWith(outerPrefix)) {
+                return true;
+            }
+        }
+        if (!fqn.startsWith("src.domain.")) {
+            return false;
+        }
+
+        if (domainFeatureName(fqn) == null) {
+            return false;
+        }
+        return !APPLICATION_SERVICE_TYPE.matcher(fqn).matches()
+                && !DOMAIN_API_TYPE.matcher(fqn).matches();
+    }
+
+    private static boolean isForbiddenRootConstructorCompositionType(
+            TypeElement typeElement,
+            String fqn,
+            String rootFeature) {
         if (fqn == null || fqn.isBlank()) {
             return false;
         }
@@ -310,11 +477,19 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         }
 
         String targetFeature = domainFeatureName(fqn);
-        if (targetFeature == null || ownFeature.equals(targetFeature)) {
+        if (targetFeature == null) {
             return false;
         }
-        return !APPLICATION_SERVICE_TYPE.matcher(fqn).matches()
-                && !DOMAIN_API_TYPE.matcher(fqn).matches();
+        if (APPLICATION_SERVICE_TYPE.matcher(fqn).matches() || DOMAIN_API_TYPE.matcher(fqn).matches()) {
+            return false;
+        }
+        return !targetFeature.equals(rootFeature) || !isSameFeatureDomainPort(typeElement);
+    }
+
+    private static boolean isSameFeatureDomainPort(TypeElement typeElement) {
+        String simpleName = typeElement.getSimpleName().toString();
+        return typeElement.getKind() == ElementKind.INTERFACE
+                && (simpleName.endsWith("Repository") || simpleName.endsWith("Port"));
     }
 
     private static String domainFeatureName(String fqn) {

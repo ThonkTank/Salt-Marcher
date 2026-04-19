@@ -3,7 +3,6 @@ package bootstrap;
 import org.jspecify.annotations.Nullable;
 import shell.api.ServiceContribution;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -19,6 +18,7 @@ final class ServiceContributionDiscovery {
     private static final String DATA_ROOT = "src/data";
     private static final String DATA_PACKAGE_PREFIX = "src.data.";
     private static final String CONTRIBUTION_SUFFIX = "ServiceContribution";
+    private static final int REQUIRED_ROOT_CLASS_COUNT = 1;
     private final ContributionRootClassScanner rootClassScanner = new ContributionRootClassScanner();
 
     List<ServiceContribution> discover() {
@@ -47,10 +47,10 @@ final class ServiceContributionDiscovery {
             List<String> matchingClasses = rootClasses.stream()
                     .filter(className -> className.endsWith("." + expectedSimpleName))
                     .toList();
-            if (matchingClasses.size() != 1) {
+            if (matchingClasses.size() != REQUIRED_ROOT_CLASS_COUNT) {
                 throw invalidContribution(featureName, expectedSimpleName, rootClasses);
             }
-            if (rootClasses.size() != 1) {
+            if (rootClasses.size() != REQUIRED_ROOT_CLASS_COUNT) {
                 throw new IllegalStateException("Data feature '" + featureName
                         + "' must expose exactly one root class under src/data/" + featureName + "/. "
                         + "Expected only '" + matchingClasses.getFirst() + "' but found: " + rootClasses);

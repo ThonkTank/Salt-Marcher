@@ -40,6 +40,11 @@ public record EncounterSnapshot(
                 false);
     }
 
+    @Override
+    public List<String> difficultyOptions() {
+        return List.copyOf(difficultyOptions);
+    }
+
     private static List<String> defaultDifficultyOptions() {
         return List.of("EASY", "MEDIUM", "HARD", "DEADLY");
     }
@@ -58,6 +63,21 @@ public record EncounterSnapshot(
 
         public static FilterOptionsViewData empty() {
             return new FilterOptionsViewData(List.of(), List.of(), List.of());
+        }
+
+        @Override
+        public List<String> types() {
+            return immutableCopy(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return immutableCopy(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return immutableCopy(biomes);
         }
 
         private static <T> List<T> immutableCopy(List<T> values) {
@@ -79,6 +99,21 @@ public record EncounterSnapshot(
 
         public static FilterSelectionViewData empty() {
             return new FilterSelectionViewData(List.of(), List.of(), List.of());
+        }
+
+        @Override
+        public List<String> selectedTypes() {
+            return immutableCopy(selectedTypes);
+        }
+
+        @Override
+        public List<String> selectedSubtypes() {
+            return immutableCopy(selectedSubtypes);
+        }
+
+        @Override
+        public List<String> selectedBiomes() {
+            return immutableCopy(selectedBiomes);
         }
 
         private static <T> List<T> immutableCopy(List<T> values) {

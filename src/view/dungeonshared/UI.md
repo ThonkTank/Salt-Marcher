@@ -18,7 +18,8 @@ editor and travel slices.
 - The current repo still carries shared projection, domain coordination, and
   interaction code in `interactor/` as migration debt while the component is
   moved toward canonical MVVM buckets.
-- `assembly/` owns shell-facing adaptation such as the inspector adapter.
+- `assembly/` owns shell-facing adaptation such as the inspector adapter and
+  the shared runtime-state contribution that publishes dungeon travel state.
 
 ## Public Boundary
 

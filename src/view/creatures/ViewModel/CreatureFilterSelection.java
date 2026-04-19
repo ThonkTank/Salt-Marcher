@@ -28,6 +28,31 @@ public record CreatureFilterSelection(
         return new CreatureFilterSelection("", null, null, List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
+    @Override
+    public List<String> selectedSizes() {
+        return immutableCopy(selectedSizes);
+    }
+
+    @Override
+    public List<String> selectedTypes() {
+        return immutableCopy(selectedTypes);
+    }
+
+    @Override
+    public List<String> selectedSubtypes() {
+        return immutableCopy(selectedSubtypes);
+    }
+
+    @Override
+    public List<String> selectedBiomes() {
+        return immutableCopy(selectedBiomes);
+    }
+
+    @Override
+    public List<String> selectedAlignments() {
+        return immutableCopy(selectedAlignments);
+    }
+
     private static <T> List<T> immutableCopy(List<T> values) {
         return values == null ? List.of() : List.copyOf(values);
     }

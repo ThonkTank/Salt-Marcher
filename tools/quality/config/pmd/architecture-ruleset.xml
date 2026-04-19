@@ -20,4 +20,11 @@
           class="saltmarcher.quality.pmd.SaltMarcherSourcePolicyRule">
         <priority>1</priority>
     </rule>
+
+    <rule name="SaltMarcherDataLayerRoleRule"
+          language="java"
+          message="SaltMarcher data-layer role violation"
+          class="saltmarcher.quality.pmd.SaltMarcherDataLayerRoleRule">
+        <priority>1</priority>
+    </rule>
 </ruleset>

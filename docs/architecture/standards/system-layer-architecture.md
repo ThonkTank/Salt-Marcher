@@ -81,6 +81,10 @@ Additional rules:
 - The repository shape is layered, but the dependency model is onion-style.
   Outer layers may skip an intermediate layer only when the dependency lands on
   an explicit intentional public boundary defined below.
+- Data adapters may use own-feature domain types required by their
+  domain-owned repository, read-model, mapper, and application-service factory
+  contracts. Foreign-feature data access remains limited to foreign public
+  domain boundaries.
 - Outer layers must not reach into foreign private buckets just because they
   are deeper. The target must still be an intentional public boundary.
 - Runtime control flow may travel in either direction. Source-code
@@ -102,8 +106,9 @@ The canonical intentional public boundaries are:
 - view-layer public `api/` packages for cross-component reuse
 - domain `*ApplicationService` roots and `src/domain/<feature>/api/**` as the
   public client-facing backend boundary below the view layer
-- domain-owned contracts declared in `application/` or named domain modules as
-  inner backend ports, not alternate client boundaries
+- domain-owned contracts declared in named domain modules as inner backend
+  ports, not alternate client boundaries and not `application/` use-case
+  coordinators
 - data `*ServiceContribution` roots as the registration boundary of one
   data feature, not as a public business boundary
 
@@ -187,55 +192,64 @@ boundaries.
 
 ## Verification Notes
 
+The canonical owner model, rule-status vocabulary, and blocking-task mapping
+for these checks live in the
+[Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+The per-surface rule-status matrix, including system-layer rules, lives in the
+[Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1).
+
 Current mechanical ownership:
 
-- `./gradlew architectureTest` owns top-level dependency direction, domain
-  independence from outer layers, data independence from shell/view/bootstrap,
-  the `shell.api` / `shell.host` split including the bootstrap-only access
-  rule for `shell.host.AppShell`, and foreign-domain-public-boundary-only
-  access below the view layer for the
-  internal data packages.
-- `./gradlew checkViewArchitecture` and `./gradlew compileJava` own the
-  internal MVVM topology and compiler-precise view-layer dependency bans.
-- `./gradlew compileJava` also owns the current compiler-precise subset of
-  public domain-boundary signature purity: public domain boundary signatures
-  must stay free of outer-layer types and foreign private domain types.
+- `./gradlew architectureTest` owns bytecode-visible system dependency
+  direction: bootstrap stays out of feature code, shell stays out of
+  bootstrap and feature layers, view stays out of bootstrap and data, domain
+  stays out of all outer layers, data stays out of bootstrap and view, and
+  internal data buckets stay out of shell.
+- `./gradlew architectureTest` also owns the `shell.api` / `shell.host` split,
+  the bootstrap-only access rule for `shell.host.AppShell`,
+  foreign-domain-public-boundary-only access below the view layer, and
+  feature-cycle freedom across domain, view, data, and shell package slices.
+- `./gradlew checkViewArchitecture` owns internal MVVM topology, while
+  `./gradlew compileJava` owns compiler-precise view-layer dependency bans,
+  shell API allowlists, and public view `api/` signature leak checks.
+- `./gradlew compileJava` owns compiler-precise domain boundary purity:
+  public operational members on domain application-service roots and public
+  domain `api/` signatures must stay free of outer-layer types, foreign
+  private domain types, and same-feature internal domain-module types.
+- `./gradlew compileJava` owns root application-service constructor
+  composition safety: public/protected constructors may expose only
+  same-feature domain-owned port interfaces and public domain boundaries, not
+  outer-layer types, foreign private domain types, or same-feature concrete
+  application/model collaborators.
+- `./gradlew compileJava` owns data adapter boundary purity and role checks:
+  gateway public return types stay source-local, repository/query public
+  signatures do not leak internal data infrastructure, and public concrete
+  adapters satisfy the expected own-feature domain-owned contract role.
 - `./gradlew pmdArchitectureMain` owns root-entrypoint contracts, thin
-  stateless root contracts, shell source policies, and forbidden legacy wiring
-  patterns.
+  stateless root contracts, shell source policies, forbidden legacy wiring
+  patterns, feature-specific bootstrap/shell wiring bans, and the source-level
+  data root registration subset that limits `ServiceRegistry` registrations to
+  own-feature application-service roots, nested factories, and domain-owned
+  port contracts.
 - `./gradlew :build-harness:check` owns repository topology, placement rules,
-  and required root-presence checks.
-
-Current `Candidate` rules in this standard:
-
-- same-feature internal carrier purity on domain-owned public backend
-  boundaries, with `Error Prone` on `./gradlew compileJava` as the preferred
-  future owner once the remaining migration debt is retired
+  required root-presence checks, `ServiceContribution` root placement, and
+  backend-port contract exclusion from domain `api/` and `application/`
+  packages.
+- `./gradlew compileJava` owns compiler-precise service-registry registration
+  placement: direct `ServiceRegistry.Builder.register(...)` calls belong only
+  in data `*ServiceContribution` roots.
 
 Review-owned rules in this standard:
 
 - minimizing cross-layer seams to the smallest intentional public boundary
 - using only the explicit public-boundary list above to remove needless
   pass-through wrappers without widening private access
+- deciding whether same-feature data-domain references are genuinely required
+  by the adapter role rather than merely convenient
 - preserving shell passivity and composition-root discipline beyond the checks
   already encoded mechanically
 - keeping coordination logic authored once instead of duplicated across shell,
   view, domain, and data
-
-Already enforced parts of the stronger seam model:
-
-- top-level inward dependency direction between `bootstrap`, `shell`,
-  `src/view`, `src/domain`, and `src/data`
-- view access to backend boundaries only through public
-  `*ApplicationService` roots and public `api/` carriers
-- shell usage confined to view contribution roots and `assembly/`
-- data-internal packages staying out of shell, view, and bootstrap while shell
-  registration stays confined to the `*ServiceContribution` root
-- the `shell.api` / `shell.host` split, including the bootstrap-only access
-  rule for `shell.host.AppShell`
-- public domain-boundary signatures staying free of outer-layer types and
-  foreign private domain types
-- the structurally expressible subset of boundary-carrier purity
 
 ## References
 
@@ -246,5 +260,7 @@ Already enforced parts of the stronger seam model:
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/view-mvvm.md:1)
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/data-layer.md:1)
+- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1)
+- [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/quality-platforms.md:1)
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)

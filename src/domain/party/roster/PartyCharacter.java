@@ -1,8 +1,6 @@
 package src.domain.party.roster;
 
 import src.domain.party.api.CharacterDraft;
-import src.domain.party.roster.PartyMembership;
-import src.domain.party.roster.PartyRestType;
 
 import java.util.Objects;
 

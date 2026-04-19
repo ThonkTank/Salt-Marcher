@@ -40,8 +40,8 @@ final class ShellWorkspacePane extends SplitPane {
     private @Nullable ShellTabMode activeTabMode;
     private @Nullable ShellSlotContent activeSlotContent;
 
-    public ShellWorkspacePane() {
-        controlsPanel.getStyleClass().add("control-panel");
+    ShellWorkspacePane() {
+        ShellFx.addStyleClass(controlsPanel, "control-panel");
         controlsPanel.setPrefWidth(240);
         controlsPanel.setMinWidth(200);
         controlsPanel.setMinHeight(0);
@@ -58,37 +58,37 @@ final class ShellWorkspacePane extends SplitPane {
 
         ShellContentLayout.makeShrinkable(detailsContainer);
         ShellContentLayout.makeShrinkable(stateContainer);
-        detailsContainer.getChildren().add(inspectorPane);
-        stateContainer.getChildren().add(ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
+        ShellFx.addChild(detailsContainer, inspectorPane);
+        ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
 
         rightSplit.setOrientation(Orientation.VERTICAL);
         ShellContentLayout.makeShrinkable(rightSplit);
-        rightSplit.getItems().addAll(detailsContainer, stateContainer);
+        ShellFx.setSplitPaneItems(rightSplit, detailsContainer, stateContainer);
 
         setOrientation(Orientation.HORIZONTAL);
         getItems().addAll(leftColumn, rightSplit);
     }
 
-    public InspectorPane inspectorPane() {
+    InspectorPane inspectorPane() {
         return inspectorPane;
     }
 
-    public void registerRuntimeStateTab(ContributionKey key, String label, int itemOrder, Node content) {
+    void registerRuntimeStateTab(ContributionKey key, String label, int itemOrder, Node content) {
         runtimeStatePane.registerTab(key, label, itemOrder, content);
         refreshStatePanel();
     }
 
-    public void showTab(ShellSlotContent slotContent, ShellTabMode mode) {
+    void showTab(ShellSlotContent slotContent, ShellTabMode mode) {
         this.activeSlotContent = Objects.requireNonNull(slotContent, "slotContent");
         this.activeTabMode = Objects.requireNonNull(mode, "mode");
         applyControls(slotContent.controls());
-        mainPanel.getChildren().clear();
-        mainPanel.getChildren().add(ShellContentLayout.shellOwned(Objects.requireNonNull(slotContent.main(), "main")));
-        detailsContainer.getChildren().setAll(inspectorPane);
+        ShellFx.clearChildren(mainPanel);
+        ShellFx.addChild(mainPanel, ShellContentLayout.shellOwned(Objects.requireNonNull(slotContent.main(), "main")));
+        ShellFx.setChildren(detailsContainer, inspectorPane);
         refreshStatePanel();
     }
 
-    public void saveDividerPositions(ContributionKey key) {
+    void saveDividerPositions(ContributionKey key) {
         double[] mainDividers = getDividerPositions();
         if (mainDividers.length > 0) {
             savedMainDividers.put(key, mainDividers.clone());
@@ -99,7 +99,7 @@ final class ShellWorkspacePane extends SplitPane {
         }
     }
 
-    public void restoreDividerPositionsLater(ContributionKey key, BooleanSupplier shouldApply) {
+    void restoreDividerPositionsLater(ContributionKey key, BooleanSupplier shouldApply) {
         Platform.runLater(() -> {
             if (!shouldApply.getAsBoolean()) {
                 return;
@@ -112,10 +112,10 @@ final class ShellWorkspacePane extends SplitPane {
     }
 
     private void applyControls(@Nullable Node controls) {
-        controlsPanel.getChildren().clear();
+        ShellFx.clearChildren(controlsPanel);
         if (controls != null) {
             Node hostedControls = ShellContentLayout.shellOwned(controls);
-            controlsPanel.getChildren().add(hostedControls);
+            ShellFx.addChild(controlsPanel, hostedControls);
             VBox.setVgrow(hostedControls, Priority.ALWAYS);
         }
         controlsPanel.setVisible(controls != null);
@@ -124,28 +124,28 @@ final class ShellWorkspacePane extends SplitPane {
 
     private void refreshStatePanel() {
         if (activeTabMode == null) {
-            stateContainer.getChildren().clear();
-            stateContainer.getChildren().add(ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
+            ShellFx.clearChildren(stateContainer);
+            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
             return;
         }
         if (activeTabMode == ShellTabMode.RUNTIME) {
-            stateContainer.getChildren().clear();
-            stateContainer.getChildren().add(ShellContentLayout.shellOwned(
+            ShellFx.clearChildren(stateContainer);
+            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(
                     runtimeStatePane.hasTabs() ? runtimeStatePane : emptyRuntimeStatePlaceholder));
             return;
         }
         Node editorState = activeSlotContent == null ? null : activeSlotContent.editorState();
-        stateContainer.getChildren().clear();
-        stateContainer.getChildren().add(ShellContentLayout.shellOwned(
+        ShellFx.clearChildren(stateContainer);
+        ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(
                 editorState != null ? editorState : editorStatePlaceholder));
     }
 
     private static Node createPlaceholderPane(String titleText, String bodyText) {
         Label title = new Label(titleText);
-        title.getStyleClass().addAll("section-header", "text-muted");
+        ShellFx.addStyleClasses(title, "section-header", "text-muted");
 
         Label body = new Label(bodyText);
-        body.getStyleClass().add("text-muted");
+        ShellFx.addStyleClass(body, "text-muted");
         body.setWrapText(true);
 
         VBox box = new VBox(8, title, body);

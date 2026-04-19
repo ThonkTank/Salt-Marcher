@@ -1,27 +1,44 @@
 package src.data.creatures.gateway.local;
 
-import src.data.persistencecore.sqlite.SqliteSchemaColumnSupport;
-import src.data.persistencecore.model.SqliteTableSpec;
-import src.data.creatures.model.CreaturesPersistenceSchema;
-
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 final class CreaturesSchemaTableManager {
 
+    private final CreaturesBaseTableManager baseTableManager = new CreaturesBaseTableManager();
+    private final CreatureIdentityColumnMigrator identityColumnMigrator = new CreatureIdentityColumnMigrator();
+    private final CreatureVitalsColumnMigrator vitalsColumnMigrator = new CreatureVitalsColumnMigrator();
+    private final CreatureMovementColumnMigrator movementColumnMigrator = new CreatureMovementColumnMigrator();
+    private final CreatureAbilityColumnMigrator abilityColumnMigrator = new CreatureAbilityColumnMigrator();
+    private final CreatureCombatFeatureColumnMigrator combatFeatureColumnMigrator =
+            new CreatureCombatFeatureColumnMigrator();
+    private final CreatureTraitColumnMigrator traitColumnMigrator = new CreatureTraitColumnMigrator();
+    private final CreatureBiomeColumnMigrator biomeColumnMigrator = new CreatureBiomeColumnMigrator();
+    private final CreatureSubtypeColumnMigrator subtypeColumnMigrator = new CreatureSubtypeColumnMigrator();
+    private final CreatureActionColumnMigrator actionColumnMigrator = new CreatureActionColumnMigrator();
+
     void createBaseTables(Connection connection) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(CreaturesPersistenceSchema.CREATURES.createTableSql());
-            statement.execute(CreaturesPersistenceSchema.CREATURE_BIOMES.createTableSql());
-            statement.execute(CreaturesPersistenceSchema.CREATURE_SUBTYPES.createTableSql());
-            statement.execute(CreaturesPersistenceSchema.CREATURE_ACTIONS.createTableSql());
-        }
+        baseTableManager.createBaseTables(connection);
     }
 
-    void ensureColumns(Connection connection, SqliteTableSpec table) throws SQLException {
-        for (SqliteTableSpec.ColumnSpec column : table.columns()) {
-            SqliteSchemaColumnSupport.ensureColumn(connection, table, column.name());
-        }
+    void ensureCreatureColumns(Connection connection) throws SQLException {
+        identityColumnMigrator.ensureColumns(connection);
+        vitalsColumnMigrator.ensureColumns(connection);
+        movementColumnMigrator.ensureColumns(connection);
+        abilityColumnMigrator.ensureColumns(connection);
+        combatFeatureColumnMigrator.ensureColumns(connection);
+        traitColumnMigrator.ensureColumns(connection);
+    }
+
+    void ensureCreatureBiomeColumns(Connection connection) throws SQLException {
+        biomeColumnMigrator.ensureColumns(connection);
+    }
+
+    void ensureCreatureSubtypeColumns(Connection connection) throws SQLException {
+        subtypeColumnMigrator.ensureColumns(connection);
+    }
+
+    void ensureCreatureActionColumns(Connection connection) throws SQLException {
+        actionColumnMigrator.ensureColumns(connection);
     }
 }

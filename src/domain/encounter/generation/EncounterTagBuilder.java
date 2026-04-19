@@ -10,6 +10,8 @@ import java.util.List;
 
 final class EncounterTagBuilder {
 
+    private static final int KEEN_SENSES_PASSIVE_PERCEPTION = 15;
+
     private EncounterTagBuilder() {
     }
 
@@ -53,7 +55,7 @@ final class EncounterTagBuilder {
         if (hasActionTricks(detail.actions())) {
             tags.add("action tricks");
         }
-        if (detail.passivePerception() >= 15) {
+        if (detail.passivePerception() >= KEEN_SENSES_PASSIVE_PERCEPTION) {
             tags.add("keen senses");
         }
     }

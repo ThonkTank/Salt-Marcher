@@ -9,43 +9,38 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Lightweight startup preloader for packaged desktop launches.
  */
 public final class SaltMarcherPreloader extends Preloader {
 
-    private @Nullable Stage stage;
+    private Runnable hidePreloader = () -> {
+    };
 
     @Override
     public void start(Stage primaryStage) {
-        stage = primaryStage;
-        stage.initStyle(StageStyle.UNDECORATED);
-        stage.setTitle("SaltMarcher");
-        DesktopWindowIcons.applyTo(stage);
-        stage.setScene(createScene());
-        stage.setResizable(false);
-        stage.centerOnScreen();
-        stage.show();
+        hidePreloader = primaryStage::hide;
+        primaryStage.initStyle(StageStyle.UNDECORATED);
+        primaryStage.setTitle("SaltMarcher");
+        DesktopWindowIcons.applyTo(primaryStage);
+        primaryStage.setScene(createScene());
+        primaryStage.setResizable(false);
+        primaryStage.centerOnScreen();
+        primaryStage.show();
     }
 
     @Override
     public void handleApplicationNotification(PreloaderNotification notification) {
-        if (notification instanceof AppReadyNotification && stage != null) {
-            stage.hide();
+        if (notification instanceof AppReadyNotification) {
+            hidePreloader.run();
         }
     }
 
     @Override
     public void handleStateChangeNotification(StateChangeNotification notification) {
-        if (stage == null) {
-            return;
-        }
-        switch (notification.getType()) {
-            case BEFORE_START -> stage.hide();
-            default -> {
-            }
+        if (beforeStart(notification)) {
+            hidePreloader.run();
         }
     }
 
@@ -54,25 +49,39 @@ public final class SaltMarcherPreloader extends Preloader {
         progressIndicator.setMaxSize(56, 56);
 
         Label title = new Label("SaltMarcher");
-        title.getStyleClass().add("startup-title");
+        addStyleClass(title, "startup-title");
 
         Label subtitle = new Label("Desktop shell is starting...");
-        subtitle.getStyleClass().add("startup-subtitle");
+        addStyleClass(subtitle, "startup-subtitle");
 
         VBox card = new VBox(12, progressIndicator, title, subtitle);
-        card.getStyleClass().add("startup-card");
+        addStyleClass(card, "startup-card");
         card.setAlignment(Pos.CENTER);
         card.setPadding(new Insets(28));
 
         VBox root = new VBox(card);
-        root.getStyleClass().add("startup-root");
+        addStyleClass(root, "startup-root");
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(24));
 
         Scene scene = new Scene(root, 360, 220);
-        scene.getStylesheets().add(
-                SaltMarcherPreloader.class.getResource("/salt-marcher.css").toExternalForm());
+        BootstrapFx.addStylesheet(scene, SaltMarcherPreloader.class.getResource("/salt-marcher.css").toExternalForm());
         return scene;
+    }
+
+    @SuppressWarnings("PMD.LawOfDemeter")
+    private static boolean beforeStart(StateChangeNotification notification) {
+        return notification.getType() == StateChangeNotification.Type.BEFORE_START;
+    }
+
+    @SuppressWarnings("PMD.LawOfDemeter")
+    private static void addStyleClass(Label label, String styleClass) {
+        label.getStyleClass().add(styleClass);
+    }
+
+    @SuppressWarnings("PMD.LawOfDemeter")
+    private static void addStyleClass(VBox box, String styleClass) {
+        box.getStyleClass().add(styleClass);
     }
 
     public static final class AppReadyNotification implements PreloaderNotification {

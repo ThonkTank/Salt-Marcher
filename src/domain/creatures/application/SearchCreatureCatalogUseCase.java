@@ -23,6 +23,9 @@ final class SearchCreatureCatalogUseCase {
             int pageSize,
             int pageOffset
     ) {
+        boolean invalidQuery() {
+            return status == SearchStatus.INVALID_QUERY;
+        }
     }
 
     private static final int DEFAULT_PAGE_SIZE = 50;

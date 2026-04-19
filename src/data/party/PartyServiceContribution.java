@@ -11,7 +11,9 @@ import src.domain.party.roster.PartyRosterRepository;
  */
 public final class PartyServiceContribution implements ServiceContribution {
 
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public PartyServiceContribution() {
+        // Required by passive service contribution discovery.
     }
 
     @Override

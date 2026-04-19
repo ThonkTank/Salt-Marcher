@@ -1,7 +1,6 @@
 package bootstrap;
 
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -15,6 +14,9 @@ import java.util.stream.Stream;
 
 final class ContributionRootClassScanner {
 
+    private static final String FILE_PROTOCOL = "file";
+    private static final String JAR_PROTOCOL = "jar";
+
     private final JarClassEntrySource jarClassEntrySource = new JarClassEntrySource();
 
     Map<String, List<String>> discoverRootClasses(
@@ -27,11 +29,11 @@ final class ContributionRootClassScanner {
             Enumeration<URL> resources = classLoader.getResources(resourceRoot);
             while (resources.hasMoreElements()) {
                 URL resource = resources.nextElement();
-                if ("file".equals(resource.getProtocol())) {
+                if (FILE_PROTOCOL.equals(resource.getProtocol())) {
                     collectClassNamesFromDirectory(Path.of(resource.toURI()), packagePrefix, rootClassesBySegment);
                     continue;
                 }
-                if ("jar".equals(resource.getProtocol())) {
+                if (JAR_PROTOCOL.equals(resource.getProtocol())) {
                     collectClassNamesFromJar(resource, packagePrefix, rootClassesBySegment);
                 }
             }
@@ -51,19 +53,19 @@ final class ContributionRootClassScanner {
         }
         try (Stream<Path> segmentDirs = Files.list(rootDirectory)) {
             for (Path segmentDir : segmentDirs.filter(Files::isDirectory).sorted().toList()) {
-                String segmentName = segmentDir.getFileName().toString();
+                String segmentName = fileName(segmentDir);
                 try (Stream<Path> classFiles = Files.list(segmentDir)) {
                     for (Path classFile : classFiles
                             .filter(Files::isRegularFile)
-                            .filter(path -> path.getFileName().toString().endsWith(".class"))
-                            .filter(path -> !path.getFileName().toString().contains("$"))
-                            .sorted((left, right) -> left.getFileName().toString().compareTo(right.getFileName().toString()))
+                            .filter(path -> fileName(path).endsWith(".class"))
+                            .filter(path -> !fileName(path).contains("$"))
+                            .sorted((left, right) -> fileName(left).compareTo(fileName(right)))
                             .toList()) {
                         registerRootClass(
                                 rootClassesBySegment,
                                 packagePrefix,
                                 segmentName,
-                                classFile.getFileName().toString().replaceFirst("\\.class$", ""));
+                                fileName(classFile).replaceFirst("\\.class$", ""));
                     }
                 }
             }
@@ -97,5 +99,13 @@ final class ContributionRootClassScanner {
         rootClassesBySegment
                 .computeIfAbsent(segmentName, ignored -> new ArrayList<>())
                 .add(packagePrefix + segmentName + "." + simpleName);
+    }
+
+    private static String fileName(Path path) {
+        Path fileName = path.getFileName();
+        if (fileName == null) {
+            throw new IllegalArgumentException("Path has no file name: " + path);
+        }
+        return fileName.toString();
     }
 }

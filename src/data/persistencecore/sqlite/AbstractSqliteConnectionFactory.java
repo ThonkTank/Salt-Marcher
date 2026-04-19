@@ -1,5 +1,6 @@
 package src.data.persistencecore.sqlite;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -20,7 +21,7 @@ public abstract class AbstractSqliteConnectionFactory {
     private final Path legacyDatabasePath;
     private final String url;
 
-    private volatile boolean prepared;
+    private boolean prepared;
 
     protected AbstractSqliteConnectionFactory(Path databasePath, Path legacyDatabasePath) {
         this.databasePath = Objects.requireNonNull(databasePath, "databasePath").toAbsolutePath().normalize();
@@ -63,15 +64,18 @@ public abstract class AbstractSqliteConnectionFactory {
             return;
         }
         try {
-            Files.createDirectories(databasePath.getParent());
+            Path parent = databasePath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
             migrateLegacyDatabaseIfNeeded();
             prepared = true;
-        } catch (Exception exception) {
+        } catch (IOException exception) {
             throw new SQLException("Could not prepare SQLite path " + databasePath, exception);
         }
     }
 
-    private void migrateLegacyDatabaseIfNeeded() throws Exception {
+    private void migrateLegacyDatabaseIfNeeded() throws IOException {
         if (legacyDatabasePath.equals(databasePath) || Files.exists(databasePath) || !Files.exists(legacyDatabasePath)) {
             return;
         }

@@ -1,13 +1,14 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.entity.DungeonCorridorAggregate;
-import src.domain.dungeon.entity.DungeonDerivedState;
-import src.domain.dungeon.entity.DungeonDocument;
-import src.domain.dungeon.entity.DungeonDoorPrimitive;
-import src.domain.dungeon.entity.DungeonRelationGraph;
-import src.domain.dungeon.entity.DungeonRoomAggregate;
-import src.domain.dungeon.entity.DungeonWallPrimitive;
-import src.domain.dungeon.valueobject.DungeonCell;
+import src.domain.dungeon.map.DungeonCorridorAggregate;
+import src.domain.dungeon.map.DungeonDerivedState;
+import src.domain.dungeon.map.DungeonDocument;
+import src.domain.dungeon.map.DungeonDoorPrimitive;
+import src.domain.dungeon.map.DungeonPrimitive;
+import src.domain.dungeon.map.DungeonRelationGraph;
+import src.domain.dungeon.map.DungeonRoomAggregate;
+import src.domain.dungeon.map.DungeonWallPrimitive;
+import src.domain.dungeon.map.DungeonCell;
 import src.domain.mapcore.api.MapCellSnapshot;
 import src.domain.mapcore.api.MapCellStyle;
 import src.domain.mapcore.api.MapEdgeSnapshot;
@@ -24,6 +25,8 @@ import java.util.List;
  */
 public final class BuildDungeonDerivedStateUseCase {
 
+    private static final String DOOR_KIND = "door";
+
     public DungeonDerivedState execute(DungeonDocument document) {
         List<DungeonCell> roomCells = buildRoomCells(document);
         List<DungeonCell> corridorCells = buildCorridorCells(document);
@@ -38,8 +41,8 @@ public final class BuildDungeonDerivedStateUseCase {
 
         DungeonRelationGraph relations = new DungeonRelationGraph(
                 List.of(
-                        new DungeonRelationGraph.ContainmentRelation(room.id(), door.id(), "door"),
-                        new DungeonRelationGraph.ContainmentRelation(corridor.id(), door.id(), "door")
+                        new DungeonRelationGraph.ContainmentRelation(room.id(), door.id(), DOOR_KIND),
+                        new DungeonRelationGraph.ContainmentRelation(corridor.id(), door.id(), DOOR_KIND)
                 ),
                 List.of(
                         new DungeonRelationGraph.ConnectionRelation(corridor.id(), room.id(), "south")
@@ -48,7 +51,7 @@ public final class BuildDungeonDerivedStateUseCase {
 
         MapSelectionRef roomSelection = new MapSelectionRef("room", room.id(), "aggregate", room.label());
         MapSelectionRef corridorSelection = new MapSelectionRef("corridor", corridor.id(), "aggregate", corridor.label());
-        MapSelectionRef doorSelection = new MapSelectionRef("door", door.id(), "primitive", door.label());
+        MapSelectionRef doorSelection = new MapSelectionRef(DOOR_KIND, door.id(), "primitive", door.label());
 
         MapSurfaceSnapshot surface = new MapSurfaceSnapshot(
                 document.mapName(),
@@ -64,7 +67,7 @@ public final class BuildDungeonDerivedStateUseCase {
                                 .toList())
                 ),
                 List.of(
-                        new MapEdgeSnapshot(door.edge(), "door", door.label(), doorSelection),
+                        new MapEdgeSnapshot(door.edge(), DOOR_KIND, door.label(), doorSelection),
                         new MapEdgeSnapshot(walls.getFirst().edge(), "wall", "North Wall", null),
                         new MapEdgeSnapshot(walls.get(1).edge(), "wall", "South Wall", null)
                 ),
@@ -79,7 +82,7 @@ public final class BuildDungeonDerivedStateUseCase {
         primitives.add(door);
         primitives.addAll(walls);
         return new DungeonDerivedState(surface, List.of(room, corridor), primitives.stream()
-                .map(src.domain.dungeon.entity.DungeonPrimitive.class::cast)
+                .map(DungeonPrimitive.class::cast)
                 .toList(), relations);
     }
 

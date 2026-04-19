@@ -2,6 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-04-18
+- Enforcement Update: ADR 014 removes the temporary mechanical tolerance for
+  legacy root role buckets.
 
 ## Context
 
@@ -62,12 +64,10 @@ SaltMarcher adopts a DDD-primary domain-layer model for `src/domain/**`.
   - Service Layer for the single public application boundary
   - DDD application layer for orchestration in `application/`
   - exported boundary carriers in `api/`
-- Existing root role buckets under `src/domain/**` may remain temporarily in
-  the codebase, but standards and reviews must treat them as transitional
-  structure rather than the target model.
-- Mechanical topology checks that still encode the old bucket model must be
-  described as lagging migration debt, not as the architecture source of
-  truth.
+- ADR 014 subsequently removed temporary mechanical tolerance for existing root
+  role buckets under `src/domain/**`.
+- Mechanical topology checks must enforce the DDD target model rather than
+  encode the old bucket model.
 
 ## Alternatives Considered
 
@@ -94,3 +94,4 @@ for use-case coordination and boundary definition.
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1)
+- [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)

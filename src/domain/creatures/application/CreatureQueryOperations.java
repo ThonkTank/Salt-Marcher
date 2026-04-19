@@ -11,7 +11,6 @@ import src.domain.creatures.api.CreatureLookupStatus;
 import src.domain.creatures.api.CreatureQueryStatus;
 import src.domain.creatures.api.CreatureReadStatus;
 import src.domain.creatures.api.EncounterCandidatesResult;
-import src.domain.creatures.api.EncounterCandidate;
 import src.domain.creatures.api.EncounterCandidateQuery;
 import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
@@ -20,6 +19,7 @@ import java.util.List;
 /**
  * Internal read coordinator for the public creatures API facade.
  */
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public final class CreatureQueryOperations {
 
     private final LoadCreatureFilterOptionsUseCase loadCreatureFilterOptionsUseCase;
@@ -49,7 +49,7 @@ public final class CreatureQueryOperations {
     public CreatureCatalogPageResult searchCatalog(CreatureCatalogQuery query) {
         try {
             SearchCreatureCatalogUseCase.SearchResult result = searchCreatureCatalogUseCase.execute(query);
-            if (result.status() == SearchCreatureCatalogUseCase.SearchStatus.INVALID_QUERY) {
+            if (result.invalidQuery()) {
                 return new CreatureCatalogPageResult(
                         CreatureQueryStatus.INVALID_QUERY,
                         CreatureCatalogPage.empty(result.pageSize(), result.pageOffset()));
@@ -79,7 +79,7 @@ public final class CreatureQueryOperations {
     public EncounterCandidatesResult loadEncounterCandidates(EncounterCandidateQuery query) {
         try {
             LoadEncounterCandidatesUseCase.LoadResult result = loadEncounterCandidatesUseCase.execute(query);
-            if (result.status() == LoadEncounterCandidatesUseCase.LoadStatus.INVALID_QUERY) {
+            if (result.invalidQuery()) {
                 return new EncounterCandidatesResult(CreatureQueryStatus.INVALID_QUERY, List.of());
             }
             return new EncounterCandidatesResult(

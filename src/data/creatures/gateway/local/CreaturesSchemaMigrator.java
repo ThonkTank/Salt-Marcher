@@ -12,18 +12,24 @@ final class CreaturesSchemaMigrator {
 
     void ensureSchema(Connection connection) throws SQLException {
         tableManager.createBaseTables(connection);
-        tableManager.ensureColumns(connection, CreaturesPersistenceSchema.CREATURES);
-        tableManager.ensureColumns(connection, CreaturesPersistenceSchema.CREATURE_BIOMES);
-        tableManager.ensureColumns(connection, CreaturesPersistenceSchema.CREATURE_SUBTYPES);
-        tableManager.ensureColumns(connection, CreaturesPersistenceSchema.CREATURE_ACTIONS);
+        tableManager.ensureCreatureColumns(connection);
+        tableManager.ensureCreatureBiomeColumns(connection);
+        tableManager.ensureCreatureSubtypeColumns(connection);
+        tableManager.ensureCreatureActionColumns(connection);
         createIndexes(connection);
     }
 
     private void createIndexes(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
-            for (String indexSql : CreaturesPersistenceSchema.INDEX_SQL) {
-                statement.execute(indexSql);
-            }
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURES_TYPE_INDEX_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURES_ALIGNMENT_INDEX_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURES_XP_INDEX_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURES_NAME_INDEX_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_BIOMES_BIOME_INDEX_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_BIOMES_CREATURE_INDEX_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_SUBTYPES_SUBTYPE_INDEX_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_SUBTYPES_CREATURE_INDEX_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_CREATURE_ACTIONS_CREATURE_INDEX_SQL);
         }
     }
 }

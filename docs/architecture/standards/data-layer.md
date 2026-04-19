@@ -22,9 +22,9 @@ ownership leaking out of `src/domain/**`.
   the domain owns repository contracts for the write model; the data layer
   implements them.
 - `Read Model` is the preferred term for domain-owned read-only lookup and
-  projection contracts. Those contracts may be declared in `application/` or
-  in the owning named domain module; they are not tied to a mandatory domain
-  `query/` package.
+  projection contracts. Those contracts belong in the owning named domain
+  module; they are not tied to a mandatory domain `query/` package or the
+  thin `application/` coordination package.
 - `Data Mapper` governs translation between source-local records and domain or
   boundary types.
 - `Gateway` governs internal concrete-source adapters below the exported data
@@ -110,9 +110,9 @@ Additional rules:
 - That registration root is not a public client-facing backend boundary.
 - Data features must not require routine bootstrap edits or shell-owned
   feature-specific wiring.
-- Cross-feature backend access should go through foreign application services
-  or other foreign domain-owned contracts, not through direct imports of
-  foreign private data buckets.
+- Cross-feature backend access should go through foreign public domain
+  boundaries, not through direct imports of foreign private domain or data
+  buckets.
 
 ## Role Definitions
 
@@ -270,42 +270,59 @@ replace this document as the rule source.
 
 ## Verification Notes
 
-The canonical owner model, rule-status vocabulary, and blocking-task mapping
-for these checks live in the
-[Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+The canonical owner model, rule-status vocabulary, and blocking-task mapping live in the [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+The per-surface rule-status matrix lives in the [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1).
 
 Current mechanical ownership:
 
 - `build-harness` owns allowed data buckets, data-root placement, service-root
-  presence, and the current stricter schema-entrypoint presence blocker below
-  `src/data/**`.
+  presence, the current stricter schema-entrypoint presence blocker below
+  `src/data/**`, `ServiceContribution` root placement, and exact table-name
+  literal ownership by the feature persistence schema.
 - `PMD architecture` owns source-level root contracts for
   `*ServiceContribution`, including naming, `public final`, public no-arg
   constructor, required interface, `register(ServiceRegistry.Builder)`, no
   instance fields, no extra public/protected members, and own-feature
   domain-boundary-only registration into `ServiceRegistry`.
+  It also owns the mechanically stable source-level subset of data-role
+  discipline: obvious mutation-method bans in `query/`, concrete source API
+  bans in `repository/` and `query/`, and feature DDL literal placement in
+  `model/<Feature>PersistenceSchema.java` or generic `persistencecore/`
+  infrastructure.
 - `Error Prone` owns the shell API allowlist on data
-  `*ServiceContribution` roots, public/protected gateway return-type bans on
-  domain exposure, and public/protected repository/query signature bans on
-  leaking internal `model/`, `gateway/`, or `persistencecore` infrastructure
-  types.
+  `*ServiceContribution` roots, direct service-registry registration placement,
+  public/protected gateway return-type bans outside JDK values/containers and
+  same-feature `model/` records, and public/protected repository/query
+  signature bans on leaking internal `model/`, `gateway/`, or
+  `persistencecore` infrastructure types, including constructors.
+  It also owns the compiler-precise adapter role-contract check that keeps
+  `repository/` adapters on repository contracts and `query/` adapters on
+  read-model or query contracts, prevents public data-owned contract/carrier
+  types in adapter buckets, requires public concrete adapters to satisfy an
+  own-feature domain-owned role contract, and keeps exported domain port
+  implementations out of other data buckets.
 - `ArchUnit` owns data dependence bans on `src.view`, `shell`, and
   `bootstrap`, foreign-domain-public-boundary-only access from internal data
   packages, cycle freedom across data features, cross-feature dependency bans
-  on foreign private data buckets, and `persistencecore/` structural
-  independence from feature-specific data packages and domain packages.
+  on foreign private data buckets, `model/` independence from domain packages,
+  and `persistencecore/` structural independence from feature-specific data
+  packages and domain packages.
 
 Current `Review-Only` rules in this standard:
 
 - semantic thin `*ServiceContribution` registration roots beyond the encoded
   stateless/root-contract checks
 - `repository/` and `query/` as the only exported domain-port adapter roles in
-  the stronger semantic sense
+  the stronger semantic sense beyond the mechanically encoded contract-role
+  split, public contract-placement check, contract-presence check, and adapter
+  placement check
 - gateway internals staying private to the owning data feature in the stronger
   semantic sense
 - business-rule exclusion from `src/data/**`
 - the semantic remainder of generic-only discipline for `persistencecore/`
 - duplicate schema truth staying out of scattered helpers and string constants
+  beyond exact table-name duplicate detection and the mechanically stable
+  feature-DDL placement rule
 
 Current build-harness scope is slightly stricter than the intent wording in
 this standard:
@@ -322,6 +339,7 @@ to distinguish remote-only or otherwise non-persistence-exporting data slices.
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1)
+- [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1)

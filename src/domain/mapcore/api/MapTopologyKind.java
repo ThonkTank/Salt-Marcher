@@ -5,5 +5,9 @@ package src.domain.mapcore.api;
  */
 public enum MapTopologyKind {
     SQUARE,
-    HEX
+    HEX;
+
+    public static MapTopologyKind defaultTopology() {
+        return SQUARE;
+    }
 }

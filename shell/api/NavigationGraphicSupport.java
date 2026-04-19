@@ -17,7 +17,7 @@ public final class NavigationGraphicSupport {
 
     public static StackPane wrap(Node... nodes) {
         StackPane pane = new StackPane(nodes);
-        pane.getStyleClass().add("nav-icon");
+        addStyleClass(pane, "nav-icon");
         pane.setMinSize(18, 18);
         pane.setPrefSize(18, 18);
         pane.setMaxSize(18, 18);
@@ -27,13 +27,18 @@ public final class NavigationGraphicSupport {
 
     public static Line strokeLine(double startX, double startY, double endX, double endY) {
         Line line = new Line(startX, startY, endX, endY);
-        line.getStyleClass().add("nav-icon-stroke");
+        addStyleClass(line, "nav-icon-stroke");
         return line;
     }
 
     public static Rectangle filledRect(double x, double y, double width, double height) {
         Rectangle rect = new Rectangle(x, y, width, height);
-        rect.getStyleClass().add("nav-icon-fill");
+        addStyleClass(rect, "nav-icon-fill");
         return rect;
+    }
+
+    @SuppressWarnings("PMD.LawOfDemeter")
+    private static void addStyleClass(Node node, String styleClass) {
+        node.getStyleClass().add(styleClass);
     }
 }

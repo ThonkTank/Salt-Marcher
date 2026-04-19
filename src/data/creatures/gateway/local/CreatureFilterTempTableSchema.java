@@ -1,0 +1,39 @@
+package src.data.creatures.gateway.local;
+
+import src.data.creatures.model.CreaturesPersistenceSchema;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+final class CreatureFilterTempTableSchema {
+
+    private static final String CLEAR_TEMP_FILTER_SIZES_SQL = "DELETE FROM sm_temp_filter_sizes";
+    private static final String CLEAR_TEMP_FILTER_TYPES_SQL = "DELETE FROM sm_temp_filter_types";
+    private static final String CLEAR_TEMP_FILTER_ALIGNMENTS_SQL = "DELETE FROM sm_temp_filter_alignments";
+    private static final String CLEAR_TEMP_FILTER_SUBTYPES_SQL = "DELETE FROM sm_temp_filter_subtypes";
+    private static final String CLEAR_TEMP_FILTER_BIOMES_SQL = "DELETE FROM sm_temp_filter_biomes";
+
+    private CreatureFilterTempTableSchema() {
+    }
+
+    static void createTempTables(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(CreaturesPersistenceSchema.CREATE_TEMP_FILTER_SIZES_TABLE_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_TEMP_FILTER_TYPES_TABLE_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_TEMP_FILTER_ALIGNMENTS_TABLE_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_TEMP_FILTER_SUBTYPES_TABLE_SQL);
+            statement.execute(CreaturesPersistenceSchema.CREATE_TEMP_FILTER_BIOMES_TABLE_SQL);
+        }
+    }
+
+    static void clearTempTables(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(CLEAR_TEMP_FILTER_SIZES_SQL);
+            statement.executeUpdate(CLEAR_TEMP_FILTER_TYPES_SQL);
+            statement.executeUpdate(CLEAR_TEMP_FILTER_ALIGNMENTS_SQL);
+            statement.executeUpdate(CLEAR_TEMP_FILTER_SUBTYPES_SQL);
+            statement.executeUpdate(CLEAR_TEMP_FILTER_BIOMES_SQL);
+        }
+    }
+}

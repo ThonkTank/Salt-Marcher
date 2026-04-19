@@ -12,7 +12,7 @@ public record EncounterGenerationResult(
 ) {
 
     public EncounterGenerationResult {
-        status = status == null ? EncounterGenerationStatus.STORAGE_ERROR : status;
+        status = status == null ? EncounterGenerationStatus.defaultFailure() : status;
         encounters = encounters == null ? List.of() : List.copyOf(encounters);
         message = message == null ? "" : message;
     }

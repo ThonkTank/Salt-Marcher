@@ -1,5 +1,6 @@
 package bootstrap;
 
+import java.io.IOException;
 import java.io.InputStream;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
@@ -21,7 +22,7 @@ final class DesktopWindowIcons {
     static void applyTo(Stage stage) {
         Image icon = loadWindowIcon();
         if (icon != null) {
-            stage.getIcons().setAll(icon);
+            BootstrapFx.setWindowIcon(stage, icon);
         }
     }
 
@@ -35,8 +36,8 @@ final class DesktopWindowIcons {
             if (stream != null) {
                 cachedIcon = new Image(stream);
             }
-        } catch (Exception ignored) {
-            cachedIcon = null;
+        } catch (IOException | IllegalArgumentException ignored) {
+            return null;
         }
         return cachedIcon;
     }

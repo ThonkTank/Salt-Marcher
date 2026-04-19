@@ -1,12 +1,9 @@
 package src.view.mapshared.View;
-
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import src.view.mapshared.ViewModel.MapCellViewModel;
-
 final class SquareMapRenderTheme {
-
     static final Color BACKGROUND = Color.web("#12181c");
     static final Color GRID_MINOR = Color.web("#667782", 0.18);
     static final Color GRID_MEDIUM = Color.web("#738390", 0.16);
@@ -35,10 +32,8 @@ final class SquareMapRenderTheme {
     static final Font LABEL_FONT = Font.font("SansSerif", FontWeight.BOLD, 12);
     static final Font MARKER_FONT = Font.font("SansSerif", FontWeight.BOLD, 10);
     static final int[] GRID_STEPS = {1, 5, 10, 25};
-
     private SquareMapRenderTheme() {
     }
-
     static Color fillFor(MapCellViewModel cell) {
         if (cell.current()) {
             return CURRENT_FILL;
@@ -54,7 +49,6 @@ final class SquareMapRenderTheme {
         }
         return OPEN_FILL;
     }
-
     static Color strokeFor(MapCellViewModel cell) {
         if (cell.current()) {
             return CURRENT_STROKE;
@@ -70,7 +64,6 @@ final class SquareMapRenderTheme {
         }
         return OPEN_STROKE;
     }
-
     static Color gridTierColor(int tier) {
         return switch (tier) {
             case 0 -> GRID_MINOR;
@@ -79,7 +72,6 @@ final class SquareMapRenderTheme {
             default -> GRID_MAX;
         };
     }
-
     static double gridTierWidth(int tier) {
         return switch (tier) {
             case 0 -> 0.9;
@@ -87,5 +79,20 @@ final class SquareMapRenderTheme {
             case 2 -> 1.4;
             default -> 1.8;
         };
+    }
+    static int gridStepCount() {
+        return GRID_STEPS.length;
+    }
+    static int gridStep(int index) {
+        return GRID_STEPS[index];
+    }
+    static Color labelBorder(boolean current) {
+        return current ? CURRENT_STROKE : LABEL_BORDER;
+    }
+    static Color currentStroke() {
+        return CURRENT_STROKE;
+    }
+    static Color overlayMessageFill(boolean mapLoaded) {
+        return mapLoaded ? LOADED_NOTE : PLACEHOLDER;
     }
 }

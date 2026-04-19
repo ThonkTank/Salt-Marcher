@@ -14,7 +14,7 @@ record EncounterGenerationPreparation(
 ) {
 
     boolean success() {
-        return status == EncounterGenerationUseCase.GenerateStatus.SUCCESS;
+        return status.isSuccessful();
     }
 
     static EncounterGenerationPreparation success(
@@ -22,7 +22,7 @@ record EncounterGenerationPreparation(
             List<EncounterDraft> drafts
     ) {
         return new EncounterGenerationPreparation(
-                EncounterGenerationUseCase.GenerateStatus.SUCCESS,
+                EncounterGenerationUseCase.GenerateStatus.successfulStatus(),
                 budget,
                 drafts,
                 "Encounter options generated.");

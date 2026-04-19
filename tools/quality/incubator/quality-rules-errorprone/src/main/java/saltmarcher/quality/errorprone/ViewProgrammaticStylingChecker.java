@@ -24,18 +24,39 @@ public final class ViewProgrammaticStylingChecker extends BugChecker
             "javafx.scene.canvas.GraphicsContext",
             "javafx.scene.layout.Background",
             "javafx.scene.layout.BackgroundFill",
+            "javafx.scene.layout.BackgroundImage",
+            "javafx.scene.layout.BackgroundPosition",
+            "javafx.scene.layout.BackgroundRepeat",
+            "javafx.scene.layout.BackgroundSize",
             "javafx.scene.layout.Border",
+            "javafx.scene.layout.BorderImage",
             "javafx.scene.layout.BorderStroke",
+            "javafx.scene.layout.BorderStrokeStyle",
+            "javafx.scene.layout.BorderWidths",
             "javafx.scene.paint.Color",
+            "javafx.scene.paint.CycleMethod",
+            "javafx.scene.paint.LinearGradient",
+            "javafx.scene.paint.Paint",
+            "javafx.scene.paint.RadialGradient",
+            "javafx.scene.paint.Stop",
             "javafx.scene.text.Font",
+            "javafx.scene.text.FontPosture",
             "javafx.scene.text.FontWeight"
     );
 
     private static final Set<String> FORBIDDEN_METHODS = Set.of(
-            "setTextFill",
             "setBackground",
             "setBorder",
-            "setFont"
+            "setFill",
+            "setFont",
+            "setStroke",
+            "setStrokeDashOffset",
+            "setStrokeLineCap",
+            "setStrokeLineJoin",
+            "setStrokeMiterLimit",
+            "setStrokeType",
+            "setStrokeWidth",
+            "setTextFill"
     );
 
     private static final Set<String> FORBIDDEN_GRAPHICS_CONTEXT_METHODS = Set.of(

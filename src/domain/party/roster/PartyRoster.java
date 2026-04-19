@@ -1,9 +1,6 @@
 package src.domain.party.roster;
 
 import src.domain.party.api.CharacterDraft;
-import src.domain.party.roster.PartyMembership;
-import src.domain.party.roster.PartyMutationStatus;
-import src.domain.party.roster.PartyRestType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +25,10 @@ public final class PartyRoster {
 
     public List<PartyCharacter> characters() {
         return characters;
+    }
+
+    PartyRoster copy() {
+        return new PartyRoster(nextCharacterId, characters);
     }
 
     public PartyRosterProjection projection() {
@@ -98,7 +99,7 @@ public final class PartyRoster {
         Objects.requireNonNull(restType, "restType");
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters.size());
         for (PartyCharacter character : characters) {
-            nextCharacters.add(character.membership() == PartyMembership.ACTIVE ? character.afterRest(restType) : character);
+            nextCharacters.add(character.membership().isActive() ? character.afterRest(restType) : character);
         }
         return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
     }
@@ -107,5 +108,14 @@ public final class PartyRoster {
             PartyMutationStatus status,
             PartyRoster roster
     ) {
+        public MutationResult {
+            Objects.requireNonNull(status, "status");
+            roster = Objects.requireNonNull(roster, "roster").copy();
+        }
+
+        @Override
+        public PartyRoster roster() {
+            return roster.copy();
+        }
     }
 }

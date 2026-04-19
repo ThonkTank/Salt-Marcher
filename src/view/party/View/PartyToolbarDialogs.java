@@ -31,7 +31,7 @@ final class PartyToolbarDialogs {
         Optional<PartyCharacterEditorDialog.CharacterDraft> draft = PartyCharacterEditorDialog.showEdit(owner, member);
         draft.ifPresent(value -> viewModel.updateCharacter(
                 member.id(),
-                toViewModelRequest(value, member.membership() == PartyViewData.MembershipSelection.ACTIVE)));
+                toViewModelRequest(value, member.membership().isActive())));
     }
 
     static void confirmDelete(

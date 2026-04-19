@@ -9,13 +9,37 @@ public final class PartyViewData {
 
     public enum MembershipSelection {
         ACTIVE,
-        RESERVE
+        RESERVE;
+
+        public static MembershipSelection active() {
+            return ACTIVE;
+        }
+
+        public static MembershipSelection reserve() {
+            return RESERVE;
+        }
+
+        public boolean isActive() {
+            return this == ACTIVE;
+        }
     }
 
     public enum RestIndicatorSeverity {
         NORMAL,
         SOON,
-        OVERDUE
+        OVERDUE;
+
+        static RestIndicatorSeverity normal() {
+            return NORMAL;
+        }
+
+        static RestIndicatorSeverity soon() {
+            return SOON;
+        }
+
+        static RestIndicatorSeverity overdue() {
+            return OVERDUE;
+        }
     }
 
     public record RestStatusViewData(

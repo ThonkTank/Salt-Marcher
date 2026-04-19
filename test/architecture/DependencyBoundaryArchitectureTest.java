@@ -2,6 +2,7 @@ package architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -54,6 +55,22 @@ public final class DependencyBoundaryArchitectureTest {
                     .should(onlyDependOnDomainPublicBoundaries());
 
     @ArchTest
+    static final ArchRule viewMustNotReachBootstrapOrData =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.view..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAnyPackage("bootstrap..", "src.data..");
+
+    @ArchTest
+    static final ArchRule viewComponentsMustStayCycleFree =
+            slices()
+                    .matching("src.view.(*)..")
+                    .should()
+                    .beFreeOfCycles();
+
+    @ArchTest
     static final ArchRule domainMustStayIndependentFromOuterLayers =
             noClasses()
                     .that()
@@ -68,6 +85,13 @@ public final class DependencyBoundaryArchitectureTest {
                     .that()
                     .resideInAPackage("src.domain..")
                     .should(onlyDependOnForeignDomainApis());
+
+    @ArchTest
+    static final ArchRule domainFeaturesMustStayCycleFree =
+            slices()
+                    .matching("src.domain.(*)..")
+                    .should()
+                    .beFreeOfCycles();
 
     @ArchTest
     static final ArchRule dataMustNotReachPresentationShellOrBootstrap =
@@ -85,6 +109,15 @@ public final class DependencyBoundaryArchitectureTest {
                     .resideInAnyPackage("src.view..", "shell..", "bootstrap..");
 
     @ArchTest
+    static final ArchRule dataMustNotReachBootstrapOrPresentation =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.data..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAnyPackage("bootstrap..", "src.view..");
+
+    @ArchTest
     static final ArchRule dataFeaturesMustOnlyUseForeignFeatureApis =
             classes()
                     .that()
@@ -96,8 +129,6 @@ public final class DependencyBoundaryArchitectureTest {
                             "src.data..model..",
                             "src.data..mapper..",
                             "src.data..persistencecore..")
-                    .and()
-                    .doNotResideInAnyPackage("src.data.persistencecore..")
                     .should(onlyDependOnForeignDomainApis());
 
     @ArchTest
@@ -105,9 +136,23 @@ public final class DependencyBoundaryArchitectureTest {
             classes()
                     .that()
                     .resideInAPackage("src.data..")
-                    .and()
-                    .doNotResideInAnyPackage("src.data.persistencecore..")
                     .should(onlyDependOnOwnDataFeatureOrPersistencecore());
+
+    @ArchTest
+    static final ArchRule dataFeaturesMustStayCycleFree =
+            slices()
+                    .matching("src.data.(*)..")
+                    .should()
+                    .beFreeOfCycles();
+
+    @ArchTest
+    static final ArchRule dataModelTypesMustStayIndependentFromDomainTypes =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.data..model..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("src.domain..");
 
     @ArchTest
     static final ArchRule persistencecoreMustStayIndependentFromFeatureSpecificDataPackages =
@@ -133,6 +178,15 @@ public final class DependencyBoundaryArchitectureTest {
                     .should()
                     .dependOnClassesThat()
                     .resideInAnyPackage("src.view..", "src.domain..", "src.data..");
+
+    @ArchTest
+    static final ArchRule shellMustStayIndependentFromBootstrap =
+            noClasses()
+                    .that()
+                    .resideInAPackage("shell..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("bootstrap..");
 
     @ArchTest
     static final ArchRule bootstrapMustStayOutsideFeatureCode =
@@ -172,7 +226,7 @@ public final class DependencyBoundaryArchitectureTest {
         return new ArchCondition<>("only depend on same-feature domain internals or foreign feature public boundaries") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
-                String sourceFeature = domainFeatureName(item.getPackageName());
+                String sourceFeature = featureName(item.getPackageName());
                 if (sourceFeature == null) {
                     return;
                 }
@@ -227,6 +281,11 @@ public final class DependencyBoundaryArchitectureTest {
         String remainder = packageName.substring("src.domain.".length());
         int separatorIndex = remainder.indexOf('.');
         return separatorIndex >= 0 ? remainder.substring(0, separatorIndex) : remainder;
+    }
+
+    private static String featureName(String packageName) {
+        String domainFeatureName = domainFeatureName(packageName);
+        return domainFeatureName != null ? domainFeatureName : dataFeatureName(packageName);
     }
 
     private static ArchCondition<JavaClass> onlyDependOnOwnDataFeatureOrPersistencecore() {

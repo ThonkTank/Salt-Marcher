@@ -195,8 +195,8 @@ public final class PartyToolbarViewModel {
                     member.xpSinceLongRest(),
                     member.shortRestsTakenSinceLongRest(),
                     member.membership() == MembershipState.ACTIVE
-                            ? PartyViewData.MembershipSelection.ACTIVE
-                            : PartyViewData.MembershipSelection.RESERVE,
+                            ? PartyViewData.MembershipSelection.active()
+                            : PartyViewData.MembershipSelection.reserve(),
                     restStatuses.get(member.id())));
         }
         return viewData;
@@ -238,12 +238,12 @@ public final class PartyToolbarViewModel {
 
     private PartyViewData.RestIndicatorSeverity severityFor(RestCadenceUrgency urgency) {
         if (urgency == null) {
-            return PartyViewData.RestIndicatorSeverity.NORMAL;
+            return PartyViewData.RestIndicatorSeverity.normal();
         }
         return switch (urgency) {
-            case NORMAL -> PartyViewData.RestIndicatorSeverity.NORMAL;
-            case SOON -> PartyViewData.RestIndicatorSeverity.SOON;
-            case OVERDUE -> PartyViewData.RestIndicatorSeverity.OVERDUE;
+            case NORMAL -> PartyViewData.RestIndicatorSeverity.normal();
+            case SOON -> PartyViewData.RestIndicatorSeverity.soon();
+            case OVERDUE -> PartyViewData.RestIndicatorSeverity.overdue();
         };
     }
 

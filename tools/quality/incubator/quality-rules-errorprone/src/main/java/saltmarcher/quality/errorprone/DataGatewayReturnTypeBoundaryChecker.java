@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
@@ -27,6 +28,10 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
         if (!DataArchitectureSupport.GATEWAY_PACKAGE.matcher(packageName).matches()) {
             return Description.NO_MATCH;
         }
+        String featureName = featureName(packageName);
+        if (featureName == null) {
+            return Description.NO_MATCH;
+        }
 
         TypeElement typeElement = ASTHelpers.getSymbol(tree);
         if (typeElement == null) {
@@ -42,7 +47,7 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
             Set<String> referencedTypes = new LinkedHashSet<>();
             DataArchitectureSupport.collectTypeReferences(method.getReturnType(), referencedTypes);
             for (String referencedType : referencedTypes) {
-                if (DataArchitectureSupport.isDomainType(referencedType)) {
+                if (!isAllowedGatewayReturnType(referencedType, featureName)) {
                     violations.add("return type of " + method.getSimpleName() + " -> " + referencedType);
                 }
             }
@@ -53,7 +58,23 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
         }
         return buildDescription(tree)
                 .setMessage("Gateway package '" + packageName
-                        + "' exposes domain-facing return types: " + String.join("; ", violations))
+                        + "' exposes return types outside source-local data records or JDK value/container types: "
+                        + String.join("; ", violations))
                 .build();
+    }
+
+    private static String featureName(String packageName) {
+        Matcher matcher = DataArchitectureSupport.GATEWAY_PACKAGE.matcher(packageName);
+        return matcher.matches() ? matcher.group(1) : null;
+    }
+
+    private static boolean isAllowedGatewayReturnType(String referencedType, String featureName) {
+        if (referencedType.startsWith("src.data." + featureName + ".model.")) {
+            return true;
+        }
+        if (referencedType.startsWith("java.lang.")) {
+            return true;
+        }
+        return referencedType.startsWith("java.util.");
     }
 }

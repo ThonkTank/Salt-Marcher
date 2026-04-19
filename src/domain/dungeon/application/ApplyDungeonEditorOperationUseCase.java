@@ -4,9 +4,9 @@ import src.domain.dungeon.api.DungeonEditorOperation;
 import src.domain.dungeon.api.DungeonMapMode;
 import src.domain.dungeon.api.DungeonOperationResult;
 import src.domain.dungeon.api.DungeonSnapshot;
-import src.domain.dungeon.entity.DungeonDerivedState;
-import src.domain.dungeon.entity.DungeonDocument;
-import src.domain.dungeon.repository.DungeonDocumentStore;
+import src.domain.dungeon.map.DungeonDerivedState;
+import src.domain.dungeon.map.DungeonDocument;
+import src.domain.dungeon.map.DungeonDocumentStore;
 
 import java.util.ArrayList;
 import java.util.List;

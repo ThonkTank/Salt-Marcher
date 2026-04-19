@@ -151,7 +151,7 @@ final class PartyCharacterEditorDialog {
 
     private static Label buildErrorLabel() {
         Label errorLabel = new Label();
-        errorLabel.getStyleClass().add("party-error-label");
+        errorLabel.getStyleClass().add("status-label-error");
         errorLabel.setWrapText(true);
         return errorLabel;
     }

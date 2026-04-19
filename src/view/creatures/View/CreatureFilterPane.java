@@ -48,7 +48,7 @@ public final class CreatureFilterPane extends VBox {
         this.config = Objects.requireNonNull(config, "config");
         this.onFilterChanged = onFilterChanged;
 
-        getStyleClass().add("filter-pane");
+        getStyleClass().add("surface-root");
         setSpacing(4);
         setPadding(new javafx.geometry.Insets(6, 8, 6, 8));
 

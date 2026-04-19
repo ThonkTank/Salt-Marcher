@@ -3,9 +3,9 @@ package src.domain.dungeon.application;
 import src.domain.dungeon.api.CreateDungeonMapCommand;
 import src.domain.dungeon.api.CreateDungeonMapResult;
 import src.domain.dungeon.api.DungeonMapId;
-import src.domain.dungeon.entity.DungeonMap;
-import src.domain.dungeon.repository.DungeonDocumentStore;
-import src.domain.dungeon.repository.DungeonMapRepository;
+import src.domain.dungeon.map.DungeonMap;
+import src.domain.dungeon.map.DungeonDocumentStore;
+import src.domain.dungeon.map.DungeonMapRepository;
 
 /**
  * Creates an empty authored dungeon map aggregate.

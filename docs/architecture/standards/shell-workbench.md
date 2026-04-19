@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: Shell workbench role vocabulary, fixed shell-facing
 contracts, lifecycle expectations, dependency rules, and forbidden shell
 composition patterns.
@@ -244,33 +244,46 @@ places. That is migration debt relative to this standard, not precedent.
 
 ## Verification Notes
 
-The canonical owner model, rule-status vocabulary, and blocking-task mapping
-for these checks live in the
+The canonical owner model and rule-status vocabulary live in the
 [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-harness.md:1).
+The concrete Passive Workbench Shell rule-status and blocking-task matrix lives
+in the
+[Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/architecture-enforcement-coverage.md:1).
 
 Current mechanical coverage:
 
-- `architectureTest` enforces top-level dependency direction between
-  `bootstrap`, `shell`, `view`, `domain`, and `data`, including the
-  `shell.api` / `shell.host` split and the bootstrap-only access rule for
-  `AppShell`
-- `pmdArchitectureMain` enforces contribution entrypoint contracts, thin
-  stateless root contracts, minimal public root surface, supported
-  contribution-spec selection, and bans on legacy shell wiring types
-- `compileJava` via Error Prone enforces the current build-blocking subset of
-  contribution-root delegation into `assembly/`: no direct root wiring to
+- `shell-view-root-entrypoint-contracts` is enforced by `jQAssistant`
+  (`checkViewArchitecture`) and `PMD architecture`
+  (`pmdArchitectureMain`).
+- `shell-service-root-entrypoint-contracts` is enforced by `build-harness`
+  (`:build-harness:check`) and `PMD architecture` (`pmdArchitectureMain`).
+- `shell-api-public-surface-allowlist` is enforced by `build-harness`
+  (`:build-harness:check`).
+- `shell-api-host-split` and
+  `shell-host-passivity-dependency-direction` are enforced by
+  `architectureTest`.
+- `shell-runtime-context-api-shape` is enforced by `pmdArchitectureMain`.
+- `shell-view-root-delegation-boundary` is enforced by `compileJava` via
+  Error Prone for the current build-blocking subset: no direct root wiring to
   JavaFX, domain, data, or private view buckets; no inline `ShellScreen`
   construction; and no root use of `ShellRuntimeContext.inspector()`,
-  `services()`, or `session(...)`
-- `compileJava` via Error Prone enforces the documented type-level allowlist
-  for the feature-facing shell API surface on view contribution roots,
-  `assembly/`, and data `*ServiceContribution` roots
+  `services()`, or `session(...)`.
+- `shell-feature-facing-api-allowlist` is enforced by `compileJava` via Error
+  Prone for view contribution roots, `assembly/`, and data
+  `*ServiceContribution` roots.
+- `shell-fixed-slot-api`, `shell-contribution-spec-family`,
+  `shell-contribution-spec-metadata-purity`,
+  `shell-contribution-spec-api-shape`, `shell-screen-api-shape`, and
+  `shell-details-inspector-only` are enforced by `pmdArchitectureMain`.
+- `shell-screen-lifecycle-hook-ownership` is enforced by `compileJava` via
+  Error Prone.
 
 Runtime guards outside the build-blocking harness:
 
 - `AppShell` routes contribution registration through `ShellSlotValidator`, so
   invalid slot payloads are also rejected at shell-registration time even when
-  a source-level rule missed the exact shape
+  a source-level rule missed the exact shape. This is the current mechanical
+  owner for the full contribution-spec-to-slot matrix.
 
 Review-owned rules in this standard:
 
@@ -279,8 +292,6 @@ Review-owned rules in this standard:
 - `ShellScreen` as a current API name for prepared contribution content rather
   than proof that every contribution is a navigable screen
 - lazy-realization readiness of `createScreen(...)`
-- contribution-spec types staying pure registration metadata rather than a home
-  for feature logic or runtime lookup
 - the ban on open-ended named-region composition and manual bootstrap feature
   registries as the default extension model
 - the semantic remainder of the ban on feature-specific alternate wiring paths

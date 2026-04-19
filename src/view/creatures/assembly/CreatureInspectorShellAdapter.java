@@ -4,7 +4,9 @@ import java.util.Objects;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import src.domain.creatures.api.CreatureDetail;
+import src.view.creatures.View.CreatureInspectorContentFactory;
 import src.view.creatures.ViewModel.CreatureInspectorPublisher;
+import src.view.creatures.ViewModel.CreatureInspectorViewMapper;
 
 public final class CreatureInspectorShellAdapter implements CreatureInspectorPublisher {
 
@@ -24,7 +26,7 @@ public final class CreatureInspectorShellAdapter implements CreatureInspectorPub
         inspector.push(new InspectorEntrySpec(
                 detail.name(),
                 inspectorKey,
-                () -> CreatureInspectorContentFactory.build(detail),
+                () -> CreatureInspectorContentFactory.build(CreatureInspectorViewMapper.toViewData(detail)),
                 null
         ));
     }

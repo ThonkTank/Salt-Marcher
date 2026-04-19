@@ -2,7 +2,10 @@ package src.data.creatures.query;
 
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.gateway.local.SqliteCreatureCatalogLocalGateway;
-import src.data.creatures.mapper.CreatureCatalogMapper;
+import src.data.creatures.mapper.CreatureCatalogPageMapper;
+import src.data.creatures.mapper.CreatureDetailMapper;
+import src.data.creatures.mapper.CreatureFilterValuesMapper;
+import src.data.creatures.mapper.EncounterCandidateMapper;
 import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.domain.creatures.api.CreatureCatalogPage;
 import src.domain.creatures.api.CreatureDetail;
@@ -27,23 +30,23 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogQ
     @Override
     public DistinctFilterValues loadFilterValues() {
         CreatureFilterValuesRecord record = gateway.loadFilterValues();
-        return CreatureCatalogMapper.toQueryValues(record);
+        return CreatureFilterValuesMapper.toQueryValues(record);
     }
 
     @Override
     public CreatureCatalogPage searchCatalog(CatalogSearchSpec spec) {
-        return CreatureCatalogMapper.toDomain(gateway.searchCatalog(spec));
+        return CreatureCatalogPageMapper.toDomain(gateway.searchCatalog(spec));
     }
 
     @Override
     public @Nullable CreatureDetail loadCreatureDetail(long creatureId) {
-        return CreatureCatalogMapper.toDomain(gateway.loadCreatureDetail(creatureId));
+        return CreatureDetailMapper.toDomain(gateway.loadCreatureDetail(creatureId));
     }
 
     @Override
     public List<EncounterCandidate> loadEncounterCandidates(EncounterCandidateSpec spec) {
         return gateway.loadEncounterCandidates(spec).stream()
-                .map(CreatureCatalogMapper::toDomain)
+                .map(EncounterCandidateMapper::toDomain)
                 .toList();
     }
 }

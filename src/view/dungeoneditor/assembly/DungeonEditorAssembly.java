@@ -4,14 +4,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.Node;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.Rectangle;
-import static shell.api.NavigationGraphicSupport.filledRect;
-import static shell.api.NavigationGraphicSupport.strokeLine;
-import static shell.api.NavigationGraphicSupport.wrap;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellScreen;
 import shell.api.ShellSlot;
+import src.view.dungeoneditor.View.DungeonEditorNavigationGraphic;
 import src.view.dungeoneditor.api.DungeonEditorRuntimeSession;
 
 public final class DungeonEditorAssembly {
@@ -46,19 +42,7 @@ public final class DungeonEditorAssembly {
     }
 
     public static Supplier navigationGraphicSupplier() {
-        return DungeonEditorAssembly::navigationGraphic;
-    }
-
-    private static Node navigationGraphic() {
-        Rectangle cellA = filledRect(3, 3, 5, 5);
-        Rectangle cellB = filledRect(10, 3, 5, 5);
-        Rectangle cellC = filledRect(3, 10, 5, 5);
-        Rectangle cellD = new Rectangle(10, 10, 5, 5);
-        cellD.getStyleClass().add("nav-icon-stroke");
-        cellD.setFill(null);
-
-        Line tool = strokeLine(11, 14, 15, 10);
-        return wrap(cellA, cellB, cellC, cellD, tool);
+        return DungeonEditorNavigationGraphic::create;
     }
 
 }

@@ -50,6 +50,14 @@ public final class EncounterGenerationUseCase {
         NO_ACTIVE_PARTY,
         NO_CREATURES,
         INVALID_REQUEST,
-        STORAGE_ERROR
+        STORAGE_ERROR;
+
+        static GenerateStatus successfulStatus() {
+            return SUCCESS;
+        }
+
+        boolean isSuccessful() {
+            return this == SUCCESS;
+        }
     }
 }

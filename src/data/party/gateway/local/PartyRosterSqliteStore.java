@@ -1,7 +1,6 @@
 package src.data.party.gateway.local;
 
 import src.data.party.model.PartyCharacterRecord;
-import src.data.party.model.PartyPersistenceSchema;
 import src.data.party.model.PartyRosterRecord;
 
 import java.sql.Connection;

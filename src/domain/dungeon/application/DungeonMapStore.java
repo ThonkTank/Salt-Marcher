@@ -1,8 +1,8 @@
 package src.domain.dungeon.application;
 
 import src.domain.dungeon.api.DungeonMapId;
-import src.domain.dungeon.entity.DungeonMap;
-import src.domain.dungeon.repository.DungeonMapRepository;
+import src.domain.dungeon.map.DungeonMap;
+import src.domain.dungeon.map.DungeonMapRepository;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -51,6 +51,8 @@ public final class DungeonMapStore implements DungeonMapRepository {
 
     @Override
     public synchronized DungeonMapId nextId() {
-        return new DungeonMapId(nextId++);
+        long mapId = nextId;
+        nextId = mapId + 1L;
+        return new DungeonMapId(mapId);
     }
 }

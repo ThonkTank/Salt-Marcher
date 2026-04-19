@@ -6,6 +6,7 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Classpath
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
@@ -22,6 +23,10 @@ import javax.inject.Inject
 @DisableCachingByDefault(because = "Verification task whose result is a generated report.")
 abstract class CkjmReportTask : DefaultTask() {
 
+    init {
+        outputs.upToDateWhen { false }
+    }
+
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val compiledClasses: ConfigurableFileCollection
@@ -37,6 +42,30 @@ abstract class CkjmReportTask : DefaultTask() {
 
     @get:OutputFile
     abstract val summaryFile: RegularFileProperty
+
+    @get:Input
+    abstract val maxWeightedMethodsPerClass: org.gradle.api.provider.Property<Int>
+
+    @get:Input
+    abstract val maxDepthOfInheritanceTree: org.gradle.api.provider.Property<Int>
+
+    @get:Input
+    abstract val maxNumberOfChildren: org.gradle.api.provider.Property<Int>
+
+    @get:Input
+    abstract val maxCouplingBetweenObjects: org.gradle.api.provider.Property<Int>
+
+    @get:Input
+    abstract val maxResponseForClass: org.gradle.api.provider.Property<Int>
+
+    @get:Input
+    abstract val maxLackOfCohesionInMethods: org.gradle.api.provider.Property<Int>
+
+    @get:Input
+    abstract val maxAfferentCouplings: org.gradle.api.provider.Property<Int>
+
+    @get:Input
+    abstract val maxNumberOfPublicMethods: org.gradle.api.provider.Property<Int>
 
     @get:Internal
     abstract val projectRoot: DirectoryProperty
@@ -77,12 +106,40 @@ abstract class CkjmReportTask : DefaultTask() {
         }
 
         val outputText = outputBuffer.toString(Charsets.UTF_8)
+        val thresholds = CkjmThresholds(
+            wmc = maxWeightedMethodsPerClass.get(),
+            dit = maxDepthOfInheritanceTree.get(),
+            noc = maxNumberOfChildren.get(),
+            cbo = maxCouplingBetweenObjects.get(),
+            rfc = maxResponseForClass.get(),
+            lcom = maxLackOfCohesionInMethods.get(),
+            ca = maxAfferentCouplings.get(),
+            npm = maxNumberOfPublicMethods.get()
+        )
+        val thresholdViolations = findCkjmThresholdViolations(outputText, thresholds)
         Files.writeString(reportPath, outputText)
-        Files.writeString(summaryPath, summarizeCkjmOutput(outputText))
+        Files.writeString(summaryPath, summarizeCkjmOutput(outputText, thresholds, thresholdViolations))
 
         if (execResult.exitValue != 0) {
             val suffix = if (outputText.isBlank()) "" else "\n${outputText.trimEnd()}"
             throw GradleException("CKJM ext failed with exit code ${execResult.exitValue}.$suffix")
+        }
+
+        if (thresholdViolations.isNotEmpty()) {
+            val preview = thresholdViolations
+                .take(20)
+                .joinToString(separator = "\n") { violation ->
+                    "${violation.className}: ${violation.metric}=${violation.valueText} > ${violation.threshold}"
+                }
+            val suffix = if (thresholdViolations.size > 20) {
+                "\n...and ${thresholdViolations.size - 20} more CKJM threshold violations."
+            } else {
+                ""
+            }
+            throw GradleException(
+                "CKJM metric thresholds were exceeded. See the summary at: " +
+                    "file://${summaryPath.toAbsolutePath()}\n$preview$suffix"
+            )
         }
     }
 }

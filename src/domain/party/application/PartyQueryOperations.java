@@ -40,7 +40,7 @@ public final class PartyQueryOperations {
     public PartySnapshotResult loadSnapshot() {
         try {
             return new PartySnapshotResult(ReadStatus.SUCCESS, mapSnapshot(loadPartySnapshotUseCase.execute()));
-        } catch (RuntimeException exception) {
+        } catch (IllegalStateException exception) {
             return new PartySnapshotResult(ReadStatus.STORAGE_ERROR, emptySnapshot());
         }
     }
@@ -50,7 +50,7 @@ public final class PartyQueryOperations {
             return new ActivePartyResult(
                     ReadStatus.SUCCESS,
                     loadActivePartyUseCase.execute().stream().map(this::mapSummary).toList());
-        } catch (RuntimeException exception) {
+        } catch (IllegalStateException exception) {
             return new ActivePartyResult(ReadStatus.STORAGE_ERROR, List.of());
         }
     }
@@ -60,7 +60,7 @@ public final class PartyQueryOperations {
             return new ActivePartyCompositionResult(
                     ReadStatus.SUCCESS,
                     loadActivePartyCompositionUseCase.execute());
-        } catch (RuntimeException exception) {
+        } catch (IllegalStateException exception) {
             return new ActivePartyCompositionResult(
                     ReadStatus.STORAGE_ERROR,
                     new ActivePartyComposition(List.of(), 1));
@@ -80,7 +80,7 @@ public final class PartyQueryOperations {
                             dayStatus.totalBudgetXp(),
                             dayStatus.consumedPercent(),
                             dayStatus.restCadenceStatuses().stream().map(this::mapRestCadenceStatus).toList()));
-        } catch (RuntimeException exception) {
+        } catch (IllegalStateException exception) {
             return new AdventuringDayResult(
                     ReadStatus.STORAGE_ERROR,
                     new AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of()));

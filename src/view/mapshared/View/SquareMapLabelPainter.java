@@ -1,22 +1,17 @@
 package src.view.mapshared.View;
-
 import javafx.geometry.VPos;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.text.TextAlignment;
 import src.view.mapshared.ViewModel.MapCellViewModel;
 import src.view.mapshared.ViewModel.MapViewport;
 import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 final class SquareMapLabelPainter {
-
     private SquareMapLabelPainter() {
     }
-
     static void paintLabels(GraphicsContext graphics, MapWorkspaceRenderModel renderModel, MapViewport viewport) {
-        double scale = MapCameraController.BASE_TILE_PIXELS * viewport.zoom();
+        double scale = MapCameraController.baseTilePixels() * viewport.zoom();
         if (scale < 18.0) {
             return;
         }
@@ -28,7 +23,6 @@ final class SquareMapLabelPainter {
             paintLabelGroup(graphics, viewport, scale, group);
         }
     }
-
     private static Map<String, LabelGroup> collectLabelGroups(MapWorkspaceRenderModel renderModel) {
         Map<String, LabelGroup> groups = new LinkedHashMap<>();
         for (MapCellViewModel cell : renderModel.scene().cells()) {
@@ -41,7 +35,6 @@ final class SquareMapLabelPainter {
         }
         return groups;
     }
-
     private static void paintLabelGroup(
             GraphicsContext graphics,
             MapViewport viewport,
@@ -57,13 +50,12 @@ final class SquareMapLabelPainter {
         }
         graphics.setFill(SquareMapRenderTheme.LABEL_FILL);
         graphics.fillRoundRect(screenX - width / 2.0, screenY - height / 2.0, width, height, 14.0, 14.0);
-        graphics.setStroke(group.current() ? SquareMapRenderTheme.CURRENT_STROKE : SquareMapRenderTheme.LABEL_BORDER);
+        graphics.setStroke(SquareMapRenderTheme.labelBorder(group.current()));
         graphics.setLineWidth(group.current() ? 1.6 : 1.0);
         graphics.strokeRoundRect(screenX - width / 2.0, screenY - height / 2.0, width, height, 14.0, 14.0);
         graphics.setFill(SquareMapRenderTheme.LABEL_TEXT);
         graphics.fillText(group.label(), screenX, screenY + 0.5);
     }
-
     private static boolean offscreen(
             double screenX,
             double screenY,
@@ -76,37 +68,30 @@ final class SquareMapLabelPainter {
                 || screenX - width / 2.0 > viewport.canvasWidth()
                 || screenY - height / 2.0 > viewport.canvasHeight();
     }
-
     private static final class LabelGroup {
         private final String label;
         private double sumX;
         private double sumY;
         private int count;
         private boolean current;
-
         private LabelGroup(String label) {
             this.label = label;
         }
-
         private void include(double x, double y, boolean current) {
             sumX += x;
             sumY += y;
             count++;
             this.current = this.current || current;
         }
-
         private String label() {
             return label;
         }
-
         private double centerX() {
             return count == 0 ? 0.0 : sumX / count;
         }
-
         private double centerY() {
             return count == 0 ? 0.0 : sumY / count;
         }
-
         private boolean current() {
             return current;
         }

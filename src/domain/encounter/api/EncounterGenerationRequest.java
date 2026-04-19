@@ -1,7 +1,5 @@
 package src.domain.encounter.api;
 
-import org.jspecify.annotations.Nullable;
-
 import java.util.List;
 import java.util.Objects;
 
@@ -19,7 +17,7 @@ public record EncounterGenerationRequest(
         creatureTypes = normalize(creatureTypes);
         creatureSubtypes = normalize(creatureSubtypes);
         biomes = normalize(biomes);
-        targetDifficulty = targetDifficulty == null ? EncounterDifficultyBand.MEDIUM : targetDifficulty;
+        targetDifficulty = targetDifficulty == null ? EncounterDifficultyBand.defaultBand() : targetDifficulty;
         alternativeCount = Math.max(1, Math.min(10, alternativeCount <= 0 ? 5 : alternativeCount));
         excludedCreatureIds = excludedCreatureIds == null ? List.of() : List.copyOf(excludedCreatureIds);
         lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);

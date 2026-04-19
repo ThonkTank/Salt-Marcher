@@ -10,15 +10,15 @@ final class PartyRosterSqliteValueBinder {
 
     void bindCharacter(PreparedStatement statement, PartyCharacterRecord character) throws SQLException {
         statement.setLong(1, character.id());
-        statement.setString(2, character.name());
-        statement.setString(3, blankToNull(character.playerName()));
-        statement.setInt(4, character.level());
-        statement.setInt(5, sanitizeNonNegative(character.currentXp()));
-        statement.setInt(6, sanitizeNonNegative(character.xpSinceLongRest()));
-        statement.setInt(7, sanitizeNonNegative(character.xpSinceShortRest()));
-        statement.setInt(8, sanitizeCadence(character.shortRestsTakenSinceLongRest()));
-        statement.setInt(9, sanitizeBoundedStat(character.passivePerception()));
-        statement.setInt(10, sanitizeBoundedStat(character.armorClass()));
+        statement.setString(2, character.identity().name());
+        statement.setString(3, blankToNull(character.identity().playerName()));
+        statement.setInt(4, character.progress().level());
+        statement.setInt(5, sanitizeNonNegative(character.progress().currentXp()));
+        statement.setInt(6, sanitizeNonNegative(character.progress().xpSinceLongRest()));
+        statement.setInt(7, sanitizeNonNegative(character.progress().xpSinceShortRest()));
+        statement.setInt(8, sanitizeCadence(character.progress().shortRestsTakenSinceLongRest()));
+        statement.setInt(9, sanitizeBoundedStat(character.combat().passivePerception()));
+        statement.setInt(10, sanitizeBoundedStat(character.combat().armorClass()));
         statement.setInt(11, "ACTIVE".equalsIgnoreCase(character.membership()) ? 1 : 0);
     }
 

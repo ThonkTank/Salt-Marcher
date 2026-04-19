@@ -24,7 +24,7 @@ public final class EncounterRuntimeStatePane {
 
     public EncounterRuntimeStatePane(EncounterViewModel viewModel) {
         this.viewModel = Objects.requireNonNull(viewModel, "viewModel");
-        content.getStyleClass().add("scene-pane");
+        content.getStyleClass().add("surface-root");
         content.setPadding(new Insets(12));
         lockSummary.setWrapText(true);
         excludeSummary.setWrapText(true);

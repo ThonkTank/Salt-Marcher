@@ -93,10 +93,10 @@ public final class PartyToolbarView {
         panel.setPadding(new Insets(12));
         panel.setPrefWidth(440);
         panel.setMaxWidth(440);
-        panel.getStyleClass().add("party-toolbar-panel");
+        panel.getStyleClass().add("card-surface");
 
         Label titleLabel = new Label("Party Management");
-        titleLabel.getStyleClass().add("party-toolbar-title");
+        titleLabel.getStyleClass().add("title-large");
         Button closeButton = new Button("Close");
         closeButton.setOnAction(event -> popup.hide());
         Region spacer = new Region();

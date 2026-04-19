@@ -1,5 +1,4 @@
 package src.view.mapshared.View;
-
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -7,14 +6,11 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.StackPane;
 final class MapWorkspaceInteractionHandler {
-
     private final MapCameraController cameraController;
     private final MapWorkspaceInteractionCallbacks callbacks;
-
     private double lastDragX;
     private double lastDragY;
     private boolean middleDragActive;
-
     MapWorkspaceInteractionHandler(
             StackPane contentHost,
             MapCameraController cameraController,
@@ -33,7 +29,6 @@ final class MapWorkspaceInteractionHandler {
         contentHost.heightProperty().addListener((ignored, before, after) ->
                 handleViewportGeometryChanged(before.doubleValue(), after.doubleValue()));
     }
-
     private void handleMouseClicked(MouseEvent event) {
         if (event.getButton() != MouseButton.PRIMARY || middleDragActive) {
             return;
@@ -41,7 +36,6 @@ final class MapWorkspaceInteractionHandler {
         callbacks.onPrimaryClick(event.getX(), event.getY());
         event.consume();
     }
-
     private void handleMousePressed(MouseEvent event) {
         ((StackPane) event.getSource()).requestFocus();
         if (event.getButton() == MouseButton.MIDDLE) {
@@ -51,7 +45,6 @@ final class MapWorkspaceInteractionHandler {
             event.consume();
         }
     }
-
     private void handleMouseDragged(MouseEvent event) {
         if (!middleDragActive) {
             return;
@@ -66,14 +59,12 @@ final class MapWorkspaceInteractionHandler {
         callbacks.onViewportChanged();
         event.consume();
     }
-
     private void handleMouseReleased(MouseEvent event) {
         if (event.getButton() == MouseButton.MIDDLE) {
             middleDragActive = false;
             event.consume();
         }
     }
-
     private void handleScroll(ScrollEvent event) {
         if (event.getDeltaY() > 0.0) {
             cameraController.zoomAround(
@@ -95,7 +86,6 @@ final class MapWorkspaceInteractionHandler {
         callbacks.onViewportChanged();
         event.consume();
     }
-
     private void handleKeyPressed(KeyEvent event) {
         if (event.getCode() == KeyCode.A) {
             cameraController.panByTiles(-1.5, 0.0);
@@ -119,7 +109,6 @@ final class MapWorkspaceInteractionHandler {
         callbacks.onViewportChanged();
         event.consume();
     }
-
     private void handleViewportGeometryChanged(double before, double after) {
         if (!callbacks.mapLoaded()) {
             return;

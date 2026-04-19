@@ -1,8 +1,5 @@
 package src.domain.party.roster;
 
-import src.domain.party.roster.PartyLevelProgression;
-import src.domain.party.roster.PartyRestType;
-
 public record PartyCharacterProgress(
         int level,
         int currentXp,
@@ -38,14 +35,14 @@ public record PartyCharacterProgress(
     }
 
     public PartyCharacterProgress afterRest(PartyRestType restType) {
-        return switch (restType) {
-            case SHORT_REST -> new PartyCharacterProgress(
+        if (restType.isShortRest()) {
+            return new PartyCharacterProgress(
                     level,
                     currentXp,
                     xpSinceLongRest,
                     0,
                     Math.min(2, shortRestsTakenSinceLongRest + 1));
-            case LONG_REST -> new PartyCharacterProgress(level, currentXp, 0, 0, 0);
-        };
+        }
+        return new PartyCharacterProgress(level, currentXp, 0, 0, 0);
     }
 }
