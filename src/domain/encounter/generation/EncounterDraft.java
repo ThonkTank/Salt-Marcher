@@ -10,4 +10,13 @@ public record EncounterDraft(
         EncounterDraftMetrics metrics,
         List<EncounterDraftEntry> entries
 ) {
+
+    public EncounterDraft {
+        entries = entries == null ? List.of() : List.copyOf(entries);
+    }
+
+    @Override
+    public List<EncounterDraftEntry> entries() {
+        return List.copyOf(entries);
+    }
 }

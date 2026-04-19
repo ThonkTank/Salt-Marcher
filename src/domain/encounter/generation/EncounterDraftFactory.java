@@ -3,6 +3,8 @@ package src.domain.encounter.generation;
 import src.domain.encounter.api.EncounterDifficultyBand;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,5 +35,28 @@ public final class EncounterDraftFactory {
             Map<Long, Integer> lockedQuantities,
             List<EncounterCandidateProfile> unlockedProfiles
     ) {
+
+        public EncounterDraftRequest {
+            lockedProfiles = lockedProfiles == null ? List.of() : List.copyOf(lockedProfiles);
+            lockedQuantities = lockedQuantities == null
+                    ? Map.of()
+                    : Collections.unmodifiableMap(new LinkedHashMap<>(lockedQuantities));
+            unlockedProfiles = unlockedProfiles == null ? List.of() : List.copyOf(unlockedProfiles);
+        }
+
+        @Override
+        public Collection<EncounterCandidateProfile> lockedProfiles() {
+            return List.copyOf(lockedProfiles);
+        }
+
+        @Override
+        public Map<Long, Integer> lockedQuantities() {
+            return Collections.unmodifiableMap(new LinkedHashMap<>(lockedQuantities));
+        }
+
+        @Override
+        public List<EncounterCandidateProfile> unlockedProfiles() {
+            return List.copyOf(unlockedProfiles);
+        }
     }
 }

@@ -64,5 +64,14 @@ public final class EncounterRoleClassifier {
             String role,
             List<String> tags
     ) {
+
+        public Classification {
+            tags = tags == null ? List.of() : List.copyOf(tags);
+        }
+
+        @Override
+        public List<String> tags() {
+            return List.copyOf(tags);
+        }
     }
 }

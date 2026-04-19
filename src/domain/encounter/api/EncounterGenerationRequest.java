@@ -23,15 +23,40 @@ public record EncounterGenerationRequest(
         lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);
     }
 
+    @Override
+    public List<String> creatureTypes() {
+        return List.copyOf(creatureTypes);
+    }
+
+    @Override
+    public List<String> creatureSubtypes() {
+        return List.copyOf(creatureSubtypes);
+    }
+
+    @Override
+    public List<String> biomes() {
+        return List.copyOf(biomes);
+    }
+
+    @Override
+    public List<Long> excludedCreatureIds() {
+        return List.copyOf(excludedCreatureIds);
+    }
+
+    @Override
+    public List<EncounterLock> lockedCreatures() {
+        return List.copyOf(lockedCreatures);
+    }
+
     private static List<String> normalize(List<String> values) {
         if (values == null || values.isEmpty()) {
             return List.of();
         }
-        return values.stream()
+        return List.copyOf(values.stream()
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(value -> !value.isEmpty() && !"Any".equalsIgnoreCase(value))
                 .distinct()
-                .toList();
+                .toList());
     }
 }
