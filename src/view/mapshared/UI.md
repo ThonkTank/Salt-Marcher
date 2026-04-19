@@ -14,17 +14,14 @@ components render inside their own screens.
 ## Ownership
 
 - `View/` owns the JavaFX canvas, camera interaction, hit testing, and render
-  helpers.
+  helpers, including the current workspace-session facade.
 - `ViewModel/` owns the reusable render payloads and camera/view data that the
   canvas consumes.
-- `assembly/` owns component construction and adapts the workspace into the
-  shell-facing shared view surface.
-- `api/` owns the intentional public workspace boundary consumed by other view
-  components.
 
-## Boundary Rules
+## Boundary Status
 
-- Foreign components may reuse the workspace only through
-  `src/view/mapshared/api/**`.
-- Private `View/`, `ViewModel/`, and `assembly/` types remain internal to
-  `mapshared`.
+- The former `api/` and `assembly/` buckets have been removed.
+- Current dungeon shared code still reuses the workspace session and render
+  payloads directly during the first MVVM-topology migration pass.
+- A later pass should either absorb this workspace into the owning dungeon
+  view component or define a target-approved shared-view boundary.

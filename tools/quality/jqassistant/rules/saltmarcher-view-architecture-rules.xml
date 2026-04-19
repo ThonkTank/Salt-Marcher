@@ -6,7 +6,6 @@
         <includeConstraint refId="saltmarcher:MvvmAllowedViewBuckets"/>
         <includeConstraint refId="saltmarcher:MvvmNoLegacyBuckets"/>
         <includeConstraint refId="saltmarcher:MvvmRootOnlyViewContribution"/>
-        <includeConstraint refId="saltmarcher:MvvmAssemblyPlacement"/>
         <includeConstraint refId="saltmarcher:MvvmViewRootEntrypointCount"/>
         <includeConstraint refId="saltmarcher:MvvmNoPrivateForeignComponentDependencies"/>
     </group>
@@ -48,15 +47,15 @@
 
     <constraint id="saltmarcher:MvvmAllowedViewBuckets">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Canonical MVVM topology allows only assembly, api, View, and ViewModel below each component.</description>
+        <description>Declarative MVVM topology allows only View and ViewModel below each component root.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
             WHERE type.bucket = 'OTHER'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/<component>/{assembly,api,View,ViewModel}' AS ExpectedDirection,
+              'src/view/<component>/{View,ViewModel}' AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Unbekanntes Bucket ausserhalb der kanonischen MVVM-Topologie.' AS Details
+              'Bucket ausserhalb der deklarativen MVVM-Zieltopologie.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -64,15 +63,15 @@
 
     <constraint id="saltmarcher:MvvmNoLegacyBuckets">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Legacy buckets are migration debt and must disappear from the canonical topology.</description>
+        <description>Legacy and transitional buckets are migration debt and must disappear from the target topology.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE type.bucket IN ['Model', 'Controller', 'interactor']
+            WHERE type.bucket IN ['assembly', 'api', 'Model', 'Controller', 'interactor']
             RETURN DISTINCT
               type.relativePath AS Source,
-              'assembly/api/View/ViewModel' AS ExpectedDirection,
+              'View/ViewModel' AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Legacy-Bucket in der kanonischen MVVM-Topologie. Verschiebe die Verantwortung in die neuen Buckets.' AS Details
+              'Legacy- oder Transitional-Bucket in der deklarativen MVVM-Zieltopologie. Verschiebe die Verantwortung in View/ oder ViewModel/.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -92,25 +91,6 @@
               'src/view/<component>/<Component>ViewContribution.java' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Root-Typen ausserhalb des Shell-Entrypoints gehoeren in Buckets.' AS Details
-            ORDER BY Source
-        ]]></cypher>
-        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
-    </constraint>
-
-    <constraint id="saltmarcher:MvvmAssemblyPlacement">
-        <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>*Assembly and *ShellAdapter types belong in assembly.</description>
-        <cypher><![CDATA[
-            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE
-              (type.name ENDS WITH 'Assembly'
-               OR type.name ENDS WITH 'ShellAdapter')
-              AND type.bucket <> 'assembly'
-            RETURN DISTINCT
-              type.relativePath AS Source,
-              'src/view/<component>/assembly/**' AS ExpectedDirection,
-              type.fqn AS ActualDirection,
-              'Assembly- und Shell-Adapter-Typen muessen im assembly-Bucket leben.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -139,19 +119,18 @@
 
     <constraint id="saltmarcher:MvvmNoPrivateForeignComponentDependencies">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Cross-component view reuse may only happen through foreign api packages.</description>
+        <description>Declarative MVVM view components do not import foreign view component packages.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:MvvmViewType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:MvvmViewType)
             WHERE
               source <> target
               AND source.component <> target.component
-              AND target.bucket <> 'api'
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'Komponente -> fremdes api/' AS ExpectedDirection,
+              'keine fremden src/view/<component> Pakete' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
-              'Komponentenuebergreifende View-Wiederverwendung darf nur ueber api/ laufen.' AS Details
+              'Komponentenuebergreifende View-Abhaengigkeiten gehoeren nicht zur deklarativen MVVM-Zieltopologie.' AS Details
             ORDER BY Source, Target
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>

@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "FeatureShellApiAllowlist",
-        summary = "View roots, assembly packages, and data service roots may use only their documented shell API subset.",
+        summary = "View roots and data service roots may use only their documented shell API subset.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class FeatureShellApiAllowlistChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -49,9 +49,6 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
         if (ViewArchitectureSupport.ROOT_PACKAGE.matcher(packageName).matches()) {
             return ShellPolicy.ROOT;
         }
-        if (ViewArchitectureSupport.ASSEMBLY_PACKAGE.matcher(packageName).matches()) {
-            return ShellPolicy.ASSEMBLY;
-        }
         if (ViewArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName).matches()) {
             return ShellPolicy.DATA_ROOT;
         }
@@ -63,12 +60,6 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
             @Override
             boolean isAllowed(String referencedType) {
                 return ViewArchitectureSupport.isAllowedRootShellType(referencedType);
-            }
-        },
-        ASSEMBLY {
-            @Override
-            boolean isAllowed(String referencedType) {
-                return ViewArchitectureSupport.isAllowedAssemblyShellType(referencedType);
             }
         },
         DATA_ROOT {

@@ -5,9 +5,9 @@ import src.domain.mapcore.api.MapCellRef;
 import src.domain.mapcore.api.MapCellSnapshot;
 import src.domain.mapcore.api.MapEdgeSnapshot;
 import src.domain.mapcore.api.MapRenderPayload;
-import src.view.mapshared.api.MapCellViewModel;
-import src.view.mapshared.api.MapEdgeViewModel;
-import src.view.mapshared.api.MapWorkspaceSceneViewData;
+import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapshared.ViewModel.MapEdgeViewModel;
+import src.view.mapshared.ViewModel.MapWorkspaceSceneViewData;
 
 final class DungeonMapRenderMapper {
 

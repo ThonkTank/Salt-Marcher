@@ -4,10 +4,10 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.Viewport;
 import src.domain.mapcore.api.MapSelectionRef;
-import src.view.dungeonshared.api.DungeonSelectionInspectorEntry;
-import src.view.dungeonshared.api.DungeonSelectionPublisher;
-import src.view.mapshared.api.MapCellViewModel;
-import src.view.mapshared.api.MapWorkspaceSession;
+import src.view.dungeonshared.ViewModel.DungeonSelectionInspectorEntry;
+import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
+import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapshared.View.MapWorkspaceSession;
 import java.util.function.Consumer;
 /**
  * Shared map-list workflow for dungeon editor and travel tabs.

@@ -63,11 +63,13 @@ The runtime state panel is a separate runtime-state contribution in the shared
 shell runtime-state area. The travel tab itself leaves that area free.
 
 The travel tab contribution and the separate runtime-state contribution share
-one runtime-session API in
-`src/view/dungeonshared/api/DungeonTravelRuntimeSession`.
+one runtime-session facade in
+`src/view/dungeonshared/View/DungeonTravelRuntimeSession`.
 
-Shell-facing wiring stays local to `src/view/dungeontravel/assembly/` and
-`src/view/dungeonshared/assembly/`.
+Shell-facing wiring stays in the contribution roots. The remaining
+`src/view/dungeonshared/assembly/` package is migration debt for the shared
+map coordinator that still mixes domain coordination and JavaFX interaction
+orchestration.
 
 The `dungeonshared` runtime-state contribution owns dungeon map management and
 lightweight runtime focus context for travel.

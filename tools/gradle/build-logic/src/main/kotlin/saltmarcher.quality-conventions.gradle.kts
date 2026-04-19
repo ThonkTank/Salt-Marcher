@@ -13,6 +13,7 @@ import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
 import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
 import saltmarcher.buildlogic.tasks.CheckDesktopPackagingInputsTask
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
+import saltmarcher.buildlogic.tasks.CheckViewFxmlResourcesTask
 import saltmarcher.buildlogic.tasks.CkjmReportTask
 import saltmarcher.buildlogic.tasks.CpdCheckTask
 import saltmarcher.buildlogic.tasks.LizardCheckTask
@@ -46,6 +47,7 @@ val qualityReportEntrypoints = setOf(
 val resourcePolicyEntrypoints = setOf(
     "checkCentralizedStylesheets",
     "checkDefinedStyleClassSelectors",
+    "checkViewFxmlResources",
     "checkNoCompiledArtifactsInSource",
     "checkDesktopPackagingInputs"
 )
@@ -201,16 +203,14 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("ShellLifecycleHookOwnership")
     options.errorprone.error("StringCaseLocaleUsage")
     options.errorprone.error("StringSplitter")
-    options.errorprone.error("ViewAssemblyDependencies")
-    options.errorprone.error("ViewApiDependencies")
-    options.errorprone.error("ViewApiPublicSignatureLeak")
     options.errorprone.error("ViewModelOwnershipNaming")
     options.errorprone.error("ViewModelFrameworkIndependence")
+    options.errorprone.error("ViewPresentationDecisionLeak")
     options.errorprone.error("ViewProgrammaticStyling")
     options.errorprone.error("ViewReflectionBypass")
     options.errorprone.error("ViewRestrictedDependencies")
     options.errorprone.error("ViewRootDelegation")
-    options.errorprone.error("ViewSceneGraphPlacement")
+    options.errorprone.error("ViewSnapshotMirroring")
     options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
     options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
 }
@@ -338,6 +338,7 @@ val checkViewArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Run the canonical SaltMarcher MVVM view-architecture blocker via jQAssistant."
     dependsOn(jqassistantAnalyzeViewArchitecture)
+    dependsOn("checkViewFxmlResources")
 }
 
 // Desktop resource generation
@@ -478,6 +479,19 @@ val checkDefinedStyleClassSelectors by tasks.registering(CheckDefinedStyleClassS
     )
 }
 
+val checkViewFxmlResources by tasks.registering(CheckViewFxmlResourcesTask::class) {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validate declarative MVVM FXML resource placement and controller ownership."
+    projectRoot.set(layout.projectDirectory)
+    resourcesRoot.set(layout.projectDirectory.dir("resources"))
+    fxmlFiles.from(
+        layout.projectDirectory.asFileTree.matching {
+            include("**/*.fxml")
+            exclude("**/.git/**", "**/.gradle/**", "**/build/**")
+        }
+    )
+}
+
 val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputsTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validate main class, icon, stylesheet, and launcher metadata required for desktop packaging."
@@ -508,6 +522,7 @@ tasks.named("check") {
     dependsOn(checkViewArchitecture)
     dependsOn(checkCentralizedStylesheets)
     dependsOn(checkDefinedStyleClassSelectors)
+    dependsOn(checkViewFxmlResources)
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkDesktopPackagingInputs)
     dependsOn("spotbugsMain")
@@ -557,6 +572,10 @@ tasks.withType<CheckDefinedStyleClassSelectorsTask>().configureEach {
 }
 
 tasks.withType<CheckNoCompiledArtifactsTask>().configureEach {
+    enforceFreshGateResult()
+}
+
+tasks.withType<CheckViewFxmlResourcesTask>().configureEach {
     enforceFreshGateResult()
 }
 

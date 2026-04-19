@@ -1,6 +1,6 @@
 package src.view.dungeonshared.assembly;
 import src.domain.dungeon.api.BaseMapSnapshot;
-import src.view.mapshared.api.MapWorkspaceRenderModel;
+import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
 import java.util.function.Function;
 import java.util.function.Supplier;
 public record DungeonMapPresentation(

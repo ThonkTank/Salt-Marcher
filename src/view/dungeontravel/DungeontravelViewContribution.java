@@ -1,14 +1,25 @@
 package src.view.dungeontravel;
 
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
+import javafx.scene.Node;
 import shell.api.ContributionKey;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
 import shell.api.NavigationGroupSpec;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellScreen;
+import shell.api.ShellSlot;
 import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import shell.api.ShellViewContribution;
-import src.view.dungeontravel.assembly.DungeonTravelAssembly;
+import src.view.dungeonshared.View.DungeonSelectionInspectorContent;
+import src.view.dungeonshared.View.DungeonTravelRuntimeSession;
+import src.view.dungeonshared.ViewModel.DungeonSelectionInspectorEntry;
+import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
+import src.view.dungeontravel.View.DungeonTravelNavigationGraphic;
 
 /**
  * Travel/runtime tab root for dungeon navigation.
@@ -27,13 +38,64 @@ public final class DungeontravelViewContribution implements ShellViewContributio
                 new NavigationGroupSpec("world", "World", 20),
                 20,
                 false,
-                DungeonTravelAssembly.navigationGraphicSupplier(),
+                navigationGraphicSupplier(),
                 ShellTabMode.RUNTIME
         );
     }
 
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
-        return DungeonTravelAssembly.createScreen(runtimeContext);
+        Objects.requireNonNull(runtimeContext, "runtimeContext");
+        DungeonTravelRuntimeSession session = runtimeContext.session(
+                DungeonTravelRuntimeSession.class,
+                () -> DungeonTravelRuntimeSession.create(
+                        new DungeonSelectionInspectorShellAdapter(runtimeContext.inspector())));
+        return new ShellScreen() {
+            @Override
+            public String getTitle() {
+                return "Dungeon Travel";
+            }
+
+            @Override
+            public String getNavigationLabel() {
+                return "Travel";
+            }
+
+            @Override
+            public Map<ShellSlot, Node> slotContent() {
+                return Map.of(
+                        ShellSlot.COCKPIT_CONTROLS, session.controls(),
+                        ShellSlot.COCKPIT_MAIN, session.workspace()
+                );
+            }
+        };
+    }
+
+    private static Supplier<Node> navigationGraphicSupplier() {
+        return DungeonTravelNavigationGraphic::create;
+    }
+
+    private static final class DungeonSelectionInspectorShellAdapter implements DungeonSelectionPublisher {
+
+        private final InspectorSink inspectorSink;
+
+        private DungeonSelectionInspectorShellAdapter(InspectorSink inspectorSink) {
+            this.inspectorSink = Objects.requireNonNull(inspectorSink, "inspectorSink");
+        }
+
+        @Override
+        public void clear() {
+            inspectorSink.clear();
+        }
+
+        @Override
+        public void showSelection(DungeonSelectionInspectorEntry entry) {
+            inspectorSink.push(new InspectorEntrySpec(
+                    entry.label(),
+                    entry.inspectorKey(),
+                    () -> DungeonSelectionInspectorContent.build(entry),
+                    null
+            ));
+        }
     }
 }

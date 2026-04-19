@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: UI structure, interactions, and user-visible states for the
 creatures catalog component.
 
@@ -35,9 +35,9 @@ Visible elements:
 - status message for empty, success, and error states
 
 Selecting a creature opens the inspector detail surface for that creature.
-The root contribution delegates all slice wiring into `assembly/`.
-Presentation state and actions are owned under `ViewModel/`, while shell
-adaptation for inspector publishing remains in `assembly/`.
+The root contribution owns shell-facing screen composition and the inspector
+publication adapter. Presentation state and actions are owned under
+`ViewModel/`, while JavaFX controls and inspector content remain under `View/`.
 
 ## User-Visible States
 

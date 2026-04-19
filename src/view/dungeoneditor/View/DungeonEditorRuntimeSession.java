@@ -1,10 +1,10 @@
-package src.view.dungeoneditor.api;
+package src.view.dungeoneditor.View;
 
 import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.Node;
-import src.view.dungeonshared.api.DungeonEditorRuntimeNodes;
-import src.view.dungeonshared.api.DungeonSelectionPublisher;
+import src.view.dungeonshared.View.DungeonEditorRuntimeNodes;
+import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
 
 public final class DungeonEditorRuntimeSession {
 

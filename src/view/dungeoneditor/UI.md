@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: UI composition, interactions, and user-visible states for the
 dungeon editor component.
 
@@ -14,9 +14,9 @@ and commit-oriented interactions.
 
 Shell registration is owned by `DungeoneditorViewContribution`.
 
-Shell-facing composition and inspector publication stay inside
-`src/view/dungeoneditor/assembly/`, while the reusable runtime-session facade
-is exposed through `src/view/dungeoneditor/api/`.
+Shell-facing composition and inspector publication are owned by
+`DungeoneditorViewContribution`, while the runtime-session facade lives under
+`src/view/dungeoneditor/View/`.
 
 ## Editor Surface
 

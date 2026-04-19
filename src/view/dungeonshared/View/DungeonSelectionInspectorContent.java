@@ -1,9 +1,10 @@
-package src.view.dungeonshared.api;
+package src.view.dungeonshared.View;
 
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import src.view.dungeonshared.ViewModel.DungeonSelectionInspectorEntry;
 
 public final class DungeonSelectionInspectorContent {
 

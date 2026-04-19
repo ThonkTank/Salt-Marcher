@@ -5,12 +5,12 @@ import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
-import src.view.dungeonshared.api.DungeonSelectionPublisher;
+import src.view.dungeonshared.ViewModel.DungeonSelectionPublisher;
 import src.view.dungeonshared.View.DungeonTravelControls;
 import src.view.dungeonshared.View.DungeonTravelStatePane;
 import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
-import src.view.mapshared.api.MapWorkspaceRenderModel;
-import src.view.mapshared.api.MapWorkspaceSceneViewData;
+import src.view.mapshared.ViewModel.MapWorkspaceRenderModel;
+import src.view.mapshared.ViewModel.MapWorkspaceSceneViewData;
 /**
  * Travel/runtime coordination for the dungeon control-panel placeholder slice.
  */

@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "ViewRestrictedDependencies",
-        summary = "View packages may only depend on own View/ViewModel and foreign api boundaries.",
+        summary = "View packages may depend only on JavaFX UI APIs, own View/ViewModel, and JDK types.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewRestrictedDependencyChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -54,6 +54,6 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType.component().equals(component)) {
             return !"View".equals(viewType.bucket()) && !"ViewModel".equals(viewType.bucket());
         }
-        return !"api".equals(viewType.bucket());
+        return true;
     }
 }

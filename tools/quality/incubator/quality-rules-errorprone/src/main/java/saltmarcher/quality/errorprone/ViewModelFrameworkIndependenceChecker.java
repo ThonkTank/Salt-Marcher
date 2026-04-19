@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "ViewModelFrameworkIndependence",
-        summary = "ViewModel packages must stay free of JavaFX, shell, data, and private view dependencies.",
+        summary = "ViewModel packages may use JavaFX beans/collections but not JavaFX UI, shell, data, or view dependencies.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -49,8 +49,10 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
     }
 
     private static boolean isForbidden(String referencedType, String component) {
-        if (referencedType.startsWith("javafx.")
-                || referencedType.startsWith("shell.")
+        if (referencedType.startsWith("javafx.")) {
+            return !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
+        }
+        if (referencedType.startsWith("shell.")
                 || referencedType.startsWith("src.data.")) {
             return true;
         }

@@ -1,7 +1,7 @@
-package src.view.encounter.api;
+package src.view.encounter.View;
 
 import javafx.scene.Node;
-import src.view.encounter.assembly.EncounterRuntimeSessionFactory;
+import src.view.encounter.ViewModel.EncounterViewModel;
 
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -18,8 +18,12 @@ public final class EncounterRuntimeSession {
         this.state = Objects.requireNonNull(state, "state");
     }
 
-    public static EncounterRuntimeSession create(Object encounterService, Object creatureService) {
-        return EncounterRuntimeSessionFactory.create(encounterService, creatureService);
+    public static EncounterRuntimeSession create(EncounterViewModel viewModel) {
+        Objects.requireNonNull(viewModel, "viewModel");
+        EncounterView view = new EncounterView(viewModel);
+        EncounterRuntimeStatePane statePane = new EncounterRuntimeStatePane(viewModel);
+        viewModel.initialize();
+        return of(view.controls(), view.workspace(), statePane.content());
     }
 
     public static EncounterRuntimeSession of(Node controls, Node workspace, Node state) {

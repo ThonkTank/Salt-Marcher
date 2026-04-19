@@ -14,18 +14,18 @@ editor and travel slices.
 ## Ownership
 
 - `ViewModel/` owns reusable presentation state that is consumed by shared
-  dungeon workspace logic.
-- `assembly/` owns shared projection, domain coordination, interaction
-  orchestration, inspector adaptation, and the runtime-state contribution that
-  publishes dungeon travel state.
+  dungeon workspace logic, plus the selection/inspector payload contract.
+- `View/` owns JavaFX inspector content, runtime-session facades, and shared
+  dungeon control panes.
+- `assembly/` remains migration debt for shared projection, domain
+  coordination, and interaction orchestration that has not yet been split into
+  `View/` and `ViewModel/` roles.
 
-## Public Boundary
+## Selection Boundary
 
-- `api/` is the only exported cross-component boundary.
-- `DungeonSelectionPublisher` is the public selection/inspector contract used
-  by editor and travel code.
-- `DungeonSelectionInspectorEntry` is the exported render-ready payload for
-  that contract and keeps domain inspector snapshots out of public `api/`
-  signatures.
-- Private `View/`, `ViewModel/`, and `assembly/` types remain internal to
-  `dungeonshared`.
+- `DungeonSelectionPublisher` is the presentation-level selection/inspector
+  contract used by editor and travel roots.
+- `DungeonSelectionInspectorEntry` is the render-ready payload for that
+  contract and keeps domain inspector snapshots out of shell-facing signatures.
+- Shell inspector adaptation lives in the contribution roots, not below
+  `View/` or `ViewModel/`.

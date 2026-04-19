@@ -6,8 +6,8 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
 import src.view.dungeonshared.ViewModel.DungeonSelectionItemViewModel;
-import src.view.mapshared.api.MapCellViewModel;
-import src.view.mapshared.api.MapWorkspaceSession;
+import src.view.mapshared.ViewModel.MapCellViewModel;
+import src.view.mapshared.View.MapWorkspaceSession;
 
 final class DungeonMapSelectionMapper {
 
