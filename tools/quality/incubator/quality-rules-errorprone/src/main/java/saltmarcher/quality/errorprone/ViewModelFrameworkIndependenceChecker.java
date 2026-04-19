@@ -71,7 +71,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             return false;
         }
         if (contribution) {
-            return !"MODEL".equals(viewType.bucket()) && !"VIEW".equals(viewType.bucket());
+            return !"CONTRIBUTION".equals(viewType.bucket())
+                    && !"MODEL".equals(viewType.bucket())
+                    && !"VIEW".equals(viewType.bucket());
         }
         return !"MODEL".equals(viewType.bucket());
     }

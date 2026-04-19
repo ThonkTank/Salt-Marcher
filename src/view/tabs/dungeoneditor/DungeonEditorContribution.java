@@ -33,8 +33,10 @@ public final class DungeonEditorContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        Objects.requireNonNull(runtimeContext, "runtimeContext");
-        DungeonEditorViewModel viewModel = new DungeonEditorViewModel(new DungeonApplicationService());
+        DungeonApplicationService dungeon = Objects.requireNonNull(runtimeContext, "runtimeContext")
+                .services()
+                .require(DungeonApplicationService.class);
+        DungeonEditorViewModel viewModel = new DungeonEditorViewModel(dungeon);
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         DungeonEditorMainView main = new DungeonEditorMainView();
         DungeonEditorStateView state = new DungeonEditorStateView();

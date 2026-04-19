@@ -178,14 +178,11 @@ final class ViewArchitectureSupport {
         if (segments.length == 0) {
             return new ViewTypeInfo("VIEW_ROOT", "LEGACY");
         }
-        if ("models".equals(segments[0])) {
-            return new ViewTypeInfo("models", "MODEL");
-        }
         if ("views".equals(segments[0])) {
             return new ViewTypeInfo("views", "VIEW");
         }
         if (Set.of("tabs", "topbar", "state", "details").contains(segments[0]) && segments.length >= 3) {
-            String simpleName = segments[segments.length - 1];
+            String simpleName = segments[segments.length - 1].replaceFirst("\\$.*$", "");
             if (simpleName.endsWith("Contribution")) {
                 return new ViewTypeInfo(segments[0], "CONTRIBUTION");
             }

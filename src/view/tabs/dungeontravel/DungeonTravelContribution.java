@@ -33,8 +33,10 @@ public final class DungeonTravelContribution implements ShellContribution {
 
     @Override
     public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        Objects.requireNonNull(runtimeContext, "runtimeContext");
-        DungeonTravelViewModel viewModel = new DungeonTravelViewModel(new DungeonApplicationService());
+        DungeonApplicationService dungeon = Objects.requireNonNull(runtimeContext, "runtimeContext")
+                .services()
+                .require(DungeonApplicationService.class);
+        DungeonTravelViewModel viewModel = new DungeonTravelViewModel(dungeon);
         DungeonTravelControlsView controls = new DungeonTravelControlsView();
         DungeonTravelMainView main = new DungeonTravelMainView();
         DungeonTravelStateView state = new DungeonTravelStateView();

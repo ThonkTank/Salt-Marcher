@@ -15,7 +15,7 @@
     </group>
 
     <concept id="saltmarcher:MvvmViewType">
-        <description>Annotates compiled SaltMarcher view-layer types for the cockpit tab-model MVVM harness.</description>
+        <description>Annotates compiled SaltMarcher view-layer types for the cockpit contribution MVVM harness.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type)
             WHERE type.fqn =~ 'src\\.view\\..*'
@@ -25,8 +25,10 @@
             SET
               type:SaltMarcher:MvvmViewType,
               type.viewBucket = CASE
-                WHEN size(segments) >= 4 AND segments[2] = 'models' THEN 'MODEL'
                 WHEN size(segments) >= 4 AND segments[2] = 'views' THEN 'VIEW'
+                WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND type.name ENDS WITH 'Contribution' THEN 'CONTRIBUTION'
+                WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND type.name ENDS WITH 'ViewModel' THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND type.name ENDS WITH 'View' THEN 'VIEW'
                 ELSE 'LEGACY'
               END,
               type.relativePath = replace(type.fqn, '.', '/') + '.java'
@@ -37,10 +39,10 @@
 
     <concept id="saltmarcher:MvvmRootEntrypoint">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Labels shell contribution model entrypoints.</description>
+        <description>Labels shell contribution entrypoints.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE type.viewBucket = 'MODEL' AND (type.name ENDS WITH 'TabModel' OR type.name ENDS WITH 'WindowModel')
+            WHERE type.viewBucket = 'CONTRIBUTION'
             SET type:SaltMarcher:MvvmRootEntrypoint
             RETURN type AS MvvmRootEntrypoint
         ]]></cypher>
@@ -48,13 +50,13 @@
 
     <constraint id="saltmarcher:MvvmAllowedViewBuckets">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Cockpit MVVM topology allows active view Java only in src/view/models or src/view/views.</description>
+        <description>Cockpit MVVM topology allows active view Java only in contribution roots or reusable src/view/views.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
             WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/models or src/view/views' AS ExpectedDirection,
+              'src/view/tabs, src/view/topbar, src/view/state, src/view/details, or src/view/views' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Active view Java must use the cockpit tab-model topology.' AS Details
             ORDER BY Source
@@ -70,7 +72,7 @@
             WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/models or src/view/views' AS ExpectedDirection,
+              'src/view/tabs, src/view/topbar, src/view/state, src/view/details, or src/view/views' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Legacy component-local View/ViewModel/api/assembly-style topology is not active target code.' AS Details
             ORDER BY Source
@@ -80,18 +82,18 @@
 
     <constraint id="saltmarcher:MvvmRootOnlyViewContribution">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>View contribution models are the only shell-facing model entrypoints.</description>
+        <description>View contributions are the only shell-facing view-layer entrypoints.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
             WHERE
-              type.viewBucket = 'MODEL'
+              type.viewBucket = 'CONTRIBUTION'
               AND NOT type.name CONTAINS '$'
-              AND NOT (type.name ENDS WITH 'TabModel' OR type.name ENDS WITH 'WindowModel')
+              AND NOT type.name ENDS WITH 'Contribution'
             RETURN DISTINCT
               type.relativePath AS Source,
-              '*TabModel or *WindowModel' AS ExpectedDirection,
+              '*Contribution' AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Each file in src/view/models must be one shell contribution model.' AS Details
+              'Each shell-facing view-layer entrypoint must be one contribution.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -99,18 +101,19 @@
 
     <constraint id="saltmarcher:MvvmOneModelPerFile">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Each model source file owns exactly one top-level tab/window contribution model.</description>
+        <description>Each contribution or ViewModel source file owns exactly one top-level type.</description>
         <cypher><![CDATA[
-            MATCH (type:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'MODEL'})
-            WHERE NOT type.name CONTAINS '$'
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
+            WHERE type.viewBucket IN ['CONTRIBUTION', 'MODEL']
+              AND NOT type.name CONTAINS '$'
             WITH type.relativePath AS source, collect(DISTINCT type.name) AS typeNames
             WHERE size(typeNames) <> 1
             RETURN
               source AS Source,
-              'exactly one top-level model type' AS ExpectedDirection,
+              'exactly one top-level contribution or ViewModel type' AS ExpectedDirection,
               reduce(actual = '', typeName IN typeNames |
                 CASE WHEN actual = '' THEN typeName ELSE actual + ', ' + typeName END) AS ActualDirection,
-              'A src/view/models file must define exactly one tab/window contribution model.' AS Details
+              'A contribution or ViewModel file must define exactly one top-level type.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -167,10 +170,10 @@
             WITH count(root) AS rootCount
             WHERE rootCount = 0
             RETURN
-              'src/view/models' AS Source,
-              'at least one shell contribution model' AS ExpectedDirection,
+              'src/view/tabs, src/view/topbar, or src/view/state' AS Source,
+              'at least one shell contribution' AS ExpectedDirection,
               'none' AS ActualDirection,
-              'The shell needs discoverable contribution models.' AS Details
+              'The shell needs discoverable contributions.' AS Details
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
     </constraint>
@@ -194,9 +197,9 @@
 
     <constraint id="saltmarcher:MvvmModelDependencies">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Contribution models may bind passive views, use shell API, and call only domain public boundaries.</description>
+        <description>Contributions may bind passive views, use shell API, and call only domain public boundaries.</description>
         <cypher><![CDATA[
-            MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'MODEL'})-[:DEPENDS_ON]->(target:Java:Type)
+            MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'CONTRIBUTION'})-[:DEPENDS_ON]->(target:Java:Type)
             WHERE
               target.fqn =~ 'bootstrap\\..*'
               OR target.fqn =~ 'src\\.data\\..*'
@@ -214,9 +217,9 @@
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'shell.api, src/view/views, src/view/models, and domain public boundaries only' AS ExpectedDirection,
+              'shell.api, owning ViewModels, passive views, and domain public boundaries only' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
-              'Contribution models must not depend on old view topology, data, bootstrap, shell internals, or domain internals.' AS Details
+              'Contributions must not depend on old view topology, data, bootstrap, shell internals, or domain internals.' AS Details
             ORDER BY Source, Target
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
