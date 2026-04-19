@@ -3,7 +3,6 @@ package src.domain.encounter.generation;
 import src.domain.encounter.api.EncounterDifficultyBand;
 
 import java.util.List;
-import java.util.Optional;
 
 final class EncounterDraftCreator {
 
@@ -12,16 +11,19 @@ final class EncounterDraftCreator {
     private EncounterDraftCreator() {
     }
 
-    static Optional<EncounterDraft> create(
+    static List<EncounterDraft> create(
             EncounterDraftComposition composition,
             EncounterDraftBuildRequest request
     ) {
         if (!composition.valid()) {
-            return Optional.empty();
+            return List.of();
         }
         EncounterDraftXpProfile xpProfile = xpProfile(composition.stats(), request);
-        if (exceedsDeadlyLimit(xpProfile.adjustedXp(), request.thresholds())) {
-            return Optional.empty();
+        int maxAllowedAdjustedXp = EncounterDifficultyTargets.maxAdjustedXp(
+                EncounterDifficultyBand.DEADLY,
+                request.thresholds());
+        if (xpProfile.adjustedXp() > maxAllowedAdjustedXp * MAX_DEADLY_MULTIPLE) {
+            return List.of();
         }
         EncounterDifficultyBand achievedDifficulty = EncounterDifficultyTargets.bandFor(
                 xpProfile.adjustedXp(),
@@ -34,7 +36,7 @@ final class EncounterDraftCreator {
                         request.thresholds(),
                         xpProfile)));
         List<EncounterDraftEntry> entries = EncounterDraftEntries.sorted(composition.entries());
-        return Optional.of(new EncounterDraft(
+        return List.of(new EncounterDraft(
                 EncounterDraftTitle.from(entries),
                 achievedDifficulty,
                 metrics(composition.stats(), xpProfile, score),
@@ -51,14 +53,6 @@ final class EncounterDraftCreator {
                 request.targetDifficulty(),
                 request.thresholds());
         return new EncounterDraftXpProfile(adjustedXp, targetAdjustedXp, multiplier);
-    }
-
-    private static boolean exceedsDeadlyLimit(
-            int adjustedXp,
-            EncounterDifficultyMath.Thresholds thresholds
-    ) {
-        int maxAllowedAdjustedXp = EncounterDifficultyTargets.maxAdjustedXp(EncounterDifficultyBand.DEADLY, thresholds);
-        return adjustedXp > maxAllowedAdjustedXp * MAX_DEADLY_MULTIPLE;
     }
 
     private static EncounterDraftMetrics metrics(

@@ -134,9 +134,9 @@ direction, compiler-resolved signature checks, or graph-shaped view topology.
 `PMD architecture` owns Java source conventions and forbidden usage patterns:
 root entrypoint contracts, required root methods, thin stateless contribution
 roots, shell contribution spec selection, inline styling bans, domain source
-token bans, and legacy wiring type bans already modeled at source level. It is
-not the owner for graph topology, full compiler-signature checks, or package
-dependency direction.
+token bans, data role source-mechanics bans, and legacy wiring type bans
+already modeled at source level. It is not the owner for graph topology, full
+compiler-signature checks, or package dependency direction.
 
 ### `Error Prone`
 
@@ -146,8 +146,8 @@ framework independence, shell API allowlists, public domain-boundary signature
 purity, service-registry registration placement, presentation-state placement,
 scene-graph placement between `assembly/` and `View/`, visual-styling
 exceptions, reflection-bypass bans, and public API signature leaks from private
-buckets. It is not the owner for repository topology or broad package graph
-rules.
+buckets, including compiler-visible data adapter collaborator boundaries. It is
+not the owner for repository topology or broad package graph rules.
 
 ### `ArchUnit`
 

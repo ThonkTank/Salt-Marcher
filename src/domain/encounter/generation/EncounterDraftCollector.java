@@ -20,7 +20,8 @@ final class EncounterDraftCollector {
 
     void add(Map<Long, Integer> counts) {
         EncounterDraftComposition composition = EncounterDraftComposition.from(counts, profiles);
-        EncounterDraftCreator.create(composition, request)
-                .ifPresent(draft -> drafts.put(EncounterDraftKey.normalized(draft.entries()), draft));
+        for (EncounterDraft draft : EncounterDraftCreator.create(composition, request)) {
+            drafts.put(EncounterDraftKey.normalized(draft.entries()), draft);
+        }
     }
 }

@@ -44,7 +44,7 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         }
 
         if (sourceFacts.isDataSource()) {
-            if (isRepositoryOrQuery(sourceFacts)) {
+            if (isRepositoryQueryOrMapper(sourceFacts)) {
                 validateNoConcreteSourceMechanics(node, data, sourceFacts);
             }
             if (isQuery(sourceFacts)) {
@@ -63,7 +63,7 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         for (String token : CONCRETE_SOURCE_TOKENS) {
             if (sourceFacts.text().contains(token)) {
                 asCtx(data).addViolationWithMessage(node,
-                        "Data repository/ and query/ adapters must not own concrete source mechanics such as '"
+                        "Data repository/, query/, and mapper/ code must not own concrete source mechanics such as '"
                                 + token + "'. Move source-specific work into gateway/.");
             }
         }
@@ -99,8 +99,8 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         }
     }
 
-    private static boolean isRepositoryOrQuery(SaltMarcherSourceFacts sourceFacts) {
-        return isRepository(sourceFacts) || isQuery(sourceFacts);
+    private static boolean isRepositoryQueryOrMapper(SaltMarcherSourceFacts sourceFacts) {
+        return isRepository(sourceFacts) || isQuery(sourceFacts) || isMapper(sourceFacts);
     }
 
     private static boolean isRepository(SaltMarcherSourceFacts sourceFacts) {
@@ -111,6 +111,11 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
     private static boolean isQuery(SaltMarcherSourceFacts sourceFacts) {
         return sourceFacts.relativePath().startsWith("src/data/")
                 && sourceFacts.relativePath().contains("/query/");
+    }
+
+    private static boolean isMapper(SaltMarcherSourceFacts sourceFacts) {
+        return sourceFacts.relativePath().startsWith("src/data/")
+                && sourceFacts.relativePath().contains("/mapper/");
     }
 
     private static boolean isFeaturePersistenceSchema(SaltMarcherSourceFacts sourceFacts) {

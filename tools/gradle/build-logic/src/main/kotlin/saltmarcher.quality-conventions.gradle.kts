@@ -159,6 +159,7 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.disableWarningsInGeneratedCode.set(true)
     options.errorprone.disable("StringConcatToTextBlock")
     options.errorprone.error("EqualsNull")
+    options.errorprone.error("DataAdapterGatewayCollaboratorBoundary")
     options.errorprone.error("DataAdapterPublicSignatureLeak")
     options.errorprone.error("DataAdapterRoleContract")
     options.errorprone.error("DataGatewayReturnTypeBoundary")

@@ -286,9 +286,9 @@ Current mechanical ownership:
   domain-boundary-only registration into `ServiceRegistry`.
   It also owns the mechanically stable source-level subset of data-role
   discipline: obvious mutation-method bans in `query/`, concrete source API
-  bans in `repository/` and `query/`, and feature DDL literal placement in
-  `model/<Feature>PersistenceSchema.java` or generic `persistencecore/`
-  infrastructure.
+  bans in `repository/`, `query/`, and `mapper/`, and feature DDL literal
+  placement in `model/<Feature>PersistenceSchema.java` or generic
+  `persistencecore/` infrastructure.
 - `Error Prone` owns the shell API allowlist on data
   `*ServiceContribution` roots, direct service-registry registration placement,
   public/protected gateway return-type bans outside JDK values/containers and
@@ -299,8 +299,10 @@ Current mechanical ownership:
   `repository/` adapters on repository contracts and `query/` adapters on
   read-model or query contracts, prevents public data-owned contract/carrier
   types in adapter buckets, requires public concrete adapters to satisfy an
-  own-feature domain-owned role contract, and keeps exported domain port
-  implementations out of other data buckets.
+  own-feature domain-owned role contract, keeps exported domain port
+  implementations out of other data buckets, and keeps exported adapters
+  dependent on own-feature gateway facade types rather than concrete gateway
+  mechanics such as stores, migrators, table managers, or connection factories.
 - `ArchUnit` owns data dependence bans on `src.view`, `shell`, and
   `bootstrap`, foreign-domain-public-boundary-only access from internal data
   packages, cycle freedom across data features, cross-feature dependency bans
@@ -314,11 +316,15 @@ Current `Review-Only` rules in this standard:
   stateless/root-contract checks
 - `repository/` and `query/` as the only exported domain-port adapter roles in
   the stronger semantic sense beyond the mechanically encoded contract-role
-  split, public contract-placement check, contract-presence check, and adapter
-  placement check
+  split, public contract-placement check, contract-presence check, adapter
+  placement check, and gateway-facade collaborator check
 - gateway internals staying private to the owning data feature in the stronger
-  semantic sense
+  semantic sense beyond Java-visible signatures and direct exported-adapter
+  collaborator references
 - business-rule exclusion from `src/data/**`
+- mapper translation purity beyond concrete source API bans
+- `model/` types being truly source-local data shapes rather than domain
+  entities beyond dependency and signature-leak checks
 - the semantic remainder of generic-only discipline for `persistencecore/`
 - duplicate schema truth staying out of scattered helpers and string constants
   beyond exact table-name duplicate detection and the mechanically stable

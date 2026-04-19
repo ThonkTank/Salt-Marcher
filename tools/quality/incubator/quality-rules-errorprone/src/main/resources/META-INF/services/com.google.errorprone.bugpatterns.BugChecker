@@ -1,5 +1,6 @@
 saltmarcher.quality.errorprone.DataAdapterPublicSignatureLeakChecker
 saltmarcher.quality.errorprone.DataAdapterRoleContractChecker
+saltmarcher.quality.errorprone.DataAdapterGatewayCollaboratorBoundaryChecker
 saltmarcher.quality.errorprone.DataGatewayReturnTypeBoundaryChecker
 saltmarcher.quality.errorprone.ViewAssemblyDependencyChecker
 saltmarcher.quality.errorprone.ViewApiDependencyChecker

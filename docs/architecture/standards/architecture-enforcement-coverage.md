@@ -214,6 +214,9 @@ Mechanical trace against the MVVM standard:
 - `data-adapter-no-concrete-source-mechanics`: `repository/` and `query/`
   adapters must not directly reference concrete source APIs such as SQL, HTTP,
   or file-system mechanics via `PMD architecture` (`pmdArchitectureMain`).
+- `data-mapper-no-concrete-source-mechanics`: `mapper/` translation code must
+  not directly reference concrete source APIs such as SQL, HTTP, or file-system
+  mechanics via `PMD architecture` (`pmdArchitectureMain`).
 - `data-schema-ddl-owned-by-schema`: feature DDL literals in active source
   roots must live in the owning `model/<Feature>PersistenceSchema.java`
   declaration or generic `persistencecore/` infrastructure via
@@ -235,6 +238,11 @@ Mechanical trace against the MVVM standard:
 - `data-adapter-role-contract`: `repository/` adapters implement repository
   contracts and `query/` adapters implement read-model/query contracts via
   `Error Prone` (`compileJava`).
+- `data-exported-adapter-gateway-collaborator-boundary`: `repository/` and
+  `query/` adapters may depend on own-feature `gateway/local` or
+  `gateway/remote` facade types ending in `Gateway`, but must not directly
+  depend on source-mechanic gateway collaborators such as stores, migrators,
+  table managers, or connection factories via `Error Prone` (`compileJava`).
 - `data-adapter-public-contract-placement`: public non-adapter boundary types
   such as interfaces, records, enums, or abstract classes must not be declared
   in `repository/` or `query/`; data-facing contracts and carriers belong in
@@ -249,15 +257,60 @@ Mechanical trace against the MVVM standard:
   `query/` must not implement exported domain repository or read-model/query
   port contracts via `Error Prone` (`compileJava`).
 
+Mechanical trace against the data-layer standard:
+
+- Data topology and entrypoint presence are enforced by `build-harness`:
+  allowed data buckets, `gateway/local` and `gateway/remote`, `persistencecore`
+  bucket placement, exactly one data root, service-contribution placement, and
+  the current stricter schema declaration requirement.
+- `*ServiceContribution` root shape is enforced by PMD, direct service-registry
+  call placement and shell API access are enforced by Error Prone, and allowed
+  registered service types are checked by PMD against own-feature domain
+  boundaries.
+- `repository/` and `query/` as exported adapter roles are enforced by Error
+  Prone through own-feature domain contract presence, repository-versus-query
+  contract role matching, public contract placement bans, and implementation
+  placement for exported domain ports.
+- `gateway/` as the concrete-source boundary is enforced by `build-harness`
+  placement, PMD concrete-source API bans outside gateways, Error Prone
+  public/protected gateway return-type restrictions, and Error Prone exported
+  adapter gateway-facade access.
+- `model/` as source-local schema and carrier ownership is enforced by
+  `build-harness` schema/table-name ownership, PMD DDL placement, ArchUnit
+  independence from domain packages, and Error Prone bans on leaking internal
+  model types through public adapter signatures.
+- `mapper/` as translation-only code is mechanically enforced only for source
+  mechanics placement through PMD; semantic normalization and validation
+  meaning remains review-owned.
+- `persistencecore/` is enforced as shared infrastructure by `build-harness`
+  placement, ArchUnit independence from feature-specific data packages and
+  domain packages, and Error Prone signature-leak checks when adapters expose
+  internal persistencecore types.
+- Cross-layer and cross-feature forbidden patterns are enforced through ArchUnit
+  for view/shell/bootstrap independence, foreign-domain public seams, data
+  feature cycle freedom, and foreign private data bucket bans.
+
 `Review-Only`:
 
-- Semantic thinness of `*ServiceContribution` beyond root-shape checks, the
-  stronger semantic meaning of `repository/` and `query/` as exported adapter
-  boundaries beyond the encoded contract presence and placement checks,
-  business-rule exclusion from `src/data/**`, feature-private gateway
-  containment beyond Java-visible signatures, generic-only discipline for
-  `persistencecore/`, and duplicate schema truth outside exact table-name
-  literal and mechanically stable DDL placement checks.
+- Semantic thinness of `*ServiceContribution` beyond root-shape and registration
+  checks.
+- Business-rule, invariant, ranking-policy, and presentation-policy exclusion
+  from `src/data/**` when it is not visible as stable source tokens,
+  dependencies, or signatures.
+- Whether `repository/` and `query/` remain semantically limited to exported
+  domain-port adapter roles beyond the encoded contract presence, contract
+  role, public boundary placement, and gateway-facade checks.
+- Whether `gateway/` internals remain feature-private in the stronger semantic
+  sense beyond Java-visible public/protected return types and direct adapter
+  collaborator references.
+- Whether `model/` types are truly source-local data shapes rather than domain
+  entities beyond the domain-dependency and public-signature leak bans.
+- Whether mappers only translate rather than normalize or validate with domain
+  meaning.
+- Generic-only discipline for `persistencecore/` beyond package dependency and
+  signature-leak checks.
+- Duplicate schema truth outside exact table-name literals and mechanically
+  stable DDL placement checks.
 
 ## System Layer
 
