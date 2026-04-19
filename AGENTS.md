@@ -89,8 +89,11 @@ Use the documentation tree in this order:
 - If the start-of-task WIP commit cannot complete exactly as required, report
   the concrete blocker together with the preserved local state instead of
   silently continuing.
-- After each completed implementation pass, rerun `./gradlew build` before
-  handoff. A pass without that rerun is incomplete and must remain WIP.
+- After each completed implementation pass, rerun
+  `./gradlew build --console=plain` from the repository root before handoff.
+  If you are working inside `src/` or another subdirectory, set the command
+  working directory to the repository root instead of using `../gradlew`. A pass
+  without that rerun is incomplete and must remain WIP.
 - When the desktop app is the manual test surface, run
   `./gradlew installDesktopApp` after the successful build before handoff
   unless the user explicitly waives reinstall or the task is purely non-code

@@ -276,7 +276,7 @@ Concrete rule IDs and checker names are recorded in the
     interface, required root methods, stateless root shape, allowed
     contribution-spec construction, and no extra public/protected root members
   - `Error Prone` on `compileJava` owns compiler-precise MVVM bans:
-    positive root `createScreen(...)` delegation into own `assembly/`;
+    `createScreen(...)` returns backed by own `assembly/` logic; root
     `ShellScreen` construction bans; direct root use of
     `ShellRuntimeContext.inspector()` / `services()` / `session(...)`;
     documented shell API allowlist checks for roots and `assembly/`; restricted

@@ -35,7 +35,12 @@ review-only boundary remain defined in the
 - `view-root-contracts` via PMD `SaltMarcherEntrypointRule`
   (`pmdArchitectureMain`).
 - `view-root-delegation-boundary` via Error Prone `ViewRootDelegation`
-  (`compileJava`).
+  (`compileJava`). This requires `createScreen(ShellRuntimeContext)` to return
+  a `ShellScreen` obtained from own-component `assembly/` logic, and blocks
+  direct root references to JavaFX, domain, data, own private view buckets other
+  than `assembly/`, foreign view components, direct `ShellScreen` construction,
+  and direct `ShellRuntimeContext.inspector()`, `services()`, or `session(...)`
+  lookup.
 - `view-shell-api-allowlist` via Error Prone `FeatureShellApiAllowlist`
   (`compileJava`).
 - `view-assembly-dependency-boundary` via Error Prone
@@ -58,6 +63,34 @@ review-only boundary remain defined in the
   `ViewApiPublicSignatureLeak` (`compileJava`).
 - `view-component-cycle-freedom` via ArchUnit
   `viewComponentsMustStayCycleFree` (`architectureTest`).
+
+Mechanical trace against the MVVM standard:
+
+- Component topology in `src/view/<component>/{assembly,api,View,ViewModel}`
+  and the ban on `Model/`, `Controller/`, and `interactor/` buckets are enforced
+  by the jQAssistant MVVM topology rules.
+- The component-root rule of exactly one `*ViewContribution`, plus root naming,
+  constructor, implemented shell interface, required methods, statelessness, and
+  supported contribution spec construction, is enforced by jQAssistant and PMD.
+- Inward source dependency direction is enforced by Error Prone for root,
+  `assembly/`, `View/`, `ViewModel/`, and `api/` packages, with ArchUnit and
+  jQAssistant covering broader component cycles and cross-component private
+  bucket access.
+- `assembly/` is the only shell-facing composition boundary in mechanically
+  visible type references: shell API access is allowlisted there and at roots,
+  while `View/` and `ViewModel/` shell references are blocked.
+- `View/` is the only bucket allowed to own JavaFX scene-graph implementation
+  broadly; `assembly/` may reference only `javafx.scene.Node` as the shell slot
+  boundary type, and `ViewModel/` may not reference JavaFX at all.
+- Public view reuse is mechanically public only through foreign `api/` packages;
+  `*shared` component naming does not weaken the cross-component private-bucket
+  ban, and public `api/` signatures may not leak private bucket types.
+- Presentation-state carrier placement is mechanically name-based for
+  `*ViewModel`, `*ViewData`, `*State`, `*Status`, `*Section`, and `*Model`
+  style names outside `ViewModel/` or intentional `api/`.
+- Reflection bypasses under `src/view/**`, including `Class.forName(...)`,
+  `ClassLoader.loadClass(...)`, `MethodHandles.Lookup.findClass(...)`, and
+  direct `java.lang.reflect.*` references, are blocked by Error Prone.
 
 `Review-Only`:
 

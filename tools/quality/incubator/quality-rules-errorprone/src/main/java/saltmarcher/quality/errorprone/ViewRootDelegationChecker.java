@@ -6,9 +6,16 @@ import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.ConditionalExpressionTree;
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.ParenthesizedTree;
+import com.sun.source.tree.ReturnTree;
+import com.sun.source.tree.TypeCastTree;
+import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
@@ -34,7 +41,7 @@ public final class ViewRootDelegationChecker extends BugChecker
 
         Set<String> violations = new LinkedHashSet<>();
         boolean[] hasCreateScreen = {false};
-        boolean[] delegatesCreateScreenToAssembly = {false};
+        boolean[] hasAssemblyBackedReturn = {false};
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
             if (isForbiddenReference(referencedType, component)) {
                 violations.add("reference -> " + referencedType);
@@ -43,19 +50,42 @@ public final class ViewRootDelegationChecker extends BugChecker
 
         new TreePathScanner<Void, Void>() {
             private boolean insideCreateScreen;
+            private final Set<String> assemblyBackedLocals = new LinkedHashSet<>();
 
             @Override
             public Void visitMethod(MethodTree methodTree, Void unused) {
                 boolean previousInsideCreateScreen = insideCreateScreen;
+                Set<String> previousAssemblyBackedLocals = new LinkedHashSet<>(assemblyBackedLocals);
                 if (isCreateScreenMethod(methodTree)) {
                     hasCreateScreen[0] = true;
                     insideCreateScreen = true;
+                    assemblyBackedLocals.clear();
                 }
                 try {
                     return super.visitMethod(methodTree, unused);
                 } finally {
                     insideCreateScreen = previousInsideCreateScreen;
+                    assemblyBackedLocals.clear();
+                    assemblyBackedLocals.addAll(previousAssemblyBackedLocals);
                 }
+            }
+
+            @Override
+            public Void visitVariable(VariableTree variableTree, Void unused) {
+                if (insideCreateScreen
+                        && isAssemblyBackedExpression(variableTree.getInitializer(), component, assemblyBackedLocals)) {
+                    assemblyBackedLocals.add(variableTree.getName().toString());
+                }
+                return super.visitVariable(variableTree, unused);
+            }
+
+            @Override
+            public Void visitReturn(ReturnTree returnTree, Void unused) {
+                if (insideCreateScreen
+                        && isAssemblyBackedExpression(returnTree.getExpression(), component, assemblyBackedLocals)) {
+                    hasAssemblyBackedReturn[0] = true;
+                }
+                return super.visitReturn(returnTree, unused);
             }
 
             @Override
@@ -64,9 +94,6 @@ public final class ViewRootDelegationChecker extends BugChecker
                 if (symbol != null) {
                     String owner = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
                     String methodName = symbol.getSimpleName().toString();
-                    if (insideCreateScreen && isOwnAssemblyReference(owner, component)) {
-                        delegatesCreateScreenToAssembly[0] = true;
-                    }
                     if ("shell.api.ShellRuntimeContext".equals(owner)
                             && FORBIDDEN_RUNTIME_CONTEXT_METHODS.contains(methodName)) {
                         violations.add("runtime access -> ShellRuntimeContext." + methodName + "()");
@@ -81,9 +108,6 @@ public final class ViewRootDelegationChecker extends BugChecker
                 if (ASTHelpers.getType(newClassTree) != null && ASTHelpers.getType(newClassTree).tsym instanceof Symbol.ClassSymbol classSymbol) {
                     constructedType = classSymbol.getQualifiedName().toString();
                 }
-                if (insideCreateScreen && isOwnAssemblyReference(constructedType, component)) {
-                    delegatesCreateScreenToAssembly[0] = true;
-                }
                 if (newClassTree.getClassBody() != null) {
                     if ("shell.api.ShellScreen".equals(constructedType)) {
                         violations.add("direct shell screen construction -> " + constructedType);
@@ -93,8 +117,8 @@ public final class ViewRootDelegationChecker extends BugChecker
             }
         }.scan(tree, null);
 
-        if (hasCreateScreen[0] && !delegatesCreateScreenToAssembly[0]) {
-            violations.add("createScreen delegation -> no call to src.view."
+        if (hasCreateScreen[0] && !hasAssemblyBackedReturn[0]) {
+            violations.add("createScreen return -> no ShellScreen returned from src.view."
                     + component
                     + ".assembly.*");
         }
@@ -123,6 +147,35 @@ public final class ViewRootDelegationChecker extends BugChecker
             return !"assembly".equals(viewType.bucket()) && !"ROOT".equals(viewType.bucket());
         }
         return true;
+    }
+
+    private static boolean isAssemblyBackedExpression(
+            ExpressionTree expression,
+            String component,
+            Set<String> assemblyBackedLocals) {
+        if (expression == null) {
+            return false;
+        }
+        return switch (expression) {
+            case MethodInvocationTree methodInvocationTree ->
+                    isOwnAssemblyReference(
+                            ViewArchitectureSupport.getQualifiedOwnerTypeName(ASTHelpers.getSymbol(methodInvocationTree)),
+                            component);
+            case NewClassTree newClassTree ->
+                    ASTHelpers.getType(newClassTree) != null
+                            && ASTHelpers.getType(newClassTree).tsym instanceof Symbol.ClassSymbol classSymbol
+                            && isOwnAssemblyReference(classSymbol.getQualifiedName().toString(), component);
+            case IdentifierTree identifierTree ->
+                    assemblyBackedLocals.contains(identifierTree.getName().toString());
+            case ParenthesizedTree parenthesizedTree ->
+                    isAssemblyBackedExpression(parenthesizedTree.getExpression(), component, assemblyBackedLocals);
+            case TypeCastTree typeCastTree ->
+                    isAssemblyBackedExpression(typeCastTree.getExpression(), component, assemblyBackedLocals);
+            case ConditionalExpressionTree conditionalExpressionTree ->
+                    isAssemblyBackedExpression(conditionalExpressionTree.getTrueExpression(), component, assemblyBackedLocals)
+                            && isAssemblyBackedExpression(conditionalExpressionTree.getFalseExpression(), component, assemblyBackedLocals);
+            default -> false;
+        };
     }
 
     private static boolean isCreateScreenMethod(MethodTree methodTree) {
