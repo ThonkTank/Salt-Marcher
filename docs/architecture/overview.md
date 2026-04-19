@@ -35,8 +35,8 @@ tools/       build infrastructure, quality platforms, and engineering scripts
   workspace hosting, inspector/details hosting, runtime-state hosting, and
   shared runtime-session state used by multiple contributions.
 - `src/view/<component>/` owns presentation behavior and user interaction.
-  The detailed role model, dependency rules, reuse boundary, and enforcement
-  targets live only in the dedicated MVVM standard.
+  The detailed declarative MVVM role model, dependency rules, FXML target, and
+  enforcement targets live only in the dedicated MVVM standard.
 - `src/domain/<feature>/` owns business meaning, invariants, policy decisions,
   aggregates, application services, exported boundary types, and named domain
   modules inside one bounded context. The detailed DDD model, aggregate rules,
@@ -125,15 +125,16 @@ runtime capabilities through service contributions.
   `ServiceRegistry`.
 - `shell/api/ShellRuntimeContext` provides shell-owned shared services such as
   runtime-capability lookup, inspector access, and per-shell runtime sessions.
-- `*ViewContribution` remains a thin root that delegates routine shell-facing
-  composition into `assembly/`.
+- `*ViewContribution` remains a thin shell-facing root that composes the
+  FXML-backed view, view model, domain boundary, and shell slots.
 - Bootstrap discovers both generically. Adding a feature should not require
   routine shell or bootstrap edits.
 
-The view layer follows MVVM for `View/` and `ViewModel/` responsibilities, with
-SaltMarcher-specific composition in `assembly/` and justified optional public
-reuse or runtime-session boundaries in `api/`. Detailed rules live only in the
-dedicated MVVM standard.
+The view layer target follows declarative JavaFX MVVM: FXML and `View/`
+controllers own UI structure and JavaFX-only behavior, `ViewModel/` owns
+bindable presentation state and actions, and the domain layer is the MVVM
+Model behind each feature's root application service. Detailed rules live only
+in the dedicated MVVM standard.
 
 ## Presentation Styling
 
@@ -174,6 +175,7 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 004: Shared Runtime Session Store](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/004-shared-runtime-session-store.md:1)
 - [ADR 005: MVVM And Assembly Boundary In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-view-mvvm-and-assembly-boundary.md:1)
 - [ADR 007: Shared View API Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/007-shared-view-api-boundary.md:1)
+- [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
 - [ADR 008: Top-Level Repository Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/008-top-level-repository-taxonomy.md:1)
 - [ADR 009: Domain-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/009-domain-layer-architecture-model.md:1)
 - [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)

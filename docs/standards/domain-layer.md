@@ -1,9 +1,9 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-19
-Source of Truth: Binding DDD-primary domain-layer model, bounded-context
-structure, aggregate rules, and review-versus-enforcement expectations for
-`src/domain/**`.
+Source of Truth: Binding DDD-primary domain-layer model, single callable
+application-service boundary, bounded-context structure, aggregate rules, and
+review-versus-enforcement expectations for `src/domain/**`.
 
 # Domain Layer Standard
 
@@ -11,7 +11,7 @@ structure, aggregate rules, and review-versus-enforcement expectations for
 
 SaltMarcher treats each `src/domain/<feature>/` slice primarily as one DDD
 bounded context that owns business meaning, invariants, aggregates, domain
-services, domain events, and domain-owned contracts behind one thin
+services, domain events, and domain-owned contracts behind exactly one callable
 application-service boundary.
 
 ## Pattern Alignment
@@ -31,6 +31,11 @@ application-service boundary.
 
 - The domain layer is the single authored home for business rules and domain
   language.
+- Each domain feature exposes exactly one callable client boundary:
+  `<PascalFeatureName>ApplicationService.java`.
+- `api/` is carrier-only. It may define command, query, result, snapshot, enum,
+  and sealed carrier abstractions, but it must not define alternate service,
+  facade, repository, port, or gateway interfaces for view clients.
 - Object-centred and aggregate-centred modelling is the default. Put behavior
   on the entity, value object, aggregate, or domain service that owns the
   concept.
@@ -53,7 +58,7 @@ The canonical domain layout is:
 src/domain/
   <feature>/
     <PascalFeatureName>ApplicationService.java
-    api/
+    api/                 carrier types only
     application/
     <domain-module>/
     <domain-module>/
@@ -61,7 +66,8 @@ src/domain/
 
 Rules:
 
-- `api/` is the exported boundary-carrier surface.
+- `api/` is the exported boundary-carrier surface, not a callable service
+  boundary.
 - `application/` is the thin application layer.
 - Every additional directory under the feature root must be a named domain
   module expressed in the ubiquitous language of that bounded context.
@@ -76,7 +82,7 @@ Rules:
 
 The canonical domain interaction flow is:
 
-1. view or assembly code calls one feature's `*ApplicationService`
+1. view code calls one feature's root `*ApplicationService`
 2. the application layer coordinates the use case
 3. mutation enters the owning aggregate root
 4. domain-owned contracts are satisfied by outer adapters
@@ -86,6 +92,8 @@ Additional rules:
 
 - The root `*ApplicationService` is the only public client-facing backend
   boundary below the view layer.
+- Foreign clients may use `api/` types only as parameters, results, snapshots,
+  statuses, and other carriers of the root application-service boundary.
 - Domain-owned contracts are inner backend ports, not alternate client
   boundaries.
 - Root application services must not instantiate infrastructure
@@ -137,6 +145,8 @@ context.
   - keep foreign consumers off domain internals
 - Rules:
   - `api/` types are carriers, not invariant owners
+  - `api/` must not expose callable service, facade, repository, port, gateway,
+    factory, or locator contracts
   - do not move domain policy into `api/` to keep model types artificially
     thin
 
@@ -288,6 +298,10 @@ integration relationship to the other bounded contexts.
 ## Forbidden Patterns
 
 - business rules implemented in `view` or `data`
+- additional callable client boundaries beside the root
+  `<Feature>ApplicationService`
+- service, facade, repository, port, gateway, factory, or locator interfaces
+  exported from domain `api/`
 - passive aggregates or entities whose behavior lives mainly in application
   coordinators
 - `application/` as a generic business-logic dump
@@ -402,8 +416,10 @@ Current mechanical ownership:
 
 Candidate mechanical checks:
 
-- None currently accepted. Candidate checks need a stable mechanical shape
-  before promotion.
+- `domain-single-callable-boundary`: strengthen current root-presence and
+  `api/` carrier-shape checks so public domain `api/` types cannot expose
+  callable service, facade, gateway, factory, locator, repository, or port
+  contracts. Promotion requires an explicit user request for checker work.
 
 Review-owned rules:
 
@@ -413,6 +429,8 @@ Review-owned rules:
 - `api/` carrier-only discipline beyond the enforced same-feature
   command/query/result/draft/snapshot/page/detail/options/payload carrier ban
   and public carrier shape
+- whether a domain feature exposes only the root application service as a
+  callable client boundary while keeping `api/` carrier-only
 - whether business rules have semantically leaked into `view` or `data`
 - aggregate-root-only mutation semantics
 - whether true invariants are modelled inside one aggregate

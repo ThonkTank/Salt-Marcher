@@ -5,6 +5,10 @@
 
 ## Context
 
+This ADR remains the shell workbench model. Its `assembly/`-specific view
+composition details are superseded by
+[ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1).
+
 SaltMarcher already uses a passive shell with generic discovery, fixed slot
 surfaces, and shell-scoped runtime services. However, the architecture has so
 far described those ideas through project-local wording and a combined
@@ -17,7 +21,7 @@ That leaves three problems:
 - the repository lacks a professional architecture vocabulary for shell-owned
   workbench responsibilities and contribution boundaries
 - the current standards series is not strict enough yet about contribution-root
-  delegation versus feature-local assembly
+  composition boundaries
 - current eager screen creation in bootstrap is an implementation detail, but
   the model does not yet make clear whether lazy shell-managed realization is a
   valid future behavior
@@ -36,9 +40,8 @@ architecture model.
 - `ShellContributionSpec` and its concrete types are pure registration
   metadata. `ShellTabSpec` may carry a feature-owned navigation-graphic
   supplier as part of that registration metadata.
-- `ShellViewContribution` is the thin stateless contribution root. Routine
-  shell-facing composition belongs in the owning feature's `assembly/`
-  boundary.
+- `ShellViewContribution` is the thin stateless contribution root. The current
+  target places shell-facing view composition in that root.
 - `ShellScreen` is the current Java API name for prepared contribution
   content. Only `ShellTabSpec` contributions are navigable workbench parts;
   top-bar and auxiliary contributions project content into fixed shell-owned
@@ -74,8 +77,9 @@ framework as-is:
   registration, and startup resolution.
 - Features must treat the shell as a fixed typed workbench contract rather than
   an open-ended named-region system.
-- Contribution roots now have one straight responsibility split: registration
-  and delegation in the root, routine composition in `assembly/`.
+- Contribution roots now have one straight responsibility split: shell
+  registration and composition in the root, presentation behavior in MVVM
+  roles below it.
 - Feature code must not import `AppShell` or concrete shell pane classes as
   extension points.
 - Contribution roots are expected to remain stateless and safe for future
@@ -110,6 +114,7 @@ shell boundary would become less passive.
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
+- [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
 - [ADR 004: Shared Runtime Session Store](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/004-shared-runtime-session-store.md:1)

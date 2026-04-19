@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including `*ApplicationService.java`, `api/`, `application/`, `entity/`, `service/`, `valueobject/`, `repository/`, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, and `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including root `*ApplicationService.java`, carrier-only `api/`, `application/`, named domain modules, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, and `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
 ---
 
 # Domain Layer
@@ -16,9 +16,8 @@ This skill is not the source of truth. If it conflicts with
 ## Use This Skill For
 
 - any file under `src/domain/**`
-- any `*ApplicationService.java`
-- any `api/`, `application/`, `entity/`, `service/`, `valueobject/`, or
-  `repository/` package in the domain layer
+- any root `*ApplicationService.java`
+- any `api/`, `application/`, or named domain module package
 - any `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md` that defines or
   reviews a domain feature
 
@@ -26,67 +25,61 @@ This skill is not the source of truth. If it conflicts with
 
 Before changing domain code:
 
-1. Classify the feature as `domain-model` or `read/query` if the feature docs
-   do not already make that explicit.
-2. Assign each touched type one primary role:
-   `application service`, `api`, `application`, `entity`, `aggregate root`,
-   `service`, `valueobject`, or `repository`.
-3. Check whether the behavior belongs on an aggregate, entity, or value object
-   before placing it in `application/` or `service/`.
-4. Check mutation boundaries. External mutation must enter through the owning
-   aggregate root.
-5. Check cross-feature access. Below the view layer, access goes only through
-   foreign application services and foreign `api/` records.
+1. Read the feature's `DOMAIN.md` and confirm its context type.
+2. Treat the root `<Feature>ApplicationService` as the only callable public
+   client boundary for that feature.
+3. Treat `api/` as carrier-only: commands, queries, results, snapshots,
+   statuses, enums, and sealed carrier abstractions.
+4. Assign each internal type to `application/` coordination or to a named
+   domain module expressed in the ubiquitous language.
+5. Check whether behavior belongs on an aggregate, entity, value object, or
+   domain service before placing it in `application/`.
+6. Check mutation boundaries. External mutation must enter through the owning
+   aggregate root when the context has a write model.
+7. Check cross-feature access. Below the view layer, access goes only through
+   foreign root application services and foreign `api/` carriers.
 
 ## Role Reminders
 
 ### `*ApplicationService.java`
 
-- public backend boundary of one feature
+- exactly one callable public backend boundary of one feature
+- accepts commands and queries in domain terms
 - thin coordination only
-- not a composition root
-
-### `application/`
-
-- use-case orchestration and internal application services
-- coordinates domain objects; does not replace them
-
-### `entity/`
-
-- identity-bearing objects and aggregate roots
-- owns state-coupled behavior and invariants
-
-### `service/`
-
-- true domain services only
-- stateless business logic that belongs to no single aggregate, entity, or
-  value object
-
-### `valueobject/`
-
-- immutable identity-free domain concepts
-- owns value-local validation and normalization
-
-### `repository/`
-
-- domain-owned contracts over canonical truth
-- not a bucket for arbitrary external adapters
+- not a composition root for infrastructure
 
 ### `api/`
 
-- exported commands, queries, results, and snapshots
-- carriers only, not invariant owners
+- exported boundary carriers only
+- records, enums, or sealed carrier abstractions
+- not a home for service, facade, repository, port, factory, locator, gateway,
+  or invariant-owning contracts
+
+### `application/`
+
+- use-case orchestration and internal application coordination
+- coordinates domain objects and domain-owned contracts
+- does not replace rich domain behavior
+
+### Named Domain Modules
+
+- cohesive domain concepts in the ubiquitous language
+- may contain entities, aggregate roots, value objects, repository contracts,
+  domain services, factories, specifications, and events as needed
+- must not be generic technical role buckets such as `entity/`, `service/`,
+  `valueobject/`, `repository/`, or `query/`
 
 ## Review Focus
 
 When reviewing domain-layer work, look for:
 
-- rich behavior moving into aggregates, entities, and value objects instead of
-  procedural coordinators
+- a single callable root application-service boundary per feature
+- carrier-only `api/` packages
+- rich behavior moving into aggregates, entities, value objects, and domain
+  services instead of procedural coordinators
 - thin application services without hidden adapter composition
-- proper separation between `application/` and true `service/`
 - aggregate-root-only mutation boundaries
-- read/query features staying free of owned domain policy
+- supporting read-model contexts staying free of owned domain policy
 
 ## References
 

@@ -17,6 +17,10 @@ review-only boundary remain defined in the
 
 ## View Layer
 
+Current view checks still enforce the transitional topology that existed before
+ADR 017. They remain listed here as current blockers until explicit checker
+migration work updates them to the declarative MVVM target.
+
 `Enforced`:
 
 - `view-topology-allowlist` via `jQAssistant`
@@ -64,7 +68,7 @@ review-only boundary remain defined in the
 - `view-component-cycle-freedom` via ArchUnit
   `viewComponentsMustStayCycleFree` (`architectureTest`).
 
-Mechanical trace against the MVVM standard:
+Current mechanical trace against the transitional MVVM checks:
 
 - Component topology in `src/view/<component>/{assembly,api,View,ViewModel}`
   and the ban on `Model/`, `Controller/`, and `interactor/` buckets are enforced
@@ -92,16 +96,28 @@ Mechanical trace against the MVVM standard:
   `ClassLoader.loadClass(...)`, `MethodHandles.Lookup.findClass(...)`, and
   direct `java.lang.reflect.*` references, are blocked by Error Prone.
 
+Target mechanical trace after ADR 017 migration:
+
+- FXML files live under `resources/view/<component>/`.
+- Target view components use only root `*ViewContribution`, `View/`, and
+  `ViewModel/` buckets.
+- `View/` may use JavaFX UI, scene, stage, fxml, bean, and collection APIs,
+  but not shell, domain, or data APIs.
+- `ViewModel/` may use JavaFX bean and collection APIs, but not scene, stage,
+  fxml, shell, data, own `View/`, or foreign private view packages.
+- Root view contributions are the only shell-facing composition adapters for
+  view components.
+- `src.domain.<feature>.api/**` stays carrier-only, while the callable model
+  boundary is the root application service.
+
 `Review-Only`:
 
-- Whether `api/` represents intentional reuse or a real multi-contribution
-  runtime-session boundary rather than convenience exposure.
-- Whether cross-component reuse is minimized to the smallest intended `api/`
-  instead of copied DTOs, wrappers, or needless pass-throughs.
+- Whether remaining view `api/` and `assembly/` packages are migration debt and
+  whether touched code moves toward declarative MVVM.
 - Whether root entrypoints are semantically thin beyond the mechanically
   encoded shape, dependency, and delegation checks.
-- Whether `assembly/` is the real owner of slice construction, shell/runtime
-  adaptation, and collaborator wiring beyond referenced-type shape.
+- Whether root view contributions remain thin shell/composition adapters
+  instead of accumulating presentation or business logic.
 - Whether `View/` logic is simple binding/projection and gesture forwarding
   rather than duplicated presentation policy.
 - Whether `ViewModel/` is the single owner of user-triggered actions,
@@ -115,7 +131,7 @@ Mechanical trace against the MVVM standard:
 - Whether asynchronous presentation work keeps blocking I/O off the UI thread
   and leaves loading, failure, cancellation, retry, and stale-result semantics
   under `ViewModel/` ownership.
-- Whether shell-specific type usage below the root entrypoint or `assembly/`
+- Whether shell-specific type usage below the root entrypoint
   is semantically acceptable when the distinction is about intent rather than
   referenced type shape.
 - Whether changes to legacy surfaces move toward the MVVM target model.
@@ -387,9 +403,9 @@ Mechanical trace against the data-layer standard:
   not name concrete `src.view`, `src.domain`, or `src.data` feature packages
   via `PMD architecture` (`pmdArchitectureMain`).
 - `system-shell-runtime-seam-placement`: feature-facing shell API use is
-  limited to view roots, view `assembly/`, and data `*ServiceContribution`
-  roots through `Error Prone` (`compileJava`) and PMD root-contract checks
-  (`pmdArchitectureMain`).
+  currently limited to view roots, transitional view `assembly/`, and data
+  `*ServiceContribution` roots through `Error Prone` (`compileJava`) and PMD
+  root-contract checks (`pmdArchitectureMain`).
 - `system-service-contribution-placement`: service contribution roots are
   allowed only at the shell API contract and data feature roots via
   `build-harness` (`:build-harness:check`).
@@ -403,8 +419,8 @@ Mechanical trace against the data-layer standard:
   must not expose domain-facing return types, and public/protected
   repository/query adapter signatures must not leak internal data
   infrastructure types via `Error Prone` (`compileJava`).
-- `system-view-boundary-carrier-purity`: public view `api/` signatures must
-  not leak private view bucket types via `Error Prone`
+- `system-view-boundary-carrier-purity`: transitional public view `api/`
+  signatures must not leak private view bucket types via `Error Prone`
   `ViewApiPublicSignatureLeak` (`compileJava`).
 - `system-foreign-private-bucket-bans`: cross-feature access to private view,
   domain, and data buckets is blocked by the owning view, domain, and data
@@ -438,13 +454,14 @@ Mechanical trace against the data-layer standard:
 - `shell-runtime-context-api-shape`: `ShellRuntimeContext` exposes only the
   fixed runtime gateway methods `inspector()`, `services()`, and `session(...)`
   through PMD `SaltMarcherSourcePolicyRule` (`pmdArchitectureMain`).
-- `shell-feature-facing-api-allowlist`: view roots, view `assembly/`, and data
-  service roots may use only their documented shell API subsets through Error
-  Prone `FeatureShellApiAllowlist` (`compileJava`).
-- `shell-view-root-delegation-boundary`: view roots must delegate
-  `createScreen(...)` into own-feature `assembly/` and must not perform direct
-  runtime lookup, JavaFX construction, domain/data wiring, or private view
-  composition through Error Prone `ViewRootDelegation` (`compileJava`).
+- `shell-feature-facing-api-allowlist`: view roots, transitional view
+  `assembly/`, and data service roots may use only their documented shell API
+  subsets through Error Prone `FeatureShellApiAllowlist` (`compileJava`).
+- `shell-view-root-delegation-boundary`: current transitional checks require
+  view roots to delegate `createScreen(...)` into own-feature `assembly/` and
+  block direct runtime lookup, JavaFX construction, domain/data wiring, or
+  private view composition through Error Prone `ViewRootDelegation`
+  (`compileJava`).
 - `shell-service-registry-registration-placement`: direct
   `ServiceRegistry.Builder.register(...)` calls must stay in data feature
   `*ServiceContribution` roots through Error Prone
@@ -573,9 +590,9 @@ Runtime guards outside the build-blocking harness:
   rules `root-layout`, `src-layout`, `shell-layout`, `view-layout`,
   `domain-layout`, `data-layout`, `package-declaration`, and
   `package-path-match` (`:build-harness:check`).
-- `repository-view-feature-layout`: view component root-only placement and
-  allowed `assembly/`, optional `api/`, `View/`, and `ViewModel/` buckets are
-  enforced by `jQAssistant` MVVM rules and PMD root contracts
+- `repository-view-feature-layout`: current view component root-only placement
+  and transitional `assembly/`, optional `api/`, `View/`, and `ViewModel/`
+  buckets are enforced by `jQAssistant` MVVM rules and PMD root contracts
   (`checkViewArchitecture`, `pmdArchitectureMain`).
 - `repository-domain-feature-layout`: domain root application-service
   presence, direct `api/` and `application/` allowances, named-module package

@@ -1,350 +1,334 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-19
-Source of Truth: Binding view-layer architecture model, role boundaries,
-public reuse boundary, and enforcement targets for `src/view/**`.
+Source of Truth: Declarative MVVM target model, view-role boundaries, and
+view-layer dependency rules for `src/view/**`.
 
 # Model-View-ViewModel Standard
 
 ## Goal
 
-SaltMarcher uses `Model-View-ViewModel (MVVM)` so the view layer has one
-authoritative owner for presentation decisions, one explicit composition
-boundary, one public reuse boundary, and one mechanically enforceable
-dependency direction.
+SaltMarcher uses `Model-View-ViewModel (MVVM)` with declarative JavaFX views.
+The target model keeps markup, presentation state, and business logic in three
+separate roles:
+
+- `View`: FXML markup plus minimal JavaFX code-behind for UI-only concerns.
+- `ViewModel`: bindable presentation state and user-triggered actions.
+- `Model`: the existing domain layer exposed through one root application
+  service per domain feature.
 
 The architectural goals are:
 
-- `Decoupling`: scene-graph code, shell wiring, and domain orchestration must
-  stay in separate roles with inward-only source dependencies.
-- `Deduplication`: one `ViewModel` owns presentation interpretation for one
-  screen or reusable view root, instead of duplicating UI decisions across
-  widgets, helpers, and coordinators.
+- `Declarative UI`: screen structure is authored in FXML so UI composition is
+  visible as markup instead of hidden in procedural Java node construction.
+- `Decoupling`: the view binds to a view model; the view model calls the
+  domain model; the domain model knows nothing about either.
+- `Mechanical Clarity`: allowed and forbidden Java/JavaFX APIs express the
+  role boundary well enough for architecture checks to enforce the target over
+  time.
 
 ## Pattern Alignment
 
 - The canonical pattern name is `Model-View-ViewModel (MVVM)`.
-- `View/` and `ViewModel/` carry the standard MVVM responsibilities:
-  framework-facing view code binds to view-independent presentation state and
-  command-style actions owned by a view model.
-- `assembly/` and `api/` are SaltMarcher composition boundaries around MVVM,
-  not additional MVVM roles.
-- Fowler `Presentation Model` is the conceptual ancestor for pulling
-  presentation behavior out of the view. SaltMarcher uses the more widely
-  understood `ViewModel` term.
-- `Clean Architecture` governs source dependency direction between the view
-  layer, the shell, and domain application services.
-- Fowler `Passive View` and `Supervising Controller` remain useful reference
-  patterns, but they are not the active name of the SaltMarcher target model.
+- Fowler `Presentation Model` is the conceptual ancestor: presentation state
+  and behavior are pulled out of widgets into a GUI-independent model.
+- WPF/Silverlight-style MVVM is the target shape: declarative markup owns the
+  view tree, bindings connect view controls to the view model, and code-behind
+  stays thin.
+- JavaFX implements the same target through FXML, `FXMLLoader`, controller
+  code-behind, JavaFX properties, and property binding.
+- Clean Architecture governs dependency direction: source dependencies point
+  from outer presentation code toward the domain model, never back outward.
 
-## Core Principles
+## Target Topology
 
-- `ViewModel/` is the single authoritative owner of presentation state and
-  presentation decisions for one component root.
-- `View/` owns the UI tree, rendering, widget composition, gesture extraction,
-  and simple binding or projection from the `ViewModel`.
-- `assembly/` is the only shell-facing composition boundary inside a
-  component. It is not an MVVM layer.
-- Cross-component view reuse is opt-in and public only through
-  `src/view/<component>/api/**`. `api/` is not an MVVM layer.
-- No private view bucket may be imported across component boundaries.
-- New components and architectural refactors target MVVM topology directly.
-  Legacy `Model/`, `Controller/`, or `interactor/` buckets are migration debt
-  and must not be copied into new work.
-
-## Component Topology
+The target view-component layout is:
 
 ```text
 src/view/
   <component>/
     <PascalComponentName>ViewContribution.java
-    assembly/
-    api/              optional; the only public view-to-view boundary
     View/
+      <PascalComponentName>Controller.java
+      ...
     ViewModel/
+      <PascalComponentName>ViewModel.java
+      ...
+resources/
+  view/
+    <component>/
+      <component>.fxml
+      ...
 ```
 
-- The component root is reserved for exactly one `*ViewContribution`.
-- `api/` exists only when a component intentionally exports reusable
-  view-layer capabilities to other view components or owns a multi-contribution
-  runtime-session boundary.
-- Every other Java type in a component belongs to exactly one named bucket.
+Rules:
+
+- The component root contains exactly one `*ViewContribution.java`.
+- `View/` contains FXML controllers, view factories needed to load FXML, and
+  UI-only helper classes.
+- `ViewModel/` contains presentation state, presentation actions, and
+  presentation-only value types.
+- FXML files live under `resources/view/<component>/`.
+- New or substantially refactored view code targets this topology.
+- Existing `assembly/`, view `api/`, `Model/`, `Controller/`, and
+  `interactor/` buckets are migration debt, not precedent for new work.
 
 ## Dependency Direction
 
-Source dependencies point inward:
+The source dependency direction is:
 
-1. `*ViewContribution -> assembly`
-2. `assembly -> View + ViewModel + api + domain application service`
-3. `View -> ViewModel`
-4. `ViewModel -> domain API`
+```text
+*ViewContribution -> View + ViewModel + shell public API + domain root service
+View              -> ViewModel
+ViewModel         -> domain root service + domain api carriers
+domain            -> no view, shell, JavaFX, or data implementation types
+```
 
-Additional rules:
+Runtime control may move through callbacks, bindings, listeners, and shell
+activation hooks. Source dependencies still follow the direction above.
 
-- Shell and backend-service access enter a component through the root
-  entrypoint and are consumed in `assembly/`. The current Java
-  runtime-capability lookup API is `ShellRuntimeContext.services()`;
-  it is a shell-owned composition seam, not a second client-facing backend
-  boundary.
-- Cross-component composition flows only through foreign `api/` packages.
-- `ViewModel/` must not depend on `View/`, `shell.*`, or `src.data.*`.
-- `View/` must not depend on `src.domain.*`, `src.data.*`, or `shell.*`.
-
-Runtime control flow may move in both directions, but source dependencies must
-still respect these boundaries.
+Cross-feature backend access below the view layer goes through the foreign
+feature's root `*ApplicationService` and its `api/` carrier types. No view code
+may import foreign domain modules or data adapters.
 
 ## Runtime Interaction
 
 The normal interaction loop is:
 
-1. `View` receives a user gesture.
-2. `View` forwards the action to the `ViewModel`.
-3. `ViewModel` executes presentation logic and calls domain application
-   services when
-   needed.
-4. `ViewModel` updates presentation state.
-5. `View` reloads or rebinds from the `ViewModel`.
+1. FXML defines the controls, layout, static visual structure, and bindings.
+2. A `View/` controller receives a JavaFX event or binding callback.
+3. The controller translates the technical event into a named view-model
+   action.
+4. The `ViewModel` updates presentation state and calls a domain application
+   service when business behavior is needed.
+5. Domain results return as carrier objects.
+6. The `ViewModel` maps those results into bindable presentation properties.
+7. The FXML/controller-visible UI updates through JavaFX binding or a small
+   explicit refresh from the view model.
 
-Rules for synchronization:
-
-- The `View` may perform simple binding and projection work.
-- The `View` must not invent presentation policy, duplicate domain-to-UI
-  interpretation logic, or own the only copy of mutable presentation state.
-- Derived presentation facts that matter across multiple widgets belong in the
-  `ViewModel`, not in duplicated view helpers.
+The view may contain glue that is unavoidably tied to JavaFX controls. Any
+decision that would still matter if the same screen were rendered differently
+belongs in the view model or domain model.
 
 ## Role Definitions
 
 ### Root Entrypoint
 
-`<Component>ViewContribution.java` owns only shell registration and delegation
-into the component assembly.
+`<Component>ViewContribution.java` is the shell-facing adapter for one
+component.
 
-- Responsibilities:
-  - define `registrationSpec()`
-  - accept `ShellRuntimeContext` and delegate it into the owning `assembly/`
-  - create or fetch the component assembly
-  - return the assembly-prepared `ShellScreen`
-- Allowed dependencies:
-  - `shell.*`
-  - own `assembly/`
-  - general-purpose JDK types
-- Forbidden dependencies:
-  - own `View/`, `ViewModel/`, or `api/` implementations
-  - `src.domain.*` and `src.data.*`
-- Forbidden behavior:
-  - routine runtime-capability lookup or domain-application-service creation
-  - direct construction of `View/` or `ViewModel/` objects
+Responsibilities:
 
-### `assembly/`
+- expose shell registration metadata through `registrationSpec()`
+- create or obtain the component `ViewModel`
+- load the FXML-backed `View`
+- adapt the prepared view root into the fixed shell slots returned by
+  `ShellScreen`
+- obtain shell-owned runtime services only as needed for composition
 
-`assembly/` owns slice composition and all shell-facing adaptation. It is
-SaltMarcher's composition root for one view component, not a View, ViewModel,
-or additional MVVM participant.
+Allowed dependencies:
 
-- Responsibilities:
-  - create the component's `ViewModel` and `View`
-  - obtain `ShellRuntimeContext` services, sessions, backend-service
-    factories, backend capabilities used to assemble those factories, and
-    inspector sinks
-  - adapt shell-owned services into component-local collaborators
-  - host reusable public facades exported through `api/`
-- Allowed dependencies:
-  - `shell.*`
-  - own `api/`, `View/`, and `ViewModel/`
-  - foreign `src.view.<component>.api.*`
-  - `src.domain.<feature>.*ApplicationService`, nested boundary types such as
-    `*ApplicationService.Factory`, and
-    `src.domain.<feature>.api.*`
-  - general-purpose JDK types
-- Forbidden dependencies:
-  - `src.data.*`
+- `shell.api.*` public contribution and runtime-context types
+- own `View/` and `ViewModel/`
+- `javafx.fxml.FXMLLoader` and `javafx.scene.Node` as composition boundary
+  types
+- root `src.domain.<feature>.<Feature>ApplicationService`
+- `src.domain.<feature>.api.*` carrier types only when needed at the boundary
+- general-purpose JDK types
+
+Forbidden behavior:
+
+- business rules
+- UI layout construction beyond loading FXML and assigning slot roots
+- persistence or data-adapter access
+- long-lived mutable feature state unrelated to shell lifecycle
 
 ### `View/`
 
-`View/` owns every JavaFX scene-graph type and every rendering concern.
+`View/` owns JavaFX-facing view code.
 
-- Responsibilities:
-  - create the UI tree: nodes, controls, dialogs, popups, menus, and cell
-    factories
-  - render, style through style classes, and maintain widget layout
-  - bind or project state from `ViewModel/` into widget state
-  - extract user gestures and forward command-style actions into `ViewModel/`
-  - own local ephemeral widget state such as focus, selection models, popup
-    visibility, or transient text that is purely local to one widget subtree
-- Allowed dependencies:
-  - `javafx.*`
-  - own `View/` and `ViewModel/`
-  - foreign `src.view.<component>.api.*`
-  - general-purpose JDK types
-- Forbidden dependencies:
-  - `shell.*`
-  - `src.domain.*`
-  - `src.data.*`
+Responsibilities:
+
+- define FXML controllers and UI-only helper classes
+- bind controls to view-model properties and observable collections
+- extract gestures and call view-model actions
+- own local widget state such as focus, selection models, popover visibility,
+  drag state, and temporary text still being edited in one control subtree
+- own JavaFX dialogs, popups, menus, cell factories, skins, and control
+  adapters
+
+Allowed dependencies:
+
+- `javafx.fxml.*`
+- `javafx.scene.*`, `javafx.stage.*`, `javafx.animation.*`, `javafx.util.*`,
+  `javafx.css.*`, and other JavaFX UI APIs
+- `javafx.beans.*` and `javafx.collections.*`
+- own `View/` and `ViewModel/`
+- general-purpose JDK types
+
+Forbidden dependencies:
+
+- `shell.*`
+- `src.domain.*`
+- `src.data.*`
+- foreign private view component packages
+
+Forbidden behavior:
+
+- calling domain or data services
+- owning business rules
+- owning presentation decisions shared by multiple controls
+- mapping domain results into user-facing presentation state except for
+  trivial formatting that is local to one control
 
 ### `ViewModel/`
 
-`ViewModel/` owns view-independent presentation state, presentation policy, and
-user-triggered command behavior.
+`ViewModel/` owns view-independent presentation state and actions.
 
-- Responsibilities:
-  - hold view-consumable presentation values, records, enums, and state
-    aggregates
-  - expose user-triggered actions and command-style methods
-  - map domain responses into presentation state
-  - own derived presentation facts such as enablement, visibility, labels, and
-    status summaries when those decisions matter beyond one widget
-  - own loading, failure, cancellation, and stale-result state for asynchronous
-    presentation work
-  - own synchronization state that must survive widget refresh or is shared
-    across multiple widgets
-- Allowed dependencies:
-  - own `ViewModel/`
-  - `src.domain.<feature>.*ApplicationService` and
-    `src.domain.<feature>.api.*`
-  - general-purpose JDK types
-- Forbidden dependencies:
-  - `javafx.*`
-  - `shell.*`
-  - `src.data.*`
-  - own `View/` and `assembly/`
-  - foreign private view buckets
+Responsibilities:
 
-### `api/`
+- expose bindable properties, observable lists, and presentation snapshots
+- expose user-triggered actions such as load, save, generate, select, clear,
+  reroll, or delete
+- own presentation policy: enablement, visibility, selected item, validation
+  messages, status text, loading state, failure state, retry state, and stale
+  result handling
+- translate domain results into presentation state
+- call same-feature or foreign root domain application services
+- own synchronization state that must survive UI refresh or is shared across
+  multiple controls
 
-`api/` is the only public reuse boundary between view components. It is a
-SaltMarcher public module boundary, not a View, ViewModel, or additional MVVM
-participant.
+Allowed dependencies:
 
-- Responsibilities:
-  - expose reusable view-layer capabilities intentionally
-  - shield consumers from private bucket types
-  - define stable public factory, facade, or wrapper types for view reuse
-  - host shared runtime-session carriers only when multiple contributions need
-    the same public session boundary
-- Allowed dependencies:
-  - own private buckets as implementation detail
-  - `javafx.*` when a public view API intentionally returns reusable nodes or
-    view wrappers
-  - general-purpose JDK types
-- Forbidden public signatures:
-  - own `View/`, `ViewModel/`, or `assembly/` types
-  - foreign private bucket types
+- own `ViewModel/`
+- `javafx.beans.*` and `javafx.collections.*` for bindable presentation state
+- root `src.domain.<feature>.<Feature>ApplicationService`
+- `src.domain.<feature>.api.*` carrier records, enums, and sealed carrier
+  abstractions
+- general-purpose JDK types
 
-## Shared Reuse Rule
+Forbidden dependencies:
 
-- Direct imports from another component's `View/`, `ViewModel/`, or `assembly/`
-  are forbidden.
-- A component that wants to be reusable by a foreign component must publish an
-  explicit `api/` package.
-- A consuming component may depend only on that foreign `api/` package.
-- `*shared` naming may still be used as an organizational hint, but the public
-  boundary is `api/`, not the component name.
-- An `api/` package is justified only by at least one real foreign component
-  consumer or a multi-contribution runtime-session need.
-- Do not create `api/` packages only to bypass private bucket rules, mirror
-  internal DTOs, or expose pass-through wrappers without a stability reason.
+- `javafx.scene.*`
+- `javafx.stage.*`
+- `javafx.fxml.*`
+- `shell.*`
+- `src.data.*`
+- own `View/`
+- foreign private view component packages
+- foreign domain internals outside root application services and `api/`
+  carriers
+
+### Model
+
+The MVVM `Model` role is fulfilled by `src/domain/**`.
+
+Responsibilities:
+
+- own business language, business rules, invariants, policies, domain-owned
+  contracts, and application services
+- expose exactly one callable client boundary per feature:
+  `<Feature>ApplicationService`
+- expose only carrier records, enums, and sealed carrier abstractions under
+  `src/domain/<feature>/api/**`
+
+Forbidden dependencies:
+
+- `src.view.*`
+- `shell.*`
+- `javafx.*`
+- `src.data.*` implementation types
+
+The domain layer standard owns the detailed DDD structure. This standard owns
+only the MVVM-facing rule that the view layer treats each domain feature as a
+model behind one root application service.
+
+## FXML Rules
+
+- New view roots and substantial view rewrites should use FXML.
+- FXML may declare controls, layout, static properties, includes, style
+  classes, and bindings.
+- FXML must not contain inline scripts.
+- FXML controllers may use `@FXML` fields and methods only for UI wiring.
+- Controller methods referenced from FXML must delegate non-UI decisions to the
+  view model.
+- `FXMLLoader` setup belongs at the root contribution or in a small own
+  `View/` factory, not in the view model.
+- Existing programmatic JavaFX views are migration debt until converted; they
+  may be touched only when the change moves them toward the target model.
 
 ## Lifecycle, Commands, And Async Work
 
 - Long-lived listeners, subscriptions, callbacks, or observers must have
   explicit removal, disposal, weak-listener use, or a documented shell-lifetime
   rationale.
-- Direct command-style methods on the `ViewModel` are acceptable. A new command
-  abstraction is not required, but command availability, disabled reasons,
-  result status, and user-visible failures must be exposed by the `ViewModel`
-  instead of being inferred by widgets.
-- Blocking I/O must not run on the JavaFX UI thread. When asynchronous work is
-  introduced, the `ViewModel` owns loading, failure, cancellation, retry, and
-  stale-result behavior.
+- Direct action methods on a view model are acceptable. A separate command
+  class is not required.
+- Command availability, disabled reasons, result status, loading state, and
+  user-visible failures must be exposed by the view model instead of inferred
+  by controls.
+- Blocking I/O must not run on the JavaFX application thread.
+- When asynchronous work is introduced, the view model owns loading, failure,
+  cancellation, retry, and stale-result semantics.
 
 ## Forbidden Patterns
 
-- `ViewModel/` returning `Node`, `Control`, `Scene`, `Stage`, or any other
-  scene-graph type
-- `ViewModel/` building dialogs, popups, menus, list cells, or layout nodes
-- `View/` calling domain or data layers directly
-- `View/` owning the only copy of mutable presentation decisions that multiple
-  widgets depend on
-- presentation-state carriers such as `*ViewModel`, `*ViewData`, `*State`,
-  `*Status`, `*Section`, or `*Model` living outside `ViewModel/` or an
-  intentional public `api/`
-- root entrypoints performing routine shell or backend-service lookup instead
-  of delegating into `assembly/`
-- shell-specific types appearing below the root entrypoint or `assembly/`
-- cross-component reuse through copied DTOs instead of one exported public
-  `api/`
-- reflective type lookups such as `Class.forName(...)`,
-  `ClassLoader.loadClass(...)`, or equivalent lookup-based reach-throughs under
+- `ViewModel/` returning `Node`, `Control`, `Scene`, `Stage`, `Parent`, or any
+  other scene-graph/window type
+- `ViewModel/` importing `javafx.fxml.*` or loading FXML
+- `ViewModel/` building dialogs, popups, menus, cells, or layout nodes
+- `View/` calling domain or data services directly
+- `View/` owning presentation decisions that multiple controls depend on
+- `View/` or `ViewModel/` importing shell API
+- `src/domain/**` importing JavaFX, shell, view, or data implementation types
+- new `assembly/`, `api/`, `Model/`, `Controller/`, or `interactor/` buckets
+  under `src/view/<component>/`
+- reflective reach-through such as `Class.forName(...)`,
+  `ClassLoader.loadClass(...)`, or equivalent lookup-based bypasses under
   `src/view/**`
-- new view components introducing `Model/`, `Controller/`, or `interactor/`
-  buckets
 
 ## Migration Debt
 
-The current codebase may still contain legacy buckets and mixed responsibilities
-relative to this target model. They are migration debt, not architectural
-precedent.
+Current active code still contains programmatic JavaFX views, `assembly/`
+composition packages, view `api/` packages, and legacy `Model/`, `Controller/`,
+and `interactor/` buckets. Those structures describe current state only.
 
-That migration debt may include feature roots that still inline composition or
-service lookup. New work must keep those concerns in `assembly/`.
-
-New code must target MVVM directly. Existing code may only move toward the
-target model.
+The target model is the declarative MVVM shape above. Standards work may update
+documentation before source code and checker migration. Implementation work
+that touches legacy view surfaces must move them toward the target shape rather
+than copying the legacy topology.
 
 ## Verification Notes
 
-The canonical owner model, rule-status vocabulary, and blocking-task mapping
-for these checks live in the
-[Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1).
-Concrete rule IDs and checker names are recorded in the
-[Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1).
+Current checks still enforce the transitional topology that existed before the
+declarative MVVM refactor. The enforcement coverage standard records that
+current-state mapping.
 
-- `Enforced`
-  - `jQAssistant` on `checkViewArchitecture` owns canonical
-    MVVM topology: allowed buckets only, legacy-bucket bans, root-only
-    `*ViewContribution` types, exactly one root per component, naming-based
-    `*Assembly` / `*ShellAdapter` placement, and cross-component public-boundary
-    checks through foreign `api/`
-  - `ArchUnit` on `architectureTest` owns view-component cycle freedom
-  - `PMD architecture` on `pmdArchitectureMain` owns root-entrypoint contracts:
-    naming, `public final`, public no-arg constructor, implemented shell
-    interface, required root methods, stateless root shape, allowed
-    contribution-spec construction, and no extra public/protected root members
-  - `Error Prone` on `compileJava` owns compiler-precise MVVM bans:
-    `createScreen(...)` returns backed by own `assembly/` logic; root
-    `ShellScreen` construction bans; direct root use of
-    `ShellRuntimeContext.inspector()` / `services()` / `session(...)`;
-    documented shell API allowlist checks for roots and `assembly/`; restricted
-    dependency rules for `assembly/`, `View/`, `ViewModel/`, and `api/`;
-    scene-graph placement that allows `assembly/` to expose
-    `javafx.scene.Node` only as a shell slot boundary type;
-    presentation-state naming and placement bans; reflective reach-through
-    bans; and public-signature bans on leaking private view bucket types
-- `Review-Only`
-  - whether an `api/` package represents intentional reuse or a real
-    multi-contribution runtime-session boundary rather than convenience
-    exposure
-  - whether cross-component reuse copied DTOs or wrappers instead of defining
-    the smallest intended `api/`
-  - the semantic remainder of shell-specific type usage below the root
-    entrypoint or `assembly/` when the distinction is about intent rather than
-    referenced type shape
-  - `ViewModel/` as the single owner of cross-widget presentation decisions
-  - command availability, result, loading, failure, cancellation, and
-    stale-result ownership
-  - listener, subscription, callback, and observer lifecycle semantics
-  - deeper semantic checks that distinguish simple binding from duplicated
-    presentation policy
-  - whether changes to legacy surfaces move toward the MVVM target model
-  - runtime-behaviour questions that depend on callback flow rather than
-    source dependency shape
+Target mechanical checks should eventually cover:
+
+- FXML files live under `resources/view/<component>/`
+- `View/` may use JavaFX UI APIs and own FXML controllers
+- `ViewModel/` may use only `javafx.beans.*` and `javafx.collections.*`, not
+  scene graph, stage, or fxml APIs
+- `View/` does not import domain, data, or shell
+- `ViewModel/` imports only root application services and domain `api/`
+  carriers from `src.domain.*`
+- root view contributions are the only shell-facing composition adapters
+- legacy view buckets are absent from target components
+
+New mechanical gates require explicit user request before being added to the
+local build/check pipeline.
 
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
-- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/quality-platforms.md:1)
-- [ADR 005: MVVM And Assembly Boundary In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-view-mvvm-and-assembly-boundary.md:1)
-- [ADR 007: Shared View API Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/007-shared-view-api-boundary.md:1)
+- [System Layer Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/system-layer-architecture.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
+- [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
+- [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
+- [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+- [Microsoft MVVM Reference](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/microsoft-maui-mvvm.md:1)
+- [Fowler Presentation Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/fowler-presentation-model.md:1)
+- [Oracle JavaFX FXML Introduction](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/oracle-javafx-fxml-introduction.md:1)
+- [JavaFX Properties And Binding](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/oracle-javafx-properties-binding.md:1)

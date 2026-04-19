@@ -65,16 +65,17 @@ feature entrypoint.
 Responsibilities:
 
 - expose passive registration metadata through `registrationSpec()`
-- delegate into the owning feature's `assembly/` boundary through
+- compose the FXML-backed view, view model, and shell slot content through
   `createScreen(runtimeContext)`
 
 Rules:
 
 - contribution classes stay thin and stateless
 - long-lived runtime state must not be stored on contribution instances
-- root entrypoints own registration and delegation only
-- routine slice wiring, service lookup, and shell-facing adaptation belong in
-  the owning component's `assembly/` bucket
+- root entrypoints own registration, FXML loading, view-model creation,
+  application-service lookup, and shell slot adaptation
+- feature logic, presentation policy, JavaFX controller behavior, and business
+  logic still belong below the root in the MVVM roles
 
 ### `ShellScreen`
 
@@ -113,8 +114,8 @@ It exposes:
 - `session(...)` for typed per-shell shared runtime sessions
 
 Features must not bypass this gateway by importing `AppShell` or concrete
-shell pane types. Routine runtime-capability lookup belongs in `assembly/`, not in the
-contribution root, `View/`, or `ViewModel/`.
+shell pane types. Runtime-capability lookup belongs in the root view
+contribution, not in `View/` or `ViewModel/`.
 
 This runtime lookup seam is a composition facility of the shell. It is not a
 second public backend layer alongside `*ApplicationService`.
@@ -174,9 +175,6 @@ The public shell-facing API surface is fixed by consumer bucket:
   `ShellContributionSpec`, `ShellTabSpec`, `ShellTabMode`,
   `ShellTopBarSpec`, `ShellRuntimeStateSpec`, `ShellScreen`,
   `ShellRuntimeContext`, `ContributionKey`, and `NavigationGroupSpec`
-- `assembly/` may use only `ShellRuntimeContext`, `ShellScreen`,
-  `ShellSlot`, `InspectorSink`, `InspectorEntrySpec`, `ServiceRegistry`,
-  and `NavigationGraphicSupport`
 - data `*ServiceContribution` roots may use only `ServiceContribution`
   and `ServiceRegistry`
 
@@ -190,7 +188,7 @@ Dependencies point inward:
 - bootstrap depends on shell contracts and discovery mechanics
 - shell depends on shell-owned contracts and generic runtime hosting
 - view components use the allowed shell API surface only at the contribution
-  root and `assembly/` boundary
+  root
 - domain and data stay independent from shell implementation
 
 Forbidden directions and patterns:
@@ -200,13 +198,11 @@ Forbidden directions and patterns:
 - open-ended named-region composition as the default public extension model
 - manual bootstrap feature registries as routine wiring
 - long-lived runtime state in contribution classes
-- routine slice composition or backend capability lookup in contribution roots
 - feature-specific alternate wiring paths around `ShellRuntimeContext`
 
-Shell-facing runtime composition belongs in the owning component's
-`assembly/` bucket. The contribution root registers and delegates only. It
-does not belong in `View/`, `ViewModel/`, or in legacy `Controller/`,
-`Model/`, or `interactor/` buckets.
+Shell-facing runtime composition belongs in the owning component's root
+`*ViewContribution`. It does not belong in `View/`, `ViewModel/`, or in legacy
+`assembly/`, `Controller/`, `Model/`, or `interactor/` buckets.
 
 ## Lifecycle And Realization
 
@@ -264,12 +260,10 @@ Current mechanical coverage:
   `architectureTest`.
 - `shell-runtime-context-api-shape` is enforced by `pmdArchitectureMain`.
 - `shell-view-root-delegation-boundary` is enforced by `compileJava` via
-  Error Prone for the current build-blocking subset: no direct root wiring to
-  JavaFX, domain, data, or private view buckets; no inline `ShellScreen`
-  construction; and no root use of `ShellRuntimeContext.inspector()`,
-  `services()`, or `session(...)`.
+  Error Prone for the older transitional topology. It still blocks direct root
+  wiring patterns that predate declarative MVVM until the checker is migrated.
 - `shell-feature-facing-api-allowlist` is enforced by `compileJava` via Error
-  Prone for view contribution roots, `assembly/`, and data
+  Prone for view contribution roots, transitional `assembly/`, and data
   `*ServiceContribution` roots.
 - `shell-fixed-slot-api`, `shell-contribution-spec-family`,
   `shell-contribution-spec-metadata-purity`,

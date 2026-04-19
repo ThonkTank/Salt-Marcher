@@ -5,6 +5,11 @@
 
 ## Context
 
+This ADR remains the historical owner split for the current view-architecture
+checks. The target view topology is now defined by
+[ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+and requires later checker migration.
+
 SaltMarcher's view-architecture rules had been split across multiple tools
 without a clear contract for which engine should own which kind of rule.
 The temporary follow-up decision to move everything into `jQAssistant` reduced
@@ -42,9 +47,9 @@ rules enforced through the central `check` aggregate.
 
 The rollout of the owner split and blocking entrypoints is complete:
 
-- `checkViewArchitecture` remains the explicit reporting task for canonical
-  MVVM view architecture.
-- The central `check` aggregate runs canonical MVVM jQAssistant analysis
+- `checkViewArchitecture` remains the explicit reporting task for current
+  graph-shaped view architecture.
+- The central `check` aggregate runs current jQAssistant view-topology analysis
   through `checkViewArchitecture`; `build` reaches it through Gradle's standard
   `build -> check` lifecycle.
 - Focused `compileJava` invocations do not run jQAssistant graph analysis.
@@ -81,3 +86,4 @@ multiple tools without a clean rule-shape boundary.
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/quality-platforms.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
+- [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)

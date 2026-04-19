@@ -56,8 +56,9 @@ Layer responsibilities:
   - stays generic and must not own feature logic
 - `src/view/**`
   - is the inbound interface-adapter layer
-  - translates user gestures, activation hooks, and presentation concerns into
-    calls against shell contracts and domain application boundaries
+  - translates FXML/controller gestures, activation hooks, and presentation
+    concerns into calls against shell contracts and domain application
+    boundaries
 - `src/domain/**`
   - is the application core
   - owns business meaning, invariants, application services, exported boundary
@@ -103,9 +104,11 @@ The canonical intentional public boundaries are:
   `ShellViewContribution`, `ShellScreen`, and `ShellContributionSpec`
 - the shell-owned runtime composition seam under `shell/api/**` consisting of
   `ShellRuntimeContext`, `ServiceContribution`, and `ServiceRegistry`
-- view-layer public `api/` packages for cross-component reuse
-- domain `*ApplicationService` roots and `src/domain/<feature>/api/**` as the
-  public client-facing backend boundary below the view layer
+- root `*ViewContribution` classes as shell-facing view composition adapters
+- domain `*ApplicationService` roots as the only callable public
+  client-facing backend boundary below the view layer
+- `src/domain/<feature>/api/**` as carrier-only public boundary types used by
+  those application services
 - domain-owned contracts declared in named domain modules as inner backend
   ports, not alternate client boundaries and not `application/` use-case
   coordinators
@@ -126,7 +129,7 @@ The canonical intentional public boundaries are:
 ### User-Initiated Application Flow
 
 1. the shell activates a prepared screen
-2. `View/` receives a user gesture
+2. FXML-backed `View/` controllers receive user gestures
 3. `View/` forwards to `ViewModel/`
 4. `ViewModel/` calls a same-feature or foreign public
    `*ApplicationService`
@@ -137,7 +140,7 @@ The canonical intentional public boundaries are:
 
 ### Shell-Scoped Runtime Flow
 
-1. a view contribution or `assembly/` obtains `ShellRuntimeContext`
+1. a view contribution obtains `ShellRuntimeContext`
 2. shell-owned services such as inspector publishing, backend capability
    lookup, or typed runtime sessions are adapted into component-local
    collaborators
@@ -160,8 +163,8 @@ The allowed outer-layer bridging exceptions are explicit and narrow:
 
 - `bootstrap/` may instantiate and register shell/view/data roots because it
   is the composition root.
-- `src/view/<component>/*ViewContribution.java` and `assembly/` may use shell
-  contracts because shell composition is a root concern of the view layer.
+- `src/view/<component>/*ViewContribution.java` may use shell contracts because
+  shell composition is a root concern of the view layer.
 - `src/data/<feature>/*ServiceContribution.java` may use shell service
   registration contracts because backend capability export is a root
   concern of the data layer.
@@ -183,10 +186,9 @@ boundaries.
 - `bootstrap/**` owning feature-specific business or presentation logic
 - source-local data shapes or framework types leaking from `src/data/**` into
   `src/domain/**`
-- shell implementation classes leaking below the view contribution or
-  `assembly/` boundary
+- shell implementation classes leaking below the view contribution boundary
 - cross-feature imports of foreign private `View/`, `ViewModel/`, `assembly/`,
-  domain modules, `gateway/`, `model/`, or `mapper/` buckets
+  view `api/`, domain modules, `gateway/`, `model/`, or `mapper/` buckets
 - duplicate rule ownership across shell, view, domain, and data instead of one
   authoritative owner plus translation at boundaries
 
@@ -209,9 +211,11 @@ Current mechanical ownership:
   the bootstrap-only access rule for `shell.host.AppShell`,
   foreign-domain-public-boundary-only access below the view layer, and
   feature-cycle freedom across domain, view, data, and shell package slices.
-- `./gradlew checkViewArchitecture` owns internal MVVM topology, while
+- `./gradlew checkViewArchitecture` currently owns the transitional MVVM
+  topology that predates declarative MVVM, while
   `./gradlew compileJava` owns compiler-precise view-layer dependency bans,
-  shell API allowlists, and public view `api/` signature leak checks.
+  shell API allowlists, and public view `api/` signature leak checks until the
+  checks are migrated to the target topology.
 - `./gradlew compileJava` owns compiler-precise domain boundary purity:
   public operational members on domain application-service roots and public
   domain `api/` signatures must stay free of outer-layer types, foreign

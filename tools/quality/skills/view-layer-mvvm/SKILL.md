@@ -1,6 +1,6 @@
 ---
 name: view-layer-mvvm
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**`, including `*ViewContribution`, `assembly/`, `View/`, `ViewModel/`, `api/`, and adjacent `UI.md`. This skill defines the mandatory SaltMarcher view-layer execution rules for all agents working in that layer.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**` or view FXML resources, including `*ViewContribution`, `View/`, `ViewModel/`, `resources/view/**`, and adjacent `UI.md`. This skill defines SaltMarcher's declarative JavaFX MVVM target.
 ---
 
 # View Layer MVVM
@@ -8,23 +8,11 @@ description: Use before planning, implementing, refactoring, or reviewing anythi
 ## Overview
 
 Use this skill to implement SaltMarcher view code according to the canonical
-MVVM architecture. Treat it as binding execution guidance for work under
-`src/view/**`.
+declarative JavaFX MVVM architecture. Treat it as binding execution guidance
+for work under `src/view/**` and `resources/view/**`.
 
-This skill does not preserve legacy view structure. It defines what correct
-view implementation must look like now.
-
-## Use This Skill For
-
-Use this skill before changing or reviewing:
-
-- any file under `src/view/**`
-- any `*ViewContribution.java`
-- any `assembly/`, `View/`, `ViewModel/`, or `api/` package in the view layer
-- any `UI.md` that defines or reviews a view component
-
-Do not use legacy package shape as precedent. If the code conflicts with this
-skill or the canonical architecture standard, the code is debt.
+Existing legacy view structure is not precedent. Current `assembly/`, view
+`api/`, `Model/`, `Controller/`, and `interactor/` buckets are migration debt.
 
 ## Canonical Truth
 
@@ -33,119 +21,105 @@ skill or the canonical architecture standard, the code is debt.
 - Project-wide agent-governance rules live in
   [AGENTS.md](../../../../AGENTS.md).
 - This skill operationalizes those rules for agent work in the view layer.
-- Existing code is not allowed to redefine the model.
 
 ## Required Workflow
 
 Before editing a view component:
 
-1. Identify every touched type and assign it one target role: root entrypoint,
-   `assembly`, `View`, `ViewModel`, or `api`.
-2. Check the planned source dependencies against the MVVM standard before
-   writing code.
-3. Move ambiguous logic toward the single role that owns it instead of splitting
-   it across multiple buckets.
-4. Reject any solution whose only justification is "the current code already
-   does it there."
+1. Assign every touched type one role: root contribution, `View`, or
+   `ViewModel`.
+2. For new or substantially refactored view roots, plan FXML under
+   `resources/view/<component>/`.
+3. Check imports against the allowed Java/JavaFX API surface before writing
+   code.
+4. Move ambiguous logic to the role that owns it instead of copying existing
+   legacy placement.
 
 When reviewing view-layer changes:
 
-1. Check that each type has one role only.
-2. Check that presentation decisions are owned by one `ViewModel`.
-3. Check that cross-component reuse goes only through public `api/`.
-4. Treat legacy package names or mixed responsibilities as findings, not
-   exceptions.
+1. Check that UI structure and JavaFX control code stay in `View/` or FXML.
+2. Check that presentation state and actions stay in `ViewModel/`.
+3. Check that business behavior stays behind root domain application services.
+4. Treat new `assembly/`, view `api/`, `Model/`, `Controller/`, or
+   `interactor/` buckets as findings.
 
 ## Required Placement Rules
 
 ### Root Entrypoint
 
-`<Component>ViewContribution.java` is shell registration only.
+`<Component>ViewContribution.java` is the shell-facing composition adapter.
 
-- Put `registrationSpec()` and shell registration there.
-- Delegate routine construction into `assembly/`.
-- Do not put domain wiring, scene-graph construction, or presentation logic
-  there.
-
-### `assembly/`
-
-`assembly/` owns composition and shell/runtime adaptation.
-
-- Create the component `View` and `ViewModel` there.
-- Obtain shell/runtime services there.
-- Adapt external collaborators into component-local construction there.
-- Keep shell-facing code there instead of leaking it into lower buckets.
+- Put `registrationSpec()` and `createScreen(...)` there.
+- Create or obtain the component `ViewModel` there.
+- Load the FXML-backed view there or delegate FXML loading to a small own
+  `View/` factory.
+- Adapt view nodes into `ShellScreen` slots there.
+- Do not put business rules, presentation policy, or JavaFX layout
+  construction there.
 
 ### `View/`
 
-`View/` owns JavaFX scene graph and widget behavior.
+`View/` owns FXML controllers and JavaFX UI behavior.
 
-- Put nodes, controls, dialogs, popups, cell factories, bindings, and widget
-  composition there.
+- Put `@FXML` controllers, UI-only helpers, dialogs, popups, menus, cell
+  factories, and control adapters there.
+- Bind controls to `ViewModel/` properties and observable collections.
 - Forward user gestures into the `ViewModel`.
-- Keep widget-local ephemeral UI state there when it is local to one subtree.
-- Do not call domain APIs or encode presentation policy there.
+- Keep widget-local ephemeral state there when it is local to one control
+  subtree.
+- Do not call domain APIs, data APIs, or shell APIs there.
 
 ### `ViewModel/`
 
-`ViewModel/` owns presentation state and presentation decisions.
+`ViewModel/` owns bindable presentation state and actions.
 
-- Put view-consumable state, derived display facts, actions, and domain-response
-  shaping there.
-- Call injected domain feature APIs there.
-- Make one `ViewModel` the single owner of cross-widget presentation decisions
-  for one screen or reusable view root.
-- Do not reference JavaFX, shell types, data-layer types, or `View/` there.
-
-### `api/`
-
-`api/` is the only public view-to-view reuse boundary.
-
-- Export reusable view-layer factories, wrappers, or facades there when reuse is
-  intentional.
-- Keep consumers dependent on `api/` only.
-- Do not leak private implementation bucket types through public signatures.
+- Put view-consumable properties, observable lists, records, enums, status
+  values, selected-item state, and action methods there.
+- Own enablement, visibility, labels, validation messages, loading state,
+  failure state, retry state, and stale-result state.
+- Call injected root domain application services there.
+- Use only `javafx.beans.*` and `javafx.collections.*` from JavaFX.
+- Do not reference `javafx.scene.*`, `javafx.stage.*`, `javafx.fxml.*`,
+  shell types, data-layer types, or own `View/`.
 
 ## Default Placement Heuristics
 
-- If code creates, configures, or mutates JavaFX nodes, it belongs in `View/`.
-- If code owns presentation state, command handling, enablement, visibility,
-  labels, or domain-to-UI interpretation, it belongs in `ViewModel/`.
-- If code wires shell/runtime/domain collaborators together, it belongs in
-  `assembly/`.
-- If code is an intentional cross-component surface, it belongs in `api/`.
-- If code is shell registration only, it belongs in the root
-  `*ViewContribution`.
+- If code declares controls, layout, dialogs, popups, cell factories, or
+  widget event handlers, it belongs in FXML or `View/`.
+- If code decides what should be shown, enabled, selected, labelled, loaded, or
+  reported to the user, it belongs in `ViewModel/`.
+- If code owns business meaning or invariants, it belongs in `src/domain/**`
+  behind a root application service.
+- If code composes shell slots, loads FXML roots, or creates a view model, it
+  belongs in the root `*ViewContribution`.
 
 ## Forbidden Moves
 
-- Do not add new `Model/`, `Controller/`, or `interactor/` buckets for new
-  view-layer work.
-- Do not import `src.domain.*` or `src.data.*` into `View/`.
-- Do not import `javafx.*`, `shell.*`, `src.data.*`, or own `View/` into
-  `ViewModel/`.
-- Do not let shell types appear below the root entrypoint or `assembly/`.
-- Do not import another component's private `View/`, `ViewModel/`, or
-  `assembly/` buckets.
-- Do not duplicate cross-component DTOs or wrappers when a public `api/`
-  boundary should exist.
+- Do not add new `assembly/`, `api/`, `Model/`, `Controller/`, or
+  `interactor/` buckets for target view work.
+- Do not import `src.domain.*`, `src.data.*`, or `shell.*` into `View/`.
+- Do not import JavaFX scene, stage, or fxml APIs into `ViewModel/`.
+- Do not let `ViewModel/` return `Node`, `Control`, `Scene`, `Stage`, or other
+  scene graph/window types.
+- Do not let shell types appear below the root entrypoint.
+- Do not import another component's private view packages.
 - Do not store the only copy of shared presentation decisions inside widgets,
-  callbacks, or local helper classes in `View/`.
+  callbacks, or controller-local fields.
+
+## FXML Rules
+
+- Prefer FXML for new and substantially refactored view roots.
+- Keep FXML under `resources/view/<component>/`.
+- Do not use inline FXML scripts.
+- `fx:controller` classes are `View/` classes.
+- `@FXML` methods may translate events into view-model actions, but they must
+  not own business or cross-widget presentation decisions.
 
 ## Correctness Rule
 
-Correct view code follows the target MVVM model even when nearby legacy code
-does not. Legacy layouts are migration debt. They never justify a new placement
-decision.
-
-## When In Doubt
-
-- Resolve ambiguity toward the smallest role that cleanly owns the concern.
-- Prefer moving presentation interpretation into `ViewModel/` over duplicating
-  it in multiple `View/` classes.
-- Prefer moving shell/runtime adaptation into `assembly/` over leaking it into
-  the component interior.
-- Prefer introducing a deliberate `api/` over cross-component reach-through.
+Correct view code follows the declarative MVVM target even when nearby legacy
+code does not. Legacy layouts are migration debt. They never justify a new
+placement decision.
 
 ## References
 

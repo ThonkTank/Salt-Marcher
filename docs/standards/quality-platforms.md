@@ -63,11 +63,11 @@ checks currently promoted to errors are:
 - `StringCaseLocaleUsage`
 - `StringSplitter`
 
-`compileJava` does not run the jQAssistant MVVM blocker. Graph-shaped MVVM
-analysis enters local quality through `checkViewArchitecture`, which is wired
-directly into the central `check` aggregate. This keeps focused compilation
-verification independent from graph analysis while ensuring `build` still runs
-the full architecture harness through `check`.
+`compileJava` does not run the jQAssistant view-topology blocker. Graph-shaped
+view analysis enters local quality through `checkViewArchitecture`, which is
+wired directly into the central `check` aggregate. This keeps focused
+compilation verification independent from graph analysis while ensuring
+`build` still runs the full architecture harness through `check`.
 
 ### Complexity, Duplication, And Metrics
 
@@ -121,7 +121,7 @@ CKJM blocks on these thresholds:
 - Number of public methods (`NPM`): `30`
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
-of the jQAssistant MVVM blocker; they may be run together for quality
+of the jQAssistant view-topology blocker; they may be run together for quality
 investigation without pulling in the view-architecture graph analysis.
 
 Checkstyle metrics and Semgrep are deferred unless current tooling cannot
@@ -183,7 +183,7 @@ Architecture-focused entrypoints:
   Aggregates `architectureTest`, `pmdArchitectureMain`, and
   `:build-harness:check`.
 - `./gradlew checkViewArchitecture --console=plain`
-  Runs the explicit jQAssistant MVVM topology analysis.
+  Runs the explicit jQAssistant view-topology analysis.
 
 The Gradle convention implementation must keep these public entrypoints stable
 while organizing internal wiring by policy area: invocation behavior, compiler
@@ -256,13 +256,15 @@ standard defines which engine owns which class of architecture rule.
 Operationally, architecture checks enter local quality through:
 
 - `compileJava`
-  Runs Error Prone architecture checks, including positive root
-  `createScreen(...)` delegation into the owning view `assembly/`.
+  Runs Error Prone architecture checks. Some current view checks still reflect
+  the transitional pre-ADR-017 `assembly/` topology until explicit checker
+  migration work updates them.
 - `architectureTest`
   Runs ArchUnit dependency and cycle checks, including view-component cycle
   freedom.
 - `checkViewArchitecture`
-  Runs explicit jQAssistant MVVM topology analysis.
+  Runs explicit jQAssistant view-topology analysis for the current
+  transitional MVVM checks.
 - `checkArchitecture`
   Aggregates ArchUnit, PMD architecture rules, and the build-harness.
 - `check`

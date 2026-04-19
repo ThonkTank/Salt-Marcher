@@ -146,10 +146,11 @@ information or public-signature awareness: MVVM dependency bans, `ViewModel/`
 framework independence, shell API allowlists, public domain-boundary signature
 purity, public domain api carrier shape, domain service/factory statelessness,
 service-registry registration placement, presentation-state placement,
-scene-graph placement between `assembly/` and `View/`, visual-styling
-exceptions, reflection-bypass bans, and public API signature leaks from private
-buckets, including compiler-visible data adapter collaborator boundaries. It is
-not the owner for repository topology or broad package graph rules.
+JavaFX API placement between `View/`, `ViewModel/`, and transitional
+composition code, visual-styling exceptions, reflection-bypass bans, and public
+API signature leaks from private buckets, including compiler-visible data
+adapter collaborator boundaries. It is not the owner for repository topology or
+broad package graph rules.
 
 ### `ArchUnit`
 
@@ -161,12 +162,13 @@ root method contracts, or compiler-precise public-signature bans.
 
 ### `jQAssistant`
 
-`jQAssistant` owns graph-shaped architecture rules where the canonical model
-spans buckets and files: MVVM bucket topology, view-component root count,
-graph-shaped cross-component boundaries, and bucket placement such as
-`assembly`-only wiring types. It is not the owner for general domain or data
-topology, nor for compiler-precise signature and framework checks that produce
-better diagnostics inside `compileJava`.
+`jQAssistant` owns graph-shaped architecture rules where the current enforced
+view model spans buckets and files: transitional MVVM bucket topology,
+view-component root count, graph-shaped cross-component boundaries, and
+transitional bucket placement such as `assembly`-only wiring types. It is not
+the owner for general domain or data topology, nor for compiler-precise
+signature and framework checks that produce better diagnostics inside
+`compileJava`.
 
 ### Gradle-Owned Verification Tasks
 
@@ -209,7 +211,7 @@ check` lifecycle.
 
 The jQAssistant view-architecture entrypoint uses an invocation-local temporary
 graph-store directory. Focused compile verification does not run the
-jQAssistant MVVM blocker.
+jQAssistant view-topology blocker.
 
 Architecture gate diagnostics must come from the current invocation. The
 compiler-integrated Error Prone architecture checks, ArchUnit architecture
@@ -230,8 +232,8 @@ their prerequisite output was not produced.
 ### Explicit View-Architecture Entry Point
 
 - `./gradlew checkViewArchitecture`
-  This is the explicit reporting entrypoint for the canonical graph-shaped MVVM
-  blocker.
+  This is the explicit reporting entrypoint for the current graph-shaped
+  view-topology blocker.
 
 ### Explicit Non-View Architecture Aggregate
 
@@ -246,7 +248,8 @@ their prerequisite output was not produced.
 - `./gradlew check`
   This is the local blocking aggregate for the architecture harness plus
   adjacent blocking quality gates wired into the repository. It runs the
-  canonical `jQAssistant` MVVM blocker through `checkViewArchitecture`.
+  current `jQAssistant` view-topology blocker through
+  `checkViewArchitecture`.
 
 ### Explicit Gradle-Owned Resource Entry Points
 

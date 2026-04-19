@@ -1,9 +1,13 @@
 # ADR 007: Shared View API Boundary
 
-- Status: Accepted
+- Status: Superseded by [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
 - Date: 2026-04-18
 
 ## Context
+
+This ADR is a historical record of SaltMarcher's intermediate public view API
+boundary. The current target architecture is defined by ADR 017 and the MVVM
+standard.
 
 SaltMarcher's current view reuse is still too ad hoc. Components already reuse
 presentation helpers from other components, but they often do so by importing
