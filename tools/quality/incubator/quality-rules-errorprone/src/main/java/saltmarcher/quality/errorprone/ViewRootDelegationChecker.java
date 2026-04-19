@@ -81,9 +81,15 @@ public final class ViewRootDelegationChecker extends BugChecker
 
             @Override
             public Void visitReturn(ReturnTree returnTree, Void unused) {
-                if (insideCreateScreen
-                        && isAssemblyBackedExpression(returnTree.getExpression(), component, assemblyBackedLocals)) {
+                if (!insideCreateScreen) {
+                    return super.visitReturn(returnTree, unused);
+                }
+                if (isAssemblyBackedExpression(returnTree.getExpression(), component, assemblyBackedLocals)) {
                     hasAssemblyBackedReturn[0] = true;
+                } else {
+                    violations.add("createScreen return -> return expression is not backed by src.view."
+                            + component
+                            + ".assembly.*");
                 }
                 return super.visitReturn(returnTree, unused);
             }

@@ -6,14 +6,12 @@ import src.data.creatures.mapper.CreatureCatalogPageMapper;
 import src.data.creatures.mapper.CreatureDetailMapper;
 import src.data.creatures.mapper.CreatureFilterValuesMapper;
 import src.data.creatures.mapper.EncounterCandidateMapper;
-import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.domain.creatures.api.CreatureCatalogPage;
 import src.domain.creatures.api.CreatureDetail;
 import src.domain.creatures.api.EncounterCandidate;
 import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.List;
-import java.util.Objects;
 
 public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogQueryPort {
 
@@ -24,13 +22,12 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogQ
     }
 
     SqliteCreatureCatalogQueryAdapter(SqliteCreatureCatalogLocalGateway gateway) {
-        this.gateway = Objects.requireNonNull(gateway, "gateway");
+        this.gateway = requireGateway(gateway);
     }
 
     @Override
     public DistinctFilterValues loadFilterValues() {
-        CreatureFilterValuesRecord record = gateway.loadFilterValues();
-        return CreatureFilterValuesMapper.toQueryValues(record);
+        return CreatureFilterValuesMapper.toQueryValues(gateway.loadFilterValues());
     }
 
     @Override
@@ -48,5 +45,12 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogQ
         return gateway.loadEncounterCandidates(spec).stream()
                 .map(EncounterCandidateMapper::toDomain)
                 .toList();
+    }
+
+    private static SqliteCreatureCatalogLocalGateway requireGateway(SqliteCreatureCatalogLocalGateway gateway) {
+        if (gateway == null) {
+            throw new IllegalArgumentException("gateway");
+        }
+        return gateway;
     }
 }

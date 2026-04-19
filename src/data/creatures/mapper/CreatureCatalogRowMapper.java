@@ -10,16 +10,18 @@ public final class CreatureCatalogRowMapper {
     }
 
     public static CreatureCatalogRow toDomain(CreatureCatalogRecord record) {
+        CreatureCatalogRecord.Identity identity = record.identity();
+        CreatureCatalogRecord.CombatStats combatStats = record.combatStats();
         return new CreatureCatalogRow(
-                record.id(),
-                safeText(record.name()),
-                safeText(record.size()),
-                safeText(record.creatureType()),
-                safeText(record.alignment()),
-                safeText(record.challengeRating()),
-                record.xp(),
-                record.hitPoints(),
-                record.armorClass());
+                identity.id(),
+                safeText(identity.name()),
+                safeText(identity.size()),
+                safeText(identity.creatureType()),
+                safeText(identity.alignment()),
+                safeText(combatStats.challengeRating()),
+                combatStats.xp(),
+                combatStats.hitPoints(),
+                combatStats.armorClass());
     }
 
     private static String safeText(@Nullable String value) {

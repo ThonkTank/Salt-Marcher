@@ -79,15 +79,17 @@ final class CreatureCatalogSearchSqliteStore {
                     totalCount = resultSet.getInt("total_count");
                 }
                 rows.add(new CreatureCatalogRecord(
-                        resultSet.getLong("id"),
-                        resultSet.getString("name"),
-                        resultSet.getString("size"),
-                        resultSet.getString("creature_type"),
-                        resultSet.getString("alignment"),
-                        resultSet.getString("cr"),
-                        resultSet.getInt("xp"),
-                        resultSet.getInt("hp"),
-                        resultSet.getInt("ac")));
+                        new CreatureCatalogRecord.Identity(
+                                resultSet.getLong("id"),
+                                resultSet.getString("name"),
+                                resultSet.getString("size"),
+                                resultSet.getString("creature_type"),
+                                resultSet.getString("alignment")),
+                        new CreatureCatalogRecord.CombatStats(
+                                resultSet.getString("cr"),
+                                resultSet.getInt("xp"),
+                                resultSet.getInt("hp"),
+                                resultSet.getInt("ac"))));
             }
         }
         return new CreatureCatalogPageRecord(rows, totalCount, spec.pageSize(), spec.pageOffset());
