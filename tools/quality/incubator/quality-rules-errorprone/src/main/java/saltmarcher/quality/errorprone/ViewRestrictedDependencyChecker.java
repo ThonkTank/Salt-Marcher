@@ -24,7 +24,7 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
 
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            if (isForbiddenReference(referencedType)) {
+            if (isForbiddenReference(referencedType, packageName)) {
                 forbiddenReferences.add(referencedType);
             }
         }
@@ -39,7 +39,7 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
                 .build();
     }
 
-    private static boolean isForbiddenReference(String referencedType) {
+    private static boolean isForbiddenReference(String referencedType, String sourcePackageName) {
         if (referencedType.startsWith("shell.")
                 || referencedType.startsWith("src.domain.")
                 || referencedType.startsWith("src.data.")) {
@@ -49,6 +49,8 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
-        return !"VIEW".equals(viewType.bucket());
+        return !"VIEW".equals(viewType.bucket())
+                || !ViewArchitectureSupport.isSameViewRootOrReusablePassiveViewReference(
+                        sourcePackageName, referencedType);
     }
 }

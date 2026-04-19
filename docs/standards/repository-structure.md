@@ -163,8 +163,9 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   included-build placement, and service-entrypoint presence rules below
   `src/data/`.
 - Existing `checkViewArchitecture`, PMD, ArchUnit, Error Prone, and
-  `build-harness` view checks enforce contribution-root placement for active
-  target view code.
+  `build-harness` view checks enforce contribution-root placement, root
+  composition, co-located ViewModel/passive View ownership, and FXML resource
+  placement for active target view code.
 - A feature root may contain Markdown documents with the standard co-located
   filenames without counting as alternate Java entrypoints.
 - The shell-workbench standard defines the semantic responsibilities of

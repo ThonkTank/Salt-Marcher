@@ -125,9 +125,10 @@ Gradle verification tasks over files, resources, or packaging metadata.
 
 `build-harness` owns repository-topology and presence rules whose truth is most
 directly expressed from the file tree: layout, package-path alignment,
-feature-root presence, topological bucket names, persistence schema contracts,
-and bans on fixture-based harness selftests. It is not the owner for dependency
-direction, compiler-resolved signature checks, or graph-shaped view topology.
+feature-root presence, topological bucket names, view-root composition,
+persistence schema contracts, and bans on fixture-based harness selftests. It
+is not the owner for dependency direction, compiler-resolved signature checks,
+or graph-shaped view topology.
 
 ### `PMD architecture`
 
@@ -175,7 +176,8 @@ checks that produce better diagnostics inside `compileJava`.
 Typed Gradle verification tasks in the build logic own repository-wide build
 and resource policies that are neither language-level architecture rules nor
 external platform reports: centralized stylesheet placement, style-class
-selector definitions, compiled-artifact bans, and packaging resources.
+selector definitions, FXML view-resource placement and script bans,
+compiled-artifact bans, and packaging resources.
 
 ## Implementation Model
 
@@ -258,6 +260,9 @@ their prerequisite output was not produced.
 - `./gradlew checkDefinedStyleClassSelectors`
   This is the primary blocking entrypoint for Java-authored style classes that
   must resolve to centralized selectors in `resources/*.css`.
+- `./gradlew checkViewFxmlResources`
+  This is the primary blocking entrypoint for optional FXML view-resource
+  placement, controller package ownership, and inline FXML script bans.
 - `./gradlew checkNoCompiledArtifactsInSource`
   This is the primary blocking entrypoint for compiled-artifact bans in active
   source roots.

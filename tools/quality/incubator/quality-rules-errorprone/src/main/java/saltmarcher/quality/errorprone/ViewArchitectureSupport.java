@@ -204,6 +204,40 @@ final class ViewArchitectureSupport {
         return viewType != null && "LEGACY".equals(viewType.bucket());
     }
 
+    static boolean isSameViewRootReference(String sourcePackageName, String referencedType) {
+        return packageNameOf(referencedType).equals(sourcePackageName);
+    }
+
+    static boolean isReusablePassiveViewReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && "views".equals(viewType.component())
+                && "VIEW".equals(viewType.bucket());
+    }
+
+    static boolean isSameViewRootOrReusablePassiveViewReference(String sourcePackageName, String referencedType) {
+        return isSameViewRootReference(sourcePackageName, referencedType)
+                || isReusablePassiveViewReference(referencedType);
+    }
+
+    private static String packageNameOf(String referencedType) {
+        if (referencedType == null || referencedType.isBlank()) {
+            return "";
+        }
+        String topLevelType = referencedType.replaceFirst("\\$.*$", "");
+        if (topLevelType.startsWith("src.view.")) {
+            String[] segments = topLevelType.split("\\.");
+            if (segments.length >= 3 && "views".equals(segments[2])) {
+                return "src.view.views";
+            }
+            if (segments.length >= 4 && Set.of("tabs", "topbar", "state", "details").contains(segments[2])) {
+                return String.join(".", segments[0], segments[1], segments[2], segments[3]);
+            }
+        }
+        int separator = topLevelType.lastIndexOf('.');
+        return separator < 0 ? "" : topLevelType.substring(0, separator);
+    }
+
     static boolean isAllowedContributionShellType(String referencedType) {
         return isAllowedShellType(referencedType, CONTRIBUTION_ALLOWED_SHELL_TYPES);
     }

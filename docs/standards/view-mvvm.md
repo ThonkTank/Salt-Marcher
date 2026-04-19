@@ -289,12 +289,19 @@ shape:
   passive `*View` files needed by that contribution.
 - Detail entries define `*ViewModel` and `*View` content only; they do not
   define bootstrap-discovered `*Contribution` roots.
-- Contributions may use the allowed shell API subset, own ViewModels, own
-  Views, JavaFX `Node`, and domain application-service boundaries.
+- Reusable `src/view/views` Java files are passive `*View` files.
+- Contributions may use the allowed shell API subset, co-located ViewModels,
+  co-located Views, reusable generic passive Views, JavaFX `Node`, and domain
+  application-service boundaries.
 - ViewModels may use JavaFX beans/collections and domain application-service
-  boundaries, but not shell, views, data, or concrete shell host types.
+  boundaries, but not shell, views, data, concrete shell host types, or
+  foreign view-root ViewModels.
 - Views may use JavaFX UI APIs but not shell, domain, data, or
-  ApplicationService types.
+  ApplicationService types; contribution-owned Views may reference only
+  co-located passive Views or reusable generic passive Views.
+- Optional FXML resources live under `resources/view/{tabs,topbar,state,details}`
+  or `resources/view/views`, use view-layer controllers only, and do not use
+  inline scripts.
 - State-pane precedence is modeled explicitly.
 - Legacy component-local buckets are absent from migrated target code.
 

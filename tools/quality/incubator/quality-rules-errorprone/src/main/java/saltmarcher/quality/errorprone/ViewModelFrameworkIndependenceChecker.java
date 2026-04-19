@@ -26,7 +26,7 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
 
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            collectForbiddenReferences(referencedType, contribution, forbiddenReferences);
+            collectForbiddenReferences(referencedType, contribution, packageName, forbiddenReferences);
         }
 
         if (forbiddenReferences.isEmpty()) {
@@ -42,16 +42,17 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
     private static void collectForbiddenReferences(
             String qualifiedName,
             boolean contribution,
+            String sourcePackageName,
             Set<String> forbiddenReferences) {
         if (qualifiedName == null || qualifiedName.isBlank()) {
             return;
         }
-        if (isForbidden(qualifiedName, contribution)) {
+        if (isForbidden(qualifiedName, contribution, sourcePackageName)) {
             forbiddenReferences.add(qualifiedName);
         }
     }
 
-    private static boolean isForbidden(String referencedType, boolean contribution) {
+    private static boolean isForbidden(String referencedType, boolean contribution, String sourcePackageName) {
         if (referencedType.startsWith("javafx.")) {
             return contribution
                     ? !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType)
@@ -71,10 +72,16 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             return false;
         }
         if (contribution) {
-            return !"CONTRIBUTION".equals(viewType.bucket())
-                    && !"MODEL".equals(viewType.bucket())
-                    && !"VIEW".equals(viewType.bucket());
+            if ("CONTRIBUTION".equals(viewType.bucket()) || "MODEL".equals(viewType.bucket())) {
+                return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+            }
+            if ("VIEW".equals(viewType.bucket())) {
+                return !ViewArchitectureSupport.isSameViewRootOrReusablePassiveViewReference(
+                        sourcePackageName, referencedType);
+            }
+            return true;
         }
-        return !"MODEL".equals(viewType.bucket());
+        return !"MODEL".equals(viewType.bucket())
+                || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
     }
 }

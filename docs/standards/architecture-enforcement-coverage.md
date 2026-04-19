@@ -40,6 +40,20 @@ controls; reusable generic views live under `src/view/views`.
   `saltmarcher:MvvmAllowedViewBuckets` and
   `saltmarcher:MvvmNoLegacyBuckets` (`checkViewArchitecture`), and ArchUnit
   `viewLayerMustNotUseViewContributionImplementations` (`architectureTest`).
+- `view-root-file-role`: active view roots may contain only their
+  `*Contribution.java` entrypoint where discoverable, one co-located
+  `*ViewModel.java`, and passive `*View.java` files; reusable generic files
+  under `src/view/views` must be passive `*View.java` files. This is enforced
+  by `build-harness` `view-root-file-role` and
+  `view-reusable-root-shape` (`:build-harness:check`).
+- `view-root-composition`: each discoverable root under `src/view/tabs/*`,
+  `src/view/topbar/*`, and `src/view/state/*` contains exactly one
+  `*Contribution.java`, exactly one co-located `*ViewModel.java`, and at least
+  one passive `*View.java`; each detail root under `src/view/details/*`
+  contains no `*Contribution.java`, exactly one `*ViewModel.java`, and at
+  least one passive `*View.java`. This is enforced by `build-harness`
+  `view-root-composition` and `view-details-no-contribution-root`
+  (`:build-harness:check`).
 - `view-contribution-entrypoint-shape`: shell-facing view entrypoints use
   `*Contribution`, implement `shell.api.ShellContribution`, expose
   `registrationSpec()` and `bind(ShellRuntimeContext)`, and are discovered only
@@ -61,9 +75,10 @@ controls; reusable generic views live under `src/view/views`.
   `SaltMarcherEntrypointRule` for source-local panel shape
   (`pmdArchitectureMain`).
 - `view-contribution-dependency-boundary`: contributions may use shell public
-  contracts, own ViewModels, passive views, JavaFX scene `Node`, domain root
-  application services, and domain `api` carriers, but not data, bootstrap,
-  shell host internals, legacy view topology, or private domain internals
+  contracts, their co-located ViewModel, co-located passive views, reusable
+  generic passive views, JavaFX scene `Node`, domain root application services,
+  and domain `api` carriers, but not data, bootstrap, shell host internals,
+  legacy view topology, foreign view roots, or private domain internals
   through Error Prone `ViewModelFrameworkIndependence` and
   `FeatureShellApiAllowlist` (`compileJava`), jQAssistant
   `saltmarcher:MvvmModelDependencies` (`checkViewArchitecture`), and
@@ -71,15 +86,17 @@ controls; reusable generic views live under `src/view/views`.
   and `viewContributionsAndViewModelsMustOnlyUseFeatureApisAtBackendBoundary`
   (`architectureTest`).
 - `view-model-dependency-boundary`: ViewModels may use JavaFX
-  beans/collections, JDK types, and domain public boundaries, but not shell,
-  concrete views, data, bootstrap, shell host internals, or domain internals
-  through Error Prone `ViewModelFrameworkIndependence` (`compileJava`) and
-  jQAssistant `saltmarcher:MvvmViewModelDependencies`
+  beans/collections, JDK types, same-root ViewModels, and domain public
+  boundaries, but not shell, concrete views, data, bootstrap, shell host
+  internals, foreign view roots, or domain internals through Error Prone
+  `ViewModelFrameworkIndependence` (`compileJava`) and jQAssistant
+  `saltmarcher:MvvmViewModelDependencies`
   (`checkViewArchitecture`).
 - `view-passive-panel-dependency-boundary`: passive panel views may use JavaFX,
-  JDK types, and passive view helpers, but not shell, domain, data, bootstrap,
-  contributions, ViewModels, ApplicationServices, or legacy view topology
-  through Error Prone
+  JDK types, co-located passive view helpers, and reusable generic passive
+  views, but not shell, domain, data, bootstrap, contributions, ViewModels,
+  ApplicationServices, foreign view roots, or legacy view topology through
+  Error Prone
   `ViewRestrictedDependencies` (`compileJava`), jQAssistant
   `saltmarcher:MvvmNoPrivateForeignComponentDependencies`
   (`checkViewArchitecture`), and
@@ -94,20 +111,33 @@ controls; reusable generic views live under `src/view/views`.
   references, is blocked by Error Prone `ViewReflectionBypass` (`compileJava`).
 - `view-component-cycle-freedom`: view packages remain cycle-free through
   ArchUnit `viewComponentsMustStayCycleFree` (`architectureTest`).
+- `view-fxml-resource-boundary`: optional declarative view resources must live
+  under `resources/view/tabs/<entry>/`, `resources/view/topbar/<entry>/`,
+  `resources/view/state/<entry>/`, `resources/view/details/<entry>/`, or
+  direct reusable `resources/view/views/`; inline FXML scripts are forbidden;
+  `fx:controller` must point to `src.view.tabs`, `src.view.topbar`,
+  `src.view.state`, `src.view.details`, or `src.view.views`. This is enforced
+  by Gradle-owned `checkViewFxmlResources` (`checkViewArchitecture` and
+  `check`).
 
 Mechanical trace:
 
 - Java view code lives under direct files in `src/view/tabs/*`,
   `src/view/topbar/*`, `src/view/state/*`, `src/view/details/*`, or reusable
   `src/view/views`.
-- A contribution file defines one shell-discovered adapter; detail entries do
-  not define bootstrap-discovered contributions.
+- A discoverable contribution root defines one shell-discovered adapter, one
+  co-located ViewModel, and at least one passive View; detail entries do not
+  define bootstrap-discovered contributions.
 - A ViewModel file defines one presentation state/action holder and imports no
-  shell APIs or concrete view classes.
+  shell APIs, concrete view classes, or foreign view-root ViewModels.
 - A view file defines one passive JavaFX fragment and imports no shell, domain,
-  data, ApplicationService, Contribution, or ViewModel types.
-- Contributions may use shell public contracts, own ViewModels, passive views,
-  JavaFX `Node`, domain application-service roots, and domain `api` carriers.
+  data, ApplicationService, Contribution, ViewModel, or foreign view-root view
+  types.
+- Contributions may use shell public contracts, co-located ViewModels,
+  co-located passive views, reusable generic passive views, JavaFX `Node`,
+  domain application-service roots, and domain `api` carriers.
+- Optional FXML resources stay in the view resource tree and do not use inline
+  scripts.
 - Details/history publication goes through shell-owned contracts.
 - State-pane precedence is explicit: active left-bar tab content wins while
   present; otherwise registered state-pane tabs are shown.

@@ -19,6 +19,7 @@ public final class ArchitectureChecker {
                 new BuildHarnessPolicyRules(),
                 new RepositoryTopologyRules(),
                 new SourceLayoutRules(),
+                new ViewFeatureRules(),
                 new DomainFeatureRules(),
                 new ShellSurfaceRules(),
                 new DataPersistenceRules());
