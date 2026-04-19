@@ -4,14 +4,15 @@ import javafx.scene.Node;
 import src.view.encounter.assembly.EncounterRuntimeSessionFactory;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class EncounterRuntimeSession {
 
-    private final Node controls;
-    private final Node workspace;
-    private final Node state;
+    private final Supplier<Node> controls;
+    private final Supplier<Node> workspace;
+    private final Supplier<Node> state;
 
-    private EncounterRuntimeSession(Node controls, Node workspace, Node state) {
+    private EncounterRuntimeSession(Supplier<Node> controls, Supplier<Node> workspace, Supplier<Node> state) {
         this.controls = Objects.requireNonNull(controls, "controls");
         this.workspace = Objects.requireNonNull(workspace, "workspace");
         this.state = Objects.requireNonNull(state, "state");
@@ -22,18 +23,21 @@ public final class EncounterRuntimeSession {
     }
 
     public static EncounterRuntimeSession of(Node controls, Node workspace, Node state) {
-        return new EncounterRuntimeSession(controls, workspace, state);
+        Objects.requireNonNull(controls, "controls");
+        Objects.requireNonNull(workspace, "workspace");
+        Objects.requireNonNull(state, "state");
+        return new EncounterRuntimeSession(() -> controls, () -> workspace, () -> state);
     }
 
     public Node controls() {
-        return controls;
+        return Objects.requireNonNull(controls.get(), "controls");
     }
 
     public Node workspace() {
-        return workspace;
+        return Objects.requireNonNull(workspace.get(), "workspace");
     }
 
     public Node state() {
-        return state;
+        return Objects.requireNonNull(state.get(), "state");
     }
 }

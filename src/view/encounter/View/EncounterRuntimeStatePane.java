@@ -9,11 +9,13 @@ import src.view.encounter.ViewModel.EncounterSnapshot;
 import src.view.encounter.ViewModel.EncounterViewModel;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class EncounterRuntimeStatePane {
 
     private final EncounterViewModel viewModel;
     private final VBox content = new VBox(10);
+    private final Supplier<Node> contentNode = () -> content;
     private final Label lockSummary = new Label();
     private final Label excludeSummary = new Label();
     private final Label statusText = new Label();
@@ -50,7 +52,7 @@ public final class EncounterRuntimeStatePane {
     }
 
     public Node content() {
-        return content;
+        return Objects.requireNonNull(contentNode.get(), "content");
     }
 
     private void refreshFromViewModel() {

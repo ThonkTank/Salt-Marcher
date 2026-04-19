@@ -17,12 +17,15 @@ import src.view.creatures.ViewModel.CreaturesCatalogViewData;
 import src.view.creatures.ViewModel.CreaturesCatalogViewModel;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class CreaturesView {
 
     private final CreaturesCatalogViewModel viewModel;
     private final VBox controls = new VBox(10);
     private final VBox workspace = new VBox(10);
+    private final Supplier<Node> controlsNode = () -> controls;
+    private final Supplier<Node> workspaceNode = () -> workspace;
     private final TableView<CreaturesCatalogViewData.Row> table = new TableView<>();
     private final Label pageSummaryLabel = new Label();
     private final Label statusLabel = new Label();
@@ -38,11 +41,11 @@ public final class CreaturesView {
     }
 
     public Node controls() {
-        return controls;
+        return Objects.requireNonNull(controlsNode.get(), "controls");
     }
 
     public Node workspace() {
-        return workspace;
+        return Objects.requireNonNull(workspaceNode.get(), "workspace");
     }
 
     private void buildControls() {

@@ -16,12 +16,15 @@ import src.view.encounter.ViewModel.EncounterSnapshot;
 import src.view.encounter.ViewModel.EncounterViewModel;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class EncounterView {
 
     private final EncounterViewModel viewModel;
     private final VBox controls;
     private final VBox workspace;
+    private final Supplier<Node> controlsNode;
+    private final Supplier<Node> workspaceNode;
     private final ComboBox<String> difficulty = new ComboBox<>();
     private final EncounterFilterPane filterPane;
     private final Button generateButton = new Button("Generate");
@@ -39,16 +42,18 @@ public final class EncounterView {
         this.filterPane = new EncounterFilterPane(viewModel);
         this.controls = buildControls();
         this.workspace = buildWorkspace();
+        this.controlsNode = () -> controls;
+        this.workspaceNode = () -> workspace;
         this.viewModel.addChangeListener(this::refreshFromViewModel);
         refreshFromViewModel();
     }
 
     public Node controls() {
-        return controls;
+        return Objects.requireNonNull(controlsNode.get(), "controls");
     }
 
     public Node workspace() {
-        return workspace;
+        return Objects.requireNonNull(workspaceNode.get(), "workspace");
     }
 
     private VBox buildControls() {

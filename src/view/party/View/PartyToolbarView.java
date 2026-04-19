@@ -19,12 +19,14 @@ import src.view.party.ViewModel.PartyToolbarSnapshot;
 import src.view.party.ViewModel.PartyToolbarViewModel;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class PartyToolbarView {
 
     private final PartyToolbarViewModel viewModel;
     private final PartyToolbarMemberListRenderer memberListRenderer;
     private final Button triggerButton = new Button();
+    private final Supplier<Node> triggerNode = () -> triggerButton;
     private final Popup popup = new Popup();
     private final Label summaryLabel = new Label();
     private final Label daySummaryLabel = new Label();
@@ -61,7 +63,7 @@ public final class PartyToolbarView {
     }
 
     public Node node() {
-        return triggerButton;
+        return Objects.requireNonNull(triggerNode.get(), "triggerButton");
     }
 
     private void togglePopup() {

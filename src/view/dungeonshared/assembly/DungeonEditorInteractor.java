@@ -12,13 +12,16 @@ import src.view.dungeonshared.ViewModel.DungeonViewportViewModel;
 import src.view.mapshared.api.MapCellViewModel;
 import src.view.mapshared.api.MapWorkspaceRenderModel;
 import src.view.mapshared.api.MapWorkspaceSceneViewData;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 /**
  * Editor coordination for the dungeon control-panel placeholder slice.
  */
 public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor {
     private final DungeonEditorControls controls;
+    private final Supplier<Node> controlsNode;
     private final DungeonEditorStatePane statePane;
-    private final DungeonSelectionPublisher selectionPublisher;
+    private final Consumer<@Nullable MapSelectionRef> selectionSink;
     private @Nullable MapSelectionRef selectedTarget;
     private DungeonEditorTool activeTool = DungeonEditorTool.defaultTool();
     public DungeonEditorInteractor(DungeonSelectionPublisher selectionPublisher) {
@@ -27,8 +30,9 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
                 DungeonEditorInteractor::loadedRenderModel
         ), DungeonMapSurfaceController.shared());
         this.controls = new DungeonEditorControls(mapController(), this::currentMapViewport);
+        this.controlsNode = () -> controls;
         this.statePane = new DungeonEditorStatePane(mapController(), this::viewportSummary, this::currentMapViewport);
-        this.selectionPublisher = selectionPublisher;
+        this.selectionSink = selectionRef -> applySelection(selectionPublisher, selectionRef);
         controls.setOnToolChanged(this::setActiveTool);
         controls.showActiveTool(activeTool);
         statePane.setActiveTool(activeTool);
@@ -40,7 +44,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
         finishInitialization();
     }
     public Node controls() {
-        return controls;
+        return controlsNode.get();
     }
     public Node workspaceNode() {
         return workspace();
@@ -58,7 +62,7 @@ public final class DungeonEditorInteractor extends AbstractDungeonMapInteractor 
     }
     private void showSelection(@Nullable MapSelectionRef selectionRef) {
         selectedTarget = selectionRef;
-        applySelection(selectionPublisher, selectionRef);
+        selectionSink.accept(selectionRef);
         statePane.showSelectedTarget(DungeonMapSelectionMapper.toView(selectionRef));
     }
     private void showSelection( DungeonSelectionItemViewModel selection) {

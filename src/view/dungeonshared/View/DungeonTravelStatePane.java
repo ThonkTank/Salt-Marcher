@@ -20,6 +20,7 @@ public final class DungeonTravelStatePane {
     private final DungeonMapSurfaceViewModel controller;
     private final Supplier<DungeonViewportViewModel> viewportSupplier;
     private final VBox content = new VBox(12);
+    private final Supplier<Node> contentNode = () -> content;
     private final TextField searchField = new TextField();
     private final ListView<DungeonMapSummaryViewModel> mapList = new ListView<>();
     private final TextField createNameField = new TextField();
@@ -73,7 +74,7 @@ public final class DungeonTravelStatePane {
         refresh();
     }
     public Node content() {
-        return content;
+        return Objects.requireNonNull(contentNode.get(), "content");
     }
     public void setOnTargetSelected(Consumer<DungeonSelectionItemViewModel> onTargetSelected) {
         this.onTargetSelected = onTargetSelected == null ? ignored -> { } : onTargetSelected;

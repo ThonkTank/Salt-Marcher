@@ -27,7 +27,7 @@ public final class DungeonMapSurfaceController extends AbstractDungeonMapCatalog
     private DungeonMapSurfaceController(DungeonApplicationService dungeon) {
         super(dungeon);
     }
-    public static DungeonMapSurfaceController shared() {
+    static DungeonMapSurfaceController shared() {
         return SHARED;
     }
     @Override

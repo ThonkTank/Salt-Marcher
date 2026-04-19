@@ -19,6 +19,7 @@ public final class DungeonEditorStatePane {
     private final Supplier<String> viewportSummarySupplier;
     private final Supplier<DungeonViewportViewModel> viewportSupplier;
     private final VBox content = new VBox(12);
+    private final Supplier<Node> contentNode = () -> content;
     private final Button deleteButton = new Button("Dungeon loeschen");
     private final ListView<DungeonSelectionItemViewModel> objectList = new ListView<>();
     private Consumer<DungeonSelectionItemViewModel> onTargetSelected = ignored -> { };
@@ -42,7 +43,7 @@ public final class DungeonEditorStatePane {
         refresh();
     }
     public Node content() {
-        return content;
+        return Objects.requireNonNull(contentNode.get(), "content");
     }
     public void setActiveTool(DungeonEditorTool activeTool) {
         this.activeTool = activeTool == null ? DungeonEditorTool.defaultTool() : activeTool;

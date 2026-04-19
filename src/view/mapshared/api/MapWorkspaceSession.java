@@ -1,7 +1,9 @@
 package src.view.mapshared.api;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.Supplier;
 import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 import src.view.mapshared.View.MapWorkspaceView;
@@ -9,9 +11,11 @@ import src.view.mapshared.View.MapWorkspaceView;
 public final class MapWorkspaceSession {
 
     private final MapWorkspaceView view;
+    private final Supplier<Node> node;
 
     private MapWorkspaceSession(MapWorkspaceView view) {
-        this.view = view;
+        this.view = Objects.requireNonNull(view, "view");
+        this.node = () -> this.view;
     }
 
     public static MapWorkspaceSession create() {
@@ -19,7 +23,7 @@ public final class MapWorkspaceSession {
     }
 
     public Node node() {
-        return view;
+        return Objects.requireNonNull(node.get(), "node");
     }
 
     public void show(MapWorkspaceRenderModel renderModel) {
