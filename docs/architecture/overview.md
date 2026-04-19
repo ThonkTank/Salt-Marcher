@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: System-wide architecture summary and entry point into the
 architecture documentation set.
 
@@ -130,14 +130,10 @@ runtime capabilities through service contributions.
 - Bootstrap discovers both generically. Adding a feature should not require
   routine shell or bootstrap edits.
 
-The view layer follows an MVVM model with:
-
-- shell composition in `assembly/`
-- presentation state and actions in `ViewModel/`
-- scene-graph ownership in `View/`
-- optional public cross-component reuse through `api/`
-
-Detailed rules live only in the dedicated MVVM standard.
+The view layer follows MVVM for `View/` and `ViewModel/` responsibilities, with
+SaltMarcher-specific composition in `assembly/` and justified optional public
+reuse or runtime-session boundaries in `api/`. Detailed rules live only in the
+dedicated MVVM standard.
 
 ## Presentation Styling
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: Repository structure, feature layout, and public entrypoint
 rules for active application code.
 
@@ -56,7 +56,7 @@ src/
     <component>/
       <PascalComponentName>ViewContribution.java
       assembly/
-      api/
+      api/              optional public reuse/session boundary
       View/
       ViewModel/
   domain/
@@ -147,8 +147,8 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   Treat that mismatch as migration debt until the checker can distinguish data
   features that intentionally do not export persistence schema truth.
 - The binding MVVM standard defines optional `api/` view buckets for public
-  cross-component reuse, and `checkViewArchitecture` is expected to enforce
-  that topology directly.
+  cross-component reuse or multi-contribution runtime-session boundaries, and
+  `checkViewArchitecture` is expected to enforce that topology directly.
 
 ## Packaging Rules
 
@@ -157,13 +157,15 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   contribution.
 - Markdown documentation files with the standard co-located names are allowed
   in those roots and do not count as alternate code entrypoints.
-- Presentation classes live under `assembly/`, optional `api/`, `View/`, or
-  `ViewModel/`.
+- Presentation classes live under `assembly/`, `View/`, `ViewModel/`, or a
+  justified optional `api/`.
 - `assembly/` is reserved for slice composition, shell adapters, and
   runtime-session composition.
 - A shared runtime-session carrier may live in `api/` when it is intentionally
   part of a public cross-component or multi-contribution boundary.
-- `api/` is reserved for the only public view-to-view boundary of a component.
+- `api/` is reserved for the only public view-to-view boundary of a component
+  and must not exist only to bypass private bucket rules or mirror internal
+  DTOs without a stability reason.
 - `ViewModel/` is the home for presentation state, actions, and presentation
   policy.
 - The root `*ApplicationService` is the only public client-facing backend

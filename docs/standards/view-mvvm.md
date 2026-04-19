@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: Binding view-layer architecture model, role boundaries,
 public reuse boundary, and enforcement targets for `src/view/**`.
 
@@ -24,6 +24,11 @@ The architectural goals are:
 ## Pattern Alignment
 
 - The canonical pattern name is `Model-View-ViewModel (MVVM)`.
+- `View/` and `ViewModel/` carry the standard MVVM responsibilities:
+  framework-facing view code binds to view-independent presentation state and
+  command-style actions owned by a view model.
+- `assembly/` and `api/` are SaltMarcher composition boundaries around MVVM,
+  not additional MVVM roles.
 - Fowler `Presentation Model` is the conceptual ancestor for pulling
   presentation behavior out of the view. SaltMarcher uses the more widely
   understood `ViewModel` term.
@@ -36,11 +41,12 @@ The architectural goals are:
 
 - `ViewModel/` is the single authoritative owner of presentation state and
   presentation decisions for one component root.
-- `View/` owns rendering, widget composition, and simple binding or projection
-  from the `ViewModel`.
-- `assembly/` is the only shell-facing composition boundary inside a component.
+- `View/` owns the UI tree, rendering, widget composition, gesture extraction,
+  and simple binding or projection from the `ViewModel`.
+- `assembly/` is the only shell-facing composition boundary inside a
+  component. It is not an MVVM layer.
 - Cross-component view reuse is opt-in and public only through
-  `src/view/<component>/api/**`.
+  `src/view/<component>/api/**`. `api/` is not an MVVM layer.
 - No private view bucket may be imported across component boundaries.
 - New components and architectural refactors target MVVM topology directly.
   Legacy `Model/`, `Controller/`, or `interactor/` buckets are migration debt
@@ -60,7 +66,8 @@ src/view/
 
 - The component root is reserved for exactly one `*ViewContribution`.
 - `api/` exists only when a component intentionally exports reusable
-  view-layer capabilities to other view components.
+  view-layer capabilities to other view components or owns a multi-contribution
+  runtime-session boundary.
 - Every other Java type in a component belongs to exactly one named bucket.
 
 ## Dependency Direction
@@ -131,7 +138,9 @@ into the component assembly.
 
 ### `assembly/`
 
-`assembly/` owns slice composition and all shell-facing adaptation.
+`assembly/` owns slice composition and all shell-facing adaptation. It is
+SaltMarcher's composition root for one view component, not a View, ViewModel,
+or additional MVVM participant.
 
 - Responsibilities:
   - create the component's `ViewModel` and `View`
@@ -156,9 +165,11 @@ into the component assembly.
 `View/` owns every JavaFX scene-graph type and every rendering concern.
 
 - Responsibilities:
-  - create nodes, controls, dialogs, popups, menus, and cell factories
+  - create the UI tree: nodes, controls, dialogs, popups, menus, and cell
+    factories
+  - render, style through style classes, and maintain widget layout
   - bind or project state from `ViewModel/` into widget state
-  - forward user actions into `ViewModel/`
+  - extract user gestures and forward command-style actions into `ViewModel/`
   - own local ephemeral widget state such as focus, selection models, popup
     visibility, or transient text that is purely local to one widget subtree
 - Allowed dependencies:
@@ -173,8 +184,8 @@ into the component assembly.
 
 ### `ViewModel/`
 
-`ViewModel/` owns presentation state, presentation policy, and user-triggered
-actions.
+`ViewModel/` owns view-independent presentation state, presentation policy, and
+user-triggered command behavior.
 
 - Responsibilities:
   - hold view-consumable presentation values, records, enums, and state
@@ -183,6 +194,10 @@ actions.
   - map domain responses into presentation state
   - own derived presentation facts such as enablement, visibility, labels, and
     status summaries when those decisions matter beyond one widget
+  - own loading, failure, cancellation, and stale-result state for asynchronous
+    presentation work
+  - own synchronization state that must survive widget refresh or is shared
+    across multiple widgets
 - Allowed dependencies:
   - own `ViewModel/`
   - `src.domain.<feature>.*ApplicationService` and
@@ -197,12 +212,16 @@ actions.
 
 ### `api/`
 
-`api/` is the only public reuse boundary between view components.
+`api/` is the only public reuse boundary between view components. It is a
+SaltMarcher public module boundary, not a View, ViewModel, or additional MVVM
+participant.
 
 - Responsibilities:
   - expose reusable view-layer capabilities intentionally
   - shield consumers from private bucket types
   - define stable public factory, facade, or wrapper types for view reuse
+  - host shared runtime-session carriers only when multiple contributions need
+    the same public session boundary
 - Allowed dependencies:
   - own private buckets as implementation detail
   - `javafx.*` when a public view API intentionally returns reusable nodes or
@@ -216,11 +235,28 @@ actions.
 
 - Direct imports from another component's `View/`, `ViewModel/`, or `assembly/`
   are forbidden.
-- A component that wants to be reusable must publish an explicit `api/`
-  package.
+- A component that wants to be reusable by a foreign component must publish an
+  explicit `api/` package.
 - A consuming component may depend only on that foreign `api/` package.
 - `*shared` naming may still be used as an organizational hint, but the public
   boundary is `api/`, not the component name.
+- An `api/` package is justified only by at least one real foreign component
+  consumer or a multi-contribution runtime-session need.
+- Do not create `api/` packages only to bypass private bucket rules, mirror
+  internal DTOs, or expose pass-through wrappers without a stability reason.
+
+## Lifecycle, Commands, And Async Work
+
+- Long-lived listeners, subscriptions, callbacks, or observers must have
+  explicit removal, disposal, weak-listener use, or a documented shell-lifetime
+  rationale.
+- Direct command-style methods on the `ViewModel` are acceptable. A new command
+  abstraction is not required, but command availability, disabled reasons,
+  result status, and user-visible failures must be exposed by the `ViewModel`
+  instead of being inferred by widgets.
+- Blocking I/O must not run on the JavaFX UI thread. When asynchronous work is
+  introduced, the `ViewModel` owns loading, failure, cancellation, retry, and
+  stale-result behavior.
 
 ## Forbidden Patterns
 
@@ -286,14 +322,18 @@ Concrete rule IDs and checker names are recorded in the
     presentation-state naming and placement bans; reflective reach-through
     bans; and public-signature bans on leaking private view bucket types
 - `Review-Only`
-  - whether an `api/` package represents intentional reuse rather than
-    convenience exposure
+  - whether an `api/` package represents intentional reuse or a real
+    multi-contribution runtime-session boundary rather than convenience
+    exposure
   - whether cross-component reuse copied DTOs or wrappers instead of defining
     the smallest intended `api/`
   - the semantic remainder of shell-specific type usage below the root
     entrypoint or `assembly/` when the distinction is about intent rather than
     referenced type shape
   - `ViewModel/` as the single owner of cross-widget presentation decisions
+  - command availability, result, loading, failure, cancellation, and
+    stale-result ownership
+  - listener, subscription, callback, and observer lifecycle semantics
   - deeper semantic checks that distinguish simple binding from duplicated
     presentation policy
   - whether changes to legacy surfaces move toward the MVVM target model

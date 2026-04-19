@@ -94,7 +94,8 @@ Mechanical trace against the MVVM standard:
 
 `Review-Only`:
 
-- Whether `api/` represents intentional reuse rather than convenience exposure.
+- Whether `api/` represents intentional reuse or a real multi-contribution
+  runtime-session boundary rather than convenience exposure.
 - Whether cross-component reuse is minimized to the smallest intended `api/`
   instead of copied DTOs, wrappers, or needless pass-throughs.
 - Whether root entrypoints are semantically thin beyond the mechanically
@@ -106,6 +107,14 @@ Mechanical trace against the MVVM standard:
 - Whether `ViewModel/` is the single owner of user-triggered actions,
   domain-response mapping, cross-widget presentation decisions, and shared
   presentation state.
+- Whether command availability, disabled reasons, results, and user-visible
+  failures are owned by `ViewModel/` rather than inferred in widgets.
+- Whether long-lived listeners, subscriptions, callbacks, and observers have
+  explicit removal, disposal, weak-listener use, or a documented shell-lifetime
+  rationale.
+- Whether asynchronous presentation work keeps blocking I/O off the UI thread
+  and leaves loading, failure, cancellation, retry, and stale-result semantics
+  under `ViewModel/` ownership.
 - Whether shell-specific type usage below the root entrypoint or `assembly/`
   is semantically acceptable when the distinction is about intent rather than
   referenced type shape.

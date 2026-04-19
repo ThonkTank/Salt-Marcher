@@ -20,11 +20,14 @@ SaltMarcher introduces `src/view/<component>/api/**` as the only public
 view-to-view boundary.
 
 - A component may expose `api/` only when it intentionally supports reuse by
-  other view components.
+  other view components or owns a public multi-contribution runtime-session
+  boundary.
 - Consuming components may depend only on that foreign `api/` package.
 - Foreign `ViewModel/`, `View/`, and `assembly/` packages remain private.
 - Public `api/` signatures must not leak private bucket types.
 - The implementing types behind `api/` remain owned by the exporting component.
+- DTO duplication is acceptable only when it creates stable public ownership
+  for the exported boundary, not when it mirrors internal DTOs for convenience.
 
 The detailed packaging and dependency rules live in the MVVM standard.
 
@@ -37,6 +40,8 @@ The detailed packaging and dependency rules live in the MVVM standard.
   entrypoint.
 - Future view-architecture checks must model `api/` as the only allowed
   cross-component boundary.
+- Review must reject `api/` packages whose only purpose is bypassing private
+  bucket rules or exposing pass-through copies without a stability reason.
 
 ## Alternatives Considered
 

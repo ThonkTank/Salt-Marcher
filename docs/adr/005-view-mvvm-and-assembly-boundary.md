@@ -32,7 +32,9 @@ architecture model.
 - `ViewModel/` owns presentation state, user-triggered actions, presentation
   policy, and domain-API interaction.
 - `assembly/` owns shell adapters, runtime-session composition, and slice
-  construction that wires shell-owned services into the MVVM slice.
+  construction that wires shell-owned services around the MVVM slice.
+  `assembly/` is SaltMarcher composition infrastructure, not a fourth MVVM
+  role.
 - Root `*ViewContribution` classes are thin shell-registration entrypoints and
   delegate routine slice wiring into `assembly/`.
 - Cross-component reuse is explicit and public only; private foreign view
@@ -48,8 +50,9 @@ the view-layer standard, not in this ADR.
   than precedent.
 - Existing components that store presentation state in `javafx.*` types must
   be migrated toward `ViewModel`-owned framework-free state over time.
-- The repository structure standard permits `assembly/`, optional `api/`,
-  `View/`, and `ViewModel/` below `src/view/<component>/`.
+- The repository structure standard permits `assembly/`, `View/`,
+  `ViewModel/`, and justified optional `api/` buckets below
+  `src/view/<component>/`.
 - Every view component, including historically `*shared`-named components,
   still owns exactly one `*ViewContribution` root entrypoint.
 - The shell-workbench standard must describe shell access as a root or
