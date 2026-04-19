@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 @BugPattern(
         name = "ViewModelOwnershipNaming",
-        summary = "Presentation-state and presentation-model types must live in ViewModel packages.",
+        summary = "Presentation-state and presentation-model types must live in src.view.models.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewModelOwnershipNamingChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
@@ -26,17 +26,13 @@ public final class ViewModelOwnershipNamingChecker extends BugChecker implements
                 || ViewArchitectureSupport.VIEW_MODEL_PACKAGE.matcher(packageName).matches()) {
             return Description.NO_MATCH;
         }
-        ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(packageName + ".PackageMarker");
-        if (ViewArchitectureSupport.isDeclaredSharedApi(viewType)) {
-            return Description.NO_MATCH;
-        }
         String simpleName = tree.getSimpleName().toString();
         if (!PRESENTATION_TYPE_NAME.matcher(simpleName).matches()) {
             return Description.NO_MATCH;
         }
         return buildDescription(tree)
                 .setMessage("Presentation-owned type '" + simpleName
-                        + "' must live in ViewModel/, not in package '"
+                        + "' must live in src.view.models, not in package '"
                         + packageName + "'.")
                 .build();
     }

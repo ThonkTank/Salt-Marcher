@@ -21,15 +21,15 @@ final class ShellSurfaceRules implements ArchitectureRule {
                     "NavigationGroupSpec.java",
                     "ServiceContribution.java",
                     "ServiceRegistry.java",
+                    "ShellBinding.java",
+                    "ShellContributionModel.java",
                     "ShellContributionSpec.java",
                     "ShellRuntimeContext.java",
                     "ShellRuntimeStateSpec.java",
-                    "ShellScreen.java",
                     "ShellSlot.java",
                     "ShellTabMode.java",
                     "ShellTabSpec.java",
-                    "ShellTopBarSpec.java",
-                    "ShellViewContribution.java");
+                    "ShellTopBarSpec.java");
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {

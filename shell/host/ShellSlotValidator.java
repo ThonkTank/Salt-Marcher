@@ -1,10 +1,9 @@
 package shell.host;
 
 import shell.api.ContributionKey;
+import shell.api.ShellBinding;
 import shell.api.ShellContributionSpec;
-import shell.api.ShellScreen;
 import shell.api.ShellSlot;
-import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import shell.api.ShellRuntimeStateSpec;
 import shell.api.ShellTopBarSpec;
@@ -14,15 +13,10 @@ final class ShellSlotValidator {
     private ShellSlotValidator() {
     }
 
-    static ShellSlotContent validate(ShellContributionSpec registrationSpec, ShellScreen screen) {
-        ShellSlotContent slotContent = ShellSlotContent.from(screen);
-        if (registrationSpec instanceof ShellTabSpec tabSpec) {
+    static ShellSlotContent validate(ShellContributionSpec registrationSpec, ShellBinding binding) {
+        ShellSlotContent slotContent = ShellSlotContent.from(binding);
+        if (registrationSpec instanceof ShellTabSpec) {
             requireSlot(slotContent, registrationSpec.key(), ShellSlot.COCKPIT_MAIN);
-            if (tabSpec.mode() == ShellTabMode.RUNTIME) {
-                forbidSlots(slotContent, registrationSpec.key(),
-                        ShellSlot.TOP_BAR, ShellSlot.COCKPIT_DETAILS, ShellSlot.COCKPIT_STATE);
-                return slotContent;
-            }
             forbidSlots(slotContent, registrationSpec.key(), ShellSlot.TOP_BAR, ShellSlot.COCKPIT_DETAILS);
             return slotContent;
         }

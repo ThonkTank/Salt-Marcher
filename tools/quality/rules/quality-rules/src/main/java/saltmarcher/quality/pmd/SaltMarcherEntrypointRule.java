@@ -44,17 +44,17 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
             asCtx(data).addViolationWithMessage(node,
                     "View contribution model must declare a public no-arg constructor for shell discovery.");
         }
-        if (!sourceFacts.text().contains("ShellViewContribution")) {
+        if (!sourceFacts.text().contains("ShellContributionModel")) {
             asCtx(data).addViolationWithMessage(node,
-                    "View contribution model must implement shell.api.ShellViewContribution until the shell contribution API is renamed.");
+                    "View contribution model must implement shell.api.ShellContributionModel.");
         }
         if (!sourceFacts.hasRegistrationSpecMethod()) {
             asCtx(data).addViolationWithMessage(node,
                     "View contribution model must declare ShellContributionSpec registrationSpec().");
         }
-        if (!sourceFacts.hasCreateScreenMethod()) {
+        if (!sourceFacts.hasBindMethod()) {
             asCtx(data).addViolationWithMessage(node,
-                    "View contribution model must declare ShellScreen createScreen(ShellRuntimeContext).");
+                    "View contribution model must declare ShellBinding bind(ShellRuntimeContext).");
         }
 
         ContributionSpecKind specKind = detectContributionSpecKind(sourceFacts.text());
@@ -75,11 +75,11 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
         if (!sourceFacts.hasExplicitPublicFinalClass()) {
             asCtx(data).addViolationWithMessage(node, "Passive panel view must be declared public final.");
         }
-        if (sourceFacts.text().contains("ShellViewContribution")
+        if (sourceFacts.text().contains("ShellContributionModel")
                 || sourceFacts.hasRegistrationSpecMethod()
-                || sourceFacts.hasCreateScreenMethod()) {
+                || sourceFacts.hasBindMethod()) {
             asCtx(data).addViolationWithMessage(node,
-                    "Passive panel views must not own shell registration or create ShellScreen content.");
+                    "Passive panel views must not own shell registration or bind shell content.");
         }
     }
 

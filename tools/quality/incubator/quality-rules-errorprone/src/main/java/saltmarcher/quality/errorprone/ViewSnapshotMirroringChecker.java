@@ -16,7 +16,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "ViewSnapshotMirroring",
-        summary = "View code must bind to ViewModel state instead of mirroring whole snapshots through manual refresh loops.",
+        summary = "View code must bind to contribution-model state instead of mirroring whole snapshots through manual refresh loops.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewSnapshotMirroringChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -24,14 +24,12 @@ public final class ViewSnapshotMirroringChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        var matcher = ViewArchitectureSupport.VIEW_PACKAGE.matcher(packageName);
-        if (!matcher.matches()) {
+        if (!ViewArchitectureSupport.VIEW_PANEL_PACKAGE.matcher(packageName).matches()) {
             return Description.NO_MATCH;
         }
-        if (!containsTargetController(tree)) {
+        if (!containsTargetPanelView(tree)) {
             return Description.NO_MATCH;
         }
-        String component = matcher.group(1);
 
         Set<String> violations = new LinkedHashSet<>();
         new TreePathScanner<Void, Void>() {
@@ -41,7 +39,7 @@ public final class ViewSnapshotMirroringChecker extends BugChecker
                 if (symbol != null) {
                     String owner = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
                     String methodName = symbol.getSimpleName().toString();
-                    if (isOwnViewModel(owner, component)
+                    if (ViewArchitectureSupport.isTargetViewModelReference(owner)
                             && ("snapshot".equals(methodName) || "addChangeListener".equals(methodName))) {
                         violations.add(owner + "." + methodName + "()");
                     }
@@ -55,23 +53,23 @@ public final class ViewSnapshotMirroringChecker extends BugChecker
         }
         return buildDescription(tree)
                 .setMessage("View package '" + packageName
-                        + "' mirrors ViewModel snapshots through manual refresh APIs: "
+                        + "' mirrors model snapshots through manual refresh APIs: "
                         + String.join(", ", violations)
-                        + ". Expose bindable properties/collections from ViewModel instead.")
+                        + ". Expose bindable properties/collections from src.view.models instead.")
                 .build();
     }
 
-    private static boolean isOwnViewModel(String qualifiedType, String component) {
-        return qualifiedType != null
-                && ViewArchitectureSupport.isOwnViewModelReference(qualifiedType, component);
-    }
-
-    private static boolean containsTargetController(CompilationUnitTree tree) {
+    private static boolean containsTargetPanelView(CompilationUnitTree tree) {
         boolean[] found = {false};
         new TreeScanner<Void, Void>() {
             @Override
             public Void visitClass(ClassTree classTree, Void unused) {
-                if (classTree.getSimpleName().toString().endsWith("Controller")) {
+                String simpleName = classTree.getSimpleName().toString();
+                if (simpleName.endsWith("ControlsView")
+                        || simpleName.endsWith("MainView")
+                        || simpleName.endsWith("DetailsView")
+                        || simpleName.endsWith("StateView")
+                        || simpleName.endsWith("TopBarView")) {
                     found[0] = true;
                     return null;
                 }

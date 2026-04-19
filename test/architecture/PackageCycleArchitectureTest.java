@@ -32,12 +32,12 @@ public final class PackageCycleArchitectureTest {
             if (nextDot >= 0) {
                 rootName = rootName.substring(0, nextDot);
             }
-            return SliceIdentifier.of(normalizedViewRoot(rootName));
+            return SliceIdentifier.of(rootName);
         }
 
         @Override
         public String getDescription() {
-            return "src.view root package, with trailing shared normalized to the base root";
+            return "src.view target package, normally models or views";
         }
     };
 
@@ -60,10 +60,4 @@ public final class PackageCycleArchitectureTest {
     static final ArchRule shellPackagesMustBeCycleFree =
             slices().matching("shell.(*)..").should().beFreeOfCycles();
 
-    private static String normalizedViewRoot(String rootName) {
-        if (rootName.endsWith("shared") && rootName.length() > "shared".length()) {
-            return rootName.substring(0, rootName.length() - "shared".length());
-        }
-        return rootName;
-    }
 }

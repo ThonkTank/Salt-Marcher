@@ -15,12 +15,12 @@ import java.util.Set;
 
 @BugPattern(
         name = "ShellLifecycleHookOwnership",
-        summary = "ShellScreen lifecycle hooks must be invoked only by shell.host.AppShell.",
+        summary = "ShellBinding lifecycle hooks must be invoked only by shell.host.AppShell.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ShellLifecycleHookOwnershipChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
 
-    private static final Set<String> LIFECYCLE_HOOKS = Set.of("onShow", "onHide");
+    private static final Set<String> LIFECYCLE_HOOKS = Set.of("onActivate", "onDeactivate");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -34,7 +34,7 @@ public final class ShellLifecycleHookOwnershipChecker extends BugChecker
             public Void visitMethodInvocation(MethodInvocationTree methodInvocation, Void unused) {
                 Symbol symbol = ASTHelpers.getSymbol(methodInvocation);
                 if (symbol instanceof Symbol.MethodSymbol methodSymbol
-                        && isShellScreenLifecycleHook(methodSymbol, state)) {
+                        && isShellBindingLifecycleHook(methodSymbol, state)) {
                     violations.add(methodInvocation.toString());
                 }
                 return super.visitMethodInvocation(methodInvocation, unused);
@@ -45,8 +45,8 @@ public final class ShellLifecycleHookOwnershipChecker extends BugChecker
             return Description.NO_MATCH;
         }
         return buildDescription(tree)
-                .setMessage("ShellScreen lifecycle hooks are shell-owned activation callbacks."
-                        + " Only shell.host.AppShell may invoke onShow() or onHide(). Found: "
+                .setMessage("ShellBinding lifecycle hooks are shell-owned activation callbacks."
+                        + " Only shell.host.AppShell may invoke onActivate() or onDeactivate(). Found: "
                         + String.join(", ", violations))
                 .build();
     }
@@ -58,13 +58,13 @@ public final class ShellLifecycleHookOwnershipChecker extends BugChecker
                 .endsWith("shell/host/AppShell.java");
     }
 
-    private static boolean isShellScreenLifecycleHook(Symbol.MethodSymbol methodSymbol, VisitorState state) {
+    private static boolean isShellBindingLifecycleHook(Symbol.MethodSymbol methodSymbol, VisitorState state) {
         if (!LIFECYCLE_HOOKS.contains(methodSymbol.getSimpleName().toString())) {
             return false;
         }
-        Type shellScreenType = state.getTypeFromString("shell.api.ShellScreen");
-        return shellScreenType != null
+        Type shellBindingType = state.getTypeFromString("shell.api.ShellBinding");
+        return shellBindingType != null
                 && methodSymbol.owner instanceof Symbol.ClassSymbol owner
-                && ASTHelpers.isSubtype(owner.type, shellScreenType, state);
+                && ASTHelpers.isSubtype(owner.type, shellBindingType, state);
     }
 }

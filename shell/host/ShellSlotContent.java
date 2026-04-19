@@ -4,11 +4,11 @@ import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
-import shell.api.ShellScreen;
+import shell.api.ShellBinding;
 import shell.api.ShellSlot;
 
 /**
- * Sanitized slot content published by a shell screen.
+ * Sanitized slot content published by a shell binding.
  */
 final class ShellSlotContent {
 
@@ -18,15 +18,15 @@ final class ShellSlotContent {
         this.nodes = Map.copyOf(nodes);
     }
 
-    static ShellSlotContent from(ShellScreen screen) {
-        Map<ShellSlot, Node> provided = screen.slotContent();
+    static ShellSlotContent from(ShellBinding binding) {
+        Map<ShellSlot, Node> provided = binding.slotContent();
         if (provided == null || provided.isEmpty()) {
             return new ShellSlotContent(Map.of());
         }
         Map<ShellSlot, Node> sanitized = new EnumMap<>(ShellSlot.class);
         for (Map.Entry<ShellSlot, Node> entry : provided.entrySet()) {
             if (entry.getKey() == null) {
-                throw new IllegalArgumentException("Shell screen must not declare a null slot key.");
+                throw new IllegalArgumentException("Shell binding must not declare a null slot key.");
             }
             if (entry.getValue() != null) {
                 sanitized.put(entry.getKey(), entry.getValue());

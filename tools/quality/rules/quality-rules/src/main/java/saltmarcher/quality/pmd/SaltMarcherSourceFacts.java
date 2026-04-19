@@ -18,8 +18,8 @@ final class SaltMarcherSourceFacts {
 
     static final Pattern REGISTRATION_SPEC_METHOD_PATTERN =
             Pattern.compile("\\bShellContributionSpec\\s+registrationSpec\\s*\\(\\s*\\)");
-    static final Pattern CREATE_SCREEN_METHOD_PATTERN =
-            Pattern.compile("\\bShellScreen\\s+createScreen\\s*\\(\\s*(?:final\\s+)?(?:shell\\.api\\.)?ShellRuntimeContext\\s+\\w+\\s*\\)");
+    static final Pattern BIND_METHOD_PATTERN =
+            Pattern.compile("\\bShellBinding\\s+bind\\s*\\(\\s*(?:final\\s+)?(?:shell\\.api\\.)?ShellRuntimeContext\\s+\\w+\\s*\\)");
     static final Pattern SERVICE_REGISTER_METHOD_PATTERN =
             Pattern.compile("\\bvoid\\s+register\\s*\\(\\s*(?:final\\s+)?(?:shell\\.api\\.)?ServiceRegistry\\.Builder\\s+\\w+\\s*\\)");
     static final Pattern SHELL_SLOT_USAGE_PATTERN =
@@ -167,8 +167,8 @@ final class SaltMarcherSourceFacts {
         return REGISTRATION_SPEC_METHOD_PATTERN.matcher(text).find();
     }
 
-    boolean hasCreateScreenMethod() {
-        return CREATE_SCREEN_METHOD_PATTERN.matcher(text).find();
+    boolean hasBindMethod() {
+        return BIND_METHOD_PATTERN.matcher(text).find();
     }
 
     boolean hasInstanceFields() {

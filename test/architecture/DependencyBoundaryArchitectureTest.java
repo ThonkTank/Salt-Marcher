@@ -28,40 +28,43 @@ public final class DependencyBoundaryArchitectureTest {
     }
 
     @ArchTest
-    static final ArchRule featureEntrypointsMustNotReachDomainInternalsOrData =
-            noClasses()
-                    .that()
-                    .resideInAPackage("src.view..")
-                    .and()
-                    .haveSimpleNameEndingWith("ViewContribution")
-                    .should()
-                    .dependOnClassesThat()
-                    .resideInAnyPackage("src.data..");
-
-    @ArchTest
-    static final ArchRule featureEntrypointsMustOnlyUseFeatureApisAtBackendBoundary =
+    static final ArchRule viewLayerMustUseModelsOrViewsPackages =
             classes()
                     .that()
                     .resideInAPackage("src.view..")
-                    .and()
-                    .haveSimpleNameEndingWith("ViewContribution")
-                    .should(onlyDependOnDomainPublicBoundaries());
+                    .should(resideInTargetViewPackage());
 
     @ArchTest
-    static final ArchRule viewImplementationMustOnlyUseDomainRootsAndApis =
+    static final ArchRule viewLayerMustNotUseViewContributionImplementations =
             classes()
                     .that()
                     .resideInAPackage("src.view..")
+                    .should(notBeViewContributionImplementation());
+
+    @ArchTest
+    static final ArchRule viewModelsMustNotReachBootstrapDataOrShellHost =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.view.models..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAnyPackage("bootstrap..", "src.data..", "shell.host..");
+
+    @ArchTest
+    static final ArchRule viewModelsMustOnlyUseFeatureApisAtBackendBoundary =
+            classes()
+                    .that()
+                    .resideInAPackage("src.view.models..")
                     .should(onlyDependOnDomainPublicBoundaries());
 
     @ArchTest
-    static final ArchRule viewMustNotReachBootstrapOrData =
+    static final ArchRule passiveViewsMustNotReachModelShellDomainDataOrBootstrap =
             noClasses()
                     .that()
-                    .resideInAPackage("src.view..")
+                    .resideInAPackage("src.view.views..")
                     .should()
                     .dependOnClassesThat()
-                    .resideInAnyPackage("bootstrap..", "src.data..");
+                    .resideInAnyPackage("bootstrap..", "shell..", "src.domain..", "src.data..", "src.view.models..");
 
     @ArchTest
     static final ArchRule viewComponentsMustStayCycleFree =
@@ -253,6 +256,40 @@ public final class DependencyBoundaryArchitectureTest {
                     String message = item.getName() + " depends on foreign domain internal " + target.getName();
                     events.add(SimpleConditionEvent.violated(item, message));
                 }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> resideInTargetViewPackage() {
+        return new ArchCondition<>("reside in src.view.models or src.view.views") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                String packageName = item.getPackageName();
+                if (packageName.equals("src.view.models")
+                        || packageName.startsWith("src.view.models.")
+                        || packageName.equals("src.view.views")
+                        || packageName.startsWith("src.view.views.")) {
+                    return;
+                }
+                String message = item.getName()
+                        + " lives in old view topology package "
+                        + packageName
+                        + "; move contribution models to src.view.models and passive panels to src.view.views";
+                events.add(SimpleConditionEvent.violated(item, message));
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notBeViewContributionImplementation() {
+        return new ArchCondition<>("not be a *ViewContribution implementation") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (!item.getSimpleName().endsWith("ViewContribution")) {
+                    return;
+                }
+                String message = item.getName()
+                        + " uses replaced *ViewContribution naming; use *TabModel or *WindowModel under src.view.models";
+                events.add(SimpleConditionEvent.violated(item, message));
             }
         };
     }

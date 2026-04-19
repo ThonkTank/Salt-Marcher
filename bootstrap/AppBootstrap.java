@@ -4,20 +4,20 @@ import org.jspecify.annotations.Nullable;
 import shell.host.AppShell;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
+import shell.api.ShellBinding;
 import shell.api.ShellContributionSpec;
+import shell.api.ShellContributionModel;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellRuntimeStateSpec;
-import shell.api.ShellScreen;
 import shell.api.ShellTabSpec;
 import shell.api.ShellTopBarSpec;
-import shell.api.ShellViewContribution;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 /**
- * Generic application bootstrap that discovers feature-owned view contributions from {@code src/}.
+ * Generic application bootstrap that discovers feature-owned shell contribution models from {@code src/}.
  */
 public final class AppBootstrap {
 
@@ -58,10 +58,10 @@ public final class AppBootstrap {
 
     private List<ResolvedContribution> discoverContributions(ShellRuntimeContext runtimeContext) {
         List<ResolvedContribution> resolved = new ArrayList<>();
-        for (ShellViewContribution contribution : discovery.discover()) {
+        for (ShellContributionModel contribution : discovery.discover()) {
             resolved.add(new ResolvedContribution(
                     contribution.registrationSpec(),
-                    contribution.createScreen(runtimeContext)));
+                    contribution.bind(runtimeContext)));
         }
         resolved.sort(Comparator.comparing(contribution -> contribution.registrationSpec().key().value()));
         return resolved;
@@ -70,15 +70,15 @@ public final class AppBootstrap {
     private void register(AppShell shell, ResolvedContribution contribution) {
         ShellContributionSpec spec = contribution.registrationSpec();
         if (spec instanceof ShellTabSpec tabSpec) {
-            shell.registerTab(tabSpec, contribution.screen());
+            shell.registerTab(tabSpec, contribution.binding());
             return;
         }
         if (spec instanceof ShellTopBarSpec topBarSpec) {
-            shell.registerTopBar(topBarSpec, contribution.screen());
+            shell.registerTopBar(topBarSpec, contribution.binding());
             return;
         }
         if (spec instanceof ShellRuntimeStateSpec runtimeStateSpec) {
-            shell.registerRuntimeState(runtimeStateSpec, contribution.screen());
+            shell.registerRuntimeState(runtimeStateSpec, contribution.binding());
             return;
         }
         throw new IllegalStateException("Unsupported shell contribution type: " + spec.getClass().getName());
@@ -113,7 +113,7 @@ public final class AppBootstrap {
 
     private record ResolvedContribution(
             ShellContributionSpec registrationSpec,
-            ShellScreen screen
+            ShellBinding binding
     ) {
     }
 }

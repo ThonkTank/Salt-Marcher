@@ -41,21 +41,19 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        var matcher = ViewArchitectureSupport.VIEW_PACKAGE.matcher(packageName);
-        if (!matcher.matches()) {
+        if (!ViewArchitectureSupport.VIEW_PANEL_PACKAGE.matcher(packageName).matches()) {
             return Description.NO_MATCH;
         }
-        if (!containsTargetController(tree)) {
+        if (!containsTargetPanelView(tree)) {
             return Description.NO_MATCH;
         }
-        String component = matcher.group(1);
 
         Tree[] violatingTree = {null};
         new TreeScanner<Void, Void>() {
             @Override
             public Void visitIf(IfTree ifTree, Void unused) {
                 if (violatingTree[0] == null
-                        && referencesPresentationCarrier(ifTree.getCondition(), component)
+                        && referencesPresentationCarrier(ifTree.getCondition())
                         && (containsPresentationMutation(ifTree.getThenStatement())
                         || containsPresentationMutation(ifTree.getElseStatement()))) {
                     violatingTree[0] = ifTree;
@@ -66,7 +64,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
             @Override
             public Void visitSwitch(SwitchTree switchTree, Void unused) {
                 if (violatingTree[0] == null
-                        && referencesPresentationCarrier(switchTree.getExpression(), component)
+                        && referencesPresentationCarrier(switchTree.getExpression())
                         && containsPresentationMutation(switchTree)) {
                     violatingTree[0] = switchTree;
                 }
@@ -76,7 +74,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
             @Override
             public Void visitSwitchExpression(SwitchExpressionTree switchExpressionTree, Void unused) {
                 if (violatingTree[0] == null
-                        && referencesPresentationCarrier(switchExpressionTree.getExpression(), component)
+                        && referencesPresentationCarrier(switchExpressionTree.getExpression())
                         && containsPresentationMutation(switchExpressionTree)) {
                     violatingTree[0] = switchExpressionTree;
                 }
@@ -89,12 +87,12 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
         }
         return buildDescription(violatingTree[0])
                 .setMessage("View package '" + packageName
-                        + "' branches on a ViewModel presentation carrier while mutating widget presentation."
-                        + " Move shared labels, enablement, visibility, and style decisions into ViewModel state.")
+                        + "' branches on a contribution-model presentation carrier while mutating widget presentation."
+                        + " Move shared labels, enablement, visibility, and style decisions into src.view.models state.")
                 .build();
     }
 
-    private static boolean referencesPresentationCarrier(Tree tree, String component) {
+    private static boolean referencesPresentationCarrier(Tree tree) {
         if (tree == null) {
             return false;
         }
@@ -102,7 +100,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
         new TreeScanner<Void, Void>() {
             @Override
             public Void scan(Tree currentTree, Void unused) {
-                if (currentTree != null && isPresentationCarrier(currentTree, component)) {
+                if (currentTree != null && isPresentationCarrier(currentTree)) {
                     found[0] = true;
                     return null;
                 }
@@ -112,12 +110,17 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
         return found[0];
     }
 
-    private static boolean containsTargetController(CompilationUnitTree tree) {
+    private static boolean containsTargetPanelView(CompilationUnitTree tree) {
         boolean[] found = {false};
         new TreeScanner<Void, Void>() {
             @Override
             public Void visitClass(ClassTree classTree, Void unused) {
-                if (classTree.getSimpleName().toString().endsWith("Controller")) {
+                String simpleName = classTree.getSimpleName().toString();
+                if (simpleName.endsWith("ControlsView")
+                        || simpleName.endsWith("MainView")
+                        || simpleName.endsWith("DetailsView")
+                        || simpleName.endsWith("StateView")
+                        || simpleName.endsWith("TopBarView")) {
                     found[0] = true;
                     return null;
                 }
@@ -146,13 +149,13 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
         return found[0];
     }
 
-    private static boolean isPresentationCarrier(Tree tree, String component) {
+    private static boolean isPresentationCarrier(Tree tree) {
         var type = ASTHelpers.getType(tree);
         if (type == null || type.tsym == null) {
             return false;
         }
         String qualifiedName = type.tsym.getQualifiedName().toString();
-        if (!ViewArchitectureSupport.isOwnViewModelReference(qualifiedName, component)) {
+        if (!ViewArchitectureSupport.isTargetViewModelReference(qualifiedName)) {
             return false;
         }
         String simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);

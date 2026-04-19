@@ -38,16 +38,16 @@ final class ViewArchitectureSupport {
             "shell.api.InspectorSink",
             "shell.api.NavigationGraphicSupport",
             "shell.api.NavigationGroupSpec",
+            "shell.api.ShellBinding",
+            "shell.api.ShellContributionModel",
             "shell.api.ShellContributionSpec",
             "shell.api.ShellRuntimeContext",
             "shell.api.ShellRuntimeStateSpec",
-            "shell.api.ShellScreen",
             "shell.api.ServiceRegistry",
             "shell.api.ShellSlot",
             "shell.api.ShellTabMode",
             "shell.api.ShellTabSpec",
-            "shell.api.ShellTopBarSpec",
-            "shell.api.ShellViewContribution");
+            "shell.api.ShellTopBarSpec");
     private static final Set<String> DATA_ROOT_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ServiceContribution",
             "shell.api.ServiceRegistry");

@@ -19,7 +19,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
     private static final Pattern ENUM_CONSTANT_PATTERN = Pattern.compile("(?m)^\\s*([A-Z][A-Z0-9_]*)\\b");
     private static final Pattern PERMITS_CLAUSE_PATTERN = Pattern.compile(
             "(?s)sealed\\s+interface\\s+ShellContributionSpec\\s+permits\\s+([^\\{]+)\\{");
-    private static final Pattern SHELL_SCREEN_METHOD_PATTERN = Pattern.compile(
+    private static final Pattern SHELL_BINDING_METHOD_PATTERN = Pattern.compile(
             "(?m)^\\s*(?:default\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern PUBLIC_METHOD_PATTERN = Pattern.compile(
             "(?m)^\\s*public\\s+(?:synchronized\\s+)?(?:<[^>]+>\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
@@ -29,7 +29,8 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
     private static final Pattern DOMAIN_SETTER_STYLE_MUTATION_PATTERN = Pattern.compile(
             "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?void\\s+(set[A-Z][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern FEATURE_SPECIFIC_PACKAGE_REFERENCE_PATTERN = Pattern.compile(
-            "\\bsrc\\.(?:view|domain|data)\\.[a-z][A-Za-z0-9_]*\\.");
+            "\\bsrc\\.(?:domain|data)\\.[a-z][A-Za-z0-9_]*\\."
+                    + "|\\bsrc\\.view\\.(?!(?:models|views)\\b)[a-z][A-Za-z0-9_]*\\.");
     private static final Set<String> SHELL_SLOT_API_CONSTANTS = Set.of(
             "TOP_BAR",
             "COCKPIT_CONTROLS",
@@ -40,12 +41,12 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "ShellTabSpec",
             "ShellTopBarSpec",
             "ShellRuntimeStateSpec");
-    private static final Set<String> SHELL_SCREEN_ALLOWED_METHODS = Set.of(
-            "getTitle",
-            "getNavigationLabel",
+    private static final Set<String> SHELL_BINDING_ALLOWED_METHODS = Set.of(
+            "title",
+            "navigationLabel",
             "slotContent",
-            "onShow",
-            "onHide");
+            "onActivate",
+            "onDeactivate");
     private static final List<String> SHELL_RUNTIME_CONTEXT_ALLOWED_METHODS = List.of(
             "inspector",
             "services",
@@ -183,12 +184,12 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             }
         }
 
-        if (sourceFacts.relativePath().equals("shell/api/ShellScreen.java")) {
-            Set<String> methods = shellScreenMethods(sourceFacts.text());
-            if (!methods.equals(SHELL_SCREEN_ALLOWED_METHODS)) {
+        if (sourceFacts.relativePath().equals("shell/api/ShellBinding.java")) {
+            Set<String> methods = shellBindingMethods(sourceFacts.text());
+            if (!methods.equals(SHELL_BINDING_ALLOWED_METHODS)) {
                 asCtx(data).addViolationWithMessage(node,
-                        "ShellScreen must expose only prepared content and lifecycle hooks: "
-                                + String.join(", ", SHELL_SCREEN_ALLOWED_METHODS) + ".");
+                        "ShellBinding must expose only bound content and lifecycle hooks: "
+                                + String.join(", ", SHELL_BINDING_ALLOWED_METHODS) + ".");
             }
         }
 
@@ -381,8 +382,8 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
         return permittedTypes;
     }
 
-    private static Set<String> shellScreenMethods(String sourceText) {
-        Matcher matcher = SHELL_SCREEN_METHOD_PATTERN.matcher(sourceText);
+    private static Set<String> shellBindingMethods(String sourceText) {
+        Matcher matcher = SHELL_BINDING_METHOD_PATTERN.matcher(sourceText);
         Set<String> methods = new LinkedHashSet<>();
         while (matcher.find()) {
             String methodName = matcher.group(1);

@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import shell.api.ContributionKey;
 import shell.api.NavigationGroupSpec;
-import shell.api.ShellScreen;
+import shell.api.ShellBinding;
 import shell.api.ShellTabSpec;
 
 /**
@@ -33,12 +33,12 @@ final class ShellNavigationSidebar extends VBox {
         setAlignment(Pos.TOP_CENTER);
     }
 
-    void registerTab(ShellTabSpec registrationSpec, ShellScreen screen, Consumer<ContributionKey> onSelect) {
+    void registerTab(ShellTabSpec registrationSpec, ShellBinding binding, Consumer<ContributionKey> onSelect) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
-        Objects.requireNonNull(screen, "screen");
+        Objects.requireNonNull(binding, "binding");
         Objects.requireNonNull(onSelect, "onSelect");
-        ToggleButton button = createButton(registrationSpec, screen, onSelect);
-        items.put(registrationSpec.key(), new NavigationItem(registrationSpec, screen.getTitle(), button));
+        ToggleButton button = createButton(registrationSpec, binding, onSelect);
+        items.put(registrationSpec.key(), new NavigationItem(registrationSpec, binding.title(), button));
         rebuild();
     }
 
@@ -51,13 +51,13 @@ final class ShellNavigationSidebar extends VBox {
 
     private ToggleButton createButton(
             ShellTabSpec registrationSpec,
-            ShellScreen screen,
+            ShellBinding binding,
         Consumer<ContributionKey> onSelect) {
-        ToggleButton button = new ToggleButton(screen.getNavigationLabel());
+        ToggleButton button = new ToggleButton(binding.navigationLabel());
         ShellFx.addStyleClass(button, "nav-btn");
         button.setToggleGroup(navGroup);
-        button.setTooltip(new Tooltip(screen.getTitle()));
-        button.setAccessibleText(screen.getTitle());
+        button.setTooltip(new Tooltip(binding.title()));
+        button.setAccessibleText(binding.title());
         Node graphic = registrationSpec.navigationGraphic();
         if (graphic != null) {
             button.setGraphic(graphic);

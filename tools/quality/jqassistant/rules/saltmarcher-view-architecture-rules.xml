@@ -6,28 +6,29 @@
         <includeConstraint refId="saltmarcher:MvvmAllowedViewBuckets"/>
         <includeConstraint refId="saltmarcher:MvvmNoLegacyBuckets"/>
         <includeConstraint refId="saltmarcher:MvvmRootOnlyViewContribution"/>
+        <includeConstraint refId="saltmarcher:MvvmOneModelPerFile"/>
+        <includeConstraint refId="saltmarcher:MvvmOnePanelViewPerFile"/>
+        <includeConstraint refId="saltmarcher:MvvmPanelViewName"/>
         <includeConstraint refId="saltmarcher:MvvmViewRootEntrypointCount"/>
+        <includeConstraint refId="saltmarcher:MvvmModelDependencies"/>
         <includeConstraint refId="saltmarcher:MvvmNoPrivateForeignComponentDependencies"/>
     </group>
 
     <concept id="saltmarcher:MvvmViewType">
-        <description>Annotates compiled SaltMarcher view-layer types for the canonical MVVM harness.</description>
+        <description>Annotates compiled SaltMarcher view-layer types for the cockpit tab-model MVVM harness.</description>
         <cypher><![CDATA[
             MATCH (packageNode:Package)-[:CONTAINS]->(type:Java:Type)
-            WHERE packageNode.fqn =~ 'src\\.view\\.[^.]+(\\..*)?'
+            WHERE packageNode.fqn =~ 'src\\.view(\\..*)?'
             WITH
               packageNode,
               type,
               split(packageNode.fqn, '.') AS segments
             SET
               type:SaltMarcher:MvvmViewType,
-              type.component = segments[2],
-              type.sharedViewComponent = segments[2] IN ['mapcanvas', 'dungeonmap'],
-              type.bucket = CASE
-                WHEN size(segments) = 3 THEN 'ROOT'
-                WHEN segments[3] IN ['assembly', 'api', 'View', 'ViewModel', 'Model', 'Controller', 'interactor']
-                  THEN segments[3]
-                ELSE 'OTHER'
+              type.viewBucket = CASE
+                WHEN size(segments) = 3 AND segments[2] = 'models' THEN 'MODEL'
+                WHEN size(segments) = 3 AND segments[2] = 'views' THEN 'VIEW'
+                ELSE 'LEGACY'
               END,
               type.relativePath = replace(packageNode.fqn, '.', '/') + '/' + coalesce(type.sourceFileName, type.name + '.java')
             RETURN
@@ -37,10 +38,10 @@
 
     <concept id="saltmarcher:MvvmRootEntrypoint">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Labels canonical root *ViewContribution entrypoints.</description>
+        <description>Labels shell contribution model entrypoints.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE type.bucket = 'ROOT' AND type.name ENDS WITH 'ViewContribution'
+            WHERE type.viewBucket = 'MODEL' AND (type.name ENDS WITH 'TabModel' OR type.name ENDS WITH 'WindowModel')
             SET type:SaltMarcher:MvvmRootEntrypoint
             RETURN type AS MvvmRootEntrypoint
         ]]></cypher>
@@ -48,28 +49,15 @@
 
     <constraint id="saltmarcher:MvvmAllowedViewBuckets">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Declarative MVVM topology allows normal components and declared shared components to use only their target buckets.</description>
+        <description>Cockpit MVVM topology allows active view Java only in src/view/models or src/view/views.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE
-              type.bucket = 'OTHER'
-              OR (
-                NOT type.sharedViewComponent
-                AND type.bucket <> 'ROOT'
-                AND NOT type.bucket IN ['View', 'ViewModel']
-              )
-              OR (
-                type.sharedViewComponent
-                AND NOT type.bucket IN ['api', 'View', 'ViewModel']
-              )
+            WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              CASE
-                WHEN type.sharedViewComponent THEN 'src/view/<shared-component>/{api,View,ViewModel}'
-                ELSE 'src/view/<component>/{<Component>ViewContribution.java,View,ViewModel}'
-              END AS ExpectedDirection,
+              'src/view/models or src/view/views' AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Bucket ausserhalb der deklarativen MVVM-Zieltopologie fuer normale oder deklarierte Shared View Components.' AS Details
+              'Active view Java must use the cockpit tab-model topology.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -77,20 +65,15 @@
 
     <constraint id="saltmarcher:MvvmNoLegacyBuckets">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Legacy and transitional buckets are migration debt and must disappear from the target topology.</description>
+        <description>Component-local view buckets are migration debt and forbidden for active Java.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE
-              type.bucket IN ['assembly', 'Model', 'Controller', 'interactor']
-              OR (type.bucket = 'api' AND NOT type.sharedViewComponent)
+            WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              CASE
-                WHEN type.sharedViewComponent THEN 'api/View/ViewModel'
-                ELSE 'View/ViewModel'
-              END AS ExpectedDirection,
+              'src/view/models or src/view/views' AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Legacy- oder unerlaubter Transitional-Bucket in der deklarativen MVVM-Zieltopologie.' AS Details
+              'Legacy component-local View/ViewModel/api/assembly-style topology is not active target code.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -98,24 +81,80 @@
 
     <constraint id="saltmarcher:MvvmRootOnlyViewContribution">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Component roots may only host *ViewContribution classes.</description>
+        <description>View contribution models are the only shell-facing model entrypoints.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
             WHERE
-              type.bucket = 'ROOT'
+              type.viewBucket = 'MODEL'
               AND NOT type.name CONTAINS '$'
-              AND (
-                type.sharedViewComponent
-                OR NOT type.name ENDS WITH 'ViewContribution'
+              AND NOT (type.name ENDS WITH 'TabModel' OR type.name ENDS WITH 'WindowModel')
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              '*TabModel or *WindowModel' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Each file in src/view/models must be one shell contribution model.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmOneModelPerFile">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Each model source file owns exactly one top-level tab/window contribution model.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'MODEL'})
+            WHERE NOT type.name CONTAINS '$'
+            WITH type.relativePath AS source, collect(DISTINCT type.name) AS typeNames
+            WHERE size(typeNames) <> 1
+            RETURN
+              source AS Source,
+              'exactly one top-level model type' AS ExpectedDirection,
+              reduce(actual = '', typeName IN typeNames |
+                CASE WHEN actual = '' THEN typeName ELSE actual + ', ' + typeName END) AS ActualDirection,
+              'A src/view/models file must define exactly one tab/window contribution model.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmPanelViewName">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Passive panel views name their fixed shell surface.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'VIEW'})
+            WHERE
+              NOT type.name CONTAINS '$'
+              AND NOT (
+                type.name ENDS WITH 'ControlsView'
+                OR type.name ENDS WITH 'MainView'
+                OR type.name ENDS WITH 'DetailsView'
+                OR type.name ENDS WITH 'StateView'
+                OR type.name ENDS WITH 'TopBarView'
               )
             RETURN DISTINCT
               type.relativePath AS Source,
-              CASE
-                WHEN type.sharedViewComponent THEN 'kein Java-Root-Typ in deklarierter Shared View Component'
-                ELSE 'src/view/<component>/<Component>ViewContribution.java'
-              END AS ExpectedDirection,
+              '*ControlsView, *MainView, *DetailsView, *StateView, or *TopBarView' AS ExpectedDirection,
               type.fqn AS ActualDirection,
-              'Normale Komponenten haben nur den Shell-Entrypoint im Root; Shared View Components haben keinen Shell-Entrypoint.' AS Details
+              'Passive view names must identify the shell surface they render.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmOnePanelViewPerFile">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Each passive view source file owns exactly one top-level panel fragment.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'VIEW'})
+            WHERE NOT type.name CONTAINS '$'
+            WITH type.relativePath AS source, collect(DISTINCT type.name) AS typeNames
+            WHERE size(typeNames) <> 1
+            RETURN
+              source AS Source,
+              'exactly one top-level passive panel view type' AS ExpectedDirection,
+              reduce(actual = '', typeName IN typeNames |
+                CASE WHEN actual = '' THEN typeName ELSE actual + ', ' + typeName END) AS ActualDirection,
+              'A src/view/views file must define exactly one passive panel fragment.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -123,49 +162,62 @@
 
     <constraint id="saltmarcher:MvvmViewRootEntrypointCount">
         <requiresConcept refId="saltmarcher:MvvmRootEntrypoint"/>
-        <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Every component requires exactly one root entrypoint.</description>
+        <description>At least one shell contribution model must exist.</description>
         <cypher><![CDATA[
-            MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
-            WITH DISTINCT type.component AS component, type.sharedViewComponent AS sharedViewComponent
-            OPTIONAL MATCH (root:Java:Type:SaltMarcher:MvvmRootEntrypoint {component: component})
-            WITH component, collect(DISTINCT root.name) AS roots
-            WITH
-              component,
-              [rootName IN roots WHERE rootName IS NOT NULL] AS roots,
-              component IN ['mapcanvas', 'dungeonmap'] AS sharedViewComponent
-            WHERE
-              (sharedViewComponent AND size(roots) <> 0)
-              OR (NOT sharedViewComponent AND size(roots) <> 1)
+            MATCH (root:Java:Type:SaltMarcher:MvvmRootEntrypoint)
+            WITH count(root) AS rootCount
+            WHERE rootCount = 0
             RETURN
-              'src/view/' + component AS Source,
-              CASE
-                WHEN sharedViewComponent THEN '0x <Component>ViewContribution'
-                ELSE '1x <Component>ViewContribution'
-              END AS ExpectedDirection,
-              coalesce(reduce(actual = '', rootName IN roots |
-                CASE WHEN actual = '' THEN rootName ELSE actual + ', ' + rootName END), '(none)') AS ActualDirection,
-              'Normale Komponenten haben genau einen Shell-Entrypoint; deklarierte Shared View Components haben keinen.' AS Details
-            ORDER BY Source
+              'src/view/models' AS Source,
+              'at least one shell contribution model' AS ExpectedDirection,
+              'none' AS ActualDirection,
+              'The shell needs discoverable contribution models.' AS Details
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
     </constraint>
 
     <constraint id="saltmarcher:MvvmNoPrivateForeignComponentDependencies">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Declarative MVVM view components do not import foreign view component packages.</description>
+        <description>Passive panel views do not depend on shell contribution models.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:MvvmViewType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:MvvmViewType)
-            WHERE
-              source <> target
-              AND source.component <> target.component
-              AND NOT (target.sharedViewComponent AND target.bucket = 'api')
+            WHERE source.viewBucket = 'VIEW' AND target.viewBucket <> 'VIEW'
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'nur deklarierte fremde Shared-Component-api Pakete' AS ExpectedDirection,
+              'passive views may depend only on other passive views' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
-              'Komponentenuebergreifende View-Abhaengigkeiten duerfen nur auf deklarierte Shared-Component-api Pakete zeigen.' AS Details
+              'src/view/views must remain passive and model-free.' AS Details
+            ORDER BY Source, Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmModelDependencies">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Contribution models may bind passive views, use shell API, and call only domain public boundaries.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'MODEL'})-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE
+              target.fqn =~ 'bootstrap\\..*'
+              OR target.fqn =~ 'src\\.data\\..*'
+              OR target.fqn =~ 'shell\\.host\\..*'
+              OR (target.fqn =~ 'shell\\..*' AND NOT target.fqn =~ 'shell\\.api\\..*')
+              OR (
+                target.fqn =~ 'src\\.domain\\..*'
+                AND NOT target.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+ApplicationService(\\$.*)?'
+                AND NOT target.fqn =~ 'src\\.domain\\.[^.]+\\.api\\..+'
+              )
+              OR (
+                target.fqn =~ 'src\\.view\\..*'
+                AND NOT target.viewBucket IN ['MODEL', 'VIEW']
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'shell.api, src/view/views, src/view/models, and domain public boundaries only' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Contribution models must not depend on old view topology, data, bootstrap, shell internals, or domain internals.' AS Details
             ORDER BY Source, Target
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>

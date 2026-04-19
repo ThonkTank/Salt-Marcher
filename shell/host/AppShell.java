@@ -7,9 +7,9 @@ import java.util.Map;
 import java.util.Objects;
 import shell.api.ContributionKey;
 import shell.api.ServiceRegistry;
+import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellRuntimeStateSpec;
-import shell.api.ShellScreen;
 import shell.api.ShellTabSpec;
 import shell.api.ShellTopBarSpec;
 
@@ -43,30 +43,30 @@ public final class AppShell extends BorderPane {
         return runtimeContext;
     }
 
-    public void registerTab(ShellTabSpec registrationSpec, ShellScreen screen) {
+    public void registerTab(ShellTabSpec registrationSpec, ShellBinding binding) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
-        Objects.requireNonNull(screen, "screen");
+        Objects.requireNonNull(binding, "binding");
         assertUniqueKey(registrationSpec.key());
-        ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, screen);
-        tabs.put(registrationSpec.key(), new RegisteredTab(registrationSpec, screen, slotContent));
-        navigationSidebar.registerTab(registrationSpec, screen, this::navigateTo);
+        ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, binding);
+        tabs.put(registrationSpec.key(), new RegisteredTab(registrationSpec, binding, slotContent));
+        navigationSidebar.registerTab(registrationSpec, binding, this::navigateTo);
     }
 
-    public void registerTopBar(ShellTopBarSpec registrationSpec, ShellScreen screen) {
+    public void registerTopBar(ShellTopBarSpec registrationSpec, ShellBinding binding) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
-        Objects.requireNonNull(screen, "screen");
+        Objects.requireNonNull(binding, "binding");
         assertUniqueKey(registrationSpec.key());
-        ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, screen);
+        ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, binding);
         topBarItems.put(registrationSpec.key(), registrationSpec);
         toolbar.registerItem(registrationSpec, Objects.requireNonNull(slotContent.topBar(), "top bar content"));
         refreshToolbar();
     }
 
-    public void registerRuntimeState(ShellRuntimeStateSpec registrationSpec, ShellScreen screen) {
+    public void registerRuntimeState(ShellRuntimeStateSpec registrationSpec, ShellBinding binding) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
-        Objects.requireNonNull(screen, "screen");
+        Objects.requireNonNull(binding, "binding");
         assertUniqueKey(registrationSpec.key());
-        ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, screen);
+        ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, binding);
         runtimeStateItems.put(registrationSpec.key(), registrationSpec);
         workspace.registerRuntimeStateTab(
                 registrationSpec.key(),
@@ -83,7 +83,7 @@ public final class AppShell extends BorderPane {
         hideActiveTab();
         activeTabKey = key;
         showTargetTab(target);
-        target.screen().onShow();
+        target.binding().onActivate();
     }
 
     private void hideActiveTab() {
@@ -93,7 +93,7 @@ public final class AppShell extends BorderPane {
         workspace.saveDividerPositions(activeTabKey);
         RegisteredTab current = tabs.get(activeTabKey);
         if (current != null) {
-            current.screen().onHide();
+            current.binding().onDeactivate();
         }
     }
 
@@ -106,7 +106,7 @@ public final class AppShell extends BorderPane {
 
     private void refreshToolbar() {
         RegisteredTab activeTab = activeTabKey == null ? null : tabs.get(activeTabKey);
-        toolbar.showTitle(activeTab != null ? activeTab.screen().getTitle() : "");
+        toolbar.showTitle(activeTab != null ? activeTab.binding().title() : "");
     }
 
     private void restoreWorkspaceDividers(ContributionKey key) {
@@ -122,7 +122,7 @@ public final class AppShell extends BorderPane {
 
     private record RegisteredTab(
             ShellTabSpec registrationSpec,
-            ShellScreen screen,
+            ShellBinding binding,
             ShellSlotContent slotContent
     ) {
     }

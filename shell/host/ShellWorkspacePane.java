@@ -128,16 +128,18 @@ final class ShellWorkspacePane extends SplitPane {
             ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
             return;
         }
-        if (activeTabMode == ShellTabMode.RUNTIME) {
-            ShellFx.clearChildren(stateContainer);
-            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(
-                    runtimeStatePane.hasTabs() ? runtimeStatePane : emptyRuntimeStatePlaceholder));
-            return;
-        }
         Node editorState = activeSlotContent == null ? null : activeSlotContent.editorState();
         ShellFx.clearChildren(stateContainer);
+        if (editorState != null) {
+            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(editorState));
+            return;
+        }
+        if (runtimeStatePane.hasTabs()) {
+            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(runtimeStatePane));
+            return;
+        }
         ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(
-                editorState != null ? editorState : editorStatePlaceholder));
+                activeTabMode == ShellTabMode.EDITOR ? editorStatePlaceholder : emptyRuntimeStatePlaceholder));
     }
 
     private static Node createPlaceholderPane(String titleText, String bodyText) {
