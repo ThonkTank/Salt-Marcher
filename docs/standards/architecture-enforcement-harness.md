@@ -142,12 +142,12 @@ compiler-signature checks, or package dependency direction.
 ### `Error Prone`
 
 `Error Prone` owns compiler-precise source rules that need javac-resolved type
-information or public-signature awareness: MVVM dependency bans, `ViewModel/`
+information or public-signature awareness: MVVM dependency bans, view-model
 framework independence, shell API allowlists, public domain-boundary signature
 purity, public domain api carrier shape, domain service/factory statelessness,
 service-registry registration placement, presentation-state placement,
-JavaFX API placement between `View/`, `ViewModel/`, and transitional
-composition code, visual-styling exceptions, reflection-bypass bans, and public
+JavaFX API placement between `view/models`, `view/views`, and transitional
+legacy view code, visual-styling exceptions, reflection-bypass bans, and public
 API signature leaks from private buckets, including compiler-visible data
 adapter collaborator boundaries. It is not the owner for repository topology or
 broad package graph rules.
@@ -163,11 +163,11 @@ root method contracts, or compiler-precise public-signature bans.
 ### `jQAssistant`
 
 `jQAssistant` owns graph-shaped architecture rules where the current enforced
-view model spans buckets and files: declarative MVVM bucket topology,
-view-component root count, declared Shared View Component shape, and
-graph-shaped cross-component boundaries. It is not the owner for general domain
-or data topology, nor for compiler-precise signature and framework checks that
-produce better diagnostics inside `compileJava`.
+view model spans buckets and files: cockpit MVVM bucket topology, one model per
+view-model contribution, one passive panel per view file, and graph-shaped
+cross-component boundaries. It is not the owner for general domain or data
+topology, nor for compiler-precise signature and framework checks that produce
+better diagnostics inside `compileJava`.
 
 ### Gradle-Owned Verification Tasks
 
