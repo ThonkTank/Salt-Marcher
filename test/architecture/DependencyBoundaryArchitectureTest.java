@@ -42,29 +42,44 @@ public final class DependencyBoundaryArchitectureTest {
                     .should(notBeViewContributionImplementation());
 
     @ArchTest
-    static final ArchRule viewModelsMustNotReachBootstrapDataOrShellHost =
+    static final ArchRule viewContributionsAndViewModelsMustNotReachBootstrapDataOrShellHost =
             noClasses()
                     .that()
-                    .resideInAPackage("src.view.models..")
+                    .resideInAnyPackage(
+                            "src.view.tabs..",
+                            "src.view.topbar..",
+                            "src.view.state..",
+                            "src.view.details..")
                     .should()
                     .dependOnClassesThat()
                     .resideInAnyPackage("bootstrap..", "src.data..", "shell.host..");
 
     @ArchTest
-    static final ArchRule viewModelsMustOnlyUseFeatureApisAtBackendBoundary =
+    static final ArchRule viewContributionsAndViewModelsMustOnlyUseFeatureApisAtBackendBoundary =
             classes()
                     .that()
-                    .resideInAPackage("src.view.models..")
+                    .resideInAnyPackage(
+                            "src.view.tabs..",
+                            "src.view.topbar..",
+                            "src.view.state..",
+                            "src.view.details..")
                     .should(onlyDependOnDomainPublicBoundaries());
 
     @ArchTest
-    static final ArchRule passiveViewsMustNotReachModelShellDomainDataOrBootstrap =
+    static final ArchRule passiveViewsMustNotReachContributionShellDomainDataOrBootstrap =
             noClasses()
                     .that()
-                    .resideInAPackage("src.view.views..")
+                    .resideInAnyPackage(
+                            "src.view.tabs..",
+                            "src.view.topbar..",
+                            "src.view.state..",
+                            "src.view.details..",
+                            "src.view.views..")
+                    .and()
+                    .haveSimpleNameEndingWith("View")
                     .should()
                     .dependOnClassesThat()
-                    .resideInAnyPackage("bootstrap..", "shell..", "src.domain..", "src.data..", "src.view.models..");
+                    .resideInAnyPackage("bootstrap..", "shell..", "src.domain..", "src.data..");
 
     @ArchTest
     static final ArchRule viewComponentsMustStayCycleFree =
@@ -261,20 +276,17 @@ public final class DependencyBoundaryArchitectureTest {
     }
 
     private static ArchCondition<JavaClass> resideInTargetViewPackage() {
-        return new ArchCondition<>("reside in src.view.models or src.view.views") {
+        return new ArchCondition<>("reside in target view contribution, view model, view, or reusable view package") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 String packageName = item.getPackageName();
-                if (packageName.equals("src.view.models")
-                        || packageName.startsWith("src.view.models.")
-                        || packageName.equals("src.view.views")
-                        || packageName.startsWith("src.view.views.")) {
+                if (isTargetViewPackage(packageName)) {
                     return;
                 }
                 String message = item.getName()
                         + " lives in old view topology package "
                         + packageName
-                        + "; move contribution models to src.view.models and passive panels to src.view.views";
+                        + "; move shell-facing code to src.view.tabs/topbar/state/details and reusable panels to src.view.views";
                 events.add(SimpleConditionEvent.violated(item, message));
             }
         };
@@ -288,10 +300,17 @@ public final class DependencyBoundaryArchitectureTest {
                     return;
                 }
                 String message = item.getName()
-                        + " uses replaced *ViewContribution naming; use *TabModel or *WindowModel under src.view.models";
+                        + " uses replaced *ViewContribution naming; use *Contribution under src.view.tabs, src.view.topbar, or src.view.state";
                 events.add(SimpleConditionEvent.violated(item, message));
             }
         };
+    }
+
+    private static boolean isTargetViewPackage(String packageName) {
+        if (packageName.equals("src.view.views") || packageName.startsWith("src.view.views.")) {
+            return true;
+        }
+        return packageName.matches("src\\.view\\.(tabs|topbar|state|details)\\.[^.]+");
     }
 
     private static ArchCondition<JavaClass> onlyDependOnDomainPublicBoundaries() {

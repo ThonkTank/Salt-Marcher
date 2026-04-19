@@ -37,7 +37,7 @@ public final class PackageCycleArchitectureTest {
 
         @Override
         public String getDescription() {
-            return "src.view target package, normally models or views";
+            return "src.view target package, normally tabs, topbar, state, details, or reusable views";
         }
     };
 

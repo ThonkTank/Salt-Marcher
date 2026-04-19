@@ -9,8 +9,8 @@ shell contributions.
 
 ## Goal
 
-Bootstrap must discover and register shell-facing view models and backend
-service contributions generically without becoming a feature registry.
+Bootstrap must discover and register shell-facing view contributions and
+backend service contributions generically without becoming a feature registry.
 
 This document defines bootstrap mechanics only. The binding shell role model,
 fixed cockpit surfaces, lifecycle vocabulary, and forbidden shell-composition
@@ -24,11 +24,10 @@ patterns live in the dedicated
 - discovering exported service contributions
 - building the shared shell service registry
 - constructing `AppShell` with that registry
-- discovering shell-facing tab models, state-tab models, and top-bar dropdown
-  window models
-- resolving each discovered model into passive registration metadata plus
-  surface bindings
-- registering each resolved model into the shell by contribution kind
+- discovering shell-facing left-tab, top-bar, and runtime-state contributions
+- resolving each discovered contribution into passive registration metadata
+  plus surface bindings
+- registering each resolved contribution into the shell by contribution kind
 - selecting the startup tab and navigating to it
 
 Bootstrap must stay generic. Routine feature addition must not require manual
@@ -36,27 +35,27 @@ feature registries, explicit bootstrap imports, or per-feature shell wiring.
 
 ## Discovery Contracts
 
-Bootstrap discovers backend service contributions and view models generically.
+Bootstrap discovers backend service contributions and view contributions
+generically.
 
-### View Model Discovery
+### View Contribution Discovery
 
 Target discovery:
 
-- scans `src/view/models/`
-- expects each concrete model file to define exactly one tab model, state-tab
-  model, or top-bar dropdown window model
-- expects discovered models to implement the public shell registration
-  contract for their contribution kind
-- expects a public no-arg constructor unless the future registration contract
-  explicitly defines another generic construction shape
-- instantiates discovered models reflectively and generically
+- scans `src/view/tabs/*`, `src/view/topbar/*`, and `src/view/state/*`
+- expects each contribution segment to expose exactly one concrete
+  `*Contribution` root class
+- expects discovered roots to implement `shell.api.ShellContribution`
+- expects a public no-arg constructor unless a future generic registration
+  contract explicitly defines another construction shape
+- instantiates discovered contributions reflectively and generically
+- does not scan `src/view/details/*`
 
-Current migration state:
+Detail entries are not startup contributions. They are published through the
+shell-owned details/history API.
 
-- old `src/view/<component>/<Component>ViewContribution` roots implementing
-  `ShellViewContribution` are migration debt
-- active target code is discovered from `src/view/models` through
-  `ShellContributionModel`
+Old `src/view/<component>/<Component>ViewContribution` roots and
+`ShellViewContribution` names are migration debt.
 
 ### Service Discovery
 
@@ -90,24 +89,25 @@ Target registration behavior:
 - service contributions are discovered first and populate the shell service
   registry
 - the shell is constructed with that registry
-- view models are discovered next
-- resolved view models are sorted by contribution key before registration
-- each model is registered by contribution kind:
-  - left-bar tab model
-  - state-pane tab model
-  - top-bar dropdown window model
+- view contributions are discovered next
+- resolved view contributions are sorted by contribution key before
+  registration
+- each contribution is registered by contribution kind:
+  - left-bar tab
+  - state-pane tab
+  - top-bar dropdown window
 
-The key sort is a deterministic registration-order rule. It is not a user-
-visible navigation-order contract.
+The key sort is a deterministic registration-order rule. It is not a
+user-visible navigation-order contract.
 
 ## Startup Resolution
 
-Startup landing is resolved only from left-bar tab models.
+Startup landing is resolved only from left-bar tab contributions.
 
 Rules:
 
-- exactly one tab model may declare `defaultLanding=true`
-- multiple default-landing tab models are bootstrap errors
+- exactly one tab contribution may declare `defaultLanding=true`
+- multiple default-landing tab contributions are bootstrap errors
 - if no tab declares `defaultLanding=true`, startup falls back to the first tab
   in sorted navigation order:
   - navigation group order
@@ -117,33 +117,17 @@ Rules:
 
 State-pane tabs and top-bar dropdown windows are never startup landing targets.
 
-## Responsibilities Excluded From This Document
-
-This standard does not redefine:
-
-- shell workbench role ownership
-- fixed cockpit surface semantics
-- state-pane precedence
-- lifecycle meaning of shell activation hooks
-- the allowed feature-facing shell API surface
-- forbidden shell-composition patterns beyond bootstrap mechanics
-
 ## Verification Notes
 
-The canonical owner model, rule-status vocabulary, and blocking-task mapping
-for these checks live in the
-[Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1).
-Concrete rule IDs and checker names are recorded in the
-[Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1).
+Current checks enforce the target discovery shape where it has a stable static
+surface:
 
-Current checks enforce the target model-discovery shape where it has a stable
-static surface:
-
-- model discovery from `src/view/models`
-- one shell-registered contribution model per model file
-- generic model instantiation
+- contribution discovery from `src/view/tabs/*`, `src/view/topbar/*`, and
+  `src/view/state/*`
+- one shell-registered `*Contribution` per contribution segment
+- generic contribution instantiation
 - supported contribution-kind selection
-- single startup default among left-bar tab models
+- single startup default among left-bar tab contributions
 - generic bootstrap and shell wiring with no concrete feature imports
 
 Runtime discovery ordering and reflection error wording remain review-owned
@@ -158,4 +142,4 @@ unless they become stable build-time policy surfaces.
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
-- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
+- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)

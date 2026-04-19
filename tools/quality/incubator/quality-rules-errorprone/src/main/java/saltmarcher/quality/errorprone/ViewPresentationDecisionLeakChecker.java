@@ -87,7 +87,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
         }
         return buildDescription(violatingTree[0])
                 .setMessage("View package '" + packageName
-                        + "' branches on a contribution-model presentation carrier while mutating widget presentation."
+                        + "' branches on a ViewModel presentation carrier while mutating widget presentation."
                         + " Move shared labels, enablement, visibility, and style decisions into the owning ViewModel state.")
                 .build();
     }

@@ -47,7 +47,7 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
 
         if (violations.isNotEmpty()) {
             throw GradleException(
-                "View FXML resources must live under resources/view/views/ and must not contain inline scripts.\n" +
+                "View FXML resources must live under resources/view/ and must not contain inline scripts.\n" +
                     "Violations:\n" + violations.sorted().joinToString(separator = "\n") { " - $it" }
             )
         }
@@ -61,11 +61,8 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
     ) {
         val path = file.toPath().normalize()
         if (!underExpectedRoot || path.parent == null || path.parent.fileName == null) {
-            violations.add("$relative -> expected resources/view/views/*.fxml")
+            violations.add("$relative -> expected resources/view/<area-or-shared>/*.fxml")
             return
-        }
-        if (path.parent.fileName.toString() != "views") {
-            violations.add("$relative -> expected direct placement under resources/view/views/")
         }
         if (!Files.isDirectory(path.parent)) {
             violations.add("$relative -> parent directory is not a readable passive-view resource directory")
@@ -79,9 +76,15 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
         }
         val controllerMatch = FX_CONTROLLER_PATTERN.find(text) ?: return
         val controller = controllerMatch.groupValues[1]
-        val expectedPrefix = "src.view.views."
-        if (!controller.startsWith(expectedPrefix)) {
-            violations.add("$relative -> fx:controller must start with $expectedPrefix")
+        val allowedPrefixes = listOf(
+            "src.view.tabs.",
+            "src.view.topbar.",
+            "src.view.state.",
+            "src.view.details.",
+            "src.view.views."
+        )
+        if (allowedPrefixes.none(controller::startsWith)) {
+            violations.add("$relative -> fx:controller must start with one of ${allowedPrefixes.joinToString()}")
         }
     }
 

@@ -182,15 +182,17 @@ final class ViewArchitectureSupport {
             return new ViewTypeInfo("views", "VIEW");
         }
         if (Set.of("tabs", "topbar", "state", "details").contains(segments[0]) && segments.length >= 3) {
-            String simpleName = segments[segments.length - 1].replaceFirst("\\$.*$", "");
-            if (simpleName.endsWith("Contribution")) {
-                return new ViewTypeInfo(segments[0], "CONTRIBUTION");
-            }
-            if (simpleName.endsWith("ViewModel")) {
-                return new ViewTypeInfo(segments[0], "MODEL");
-            }
-            if (simpleName.endsWith("View")) {
-                return new ViewTypeInfo(segments[0], "VIEW");
+            for (int index = 2; index < segments.length; index++) {
+                String simpleName = segments[index].replaceFirst("\\$.*$", "");
+                if (simpleName.endsWith("Contribution")) {
+                    return new ViewTypeInfo(segments[0], "CONTRIBUTION");
+                }
+                if (simpleName.endsWith("ViewModel")) {
+                    return new ViewTypeInfo(segments[0], "MODEL");
+                }
+                if (simpleName.endsWith("View")) {
+                    return new ViewTypeInfo(segments[0], "VIEW");
+                }
             }
         }
         return new ViewTypeInfo(segments[0], "LEGACY");

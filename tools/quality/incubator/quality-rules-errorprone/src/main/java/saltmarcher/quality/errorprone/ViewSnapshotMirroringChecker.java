@@ -16,7 +16,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "ViewSnapshotMirroring",
-        summary = "View code must bind to contribution-model state instead of mirroring whole snapshots through manual refresh loops.",
+        summary = "View code must bind to ViewModel state instead of mirroring whole snapshots through manual refresh loops.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewSnapshotMirroringChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {

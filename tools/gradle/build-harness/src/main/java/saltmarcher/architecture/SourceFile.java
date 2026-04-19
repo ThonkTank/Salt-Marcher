@@ -147,9 +147,11 @@ record SourceFile(
         if (segments.size() < 3) {
             return null;
         }
-        if ("src".equals(segments.get(0))
-                && Set.of("domain", "data", "view").contains(segments.get(1))) {
+        if ("src".equals(segments.get(0)) && Set.of("domain", "data").contains(segments.get(1))) {
             return segments.get(2);
+        }
+        if ("src".equals(segments.get(0)) && "view".equals(segments.get(1))) {
+            return segments.size() >= 4 ? segments.get(3) : null;
         }
         return null;
     }
