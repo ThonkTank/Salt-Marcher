@@ -125,6 +125,30 @@ final class ViewArchitectureSupport {
                 || referencedType.matches("^src\\.domain\\.[^.]+\\.api\\..+");
     }
 
+    static boolean isAllowedViewModelJavafxType(String referencedType) {
+        return referencedType.startsWith("javafx.beans.")
+                || referencedType.startsWith("javafx.collections.");
+    }
+
+    static boolean isAllowedRootJavafxType(String referencedType) {
+        return referencedType.equals("javafx.fxml.FXMLLoader")
+                || referencedType.equals("javafx.scene.Node");
+    }
+
+    static boolean isTargetOwnViewReference(String referencedType, String component) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && viewType.component().equals(component)
+                && ("View".equals(viewType.bucket()) || "ViewModel".equals(viewType.bucket()));
+    }
+
+    static boolean isOwnViewModelReference(String referencedType, String component) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && viewType.component().equals(component)
+                && "ViewModel".equals(viewType.bucket());
+    }
+
     static ViewTypeInfo parseViewType(String referencedType) {
         if (referencedType == null || !referencedType.startsWith("src.view.")) {
             return null;
