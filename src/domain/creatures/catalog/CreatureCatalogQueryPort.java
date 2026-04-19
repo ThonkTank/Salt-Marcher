@@ -26,6 +26,31 @@ public interface CreatureCatalogQueryPort {
             biomes = normalized.get(3);
             alignments = normalized.get(4);
         }
+
+        @Override
+        public List<String> sizes() {
+            return copyStrings(sizes);
+        }
+
+        @Override
+        public List<String> types() {
+            return copyStrings(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return copyStrings(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return copyStrings(biomes);
+        }
+
+        @Override
+        public List<String> alignments() {
+            return copyStrings(alignments);
+        }
     }
 
     record CatalogSearchSpec(
@@ -49,6 +74,31 @@ public interface CreatureCatalogQueryPort {
             biomes = copyStrings(biomes);
             alignments = copyStrings(alignments);
         }
+
+        @Override
+        public List<String> sizes() {
+            return copyStrings(sizes);
+        }
+
+        @Override
+        public List<String> types() {
+            return copyStrings(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return copyStrings(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return copyStrings(biomes);
+        }
+
+        @Override
+        public List<String> alignments() {
+            return copyStrings(alignments);
+        }
     }
 
     record EncounterCandidateSpec(
@@ -63,6 +113,21 @@ public interface CreatureCatalogQueryPort {
             types = copyStrings(types);
             subtypes = copyStrings(subtypes);
             biomes = copyStrings(biomes);
+        }
+
+        @Override
+        public List<String> types() {
+            return copyStrings(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return copyStrings(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return copyStrings(biomes);
         }
     }
 
