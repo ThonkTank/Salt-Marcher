@@ -1,4 +1,4 @@
-package src.view.tabs.encounter;
+package src.view.state.encounter;
 
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;

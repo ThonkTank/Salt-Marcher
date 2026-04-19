@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "ViewRootDelegation",
-        summary = "Old component-local view roots are forbidden; shell-facing view wiring belongs in src.view.models.",
+        summary = "Old component-local view roots are forbidden; shell-facing view wiring belongs in view contributions.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewRootDelegationChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -32,7 +32,7 @@ public final class ViewRootDelegationChecker extends BugChecker
 
         return buildDescription(tree)
                 .setMessage("Legacy view package '" + packageName
-                        + "' violates the shell cockpit tab-model topology. Move contribution models to src.view.models and passive panels to src.view.views. Violations: "
+                        + "' violates the shell cockpit contribution topology. Move shell wiring to src.view.tabs/topbar/state contributions and passive views next to the owning contribution or into src.view.views when reusable. Violations: "
                         + String.join(", ", violations))
                 .build();
     }

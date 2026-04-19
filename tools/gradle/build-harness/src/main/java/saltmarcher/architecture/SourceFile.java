@@ -70,11 +70,19 @@ record SourceFile(
         }
         return switch (segments.get(1)) {
             case "view" -> {
-                if (segments.size() == 4 && segments.get(2).equals("models")) {
-                    yield SourceKind.VIEW_MODEL_CONTRIBUTION;
-                }
                 if (segments.size() == 4 && segments.get(2).equals("views")) {
                     yield SourceKind.VIEW_PANEL;
+                }
+                if (segments.size() == 5 && Set.of("tabs", "topbar", "state", "details").contains(segments.get(2))) {
+                    if (fileName.endsWith("Contribution.java")) {
+                        yield SourceKind.VIEW_CONTRIBUTION;
+                    }
+                    if (fileName.endsWith("ViewModel.java")) {
+                        yield SourceKind.VIEW_MODEL;
+                    }
+                    if (fileName.endsWith("View.java")) {
+                        yield SourceKind.VIEW_PANEL;
+                    }
                 }
                 yield SourceKind.UNKNOWN;
             }

@@ -1,4 +1,4 @@
-package src.view.tabs.encounter;
+package src.view.state.encounter;
 
 import java.util.List;
 import java.util.Objects;
@@ -9,18 +9,13 @@ import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.api.EncounterDifficultyBand;
 import src.domain.encounter.api.EncounterGenerationRequest;
 
-public final class EncounterBuilderViewModel {
+public final class EncounterRuntimeStateViewModel {
 
     private final EncounterApplicationService encounters;
-    private final StringProperty result = new SimpleStringProperty("");
     private final StringProperty state = new SimpleStringProperty("");
 
-    public EncounterBuilderViewModel(EncounterApplicationService encounters) {
+    public EncounterRuntimeStateViewModel(EncounterApplicationService encounters) {
         this.encounters = Objects.requireNonNull(encounters, "encounters");
-    }
-
-    public ReadOnlyStringProperty resultProperty() {
-        return result;
     }
 
     public ReadOnlyStringProperty stateProperty() {
@@ -36,7 +31,7 @@ public final class EncounterBuilderViewModel {
                 5,
                 List.of(),
                 List.of()));
-        result.set(String.valueOf(generatedEncounter));
-        state.set("Encounter request sent through EncounterApplicationService.");
+        state.set("Encounter request sent through EncounterApplicationService: "
+                + String.valueOf(generatedEncounter));
     }
 }

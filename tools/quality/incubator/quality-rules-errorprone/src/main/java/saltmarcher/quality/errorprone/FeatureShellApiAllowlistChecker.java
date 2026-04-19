@@ -18,7 +18,7 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        ShellPolicy shellPolicy = shellPolicy(packageName);
+        ShellPolicy shellPolicy = shellPolicy(tree, packageName);
         if (shellPolicy == null) {
             return Description.NO_MATCH;
         }
@@ -45,9 +45,9 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
                 .build();
     }
 
-    private static ShellPolicy shellPolicy(String packageName) {
-        if (ViewArchitectureSupport.isContributionSource(treeFromPackage(packageName))) {
-            return ShellPolicy.MODEL;
+    private static ShellPolicy shellPolicy(CompilationUnitTree tree, String packageName) {
+        if (ViewArchitectureSupport.isContributionSource(tree)) {
+            return ShellPolicy.CONTRIBUTION;
         }
         if (ViewArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName).matches()) {
             return ShellPolicy.DATA_ROOT;
@@ -56,7 +56,7 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
     }
 
     private enum ShellPolicy {
-        MODEL {
+        CONTRIBUTION {
             @Override
             boolean isAllowed(String referencedType) {
                 return ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
@@ -70,9 +70,5 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
         };
 
         abstract boolean isAllowed(String referencedType);
-    }
-
-    private static CompilationUnitTree treeFromPackage(String unused) {
-        throw new UnsupportedOperationException("Synthetic tree placeholder should never be called.");
     }
 }

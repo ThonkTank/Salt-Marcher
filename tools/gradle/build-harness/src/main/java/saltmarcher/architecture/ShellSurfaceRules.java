@@ -22,7 +22,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
                     "ServiceContribution.java",
                     "ServiceRegistry.java",
                     "ShellBinding.java",
-                    "ShellContributionModel.java",
+                    "ShellContribution.java",
                     "ShellContributionSpec.java",
                     "ShellRuntimeContext.java",
                     "ShellRuntimeStateSpec.java",
@@ -70,10 +70,15 @@ final class ShellSurfaceRules implements ArchitectureRule {
             if (sourceFile.fileName().endsWith("ViewContribution.java")
                     && sourceFile.relativePath().startsWith("src/view/")) {
                 violations.add(sourceFile.relativePath(), "shell-view-contribution-placement",
-                        "View-layer shell contributions must migrate to src/view/models/*TabModel.java or *WindowModel.java; *ViewContribution implementations are forbidden.");
+                        "View-layer shell contributions must use *Contribution.java under src/view/tabs, src/view/topbar, or src/view/state; *ViewContribution implementations are forbidden.");
             }
 
-            if (sourceFile.kind() != SourceKind.VIEW_MODEL_CONTRIBUTION) {
+            if (sourceFile.kind() != SourceKind.VIEW_CONTRIBUTION) {
+                continue;
+            }
+            if (sourceFile.relativePath().startsWith("src/view/details/")) {
+                violations.add(sourceFile.relativePath(), "shell-view-contribution-placement",
+                        "Detail entries are published through shell-owned details/history APIs and must not be bootstrap-discovered view contributions.");
                 continue;
             }
             for (List<String> arguments : shellTabSpecArgumentLists(sourceFile.content())) {

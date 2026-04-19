@@ -18,7 +18,7 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        if (!ViewArchitectureSupport.VIEW_PANEL_PACKAGE.matcher(packageName).matches()) {
+        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
             return Description.NO_MATCH;
         }
 

@@ -41,7 +41,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        if (!ViewArchitectureSupport.VIEW_PANEL_PACKAGE.matcher(packageName).matches()) {
+        if (!ViewArchitectureSupport.isPanelViewSource(tree)) {
             return Description.NO_MATCH;
         }
         if (!containsTargetPanelView(tree)) {
@@ -88,7 +88,7 @@ public final class ViewPresentationDecisionLeakChecker extends BugChecker
         return buildDescription(violatingTree[0])
                 .setMessage("View package '" + packageName
                         + "' branches on a contribution-model presentation carrier while mutating widget presentation."
-                        + " Move shared labels, enablement, visibility, and style decisions into src.view.models state.")
+                        + " Move shared labels, enablement, visibility, and style decisions into the owning ViewModel state.")
                 .build();
     }
 

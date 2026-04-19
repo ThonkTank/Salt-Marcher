@@ -30,7 +30,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?void\\s+(set[A-Z][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern FEATURE_SPECIFIC_PACKAGE_REFERENCE_PATTERN = Pattern.compile(
             "\\bsrc\\.(?:domain|data)\\.[a-z][A-Za-z0-9_]*\\."
-                    + "|\\bsrc\\.view\\.(?!(?:models|views)\\b)[a-z][A-Za-z0-9_]*\\.");
+                    + "|\\bsrc\\.view\\.(?!(?:tabs|topbar|state|details|views)\\b)[a-z][A-Za-z0-9_]*\\.");
     private static final Set<String> SHELL_SLOT_API_CONSTANTS = Set.of(
             "TOP_BAR",
             "COCKPIT_CONTROLS",
