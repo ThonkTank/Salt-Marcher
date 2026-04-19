@@ -22,7 +22,7 @@ slots for tab-specific controls and canvas content.
   and slot/layer host nodes.
 - `ViewModel/` owns reusable presentation state and actions for the shared
   dungeon-map component.
-- `ViewModel/internal/` is migration debt for orchestration logic that should
+- `api/internal/` is migration debt for orchestration logic that should
   settle into public API contracts, component view models, or domain services
   as the shared component is completed.
 

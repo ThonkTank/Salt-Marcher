@@ -13,10 +13,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import src.view.dungeonmap.api.DungeonOverlayMode;
 import src.view.dungeonmap.api.DungeonOverlaySettings;
 /**
@@ -24,7 +22,6 @@ import src.view.dungeonmap.api.DungeonOverlaySettings;
  */
 public final class DungeonOverlayControls {
     private final MenuButton trigger = new MenuButton();
-    private final Supplier<Node> triggerNode = () -> trigger;
     private final ToggleGroup modeGroup = new ToggleGroup();
     private final RadioMenuItem offMode = modeItem(DungeonOverlayMode.OFF);
     private final RadioMenuItem nearbyMode = modeItem(DungeonOverlayMode.NEARBY);
@@ -89,7 +86,7 @@ public final class DungeonOverlayControls {
         showSettings(DungeonOverlaySettings.defaults(), false);
     }
     public Node trigger() {
-        return Objects.requireNonNull(triggerNode.get(), "trigger");
+        return trigger;
     }
     public void setOnModeChanged(Consumer<DungeonOverlayMode> onModeChanged) {
         this.onModeChanged = onModeChanged == null ? ignored -> { } : onModeChanged;

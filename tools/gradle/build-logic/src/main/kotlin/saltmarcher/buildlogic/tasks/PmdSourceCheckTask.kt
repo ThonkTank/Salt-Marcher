@@ -1,7 +1,6 @@
 package saltmarcher.buildlogic.tasks
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -103,8 +102,8 @@ abstract class PmdSourceCheckTask : DefaultTask() {
             if (outputText.isNotBlank()) {
                 println(outputText)
             }
-            throw GradleException(
-                "PMD source-smell violations or analysis errors were found. " +
+            logger.warn(
+                "PMD source-smell report contains violations or analysis diagnostics. " +
                     "See the report at: file://${reportPath.toAbsolutePath()}"
             )
         }

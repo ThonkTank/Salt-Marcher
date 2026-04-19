@@ -15,8 +15,7 @@ import src.view.dungeonmap.api.DungeonEditorTool;
 import src.view.dungeonmap.api.DungeonMapSurfaceViewModel;
 import src.view.dungeonmap.api.DungeonViewportViewModel;
 
-public final class DungeonEditorControls extends VBox {
-    private final DungeonControlsPanel controlsPanel;
+public final class DungeonEditorControls extends AbstractDungeonControlsHost {
     private final ToggleGroup toolGroup = new ToggleGroup();
     private final Map<DungeonEditorTool, ToggleButton> toolButtons = new EnumMap<>(DungeonEditorTool.class);
     private Consumer<DungeonEditorTool> onToolChanged = ignored -> { };
@@ -26,19 +25,20 @@ public final class DungeonEditorControls extends VBox {
             DungeonMapSurfaceViewModel controller,
             Supplier<DungeonViewportViewModel> viewportSupplier
     ) {
-        Objects.requireNonNull(controller, "controller");
-        this.controlsPanel = new DungeonControlsPanel(
+        super(new DungeonControlsPanel(
                 DungeonControlsPanel.Mode.EDITOR,
-                controller,
+                Objects.requireNonNull(controller, "controller"),
                 Objects.requireNonNull(viewportSupplier, "viewportSupplier"),
-                null);
+                null));
+        DungeonMapSurfaceViewModel checkedController = Objects.requireNonNull(controller, "controller");
         Button newMapButton = DungeonControlsPanel.actionButton("Neuen Dungeon");
-        newMapButton.setOnAction(event -> controller.createMap(controller.defaultMapName(), viewportSupplier.get()));
+        newMapButton.setOnAction(event -> checkedController.createMap(
+                checkedController.defaultMapName(),
+                viewportSupplier.get()));
         Button graphButton = DungeonControlsPanel.actionButton("Graph");
         graphButton.setDisable(true);
-        controlsPanel.setMapRowActions(newMapButton, graphButton);
-        controlsPanel.setModeControls(buildToolGroup());
-        getChildren().setAll(controlsPanel);
+        setMapRowActions(newMapButton, graphButton);
+        setModeControls(buildToolGroup());
     }
 
     public void setOnToolChanged(Consumer<DungeonEditorTool> onToolChanged) {
@@ -52,10 +52,6 @@ public final class DungeonEditorControls extends VBox {
                 toolGroup.selectToggle(button);
             }
         });
-    }
-
-    public void refresh() {
-        controlsPanel.refresh();
     }
 
     private VBox buildToolGroup() {

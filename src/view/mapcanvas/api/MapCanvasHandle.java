@@ -28,6 +28,10 @@ public final class MapCanvasHandle {
         return new MapCanvasHandle(new MapWorkspaceView());
     }
 
+    static MapCanvasHandle create(MapWorkspaceView view) {
+        return new MapCanvasHandle(view);
+    }
+
     public Node node() {
         return Objects.requireNonNull(node.get(), "node");
     }
@@ -42,6 +46,24 @@ public final class MapCanvasHandle {
 
     public void setLayerContent(MapCanvasLayer layer, Node... nodes) {
         view.setLayerContent(layer, nodes == null ? List.of() : List.of(nodes));
+    }
+
+    public void setLayers(MapCanvasLayers layers) {
+        MapCanvasLayers resolved = layers == null ? MapCanvasLayers.empty() : layers;
+        setLayerContent(MapCanvasLayer.BELOW_GRID, resolved.belowGrid());
+        setLayerContent(MapCanvasLayer.BELOW_CONTENT, resolved.belowContent());
+        setLayerContent(MapCanvasLayer.ABOVE_CONTENT, resolved.aboveContent());
+        setLayerContent(MapCanvasLayer.SELECTION_OVERLAY, resolved.selectionOverlay());
+        setLayerContent(MapCanvasLayer.ACTOR_OVERLAY, resolved.actorOverlay());
+        setLayerContent(MapCanvasLayer.TOOL_OVERLAY, resolved.toolOverlay());
+        setLayerContent(MapCanvasLayer.HUD_OVERLAY, resolved.hudOverlay());
+    }
+
+    public void setCallbacks(MapCanvasCallbacks callbacks) {
+        MapCanvasCallbacks resolved = callbacks == null ? MapCanvasCallbacks.none() : callbacks;
+        setCellSelectionListener(resolved.cellSelectionListener());
+        setViewportListener(resolved.viewportListener());
+        setFloorStepListener(resolved.floorStepListener());
     }
 
     public MapCanvasViewport currentViewport() {

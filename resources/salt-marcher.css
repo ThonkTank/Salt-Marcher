@@ -350,6 +350,14 @@
     -fx-font-weight: bold;
     -fx-text-fill: -sm-text-primary;
 }
+.party-token {
+    -fx-background-color: rgba(47, 143, 218, 0.26);
+    -fx-border-color: rgba(90, 198, 122, 0.7);
+}
+.tool-layer {
+    -fx-background-color: rgba(255, 182, 42, 0.22);
+    -fx-border-color: rgba(255, 240, 198, 0.7);
+}
 .map-status-label {
     -fx-text-fill: #f0d89a;
     -fx-font-size: 11px;

@@ -5,9 +5,11 @@ import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.util.TreePathScanner;
+import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -24,6 +26,9 @@ public final class ViewSnapshotMirroringChecker extends BugChecker
         String packageName = ViewArchitectureSupport.packageName(tree);
         var matcher = ViewArchitectureSupport.VIEW_PACKAGE.matcher(packageName);
         if (!matcher.matches()) {
+            return Description.NO_MATCH;
+        }
+        if (!containsTargetController(tree)) {
             return Description.NO_MATCH;
         }
         String component = matcher.group(1);
@@ -59,5 +64,20 @@ public final class ViewSnapshotMirroringChecker extends BugChecker
     private static boolean isOwnViewModel(String qualifiedType, String component) {
         return qualifiedType != null
                 && ViewArchitectureSupport.isOwnViewModelReference(qualifiedType, component);
+    }
+
+    private static boolean containsTargetController(CompilationUnitTree tree) {
+        boolean[] found = {false};
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitClass(ClassTree classTree, Void unused) {
+                if (classTree.getSimpleName().toString().endsWith("Controller")) {
+                    found[0] = true;
+                    return null;
+                }
+                return found[0] ? null : super.visitClass(classTree, unused);
+            }
+        }.scan(tree, null);
+        return found[0];
     }
 }

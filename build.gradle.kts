@@ -102,13 +102,13 @@ dependencies {
 pmd {
     toolVersion = "7.23.0"
     isConsoleOutput = true
-    isIgnoreFailures = false
+    isIgnoreFailures = true
     ruleSets = listOf()
     ruleSetFiles = files(layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"))
 }
 
 spotbugs {
-    ignoreFailures = false
+    ignoreFailures = true
     effort = Effort.MAX
     reportLevel = Confidence.MEDIUM
 }

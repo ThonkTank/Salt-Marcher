@@ -16,7 +16,8 @@ import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import shell.api.ShellViewContribution;
 import src.view.dungeoneditor.View.DungeonEditorNavigationGraphic;
-import src.view.dungeoneditor.View.DungeonEditorRuntimeSession;
+import src.view.dungeonmap.api.DungeonMapFactory;
+import src.view.dungeonmap.api.DungeonMapHandle;
 import src.view.dungeonmap.api.DungeonSelectionInspectorContent;
 import src.view.dungeonmap.api.DungeonSelectionInspectorEntry;
 import src.view.dungeonmap.api.DungeonSelectionPublisher;
@@ -46,7 +47,7 @@ public final class DungeoneditorViewContribution implements ShellViewContributio
     @Override
     public ShellScreen createScreen(ShellRuntimeContext runtimeContext) {
         Objects.requireNonNull(runtimeContext, "runtimeContext");
-        DungeonEditorRuntimeSession session = DungeonEditorRuntimeSession.create(
+        DungeonMapHandle dungeonMap = DungeonMapFactory.createEditor(
                 new DungeonSelectionInspectorShellAdapter(runtimeContext.inspector()));
         return new ShellScreen() {
             @Override
@@ -62,9 +63,9 @@ public final class DungeoneditorViewContribution implements ShellViewContributio
             @Override
             public Map<ShellSlot, Node> slotContent() {
                 return Map.of(
-                        ShellSlot.COCKPIT_CONTROLS, session.controls(),
-                        ShellSlot.COCKPIT_MAIN, session.workspace(),
-                        ShellSlot.COCKPIT_STATE, session.state()
+                        ShellSlot.COCKPIT_CONTROLS, dungeonMap.controls(),
+                        ShellSlot.COCKPIT_MAIN, dungeonMap.canvas(),
+                        ShellSlot.COCKPIT_STATE, dungeonMap.state()
                 );
             }
         };

@@ -6,6 +6,8 @@ import javafx.scene.control.Label;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.mapcore.api.MapSelectionRef;
+import src.view.dungeonmap.api.DungeonControlsExtensions;
+import src.view.dungeonmap.api.DungeonMapCanvasExtensions;
 import src.view.dungeonmap.api.DungeonSelectionPublisher;
 import src.view.dungeonmap.View.DungeonTravelControls;
 import src.view.dungeonmap.View.DungeonTravelStatePane;
@@ -42,14 +44,21 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
         workspaceSession().setLayerContent(MapCanvasLayer.ACTOR_OVERLAY, partyToken());
         finishInitialization();
     }
-    public Node controls() {
+    @Override
+    protected Node controlsContent() {
         return controls.content();
     }
-    public Node workspaceNode() {
-        return workspace();
-    }
-    public Node state() {
+
+    @Override
+    protected Node stateContent() {
         return statePane.content();
+    }
+
+    public void applyExtensions(
+            DungeonControlsExtensions controlsExtensions,
+            DungeonMapCanvasExtensions canvasExtensions
+    ) {
+        applyExtensions(controlsExtensions, canvasExtensions, controls);
     }
     private void showSelection(DungeonSelectionPublisher selectionPublisher, @Nullable MapSelectionRef selectionRef) {
         selectedTarget = selectionRef;
@@ -86,7 +95,7 @@ public final class DungeonTravelInteractor extends AbstractDungeonMapInteractor 
     }
     private static Node partyToken() {
         Label token = new Label("Party");
-        token.getStyleClass().addAll("mode-badge", "party-token");
+        token.getStyleClass().addAll("map-mode-badge", "party-token");
         token.setLayoutX(16.0);
         token.setLayoutY(16.0);
         return token;

@@ -25,9 +25,9 @@ final class SaltMarcherSourceFacts {
     static final Pattern SHELL_SLOT_USAGE_PATTERN =
             Pattern.compile("\\bShellSlot\\.([A-Z_]+)\\b");
     static final Pattern INSTANCE_FIELD_DECLARATION_PATTERN =
-            Pattern.compile("(?m)^\\s*(?:private|protected|public)\\s+(?!static\\b)(?!final\\s+class\\b)(?!class\\b|interface\\b|enum\\b|record\\b)[^\\n;()]+;");
+            Pattern.compile("(?m)^ {4}(?:private|protected|public)\\s+(?!static\\b)(?!final\\s+class\\b)(?!class\\b|interface\\b|enum\\b|record\\b)[^\\n;()]+;");
     static final Pattern EXPOSED_EXECUTABLE_DECLARATION_PATTERN =
-            Pattern.compile("(?m)^\\s*(?:public|protected)\\s+[^\\n=;{}]*\\(");
+            Pattern.compile("(?m)^ {4}(?:public|protected)\\s+[^\\n=;{}]*\\(");
     static final Pattern IMPORT_PATTERN =
             Pattern.compile("(?m)^\\s*import\\s+([^;]+);");
     static final Pattern SERVICE_REGISTER_CALL_PATTERN =
@@ -164,16 +164,98 @@ final class SaltMarcherSourceFacts {
     }
 
     boolean hasInstanceFields() {
-        return INSTANCE_FIELD_DECLARATION_PATTERN.matcher(text).find();
+        return topLevelMemberDeclarations().stream()
+                .anyMatch(line -> INSTANCE_FIELD_DECLARATION_PATTERN.matcher(line).find());
     }
 
     List<String> exposedExecutableDeclarations() {
-        Matcher matcher = EXPOSED_EXECUTABLE_DECLARATION_PATTERN.matcher(text);
         List<String> declarations = new ArrayList<>();
-        while (matcher.find()) {
-            declarations.add(matcher.group().trim());
+        for (String line : topLevelMemberDeclarations()) {
+            Matcher matcher = EXPOSED_EXECUTABLE_DECLARATION_PATTERN.matcher(line);
+            if (matcher.find()) {
+                declarations.add(matcher.group().trim());
+            }
         }
         return declarations;
+    }
+
+    private List<String> topLevelMemberDeclarations() {
+        String body = topLevelClassBody();
+        List<String> declarations = new ArrayList<>();
+        int depth = 1;
+        for (String line : body.split("\\R")) {
+            String stripped = line.strip();
+            if (depth == 1 && isMemberDeclarationStart(stripped)) {
+                declarations.add(stripped);
+            }
+            depth = updateBraceDepth(line, depth);
+        }
+        return declarations;
+    }
+
+    private String topLevelClassBody() {
+        int classIndex = text.indexOf("public final class " + simpleName);
+        if (classIndex < 0) {
+            return text;
+        }
+        int bodyStart = text.indexOf('{', classIndex);
+        if (bodyStart < 0) {
+            return "";
+        }
+        int depth = 0;
+        for (int index = bodyStart; index < text.length(); index++) {
+            char character = text.charAt(index);
+            if (character == '{') {
+                depth++;
+            } else if (character == '}') {
+                depth--;
+                if (depth == 0) {
+                    return text.substring(bodyStart + 1, index);
+                }
+            }
+        }
+        return text.substring(bodyStart + 1);
+    }
+
+    private static boolean isMemberDeclarationStart(String line) {
+        return line.startsWith("public ")
+                || line.startsWith("protected ")
+                || line.startsWith("private ");
+    }
+
+    private static int updateBraceDepth(String line, int currentDepth) {
+        int depth = currentDepth;
+        boolean inString = false;
+        boolean inChar = false;
+        boolean escaped = false;
+        for (int index = 0; index < line.length(); index++) {
+            char character = line.charAt(index);
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (character == '\\') {
+                escaped = inString || inChar;
+                continue;
+            }
+            if (character == '"' && !inChar) {
+                inString = !inString;
+                continue;
+            }
+            if (character == '\'' && !inString) {
+                inChar = !inChar;
+                continue;
+            }
+            if (inString || inChar) {
+                continue;
+            }
+            if (character == '{') {
+                depth++;
+            } else if (character == '}') {
+                depth--;
+            }
+        }
+        return Math.max(0, depth);
     }
 
     boolean hasServiceRegisterMethod() {

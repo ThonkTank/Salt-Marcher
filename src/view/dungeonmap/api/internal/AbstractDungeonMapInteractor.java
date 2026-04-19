@@ -4,6 +4,9 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.api.BaseMapSnapshot;
 import src.domain.dungeon.api.Viewport;
 import src.domain.mapcore.api.MapSelectionRef;
+import src.view.dungeonmap.View.DungeonControlsExtensionTarget;
+import src.view.dungeonmap.api.DungeonControlsExtensions;
+import src.view.dungeonmap.api.DungeonMapCanvasExtensions;
 import src.view.dungeonmap.api.DungeonSelectionInspectorEntry;
 import src.view.dungeonmap.api.DungeonSelectionPublisher;
 import src.view.mapcanvas.api.MapCanvasCell;
@@ -27,12 +30,23 @@ public abstract class AbstractDungeonMapInteractor {
         mapController.refreshMaps();
         refreshWorkspace();
     }
+    public final Node controls() {
+        return controlsContent();
+    }
     public final Node workspace() {
         return workspaceSession.node();
+    }
+    public final Node workspaceNode() {
+        return workspace();
+    }
+    public final Node state() {
+        return stateContent();
     }
     protected final MapCanvasHandle workspaceSession() {
         return workspaceSession;
     }
+    protected abstract Node controlsContent();
+    protected abstract Node stateContent();
     protected final @Nullable BaseMapSnapshot loadedSnapshot() {
         return mapController.state().loadedSnapshot();
     }
@@ -65,6 +79,16 @@ public abstract class AbstractDungeonMapInteractor {
                 viewport.canvasWidth(),
                 viewport.canvasHeight(),
                 viewport.zoom());
+    }
+    protected final void applyExtensions(
+            DungeonControlsExtensions controlsExtensions,
+            DungeonMapCanvasExtensions canvasExtensions,
+            DungeonControlsExtensionTarget controls
+    ) {
+        DungeonControlsExtensionApplicator.apply(controls, controlsExtensions);
+        if (canvasExtensions.hasContent()) {
+            workspaceSession().setLayers(canvasExtensions.layers());
+        }
     }
     private void refreshWorkspace() {
         BaseMapSnapshot snapshot = mapController.state().loadedSnapshot();

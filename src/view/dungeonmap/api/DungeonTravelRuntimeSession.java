@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import javafx.scene.Node;
 import src.view.dungeonmap.api.internal.DungeonTravelInteractor;
-import src.view.dungeonmap.api.DungeonSelectionPublisher;
 
 public final class DungeonTravelRuntimeSession {
 
@@ -19,8 +18,22 @@ public final class DungeonTravelRuntimeSession {
     }
 
     public static DungeonTravelRuntimeSession create(DungeonSelectionPublisher selectionPublisher) {
+        return create(
+                selectionPublisher,
+                DungeonControlsExtensions.empty(),
+                DungeonMapCanvasExtensions.empty());
+    }
+
+    public static DungeonTravelRuntimeSession create(
+            DungeonSelectionPublisher selectionPublisher,
+            DungeonControlsExtensions controlsExtensions,
+            DungeonMapCanvasExtensions canvasExtensions
+    ) {
         DungeonTravelInteractor interactor =
                 new DungeonTravelInteractor(Objects.requireNonNull(selectionPublisher, "selectionPublisher"));
+        interactor.applyExtensions(
+                Objects.requireNonNull(controlsExtensions, "controlsExtensions"),
+                Objects.requireNonNull(canvasExtensions, "canvasExtensions"));
         return of(interactor.controls(), interactor.workspaceNode(), interactor.state());
     }
 

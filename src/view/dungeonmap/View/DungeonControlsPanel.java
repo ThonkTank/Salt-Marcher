@@ -31,7 +31,6 @@ public final class DungeonControlsPanel extends VBox {
     private final DungeonMapSurfaceViewModel viewModel;
     private final Supplier<DungeonViewportViewModel> viewportSupplier;
     private final @Nullable DoubleSupplier zoomSupplier;
-    private final Mode mode;
     private final ComboBox<DungeonMapSummaryViewModel> selector = new ComboBox<>();
     private final Label zoomLabel = new Label();
     private final Label statusLabel = new Label();
@@ -42,6 +41,7 @@ public final class DungeonControlsPanel extends VBox {
     private final DungeonOverlayControls overlayControls = new DungeonOverlayControls();
     private final HBox mapRowActions = new HBox(8);
     private final VBox modeControls = new VBox(6);
+    private final VBox secondaryActions = new VBox(6);
     private final VBox footerContent = new VBox(6);
     private boolean syncingSelection;
 
@@ -51,7 +51,7 @@ public final class DungeonControlsPanel extends VBox {
             Supplier<DungeonViewportViewModel> viewportSupplier,
             @Nullable DoubleSupplier zoomSupplier
     ) {
-        this.mode = Objects.requireNonNull(mode, "mode");
+        Objects.requireNonNull(mode, "mode");
         this.viewModel = Objects.requireNonNull(viewModel, "viewModel");
         this.viewportSupplier = Objects.requireNonNull(viewportSupplier, "viewportSupplier");
         this.zoomSupplier = zoomSupplier;
@@ -70,7 +70,7 @@ public final class DungeonControlsPanel extends VBox {
         if (mode == Mode.TRAVEL) {
             getChildren().add(zoomLabel);
         }
-        getChildren().addAll(buildDungeonGroup(), modeControls, footerContent);
+        getChildren().addAll(buildDungeonGroup(), modeControls, secondaryActions, footerContent);
         viewModel.addListener(this::refresh);
         refresh();
     }
@@ -81,6 +81,10 @@ public final class DungeonControlsPanel extends VBox {
 
     public void setModeControls(Node... nodes) {
         modeControls.getChildren().setAll(nodes == null ? java.util.List.of() : java.util.List.of(nodes));
+    }
+
+    public void setSecondaryActions(Node... nodes) {
+        secondaryActions.getChildren().setAll(nodes == null ? java.util.List.of() : java.util.List.of(nodes));
     }
 
     public void setFooterContent(Node... nodes) {
