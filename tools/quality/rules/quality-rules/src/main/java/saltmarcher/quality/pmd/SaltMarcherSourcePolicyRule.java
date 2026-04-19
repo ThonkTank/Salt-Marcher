@@ -23,6 +23,11 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "(?m)^\\s*(?:default\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern PUBLIC_METHOD_PATTERN = Pattern.compile(
             "(?m)^\\s*public\\s+(?:synchronized\\s+)?(?:<[^>]+>\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
+    private static final Pattern DOMAIN_APPLICATION_POLICY_HELPER_PATTERN = Pattern.compile(
+            "(?m)^\\s*(?!(?:public\\b))(?:(?:private|protected)\\s+)?(?:static\\s+)?(?:<[^>]+>\\s+)?[A-Za-z0-9_<>, ?.@\\[\\]]+\\s+"
+                    + "((?:mutate|validate|react|score|rank|choose|balance|enforce|calculate)[A-Za-z0-9_]*)\\s*\\(");
+    private static final Pattern DOMAIN_SETTER_STYLE_MUTATION_PATTERN = Pattern.compile(
+            "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?void\\s+(set[A-Z][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern FEATURE_SPECIFIC_PACKAGE_REFERENCE_PATTERN = Pattern.compile(
             "\\bsrc\\.(?:view|domain|data)\\.[a-z][A-Za-z0-9_]*\\.");
     private static final Set<String> SHELL_SLOT_API_CONSTANTS = Set.of(
@@ -198,6 +203,22 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
                         || ROOT_APPLICATION_SERVICE_STATIC_BACKEND_PATTERN.matcher(sourceFacts.text()).find()) {
                     asCtx(data).addViolationWithMessage(node,
                             "Root application services must stay thin and must not instantiate or cache repository/query/gateway/store infrastructure directly.");
+                }
+            }
+            if (sourceFacts.isDomainApplicationSource()) {
+                Matcher matcher = DOMAIN_APPLICATION_POLICY_HELPER_PATTERN.matcher(sourceFacts.text());
+                if (matcher.find()) {
+                    asCtx(data).addViolationWithMessage(node,
+                            "Domain application code must not hide policy helper method '" + matcher.group(1)
+                                    + "'. Move rule-bearing behavior into the owning domain module and keep application code as orchestration.");
+                }
+            }
+            if (sourceFacts.isNamedDomainModuleSource()) {
+                Matcher matcher = DOMAIN_SETTER_STYLE_MUTATION_PATTERN.matcher(sourceFacts.text());
+                if (matcher.find()) {
+                    asCtx(data).addViolationWithMessage(node,
+                            "Named domain modules must use domain command names instead of JavaBean-style void mutation method '"
+                                    + matcher.group(1) + "'.");
                 }
             }
         }

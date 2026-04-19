@@ -5,9 +5,10 @@
 
 ## Context
 
-Reusable standards were stored under `docs/architecture/standards/`. That path
-made standards look like a nested subsection of the architecture overview even
-though they are a first-class project-wide documentation type.
+Reusable standards were stored in a nested standards subtree below the
+architecture directory. That path made standards look like a subsection of the
+architecture overview even though they are a first-class project-wide
+documentation type.
 
 The extra directory level also made references longer without adding ownership
 clarity.
@@ -28,7 +29,7 @@ Architecture decisions remain under `docs/adr/`.
 
 ## Alternatives Considered
 
-### Keep standards under `docs/architecture/standards/`
+### Keep standards below the architecture directory
 
 Rejected because the extra nesting does not add a meaningful ownership boundary.
 

@@ -24,27 +24,41 @@ plugins {
     id("net.ltgt.errorprone")
 }
 
+// Invocation policy
+
+val architectureGateEntrypoints = setOf(
+    "architectureTest",
+    "checkArchitecture",
+    "checkViewArchitecture",
+    "pmdArchitectureMain",
+    "jqassistantEffectiveRules"
+)
+
+val qualityReportEntrypoints = setOf(
+    "pmdMain",
+    "pmdStrictMain",
+    "spotbugsMain",
+    "cpdMain",
+    "lizardMain",
+    "ckjmMain"
+)
+
+val resourcePolicyEntrypoints = setOf(
+    "checkCentralizedStylesheets",
+    "checkDefinedStyleClassSelectors",
+    "checkNoCompiledArtifactsInSource",
+    "checkDesktopPackagingInputs"
+)
+
 val continueOnFailureEntrypoints = setOf(
     "build",
     "check",
     "compileJava",
-    "test",
-    "architectureTest",
-    "checkArchitecture",
-    "checkViewArchitecture",
-    "pmdMain",
-    "pmdStrictMain",
-    "pmdArchitectureMain",
-    "spotbugsMain",
-    "cpdMain",
-    "lizardMain",
-    "ckjmMain",
-    "checkCentralizedStylesheets",
-    "checkDefinedStyleClassSelectors",
-    "checkNoCompiledArtifactsInSource",
-    "checkDesktopPackagingInputs",
-    "jqassistantEffectiveRules"
+    "test"
 )
+    .plus(architectureGateEntrypoints)
+    .plus(qualityReportEntrypoints)
+    .plus(resourcePolicyEntrypoints)
 
 val requestedTaskNames = gradle.startParameter.taskNames
     .map { taskName -> taskName.substringAfterLast(":") }
@@ -60,6 +74,8 @@ fun Task.enforceFreshGateResult() {
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf(freshGateResultReason) { true }
 }
+
+// Shared project inputs and tool locations
 
 val desktopIconSourceRelativePathProvider = providers.gradleProperty("saltMarcherDesktopIconSource")
     .orElse("icons/salt-marcher.svg")
@@ -116,6 +132,8 @@ fun File.absoluteInvariantPath(): String {
     return absolutePath.replace(File.separatorChar, '/')
 }
 
+// Tool configurations
+
 val cpdCli by configurations.creating {
     isCanBeConsumed = false
 }
@@ -153,6 +171,8 @@ dependencies {
     )
 }
 
+// Compiler hygiene and compiler-precise architecture gates
+
 tasks.withType<JavaCompile>().configureEach {
     options.errorprone.enabled.set(false)
 }
@@ -168,10 +188,12 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("DataAdapterPublicSignatureLeak")
     options.errorprone.error("DataAdapterRoleContract")
     options.errorprone.error("DataGatewayReturnTypeBoundary")
+    options.errorprone.error("DomainApiCarrierShape")
     options.errorprone.error("DomainModuleFieldPurity")
     options.errorprone.error("DomainModuleNoApiCarrierDependency")
     options.errorprone.error("DomainPublicBoundarySignaturePurity")
     options.errorprone.error("DomainPublicConcreteTypeShape")
+    options.errorprone.error("DomainServiceFactoryStatelessness")
     options.errorprone.error("FeatureShellApiAllowlist")
     options.errorprone.error("NullAway")
     options.errorprone.error("ReferenceEquality")
@@ -192,6 +214,8 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
     options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
 }
+
+// jQAssistant graph-shaped view architecture gate
 
 fun ExecSpec.configureJqassistantInvocation(configFile: RegularFile, vararg arguments: String) {
     workingDir = layout.projectDirectory.asFile
@@ -316,6 +340,8 @@ val checkViewArchitecture by tasks.registering {
     dependsOn(jqassistantAnalyzeViewArchitecture)
 }
 
+// Desktop resource generation
+
 val renderDesktopIconPng by tasks.registering(RenderDesktopIconTask::class) {
     group = "distribution"
     description = "Render the generated runtime PNG icon from the canonical SVG source."
@@ -330,6 +356,8 @@ tasks.named<ProcessResources>("processResources") {
     dependsOn(renderDesktopIconPng)
     from(renderDesktopIconPng.flatMap { it.outputDirectory })
 }
+
+// Complexity, duplication, and metrics gates
 
 val setupLizard by tasks.registering(SetupLizardTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -405,6 +433,8 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
     maxNumberOfPublicMethods.set(30)
 }
 
+// Architecture aggregate and repository/resource policy gates
+
 val checkArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs non-view-architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
@@ -464,6 +494,8 @@ val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputs
     launcherName.set(launcherNameProvider)
     startupWmClass.set(startupWmClassProvider)
 }
+
+// Central check aggregate
 
 tasks.named("check") {
     dependsOn("compileJava")

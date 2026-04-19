@@ -184,3 +184,4 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 010: Data-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/010-data-layer-architecture-model.md:1)
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
+- [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)

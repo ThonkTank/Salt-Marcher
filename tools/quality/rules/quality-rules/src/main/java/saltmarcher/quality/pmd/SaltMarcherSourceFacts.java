@@ -109,6 +109,16 @@ final class SaltMarcherSourceFacts {
         return isDomainSource() && segments.size() == 4;
     }
 
+    boolean isDomainApplicationSource() {
+        return isDomainSource() && segments.size() >= 5 && segments.get(3).equals("application");
+    }
+
+    boolean isNamedDomainModuleSource() {
+        return isDomainSource()
+                && segments.size() >= 5
+                && !Set.of("api", "application").contains(segments.get(3));
+    }
+
     boolean isDataSource() {
         return startsWith("src", "data");
     }

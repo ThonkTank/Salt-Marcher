@@ -134,7 +134,8 @@ direction, compiler-resolved signature checks, or graph-shaped view topology.
 `PMD architecture` owns Java source conventions and forbidden usage patterns:
 root entrypoint contracts, required root methods, thin stateless contribution
 roots, shell contribution spec selection, inline styling bans, domain source
-token bans, data role source-mechanics bans, and legacy wiring type bans
+token bans, application-layer policy-helper naming bans, setter-style domain
+mutation bans, data role source-mechanics bans, and legacy wiring type bans
 already modeled at source level. It is not the owner for graph topology, full
 compiler-signature checks, or package dependency direction.
 
@@ -143,7 +144,8 @@ compiler-signature checks, or package dependency direction.
 `Error Prone` owns compiler-precise source rules that need javac-resolved type
 information or public-signature awareness: MVVM dependency bans, `ViewModel/`
 framework independence, shell API allowlists, public domain-boundary signature
-purity, service-registry registration placement, presentation-state placement,
+purity, public domain api carrier shape, domain service/factory statelessness,
+service-registry registration placement, presentation-state placement,
 scene-graph placement between `assembly/` and `View/`, visual-styling
 exceptions, reflection-bypass bans, and public API signature leaks from private
 buckets, including compiler-visible data adapter collaborator boundaries. It is
@@ -172,6 +174,26 @@ Typed Gradle verification tasks in the build logic own repository-wide build
 and resource policies that are neither language-level architecture rules nor
 external platform reports: centralized stylesheet placement, style-class
 selector definitions, compiled-artifact bans, and packaging resources.
+
+## Implementation Model
+
+The mechanical owner model is also the implementation boundary for future
+checks. A new rule must be classified by rule shape before code is written, and
+the implementation must land in the owning engine rather than in the most
+convenient existing file.
+
+`build-harness` uses a small internal rule API for repository-topology and
+presence rules: `ArchitectureChecker` orchestrates rule groups,
+`ArchitectureContext` provides repository facts, and concrete rule groups emit
+violations through `ViolationSink`. New `build-harness` rules should be added
+to the narrow rule group that owns the affected surface, or to a new named rule
+group when the existing groups would become mixed-purpose.
+
+The Gradle convention plugin remains the public quality-gate wiring surface,
+but its implementation is organized by policy area rather than by historical
+task-registration order. Keep invocation policy, compiler gates, graph gates,
+metric/report gates, resource-policy gates, and the central aggregate visually
+separate when extending the build logic.
 
 ## Execution Model
 
@@ -322,3 +344,4 @@ not a backlog omission.
 - [ADR 003: Architecture Rule Ownership By Enforcement Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/003-architecture-rule-ownership.md:1)
 - [ADR 006: Layered View-Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/006-jqassistant-owns-view-architecture-enforcement.md:1)
 - [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)
+- [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)

@@ -117,11 +117,12 @@ Mechanical trace against the MVVM standard:
 
 `Enforced`:
 
-- `domain-root-presence`, `domain-top-level-role-bucket-ban`,
+- `domain-layout`, `domain-root-presence`, `domain-top-level-role-bucket-ban`,
   `domain-module-name-shape`, `domain-api-no-backend-port-contracts`,
   `domain-application-no-backend-port-contracts`,
   `domain-context-document-presence`, `domain-context-shape-declared`,
   `domain-supporting-context-rationale`, `domain-context-map-complete`,
+  `domain-context-map-role-matches`,
   `domain-policy-context-required-sections`, `domain-aggregate-marker-shape`,
   and `domain-supporting-context-promotion-triggers` via `build-harness`
   (`:build-harness:check`). These checks cover root application-service
@@ -129,15 +130,21 @@ Mechanical trace against the MVVM standard:
   domain-module package shape, bans on technical role buckets, backend-port
   contract exclusion from `api/` and `application/`, and the required
   `DOMAIN.md` context marker plus supporting read-model rationale, promotion
-  triggers, policy-context tactical sections, aggregate-root markers, and the
-  overview context-map listing for every domain feature.
+  triggers, policy-context tactical sections, aggregate-root markers, the
+  overview context-map listing for every domain feature, and context-map role
+  text matching each feature's declared context marker.
 - `domain-outer-layer-independence`,
   `domain-foreign-feature-public-seams-only`, and
   `domain-feature-cycle-freedom`, and `domain-subpackage-cycle-freedom` via
   `ArchUnit` (`architectureTest`).
-- `domain-framework-and-infra-leakage` and
-  `domain-root-no-direct-infra-composition` via `PMD architecture`
-  (`pmdArchitectureMain`).
+- `domain-framework-and-infra-leakage`,
+  `domain-root-no-direct-infra-composition`,
+  `domain-application-no-policy-helper-methods`, and
+  `domain-no-setter-style-mutation` via `PMD architecture`
+  (`pmdArchitectureMain`). The policy-helper check blocks application-layer
+  helpers named like domain policy verbs, while leaving boundary/query
+  normalization review-owned; the setter-style check blocks public/protected
+  JavaBean-style `void setX(...)` mutation methods in named domain modules.
 - `domain-public-boundary-no-private-or-outer-signature-leaks`: public
   operational members on `*ApplicationService` roots and public `api/`
   signatures stay free of outer-layer types, foreign private domain types, and
@@ -157,26 +164,31 @@ Mechanical trace against the MVVM standard:
 - `domain-module-field-purity`: public concrete named-module domain types must
   not expose non-final instance fields or mutable public static fields via
   `Error Prone` (`compileJava`).
+- `domain-api-carrier-shape`: public `api/` types must be records, enums, or
+  sealed abstractions via `Error Prone` (`compileJava`).
+- `domain-service-factory-statelessness`: named-module domain types ending in
+  `Service` or `Factory` must not declare instance fields via `Error Prone`
+  (`compileJava`).
 
 `Candidate`:
 
-- `domain-application-no-policy-helper-methods` via PMD source policy for
-  application-layer helpers named like domain policy.
-- `domain-no-setter-style-mutation` via PMD source policy for JavaBean-style
-  mutation naming in domain modules.
+- No current Domain Layer candidate checks are accepted. New mechanical checks
+  require a stable source, compiler, bytecode, graph, or file-tree shape before
+  promotion.
 
 `Review-Only`:
 
 - Object-centred placement, named-module cohesion and ubiquitous-language
   naming beyond package-shape checks and required document sections,
   application-layer thinness beyond direct infrastructure composition,
-  `api/` carrier-only discipline beyond the same-feature carrier dependency
-  ban, semantic business-rule leakage, aggregate mutation semantics,
+  `api/` carrier-only discipline beyond shape and same-feature carrier
+  dependency checks, semantic business-rule leakage, aggregate mutation semantics,
   true-invariant placement inside one aggregate, small and coherent aggregate
   boundaries, reference-by-identity and eventual-consistency choices, broad
   mutable object graphs across aggregates, one-aggregate-per-transaction,
-  supporting read-model justification, and declared context classification
-  quality.
+  supporting read-model justification, declared context classification quality,
+  domain-service/factory naming quality, and boundary/query normalization that
+  does not own domain policy.
 
 ## Data Layer
 

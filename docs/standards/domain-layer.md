@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: Binding DDD-primary domain-layer model, bounded-context
 structure, aggregate rules, and review-versus-enforcement expectations for
 `src/domain/**`.
@@ -283,6 +283,9 @@ Current mechanical ownership:
 - `Enforced`
   - `domain-root-presence` via `build-harness`
     (`./gradlew :build-harness:check`)
+  - `domain-layout` via `build-harness`
+    (`./gradlew :build-harness:check`): domain sources must live under
+    `src/domain/<feature>/...`
   - `domain-top-level-role-bucket-ban` via `build-harness`
     (`./gradlew :build-harness:check`): top-level technical role buckets such
     as `entity/`, `valueobject/`, `repository/`, `query/`, `service/`, and
@@ -309,6 +312,9 @@ Current mechanical ownership:
   - `domain-context-map-complete` via `build-harness`
     (`./gradlew :build-harness:check`): every `src/domain/<feature>` appears in
     the overview's `## Domain Context Map`
+  - `domain-context-map-role-matches` via `build-harness`
+    (`./gradlew :build-harness:check`): every context-map feature bullet
+    includes the same context type declared by the feature's `DOMAIN.md`
   - `domain-policy-context-required-sections` via `build-harness`
     (`./gradlew :build-harness:check`): policy-owning `DOMAIN.md` files define
     aggregate model, commands and invariants, consistency model, and ubiquitous
@@ -330,6 +336,14 @@ Current mechanical ownership:
     (`./gradlew pmdArchitectureMain`)
   - `domain-root-no-direct-infra-composition` via `PMD architecture`
     (`./gradlew pmdArchitectureMain`)
+  - `domain-application-no-policy-helper-methods` via `PMD architecture`
+    (`./gradlew pmdArchitectureMain`): application-layer helpers must not be
+    named like rule-bearing domain policy such as `mutate*`, `validate*`,
+    `react*`, `score*`, `rank*`, `choose*`, `balance*`, `enforce*`, or
+    `calculate*`; boundary/query normalization remains review-owned
+  - `domain-no-setter-style-mutation` via `PMD architecture`
+    (`./gradlew pmdArchitectureMain`): named domain modules must not expose
+    public or protected JavaBean-style `void setX(...)` mutation methods
   - `domain-public-boundary-no-private-or-outer-signature-leaks` via
     `Error Prone` (`./gradlew compileJava`): public operational members on
     root application services and public `api/` signatures must stay free of
@@ -351,20 +365,20 @@ Current mechanical ownership:
   - `domain-module-field-purity` via `Error Prone`
     (`./gradlew compileJava`): public concrete named-module domain types must
     not expose non-final instance fields or mutable public static fields
+  - `domain-api-carrier-shape` via `Error Prone`
+    (`./gradlew compileJava`): public `api/` types must be records, enums, or
+    sealed abstractions
+  - `domain-service-factory-statelessness` via `Error Prone`
+    (`./gradlew compileJava`): named-module domain types ending in `Service` or
+    `Factory` must not declare instance fields
   - `domain-subpackage-cycle-freedom` via `ArchUnit`
     (`./gradlew architectureTest`): direct subpackages under each domain
     feature, including named modules, must stay cycle-free
 
 Candidate mechanical checks:
 
-- `domain-application-no-policy-helper-methods` via PMD source policy:
-  application use cases should not grow private helpers named like domain
-  policy (`validate`, `normalize`, `mutate`, `react`, `score`, `rank`,
-  `calculate`) unless the helper is clearly boundary mapping or query
-  normalization.
-- `domain-no-setter-style-mutation` via PMD source policy: domain mutation
-  operations should be named as domain commands rather than JavaBean setters;
-  documented aggregate commands such as `setMembership` remain acceptable.
+- None currently accepted. Candidate checks need a stable mechanical shape
+  before promotion.
 
 Review-owned rules:
 
@@ -373,6 +387,7 @@ Review-owned rules:
 - application-layer thinness beyond direct infrastructure-composition patterns
 - `api/` carrier-only discipline beyond the enforced same-feature
   command/query/result/draft/snapshot/page/detail/options/payload carrier ban
+  and public carrier shape
 - whether business rules have semantically leaked into `view` or `data`
 - aggregate-root-only mutation semantics
 - whether true invariants are modelled inside one aggregate
@@ -383,6 +398,8 @@ Review-owned rules:
 - one-aggregate-per-transaction as a modelling judgment
 - whether a supporting read-model context is actually justified
 - whether a declared context classification is substantively correct
+- whether domain-service or factory names are ubiquitous-language names
+- boundary/query normalization that does not own domain policy
 
 ## References
 
