@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "FeatureShellApiAllowlist",
-        summary = "View roots and data service roots may use only their documented shell API subset.",
+        summary = "View contribution models and data service roots may use only their documented shell API subset.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class FeatureShellApiAllowlistChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -46,8 +46,8 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
     }
 
     private static ShellPolicy shellPolicy(String packageName) {
-        if (ViewArchitectureSupport.ROOT_PACKAGE.matcher(packageName).matches()) {
-            return ShellPolicy.ROOT;
+        if (ViewArchitectureSupport.VIEW_MODEL_PACKAGE.matcher(packageName).matches()) {
+            return ShellPolicy.MODEL;
         }
         if (ViewArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName).matches()) {
             return ShellPolicy.DATA_ROOT;
@@ -56,10 +56,10 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
     }
 
     private enum ShellPolicy {
-        ROOT {
+        MODEL {
             @Override
             boolean isAllowed(String referencedType) {
-                return ViewArchitectureSupport.isAllowedRootShellType(referencedType);
+                return ViewArchitectureSupport.isAllowedModelShellType(referencedType);
             }
         },
         DATA_ROOT {

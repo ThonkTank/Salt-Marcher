@@ -17,7 +17,7 @@ Use the documentation tree in this order:
 3. `docs/standards/*.md` for reusable standards.
 4. `docs/adr/*.md` for individual architecture decisions.
 5. co-located feature documents under `src/domain/<feature>/`,
-   `src/view/<component>/`, and `src/data/<feature>/`.
+   `src/view/models/`, `src/view/views/`, and `src/data/<feature>/`.
 
 ## Core Terms
 
@@ -129,8 +129,9 @@ Use the documentation tree in this order:
   Product and behavior specification.
 - `src/domain/<feature>/DOMAIN.md`
   Canonical domain model, ownership, invariants, and derived-state rules.
-- `src/view/<component>/UI.md`
-  UI structure, interaction model, and user-visible states for one component.
+- `src/view/models/<topic>.md` or `src/view/views/<topic>.md`
+  UI structure, interaction model, and user-visible states for one tab model,
+  state tab, dropdown window, or panel view.
 - `src/data/<feature>/PERSISTENCE.md`
   Persistence contracts, schema ownership, and adapter rules.
 - `src/domain/<feature>/DELIVERY.md`

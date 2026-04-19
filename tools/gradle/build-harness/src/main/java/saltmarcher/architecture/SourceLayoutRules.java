@@ -90,9 +90,20 @@ final class SourceLayoutRules implements ArchitectureRule {
 
         switch (segments.get(1)) {
             case "view" -> {
-                if (segments.size() < 4) {
+                if (segments.size() < 3) {
                     violations.add(sourceFile.relativePath(), "view-layout",
-                            "View sources must live under src/view/<component>/...");
+                            "View sources must live under src/view/models or src/view/views.");
+                    return;
+                }
+                String bucket = segments.get(2);
+                if (!Set.of("models", "views").contains(bucket)) {
+                    violations.add(sourceFile.relativePath(), "view-layout",
+                            "View Java sources must migrate to src/view/models or src/view/views; old component-local view roots are forbidden.");
+                    return;
+                }
+                if (segments.size() != 4) {
+                    violations.add(sourceFile.relativePath(), "view-layout",
+                            "View Java sources must be direct files under src/view/models or src/view/views.");
                 }
             }
             case "domain" -> validateDomainLayout(sourceFile, violations);

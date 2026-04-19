@@ -6,11 +6,22 @@ import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
 
 public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
 
+    private static final Set<String> VIEW_MODEL_SUFFIXES = Set.of("TabModel", "WindowModel");
+    private static final Set<String> VIEW_PANEL_SUFFIXES = Set.of(
+            "ControlsView",
+            "MainView",
+            "DetailsView",
+            "StateView",
+            "TopBarView");
+
     @Override
     public Object visit(ASTCompilationUnit node, Object data) {
         SaltMarcherSourceFacts sourceFacts = SaltMarcherSourceFacts.from(node);
-        if (sourceFacts.isViewRoot()) {
-            checkViewRoot(node, data, sourceFacts);
+        if (sourceFacts.isViewModelSource()) {
+            checkViewModelContribution(node, data, sourceFacts);
+        }
+        if (sourceFacts.isViewPanelSource()) {
+            checkViewPanel(node, data, sourceFacts);
         }
         if (sourceFacts.isDataRoot()) {
             checkServiceRoot(node, data, sourceFacts);
@@ -21,45 +32,54 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
         return data;
     }
 
-    private void checkViewRoot(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
-        if (!sourceFacts.fileName().equals(sourceFacts.expectedViewRootFileName())) {
+    private void checkViewModelContribution(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
+        if (VIEW_MODEL_SUFFIXES.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root view entrypoint must be named '" + sourceFacts.expectedViewRootFileName() + "'.");
+                    "View contribution models under src/view/models must be named *TabModel or *WindowModel.");
         }
         if (!sourceFacts.hasExplicitPublicFinalClass()) {
-            asCtx(data).addViolationWithMessage(node, "Root view entrypoint must be declared public final.");
+            asCtx(data).addViolationWithMessage(node, "View contribution model must be declared public final.");
         }
         if (!sourceFacts.hasExplicitPublicNoArgConstructor()) {
-            asCtx(data).addViolationWithMessage(node, "Root view entrypoint must declare a public no-arg constructor.");
+            asCtx(data).addViolationWithMessage(node,
+                    "View contribution model must declare a public no-arg constructor for shell discovery.");
         }
         if (!sourceFacts.text().contains("ShellViewContribution")) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root view entrypoint must implement shell.api.ShellViewContribution.");
+                    "View contribution model must implement shell.api.ShellViewContribution until the shell contribution API is renamed.");
         }
         if (!sourceFacts.hasRegistrationSpecMethod()) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root view entrypoint must declare ShellContributionSpec registrationSpec().");
+                    "View contribution model must declare ShellContributionSpec registrationSpec().");
         }
         if (!sourceFacts.hasCreateScreenMethod()) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root view entrypoint must declare ShellScreen createScreen(ShellRuntimeContext).");
+                    "View contribution model must declare ShellScreen createScreen(ShellRuntimeContext).");
         }
-        if (sourceFacts.hasInstanceFields()) {
-            asCtx(data).addViolationWithMessage(node,
-                    "Root view entrypoint must stay stateless and must not declare instance fields.");
-        }
-        validateExposedMembers(node, data, sourceFacts, Set.of(
-                sourceFacts.simpleName(),
-                "registrationSpec",
-                "createScreen"));
 
         ContributionSpecKind specKind = detectContributionSpecKind(sourceFacts.text());
         if (specKind == ContributionSpecKind.UNKNOWN) {
             asCtx(data).addViolationWithMessage(node,
-                    "Root view entrypoint must construct exactly one allowed contribution spec type.");
+                    "View contribution model must construct exactly one allowed shell contribution spec type.");
         }
         if (sourceFacts.text().contains("defaultLanding") && specKind != ContributionSpecKind.TAB) {
             asCtx(data).addViolationWithMessage(node, "defaultLanding only applies to ShellTabSpec contributions.");
+        }
+    }
+
+    private void checkViewPanel(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
+        if (VIEW_PANEL_SUFFIXES.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
+            asCtx(data).addViolationWithMessage(node,
+                    "Passive panel views under src/view/views must end with ControlsView, MainView, DetailsView, StateView, or TopBarView.");
+        }
+        if (!sourceFacts.hasExplicitPublicFinalClass()) {
+            asCtx(data).addViolationWithMessage(node, "Passive panel view must be declared public final.");
+        }
+        if (sourceFacts.text().contains("ShellViewContribution")
+                || sourceFacts.hasRegistrationSpecMethod()
+                || sourceFacts.hasCreateScreenMethod()) {
+            asCtx(data).addViolationWithMessage(node,
+                    "Passive panel views must not own shell registration or create ShellScreen content.");
         }
     }
 

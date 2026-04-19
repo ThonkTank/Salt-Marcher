@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-19
 Source of Truth: Documentation taxonomy, required metadata, and review rules for
 all project documentation outside `AGENTS.md`.
 
@@ -32,7 +32,8 @@ Feature documentation is co-located by default. Put the canonical document at
 the nearest stable code root that owns the topic.
 
 - feature-wide meaning and behavior go under `src/domain/<feature>/`
-- UI behavior for one component goes under `src/view/<component>/`
+- UI behavior for a tab model or panel view goes under the owning
+  `src/view/models/` or `src/view/views/` surface
 - persistence and storage rules go under `src/data/<feature>/`
 - system-wide architecture stays centralized under `docs/`
 
@@ -63,8 +64,9 @@ instead of restating it.
   Behavior, user flows, and acceptance criteria.
 - `src/domain/<feature>/DOMAIN.md`
   Canonical truth, ownership, invariants, and derived state.
-- `src/view/<component>/UI.md`
-  UI composition, interactions, and user-visible states for one component.
+- `src/view/models/<topic>.md` or `src/view/views/<topic>.md`
+  UI composition, interactions, and user-visible states for one tab model,
+  state tab, dropdown window, or panel view.
 - `src/data/<feature>/PERSISTENCE.md`
   Persistence contracts, schema ownership, migration rules, and exported
   capabilities.

@@ -13,10 +13,12 @@ feature business logic.
 
 SaltMarcher uses a passive shell and generic discovery:
 
-- bootstrap discovers feature UI through `ShellViewContribution`
+- bootstrap discovers feature UI through shell-facing view contribution
+  contracts; the current Java API uses `ShellViewContribution`, while the
+  target model moves discovery toward tab models under `src/view/models`
 - bootstrap discovers exported runtime services through `ServiceContribution`
-- the shell owns slots, registration contracts, runtime context, and inspector
-  surfaces
+- the shell owns fixed cockpit surfaces, registration contracts, runtime
+  context, details/history, and state-pane precedence
 - features register themselves through open contracts instead of closed shell
   registries or feature-specific bootstrap wiring
 
@@ -47,3 +49,4 @@ passive host.
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
+- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)

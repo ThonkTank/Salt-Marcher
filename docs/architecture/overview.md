@@ -144,9 +144,8 @@ JavaFX styling is centralized under `resources/`.
 - `docs/compat/` for deprecated compatibility stubs that point at canonical
   co-located documents
 - `src/domain/<feature>/README.md` for feature entry documentation
-- `src/view/<component>/UI.md` for component-local UI behavior during the
-  migration; target view docs should follow the owning view model or panel
-  view
+- `src/view/models/<topic>.md` or `src/view/views/<topic>.md` for target UI
+  behavior; legacy `src/view/<component>/UI.md` files remain migration state
 - `src/data/<feature>/PERSISTENCE.md` for persistence ownership and rules
 
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
@@ -166,6 +165,4 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
 - [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)
-- [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
-- [ADR 018: Shared View Component Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/018-shared-view-component-boundary.md:1)
 - [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)

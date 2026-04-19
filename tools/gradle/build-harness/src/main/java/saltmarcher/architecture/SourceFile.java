@@ -2,8 +2,6 @@ package saltmarcher.architecture;
 
 import static saltmarcher.architecture.ArchitectureNaming.expectedDataRootFileName;
 import static saltmarcher.architecture.ArchitectureNaming.expectedDataSchemaFileName;
-import static saltmarcher.architecture.ArchitectureNaming.expectedViewRootFileName;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,10 +48,6 @@ record SourceFile(
                 && "domain".equals(relativeSegments.get(1));
     }
 
-    boolean isCanonicalViewRootContribution() {
-        return kind == SourceKind.VIEW_ROOT && fileName.equals(expectedViewRootFileName(featureName));
-    }
-
     private static String extractPackage(String content) {
         Matcher matcher = PACKAGE_PATTERN.matcher(content);
         return matcher.find() ? matcher.group(1) : "";
@@ -76,17 +70,13 @@ record SourceFile(
         }
         return switch (segments.get(1)) {
             case "view" -> {
-                if (segments.size() == 4) {
-                    yield SourceKind.VIEW_ROOT;
+                if (segments.size() == 4 && segments.get(2).equals("models")) {
+                    yield SourceKind.VIEW_MODEL_CONTRIBUTION;
                 }
-                yield switch (segments.get(3)) {
-                    case "assembly" -> SourceKind.ASSEMBLY;
-                    case "View" -> SourceKind.VIEW;
-                    case "Controller" -> SourceKind.CONTROLLER;
-                    case "Model" -> SourceKind.MODEL;
-                    case "interactor" -> SourceKind.INTERACTOR;
-                    default -> SourceKind.UNKNOWN;
-                };
+                if (segments.size() == 4 && segments.get(2).equals("views")) {
+                    yield SourceKind.VIEW_PANEL;
+                }
+                yield SourceKind.UNKNOWN;
             }
             case "domain" -> {
                 if (segments.size() == 4) {

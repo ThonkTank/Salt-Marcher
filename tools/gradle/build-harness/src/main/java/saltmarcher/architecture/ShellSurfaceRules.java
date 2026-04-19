@@ -35,7 +35,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
     public void check(ArchitectureContext context, ViolationSink violations) {
         List<SourceFile> sourceFiles = context.sourceFiles(violations);
         validateShellApiPublicSurface(sourceFiles, violations);
-        validateViewContributionPlacementAndStartup(sourceFiles, violations);
+        validateViewModelContributionPlacementAndStartup(sourceFiles, violations);
         validateServiceContributionPlacement(sourceFiles, violations);
     }
 
@@ -62,19 +62,18 @@ final class ShellSurfaceRules implements ArchitectureRule {
         }
     }
 
-    private void validateViewContributionPlacementAndStartup(
+    private void validateViewModelContributionPlacementAndStartup(
             List<SourceFile> sourceFiles,
             ViolationSink violations) {
         List<SourceFile> defaultLandingRoots = new ArrayList<>();
         for (SourceFile sourceFile : sourceFiles) {
             if (sourceFile.fileName().endsWith("ViewContribution.java")
-                    && !sourceFile.relativePath().equals("shell/api/ShellViewContribution.java")
-                    && !sourceFile.isCanonicalViewRootContribution()) {
+                    && sourceFile.relativePath().startsWith("src/view/")) {
                 violations.add(sourceFile.relativePath(), "shell-view-contribution-placement",
-                        "Shell view contribution roots must live at src/view/<component>/<PascalComponentName>ViewContribution.java.");
+                        "View-layer shell contributions must migrate to src/view/models/*TabModel.java or *WindowModel.java; *ViewContribution implementations are forbidden.");
             }
 
-            if (sourceFile.kind() != SourceKind.VIEW_ROOT) {
+            if (sourceFile.kind() != SourceKind.VIEW_MODEL_CONTRIBUTION) {
                 continue;
             }
             for (List<String> arguments : shellTabSpecArgumentLists(sourceFile.content())) {

@@ -16,15 +16,6 @@ final class ArchitectureNaming {
                 + "ApplicationService.java";
     }
 
-    static String expectedViewRootFileName(String component) {
-        if (component == null || component.isBlank()) {
-            return "ViewContribution.java";
-        }
-        return component.substring(0, 1).toUpperCase(Locale.ROOT)
-                + component.substring(1)
-                + "ViewContribution.java";
-    }
-
     static String expectedDataRootFileName(String feature) {
         if (feature == null || feature.isBlank()) {
             return "ServiceContribution.java";

@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "ViewRestrictedDependencies",
-        summary = "View packages may depend only on JavaFX UI APIs, own View/ViewModel, and JDK types.",
+        summary = "Passive panel views may depend only on JavaFX UI APIs, passive views, and JDK types.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewRestrictedDependencyChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -18,15 +18,13 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        var matcher = ViewArchitectureSupport.VIEW_PACKAGE.matcher(packageName);
-        if (!matcher.matches()) {
+        if (!ViewArchitectureSupport.VIEW_PANEL_PACKAGE.matcher(packageName).matches()) {
             return Description.NO_MATCH;
         }
-        String component = matcher.group(1);
 
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            if (isForbiddenReference(referencedType, component)) {
+            if (isForbiddenReference(referencedType)) {
                 forbiddenReferences.add(referencedType);
             }
         }
@@ -41,7 +39,7 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
                 .build();
     }
 
-    private static boolean isForbiddenReference(String referencedType, String component) {
+    private static boolean isForbiddenReference(String referencedType) {
         if (referencedType.startsWith("shell.")
                 || referencedType.startsWith("src.domain.")
                 || referencedType.startsWith("src.data.")) {
@@ -51,14 +49,6 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
-        if (ViewArchitectureSupport.isDeclaredSharedApi(viewType)) {
-            return false;
-        }
-        if (viewType.component().equals(component)) {
-            return !"View".equals(viewType.bucket())
-                    && !"ViewModel".equals(viewType.bucket())
-                    && !ViewArchitectureSupport.isDeclaredSharedApi(viewType);
-        }
-        return !ViewArchitectureSupport.isDeclaredSharedApi(viewType);
+        return !"VIEW".equals(viewType.bucket());
     }
 }

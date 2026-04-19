@@ -27,19 +27,16 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 
 final class ViewArchitectureSupport {
 
-    static final Pattern ROOT_PACKAGE = Pattern.compile("^src\\.view\\.([^.]+)$");
-    static final Pattern ASSEMBLY_PACKAGE = Pattern.compile("^src\\.view\\.([^.]+)\\.assembly(\\..*)?$");
-    static final Pattern VIEW_PACKAGE = Pattern.compile("^src\\.view\\.([^.]+)\\.View(\\..*)?$");
-    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.([^.]+)\\.ViewModel(\\..*)?$");
-    static final Pattern API_PACKAGE = Pattern.compile("^src\\.view\\.([^.]+)\\.api(\\..*)?$");
+    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.models$");
+    static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.views$");
+    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(models|views)(\\.|$)).+");
     static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
 
-    private static final Set<String> KNOWN_BUCKETS = Set.of("assembly", "api", "View", "ViewModel", "Model", "Controller", "interactor");
-    private static final Set<String> DECLARED_SHARED_VIEW_COMPONENTS = Set.of("mapcanvas", "dungeonmap");
-    private static final Set<String> ROOT_ALLOWED_SHELL_TYPES = Set.of(
+    private static final Set<String> MODEL_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ContributionKey",
             "shell.api.InspectorEntrySpec",
             "shell.api.InspectorSink",
+            "shell.api.NavigationGraphicSupport",
             "shell.api.NavigationGroupSpec",
             "shell.api.ShellContributionSpec",
             "shell.api.ShellRuntimeContext",
@@ -51,14 +48,6 @@ final class ViewArchitectureSupport {
             "shell.api.ShellTabSpec",
             "shell.api.ShellTopBarSpec",
             "shell.api.ShellViewContribution");
-    private static final Set<String> ASSEMBLY_ALLOWED_SHELL_TYPES = Set.of(
-            "shell.api.InspectorEntrySpec",
-            "shell.api.InspectorSink",
-            "shell.api.NavigationGraphicSupport",
-            "shell.api.ServiceRegistry",
-            "shell.api.ShellRuntimeContext",
-            "shell.api.ShellScreen",
-            "shell.api.ShellSlot");
     private static final Set<String> DATA_ROOT_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ServiceContribution",
             "shell.api.ServiceRegistry");
@@ -135,39 +124,19 @@ final class ViewArchitectureSupport {
                 || referencedType.startsWith("javafx.collections.");
     }
 
-    static boolean isAllowedRootJavafxType(String referencedType) {
-        return referencedType.equals("javafx.fxml.FXMLLoader")
+    static boolean isAllowedModelJavafxType(String referencedType) {
+        return isAllowedViewModelJavafxType(referencedType)
                 || referencedType.equals("javafx.scene.Node");
     }
 
-    static boolean isTargetOwnViewReference(String referencedType, String component) {
+    static boolean isTargetViewModelReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && viewType.component().equals(component)
-                && ("View".equals(viewType.bucket())
-                || "ViewModel".equals(viewType.bucket())
-                || isDeclaredSharedApi(viewType));
+        return viewType != null && "MODEL".equals(viewType.bucket());
     }
 
-    static boolean isOwnViewModelReference(String referencedType, String component) {
+    static boolean isTargetPanelViewReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
-        return viewType != null
-                && viewType.component().equals(component)
-                && "ViewModel".equals(viewType.bucket());
-    }
-
-    static boolean isDeclaredSharedViewComponent(String component) {
-        return DECLARED_SHARED_VIEW_COMPONENTS.contains(component);
-    }
-
-    static boolean isDeclaredSharedApi(ViewTypeInfo viewType) {
-        return viewType != null
-                && isDeclaredSharedViewComponent(viewType.component())
-                && "api".equals(viewType.bucket());
-    }
-
-    static boolean isDeclaredSharedApiReference(String referencedType) {
-        return isDeclaredSharedApi(parseViewType(referencedType));
+        return viewType != null && "VIEW".equals(viewType.bucket());
     }
 
     static ViewTypeInfo parseViewType(String referencedType) {
@@ -176,31 +145,25 @@ final class ViewArchitectureSupport {
         }
         String remainder = referencedType.substring("src.view.".length());
         String[] segments = remainder.split("\\.");
-        if (segments.length < 2) {
-            return null;
+        if (segments.length == 0) {
+            return new ViewTypeInfo("VIEW_ROOT", "LEGACY");
         }
-        String component = segments[0];
-        String bucket = KNOWN_BUCKETS.contains(segments[1]) ? segments[1] : "ROOT";
-        return new ViewTypeInfo(component, bucket);
+        if ("models".equals(segments[0])) {
+            return new ViewTypeInfo("models", "MODEL");
+        }
+        if ("views".equals(segments[0])) {
+            return new ViewTypeInfo("views", "VIEW");
+        }
+        return new ViewTypeInfo(segments[0], "LEGACY");
     }
 
-    static boolean isPrivateViewLeak(String referencedType, String ownComponent) {
+    static boolean isLegacyViewReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
-        if (viewType == null) {
-            return false;
-        }
-        if (viewType.component().equals(ownComponent)) {
-            return !"api".equals(viewType.bucket());
-        }
-        return !"api".equals(viewType.bucket());
+        return viewType != null && "LEGACY".equals(viewType.bucket());
     }
 
-    static boolean isAllowedRootShellType(String referencedType) {
-        return isAllowedShellType(referencedType, ROOT_ALLOWED_SHELL_TYPES);
-    }
-
-    static boolean isAllowedAssemblyShellType(String referencedType) {
-        return isAllowedShellType(referencedType, ASSEMBLY_ALLOWED_SHELL_TYPES);
+    static boolean isAllowedModelShellType(String referencedType) {
+        return isAllowedShellType(referencedType, MODEL_ALLOWED_SHELL_TYPES);
     }
 
     static boolean isAllowedDataRootShellType(String referencedType) {

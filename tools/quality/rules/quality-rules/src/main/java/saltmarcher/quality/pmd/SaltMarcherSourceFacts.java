@@ -97,8 +97,16 @@ final class SaltMarcherSourceFacts {
         return startsWith("src", "view");
     }
 
-    boolean isViewRoot() {
-        return isViewSource() && segments.size() == 4;
+    boolean isViewModelSource() {
+        return isViewSource() && segments.size() == 4 && segments.get(2).equals("models");
+    }
+
+    boolean isViewPanelSource() {
+        return isViewSource() && segments.size() == 4 && segments.get(2).equals("views");
+    }
+
+    boolean isLegacyViewSource() {
+        return isViewSource() && !isViewModelSource() && !isViewPanelSource();
     }
 
     boolean isDomainSource() {
@@ -269,10 +277,6 @@ final class SaltMarcherSourceFacts {
             serviceTypes.add(resolveTypeLiteral(matcher.group(1)));
         }
         return serviceTypes;
-    }
-
-    String expectedViewRootFileName() {
-        return toPascalCaseSuffix(featureName(), "ViewContribution") + ".java";
     }
 
     String expectedServiceRootFileName() {

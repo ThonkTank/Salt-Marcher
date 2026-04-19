@@ -7,7 +7,7 @@
 
 This ADR remains the historical owner split for the current view-architecture
 checks. The target view topology is now defined by
-[ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+[ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
 and requires later checker migration.
 
 SaltMarcher's view-architecture rules had been split across multiple tools
@@ -27,19 +27,13 @@ SaltMarcher uses a layered enforcement model for view architecture, with
 compiler-precise rules enforced during `compileJava` and graph-shaped MVVM
 rules enforced through the central `check` aggregate.
 
-- `jQAssistant` owns graph-shaped view rules:
-  - component topology
-  - bucket placement for `*Assembly` and `*ShellAdapter` naming contracts
-  - root-entrypoint count
-  - cross-component boundaries
-- `Error Prone` owns compiler-precise source rules:
-  - root-entrypoint delegation and direct `ShellRuntimeContext` wiring bans
-  - shell API allowlist checks on the view composition boundary
-  - `assembly/` and `View/` dependency bans
-  - `ViewModel` framework independence
-  - `api/` dependency bans
-  - presentation-state placement and reflection-bypass bans
-  - public `api/` signature bans on leaking private view types
+- `jQAssistant` owns graph-shaped view rules. Current checks still cover
+  component topology, root-entrypoint count, and cross-component boundaries;
+  target checks should move to `src/view/models` and `src/view/views`.
+- `Error Prone` owns compiler-precise source rules. Current checks still cover
+  root-entrypoint delegation, shell API allowlists, `assembly/`, `View/`,
+  `ViewModel`, and `api/` dependency bans; target checks should cover model
+  shell/domain wiring and passive panel-view restrictions.
 - `ArchUnit` keeps outer-layer dependency direction and cycle rules, but not
   component-internal view-bucket contracts.
 - `build-harness` keeps repository and persistence topology checks, but not
@@ -86,4 +80,4 @@ multiple tools without a clean rule-shape boundary.
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/quality-platforms.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
-- [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)

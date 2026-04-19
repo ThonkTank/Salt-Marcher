@@ -1,12 +1,12 @@
 # ADR 007: Shared View API Boundary
 
-- Status: Superseded by [ADR 017: Declarative MVVM View Boundary](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/017-declarative-mvvm-view-boundary.md:1)
+- Status: Superseded by [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
 - Date: 2026-04-18
 
 ## Context
 
 This ADR is a historical record of SaltMarcher's intermediate public view API
-boundary. The current target architecture is defined by ADR 017 and the MVVM
+boundary. The current target architecture is defined by ADR 019 and the MVVM
 standard.
 
 SaltMarcher's current view reuse is still too ad hoc. Components already reuse
@@ -68,4 +68,5 @@ DTOs and copied UI helpers.
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
+- [ADR 019: Shell Cockpit Tab Model View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
 - [ADR 005: MVVM And Assembly Boundary In The View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/005-view-mvvm-and-assembly-boundary.md:1)

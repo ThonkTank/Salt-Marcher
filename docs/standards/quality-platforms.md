@@ -259,13 +259,15 @@ Operationally, architecture checks enter local quality through:
 
 - `compileJava`
   Runs Error Prone architecture checks, including compiler-precise MVVM
-  dependency rules and declared Shared View Component API access.
+  dependency rules. Current view checks still include pre-tab-model shared
+  component API access until checker migration.
 - `architectureTest`
-  Runs ArchUnit dependency and cycle checks, including view-component cycle
-  freedom.
+  Runs ArchUnit dependency and cycle checks, including current view-component
+  cycle freedom.
 - `checkViewArchitecture`
-  Runs explicit jQAssistant view-topology analysis for normal view components
-  and declared Shared View Components.
+  Runs explicit jQAssistant view-topology analysis. Current rules still cover
+  normal view components and declared Shared View Components; target rules
+  should move to `src/view/models` and `src/view/views`.
 - `checkArchitecture`
   Aggregates ArchUnit, PMD architecture rules, and the build-harness.
 - `check`
