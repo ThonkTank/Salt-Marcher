@@ -32,6 +32,7 @@ final class CreatureDetailSqliteStore {
 
     private final CreatureDetailStringValuesSqliteStore stringValuesStore =
             new CreatureDetailStringValuesSqliteStore();
+    private final CreatureDetailRowMapper rowMapper = new CreatureDetailRowMapper(stringValuesStore);
 
     @Nullable CreatureDetailRecord loadCreatureDetail(Connection connection, long creatureId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(LOAD_CREATURE_DETAIL_SQL)) {
@@ -40,85 +41,13 @@ final class CreatureDetailSqliteStore {
                 if (!resultSet.next()) {
                     return null;
                 }
-                return new CreatureDetailRecord(
-                        identity(connection, resultSet, creatureId),
-                        hitDice(resultSet),
-                        armor(resultSet),
-                        movement(resultSet),
-                        abilityScores(resultSet),
-                        proficiency(resultSet),
-                        traits(resultSet),
+                return rowMapper.toRecord(
+                        connection,
+                        resultSet,
+                        creatureId,
                         loadActions(connection, creatureId));
             }
         }
-    }
-
-    private CreatureDetailRecord.Identity identity(Connection connection, ResultSet resultSet, long creatureId)
-            throws SQLException {
-        return new CreatureDetailRecord.Identity(
-                resultSet.getLong("id"),
-                resultSet.getString("name"),
-                resultSet.getString("size"),
-                resultSet.getString("creature_type"),
-                stringValuesStore.loadSubtypes(connection, creatureId),
-                stringValuesStore.loadBiomes(connection, creatureId),
-                resultSet.getString("alignment"),
-                resultSet.getString("cr"),
-                resultSet.getInt("xp"));
-    }
-
-    private CreatureDetailRecord.HitDice hitDice(ResultSet resultSet) throws SQLException {
-        return new CreatureDetailRecord.HitDice(
-                resultSet.getInt("hp"),
-                resultSet.getString("hit_dice"),
-                CreaturesSqliteQuerySupport.getNullableInt(resultSet, "hit_dice_count"),
-                CreaturesSqliteQuerySupport.getNullableInt(resultSet, "hit_dice_sides"),
-                CreaturesSqliteQuerySupport.getNullableInt(resultSet, "hit_dice_modifier"));
-    }
-
-    private CreatureDetailRecord.Armor armor(ResultSet resultSet) throws SQLException {
-        return new CreatureDetailRecord.Armor(
-                resultSet.getInt("ac"),
-                resultSet.getString("ac_notes"));
-    }
-
-    private CreatureDetailRecord.Movement movement(ResultSet resultSet) throws SQLException {
-        return new CreatureDetailRecord.Movement(
-                resultSet.getInt("speed"),
-                resultSet.getInt("fly_speed"),
-                resultSet.getInt("swim_speed"),
-                resultSet.getInt("climb_speed"),
-                resultSet.getInt("burrow_speed"));
-    }
-
-    private CreatureDetailRecord.AbilityScores abilityScores(ResultSet resultSet) throws SQLException {
-        return new CreatureDetailRecord.AbilityScores(
-                resultSet.getInt("str"),
-                resultSet.getInt("dex"),
-                resultSet.getInt("con"),
-                resultSet.getInt("intel"),
-                resultSet.getInt("wis"),
-                resultSet.getInt("cha"));
-    }
-
-    private CreatureDetailRecord.Proficiency proficiency(ResultSet resultSet) throws SQLException {
-        return new CreatureDetailRecord.Proficiency(
-                resultSet.getInt("initiative_bonus"),
-                resultSet.getInt("proficiency_bonus"));
-    }
-
-    private CreatureDetailRecord.Traits traits(ResultSet resultSet) throws SQLException {
-        return new CreatureDetailRecord.Traits(
-                resultSet.getString("saving_throws"),
-                resultSet.getString("skills"),
-                resultSet.getString("damage_vulnerabilities"),
-                resultSet.getString("damage_resistances"),
-                resultSet.getString("damage_immunities"),
-                resultSet.getString("condition_immunities"),
-                resultSet.getString("senses"),
-                resultSet.getInt("passive_perception"),
-                resultSet.getString("languages"),
-                resultSet.getInt("legendary_action_count"));
     }
 
     private List<CreatureActionRecord> loadActions(Connection connection, long creatureId) throws SQLException {

@@ -5,11 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 public record CreatureDetailRecord(
         Identity identity,
-        HitDice hitDice,
-        Armor armor,
-        Movement movement,
-        AbilityScores abilityScores,
-        Proficiency proficiency,
+        Vitals vitals,
         Traits traits,
         List<CreatureActionRecord> actions
 ) {
@@ -25,15 +21,20 @@ public record CreatureDetailRecord(
     public record Identity(
             long id,
             String name,
+            Classification classification,
+            String challengeRating,
+            int xp
+    ) {
+    }
+
+    public record Classification(
             String size,
             String creatureType,
             List<String> subtypes,
             List<String> biomes,
-            String alignment,
-            String challengeRating,
-            int xp
+            String alignment
     ) {
-        public Identity {
+        public Classification {
             subtypes = immutableCopy(subtypes);
             biomes = immutableCopy(biomes);
         }
@@ -84,16 +85,40 @@ public record CreatureDetailRecord(
     }
 
     public record Traits(
+            TraitProficiencies proficiencies,
+            Defenses defenses,
+            Awareness awareness,
+            int legendaryActionCount
+    ) {
+    }
+
+    public record TraitProficiencies(
             @Nullable String savingThrows,
-            @Nullable String skills,
+            @Nullable String skills
+    ) {
+    }
+
+    public record Defenses(
             @Nullable String damageVulnerabilities,
             @Nullable String damageResistances,
             @Nullable String damageImmunities,
-            @Nullable String conditionImmunities,
+            @Nullable String conditionImmunities
+    ) {
+    }
+
+    public record Awareness(
             @Nullable String senses,
             int passivePerception,
-            @Nullable String languages,
-            int legendaryActionCount
+            @Nullable String languages
+    ) {
+    }
+
+    public record Vitals(
+            HitDice hitDice,
+            Armor armor,
+            Movement movement,
+            AbilityScores abilityScores,
+            Proficiency proficiency
     ) {
     }
 
