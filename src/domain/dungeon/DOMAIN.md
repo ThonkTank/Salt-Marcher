@@ -201,7 +201,7 @@ These policies are part of domain behavior. They are not UI tool definitions.
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Dungeon Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/SPEC.md:1)
 - [Dungeon Editor UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/dungeoneditor/UI.md:1)
 - [Dungeon Travel UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/dungeontravel/UI.md:1)

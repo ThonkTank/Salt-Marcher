@@ -48,7 +48,7 @@ instead of restating it.
   Project-wide norms only.
 - `docs/architecture/overview.md`
   System summary and entry point into architecture docs.
-- `docs/architecture/standards/*.md`
+- `docs/standards/*.md`
   Reusable standards. One topic per file.
 - `docs/adr/NNN-*.md`
   One architecture decision per file.

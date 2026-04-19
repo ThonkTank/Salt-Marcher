@@ -29,7 +29,7 @@ skill or the canonical architecture standard, the code is debt.
 ## Canonical Truth
 
 - The architecture source of truth is
-  [docs/architecture/standards/view-mvvm.md](../../../../docs/architecture/standards/view-mvvm.md).
+  [docs/standards/view-mvvm.md](../../../../docs/standards/view-mvvm.md).
 - Project-wide agent-governance rules live in
   [AGENTS.md](../../../../AGENTS.md).
 - This skill operationalizes those rules for agent work in the view layer.
@@ -150,4 +150,4 @@ decision.
 ## References
 
 - [AGENTS.md](../../../../AGENTS.md)
-- [Model-View-ViewModel Standard](../../../../docs/architecture/standards/view-mvvm.md)
+- [Model-View-ViewModel Standard](../../../../docs/standards/view-mvvm.md)

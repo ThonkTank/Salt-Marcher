@@ -50,6 +50,6 @@ Promote `creatures` to a policy-owning bounded context before adding any of:
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/domain-layer.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Creatures Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/PERSISTENCE.md:1)
 - [Creatures UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/creatures/UI.md:1)

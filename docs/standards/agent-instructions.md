@@ -48,7 +48,7 @@ Any work on covered surfaces must use that skill first.
 
 - `AGENTS.md` owns project-wide norms only.
 - `SKILL.md` owns reusable agent workflow and trigger logic for one skill.
-- `docs/architecture/standards/*.md` own reusable project-wide rules for one
+- `docs/standards/*.md` own reusable project-wide rules for one
   topic.
 - Other instruction markdown may exist only when the topic is narrower than a
   reusable standard or skill.
@@ -71,6 +71,6 @@ When a covered artifact changes, reviewers must check:
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/documentation.md:1)
-- [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
+- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
+- [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [Agent Instruction Engineering Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/agent-instruction-engineering/SKILL.md:1)

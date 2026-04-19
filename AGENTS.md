@@ -14,7 +14,7 @@ Use the documentation tree in this order:
 
 1. `AGENTS.md` for project-wide norms and documentation governance.
 2. `docs/architecture/overview.md` for the system shape and major boundaries.
-3. `docs/architecture/standards/*.md` for reusable standards.
+3. `docs/standards/*.md` for reusable standards.
 4. `docs/adr/*.md` for individual architecture decisions.
 5. co-located feature documents under `src/domain/<feature>/`,
    `src/view/<component>/`, and `src/data/<feature>/`.
@@ -44,7 +44,7 @@ Use the documentation tree in this order:
 - Verification harnesses must not carry fixture-based selftest suites or
   meta-test layers; enforce repository policy directly in the owning gate.
 - New compile/build/check gates require explicit user request. Detailed
-  verification policy lives in `docs/architecture/standards/quality-platforms.md`.
+  verification policy lives in `docs/standards/quality-platforms.md`.
 - Every non-ADR document outside `AGENTS.md` must declare `Status`, `Owner`,
   `Last Reviewed`, and `Source of Truth`.
 - Documents must clearly distinguish current state from target state.
@@ -118,7 +118,7 @@ Use the documentation tree in this order:
 
 - `docs/architecture/overview.md`
   Current system-wide architecture summary.
-- `docs/architecture/standards/*.md`
+- `docs/standards/*.md`
   Reusable standards such as documentation rules, repository structure, shell
   registration, and quality tooling.
 - `docs/adr/NNN-*.md`
@@ -139,11 +139,11 @@ Use the documentation tree in this order:
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/documentation.md:1)
-- [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/agent-instructions.md:1)
+- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
+- [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/agent-instructions.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
-- [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/repository-structure.md:1)
-- [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/shell-and-discovery.md:1)
+- [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
+- [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [ADR 001: Documentation Governance](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/001-documentation-governance.md:1)
 - [ADR 002: Passive Shell And Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)

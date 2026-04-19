@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including `*ApplicationService.java`, `api/`, `application/`, `entity/`, `service/`, `valueobject/`, `repository/`, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, and `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/architecture/standards/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including `*ApplicationService.java`, `api/`, `application/`, `entity/`, `service/`, `valueobject/`, `repository/`, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, and `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
 ---
 
 # Domain Layer
@@ -11,7 +11,7 @@ Use this skill to keep domain-layer work aligned with the canonical
 domain-layer standard.
 
 This skill is not the source of truth. If it conflicts with
-`docs/architecture/standards/domain-layer.md`, follow the standard.
+`docs/standards/domain-layer.md`, follow the standard.
 
 ## Use This Skill For
 
@@ -90,5 +90,5 @@ When reviewing domain-layer work, look for:
 
 ## References
 
-- [Domain Layer Standard](../../../../docs/architecture/standards/domain-layer.md)
+- [Domain Layer Standard](../../../../docs/standards/domain-layer.md)
 - [AGENTS.md](../../../../AGENTS.md)

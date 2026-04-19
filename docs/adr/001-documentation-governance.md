@@ -1,5 +1,9 @@
 # ADR 001: Documentation Governance By Document Type And Ownership
 
+Amended in part by [ADR 015: Standards Directory Simplification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/015-standards-directory-simplification.md:1)
+for the reusable standards directory location. This ADR still owns the
+document-type and ownership model.
+
 - Status: Accepted
 - Date: 2026-04-17
 
@@ -14,7 +18,8 @@ made documents hard to trust because scope, status, and ownership were unclear.
 SaltMarcher will document by document type:
 
 - `AGENTS.md` for project-wide rules only
-- architecture overview and standards under `docs/architecture/`
+- architecture overview under `docs/architecture/`
+- reusable standards under `docs/standards/`
 - one ADR per architecture decision under `docs/adr/`
 - feature documentation co-located with the owning code root under `src/`
 
@@ -49,4 +54,4 @@ temporary delivery planning.
 ## Related Documents
 
 - [AGENTS.md](/home/aaron/Schreibtisch/projects/SaltMarcher/AGENTS.md:1)
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/standards/documentation.md:1)
+- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
