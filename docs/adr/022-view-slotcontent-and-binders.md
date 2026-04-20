@@ -15,15 +15,15 @@ slot-local ViewModel. Callers then duplicated projection support in their own
 aggregate ViewModels.
 
 The view layer also still used physical root names that described shell
-implementation areas (`tabs`, `topbar`, `state`) rather than user-addressable
+implementation areas (`left-bar tabs`, `topbar`, `state`) rather than user-addressable
 UI entrypoints and reusable cockpit slot content.
 
 ## Decision
 
 SaltMarcher adopts active roots plus slotcontent:
 
-- `src/view/featuretabs/<entry>/` owns left-sidebar feature tabs.
-- `src/view/runtimetabs/<entry>/` owns global runtime state-panel tabs.
+- `src/view/leftbartabs/<entry>/` owns left-bar tabs.
+- `src/view/statetabs/<entry>/` owns global state tabs.
 - `src/view/dropdowns/<entry>/` owns dropdown-capable UI units. A
   `*Contribution` is optional there and exists only when the shell should
   discover the dropdown directly.

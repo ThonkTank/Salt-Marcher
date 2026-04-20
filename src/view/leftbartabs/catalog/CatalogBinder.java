@@ -1,4 +1,4 @@
-package src.view.featuretabs.catalog;
+package src.view.leftbartabs.catalog;
 
 import java.util.List;
 import java.util.Map;

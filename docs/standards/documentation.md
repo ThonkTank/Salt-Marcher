@@ -32,9 +32,9 @@ Feature documentation is co-located by default. Put the canonical document at
 the nearest stable code root that owns the topic.
 
 - feature-wide meaning and behavior go under `src/domain/<feature>/`
-- UI behavior for a feature tab, runtime state tab, dropdown, detail entry, or
-  reusable slotcontent unit goes under the owning `src/view/featuretabs/`,
-  `src/view/runtimetabs/`, `src/view/dropdowns/`, or
+- UI behavior for a left-bar tab, state tab, dropdown, detail entry, or
+  reusable slotcontent unit goes under the owning `src/view/leftbartabs/`,
+  `src/view/statetabs/`, `src/view/dropdowns/`, or
   `src/view/slotcontent/` surface
 - persistence and storage rules go under `src/data/<feature>/`
 - system-wide architecture stays centralized under `docs/`
@@ -66,8 +66,8 @@ instead of restating it.
   Behavior, user flows, and acceptance criteria.
 - `src/domain/<feature>/DOMAIN.md`
   Canonical truth, ownership, invariants, and derived state.
-- `src/view/featuretabs/<tab>/<topic>.md`,
-  `src/view/runtimetabs/<state>/<topic>.md`,
+- `src/view/leftbartabs/<tab>/<topic>.md`,
+  `src/view/statetabs/<state>/<topic>.md`,
   `src/view/dropdowns/<dropdown>/<topic>.md`, or
   `src/view/slotcontent/<slot>/<entry>/<topic>.md`
   UI composition, interactions, and user-visible states for one tab, runtime

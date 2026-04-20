@@ -1,4 +1,4 @@
-package src.view.featuretabs.dungeontravel;
+package src.view.leftbartabs.dungeontravel;
 
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;

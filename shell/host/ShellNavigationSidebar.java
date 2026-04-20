@@ -18,10 +18,10 @@ import java.util.function.Consumer;
 import shell.api.ContributionKey;
 import shell.api.NavigationGroupSpec;
 import shell.api.ShellBinding;
-import shell.api.ShellTabSpec;
+import shell.api.ShellLeftBarTabSpec;
 
 /**
- * Passive left navigation that renders tabs discovered by the shell.
+ * Passive left navigation that renders left-bar tabs discovered by the shell.
  */
 final class ShellNavigationSidebar extends VBox {
 
@@ -33,7 +33,7 @@ final class ShellNavigationSidebar extends VBox {
         setAlignment(Pos.TOP_CENTER);
     }
 
-    void registerTab(ShellTabSpec registrationSpec, ShellBinding binding, Consumer<ContributionKey> onSelect) {
+    void registerLeftBarTab(ShellLeftBarTabSpec registrationSpec, ShellBinding binding, Consumer<ContributionKey> onSelect) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
         Objects.requireNonNull(binding, "binding");
         Objects.requireNonNull(onSelect, "onSelect");
@@ -50,7 +50,7 @@ final class ShellNavigationSidebar extends VBox {
     }
 
     private ToggleButton createButton(
-            ShellTabSpec registrationSpec,
+            ShellLeftBarTabSpec registrationSpec,
             ShellBinding binding,
         Consumer<ContributionKey> onSelect) {
         ToggleButton button = new ToggleButton(binding.navigationLabel());
@@ -98,7 +98,7 @@ final class ShellNavigationSidebar extends VBox {
     }
 
     private record NavigationItem(
-            ShellTabSpec registrationSpec,
+            ShellLeftBarTabSpec registrationSpec,
             String screenTitle,
             ToggleButton button
     ) {

@@ -8,7 +8,7 @@ interactions, and visible states.
 
 ## Component Purpose
 
-The Encounter runtime state tab owns the compact encounter dialog shown in the
+The Encounter state tab owns the compact encounter dialog shown in the
 global `COCKPIT_STATE` pane when the active left-bar tab does not provide its
 own state content.
 

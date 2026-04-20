@@ -27,11 +27,11 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 
 final class ViewArchitectureSupport {
 
-    static final Pattern VIEW_CONTRIBUTION_PACKAGE = Pattern.compile("^src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\.[^.]+$");
-    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\.[^.]+$|^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$");
+    static final Pattern VIEW_CONTRIBUTION_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
+    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$|^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$");
     static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$");
-    static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile("^src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\.[^.]+$");
-    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(featuretabs|runtimetabs|dropdowns|slotcontent)(\\.|$)).+");
+    static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
+    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(leftbartabs|statetabs|dropdowns|slotcontent)(\\.|$)).+");
     static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
 
     private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(
@@ -44,11 +44,11 @@ final class ViewArchitectureSupport {
             "shell.api.ShellContribution",
             "shell.api.ShellContributionSpec",
             "shell.api.ShellRuntimeContext",
-            "shell.api.ShellRuntimeStateSpec",
+            "shell.api.ShellStateTabSpec",
             "shell.api.ServiceRegistry",
             "shell.api.ShellSlot",
-            "shell.api.ShellTabMode",
-            "shell.api.ShellTabSpec",
+            "shell.api.ShellLeftBarTabMode",
+            "shell.api.ShellLeftBarTabSpec",
             "shell.api.ShellTopBarSpec");
     private static final Set<String> DATA_ROOT_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ServiceContribution",
@@ -222,7 +222,7 @@ final class ViewArchitectureSupport {
             }
             return new ViewTypeInfo(segments[1], "VIEW");
         }
-        if (Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments[0]) && segments.length >= 3) {
+        if (Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[0]) && segments.length >= 3) {
             for (int index = 2; index < segments.length; index++) {
                 String simpleName = segments[index].replaceFirst("\\$.*$", "");
                 if (simpleName.endsWith("Contribution")) {
@@ -307,7 +307,7 @@ final class ViewArchitectureSupport {
             if (segments.length >= 6 && "slotcontent".equals(segments[2])) {
                 return String.join(".", segments[0], segments[1], segments[2], segments[3], segments[4]);
             }
-            if (segments.length >= 4 && Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments[2])) {
+            if (segments.length >= 4 && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[2])) {
                 return String.join(".", segments[0], segments[1], segments[2], segments[3]);
             }
         }

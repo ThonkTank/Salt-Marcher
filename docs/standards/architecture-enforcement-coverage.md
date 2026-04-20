@@ -18,9 +18,9 @@ review-only boundary remain defined in the
 ## View Layer
 
 The target view architecture is the cockpit MVVM model from ADR 022:
-shell-discovered `*Contribution` adapters live under `src/view/featuretabs/*`,
-optional dropdown contributions live under `src/view/dropdowns/*`, runtime tab
-contributions live under `src/view/runtimetabs/*`, co-located `*Binder` files
+shell-discovered `*Contribution` adapters live under `src/view/leftbartabs/*`,
+optional dropdown contributions live under `src/view/dropdowns/*`, state tab
+contributions live under `src/view/statetabs/*`, co-located `*Binder` files
 own runtime wiring, active-root `*ViewModel` files own aggregate presentation
 state and actions, and reusable single-slot content lives under
 `src/view/slotcontent/<slot>/*`.
@@ -28,7 +28,7 @@ state and actions, and reusable single-slot content lives under
 `Enforced`:
 
 - `view-target-package-layout`: active Java view code may live only as direct
-  files under `src/view/featuretabs/*`, `src/view/dropdowns/*`, `src/view/runtimetabs/*`,
+  files under `src/view/leftbartabs/*`, `src/view/dropdowns/*`, `src/view/statetabs/*`,
   or `src/view/slotcontent/<slot>/*` through `build-harness`
   `view-layout` (`:build-harness:check`), jQAssistant
   `saltmarcher:MvvmAllowedViewBuckets` and
@@ -49,8 +49,8 @@ state and actions, and reusable single-slot content lives under
   `*ViewModel.java`, and `*DisplayModel.java` files. This is enforced by
   `build-harness` `view-root-file-role` and `view-slotcontent-root-shape`
   (`:build-harness:check`).
-- `view-root-composition`: roots under `src/view/featuretabs/*` and
-  `src/view/runtimetabs/*` contain exactly one `*Contribution.java`, exactly
+- `view-root-composition`: roots under `src/view/leftbartabs/*` and
+  `src/view/statetabs/*` contain exactly one `*Contribution.java`, exactly
   one `*Binder.java`, and exactly one co-located `*ViewModel.java`. Dropdown
   roots contain exactly one `*Binder.java` and exactly one co-located
   `*ViewModel.java`; they may contain zero or one `*Contribution.java` through
@@ -60,9 +60,9 @@ state and actions, and reusable single-slot content lives under
 - `view-contribution-entrypoint-shape`: shell-facing view entrypoints use
   `*Contribution`, implement `shell.api.ShellContribution`, expose
   `registrationSpec()` and `bind(ShellRuntimeContext)`, and are discovered only
-  from `featuretabs`, `runtimetabs`, and optional `dropdowns` roots; each
+  from `leftbartabs`, `statetabs`, and optional `dropdowns` roots; each
   entrypoint constructs the shell contribution spec matching its area
-  (`ShellTabSpec`, `ShellTopBarSpec`, or `ShellRuntimeStateSpec`) through build-harness
+  (`ShellLeftBarTabSpec`, `ShellTopBarSpec`, or `ShellStateTabSpec`) through build-harness
   `shell-view-contribution-placement` (`:build-harness:check`), jQAssistant
   `saltmarcher:MvvmRootOnlyViewContribution`, and
   `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`), plus PMD
@@ -75,9 +75,9 @@ state and actions, and reusable single-slot content lives under
   (`compileJava`).
 - `view-passive-panel-one-fragment-per-file`: co-located `*View` files and
   reusable `src/view/slotcontent` files define one top-level passive view and
-  use area-specific fixed-surface or reusable-view naming (`featuretabs`:
+  use area-specific fixed-surface or reusable-view naming (`leftbartabs`:
   `*ControlsView`, `*MainView`, or `*StateView`; `dropdowns`: `*TopBarView`;
-  `runtimetabs`: `*StateView`; slotcontent views: `*View`)
+  `statetabs`: `*StateView`; slotcontent views: `*View`)
   through jQAssistant
   `saltmarcher:MvvmOnePanelViewPerFile` and
   `saltmarcher:MvvmPanelViewName` (`checkViewArchitecture`), plus PMD
@@ -138,8 +138,8 @@ state and actions, and reusable single-slot content lives under
 - `view-component-cycle-freedom`: view packages remain cycle-free through
   ArchUnit `viewComponentsMustStayCycleFree` (`architectureTest`).
 - `view-fxml-resource-boundary`: optional declarative view resources must live
-  under `resources/view/featuretabs/<entry>/`, `resources/view/dropdowns/<entry>/`,
-  `resources/view/runtimetabs/<entry>/`, or
+  under `resources/view/leftbartabs/<entry>/`, `resources/view/dropdowns/<entry>/`,
+  `resources/view/statetabs/<entry>/`, or
   `resources/view/slotcontent/<slot>/<entry>/`; inline FXML scripts are forbidden;
   when present, `fx:controller` must point to the passive View class matching
   the resource area, entry folder, and FXML basename with the same
@@ -154,8 +154,8 @@ state and actions, and reusable single-slot content lives under
 
 Mechanical trace:
 
-- Java view code lives under direct files in `src/view/featuretabs/*`,
-  `src/view/dropdowns/*`, `src/view/runtimetabs/*`, or
+- Java view code lives under direct files in `src/view/leftbartabs/*`,
+  `src/view/dropdowns/*`, `src/view/statetabs/*`, or
   `src/view/slotcontent/<slot>/*`.
 - A featuretab or runtimetab root defines one shell-discovered adapter, one
   Binder, and one co-located ViewModel; dropdowns define one Binder and may
@@ -179,7 +179,7 @@ Mechanical trace:
 - Details/history publication goes through shell-owned contracts.
 - Feature view code does not publish `ShellSlot.COCKPIT_DETAILS` directly.
 - State-pane precedence is explicit: active left-bar tab content wins while
-  present; otherwise registered state-pane tabs are shown.
+  present; otherwise registered state-pane left-bar tabs are shown.
 - Legacy component-local buckets are absent from migrated target code.
 - Domain `published/` carriers stay carrier-only, while the callable model
   boundary is the root application service. Translation from published domain
@@ -210,8 +210,8 @@ Mechanical trace:
 - Whether similar passive panels should extend an existing reusable view or
   stay duplicated because feature-specific semantics would make sharing leaky.
 - Whether state-pane precedence is preserved.
-- Whether runtime state belongs under `src/view/runtimetabs/<state>` as a cockpit
-  state-pane contribution or under a feature tab/detail root as local
+- Whether runtime state belongs under `src/view/statetabs/<state>` as a cockpit
+  state-pane contribution or under a left-bar tab/detail root as local
   presentation state.
 - Whether Binder wiring performs meaningful ViewModel/action binding and
   service lookup at the shell adapter boundary rather than merely satisfying
@@ -548,8 +548,8 @@ Mechanical trace against the data-layer standard:
   Error Prone `FeatureShellApiAllowlist` (`compileJava`).
 - `shell-view-root-delegation-boundary`: old component-local view roots are
   blocked, shell-facing registration belongs in `*Contribution` classes, and
-  runtime wiring belongs in `*Binder` classes under `src/view/featuretabs`,
-  `src/view/dropdowns`, and `src/view/runtimetabs` through Error Prone
+  runtime wiring belongs in `*Binder` classes under `src/view/leftbartabs`,
+  `src/view/dropdowns`, and `src/view/statetabs` through Error Prone
   `ViewRootDelegation` (`compileJava`).
 - `shell-service-registry-registration-placement`: direct
   `ServiceRegistry.Builder.register(...)` calls must stay in data feature
@@ -587,8 +587,8 @@ Runtime guards outside the build-blocking harness:
 `Enforced`:
 
 - `shell-view-contribution-discovery-contract`: view contributions are found
-  as direct `*Contribution.java` files under `src/view/featuretabs/<entry>`,
-  `src/view/dropdowns/<entry>`, and `src/view/runtimetabs/<entry>`, with one
+  as direct `*Contribution.java` files under `src/view/leftbartabs/<entry>`,
+  `src/view/dropdowns/<entry>`, and `src/view/statetabs/<entry>`, with one
   concrete shell contribution per featuretab or runtimetab root and zero or
   one per dropdown root, through jQAssistant
   `saltmarcher:MvvmOneModelPerFile`,
@@ -609,10 +609,10 @@ Runtime guards outside the build-blocking harness:
   (`pmdArchitectureMain`).
 - `shell-supported-contribution-spec-selection`: view contributions construct
   exactly one supported shell contribution spec and `defaultLanding` appears
-  only on `ShellTabSpec` tab contributions through PMD
+  only on `ShellLeftBarTabSpec` tab contributions through PMD
   `SaltMarcherEntrypointRule` (`pmdArchitectureMain`).
 - `shell-startup-default-landing-uniqueness`: contribution-authored
-  `ShellTabSpec` metadata must use literal `defaultLanding` values and at most
+  `ShellLeftBarTabSpec` metadata must use literal `defaultLanding` values and at most
   one tab may declare `defaultLanding=true` through `build-harness`
   `shell-tab-default-landing-literal` and `shell-default-landing-uniqueness`
   (`:build-harness:check`).

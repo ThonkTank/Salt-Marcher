@@ -1,4 +1,4 @@
-package src.view.runtimetabs.encounter;
+package src.view.statetabs.encounter;
 
 import java.util.Objects;
 import shell.api.ContributionKey;
@@ -6,17 +6,17 @@ import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellRuntimeContext;
-import shell.api.ShellRuntimeStateSpec;
+import shell.api.ShellStateTabSpec;
 
-public final class EncounterRuntimeStateContribution implements ShellContribution {
+public final class EncounterStateContribution implements ShellContribution {
 
     @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public EncounterRuntimeStateContribution() {
+    public EncounterStateContribution() {
     }
 
     @Override
     public ShellContributionSpec registrationSpec() {
-        return new ShellRuntimeStateSpec(
+        return new ShellStateTabSpec(
                 new ContributionKey("encounter"),
                 "Encounter",
                 30);
@@ -24,6 +24,6 @@ public final class EncounterRuntimeStateContribution implements ShellContributio
 
     @Override
     public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        return new EncounterRuntimeStateBinder(Objects.requireNonNull(runtimeContext, "runtimeContext")).bind();
+        return new EncounterStateBinder(Objects.requireNonNull(runtimeContext, "runtimeContext")).bind();
     }
 }

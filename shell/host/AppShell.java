@@ -9,18 +9,18 @@ import shell.api.ContributionKey;
 import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
-import shell.api.ShellRuntimeStateSpec;
-import shell.api.ShellTabSpec;
+import shell.api.ShellStateTabSpec;
+import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellTopBarSpec;
 
 /**
- * Main application shell: global top bar, navigable tabs, shared inspector, and shared runtime-state tabs.
+ * Main application shell: global top bar, left-bar tabs, shared inspector, and shared state tabs.
  */
 public final class AppShell extends BorderPane {
 
-    private final Map<ContributionKey, RegisteredTab> tabs = new LinkedHashMap<>();
+    private final Map<ContributionKey, RegisteredLeftBarTab> leftBarTabs = new LinkedHashMap<>();
     private final Map<ContributionKey, ShellTopBarSpec> topBarItems = new LinkedHashMap<>();
-    private final Map<ContributionKey, ShellRuntimeStateSpec> runtimeStateItems = new LinkedHashMap<>();
+    private final Map<ContributionKey, ShellStateTabSpec> stateTabItems = new LinkedHashMap<>();
     private final ShellNavigationSidebar navigationSidebar = new ShellNavigationSidebar();
     private final ShellToolbarStrip toolbar = new ShellToolbarStrip();
     private final ShellWorkspacePane workspace = new ShellWorkspacePane();
@@ -43,13 +43,13 @@ public final class AppShell extends BorderPane {
         return runtimeContext;
     }
 
-    public void registerTab(ShellTabSpec registrationSpec, ShellBinding binding) {
+    public void registerLeftBarTab(ShellLeftBarTabSpec registrationSpec, ShellBinding binding) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
         Objects.requireNonNull(binding, "binding");
         assertUniqueKey(registrationSpec.key());
         ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, binding);
-        tabs.put(registrationSpec.key(), new RegisteredTab(registrationSpec, binding, slotContent));
-        navigationSidebar.registerTab(registrationSpec, binding, this::navigateTo);
+        leftBarTabs.put(registrationSpec.key(), new RegisteredLeftBarTab(registrationSpec, binding, slotContent));
+        navigationSidebar.registerLeftBarTab(registrationSpec, binding, this::navigateTo);
     }
 
     public void registerTopBar(ShellTopBarSpec registrationSpec, ShellBinding binding) {
@@ -62,21 +62,21 @@ public final class AppShell extends BorderPane {
         refreshToolbar();
     }
 
-    public void registerRuntimeState(ShellRuntimeStateSpec registrationSpec, ShellBinding binding) {
+    public void registerStateTab(ShellStateTabSpec registrationSpec, ShellBinding binding) {
         Objects.requireNonNull(registrationSpec, "registrationSpec");
         Objects.requireNonNull(binding, "binding");
         assertUniqueKey(registrationSpec.key());
         ShellSlotContent slotContent = ShellSlotValidator.validate(registrationSpec, binding);
-        runtimeStateItems.put(registrationSpec.key(), registrationSpec);
-        workspace.registerRuntimeStateTab(
+        stateTabItems.put(registrationSpec.key(), registrationSpec);
+        workspace.registerStateTab(
                 registrationSpec.key(),
                 registrationSpec.tabLabel(),
                 registrationSpec.itemOrder(),
-                Objects.requireNonNull(slotContent.runtimeState(), "runtime state content"));
+                Objects.requireNonNull(slotContent.stateTab(), "state tab content"));
     }
 
     public void navigateTo(ContributionKey key) {
-        RegisteredTab target = tabs.get(key);
+        RegisteredLeftBarTab target = leftBarTabs.get(key);
         if (target == null || key.equals(activeTabKey)) {
             return;
         }
@@ -91,13 +91,13 @@ public final class AppShell extends BorderPane {
             return;
         }
         workspace.saveDividerPositions(activeTabKey);
-        RegisteredTab current = tabs.get(activeTabKey);
+        RegisteredLeftBarTab current = leftBarTabs.get(activeTabKey);
         if (current != null) {
             current.binding().onDeactivate();
         }
     }
 
-    private void showTargetTab(RegisteredTab target) {
+    private void showTargetTab(RegisteredLeftBarTab target) {
         workspace.showTab(target.slotContent(), target.registrationSpec().mode());
         navigationSidebar.select(target.registrationSpec().key());
         refreshToolbar();
@@ -105,7 +105,7 @@ public final class AppShell extends BorderPane {
     }
 
     private void refreshToolbar() {
-        RegisteredTab activeTab = activeTabKey == null ? null : tabs.get(activeTabKey);
+        RegisteredLeftBarTab activeTab = activeTabKey == null ? null : leftBarTabs.get(activeTabKey);
         toolbar.showTitle(activeTab != null ? activeTab.binding().title() : "");
     }
 
@@ -115,13 +115,13 @@ public final class AppShell extends BorderPane {
     }
 
     private void assertUniqueKey(ContributionKey key) {
-        if (tabs.containsKey(key) || topBarItems.containsKey(key) || runtimeStateItems.containsKey(key)) {
+        if (leftBarTabs.containsKey(key) || topBarItems.containsKey(key) || stateTabItems.containsKey(key)) {
             throw new IllegalArgumentException("Duplicate contribution key: " + key.value());
         }
     }
 
-    private record RegisteredTab(
-            ShellTabSpec registrationSpec,
+    private record RegisteredLeftBarTab(
+            ShellLeftBarTabSpec registrationSpec,
             ShellBinding binding,
             ShellSlotContent slotContent
     ) {

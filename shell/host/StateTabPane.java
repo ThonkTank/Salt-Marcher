@@ -19,19 +19,19 @@ import java.util.Objects;
 import shell.api.ContributionKey;
 
 /**
- * Shared lower-right runtime-state panel with autonomous tab navigation.
+ * Shared lower-right state panel with autonomous state-tab navigation.
  */
-final class RuntimeStatePane extends VBox {
+final class StateTabPane extends VBox {
 
     private final HBox tabBar = new HBox(2);
     private final StackPane contentArea = new StackPane();
     private final ToggleGroup tabGroup = new ToggleGroup();
-    private final Label placeholder = new Label("Kein Runtime-Zustand verfügbar");
+    private final Label placeholder = new Label("Kein Zustand verfügbar");
     private final Node placeholderHost = ShellContentLayout.shellOwned(placeholder);
     private final Map<ContributionKey, StateTab> tabs = new LinkedHashMap<>();
     private boolean manualSelectionMade;
 
-    RuntimeStatePane() {
+    StateTabPane() {
         getStyleClass().add("surface-root");
         setPrefWidth(380);
         setMinWidth(280);
@@ -59,7 +59,7 @@ final class RuntimeStatePane extends VBox {
     void registerTab(ContributionKey key, String label, int itemOrder, Node content) {
         Objects.requireNonNull(key, "key");
         if (tabs.containsKey(key)) {
-            throw new IllegalArgumentException("Duplicate runtime state key: " + key.value());
+            throw new IllegalArgumentException("Duplicate state tab key: " + key.value());
         }
         tabs.put(key, new StateTab(key, label, itemOrder, content));
         rebuildTabBar();

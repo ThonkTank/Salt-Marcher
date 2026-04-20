@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 final class ShellSurfaceRules implements ArchitectureRule {
 
-    private static final Pattern SHELL_TAB_SPEC_CONSTRUCTOR_PATTERN =
-            Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellTabSpec\\s*\\(");
+    private static final Pattern SHELL_LEFT_BAR_TAB_SPEC_CONSTRUCTOR_PATTERN =
+            Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellLeftBarTabSpec\\s*\\(");
     private static final Set<String> SHELL_API_PUBLIC_SURFACE_ALLOWLIST =
             Set.of(
                     "ContributionKey.java",
@@ -25,10 +25,10 @@ final class ShellSurfaceRules implements ArchitectureRule {
                     "ShellContribution.java",
                     "ShellContributionSpec.java",
                     "ShellRuntimeContext.java",
-                    "ShellRuntimeStateSpec.java",
+                    "ShellStateTabSpec.java",
                     "ShellSlot.java",
-                    "ShellTabMode.java",
-                    "ShellTabSpec.java",
+                    "ShellLeftBarTabMode.java",
+                    "ShellLeftBarTabSpec.java",
                     "ShellTopBarSpec.java");
 
     @Override
@@ -70,7 +70,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
             if (sourceFile.fileName().endsWith("ViewContribution.java")
                     && sourceFile.relativePath().startsWith("src/view/")) {
                 violations.add(sourceFile.relativePath(), "shell-view-contribution-placement",
-                        "View-layer shell contributions must use *Contribution.java under src/view/featuretabs, src/view/runtimetabs, or src/view/dropdowns; *ViewContribution implementations are forbidden.");
+                        "View-layer shell contributions must use *Contribution.java under src/view/leftbartabs, src/view/statetabs, or src/view/dropdowns; *ViewContribution implementations are forbidden.");
             }
 
             if (sourceFile.kind() != SourceKind.VIEW_CONTRIBUTION) {
@@ -84,7 +84,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
             for (List<String> arguments : shellTabSpecArgumentLists(sourceFile.content())) {
                 if (arguments.size() < 4) {
                     violations.add(sourceFile.relativePath(), "shell-tab-default-landing-literal",
-                            "ShellTabSpec root metadata must expose a literal defaultLanding argument.");
+                            "ShellLeftBarTabSpec root metadata must expose a literal defaultLanding argument.");
                     continue;
                 }
                 String defaultLanding = arguments.get(3).trim();
@@ -94,7 +94,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
                 }
                 if (!defaultLanding.equals("false")) {
                     violations.add(sourceFile.relativePath(), "shell-tab-default-landing-literal",
-                            "ShellTabSpec defaultLanding must be the literal true or false so startup uniqueness can be enforced.");
+                            "ShellLeftBarTabSpec defaultLanding must be the literal true or false so startup uniqueness can be enforced.");
                 }
             }
         }
@@ -105,7 +105,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
                     .sorted()
                     .collect(Collectors.joining(", "));
             violations.add("src/view", "shell-default-landing-uniqueness",
-                    "At most one ShellTabSpec root may declare defaultLanding=true. Found: " + files);
+                    "At most one ShellLeftBarTabSpec root may declare defaultLanding=true. Found: " + files);
         }
     }
 
@@ -125,7 +125,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
 
     private static List<List<String>> shellTabSpecArgumentLists(String sourceText) {
         List<List<String>> arguments = new ArrayList<>();
-        Matcher matcher = SHELL_TAB_SPEC_CONSTRUCTOR_PATTERN.matcher(sourceText);
+        Matcher matcher = SHELL_LEFT_BAR_TAB_SPEC_CONSTRUCTOR_PATTERN.matcher(sourceText);
         while (matcher.find()) {
             int openParenthesis = matcher.end() - 1;
             int closeParenthesis = findClosingParenthesis(sourceText, openParenthesis);

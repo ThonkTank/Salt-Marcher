@@ -55,7 +55,7 @@ final class ShellSlotContent {
         return nodes.get(ShellSlot.COCKPIT_STATE);
     }
 
-    @Nullable Node runtimeState() {
+    @Nullable Node stateTab() {
         return nodes.get(ShellSlot.COCKPIT_STATE);
     }
 }

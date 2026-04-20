@@ -8,8 +8,8 @@ import java.util.TreeMap;
 
 final class ViewFeatureRules implements ArchitectureRule {
 
-    private static final Set<String> REQUIRED_CONTRIBUTION_AREAS = Set.of("featuretabs", "runtimetabs");
-    private static final Set<String> ACTIVE_AREAS = Set.of("featuretabs", "runtimetabs", "dropdowns");
+    private static final Set<String> REQUIRED_CONTRIBUTION_AREAS = Set.of("leftbartabs", "statetabs");
+    private static final Set<String> ACTIVE_AREAS = Set.of("leftbartabs", "statetabs", "dropdowns");
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
@@ -55,7 +55,7 @@ final class ViewFeatureRules implements ArchitectureRule {
         if (root.requiresContribution()) {
             if (contributionCount != 1) {
                 violations.add(root.source(), "view-root-composition",
-                        "Feature and runtime tab roots must contain exactly one shell-discovered *Contribution.java file.");
+                        "Left-bar and state tab roots must contain exactly one shell-discovered *Contribution.java file.");
             }
         } else if (contributionCount > 1) {
             violations.add(root.source(), "view-dropdown-optional-contribution",

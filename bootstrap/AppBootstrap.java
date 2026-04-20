@@ -8,8 +8,8 @@ import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellRuntimeContext;
-import shell.api.ShellRuntimeStateSpec;
-import shell.api.ShellTabSpec;
+import shell.api.ShellStateTabSpec;
+import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellTopBarSpec;
 
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ public final class AppBootstrap {
             register(shell, contribution);
         }
 
-        ShellTabSpec startup = resolveStartupView(contributions);
+        ShellLeftBarTabSpec startup = resolveStartupView(contributions);
         if (startup != null) {
             shell.navigateTo(startup.key());
         }
@@ -69,43 +69,43 @@ public final class AppBootstrap {
 
     private void register(AppShell shell, ResolvedContribution contribution) {
         ShellContributionSpec spec = contribution.registrationSpec();
-        if (spec instanceof ShellTabSpec tabSpec) {
-            shell.registerTab(tabSpec, contribution.binding());
+        if (spec instanceof ShellLeftBarTabSpec leftBarTabSpec) {
+            shell.registerLeftBarTab(leftBarTabSpec, contribution.binding());
             return;
         }
         if (spec instanceof ShellTopBarSpec topBarSpec) {
             shell.registerTopBar(topBarSpec, contribution.binding());
             return;
         }
-        if (spec instanceof ShellRuntimeStateSpec runtimeStateSpec) {
-            shell.registerRuntimeState(runtimeStateSpec, contribution.binding());
+        if (spec instanceof ShellStateTabSpec stateTabSpec) {
+            shell.registerStateTab(stateTabSpec, contribution.binding());
             return;
         }
         throw new IllegalStateException("Unsupported shell contribution type: " + spec.getClass().getName());
     }
 
-    private @Nullable ShellTabSpec resolveStartupView(List<ResolvedContribution> contributions) {
-        ShellTabSpec startup = null;
+    private @Nullable ShellLeftBarTabSpec resolveStartupView(List<ResolvedContribution> contributions) {
+        ShellLeftBarTabSpec startup = null;
         for (ResolvedContribution contribution : contributions) {
-            if (!(contribution.registrationSpec() instanceof ShellTabSpec tabSpec) || !tabSpec.defaultLanding()) {
+            if (!(contribution.registrationSpec() instanceof ShellLeftBarTabSpec leftBarTabSpec) || !leftBarTabSpec.defaultLanding()) {
                 continue;
             }
             if (startup != null) {
-                throw new IllegalStateException("Multiple shell tabs declare defaultLanding=true.");
+                throw new IllegalStateException("Multiple shell left-bar tabs declare defaultLanding=true.");
             }
-            startup = tabSpec;
+            startup = leftBarTabSpec;
         }
         if (startup != null) {
             return startup;
         }
         return contributions.stream()
                 .map(ResolvedContribution::registrationSpec)
-                .filter(ShellTabSpec.class::isInstance)
-                .map(ShellTabSpec.class::cast)
+                .filter(ShellLeftBarTabSpec.class::isInstance)
+                .map(ShellLeftBarTabSpec.class::cast)
                 .sorted(Comparator
-                        .comparingInt((ShellTabSpec tab) -> tab.navigationGroup().order())
+                        .comparingInt((ShellLeftBarTabSpec tab) -> tab.navigationGroup().order())
                         .thenComparing(tab -> tab.navigationGroup().label(), String.CASE_INSENSITIVE_ORDER)
-                        .thenComparingInt(ShellTabSpec::viewOrder)
+                        .thenComparingInt(ShellLeftBarTabSpec::viewOrder)
                         .thenComparing(tab -> tab.key().value()))
                 .findFirst()
                 .orElse(null);

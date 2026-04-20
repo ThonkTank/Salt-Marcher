@@ -1,4 +1,4 @@
-package src.view.runtimetabs.encounter;
+package src.view.statetabs.encounter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
 
-public final class EncounterRuntimeStateViewModel {
+public final class EncounterStateViewModel {
 
     public enum Mode {
         BUILDER,

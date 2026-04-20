@@ -38,14 +38,14 @@ architecture model.
   inspector/details hosting, runtime-state hosting, activation/deactivation,
   and layout persistence.
 - `ShellContributionSpec` and its concrete types are pure registration
-  metadata. `ShellTabSpec` may carry a feature-owned navigation-graphic
+  metadata. `ShellLeftBarTabSpec` may carry a feature-owned navigation-graphic
   supplier as part of that registration metadata.
 - Shell-facing view registration belongs in `*Contribution` classes under
-  `src/view/featuretabs`, `src/view/runtimetabs`, and shell-contributed
+  `src/view/leftbartabs`, `src/view/statetabs`, and shell-contributed
   `src/view/dropdowns`; runtime composition belongs in the co-located
   `*Binder`.
 - `ShellScreen` is the current Java API name for prepared contribution
-  content. Only `ShellTabSpec` contributions are navigable workbench parts;
+  content. Only `ShellLeftBarTabSpec` contributions are navigable workbench parts;
   top-bar and auxiliary contributions project content into fixed shell-owned
   surfaces.
 - `ShellRuntimeContext` is the single shell-scoped runtime gateway for

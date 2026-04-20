@@ -3,19 +3,19 @@ package shell.api;
 import java.util.Objects;
 
 /**
- * Passive registration metadata for a global runtime-state tab.
+ * Passive registration metadata for a global state tab.
  */
-public record ShellRuntimeStateSpec(
+public record ShellStateTabSpec(
         ContributionKey key,
         String tabLabel,
         int itemOrder
 ) implements ShellContributionSpec {
 
-    public ShellRuntimeStateSpec {
+    public ShellStateTabSpec {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(tabLabel, "tabLabel");
         if (tabLabel.isBlank()) {
-            throw new IllegalArgumentException("Runtime state tab label must not be blank.");
+            throw new IllegalArgumentException("State tab label must not be blank.");
         }
     }
 }

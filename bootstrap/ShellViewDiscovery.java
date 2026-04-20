@@ -20,8 +20,8 @@ import shell.api.ShellContribution;
 public final class ShellViewDiscovery {
 
     private static final List<ContributionRoot> CONTRIBUTION_ROOTS = List.of(
-            new ContributionRoot("src/view/featuretabs", "src.view.featuretabs."),
-            new ContributionRoot("src/view/runtimetabs", "src.view.runtimetabs."),
+            new ContributionRoot("src/view/leftbartabs", "src.view.leftbartabs."),
+            new ContributionRoot("src/view/statetabs", "src.view.statetabs."),
             new ContributionRoot("src/view/dropdowns", "src.view.dropdowns."));
     private static final String CLASS_SUFFIX = ".class";
     private static final String FILE_PROTOCOL = "file";

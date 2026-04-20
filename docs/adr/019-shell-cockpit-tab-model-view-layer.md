@@ -34,11 +34,11 @@ architecture.
 
 - The shell owns fixed cockpit surfaces and the public contracts by which
   contributions attach content to them.
-- `src/view/tabs/<entry>/` owns one left-bar tab contribution, its ViewModel,
+- `src/view/leftbartabs/<entry>/` owns one left-bar tab contribution, its ViewModel,
   and its contribution-owned passive Views.
 - `src/view/topbar/<entry>/` owns one top-bar dropdown-window contribution, its
   ViewModel, and its dropdown View.
-- `src/view/state/<entry>/` owns one global runtime state-panel tab
+- `src/view/statetabs/<entry>/` owns one global state tab
   contribution, its ViewModel, and its state View.
 - `src/view/details/<entry>/` owns detail-entry ViewModels and Views published
   through the shell-owned details/history API. Detail entries are not
@@ -56,8 +56,8 @@ architecture.
 - The details pane remains shell-owned and is populated through public
   details/history contracts.
 - The state pane uses explicit precedence: active left-bar tab content wins
-  while present; otherwise shell-registered global runtime state-panel tabs are
-  shown. Encounter is such a runtime state-panel tab, not a left-bar tab.
+  while present; otherwise shell-registered global state tabs are
+  shown. Encounter is such a state tab, not a left-bar tab.
 
 This decision supersedes ADR 017 as the target view architecture. ADR 017 and
 ADR 018 remain historical records of the intermediate component-local model and
@@ -73,8 +73,8 @@ shared-component exception.
 - The repository structure standard must define the contribution-root view
   topology.
 - The discovery standard must move from component-root discovery toward
-  `*Contribution` discovery under `src/view/tabs`, `src/view/topbar`, and
-  `src/view/state`.
+  `*Contribution` discovery under `src/view/leftbartabs`, `src/view/topbar`, and
+  `src/view/statetabs`.
 - Architecture checks can lag the standards during migration, but enforcement
   documentation must state the mismatch rather than presenting old checks as
   target truth.

@@ -1,4 +1,4 @@
-package src.view.runtimetabs.encounter;
+package src.view.statetabs.encounter;
 
 import java.util.Map;
 import java.util.Objects;
@@ -7,14 +7,14 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 
-final class EncounterRuntimeStateBinder {
+final class EncounterStateBinder {
 
-    EncounterRuntimeStateBinder(ShellRuntimeContext runtimeContext) {
+    EncounterStateBinder(ShellRuntimeContext runtimeContext) {
         Objects.requireNonNull(runtimeContext, "runtimeContext");
     }
 
     ShellBinding bind() {
-        EncounterRuntimeStateViewModel viewModel = new EncounterRuntimeStateViewModel();
+        EncounterStateViewModel viewModel = new EncounterStateViewModel();
         EncounterStateView state = new EncounterStateView();
         state.statusTextProperty().bind(viewModel.statusProperty());
         wireActions(state, viewModel);
@@ -23,8 +23,8 @@ final class EncounterRuntimeStateBinder {
         return new Binding(state);
     }
 
-    private void wireActions(EncounterStateView state, EncounterRuntimeStateViewModel viewModel) {
-        state.setOnGenerate(input -> viewModel.generate(new EncounterRuntimeStateViewModel.BuilderSettings(
+    private void wireActions(EncounterStateView state, EncounterStateViewModel viewModel) {
+        state.setOnGenerate(input -> viewModel.generate(new EncounterStateViewModel.BuilderSettings(
                 input.difficultyLabel(),
                 input.balanceLevel(),
                 input.amountValue(),
@@ -34,7 +34,7 @@ final class EncounterRuntimeStateBinder {
         state.setOnStartInitiative(viewModel::openInitiative);
         state.setOnInitiativeBack(viewModel::backToBuilder);
         state.setOnInitiativeConfirm(inputs -> viewModel.confirmInitiative(inputs.stream()
-                .map(input -> new EncounterRuntimeStateViewModel.InitiativeInput(input.id(), input.initiative()))
+                .map(input -> new EncounterStateViewModel.InitiativeInput(input.id(), input.initiative()))
                 .toList()));
         state.setOnNextTurn(viewModel::nextTurn);
         state.setOnDamage(viewModel::applyDamage);
@@ -45,7 +45,7 @@ final class EncounterRuntimeStateBinder {
         state.setOnReturnToBuilder(viewModel::returnToBuilderAfterResults);
     }
 
-    private void wireRendering(EncounterStateView state, EncounterRuntimeStateViewModel viewModel) {
+    private void wireRendering(EncounterStateView state, EncounterStateViewModel viewModel) {
         viewModel.modeProperty().addListener((obs, oldMode, newMode) -> render(state, viewModel));
         viewModel.builderStateProperty().addListener((obs, oldState, newState) -> render(state, viewModel));
         viewModel.initiativeStateProperty().addListener((obs, oldState, newState) -> render(state, viewModel));
@@ -53,7 +53,7 @@ final class EncounterRuntimeStateBinder {
         viewModel.resultStateProperty().addListener((obs, oldState, newState) -> render(state, viewModel));
     }
 
-    private void render(EncounterStateView state, EncounterRuntimeStateViewModel viewModel) {
+    private void render(EncounterStateView state, EncounterStateViewModel viewModel) {
         switch (viewModel.modeProperty().get()) {
             case BUILDER -> state.showBuilder(toBuilderState(viewModel.builderStateProperty().get()));
             case INITIATIVE -> state.showInitiative(toInitiativeState(viewModel.initiativeStateProperty().get()));
@@ -62,11 +62,11 @@ final class EncounterRuntimeStateBinder {
         }
     }
 
-    private EncounterStateView.BuilderStateView toBuilderState(EncounterRuntimeStateViewModel.BuilderState source) {
-        EncounterRuntimeStateViewModel.DifficultySummary difficulty = source.difficulty();
-        EncounterRuntimeStateViewModel.BuilderSettings settings = source.settings();
+    private EncounterStateView.BuilderStateView toBuilderState(EncounterStateViewModel.BuilderState source) {
+        EncounterStateViewModel.DifficultySummary difficulty = source.difficulty();
+        EncounterStateViewModel.BuilderSettings settings = source.settings();
         String partyLabel = "Party: " + source.party().size() + ", Lv "
-                + Math.round(source.party().stream().mapToInt(EncounterRuntimeStateViewModel.PartyMember::level)
+                + Math.round(source.party().stream().mapToInt(EncounterStateViewModel.PartyMember::level)
                 .average().orElse(1.0));
         return new EncounterStateView.BuilderStateView(
                 partyLabel,
@@ -96,7 +96,7 @@ final class EncounterRuntimeStateBinder {
     }
 
     private EncounterStateView.InitiativeStateView toInitiativeState(
-            EncounterRuntimeStateViewModel.InitiativeState source
+            EncounterStateViewModel.InitiativeState source
     ) {
         return new EncounterStateView.InitiativeStateView(source.entries().stream()
                 .map(entry -> new EncounterStateView.InitiativeEntryView(
@@ -107,7 +107,7 @@ final class EncounterRuntimeStateBinder {
                 .toList());
     }
 
-    private EncounterStateView.CombatStateView toCombatState(EncounterRuntimeStateViewModel.CombatState source) {
+    private EncounterStateView.CombatStateView toCombatState(EncounterStateViewModel.CombatState source) {
         return new EncounterStateView.CombatStateView(
                 source.round(),
                 source.status(),
@@ -128,7 +128,7 @@ final class EncounterRuntimeStateBinder {
                 source.allEnemiesDefeated());
     }
 
-    private EncounterStateView.ResultStateView toResultState(EncounterRuntimeStateViewModel.ResultState source) {
+    private EncounterStateView.ResultStateView toResultState(EncounterStateViewModel.ResultState source) {
         return new EncounterStateView.ResultStateView(
                 source.enemies().stream()
                         .map(enemy -> new EncounterStateView.ResultEnemyView(

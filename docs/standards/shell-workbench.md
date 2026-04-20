@@ -12,7 +12,7 @@ composition patterns.
 SaltMarcher uses a passive workbench shell.
 
 The shell exposes a fixed cockpit frame and public contracts through which
-feature-owned contributions register tabs, global runtime state-panel tabs,
+feature-owned contributions register left-bar tabs, global state tabs,
 and top-bar dropdown windows. The shell hosts surfaces, navigation, lifecycle,
 details/history, state-pane arbitration, and layout behavior. It does not own
 feature or business behavior.
@@ -33,8 +33,8 @@ It owns:
 - empty cockpit control-panel hosting
 - empty cockpit main-panel hosting
 - details-pane and history hosting
-- global runtime state-panel tab hosting
-- state-pane precedence between active-tab state and global runtime state tabs
+- global state tab hosting
+- state-pane precedence between active-tab state and global state tabs
 - activation and deactivation calls
 - layout persistence such as divider restoration
 
@@ -56,9 +56,9 @@ that belongs to a view Binder and passive Views.
 
 A contribution is the feature-owned shell adapter for one UI entrypoint:
 
-- a left-bar feature tab under `src/view/featuretabs/<entry>/`
+- a left-bar tab under `src/view/leftbartabs/<entry>/`
 - a shell-discovered dropdown window under `src/view/dropdowns/<entry>/`
-- a global runtime state-panel tab under `src/view/runtimetabs/<entry>/`
+- a global state tab under `src/view/statetabs/<entry>/`
 
 Responsibilities:
 
@@ -68,8 +68,8 @@ Responsibilities:
 
 Rules:
 
-- contributions live under shell-discovered roots in `src/view/featuretabs`,
-  `src/view/runtimetabs`, and contributing `src/view/dropdowns` roots
+- contributions live under shell-discovered roots in `src/view/leftbartabs`,
+  `src/view/statetabs`, and contributing `src/view/dropdowns` roots
 - each contribution file defines one shell-registered UI entrypoint
 - long-lived runtime state must not be stored in the shell host
 - feature logic, presentation state, JavaFX panel behavior, and business logic
@@ -82,8 +82,8 @@ wiring.
 
 ### Binders
 
-A Binder is the active-root runtime composition adapter for one feature tab,
-runtime state-panel tab, or dropdown-capable unit.
+A Binder is the active-root runtime composition adapter for one left-bar tab,
+state tab, or dropdown-capable unit.
 
 Responsibilities:
 
@@ -98,7 +98,7 @@ Responsibilities:
 
 Rules:
 
-- every active root under `src/view/featuretabs`, `src/view/runtimetabs`, and
+- every active root under `src/view/leftbartabs`, `src/view/statetabs`, and
   `src/view/dropdowns` owns exactly one Binder
 - Binder code may use shell public contracts and `ShellRuntimeContext`
 - presentation state stays in ViewModels, and JavaFX panel behavior stays in
@@ -150,16 +150,16 @@ Ownership rules:
   details through shell-owned details/history APIs, not direct slot content.
 - `COCKPIT_STATE` is shell-owned state-pane space. If the active left-bar tab
   claims it, the shell shows that active-tab state panel. Otherwise the shell
-  shows registered global runtime state-panel tabs.
+  shows registered global state tabs.
 
-Encounter and similar global runtime state are runtime state-panel tabs, not
+Encounter and similar global runtime state are state tabs, not
 left-bar tabs.
 
 The shell owns resize, layout, precedence, history, and activation behavior for
 those surfaces. Features supply bound content and user-event emitters through
 their Binders.
 
-Navigation icons for navigable tabs are feature-owned content, but they are
+Navigation icons for navigable left-bar tabs are feature-owned content, but they are
 supplied declaratively through registration metadata rather than through panel
 views.
 
@@ -208,7 +208,7 @@ Forbidden directions and patterns:
 - feature-specific alternate wiring paths around `ShellRuntimeContext`
 
 Shell-facing runtime composition belongs in the owning Binder under
-`src/view/featuretabs`, `src/view/dropdowns`, or `src/view/runtimetabs`. It does
+`src/view/leftbartabs`, `src/view/dropdowns`, or `src/view/statetabs`. It does
 not belong in Contributions, ViewModels, passive Views, concrete shell host
 classes, or legacy
 `ViewContribution`, `assembly`, `Controller`, `Model`, or `interactor`
@@ -222,7 +222,7 @@ Current state:
 
 - `AppBootstrap` eagerly discovers and binds every `ShellContribution` during
   shell creation.
-- `AppShell` activates tabs through `navigateTo(...)`.
+- `AppShell` activates left-bar tabs through `navigateTo(...)`.
 - `ShellBinding.onActivate()` and `ShellBinding.onDeactivate()` provide the
   current activation lifecycle hooks.
 
@@ -239,7 +239,7 @@ Eager creation is current behavior, not the binding model.
 - `shell/host/AppShell.java` is the workbench host root.
 - `shell/host/ShellWorkspacePane.java` hosts the controls, main, details, and
   state surfaces below `AppShell`.
-- `shell/host/RuntimeStatePane.java` hosts global runtime state-panel tabs.
+- `shell/host/StateTabPane.java` hosts global state tabs.
 - `shell/api/ShellRuntimeContext.java` is the shell-scoped runtime gateway.
 - `shell/api/ShellContribution.java` is the shell-facing UI contribution
   contract.

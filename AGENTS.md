@@ -17,7 +17,7 @@ Use the documentation tree in this order:
 3. `docs/standards/*.md` for reusable standards.
 4. `docs/adr/*.md` for individual architecture decisions.
 5. co-located feature documents under `src/domain/<feature>/`,
-   `src/view/featuretabs/<tab>/`, `src/view/runtimetabs/<state>/`,
+   `src/view/leftbartabs/<tab>/`, `src/view/statetabs/<state>/`,
    `src/view/dropdowns/<dropdown>/`,
    `src/view/slotcontent/<slot>/<entry>/`, and `src/data/<feature>/`.
 
@@ -131,12 +131,12 @@ Use the documentation tree in this order:
   Product and behavior specification.
 - `src/domain/<feature>/DOMAIN.md`
   Canonical domain model, ownership, invariants, and derived-state rules.
-- `src/view/featuretabs/<tab>/UI.md`,
-  `src/view/runtimetabs/<state>/UI.md`,
+- `src/view/leftbartabs/<tab>/UI.md`,
+  `src/view/statetabs/<state>/UI.md`,
   `src/view/dropdowns/<dropdown>/UI.md`, or
   `src/view/slotcontent/<slot>/<entry>/<topic>.md`
   UI structure, interaction model, and user-visible states for one tab,
-  runtime state-panel tab, dropdown window, detail entry, or reusable
+  state tab, dropdown window, detail entry, or reusable
   slotcontent unit.
 - `src/data/<feature>/PERSISTENCE.md`
   Persistence contracts, schema ownership, and adapter rules.

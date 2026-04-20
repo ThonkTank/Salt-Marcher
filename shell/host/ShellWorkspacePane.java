@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import shell.api.ContributionKey;
-import shell.api.ShellTabMode;
+import shell.api.ShellLeftBarTabMode;
 
 /**
  * Passive shell workspace for controls, main content, inspector, and state surfaces.
@@ -30,14 +30,14 @@ final class ShellWorkspacePane extends SplitPane {
     private final StackPane detailsContainer = new StackPane();
     private final StackPane stateContainer = new StackPane();
     private final InspectorPane inspectorPane = new InspectorPane();
-    private final RuntimeStatePane runtimeStatePane = new RuntimeStatePane();
+    private final StateTabPane stateTabPane = new StateTabPane();
     private final Node editorStatePlaceholder = createPlaceholderPane("Status", "Kein lokaler Zustand");
-    private final Node emptyRuntimeStatePlaceholder = createPlaceholderPane("Runtime State", "Keine Runtime-State-Tabs registriert");
+    private final Node emptyStateTabPlaceholder = createPlaceholderPane("Status", "Keine State-Tabs registriert");
     private final SplitPane rightSplit = new SplitPane();
     private final Map<ContributionKey, double[]> savedMainDividers = new LinkedHashMap<>();
     private final Map<ContributionKey, double[]> savedRightDividers = new LinkedHashMap<>();
 
-    private @Nullable ShellTabMode activeTabMode;
+    private @Nullable ShellLeftBarTabMode activeTabMode;
     private @Nullable ShellSlotContent activeSlotContent;
 
     ShellWorkspacePane() {
@@ -59,7 +59,7 @@ final class ShellWorkspacePane extends SplitPane {
         ShellContentLayout.makeShrinkable(detailsContainer);
         ShellContentLayout.makeShrinkable(stateContainer);
         ShellFx.addChild(detailsContainer, inspectorPane);
-        ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
+        ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(emptyStateTabPlaceholder));
 
         rightSplit.setOrientation(Orientation.VERTICAL);
         ShellContentLayout.makeShrinkable(rightSplit);
@@ -73,12 +73,12 @@ final class ShellWorkspacePane extends SplitPane {
         return inspectorPane;
     }
 
-    void registerRuntimeStateTab(ContributionKey key, String label, int itemOrder, Node content) {
-        runtimeStatePane.registerTab(key, label, itemOrder, content);
+    void registerStateTab(ContributionKey key, String label, int itemOrder, Node content) {
+        stateTabPane.registerTab(key, label, itemOrder, content);
         refreshStatePanel();
     }
 
-    void showTab(ShellSlotContent slotContent, ShellTabMode mode) {
+    void showTab(ShellSlotContent slotContent, ShellLeftBarTabMode mode) {
         this.activeSlotContent = Objects.requireNonNull(slotContent, "slotContent");
         this.activeTabMode = Objects.requireNonNull(mode, "mode");
         applyControls(slotContent.controls());
@@ -125,7 +125,7 @@ final class ShellWorkspacePane extends SplitPane {
     private void refreshStatePanel() {
         if (activeTabMode == null) {
             ShellFx.clearChildren(stateContainer);
-            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(emptyRuntimeStatePlaceholder));
+            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(emptyStateTabPlaceholder));
             return;
         }
         Node editorState = activeSlotContent == null ? null : activeSlotContent.editorState();
@@ -134,12 +134,12 @@ final class ShellWorkspacePane extends SplitPane {
             ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(editorState));
             return;
         }
-        if (runtimeStatePane.hasTabs()) {
-            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(runtimeStatePane));
+        if (stateTabPane.hasTabs()) {
+            ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(stateTabPane));
             return;
         }
         ShellFx.addChild(stateContainer, ShellContentLayout.shellOwned(
-                activeTabMode == ShellTabMode.EDITOR ? editorStatePlaceholder : emptyRuntimeStatePlaceholder));
+                activeTabMode == ShellLeftBarTabMode.EDITOR ? editorStatePlaceholder : emptyStateTabPlaceholder));
     }
 
     private static Node createPlaceholderPane(String titleText, String bodyText) {

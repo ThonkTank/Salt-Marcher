@@ -1,4 +1,4 @@
-package src.view.featuretabs.dungeoneditor;
+package src.view.leftbartabs.dungeoneditor;
 
 import java.util.Objects;
 import javafx.beans.property.ReadOnlyObjectProperty;

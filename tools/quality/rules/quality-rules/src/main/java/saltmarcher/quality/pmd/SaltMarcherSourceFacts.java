@@ -132,7 +132,7 @@ final class SaltMarcherSourceFacts {
     private boolean isActiveViewRootSource() {
         return isViewSource()
                 && segments.size() == 5
-                && Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments.get(2));
+                && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments.get(2));
     }
 
     private boolean isSlotcontentSource() {
@@ -145,7 +145,7 @@ final class SaltMarcherSourceFacts {
     private boolean isDiscoverableViewContributionArea() {
         return isViewSource()
                 && segments.size() == 5
-                && Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments.get(2));
+                && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments.get(2));
     }
 
     boolean isDomainSource() {

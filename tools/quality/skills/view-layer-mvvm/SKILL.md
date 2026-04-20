@@ -1,6 +1,6 @@
 ---
 name: view-layer-mvvm
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**`, shell-facing UI contribution registration, Binders, ViewModels, passive Views, view resources, or adjacent `UI.md`. This skill operationalizes SaltMarcher's cockpit MVVM target with active roots under `src/view/featuretabs`, `src/view/runtimetabs`, optional shell-contributed `src/view/dropdowns`, reusable `src/view/slotcontent`, domain-as-Model, and passive shell slot binding.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**`, shell-facing UI contribution registration, Binders, ViewModels, passive Views, view resources, or adjacent `UI.md`. This skill operationalizes SaltMarcher's cockpit MVVM target with active roots under `src/view/leftbartabs`, `src/view/statetabs`, optional shell-contributed `src/view/dropdowns`, reusable `src/view/slotcontent`, domain-as-Model, and passive shell slot binding.
 ---
 
 # View Layer MVVM
@@ -30,7 +30,7 @@ Before editing a view surface:
 1. Assign every touched type one role: shell host, UI contribution, Binder,
    ViewModel, passive View, domain Model, or data adapter.
 2. For every touched contribution, identify exactly one shell entrypoint:
-   left-bar tab, top-bar dropdown window, or global runtime state-panel tab.
+   left-bar tab, top-bar dropdown window, or global state tab.
 3. For every touched Binder, identify the active root whose lifecycle and
    wiring it owns.
 4. For every touched ViewModel, identify the active root or slotcontent unit
@@ -73,10 +73,10 @@ The shell owns the fixed cockpit frame and public contracts.
 
 Contribution roots own shell registration:
 
-- `src/view/featuretabs/<entry>/` for one left-bar tab.
+- `src/view/leftbartabs/<entry>/` for one left-bar tab.
 - `src/view/dropdowns/<entry>/` for a dropdown-capable root. `*Contribution`
   is optional here and exists only when shell discovery should register it.
-- `src/view/runtimetabs/<entry>/` for one global runtime state-panel tab.
+- `src/view/statetabs/<entry>/` for one global state tab.
 Slotcontent roots under `src/view/slotcontent/<slot>/<entry>/` are not
 shell-discovered contribution roots.
 
@@ -95,7 +95,7 @@ Contribution responsibilities:
 
 Binders own active-root runtime wiring:
 
-- Put one `*Binder` class in every `featuretabs`, `runtimetabs`, and
+- Put one `*Binder` class in every `leftbartabs`, `statetabs`, and
   `dropdowns` root.
 - Look up runtime services through `ShellRuntimeContext`.
 - Instantiate the active ViewModel, active Views, and needed slotcontent
@@ -153,8 +153,8 @@ Views own the MVVM View role.
 - If the active left-bar tab contributes state content, that content owns the
   state pane.
 - If the active left-bar tab does not contribute state content, the shell shows
-  global runtime state-panel tabs from `src/view/runtimetabs/<entry>/`.
-- Encounter belongs under `src/view/runtimetabs`, not under `src/view/featuretabs`.
+  global state tabs from `src/view/statetabs/<entry>/`.
+- Encounter belongs under `src/view/statetabs`, not under `src/view/leftbartabs`.
 
 ## Default Placement Heuristics
 
@@ -186,7 +186,7 @@ Views own the MVVM View role.
   callbacks, or view-local fields.
 - Do not treat `COCKPIT_DETAILS` as direct feature-owned slot content; publish
   details/history through shell-owned contracts.
-- Do not let active-tab state content and registered runtime state-panel tabs
+- Do not let active-tab state content and registered state tabs
   both own the state pane at the same time.
 
 ## View Resource Rules

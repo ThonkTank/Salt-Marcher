@@ -1,4 +1,4 @@
-package src.view.featuretabs.dungeontravel;
+package src.view.leftbartabs.dungeoneditor;
 
 import java.util.Objects;
 import shell.api.ContributionKey;
@@ -7,28 +7,28 @@ import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellRuntimeContext;
-import shell.api.ShellTabMode;
-import shell.api.ShellTabSpec;
+import shell.api.ShellLeftBarTabMode;
+import shell.api.ShellLeftBarTabSpec;
 
-public final class DungeonTravelContribution implements ShellContribution {
+public final class DungeonEditorContribution implements ShellContribution {
 
     @SuppressWarnings({"PMD.UnnecessaryConstructor", "PMD.UncommentedEmptyConstructor"})
-    public DungeonTravelContribution() {
+    public DungeonEditorContribution() {
     }
 
     @Override
     public ShellContributionSpec registrationSpec() {
-        return new ShellTabSpec(
-                new ContributionKey("dungeon-travel"),
+        return new ShellLeftBarTabSpec(
+                new ContributionKey("dungeon-editor"),
                 new NavigationGroupSpec("world", "World", 20),
-                20,
-                false,
+                10,
+                true,
                 null,
-                ShellTabMode.RUNTIME);
+                ShellLeftBarTabMode.EDITOR);
     }
 
     @Override
     public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        return new DungeonTravelBinder(Objects.requireNonNull(runtimeContext, "runtimeContext")).bind();
+        return new DungeonEditorBinder(Objects.requireNonNull(runtimeContext, "runtimeContext")).bind();
     }
 }

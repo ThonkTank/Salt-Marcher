@@ -53,7 +53,7 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
 
         if (violations.isNotEmpty()) {
             throw GradleException(
-                "View FXML resources must live under resources/view/{featuretabs,runtimetabs,dropdowns}/<entry>/ " +
+                "View FXML resources must live under resources/view/{leftbartabs,statetabs,dropdowns}/<entry>/ " +
                     "or resources/view/slotcontent/<slot>/<entry>/ and must not contain inline scripts.\n" +
                     "Violations:\n" + violations.sorted().joinToString(separator = "\n") { " - $it" }
             )
@@ -69,12 +69,12 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
     ) {
         val path = file.toPath().normalize()
         if (!underExpectedRoot || path.parent == null || path.parent.fileName == null) {
-            violations.add("$relative -> expected resources/view/{featuretabs,runtimetabs,dropdowns}/<entry>/*.fxml or resources/view/slotcontent/<slot>/<entry>/*.fxml")
+            violations.add("$relative -> expected resources/view/{leftbartabs,statetabs,dropdowns}/<entry>/*.fxml or resources/view/slotcontent/<slot>/<entry>/*.fxml")
             return
         }
         val rootRelative = expectedRoot.toPath().normalize().relativize(path)
         if (!hasAllowedViewResourceRoot(rootRelative.map { it.toString() })) {
-            violations.add("$relative -> expected resources/view/{featuretabs,runtimetabs,dropdowns}/<entry>/*.fxml or resources/view/slotcontent/<slot>/<entry>/*.fxml")
+            violations.add("$relative -> expected resources/view/{leftbartabs,statetabs,dropdowns}/<entry>/*.fxml or resources/view/slotcontent/<slot>/<entry>/*.fxml")
         }
         if (!Files.isDirectory(path.parent)) {
             violations.add("$relative -> parent directory is not a readable passive-view resource directory")
@@ -94,8 +94,8 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
         val controllerMatch = FX_CONTROLLER_PATTERN.find(text) ?: return
         val controller = controllerMatch.groupValues[1]
         val allowedPrefixes = listOf(
-            "src.view.featuretabs.",
-            "src.view.runtimetabs.",
+            "src.view.leftbartabs.",
+            "src.view.statetabs.",
             "src.view.dropdowns.",
             "src.view.slotcontent."
         )
@@ -122,17 +122,17 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
         val validController = when (area) {
             "slotcontent" -> controllerSegments.size == 6 &&
                 simpleName.endsWith("View") && !simpleName.endsWith("ViewModel")
-            "featuretabs" -> controllerSegments.size == 5 &&
+            "leftbartabs" -> controllerSegments.size == 5 &&
                 listOf("ControlsView", "MainView", "StateView").any(simpleName::endsWith)
             "dropdowns" -> controllerSegments.size == 5 && simpleName.endsWith("TopBarView")
-            "runtimetabs" -> controllerSegments.size == 5 && simpleName.endsWith("StateView")
+            "statetabs" -> controllerSegments.size == 5 && simpleName.endsWith("StateView")
             else -> false
         }
         if (!validController) {
             violations.add(
                 "$relative -> fx:controller must match its passive view area: " +
-                    "featuretabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, " +
-                    "runtimetabs use *StateView, slotcontent uses *View"
+                    "leftbartabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, " +
+                    "statetabs use *StateView, slotcontent uses *View"
             )
         }
         validateControllerPathAlignment(controllerSegments, simpleName, viewResourceSegments, relative, violations)
@@ -169,7 +169,7 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
     }
 
     private companion object {
-        private val ACTIVE_RESOURCE_AREAS = setOf("featuretabs", "runtimetabs", "dropdowns")
+        private val ACTIVE_RESOURCE_AREAS = setOf("leftbartabs", "statetabs", "dropdowns")
         private val SLOTCONTENT_RESOURCE_AREAS = setOf("controls", "main", "state", "details", "topbar")
         private val FX_CONTROLLER_PATTERN = Regex("fx:controller\\s*=\\s*\"([^\"]+)\"")
 

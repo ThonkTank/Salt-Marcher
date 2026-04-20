@@ -30,10 +30,10 @@
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'DisplayModel' THEN 'MODEL'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'ViewModel' THEN 'MODEL'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'View' THEN 'VIEW'
-                WHEN size(segments) >= 5 AND segments[2] IN ['featuretabs', 'runtimetabs', 'dropdowns'] AND segments[4] CONTAINS 'Contribution' THEN 'CONTRIBUTION'
-                WHEN size(segments) >= 5 AND segments[2] IN ['featuretabs', 'runtimetabs', 'dropdowns'] AND segments[4] CONTAINS 'Binder' THEN 'BINDER'
-                WHEN size(segments) >= 5 AND segments[2] IN ['featuretabs', 'runtimetabs', 'dropdowns'] AND segments[4] CONTAINS 'ViewModel' THEN 'MODEL'
-                WHEN size(segments) >= 5 AND segments[2] IN ['featuretabs', 'runtimetabs', 'dropdowns'] AND segments[4] CONTAINS 'View' THEN 'VIEW'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'Contribution' THEN 'CONTRIBUTION'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'Binder' THEN 'BINDER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'ViewModel' THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'View' THEN 'VIEW'
                 ELSE 'LEGACY'
               END,
               type.relativePath = CASE
@@ -69,7 +69,7 @@
             WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
+              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Active view Java must use the cockpit contribution topology.' AS Details
             ORDER BY Source
@@ -85,7 +85,7 @@
             WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
+              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Legacy component-local View/ViewModel/api/assembly-style topology is not active target code.' AS Details
             ORDER BY Source
@@ -141,18 +141,18 @@
               NOT type.name CONTAINS '$'
               AND NOT (
                 (type.fqn =~ 'src\\.view\\.slotcontent\\..*' AND type.name ENDS WITH 'View')
-                OR (type.fqn =~ 'src\\.view\\.featuretabs\\.[^.]+\\..*'
+                OR (type.fqn =~ 'src\\.view\\.leftbartabs\\.[^.]+\\..*'
                   AND (type.name ENDS WITH 'ControlsView'
                     OR type.name ENDS WITH 'MainView'
                     OR type.name ENDS WITH 'StateView'))
                 OR (type.fqn =~ 'src\\.view\\.dropdowns\\.[^.]+\\..*'
                   AND type.name ENDS WITH 'TopBarView')
-                OR (type.fqn =~ 'src\\.view\\.runtimetabs\\.[^.]+\\..*'
+                OR (type.fqn =~ 'src\\.view\\.statetabs\\.[^.]+\\..*'
                   AND type.name ENDS WITH 'StateView')
               )
             RETURN DISTINCT
               type.relativePath AS Source,
-              'area-specific passive view suffix: featuretabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, runtimetabs use *StateView, slotcontent uses *View' AS ExpectedDirection,
+              'area-specific passive view suffix: leftbartabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, statetabs use *StateView, slotcontent uses *View' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Passive view names must identify the shell surface they render.' AS Details
             ORDER BY Source
@@ -187,7 +187,7 @@
             WITH count(root) AS rootCount
             WHERE rootCount = 0
             RETURN
-              'src/view/featuretabs, src/view/runtimetabs, or shell-discovered src/view/dropdowns' AS Source,
+              'src/view/leftbartabs, src/view/statetabs, or shell-discovered src/view/dropdowns' AS Source,
               'at least one shell contribution' AS ExpectedDirection,
               'none' AS ActualDirection,
               'The shell needs discoverable contributions.' AS Details
@@ -264,7 +264,7 @@
                   AND sourceSegments[4] = targetSegments[4]
                 )
                 OR (
-                  target.fqn =~ 'src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\..*'
+                  target.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\..*'
                   AND NOT (
                     size(sourceSegments) >= 4
                     AND size(targetSegments) >= 4

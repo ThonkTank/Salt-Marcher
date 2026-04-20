@@ -42,13 +42,13 @@ single-slot content:
 
 ```text
 src/view/
-  featuretabs/
+  leftbartabs/
     <entry>/
       <PascalEntry>Contribution.java
       <PascalEntry>Binder.java
       <PascalEntry>ViewModel.java
       <PascalEntry><Surface>View.java  # optional root-local wrapper/specialization
-  runtimetabs/
+  statetabs/
     <entry>/
       <PascalEntry>Contribution.java
       <PascalEntry>Binder.java
@@ -81,16 +81,16 @@ src/view/
       <PascalEntry>ViewModel.java
 resources/
   view/
-    featuretabs/<entry>/<PascalEntry><Surface>.fxml
-    runtimetabs/<entry>/<PascalEntry>StateView.fxml
+    leftbartabs/<entry>/<PascalEntry><Surface>.fxml
+    statetabs/<entry>/<PascalEntry>StateView.fxml
     dropdowns/<entry>/<PascalEntry>TopBarView.fxml
     slotcontent/<slot>/<entry>/<PascalEntry>View.fxml
 ```
 
 Rules:
 
-- `src/view/featuretabs/<entry>/` defines one left-bar feature tab.
-- `src/view/runtimetabs/<entry>/` defines one global runtime state-panel tab.
+- `src/view/leftbartabs/<entry>/` defines one left-bar tab.
+- `src/view/statetabs/<entry>/` defines one global state tab.
 - `src/view/dropdowns/<entry>/` defines a dropdown-capable UI unit. It has a
   `*Contribution` only when bootstrap should discover it directly.
 - `src/view/slotcontent/<slot>/<entry>/` defines one reusable or standalone
@@ -114,8 +114,8 @@ The shell owns these cockpit surfaces:
 `COCKPIT_STATE` has explicit precedence. If the active left-bar tab contributes
 state content, that content owns the pane. If the active left-bar tab does not
 contribute state content, the shell shows registered global runtime
-state-panel tabs from `src/view/runtimetabs/<entry>/`. Encounter-style runtime
-state belongs under `src/view/runtimetabs`, not under `src/view/featuretabs`.
+state tabs from `src/view/statetabs/<entry>/`. Encounter-style runtime
+state belongs under `src/view/statetabs`, not under `src/view/leftbartabs`.
 
 ## Dependency Direction
 
@@ -156,7 +156,7 @@ Responsibilities:
 - keep bootstrap generic so adding a new contribution does not require shell or
   bootstrap directory edits
 
-`src/view/featuretabs/*`, `src/view/runtimetabs/*`, and shell-contributed
+`src/view/leftbartabs/*`, `src/view/statetabs/*`, and shell-contributed
 `src/view/dropdowns/*` roots are bootstrap-discovered. `dropdowns` roots may
 omit `*Contribution` when they are invoked by another binder. Slotcontent roots
 are never bootstrap-discovered.
@@ -206,7 +206,7 @@ Allowed dependencies:
 ## ViewModel Role
 
 An active-root ViewModel owns aggregate presentation state and user-intent
-handling for one `featuretabs`, `runtimetabs`, or `dropdowns` root. A
+handling for one `leftbartabs`, `statetabs`, or `dropdowns` root. A
 slotcontent ViewModel owns the presentation projection for one reusable
 slotcontent unit.
 
@@ -321,7 +321,7 @@ model behind one root application service.
 
 ## Forbidden Patterns
 
-- A `featuretabs` or `runtimetabs` root defining zero or more than one shell
+- A `leftbartabs` or `statetabs` root defining zero or more than one shell
   contribution.
 - A `dropdowns` root defining more than one shell contribution.
 - An active root missing its mandatory `*Binder`.
@@ -339,7 +339,7 @@ model behind one root application service.
   shell-owned details/history publication.
 - Treating Encounter or other global runtime state as a left-bar tab.
 - Treating the state pane as simultaneously owned by an active tab and
-  registered runtime state tabs.
+  registered state tabs.
 - Reflective reach-through such as `Class.forName(...)`,
   `ClassLoader.loadClass(...)`, or equivalent lookup-based bypasses under
   `src/view/**`.
@@ -349,9 +349,9 @@ model behind one root application service.
 Current checks enforce the target mechanical parts that have a stable static
 shape:
 
-- Java view code lives under `src/view/featuretabs`, `src/view/runtimetabs`,
+- Java view code lives under `src/view/leftbartabs`, `src/view/statetabs`,
   `src/view/dropdowns`, or `src/view/slotcontent`.
-- `featuretabs` and `runtimetabs` roots define exactly one `*Contribution`,
+- `leftbartabs` and `statetabs` roots define exactly one `*Contribution`,
   one `*Binder`, and one aggregate `*ViewModel`.
 - `dropdowns` roots define exactly one `*Binder`, one aggregate `*ViewModel`,
   and zero or one `*Contribution`.
@@ -370,7 +370,7 @@ shape:
   technique; reusable visual values used by direct renderers still come from
   the centralized styling standard.
 - Optional FXML resources live under
-  `resources/view/{featuretabs,runtimetabs,dropdowns}/<entry>/` or
+  `resources/view/{leftbartabs,statetabs,dropdowns}/<entry>/` or
   `resources/view/slotcontent/<slot>/<entry>/`, use passive View controllers
   matching the same area-specific suffixes, and do not use inline scripts.
 - State-pane precedence is modeled explicitly.

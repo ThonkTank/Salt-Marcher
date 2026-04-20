@@ -1,4 +1,4 @@
-package src.view.featuretabs.catalog;
+package src.view.leftbartabs.catalog;
 
 import java.text.NumberFormat;
 import java.util.List;

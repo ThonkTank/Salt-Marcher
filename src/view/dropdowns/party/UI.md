@@ -11,7 +11,7 @@ states.
 The party dropdown is the shell-discovered top-bar window for the current
 party snapshot. It gives a compact read-only overview of active party members,
 party composition, and adventuring-day readiness without becoming a left-bar
-feature tab.
+left-bar tab.
 
 ## Visible Surfaces
 

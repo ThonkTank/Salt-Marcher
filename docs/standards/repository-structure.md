@@ -12,8 +12,8 @@ Feature code must stay inside `src/`, and application startup and shell hosting
 must stay outside feature slices.
 
 The active view target is organized by SaltMarcher's cockpit slotcontent
-model: shell-discovered feature tabs under `src/view/featuretabs`, runtime
-state tabs under `src/view/runtimetabs`, dropdown-capable roots under
+model: shell-discovered left-bar tabs under `src/view/leftbartabs`, state
+tabs under `src/view/statetabs`, dropdown-capable roots under
 `src/view/dropdowns`, and reusable single-slot content under
 `src/view/slotcontent`.
 
@@ -60,7 +60,7 @@ Additional constraints:
 ```text
 src/
   view/
-    featuretabs/
+    leftbartabs/
       <entry>/
         <PascalEntry>Contribution.java
         <PascalEntry>Binder.java
@@ -68,7 +68,7 @@ src/
         <PascalEntry>ControlsView.java  optional root-local wrapper
         <PascalEntry>MainView.java      optional root-local wrapper
         <PascalEntry>StateView.java     optional root-local wrapper
-    runtimetabs/
+    statetabs/
       <entry>/
         <PascalEntry>Contribution.java
         <PascalEntry>Binder.java
@@ -124,10 +124,10 @@ resources/
 Every shell-registered UI contribution is represented by one contribution
 root:
 
-- `src/view/featuretabs/<entry>/<PascalEntry>Contribution.java` for one
-  left-bar feature tab
-- `src/view/runtimetabs/<entry>/<PascalEntry>Contribution.java` for one global
-  runtime state-panel tab
+- `src/view/leftbartabs/<entry>/<PascalEntry>Contribution.java` for one
+  left-bar tab
+- `src/view/statetabs/<entry>/<PascalEntry>Contribution.java` for one global
+  state tab
 - `src/view/dropdowns/<entry>/<PascalEntry>Contribution.java` for one
   shell-discovered dropdown; dropdown roots may omit this file when another
   binder invokes them
@@ -195,12 +195,12 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 
 ## Packaging Rules
 
-- Active target view code lives under `src/view/featuretabs`,
-  `src/view/runtimetabs`, `src/view/dropdowns`, or `src/view/slotcontent`.
+- Active target view code lives under `src/view/leftbartabs`,
+  `src/view/statetabs`, `src/view/dropdowns`, or `src/view/slotcontent`.
 - Active-root Java files are direct files under `src/view/<area>/<entry>/`.
 - Slotcontent Java files are direct files under
   `src/view/slotcontent/<slot>/<entry>/`.
-- A root under `featuretabs` or `runtimetabs` owns exactly one
+- A root under `leftbartabs` or `statetabs` owns exactly one
   shell-registered contribution.
 - A root under `dropdowns` owns zero or one shell-registered contribution.
 - Every active root owns exactly one `*Binder` and one aggregate `*ViewModel`.

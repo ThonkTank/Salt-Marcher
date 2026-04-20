@@ -32,7 +32,7 @@ public final class ViewRootDelegationChecker extends BugChecker
 
         return buildDescription(tree)
                 .setMessage("Legacy view package '" + packageName
-                        + "' violates the shell cockpit contribution topology. Move shell wiring to src.view.featuretabs/runtimetabs/dropdowns binders and passive views into src.view.slotcontent when reusable. Violations: "
+                        + "' violates the shell cockpit contribution topology. Move shell wiring to src.view.leftbartabs/statetabs/dropdowns binders and passive views into src.view.slotcontent when reusable. Violations: "
                         + String.join(", ", violations))
                 .build();
     }

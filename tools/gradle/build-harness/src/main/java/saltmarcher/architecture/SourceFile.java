@@ -70,7 +70,7 @@ record SourceFile(
         }
         return switch (segments.get(1)) {
             case "view" -> {
-                if (segments.size() == 5 && Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments.get(2))) {
+                if (segments.size() == 5 && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments.get(2))) {
                     if (fileName.endsWith("Contribution.java")) {
                         yield SourceKind.VIEW_CONTRIBUTION;
                     }

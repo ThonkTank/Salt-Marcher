@@ -1,4 +1,4 @@
-package src.view.featuretabs.dungeoneditor;
+package src.view.leftbartabs.dungeoneditor;
 
 import javafx.scene.control.Button;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;

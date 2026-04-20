@@ -1,4 +1,4 @@
-package src.view.runtimetabs.encounter;
+package src.view.statetabs.encounter;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

@@ -1,4 +1,4 @@
-package src.view.featuretabs.dungeoneditor;
+package src.view.leftbartabs.dungeontravel;
 
 import java.util.Map;
 import java.util.Objects;
@@ -9,24 +9,24 @@ import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewModel;
 
-final class DungeonEditorBinder {
+final class DungeonTravelBinder {
 
     private final ShellRuntimeContext runtimeContext;
 
-    DungeonEditorBinder(ShellRuntimeContext runtimeContext) {
+    DungeonTravelBinder(ShellRuntimeContext runtimeContext) {
         this.runtimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
     }
 
     ShellBinding bind() {
         DungeonApplicationService dungeon = runtimeContext.services().require(DungeonApplicationService.class);
-        DungeonEditorViewModel viewModel = new DungeonEditorViewModel(dungeon);
-        DungeonMapViewModel mapViewModel = new DungeonMapViewModel("Dungeon workspace");
-        DungeonEditorControlsView controls = new DungeonEditorControlsView();
-        DungeonEditorMainView main = new DungeonEditorMainView();
-        DungeonEditorStateView state = new DungeonEditorStateView();
+        DungeonTravelViewModel viewModel = new DungeonTravelViewModel(dungeon);
+        DungeonMapViewModel mapViewModel = new DungeonMapViewModel("Travel workspace");
+        DungeonTravelControlsView controls = new DungeonTravelControlsView();
+        DungeonTravelMainView main = new DungeonTravelMainView();
+        DungeonTravelStateView state = new DungeonTravelStateView();
         main.renderModelProperty().bind(mapViewModel.displayModelProperty());
         state.stateTextProperty().bind(viewModel.stateProperty());
-        controls.onCreateMap(viewModel::refresh);
+        controls.onRefresh(viewModel::refresh);
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
         viewModel.refresh();
         return new Binding(controls, main, state);
@@ -40,12 +40,12 @@ final class DungeonEditorBinder {
 
         @Override
         public String title() {
-            return "Dungeon Editor";
+            return "Dungeon Travel";
         }
 
         @Override
         public String navigationLabel() {
-            return "Dungeon";
+            return "Travel";
         }
 
         @Override

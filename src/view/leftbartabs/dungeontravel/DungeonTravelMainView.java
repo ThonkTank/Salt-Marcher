@@ -1,4 +1,4 @@
-package src.view.featuretabs.dungeontravel;
+package src.view.leftbartabs.dungeontravel;
 
 import src.view.slotcontent.main.dungeonmap.DungeonMapMainView;
 

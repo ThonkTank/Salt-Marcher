@@ -104,7 +104,7 @@ final class SourceLayoutRules implements ArchitectureRule {
             case "view" -> {
                 if (segments.size() < 3) {
                     violations.add(sourceFile.relativePath(), "view-layout",
-                            "View sources must live under src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or src/view/slotcontent.");
+                            "View sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent.");
                     return;
                 }
                 String bucket = segments.get(2);
@@ -115,9 +115,9 @@ final class SourceLayoutRules implements ArchitectureRule {
                     }
                     return;
                 }
-                if (!Set.of("featuretabs", "runtimetabs", "dropdowns").contains(bucket)) {
+                if (!Set.of("leftbartabs", "statetabs", "dropdowns").contains(bucket)) {
                     violations.add(sourceFile.relativePath(), "view-layout",
-                            "View Java sources must live under src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or src/view/slotcontent.");
+                            "View Java sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent.");
                     return;
                 }
                 if (segments.size() != 5) {

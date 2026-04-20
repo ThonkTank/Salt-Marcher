@@ -1,4 +1,4 @@
-package src.view.featuretabs.dungeoneditor;
+package src.view.leftbartabs.dungeoneditor;
 
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;

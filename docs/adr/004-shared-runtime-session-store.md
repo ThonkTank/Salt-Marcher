@@ -6,8 +6,8 @@
 ## Context
 
 Some runtime workflows need one shared live session across multiple passive
-shell contributions. The main runtime tab and the independent runtime-state
-tab must read and mutate the same transient state without introducing
+shell contributions. Runtime-mode left-bar tabs and independent state tabs
+must read and mutate the same transient state without introducing
 feature-specific shell wiring or global static singletons.
 
 ## Decision
@@ -23,7 +23,7 @@ SaltMarcher adds a typed per-shell runtime-session store on
 
 ## Consequences
 
-- Runtime main tabs and runtime-state tabs can share one transient session
+- Runtime-mode left-bar tabs and state tabs can share one transient session
   without direct knowledge of each other.
 - Feature state remains runtime-local and separate from canonical persistence.
 - The shell runtime context becomes the single passive integration point for

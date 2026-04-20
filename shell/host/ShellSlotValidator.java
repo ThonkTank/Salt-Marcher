@@ -4,8 +4,8 @@ import shell.api.ContributionKey;
 import shell.api.ShellBinding;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellSlot;
-import shell.api.ShellTabSpec;
-import shell.api.ShellRuntimeStateSpec;
+import shell.api.ShellLeftBarTabSpec;
+import shell.api.ShellStateTabSpec;
 import shell.api.ShellTopBarSpec;
 
 final class ShellSlotValidator {
@@ -15,7 +15,7 @@ final class ShellSlotValidator {
 
     static ShellSlotContent validate(ShellContributionSpec registrationSpec, ShellBinding binding) {
         ShellSlotContent slotContent = ShellSlotContent.from(binding);
-        if (registrationSpec instanceof ShellTabSpec) {
+        if (registrationSpec instanceof ShellLeftBarTabSpec) {
             requireSlot(slotContent, registrationSpec.key(), ShellSlot.COCKPIT_MAIN);
             forbidSlots(slotContent, registrationSpec.key(), ShellSlot.TOP_BAR, ShellSlot.COCKPIT_DETAILS);
             return slotContent;
@@ -26,7 +26,7 @@ final class ShellSlotValidator {
                     ShellSlot.COCKPIT_CONTROLS, ShellSlot.COCKPIT_MAIN, ShellSlot.COCKPIT_DETAILS, ShellSlot.COCKPIT_STATE);
             return slotContent;
         }
-        if (registrationSpec instanceof ShellRuntimeStateSpec) {
+        if (registrationSpec instanceof ShellStateTabSpec) {
             requireSlot(slotContent, registrationSpec.key(), ShellSlot.COCKPIT_STATE);
             forbidSlots(slotContent, registrationSpec.key(),
                     ShellSlot.TOP_BAR, ShellSlot.COCKPIT_CONTROLS, ShellSlot.COCKPIT_MAIN, ShellSlot.COCKPIT_DETAILS);

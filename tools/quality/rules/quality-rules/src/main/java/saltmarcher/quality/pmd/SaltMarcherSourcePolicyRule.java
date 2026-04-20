@@ -30,8 +30,8 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?void\\s+(set[A-Z][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern FEATURE_SPECIFIC_PACKAGE_REFERENCE_PATTERN = Pattern.compile(
             "\\bsrc\\.(?:domain|data)\\.[a-z][A-Za-z0-9_]*\\."
-                    + "|\\bsrc\\.view\\.(?:featuretabs|runtimetabs|dropdowns|slotcontent)\\.[a-z][A-Za-z0-9_]*\\."
-                    + "|\\bsrc\\.view\\.(?!(?:featuretabs|runtimetabs|dropdowns|slotcontent)\\b)[a-z][A-Za-z0-9_]*\\.");
+                    + "|\\bsrc\\.view\\.(?:leftbartabs|statetabs|dropdowns|slotcontent)\\.[a-z][A-Za-z0-9_]*\\."
+                    + "|\\bsrc\\.view\\.(?!(?:leftbartabs|statetabs|dropdowns|slotcontent)\\b)[a-z][A-Za-z0-9_]*\\.");
     private static final Set<String> SHELL_SLOT_API_CONSTANTS = Set.of(
             "TOP_BAR",
             "COCKPIT_CONTROLS",
@@ -39,9 +39,9 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "COCKPIT_DETAILS",
             "COCKPIT_STATE");
     private static final Set<String> SHELL_CONTRIBUTION_SPEC_PERMITTED_TYPES = Set.of(
-            "ShellTabSpec",
+            "ShellLeftBarTabSpec",
             "ShellTopBarSpec",
-            "ShellRuntimeStateSpec");
+            "ShellStateTabSpec");
     private static final Set<String> SHELL_BINDING_ALLOWED_METHODS = Set.of(
             "title",
             "navigationLabel",
@@ -52,7 +52,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "inspector",
             "services",
             "session");
-    private static final List<String> SHELL_TAB_SPEC_COMPONENTS = List.of(
+    private static final List<String> SHELL_LEFT_BAR_TAB_SPEC_COMPONENTS = List.of(
             "key",
             "navigationGroup",
             "viewOrder",
@@ -62,7 +62,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
     private static final List<String> SHELL_TOP_BAR_SPEC_COMPONENTS = List.of(
             "key",
             "itemOrder");
-    private static final List<String> SHELL_RUNTIME_STATE_SPEC_COMPONENTS = List.of(
+    private static final List<String> SHELL_STATE_TAB_SPEC_COMPONENTS = List.of(
             "key",
             "tabLabel",
             "itemOrder");
@@ -91,7 +91,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "shell.panel.SceneRegistry",
             "shell.host.InspectorPane",
             "shell.panel.ScenePane",
-            "shell.host.RuntimeStatePane"
+            "shell.host.StateTabPane"
     );
 
     private static final Set<String> LEGACY_PERSISTENCE_TYPES = Set.of(
@@ -138,7 +138,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
         if (sourceFacts.isViewSource()) {
             if (sourceFacts.isLegacyViewSource()) {
                 asCtx(data).addViolationWithMessage(node,
-                        "View code must migrate to src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or reusable src/view/slotcontent; old component-local roots are forbidden.");
+                        "View code must migrate to src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or reusable src/view/slotcontent; old component-local roots are forbidden.");
             }
             for (String legacyType : VIEW_LEGACY_SHELL_TYPES) {
                 if (sourceFacts.text().contains(legacyType)) {
@@ -273,9 +273,9 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
     }
 
     private static boolean isShellContributionSpec(String relativePath) {
-        return relativePath.equals("shell/api/ShellTabSpec.java")
+        return relativePath.equals("shell/api/ShellLeftBarTabSpec.java")
                 || relativePath.equals("shell/api/ShellTopBarSpec.java")
-                || relativePath.equals("shell/api/ShellRuntimeStateSpec.java");
+                || relativePath.equals("shell/api/ShellStateTabSpec.java");
     }
 
     private void validateShellContributionSpecPurity(
@@ -290,7 +290,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             }
         }
 
-        boolean isShellTabSpec = sourceFacts.relativePath().equals("shell/api/ShellTabSpec.java");
+        boolean isShellLeftBarTabSpec = sourceFacts.relativePath().equals("shell/api/ShellLeftBarTabSpec.java");
         for (String sceneGraphType : SHELL_SPEC_SCENE_GRAPH_TYPES) {
             if (sourceFacts.text().contains(sceneGraphType)) {
                 asCtx(data).addViolationWithMessage(node,
@@ -298,9 +298,9 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
                                 + sceneGraphType + "'.");
             }
         }
-        if (!isShellTabSpec && sourceFacts.text().contains("javafx.scene.Node")) {
+        if (!isShellLeftBarTabSpec && sourceFacts.text().contains("javafx.scene.Node")) {
             asCtx(data).addViolationWithMessage(node,
-                    "Only ShellTabSpec may expose the documented feature-owned navigation graphic Node supplier.");
+                    "Only ShellLeftBarTabSpec may expose the documented feature-owned navigation graphic Node supplier.");
         }
     }
 
@@ -308,8 +308,8 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             ASTCompilationUnit node,
             Object data,
             SaltMarcherSourceFacts sourceFacts) {
-        if (sourceFacts.relativePath().equals("shell/api/ShellTabSpec.java")) {
-            validateRecordComponents(node, data, sourceFacts, "ShellTabSpec", SHELL_TAB_SPEC_COMPONENTS);
+        if (sourceFacts.relativePath().equals("shell/api/ShellLeftBarTabSpec.java")) {
+            validateRecordComponents(node, data, sourceFacts, "ShellLeftBarTabSpec", SHELL_LEFT_BAR_TAB_SPEC_COMPONENTS);
             validatePublicMethods(node, data, sourceFacts, Set.of("navigationGraphic"));
             return;
         }
@@ -318,8 +318,8 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             validatePublicMethods(node, data, sourceFacts, Set.of());
             return;
         }
-        if (sourceFacts.relativePath().equals("shell/api/ShellRuntimeStateSpec.java")) {
-            validateRecordComponents(node, data, sourceFacts, "ShellRuntimeStateSpec", SHELL_RUNTIME_STATE_SPEC_COMPONENTS);
+        if (sourceFacts.relativePath().equals("shell/api/ShellStateTabSpec.java")) {
+            validateRecordComponents(node, data, sourceFacts, "ShellStateTabSpec", SHELL_STATE_TAB_SPEC_COMPONENTS);
             validatePublicMethods(node, data, sourceFacts, Set.of());
         }
     }

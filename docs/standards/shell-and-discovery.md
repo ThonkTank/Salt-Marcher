@@ -42,7 +42,7 @@ generically.
 
 Target discovery:
 
-- scans `src/view/featuretabs/<entry>/`, `src/view/runtimetabs/<entry>/`, and
+- scans `src/view/leftbartabs/<entry>/`, `src/view/statetabs/<entry>/`, and
   `src/view/dropdowns/<entry>/`
 - considers only direct concrete classes named `*Contribution`
 - expects each contribution to implement `shell.api.ShellContribution`
@@ -52,8 +52,8 @@ Target discovery:
 
 Contribution roots mean:
 
-- `src/view/featuretabs/<entry>/`: one left-bar feature-tab contribution
-- `src/view/runtimetabs/<entry>/`: one global runtime state-panel tab
+- `src/view/leftbartabs/<entry>/`: one left-bar-tab contribution
+- `src/view/statetabs/<entry>/`: one global state tab
   contribution
 - `src/view/dropdowns/<entry>/`: zero or one shell-discovered dropdown
   contribution
@@ -98,7 +98,7 @@ Target registration behavior:
 - resolved UI contributions are sorted by contribution key before registration
 - each contribution is registered by contribution kind:
   - left-bar tab
-  - global runtime state-panel tab
+  - global state tab
   - top-bar dropdown window
 
 The key sort is a deterministic registration-order rule. It is not a user-
@@ -119,8 +119,8 @@ Rules:
   - tab view order
   - contribution key
 
-Runtime state-panel tabs and top-bar dropdown windows are never startup
-landing targets. Encounter is a runtime state-panel tab, so it must not
+State tabs and top-bar dropdown windows are never startup
+landing targets. Encounter is a state tab, so it must not
 participate in startup navigation selection.
 
 ## Responsibilities Excluded From This Document
@@ -146,9 +146,9 @@ Concrete rule IDs and checker names are recorded in the
 Current checks enforce the target discovery shape where it has a stable static
 surface:
 
-- UI contribution discovery from `src/view/featuretabs`, `src/view/runtimetabs`,
+- UI contribution discovery from `src/view/leftbartabs`, `src/view/statetabs`,
   and shell-contributed `src/view/dropdowns`
-- one shell-registered `*Contribution` per feature/runtime tab root and zero
+- one shell-registered `*Contribution` per left-bar/state tab root and zero
   or one per dropdown root
 - generic contribution instantiation
 - supported contribution-kind selection

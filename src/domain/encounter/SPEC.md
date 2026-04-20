@@ -23,9 +23,9 @@ Provide a runtime encounter builder that:
 
 ## Primary User Flow
 
-1. The user opens the encounter runtime state-panel tab when the active
+1. The user opens the encounter state tab when the active
    left-bar tab is not claiming the state pane.
-2. The runtime state-panel tab reads the active party and current creature
+2. The state tab reads the active party and current creature
    filter options.
 3. The user selects a difficulty and optional type, subtype, or biome filters.
 4. The user generates encounter alternatives.

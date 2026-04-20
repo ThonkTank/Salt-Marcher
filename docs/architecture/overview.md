@@ -34,10 +34,10 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 - `shell/` owns passive cockpit surfaces: top-left controls, primary main
   panel, top-right details/history, bottom-right state pane, top-bar dropdown
   windows, navigation, activation, and shared runtime-session state.
-- `src/view/featuretabs/<entry>/` owns one left-bar feature tab, its shell
+- `src/view/leftbartabs/<entry>/` owns one left-bar tab, its shell
   contribution, Binder, aggregate ViewModel, and optional active-root Views.
-- `src/view/runtimetabs/<entry>/` owns one global runtime state-panel tab, its
-  shell contribution, Binder, aggregate ViewModel, and state View. These tabs
+- `src/view/statetabs/<entry>/` owns one global state tab, its
+  shell contribution, Binder, aggregate ViewModel, and state View. These state tabs
   are shown when the active left-bar tab does not claim `COCKPIT_STATE`.
 - `src/view/dropdowns/<entry>/` owns one dropdown-capable UI unit. Its shell
   contribution is optional and exists only when bootstrap should discover it.
@@ -113,8 +113,8 @@ runtime capabilities through service contributions.
 
 - shell public contracts provide registration metadata, fixed surface binding,
   lifecycle hooks, details/history publication, and runtime context.
-- `src/view/featuretabs/**` contributes left-bar feature tabs.
-- `src/view/runtimetabs/**` contributes global runtime state-panel tabs.
+- `src/view/leftbartabs/**` contributes left-bar tabs.
+- `src/view/statetabs/**` contributes global state tabs.
 - `src/view/dropdowns/**` may contribute top-bar dropdown windows when a
   `*Contribution` is present.
 - `shell/api/ServiceContribution` registers typed backend capabilities and

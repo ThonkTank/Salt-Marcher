@@ -1,4 +1,4 @@
-package src.view.featuretabs.catalog;
+package src.view.leftbartabs.catalog;
 
 import java.util.Objects;
 import shell.api.ContributionKey;
@@ -7,8 +7,8 @@ import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellRuntimeContext;
-import shell.api.ShellTabMode;
-import shell.api.ShellTabSpec;
+import shell.api.ShellLeftBarTabMode;
+import shell.api.ShellLeftBarTabSpec;
 
 public final class CatalogContribution implements ShellContribution {
 
@@ -18,13 +18,13 @@ public final class CatalogContribution implements ShellContribution {
 
     @Override
     public ShellContributionSpec registrationSpec() {
-        return new ShellTabSpec(
+        return new ShellLeftBarTabSpec(
                 new ContributionKey("catalog"),
                 new NavigationGroupSpec("reference", "Reference", 30),
                 10,
                 false,
                 null,
-                ShellTabMode.RUNTIME);
+                ShellLeftBarTabMode.RUNTIME);
     }
 
     @Override

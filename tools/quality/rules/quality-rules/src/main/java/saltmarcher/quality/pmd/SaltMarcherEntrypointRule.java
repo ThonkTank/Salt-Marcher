@@ -8,16 +8,16 @@ import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
 public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
 
     private static final Set<String> VIEW_CONTRIBUTION_SUFFIXES = Set.of("Contribution");
-    private static final Set<String> TAB_VIEW_PANEL_SUFFIXES = Set.of("ControlsView", "MainView", "StateView");
+    private static final Set<String> LEFT_BAR_TAB_VIEW_PANEL_SUFFIXES = Set.of("ControlsView", "MainView", "StateView");
     private static final Set<String> TOP_BAR_VIEW_PANEL_SUFFIXES = Set.of("TopBarView");
-    private static final Set<String> RUNTIME_STATE_VIEW_PANEL_SUFFIXES = Set.of("StateView");
+    private static final Set<String> STATE_TAB_VIEW_PANEL_SUFFIXES = Set.of("StateView");
     private static final Set<String> DETAILS_VIEW_PANEL_SUFFIXES = Set.of("DetailsView");
-    private static final Pattern SHELL_TAB_SPEC_CONSTRUCTOR_PATTERN =
-            Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellTabSpec\\s*\\(");
+    private static final Pattern SHELL_LEFT_BAR_TAB_SPEC_CONSTRUCTOR_PATTERN =
+            Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellLeftBarTabSpec\\s*\\(");
     private static final Pattern SHELL_TOP_BAR_SPEC_CONSTRUCTOR_PATTERN =
             Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellTopBarSpec\\s*\\(");
-    private static final Pattern SHELL_RUNTIME_STATE_SPEC_CONSTRUCTOR_PATTERN =
-            Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellRuntimeStateSpec\\s*\\(");
+    private static final Pattern SHELL_STATE_TAB_SPEC_CONSTRUCTOR_PATTERN =
+            Pattern.compile("\\bnew\\s+(?:shell\\.api\\.)?ShellStateTabSpec\\s*\\(");
 
     @Override
     public Object visit(ASTCompilationUnit node, Object data) {
@@ -76,8 +76,8 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
                     "View shell contribution under " + sourceFacts.relativePath()
                             + " must construct " + expectedSpecKind.specTypeName() + ".");
         }
-        if (sourceFacts.text().contains("defaultLanding") && specKind != ContributionSpecKind.TAB) {
-            asCtx(data).addViolationWithMessage(node, "defaultLanding only applies to ShellTabSpec contributions.");
+        if (sourceFacts.text().contains("defaultLanding") && specKind != ContributionSpecKind.LEFT_BAR_TAB) {
+            asCtx(data).addViolationWithMessage(node, "defaultLanding only applies to ShellLeftBarTabSpec contributions.");
         }
     }
 
@@ -160,45 +160,45 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     private static ContributionSpecKind detectContributionSpecKind(String sourceText) {
         int matches = 0;
         ContributionSpecKind result = ContributionSpecKind.UNKNOWN;
-        if (SHELL_TAB_SPEC_CONSTRUCTOR_PATTERN.matcher(sourceText).find()) {
+        if (SHELL_LEFT_BAR_TAB_SPEC_CONSTRUCTOR_PATTERN.matcher(sourceText).find()) {
             matches++;
-            result = ContributionSpecKind.TAB;
+            result = ContributionSpecKind.LEFT_BAR_TAB;
         }
         if (SHELL_TOP_BAR_SPEC_CONSTRUCTOR_PATTERN.matcher(sourceText).find()) {
             matches++;
             result = ContributionSpecKind.TOP_BAR;
         }
-        if (SHELL_RUNTIME_STATE_SPEC_CONSTRUCTOR_PATTERN.matcher(sourceText).find()) {
+        if (SHELL_STATE_TAB_SPEC_CONSTRUCTOR_PATTERN.matcher(sourceText).find()) {
             matches++;
-            result = ContributionSpecKind.RUNTIME_STATE;
+            result = ContributionSpecKind.STATE_TAB;
         }
         return matches == 1 ? result : ContributionSpecKind.UNKNOWN;
     }
 
     private static ContributionSpecKind expectedContributionSpecKind(SaltMarcherSourceFacts sourceFacts) {
         String path = sourceFacts.relativePath();
-        if (path.startsWith("src/view/featuretabs/")) {
-            return ContributionSpecKind.TAB;
+        if (path.startsWith("src/view/leftbartabs/")) {
+            return ContributionSpecKind.LEFT_BAR_TAB;
         }
         if (path.startsWith("src/view/dropdowns/")) {
             return ContributionSpecKind.TOP_BAR;
         }
-        if (path.startsWith("src/view/runtimetabs/")) {
-            return ContributionSpecKind.RUNTIME_STATE;
+        if (path.startsWith("src/view/statetabs/")) {
+            return ContributionSpecKind.STATE_TAB;
         }
         return ContributionSpecKind.UNKNOWN;
     }
 
     private static Set<String> allowedViewPanelSuffixes(SaltMarcherSourceFacts sourceFacts) {
         String path = sourceFacts.relativePath();
-        if (path.startsWith("src/view/featuretabs/")) {
-            return TAB_VIEW_PANEL_SUFFIXES;
+        if (path.startsWith("src/view/leftbartabs/")) {
+            return LEFT_BAR_TAB_VIEW_PANEL_SUFFIXES;
         }
         if (path.startsWith("src/view/dropdowns/")) {
             return TOP_BAR_VIEW_PANEL_SUFFIXES;
         }
-        if (path.startsWith("src/view/runtimetabs/")) {
-            return RUNTIME_STATE_VIEW_PANEL_SUFFIXES;
+        if (path.startsWith("src/view/statetabs/")) {
+            return STATE_TAB_VIEW_PANEL_SUFFIXES;
         }
         if (path.startsWith("src/view/slotcontent/details/")) {
             return DETAILS_VIEW_PANEL_SUFFIXES;
@@ -208,14 +208,14 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
 
     private static String viewAreaName(SaltMarcherSourceFacts sourceFacts) {
         String path = sourceFacts.relativePath();
-        if (path.startsWith("src/view/featuretabs/")) {
-            return "src/view/featuretabs";
+        if (path.startsWith("src/view/leftbartabs/")) {
+            return "src/view/leftbartabs";
         }
         if (path.startsWith("src/view/dropdowns/")) {
             return "src/view/dropdowns";
         }
-        if (path.startsWith("src/view/runtimetabs/")) {
-            return "src/view/runtimetabs";
+        if (path.startsWith("src/view/statetabs/")) {
+            return "src/view/statetabs";
         }
         if (path.startsWith("src/view/slotcontent/details/")) {
             return "src/view/slotcontent/details";
@@ -224,9 +224,9 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     }
 
     private enum ContributionSpecKind {
-        TAB("ShellTabSpec"),
+        LEFT_BAR_TAB("ShellLeftBarTabSpec"),
         TOP_BAR("ShellTopBarSpec"),
-        RUNTIME_STATE("ShellRuntimeStateSpec"),
+        STATE_TAB("ShellStateTabSpec"),
         UNKNOWN("one allowed shell contribution spec");
 
         private final String specTypeName;

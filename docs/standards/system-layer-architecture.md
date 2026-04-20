@@ -107,7 +107,7 @@ The canonical intentional public boundaries are:
    service registry.
 2. `bootstrap/` creates the shell with that registry.
 3. `bootstrap/` discovers view contributions, resolves registration metadata,
-   and registers shell-facing tabs, state tabs, and top-bar dropdown windows.
+   and registers shell-facing left-bar tabs, state tabs, and top-bar dropdown windows.
 4. No routine feature addition should require feature-specific bootstrap logic.
 
 ### User-Initiated Application Flow

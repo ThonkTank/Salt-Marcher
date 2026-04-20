@@ -20,9 +20,9 @@ a conventional MVVM ViewModel.
 
 SaltMarcher separates shell contribution adapters from ViewModels.
 
-- `src/view/tabs/<tab>/*Contribution.java`,
+- `src/view/leftbartabs/<tab>/*Contribution.java`,
   `src/view/topbar/<window>/*Contribution.java`, and
-  `src/view/state/<state>/*Contribution.java` are discovered by bootstrap and
+  `src/view/statetabs/<state>/*Contribution.java` are discovered by bootstrap and
   implement `shell.api.ShellContribution`.
 - Co-located `*ViewModel.java` files own UI state, actions, commands,
   enablement, validation, loading, error, retry, and stale-state handling.
@@ -32,8 +32,8 @@ SaltMarcher separates shell contribution adapters from ViewModels.
   is not a bootstrap-discovered shell contribution root.
 - `src/view/views/` is reserved for generic reusable JavaFX views or base
   components used by multiple contribution folders.
-- Encounter is a `src/view/state/<state>` runtime state-panel tab, not a
-  `src/view/tabs/<tab>` left-bar tab. It is visible in the global state pane
+- Encounter is a `src/view/statetabs/<state>` state tab, not a
+  `src/view/leftbartabs/<tab>` left-bar tab. It is visible in the global state pane
   only when the active left-bar tab does not claim `COCKPIT_STATE`.
 
 The public shell-facing contribution contract is named `ShellContribution`.
