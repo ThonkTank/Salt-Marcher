@@ -83,7 +83,7 @@ compilation verification independent from graph analysis while ensuring
 | SpotBugs plus FindSecBugs | `Informational Report` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 80`, stricter than PMD's documented `100` token Java example; writes `build/reports/cpd/main.txt`. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; writes `build/reports/lizard/main.txt`. |
-| CKJM ext | `Blocking Local Gate` | `./gradlew ckjmMain` | Runs on compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, and fails when configured thresholds are exceeded. |
+| CKJM ext | `Blocking Local Gate` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, reports current hotspots, and fails on baseline hotspot regressions. |
 
 PMD non-architecture reports use explicit metric thresholds. These thresholds
 must stay at or below PMD's documented defaults unless the standard explicitly
@@ -122,23 +122,38 @@ is disabled because behavior-coupled automated tests are not part of the
 project strategy.
 
 CKJM measures object-oriented class metrics but does not publish official
-blocking defaults. SaltMarcher therefore uses the documented CK metric
-reference policy: values must stay low for complexity, coupling, lack of
-cohesion, inheritance depth, and child count. These are blocking thresholds,
-not current-code regression baselines:
+blocking defaults. SaltMarcher therefore treats CKJM as a hotspot and
+regression gate, not as a universal low absolute threshold over every class.
+`ckjmMain` scans only the current `compileJava` output and compares the current
+hotspot candidates with `tools/quality/config/ckjm/baseline.tsv`.
 
-- Weighted methods per class (`WMC`): `11`
-- Depth of inheritance tree (`DIT`): `1`
-- Number of children (`NOC`): `0`
-- Coupling between objects (`CBO`): `1`
-- Response for class (`RFC`): `43`
-- Lack of cohesion in methods (`LCOM`): `78`
-- Afferent couplings (`Ca`): `1`
-- Number of public methods (`NPM`): `11`
+The blocking hotspot metrics are weighted methods per class (`WMC`), coupling
+between objects (`CBO`), response for class (`RFC`), lack of cohesion in
+methods (`LCOM`), and number of public methods (`NPM`). Depth of inheritance
+tree (`DIT`), number of children (`NOC`), and afferent couplings (`Ca`) remain
+report context and do not block by themselves.
 
-`Ca` follows the same low-coupling policy as `CBO`. `NPM` follows the same
-method-count policy as `WMC`. `DIT` uses `1` because CKJM's Java output counts
-ordinary classes from a root depth of `1`.
+A class is a hotspot candidate when at least two attention thresholds are met
+or at least one extreme threshold is met:
+
+- Attention thresholds: `WMC>=50`, `CBO>=40`, `RFC>=120`, `LCOM>=500`,
+  `NPM>=40`.
+- Extreme thresholds: `WMC>=100`, `CBO>=60`, `RFC>=200`, `LCOM>=1500`,
+  `NPM>=60`.
+
+Known hotspot candidates are accepted in the baseline. `ckjmMain` blocks when a
+new class becomes a hotspot candidate or when a baseline hotspot meaningfully
+worsens beyond the allowed deltas:
+
+- `WMC`: `+5`
+- `CBO`: `+5`
+- `RFC`: `+15`
+- `LCOM`: `+150`
+- `NPM`: `+5`
+
+The CKJM summary must still list current hotspots and LCOM-only outliers so
+wide data carriers and real multi-metric hotspots stay visible even when the
+baseline gate passes.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the jQAssistant view-topology blocker; they may be run together for quality
@@ -269,7 +284,8 @@ manual testing for behavior verification.
   the owning gate instead.
 - Do not expand the compile/build/check pipeline with new automated gates
   unless the user explicitly requests that expansion.
-- Treat only the CKJM thresholds named here as mechanical blockers.
+- Treat only the CKJM hotspot regression policy named here as the mechanical
+  CKJM blocker.
 - Use manual testing for workflow behavior, desktop interaction, UI judgment,
   and product acceptance.
 - `./gradlew test` is not a general-purpose home for behavior-regression

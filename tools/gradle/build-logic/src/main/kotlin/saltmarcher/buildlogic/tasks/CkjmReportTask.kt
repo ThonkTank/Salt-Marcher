@@ -6,7 +6,7 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Classpath
-import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
@@ -43,29 +43,9 @@ abstract class CkjmReportTask : DefaultTask() {
     @get:OutputFile
     abstract val summaryFile: RegularFileProperty
 
-    @get:Input
-    abstract val maxWeightedMethodsPerClass: org.gradle.api.provider.Property<Int>
-
-    @get:Input
-    abstract val maxDepthOfInheritanceTree: org.gradle.api.provider.Property<Int>
-
-    @get:Input
-    abstract val maxNumberOfChildren: org.gradle.api.provider.Property<Int>
-
-    @get:Input
-    abstract val maxCouplingBetweenObjects: org.gradle.api.provider.Property<Int>
-
-    @get:Input
-    abstract val maxResponseForClass: org.gradle.api.provider.Property<Int>
-
-    @get:Input
-    abstract val maxLackOfCohesionInMethods: org.gradle.api.provider.Property<Int>
-
-    @get:Input
-    abstract val maxAfferentCouplings: org.gradle.api.provider.Property<Int>
-
-    @get:Input
-    abstract val maxNumberOfPublicMethods: org.gradle.api.provider.Property<Int>
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val baselineFile: RegularFileProperty
 
     @get:Internal
     abstract val projectRoot: DirectoryProperty
@@ -106,38 +86,31 @@ abstract class CkjmReportTask : DefaultTask() {
         }
 
         val outputText = outputBuffer.toString(Charsets.UTF_8)
-        val thresholds = CkjmThresholds(
-            wmc = maxWeightedMethodsPerClass.get(),
-            dit = maxDepthOfInheritanceTree.get(),
-            noc = maxNumberOfChildren.get(),
-            cbo = maxCouplingBetweenObjects.get(),
-            rfc = maxResponseForClass.get(),
-            lcom = maxLackOfCohesionInMethods.get(),
-            ca = maxAfferentCouplings.get(),
-            npm = maxNumberOfPublicMethods.get()
-        )
-        val thresholdViolations = findCkjmThresholdViolations(outputText, thresholds)
+        val baselinePath = baselineFile.get().asFile.toPath()
+        val baseline = parseCkjmHotspotBaseline(Files.readString(baselinePath), baselinePath)
+        val evaluation = evaluateCkjmHotspots(outputText, baseline)
         Files.writeString(reportPath, outputText)
-        Files.writeString(summaryPath, summarizeCkjmOutput(outputText, thresholds, thresholdViolations))
+        Files.writeString(summaryPath, summarizeCkjmOutput(outputText, evaluation))
 
         if (execResult.exitValue != 0) {
             val suffix = if (outputText.isBlank()) "" else "\n${outputText.trimEnd()}"
             throw GradleException("CKJM ext failed with exit code ${execResult.exitValue}.$suffix")
         }
 
-        if (thresholdViolations.isNotEmpty()) {
-            val preview = thresholdViolations
+        if (evaluation.blockingRegressions.isNotEmpty()) {
+            val preview = evaluation.blockingRegressions
                 .take(20)
-                .joinToString(separator = "\n") { violation ->
-                    "${violation.className}: ${violation.metric}=${violation.valueText} > ${violation.threshold}"
+                .joinToString(separator = "\n") { regression ->
+                    "${regression.className}: ${regression.metric}=${regression.valueText} " +
+                        "> baseline ${regression.baselineText} + ${regression.allowedIncrease}"
                 }
-            val suffix = if (thresholdViolations.size > 20) {
-                "\n...and ${thresholdViolations.size - 20} more CKJM threshold violations."
+            val suffix = if (evaluation.blockingRegressions.size > 20) {
+                "\n...and ${evaluation.blockingRegressions.size - 20} more CKJM hotspot regressions."
             } else {
                 ""
             }
             throw GradleException(
-                "CKJM metric thresholds were exceeded. See the summary at: " +
+                "CKJM hotspot regressions were detected. See the summary at: " +
                     "file://${summaryPath.toAbsolutePath()}\n$preview$suffix"
             )
         }

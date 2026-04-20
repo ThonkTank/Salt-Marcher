@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-20
-Source of Truth: CK metric threshold policy reference used by the Quality Platforms Standard.
+Source of Truth: CK metric hotspot policy reference used by the Quality Platforms Standard.
 
 # CK Metric Reference Values
 
@@ -13,7 +13,7 @@ Accessed: 2026-04-20
 # CK Metric Reference Values
 
 This local note captures the external interpretation policy used for
-SaltMarcher's CKJM thresholds.
+SaltMarcher's CKJM hotspot gate.
 
 ## Why It Matters
 
@@ -21,9 +21,8 @@ SaltMarcher's CKJM thresholds.
 - The NASA SATC object-oriented metrics reference treats the CK metrics as
   quality indicators and consistently interprets lower values as better for
   complexity, coupling, lack of cohesion, and inheritance risk.
-- SaltMarcher needs stable numeric limits so contributors cannot raise the
-  object-oriented metrics gate to the current worst classes without updating
-  the documented policy.
+- SaltMarcher needs stable hotspot limits so contributors cannot raise the
+  object-oriented metrics baseline without updating the documented policy.
 
 ## Key Reference Position
 
@@ -32,23 +31,26 @@ SaltMarcher's CKJM thresholds.
 - Lower values are preferred for method count/complexity, response set size,
   lack of cohesion, coupling, inheritance depth, and child count.
 - The reference does not define official CKJM-compatible blocking thresholds;
-  SaltMarcher therefore uses a conservative project policy derived from the
-  lower-is-better interpretation.
+  SaltMarcher therefore uses a project-specific hotspot and baseline-regression
+  policy derived from the lower-is-better interpretation.
 
-## SaltMarcher Threshold Policy
+## SaltMarcher Hotspot Policy
 
-- `WMC`: `11`
-- `DIT`: `1`
-- `NOC`: `0`
-- `CBO`: `1`
-- `RFC`: `43`
-- `LCOM`: `78`
-- `Ca`: `1`
-- `NPM`: `11`
+CKJM blocks on meaningful regressions in hotspot candidates rather than on
+low absolute thresholds for every class.
 
-`Ca` follows the same low-coupling policy as `CBO`. `NPM` follows the same
-method-count policy as `WMC`. `DIT` uses `1` because CKJM's Java output counts
-ordinary classes from a root depth of `1`.
+- Blocking hotspot metrics: `WMC`, `CBO`, `RFC`, `LCOM`, `NPM`.
+- Report-only context metrics: `DIT`, `NOC`, `Ca`.
+- Attention thresholds: `WMC>=50`, `CBO>=40`, `RFC>=120`, `LCOM>=500`,
+  `NPM>=40`.
+- Extreme thresholds: `WMC>=100`, `CBO>=60`, `RFC>=200`, `LCOM>=1500`,
+  `NPM>=60`.
+- Meaningful regression deltas: `WMC +5`, `CBO +5`, `RFC +15`,
+  `LCOM +150`, `NPM +5`.
+
+A class is a hotspot candidate when it meets at least two attention thresholds
+or at least one extreme threshold. The accepted baseline lives in
+`tools/quality/config/ckjm/baseline.tsv`.
 
 ## Related Local Standards
 

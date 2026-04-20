@@ -114,6 +114,7 @@ val lizardRequirementsFile = layout.projectDirectory.file("tools/quality/config/
 val lizardVenvDir = layout.buildDirectory.dir("tools/lizard-venv")
 val lizardReadyMarker = layout.buildDirectory.file("tools/lizard-venv/.lizard-ready")
 val cpdReportFile = layout.buildDirectory.file("reports/cpd/main.txt")
+val ckjmBaselineFile = layout.projectDirectory.file("tools/quality/config/ckjm/baseline.tsv")
 val ckjmReportFile = layout.buildDirectory.file("reports/ckjm/main.txt")
 val ckjmSummaryFile = layout.buildDirectory.file("reports/ckjm/summary.md")
 val jqassistantInstallDir = layout.buildDirectory.dir("tools/jqassistant")
@@ -449,19 +450,11 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
     dependsOn(tasks.named("classes"))
     projectRoot.set(layout.projectDirectory)
     compiledClasses.from(mainJavaClassesDir)
-    compiledClasses.from(localMainJavaClassesDir)
     toolClasspath.from(ckjmToolClasspath)
     runtimeClasspath.from(configurations.named("runtimeClasspath"))
+    baselineFile.set(ckjmBaselineFile)
     reportFile.set(ckjmReportFile)
     summaryFile.set(ckjmSummaryFile)
-    maxWeightedMethodsPerClass.set(11)
-    maxDepthOfInheritanceTree.set(1)
-    maxNumberOfChildren.set(0)
-    maxCouplingBetweenObjects.set(1)
-    maxResponseForClass.set(43)
-    maxLackOfCohesionInMethods.set(78)
-    maxAfferentCouplings.set(1)
-    maxNumberOfPublicMethods.set(11)
 }
 
 // Architecture aggregate and repository/resource policy gates

@@ -60,25 +60,92 @@ internal data class CkjmMetricRow(
     val maxCc: Double?
 )
 
-internal data class CkjmThresholds(
-    val wmc: Int,
-    val dit: Int,
-    val noc: Int,
-    val cbo: Int,
-    val rfc: Int,
-    val lcom: Int,
-    val ca: Int,
-    val npm: Int
+internal data class CkjmHotspotBaselineEntry(
+    val className: String,
+    val wmc: Double,
+    val cbo: Double,
+    val rfc: Double,
+    val lcom: Double,
+    val npm: Double
 )
 
-internal data class CkjmThresholdViolation(
+internal data class CkjmHotspotCandidate(
+    val row: CkjmMetricRow,
+    val score: Double,
+    val attentionMetrics: List<String>,
+    val extremeMetrics: List<String>
+) {
+    val className: String
+        get() = row.className
+}
+
+internal data class CkjmHotspotRegression(
     val className: String,
     val metric: String,
     val value: Double,
-    val threshold: Int
+    val baseline: Double,
+    val allowedIncrease: Int
 ) {
     val valueText: String
         get() = String.format(Locale.ROOT, "%.2f", value)
+
+    val baselineText: String
+        get() = String.format(Locale.ROOT, "%.2f", baseline)
+}
+
+internal data class CkjmHotspotEvaluation(
+    val metricRows: List<CkjmMetricRow>,
+    val rawLineCount: Int,
+    val baselineEntries: Map<String, CkjmHotspotBaselineEntry>,
+    val currentHotspots: List<CkjmHotspotCandidate>,
+    val blockingRegressions: List<CkjmHotspotRegression>,
+    val lcomOnlyOutliers: List<CkjmMetricRow>,
+    val staleBaselineEntries: List<CkjmHotspotBaselineEntry>
+)
+
+private data class CkjmHotspotMetricPolicy(
+    val name: String,
+    val attention: Double,
+    val extreme: Double,
+    val allowedIncrease: Int,
+    val currentValue: (CkjmMetricRow) -> Double,
+    val baselineValue: (CkjmHotspotBaselineEntry) -> Double
+)
+
+private val ckjmHotspotMetricPolicies = listOf(
+    CkjmHotspotMetricPolicy("WMC", 50.0, 100.0, 5, { it.wmc }, { it.wmc }),
+    CkjmHotspotMetricPolicy("CBO", 40.0, 60.0, 5, { it.cbo }, { it.cbo }),
+    CkjmHotspotMetricPolicy("RFC", 120.0, 200.0, 15, { it.rfc }, { it.rfc }),
+    CkjmHotspotMetricPolicy("LCOM", 500.0, 1500.0, 150, { it.lcom }, { it.lcom }),
+    CkjmHotspotMetricPolicy("NPM", 40.0, 60.0, 5, { it.npm }, { it.npm })
+)
+
+private val ckjmBaselineHeader = listOf("className", "wmc", "cbo", "rfc", "lcom", "npm")
+
+private fun formatMetric(value: Double): String {
+    return String.format(Locale.ROOT, "%.2f", value)
+}
+
+private fun CkjmMetricRow.hotspotScore(): Double {
+    return (wmc / 50.0) + (cbo / 40.0) + (rfc / 120.0) + (lcom / 500.0) + (npm / 40.0)
+}
+
+private fun CkjmMetricRow.toHotspotCandidateOrNull(): CkjmHotspotCandidate? {
+    val attentionMetrics = ckjmHotspotMetricPolicies
+        .filter { policy -> policy.currentValue(this) >= policy.attention }
+        .map { it.name }
+    val extremeMetrics = ckjmHotspotMetricPolicies
+        .filter { policy -> policy.currentValue(this) >= policy.extreme }
+        .map { it.name }
+    if (attentionMetrics.size < 2 && extremeMetrics.isEmpty()) {
+        return null
+    }
+    return CkjmHotspotCandidate(
+        row = this,
+        score = hotspotScore(),
+        attentionMetrics = attentionMetrics,
+        extremeMetrics = extremeMetrics
+    )
 }
 
 internal fun parseCkjmMetricRows(outputText: String): List<CkjmMetricRow> {
@@ -110,35 +177,127 @@ internal fun parseCkjmMetricRows(outputText: String): List<CkjmMetricRow> {
     }
 }
 
-internal fun findCkjmThresholdViolations(
-    outputText: String,
-    thresholds: CkjmThresholds
-): List<CkjmThresholdViolation> {
-    return parseCkjmMetricRows(outputText)
-        .flatMap { row ->
-            listOf(
-                CkjmThresholdViolation(row.className, "WMC", row.wmc, thresholds.wmc),
-                CkjmThresholdViolation(row.className, "DIT", row.dit, thresholds.dit),
-                CkjmThresholdViolation(row.className, "NOC", row.noc, thresholds.noc),
-                CkjmThresholdViolation(row.className, "CBO", row.cbo, thresholds.cbo),
-                CkjmThresholdViolation(row.className, "RFC", row.rfc, thresholds.rfc),
-                CkjmThresholdViolation(row.className, "LCOM", row.lcom, thresholds.lcom),
-                CkjmThresholdViolation(row.className, "Ca", row.ca, thresholds.ca),
-                CkjmThresholdViolation(row.className, "NPM", row.npm, thresholds.npm)
+internal fun parseCkjmHotspotBaseline(
+    baselineText: String,
+    baselinePath: Path
+): Map<String, CkjmHotspotBaselineEntry> {
+    val entries = linkedMapOf<String, CkjmHotspotBaselineEntry>()
+
+    fun parseMetric(parts: List<String>, index: Int, lineNumber: Int, metric: String): Double {
+        return parts.getOrNull(index)?.toDoubleOrNull()
+            ?: throw GradleException("Invalid CKJM baseline $metric value at $baselinePath:$lineNumber")
+    }
+
+    baselineText.lineSequence().forEachIndexed { index, rawLine ->
+        val lineNumber = index + 1
+        val line = rawLine.trim()
+        if (line.isEmpty() || line.startsWith("#")) {
+            return@forEachIndexed
+        }
+        val parts = line.split(Regex("\\s+"))
+        if (parts == ckjmBaselineHeader) {
+            return@forEachIndexed
+        }
+        if (parts.size != ckjmBaselineHeader.size) {
+            throw GradleException(
+                "Invalid CKJM baseline row at $baselinePath:$lineNumber. " +
+                    "Expected columns: ${ckjmBaselineHeader.joinToString(separator = "\t")}"
             )
         }
-        .filter { violation -> violation.value > violation.threshold }
+        val className = parts[0]
+        if (entries.containsKey(className)) {
+            throw GradleException("Duplicate CKJM baseline row for $className at $baselinePath:$lineNumber")
+        }
+        entries[className] = CkjmHotspotBaselineEntry(
+            className = className,
+            wmc = parseMetric(parts, 1, lineNumber, "WMC"),
+            cbo = parseMetric(parts, 2, lineNumber, "CBO"),
+            rfc = parseMetric(parts, 3, lineNumber, "RFC"),
+            lcom = parseMetric(parts, 4, lineNumber, "LCOM"),
+            npm = parseMetric(parts, 5, lineNumber, "NPM")
+        )
+    }
+    return entries
+}
+
+internal fun evaluateCkjmHotspots(
+    outputText: String,
+    baselineEntries: Map<String, CkjmHotspotBaselineEntry>
+): CkjmHotspotEvaluation {
+    val rawLines = outputText
+        .lineSequence()
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .toList()
+
+    val metricRows = parseCkjmMetricRows(outputText)
+    val metricRowsByClass = metricRows.associateBy { it.className }
+    val currentHotspots = metricRows
+        .mapNotNull { it.toHotspotCandidateOrNull() }
         .sortedWith(
-            compareByDescending<CkjmThresholdViolation> { it.value - it.threshold }
+            compareByDescending<CkjmHotspotCandidate> { it.score }
+                .thenBy { it.className }
+        )
+    val blockingRegressions = currentHotspots
+        .flatMap { candidate ->
+            val baseline = baselineEntries[candidate.className]
+            if (baseline == null) {
+                return@flatMap ckjmHotspotMetricPolicies
+                    .filter { policy -> policy.currentValue(candidate.row) >= policy.attention }
+                    .map { policy ->
+                        CkjmHotspotRegression(
+                            className = candidate.className,
+                            metric = policy.name,
+                            value = policy.currentValue(candidate.row),
+                            baseline = 0.0,
+                            allowedIncrease = 0
+                        )
+                    }
+            }
+            ckjmHotspotMetricPolicies.mapNotNull { policy ->
+                val value = policy.currentValue(candidate.row)
+                val baselineValue = policy.baselineValue(baseline)
+                if (value > baselineValue + policy.allowedIncrease) {
+                    CkjmHotspotRegression(
+                        className = candidate.className,
+                        metric = policy.name,
+                        value = value,
+                        baseline = baselineValue,
+                        allowedIncrease = policy.allowedIncrease
+                    )
+                } else {
+                    null
+                }
+            }
+        }
+        .sortedWith(
+            compareByDescending<CkjmHotspotRegression> { it.value - it.baseline - it.allowedIncrease }
                 .thenBy { it.className }
                 .thenBy { it.metric }
         )
+    val lcomOnlyOutliers = metricRows
+        .filter { row ->
+            row.lcom >= 500.0 && row.toHotspotCandidateOrNull() == null
+        }
+        .sortedWith(compareByDescending<CkjmMetricRow> { it.lcom }.thenBy { it.className })
+    val staleBaselineEntries = baselineEntries.values
+        .filterNot { entry -> metricRowsByClass.containsKey(entry.className) }
+        .sortedBy { it.className }
+
+    return CkjmHotspotEvaluation(
+        metricRows = metricRows,
+        rawLineCount = rawLines.size,
+        baselineEntries = baselineEntries,
+        currentHotspots = currentHotspots,
+        blockingRegressions = blockingRegressions,
+        lcomOnlyOutliers = lcomOnlyOutliers,
+        staleBaselineEntries = staleBaselineEntries
+    )
 }
 
 internal fun summarizeCkjmOutput(
     outputText: String,
-    thresholds: CkjmThresholds? = null,
-    thresholdViolations: List<CkjmThresholdViolation> = emptyList()
+    evaluation: CkjmHotspotEvaluation
 ): String {
     val rawLines = outputText
         .lineSequence()
@@ -150,14 +309,7 @@ internal fun summarizeCkjmOutput(
         return "# CKJM Summary\n\nNo CKJM output was produced.\n"
     }
 
-    data class RankedMetric(
-        val name: String,
-        val value: Double
-    )
-
-    val metricRows = parseCkjmMetricRows(outputText)
-
-    if (metricRows.isEmpty()) {
+    if (evaluation.metricRows.isEmpty()) {
         val preview = rawLines.take(20).joinToString(separator = "\n") { "- `$it`" }
         return buildString {
             appendLine("# CKJM Summary")
@@ -173,7 +325,7 @@ internal fun summarizeCkjmOutput(
         }
     }
 
-    val topLevelRows = metricRows.filterNot { it.className.contains('$') }
+    val topLevelRows = evaluation.metricRows.filterNot { it.className.contains('$') }
 
     fun topMetrics(selector: (CkjmMetricRow) -> Double?): List<Pair<CkjmMetricRow, Double>> {
         return topLevelRows
@@ -197,54 +349,76 @@ internal fun summarizeCkjmOutput(
         }
     }
 
-    val hotspotMetrics = linkedMapOf(
-        "WMC" to topMetrics { it.wmc },
-        "CBO" to topMetrics { it.cbo },
-        "RFC" to topMetrics { it.rfc },
-        "LCOM" to topMetrics { it.lcom }
-    )
-
-    val multiMetricHotspots = hotspotMetrics
-        .flatMap { (metricName, rows) ->
-            rows.map { (row, value) -> row.className to RankedMetric(metricName, value) }
-        }
-        .groupBy({ (className, _) -> className }, { (_, metric) -> metric })
-        .mapValues { (_, metrics) -> metrics.sortedByDescending { it.value } }
-        .filterValues { metrics -> metrics.size >= 2 }
-        .toList()
-        .sortedWith(
-            compareByDescending<Pair<String, List<RankedMetric>>> { (_, metrics) -> metrics.size }
-                .thenByDescending { (_, metrics) -> metrics.sumOf { metric -> metric.value } }
-                .thenBy { (className, _) -> className }
-        )
-
     return buildString {
         appendLine("# CKJM Summary")
         appendLine()
-        appendLine("- Analysed classes: ${metricRows.size}")
-        appendLine("- Raw rows: ${rawLines.size}")
+        appendLine("- Analysed classes: ${evaluation.metricRows.size}")
+        appendLine("- Raw rows: ${evaluation.rawLineCount}")
         appendLine("- Top-level production classes considered for ranking: ${topLevelRows.size}")
-        if (thresholds != null) {
-            appendLine(
-                "- Thresholds: WMC<=${thresholds.wmc}, DIT<=${thresholds.dit}, " +
-                    "NOC<=${thresholds.noc}, CBO<=${thresholds.cbo}, RFC<=${thresholds.rfc}, " +
-                    "LCOM<=${thresholds.lcom}, Ca<=${thresholds.ca}, NPM<=${thresholds.npm}"
-            )
-            appendLine("- Threshold violations: ${thresholdViolations.size}")
-        }
+        appendLine("- Baseline entries: ${evaluation.baselineEntries.size}")
+        appendLine("- Current hotspot candidates: ${evaluation.currentHotspots.size}")
+        appendLine("- Blocking regressions: ${evaluation.blockingRegressions.size}")
+        appendLine("- LCOM-only outliers: ${evaluation.lcomOnlyOutliers.size}")
         appendLine()
-        if (thresholdViolations.isNotEmpty()) {
-            appendLine("## Threshold Violations")
+        if (evaluation.blockingRegressions.isNotEmpty()) {
+            appendLine("## Blocking Hotspot Regressions")
             appendLine()
-            thresholdViolations.take(50).forEach { violation ->
+            evaluation.blockingRegressions.take(50).forEach { regression ->
                 appendLine(
-                    "- `${violation.className}`: ${violation.metric}=${violation.valueText} " +
-                        "> ${violation.threshold}"
+                    "- `${regression.className}`: ${regression.metric}=${regression.valueText} " +
+                        "> baseline ${regression.baselineText} + ${regression.allowedIncrease}"
                 )
             }
-            if (thresholdViolations.size > 50) {
+            if (evaluation.blockingRegressions.size > 50) {
                 appendLine()
-                appendLine("...and ${thresholdViolations.size - 50} more threshold violations.")
+                appendLine("...and ${evaluation.blockingRegressions.size - 50} more blocking regressions.")
+            }
+            appendLine()
+        }
+        if (evaluation.currentHotspots.isNotEmpty()) {
+            appendLine("## Current Hotspots")
+            appendLine()
+            evaluation.currentHotspots.take(20).forEach { candidate ->
+                appendLine(
+                    "- `${candidate.className}`: score=${formatMetric(candidate.score)}, " +
+                        "WMC=${formatMetric(candidate.row.wmc)}, CBO=${formatMetric(candidate.row.cbo)}, " +
+                        "RFC=${formatMetric(candidate.row.rfc)}, LCOM=${formatMetric(candidate.row.lcom)}, " +
+                        "NPM=${formatMetric(candidate.row.npm)}, " +
+                        "attention=${candidate.attentionMetrics.joinToString(separator = ",")}, " +
+                        "extreme=${candidate.extremeMetrics.joinToString(separator = ",").ifBlank { "-" }}"
+                )
+            }
+            if (evaluation.currentHotspots.size > 20) {
+                appendLine()
+                appendLine("...and ${evaluation.currentHotspots.size - 20} more current hotspots.")
+            }
+            appendLine()
+        }
+        if (evaluation.lcomOnlyOutliers.isNotEmpty()) {
+            appendLine("## LCOM-only Outliers")
+            appendLine()
+            evaluation.lcomOnlyOutliers.take(20).forEach { row ->
+                appendLine(
+                    "- `${row.className}`: LCOM=${formatMetric(row.lcom)}, " +
+                        "WMC=${formatMetric(row.wmc)}, CBO=${formatMetric(row.cbo)}, " +
+                        "RFC=${formatMetric(row.rfc)}, NPM=${formatMetric(row.npm)}"
+                )
+            }
+            if (evaluation.lcomOnlyOutliers.size > 20) {
+                appendLine()
+                appendLine("...and ${evaluation.lcomOnlyOutliers.size - 20} more LCOM-only outliers.")
+            }
+            appendLine()
+        }
+        if (evaluation.staleBaselineEntries.isNotEmpty()) {
+            appendLine("## Stale Baseline Entries")
+            appendLine()
+            evaluation.staleBaselineEntries.take(20).forEach { entry ->
+                appendLine("- `${entry.className}`")
+            }
+            if (evaluation.staleBaselineEntries.size > 20) {
+                appendLine()
+                appendLine("...and ${evaluation.staleBaselineEntries.size - 20} more stale baseline entries.")
             }
             appendLine()
         }
@@ -253,16 +427,5 @@ internal fun summarizeCkjmOutput(
         append(topSection("Highest RFC") { it.rfc })
         append(topSection("Highest LCOM") { it.lcom })
         append(topSection("Highest Max Cyclomatic Complexity") { it.maxCc })
-        if (multiMetricHotspots.isNotEmpty()) {
-            appendLine("## Multi-metric Hotspots")
-            appendLine()
-            multiMetricHotspots.forEach { (className, metrics) ->
-                val metricText = metrics.joinToString(", ") { metric ->
-                    "${metric.name}=${String.format(Locale.ROOT, "%.2f", metric.value)}"
-                }
-                appendLine("- `${className}`: $metricText")
-            }
-            appendLine()
-        }
     }.trimEnd() + "\n"
 }
