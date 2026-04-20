@@ -3,7 +3,6 @@ package src.view.state.encounter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -12,7 +11,6 @@ import javafx.beans.property.StringProperty;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -30,14 +28,10 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Popup;
 import javafx.util.StringConverter;
 
 public final class EncounterStateView extends VBox {
-
-    private static final int HP_BAR_WIDTH = 92;
-    private static final int HP_BAR_HEIGHT = 24;
 
     private final Label modeLabel = new Label();
     private final Label status = new Label();
@@ -98,12 +92,12 @@ public final class EncounterStateView extends VBox {
     public EncounterStateView() {
         setSpacing(0);
         setPadding(new Insets(0));
-        getStyleClass().addAll("surface-root", "encounter-runtime-root");
+        getStyleClass().add("surface-root");
         setFillWidth(true);
 
         Label title = new Label("Encounter");
         title.getStyleClass().add("title-large");
-        modeLabel.getStyleClass().addAll("encounter-mode-chip", "text-secondary");
+        modeLabel.getStyleClass().addAll("chip", "chip-type");
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
         HBox titleRow = new HBox(8, title, titleSpacer, modeLabel);
@@ -127,7 +121,6 @@ public final class EncounterStateView extends VBox {
         modeLabel.setText("Creation");
         setContent(builderPane);
         builderDifficultyLabel.setText(state.difficulty().difficulty());
-        applyDifficultyStyle(builderDifficultyLabel, state.difficulty().difficulty());
         builderPartyLabel.setText(state.partyLabel());
         builderXpLabel.setText("Adj. XP: " + state.difficulty().adjustedXp());
         builderMessageLabel.setText(state.message());
@@ -261,10 +254,10 @@ public final class EncounterStateView extends VBox {
         builderMessageLabel.setWrapText(true);
 
         HBox thresholdRow = new HBox(6, easyThresholdLabel, mediumThresholdLabel, hardThresholdLabel, deadlyThresholdLabel);
-        easyThresholdLabel.getStyleClass().addAll("small", "difficulty-easy");
-        mediumThresholdLabel.getStyleClass().addAll("small", "difficulty-medium");
-        hardThresholdLabel.getStyleClass().addAll("small", "difficulty-hard");
-        deadlyThresholdLabel.getStyleClass().addAll("small", "difficulty-deadly");
+        easyThresholdLabel.getStyleClass().addAll("chip", "chip-type");
+        mediumThresholdLabel.getStyleClass().addAll("chip", "chip-biome");
+        hardThresholdLabel.getStyleClass().addAll("chip", "chip-align");
+        deadlyThresholdLabel.getStyleClass().addAll("chip", "chip-cr");
 
         rosterList.setPadding(new Insets(2, 0, 2, 0));
         ScrollPane rosterScroll = new ScrollPane(rosterList);
@@ -380,9 +373,9 @@ public final class EncounterStateView extends VBox {
         title.setPadding(new Insets(0, 12, 2, 12));
         resultSubtitleLabel.getStyleClass().add("text-secondary");
         resultSubtitleLabel.setPadding(new Insets(0, 12, 8, 12));
-        resultXpLabel.getStyleClass().add("encounter-result-xp");
+        resultXpLabel.getStyleClass().addAll("title-large", "bold");
         resultPartyLabel.getStyleClass().add("text-secondary");
-        resultGoldLabel.getStyleClass().add("encounter-result-gold");
+        resultGoldLabel.getStyleClass().add("bold");
         resultLootLabel.getStyleClass().add("text-secondary");
         resultLootLabel.setWrapText(true);
 
@@ -436,24 +429,24 @@ public final class EncounterStateView extends VBox {
 
     private Node buildRosterCard(RosterCardView card) {
         VBox root = new VBox(2);
-        root.getStyleClass().add("creature-card");
+        root.getStyleClass().add("entity-card");
         HBox top = new HBox(8);
         top.setAlignment(Pos.CENTER_LEFT);
         Label count = new Label(String.valueOf(card.count()));
-        count.getStyleClass().add("encounter-count-pill");
+        count.getStyleClass().addAll("chip", "chip-size");
         Label name = new Label(card.name());
-        name.getStyleClass().add("combat-name");
+        name.getStyleClass().add("bold");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         Label cr = new Label("CR " + card.challengeRating());
-        cr.getStyleClass().add("ac-badge");
+        cr.getStyleClass().addAll("chip", "chip-cr");
         top.getChildren().addAll(count, name, spacer, cr);
 
         HBox detail = new HBox(4);
         Label text = new Label(card.xp() + " XP | AC " + card.armorClass() + " | " + card.type());
         text.getStyleClass().add("text-secondary");
         Label role = new Label(card.role());
-        role.getStyleClass().addAll("small", "role-badge", "role-" + card.role().toLowerCase(Locale.ROOT));
+        role.getStyleClass().addAll("chip", "chip-type");
         detail.getChildren().addAll(text, role);
         root.getChildren().addAll(top, detail);
         return root;
@@ -462,7 +455,7 @@ public final class EncounterStateView extends VBox {
     private Node buildInitiativeRow(InitiativeEntryView entry) {
         HBox row = new HBox(8);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("initiative-row");
+        row.getStyleClass().add("entity-card");
         Label name = new Label(entry.label());
         name.setWrapText(true);
         HBox.setHgrow(name, Priority.ALWAYS);
@@ -471,7 +464,7 @@ public final class EncounterStateView extends VBox {
         spinner.setPrefWidth(84);
         initiativeSpinnerById.put(entry.id(), spinner);
         Button reroll = new Button("\u2684");
-        reroll.getStyleClass().add("spinner-btn");
+        reroll.getStyleClass().add("compact");
         reroll.setOnAction(event -> spinner.getValueFactory().setValue(entry.initiative() + 2));
         row.getChildren().addAll(name, spinner, reroll);
         return row;
@@ -479,23 +472,23 @@ public final class EncounterStateView extends VBox {
 
     private Node buildCombatCard(CombatCardView card) {
         VBox root = new VBox(4);
-        root.getStyleClass().add("combat-card");
+        root.getStyleClass().add("entity-card");
         if (card.active()) {
-            root.getStyleClass().add("combat-card-active");
+            root.getStyleClass().add("content-card");
         } else if (!card.alive()) {
-            root.getStyleClass().add("combat-card-dead");
+            root.getStyleClass().add("card-surface");
         } else if (card.playerCharacter()) {
-            root.getStyleClass().add("combat-card-pc");
+            root.getStyleClass().add("card-surface");
         }
 
         HBox top = new HBox(8);
         top.setAlignment(Pos.CENTER_LEFT);
         Label turn = new Label(card.active() ? "\u25B6" : "");
-        turn.getStyleClass().add(card.active() ? "combat-turn-indicator" : "combat-turn-indicator-inactive");
+        turn.getStyleClass().add(card.active() ? "bold" : "text-muted");
         Label name = new Label(card.alive() ? card.name() : "\u2020 " + card.name());
-        name.getStyleClass().add("combat-name");
+        name.getStyleClass().add("bold");
         if (!card.alive()) {
-            name.getStyleClass().add("combat-name-dead");
+            name.getStyleClass().add("text-muted");
         }
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -503,16 +496,16 @@ public final class EncounterStateView extends VBox {
         if (!card.playerCharacter()) {
             Node hp = hpBar(card);
             Label ac = new Label("AC " + card.armorClass());
-            ac.getStyleClass().add("ac-badge");
+            ac.getStyleClass().addAll("chip", "chip-cr");
             top.getChildren().addAll(hp, ac);
         }
         Button init = new Button("Init " + card.initiative());
-        init.getStyleClass().add("init-badge");
+        init.getStyleClass().addAll("compact", "filter-trigger");
         init.setOnAction(event -> showInitiativePopup(init, card));
         top.getChildren().add(init);
 
         Label detail = new Label(card.detail());
-        detail.getStyleClass().add("combat-detail");
+        detail.getStyleClass().add("text-secondary");
         detail.setWrapText(true);
         root.getChildren().addAll(top, detail);
         return root;
@@ -526,60 +519,22 @@ public final class EncounterStateView extends VBox {
         return toggle;
     }
 
-    private StackPane hpBar(CombatCardView card) {
+    private Button hpBar(CombatCardView card) {
         double fraction = card.maxHp() > 0 ? Math.max(0.0, Math.min(1.0, (double) card.currentHp() / card.maxHp())) : 0.0;
-        double fillWidth = HP_BAR_WIDTH * fraction;
-        Region track = new Region();
-        track.getStyleClass().add("hp-bar-track");
-        track.setPrefSize(HP_BAR_WIDTH, HP_BAR_HEIGHT);
-        track.setMaxSize(HP_BAR_WIDTH, HP_BAR_HEIGHT);
-        Region fill = new Region();
-        fill.getStyleClass().add("hp-bar-fill");
-        fill.setPrefSize(fillWidth, HP_BAR_HEIGHT);
-        fill.setMaxSize(fillWidth, HP_BAR_HEIGHT);
+        Button bar = new Button((fraction <= 0.25 ? "! " : "") + card.currentHp() + " / " + card.maxHp());
+        bar.getStyleClass().addAll("compact", "filter-trigger");
         if (fraction > 0.5) {
-            fill.getStyleClass().add("hp-fill-healthy");
+            bar.getStyleClass().add("filter-trigger-active");
         } else if (fraction > 0.25) {
-            fill.getStyleClass().add("hp-fill-wounded");
+            bar.getStyleClass().add("neutral-action");
         } else {
-            fill.getStyleClass().add("hp-fill-critical");
+            bar.getStyleClass().add("accent");
         }
-        String hpLabel = (fraction <= 0.25 ? "! " : "") + card.currentHp() + " / " + card.maxHp();
-        Label onTrack = new Label(hpLabel);
-        onTrack.getStyleClass().addAll("hp-bar-text", "hp-bar-text-on-track");
-        Label onFill = new Label(hpLabel);
-        onFill.getStyleClass().addAll("hp-bar-text", "hp-bar-text-on-fill");
-        installHpTextClip(onFill, fillWidth, true);
-        installHpTextClip(onTrack, fillWidth, false);
-        StackPane bar = new StackPane(track, fill, onTrack, onFill);
-        StackPane.setAlignment(fill, Pos.CENTER_LEFT);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setMaxWidth(HP_BAR_WIDTH);
-        bar.setPrefWidth(HP_BAR_WIDTH);
-        bar.getStyleClass().add("clickable");
-        bar.setAccessibleRole(AccessibleRole.TEXT);
+        bar.setMinWidth(92);
         bar.setAccessibleText(card.name() + " HP " + card.currentHp() + "/" + card.maxHp());
-        bar.setOnMouseClicked(event -> showHpPopup(bar, card));
-        Tooltip.install(bar, new Tooltip("HP bearbeiten"));
+        bar.setOnAction(event -> showHpPopup(bar, card));
+        bar.setTooltip(new Tooltip("HP bearbeiten"));
         return bar;
-    }
-
-    private void installHpTextClip(Label label, double fillWidth, boolean showFillPortion) {
-        Rectangle clip = new Rectangle();
-        clip.heightProperty().bind(label.heightProperty());
-        label.setClip(clip);
-        Runnable updateClip = () -> {
-            double textWidth = label.getLayoutBounds().getWidth();
-            double textStart = (HP_BAR_WIDTH - textWidth) / 2.0;
-            double visibleStart = showFillPortion ? 0.0 : fillWidth;
-            double visibleEnd = showFillPortion ? fillWidth : HP_BAR_WIDTH;
-            double clipStart = Math.max(0.0, visibleStart - textStart);
-            double clipEnd = Math.min(textWidth, visibleEnd - textStart);
-            clip.setX(clipStart);
-            clip.setWidth(Math.max(0.0, clipEnd - clipStart));
-        };
-        label.layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> updateClip.run());
-        Platform.runLater(updateClip);
     }
 
     private void showHpPopup(Node anchor, CombatCardView card) {
@@ -625,7 +580,7 @@ public final class EncounterStateView extends VBox {
 
     private void showPopup(Node anchor, Popup popup, TextField focus, Node... nodes) {
         HBox content = new HBox(4);
-        content.getStyleClass().add("edit-popup-panel");
+        content.getStyleClass().add("filter-dropdown");
         content.setAlignment(Pos.CENTER_LEFT);
         content.getChildren().addAll(nodes);
         popup.getContent().add(content);
@@ -646,7 +601,7 @@ public final class EncounterStateView extends VBox {
 
     private Button popupButton(String text) {
         Button button = new Button(text);
-        button.getStyleClass().add("spinner-btn");
+        button.getStyleClass().add("compact");
         button.setFocusTraversable(false);
         return button;
     }
@@ -942,7 +897,7 @@ public final class EncounterStateView extends VBox {
             Label titleLabel = new Label(title);
             titleLabel.getStyleClass().add("text-muted");
             titleLabel.setMinWidth(86);
-            autoButton.getStyleClass().addAll("compact", "auto-dice-btn", "active");
+            autoButton.getStyleClass().addAll("compact", "filter-trigger", "filter-trigger-active");
             valueLabel.getStyleClass().add("text-secondary");
             valueLabel.setMinWidth(72);
             slider = new Slider(min, max, defaultValue);
@@ -969,9 +924,9 @@ public final class EncounterStateView extends VBox {
 
         private void setAuto(boolean auto) {
             autoButton.setSelected(auto);
-            autoButton.getStyleClass().remove("active");
+            autoButton.getStyleClass().remove("filter-trigger-active");
             if (auto) {
-                autoButton.getStyleClass().add("active");
+                autoButton.getStyleClass().add("filter-trigger-active");
             }
             slider.setDisable(auto);
         }
