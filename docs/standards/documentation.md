@@ -32,10 +32,10 @@ Feature documentation is co-located by default. Put the canonical document at
 the nearest stable code root that owns the topic.
 
 - feature-wide meaning and behavior go under `src/domain/<feature>/`
-- UI behavior for a tab, top-bar window, runtime state tab, detail entry, or
-  reusable generic view goes under the owning `src/view/tabs/`,
-  `src/view/topbar/`, `src/view/state/`, `src/view/details/`, or
-  `src/view/views/` surface
+- UI behavior for a feature tab, runtime state tab, dropdown, detail entry, or
+  reusable slotcontent unit goes under the owning `src/view/featuretabs/`,
+  `src/view/runtimetabs/`, `src/view/dropdowns/`, or
+  `src/view/slotcontent/` surface
 - persistence and storage rules go under `src/data/<feature>/`
 - system-wide architecture stays centralized under `docs/`
 
@@ -66,13 +66,12 @@ instead of restating it.
   Behavior, user flows, and acceptance criteria.
 - `src/domain/<feature>/DOMAIN.md`
   Canonical truth, ownership, invariants, and derived state.
-- `src/view/tabs/<tab>/<topic>.md`,
-  `src/view/topbar/<window>/<topic>.md`,
-  `src/view/state/<state>/<topic>.md`,
-  `src/view/details/<entry>/<topic>.md`, or
-  `src/view/views/<topic>.md`
+- `src/view/featuretabs/<tab>/<topic>.md`,
+  `src/view/runtimetabs/<state>/<topic>.md`,
+  `src/view/dropdowns/<dropdown>/<topic>.md`, or
+  `src/view/slotcontent/<slot>/<entry>/<topic>.md`
   UI composition, interactions, and user-visible states for one tab, runtime
-  state-panel tab, dropdown window, detail entry, or reusable generic view.
+  state-panel tab, dropdown window, detail entry, or reusable slotcontent unit.
 - `src/data/<feature>/PERSISTENCE.md`
   Persistence contracts, schema ownership, migration rules, and exported
   capabilities.

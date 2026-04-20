@@ -1,6 +1,6 @@
 ---
 name: view-layer-mvvm
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**`, shell-facing UI contribution registration, ViewModels, passive Views, view resources, or adjacent `UI.md`. This skill operationalizes SaltMarcher's cockpit MVVM target with contribution roots under `src/view/tabs`, `src/view/topbar`, `src/view/state`, reserved `src/view/details`, reusable `src/view/views`, domain-as-Model, and passive shell slot binding.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**`, shell-facing UI contribution registration, Binders, ViewModels, passive Views, view resources, or adjacent `UI.md`. This skill operationalizes SaltMarcher's cockpit MVVM target with active roots under `src/view/featuretabs`, `src/view/runtimetabs`, optional shell-contributed `src/view/dropdowns`, reusable `src/view/slotcontent`, domain-as-Model, and passive shell slot binding.
 ---
 
 # View Layer MVVM
@@ -27,31 +27,34 @@ Existing legacy view structure is not precedent. Component-local
 
 Before editing a view surface:
 
-1. Assign every touched type one role: shell host, UI contribution, ViewModel,
-   passive View, domain Model, or data adapter.
+1. Assign every touched type one role: shell host, UI contribution, Binder,
+   ViewModel, passive View, domain Model, or data adapter.
 2. For every touched contribution, identify exactly one shell entrypoint:
    left-bar tab, top-bar dropdown window, or global runtime state-panel tab.
-3. For every touched ViewModel, identify the contribution or detail entry
+3. For every touched Binder, identify the active root whose lifecycle and
+   wiring it owns.
+4. For every touched ViewModel, identify the active root or slotcontent unit
    whose presentation state and actions it owns.
-4. For every touched View, identify the one shell surface or reusable fragment
+5. For every touched View, identify the one shell surface or reusable fragment
    it renders: controls, main, state, details, dropdown, or reusable generic
    view.
-5. Check imports against the allowed API surface before writing code.
-6. Move ambiguous logic to the role that owns it instead of copying existing
+6. Check imports against the allowed API surface before writing code.
+7. Move ambiguous logic to the role that owns it instead of copying existing
    legacy placement.
 
 When reviewing view-layer changes:
 
-1. Check that shell registration, `ShellRuntimeContext` lookup, service lookup,
-   view instantiation, and binding stay in the contribution.
-2. Check that presentation state, command availability, failures, loading
+1. Check that shell registration stays in the contribution.
+2. Check that `ShellRuntimeContext` lookup, service lookup, view
+   instantiation, binding, and lifecycle stay in the Binder.
+3. Check that presentation state, command availability, failures, loading
    state, and domain application-service calls stay in the ViewModel.
-3. Check that JavaFX controls, rendering, widget-local state, and technical
+4. Check that JavaFX controls, rendering, widget-local state, and technical
    user-event emitters stay in Views.
-4. Check that passive Views do not import shell, domain, data, or
+5. Check that passive Views do not import shell, domain, data, or
    ApplicationService types.
-5. Check that business behavior stays behind root domain application services.
-6. Treat new component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
+6. Check that business behavior stays behind root domain application services.
+7. Treat new component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
    `Model/`, `Controller/`, or `interactor/` buckets as findings.
 
 ## Required Placement Rules
@@ -69,37 +72,53 @@ The shell owns the fixed cockpit frame and public contracts.
 
 ### Contributions
 
-Contribution roots own shell wiring:
+Contribution roots own shell registration:
 
-- `src/view/tabs/<entry>/` for one left-bar tab.
-- `src/view/topbar/<entry>/` for one top-bar dropdown window.
-- `src/view/state/<entry>/` for one global runtime state-panel tab.
-Detail entries under `src/view/details/<entry>/` are not shell-discovered
-contribution roots; they contain ViewModels and Views published through the
-shell-owned details/history API.
+- `src/view/featuretabs/<entry>/` for one left-bar tab.
+- `src/view/dropdowns/<entry>/` for a dropdown-capable root. `*Contribution`
+  is optional here and exists only when shell discovery should register it.
+- `src/view/runtimetabs/<entry>/` for one global runtime state-panel tab.
+Slotcontent roots under `src/view/slotcontent/<slot>/<entry>/` are not
+shell-discovered contribution roots.
 
 Contribution responsibilities:
 
 - Put one `*Contribution` class in each discovered contribution root.
 - Implement `shell.api.ShellContribution`.
 - Provide shell registration metadata.
-- Look up runtime services through `ShellRuntimeContext`.
-- Instantiate the owning `*ViewModel` and passive `*View` classes.
-- Bind Views to ViewModel state and actions.
-- Return `ShellBinding` slot content.
+- Instantiate the owning `*Binder` in `bind(ShellRuntimeContext)`.
+- Return the Binder-created `ShellBinding` slot content.
 - Do not import concrete `shell.host.*` or `src.data.*`.
-- Do not own presentation state, widget layout, or business rules.
+- Do not own service lookup, presentation state, widget layout, binding, or
+  business rules.
+
+### Binders
+
+Binders own active-root runtime wiring:
+
+- Put one `*Binder` class in every `featuretabs`, `runtimetabs`, and
+  `dropdowns` root.
+- Look up runtime services through `ShellRuntimeContext`.
+- Instantiate the active ViewModel, active Views, and needed slotcontent
+  Views/ViewModels.
+- Bind Views to ViewModel state and actions.
+- Wire passive View emitters to active-root ViewModel actions.
+- Return `ShellBinding` slot content and own lifecycle hooks.
 
 ### ViewModels
 
 ViewModels own the MVVM ViewModel role.
 
-- Put one `*ViewModel` class next to the owning contribution or detail entry.
+- Put one aggregate `*ViewModel` class next to every active root.
+- Put optional slot-local `*ViewModel` classes under slotcontent roots when a
+  shared View needs interpretation/projection support.
 - Own presentation state, selected state, enablement, visibility, labels,
   validation messages, loading state, failure state, retry state, and
   stale-result state.
-- Translate View emitters into ViewModel actions and domain
+- Active-root ViewModels translate View emitters into actions and domain
   ApplicationService calls.
+- Slotcontent ViewModels interpret active-root signals and must not call
+  ApplicationServices.
 - Map domain results into bindable View state.
 - Use JavaFX beans and collections for bindable state when needed.
 - Do not import `shell.*`, concrete Views, `src.data.*`, or concrete
@@ -111,13 +130,10 @@ ViewModels own the MVVM ViewModel role.
 
 Views own the MVVM View role.
 
-- Put contribution-owned passive Views next to their contribution or detail
-  entry.
-- Put reusable generic passive Views and base Views directly under
-  `src/view/views/`.
-- Let contribution-owned concrete Views extend reusable generic Views when two
-  tabs share one cockpit surface, such as the dungeon map canvas or dungeon
-  control panel.
+- Put active-root passive Views next to their active root only when they
+  extend, wrap, or specialize slotcontent.
+- Put reusable or standalone passive Views under
+  `src/view/slotcontent/<slot>/<entry>/`.
 - Put JavaFX controls, rendering, FXML controllers or loaders, menus, dialogs,
   cells, skins, drawing code, and widget-local state there.
 - Expose bind targets, properties, setters, callbacks, or observable hooks that
@@ -138,20 +154,20 @@ Views own the MVVM View role.
 - If the active left-bar tab contributes state content, that content owns the
   state pane.
 - If the active left-bar tab does not contribute state content, the shell shows
-  global runtime state-panel tabs from `src/view/state/<entry>/`.
-- Encounter belongs under `src/view/state`, not under `src/view/tabs`.
+  global runtime state-panel tabs from `src/view/runtimetabs/<entry>/`.
+- Encounter belongs under `src/view/runtimetabs`, not under `src/view/featuretabs`.
 
 ## Default Placement Heuristics
 
-- If code declares shell contribution metadata, chooses shell slot content,
-  performs runtime service lookup, instantiates Views, or binds View state, it
-  belongs in a contribution.
+- If code declares shell contribution metadata, it belongs in a contribution.
+- If code chooses shell slot content, performs runtime service lookup,
+  instantiates Views, or binds View state, it belongs in a Binder.
 - If code decides what should be shown, enabled, selected, labelled, loaded, or
   reported across a contribution's Views, it belongs in the ViewModel.
 - If code declares controls, layout, canvas drawing, dialogs, popups, cell
-  factories, or widget event handlers, it belongs in a View. Shared surface
-  structure belongs in reusable `src/view/views`; tab-specific controls stay in
-  the contribution-owned concrete View.
+  factories, or widget event handlers, it belongs in a View. Shared or
+  standalone slot content belongs in `src/view/slotcontent`; active-root Views
+  stay thin wrappers when needed.
 - If code owns business meaning or invariants, it belongs in `src/domain/**`
   behind a root application service.
 - If code hosts fixed cockpit surfaces or arbitrates state-pane precedence, it

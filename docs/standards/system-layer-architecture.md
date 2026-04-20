@@ -38,8 +38,9 @@ Layer responsibilities:
   - stays generic and must not own feature logic
 - `src/view/**`
   - is the inbound interface-adapter layer
-  - uses `*Contribution` classes to adapt ViewModels and passive views into
-    shell contracts
+  - uses `*Contribution` classes for shell registration only
+  - uses `*Binder` classes to adapt ViewModels and passive slotcontent into
+    shell bindings
   - uses `*ViewModel` classes to translate user intent and presentation
     concerns into calls against domain application boundaries
   - uses passive `*View` classes for JavaFX controls that render ViewModel
@@ -58,12 +59,13 @@ Layer responsibilities:
 The binding source-dependency rule is inward-only:
 
 1. `bootstrap -> shell`
-2. `Contribution -> shell public contracts + own ViewModel + passive views +
-   domain public boundaries`
-3. `ViewModel -> domain public boundaries + JavaFX beans/collections`
-4. `View -> JavaFX UI APIs + reusable passive views`
-5. `data -> domain public boundaries and domain-owned ports`
-6. `domain -> no outer layer`
+2. `Contribution -> shell public contracts + own Binder`
+3. `Binder -> shell public contracts + own ViewModel + passive views +
+   slotcontent + domain public boundaries`
+4. `ViewModel -> domain public boundaries + JavaFX beans/collections`
+5. `View -> JavaFX UI APIs + reusable passive views`
+6. `data -> domain public boundaries and domain-owned ports`
+7. `domain -> no outer layer`
 
 Additional rules:
 
@@ -82,7 +84,8 @@ The canonical intentional public boundaries are:
 - shell-facing contracts under `shell/api/**`
 - the shell-owned runtime composition seam under `shell/api/**`, including
   `ShellRuntimeContext`, `ServiceContribution`, and `ServiceRegistry`
-- view `*Contribution` roots as shell-facing composition adapters
+- view `*Contribution` roots as shell-facing registration adapters
+- view `*Binder` roots as runtime composition adapters
 - domain `*ApplicationService` roots as the only callable public
   client-facing backend boundary below the view layer
 - `src/domain/<feature>/published/**` as carrier-only published-language types
@@ -183,3 +186,4 @@ The per-surface rule-status matrix, including system-layer rules, lives in the
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/data-layer.md:1)
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
+- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

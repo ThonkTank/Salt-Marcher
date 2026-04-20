@@ -82,11 +82,11 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     }
 
     private void checkViewPanel(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
-        if (sourceFacts.relativePath().startsWith("src/view/views/")
+        if (sourceFacts.relativePath().startsWith("src/view/slotcontent/")
                 && sourceFacts.simpleName().endsWith("DisplayModel")) {
             return;
         }
-        boolean reusableGenericView = sourceFacts.relativePath().startsWith("src/view/views/")
+        boolean reusableGenericView = sourceFacts.relativePath().startsWith("src/view/slotcontent/")
                 && sourceFacts.simpleName().endsWith("View")
                 && !sourceFacts.simpleName().endsWith("ViewModel");
         Set<String> allowedSuffixes = allowedViewPanelSuffixes(sourceFacts);
@@ -94,7 +94,7 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
             asCtx(data).addViolationWithMessage(node,
                     "Passive panel views under " + viewAreaName(sourceFacts)
                             + " must end with one of " + allowedSuffixes
-                            + "; reusable generic views under src/view/views must end with View.");
+                            + "; slotcontent views under src/view/slotcontent must end with View.");
         }
         if (!reusableGenericView && !sourceFacts.hasExplicitPublicFinalClass()) {
             asCtx(data).addViolationWithMessage(node, "Passive panel view must be declared public final.");
@@ -177,13 +177,13 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
 
     private static ContributionSpecKind expectedContributionSpecKind(SaltMarcherSourceFacts sourceFacts) {
         String path = sourceFacts.relativePath();
-        if (path.startsWith("src/view/tabs/")) {
+        if (path.startsWith("src/view/featuretabs/")) {
             return ContributionSpecKind.TAB;
         }
-        if (path.startsWith("src/view/topbar/")) {
+        if (path.startsWith("src/view/dropdowns/")) {
             return ContributionSpecKind.TOP_BAR;
         }
-        if (path.startsWith("src/view/state/")) {
+        if (path.startsWith("src/view/runtimetabs/")) {
             return ContributionSpecKind.RUNTIME_STATE;
         }
         return ContributionSpecKind.UNKNOWN;
@@ -191,16 +191,16 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
 
     private static Set<String> allowedViewPanelSuffixes(SaltMarcherSourceFacts sourceFacts) {
         String path = sourceFacts.relativePath();
-        if (path.startsWith("src/view/tabs/")) {
+        if (path.startsWith("src/view/featuretabs/")) {
             return TAB_VIEW_PANEL_SUFFIXES;
         }
-        if (path.startsWith("src/view/topbar/")) {
+        if (path.startsWith("src/view/dropdowns/")) {
             return TOP_BAR_VIEW_PANEL_SUFFIXES;
         }
-        if (path.startsWith("src/view/state/")) {
+        if (path.startsWith("src/view/runtimetabs/")) {
             return RUNTIME_STATE_VIEW_PANEL_SUFFIXES;
         }
-        if (path.startsWith("src/view/details/")) {
+        if (path.startsWith("src/view/slotcontent/details/")) {
             return DETAILS_VIEW_PANEL_SUFFIXES;
         }
         return Set.of("View");
@@ -208,19 +208,19 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
 
     private static String viewAreaName(SaltMarcherSourceFacts sourceFacts) {
         String path = sourceFacts.relativePath();
-        if (path.startsWith("src/view/tabs/")) {
-            return "src/view/tabs";
+        if (path.startsWith("src/view/featuretabs/")) {
+            return "src/view/featuretabs";
         }
-        if (path.startsWith("src/view/topbar/")) {
-            return "src/view/topbar";
+        if (path.startsWith("src/view/dropdowns/")) {
+            return "src/view/dropdowns";
         }
-        if (path.startsWith("src/view/state/")) {
-            return "src/view/state";
+        if (path.startsWith("src/view/runtimetabs/")) {
+            return "src/view/runtimetabs";
         }
-        if (path.startsWith("src/view/details/")) {
-            return "src/view/details";
+        if (path.startsWith("src/view/slotcontent/details/")) {
+            return "src/view/slotcontent/details";
         }
-        return "src/view/views";
+        return "src/view/slotcontent";
     }
 
     private enum ContributionSpecKind {

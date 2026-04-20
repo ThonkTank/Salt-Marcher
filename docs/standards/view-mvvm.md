@@ -20,71 +20,84 @@ The roles are:
 
 - `Model`: `src/domain/**`, exposed through root `*ApplicationService`
   boundaries and domain `published/` carriers.
-- `ViewModel`: one presentation model next to its owning contribution or detail
-  entry, named `*ViewModel`.
-- `View`: one passive panel, dropdown, or detail view next to its owning
-  contribution or detail entry, named for its fixed shell surface
-  (`*ControlsView`, `*MainView`, `*StateView`, `*TopBarView`, or
-  `*DetailsView`); reusable generic views may live directly under
-  `src/view/views/` and end with `*View`.
-- `Contribution`: one discovered shell adapter named `*Contribution`; it owns
-  shell registration, service lookup, view instantiation, and binding.
+- `ViewModel`: presentation model named `*ViewModel`. Active-root ViewModels
+  aggregate cross-slot presentation state and may call domain application
+  services. Slotcontent ViewModels interpret active-root signals into
+  slot-local projection state and do not call application services.
+- `View`: passive JavaFX content named `*View`. Active-root Views are optional
+  wrappers around slotcontent counterparts. Slotcontent Views are reusable or
+  standalone content for exactly one cockpit slot.
+- `Contribution`: discovered shell adapter named `*Contribution`. It owns
+  registration metadata only and delegates runtime binding to the root binder.
+- `Binder`: one active-root lifecycle and wiring owner named `*Binder`. It owns
+  service lookup, ViewModel construction, slotcontent construction, emitter
+  wiring, binding, and `ShellBinding` lifecycle hooks.
 - `Shell`: the passive cockpit host, fixed surfaces, activation lifecycle,
   details/history hosting, state-pane precedence, and top-bar window hosting.
 
 ## Target Topology
 
-Active view code is organized by shell contribution kind, shell-owned detail
-entry, or reusable view role:
+Active view code is organized by user-addressable UI entrypoint or by reusable
+single-slot content:
 
 ```text
 src/view/
-  tabs/
+  featuretabs/
     <entry>/
       <PascalEntry>Contribution.java
+      <PascalEntry>Binder.java
       <PascalEntry>ViewModel.java
-      <PascalEntry>ControlsView.java
-      <PascalEntry>MainView.java
-      <PascalEntry>StateView.java
-  topbar/
+      <PascalEntry><Surface>View.java
+  runtimetabs/
     <entry>/
       <PascalEntry>Contribution.java
+      <PascalEntry>Binder.java
+      <PascalEntry>ViewModel.java
+      <PascalEntry>StateView.java
+  dropdowns/
+    <entry>/
+      <PascalEntry>Contribution.java  # optional; only for shell-discovered dropdowns
+      <PascalEntry>Binder.java
       <PascalEntry>ViewModel.java
       <PascalEntry>TopBarView.java
-  state/
-    <entry>/
-      <PascalEntry>Contribution.java
+  slotcontent/
+    controls/<entry>/
+      <PascalEntry>View.java
       <PascalEntry>ViewModel.java
-      <PascalEntry>StateView.java
-  details/
-    <entry>/
+      <PascalEntry>DisplayModel.java
+    main/<entry>/
+      <PascalEntry>View.java
       <PascalEntry>ViewModel.java
-      <PascalEntry>DetailsView.java
-  views/
-    <PascalReusableView>.java
+      <PascalEntry>DisplayModel.java
+    state/<entry>/
+      <PascalEntry>View.java
+      <PascalEntry>ViewModel.java
+      <PascalEntry>DisplayModel.java
+    details/<entry>/
+      <PascalEntry>View.java
+      <PascalEntry>ViewModel.java
+    topbar/<entry>/
+      <PascalEntry>View.java
+      <PascalEntry>ViewModel.java
 resources/
   view/
-    tabs/<entry>/<PascalEntry><Surface>.fxml
-    topbar/<entry>/<PascalEntry>TopBarView.fxml
-    state/<entry>/<PascalEntry>StateView.fxml
-    details/<entry>/<PascalEntry>DetailsView.fxml
-    views/<PascalReusableView>.fxml
+    featuretabs/<entry>/<PascalEntry><Surface>.fxml
+    runtimetabs/<entry>/<PascalEntry>StateView.fxml
+    dropdowns/<entry>/<PascalEntry>TopBarView.fxml
+    slotcontent/<slot>/<entry>/<PascalEntry>View.fxml
 ```
 
 Rules:
 
-- `src/view/tabs/<entry>/` defines one left-bar tab contribution.
-- `src/view/topbar/<entry>/` defines one top-bar dropdown-window
-  contribution.
-- `src/view/state/<entry>/` defines one global runtime state-panel tab
-  contribution.
-- `src/view/details/<entry>/` defines detail-pane entry content published
-  through the shell-owned details/history API. It is not a discovered shell
-  contribution root.
-- `src/view/views/` is only for reusable generic passive views shared by
-  multiple contribution roots. Owned views stay next to their contribution and
-  may extend reusable generic views when a shared surface such as a dungeon map
-  canvas or dungeon control panel needs tab-specific specialization.
+- `src/view/featuretabs/<entry>/` defines one left-bar feature tab.
+- `src/view/runtimetabs/<entry>/` defines one global runtime state-panel tab.
+- `src/view/dropdowns/<entry>/` defines a dropdown-capable UI unit. It has a
+  `*Contribution` only when bootstrap should discover it directly.
+- `src/view/slotcontent/<slot>/<entry>/` defines one reusable or standalone
+  content unit for exactly one cockpit slot.
+- `*Contribution` is shell-discovery only. It must stay thin and delegate
+  runtime composition to the co-located `*Binder`.
+- Every active root has exactly one `*Binder` and one aggregate `*ViewModel`.
 - Existing component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
   `Model/`, `Controller/`, and `interactor/` buckets are migration debt.
 
@@ -101,19 +114,21 @@ The shell owns these cockpit surfaces:
 `COCKPIT_STATE` has explicit precedence. If the active left-bar tab contributes
 state content, that content owns the pane. If the active left-bar tab does not
 contribute state content, the shell shows registered global runtime
-state-panel tabs from `src/view/state/<entry>/`. Encounter-style runtime state
-belongs under `src/view/state`, not under `src/view/tabs`.
+state-panel tabs from `src/view/runtimetabs/<entry>/`. Encounter-style runtime
+state belongs under `src/view/runtimetabs`, not under `src/view/featuretabs`.
 
 ## Dependency Direction
 
 The target source dependency direction is:
 
 ```text
-Contribution -> shell.api + ViewModel + Views + domain ApplicationService roots
-ViewModel    -> JavaFX beans/collections + domain ApplicationServices/published
-View         -> JavaFX UI APIs + narrow callbacks/properties only
-Model        -> no shell, view, JavaFX, or data implementation types
-Shell        -> shell contracts and generic hosting only
+Contribution        -> shell.api + Binder
+Binder              -> shell.api + active ViewModel + Views + slotcontent + domain ApplicationService roots
+Active ViewModel    -> JavaFX beans/collections + domain ApplicationServices/published
+Slotcontent VM      -> JavaFX beans/collections + domain published carriers
+View                -> JavaFX UI APIs + narrow callbacks/properties only
+Model               -> no shell, view, JavaFX, or data implementation types
+Shell               -> shell contracts and generic hosting only
 ```
 
 Runtime control may flow through listeners, emitters, bindings, callbacks, and
@@ -126,38 +141,31 @@ JDK dependencies in view-layer roles are allowed only when they are ordinary
 language, value, collection, optional, functional, or formatting support for the
 owning role. Direct file-system, network, SQL, process, reflection, classloader,
 timer, executor, thread, persistence, or other infrastructure ownership is not a
-general-purpose JDK dependency for Contributions, ViewModels, or Views.
+general-purpose JDK dependency for Contributions, Binders, ViewModels, or Views.
 
 ## Contribution Role
 
-A contribution is the shell adapter for one discovered UI entrypoint.
+A contribution is the shell-discovered adapter for one UI entrypoint.
 
 Responsibilities:
 
 - expose passive shell registration metadata through `ShellContributionSpec`
 - implement `ShellContribution`
-- look up required runtime capabilities from `ShellRuntimeContext`
-- instantiate the owning ViewModel and passive views
-- bind view properties, listeners, and emitters to the ViewModel
-- return `ShellBinding` slot content for the contribution kind
+- create the co-located `*Binder` during `bind(ShellRuntimeContext)`
+- return the binder-created `ShellBinding`
 - keep bootstrap generic so adding a new contribution does not require shell or
   bootstrap directory edits
 
-Only `src/view/tabs/*`, `src/view/topbar/*`, and `src/view/state/*`
-contribution roots are bootstrap-discovered. Detail-pane entries do not own
-top-level startup contributions; they are published through the shell-owned
-details/history API.
+`src/view/featuretabs/*`, `src/view/runtimetabs/*`, and shell-contributed
+`src/view/dropdowns/*` roots are bootstrap-discovered. `dropdowns` roots may
+omit `*Contribution` when they are invoked by another binder. Slotcontent roots
+are never bootstrap-discovered.
 
 Allowed dependencies:
 
 - `shell.api.*` public contribution, binding, slot, context, and details
   contracts allowed by the shell API allowlist
-- the contribution's own `*ViewModel`
-- the contribution's own passive `*View` classes and reusable
-  `src.view.views.*`
-- root `src.domain.<feature>.<Feature>ApplicationService`
-- `src.domain.<feature>.published.*` carrier records, enums, and sealed carriers
-- JavaFX `Node` and collection types needed to return bound slot content
+- the contribution's own `*Binder`
 - ordinary JDK language, value, collection, optional, functional, and formatting
   types that do not own infrastructure access
 
@@ -166,28 +174,60 @@ Forbidden behavior:
 - feature-specific bootstrap registries
 - concrete `shell.host.*` imports
 - direct `src.data.*` imports
+- direct application-service lookup
+- view instantiation or binding
 - business invariants that belong in the domain
 - presentation state that belongs in the ViewModel
 - widget layout or rendering logic that belongs in a View
 
+## Binder Role
+
+A binder owns runtime assembly for one active root.
+
+Responsibilities:
+
+- look up required runtime capabilities from `ShellRuntimeContext`
+- instantiate the active-root ViewModel, active-root Views, and slotcontent
+  View/ViewModel pairs
+- bind view properties, listeners, and emitters to ViewModels
+- publish details through shell-owned inspector/history APIs
+- return `ShellBinding` slot content and own activation/deactivation hooks
+
+Allowed dependencies:
+
+- shell public contracts allowed for contributions
+- the same-root active ViewModel and passive Views
+- slotcontent Views, ViewModels, and display models
+- detail slotcontent Views and ViewModels when publishing inspector entries
+- root `src.domain.<feature>.<Feature>ApplicationService`
+- `src.domain.<feature>.published.*` carrier records, enums, and sealed carriers
+- JavaFX `Node` and collection types needed for bound slot content
+
 ## ViewModel Role
 
-A ViewModel owns presentation state and user-intent handling for one
-contribution or detail entry.
+An active-root ViewModel owns aggregate presentation state and user-intent
+handling for one `featuretabs`, `runtimetabs`, or `dropdowns` root. A
+slotcontent ViewModel owns the presentation projection for one reusable
+slotcontent unit.
 
 Responsibilities:
 
 - expose bindable presentation state through JavaFX properties or collections
 - own selected state, enablement, labels, validation messages, loading state,
   failure state, retry state, and stale-result handling
-- translate view emitters into model actions and application-service calls
-- map domain results into view-consumable state
-- coordinate presentation state across the contribution's own views
+- active-root ViewModels translate view emitters into model actions and
+  application-service calls
+- slotcontent ViewModels interpret active-root signals into slot-local
+  display state and must not call application services
+- map domain or active-root results into view-consumable state
+- coordinate presentation state across the owning active root or slotcontent
+  unit
 
 Allowed dependencies:
 
 - JavaFX beans and collections
-- root `src.domain.<feature>.<Feature>ApplicationService`
+- root `src.domain.<feature>.<Feature>ApplicationService` for active-root
+  ViewModels only
 - `src.domain.<feature>.published.*` carrier records, enums, and sealed carriers
 - private nested presentation helper or carrier types declared inside the owning
   `*ViewModel` when they do not become a second ViewModel for the root
@@ -201,7 +241,7 @@ Forbidden dependencies and behavior:
 - `src.data.*`
 - foreign private domain internals outside root application services and
   domain `published/` carriers
-- additional top-level `*ViewModel` types in the same contribution or detail root
+- additional top-level `*ViewModel` types in the same active root
 - view instantiation, slot binding, or bootstrap discovery
 - widget-specific layout and rendering decisions
 
@@ -220,14 +260,15 @@ Responsibilities:
   and temporary text still being edited inside one control subtree
 - own UI-only helpers such as cell factories, skins, drawing code, menus,
   dialogs, and control adapters when local to the view
-- provide reusable generic base views under `src/view/views/` when multiple
-  contribution-owned views share one cockpit surface structure
+- provide reusable or standalone slot content under `src/view/slotcontent`
+  when multiple active roots share one cockpit surface structure or when a
+  feature publishes detail/dropdown content through a binder
 
 Allowed dependencies:
 
 - JavaFX UI APIs, including scene graph, controls, canvas, animation, stage,
   CSS, FXML, beans, and collections
-- reusable `src.view.views.*` views when needed
+- same-root passive Views or `src.view.slotcontent.*` passive Views when needed
 - narrow listener, callback, or property types from the JDK or JavaFX
 
 Forbidden dependencies and behavior:
@@ -280,12 +321,15 @@ model behind one root application service.
 
 ## Forbidden Patterns
 
-- A contribution root defining more than one shell contribution.
+- A `featuretabs` or `runtimetabs` root defining zero or more than one shell
+  contribution.
+- A `dropdowns` root defining more than one shell contribution.
+- An active root missing its mandatory `*Binder`.
 - A ViewModel instantiating JavaFX views or using shell APIs.
-- A contribution or detail root defining more than one top-level `*ViewModel`.
+- An active root defining more than one top-level aggregate `*ViewModel`.
 - A View importing shell, domain, data, or ApplicationService types.
-- A contribution-owned tab View duplicating a reusable generic surface instead
-  of extending the generic View under `src/view/views`.
+- An active-root View duplicating a reusable slotcontent surface instead of
+  extending, wrapping, or composing the slotcontent View.
 - Shell host code importing feature contributions, ViewModels, or Views.
 - Domain code importing JavaFX, shell, view, or data implementation types.
 - Reintroducing component-local `View/`, `ViewModel/`, `assembly/`,
@@ -305,34 +349,30 @@ model behind one root application service.
 Current checks enforce the target mechanical parts that have a stable static
 shape:
 
-- Java view code lives under `src/view/tabs`, `src/view/topbar`,
-  `src/view/state`, `src/view/details`, or reusable `src/view/views`.
-- Contribution roots define one `*Contribution`, one `*ViewModel`, and the
-  passive `*View` files needed by that contribution.
-- Detail entries define `*ViewModel` and `*View` content only; they do not
-  define bootstrap-discovered `*Contribution` roots.
-- Reusable `src/view/views` Java files are passive `*View` files and may be
-  base Views for contribution-owned concrete Views.
-- Contributions may use the allowed shell API subset, co-located ViewModels,
-  co-located Views, reusable generic passive Views, detail-entry ViewModels and
-  Views when publishing shell Inspector entries, JavaFX `Node`, and domain
-  application-service boundaries; each contribution root must construct the
-  shell spec matching its area (`tabs` -> `ShellTabSpec`, `topbar` ->
-  `ShellTopBarSpec`, `state` -> `ShellRuntimeStateSpec`), and must not use
-  direct JDK infrastructure APIs.
-- ViewModels may use JavaFX beans/collections and domain application-service
-  boundaries, but not shell, views, data, concrete shell host types, or
-  foreign view-root ViewModels, and must not use direct JDK infrastructure APIs.
+- Java view code lives under `src/view/featuretabs`, `src/view/runtimetabs`,
+  `src/view/dropdowns`, or `src/view/slotcontent`.
+- `featuretabs` and `runtimetabs` roots define exactly one `*Contribution`,
+  one `*Binder`, and one aggregate `*ViewModel`.
+- `dropdowns` roots define exactly one `*Binder`, one aggregate `*ViewModel`,
+  and zero or one `*Contribution`.
+- `slotcontent` roots define slot-local passive Views, optional
+  `*ViewModel`s, and support display models.
+- Contributions may use the allowed shell API subset and their own Binder.
+  Binders may use shell API, same-root ViewModels, active-root Views,
+  slotcontent Views/ViewModels, JavaFX `Node`, and domain application-service
+  boundaries.
+- Active-root ViewModels may use JavaFX beans/collections and domain
+  application-service boundaries. Slotcontent ViewModels may use JavaFX
+  beans/collections and domain `published` carriers but not application
+  services.
 - Views may use JavaFX UI APIs but not shell, domain, data, or
-  ApplicationService types; contribution-owned Views may reference only
-  co-located passive Views or reusable generic passive/base Views, and must not
-  use direct JDK infrastructure APIs. Direct rendering is a View
-  implementation technique; reusable visual values used by direct renderers
-  still come from the centralized styling standard.
-- Optional FXML resources live directly under
-  `resources/view/{tabs,topbar,state,details}/<entry>/` or
-  `resources/view/views`, use passive View controllers matching the same
-  area-specific suffixes, and do not use inline scripts.
+  ApplicationService types. Direct rendering is a View implementation
+  technique; reusable visual values used by direct renderers still come from
+  the centralized styling standard.
+- Optional FXML resources live under
+  `resources/view/{featuretabs,runtimetabs,dropdowns}/<entry>/` or
+  `resources/view/slotcontent/<slot>/<entry>/`, use passive View controllers
+  matching the same area-specific suffixes, and do not use inline scripts.
 - State-pane precedence is modeled explicitly.
 - Legacy component-local buckets are absent from migrated target code.
 
@@ -348,5 +388,6 @@ graph, or file-tree rules remains review-owned.
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
+- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)
 - [Fowler Presentation Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/fowler-presentation-model.md:1)
 - [JavaFX Properties And Binding](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/oracle-javafx-properties-binding.md:1)

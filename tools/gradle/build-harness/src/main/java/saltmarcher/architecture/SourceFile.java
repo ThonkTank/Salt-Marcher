@@ -70,14 +70,20 @@ record SourceFile(
         }
         return switch (segments.get(1)) {
             case "view" -> {
-                if (segments.size() == 4 && segments.get(2).equals("views")) {
-                    yield SourceKind.VIEW_PANEL;
-                }
-                if (segments.size() == 5 && Set.of("tabs", "topbar", "state", "details").contains(segments.get(2))) {
-                    if (Set.of("tabs", "topbar", "state").contains(segments.get(2))
-                            && fileName.endsWith("Contribution.java")) {
+                if (segments.size() == 5 && Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments.get(2))) {
+                    if (fileName.endsWith("Contribution.java")) {
                         yield SourceKind.VIEW_CONTRIBUTION;
                     }
+                    if (fileName.endsWith("ViewModel.java")) {
+                        yield SourceKind.VIEW_MODEL;
+                    }
+                    if (fileName.endsWith("View.java")) {
+                        yield SourceKind.VIEW_PANEL;
+                    }
+                }
+                if (segments.size() == 6
+                        && segments.get(2).equals("slotcontent")
+                        && Set.of("controls", "main", "state", "details", "topbar").contains(segments.get(3))) {
                     if (fileName.endsWith("ViewModel.java")) {
                         yield SourceKind.VIEW_MODEL;
                     }
@@ -147,6 +153,9 @@ record SourceFile(
             return segments.get(2);
         }
         if ("src".equals(segments.get(0)) && "view".equals(segments.get(1))) {
+            if (segments.size() >= 5 && "slotcontent".equals(segments.get(2))) {
+                return segments.get(4);
+            }
             return segments.size() >= 4 ? segments.get(3) : null;
         }
         return null;

@@ -46,7 +46,7 @@ domain context.
   model.
 - ViewModels own translation from domain facts into display models. Passive
   Views render ViewModel-owned state.
-- Reusable render input belongs under `src/view/views/`, not `src/domain/**`.
+- Reusable render input belongs under `src/view/slotcontent/main/dungeonmap/`, not `src/domain/**`.
 
 ## Domain Topology
 
@@ -174,7 +174,7 @@ published language, not through private model imports.
   facts with presentation state, but that composition is not a domain
   relationship.
 
-Reusable map display input belongs to `src/view/views`; no domain context owns
+Reusable map display input belongs to `src/view/slotcontent/main/dungeonmap`; no domain context owns
 shared render payloads.
 
 ## Interaction Flow

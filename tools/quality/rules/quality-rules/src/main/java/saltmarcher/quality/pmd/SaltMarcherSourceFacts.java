@@ -101,32 +101,51 @@ final class SaltMarcherSourceFacts {
         return isDiscoverableViewContributionArea() && simpleName.endsWith("Contribution");
     }
 
+    boolean isViewBinderSource() {
+        return isActiveViewRootSource() && simpleName.endsWith("Binder");
+    }
+
+    boolean isViewSupportModelSource() {
+        return isSlotcontentSource() && simpleName.endsWith("DisplayModel");
+    }
+
     boolean isViewModelSource() {
-        return isViewSlotAreaSource() && simpleName.endsWith("ViewModel");
+        return (isActiveViewRootSource() || isSlotcontentSource()) && simpleName.endsWith("ViewModel");
     }
 
     boolean isViewPanelSource() {
         return isViewSource()
-                && ((segments.size() == 4 && segments.get(2).equals("views"))
-                || (isViewSlotAreaSource()
+                && ((isSlotcontentSource() || isActiveViewRootSource())
                 && simpleName.endsWith("View")
-                && !simpleName.endsWith("ViewModel")));
+                && !simpleName.endsWith("ViewModel"));
     }
 
     boolean isLegacyViewSource() {
-        return isViewSource() && !isViewContributionSource() && !isViewModelSource() && !isViewPanelSource();
+        return isViewSource()
+                && !isViewContributionSource()
+                && !isViewBinderSource()
+                && !isViewModelSource()
+                && !isViewSupportModelSource()
+                && !isViewPanelSource();
     }
 
-    private boolean isViewSlotAreaSource() {
+    private boolean isActiveViewRootSource() {
         return isViewSource()
                 && segments.size() == 5
-                && Set.of("tabs", "topbar", "state", "details").contains(segments.get(2));
+                && Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments.get(2));
+    }
+
+    private boolean isSlotcontentSource() {
+        return isViewSource()
+                && segments.size() == 6
+                && segments.get(2).equals("slotcontent")
+                && Set.of("controls", "main", "state", "details", "topbar").contains(segments.get(3));
     }
 
     private boolean isDiscoverableViewContributionArea() {
         return isViewSource()
                 && segments.size() == 5
-                && Set.of("tabs", "topbar", "state").contains(segments.get(2));
+                && Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments.get(2));
     }
 
     boolean isDomainSource() {

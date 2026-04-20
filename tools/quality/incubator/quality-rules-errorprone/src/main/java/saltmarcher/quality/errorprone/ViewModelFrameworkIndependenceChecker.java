@@ -18,7 +18,8 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        boolean contribution = ViewArchitectureSupport.isContributionSource(tree);
+        boolean contribution = ViewArchitectureSupport.isContributionSource(tree)
+                || ViewArchitectureSupport.isBinderSource(tree);
         boolean viewModel = ViewArchitectureSupport.isViewModelSource(tree);
         if (!contribution && !viewModel) {
             return Description.NO_MATCH;
@@ -91,10 +92,15 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             if (ViewArchitectureSupport.isDetailEntryReference(referencedType)) {
                 return false;
             }
+            if (ViewArchitectureSupport.isSlotcontentModelReference(referencedType)) {
+                return false;
+            }
             if (ViewArchitectureSupport.isReusableDisplayModelReference(referencedType)) {
                 return false;
             }
-            if ("CONTRIBUTION".equals(viewType.bucket()) || "MODEL".equals(viewType.bucket())) {
+            if ("CONTRIBUTION".equals(viewType.bucket())
+                    || "BINDER".equals(viewType.bucket())
+                    || "MODEL".equals(viewType.bucket())) {
                 return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
             }
             if ("VIEW".equals(viewType.bucket())) {

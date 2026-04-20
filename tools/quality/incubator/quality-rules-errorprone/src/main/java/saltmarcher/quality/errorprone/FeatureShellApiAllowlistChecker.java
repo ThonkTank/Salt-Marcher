@@ -46,7 +46,7 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
     }
 
     private static ShellPolicy shellPolicy(CompilationUnitTree tree, String packageName) {
-        if (ViewArchitectureSupport.isContributionSource(tree)) {
+        if (ViewArchitectureSupport.isContributionSource(tree) || ViewArchitectureSupport.isBinderSource(tree)) {
             return ShellPolicy.CONTRIBUTION;
         }
         if (ViewArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName).matches()) {

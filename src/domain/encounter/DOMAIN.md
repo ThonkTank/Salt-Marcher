@@ -138,4 +138,4 @@ are session-local controls over the next generation command.
 
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/encounter/SPEC.md:1)
-- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/state/encounter/UI.md:1)
+- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/runtimetabs/encounter/UI.md:1)

@@ -53,9 +53,8 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
 
         if (violations.isNotEmpty()) {
             throw GradleException(
-                "View FXML resources must live under resources/view/tabs/<entry>/, " +
-                    "resources/view/topbar/<entry>/, resources/view/state/<entry>/, " +
-                    "resources/view/details/<entry>/, or resources/view/views/ and must not contain inline scripts.\n" +
+                "View FXML resources must live under resources/view/{featuretabs,runtimetabs,dropdowns}/<entry>/ " +
+                    "or resources/view/slotcontent/<slot>/<entry>/ and must not contain inline scripts.\n" +
                     "Violations:\n" + violations.sorted().joinToString(separator = "\n") { " - $it" }
             )
         }
@@ -70,12 +69,12 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
     ) {
         val path = file.toPath().normalize()
         if (!underExpectedRoot || path.parent == null || path.parent.fileName == null) {
-            violations.add("$relative -> expected resources/view/{tabs,topbar,state,details}/<entry>/*.fxml or resources/view/views/*.fxml")
+            violations.add("$relative -> expected resources/view/{featuretabs,runtimetabs,dropdowns}/<entry>/*.fxml or resources/view/slotcontent/<slot>/<entry>/*.fxml")
             return
         }
         val rootRelative = expectedRoot.toPath().normalize().relativize(path)
         if (!hasAllowedViewResourceRoot(rootRelative.map { it.toString() })) {
-            violations.add("$relative -> expected resources/view/{tabs,topbar,state,details}/<entry>/*.fxml or resources/view/views/*.fxml")
+            violations.add("$relative -> expected resources/view/{featuretabs,runtimetabs,dropdowns}/<entry>/*.fxml or resources/view/slotcontent/<slot>/<entry>/*.fxml")
         }
         if (!Files.isDirectory(path.parent)) {
             violations.add("$relative -> parent directory is not a readable passive-view resource directory")
@@ -95,11 +94,10 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
         val controllerMatch = FX_CONTROLLER_PATTERN.find(text) ?: return
         val controller = controllerMatch.groupValues[1]
         val allowedPrefixes = listOf(
-            "src.view.tabs.",
-            "src.view.topbar.",
-            "src.view.state.",
-            "src.view.details.",
-            "src.view.views."
+            "src.view.featuretabs.",
+            "src.view.runtimetabs.",
+            "src.view.dropdowns.",
+            "src.view.slotcontent."
         )
         if (allowedPrefixes.none(controller::startsWith)) {
             violations.add("$relative -> fx:controller must start with one of ${allowedPrefixes.joinToString()}")
@@ -122,19 +120,19 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
         val area = controllerSegments[2]
         val simpleName = controllerSegments.last().substringBefore('$')
         val validController = when (area) {
-            "views" -> simpleName.endsWith("View") && !simpleName.endsWith("ViewModel") && controllerSegments.size == 4
-            "tabs" -> controllerSegments.size == 5 &&
+            "slotcontent" -> controllerSegments.size == 6 &&
+                simpleName.endsWith("View") && !simpleName.endsWith("ViewModel")
+            "featuretabs" -> controllerSegments.size == 5 &&
                 listOf("ControlsView", "MainView", "StateView").any(simpleName::endsWith)
-            "topbar" -> controllerSegments.size == 5 && simpleName.endsWith("TopBarView")
-            "state" -> controllerSegments.size == 5 && simpleName.endsWith("StateView")
-            "details" -> controllerSegments.size == 5 && simpleName.endsWith("DetailsView")
+            "dropdowns" -> controllerSegments.size == 5 && simpleName.endsWith("TopBarView")
+            "runtimetabs" -> controllerSegments.size == 5 && simpleName.endsWith("StateView")
             else -> false
         }
         if (!validController) {
             violations.add(
                 "$relative -> fx:controller must match its passive view area: " +
-                    "tabs use *ControlsView/*MainView/*StateView, topbar uses *TopBarView, " +
-                    "state uses *StateView, details uses *DetailsView, reusable views use *View"
+                    "featuretabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, " +
+                    "runtimetabs use *StateView, slotcontent uses *View"
             )
         }
         validateControllerPathAlignment(controllerSegments, simpleName, viewResourceSegments, relative, violations)
@@ -157,8 +155,8 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
             )
         }
 
-        val expectedPackageSegments = if (viewResourceSegments.first() == "views") {
-            listOf("src", "view", "views")
+        val expectedPackageSegments = if (viewResourceSegments.first() == "slotcontent") {
+            listOf("src", "view", "slotcontent", viewResourceSegments[1], viewResourceSegments[2])
         } else {
             listOf("src", "view", viewResourceSegments[0], viewResourceSegments[1])
         }
@@ -171,17 +169,18 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
     }
 
     private companion object {
-        private val CONTRIBUTION_RESOURCE_AREAS = setOf("tabs", "topbar", "state", "details")
+        private val ACTIVE_RESOURCE_AREAS = setOf("featuretabs", "runtimetabs", "dropdowns")
+        private val SLOTCONTENT_RESOURCE_AREAS = setOf("controls", "main", "state", "details", "topbar")
         private val FX_CONTROLLER_PATTERN = Regex("fx:controller\\s*=\\s*\"([^\"]+)\"")
 
         private fun hasAllowedViewResourceRoot(segments: List<String>): Boolean {
             if (segments.size < 2) {
                 return false
             }
-            if (segments.first() == "views") {
-                return segments.size == 2
+            if (segments.first() == "slotcontent") {
+                return segments.size == 4 && segments[1] in SLOTCONTENT_RESOURCE_AREAS
             }
-            return segments.first() in CONTRIBUTION_RESOURCE_AREAS && segments.size == 3
+            return segments.first() in ACTIVE_RESOURCE_AREAS && segments.size == 3
         }
 
         private fun Path.pathSegments(): List<String> = map { it.toString() }

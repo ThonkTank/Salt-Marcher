@@ -16,7 +16,7 @@ write-model state.
 
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/encounter/SPEC.md:1)
 - [Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/encounter/DOMAIN.md:1)
-- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/state/encounter/UI.md:1)
+- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/runtimetabs/encounter/UI.md:1)
 
 ## Scope
 

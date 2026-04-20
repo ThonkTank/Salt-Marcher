@@ -42,8 +42,8 @@ generically.
 
 Target discovery:
 
-- scans `src/view/tabs/<entry>/`, `src/view/topbar/<entry>/`, and
-  `src/view/state/<entry>/`
+- scans `src/view/featuretabs/<entry>/`, `src/view/runtimetabs/<entry>/`, and
+  `src/view/dropdowns/<entry>/`
 - considers only direct concrete classes named `*Contribution`
 - expects each contribution to implement `shell.api.ShellContribution`
 - expects a public no-arg constructor unless a future registration contract
@@ -52,13 +52,15 @@ Target discovery:
 
 Contribution roots mean:
 
-- `src/view/tabs/<entry>/`: one left-bar tab contribution
-- `src/view/topbar/<entry>/`: one top-bar dropdown-window contribution
-- `src/view/state/<entry>/`: one global runtime state-panel tab contribution
+- `src/view/featuretabs/<entry>/`: one left-bar feature-tab contribution
+- `src/view/runtimetabs/<entry>/`: one global runtime state-panel tab
+  contribution
+- `src/view/dropdowns/<entry>/`: zero or one shell-discovered dropdown
+  contribution
 
-`src/view/details/<entry>/` is not a bootstrap discovery root. Detail content
-is published through the shell-owned details/history API from the owning
-contribution instead of being discovered as an independent startup root.
+`src/view/slotcontent/**` is not a bootstrap discovery root. Detail content is
+published through the shell-owned details/history API from the owning binder
+instead of being discovered as an independent startup root.
 
 ### Service Discovery
 
@@ -144,9 +146,10 @@ Concrete rule IDs and checker names are recorded in the
 Current checks enforce the target discovery shape where it has a stable static
 surface:
 
-- UI contribution discovery from `src/view/tabs`, `src/view/topbar`, and
-  `src/view/state`
-- one shell-registered `*Contribution` per contribution root
+- UI contribution discovery from `src/view/featuretabs`, `src/view/runtimetabs`,
+  and shell-contributed `src/view/dropdowns`
+- one shell-registered `*Contribution` per feature/runtime tab root and zero
+  or one per dropdown root
 - generic contribution instantiation
 - supported contribution-kind selection
 - single startup default among left-bar tab contributions
@@ -166,3 +169,4 @@ unless they become stable build-time policy surfaces.
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
 - [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
+- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

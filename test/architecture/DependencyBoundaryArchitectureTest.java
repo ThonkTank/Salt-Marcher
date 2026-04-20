@@ -45,11 +45,7 @@ public final class DependencyBoundaryArchitectureTest {
     static final ArchRule viewContributionsAndViewModelsMustNotReachBootstrapDataOrShellHost =
             noClasses()
                     .that()
-                    .resideInAnyPackage(
-                            "src.view.tabs..",
-                            "src.view.topbar..",
-                            "src.view.state..",
-                            "src.view.details..")
+                    .resideInAPackage("src.view..")
                     .should()
                     .dependOnClassesThat()
                     .resideInAnyPackage("bootstrap..", "src.data..", "shell.host..");
@@ -58,23 +54,14 @@ public final class DependencyBoundaryArchitectureTest {
     static final ArchRule viewContributionsAndViewModelsMustOnlyUseFeatureApisAtBackendBoundary =
             classes()
                     .that()
-                    .resideInAnyPackage(
-                            "src.view.tabs..",
-                            "src.view.topbar..",
-                            "src.view.state..",
-                            "src.view.details..")
+                    .resideInAPackage("src.view..")
                     .should(onlyDependOnDomainPublicBoundaries());
 
     @ArchTest
     static final ArchRule passiveViewsMustNotReachContributionShellDomainDataOrBootstrap =
             noClasses()
                     .that()
-                    .resideInAnyPackage(
-                            "src.view.tabs..",
-                            "src.view.topbar..",
-                            "src.view.state..",
-                            "src.view.details..",
-                            "src.view.views..")
+                    .resideInAPackage("src.view..")
                     .and()
                     .haveSimpleNameEndingWith("View")
                     .should()
@@ -286,7 +273,7 @@ public final class DependencyBoundaryArchitectureTest {
                 String message = item.getName()
                         + " lives in old view topology package "
                         + packageName
-                        + "; move shell-facing code to src.view.tabs/topbar/state/details and reusable panels to src.view.views";
+                        + "; move shell-facing code to src.view.featuretabs/runtimetabs/dropdowns and reusable panels to src.view.slotcontent";
                 events.add(SimpleConditionEvent.violated(item, message));
             }
         };
@@ -300,17 +287,17 @@ public final class DependencyBoundaryArchitectureTest {
                     return;
                 }
                 String message = item.getName()
-                        + " uses replaced *ViewContribution naming; use *Contribution under src.view.tabs, src.view.topbar, or src.view.state";
+                        + " uses replaced *ViewContribution naming; use *Contribution under src.view.featuretabs, src.view.runtimetabs, or src.view.dropdowns";
                 events.add(SimpleConditionEvent.violated(item, message));
             }
         };
     }
 
     private static boolean isTargetViewPackage(String packageName) {
-        if (packageName.equals("src.view.views") || packageName.startsWith("src.view.views.")) {
+        if (packageName.matches("src\\.view\\.slotcontent\\.(controls|state|details|main|topbar)\\.[^.]+")) {
             return true;
         }
-        return packageName.matches("src\\.view\\.(tabs|topbar|state|details)\\.[^.]+");
+        return packageName.matches("src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\.[^.]+");
     }
 
     private static ArchCondition<JavaClass> onlyDependOnDomainPublicBoundaries() {

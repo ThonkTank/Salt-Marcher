@@ -70,15 +70,15 @@ final class ShellSurfaceRules implements ArchitectureRule {
             if (sourceFile.fileName().endsWith("ViewContribution.java")
                     && sourceFile.relativePath().startsWith("src/view/")) {
                 violations.add(sourceFile.relativePath(), "shell-view-contribution-placement",
-                        "View-layer shell contributions must use *Contribution.java under src/view/tabs, src/view/topbar, or src/view/state; *ViewContribution implementations are forbidden.");
+                        "View-layer shell contributions must use *Contribution.java under src/view/featuretabs, src/view/runtimetabs, or src/view/dropdowns; *ViewContribution implementations are forbidden.");
             }
 
             if (sourceFile.kind() != SourceKind.VIEW_CONTRIBUTION) {
                 continue;
             }
-            if (sourceFile.relativePath().startsWith("src/view/details/")) {
+            if (sourceFile.relativePath().startsWith("src/view/slotcontent/")) {
                 violations.add(sourceFile.relativePath(), "shell-view-contribution-placement",
-                        "Detail entries are published through shell-owned details/history APIs and must not be bootstrap-discovered view contributions.");
+                        "Slotcontent entries are composed by active-root Binders and must not be bootstrap-discovered view contributions.");
                 continue;
             }
             for (List<String> arguments : shellTabSpecArgumentLists(sourceFile.content())) {

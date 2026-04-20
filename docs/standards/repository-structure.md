@@ -11,10 +11,11 @@ rules for active application code.
 Feature code must stay inside `src/`, and application startup and shell hosting
 must stay outside feature slices.
 
-The active view target is organized by SaltMarcher's cockpit contribution
-model: discovered contribution roots under `src/view/tabs`,
-`src/view/topbar`, and `src/view/state`; reserved detail roots under
-`src/view/details`; and reusable generic passive views under `src/view/views`.
+The active view target is organized by SaltMarcher's cockpit slotcontent
+model: shell-discovered feature tabs under `src/view/featuretabs`, runtime
+state tabs under `src/view/runtimetabs`, dropdown-capable roots under
+`src/view/dropdowns`, and reusable single-slot content under
+`src/view/slotcontent`.
 
 ## Repository Layout
 
@@ -59,30 +60,32 @@ Additional constraints:
 ```text
 src/
   view/
-    tabs/
+    featuretabs/
       <entry>/
         <PascalEntry>Contribution.java
+        <PascalEntry>Binder.java
         <PascalEntry>ViewModel.java
         <PascalEntry>ControlsView.java
         <PascalEntry>MainView.java
         <PascalEntry>StateView.java
-    topbar/
+    runtimetabs/
       <entry>/
         <PascalEntry>Contribution.java
+        <PascalEntry>Binder.java
         <PascalEntry>ViewModel.java
-        <PascalEntry>View.java
-    state/
+        <PascalEntry>StateView.java
+    dropdowns/
       <entry>/
         <PascalEntry>Contribution.java
+        <PascalEntry>Binder.java
         <PascalEntry>ViewModel.java
-        <PascalEntry>View.java
-    details/
-      <entry>/
-        <PascalEntry>ViewModel.java
-        <PascalEntry>View.java
-    views/
-      <PascalReusableView>.java
-      <PascalReusableBaseView>.java
+        <PascalEntry>TopBarView.java
+    slotcontent/
+      <slot>/
+        <entry>/
+          <PascalEntry>View.java
+          <PascalEntry>ViewModel.java
+          <PascalEntry>DisplayModel.java
   domain/
     <feature>/
       <PascalFeatureName>ApplicationService.java
@@ -121,31 +124,30 @@ resources/
 Every shell-registered UI contribution is represented by one contribution
 root:
 
-- `src/view/tabs/<entry>/<PascalEntry>Contribution.java` for one left-bar tab
-- `src/view/topbar/<entry>/<PascalEntry>Contribution.java` for one top-bar
-  dropdown window
-- `src/view/state/<entry>/<PascalEntry>Contribution.java` for one global
+- `src/view/featuretabs/<entry>/<PascalEntry>Contribution.java` for one
+  left-bar feature tab
+- `src/view/runtimetabs/<entry>/<PascalEntry>Contribution.java` for one global
   runtime state-panel tab
-- `src/view/details/<entry>/` owns detail-entry ViewModels and passive views
-  published through shell-owned details/history APIs; it is not scanned for
-  bootstrap-discovered contributions
+- `src/view/dropdowns/<entry>/<PascalEntry>Contribution.java` for one
+  shell-discovered dropdown; dropdown roots may omit this file when another
+  binder invokes them
 
 A contribution class is `public final`, has a public no-arg constructor,
 implements `shell.api.ShellContribution`, and defines exactly one shell
 contribution.
 
-Every contribution-owned or detail-owned ViewModel is represented by one
-`*ViewModel.java` file in the same root. It owns presentation state and
-user-intent handling, not shell discovery or view instantiation.
+Every active root owns exactly one `*Binder.java` file. The binder owns
+runtime service lookup, View/ViewModel construction, emitter wiring, slot
+binding, details publication, and lifecycle hooks.
 
-Every contribution-owned or detail-owned passive view is represented by one
-`*View.java` file in the same root. It defines exactly one panel, dropdown,
-state, or detail fragment for one shell surface.
+Every active-root ViewModel is represented by one `*ViewModel.java` file in
+the same root. It owns aggregate presentation state and user-intent handling,
+not shell discovery or view instantiation.
 
-Reusable generic passive views and base views may live directly under
-`src/view/views/`. Feature-owned concrete views must not be moved there simply
-to share a package; they stay in the owning contribution root and may extend
-the reusable generic view.
+Reusable or standalone single-slot content lives under
+`src/view/slotcontent/<slot>/<entry>/`. Slotcontent Views are passive JavaFX
+content; slotcontent ViewModels are optional projection models and must not
+call application services.
 
 Every service-exporting data feature exposes exactly one service-registration
 entrypoint:
@@ -176,9 +178,9 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   included-build placement, and service-entrypoint presence rules below
   `src/data/`.
 - Existing `checkViewArchitecture`, PMD, ArchUnit, Error Prone, and
-  `build-harness` view checks enforce contribution-root placement, root
-  composition, co-located ViewModel/passive View ownership, and FXML resource
-  placement for active target view code.
+  `build-harness` view checks enforce active-root placement, Binder ownership,
+  slotcontent placement, dependency direction, and FXML resource placement for
+  active target view code.
 - A feature root may contain Markdown documents with the standard co-located
   filenames without counting as alternate Java entrypoints.
 - The shell-workbench standard defines the semantic responsibilities of
@@ -193,24 +195,27 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 
 ## Packaging Rules
 
-- Active target view code lives under `src/view/tabs`, `src/view/topbar`,
-  `src/view/state`, `src/view/details`, or reusable `src/view/views`.
-- Contribution-owned Java files are direct files under
-  `src/view/<area>/<entry>/`.
-- Reusable generic view and base-view Java files are direct files under
-  `src/view/views/`.
-- A contribution root under `tabs`, `topbar`, or `state` owns exactly one
+- Active target view code lives under `src/view/featuretabs`,
+  `src/view/runtimetabs`, `src/view/dropdowns`, or `src/view/slotcontent`.
+- Active-root Java files are direct files under `src/view/<area>/<entry>/`.
+- Slotcontent Java files are direct files under
+  `src/view/slotcontent/<slot>/<entry>/`.
+- A root under `featuretabs` or `runtimetabs` owns exactly one
   shell-registered contribution.
-- A detail root owns ViewModel and view content only, not a shell-registered
-  contribution.
-- A `*ViewModel` file owns presentation state for its contribution.
+- A root under `dropdowns` owns zero or one shell-registered contribution.
+- Every active root owns exactly one `*Binder` and one aggregate `*ViewModel`.
+- A `*ViewModel` file owns presentation state for its active root or
+  slotcontent unit.
 - A `*View` file owns exactly one passive panel, dropdown, state, or detail
   fragment.
-- Contributions may depend on shell public contracts, own ViewModels, own
-  Views, JavaFX `Node`, and domain application-service boundaries.
-- ViewModels may depend on JavaFX beans/collections and domain
+- Contributions may depend on shell public contracts and their own Binder.
+- Binders may depend on shell public contracts, own ViewModels, own Views,
+  slotcontent Views/ViewModels, JavaFX `Node`, and domain application-service
+  boundaries.
+- Active-root ViewModels may depend on JavaFX beans/collections and domain
   application-service boundaries, but not shell, views, data, or concrete
-  shell host types.
+  shell host types. Slotcontent ViewModels may depend on domain `published`
+  carriers but not application services.
 - Passive views may depend on JavaFX UI APIs and narrow listener/emitter
   contracts but must not depend on shell, domain, data, or ApplicationService
   types.
@@ -258,3 +263,4 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/styling.md:1)
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
+- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

@@ -34,18 +34,16 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 - `shell/` owns passive cockpit surfaces: top-left controls, primary main
   panel, top-right details/history, bottom-right state pane, top-bar dropdown
   windows, navigation, activation, and shared runtime-session state.
-- `src/view/tabs/<entry>/` owns one left-bar tab contribution, its ViewModel,
-  and its contribution-owned passive Views.
-- `src/view/topbar/<entry>/` owns one top-bar dropdown-window contribution, its
-  ViewModel, and its dropdown View.
-- `src/view/state/<entry>/` owns one global runtime state-panel tab
-  contribution, its ViewModel, and its state View. These tabs are shown when
-  the active left-bar tab does not claim `COCKPIT_STATE`.
-- `src/view/details/<entry>/` is reserved for detail-entry ViewModels and
-  views. Detail entries are published through shell-owned details/history APIs,
-  not bootstrap discovery.
-- `src/view/views/` owns reusable generic passive JavaFX views shared by
-  multiple contribution roots.
+- `src/view/featuretabs/<entry>/` owns one left-bar feature tab, its shell
+  contribution, Binder, aggregate ViewModel, and optional active-root Views.
+- `src/view/runtimetabs/<entry>/` owns one global runtime state-panel tab, its
+  shell contribution, Binder, aggregate ViewModel, and state View. These tabs
+  are shown when the active left-bar tab does not claim `COCKPIT_STATE`.
+- `src/view/dropdowns/<entry>/` owns one dropdown-capable UI unit. Its shell
+  contribution is optional and exists only when bootstrap should discover it.
+- `src/view/slotcontent/<slot>/<entry>/` owns reusable or standalone passive
+  JavaFX content and optional slot-local ViewModels for exactly one cockpit
+  slot.
 - `src/domain/<context>/` owns domain truth, invariants, policy decisions,
   aggregates, application services, published language, and role-explicit
   domain modules inside one real domain context.
@@ -110,9 +108,10 @@ runtime capabilities through service contributions.
 
 - shell public contracts provide registration metadata, fixed surface binding,
   lifecycle hooks, details/history publication, and runtime context.
-- `src/view/tabs/**` contributes left-bar tabs.
-- `src/view/topbar/**` contributes top-bar dropdown windows.
-- `src/view/state/**` contributes global runtime state-panel tabs.
+- `src/view/featuretabs/**` contributes left-bar feature tabs.
+- `src/view/runtimetabs/**` contributes global runtime state-panel tabs.
+- `src/view/dropdowns/**` may contribute top-bar dropdown windows when a
+  `*Contribution` is present.
 - `shell/api/ServiceContribution` registers typed backend capabilities and
   application-service factories into the shared shell service registry,
   `ServiceRegistry`.
@@ -124,10 +123,11 @@ runtime capabilities through service contributions.
   edits.
 
 The view layer target follows SaltMarcher cockpit MVVM: contributions own shell
-registration and binding; ViewModels own presentation state and actions; Views
-own passive JavaFX content; the domain layer is the MVVM Model behind each
-feature's root application service. Detailed rules live only in the dedicated
-MVVM standard.
+registration, Binders own runtime wiring and lifecycle, active-root ViewModels
+own aggregate presentation state and actions, slotcontent ViewModels own
+slot-local projections, and Views own passive JavaFX content. The domain layer
+is the MVVM Model behind each feature's root application service. Detailed
+rules live only in the dedicated MVVM standard.
 
 ## Presentation Styling
 
@@ -150,7 +150,8 @@ JavaFX styling is centralized under `resources/`.
   co-located documents
 - `src/domain/<feature>/README.md` for feature entry documentation
 - `src/view/<area>/<entry>/<topic>.md` for contribution-owned UI behavior
-- `src/view/views/<topic>.md` for reusable generic view behavior
+- `src/view/slotcontent/<slot>/<entry>/<topic>.md` for reusable slotcontent
+  behavior
 - `src/data/<feature>/PERSISTENCE.md` for persistence ownership and rules
 
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
@@ -171,3 +172,4 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
 - [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
+- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

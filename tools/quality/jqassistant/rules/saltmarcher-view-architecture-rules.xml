@@ -27,11 +27,13 @@
             SET
               type:SaltMarcher:MvvmViewType,
               type.viewBucket = CASE
-                WHEN size(segments) >= 4 AND segments[2] = 'views' AND segments[3] CONTAINS 'DisplayModel' THEN 'MODEL'
-                WHEN size(segments) >= 4 AND segments[2] = 'views' THEN 'VIEW'
-                WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state'] AND segments[4] CONTAINS 'Contribution' THEN 'CONTRIBUTION'
-                WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND segments[4] CONTAINS 'ViewModel' THEN 'MODEL'
-                WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND segments[4] CONTAINS 'View' THEN 'VIEW'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'DisplayModel' THEN 'MODEL'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'ViewModel' THEN 'MODEL'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'View' THEN 'VIEW'
+                WHEN size(segments) >= 5 AND segments[2] IN ['featuretabs', 'runtimetabs', 'dropdowns'] AND segments[4] CONTAINS 'Contribution' THEN 'CONTRIBUTION'
+                WHEN size(segments) >= 5 AND segments[2] IN ['featuretabs', 'runtimetabs', 'dropdowns'] AND segments[4] CONTAINS 'Binder' THEN 'BINDER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['featuretabs', 'runtimetabs', 'dropdowns'] AND segments[4] CONTAINS 'ViewModel' THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['featuretabs', 'runtimetabs', 'dropdowns'] AND segments[4] CONTAINS 'View' THEN 'VIEW'
                 ELSE 'LEGACY'
               END,
               type.relativePath = CASE
@@ -61,13 +63,13 @@
 
     <constraint id="saltmarcher:MvvmAllowedViewBuckets">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Cockpit MVVM topology allows active view Java only in contribution roots or reusable src/view/views.</description>
+        <description>Cockpit MVVM topology allows active view Java only in active roots or slotcontent roots.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
             WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/tabs, src/view/topbar, src/view/state, src/view/details, or src/view/views' AS ExpectedDirection,
+              'src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Active view Java must use the cockpit contribution topology.' AS Details
             ORDER BY Source
@@ -83,7 +85,7 @@
             WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/tabs, src/view/topbar, src/view/state, src/view/details, or src/view/views' AS ExpectedDirection,
+              'src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Legacy component-local View/ViewModel/api/assembly-style topology is not active target code.' AS Details
             ORDER BY Source
@@ -138,21 +140,19 @@
             WHERE
               NOT type.name CONTAINS '$'
               AND NOT (
-                (type.fqn =~ 'src\\.view\\.views\\..*' AND type.name ENDS WITH 'View')
-                OR (type.fqn =~ 'src\\.view\\.tabs\\.[^.]+\\..*'
+                (type.fqn =~ 'src\\.view\\.slotcontent\\..*' AND type.name ENDS WITH 'View')
+                OR (type.fqn =~ 'src\\.view\\.featuretabs\\.[^.]+\\..*'
                   AND (type.name ENDS WITH 'ControlsView'
                     OR type.name ENDS WITH 'MainView'
                     OR type.name ENDS WITH 'StateView'))
-                OR (type.fqn =~ 'src\\.view\\.topbar\\.[^.]+\\..*'
+                OR (type.fqn =~ 'src\\.view\\.dropdowns\\.[^.]+\\..*'
                   AND type.name ENDS WITH 'TopBarView')
-                OR (type.fqn =~ 'src\\.view\\.state\\.[^.]+\\..*'
+                OR (type.fqn =~ 'src\\.view\\.runtimetabs\\.[^.]+\\..*'
                   AND type.name ENDS WITH 'StateView')
-                OR (type.fqn =~ 'src\\.view\\.details\\.[^.]+\\..*'
-                  AND type.name ENDS WITH 'DetailsView')
               )
             RETURN DISTINCT
               type.relativePath AS Source,
-              'area-specific passive view suffix: tabs use *ControlsView/*MainView/*StateView, topbar uses *TopBarView, state uses *StateView, details use *DetailsView, reusable views use *View' AS ExpectedDirection,
+              'area-specific passive view suffix: featuretabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, runtimetabs use *StateView, slotcontent uses *View' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Passive view names must identify the shell surface they render.' AS Details
             ORDER BY Source
@@ -187,7 +187,7 @@
             WITH count(root) AS rootCount
             WHERE rootCount = 0
             RETURN
-              'src/view/tabs, src/view/topbar, or src/view/state' AS Source,
+              'src/view/featuretabs, src/view/runtimetabs, or shell-discovered src/view/dropdowns' AS Source,
               'at least one shell contribution' AS ExpectedDirection,
               'none' AS ActualDirection,
               'The shell needs discoverable contributions.' AS Details
@@ -197,9 +197,9 @@
 
     <constraint id="saltmarcher:MvvmContributionUsesOwnModelAndView">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Every contribution structurally wires its co-located ViewModel and at least one co-located passive view.</description>
+        <description>Every binder structurally wires its co-located ViewModel and at least one passive view.</description>
         <cypher><![CDATA[
-            MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'CONTRIBUTION'})
+            MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'BINDER'})
             WHERE NOT source.name CONTAINS '$'
             WITH source, split(source.fqn, '.') AS sourceSegments
             OPTIONAL MATCH (source)-[:DEPENDS_ON]->(model:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'MODEL'})
@@ -220,20 +220,25 @@
               WHERE view IS NOT NULL
                 AND NOT view.name CONTAINS '$'
                 AND size(split(view.fqn, '.')) >= 4
-                AND split(view.fqn, '.')[2] = split(source.fqn, '.')[2]
-                AND split(view.fqn, '.')[3] = split(source.fqn, '.')[3]
+                AND (
+                  (
+                    split(view.fqn, '.')[2] = split(source.fqn, '.')[2]
+                    AND split(view.fqn, '.')[3] = split(source.fqn, '.')[3]
+                  )
+                  OR split(view.fqn, '.')[2] = 'slotcontent'
+                )
             ] AS ownViews
             WITH source, ownModelCount, size(ownViews) AS ownViewCount
             WHERE ownModelCount = 0 OR ownViewCount = 0
             RETURN DISTINCT
               source.relativePath AS Source,
-              'direct dependency on the co-located ViewModel and at least one co-located passive View' AS ExpectedDirection,
+              'direct dependency on the co-located ViewModel and at least one passive View' AS ExpectedDirection,
               CASE
                 WHEN ownModelCount = 0 AND ownViewCount = 0 THEN 'missing co-located ViewModel and passive View dependency'
                 WHEN ownModelCount = 0 THEN 'missing co-located ViewModel dependency'
                 ELSE 'missing co-located passive View dependency'
               END AS ActualDirection,
-              'Contributions must be shell adapters that instantiate and bind their own model and view surface.' AS Details
+              'Binders must instantiate and bind their model and slot surfaces.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -249,12 +254,17 @@
               AND (
                 target.viewBucket <> 'VIEW'
                 AND NOT (
-                  source.fqn =~ 'src\\.view\\.views\\..*'
+                  source.fqn =~ 'src\\.view\\.slotcontent\\..*'
                   AND target.viewBucket = 'MODEL'
-                  AND target.fqn =~ 'src\\.view\\.views\\..*'
+                  AND target.fqn =~ 'src\\.view\\.slotcontent\\..*'
+                  AND size(sourceSegments) >= 5
+                  AND size(targetSegments) >= 5
+                  AND sourceSegments[2] = targetSegments[2]
+                  AND sourceSegments[3] = targetSegments[3]
+                  AND sourceSegments[4] = targetSegments[4]
                 )
                 OR (
-                  target.fqn =~ 'src\\.view\\.(tabs|topbar|state|details)\\..*'
+                  target.fqn =~ 'src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\..*'
                   AND NOT (
                     size(sourceSegments) >= 4
                     AND size(targetSegments) >= 4
@@ -263,14 +273,21 @@
                   )
                 )
                 OR (
-                  source.fqn =~ 'src\\.view\\.views\\..*'
-                  AND NOT (target.fqn =~ 'src\\.view\\.views\\..*')
+                  source.fqn =~ 'src\\.view\\.slotcontent\\..*'
+                  AND target.fqn =~ 'src\\.view\\.slotcontent\\..*'
+                  AND NOT (
+                    size(sourceSegments) >= 5
+                    AND size(targetSegments) >= 5
+                    AND sourceSegments[2] = targetSegments[2]
+                    AND sourceSegments[3] = targetSegments[3]
+                    AND sourceSegments[4] = targetSegments[4]
+                  )
                 )
               )
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'passive views may depend only on same-root passive views or reusable src.view.views passive views' AS ExpectedDirection,
+              'passive views may depend only on same-root passive views or slotcontent passive views' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
               'Passive views must remain shell-free, domain-free, ViewModel-free, and foreign-view-root-free.' AS Details
             ORDER BY Source, Target
@@ -280,9 +297,10 @@
 
     <constraint id="saltmarcher:MvvmModelDependencies">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Contributions may bind passive views, use shell API, and call only domain application-service roots.</description>
+        <description>Contributions and binders may bind passive views, use shell API, and call only domain application-service roots.</description>
         <cypher><![CDATA[
-            MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'CONTRIBUTION'})-[:DEPENDS_ON]->(target:Java:Type)
+            MATCH (source:Java:Type:SaltMarcher:MvvmViewType)-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE source.viewBucket IN ['CONTRIBUTION', 'BINDER']
             WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
             WHERE
               target.fqn =~ 'bootstrap\\..*'
@@ -297,12 +315,12 @@
               OR (
                 target.fqn =~ 'src\\.view\\..*'
                 AND (
-                  NOT (target.viewBucket IN ['CONTRIBUTION', 'MODEL', 'VIEW'])
+                  NOT (target.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'VIEW'])
                   OR (
-                    target.fqn =~ 'src\\.view\\.(tabs|topbar|state|details)\\..*'
+                    target.fqn =~ 'src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\..*'
                     AND NOT (
                       size(targetSegments) >= 5
-                      AND targetSegments[2] = 'details'
+                      AND targetSegments[2] = 'slotcontent'
                       AND target.viewBucket IN ['MODEL', 'VIEW']
                     )
                     AND NOT (
@@ -317,7 +335,7 @@
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'shell.api, same-root ViewModels, same-root/reusable/detail passive views, detail ViewModels, domain application-service roots, and published carriers only' AS ExpectedDirection,
+              'shell.api, same-root ViewModels, binders, active-root or slotcontent views/models, domain application-service roots, and published carriers only' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
               'Contributions must not depend on old view topology, data, bootstrap, shell internals, or domain internals.' AS Details
             ORDER BY Source, Target
@@ -350,11 +368,19 @@
                       AND size(targetSegments) >= 4
                       AND sourceSegments[2] = targetSegments[2]
                       AND sourceSegments[3] = targetSegments[3]
+                      AND (
+                        sourceSegments[2] <> 'slotcontent'
+                        OR (
+                          size(sourceSegments) >= 5
+                          AND size(targetSegments) >= 5
+                          AND sourceSegments[4] = targetSegments[4]
+                        )
+                      )
                     )
                     OR (
-                      size(targetSegments) >= 4
-                      AND targetSegments[2] = 'views'
-                      AND targetSegments[3] CONTAINS 'DisplayModel'
+                      size(targetSegments) >= 6
+                      AND targetSegments[2] = 'slotcontent'
+                      AND targetSegments[5] CONTAINS 'DisplayModel'
                     )
                   )
                 )

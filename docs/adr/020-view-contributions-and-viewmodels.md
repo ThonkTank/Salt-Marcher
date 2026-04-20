@@ -1,4 +1,4 @@
-Status: Accepted
+Status: Superseded by [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-20
 Source of Truth: Decision to split shell/workbench contribution adapters from

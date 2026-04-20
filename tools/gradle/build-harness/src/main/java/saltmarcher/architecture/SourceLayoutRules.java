@@ -102,25 +102,25 @@ final class SourceLayoutRules implements ArchitectureRule {
             case "view" -> {
                 if (segments.size() < 3) {
                     violations.add(sourceFile.relativePath(), "view-layout",
-                            "View sources must live under src/view/tabs, src/view/topbar, src/view/state, src/view/details, or reusable src/view/views.");
+                            "View sources must live under src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or src/view/slotcontent.");
                     return;
                 }
                 String bucket = segments.get(2);
-                if (bucket.equals("views")) {
-                    if (segments.size() != 4) {
+                if (bucket.equals("slotcontent")) {
+                    if (segments.size() != 6 || !Set.of("controls", "main", "state", "details", "topbar").contains(segments.get(3))) {
                         violations.add(sourceFile.relativePath(), "view-layout",
-                                "Reusable generic view Java sources must be direct files under src/view/views.");
+                                "Slotcontent Java sources must be direct files under src/view/slotcontent/<slot>/<entry>/.");
                     }
                     return;
                 }
-                if (!Set.of("tabs", "topbar", "state", "details").contains(bucket)) {
+                if (!Set.of("featuretabs", "runtimetabs", "dropdowns").contains(bucket)) {
                     violations.add(sourceFile.relativePath(), "view-layout",
-                            "View Java sources must migrate to src/view/tabs, src/view/topbar, src/view/state, src/view/details, or reusable src/view/views; old component-local view roots are forbidden.");
+                            "View Java sources must live under src/view/featuretabs, src/view/runtimetabs, src/view/dropdowns, or src/view/slotcontent.");
                     return;
                 }
                 if (segments.size() != 5) {
                     violations.add(sourceFile.relativePath(), "view-layout",
-                            "Feature view Java sources must be direct files under src/view/<area>/<entry>/.");
+                            "Active view Java sources must be direct files under src/view/<area>/<entry>/.");
                 }
             }
             case "domain" -> validateDomainLayout(sourceFile, violations);

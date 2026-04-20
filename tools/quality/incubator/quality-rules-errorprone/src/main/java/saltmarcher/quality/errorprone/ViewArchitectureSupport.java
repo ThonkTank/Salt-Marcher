@@ -27,11 +27,11 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 
 final class ViewArchitectureSupport {
 
-    static final Pattern VIEW_CONTRIBUTION_PACKAGE = Pattern.compile("^src\\.view\\.(tabs|topbar|state)\\.[^.]+$");
-    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(tabs|topbar|state|details)\\.[^.]+$");
-    static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.views$");
-    static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile("^src\\.view\\.(tabs|topbar|state|details)\\.[^.]+$");
-    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(tabs|topbar|state|details|views)(\\.|$)).+");
+    static final Pattern VIEW_CONTRIBUTION_PACKAGE = Pattern.compile("^src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\.[^.]+$");
+    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\.[^.]+$|^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$");
+    static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$");
+    static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile("^src\\.view\\.(featuretabs|runtimetabs|dropdowns)\\.[^.]+$");
+    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(featuretabs|runtimetabs|dropdowns|slotcontent)(\\.|$)).+");
     static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
 
     private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(
@@ -73,6 +73,11 @@ final class ViewArchitectureSupport {
     static boolean isContributionSource(CompilationUnitTree tree) {
         return VIEW_CONTRIBUTION_PACKAGE.matcher(packageName(tree)).matches()
                 && sourceFileName(tree).endsWith("Contribution.java");
+    }
+
+    static boolean isBinderSource(CompilationUnitTree tree) {
+        return VIEW_CONTRIBUTION_PACKAGE.matcher(packageName(tree)).matches()
+                && sourceFileName(tree).endsWith("Binder.java");
     }
 
     static boolean isViewModelSource(CompilationUnitTree tree) {
@@ -211,19 +216,24 @@ final class ViewArchitectureSupport {
         if (segments.length == 0) {
             return new ViewTypeInfo("VIEW_ROOT", "LEGACY");
         }
-        if ("views".equals(segments[0])) {
-            String topLevelSimpleName = segments.length >= 2 ? segments[1].replaceFirst("\\$.*$", "") : "";
+        if ("slotcontent".equals(segments[0]) && segments.length >= 4) {
+            String topLevelSimpleName = segments[3].replaceFirst("\\$.*$", "");
             if (topLevelSimpleName.endsWith("DisplayModel")) {
-                return new ViewTypeInfo("views", "MODEL");
+                return new ViewTypeInfo(segments[1], "MODEL");
             }
-            return new ViewTypeInfo("views", "VIEW");
+            if (topLevelSimpleName.endsWith("ViewModel")) {
+                return new ViewTypeInfo(segments[1], "MODEL");
+            }
+            return new ViewTypeInfo(segments[1], "VIEW");
         }
-        if (Set.of("tabs", "topbar", "state", "details").contains(segments[0]) && segments.length >= 3) {
+        if (Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments[0]) && segments.length >= 3) {
             for (int index = 2; index < segments.length; index++) {
                 String simpleName = segments[index].replaceFirst("\\$.*$", "");
-                if (Set.of("tabs", "topbar", "state").contains(segments[0])
-                        && simpleName.endsWith("Contribution")) {
+                if (simpleName.endsWith("Contribution")) {
                     return new ViewTypeInfo(segments[0], "CONTRIBUTION");
+                }
+                if (simpleName.endsWith("Binder")) {
+                    return new ViewTypeInfo(segments[0], "BINDER");
                 }
                 if (simpleName.endsWith("ViewModel")) {
                     return new ViewTypeInfo(segments[0], "MODEL");
@@ -248,18 +258,22 @@ final class ViewArchitectureSupport {
     static boolean isReusablePassiveViewReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null
-                && "views".equals(viewType.component())
+                && Set.of("controls", "main", "state", "details", "topbar").contains(viewType.component())
                 && "VIEW".equals(viewType.bucket());
     }
 
     static boolean isReusableDisplayModelReference(String referencedType) {
         if (referencedType != null
-                && referencedType.matches("^src\\.view\\.views\\.[A-Z][A-Za-z0-9_]*DisplayModel(?:[.$].*)?$")) {
+                && referencedType.matches("^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+\\.[A-Z][A-Za-z0-9_]*DisplayModel(?:[.$].*)?$")) {
             return true;
         }
+        return false;
+    }
+
+    static boolean isSlotcontentModelReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null
-                && "views".equals(viewType.component())
+                && Set.of("controls", "main", "state", "details", "topbar").contains(viewType.component())
                 && "MODEL".equals(viewType.bucket());
     }
 
@@ -294,10 +308,10 @@ final class ViewArchitectureSupport {
         String topLevelType = referencedType.replaceFirst("\\$.*$", "");
         if (topLevelType.startsWith("src.view.")) {
             String[] segments = topLevelType.split("\\.");
-            if (segments.length >= 3 && "views".equals(segments[2])) {
-                return "src.view.views";
+            if (segments.length >= 6 && "slotcontent".equals(segments[2])) {
+                return String.join(".", segments[0], segments[1], segments[2], segments[3], segments[4]);
             }
-            if (segments.length >= 4 && Set.of("tabs", "topbar", "state", "details").contains(segments[2])) {
+            if (segments.length >= 4 && Set.of("featuretabs", "runtimetabs", "dropdowns").contains(segments[2])) {
                 return String.join(".", segments[0], segments[1], segments[2], segments[3]);
             }
         }

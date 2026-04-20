@@ -56,9 +56,9 @@ that belongs to a view contribution root.
 
 A contribution is the feature-owned shell adapter for one UI entrypoint:
 
-- a left-bar tab under `src/view/tabs/<entry>/`
-- a top-bar dropdown window under `src/view/topbar/<entry>/`
-- a global runtime state-panel tab under `src/view/state/<entry>/`
+- a left-bar feature tab under `src/view/featuretabs/<entry>/`
+- a shell-discovered dropdown window under `src/view/dropdowns/<entry>/`
+- a global runtime state-panel tab under `src/view/runtimetabs/<entry>/`
 
 Responsibilities:
 
@@ -71,8 +71,8 @@ Responsibilities:
 
 Rules:
 
-- contributions live under contribution roots in `src/view/tabs`,
-  `src/view/topbar`, and `src/view/state`
+- contributions live under shell-discovered roots in `src/view/featuretabs`,
+  `src/view/runtimetabs`, and contributing `src/view/dropdowns` roots
 - each contribution file defines one shell-registered UI entrypoint
 - long-lived runtime state must not be stored in the shell host
 - feature logic, presentation state, JavaFX panel behavior, and business logic
@@ -182,7 +182,7 @@ Forbidden directions and patterns:
 - feature-specific alternate wiring paths around `ShellRuntimeContext`
 
 Shell-facing runtime composition belongs in the owning contribution under
-`src/view/tabs`, `src/view/topbar`, or `src/view/state`. It does not belong in
+`src/view/featuretabs`, `src/view/dropdowns`, or `src/view/runtimetabs`. It does not belong in
 ViewModels, passive Views, concrete shell host classes, or legacy
 `ViewContribution`, `assembly`, `Controller`, `Model`, or `interactor`
 buckets.
@@ -258,3 +258,4 @@ local build/check pipeline.
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
 - [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
+- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

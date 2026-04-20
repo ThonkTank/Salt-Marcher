@@ -8,7 +8,8 @@ import java.util.TreeMap;
 
 final class ViewFeatureRules implements ArchitectureRule {
 
-    private static final Set<String> DISCOVERED_AREAS = Set.of("tabs", "topbar", "state");
+    private static final Set<String> REQUIRED_CONTRIBUTION_AREAS = Set.of("featuretabs", "runtimetabs");
+    private static final Set<String> ACTIVE_AREAS = Set.of("featuretabs", "runtimetabs", "dropdowns");
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
@@ -19,11 +20,11 @@ final class ViewFeatureRules implements ArchitectureRule {
                 continue;
             }
             String area = segments.get(2);
-            if (area.equals("views")) {
-                validateReusableView(sourceFile, violations);
+            if (area.equals("slotcontent")) {
+                validateSlotcontent(sourceFile, violations);
                 continue;
             }
-            if (!Set.of("tabs", "topbar", "state", "details").contains(area) || segments.size() < 5) {
+            if (!ACTIVE_AREAS.contains(area) || segments.size() < 5) {
                 continue;
             }
             sourcesByRoot.computeIfAbsent(new ViewRoot(area, segments.get(3)), ignored -> new ArrayList<>())
@@ -35,54 +36,52 @@ final class ViewFeatureRules implements ArchitectureRule {
         }
     }
 
-    private static void validateReusableView(SourceFile sourceFile, ViolationSink violations) {
-        if (!isReusableViewFile(sourceFile) && !isReusableDisplayModelFile(sourceFile)) {
-            violations.add(sourceFile.relativePath(), "view-reusable-root-shape",
-                    "Reusable generic view sources under src/view/views must be passive *View.java files or reusable *DisplayModel.java files.");
+    private static void validateSlotcontent(SourceFile sourceFile, ViolationSink violations) {
+        if (!isPassiveViewFile(sourceFile) && !isViewModelFile(sourceFile) && !isReusableDisplayModelFile(sourceFile)) {
+            violations.add(sourceFile.relativePath(), "view-slotcontent-root-shape",
+                    "Slotcontent sources must be passive *View.java files, optional *ViewModel.java files, or reusable *DisplayModel.java files.");
         }
     }
 
     private static void validateRoot(ViewRoot root, List<SourceFile> files, ViolationSink violations) {
         long contributionCount = files.stream().filter(ViewFeatureRules::isContributionFile).count();
+        long binderCount = files.stream().filter(ViewFeatureRules::isBinderFile).count();
         long viewModelCount = files.stream().filter(ViewFeatureRules::isViewModelFile).count();
-        long viewCount = files.stream().filter(ViewFeatureRules::isPassiveViewFile).count();
 
         for (SourceFile sourceFile : files) {
             validateAllowedRoleFile(root, sourceFile, violations);
         }
 
-        if (root.isDiscoveredContributionRoot()) {
+        if (root.requiresContribution()) {
             if (contributionCount != 1) {
                 violations.add(root.source(), "view-root-composition",
-                        "Discoverable view roots under src/view/tabs, src/view/topbar, and src/view/state must contain exactly one *Contribution.java file.");
+                        "Feature and runtime tab roots must contain exactly one shell-discovered *Contribution.java file.");
             }
-        } else if (contributionCount != 0) {
-            violations.add(root.source(), "view-details-no-contribution-root",
-                    "Detail roots under src/view/details must not contain bootstrap-discovered *Contribution.java files.");
+        } else if (contributionCount > 1) {
+            violations.add(root.source(), "view-dropdown-optional-contribution",
+                    "Dropdown roots may contain zero or one shell-discovered *Contribution.java file.");
+        }
+
+        if (binderCount != 1) {
+            violations.add(root.source(), "view-root-composition",
+                    "Each active view root must contain exactly one *Binder.java lifecycle and wiring owner.");
         }
 
         if (viewModelCount != 1) {
             violations.add(root.source(), "view-root-composition",
-                    "Each view contribution or detail root must contain exactly one co-located *ViewModel.java file.");
-        }
-        if (viewCount < 1) {
-            violations.add(root.source(), "view-root-composition",
-                    "Each view contribution or detail root must contain at least one passive *View.java file.");
+                    "Each active view root must contain exactly one aggregate *ViewModel.java file.");
         }
     }
 
     private static void validateAllowedRoleFile(ViewRoot root, SourceFile sourceFile, ViolationSink violations) {
-        if (isViewModelFile(sourceFile) || isPassiveViewFile(sourceFile)) {
+        if (isViewModelFile(sourceFile) || isPassiveViewFile(sourceFile) || isBinderFile(sourceFile)) {
             return;
         }
-        if (root.isDiscoveredContributionRoot() && isContributionFile(sourceFile)) {
-            return;
-        }
-        if (!root.isDiscoveredContributionRoot() && isContributionFile(sourceFile)) {
+        if (isContributionFile(sourceFile)) {
             return;
         }
         violations.add(sourceFile.relativePath(), "view-root-file-role",
-                "View roots may contain only their *Contribution.java entrypoint where discoverable, one *ViewModel.java, and passive *View.java files.");
+                "Active view roots may contain only an optional or required *Contribution.java entrypoint, one *Binder.java, one *ViewModel.java, and passive *View.java files.");
     }
 
     private static boolean isContributionFile(SourceFile sourceFile) {
@@ -93,13 +92,13 @@ final class ViewFeatureRules implements ArchitectureRule {
         return sourceFile.fileName().endsWith("ViewModel.java");
     }
 
+    private static boolean isBinderFile(SourceFile sourceFile) {
+        return sourceFile.fileName().endsWith("Binder.java");
+    }
+
     private static boolean isPassiveViewFile(SourceFile sourceFile) {
         return sourceFile.fileName().endsWith("View.java")
                 && !sourceFile.fileName().endsWith("ViewModel.java");
-    }
-
-    private static boolean isReusableViewFile(SourceFile sourceFile) {
-        return isPassiveViewFile(sourceFile);
     }
 
     private static boolean isReusableDisplayModelFile(SourceFile sourceFile) {
@@ -107,8 +106,8 @@ final class ViewFeatureRules implements ArchitectureRule {
     }
 
     private record ViewRoot(String area, String entry) implements Comparable<ViewRoot> {
-        boolean isDiscoveredContributionRoot() {
-            return DISCOVERED_AREAS.contains(area);
+        boolean requiresContribution() {
+            return REQUIRED_CONTRIBUTION_AREAS.contains(area);
         }
 
         String source() {
