@@ -7,6 +7,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
+import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewModel;
 
 final class DungeonEditorBinder {
@@ -27,15 +28,15 @@ final class DungeonEditorBinder {
         main.renderModelProperty().bind(mapViewModel.displayModelProperty());
         state.stateTextProperty().bind(viewModel.stateProperty());
         controls.onRefresh(viewModel::refresh);
-        controls.onViewModeChanged(viewModel::selectViewMode);
+        controls.onViewModeChanged(mode -> viewModel.selectViewMode(toDisplayViewMode(mode)));
         controls.onToolChanged(viewModel::selectTool);
         controls.onPreviousLevel(viewModel::previousLevel);
         controls.onNextLevel(viewModel::nextLevel);
-        controls.onOverlayModeChanged(viewModel::selectOverlayMode);
+        controls.onOverlayModeChanged(mode -> viewModel.selectOverlayMode(toDisplayOverlayMode(mode)));
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
         viewModel.viewModeProperty().addListener((ignored, before, after) -> {
             mapViewModel.selectViewMode(after);
-            controls.showViewMode(after);
+            controls.showViewMode(toControlsViewMode(after));
         });
         viewModel.selectedToolProperty().addListener((ignored, before, after) -> {
             mapViewModel.showSelectedTool(after);
@@ -47,16 +48,46 @@ final class DungeonEditorBinder {
         });
         viewModel.overlayModeProperty().addListener((ignored, before, after) -> {
             mapViewModel.selectOverlayMode(after);
-            controls.showOverlayMode(after);
+            controls.showOverlayMode(toControlsOverlayMode(after));
         });
         viewModel.statusProperty().addListener((ignored, before, after) -> controls.showStatus(after));
-        controls.showViewMode(viewModel.viewModeProperty().get());
+        controls.showViewMode(toControlsViewMode(viewModel.viewModeProperty().get()));
         controls.showTool(viewModel.selectedToolProperty().get());
         controls.showLevel(viewModel.projectionLevelProperty().get());
-        controls.showOverlayMode(viewModel.overlayModeProperty().get());
+        controls.showOverlayMode(toControlsOverlayMode(viewModel.overlayModeProperty().get()));
         controls.showStatus(viewModel.statusProperty().get());
         viewModel.refresh();
         return new Binding(controls, main, state);
+    }
+
+    private static DungeonMapDisplayModel.ViewMode toDisplayViewMode(DungeonEditorControlsView.ViewMode viewMode) {
+        return viewMode == DungeonEditorControlsView.ViewMode.GRAPH
+                ? DungeonMapDisplayModel.ViewMode.GRAPH
+                : DungeonMapDisplayModel.ViewMode.GRID;
+    }
+
+    private static DungeonEditorControlsView.ViewMode toControlsViewMode(DungeonMapDisplayModel.ViewMode viewMode) {
+        return viewMode == DungeonMapDisplayModel.ViewMode.GRAPH
+                ? DungeonEditorControlsView.ViewMode.GRAPH
+                : DungeonEditorControlsView.ViewMode.GRID;
+    }
+
+    private static DungeonMapDisplayModel.OverlayMode toDisplayOverlayMode(
+            DungeonEditorControlsView.OverlayMode overlayMode) {
+        return switch (overlayMode == null ? DungeonEditorControlsView.OverlayMode.OFF : overlayMode) {
+            case OFF -> DungeonMapDisplayModel.OverlayMode.OFF;
+            case NEARBY -> DungeonMapDisplayModel.OverlayMode.NEARBY;
+            case SELECTED -> DungeonMapDisplayModel.OverlayMode.SELECTED;
+        };
+    }
+
+    private static DungeonEditorControlsView.OverlayMode toControlsOverlayMode(
+            DungeonMapDisplayModel.OverlayMode overlayMode) {
+        return switch (overlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : overlayMode) {
+            case OFF -> DungeonEditorControlsView.OverlayMode.OFF;
+            case NEARBY -> DungeonEditorControlsView.OverlayMode.NEARBY;
+            case SELECTED -> DungeonEditorControlsView.OverlayMode.SELECTED;
+        };
     }
 
     private record Binding(

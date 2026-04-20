@@ -346,38 +346,11 @@ domain feature as a model behind one root application service.
 
 ## Verification Notes
 
-Current checks enforce the target mechanical parts that have a stable static
-shape:
-
-- Java view code lives under `src/view/leftbartabs`, `src/view/statetabs`,
-  `src/view/dropdowns`, or `src/view/slotcontent`.
-- `leftbartabs` and `statetabs` roots define exactly one `*Contribution`,
-  one `*Binder`, and one aggregate `*ViewModel`.
-- `dropdowns` roots define exactly one `*Binder`, one aggregate `*ViewModel`,
-  and zero or one `*Contribution`.
-- `slotcontent` roots define slot-local passive Views, optional
-  `*ViewModel`s, and support display models.
-- Contributions may use the allowed shell API subset and their own Binder.
-  Binders may use shell API, same-root ViewModels, active-root Views,
-  slotcontent Views/ViewModels, JavaFX `Node`, and domain application-service
-  boundaries.
-- Active-root ViewModels may use JavaFX beans/collections and domain
-  application-service boundaries. Slotcontent ViewModels may use JavaFX
-  beans/collections and domain `published` carriers but not application
-  services.
-- Views may use JavaFX UI APIs but not shell, domain, data, or
-  ApplicationService types. Direct rendering is a View implementation
-  technique; reusable visual values used by direct renderers still come from
-  the centralized styling standard.
-- Optional FXML resources live under
-  `resources/view/{leftbartabs,statetabs,dropdowns}/<entry>/` or
-  `resources/view/slotcontent/<slot>/<entry>/`, use passive View controllers
-  matching the same area-specific suffixes, and do not use inline scripts.
-- State-pane precedence is modeled explicitly.
-- Legacy component-local buckets are absent from migrated target code.
-
-Semantic placement quality that cannot be expressed as stable source, bytecode,
-graph, or file-tree rules remains review-owned.
+Mechanical enforcement coverage for this standard lives in
+[Architecture Enforcement Coverage: View](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-view.md:1).
+Rules that cannot be expressed as stable source, bytecode, graph, or file-tree
+checks remain review-owned there instead of being represented as heuristic
+blocking gates.
 
 ## References
 
@@ -387,6 +360,7 @@ graph, or file-tree rules remains review-owned.
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
+- [Architecture Enforcement Coverage: View](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-view.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)
 - [Fowler Presentation Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/fowler-presentation-model.md:1)
 - [JavaFX Properties And Binding](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/oracle-javafx-properties-binding.md:1)

@@ -37,6 +37,11 @@ final class ViewFeatureRules implements ArchitectureRule {
     }
 
     private static void validateSlotcontent(SourceFile sourceFile, ViolationSink violations) {
+        if (isContributionFile(sourceFile) || isBinderFile(sourceFile)) {
+            violations.add(sourceFile.relativePath(), "view-slotcontent-no-shell-entrypoints",
+                    "Slotcontent roots are reusable passive content and must not define *Contribution.java or *Binder.java files.");
+            return;
+        }
         if (!isPassiveViewFile(sourceFile) && !isViewModelFile(sourceFile) && !isReusableDisplayModelFile(sourceFile)) {
             violations.add(sourceFile.relativePath(), "view-slotcontent-root-shape",
                     "Slotcontent sources must be passive *View.java files, optional *ViewModel.java files, or reusable *DisplayModel.java files.");
@@ -74,6 +79,11 @@ final class ViewFeatureRules implements ArchitectureRule {
     }
 
     private static void validateAllowedRoleFile(ViewRoot root, SourceFile sourceFile, ViolationSink violations) {
+        if (isReusableDisplayModelFile(sourceFile)) {
+            violations.add(sourceFile.relativePath(), "view-active-root-no-display-model",
+                    "Active view roots own aggregate *ViewModel.java files; reusable *DisplayModel.java files belong under src/view/slotcontent/<slot>/<entry>/.");
+            return;
+        }
         if (isViewModelFile(sourceFile) || isPassiveViewFile(sourceFile) || isBinderFile(sourceFile)) {
             return;
         }

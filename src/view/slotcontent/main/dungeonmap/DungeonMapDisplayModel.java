@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
@@ -36,7 +37,7 @@ public record DungeonMapDisplayModel(
         List<RenderMarker> markers,
         List<GraphNode> graphNodes,
         List<GraphLink> graphLinks,
-        PartyToken partyToken
+        @Nullable PartyToken partyToken
 ) {
 
     public DungeonMapDisplayModel {
@@ -87,7 +88,7 @@ public record DungeonMapDisplayModel(
     }
 
     public static DungeonMapDisplayModel fromDungeonSnapshot(
-            DungeonSnapshot snapshot,
+            @Nullable DungeonSnapshot snapshot,
             String placeholderTitle,
             boolean editorMode,
             ViewMode viewMode,

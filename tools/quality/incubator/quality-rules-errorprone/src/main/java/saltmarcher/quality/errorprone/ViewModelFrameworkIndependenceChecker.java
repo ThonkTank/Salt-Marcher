@@ -85,7 +85,13 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
                     : !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
         }
         if (referencedType.startsWith("shell.")) {
-            return (!contribution && !binder) || !ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
+            if (contribution) {
+                return !ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
+            }
+            if (binder) {
+                return !ViewArchitectureSupport.isAllowedBinderShellType(referencedType);
+            }
+            return true;
         }
         if (referencedType.startsWith("src.data.")) {
             return true;

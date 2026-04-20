@@ -25,8 +25,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
 public class DungeonMapMainView extends BorderPane {
@@ -38,32 +36,6 @@ public class DungeonMapMainView extends BorderPane {
     private static final double MAX_ZOOM = 4.0;
     private static final double ZOOM_STEP_FACTOR = 1.1;
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
-    private static final Color BACKGROUND = Color.web("#12181c");
-    private static final Color GRID_MINOR = Color.web("#667782", 0.18);
-    private static final Color GRID_MEDIUM = Color.web("#738390", 0.16);
-    private static final Color GRID_MAJOR = Color.web("#8d9ca8", 0.22);
-    private static final Color GRID_MAX = Color.web("#b1bcc5", 0.28);
-    private static final Color AXIS = Color.web("#c5d1d8", 0.32);
-    private static final Color ROOM_FILL = Color.web("#2a3238");
-    private static final Color ROOM_STROKE = Color.web("#8a6a35");
-    private static final Color WALL_STROKE = Color.web("#8a6a35");
-    private static final Color HIGHLIGHT_STROKE = Color.web("#f1d38a");
-    private static final Color CORRIDOR_FILL = Color.web("#3b5053", 0.8);
-    private static final Color CORRIDOR_STROKE = Color.web("#91b6b0");
-    private static final Color SELECTED_FILL = Color.web("#58706e", 0.95);
-    private static final Color SELECTED_STROKE = Color.web("#d7ece7");
-    private static final Color PARTY_FILL = Color.web("#ffb62a");
-    private static final Color PARTY_STROKE = Color.web("#fff0c6");
-    private static final Color PARTY_SHADOW = Color.web("#120f08", 0.8);
-    private static final Color LABEL_FILL = Color.web("#181f24");
-    private static final Color LABEL_BORDER = Color.web("#8a6a35");
-    private static final Color LABEL_TEXT = Color.web("#ecedee");
-    private static final Color ABOVE_TINT = Color.web("#7cc8f4");
-    private static final Color BELOW_TINT = Color.web("#d6a565");
-    private static final Font HUD_FONT = Font.font("SansSerif", FontWeight.BOLD, 14.0);
-    private static final Font ROOM_LABEL_FONT = Font.font("SansSerif", FontWeight.BOLD, 12.0);
-    private static final Font GRAPH_FONT = Font.font("SansSerif", FontWeight.BOLD, 13.0);
-
     private final ObjectProperty<DungeonMapDisplayModel> renderModel =
             new SimpleObjectProperty<>(DungeonMapDisplayModel.empty());
     private final Label titleLabel = new Label();
@@ -312,29 +284,28 @@ public class DungeonMapMainView extends BorderPane {
     private void renderGraph(GraphicsContext gc, DungeonMapDisplayModel model) {
         fillBackground(gc);
         Map<Long, GraphPoint> points = graphPoints(model);
-        gc.setStroke(Color.web("#56636c"));
+        gc.setStroke(graphLink());
         gc.setLineWidth(3.0);
         for (DungeonMapDisplayModel.GraphLink link : model.graphLinks()) {
             GraphPoint from = points.get(link.fromId());
             GraphPoint to = points.get(link.toId());
             if (from != null && to != null) {
-                gc.setStroke(link.selected() ? HIGHLIGHT_STROKE : Color.web("#56636c"));
+                gc.setStroke(link.selected() ? highlightStroke() : graphLink());
                 gc.strokeLine(from.x(), from.y(), to.x(), to.y());
             }
         }
         gc.setTextAlign(TextAlignment.CENTER);
-        gc.setFont(GRAPH_FONT);
         for (DungeonMapDisplayModel.GraphNode node : model.graphNodes()) {
             GraphPoint point = points.get(node.id());
             if (point == null) {
                 continue;
             }
-            gc.setFill(node.selected() ? PARTY_FILL : Color.web("#2f3a41"));
+            gc.setFill(node.selected() ? partyFill() : graphNodeFill());
             gc.fillRoundRect(point.x() - 42.0, point.y() - 18.0, 84.0, 36.0, 18.0, 18.0);
-            gc.setStroke(node.selected() ? PARTY_STROKE : ROOM_STROKE);
+            gc.setStroke(node.selected() ? partyStroke() : roomStroke());
             gc.setLineWidth(node.selected() ? 2.4 : 2.0);
             gc.strokeRoundRect(point.x() - 42.0, point.y() - 18.0, 84.0, 36.0, 18.0, 18.0);
-            gc.setFill(node.selected() ? PARTY_SHADOW : LABEL_TEXT);
+            gc.setFill(node.selected() ? partyShadow() : labelText());
             gc.fillText(abbreviateLabel(node.label(), 14), point.x(), point.y() + 4.0);
         }
         gc.setTextAlign(TextAlignment.LEFT);
@@ -342,7 +313,7 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private void fillBackground(GraphicsContext gc) {
-        gc.setFill(BACKGROUND);
+        gc.setFill(background());
         gc.fillRect(0.0, 0.0, width(), height());
     }
 
@@ -412,8 +383,8 @@ public class DungeonMapMainView extends BorderPane {
                 gc.setGlobalAlpha(overlayAlpha(edge.z(), model.projectionLevel()));
             }
             gc.setStroke(edge.kind() == DungeonMapDisplayModel.EdgeKind.DOOR
-                    ? Color.web("#e5c06f")
-                    : edge.selected() ? HIGHLIGHT_STROKE : WALL_STROKE);
+                    ? doorStroke()
+                    : edge.selected() ? highlightStroke() : wallStroke());
             gc.setLineWidth(edge.kind() == DungeonMapDisplayModel.EdgeKind.DOOR ? 3.6 : edge.selected() ? 2.8 : 2.0);
             gc.strokeLine(worldToScreenX(edge.startQ()), worldToScreenY(edge.startR()),
                     worldToScreenX(edge.endQ()), worldToScreenY(edge.endR()));
@@ -422,7 +393,6 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private void drawMarkers(GraphicsContext gc, DungeonMapDisplayModel model, boolean includeOverlay) {
-        gc.setFont(ROOM_LABEL_FONT);
         gc.setTextAlign(TextAlignment.CENTER);
         for (DungeonMapDisplayModel.RenderMarker marker : model.markers()) {
             boolean overlay = marker.z() != model.projectionLevel();
@@ -438,10 +408,10 @@ public class DungeonMapMainView extends BorderPane {
             }
             gc.setFill(markerFill(marker));
             gc.fillRoundRect(cx - radius, cy - radius, radius * 2.0, radius * 2.0, 10.0, 10.0);
-            gc.setStroke(marker.selected() ? HIGHLIGHT_STROKE : markerStroke(marker));
+            gc.setStroke(marker.selected() ? highlightStroke() : markerStroke(marker));
             gc.setLineWidth(marker.selected() ? 2.2 : 1.4);
             gc.strokeRoundRect(cx - radius, cy - radius, radius * 2.0, radius * 2.0, 10.0, 10.0);
-            gc.setFill(LABEL_TEXT);
+            gc.setFill(labelText());
             gc.fillText(marker.label(), cx, cy + 4.0);
             gc.restore();
         }
@@ -452,12 +422,11 @@ public class DungeonMapMainView extends BorderPane {
         if (gridSize() < 18.0) {
             return;
         }
-        gc.setFont(ROOM_LABEL_FONT);
         gc.setTextAlign(TextAlignment.CENTER);
         for (DungeonMapDisplayModel.RenderLabel label : model.labels()) {
             boolean overlay = label.z() != model.projectionLevel();
             if (label.label().isBlank()
-                    || overlay && (!includeOverlay || model.overlayMode() == DungeonMapDisplayModel.OverlayMode.OFF)) {
+                    || (overlay && (!includeOverlay || model.overlayMode() == DungeonMapDisplayModel.OverlayMode.OFF))) {
                 continue;
             }
             double width = Math.max(56.0, Math.min(180.0, label.label().length() * 7.2 + 16.0));
@@ -470,12 +439,12 @@ public class DungeonMapMainView extends BorderPane {
             if (overlay) {
                 gc.setGlobalAlpha(overlayAlpha(label.z(), model.projectionLevel()));
             }
-            gc.setFill(LABEL_FILL);
+            gc.setFill(labelFill());
             gc.fillRoundRect(x, y, width, 24.0, 14.0, 14.0);
-            gc.setStroke(label.selected() ? HIGHLIGHT_STROKE : LABEL_BORDER);
+            gc.setStroke(label.selected() ? highlightStroke() : labelBorder());
             gc.setLineWidth(label.selected() ? 2.0 : 1.0);
             gc.strokeRoundRect(x, y, width, 24.0, 14.0, 14.0);
-            gc.setFill(LABEL_TEXT);
+            gc.setFill(labelText());
             gc.fillText(label.label(), x + width / 2.0, y + 16.5);
             gc.restore();
         }
@@ -517,19 +486,19 @@ public class DungeonMapMainView extends BorderPane {
             shadowX[index] = shapeX[index] - 1.5;
             shadowY[index] = shapeY[index] + 1.5;
         }
-        gc.setFill(PARTY_SHADOW);
+        gc.setFill(partyShadow());
         gc.fillPolygon(shadowX, shadowY, shadowX.length);
-        gc.setFill(PARTY_FILL);
+        gc.setFill(partyFill());
         gc.fillPolygon(shapeX, shapeY, shapeX.length);
-        gc.setStroke(PARTY_STROKE);
+        gc.setStroke(partyStroke());
         gc.setLineWidth(2.2);
         gc.strokePolygon(shapeX, shapeY, shapeX.length);
-        gc.setFill(PARTY_STROKE);
+        gc.setFill(partyStroke());
         gc.fillOval(cx - innerRadius, cy - innerRadius, innerRadius * 2.0, innerRadius * 2.0);
     }
 
     private void drawAxes(GraphicsContext gc) {
-        gc.setStroke(AXIS);
+        gc.setStroke(axis());
         gc.setLineWidth(2.6);
         if (panX >= -gridSize() && panX <= width() + gridSize()) {
             gc.strokeLine(panX, 0.0, panX, height());
@@ -544,61 +513,60 @@ public class DungeonMapMainView extends BorderPane {
             return;
         }
         double labelWidth = hudLabelWidth(text);
-        gc.setFill(LABEL_FILL);
+        gc.setFill(labelFill());
         gc.fillRoundRect(x, y, labelWidth, 24.0, 14.0, 14.0);
-        gc.setStroke(LABEL_BORDER);
+        gc.setStroke(labelBorder());
         gc.setLineWidth(1.0);
         gc.strokeRoundRect(x, y, labelWidth, 24.0, 14.0, 14.0);
-        gc.setFill(LABEL_TEXT);
-        gc.setFont(HUD_FONT);
+        gc.setFill(labelText());
         gc.setTextAlign(TextAlignment.LEFT);
         gc.fillText(text, x + 8.0, y + 16.5);
     }
 
     private Color fillFor(DungeonMapDisplayModel.RenderCell cell, int projectionLevel) {
         if (cell.z() != projectionLevel) {
-            return blend(cell.z() > projectionLevel ? ROOM_FILL : CORRIDOR_FILL,
-                    cell.z() > projectionLevel ? ABOVE_TINT : BELOW_TINT,
+            return blend(cell.z() > projectionLevel ? roomFill() : corridorFill(),
+                    cell.z() > projectionLevel ? aboveTint() : belowTint(),
                     0.56);
         }
         if (cell.selected()) {
-            return SELECTED_FILL;
+            return selectedFill();
         }
         return switch (cell.kind()) {
-            case ROOM -> ROOM_FILL;
-            case CORRIDOR -> CORRIDOR_FILL;
-            case STAIR -> Color.web("#3b5053", 0.95);
-            case TRANSITION -> Color.web("#587f9a", 0.95);
+            case ROOM -> roomFill();
+            case CORRIDOR -> corridorFill();
+            case STAIR -> stairFill();
+            case TRANSITION -> transitionFill();
         };
     }
 
     private Color strokeFor(DungeonMapDisplayModel.RenderCell cell, int projectionLevel) {
         if (cell.z() != projectionLevel) {
-            return blend(ROOM_STROKE, cell.z() > projectionLevel ? ABOVE_TINT : BELOW_TINT, 0.62);
+            return blend(roomStroke(), cell.z() > projectionLevel ? aboveTint() : belowTint(), 0.62);
         }
         if (cell.selected()) {
-            return SELECTED_STROKE;
+            return selectedStroke();
         }
         return switch (cell.kind()) {
-            case ROOM -> ROOM_STROKE;
-            case CORRIDOR, STAIR -> CORRIDOR_STROKE;
-            case TRANSITION -> Color.web("#acc7d8");
+            case ROOM -> roomStroke();
+            case CORRIDOR, STAIR -> corridorStroke();
+            case TRANSITION -> transitionStroke();
         };
     }
 
     private Color markerFill(DungeonMapDisplayModel.RenderMarker marker) {
         return switch (marker.kind()) {
-            case DOOR -> LABEL_FILL;
-            case STAIR -> Color.web("#3b5053");
-            case TRANSITION -> Color.web("#587f9a");
+            case DOOR -> labelFill();
+            case STAIR -> stairFill();
+            case TRANSITION -> transitionFill();
         };
     }
 
     private Color markerStroke(DungeonMapDisplayModel.RenderMarker marker) {
         return switch (marker.kind()) {
-            case DOOR -> Color.web("#e5c06f");
-            case STAIR -> CORRIDOR_STROKE;
-            case TRANSITION -> Color.web("#acc7d8");
+            case DOOR -> doorStroke();
+            case STAIR -> corridorStroke();
+            case TRANSITION -> transitionStroke();
         };
     }
 
@@ -662,10 +630,10 @@ public class DungeonMapMainView extends BorderPane {
 
     private Color gridColor(int tier) {
         return switch (tier) {
-            case 0 -> GRID_MINOR;
-            case 1 -> GRID_MEDIUM;
-            case 2 -> GRID_MAJOR;
-            default -> GRID_MAX;
+            case 0 -> gridMinor();
+            case 1 -> gridMedium();
+            case 2 -> gridMajor();
+            default -> gridMax();
         };
     }
 
@@ -694,14 +662,130 @@ public class DungeonMapMainView extends BorderPane {
         return label.substring(0, Math.max(1, maxLength - 1)) + ".";
     }
 
+    private Color background() {
+        return color(0x12, 0x18, 0x1c, 1.0);
+    }
+
+    private Color gridMinor() {
+        return color(0x66, 0x77, 0x82, 0.18);
+    }
+
+    private Color gridMedium() {
+        return color(0x73, 0x83, 0x90, 0.16);
+    }
+
+    private Color gridMajor() {
+        return color(0x8d, 0x9c, 0xa8, 0.22);
+    }
+
+    private Color gridMax() {
+        return color(0xb1, 0xbc, 0xc5, 0.28);
+    }
+
+    private Color axis() {
+        return color(0xc5, 0xd1, 0xd8, 0.32);
+    }
+
+    private Color roomFill() {
+        return color(0x2a, 0x32, 0x38, 1.0);
+    }
+
+    private Color roomStroke() {
+        return color(0x8a, 0x6a, 0x35, 1.0);
+    }
+
+    private Color wallStroke() {
+        return color(0x8a, 0x6a, 0x35, 1.0);
+    }
+
+    private Color highlightStroke() {
+        return color(0xf1, 0xd3, 0x8a, 1.0);
+    }
+
+    private Color corridorFill() {
+        return color(0x3b, 0x50, 0x53, 0.8);
+    }
+
+    private Color corridorStroke() {
+        return color(0x91, 0xb6, 0xb0, 1.0);
+    }
+
+    private Color selectedFill() {
+        return color(0x58, 0x70, 0x6e, 0.95);
+    }
+
+    private Color selectedStroke() {
+        return color(0xd7, 0xec, 0xe7, 1.0);
+    }
+
+    private Color partyFill() {
+        return color(0xff, 0xb6, 0x2a, 1.0);
+    }
+
+    private Color partyStroke() {
+        return color(0xff, 0xf0, 0xc6, 1.0);
+    }
+
+    private Color partyShadow() {
+        return color(0x12, 0x0f, 0x08, 0.8);
+    }
+
+    private Color labelFill() {
+        return color(0x18, 0x1f, 0x24, 1.0);
+    }
+
+    private Color labelBorder() {
+        return color(0x8a, 0x6a, 0x35, 1.0);
+    }
+
+    private Color labelText() {
+        return color(0xec, 0xed, 0xee, 1.0);
+    }
+
+    private Color aboveTint() {
+        return color(0x7c, 0xc8, 0xf4, 1.0);
+    }
+
+    private Color belowTint() {
+        return color(0xd6, 0xa5, 0x65, 1.0);
+    }
+
+    private Color doorStroke() {
+        return color(0xe5, 0xc0, 0x6f, 1.0);
+    }
+
+    private Color graphLink() {
+        return color(0x56, 0x63, 0x6c, 1.0);
+    }
+
+    private Color graphNodeFill() {
+        return color(0x2f, 0x3a, 0x41, 1.0);
+    }
+
+    private Color stairFill() {
+        return color(0x3b, 0x50, 0x53, 0.95);
+    }
+
+    private Color transitionFill() {
+        return color(0x58, 0x7f, 0x9a, 0.95);
+    }
+
+    private Color transitionStroke() {
+        return color(0xac, 0xc7, 0xd8, 1.0);
+    }
+
     private Color blend(Color base, Color tint, double tintRatio) {
         double ratio = Math.max(0.0, Math.min(1.0, tintRatio));
         double baseRatio = 1.0 - ratio;
-        return Color.color(
+        return new Color(
                 base.getRed() * baseRatio + tint.getRed() * ratio,
                 base.getGreen() * baseRatio + tint.getGreen() * ratio,
                 base.getBlue() * baseRatio + tint.getBlue() * ratio,
                 base.getOpacity());
+    }
+
+    private Color color(int red, int green, int blue, double opacity) {
+        return new Color(red / 255.0, green / 255.0, blue / 255.0, opacity);
     }
 
     private record GraphPoint(double x, double y) {

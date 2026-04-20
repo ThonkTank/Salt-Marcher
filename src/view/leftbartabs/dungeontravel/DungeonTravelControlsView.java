@@ -13,7 +13,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
-import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 
 public final class DungeonTravelControlsView extends VBox {
 
@@ -26,7 +25,7 @@ public final class DungeonTravelControlsView extends VBox {
     private final Button nextLevelButton = new Button("Ebene +");
     private final Button overlayButton = new Button();
     private final Popup overlayPopup = new Popup();
-    private Consumer<DungeonMapDisplayModel.OverlayMode> onOverlayModeChanged = ignored -> {};
+    private Consumer<OverlayMode> onOverlayModeChanged = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonTravelControlsView() {
@@ -69,7 +68,7 @@ public final class DungeonTravelControlsView extends VBox {
         });
     }
 
-    public void onOverlayModeChanged(Consumer<DungeonMapDisplayModel.OverlayMode> action) {
+    public void onOverlayModeChanged(Consumer<OverlayMode> action) {
         onOverlayModeChanged = action == null ? ignored -> {} : action;
     }
 
@@ -81,9 +80,8 @@ public final class DungeonTravelControlsView extends VBox {
         levelLabel.setText("Ebene z=" + level);
     }
 
-    public void showOverlayMode(DungeonMapDisplayModel.OverlayMode overlayMode) {
-        DungeonMapDisplayModel.OverlayMode resolved =
-                overlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : overlayMode;
+    public void showOverlayMode(OverlayMode overlayMode) {
+        OverlayMode resolved = overlayMode == null ? OverlayMode.OFF : overlayMode;
         overlayButton.setText(resolved.label());
     }
 
@@ -106,9 +104,9 @@ public final class DungeonTravelControlsView extends VBox {
         content.setPadding(new Insets(8));
         content.getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown");
         content.getChildren().addAll(
-                overlayOption("Aus", DungeonMapDisplayModel.OverlayMode.OFF),
-                overlayOption("Nachbarn", DungeonMapDisplayModel.OverlayMode.NEARBY),
-                overlayOption("Auswahl", DungeonMapDisplayModel.OverlayMode.SELECTED));
+                overlayOption(OverlayMode.OFF),
+                overlayOption(OverlayMode.NEARBY),
+                overlayOption(OverlayMode.SELECTED));
         overlayPopup.getContent().setAll(content);
         overlayPopup.setAutoHide(true);
         overlayPopup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
@@ -119,8 +117,8 @@ public final class DungeonTravelControlsView extends VBox {
         });
     }
 
-    private Button overlayOption(String label, DungeonMapDisplayModel.OverlayMode mode) {
-        Button button = new Button(label);
+    private Button overlayOption(OverlayMode mode) {
+        Button button = new Button(mode.label());
         button.getStyleClass().add("tool-btn");
         button.setMaxWidth(Double.MAX_VALUE);
         button.setOnAction(event -> {
@@ -151,5 +149,21 @@ public final class DungeonTravelControlsView extends VBox {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         return spacer;
+    }
+
+    enum OverlayMode {
+        OFF("Aus"),
+        NEARBY("Nachbarn"),
+        SELECTED("Auswahl");
+
+        private final String label;
+
+        OverlayMode(String label) {
+            this.label = label;
+        }
+
+        String label() {
+            return label;
+        }
     }
 }

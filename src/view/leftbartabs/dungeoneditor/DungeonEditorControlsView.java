@@ -16,7 +16,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
-import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 
 public final class DungeonEditorControlsView extends VBox {
 
@@ -35,8 +34,8 @@ public final class DungeonEditorControlsView extends VBox {
     private final Label levelLabel = new Label("Ebene z=0");
     private final Button previousLevelButton = new Button("Ebene -");
     private final Button nextLevelButton = new Button("Ebene +");
-    private final ToggleButton gridButton = toolToggle(DungeonMapDisplayModel.ViewMode.GRID.label());
-    private final ToggleButton graphButton = toolToggle(DungeonMapDisplayModel.ViewMode.GRAPH.label());
+    private final ToggleButton gridButton = toolToggle(ViewMode.GRID.label());
+    private final ToggleButton graphButton = toolToggle(ViewMode.GRAPH.label());
     private final ToggleButton selectButton = toolToggle(SELECT_TOOL);
     private final Button roomButton = toolButton(ROOM_TOOL);
     private final Button wallButton = toolButton(WALL_TOOL);
@@ -48,9 +47,9 @@ public final class DungeonEditorControlsView extends VBox {
     private final Popup overlayPopup = new Popup();
     private final ToggleGroup viewModeGroup = new ToggleGroup();
     private final ToggleGroup toolGroup = new ToggleGroup();
-    private Consumer<DungeonMapDisplayModel.ViewMode> onViewModeChanged = ignored -> {};
+    private Consumer<ViewMode> onViewModeChanged = ignored -> {};
     private Consumer<String> onToolChanged = ignored -> {};
-    private Consumer<DungeonMapDisplayModel.OverlayMode> onOverlayModeChanged = ignored -> {};
+    private Consumer<OverlayMode> onOverlayModeChanged = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonEditorControlsView() {
@@ -73,7 +72,7 @@ public final class DungeonEditorControlsView extends VBox {
         });
     }
 
-    public void onViewModeChanged(Consumer<DungeonMapDisplayModel.ViewMode> action) {
+    public void onViewModeChanged(Consumer<ViewMode> action) {
         onViewModeChanged = action == null ? ignored -> {} : action;
     }
 
@@ -97,7 +96,7 @@ public final class DungeonEditorControlsView extends VBox {
         });
     }
 
-    public void onOverlayModeChanged(Consumer<DungeonMapDisplayModel.OverlayMode> action) {
+    public void onOverlayModeChanged(Consumer<OverlayMode> action) {
         onOverlayModeChanged = action == null ? ignored -> {} : action;
     }
 
@@ -109,8 +108,8 @@ public final class DungeonEditorControlsView extends VBox {
         statusLabel.setText(statusText == null ? "" : statusText);
     }
 
-    public void showViewMode(DungeonMapDisplayModel.ViewMode viewMode) {
-        if (viewMode == DungeonMapDisplayModel.ViewMode.GRAPH) {
+    public void showViewMode(ViewMode viewMode) {
+        if (viewMode == ViewMode.GRAPH) {
             graphButton.setSelected(true);
         } else {
             gridButton.setSelected(true);
@@ -128,9 +127,8 @@ public final class DungeonEditorControlsView extends VBox {
         markSelected(transitionButton, TRANSITION_TOOL.equals(selectedTool));
     }
 
-    public void showOverlayMode(DungeonMapDisplayModel.OverlayMode overlayMode) {
-        DungeonMapDisplayModel.OverlayMode resolved =
-                overlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : overlayMode;
+    public void showOverlayMode(OverlayMode overlayMode) {
+        OverlayMode resolved = overlayMode == null ? OverlayMode.OFF : overlayMode;
         overlayButton.setText(resolved.label());
     }
 
@@ -158,9 +156,7 @@ public final class DungeonEditorControlsView extends VBox {
                 }
                 return;
             }
-            onViewModeChanged.accept(newToggle == graphButton
-                    ? DungeonMapDisplayModel.ViewMode.GRAPH
-                    : DungeonMapDisplayModel.ViewMode.GRID);
+            onViewModeChanged.accept(newToggle == graphButton ? ViewMode.GRAPH : ViewMode.GRID);
         });
     }
 
@@ -181,9 +177,9 @@ public final class DungeonEditorControlsView extends VBox {
         content.setPadding(new Insets(8));
         content.getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown");
         content.getChildren().addAll(
-                overlayOption("Aus", DungeonMapDisplayModel.OverlayMode.OFF),
-                overlayOption("Nachbarn", DungeonMapDisplayModel.OverlayMode.NEARBY),
-                overlayOption("Auswahl", DungeonMapDisplayModel.OverlayMode.SELECTED));
+                overlayOption(OverlayMode.OFF),
+                overlayOption(OverlayMode.NEARBY),
+                overlayOption(OverlayMode.SELECTED));
         overlayPopup.getContent().setAll(content);
         overlayPopup.setAutoHide(true);
         overlayPopup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
@@ -212,8 +208,8 @@ public final class DungeonEditorControlsView extends VBox {
         return group;
     }
 
-    private Button overlayOption(String label, DungeonMapDisplayModel.OverlayMode mode) {
-        Button button = new Button(label);
+    private Button overlayOption(OverlayMode mode) {
+        Button button = new Button(mode.label());
         button.getStyleClass().add("tool-btn");
         button.setMaxWidth(Double.MAX_VALUE);
         button.setOnAction(event -> {
@@ -272,6 +268,37 @@ public final class DungeonEditorControlsView extends VBox {
             }
         } else {
             button.getStyleClass().remove("selected");
+        }
+    }
+
+    enum ViewMode {
+        GRID("Grid"),
+        GRAPH("Graph");
+
+        private final String label;
+
+        ViewMode(String label) {
+            this.label = label;
+        }
+
+        String label() {
+            return label;
+        }
+    }
+
+    enum OverlayMode {
+        OFF("Aus"),
+        NEARBY("Nachbarn"),
+        SELECTED("Auswahl");
+
+        private final String label;
+
+        OverlayMode(String label) {
+            this.label = label;
+        }
+
+        String label() {
+            return label;
         }
     }
 }

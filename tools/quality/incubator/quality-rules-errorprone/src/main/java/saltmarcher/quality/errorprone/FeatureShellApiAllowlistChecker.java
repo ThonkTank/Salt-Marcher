@@ -4,7 +4,11 @@ import com.google.errorprone.BugPattern;
 import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
+import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.util.TreePathScanner;
+import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -34,6 +38,9 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
                 forbiddenReferences.add(referencedType);
             }
         }
+        if (ViewArchitectureSupport.isContributionSource(tree)) {
+            collectContributionServiceLookupViolations(tree, forbiddenReferences);
+        }
 
         if (forbiddenReferences.isEmpty()) {
             return Description.NO_MATCH;
@@ -46,8 +53,11 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
     }
 
     private static ShellPolicy shellPolicy(CompilationUnitTree tree, String packageName) {
-        if (ViewArchitectureSupport.isContributionSource(tree) || ViewArchitectureSupport.isBinderSource(tree)) {
+        if (ViewArchitectureSupport.isContributionSource(tree)) {
             return ShellPolicy.CONTRIBUTION;
+        }
+        if (ViewArchitectureSupport.isBinderSource(tree)) {
+            return ShellPolicy.BINDER;
         }
         if (ViewArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName).matches()) {
             return ShellPolicy.DATA_ROOT;
@@ -55,11 +65,34 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
         return null;
     }
 
+    private static void collectContributionServiceLookupViolations(
+            CompilationUnitTree tree,
+            Set<String> forbiddenReferences) {
+        new TreePathScanner<Void, Void>() {
+            @Override
+            public Void visitMethodInvocation(MethodInvocationTree methodInvocationTree, Void unused) {
+                Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodInvocationTree);
+                if (symbol != null
+                        && "services".equals(symbol.getSimpleName().toString())
+                        && "shell.api.ShellRuntimeContext".equals(ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol))) {
+                    forbiddenReferences.add("shell.api.ShellRuntimeContext.services()");
+                }
+                return super.visitMethodInvocation(methodInvocationTree, unused);
+            }
+        }.scan(tree, null);
+    }
+
     private enum ShellPolicy {
         CONTRIBUTION {
             @Override
             boolean isAllowed(String referencedType) {
                 return ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
+            }
+        },
+        BINDER {
+            @Override
+            boolean isAllowed(String referencedType) {
+                return ViewArchitectureSupport.isAllowedBinderShellType(referencedType);
             }
         },
         DATA_ROOT {

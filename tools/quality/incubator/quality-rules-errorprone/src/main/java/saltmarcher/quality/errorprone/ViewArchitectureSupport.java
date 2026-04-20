@@ -45,6 +45,19 @@ final class ViewArchitectureSupport {
             "shell.api.ShellContributionSpec",
             "shell.api.ShellRuntimeContext",
             "shell.api.ShellStateTabSpec",
+            "shell.api.ShellLeftBarTabMode",
+            "shell.api.ShellLeftBarTabSpec",
+            "shell.api.ShellTopBarSpec");
+    private static final Set<String> BINDER_ALLOWED_SHELL_TYPES = Set.of(
+            "shell.api.ContributionKey",
+            "shell.api.InspectorEntrySpec",
+            "shell.api.InspectorSink",
+            "shell.api.NavigationGraphicSupport",
+            "shell.api.NavigationGroupSpec",
+            "shell.api.ShellBinding",
+            "shell.api.ShellContributionSpec",
+            "shell.api.ShellRuntimeContext",
+            "shell.api.ShellStateTabSpec",
             "shell.api.ServiceRegistry",
             "shell.api.ShellSlot",
             "shell.api.ShellLeftBarTabMode",
@@ -317,6 +330,10 @@ final class ViewArchitectureSupport {
 
     static boolean isAllowedContributionShellType(String referencedType) {
         return isAllowedShellType(referencedType, CONTRIBUTION_ALLOWED_SHELL_TYPES);
+    }
+
+    static boolean isAllowedBinderShellType(String referencedType) {
+        return isAllowedShellType(referencedType, BINDER_ALLOWED_SHELL_TYPES);
     }
 
     static boolean isAllowedDataRootShellType(String referencedType) {

@@ -699,6 +699,10 @@
     -fx-background-color: -sm-accent;
     -fx-text-fill: -sm-text-primary;
 }
+.tool-btn.selected {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
 .tool-btn:focused {
     -fx-border-color: -sm-accent-hover;
     -fx-border-width: 2;

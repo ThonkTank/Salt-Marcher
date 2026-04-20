@@ -2,6 +2,7 @@ package src.view.slotcontent.main.dungeonmap;
 
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonSnapshot;
 
 public final class DungeonMapViewModel {
@@ -9,7 +10,7 @@ public final class DungeonMapViewModel {
     private final String placeholderTitle;
     private final boolean editorMode;
     private final ReadOnlyObjectWrapper<DungeonMapDisplayModel> displayModel;
-    private DungeonSnapshot snapshot;
+    private @Nullable DungeonSnapshot snapshot;
     private DungeonMapDisplayModel.ViewMode viewMode = DungeonMapDisplayModel.ViewMode.GRID;
     private DungeonMapDisplayModel.OverlayMode overlayMode = DungeonMapDisplayModel.OverlayMode.NEARBY;
     private int projectionLevel;
