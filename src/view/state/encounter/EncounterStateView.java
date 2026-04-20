@@ -484,7 +484,11 @@ public final class EncounterStateView extends VBox {
         HBox top = new HBox(8);
         top.setAlignment(Pos.CENTER_LEFT);
         Label turn = new Label(card.active() ? "\u25B6" : "");
-        turn.getStyleClass().add(card.active() ? "bold" : "text-muted");
+        if (card.active()) {
+            turn.getStyleClass().add("bold");
+        } else {
+            turn.getStyleClass().add("text-muted");
+        }
         Label name = new Label(card.alive() ? card.name() : "\u2020 " + card.name());
         name.getStyleClass().add("bold");
         if (!card.alive()) {
@@ -734,18 +738,6 @@ public final class EncounterStateView extends VBox {
         }
     }
 
-    private void applyDifficultyStyle(Label label, String difficulty) {
-        label.getStyleClass().removeAll("difficulty-easy", "difficulty-medium", "difficulty-hard", "difficulty-deadly");
-        String normalized = difficulty == null ? "" : difficulty.toLowerCase(Locale.ROOT);
-        switch (normalized) {
-            case "easy" -> label.getStyleClass().add("difficulty-easy");
-            case "medium" -> label.getStyleClass().add("difficulty-medium");
-            case "hard" -> label.getStyleClass().add("difficulty-hard");
-            case "deadly" -> label.getStyleClass().add("difficulty-deadly");
-            default -> label.getStyleClass().add("text-muted");
-        }
-    }
-
     public record BuilderSettingsInput(String difficultyLabel, int balanceLevel, double amountValue, int diversityLevel) {
     }
 
@@ -950,93 +942,33 @@ public final class EncounterStateView extends VBox {
         String label(double value);
     }
 
-    private static final class DifficultyMeterView extends StackPane {
+    private static final class DifficultyMeterView extends VBox {
 
-        private static final double OUTER_PADDING = 12.0;
-        private static final double BAR_HEIGHT = 12.0;
-
-        private final HBox bar = new HBox(0);
-        private final Region empty = segment("difficulty-meter-empty");
-        private final Region easy = segment("difficulty-meter-easy");
-        private final Region medium = segment("difficulty-meter-medium");
-        private final Region hard = segment("difficulty-meter-hard");
-        private final Region deadly = segment("difficulty-meter-deadly");
-        private final Region marker = new Region();
-        private DifficultySummaryView summary = new DifficultySummaryView(0, 0, 0, 0, 0, "");
+        private final Label marker = new Label();
+        private final HBox thresholdChips = new HBox(6);
+        private final Label easy = new Label("Easy");
+        private final Label medium = new Label("Medium");
+        private final Label hard = new Label("Hard");
+        private final Label deadly = new Label("Deadly");
 
         private DifficultyMeterView() {
-            bar.getStyleClass().add("difficulty-meter-bar");
-            bar.getChildren().addAll(empty, easy, medium, hard, deadly);
-            marker.getStyleClass().add("difficulty-meter-marker");
-            marker.setManaged(false);
-            StackPane.setAlignment(bar, Pos.CENTER);
-            StackPane.setAlignment(marker, Pos.CENTER);
-            getChildren().addAll(bar, marker);
-            widthProperty().addListener((obs, oldValue, newValue) -> layoutBars());
-            setPrefHeight(28);
-            setMinHeight(28);
-            setMaxHeight(28);
-            setAccessibleRole(AccessibleRole.TEXT);
+            setSpacing(4);
+            marker.getStyleClass().addAll("text-secondary", "bold");
+            easy.getStyleClass().addAll("chip", "chip-type");
+            medium.getStyleClass().addAll("chip", "chip-biome");
+            hard.getStyleClass().addAll("chip", "chip-align");
+            deadly.getStyleClass().addAll("chip", "chip-cr");
+            thresholdChips.getChildren().addAll(easy, medium, hard, deadly);
+            getChildren().addAll(marker, thresholdChips);
         }
 
         private void update(DifficultySummaryView value) {
-            summary = value == null ? new DifficultySummaryView(0, 0, 0, 0, 0, "") : value;
-            setAccessibleText("XP: " + summary.adjustedXp() + " - " + summary.difficulty());
-            layoutBars();
-        }
-
-        private void layoutBars() {
-            double barWidth = Math.max(0.0, getWidth() - (OUTER_PADDING * 2));
-            bar.setPrefWidth(barWidth);
-            bar.setMaxWidth(barWidth);
-            marker.setVisible(summary.adjustedXp() > 0 && summary.deadly() > 0);
-            if (summary.deadly() <= 0 || barWidth <= 0) {
-                setSegmentWidths(barWidth, 0, 0, 0, 0);
-                return;
-            }
-            double maxXp = summary.deadly() * 1.5;
-            setSegmentWidths(
-                    widthFor(summary.easy(), maxXp, barWidth),
-                    widthFor(summary.medium() - summary.easy(), maxXp, barWidth),
-                    widthFor(summary.hard() - summary.medium(), maxXp, barWidth),
-                    widthFor(summary.deadly() - summary.hard(), maxXp, barWidth),
-                    widthFor((int) maxXp - summary.deadly(), maxXp, barWidth));
-            double markerX = (Math.min(summary.adjustedXp(), maxXp) / maxXp * barWidth) - (barWidth / 2.0);
-            marker.setTranslateX(markerX);
-        }
-
-        private void setSegmentWidths(double emptyWidth, double easyWidth, double mediumWidth, double hardWidth) {
-            setSegmentWidths(emptyWidth, easyWidth, mediumWidth, hardWidth, 0.0);
-        }
-
-        private void setSegmentWidths(
-                double emptyWidth,
-                double easyWidth,
-                double mediumWidth,
-                double hardWidth,
-                double deadlyWidth
-        ) {
-            setSegmentWidth(empty, emptyWidth);
-            setSegmentWidth(easy, easyWidth);
-            setSegmentWidth(medium, mediumWidth);
-            setSegmentWidth(hard, hardWidth);
-            setSegmentWidth(deadly, deadlyWidth);
-        }
-
-        private void setSegmentWidth(Region segment, double width) {
-            segment.setPrefSize(Math.max(0.0, width), BAR_HEIGHT);
-            segment.setMinSize(0.0, BAR_HEIGHT);
-            segment.setMaxSize(Math.max(0.0, width), BAR_HEIGHT);
-        }
-
-        private static double widthFor(int xp, double maxXp, double barWidth) {
-            return Math.max(0.0, xp / maxXp * barWidth);
-        }
-
-        private static Region segment(String styleClass) {
-            Region region = new Region();
-            region.getStyleClass().add(styleClass);
-            return region;
+            DifficultySummaryView summary = value == null ? new DifficultySummaryView(0, 0, 0, 0, 0, "") : value;
+            marker.setText("Marker: " + summary.adjustedXp() + " XP | " + summary.difficulty());
+            easy.setText("Easy " + summary.easy());
+            medium.setText("Medium " + summary.medium());
+            hard.setText("Hard " + summary.hard());
+            deadly.setText("Deadly " + summary.deadly());
         }
     }
 }
