@@ -314,7 +314,8 @@ shape:
 - Reusable `src/view/views` Java files are passive `*View` files and may be
   base Views for contribution-owned concrete Views.
 - Contributions may use the allowed shell API subset, co-located ViewModels,
-  co-located Views, reusable generic passive Views, JavaFX `Node`, and domain
+  co-located Views, reusable generic passive Views, detail-entry ViewModels and
+  Views when publishing shell Inspector entries, JavaFX `Node`, and domain
   application-service boundaries; each contribution root must construct the
   shell spec matching its area (`tabs` -> `ShellTabSpec`, `topbar` ->
   `ShellTopBarSpec`, `state` -> `ShellRuntimeStateSpec`), and must not use
@@ -325,7 +326,9 @@ shape:
 - Views may use JavaFX UI APIs but not shell, domain, data, or
   ApplicationService types; contribution-owned Views may reference only
   co-located passive Views or reusable generic passive/base Views, and must not
-  use direct JDK infrastructure APIs.
+  use direct JDK infrastructure APIs. Direct rendering is a View
+  implementation technique; reusable visual values used by direct renderers
+  still come from the centralized styling standard.
 - Optional FXML resources live directly under
   `resources/view/{tabs,topbar,state,details}/<entry>/` or
   `resources/view/views`, use passive View controllers matching the same

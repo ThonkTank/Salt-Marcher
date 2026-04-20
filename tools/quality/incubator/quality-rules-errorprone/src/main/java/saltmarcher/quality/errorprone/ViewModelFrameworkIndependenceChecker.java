@@ -25,8 +25,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         }
 
         Set<String> forbiddenReferences = new LinkedHashSet<>();
+        String sourceText = sourceText(tree, state);
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            collectForbiddenReferences(referencedType, contribution, packageName, forbiddenReferences);
+            collectForbiddenReferences(referencedType, contribution, packageName, sourceText, forbiddenReferences);
         }
 
         if (forbiddenReferences.isEmpty()) {
@@ -43,16 +44,26 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             String qualifiedName,
             boolean contribution,
             String sourcePackageName,
+            String sourceText,
             Set<String> forbiddenReferences) {
         if (qualifiedName == null || qualifiedName.isBlank()) {
             return;
         }
-        if (isForbidden(qualifiedName, contribution, sourcePackageName)) {
+        if (isForbidden(qualifiedName, contribution, sourcePackageName, sourceText)) {
             forbiddenReferences.add(qualifiedName);
         }
     }
 
-    private static boolean isForbidden(String referencedType, boolean contribution, String sourcePackageName) {
+    private static boolean isForbidden(
+            String referencedType,
+            boolean contribution,
+            String sourcePackageName,
+            String sourceText) {
+        if ("java.util.concurrent.Callable".equals(referencedType)
+                && !sourceText.contains("Callable")
+                && !sourceText.contains("java.util.concurrent")) {
+            return false;
+        }
         if (ViewArchitectureSupport.isForbiddenViewInfrastructureJdkType(referencedType)) {
             return true;
         }
@@ -75,6 +86,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             return false;
         }
         if (contribution) {
+            if (ViewArchitectureSupport.isDetailEntryReference(referencedType)) {
+                return false;
+            }
             if ("CONTRIBUTION".equals(viewType.bucket()) || "MODEL".equals(viewType.bucket())) {
                 return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
             }
@@ -86,5 +100,13 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         }
         return !"MODEL".equals(viewType.bucket())
                 || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+    }
+
+    private static String sourceText(CompilationUnitTree tree, VisitorState state) {
+        if (tree.getSourceFile() == null) {
+            return "";
+        }
+        String sourceText = state.getSourceForNode(tree);
+        return sourceText == null ? "" : sourceText;
     }
 }

@@ -461,7 +461,7 @@ val checkNoCompiledArtifactsInSource by tasks.registering(CheckNoCompiledArtifac
 
 val checkCentralizedStylesheets by tasks.registering(CheckCentralizedStylesheetsTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Fail if stylesheet files exist outside the top-level resources/ directory."
+    description = "Fail if stylesheet files exist outside the central resources/salt-marcher.css file."
     projectRoot.set(layout.projectDirectory)
     stylesheetFiles.from(
         layout.projectDirectory.asFileTree.matching {
@@ -471,11 +471,12 @@ val checkCentralizedStylesheets by tasks.registering(CheckCentralizedStylesheets
     )
     resourcesRoot.set(layout.projectDirectory.dir("resources"))
     styleExtensions.set(stylesheetExtensions)
+    allowedStylesheetRelativePath.set(stylesheetRelativePathProvider.map { "resources/$it" })
 }
 
 val checkDefinedStyleClassSelectors by tasks.registering(CheckDefinedStyleClassSelectorsTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Fail if Java-authored style classes are missing from centralized resources/*.css selectors."
+    description = "Fail if Java-authored style classes are missing from resources/salt-marcher.css selectors."
     javaSourceFiles.from(sourceRoots.asFileTree.matching {
         include("**/*.java")
         exclude("**/build/**")

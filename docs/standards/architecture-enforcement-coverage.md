@@ -610,27 +610,31 @@ Runtime guards outside the build-blocking harness:
   `shell/`, and `src/` must not use inline JavaFX `setStyle(...)` calls via
   PMD `SaltMarcherSourcePolicyRule` (`pmdArchitectureMain`).
 - `styling-centralized-stylesheet-placement`: stylesheet files with supported
-  stylesheet extensions must live directly under top-level `resources/` via
-  Gradle `CheckCentralizedStylesheetsTask` (`checkCentralizedStylesheets`).
+  stylesheet extensions must be centralized in `resources/salt-marcher.css`
+  via Gradle `CheckCentralizedStylesheetsTask`
+  (`checkCentralizedStylesheets`).
 - `styling-central-selector-definition`: Java-authored style class selectors
-  must resolve to selectors in centralized `resources/*.css` files via Gradle
+  must resolve to selectors in `resources/salt-marcher.css` via Gradle
   `CheckDefinedStyleClassSelectorsTask` (`checkDefinedStyleClassSelectors`).
   The mechanical scope is direct `getStyleClass()` string literals plus
   string-literal selector arguments passed through recognized helper methods
-  that forward parameters into `getStyleClass()`.
-- `styling-no-programmatic-visual-styling`: active application code outside
-  `src/view/mapcanvas/View/**` must not author visual styling through JavaFX
-  paint, font, border, background, shape-paint, text-paint, or direct canvas
-  styling APIs via Error Prone `ViewProgrammaticStyling` (`compileJava`).
+  that forward parameters into `getStyleClass()`; dynamically concatenated
+  selector names are rejected because they are not centrally enumerable.
+- `styling-no-programmatic-visual-styling`: active application code must not
+  define replacement visual values through JavaFX color, paint, font, border,
+  background, or static style-value constants via Error Prone
+  `ViewProgrammaticStyling` (`compileJava`). Direct rendering APIs are allowed
+  for passive Views, but their visual values must come from centralized
+  `resources/salt-marcher.css` rules.
 
 `Review-Only`:
 
 - Whether a newly introduced selector is genuinely shared presentation
   vocabulary rather than needless one-off naming remains review-owned even
   when the selector is centrally defined and mechanically resolvable.
-- Runtime-computed selector names that are not visible as Java string literals
-  remain review-owned unless a future stable checker can resolve them without
-  brittle whole-program heuristics.
+- Whether direct-rendered Views map centralized stylesheet values to the right
+  visual semantics remains review-owned after mechanical checks prove that
+  those values are not locally authored.
 
 ## Repository Structure
 
@@ -667,9 +671,9 @@ Runtime guards outside the build-blocking harness:
   `model/`, `mapper/`, and `persistencecore/` placement, schema declaration
   presence, and schema table-name ownership are enforced by `build-harness`
   (`:build-harness:check`).
-- `repository-resource-layout`: active stylesheet files must live directly
-  under `resources/` via `checkCentralizedStylesheets`, and Java-authored style
-  classes must resolve to centralized selectors via
+- `repository-resource-layout`: active stylesheet files must be centralized in
+  `resources/salt-marcher.css` via `checkCentralizedStylesheets`, and
+  Java-authored style classes must resolve to centralized selectors via
   `checkDefinedStyleClassSelectors`.
 
 `Review-Only`:

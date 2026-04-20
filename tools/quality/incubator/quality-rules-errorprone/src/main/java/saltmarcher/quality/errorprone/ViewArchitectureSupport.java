@@ -240,6 +240,25 @@ final class ViewArchitectureSupport {
                 && "VIEW".equals(viewType.bucket());
     }
 
+    static boolean isDetailEntryViewReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && "details".equals(viewType.component())
+                && "VIEW".equals(viewType.bucket());
+    }
+
+    static boolean isDetailEntryViewModelReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && "details".equals(viewType.component())
+                && "MODEL".equals(viewType.bucket());
+    }
+
+    static boolean isDetailEntryReference(String referencedType) {
+        return isDetailEntryViewReference(referencedType)
+                || isDetailEntryViewModelReference(referencedType);
+    }
+
     static boolean isSameViewRootOrReusablePassiveViewReference(String sourcePackageName, String referencedType) {
         return isSameViewRootReference(sourcePackageName, referencedType)
                 || isReusablePassiveViewReference(referencedType);
@@ -332,9 +351,6 @@ final class ViewArchitectureSupport {
             @Override
             public Void visitExecutable(ExecutableType executableType, Void unused) {
                 executableType.getReturnType().accept(this, null);
-                for (TypeMirror parameterType : executableType.getParameterTypes()) {
-                    parameterType.accept(this, null);
-                }
                 for (TypeMirror thrownType : executableType.getThrownTypes()) {
                     thrownType.accept(this, null);
                 }

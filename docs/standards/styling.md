@@ -13,14 +13,19 @@ its own inline presentation rules.
 
 ## Rules
 
-- Stylesheet files must live directly under `resources/`.
+- Approved application style rules must live in `resources/salt-marcher.css`.
 - Active application code under `bootstrap/`, `shell/`, and `src/` must not use
   `setStyle(...)`.
 - View code should express presentation through style classes and shared
   selectors in the central stylesheet set.
-- Active application code outside the documented canvas-rendering exception
-  must not author visual styling through JavaFX paint, font, border, or
-  background APIs.
+- Direct rendering in passive Views is allowed, including `Canvas`,
+  `GraphicsContext`, and shape drawing.
+- Active application code must not author replacement visual values in Java.
+  Colors, fonts, text sizes, borders, strokes, spacing, radii, and semantic
+  variants remain centralized in `resources/salt-marcher.css`.
+- Direct-rendered Views may apply JavaFX paint, font, and stroke APIs only with
+  values derived from centralized stylesheet rules, not with locally constructed
+  palettes or typography constants.
 
 ## Verification Notes
 
@@ -33,31 +38,30 @@ for styling checks live in the
     `shell/`, and `src/` must not use `setStyle(...)` via `PMD architecture`
     (`./gradlew pmdArchitectureMain`).
   - `styling-centralized-stylesheet-placement`: stylesheet files for active
-    code must live directly under `resources/` via Gradle-owned verification
-    tasks (`./gradlew checkCentralizedStylesheets`).
+    code must be centralized in `resources/salt-marcher.css` via Gradle-owned
+    verification tasks (`./gradlew checkCentralizedStylesheets`).
   - `styling-central-selector-definition`: style classes used from active Java
-    code must resolve to selectors defined in centralized `resources/*.css`
-    files via Gradle-owned verification tasks
+    code must resolve to selectors defined in `resources/salt-marcher.css` via
+    Gradle-owned verification tasks
     (`./gradlew checkDefinedStyleClassSelectors`). The mechanical scope is
     direct `getStyleClass()` string literals plus string-literal selector
     arguments passed through recognized helper methods that forward parameters
-    into `getStyleClass()`.
-  - `styling-no-programmatic-visual-styling`: active application code outside
-    `src/view/mapcanvas/View/**` must not author visual styling through
-    JavaFX paint, font, border, background, or direct canvas styling APIs via
-    `Error Prone` (`./gradlew compileJava`).
+    into `getStyleClass()`. Dynamically concatenated selector names are
+    rejected because the checker cannot prove that they come from centralized
+    selector vocabulary.
+  - `styling-no-programmatic-visual-styling`: active application code must not
+    define visual style values through JavaFX color, paint, font, border, or
+    background factories or static style-value constants via `Error Prone`
+    (`./gradlew compileJava`). Direct rendering APIs are allowed when their
+    visual values come from `resources/salt-marcher.css`.
 - `Review-Only`
   - `styling-shared-selector-vocabulary`: whether a newly introduced selector
     is genuinely shared presentation vocabulary rather than a needless
     one-off name remains review-owned even when the selector is centrally
     defined and mechanically resolvable.
-  - Runtime-computed selector names that are not visible as Java string
-    literals remain review-owned.
-
-The documented direct-rendering exception is limited to
-`src/view/mapcanvas/View/**`, where the shared canvas renderer currently owns
-the original Salt Marcher map palette directly instead of routing those values
-through stylesheet selectors.
+  - Whether a direct-rendered View maps central stylesheet values to the right
+    visual semantics remains review-owned after the checker proves that the
+    values are not authored locally.
 
 ## References
 

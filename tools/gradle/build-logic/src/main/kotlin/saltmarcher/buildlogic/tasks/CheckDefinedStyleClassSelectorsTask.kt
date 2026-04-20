@@ -31,26 +31,38 @@ abstract class CheckDefinedStyleClassSelectorsTask : DefaultTask() {
             .toSet()
 
         val missingSelectors = linkedMapOf<String, MutableSet<String>>()
+        val dynamicSelectors = linkedMapOf<String, MutableSet<String>>()
         val sourceTexts = javaSourceFiles.files.asSequence()
             .filter { it.isFile && it.extension == "java" }
             .associateWith { file -> file.readText() }
         val helperMethods = resolveStyleClassHelperMethods(sourceTexts.values)
         sourceTexts.forEach { (file, sourceText) ->
-            val usedSelectors = extractStyleClassLiterals(sourceText, helperMethods)
-            val missing = usedSelectors.filterNot(definedSelectors::contains)
+            val usage = extractStyleClassLiterals(sourceText, helperMethods)
+            val missing = usage.selectors.filterNot(definedSelectors::contains)
+            val relativePath = file.relativeTo(project.projectDir).invariantSeparatorsPath
             if (missing.isNotEmpty()) {
-                missingSelectors[file.relativeTo(project.projectDir).invariantSeparatorsPath] = missing.toMutableSet()
+                missingSelectors[relativePath] = missing.toMutableSet()
+            }
+            if (usage.dynamicExpressions.isNotEmpty()) {
+                dynamicSelectors[relativePath] = usage.dynamicExpressions.toMutableSet()
             }
         }
 
-        if (missingSelectors.isNotEmpty()) {
+        if (missingSelectors.isNotEmpty() || dynamicSelectors.isNotEmpty()) {
             val details = missingSelectors.entries.joinToString(separator = "\n") { (path, selectors) ->
                 " - $path -> ${selectors.joinToString(", ")}"
             }
+            val dynamicDetails = dynamicSelectors.entries.joinToString(separator = "\n") { (path, expressions) ->
+                " - $path -> ${expressions.joinToString(", ")}"
+            }
             throw GradleException(
-                "Style classes used from Java must resolve to centralized selectors in resources/*.css.\n" +
+                "Style classes used from Java must resolve to centralized selectors in resources/salt-marcher.css.\n" +
                     "Add the missing selectors to a centralized stylesheet or stop using them from code.\n" +
-                    "Missing selectors:\n$details"
+                    "Build style classes from explicit, centrally defined selector names; dynamic selector construction is forbidden.\n" +
+                    listOfNotNull(
+                        details.takeIf(String::isNotBlank)?.let { "Missing selectors:\n$it" },
+                        dynamicDetails.takeIf(String::isNotBlank)?.let { "Dynamic selector expressions:\n$it" }
+                    ).joinToString("\n")
             )
         }
     }
@@ -58,14 +70,19 @@ abstract class CheckDefinedStyleClassSelectorsTask : DefaultTask() {
     private fun extractStyleClassLiterals(
         sourceText: String,
         helperMethods: Map<MethodKey, Set<Int>>
-    ): Set<String> {
+    ): StyleClassUsage {
         val selectors = linkedSetOf<String>()
-        collectStyleClassCallLiterals(sourceText, selectors)
-        collectHelperCallLiterals(sourceText, helperMethods, selectors)
-        return selectors
+        val dynamicExpressions = linkedSetOf<String>()
+        collectStyleClassCallLiterals(sourceText, selectors, dynamicExpressions)
+        collectHelperCallLiterals(sourceText, helperMethods, selectors, dynamicExpressions)
+        return StyleClassUsage(selectors, dynamicExpressions)
     }
 
-    private fun collectStyleClassCallLiterals(sourceText: String, selectors: MutableSet<String>) {
+    private fun collectStyleClassCallLiterals(
+        sourceText: String,
+        selectors: MutableSet<String>,
+        dynamicExpressions: MutableSet<String>
+    ) {
         var searchIndex = 0
         while (true) {
             val markerIndex = sourceText.indexOf(STYLE_CLASS_MARKER, searchIndex)
@@ -102,10 +119,9 @@ abstract class CheckDefinedStyleClassSelectorsTask : DefaultTask() {
                 return
             }
             val arguments = sourceText.substring(cursor + 1, closingParenIndex)
-            STRING_LITERAL_PATTERN.findAll(arguments)
-                .map { match -> match.groupValues[1] }
-                .filter(STYLE_CLASS_NAME_PATTERN::matches)
-                .forEach(selectors::add)
+            splitArguments(arguments).forEach { argument ->
+                collectStyleArgument(argument, selectors, dynamicExpressions)
+            }
             searchIndex = closingParenIndex + 1
         }
     }
@@ -160,18 +176,64 @@ abstract class CheckDefinedStyleClassSelectorsTask : DefaultTask() {
     private fun collectHelperCallLiterals(
         sourceText: String,
         helperMethods: Map<MethodKey, Set<Int>>,
-        selectors: MutableSet<String>
+        selectors: MutableSet<String>,
+        dynamicExpressions: MutableSet<String>
     ) {
         for (call in parseCalls(sourceText)) {
             val styleIndexes = helperMethods[call.key].orEmpty()
             for (styleIndex in styleIndexes) {
                 val argument = call.arguments.getOrNull(styleIndex) ?: continue
-                STRING_LITERAL_PATTERN.findAll(argument)
-                    .map { match -> match.groupValues[1] }
-                    .filter(STYLE_CLASS_NAME_PATTERN::matches)
-                    .forEach(selectors::add)
+                collectStyleArgument(argument, selectors, dynamicExpressions)
             }
         }
+    }
+
+    private fun collectStyleArgument(
+        argument: String,
+        selectors: MutableSet<String>,
+        dynamicExpressions: MutableSet<String>
+    ) {
+        val literalSelectors = STRING_LITERAL_PATTERN.findAll(argument)
+            .map { match -> match.groupValues[1] }
+            .filter(STYLE_CLASS_NAME_PATTERN::matches)
+            .toList()
+        if (literalSelectors.isEmpty()) {
+            return
+        }
+        if (hasTopLevelConcatenation(argument)) {
+            dynamicExpressions.add(argument.trim())
+            return
+        }
+        literalSelectors.forEach(selectors::add)
+    }
+
+    private fun hasTopLevelConcatenation(expression: String): Boolean {
+        var depth = 0
+        var inString = false
+        var escaped = false
+        for (character in expression) {
+            if (inString) {
+                if (escaped) {
+                    escaped = false
+                } else if (character == '\\') {
+                    escaped = true
+                } else if (character == '"') {
+                    inString = false
+                }
+                continue
+            }
+            when (character) {
+                '"' -> inString = true
+                '(', '[', '<' -> depth++
+                ')', ']', '>' -> if (depth > 0) {
+                    depth--
+                }
+                '+' -> if (depth == 0) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
     private fun parseMethods(sourceText: String): List<MethodDefinition> {
@@ -372,6 +434,11 @@ abstract class CheckDefinedStyleClassSelectorsTask : DefaultTask() {
     private data class MethodKey(
         val name: String,
         val arity: Int
+    )
+
+    private data class StyleClassUsage(
+        val selectors: Set<String>,
+        val dynamicExpressions: Set<String>
     )
 
     companion object {

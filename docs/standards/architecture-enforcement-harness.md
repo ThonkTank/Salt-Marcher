@@ -256,10 +256,11 @@ their prerequisite output was not produced.
 ### Explicit Gradle-Owned Resource Entry Points
 
 - `./gradlew checkCentralizedStylesheets`
-  This is the primary blocking entrypoint for centralized stylesheet placement.
+  This is the primary blocking entrypoint for keeping active application style
+  files centralized in `resources/salt-marcher.css`.
 - `./gradlew checkDefinedStyleClassSelectors`
   This is the primary blocking entrypoint for Java-authored style classes that
-  must resolve to centralized selectors in `resources/*.css`.
+  must resolve to centralized selectors in `resources/salt-marcher.css`.
 - `./gradlew checkViewFxmlResources`
   This is the primary blocking entrypoint for optional FXML view-resource
   placement, controller package ownership, and inline FXML script bans.

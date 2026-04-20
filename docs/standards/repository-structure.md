@@ -44,7 +44,8 @@ Additional constraints:
   target.
 - New top-level feature code must be addable inside `src/`.
 - Do not create alternate top-level architecture roots for active feature code.
-- Stylesheet files for active code must live directly under `resources/`.
+- Stylesheet files for active code must be centralized in
+  `resources/salt-marcher.css`.
 - `tools/gradle/` owns included Gradle builds and verification harnesses.
 - `tools/quality/` owns quality-platform configuration, rules, and helper
   scripts.

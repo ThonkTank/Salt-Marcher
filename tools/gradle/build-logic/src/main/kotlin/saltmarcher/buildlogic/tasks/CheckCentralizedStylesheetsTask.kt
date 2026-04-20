@@ -5,6 +5,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
@@ -33,10 +34,13 @@ abstract class CheckCentralizedStylesheetsTask : DefaultTask() {
     @get:Input
     abstract val styleExtensions: ListProperty<String>
 
+    @get:Input
+    abstract val allowedStylesheetRelativePath: Property<String>
+
     @TaskAction
     fun checkStylesheetPlacement() {
         val projectRootPath = projectRoot.get().asFile.toPath().normalize()
-        val resourcesRootPath = resourcesRoot.get().asFile.toPath().normalize()
+        val allowedStylesheetPath = projectRootPath.resolve(allowedStylesheetRelativePath.get()).normalize()
         val extensions = styleExtensions.get().map { it.lowercase(Locale.ROOT) }.toSet()
 
         val offendingFiles = stylesheetFiles.files.asSequence()
@@ -44,7 +48,7 @@ abstract class CheckCentralizedStylesheetsTask : DefaultTask() {
             .filter(Files::isRegularFile)
             .filter { path ->
                 val extension = path.fileName.toString().substringAfterLast('.', "").lowercase(Locale.ROOT)
-                extension in extensions && path.parent.normalize() != resourcesRootPath
+                extension in extensions && path != allowedStylesheetPath
             }
             .map { path -> projectRootPath.relativize(path).toString().replace('\\', '/') }
             .sorted()
@@ -53,8 +57,8 @@ abstract class CheckCentralizedStylesheetsTask : DefaultTask() {
         if (offendingFiles.isNotEmpty()) {
             val details = offendingFiles.joinToString(separator = "\n") { " - $it" }
             throw GradleException(
-                "Stylesheet files must live directly under resources/.\n" +
-                    "Move custom styles into centralized resources/*.css files.\n" +
+                "Stylesheet files must be centralized in ${allowedStylesheetRelativePath.get()}.\n" +
+                    "Move approved visual rules into the central stylesheet instead of adding replacement style files.\n" +
                     "Offending files:\n$details"
             )
         }
