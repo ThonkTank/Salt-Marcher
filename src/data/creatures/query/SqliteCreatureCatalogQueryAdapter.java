@@ -3,9 +3,9 @@ package src.data.creatures.query;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.gateway.local.SqliteCreatureCatalogLocalGateway;
 import src.data.creatures.mapper.CreatureCatalogQueryMappingFacade;
-import src.domain.creatures.api.CreatureCatalogPage;
-import src.domain.creatures.api.CreatureDetail;
-import src.domain.creatures.api.EncounterCandidate;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.EncounterCandidate;
 import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.List;

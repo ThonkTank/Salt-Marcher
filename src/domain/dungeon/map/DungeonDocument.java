@@ -1,7 +1,7 @@
 package src.domain.dungeon.map;
 
-import src.domain.dungeon.api.DungeonEditorOperation;
-import src.domain.mapcore.api.MapTopologyKind;
+import src.domain.dungeon.published.DungeonEditorOperation;
+import src.domain.dungeon.published.DungeonTopologyKind;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
  */
 public record DungeonDocument(
         String mapName,
-        MapTopologyKind topology,
+        DungeonTopologyKind topology,
         int width,
         int height,
         int roomAnchorQ,
@@ -21,14 +21,14 @@ public record DungeonDocument(
 
     public DungeonDocument {
         mapName = mapName == null || mapName.isBlank() ? "Dungeon Bastion" : mapName;
-        topology = topology == null ? MapTopologyKind.SQUARE : topology;
+        topology = topology == null ? DungeonTopologyKind.SQUARE : topology;
         width = Math.max(6, width);
         height = Math.max(6, height);
         revision = Math.max(0, revision);
     }
 
     public static DungeonDocument demo() {
-        return new DungeonDocument("Dungeon Bastion", MapTopologyKind.SQUARE, 10, 8, 2, 2, 1);
+        return new DungeonDocument("Dungeon Bastion", DungeonTopologyKind.SQUARE, 10, 8, 2, 2, 1);
     }
 
     public DungeonDocument withMapName(String nextMapName) {

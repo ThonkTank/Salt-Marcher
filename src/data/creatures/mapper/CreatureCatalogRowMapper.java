@@ -2,7 +2,7 @@ package src.data.creatures.mapper;
 
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogRecord;
-import src.domain.creatures.api.CreatureCatalogRow;
+import src.domain.creatures.published.CreatureCatalogRow;
 
 public final class CreatureCatalogRowMapper {
 

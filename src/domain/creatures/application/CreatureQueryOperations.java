@@ -1,17 +1,17 @@
 package src.domain.creatures.application;
 
-import src.domain.creatures.api.CreatureCatalogPage;
-import src.domain.creatures.api.CreatureCatalogQuery;
-import src.domain.creatures.api.CreatureCatalogPageResult;
-import src.domain.creatures.api.CreatureDetail;
-import src.domain.creatures.api.CreatureDetailResult;
-import src.domain.creatures.api.CreatureFilterOptions;
-import src.domain.creatures.api.CreatureFilterOptionsResult;
-import src.domain.creatures.api.CreatureLookupStatus;
-import src.domain.creatures.api.CreatureQueryStatus;
-import src.domain.creatures.api.CreatureReadStatus;
-import src.domain.creatures.api.EncounterCandidatesResult;
-import src.domain.creatures.api.EncounterCandidateQuery;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogQuery;
+import src.domain.creatures.published.CreatureCatalogPageResult;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.CreatureDetailResult;
+import src.domain.creatures.published.CreatureFilterOptions;
+import src.domain.creatures.published.CreatureFilterOptionsResult;
+import src.domain.creatures.published.CreatureLookupStatus;
+import src.domain.creatures.published.CreatureQueryStatus;
+import src.domain.creatures.published.CreatureReadStatus;
+import src.domain.creatures.published.EncounterCandidatesResult;
+import src.domain.creatures.published.EncounterCandidateQuery;
 import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.List;

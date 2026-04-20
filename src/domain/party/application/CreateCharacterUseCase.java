@@ -1,10 +1,10 @@
 package src.domain.party.application;
 
-import src.domain.party.roster.PartyCharacterDraft;
-import src.domain.party.roster.PartyRoster;
-import src.domain.party.roster.PartyRosterRepository;
-import src.domain.party.roster.PartyMembership;
-import src.domain.party.roster.PartyMutationStatus;
+import src.domain.party.roster.value.PartyCharacterDraft;
+import src.domain.party.roster.aggregate.PartyRoster;
+import src.domain.party.roster.repository.PartyRosterRepository;
+import src.domain.party.roster.value.PartyMembership;
+import src.domain.party.roster.value.PartyMutationStatus;
 
 public final class CreateCharacterUseCase {
 

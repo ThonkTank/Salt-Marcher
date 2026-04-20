@@ -1,4 +1,4 @@
-package src.domain.mapcore.api;
+package src.domain.mapcore.published;
 
 /**
  * Immutable cell payload published to views.

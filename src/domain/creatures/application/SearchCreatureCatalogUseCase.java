@@ -1,10 +1,10 @@
 package src.domain.creatures.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.api.CreatureCatalogPage;
-import src.domain.creatures.api.CreatureCatalogSortField;
-import src.domain.creatures.api.CreatureCatalogQuery;
-import src.domain.creatures.api.CreatureSortDirection;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogSortField;
+import src.domain.creatures.published.CreatureCatalogQuery;
+import src.domain.creatures.published.CreatureSortDirection;
 import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.util.List;

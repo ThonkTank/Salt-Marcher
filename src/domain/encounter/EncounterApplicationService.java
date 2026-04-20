@@ -1,10 +1,10 @@
 package src.domain.encounter;
 
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encounter.api.EncounterDifficultyBand;
-import src.domain.encounter.api.EncounterGenerationResult;
-import src.domain.encounter.api.EncounterGenerationStatus;
-import src.domain.encounter.api.EncounterGenerationRequest;
+import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationResult;
+import src.domain.encounter.published.EncounterGenerationStatus;
+import src.domain.encounter.published.EncounterGenerationRequest;
 import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.party.PartyApplicationService;
 

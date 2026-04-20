@@ -4,7 +4,7 @@ import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.party.repository.SqlitePartyRosterRepository;
 import src.domain.party.PartyApplicationService;
-import src.domain.party.roster.PartyRosterRepository;
+import src.domain.party.roster.repository.PartyRosterRepository;
 
 /**
  * Root service entrypoint for the party feature.

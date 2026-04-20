@@ -1,12 +1,12 @@
 package src.domain.dungeon.map;
 
-import src.domain.mapcore.api.MapEdgeRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
 
 /**
  * Primitive wall boundary owner.
  */
 public record DungeonWallPrimitive(
         long id,
-        MapEdgeRef edge
+        DungeonEdgeRef edge
 ) implements DungeonPrimitive {
 }

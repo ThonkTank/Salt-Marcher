@@ -1,4 +1,4 @@
-package src.domain.mapcore.api;
+package src.domain.mapcore.published;
 
 /**
  * Semantic selection pointer shared between map views and domain APIs.

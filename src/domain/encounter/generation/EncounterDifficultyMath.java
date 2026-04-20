@@ -1,7 +1,7 @@
 package src.domain.encounter.generation;
 
-import src.domain.encounter.api.EncounterBudgetSummary;
-import src.domain.party.api.AdventuringDaySummary;
+import src.domain.encounter.published.EncounterBudgetSummary;
+import src.domain.party.published.AdventuringDaySummary;
 
 import java.util.List;
 

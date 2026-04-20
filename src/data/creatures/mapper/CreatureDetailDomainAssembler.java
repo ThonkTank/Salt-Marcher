@@ -4,8 +4,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureActionRecord;
 import src.data.creatures.model.CreatureDetailRecord;
-import src.domain.creatures.api.CreatureActionDetail;
-import src.domain.creatures.api.CreatureDetail;
+import src.domain.creatures.published.CreatureActionDetail;
+import src.domain.creatures.published.CreatureDetail;
 
 final class CreatureDetailDomainAssembler {
 

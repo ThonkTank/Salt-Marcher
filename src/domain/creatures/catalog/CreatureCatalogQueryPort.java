@@ -1,11 +1,11 @@
 package src.domain.creatures.catalog;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.api.CreatureCatalogPage;
-import src.domain.creatures.api.CreatureCatalogSortField;
-import src.domain.creatures.api.CreatureDetail;
-import src.domain.creatures.api.CreatureSortDirection;
-import src.domain.creatures.api.EncounterCandidate;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogSortField;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.CreatureSortDirection;
+import src.domain.creatures.published.EncounterCandidate;
 
 import java.util.List;
 

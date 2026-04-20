@@ -1,6 +1,6 @@
 package src.domain.encounter.generation;
 
-import src.domain.creatures.api.EncounterCandidate;
+import src.domain.creatures.published.EncounterCandidate;
 
 record EncounterCandidateCombatStats(
         int xp,

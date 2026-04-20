@@ -14,15 +14,15 @@ import shell.api.ShellSlot;
 import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import src.domain.dungeon.DungeonApplicationService;
-import src.domain.dungeon.api.DungeonSnapshot;
-import src.domain.mapcore.api.MapCellRef;
-import src.domain.mapcore.api.MapCellSnapshot;
-import src.domain.mapcore.api.MapCellStyle;
-import src.domain.mapcore.api.MapEdgeRef;
-import src.domain.mapcore.api.MapEdgeSnapshot;
-import src.domain.mapcore.api.MapSelectionRef;
-import src.domain.mapcore.api.MapSurfaceSnapshot;
-import src.domain.mapcore.api.MapTopologyKind;
+import src.domain.dungeon.published.DungeonSnapshot;
+import src.domain.mapcore.published.MapCellRef;
+import src.domain.mapcore.published.MapCellSnapshot;
+import src.domain.mapcore.published.MapCellStyle;
+import src.domain.mapcore.published.MapEdgeRef;
+import src.domain.mapcore.published.MapEdgeSnapshot;
+import src.domain.mapcore.published.MapSelectionRef;
+import src.domain.mapcore.published.MapSurfaceSnapshot;
+import src.domain.mapcore.published.MapTopologyKind;
 import src.view.views.DungeonMapMainView;
 
 public final class DungeonTravelContribution implements ShellContribution {

@@ -2,9 +2,9 @@ package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encounter.api.EncounterBudgetSummary;
-import src.domain.encounter.api.EncounterGenerationRequest;
-import src.domain.encounter.api.GeneratedEncounter;
+import src.domain.encounter.published.EncounterBudgetSummary;
+import src.domain.encounter.published.EncounterGenerationRequest;
+import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.party.PartyApplicationService;
 
 import java.util.List;

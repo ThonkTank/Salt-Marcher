@@ -1,9 +1,9 @@
 package src.domain.encounter.generation;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.api.CreatureActionDetail;
-import src.domain.creatures.api.CreatureDetail;
-import src.domain.creatures.api.EncounterCandidate;
+import src.domain.creatures.published.CreatureActionDetail;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.EncounterCandidate;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,6 @@
 package src.domain.dungeon.map;
 
-import src.domain.mapcore.api.MapCellRef;
+import src.domain.dungeon.published.DungeonCellRef;
 
 /**
  * Domain-local cell value object.
@@ -11,7 +11,7 @@ public record DungeonCell(
         int level
 ) {
 
-    public MapCellRef toMapCellRef() {
-        return new MapCellRef(q, r, level);
+    public DungeonCellRef toCellRef() {
+        return new DungeonCellRef(q, r, level);
     }
 }

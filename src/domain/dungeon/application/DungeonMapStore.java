@@ -1,6 +1,6 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.api.DungeonMapId;
+import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.map.DungeonMap;
 import src.domain.dungeon.map.DungeonMapRepository;
 

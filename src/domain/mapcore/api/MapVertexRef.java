@@ -1,4 +1,4 @@
-package src.domain.mapcore.api;
+package src.domain.mapcore.published;
 
 /**
  * Stable vertex reference used for shared edit semantics.

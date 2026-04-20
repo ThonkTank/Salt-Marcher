@@ -14,16 +14,16 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.api.CreatureCatalogPage;
-import src.domain.creatures.api.CreatureCatalogPageResult;
-import src.domain.creatures.api.CreatureCatalogQuery;
-import src.domain.creatures.api.CreatureCatalogRow;
-import src.domain.creatures.api.CreatureCatalogSortField;
-import src.domain.creatures.api.CreatureFilterOptions;
-import src.domain.creatures.api.CreatureFilterOptionsResult;
-import src.domain.creatures.api.CreatureQueryStatus;
-import src.domain.creatures.api.CreatureReadStatus;
-import src.domain.creatures.api.CreatureSortDirection;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogPageResult;
+import src.domain.creatures.published.CreatureCatalogQuery;
+import src.domain.creatures.published.CreatureCatalogRow;
+import src.domain.creatures.published.CreatureCatalogSortField;
+import src.domain.creatures.published.CreatureFilterOptions;
+import src.domain.creatures.published.CreatureFilterOptionsResult;
+import src.domain.creatures.published.CreatureQueryStatus;
+import src.domain.creatures.published.CreatureReadStatus;
+import src.domain.creatures.published.CreatureSortDirection;
 
 public final class CatalogViewModel {
 

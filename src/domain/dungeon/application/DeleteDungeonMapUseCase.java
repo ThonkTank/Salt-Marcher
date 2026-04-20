@@ -1,7 +1,7 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.api.DeleteDungeonMapCommand;
-import src.domain.dungeon.api.DeleteDungeonMapResult;
+import src.domain.dungeon.published.DeleteDungeonMapCommand;
+import src.domain.dungeon.published.DeleteDungeonMapResult;
 import src.domain.dungeon.map.DungeonMapRepository;
 
 /**

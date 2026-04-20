@@ -1,7 +1,7 @@
 package src.domain.dungeon.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.api.DungeonMapId;
+import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.map.DungeonDocument;
 
 import java.util.LinkedHashMap;

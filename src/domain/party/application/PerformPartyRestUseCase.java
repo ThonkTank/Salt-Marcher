@@ -1,9 +1,9 @@
 package src.domain.party.application;
 
-import src.domain.party.roster.PartyRoster;
-import src.domain.party.roster.PartyRosterRepository;
-import src.domain.party.roster.PartyMutationStatus;
-import src.domain.party.roster.PartyRestType;
+import src.domain.party.roster.aggregate.PartyRoster;
+import src.domain.party.roster.repository.PartyRosterRepository;
+import src.domain.party.roster.value.PartyMutationStatus;
+import src.domain.party.roster.value.PartyRestType;
 
 public final class PerformPartyRestUseCase {
 

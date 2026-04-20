@@ -1,11 +1,11 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.api.CreateDungeonMapCommand;
-import src.domain.dungeon.api.CreateDungeonMapResult;
-import src.domain.dungeon.api.DeleteDungeonMapCommand;
-import src.domain.dungeon.api.DeleteDungeonMapResult;
-import src.domain.dungeon.api.DungeonEditorOperation;
-import src.domain.dungeon.api.DungeonOperationResult;
+import src.domain.dungeon.published.CreateDungeonMapCommand;
+import src.domain.dungeon.published.CreateDungeonMapResult;
+import src.domain.dungeon.published.DeleteDungeonMapCommand;
+import src.domain.dungeon.published.DeleteDungeonMapResult;
+import src.domain.dungeon.published.DungeonEditorOperation;
+import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.map.DungeonMapRepository;
 
 /**

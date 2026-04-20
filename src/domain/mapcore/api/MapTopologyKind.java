@@ -1,4 +1,4 @@
-package src.domain.mapcore.api;
+package src.domain.mapcore.published;
 
 /**
  * Supported topology families for shared map rendering contracts.

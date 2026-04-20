@@ -1,14 +1,13 @@
 package src.domain.dungeon.map;
 
-import src.domain.mapcore.api.MapSurfaceSnapshot;
-
 import java.util.List;
+import src.domain.dungeon.published.DungeonMapSnapshot;
 
 /**
  * Derived dungeon lookup and render state built from committed truth.
  */
 public record DungeonDerivedState(
-        MapSurfaceSnapshot surface,
+        DungeonMapSnapshot map,
         List<DungeonAggregate> aggregates,
         List<DungeonPrimitive> primitives,
         DungeonRelationGraph relations

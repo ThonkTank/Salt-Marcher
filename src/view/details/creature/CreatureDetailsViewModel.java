@@ -11,10 +11,10 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.api.CreatureActionDetail;
-import src.domain.creatures.api.CreatureDetail;
-import src.domain.creatures.api.CreatureDetailResult;
-import src.domain.creatures.api.CreatureLookupStatus;
+import src.domain.creatures.published.CreatureActionDetail;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.CreatureDetailResult;
+import src.domain.creatures.published.CreatureLookupStatus;
 
 public final class CreatureDetailsViewModel {
 

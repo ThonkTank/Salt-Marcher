@@ -1,7 +1,7 @@
 package src.data.party.gateway.local;
 
-import src.domain.party.roster.PartyAdventuringDayBudget;
-import src.domain.party.roster.PartyLevelProgression;
+import src.domain.party.roster.policy.PartyAdventuringDayBudget;
+import src.domain.party.roster.policy.PartyLevelProgression;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

@@ -1,4 +1,4 @@
-package src.domain.mapcore.api;
+package src.domain.mapcore.published;
 
 /**
  * Stable cell reference within one topology-aware map surface.

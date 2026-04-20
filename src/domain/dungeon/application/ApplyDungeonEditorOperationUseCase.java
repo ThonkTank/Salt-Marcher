@@ -1,9 +1,9 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.api.DungeonEditorOperation;
-import src.domain.dungeon.api.DungeonMapMode;
-import src.domain.dungeon.api.DungeonOperationResult;
-import src.domain.dungeon.api.DungeonSnapshot;
+import src.domain.dungeon.published.DungeonEditorOperation;
+import src.domain.dungeon.published.DungeonMapMode;
+import src.domain.dungeon.published.DungeonOperationResult;
+import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.map.DungeonDerivedState;
 import src.domain.dungeon.map.DungeonDocument;
 

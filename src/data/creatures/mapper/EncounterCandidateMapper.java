@@ -2,7 +2,7 @@ package src.data.creatures.mapper;
 
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.api.EncounterCandidate;
+import src.domain.creatures.published.EncounterCandidate;
 
 public final class EncounterCandidateMapper {
 

@@ -3,8 +3,8 @@ package src.data.creatures.gateway.local;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureCatalogRecord;
-import src.domain.creatures.api.CreatureCatalogSortField;
-import src.domain.creatures.api.CreatureSortDirection;
+import src.domain.creatures.published.CreatureCatalogSortField;
+import src.domain.creatures.published.CreatureSortDirection;
 import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import java.sql.Connection;

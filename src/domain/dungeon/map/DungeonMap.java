@@ -1,6 +1,6 @@
 package src.domain.dungeon.map;
 
-import src.domain.dungeon.api.DungeonMapId;
+import src.domain.dungeon.published.DungeonMapId;
 
 /**
  * Canonical aggregate root for one authored dungeon map.

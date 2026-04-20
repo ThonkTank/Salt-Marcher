@@ -1,6 +1,6 @@
 package src.domain.dungeon.map;
 
-import src.domain.dungeon.api.DungeonMapId;
+import src.domain.dungeon.published.DungeonMapId;
 
 import java.util.List;
 import java.util.Optional;

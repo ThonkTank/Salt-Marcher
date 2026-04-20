@@ -1,11 +1,11 @@
 package src.domain.creatures;
 
-import src.domain.creatures.api.CreatureCatalogPageResult;
-import src.domain.creatures.api.CreatureCatalogQuery;
-import src.domain.creatures.api.CreatureDetailResult;
-import src.domain.creatures.api.CreatureFilterOptionsResult;
-import src.domain.creatures.api.EncounterCandidatesResult;
-import src.domain.creatures.api.EncounterCandidateQuery;
+import src.domain.creatures.published.CreatureCatalogPageResult;
+import src.domain.creatures.published.CreatureCatalogQuery;
+import src.domain.creatures.published.CreatureDetailResult;
+import src.domain.creatures.published.CreatureFilterOptionsResult;
+import src.domain.creatures.published.EncounterCandidatesResult;
+import src.domain.creatures.published.EncounterCandidateQuery;
 import src.domain.creatures.application.CreatureQueryOperations;
 import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 

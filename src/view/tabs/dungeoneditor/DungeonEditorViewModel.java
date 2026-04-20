@@ -6,7 +6,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.dungeon.DungeonApplicationService;
-import src.domain.dungeon.api.DungeonSnapshot;
+import src.domain.dungeon.published.DungeonSnapshot;
 
 public final class DungeonEditorViewModel {
 

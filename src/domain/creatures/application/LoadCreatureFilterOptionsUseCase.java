@@ -1,6 +1,6 @@
 package src.domain.creatures.application;
 
-import src.domain.creatures.api.CreatureFilterOptions;
+import src.domain.creatures.published.CreatureFilterOptions;
 import src.domain.creatures.catalog.CreatureCatalogQueryPort;
 
 import org.jspecify.annotations.Nullable;

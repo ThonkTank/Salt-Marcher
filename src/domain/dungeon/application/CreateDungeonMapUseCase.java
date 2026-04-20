@@ -1,8 +1,8 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.api.CreateDungeonMapCommand;
-import src.domain.dungeon.api.CreateDungeonMapResult;
-import src.domain.dungeon.api.DungeonMapId;
+import src.domain.dungeon.published.CreateDungeonMapCommand;
+import src.domain.dungeon.published.CreateDungeonMapResult;
+import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.map.DungeonMap;
 import src.domain.dungeon.map.DungeonMapRepository;
 

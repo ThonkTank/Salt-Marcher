@@ -1,7 +1,7 @@
 package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.api.EncounterBudgetSummary;
+import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.generation.EncounterDraft;
 
 import java.util.List;

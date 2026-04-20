@@ -1,12 +1,12 @@
 package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.api.CreatureDetail;
-import src.domain.creatures.api.CreatureDetailResult;
-import src.domain.creatures.api.CreatureLookupStatus;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.CreatureDetailResult;
+import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encounter.api.EncounterCreature;
-import src.domain.encounter.api.GeneratedEncounter;
+import src.domain.encounter.published.EncounterCreature;
+import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.generation.EncounterDraft;
 import src.domain.encounter.generation.EncounterDraftEntry;
 import src.domain.encounter.generation.EncounterDraftMetrics;

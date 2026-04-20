@@ -17,7 +17,7 @@ import shell.api.ShellSlot;
 import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.api.CreatureFilterOptions;
+import src.domain.creatures.published.CreatureFilterOptions;
 import src.view.details.creature.CreatureDetailsView;
 import src.view.details.creature.CreatureDetailsViewModel;
 

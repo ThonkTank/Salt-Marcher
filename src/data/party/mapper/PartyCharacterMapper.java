@@ -1,11 +1,11 @@
 package src.data.party.mapper;
 
 import src.data.party.model.PartyCharacterRecord;
-import src.domain.party.roster.PartyCharacter;
-import src.domain.party.roster.PartyCharacterCombatProfile;
-import src.domain.party.roster.PartyCharacterIdentity;
-import src.domain.party.roster.PartyCharacterProgress;
-import src.domain.party.roster.PartyMembership;
+import src.domain.party.roster.entity.PartyCharacter;
+import src.domain.party.roster.value.PartyCharacterCombatProfile;
+import src.domain.party.roster.value.PartyCharacterIdentity;
+import src.domain.party.roster.value.PartyCharacterProgress;
+import src.domain.party.roster.value.PartyMembership;
 
 final class PartyCharacterMapper {
 

@@ -1,6 +1,6 @@
 package src.domain.dungeon.map;
 
-import src.domain.mapcore.api.MapEdgeRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
 
 /**
  * Primitive door boundary owner.
@@ -8,7 +8,7 @@ import src.domain.mapcore.api.MapEdgeRef;
 public record DungeonDoorPrimitive(
         long id,
         String label,
-        MapEdgeRef edge
+        DungeonEdgeRef edge
 ) implements DungeonPrimitive {
 
     public DungeonDoorPrimitive {

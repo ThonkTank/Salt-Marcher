@@ -1,6 +1,6 @@
 package src.domain.encounter.generation;
 
-import src.domain.encounter.api.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterDifficultyBand;
 
 import java.util.Set;
 
