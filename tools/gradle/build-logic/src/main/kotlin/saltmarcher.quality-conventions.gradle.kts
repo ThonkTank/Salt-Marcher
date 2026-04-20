@@ -450,14 +450,14 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
     runtimeClasspath.from(configurations.named("runtimeClasspath"))
     reportFile.set(ckjmReportFile)
     summaryFile.set(ckjmSummaryFile)
-    maxWeightedMethodsPerClass.set(104)
-    maxDepthOfInheritanceTree.set(9)
-    maxNumberOfChildren.set(4)
-    maxCouplingBetweenObjects.set(65)
-    maxResponseForClass.set(350)
-    maxLackOfCohesionInMethods.set(6000)
-    maxAfferentCouplings.set(35)
-    maxNumberOfPublicMethods.set(60)
+    maxWeightedMethodsPerClass.set(11)
+    maxDepthOfInheritanceTree.set(1)
+    maxNumberOfChildren.set(0)
+    maxCouplingBetweenObjects.set(1)
+    maxResponseForClass.set(43)
+    maxLackOfCohesionInMethods.set(78)
+    maxAfferentCouplings.set(1)
+    maxNumberOfPublicMethods.set(11)
 }
 
 // Architecture aggregate and repository/resource policy gates

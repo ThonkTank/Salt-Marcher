@@ -35,10 +35,12 @@ aggregates, but its owner model lives in the
 
 Every quality platform named here belongs to exactly one operating status:
 `Blocking Local Gate` for local Gradle tasks that write diagnostics and fail
-the overall invocation on violations, `Required CI Gate` for GitHub Actions
-jobs intended for branch protection, `Informational Report` for artifacts
-without project-specific blocking thresholds, or `Review-Owned` for binding
-guidance that needs human judgment.
+the overall invocation on violations, `Blocking Distribution Gate` for Gradle
+tasks that fail packaging or installation flows but are not part of the central
+`check` aggregate, `Required CI Gate` for GitHub Actions jobs intended for
+branch protection, `Informational Report` for artifacts without
+project-specific blocking thresholds, or `Review-Owned` for binding guidance
+that needs human judgment.
 
 External services may be both `Required CI Gate` and `Review-Owned` for
 different parts of their output. CodeScene quality-gate failures block CI,
@@ -79,11 +81,13 @@ compilation verification independent from graph analysis while ensuring
 | --- | --- | --- | --- |
 | PMD non-architecture smells | `Informational Report` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` as source-only reports on production Java sources. |
 | SpotBugs plus FindSecBugs | `Informational Report` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
-| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 80`; writes `build/reports/cpd/main.txt`. |
-| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`; writes `build/reports/lizard/main.txt`. |
+| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 80`, stricter than PMD's documented `100` token Java example; writes `build/reports/cpd/main.txt`. |
+| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; writes `build/reports/lizard/main.txt`. |
 | CKJM ext | `Blocking Local Gate` | `./gradlew ckjmMain` | Runs on compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, and fails when configured thresholds are exceeded. |
 
-PMD non-architecture currently enforces explicit metric thresholds:
+PMD non-architecture reports use explicit metric thresholds. These thresholds
+must stay at or below PMD's documented defaults unless the standard explicitly
+records a stricter project value:
 
 - Cognitive complexity: `15`
 - Method cyclomatic complexity: `10`
@@ -92,7 +96,7 @@ PMD non-architecture currently enforces explicit metric thresholds:
 - Coupling between objects: `20`
 - Deep nested `if` depth: `3`
 - Method NCSS count: `30`
-- Excessive parameter list minimum: `6`
+- Excessive parameter list minimum: `6`, stricter than PMD's default `10`
 
 The same PMD ruleset enables PMD's default thresholds and rule defaults for the
 explicitly listed Java quickstart rules plus stricter source-smell rules for
@@ -110,22 +114,31 @@ back to a blocking gate. `pmdTest` is disabled; PMD non-architecture smell
 policy applies to production source roots, not architecture test sources.
 
 SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
-effort `MAX`, and confidence `MEDIUM`. Findings are reported but do not block
-the local build until a curated baseline is established. `spotbugsTest` is
-disabled because behavior-coupled automated tests are not part of the project
-strategy.
+effort `MAX`, and confidence `MEDIUM`. `MAX` is the strongest analysis effort;
+`MEDIUM` keeps the normal medium-confidence report level instead of weakening
+the report to high-confidence-only findings. Findings are reported but do not
+block the local build until a curated baseline is established. `spotbugsTest`
+is disabled because behavior-coupled automated tests are not part of the
+project strategy.
 
-CKJM blocks on these current-code regression thresholds while still writing
-the full metrics report:
+CKJM measures object-oriented class metrics but does not publish official
+blocking defaults. SaltMarcher therefore uses the documented CK metric
+reference policy: values must stay low for complexity, coupling, lack of
+cohesion, inheritance depth, and child count. These are blocking thresholds,
+not current-code regression baselines:
 
-- Weighted methods per class (`WMC`): `104`
-- Depth of inheritance tree (`DIT`): `9`
-- Number of children (`NOC`): `4`
-- Coupling between objects (`CBO`): `65`
-- Response for class (`RFC`): `350`
-- Lack of cohesion in methods (`LCOM`): `6000`
-- Afferent couplings (`Ca`): `35`
-- Number of public methods (`NPM`): `60`
+- Weighted methods per class (`WMC`): `11`
+- Depth of inheritance tree (`DIT`): `1`
+- Number of children (`NOC`): `0`
+- Coupling between objects (`CBO`): `1`
+- Response for class (`RFC`): `43`
+- Lack of cohesion in methods (`LCOM`): `78`
+- Afferent couplings (`Ca`): `1`
+- Number of public methods (`NPM`): `11`
+
+`Ca` follows the same low-coupling policy as `CBO`. `NPM` follows the same
+method-count policy as `WMC`. `DIT` uses `1` because CKJM's Java output counts
+ordinary classes from a root depth of `1`.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the jQAssistant view-topology blocker; they may be run together for quality
@@ -149,6 +162,7 @@ language-level architecture rules.
 | `./gradlew checkDefinedStyleClassSelectors` | `Blocking Local Gate` | Style classes authored from Java through `getStyleClass()` calls must resolve to selectors in `resources/salt-marcher.css`. |
 | `./gradlew checkNoCompiledArtifactsInSource` | `Blocking Local Gate` | `.class` files must not exist under active source roots. |
 | `./gradlew checkDesktopPackagingInputs` | `Blocking Local Gate` | Desktop main/preloader class sources, icon paths, stylesheet path, launcher name, and `StartupWMClass` must be present and valid. |
+| `./gradlew checkDesktopAppImageLayout` | `Blocking Distribution Gate` | Installed desktop app images must keep JavaFX jars on the dedicated JavaFX module path and keep launcher configuration aligned with the packaged layout. |
 | `./gradlew checkViewFxmlResources` | `Blocking Local Gate` | View FXML files must live under the MVVM view-resource tree, avoid inline scripts, and use passive View controllers matching the owning view area. |
 
 The styling rules behind the stylesheet and selector gates are defined in the
@@ -177,9 +191,10 @@ incomplete until that build has been rerun or a concrete blocker has been
 reported.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
-`spotbugsMain`, `pmdArchitectureMain`, `cpdMain`, `lizardMain`, `ckjmMain`,
-`checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
-`checkNoCompiledArtifactsInSource`, `checkDesktopPackagingInputs`,
+`pmdStrictMain`, `spotbugsMain`, `pmdArchitectureMain`, `cpdMain`,
+`lizardMain`, `ckjmMain`, `checkCentralizedStylesheets`,
+`checkDefinedStyleClassSelectors`, `checkNoCompiledArtifactsInSource`,
+`checkDesktopPackagingInputs`, `checkDesktopAppImageLayout`,
 `checkViewFxmlResources`, and `jqassistantEffectiveRules`, each run through
 `./gradlew <task> --console=plain`.
 
@@ -387,4 +402,10 @@ The quality platforms do not replace human review.
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/styling.md:1)
+- [PMD Java Design Rules Reference](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/quality-platforms/pmd-java-design-rules.md:1)
+- [PMD CPD Reference](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/quality-platforms/pmd-cpd.md:1)
+- [Lizard README Reference](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/quality-platforms/lizard-readme.md:1)
+- [SpotBugs Gradle Plugin Reference](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/quality-platforms/spotbugs-gradle-plugin.md:1)
+- [CKJM Metrics Reference](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/quality-platforms/ckjm-metrics.md:1)
+- [CK Metric Reference Values](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/quality-platforms/ck-metric-reference-values.md:1)
 - [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)
