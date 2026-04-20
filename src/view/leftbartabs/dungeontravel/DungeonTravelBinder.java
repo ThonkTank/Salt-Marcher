@@ -20,14 +20,30 @@ final class DungeonTravelBinder {
     ShellBinding bind() {
         DungeonApplicationService dungeon = runtimeContext.services().require(DungeonApplicationService.class);
         DungeonTravelViewModel viewModel = new DungeonTravelViewModel(dungeon);
-        DungeonMapViewModel mapViewModel = new DungeonMapViewModel("Travel workspace");
+        DungeonMapViewModel mapViewModel = new DungeonMapViewModel("Travel workspace", false);
         DungeonTravelControlsView controls = new DungeonTravelControlsView();
         DungeonTravelMainView main = new DungeonTravelMainView();
         DungeonTravelStateView state = new DungeonTravelStateView();
         main.renderModelProperty().bind(mapViewModel.displayModelProperty());
         state.stateTextProperty().bind(viewModel.stateProperty());
         controls.onRefresh(viewModel::refresh);
+        controls.onResetView(main::resetCamera);
+        controls.onPreviousLevel(viewModel::previousLevel);
+        controls.onNextLevel(viewModel::nextLevel);
+        controls.onOverlayModeChanged(viewModel::selectOverlayMode);
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
+        viewModel.overlayModeProperty().addListener((ignored, before, after) -> {
+            mapViewModel.selectOverlayMode(after);
+            controls.showOverlayMode(after);
+        });
+        viewModel.projectionLevelProperty().addListener((ignored, before, after) -> {
+            mapViewModel.showProjectionLevel(after.intValue());
+            controls.showLevel(after.intValue());
+        });
+        viewModel.mapNameProperty().addListener((ignored, before, after) -> controls.showMapName(after));
+        controls.showOverlayMode(viewModel.overlayModeProperty().get());
+        controls.showLevel(viewModel.projectionLevelProperty().get());
+        controls.showMapName(viewModel.mapNameProperty().get());
         viewModel.refresh();
         return new Binding(controls, main, state);
     }

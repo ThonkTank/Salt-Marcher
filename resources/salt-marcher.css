@@ -451,6 +451,9 @@
     -fx-background-color: linear-gradient(to bottom, #151b20, #0f1418);
     -fx-background-radius: 0 0 10 10;
 }
+.dungeon-map-canvas {
+    -fx-background-color: #12181c;
+}
 .map-mode-badge {
     -fx-background-color: rgba(30, 127, 212, 0.22);
     -fx-border-color: rgba(65, 169, 242, 0.6);
@@ -612,6 +615,37 @@
     -fx-font-size: 19px;
     -fx-font-weight: bold;
     -fx-alignment: center;
+}
+
+.dungeon-editor-toolbar {
+    -fx-spacing: 10;
+    -fx-background-color: -sm-bg-darkest;
+}
+.editor-toolbar-group {
+    -fx-spacing: 6;
+}
+.dungeon-editor-sidebar {
+    -fx-spacing: 12;
+    -fx-background-color: -sm-bg-darkest;
+}
+.editor-card {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10;
+    -fx-spacing: 6;
+}
+.editor-panel-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+}
+.dungeon-overlay-trigger {
+    -fx-min-width: 130;
+}
+.dungeon-overlay-dropdown {
+    -fx-min-width: 180;
 }
 
 .control-toolbar {
