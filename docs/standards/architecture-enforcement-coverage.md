@@ -83,16 +83,25 @@ controls; reusable generic views live under `src/view/views`.
   (`pmdArchitectureMain`).
 - `view-contribution-dependency-boundary`: contributions may use shell public
   contracts, their co-located ViewModel, co-located passive views, reusable
-  generic passive views, JavaFX scene `Node`, domain root application services,
-  domain `api` carriers, and ordinary non-infrastructure JDK support types, but
-  not data, bootstrap, shell host internals, legacy view topology, foreign view
-  roots, private domain internals, or direct JDK infrastructure ownership
-  through Error Prone `ViewModelFrameworkIndependence` and
+  generic passive views, detail-entry ViewModels and passive views for
+  shell-owned Inspector publication, JavaFX scene `Node`, domain root
+  application services, domain `api` carriers, and ordinary
+  non-infrastructure JDK support types, but not data, bootstrap, shell host
+  internals, legacy view topology, foreign non-detail view roots, private
+  domain internals, or direct JDK infrastructure ownership through Error Prone
+  `ViewModelFrameworkIndependence` and
   `FeatureShellApiAllowlist` (`compileJava`), jQAssistant
   `saltmarcher:MvvmModelDependencies` (`checkViewArchitecture`), and
   ArchUnit `viewContributionsAndViewModelsMustNotReachBootstrapDataOrShellHost`
   and `viewContributionsAndViewModelsMustOnlyUseFeatureApisAtBackendBoundary`
   (`architectureTest`).
+- `view-contribution-wiring-presence`: every discoverable contribution must
+  structurally depend on its co-located ViewModel and at least one co-located
+  passive View through jQAssistant
+  `saltmarcher:MvvmContributionUsesOwnModelAndView`
+  (`checkViewArchitecture`). This proves the contribution owns real MVVM
+  assembly for its root; it does not try to infer binding quality or semantic
+  delegation.
 - `view-model-dependency-boundary`: ViewModels may use JavaFX
   beans/collections, ordinary non-infrastructure JDK support types, private
   nested presentation helper types inside the owning `*ViewModel`, and domain
@@ -128,9 +137,16 @@ controls; reusable generic views live under `src/view/views`.
   under `resources/view/tabs/<entry>/`, `resources/view/topbar/<entry>/`,
   `resources/view/state/<entry>/`, `resources/view/details/<entry>/`, or
   direct reusable `resources/view/views/`; inline FXML scripts are forbidden;
-  `fx:controller` must point to a passive View class with the same area-specific
-  naming contract as Java views. This is enforced by Gradle-owned
-  `checkViewFxmlResources` (`checkViewArchitecture` and `check`).
+  when present, `fx:controller` must point to the passive View class matching
+  the resource area, entry folder, and FXML basename with the same
+  area-specific naming contract as Java views. This is enforced by
+  Gradle-owned `checkViewFxmlResources` (`checkViewArchitecture` and `check`).
+- `view-details-slot-boundary`: feature view code must not publish direct
+  `ShellSlot.COCKPIT_DETAILS` content; cockpit details/history entries are
+  published through the shell-owned Inspector API. This is enforced by Error
+  Prone `ViewDetailsSlotBoundary` (`compileJava`). The old PMD source-text
+  scan is intentionally not the owner because it cannot distinguish real enum
+  references from incidental text.
 
 Mechanical trace:
 
@@ -140,6 +156,8 @@ Mechanical trace:
 - A discoverable contribution root defines one shell-discovered adapter, one
   co-located ViewModel, and at least one passive View; detail entries do not
   define bootstrap-discovered contributions.
+- A shell-discovered adapter structurally references its co-located ViewModel
+  and at least one co-located passive View.
 - A ViewModel file defines one presentation state/action holder and imports no
   shell APIs, concrete view classes, foreign view-root ViewModels, or direct JDK
   infrastructure types.
@@ -154,6 +172,7 @@ Mechanical trace:
 - Optional FXML resources stay in the view resource tree, use matching passive
   View controllers, and do not use inline scripts.
 - Details/history publication goes through shell-owned contracts.
+- Feature view code does not publish `ShellSlot.COCKPIT_DETAILS` directly.
 - State-pane precedence is explicit: active left-bar tab content wins while
   present; otherwise registered state-pane tabs are shown.
 - Legacy component-local buckets are absent from migrated target code.
@@ -180,7 +199,18 @@ Mechanical trace:
 - Whether passive views avoid feature meaning, shell policy, domain behavior,
   and ApplicationService calls.
 - Whether details/history content is published through shell-owned APIs.
+- Whether reusable `src/view/views` content is truly generic passive UI shared
+  across view roots, rather than a feature-specific panel moved to escape
+  co-location rules.
+- Whether similar passive panels should extend an existing reusable view or
+  stay duplicated because feature-specific semantics would make sharing leaky.
 - Whether state-pane precedence is preserved.
+- Whether runtime state belongs under `src/view/state/<state>` as a cockpit
+  state-pane contribution or under a feature tab/detail root as local
+  presentation state.
+- Whether contribution wiring performs meaningful ViewModel/action binding and
+  service lookup at the shell adapter boundary rather than merely satisfying
+  structural dependency checks.
 - Whether command availability, disabled reasons, results, and user-visible
   failures are owned by models rather than inferred in widgets.
 - Whether long-lived listeners, subscriptions, callbacks, and observers have

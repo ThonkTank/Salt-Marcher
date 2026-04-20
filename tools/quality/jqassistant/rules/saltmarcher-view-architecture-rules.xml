@@ -10,6 +10,7 @@
         <includeConstraint refId="saltmarcher:MvvmOnePanelViewPerFile"/>
         <includeConstraint refId="saltmarcher:MvvmPanelViewName"/>
         <includeConstraint refId="saltmarcher:MvvmViewRootEntrypointCount"/>
+        <includeConstraint refId="saltmarcher:MvvmContributionUsesOwnModelAndView"/>
         <includeConstraint refId="saltmarcher:MvvmModelDependencies"/>
         <includeConstraint refId="saltmarcher:MvvmViewModelDependencies"/>
         <includeConstraint refId="saltmarcher:MvvmNoPrivateForeignComponentDependencies"/>
@@ -32,7 +33,15 @@
                 WHEN size(segments) >= 5 AND segments[2] IN ['tabs', 'topbar', 'state', 'details'] AND segments[4] CONTAINS 'View' THEN 'VIEW'
                 ELSE 'LEGACY'
               END,
-              type.relativePath = replace(type.fqn, '.', '/') + '.java'
+              type.relativePath = CASE
+                WHEN type.sourceFileName IS NULL OR type.sourceFileName = ''
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                WHEN type.name IS NULL
+                  OR type.name = ''
+                  OR NOT type.fqn ENDS WITH '.' + type.name
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + type.sourceFileName
+              END
             RETURN
               type AS MvvmViewType
         ]]></cypher>
@@ -181,6 +190,50 @@
               'at least one shell contribution' AS ExpectedDirection,
               'none' AS ActualDirection,
               'The shell needs discoverable contributions.' AS Details
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:MvvmContributionUsesOwnModelAndView">
+        <requiresConcept refId="saltmarcher:MvvmViewType"/>
+        <description>Every contribution structurally wires its co-located ViewModel and at least one co-located passive view.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'CONTRIBUTION'})
+            WHERE NOT source.name CONTAINS '$'
+            WITH source, split(source.fqn, '.') AS sourceSegments
+            OPTIONAL MATCH (source)-[:DEPENDS_ON]->(model:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'MODEL'})
+            WITH source, sourceSegments, collect(DISTINCT model) AS modelCandidates
+            WITH source, sourceSegments, [
+              model IN modelCandidates
+              WHERE model IS NOT NULL
+                AND NOT model.name CONTAINS '$'
+                AND size(sourceSegments) >= 4
+                AND size(split(model.fqn, '.')) >= 4
+                AND split(model.fqn, '.')[2] = sourceSegments[2]
+                AND split(model.fqn, '.')[3] = sourceSegments[3]
+            ] AS ownModels
+            OPTIONAL MATCH (source)-[:DEPENDS_ON]->(view:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'VIEW'})
+            WITH source, size(ownModels) AS ownModelCount, collect(DISTINCT view) AS viewCandidates
+            WITH source, ownModelCount, [
+              view IN viewCandidates
+              WHERE view IS NOT NULL
+                AND NOT view.name CONTAINS '$'
+                AND size(split(view.fqn, '.')) >= 4
+                AND split(view.fqn, '.')[2] = split(source.fqn, '.')[2]
+                AND split(view.fqn, '.')[3] = split(source.fqn, '.')[3]
+            ] AS ownViews
+            WITH source, ownModelCount, size(ownViews) AS ownViewCount
+            WHERE ownModelCount = 0 OR ownViewCount = 0
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              'direct dependency on the co-located ViewModel and at least one co-located passive View' AS ExpectedDirection,
+              CASE
+                WHEN ownModelCount = 0 AND ownViewCount = 0 THEN 'missing co-located ViewModel and passive View dependency'
+                WHEN ownModelCount = 0 THEN 'missing co-located ViewModel dependency'
+                ELSE 'missing co-located passive View dependency'
+              END AS ActualDirection,
+              'Contributions must be shell adapters that instantiate and bind their own model and view surface.' AS Details
+            ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
     </constraint>

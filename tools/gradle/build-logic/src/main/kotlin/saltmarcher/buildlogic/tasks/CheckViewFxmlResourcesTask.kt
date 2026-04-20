@@ -13,6 +13,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 
 @DisableCachingByDefault(because = "Verification task with no stable outputs.")
 abstract class CheckViewFxmlResourcesTask : DefaultTask() {
@@ -41,8 +42,13 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
             .forEach { file ->
                 val path = file.toPath().normalize()
                 val relative = projectRootPath.relativize(path).toString().replace('\\', '/')
+                val viewResourceSegments = if (path.startsWith(expectedRoot)) {
+                    expectedRoot.relativize(path).pathSegments()
+                } else {
+                    emptyList()
+                }
                 validatePlacement(path.toFile(), expectedRoot.toFile(), path.startsWith(expectedRoot), relative, violations)
-                validateContent(file, relative, violations)
+                validateContent(file, relative, viewResourceSegments, violations)
             }
 
         if (violations.isNotEmpty()) {
@@ -76,7 +82,12 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
         }
     }
 
-    private fun validateContent(file: File, relative: String, violations: MutableList<String>) {
+    private fun validateContent(
+        file: File,
+        relative: String,
+        viewResourceSegments: List<String>,
+        violations: MutableList<String>
+    ) {
         val text = file.readText()
         if (text.contains("<fx:script") || text.contains("<script")) {
             violations.add("$relative -> inline FXML scripts are forbidden")
@@ -94,10 +105,15 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
             violations.add("$relative -> fx:controller must start with one of ${allowedPrefixes.joinToString()}")
             return
         }
-        validateControllerName(controller, relative, violations)
+        validateControllerName(controller, relative, viewResourceSegments, violations)
     }
 
-    private fun validateControllerName(controller: String, relative: String, violations: MutableList<String>) {
+    private fun validateControllerName(
+        controller: String,
+        relative: String,
+        viewResourceSegments: List<String>,
+        violations: MutableList<String>
+    ) {
         val controllerSegments = controller.split('.')
         if (controllerSegments.size < 4 || controllerSegments[0] != "src" || controllerSegments[1] != "view") {
             violations.add("$relative -> fx:controller must point to a concrete src.view passive View class")
@@ -121,6 +137,37 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
                     "state uses *StateView, details uses *DetailsView, reusable views use *View"
             )
         }
+        validateControllerPathAlignment(controllerSegments, simpleName, viewResourceSegments, relative, violations)
+    }
+
+    private fun validateControllerPathAlignment(
+        controllerSegments: List<String>,
+        simpleName: String,
+        viewResourceSegments: List<String>,
+        relative: String,
+        violations: MutableList<String>
+    ) {
+        if (!hasAllowedViewResourceRoot(viewResourceSegments)) {
+            return
+        }
+        val fileBaseName = viewResourceSegments.last().removeSuffix(".fxml")
+        if (simpleName != fileBaseName) {
+            violations.add(
+                "$relative -> fx:controller simple class '$simpleName' must match FXML file basename '$fileBaseName'"
+            )
+        }
+
+        val expectedPackageSegments = if (viewResourceSegments.first() == "views") {
+            listOf("src", "view", "views")
+        } else {
+            listOf("src", "view", viewResourceSegments[0], viewResourceSegments[1])
+        }
+        if (controllerSegments.dropLast(1) != expectedPackageSegments) {
+            violations.add(
+                "$relative -> fx:controller package must match resource path: " +
+                    "${expectedPackageSegments.joinToString(".")}.$fileBaseName"
+            )
+        }
     }
 
     private companion object {
@@ -136,5 +183,7 @@ abstract class CheckViewFxmlResourcesTask : DefaultTask() {
             }
             return segments.first() in CONTRIBUTION_RESOURCE_AREAS && segments.size == 3
         }
+
+        private fun Path.pathSegments(): List<String> = map { it.toString() }
     }
 }

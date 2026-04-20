@@ -211,6 +211,7 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("ShellLifecycleHookOwnership")
     options.errorprone.error("StringCaseLocaleUsage")
     options.errorprone.error("StringSplitter")
+    options.errorprone.error("ViewDetailsSlotBoundary")
     options.errorprone.error("ViewModelOwnershipNaming")
     options.errorprone.error("ViewModelFrameworkIndependence")
     options.errorprone.error("ViewProgrammaticStyling")

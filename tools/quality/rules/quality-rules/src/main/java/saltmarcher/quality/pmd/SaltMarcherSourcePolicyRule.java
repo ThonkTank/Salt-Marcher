@@ -145,11 +145,6 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
                             "View code must not use legacy shell wiring type '" + legacyType + "'.");
                 }
             }
-            if (sourceFacts.text().contains("ShellSlot.COCKPIT_DETAILS")) {
-                asCtx(data).addViolationWithMessage(node,
-                        "Feature view code must not provide ShellSlot.COCKPIT_DETAILS directly."
-                                + " Publish details through ShellRuntimeContext.inspector() instead.");
-            }
         }
 
         if (sourceFacts.relativePath().equals("shell/api/ShellSlot.java")) {
