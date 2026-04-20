@@ -15,7 +15,8 @@ SaltMarcher uses a passive shell and generic discovery:
 
 - bootstrap discovers feature UI through shell-facing view contribution
   contracts; the current target discovers `*Contribution` classes under
-  `src/view/tabs`, `src/view/topbar`, and `src/view/state`
+  `src/view/featuretabs`, `src/view/runtimetabs`, and shell-contributed
+  `src/view/dropdowns`
 - bootstrap discovers exported runtime services through `ServiceContribution`
 - the shell owns fixed cockpit surfaces, registration contracts, runtime
   context, details/history, and state-pane precedence
@@ -50,3 +51,4 @@ passive host.
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
+- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

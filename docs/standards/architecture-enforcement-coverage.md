@@ -51,11 +51,12 @@ state and actions, and reusable single-slot content lives under
   (`:build-harness:check`).
 - `view-root-composition`: roots under `src/view/featuretabs/*` and
   `src/view/runtimetabs/*` contain exactly one `*Contribution.java`, exactly
-  one `*Binder.java`, exactly one co-located `*ViewModel.java`, and at least
-  one passive `*View.java`; dropdown roots contain exactly one `*Binder.java`,
-  exactly one co-located `*ViewModel.java`, at least one passive `*View.java`,
-  and zero or one `*Contribution.java`. This is enforced by `build-harness`
-  `view-root-composition` (`:build-harness:check`).
+  one `*Binder.java`, and exactly one co-located `*ViewModel.java`. Dropdown
+  roots contain exactly one `*Binder.java` and exactly one co-located
+  `*ViewModel.java`; they may contain zero or one `*Contribution.java` through
+  `build-harness` `view-root-composition` and
+  `view-dropdown-optional-contribution` (`:build-harness:check`). Passive view
+  participation is proved structurally by `view-binder-wiring-presence`.
 - `view-contribution-entrypoint-shape`: shell-facing view entrypoints use
   `*Contribution`, implement `shell.api.ShellContribution`, expose
   `registrationSpec()` and `bind(ShellRuntimeContext)`, and are discovered only
@@ -67,9 +68,10 @@ state and actions, and reusable single-slot content lives under
   `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`), plus PMD
   `SaltMarcherEntrypointRule` for source-local contribution shape
   (`pmdArchitectureMain`).
-- `view-model-one-type-per-file`: co-located `*ViewModel` files define exactly
-  one top-level ViewModel through jQAssistant `saltmarcher:MvvmOneModelPerFile`
-  (`checkViewArchitecture`) and Error Prone `ViewModelOwnershipNaming`
+- `view-root-one-type-per-file`: co-located `*Contribution`, `*Binder`, and
+  `*ViewModel` files define exactly one top-level root role type through
+  jQAssistant `saltmarcher:MvvmOneModelPerFile` (`checkViewArchitecture`) and
+  Error Prone `ViewModelOwnershipNaming` for presentation-owned types
   (`compileJava`).
 - `view-passive-panel-one-fragment-per-file`: co-located `*View` files and
   reusable `src/view/slotcontent` files define one top-level passive view and
@@ -94,13 +96,13 @@ state and actions, and reusable single-slot content lives under
   `ViewModelFrameworkIndependence` and
   `FeatureShellApiAllowlist` (`compileJava`), jQAssistant
   `saltmarcher:MvvmModelDependencies` (`checkViewArchitecture`), and
-  ArchUnit `viewContributionsAndViewModelsMustNotReachBootstrapDataOrShellHost`
-  and `viewContributionsAndViewModelsMustOnlyUseFeatureApisAtBackendBoundary`
+  ArchUnit `viewActiveRootsAndViewModelsMustNotReachBootstrapDataOrShellHost`
+  and `viewActiveRootsAndViewModelsMustOnlyUseAllowedDomainBoundaries`
   (`architectureTest`).
 - `view-binder-wiring-presence`: every active root Binder must structurally
-  depend on its co-located ViewModel and at least one co-located passive View
-  through jQAssistant
-  `saltmarcher:MvvmContributionUsesOwnModelAndView`
+  depend on its co-located ViewModel and at least one passive View from either
+  the same root or `slotcontent` through jQAssistant
+  `saltmarcher:MvvmBinderUsesOwnModelAndSlotSurface`
   (`checkViewArchitecture`). This proves the Binder owns real MVVM assembly
   for its root; it does not try to infer binding quality or semantic
   delegation. Contributions are thin shell-discovery adapters.
@@ -115,7 +117,7 @@ state and actions, and reusable single-slot content lives under
   (`checkViewArchitecture`).
 - `view-passive-panel-dependency-boundary`: passive panel views may use JavaFX,
   ordinary non-infrastructure JDK listener/callback/property support,
-  co-located passive view helpers, and reusable generic passive views, but not
+  same-root passive view helpers, and reusable slotcontent passive views, but not
   shell, domain, data, bootstrap, contributions, ViewModels,
   ApplicationServices, foreign view roots, legacy view topology, or direct JDK
   infrastructure ownership through Error Prone
@@ -137,8 +139,8 @@ state and actions, and reusable single-slot content lives under
   ArchUnit `viewComponentsMustStayCycleFree` (`architectureTest`).
 - `view-fxml-resource-boundary`: optional declarative view resources must live
   under `resources/view/featuretabs/<entry>/`, `resources/view/dropdowns/<entry>/`,
-  `resources/view/runtimetabs/<entry>/`, `resources/view/slotcontent/details/<entry>/`, or
-  direct reusable `resources/view/slotcontent/`; inline FXML scripts are forbidden;
+  `resources/view/runtimetabs/<entry>/`, or
+  `resources/view/slotcontent/<slot>/<entry>/`; inline FXML scripts are forbidden;
   when present, `fx:controller` must point to the passive View class matching
   the resource area, entry folder, and FXML basename with the same
   area-specific naming contract as Java views. This is enforced by
@@ -156,22 +158,22 @@ Mechanical trace:
   `src/view/dropdowns/*`, `src/view/runtimetabs/*`, or
   `src/view/slotcontent/<slot>/*`.
 - A featuretab or runtimetab root defines one shell-discovered adapter, one
-  Binder, one co-located ViewModel, and at least one passive View; dropdowns
-  define one Binder and may omit the contribution when composed by another
-  active root.
+  Binder, and one co-located ViewModel; dropdowns define one Binder and may
+  omit the contribution when composed by another active root.
 - A Binder structurally references its co-located ViewModel and at least one
-  co-located passive View.
+  same-root or slotcontent passive View.
 - A ViewModel file defines one presentation state/action holder and imports no
-  shell APIs, concrete view classes, foreign view-root ViewModels, or direct JDK
-  infrastructure types.
+  shell APIs, concrete view classes, foreign view-root ViewModels, direct JDK
+  infrastructure types, or application services from slotcontent roots.
 - A view file defines one passive JavaFX fragment and imports no shell, domain,
   data, ApplicationService, Contribution, ViewModel, or foreign view-root view
   types, and no direct JDK infrastructure types.
+- Contributions may use shell public contracts and their own Binder.
 - Binders may use shell public contracts, co-located ViewModels,
-  co-located passive views, reusable slotcontent views and ViewModels, detail-entry
-  ViewModels and passive views for shell-owned Inspector publication, JavaFX
-  `Node`, domain application-service roots, and ordinary non-infrastructure JDK
-  support types.
+  co-located passive views, reusable slotcontent views and ViewModels,
+  detail-entry ViewModels and passive views for shell-owned Inspector
+  publication, JavaFX `Node`, domain application-service roots, and ordinary
+  non-infrastructure JDK support types.
 - Optional FXML resources stay in the view resource tree, use matching passive
   View controllers, and do not use inline scripts.
 - Details/history publication goes through shell-owned contracts.
@@ -503,10 +505,10 @@ Mechanical trace against the data-layer standard:
   repository/query adapter signatures must not leak internal data
   infrastructure types via `Error Prone` (`compileJava`).
 - `system-view-boundary-carrier-purity`: target view-to-view dependencies are
-  contribution-to-ViewModel and contribution-to-passive-view bindings inside
-  contribution roots, plus reusable generic view use from passive views; broad
-  component-local view `api/` packages are blocked by the target view layout
-  and dependency checks.
+  contribution-to-Binder delegation, Binder-to-ViewModel and Binder-to-passive
+  View bindings inside active roots, plus reusable slotcontent use from passive
+  views; broad component-local view `api/` packages are blocked by the target
+  view layout and dependency checks.
 - `system-foreign-private-bucket-bans`: cross-feature access to private view,
   domain, and data buckets is blocked by the owning view, domain, and data
   rule sets through `jQAssistant`, `ArchUnit`, and `Error Prone`.
@@ -543,8 +545,9 @@ Mechanical trace against the data-layer standard:
   shell-facing view contribution roots and data service roots only through
   Error Prone `FeatureShellApiAllowlist` (`compileJava`).
 - `shell-view-root-delegation-boundary`: old component-local view roots are
-  blocked and shell-facing view wiring belongs in `*Contribution` classes under
-  `src/view/featuretabs`, `src/view/dropdowns`, and `src/view/runtimetabs` through Error Prone
+  blocked, shell-facing registration belongs in `*Contribution` classes, and
+  runtime wiring belongs in `*Binder` classes under `src/view/featuretabs`,
+  `src/view/dropdowns`, and `src/view/runtimetabs` through Error Prone
   `ViewRootDelegation` (`compileJava`).
 - `shell-service-registry-registration-placement`: direct
   `ServiceRegistry.Builder.register(...)` calls must stay in data feature
@@ -583,8 +586,9 @@ Runtime guards outside the build-blocking harness:
 
 - `shell-view-contribution-discovery-contract`: view contributions are found
   as direct `*Contribution.java` files under `src/view/featuretabs/<entry>`,
-  `src/view/dropdowns/<entry>`, and `src/view/runtimetabs/<entry>`, with one concrete
-  shell contribution per root, through jQAssistant
+  `src/view/dropdowns/<entry>`, and `src/view/runtimetabs/<entry>`, with one
+  concrete shell contribution per featuretab or runtimetab root and zero or
+  one per dropdown root, through jQAssistant
   `saltmarcher:MvvmOneModelPerFile`,
   `saltmarcher:MvvmRootOnlyViewContribution`, and
   `saltmarcher:MvvmViewRootEntrypointCount` (`checkViewArchitecture`),
@@ -682,8 +686,8 @@ Runtime guards outside the build-blocking harness:
   `domain-layout`, `data-layout`, `package-declaration`, and
   `package-path-match` (`:build-harness:check`).
 - `repository-view-feature-layout`: target active-root placement, Binder
-  placement, co-located ViewModel placement, co-located passive view placement,
-  and reusable `src/view/slotcontent` placement are enforced by
+  placement, co-located ViewModel placement, passive View placement, and
+  reusable `src/view/slotcontent` placement are enforced by
   `build-harness`, jQAssistant MVVM rules, ArchUnit dependency rules, PMD
   root/panel contracts, and Error Prone dependency checks
   (`:build-harness:check`, `checkViewArchitecture`, `architectureTest`,

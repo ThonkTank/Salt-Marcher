@@ -65,9 +65,9 @@ src/
         <PascalEntry>Contribution.java
         <PascalEntry>Binder.java
         <PascalEntry>ViewModel.java
-        <PascalEntry>ControlsView.java
-        <PascalEntry>MainView.java
-        <PascalEntry>StateView.java
+        <PascalEntry>ControlsView.java  optional root-local wrapper
+        <PascalEntry>MainView.java      optional root-local wrapper
+        <PascalEntry>StateView.java     optional root-local wrapper
     runtimetabs/
       <entry>/
         <PascalEntry>Contribution.java
@@ -76,10 +76,10 @@ src/
         <PascalEntry>StateView.java
     dropdowns/
       <entry>/
-        <PascalEntry>Contribution.java
+        <PascalEntry>Contribution.java  optional shell-discovered adapter
         <PascalEntry>Binder.java
         <PascalEntry>ViewModel.java
-        <PascalEntry>TopBarView.java
+        <PascalEntry>TopBarView.java    optional root-local dropdown view
     slotcontent/
       <slot>/
         <entry>/
@@ -262,5 +262,4 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/styling.md:1)
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
-- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

@@ -36,8 +36,7 @@ Before editing a view surface:
 4. For every touched ViewModel, identify the active root or slotcontent unit
    whose presentation state and actions it owns.
 5. For every touched View, identify the one shell surface or reusable fragment
-   it renders: controls, main, state, details, dropdown, or reusable generic
-   view.
+   it renders: controls, main, state, details, dropdown, or slotcontent unit.
 6. Check imports against the allowed API surface before writing code.
 7. Move ambiguous logic to the role that owns it instead of copying existing
    legacy placement.
@@ -137,7 +136,7 @@ Views own the MVVM View role.
 - Put JavaFX controls, rendering, FXML controllers or loaders, menus, dialogs,
   cells, skins, drawing code, and widget-local state there.
 - Expose bind targets, properties, setters, callbacks, or observable hooks that
-  a contribution can bind to ViewModel-owned state.
+  a Binder can bind to ViewModel-owned state.
 - Expose emitters for technical user gestures.
 - Do not know what the feature is doing. A View may emit "button pressed" or
   "cell selected"; it must not know that the event generates an encounter,

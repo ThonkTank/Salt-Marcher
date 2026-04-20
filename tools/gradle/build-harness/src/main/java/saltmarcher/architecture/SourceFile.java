@@ -74,6 +74,9 @@ record SourceFile(
                     if (fileName.endsWith("Contribution.java")) {
                         yield SourceKind.VIEW_CONTRIBUTION;
                     }
+                    if (fileName.endsWith("Binder.java")) {
+                        yield SourceKind.VIEW_BINDER;
+                    }
                     if (fileName.endsWith("ViewModel.java")) {
                         yield SourceKind.VIEW_MODEL;
                     }

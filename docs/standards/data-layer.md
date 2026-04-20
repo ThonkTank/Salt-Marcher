@@ -93,7 +93,7 @@ The canonical data flow is:
 2. the contribution registers typed backend capabilities and
    application-service factories into the shell-owned backend service
    registry, `ServiceRegistry`
-3. view contribution roots reach those capabilities through
+3. view Binders reach those capabilities through
    `ShellRuntimeContext.services()` only as composition input, or through an
    application-service factory that was already assembled at the boundary
 4. a data `repository/` or `query/` implementation satisfies one

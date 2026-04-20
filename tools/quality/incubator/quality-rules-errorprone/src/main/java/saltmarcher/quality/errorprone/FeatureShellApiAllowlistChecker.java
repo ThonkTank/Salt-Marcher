@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "FeatureShellApiAllowlist",
-        summary = "View contributions and data service roots may use only their documented shell API subset.",
+        summary = "View contributions, binders, and data service roots may use only their documented shell API subset.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class FeatureShellApiAllowlistChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {

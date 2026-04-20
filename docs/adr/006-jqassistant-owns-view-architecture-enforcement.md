@@ -7,7 +7,7 @@
 
 This ADR remains the historical owner split for view-architecture checks. The
 target view topology is now defined by
-[ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1).
+[ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1).
 
 SaltMarcher's view-architecture rules had been split across multiple tools
 without a clear contract for which engine should own which kind of rule.
@@ -27,8 +27,8 @@ compiler-precise rules enforced during `compileJava` and graph-shaped MVVM
 rules enforced through the central `check` aggregate.
 
 - `jQAssistant` owns graph-shaped view rules. Current target checks cover
-  contribution roots, co-located ViewModels, co-located passive views, reusable
-  generic views, root-entrypoint count, and cross-component boundaries.
+  active roots, Binders, co-located ViewModels, passive slot surfaces,
+  reusable slotcontent, root-entrypoint count, and cross-component boundaries.
 - `Error Prone` owns compiler-precise source rules. Current checks still cover
   root-entrypoint delegation, shell API allowlists, `assembly/`, `View/`,
   `ViewModel`, and `api/` dependency bans; target checks should cover model
@@ -81,3 +81,4 @@ multiple tools without a clean rule-shape boundary.
 - [Model-View-ViewModel Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/view-mvvm.md:1)
 - [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
 - [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
+- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

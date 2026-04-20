@@ -5,6 +5,7 @@ enum SourceKind {
     SHELL_HOST,
     SHELL_PANEL,
     VIEW_CONTRIBUTION,
+    VIEW_BINDER,
     VIEW_MODEL,
     VIEW_PANEL,
     DOMAIN_ROOT,

@@ -147,8 +147,8 @@ information or public-signature awareness: MVVM dependency bans, view-model
 framework independence, shell API allowlists, public domain-boundary signature
 purity, public domain published-carrier shape, domain role-shape checks,
 service-registry registration placement, presentation-state placement,
-JavaFX API placement between contributions, ViewModels, passive views,
-reusable generic views, and transitional legacy view code, visual-styling
+JavaFX API placement between contributions, Binders, ViewModels, passive views,
+reusable slotcontent, and transitional legacy view code, visual-styling
 exceptions, reflection-bypass bans, and public API signature leaks from
 private buckets, including compiler-visible data adapter collaborator
 boundaries. It is not the owner for repository topology or broad package graph

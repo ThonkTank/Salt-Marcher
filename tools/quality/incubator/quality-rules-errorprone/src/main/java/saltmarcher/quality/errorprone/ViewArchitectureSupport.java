@@ -158,10 +158,6 @@ final class ViewArchitectureSupport {
         return null;
     }
 
-    static boolean isAllowedContributionDomainBoundary(String referencedType) {
-        return isAllowedViewModelDomainBoundary(referencedType);
-    }
-
     static boolean isAllowedViewModelDomainBoundary(String referencedType) {
         return isDomainApplicationServiceRoot(referencedType)
                 || referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+");

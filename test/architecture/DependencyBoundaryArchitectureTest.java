@@ -42,7 +42,7 @@ public final class DependencyBoundaryArchitectureTest {
                     .should(notBeViewContributionImplementation());
 
     @ArchTest
-    static final ArchRule viewContributionsAndViewModelsMustNotReachBootstrapDataOrShellHost =
+    static final ArchRule viewActiveRootsAndViewModelsMustNotReachBootstrapDataOrShellHost =
             noClasses()
                     .that()
                     .resideInAPackage("src.view..")
@@ -51,7 +51,7 @@ public final class DependencyBoundaryArchitectureTest {
                     .resideInAnyPackage("bootstrap..", "src.data..", "shell.host..");
 
     @ArchTest
-    static final ArchRule viewContributionsAndViewModelsMustOnlyUseFeatureApisAtBackendBoundary =
+    static final ArchRule viewActiveRootsAndViewModelsMustOnlyUseAllowedDomainBoundaries =
             classes()
                     .that()
                     .resideInAPackage("src.view..")
@@ -305,6 +305,7 @@ public final class DependencyBoundaryArchitectureTest {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 boolean contribution = item.getSimpleName().endsWith("Contribution");
+                boolean slotcontent = item.getPackageName().startsWith("src.view.slotcontent.");
                 for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
                     JavaClass target = dependency.getTargetClass();
                     String targetPackage = target.getPackageName();
@@ -313,6 +314,21 @@ public final class DependencyBoundaryArchitectureTest {
                     }
                     String targetFeature = domainFeatureName(targetPackage);
                     if (targetFeature == null) {
+                        continue;
+                    }
+                    if (contribution) {
+                        String message = item.getName() + " depends on domain type " + target.getName()
+                                + "; contributions must delegate domain lookup to their Binder";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                        continue;
+                    }
+                    if (slotcontent) {
+                        if (isFeaturePublishedBoundary(targetPackage, targetFeature)) {
+                            continue;
+                        }
+                        String message = item.getName() + " depends on domain type " + target.getName()
+                                + "; slotcontent may use only domain published carriers";
+                        events.add(SimpleConditionEvent.violated(item, message));
                         continue;
                     }
                     if (isFeatureRootApplicationService(target)

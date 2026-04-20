@@ -1,7 +1,7 @@
 interface:
   display_name: "View Layer MVVM"
-  short_description: "Enforce SaltMarcher cockpit MVVM contribution boundaries"
-  default_prompt: "Use $view-layer-mvvm before planning, implementing, refactoring, or reviewing work under src/view/** so the change follows SaltMarcher's cockpit MVVM standard with *Contribution shell adapters, *ViewModel presentation state, and passive JavaFX views."
+  short_description: "Enforce SaltMarcher cockpit MVVM active-root and slotcontent boundaries"
+  default_prompt: "Use $view-layer-mvvm before planning, implementing, refactoring, or reviewing work under src/view/** so the change follows SaltMarcher's cockpit MVVM standard with thin *Contribution shell adapters, mandatory active-root *Binders, aggregate or slotcontent *ViewModel presentation state, reusable slotcontent, and passive JavaFX views."
 
 policy:
   allow_implicit_invocation: true

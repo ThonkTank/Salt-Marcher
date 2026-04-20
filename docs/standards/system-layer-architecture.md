@@ -41,8 +41,10 @@ Layer responsibilities:
   - uses `*Contribution` classes for shell registration only
   - uses `*Binder` classes to adapt ViewModels and passive slotcontent into
     shell bindings
-  - uses `*ViewModel` classes to translate user intent and presentation
-    concerns into calls against domain application boundaries
+  - uses active-root `*ViewModel` classes to translate user intent and
+    presentation concerns into calls against domain application boundaries
+  - uses slotcontent `*ViewModel` classes only for slot-local projection of
+    active-root or domain-published signals
   - uses passive `*View` classes for JavaFX controls that render ViewModel
     state and emit technical user events
 - `src/domain/**`
@@ -62,7 +64,9 @@ The binding source-dependency rule is inward-only:
 2. `Contribution -> shell public contracts + own Binder`
 3. `Binder -> shell public contracts + own ViewModel + passive views +
    slotcontent + domain public boundaries`
-4. `ViewModel -> domain public boundaries + JavaFX beans/collections`
+4. `Active ViewModel -> domain public boundaries + JavaFX beans/collections`
+   and `slotcontent ViewModel -> domain published carriers + JavaFX
+   beans/collections`
 5. `View -> JavaFX UI APIs + reusable passive views`
 6. `data -> domain public boundaries and domain-owned ports`
 7. `domain -> no outer layer`
@@ -109,25 +113,27 @@ The canonical intentional public boundaries are:
 ### User-Initiated Application Flow
 
 1. the shell activates a registered contribution
-2. the contribution instantiates the ViewModel and passive views
-3. the contribution binds passive view emitters and bind targets to ViewModel
-   state and actions
-4. a passive view emits a user event
-5. the ViewModel translates the event into presentation state or a call to a
+2. the contribution delegates binding to its co-located Binder
+3. the Binder obtains runtime services, instantiates the ViewModel, active
+   views, and needed slotcontent, then returns a `ShellBinding`
+4. the Binder binds passive view emitters and bind targets to ViewModel state
+   and actions
+5. a passive view emits a user event
+6. the ViewModel translates the event into presentation state or a call to a
    same-feature or foreign public `*ApplicationService`
-6. domain objects and domain-owned contracts coordinate the use case
-7. data adapters implement the required repository or projection contracts
-8. results return as domain published carriers into the ViewModel
-9. the ViewModel translates domain facts into presentation state or display
+7. domain objects and domain-owned contracts coordinate the use case
+8. data adapters implement the required repository or projection contracts
+9. results return as domain published carriers into the ViewModel
+10. the ViewModel translates domain facts into presentation state or display
    models
-10. passive views render the updated state
+11. passive views render the updated state
 
 ### Shell-Scoped Runtime Flow
 
-1. a contribution obtains `ShellRuntimeContext`
+1. a contribution receives `ShellRuntimeContext` from the shell
 2. shell-owned services such as details/history publishing, backend capability
-   lookup, or typed runtime sessions are adapted into contribution-local
-   collaborators
+   lookup, or typed runtime sessions are adapted by the co-located Binder into
+   active-root collaborators
 3. backend capability lookup is a composition concern used to assemble or fetch
    application-service factories and other runtime collaborators
 4. the shell remains passive: it hosts surfaces and scoped services, but it
@@ -137,8 +143,8 @@ The canonical intentional public boundaries are:
 
 - `bootstrap/` may instantiate and register shell/view/data roots because it
   is the composition root.
-- View contributions may use shell contracts because shell registration and
-  cockpit binding are contribution concerns of the view layer.
+- View contributions may use shell contracts for registration and delegation
+  to their Binder. Cockpit binding itself belongs to the Binder.
 - `src/data/<feature>/*ServiceContribution.java` may use shell service
   registration contracts because backend capability export is a root concern
   of the data layer.
@@ -185,5 +191,4 @@ The per-surface rule-status matrix, including system-layer rules, lives in the
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/data-layer.md:1)
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
-- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

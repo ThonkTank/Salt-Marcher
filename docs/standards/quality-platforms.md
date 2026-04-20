@@ -261,15 +261,15 @@ Operationally, architecture checks enter local quality through:
 
 - `compileJava`
   Runs Error Prone architecture checks, including compiler-precise MVVM
-  dependency rules for contribution roots, ViewModels, passive views, shell
+  dependency rules for active roots, Binders, ViewModels, passive views, shell
   API use, passive panel restrictions, and legacy view-package bans.
 - `architectureTest`
   Runs ArchUnit dependency and cycle checks, including target view package,
   dependency, and cycle freedom rules.
 - `checkViewArchitecture`
-  Runs explicit jQAssistant view-topology analysis for contribution roots,
-  co-located ViewModels, co-located passive views, and reusable generic views,
-  plus the view FXML resource boundary check.
+  Runs explicit jQAssistant view-topology analysis for active roots, Binders,
+  co-located ViewModels, passive views, and reusable slotcontent, plus the view
+  FXML resource boundary check.
 - `checkArchitecture`
   Aggregates ArchUnit, PMD architecture rules, and the build-harness.
 - `check`

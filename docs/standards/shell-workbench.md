@@ -50,7 +50,7 @@ activation behavior, and which fixed cockpit surfaces a contribution may bind.
 
 They must not become a home for feature logic, presentation state, runtime-
 capability lookup, domain service lookup, or prebuilt scene-graph construction
-that belongs to a view contribution root.
+that belongs to a view Binder and passive Views.
 
 ### Contributions
 
@@ -63,11 +63,8 @@ A contribution is the feature-owned shell adapter for one UI entrypoint:
 Responsibilities:
 
 - provide passive shell registration metadata
-- instantiate the owning ViewModel and passive views
-- bind views to ViewModel state and actions
-- project bound views into allowed shell surfaces through `ShellBinding`
-- obtain shell-owned runtime capabilities and domain application services
-  needed for composition
+- instantiate the co-located `*Binder` during `bind(ShellRuntimeContext)`
+- return the Binder-created `ShellBinding`
 
 Rules:
 
@@ -79,13 +76,38 @@ Rules:
   stay out of the shell
 
 The current Java API uses `ShellContribution` and `ShellBinding` for
-contribution-owned cockpit binding. Legacy shell-view contribution and
-prepared-screen names must not be reintroduced as target view wiring.
+shell-facing registration and fixed-surface binding. Legacy shell-view
+contribution and prepared-screen names must not be reintroduced as target view
+wiring.
+
+### Binders
+
+A Binder is the active-root runtime composition adapter for one feature tab,
+runtime state-panel tab, or dropdown-capable unit.
+
+Responsibilities:
+
+- obtain shell-owned runtime capabilities and domain application services
+  needed for composition
+- instantiate the owning ViewModel, active-root passive Views, and reusable
+  slotcontent Views/ViewModels
+- bind passive view emitters and bind targets to ViewModel state and actions
+- publish details/history entries through shell-owned Inspector APIs
+- project bound content into allowed shell surfaces through `ShellBinding`
+- own activation and deactivation lifecycle hooks
+
+Rules:
+
+- every active root under `src/view/featuretabs`, `src/view/runtimetabs`, and
+  `src/view/dropdowns` owns exactly one Binder
+- Binder code may use shell public contracts and `ShellRuntimeContext`
+- presentation state stays in ViewModels, and JavaFX panel behavior stays in
+  passive Views
 
 ### `ShellRuntimeContext`
 
 `ShellRuntimeContext` is the only shell-scoped runtime gateway available to UI
-contributions and data service roots.
+contributions and their Binders.
 
 It exposes:
 
@@ -96,8 +118,8 @@ It exposes:
 - `session(...)` for typed per-shell shared runtime sessions
 
 Features must not bypass this gateway by importing `AppShell` or concrete
-shell pane types. Runtime-capability lookup belongs in a contribution, not in
-passive Views.
+shell pane types. Runtime-capability lookup belongs in the active-root Binder,
+not in ViewModels or passive Views.
 
 This runtime lookup is a shell composition facility. It is not a second public
 backend layer alongside `*ApplicationService`.
@@ -135,7 +157,7 @@ left-bar tabs.
 
 The shell owns resize, layout, precedence, history, and activation behavior for
 those surfaces. Features supply bound content and user-event emitters through
-their contributions.
+their Binders.
 
 Navigation icons for navigable tabs are feature-owned content, but they are
 supplied declaratively through registration metadata rather than through panel
@@ -146,8 +168,11 @@ views.
 The public shell-facing API surface is fixed by consumer bucket:
 
 - UI contributions may use shell public registration contracts, contribution
-  identity/order types, `ShellRuntimeContext`, details/history publishing
-  contracts, and fixed surface-binding contracts.
+  identity/order types, `ShellRuntimeContext`, and fixed surface-binding
+  contracts needed to delegate to their Binder.
+- Binders may use shell public registration and binding contracts,
+  `ShellRuntimeContext`, details/history publishing contracts, and fixed
+  surface-binding contracts.
 - ViewModels must not use shell APIs.
 - passive Views must not use shell APIs.
 - data `*ServiceContribution` roots may use only `ServiceContribution` and
@@ -162,8 +187,9 @@ Dependencies point inward:
 
 - bootstrap depends on shell contracts and discovery mechanics
 - shell depends on shell-owned contracts and generic runtime hosting
-- contributions use allowed shell API surface and domain application-service
-  roots
+- contributions use allowed shell API surface and their co-located Binder
+- Binders use allowed shell API surface, same-root ViewModels and Views,
+  slotcontent, and domain application-service roots
 - ViewModels use domain application-service roots and published carriers, then
   expose bindable presentation state
 - passive Views stay below ViewModels and do not use shell or domain APIs
@@ -181,9 +207,10 @@ Forbidden directions and patterns:
 - long-lived feature runtime state in shell host classes
 - feature-specific alternate wiring paths around `ShellRuntimeContext`
 
-Shell-facing runtime composition belongs in the owning contribution under
-`src/view/featuretabs`, `src/view/dropdowns`, or `src/view/runtimetabs`. It does not belong in
-ViewModels, passive Views, concrete shell host classes, or legacy
+Shell-facing runtime composition belongs in the owning Binder under
+`src/view/featuretabs`, `src/view/dropdowns`, or `src/view/runtimetabs`. It does
+not belong in Contributions, ViewModels, passive Views, concrete shell host
+classes, or legacy
 `ViewContribution`, `assembly`, `Controller`, `Model`, or `interactor`
 buckets.
 
@@ -257,5 +284,4 @@ local build/check pipeline.
 - [ADR 004: Shared Runtime Session Store](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/004-shared-runtime-session-store.md:1)
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
 - [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/019-shell-cockpit-tab-model-view-layer.md:1)
-- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

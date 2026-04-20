@@ -47,7 +47,7 @@ src/view/
       <PascalEntry>Contribution.java
       <PascalEntry>Binder.java
       <PascalEntry>ViewModel.java
-      <PascalEntry><Surface>View.java
+      <PascalEntry><Surface>View.java  # optional root-local wrapper/specialization
   runtimetabs/
     <entry>/
       <PascalEntry>Contribution.java
@@ -59,7 +59,7 @@ src/view/
       <PascalEntry>Contribution.java  # optional; only for shell-discovered dropdowns
       <PascalEntry>Binder.java
       <PascalEntry>ViewModel.java
-      <PascalEntry>TopBarView.java
+      <PascalEntry>TopBarView.java    # optional root-local dropdown view
   slotcontent/
     controls/<entry>/
       <PascalEntry>View.java
@@ -163,8 +163,8 @@ are never bootstrap-discovered.
 
 Allowed dependencies:
 
-- `shell.api.*` public contribution, binding, slot, context, and details
-  contracts allowed by the shell API allowlist
+- `shell.api.*` public contribution metadata, binding return, and runtime
+  context types needed to delegate to the Binder
 - the contribution's own `*Binder`
 - ordinary JDK language, value, collection, optional, functional, and formatting
   types that do not own infrastructure access
@@ -387,7 +387,6 @@ graph, or file-tree rules remains review-owned.
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
-- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)
 - [Fowler Presentation Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/fowler-presentation-model.md:1)
 - [JavaFX Properties And Binding](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/oracle-javafx-properties-binding.md:1)

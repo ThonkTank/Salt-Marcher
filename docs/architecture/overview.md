@@ -87,9 +87,11 @@ Dependencies point inward toward the application core:
 
 - bootstrap depends on shell contracts.
 - shell owns generic cockpit hosting and must not import feature code.
-- view contributions reach shell public contracts, own ViewModels, own Views,
-  and domain application-service roots.
-- ViewModels own presentation state and call domain application services.
+- view contributions reach shell public contracts and their own Binder.
+- Binders reach shell public contracts, own ViewModels, own Views,
+  slotcontent, and domain application-service roots.
+- Active-root ViewModels own aggregate presentation state and may call domain
+  application services; slotcontent ViewModels own slot-local projections.
 - passive Views render ViewModel state and emit user gestures without shell,
   domain, data, or ApplicationService dependencies.
 - domain code owns business rules, published language, and domain-owned ports.
@@ -149,7 +151,7 @@ JavaFX styling is centralized under `resources/`.
 - `docs/compat/` for deprecated compatibility stubs that point at canonical
   co-located documents
 - `src/domain/<feature>/README.md` for feature entry documentation
-- `src/view/<area>/<entry>/<topic>.md` for contribution-owned UI behavior
+- `src/view/<area>/<entry>/<topic>.md` for active-root UI behavior
 - `src/view/slotcontent/<slot>/<entry>/<topic>.md` for reusable slotcontent
   behavior
 - `src/data/<feature>/PERSISTENCE.md` for persistence ownership and rules
@@ -171,5 +173,4 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 011: Passive Workbench Shell Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/011-shell-workbench-architecture-model.md:1)
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
 - [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)
-- [ADR 020: View Contributions And ViewModels](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/020-view-contributions-and-viewmodels.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

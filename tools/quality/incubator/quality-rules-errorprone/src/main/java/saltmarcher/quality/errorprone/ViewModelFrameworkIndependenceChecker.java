@@ -10,7 +10,7 @@ import java.util.Set;
 
 @BugPattern(
         name = "ViewModelFrameworkIndependence",
-        summary = "ViewModels stay independent from shell and view classes; contributions own shell/view wiring.",
+        summary = "ViewModels stay independent from shell and view classes; binders own shell/view wiring.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -18,17 +18,23 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = ViewArchitectureSupport.packageName(tree);
-        boolean contribution = ViewArchitectureSupport.isContributionSource(tree)
-                || ViewArchitectureSupport.isBinderSource(tree);
+        boolean contribution = ViewArchitectureSupport.isContributionSource(tree);
+        boolean binder = ViewArchitectureSupport.isBinderSource(tree);
         boolean viewModel = ViewArchitectureSupport.isViewModelSource(tree);
-        if (!contribution && !viewModel) {
+        if (!contribution && !binder && !viewModel) {
             return Description.NO_MATCH;
         }
 
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         String sourceText = sourceText(tree, state);
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            collectForbiddenReferences(referencedType, contribution, packageName, sourceText, forbiddenReferences);
+            collectForbiddenReferences(
+                    referencedType,
+                    contribution,
+                    binder,
+                    packageName,
+                    sourceText,
+                    forbiddenReferences);
         }
 
         if (forbiddenReferences.isEmpty()) {
@@ -44,13 +50,14 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
     private static void collectForbiddenReferences(
             String qualifiedName,
             boolean contribution,
+            boolean binder,
             String sourcePackageName,
             String sourceText,
             Set<String> forbiddenReferences) {
         if (qualifiedName == null || qualifiedName.isBlank()) {
             return;
         }
-        if (isForbidden(qualifiedName, contribution, sourcePackageName, sourceText)) {
+        if (isForbidden(qualifiedName, contribution, binder, sourcePackageName, sourceText)) {
             forbiddenReferences.add(qualifiedName);
         }
     }
@@ -58,6 +65,7 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
     private static boolean isForbidden(
             String referencedType,
             boolean contribution,
+            boolean binder,
             String sourcePackageName,
             String sourceText) {
         if ("java.util.concurrent.Callable".equals(referencedType)
@@ -69,26 +77,41 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             return true;
         }
         if (referencedType.startsWith("javafx.")) {
-            return contribution
+            if (contribution) {
+                return true;
+            }
+            return binder
                     ? !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType)
                     : !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
         }
         if (referencedType.startsWith("shell.")) {
-            return !contribution || !ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
+            return (!contribution && !binder) || !ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
         }
         if (referencedType.startsWith("src.data.")) {
             return true;
         }
         if (referencedType.startsWith("src.domain.")) {
-            return contribution
-                    ? !ViewArchitectureSupport.isAllowedContributionDomainBoundary(referencedType)
-                    : !ViewArchitectureSupport.isAllowedViewModelDomainBoundary(referencedType);
+            if (contribution) {
+                return true;
+            }
+            if (sourcePackageName.startsWith("src.view.slotcontent.")) {
+                return !referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+");
+            }
+            return !ViewArchitectureSupport.isAllowedViewModelDomainBoundary(referencedType);
         }
         ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
         if (viewType == null) {
             return false;
         }
         if (contribution) {
+            if ("CONTRIBUTION".equals(viewType.bucket())
+                    && ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)) {
+                return false;
+            }
+            return !"BINDER".equals(viewType.bucket())
+                    || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+        }
+        if (binder) {
             if (ViewArchitectureSupport.isDetailEntryReference(referencedType)) {
                 return false;
             }
