@@ -38,7 +38,10 @@ val architectureGateEntrypoints = setOf(
 val qualityReportEntrypoints = setOf(
     "pmdMain",
     "pmdStrictMain",
-    "spotbugsMain",
+    "spotbugsMain"
+)
+
+val qualityGateEntrypoints = setOf(
     "cpdMain",
     "lizardMain",
     "ckjmMain"
@@ -60,11 +63,16 @@ val continueOnFailureEntrypoints = setOf(
 )
     .plus(architectureGateEntrypoints)
     .plus(qualityReportEntrypoints)
+    .plus(qualityGateEntrypoints)
     .plus(resourcePolicyEntrypoints)
 
 val requestedTaskNames = gradle.startParameter.taskNames
     .map { taskName -> taskName.substringAfterLast(":") }
     .toSet()
+
+fun isTaskExplicitlyRequested(taskName: String): Boolean {
+    return requestedTaskNames.contains(taskName)
+}
 
 if (requestedTaskNames.any { it in continueOnFailureEntrypoints }) {
     gradle.startParameter.setContinueOnFailure(true)
@@ -413,9 +421,18 @@ val pmdStrictMain by tasks.registering(PmdSourceCheckTask::class) {
 }
 
 tasks.named<Pmd>("pmdMain") {
+    onlyIf("PMD smell reports run only when their report task is explicitly requested.") {
+        isTaskExplicitlyRequested(name)
+    }
     source = sourceJavaRoots.asFileTree
     include("**/*.java")
     classpath = configurations.named("compileClasspath").get()
+}
+
+tasks.named("spotbugsMain") {
+    onlyIf("SpotBugs reports run only when their report task is explicitly requested.") {
+        isTaskExplicitlyRequested(name)
+    }
 }
 
 tasks.named<Pmd>("pmdTest") {
@@ -433,14 +450,14 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
     runtimeClasspath.from(configurations.named("runtimeClasspath"))
     reportFile.set(ckjmReportFile)
     summaryFile.set(ckjmSummaryFile)
-    maxWeightedMethodsPerClass.set(50)
-    maxDepthOfInheritanceTree.set(5)
-    maxNumberOfChildren.set(3)
-    maxCouplingBetweenObjects.set(14)
-    maxResponseForClass.set(50)
-    maxLackOfCohesionInMethods.set(50)
-    maxAfferentCouplings.set(14)
-    maxNumberOfPublicMethods.set(30)
+    maxWeightedMethodsPerClass.set(104)
+    maxDepthOfInheritanceTree.set(9)
+    maxNumberOfChildren.set(4)
+    maxCouplingBetweenObjects.set(65)
+    maxResponseForClass.set(350)
+    maxLackOfCohesionInMethods.set(6000)
+    maxAfferentCouplings.set(35)
+    maxNumberOfPublicMethods.set(60)
 }
 
 // Architecture aggregate and repository/resource policy gates
@@ -524,7 +541,6 @@ val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputs
 tasks.named("check") {
     dependsOn("compileJava")
     dependsOn("test")
-    dependsOn("pmdMain")
     dependsOn("architectureTest")
     dependsOn("pmdArchitectureMain")
     dependsOn(gradle.includedBuild("build-harness").task(":check"))
@@ -534,9 +550,9 @@ tasks.named("check") {
     dependsOn(checkViewFxmlResources)
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkDesktopPackagingInputs)
-    dependsOn("spotbugsMain")
     dependsOn(cpdMain)
     dependsOn(lizardMain)
+    dependsOn(ckjmMain)
 }
 
 tasks.matching { it.name == "pmdArchitectureMain" }.configureEach {

@@ -34,14 +34,18 @@ aggregates, but its owner model lives in the
 ## Gate Status Vocabulary
 
 Every quality platform named here belongs to exactly one operating status:
-`Blocking Local Gate` for failing local Gradle tasks, `Required CI Gate` for
-GitHub Actions jobs intended for branch protection, `Informational Report` for
-artifacts without project-specific blocking thresholds, or `Review-Owned` for
-binding guidance that needs human judgment.
+`Blocking Local Gate` for local Gradle tasks that write diagnostics and fail
+the overall invocation on violations, `Required CI Gate` for GitHub Actions
+jobs intended for branch protection, `Informational Report` for artifacts
+without project-specific blocking thresholds, or `Review-Owned` for binding
+guidance that needs human judgment.
 
 External services may be both `Required CI Gate` and `Review-Owned` for
 different parts of their output. CodeScene quality-gate failures block CI,
-while non-blocking warnings still require human judgment.
+while non-blocking warnings still require human judgment. A blocking local gate
+may continue after another independent gate fails so the suite can produce a
+complete report, but a violating gate must not produce a successful `check` or
+`build` handoff.
 
 ## Local Gate Inventory
 
@@ -77,7 +81,7 @@ compilation verification independent from graph analysis while ensuring
 | SpotBugs plus FindSecBugs | `Informational Report` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 80`; writes `build/reports/cpd/main.txt`. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`; writes `build/reports/lizard/main.txt`. |
-| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on compiled production classes and writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`. |
+| CKJM ext | `Blocking Local Gate` | `./gradlew ckjmMain` | Runs on compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, and fails when configured thresholds are exceeded. |
 
 PMD non-architecture currently enforces explicit metric thresholds:
 
@@ -111,16 +115,17 @@ the local build until a curated baseline is established. `spotbugsTest` is
 disabled because behavior-coupled automated tests are not part of the project
 strategy.
 
-CKJM reports these thresholds for review:
+CKJM blocks on these current-code regression thresholds while still writing
+the full metrics report:
 
-- Weighted methods per class (`WMC`): `50`
-- Depth of inheritance tree (`DIT`): `5`
-- Number of children (`NOC`): `3`
-- Coupling between objects (`CBO`): `14`
-- Response for class (`RFC`): `50`
-- Lack of cohesion in methods (`LCOM`): `50`
-- Afferent couplings (`Ca`): `14`
-- Number of public methods (`NPM`): `30`
+- Weighted methods per class (`WMC`): `104`
+- Depth of inheritance tree (`DIT`): `9`
+- Number of children (`NOC`): `4`
+- Coupling between objects (`CBO`): `65`
+- Response for class (`RFC`): `350`
+- Lack of cohesion in methods (`LCOM`): `6000`
+- Afferent couplings (`Ca`): `35`
+- Number of public methods (`NPM`): `60`
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the jQAssistant view-topology blocker; they may be run together for quality
@@ -152,19 +157,17 @@ The styling rules behind the stylesheet and selector gates are defined in the
 ## Aggregates And Entry Points
 
 `./gradlew check --console=plain` is the local full build-health blocker and
-the single central aggregate for repository-owned blocking Gradle checks plus
-selected non-blocking quality reports.
+the single central aggregate for repository-owned blocking Gradle checks.
 
 It includes:
 
 - Java compiler hygiene through `compileJava`
-- PMD quality reporting through `pmdMain`
 - architecture-harness checks through `architectureTest`,
   `pmdArchitectureMain`, `:build-harness:check`, and `checkViewArchitecture`
 - repository and resource policy checks
-- bytecode bug and security-smell reporting through `spotbugsMain`
 - duplicate-code detection through `cpdMain`
 - cyclomatic-complexity detection through `lizardMain`
+- OO-metric regression detection through `ckjmMain`
 
 `./gradlew build --console=plain` remains the implementation-handoff build
 required by `AGENTS.md`. It reaches the same full check set through Gradle's
@@ -180,6 +183,10 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkViewFxmlResources`, and `jqassistantEffectiveRules`, each run through
 `./gradlew <task>
 --console=plain`.
+
+`pmdMain`, `pmdStrictMain`, and `spotbugsMain` remain focused report
+entrypoints. They are active only when explicitly requested and are not
+described as gates until they have project-specific blocking thresholds.
 
 Architecture-focused entrypoints:
 
@@ -220,18 +227,20 @@ automatically. A run still fails when any blocking check fails, but independent
 checks that are not blocked by failed dependencies must continue and report
 their failures together.
 
-This does not make bytecode-dependent gates source-only. `spotbugsMain`,
+This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
 `ckjmMain`, and `checkViewArchitecture` still require current compiled classes;
-if `compileJava` fails, those checks may be skipped because their prerequisite
-failed rather than because another independent check failed.
+if `compileJava` fails, those entrypoints may be skipped because their
+prerequisite failed rather than because another independent check failed.
 
 Local blocking Gradle gates must produce diagnostics from the current
-invocation. `compileJava`, PMD, SpotBugs, ArchUnit-backed test entrypoints,
+invocation. `compileJava`, PMD architecture, ArchUnit-backed test entrypoints,
 jQAssistant, CPD, Lizard, CKJM, build-harness architecture checks, and
-Gradle-owned resource policy checks must not report success by being skipped as
-`UP-TO-DATE` or restored from the build cache. Tool installation, dependency
-resolution, packaging, and generated-resource preparation tasks may remain
-incremental because they are not the gate result itself.
+Gradle-owned resource policy checks must not report success by being skipped
+as `UP-TO-DATE` or restored from the build cache. Report-only PMD and SpotBugs
+entrypoints should also produce fresh diagnostics when invoked, but they are
+not central blocking gates. Tool installation, dependency resolution,
+packaging, and generated-resource preparation tasks may remain incremental
+because they are not the gate result itself.
 
 ## Verification Policy
 
@@ -290,7 +299,7 @@ and defines four jobs.
 | Job | Status | Current policy |
 | --- | --- | --- |
 | `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the CI mirror of the local full blocker. |
-| `quality-platforms / ckjm-report` | `Blocking Local Gate` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM threshold failures fail the job. |
+| `quality-platforms / ckjm-report` | `Required CI Gate` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM threshold failures fail the job. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
 

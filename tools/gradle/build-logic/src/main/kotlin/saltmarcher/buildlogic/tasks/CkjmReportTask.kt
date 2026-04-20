@@ -136,7 +136,7 @@ abstract class CkjmReportTask : DefaultTask() {
             } else {
                 ""
             }
-            logger.warn(
+            throw GradleException(
                 "CKJM metric thresholds were exceeded. See the summary at: " +
                     "file://${summaryPath.toAbsolutePath()}\n$preview$suffix"
             )
