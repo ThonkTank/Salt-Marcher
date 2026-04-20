@@ -2,6 +2,7 @@ package src.domain.party;
 
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
 import src.domain.party.application.DeleteCharacterUseCase;
@@ -17,10 +18,18 @@ import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
+import src.domain.party.published.AwardPartyXpCommand;
 import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.DeleteCharacterCommand;
+import src.domain.party.published.LoadActivePartyCompositionQuery;
+import src.domain.party.published.LoadActivePartyQuery;
+import src.domain.party.published.LoadAdventuringDaySummaryQuery;
+import src.domain.party.published.LoadPartySnapshotQuery;
 import src.domain.party.published.MembershipState;
 import src.domain.party.published.MutationResult;
 import src.domain.party.published.MutationStatus;
+import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.PartyMemberDetails;
 import src.domain.party.published.PartyMemberSummary;
 import src.domain.party.published.PartySnapshot;
@@ -31,6 +40,8 @@ import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestCadenceUrgency;
 import src.domain.party.published.RestMilestone;
 import src.domain.party.published.RestType;
+import src.domain.party.published.SetPartyMembershipCommand;
+import src.domain.party.published.UpdateCharacterCommand;
 import src.domain.party.roster.entity.PartyCharacter;
 import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
 import src.domain.party.roster.port.PartyRosterRepository;
@@ -75,7 +86,7 @@ public final class PartyApplicationService {
         this.performPartyRestUseCase = new PerformPartyRestUseCase(repository);
     }
 
-    public PartySnapshotResult loadSnapshot() {
+    public PartySnapshotResult loadSnapshot(LoadPartySnapshotQuery query) {
         try {
             return new PartySnapshotResult(ReadStatus.SUCCESS, mapSnapshot(loadPartySnapshotUseCase.execute()));
         } catch (IllegalStateException exception) {
@@ -83,7 +94,7 @@ public final class PartyApplicationService {
         }
     }
 
-    public ActivePartyResult loadActiveParty() {
+    public ActivePartyResult loadActiveParty(LoadActivePartyQuery query) {
         try {
             return new ActivePartyResult(
                     ReadStatus.SUCCESS,
@@ -93,7 +104,7 @@ public final class PartyApplicationService {
         }
     }
 
-    public ActivePartyCompositionResult loadActivePartyComposition() {
+    public ActivePartyCompositionResult loadActivePartyComposition(LoadActivePartyCompositionQuery query) {
         try {
             LoadActivePartyCompositionUseCase.ActiveComposition composition = loadActivePartyCompositionUseCase.execute();
             return new ActivePartyCompositionResult(
@@ -106,7 +117,7 @@ public final class PartyApplicationService {
         }
     }
 
-    public AdventuringDayResult loadAdventuringDaySummary() {
+    public AdventuringDayResult loadAdventuringDaySummary(LoadAdventuringDaySummaryQuery query) {
         try {
             LoadAdventuringDaySummaryUseCase.AdventuringDayStatus dayStatus =
                     loadAdventuringDaySummaryUseCase.execute();
@@ -129,29 +140,40 @@ public final class PartyApplicationService {
         }
     }
 
-    public MutationResult createCharacter(CharacterDraft draft, MembershipState membership) {
+    public MutationResult createCharacter(CreateCharacterCommand command) {
+        CharacterDraft draft = command == null ? null : command.draft();
+        MembershipState membership = command == null ? null : command.membership();
         return new MutationResult(mapMutationStatus(createCharacterUseCase.execute(
                 toDomainDraft(draft),
                 toPartyMembership(membership))));
     }
 
-    public MutationResult updateCharacter(long id, CharacterDraft draft) {
-        return new MutationResult(mapMutationStatus(updateCharacterUseCase.execute(id, toDomainDraft(draft))));
+    public MutationResult updateCharacter(UpdateCharacterCommand command) {
+        return new MutationResult(mapMutationStatus(updateCharacterUseCase.execute(
+                command == null ? 0L : command.id(),
+                toDomainDraft(command == null ? null : command.draft()))));
     }
 
-    public MutationResult deleteCharacter(long id) {
+    public MutationResult deleteCharacter(DeleteCharacterCommand command) {
+        long id = command == null ? 0L : command.id();
         return new MutationResult(mapMutationStatus(deleteCharacterUseCase.execute(id)));
     }
 
-    public MutationResult setMembership(long id, MembershipState membership) {
+    public MutationResult setMembership(SetPartyMembershipCommand command) {
+        long id = command == null ? 0L : command.id();
+        MembershipState membership = command == null ? null : command.membership();
         return new MutationResult(mapMutationStatus(setPartyMembershipUseCase.execute(id, toPartyMembership(membership))));
     }
 
-    public MutationResult awardXp(List<Long> ids, int xpPerCharacter) {
-        return new MutationResult(mapMutationStatus(awardPartyXpUseCase.execute(ids, xpPerCharacter)));
+    public MutationResult awardXp(AwardPartyXpCommand command) {
+        AwardPartyXpCommand effectiveCommand = command == null ? new AwardPartyXpCommand(List.of(), 0) : command;
+        return new MutationResult(mapMutationStatus(awardPartyXpUseCase.execute(
+                effectiveCommand.ids(),
+                effectiveCommand.xpPerCharacter())));
     }
 
-    public MutationResult performRest(RestType restType) {
+    public MutationResult performRest(PerformPartyRestCommand command) {
+        RestType restType = command == null ? null : command.restType();
         return new MutationResult(mapMutationStatus(performPartyRestUseCase.execute(toPartyRestType(restType))));
     }
 
@@ -221,7 +243,7 @@ public final class PartyApplicationService {
         };
     }
 
-    private static PartyMembership toPartyMembership(MembershipState membershipState) {
+    private static PartyMembership toPartyMembership(@Nullable MembershipState membershipState) {
         if (membershipState == null) {
             return PartyMembership.RESERVE;
         }
@@ -232,14 +254,14 @@ public final class PartyApplicationService {
         return membership == PartyMembership.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
     }
 
-    private static PartyRestType toPartyRestType(RestType restType) {
+    private static PartyRestType toPartyRestType(@Nullable RestType restType) {
         if (restType == null) {
             return PartyRestType.SHORT_REST;
         }
         return restType == RestType.LONG_REST ? PartyRestType.LONG_REST : PartyRestType.SHORT_REST;
     }
 
-    private static PartyCharacterDraft toDomainDraft(CharacterDraft draft) {
+    private static PartyCharacterDraft toDomainDraft(@Nullable CharacterDraft draft) {
         if (draft == null) {
             return new PartyCharacterDraft("", "", 0, 0, 0);
         }

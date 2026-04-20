@@ -11,6 +11,8 @@ final class SourceLayoutRules implements ArchitectureRule {
 
     private static final Pattern BACKEND_PORT_CONTRACT_FILE_PATTERN =
             Pattern.compile(".*(?:Repository|Lookup|Catalog|Search)\\.java$");
+    private static final Pattern PUBLISHED_CALLABLE_CONTRACT_FILE_PATTERN =
+            Pattern.compile(".*(?:ApplicationService|Service|Facade|Repository|Lookup|Catalog|Search|Port|Gateway|Factory|Locator|Policy)\\.java$");
     private static final Set<String> DOMAIN_ALLOWED_ROLE_PACKAGES =
             Set.of(
                     "aggregate",
@@ -24,6 +26,8 @@ final class SourceLayoutRules implements ArchitectureRule {
                     "specification");
     private static final Set<String> DOMAIN_TOP_LEVEL_FORBIDDEN_BUCKETS =
             Set.of(
+                    "adapter",
+                    "adapters",
                     "aggregate",
                     "aggregates",
                     "applications",
@@ -170,9 +174,9 @@ final class SourceLayoutRules implements ArchitectureRule {
             violations.add(sourceFile.relativePath(), "domain-published-direct-files",
                     "Domain published/ boundary carriers must be direct Java files under src/domain/<context>/published/.");
         }
-        if (BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
-            violations.add(sourceFile.relativePath(), "domain-published-no-backend-port-contracts",
-                    "Domain published/ packages are exported boundary-carrier surfaces. Backend port contracts such as *Repository, *Lookup, *Catalog, or *Search belong in a named domain module port/ package.");
+        if (PUBLISHED_CALLABLE_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
+            violations.add(sourceFile.relativePath(), "domain-published-no-callable-contracts",
+                    "Domain published/ packages are exported boundary-carrier surfaces. Callable services, facades, ports, gateways, factories, policies, and backend port contracts belong outside published/.");
         }
     }
 

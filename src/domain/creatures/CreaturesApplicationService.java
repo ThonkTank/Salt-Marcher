@@ -16,6 +16,8 @@ import src.domain.creatures.published.CreatureReadStatus;
 import src.domain.creatures.published.EncounterCandidate;
 import src.domain.creatures.published.EncounterCandidatesResult;
 import src.domain.creatures.published.EncounterCandidateQuery;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
+import src.domain.creatures.published.LoadCreatureFilterOptionsQuery;
 import src.domain.creatures.application.LoadCreatureDetailUseCase;
 import src.domain.creatures.application.LoadCreatureFilterOptionsUseCase;
 import src.domain.creatures.application.LoadEncounterCandidatesUseCase;
@@ -48,7 +50,7 @@ public final class CreaturesApplicationService {
         this.loadEncounterCandidatesUseCase = new LoadEncounterCandidatesUseCase(lookup);
     }
 
-    public CreatureFilterOptionsResult loadFilterOptions() {
+    public CreatureFilterOptionsResult loadFilterOptions(LoadCreatureFilterOptionsQuery query) {
         try {
             return new CreatureFilterOptionsResult(
                     CreatureReadStatus.SUCCESS,
@@ -79,8 +81,9 @@ public final class CreaturesApplicationService {
         }
     }
 
-    public CreatureDetailResult loadCreatureDetail(long creatureId) {
+    public CreatureDetailResult loadCreatureDetail(LoadCreatureDetailQuery query) {
         try {
+            long creatureId = query == null ? 0L : query.creatureId();
             CreatureCatalogLookup.CreatureProfile detail = loadCreatureDetailUseCase.execute(creatureId);
             if (detail == null) {
                 return new CreatureDetailResult(CreatureLookupStatus.NOT_FOUND, null);

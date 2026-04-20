@@ -8,6 +8,7 @@ import src.domain.creatures.published.CreatureQueryStatus;
 import src.domain.creatures.published.EncounterCandidate;
 import src.domain.creatures.published.EncounterCandidatesResult;
 import src.domain.creatures.published.EncounterCandidateQuery;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
@@ -19,6 +20,8 @@ import src.domain.encounter.generation.value.EncounterDraft;
 import src.domain.encounter.generation.factory.EncounterDraftFactory;
 import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.AdventuringDayResult;
+import src.domain.party.published.LoadActivePartyCompositionQuery;
+import src.domain.party.published.LoadAdventuringDaySummaryQuery;
 import src.domain.party.published.ReadStatus;
 import src.domain.party.PartyApplicationService;
 
@@ -86,8 +89,9 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     private static PartyLoadResult loadPartyState(PartyApplicationService party) {
-        ActivePartyCompositionResult compositionResult = party.loadActivePartyComposition();
-        AdventuringDayResult dayResult = party.loadAdventuringDaySummary();
+        ActivePartyCompositionResult compositionResult =
+                party.loadActivePartyComposition(new LoadActivePartyCompositionQuery());
+        AdventuringDayResult dayResult = party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery());
         if (compositionResult.status() != ReadStatus.SUCCESS || dayResult.status() != ReadStatus.SUCCESS) {
             return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR, "Party data could not be loaded.");
         }
@@ -164,7 +168,7 @@ final class PrepareEncounterGenerationUseCase {
     ) {
         Map<Long, EncounterCandidateProfile> profiles = new LinkedHashMap<>();
         for (Long creatureId : lockedQuantities.keySet()) {
-            CreatureDetailResult detailResult = creatures.loadCreatureDetail(creatureId);
+            CreatureDetailResult detailResult = creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId));
             if (detailResult.status() != CreatureLookupStatus.SUCCESS || detailResult.detail() == null) {
                 continue;
             }

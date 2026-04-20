@@ -4,6 +4,7 @@ import java.util.Objects;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.published.LoadPartySnapshotQuery;
 
 public final class PartyTopBarViewModel {
 
@@ -19,6 +20,6 @@ public final class PartyTopBarViewModel {
     }
 
     public void refresh() {
-        summary.set(String.valueOf(party.loadSnapshot()));
+        summary.set(String.valueOf(party.loadSnapshot(new LoadPartySnapshotQuery())));
     }
 }

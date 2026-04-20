@@ -24,6 +24,7 @@ import src.domain.creatures.published.CreatureFilterOptionsResult;
 import src.domain.creatures.published.CreatureQueryStatus;
 import src.domain.creatures.published.CreatureReadStatus;
 import src.domain.creatures.published.CreatureSortDirection;
+import src.domain.creatures.published.LoadCreatureFilterOptionsQuery;
 
 public final class CatalogViewModel {
 
@@ -240,7 +241,7 @@ public final class CatalogViewModel {
     }
 
     private void loadCreatureFilterOptions() {
-        CreatureFilterOptionsResult result = creatures.loadFilterOptions();
+        CreatureFilterOptionsResult result = creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery());
         creatureFilterData.set(toCreatureFilterData(result.options()));
         if (result.status() != CreatureReadStatus.SUCCESS) {
             statusText.set("Filteroptionen konnten nicht vollständig geladen werden.");

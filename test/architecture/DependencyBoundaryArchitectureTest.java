@@ -14,6 +14,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.Set;
 
 @AnalyzeClasses(
         packages = {"bootstrap", "shell", "src.domain", "src.view", "src.data"},
@@ -23,6 +24,16 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
         },
         cacheMode = CacheMode.PER_CLASS)
 public final class DependencyBoundaryArchitectureTest {
+
+    private static final Set<String> DOMAIN_INTERNAL_MODEL_ROLES = Set.of(
+            "aggregate",
+            "entity",
+            "value",
+            "policy",
+            "factory",
+            "service",
+            "event",
+            "specification");
 
     private DependencyBoundaryArchitectureTest() {
     }
@@ -90,6 +101,20 @@ public final class DependencyBoundaryArchitectureTest {
                     .that()
                     .resideInAPackage("src.domain..")
                     .should(onlyDependOnForeignDomainApis());
+
+    @ArchTest
+    static final ArchRule domainNamedModulesMustNotReachForeignDomainContexts =
+            classes()
+                    .that()
+                    .resideInAPackage("src.domain..")
+                    .should(notDependOnForeignDomainFromNamedModules());
+
+    @ArchTest
+    static final ArchRule domainModelRolesMustNotDependOnOutboundPorts =
+            classes()
+                    .that()
+                    .resideInAPackage("src.domain..")
+                    .should(notDependOnOutboundPortsFromModelRoles());
 
     @ArchTest
     static final ArchRule domainFeaturesMustStayCycleFree =
@@ -262,6 +287,57 @@ public final class DependencyBoundaryArchitectureTest {
         };
     }
 
+    private static ArchCondition<JavaClass> notDependOnForeignDomainFromNamedModules() {
+        return new ArchCondition<>("not depend on foreign domain contexts from named domain modules") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                String sourceFeature = domainFeatureName(item.getPackageName());
+                if (sourceFeature == null || domainNamedModuleName(item.getPackageName()) == null) {
+                    return;
+                }
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetPackage = target.getPackageName();
+                    if (!targetPackage.startsWith("src.domain.")) {
+                        continue;
+                    }
+                    String targetFeature = domainFeatureName(targetPackage);
+                    if (targetFeature == null || targetFeature.equals(sourceFeature)) {
+                        continue;
+                    }
+                    String message = item.getName()
+                            + " depends on foreign domain context "
+                            + target.getName()
+                            + "; named modules must stay within their own context";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnOutboundPortsFromModelRoles() {
+        return new ArchCondition<>("not depend on outbound ports from aggregate/entity/value/policy/factory/service/event/specification roles") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                String sourceRole = domainRoleName(item.getPackageName());
+                if (sourceRole == null || !DOMAIN_INTERNAL_MODEL_ROLES.contains(sourceRole)) {
+                    return;
+                }
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    if (!"port".equals(domainRoleName(target.getPackageName()))) {
+                        continue;
+                    }
+                    String message = item.getName()
+                            + " depends on outbound port "
+                            + target.getName()
+                            + "; ports may be injected into application use cases or adapters, not model roles";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
+    }
+
     private static ArchCondition<JavaClass> resideInTargetViewPackage() {
         return new ArchCondition<>("reside in target view contribution, view model, view, or reusable view package") {
             @Override
@@ -354,6 +430,36 @@ public final class DependencyBoundaryArchitectureTest {
     private static String featureName(String packageName) {
         String domainFeatureName = domainFeatureName(packageName);
         return domainFeatureName != null ? domainFeatureName : dataFeatureName(packageName);
+    }
+
+    private static String domainNamedModuleName(String packageName) {
+        if (!packageName.startsWith("src.domain.")) {
+            return null;
+        }
+        String[] parts = packageName.split("\\.");
+        if (parts.length < 4) {
+            return null;
+        }
+        String moduleName = parts[3];
+        if ("published".equals(moduleName) || "application".equals(moduleName)) {
+            return null;
+        }
+        return moduleName;
+    }
+
+    private static String domainRoleName(String packageName) {
+        String namedModule = domainNamedModuleName(packageName);
+        if (namedModule == null) {
+            return null;
+        }
+        String[] parts = packageName.split("\\.");
+        for (int index = 4; index < parts.length; index++) {
+            String part = parts[index];
+            if ("port".equals(part) || DOMAIN_INTERNAL_MODEL_ROLES.contains(part)) {
+                return part;
+            }
+        }
+        return null;
     }
 
     private static ArchCondition<JavaClass> onlyDependOnOwnDataFeatureOrPersistencecore() {

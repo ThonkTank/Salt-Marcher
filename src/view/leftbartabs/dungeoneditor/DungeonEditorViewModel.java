@@ -7,6 +7,7 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.dungeon.DungeonApplicationService;
 import src.domain.dungeon.published.DungeonSnapshot;
+import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
 
 public final class DungeonEditorViewModel {
 
@@ -27,7 +28,7 @@ public final class DungeonEditorViewModel {
     }
 
     public void refresh() {
-        DungeonSnapshot loadedSnapshot = dungeon.loadSnapshot();
+        DungeonSnapshot loadedSnapshot = dungeon.loadSnapshot(new LoadDungeonSnapshotQuery());
         snapshot.set(loadedSnapshot);
         state.set("Snapshot loaded through DungeonApplicationService.");
     }

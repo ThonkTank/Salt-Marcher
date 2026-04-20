@@ -11,6 +11,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.view.slotcontent.details.creature.CreatureDetailsView;
 import src.view.slotcontent.details.creature.CreatureDetailsViewModel;
 import src.view.slotcontent.controls.catalog.CatalogControlsView;
@@ -98,7 +99,8 @@ final class CatalogBinder {
     }
 
     private static Node detailNode(CreaturesApplicationService creatures, long creatureId) {
-        CreatureDetailsViewModel viewModel = new CreatureDetailsViewModel(creatures.loadCreatureDetail(creatureId));
+        CreatureDetailsViewModel viewModel =
+                new CreatureDetailsViewModel(creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId)));
         CreatureDetailsView view = new CreatureDetailsView();
         view.setLoadingText(viewModel.loadingTextProperty().get());
         view.setErrorText(viewModel.errorTextProperty().get());

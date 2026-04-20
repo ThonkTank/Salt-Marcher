@@ -1,10 +1,13 @@
 package src.domain.dungeon;
 
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.ApplyDungeonEditorOperationCommand;
 import src.domain.dungeon.published.BaseMapSnapshot;
 import src.domain.dungeon.published.CreateDungeonMapCommand;
 import src.domain.dungeon.published.CreateDungeonMapResult;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DeleteDungeonMapResult;
+import src.domain.dungeon.published.DescribeDungeonSelectionQuery;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
@@ -19,8 +22,10 @@ import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyKind;
+import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.published.SearchMapsQuery;
+import src.domain.dungeon.published.SearchMapsResult;
 import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.application.BuildDungeonDerivedStateUseCase;
 import src.domain.dungeon.application.CreateDungeonMapUseCase;
@@ -48,7 +53,6 @@ import java.util.Objects;
  */
 public final class DungeonApplicationService {
 
-    private final DungeonDocumentRepository documentRepository;
     private final LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase;
     private final ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase;
     private final SearchDungeonMapsUseCase searchDungeonMapsUseCase;
@@ -61,21 +65,22 @@ public final class DungeonApplicationService {
             DungeonDocumentRepository documentRepository
     ) {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
-        this.documentRepository = Objects.requireNonNull(documentRepository, "documentRepository");
+        DungeonDocumentRepository documents = Objects.requireNonNull(documentRepository, "documentRepository");
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
-        this.loadDungeonSnapshotUseCase = new LoadDungeonSnapshotUseCase(this.documentRepository, derive);
-        this.applyDungeonEditorOperationUseCase = new ApplyDungeonEditorOperationUseCase(this.documentRepository, derive);
-        this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(repository, this.documentRepository);
-        this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository, this.documentRepository);
-        this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository, this.documentRepository);
-        this.loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(repository, this.documentRepository, derive);
+        this.loadDungeonSnapshotUseCase = new LoadDungeonSnapshotUseCase(documents, derive);
+        this.applyDungeonEditorOperationUseCase = new ApplyDungeonEditorOperationUseCase(documents, derive);
+        this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(repository, documents);
+        this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository, documents);
+        this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository, documents);
+        this.loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(repository, documents, derive);
     }
 
-    public DungeonSnapshot loadSnapshot() {
+    public DungeonSnapshot loadSnapshot(LoadDungeonSnapshotQuery query) {
         return toPublishedSnapshot(loadDungeonSnapshotUseCase.execute());
     }
 
-    public DungeonOperationResult applyOperation(DungeonEditorOperation operation) {
+    public DungeonOperationResult applyOperation(ApplyDungeonEditorOperationCommand command) {
+        DungeonEditorOperation operation = command == null ? null : command.operation();
         ApplyDungeonEditorOperationUseCase.OperationResultData result =
                 applyDungeonEditorOperationUseCase.execute(toOperationInput(operation));
         return new DungeonOperationResult(
@@ -84,20 +89,24 @@ public final class DungeonApplicationService {
                 result.reactionMessages());
     }
 
-    public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
+    public DungeonInspectorSnapshot describeSelection(DescribeDungeonSelectionQuery query) {
+        DescribeDungeonSelectionQuery effectiveQuery = query == null
+                ? new DescribeDungeonSelectionQuery("", 0L)
+                : query;
         LoadDungeonSnapshotUseCase.InspectorSnapshotData snapshot =
-                loadDungeonSnapshotUseCase.describeSelection(ownerKind, ownerId);
+                loadDungeonSnapshotUseCase.describeSelection(effectiveQuery.ownerKind(), effectiveQuery.ownerId());
         return new DungeonInspectorSnapshot(snapshot.title(), snapshot.description(), snapshot.facts());
     }
 
-    public List<DungeonMapSummary> searchMaps(SearchMapsQuery query) {
+    public SearchMapsResult searchMaps(SearchMapsQuery query) {
         String searchTerm = query == null ? "" : query.query();
-        return searchDungeonMapsUseCase.execute(searchTerm).stream()
+        List<DungeonMapSummary> maps = searchDungeonMapsUseCase.execute(searchTerm).stream()
                 .map(summary -> new DungeonMapSummary(
                         toPublishedId(summary.mapId()),
                         summary.mapName(),
                         summary.revision()))
                 .toList();
+        return new SearchMapsResult(maps);
     }
 
     public CreateDungeonMapResult createMap(CreateDungeonMapCommand command) {
@@ -128,10 +137,6 @@ public final class DungeonApplicationService {
                 snapshot.empty());
     }
 
-    public void activateMap(DungeonMapId mapId, String mapName) {
-        documentRepository.activateMap(toDomainIdentity(mapId), mapName);
-    }
-
     private DungeonSnapshot toPublishedSnapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
         return new DungeonSnapshot(
                 snapshot.mapName(),
@@ -145,7 +150,7 @@ public final class DungeonApplicationService {
                 toPublishedRevision(snapshot.revision()));
     }
 
-    private static ApplyDungeonEditorOperationUseCase.OperationInput toOperationInput(DungeonEditorOperation operation) {
+    private static ApplyDungeonEditorOperationUseCase.OperationInput toOperationInput(@Nullable DungeonEditorOperation operation) {
         if (operation instanceof DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor) {
             return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomAnchor(
                     moveRoomAnchor.deltaQ(),

@@ -195,8 +195,9 @@ Current roles:
   dungeon world-space truth, map topology, rooms/spaces, connections, stable
   identity, and map mutation rules.
 
-`mapcore` is not a domain context. Shared map render input belongs in the view
-layer; domain dungeon map/world facts belong to `dungeon/published`.
+Retired shared map packages are not domain contexts. Shared map render input
+belongs in the view layer; domain dungeon map/world facts belong to
+`dungeon/published`.
 
 ## Context Relationships
 
@@ -269,17 +270,21 @@ Required enforced rules:
 - `build-harness` owns root application-service presence, `published/` and
   `application/` placement, `application/*UseCase.java` naming, domain `api/`
   removal, role subpackage topology, allowed role names, direct-file bans under
-  domain modules, `Context Role:` document markers, context-role coverage, and
-  the blocking absence of `src/domain/mapcore`.
-- `Error Prone` owns public boundary signature purity, root constructor port
+  domain modules, callable-contract bans in `published/`, `Context Role:`
+  document markers, required `DOMAIN.md` sections, authored aggregate-root
+  markers, generation-policy `Write Model: None` declarations, context-role and
+  context-relationship coverage, and the blocking absence of
+  `src/domain/mapcore`.
+- `Error Prone` owns root `ApplicationService` public command/query/result
+  carrier signatures, public boundary signature purity, root constructor port
   composition, published-carrier shape, all published-carrier dependency bans
-  for named domain modules, and role-shape checks for aggregate, entity,
-  value, port, policy, factory, service, event, and specification packages.
+  for named domain modules, and role-shape checks for aggregate, entity, value,
+  port, policy, factory, service, event, and specification packages.
 - `PMD architecture` owns source-level domain leakage bans and obvious
   application-layer policy-helper smells.
 - `ArchUnit` owns domain independence from shell, view, data, JavaFX, SQL,
-  source-local infrastructure, foreign private domain internals, and feature
-  cycles.
+  source-local infrastructure, foreign private domain internals, named-module
+  foreign-context access, model-role outbound-port access, and feature cycles.
 
 Review-owned rules:
 
@@ -295,7 +300,7 @@ Review-owned rules:
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
-- [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
+- [Domain Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-domain.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [System Layer Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/system-layer-architecture.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/data-layer.md:1)

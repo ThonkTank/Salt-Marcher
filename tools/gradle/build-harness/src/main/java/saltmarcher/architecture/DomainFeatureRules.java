@@ -30,15 +30,20 @@ final class DomainFeatureRules implements ArchitectureRule {
                     "Reference Catalog Context",
                     "Generation Policy Context",
                     "Authored World-Space Context");
-    private static final List<String> POLICY_CONTEXT_REQUIRED_SECTIONS = List.of(
+    private static final Set<String> AUTHORED_CONTEXT_ROLES =
+            Set.of("Roster Truth Context", "Authored World-Space Context");
+    private static final List<String> BASE_CONTEXT_REQUIRED_SECTIONS = List.of(
+            "## Context Role",
+            "## Published Language",
+            "## Application Boundary",
+            "## Ubiquitous Language");
+    private static final List<String> AUTHORED_CONTEXT_REQUIRED_SECTIONS = List.of(
             "## Aggregate Model",
             "## Commands And Invariants",
-            "## Consistency Model",
-            "## Ubiquitous Language");
+            "## Consistency Model");
     private static final List<String> GENERATION_POLICY_REQUIRED_SECTIONS = List.of(
             "## Commands And Invariants",
-            "## Consistency Model",
-            "## Ubiquitous Language");
+            "## Consistency Model");
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
@@ -48,6 +53,7 @@ final class DomainFeatureRules implements ArchitectureRule {
         validateDomainFeatureBoundaries(domainFeatures, sourceFiles, violations);
         validateMapcoreRemoved(context, violations);
         validateDomainFeatureDirectories(context, violations);
+        validateDomainContextRoles(context, domainFeatures, violations);
         validateDomainContextRelationships(context, domainFeatures, violations);
         validateDomainContextDocuments(context, domainFeatures, violations);
     }
@@ -169,6 +175,56 @@ final class DomainFeatureRules implements ArchitectureRule {
         }
     }
 
+    private void validateDomainContextRoles(
+            ArchitectureContext context,
+            Set<String> domainFeatures,
+            ViolationSink violations) {
+        Path contextMapDocument = context.repoRoot().resolve("docs/standards/domain-layer.md");
+        String contextMapPath = "docs/standards/domain-layer.md";
+        if (!Files.isRegularFile(contextMapDocument)) {
+            violations.add(contextMapPath, "domain-context-roles-complete",
+                    "Domain layer standard must define a '## Context Roles' section covering every domain context.");
+            return;
+        }
+
+        String content;
+        try {
+            content = Files.readString(contextMapDocument, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            violations.add(contextMapPath, "file-readable",
+                    "Could not read domain layer standard: " + exception.getMessage());
+            return;
+        }
+
+        String section = sectionBody(content, "## Context Roles");
+        if (section.trim().isBlank()) {
+            violations.add(contextMapPath, "domain-context-roles-complete",
+                    "Domain layer standard must include a non-empty '## Context Roles' section.");
+            return;
+        }
+        if (section.contains("`mapcore`") || section.contains("src/domain/mapcore")) {
+            violations.add(contextMapPath, "domain-context-roles-no-mapcore",
+                    "Context roles must not declare mapcore as a domain context.");
+        }
+
+        for (String featureName : domainFeatures) {
+            Pattern featureLine = Pattern.compile("(?m)^\\s*-\\s+`" + Pattern.quote(featureName) + "`\\s*:\\s*(.+)$");
+            Matcher matcher = featureLine.matcher(section);
+            if (!matcher.find()) {
+                violations.add(contextMapPath, "domain-context-roles-complete",
+                        "Context roles must include a bullet for src/domain/" + featureName
+                                + " using '- `" + featureName + "`: <role>'.");
+                continue;
+            }
+            String declaredContextRole = declaredDomainContextRole(context, featureName);
+            if (declaredContextRole != null && !matcher.group(1).contains(declaredContextRole)) {
+                violations.add(contextMapPath, "domain-context-roles-role-matches",
+                        "Context role bullet for src/domain/" + featureName
+                                + " must include its declared context role '" + declaredContextRole + "'.");
+            }
+        }
+    }
+
     private String declaredDomainContextRole(ArchitectureContext context, String featureName) {
         Path document = context.repoRoot().resolve("src/domain").resolve(featureName).resolve("DOMAIN.md");
         if (!Files.isRegularFile(document)) {
@@ -213,11 +269,24 @@ final class DomainFeatureRules implements ArchitectureRule {
             }
 
             String role = declaredRoles.getFirst();
-            if (Set.of("Roster Truth Context", "Authored World-Space Context").contains(role)) {
+            validateBaseContextDocument(documentPath, content, violations);
+            if (AUTHORED_CONTEXT_ROLES.contains(role)) {
                 validateAggregateOwningContextDocument(context, featureName, documentPath, content, violations);
             }
             if ("Generation Policy Context".equals(role)) {
                 validateGenerationPolicyContextDocument(documentPath, content, violations);
+            }
+        }
+    }
+
+    private void validateBaseContextDocument(
+            String documentPath,
+            String content,
+            ViolationSink violations) {
+        for (String heading : BASE_CONTEXT_REQUIRED_SECTIONS) {
+            if (!hasNonEmptySection(content, heading)) {
+                violations.add(documentPath, "domain-context-required-sections",
+                        "Every DOMAIN.md must include a non-empty '" + heading + "' section.");
             }
         }
     }
@@ -228,7 +297,7 @@ final class DomainFeatureRules implements ArchitectureRule {
             String documentPath,
             String content,
             ViolationSink violations) {
-        for (String heading : POLICY_CONTEXT_REQUIRED_SECTIONS) {
+        for (String heading : AUTHORED_CONTEXT_REQUIRED_SECTIONS) {
             if (!hasNonEmptySection(content, heading)) {
                 violations.add(documentPath, "domain-role-context-required-sections",
                         "Aggregate-owning domain roles must include a non-empty '" + heading + "' section.");
@@ -237,12 +306,13 @@ final class DomainFeatureRules implements ArchitectureRule {
 
         List<String> aggregateRoots = aggregateRootMarkers(content);
         boolean writeModelNone = WRITE_MODEL_NONE_PATTERN.matcher(content).find();
+        if (writeModelNone) {
+            violations.add(documentPath, "domain-authored-context-write-model-required",
+                    "Aggregate-owning domain roles must own authored truth and must not declare 'Write Model: None'.");
+        }
         if (aggregateRoots.isEmpty()) {
-            if (!writeModelNone || !hasNonEmptySection(content, "## Ephemeral Policy Rationale")) {
-                violations.add(documentPath, "domain-aggregate-marker-shape",
-                        "Aggregate-owning domain roles must declare 'Aggregate Root: <TypeName>' for an existing module role type,"
-                                + " or declare 'Write Model: None' plus a non-empty '## Ephemeral Policy Rationale'.");
-            }
+            violations.add(documentPath, "domain-aggregate-marker-shape",
+                    "Aggregate-owning domain roles must declare 'Aggregate Root: <TypeName>' for an existing module role type.");
             return;
         }
 
@@ -266,10 +336,13 @@ final class DomainFeatureRules implements ArchitectureRule {
                         "Generation policy contexts must include a non-empty '" + heading + "' section.");
             }
         }
-        if (WRITE_MODEL_NONE_PATTERN.matcher(content).find()
-                && !hasNonEmptySection(content, "## Ephemeral Policy Rationale")) {
+        if (!WRITE_MODEL_NONE_PATTERN.matcher(content).find()) {
+            violations.add(documentPath, "domain-generation-policy-write-model-none",
+                    "Generation policy contexts must declare 'Write Model: None'.");
+        }
+        if (!hasNonEmptySection(content, "## Ephemeral Policy Rationale")) {
             violations.add(documentPath, "domain-generation-policy-ephemeral-rationale",
-                    "Generation policy contexts with no write model must include a non-empty '## Ephemeral Policy Rationale' section.");
+                    "Generation policy contexts must include a non-empty '## Ephemeral Policy Rationale' section.");
         }
     }
 

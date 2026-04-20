@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.creatures.published.CreatureDetail;
 import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureLookupStatus;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterDraft;
@@ -61,7 +62,7 @@ final class AssembleEncounterResultUseCase {
     }
 
     private @Nullable CreatureDetail loadCreatureDetailOrNull(long creatureId) {
-        CreatureDetailResult result = creatures.loadCreatureDetail(creatureId);
+        CreatureDetailResult result = creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId));
         if (result.status() != CreatureLookupStatus.SUCCESS) {
             return null;
         }

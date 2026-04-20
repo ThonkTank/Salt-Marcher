@@ -7,6 +7,7 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.dungeon.DungeonApplicationService;
 import src.domain.dungeon.published.DungeonSnapshot;
+import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
 
 public final class DungeonTravelViewModel {
 
@@ -27,7 +28,7 @@ public final class DungeonTravelViewModel {
     }
 
     public void refresh() {
-        snapshot.set(dungeon.loadSnapshot());
+        snapshot.set(dungeon.loadSnapshot(new LoadDungeonSnapshotQuery()));
         state.set("Travel projection refreshed.");
     }
 }
