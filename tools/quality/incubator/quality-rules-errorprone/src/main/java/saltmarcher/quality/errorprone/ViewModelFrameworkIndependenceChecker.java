@@ -89,6 +89,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             if (ViewArchitectureSupport.isDetailEntryReference(referencedType)) {
                 return false;
             }
+            if (ViewArchitectureSupport.isReusableDisplayModelReference(referencedType)) {
+                return false;
+            }
             if ("CONTRIBUTION".equals(viewType.bucket()) || "MODEL".equals(viewType.bucket())) {
                 return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
             }
@@ -99,7 +102,8 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             return true;
         }
         return !"MODEL".equals(viewType.bucket())
-                || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+                || (!ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)
+                && !ViewArchitectureSupport.isReusableDisplayModelReference(referencedType));
     }
 
     private static String sourceText(CompilationUnitTree tree, VisitorState state) {

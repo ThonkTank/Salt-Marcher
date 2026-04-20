@@ -52,6 +52,9 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
+        if (ViewArchitectureSupport.isReusableDisplayModelReference(referencedType)) {
+            return false;
+        }
         return !"VIEW".equals(viewType.bucket())
                 || !ViewArchitectureSupport.isSameViewRootOrReusablePassiveViewReference(
                         sourcePackageName, referencedType);

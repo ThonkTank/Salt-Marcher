@@ -36,9 +36,9 @@ final class ViewFeatureRules implements ArchitectureRule {
     }
 
     private static void validateReusableView(SourceFile sourceFile, ViolationSink violations) {
-        if (!sourceFile.fileName().endsWith("View.java") || sourceFile.fileName().endsWith("ViewModel.java")) {
+        if (!isReusableViewFile(sourceFile) && !isReusableDisplayModelFile(sourceFile)) {
             violations.add(sourceFile.relativePath(), "view-reusable-root-shape",
-                    "Reusable generic view sources under src/view/views must be passive *View.java files.");
+                    "Reusable generic view sources under src/view/views must be passive *View.java files or reusable *DisplayModel.java files.");
         }
     }
 
@@ -96,6 +96,14 @@ final class ViewFeatureRules implements ArchitectureRule {
     private static boolean isPassiveViewFile(SourceFile sourceFile) {
         return sourceFile.fileName().endsWith("View.java")
                 && !sourceFile.fileName().endsWith("ViewModel.java");
+    }
+
+    private static boolean isReusableViewFile(SourceFile sourceFile) {
+        return isPassiveViewFile(sourceFile);
+    }
+
+    private static boolean isReusableDisplayModelFile(SourceFile sourceFile) {
+        return sourceFile.fileName().endsWith("DisplayModel.java");
     }
 
     private record ViewRoot(String area, String entry) implements Comparable<ViewRoot> {

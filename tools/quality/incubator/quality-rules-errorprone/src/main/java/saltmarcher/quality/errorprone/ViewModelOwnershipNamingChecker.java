@@ -32,6 +32,9 @@ public final class ViewModelOwnershipNamingChecker extends BugChecker implements
         if (!PRESENTATION_TYPE_NAME.matcher(simpleName).matches()) {
             return Description.NO_MATCH;
         }
+        if ("src.view.views".equals(packageName) && simpleName.endsWith("DisplayModel")) {
+            return Description.NO_MATCH;
+        }
         if (isNestedInsidePassiveView(tree)) {
             return Description.NO_MATCH;
         }

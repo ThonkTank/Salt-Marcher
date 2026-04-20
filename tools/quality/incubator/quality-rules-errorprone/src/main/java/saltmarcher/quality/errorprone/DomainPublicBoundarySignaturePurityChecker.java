@@ -41,11 +41,11 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         implements BugChecker.ClassTreeMatcher {
 
     private static final Pattern DOMAIN_ROOT_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)$");
-    private static final Pattern DOMAIN_API_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)\\.api(\\..*)?$");
+    private static final Pattern DOMAIN_API_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
     private static final Pattern APPLICATION_SERVICE_TYPE =
             Pattern.compile("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService(?:[.$].+)?$");
     private static final Pattern DOMAIN_API_TYPE =
-            Pattern.compile("^src\\.domain\\.[^.]+\\.api\\..+");
+            Pattern.compile("^src\\.domain\\.[^.]+\\.published\\..+");
     private static final Set<String> OUTER_LAYER_PREFIXES = Set.of(
             "bootstrap.",
             "shell.",

@@ -155,7 +155,7 @@ final class ViewArchitectureSupport {
 
     static boolean isAllowedDomainBoundary(String referencedType) {
         return referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$")
-                || referencedType.matches("^src\\.domain\\.[^.]+\\.api\\..+");
+                || referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+");
     }
 
     static boolean isAllowedViewModelJavafxType(String referencedType) {
@@ -204,6 +204,10 @@ final class ViewArchitectureSupport {
             return new ViewTypeInfo("VIEW_ROOT", "LEGACY");
         }
         if ("views".equals(segments[0])) {
+            String topLevelSimpleName = segments.length >= 2 ? segments[1].replaceFirst("\\$.*$", "") : "";
+            if (topLevelSimpleName.endsWith("DisplayModel")) {
+                return new ViewTypeInfo("views", "MODEL");
+            }
             return new ViewTypeInfo("views", "VIEW");
         }
         if (Set.of("tabs", "topbar", "state", "details").contains(segments[0]) && segments.length >= 3) {
@@ -238,6 +242,13 @@ final class ViewArchitectureSupport {
         return viewType != null
                 && "views".equals(viewType.component())
                 && "VIEW".equals(viewType.bucket());
+    }
+
+    static boolean isReusableDisplayModelReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && "views".equals(viewType.component())
+                && "MODEL".equals(viewType.bucket());
     }
 
     static boolean isDetailEntryViewReference(String referencedType) {
