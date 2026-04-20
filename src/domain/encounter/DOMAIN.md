@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-20
 Source of Truth: Encounter feature ownership, runtime truth model, and domain
 invariants.
 
@@ -113,4 +113,4 @@ are session-local controls over the next generation command.
 
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/encounter/SPEC.md:1)
-- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/encounter/UI.md:1)
+- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/state/encounter/UI.md:1)

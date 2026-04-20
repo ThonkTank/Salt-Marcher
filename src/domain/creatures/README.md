@@ -23,7 +23,8 @@ Its public backend surface is split into:
 
 - [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/creatures/DOMAIN.md:1)
 - [Creatures Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/PERSISTENCE.md:1)
-- [Creatures UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/creatures/UI.md:1)
+- [Catalog Tab UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/tabs/catalog/UI.md:1)
+- [Creature Details UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/details/creature/UI.md:1)
 
 ## Scope
 

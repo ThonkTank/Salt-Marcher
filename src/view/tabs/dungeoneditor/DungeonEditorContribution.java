@@ -2,6 +2,7 @@ package src.view.tabs.dungeoneditor;
 
 import java.util.Map;
 import java.util.Objects;
+import javafx.beans.binding.Bindings;
 import javafx.scene.Node;
 import shell.api.ContributionKey;
 import shell.api.NavigationGroupSpec;
@@ -13,6 +14,7 @@ import shell.api.ShellSlot;
 import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import src.domain.dungeon.DungeonApplicationService;
+import src.view.views.DungeonMapMainView;
 
 public final class DungeonEditorContribution implements ShellContribution {
 
@@ -40,11 +42,63 @@ public final class DungeonEditorContribution implements ShellContribution {
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         DungeonEditorMainView main = new DungeonEditorMainView();
         DungeonEditorStateView state = new DungeonEditorStateView();
-        main.statusTextProperty().bind(viewModel.statusProperty());
+        main.renderModelProperty().bind(Bindings.createObjectBinding(
+                () -> toRenderModel(viewModel.mapPresentationProperty().get()),
+                viewModel.mapPresentationProperty()));
         state.stateTextProperty().bind(viewModel.stateProperty());
         controls.onCreateMap(viewModel::refresh);
         viewModel.refresh();
         return new Binding(controls, main, state);
+    }
+
+    private DungeonMapMainView.RenderModel toRenderModel(DungeonEditorViewModel.MapPresentation presentation) {
+        DungeonEditorViewModel.MapPresentation resolved = presentation == null
+                ? DungeonEditorViewModel.MapPresentation.empty("Dungeon workspace")
+                : presentation;
+        return new DungeonMapMainView.RenderModel(
+                resolved.title(),
+                resolved.subtitle(),
+                resolved.modeLabel(),
+                resolved.statusLabel(),
+                resolved.summaryLabel(),
+                resolved.mapLoaded(),
+                resolved.overlayMessage(),
+                DungeonMapMainView.RenderTopology.valueOf(resolved.topology().name()),
+                resolved.cells().stream()
+                        .map(this::toRenderCell)
+                        .toList(),
+                resolved.edges().stream()
+                        .map(this::toRenderEdge)
+                        .toList());
+    }
+
+    private DungeonMapMainView.RenderCell toRenderCell(DungeonEditorViewModel.CellPresentation cell) {
+        return new DungeonMapMainView.RenderCell(
+                cell.q(),
+                cell.r(),
+                cell.label(),
+                cell.room(),
+                cell.corridor(),
+                cell.blocked(),
+                cell.interactive(),
+                cell.current(),
+                cell.ownerKind(),
+                cell.ownerId(),
+                cell.partKind());
+    }
+
+    private DungeonMapMainView.RenderEdge toRenderEdge(DungeonEditorViewModel.EdgePresentation edge) {
+        return new DungeonMapMainView.RenderEdge(
+                edge.fromQ(),
+                edge.fromR(),
+                edge.toQ(),
+                edge.toR(),
+                edge.kind(),
+                edge.label(),
+                edge.interactive(),
+                edge.ownerKind(),
+                edge.ownerId(),
+                edge.partKind());
     }
 
     private record Binding(

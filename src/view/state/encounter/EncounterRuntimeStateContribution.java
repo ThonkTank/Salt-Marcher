@@ -7,12 +7,9 @@ import shell.api.ContributionKey;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
-import shell.api.ShellRuntimeStateSpec;
 import shell.api.ShellRuntimeContext;
+import shell.api.ShellRuntimeStateSpec;
 import shell.api.ShellSlot;
-import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encounter.EncounterApplicationService;
-import src.domain.party.PartyApplicationService;
 
 public final class EncounterRuntimeStateContribution implements ShellContribution {
 
@@ -30,15 +27,140 @@ public final class EncounterRuntimeStateContribution implements ShellContributio
 
     @Override
     public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        var services = Objects.requireNonNull(runtimeContext, "runtimeContext").services();
-        EncounterApplicationService encounters = new EncounterApplicationService(
-                services.require(PartyApplicationService.class),
-                services.require(CreaturesApplicationService.class));
-        EncounterRuntimeStateViewModel viewModel = new EncounterRuntimeStateViewModel(encounters);
+        Objects.requireNonNull(runtimeContext, "runtimeContext");
+        EncounterRuntimeStateViewModel viewModel = new EncounterRuntimeStateViewModel();
         EncounterStateView state = new EncounterStateView();
-        state.stateTextProperty().bind(viewModel.stateProperty());
-        viewModel.generate();
+        state.statusTextProperty().bind(viewModel.statusProperty());
+        wireActions(state, viewModel);
+        wireRendering(state, viewModel);
+        render(state, viewModel);
         return new Binding(state);
+    }
+
+    private void wireActions(EncounterStateView state, EncounterRuntimeStateViewModel viewModel) {
+        state.setOnGenerate(input -> viewModel.generate(new EncounterRuntimeStateViewModel.BuilderSettings(
+                input.difficultyLabel(),
+                input.balanceLevel(),
+                input.amountValue(),
+                input.diversityLevel())));
+        state.setOnAddDemoCreature(viewModel::addDemoCreature);
+        state.setOnClearRoster(viewModel::clearRoster);
+        state.setOnStartInitiative(viewModel::openInitiative);
+        state.setOnInitiativeBack(viewModel::backToBuilder);
+        state.setOnInitiativeConfirm(inputs -> viewModel.confirmInitiative(inputs.stream()
+                .map(input -> new EncounterRuntimeStateViewModel.InitiativeInput(input.id(), input.initiative()))
+                .toList()));
+        state.setOnNextTurn(viewModel::nextTurn);
+        state.setOnDamage(viewModel::applyDamage);
+        state.setOnHeal(viewModel::heal);
+        state.setOnSetInitiative(viewModel::setInitiative);
+        state.setOnEndCombat(viewModel::endCombat);
+        state.setOnAwardXp(viewModel::awardXp);
+        state.setOnReturnToBuilder(viewModel::returnToBuilderAfterResults);
+    }
+
+    private void wireRendering(EncounterStateView state, EncounterRuntimeStateViewModel viewModel) {
+        viewModel.modeProperty().addListener((obs, oldMode, newMode) -> render(state, viewModel));
+        viewModel.builderStateProperty().addListener((obs, oldState, newState) -> render(state, viewModel));
+        viewModel.initiativeStateProperty().addListener((obs, oldState, newState) -> render(state, viewModel));
+        viewModel.combatStateProperty().addListener((obs, oldState, newState) -> render(state, viewModel));
+        viewModel.resultStateProperty().addListener((obs, oldState, newState) -> render(state, viewModel));
+    }
+
+    private void render(EncounterStateView state, EncounterRuntimeStateViewModel viewModel) {
+        switch (viewModel.modeProperty().get()) {
+            case BUILDER -> state.showBuilder(toBuilderState(viewModel.builderStateProperty().get()));
+            case INITIATIVE -> state.showInitiative(toInitiativeState(viewModel.initiativeStateProperty().get()));
+            case COMBAT -> state.showCombat(toCombatState(viewModel.combatStateProperty().get()));
+            case RESULTS -> state.showResults(toResultState(viewModel.resultStateProperty().get()));
+        }
+    }
+
+    private EncounterStateView.BuilderStateView toBuilderState(EncounterRuntimeStateViewModel.BuilderState source) {
+        EncounterRuntimeStateViewModel.DifficultySummary difficulty = source.difficulty();
+        EncounterRuntimeStateViewModel.BuilderSettings settings = source.settings();
+        String partyLabel = "Party: " + source.party().size() + ", Lv "
+                + Math.round(source.party().stream().mapToInt(EncounterRuntimeStateViewModel.PartyMember::level)
+                .average().orElse(1.0));
+        return new EncounterStateView.BuilderStateView(
+                partyLabel,
+                new EncounterStateView.DifficultySummaryView(
+                        difficulty.easy(),
+                        difficulty.medium(),
+                        difficulty.hard(),
+                        difficulty.deadly(),
+                        difficulty.adjustedXp(),
+                        difficulty.difficulty()),
+                new EncounterStateView.BuilderSettingsInput(
+                        settings.difficultyLabel(),
+                        settings.balanceLevel(),
+                        settings.amountValue(),
+                        settings.diversityLevel()),
+                source.roster().stream()
+                        .map(creature -> new EncounterStateView.RosterCardView(
+                                creature.name(),
+                                creature.cr(),
+                                creature.totalXp(),
+                                creature.ac(),
+                                creature.type(),
+                                creature.role(),
+                                creature.count()))
+                        .toList(),
+                source.message());
+    }
+
+    private EncounterStateView.InitiativeStateView toInitiativeState(
+            EncounterRuntimeStateViewModel.InitiativeState source
+    ) {
+        return new EncounterStateView.InitiativeStateView(source.entries().stream()
+                .map(entry -> new EncounterStateView.InitiativeEntryView(
+                        entry.id(),
+                        entry.label(),
+                        entry.kind(),
+                        entry.initiative()))
+                .toList());
+    }
+
+    private EncounterStateView.CombatStateView toCombatState(EncounterRuntimeStateViewModel.CombatState source) {
+        return new EncounterStateView.CombatStateView(
+                source.round(),
+                source.status(),
+                source.cards().stream()
+                        .map(card -> new EncounterStateView.CombatCardView(
+                                card.id(),
+                                card.name(),
+                                card.playerCharacter(),
+                                card.active(),
+                                card.alive(),
+                                card.currentHp(),
+                                card.maxHp(),
+                                card.armorClass(),
+                                card.initiative(),
+                                card.count(),
+                                card.detail()))
+                        .toList(),
+                source.allEnemiesDefeated());
+    }
+
+    private EncounterStateView.ResultStateView toResultState(EncounterRuntimeStateViewModel.ResultState source) {
+        return new EncounterStateView.ResultStateView(
+                source.enemies().stream()
+                        .map(enemy -> new EncounterStateView.ResultEnemyView(
+                                enemy.name(),
+                                enemy.status(),
+                                enemy.hpLoss(),
+                                enemy.xp(),
+                                enemy.defeatedByDefault(),
+                                enemy.loot()))
+                        .toList(),
+                source.defeatedCount(),
+                source.eligibleXp(),
+                source.perPlayerXp(),
+                source.goldSummary(),
+                source.lootDetail(),
+                source.awardStatus(),
+                source.xpAwarded(),
+                source.canAwardXp());
     }
 
     private record Binding(Node state) implements ShellBinding {

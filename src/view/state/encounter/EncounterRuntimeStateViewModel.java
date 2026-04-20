@@ -7,6 +7,7 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import org.jspecify.annotations.Nullable;
 
 public final class EncounterRuntimeStateViewModel {
 
@@ -27,6 +28,9 @@ public final class EncounterRuntimeStateViewModel {
             new EncounterCreature("cult-fanatic", "Cult Fanatic", "2", 450, 33, 13, 2, "Humanoid", "SUPPORT"),
             new EncounterCreature("shadow", "Shadow", "1/2", 100, 16, 12, 2, "Undead", "MINION"));
 
+    private final List<EncounterCreature> roster = new ArrayList<>();
+    private final List<InitiativeEntry> pendingInitiativeRows = new ArrayList<>();
+    private final List<Combatant> combatants = new ArrayList<>();
     private final ReadOnlyObjectWrapper<Mode> mode = new ReadOnlyObjectWrapper<>(Mode.BUILDER);
     private final ReadOnlyObjectWrapper<BuilderState> builderState =
             new ReadOnlyObjectWrapper<>(emptyBuilderState());
@@ -39,13 +43,9 @@ public final class EncounterRuntimeStateViewModel {
     private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper(
             "Demo-UI bereit. Katalog- und Combat-Services werden spaeter angebunden.");
 
-    private final List<EncounterCreature> roster = new ArrayList<>();
-    private final List<InitiativeEntry> pendingInitiativeRows = new ArrayList<>();
-    private final List<Combatant> combatants = new ArrayList<>();
     private int currentTurnIndex;
     private int round = 1;
     private int generationCount;
-    private boolean xpAwarded;
 
     public ReadOnlyObjectProperty<Mode> modeProperty() {
         return mode.getReadOnlyProperty();
@@ -235,7 +235,6 @@ public final class EncounterRuntimeStateViewModel {
                 .mapToInt(ResultEnemy::xp)
                 .sum();
         int perPlayerXp = eligibleXp / Math.max(1, DEMO_PARTY.size());
-        xpAwarded = false;
         resultState.set(new ResultState(
                 enemies,
                 enemies.stream().filter(ResultEnemy::defeatedByDefault).count(),
@@ -252,7 +251,6 @@ public final class EncounterRuntimeStateViewModel {
 
     public void awardXp() {
         ResultState current = resultState.get();
-        xpAwarded = true;
         resultState.set(current.withAwardStatus("XP an die Demo-Party verteilt.", true));
     }
 
@@ -339,7 +337,7 @@ public final class EncounterRuntimeStateViewModel {
         return aliveEnemies < totalEnemies ? "Medium" : "Hard";
     }
 
-    private InitiativeEntry initiativeEntry(String id) {
+    private @Nullable InitiativeEntry initiativeEntry(String id) {
         for (InitiativeEntry entry : pendingInitiativeRows) {
             if (entry.id().equals(id)) {
                 return entry;
@@ -348,7 +346,7 @@ public final class EncounterRuntimeStateViewModel {
         return null;
     }
 
-    private EncounterCreature creature(String id) {
+    private @Nullable EncounterCreature creature(String id) {
         for (EncounterCreature creature : roster) {
             if (creature.id().equals(id)) {
                 return creature;
