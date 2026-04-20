@@ -23,7 +23,7 @@ Context Role: Authored World-Space Context
 ## Published Language
 
 `published/` owns public dungeon commands, queries, results, IDs, statuses, and
-fachliche dungeon map/world facts.
+domain dungeon map/world facts.
 
 Dungeon published snapshots may describe topology, areas, boundaries, cells,
 and stable dungeon references. They must not describe render layers, styles,
@@ -206,7 +206,7 @@ into `map/`.
 - `RoomCatalog`: room identity and authored room-level semantics.
 - `ConnectionCatalog`: stable semantic links between areas.
 - `FeatureCatalog`: authored non-space, non-connection features.
-- `Derived State`: reproducible fachliche facts for inspector, topology, and
+- `Derived State`: reproducible domain facts for inspector, topology, and
   travel; reusable render input is a view-layer display model.
 
 ## Domain Policies

@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including root `*ApplicationService.java`, carrier-only `published/`, `application/`, fachlich named domain modules, tactical role subpackages, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including root `*ApplicationService.java`, carrier-only `published/`, `application/`, domain-concept modules, tactical role subpackages, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
 ---
 
 # Domain Layer
@@ -17,7 +17,7 @@ This skill is not the source of truth. If it conflicts with
 
 - any file under `src/domain/**`
 - any root `*ApplicationService.java`
-- any `published/`, `application/`, fachlich named domain module, or module
+- any `published/`, `application/`, domain-concept module, or module
   role package
 - any `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md` that defines or
   reviews a domain context
@@ -32,7 +32,7 @@ Before changing domain code:
 3. Treat `published/` as carrier-only published language: commands, queries,
    results, IDs, snapshots, statuses, enums, and sealed carrier abstractions.
 4. Keep `application/` to use-case orchestration. Classes are named `*UseCase`.
-5. Assign each internal type to a fachlich named domain module and an explicit
+5. Assign each internal type to a domain-concept module and an explicit
    role package: `aggregate`, `entity`, `value`, `policy`, `repository`,
    `factory`, `service`, `event`, or `specification`.
 6. Check whether behavior belongs on an aggregate, entity, value object,
@@ -43,7 +43,7 @@ Before changing domain code:
 8. Check cross-context access. Below the view layer, access goes only through
    foreign root application services and foreign `published/` carriers.
 9. Reject `src/domain/mapcore/**`; shared render input belongs in the view
-   layer, while fachliche dungeon map/world facts belong to `dungeon/published`.
+   layer, while domain dungeon map/world facts belong to `dungeon/published`.
 
 ## Role Reminders
 
@@ -74,12 +74,12 @@ Before changing domain code:
 
 ### Domain Modules And Role Packages
 
-- direct domain module names are fachlich concepts in the ubiquitous language
+- direct domain module names are concepts in the ubiquitous language
 - Java files inside a domain module live under a tactical role package
 - `aggregate/` contains aggregate roots only
 - `entity/` contains identity-bearing child entities
 - `value/` contains immutable value objects and enums
-- `policy/` contains stateless fachliche policies and rules
+- `policy/` contains stateless domain policies and rules
 - `repository/` contains domain-owned outbound repository contracts
 - `factory/`, `service/`, `event/`, and `specification/` are used only when
   the corresponding DDD role exists

@@ -10,7 +10,7 @@ review-versus-enforcement expectations for `src/domain/**`.
 ## Goal
 
 SaltMarcher keeps `src/domain/**` as the application core. Domain contexts own
-fachliche truth, topology, invariants, policies, aggregates, repositories, and
+domain truth, topology, invariants, policies, aggregates, repositories, and
 published language. They do not own presentation display models, render-layer
 contracts, shell wiring, data-source mechanics, or UI translation policy.
 
@@ -39,7 +39,7 @@ domain context.
   sealed carriers.
 - `application/` contains use-case orchestration only. Classes are named
   `*UseCase`.
-- Fachlich named domain modules contain role subpackages for tactical DDD
+- Domain-concept modules contain role subpackages for tactical DDD
   concepts.
 - Domain modules must not depend on same-context `published/` carriers.
   Translate carriers at the root or application boundary before entering the
@@ -73,7 +73,7 @@ Rules:
 
 - `published/` and `application/` are the only technical buckets directly under
   a context root.
-- Every other direct directory is a fachlich named domain module, such as
+- Every other direct directory is a domain-concept module, such as
   `roster`, `map`, `generation`, or `catalog`.
 - Domain-module Java files must live under an allowed role subpackage.
 - Direct Java files under a named domain module are forbidden.
@@ -102,7 +102,7 @@ one domain context.
   carriers, and simple public boundary records
 - forbidden: callable services, facades, repositories, ports, gateways,
   factories, locators, policy helpers, and invariant-owning objects
-- public carriers describe fachliche facts, not render layers, canvas cells,
+- public carriers describe domain facts, not render layers, canvas cells,
   styles, widget state, or display selections
 
 ### `application/`
@@ -123,7 +123,7 @@ one domain context.
 - `entity/`: identity-bearing child entities; use final classes.
 - `value/`: immutable value objects, enums, sealed abstractions, or final
   immutable classes.
-- `policy/`: stateless fachliche policies and rules.
+- `policy/`: stateless domain policies and rules.
 - `repository/`: domain-owned outbound repository contracts only; interfaces
   end with `Repository`.
 - `factory/`: stateless creation logic that does not belong to one aggregate,
@@ -154,7 +154,7 @@ Current roles:
   identity, and map mutation rules.
 
 `mapcore` is not a domain context. Shared map render input belongs in the view
-layer; fachliche dungeon map/world facts belong to `dungeon/published`.
+layer; domain dungeon map/world facts belong to `dungeon/published`.
 
 ## Context Relationships
 
@@ -262,7 +262,7 @@ Required enforced rules:
 
 Review-owned rules include object-centred placement, module cohesion,
 ubiquitous-language quality, aggregate boundary quality, true invariant
-placement, and whether a published snapshot describes fachliche facts rather
+placement, and whether a published snapshot describes domain facts rather
 than presentation input.
 
 ## References

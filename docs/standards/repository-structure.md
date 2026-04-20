@@ -185,7 +185,7 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   `AppShell`, registration contracts, cockpit surfaces, state-pane precedence,
   and allowed shell-facing API surface.
 - The domain-layer standard defines the semantic responsibilities of
-  `published/`, `application/`, fachlich named domain modules, and module role
+  `published/`, `application/`, domain-concept modules, and module role
   packages inside one real domain context.
 - The data-layer standard defines the semantic responsibilities of
   `repository/`, `query/`, `gateway/`, `model/`, `mapper`, and

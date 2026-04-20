@@ -46,7 +46,7 @@ tools/       build infrastructure, quality platforms, and engineering scripts
   not bootstrap discovery.
 - `src/view/views/` owns reusable generic passive JavaFX views shared by
   multiple contribution roots.
-- `src/domain/<context>/` owns fachliche truth, invariants, policy decisions,
+- `src/domain/<context>/` owns domain truth, invariants, policy decisions,
   aggregates, application services, published language, and role-explicit
   domain modules inside one real domain context.
 - `src/data/<feature>/` owns persistence and external-system adapters.
@@ -75,7 +75,7 @@ documents live next to the feature code they describe.
   policy.
 - `dungeon`: Authored World-Space Context. Owns authored dungeon map/world
   truth, topology, rooms/spaces, connections, identity, and map mutation rules.
-  It publishes fachliche map/world facts through `published/`.
+  It publishes domain map/world facts through `published/`.
 
 `mapcore` is removed from the domain layer. Reusable map render input is a view
 display-model concern, not a domain context.

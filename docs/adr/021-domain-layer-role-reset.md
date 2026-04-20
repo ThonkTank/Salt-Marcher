@@ -22,7 +22,7 @@ The model still left two problems:
 
 The `mapcore` context exposed the largest mismatch. It lived under
 `src/domain/**`, but it owned shared map render projections instead of
-fachliche truth, topology, invariants, or policy.
+domain truth, topology, invariants, or policy.
 
 ## Decision
 
@@ -35,13 +35,13 @@ SaltMarcher resets the domain-layer target model.
 - Each real domain context keeps one root
   `<PascalContext>ApplicationService.java` inbound boundary.
 - `application/` contains use-case orchestration classes named `*UseCase`.
-- Every fachlich named domain module contains explicit role subpackages:
+- Every domain-concept module contains explicit role subpackages:
   `aggregate`, `entity`, `value`, `policy`, `repository`, `factory`,
   `service`, `event`, and `specification`.
 - Named domain modules must not depend on same-context `published/` carriers.
   Translation happens at the root/application boundary.
 - `mapcore` is removed from `src/domain/**`. Shared render input moves to the
-  view layer. Dungeon publishes fachliche map/world facts through
+  view layer. Dungeon publishes domain map/world facts through
   `dungeon/published`.
 
 Domain documentation now declares `Context Role:` instead of the previous
@@ -68,12 +68,12 @@ carrier-only discipline harder to communicate.
 ### Keep broad domain modules without role subpackages
 
 Rejected because the reset specifically needs mechanically checkable tactical
-roles while still preserving fachlich named module ownership.
+roles while still preserving domain-concept module ownership.
 
 ### Preserve `mapcore` as a supporting read-model context
 
 Rejected because render projections are presentation concerns. A domain context
-must own fachliche truth, policy, topology, invariants, or published language.
+must own domain truth, policy, topology, invariants, or published language.
 
 ## References
 
