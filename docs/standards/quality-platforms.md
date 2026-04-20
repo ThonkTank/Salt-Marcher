@@ -181,8 +181,7 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
 `checkNoCompiledArtifactsInSource`, `checkDesktopPackagingInputs`,
 `checkViewFxmlResources`, and `jqassistantEffectiveRules`, each run through
-`./gradlew <task>
---console=plain`.
+`./gradlew <task> --console=plain`.
 
 `pmdMain`, `pmdStrictMain`, and `spotbugsMain` remain focused report
 entrypoints. They are active only when explicitly requested and are not
