@@ -32,7 +32,7 @@ final class ApplyDungeonEditorOperationUseCase {
         DungeonSnapshot snapshot = new DungeonSnapshot(
                 mutated.mapName(),
                 DungeonMapMode.EDITOR,
-                derived.surface(),
+                derived.map(),
                 derived.aggregates().stream().map(aggregate -> aggregate.label() + " #" + aggregate.id()).toList(),
                 derived.relations().connections().stream()
                         .map(connection -> "corridor " + connection.corridorId() + " -> room " + connection.roomId() + " (" + connection.direction() + ")")

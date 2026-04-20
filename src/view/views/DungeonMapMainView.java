@@ -1,7 +1,6 @@
 package src.view.views;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -37,7 +36,7 @@ public class DungeonMapMainView extends BorderPane {
     private static final double ZOOM_STEP_FACTOR = 1.1;
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
 
-    private final ObjectProperty<RenderModel> renderModel = new SimpleObjectProperty<>(RenderModel.empty());
+    private final ObjectProperty<DungeonMapDisplayModel> renderModel = new SimpleObjectProperty<>(DungeonMapDisplayModel.empty());
     private final Label titleLabel = new Label();
     private final Label subtitleLabel = new Label();
     private final Label modeBadge = new Label();
@@ -70,7 +69,7 @@ public class DungeonMapMainView extends BorderPane {
         redraw();
     }
 
-    public final ObjectProperty<RenderModel> renderModelProperty() {
+    public final ObjectProperty<DungeonMapDisplayModel> renderModelProperty() {
         return renderModel;
     }
 
@@ -241,7 +240,7 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private void redraw() {
-        RenderModel model = renderModel.get() == null ? RenderModel.empty() : renderModel.get();
+        DungeonMapDisplayModel model = renderModel.get() == null ? DungeonMapDisplayModel.empty() : renderModel.get();
         titleLabel.setText(model.title());
         subtitleLabel.setText(model.subtitle() + "  Zoom " + String.format(Locale.ROOT, "%.1f", zoom) + "x");
         modeBadge.setText(model.modeLabel());
@@ -253,10 +252,10 @@ public class DungeonMapMainView extends BorderPane {
         renderScene(model);
     }
 
-    private void renderScene(RenderModel model) {
+    private void renderScene(DungeonMapDisplayModel model) {
         sceneLayer.getChildren().clear();
         overlayMessage.setText("");
-        if (model.topology() != RenderTopology.SQUARE) {
+        if (model.topology() != DungeonMapDisplayModel.RenderTopology.SQUARE) {
             overlayMessage.setText("Hex topology rendering is not available yet.");
             return;
         }
@@ -314,11 +313,11 @@ public class DungeonMapMainView extends BorderPane {
         sceneLayer.getChildren().add(line);
     }
 
-    private void renderCells(RenderModel model) {
+    private void renderCells(DungeonMapDisplayModel model) {
         double scale = pixelsPerTile();
         double inset = Math.max(1.5, Math.min(5.0, scale * 0.08));
         double size = Math.max(6.0, scale - inset * 2.0);
-        for (RenderCell cell : model.cells()) {
+        for (DungeonMapDisplayModel.RenderCell cell : model.cells()) {
             double x = worldToScreenX(cell.q(), scale) + inset;
             double y = worldToScreenY(cell.r(), scale) + inset;
             if (x + size < -8.0 || y + size < -8.0 || x > width() + 8.0 || y > height() + 8.0) {
@@ -341,7 +340,7 @@ public class DungeonMapMainView extends BorderPane {
         }
     }
 
-    private void addCellStyle(StackPane cellNode, RenderCell cell) {
+    private void addCellStyle(StackPane cellNode, DungeonMapDisplayModel.RenderCell cell) {
         if (cell.current()) {
             cellNode.getStyleClass().add("dungeon-map-cell-current");
         } else if (cell.room()) {
@@ -355,7 +354,7 @@ public class DungeonMapMainView extends BorderPane {
         }
     }
 
-    private void addCellContent(StackPane cellNode, RenderCell cell, double size) {
+    private void addCellContent(StackPane cellNode, DungeonMapDisplayModel.RenderCell cell, double size) {
         VBox content = new VBox(1);
         content.setAlignment(Pos.CENTER);
         content.setMouseTransparent(true);
@@ -373,7 +372,7 @@ public class DungeonMapMainView extends BorderPane {
         cellNode.getChildren().add(content);
     }
 
-    private String glyphFor(RenderCell cell) {
+    private String glyphFor(DungeonMapDisplayModel.RenderCell cell) {
         if (cell.current()) {
             return "*";
         }
@@ -389,9 +388,9 @@ public class DungeonMapMainView extends BorderPane {
         return "";
     }
 
-    private void renderEdges(RenderModel model) {
+    private void renderEdges(DungeonMapDisplayModel model) {
         double scale = pixelsPerTile();
-        for (RenderEdge edge : model.edges()) {
+        for (DungeonMapDisplayModel.RenderEdge edge : model.edges()) {
             double fromX = worldToScreenX(edge.fromQ(), scale) + scale / 2.0;
             double fromY = worldToScreenY(edge.fromR(), scale) + scale / 2.0;
             double toX = worldToScreenX(edge.toQ(), scale) + scale / 2.0;
@@ -406,7 +405,7 @@ public class DungeonMapMainView extends BorderPane {
         }
     }
 
-    private void addEdgeStyle(Line line, RenderEdge edge) {
+    private void addEdgeStyle(Line line, DungeonMapDisplayModel.RenderEdge edge) {
         if ("door".equalsIgnoreCase(edge.kind())) {
             line.getStyleClass().add("dungeon-map-door");
         } else {
@@ -417,7 +416,7 @@ public class DungeonMapMainView extends BorderPane {
         }
     }
 
-    private void addDoorMarker(RenderEdge edge, double centerScreenX, double centerScreenY) {
+    private void addDoorMarker(DungeonMapDisplayModel.RenderEdge edge, double centerScreenX, double centerScreenY) {
         Label marker = new Label(edge.label().isBlank() ? "D" : abbreviate(edge.label(), 2));
         marker.getStyleClass().add("dungeon-map-door-marker");
         marker.setMouseTransparent(true);
@@ -425,7 +424,7 @@ public class DungeonMapMainView extends BorderPane {
         sceneLayer.getChildren().add(marker);
     }
 
-    private void renderLabels(RenderModel model) {
+    private void renderLabels(DungeonMapDisplayModel model) {
         double scale = pixelsPerTile();
         if (scale < 18.0) {
             return;
@@ -436,9 +435,9 @@ public class DungeonMapMainView extends BorderPane {
         }
     }
 
-    private Map<String, LabelGroup> collectLabelGroups(RenderModel model) {
+    private Map<String, LabelGroup> collectLabelGroups(DungeonMapDisplayModel model) {
         Map<String, LabelGroup> groups = new LinkedHashMap<>();
-        for (RenderCell cell : model.cells()) {
+        for (DungeonMapDisplayModel.RenderCell cell : model.cells()) {
             if (cell.label().isBlank() || cell.ownerKind().isBlank()) {
                 continue;
             }
@@ -470,7 +469,7 @@ public class DungeonMapMainView extends BorderPane {
         sceneLayer.getChildren().add(label);
     }
 
-    private void renderOverlayMessage(RenderModel model) {
+    private void renderOverlayMessage(DungeonMapDisplayModel model) {
         overlayMessage.getStyleClass().removeAll("dungeon-map-overlay-placeholder", "dungeon-map-overlay-note");
         overlayMessage.getStyleClass().add(model.mapLoaded() ? "dungeon-map-overlay-note" : "dungeon-map-overlay-placeholder");
         overlayMessage.setText(model.overlayMessage());
@@ -520,93 +519,6 @@ public class DungeonMapMainView extends BorderPane {
         return compact.length() <= maxLength
                 ? compact.toUpperCase(Locale.ROOT)
                 : compact.substring(0, maxLength).toUpperCase(Locale.ROOT);
-    }
-
-    public enum RenderTopology {
-        SQUARE,
-        HEX
-    }
-
-    public record RenderModel(
-            String title,
-            String subtitle,
-            String modeLabel,
-            String statusLabel,
-            String summaryLabel,
-            boolean mapLoaded,
-            String overlayMessage,
-            RenderTopology topology,
-            List<RenderCell> cells,
-            List<RenderEdge> edges
-    ) {
-
-        public RenderModel {
-            title = title == null || title.isBlank() ? "Dungeon Map" : title;
-            subtitle = subtitle == null ? "" : subtitle;
-            modeLabel = modeLabel == null ? "" : modeLabel;
-            statusLabel = statusLabel == null ? "" : statusLabel;
-            summaryLabel = summaryLabel == null ? "" : summaryLabel;
-            overlayMessage = overlayMessage == null ? "" : overlayMessage;
-            topology = topology == null ? RenderTopology.SQUARE : topology;
-            cells = cells == null ? List.of() : List.copyOf(cells);
-            edges = edges == null ? List.of() : List.copyOf(edges);
-        }
-
-        public static RenderModel empty() {
-            return new RenderModel(
-                    "Dungeon Map",
-                    "",
-                    "",
-                    "",
-                    "",
-                    false,
-                    "No dungeon map loaded.",
-                    RenderTopology.SQUARE,
-                    List.of(),
-                    List.of());
-        }
-    }
-
-    public record RenderCell(
-            int q,
-            int r,
-            String label,
-            boolean room,
-            boolean corridor,
-            boolean blocked,
-            boolean interactive,
-            boolean current,
-            String ownerKind,
-            long ownerId,
-            String partKind
-    ) {
-
-        public RenderCell {
-            label = label == null ? "" : label;
-            ownerKind = ownerKind == null ? "" : ownerKind;
-            partKind = partKind == null ? "" : partKind;
-        }
-    }
-
-    public record RenderEdge(
-            int fromQ,
-            int fromR,
-            int toQ,
-            int toR,
-            String kind,
-            String label,
-            boolean interactive,
-            String ownerKind,
-            long ownerId,
-            String partKind
-    ) {
-
-        public RenderEdge {
-            kind = kind == null || kind.isBlank() ? "edge" : kind;
-            label = label == null ? "" : label;
-            ownerKind = ownerKind == null ? "" : ownerKind;
-            partKind = partKind == null ? "" : partKind;
-        }
     }
 
     private static final class LabelGroup {

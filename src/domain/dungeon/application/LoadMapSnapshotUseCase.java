@@ -1,11 +1,10 @@
 package src.domain.dungeon.application;
 
 import src.domain.dungeon.published.BaseMapSnapshot;
+import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.map.DungeonMap;
 import src.domain.dungeon.map.DungeonMapRepository;
-import src.domain.mapcore.published.MapRenderPayload;
-import src.domain.mapcore.published.MapSurfaceSnapshot;
 
 /**
  * Loads the snapshot for one authored map and carries the requested viewport through.
@@ -31,7 +30,7 @@ final class LoadMapSnapshotUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + query.mapId().value()));
         documentStore.activateMap(query.mapId(), dungeonMap.metadata().mapName());
         var document = documentStore.load(query.mapId(), dungeonMap.metadata().mapName());
-        MapSurfaceSnapshot surface = derive.execute(document).surface();
+        DungeonMapSnapshot map = derive.execute(document).map();
         return new BaseMapSnapshot(
                 dungeonMap.metadata().mapId(),
                 dungeonMap.metadata().mapName(),
@@ -39,17 +38,8 @@ final class LoadMapSnapshotUseCase {
                 query.targetFloor(),
                 query.onionConfig(),
                 query.viewport(),
-                toRenderPayload(surface),
-                surface.allCells().isEmpty(),
-                surface.selectableTargets()
-        );
-    }
-
-    private MapRenderPayload toRenderPayload(MapSurfaceSnapshot surface) {
-        return new MapRenderPayload(
-                surface.topology(),
-                surface.allCells(),
-                surface.edges()
+                map,
+                map.allCells().isEmpty()
         );
     }
 }

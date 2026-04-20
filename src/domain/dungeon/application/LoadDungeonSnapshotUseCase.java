@@ -34,7 +34,7 @@ final class LoadDungeonSnapshotUseCase {
         return new DungeonSnapshot(
                 store.load().mapName(),
                 DungeonMapMode.EDITOR,
-                derived.surface(),
+                derived.map(),
                 aggregateSummaries,
                 relationSummaries,
                 store.load().revision()
