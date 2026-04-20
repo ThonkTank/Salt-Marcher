@@ -724,10 +724,8 @@ public final class EncounterStateView extends VBox {
         return label;
     }
 
-    private Region separator() {
-        Region region = new Region();
-        region.getStyleClass().add("control-separator");
-        return region;
+    private Separator separator() {
+        return new Separator();
     }
 
     private int parse(String text, int fallback) {
