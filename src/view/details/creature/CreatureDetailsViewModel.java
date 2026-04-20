@@ -82,19 +82,19 @@ public final class CreatureDetailsViewModel {
         return meta.toString();
     }
 
-    private static List<PropertyLine> coreProperties(CreatureDetail creature) {
-        List<PropertyLine> lines = new ArrayList<>();
+    private static List<LabeledValue> coreProperties(CreatureDetail creature) {
+        List<LabeledValue> lines = new ArrayList<>();
         String armorClassNotes = creature.armorClassNotes();
         String hitDiceExpression = creature.hitDiceExpression();
-        lines.add(new PropertyLine("Armor Class", creature.armorClass()
+        lines.add(new LabeledValue("Armor Class", creature.armorClass()
                 + (present(armorClassNotes) ? " (" + armorClassNotes + ")" : "")));
-        lines.add(new PropertyLine("Hit Points", creature.hitPoints()
+        lines.add(new LabeledValue("Hit Points", creature.hitPoints()
                 + (present(hitDiceExpression) ? " (" + hitDiceExpression + ")" : "")));
-        lines.add(new PropertyLine("Speed", speed(creature)));
+        lines.add(new LabeledValue("Speed", speed(creature)));
         return lines;
     }
 
-    private static List<AbilityScore> abilities(CreatureDetail creature) {
+    private static List<AbilityValue> abilities(CreatureDetail creature) {
         return List.of(
                 ability("STR", creature.strength()),
                 ability("DEX", creature.dexterity()),
@@ -104,14 +104,14 @@ public final class CreatureDetailsViewModel {
                 ability("CHA", creature.charisma()));
     }
 
-    private static AbilityScore ability(String label, int value) {
+    private static AbilityValue ability(String label, int value) {
         int modifier = Math.floorDiv(value - 10, 2);
         String modifierText = modifier >= 0 ? "+" + modifier : String.valueOf(modifier);
-        return new AbilityScore(label, value + " (" + modifierText + ")");
+        return new AbilityValue(label, value + " (" + modifierText + ")");
     }
 
-    private static List<PropertyLine> properties(CreatureDetail creature) {
-        List<PropertyLine> lines = new ArrayList<>();
+    private static List<LabeledValue> properties(CreatureDetail creature) {
+        List<LabeledValue> lines = new ArrayList<>();
         addIfPresent(lines, "Saving Throws", formatDelimited(creature.savingThrows()));
         addIfPresent(lines, "Skills", formatDelimited(creature.skills()));
         addIfPresent(lines, "Damage Vulnerabilities", creature.damageVulnerabilities());
@@ -120,27 +120,27 @@ public final class CreatureDetailsViewModel {
         addIfPresent(lines, "Condition Immunities", creature.conditionImmunities());
         addIfPresent(lines, "Senses", senses(creature));
         addIfPresent(lines, "Languages", creature.languages());
-        lines.add(new PropertyLine("Challenge", creature.challengeRating()
+        lines.add(new LabeledValue("Challenge", creature.challengeRating()
                 + " (" + INTEGER_FORMAT.format(creature.xp()) + " XP)"));
         if (creature.proficiencyBonus() > 0) {
-            lines.add(new PropertyLine("Proficiency Bonus", "+" + creature.proficiencyBonus()));
+            lines.add(new LabeledValue("Proficiency Bonus", "+" + creature.proficiencyBonus()));
         }
         return lines;
     }
 
-    private static List<ActionSection> sections(CreatureDetail creature) {
-        List<ActionSection> sections = new ArrayList<>();
-        List<ActionLine> actions = creature.actions().stream()
+    private static List<ActionGroup> sections(CreatureDetail creature) {
+        List<ActionGroup> sections = new ArrayList<>();
+        List<ActionText> actions = creature.actions().stream()
                 .map(CreatureDetailsViewModel::actionLine)
                 .toList();
         if (!actions.isEmpty()) {
-            sections.add(new ActionSection("Actions", "", actions));
+            sections.add(new ActionGroup("Actions", "", actions));
         }
         return sections;
     }
 
-    private static ActionLine actionLine(CreatureActionDetail action) {
-        return new ActionLine(action.name(), action.description());
+    private static ActionText actionLine(CreatureActionDetail action) {
+        return new ActionText(action.name(), action.description());
     }
 
     private static String speed(CreatureDetail creature) {
@@ -180,7 +180,7 @@ public final class CreatureDetailsViewModel {
     }
 
     private static @Nullable String reformatColonDelimited(@Nullable String raw, String valueSuffix) {
-        if (!present(raw)) {
+        if (raw == null || raw.isBlank()) {
             return null;
         }
         StringBuilder text = new StringBuilder();
@@ -225,9 +225,9 @@ public final class CreatureDetailsViewModel {
         target.append(value);
     }
 
-    private static void addIfPresent(List<PropertyLine> lines, String label, @Nullable String value) {
-        if (present(value)) {
-            lines.add(new PropertyLine(label, value));
+    private static void addIfPresent(List<LabeledValue> lines, String label, @Nullable String value) {
+        if (value != null && !value.isBlank()) {
+            lines.add(new LabeledValue(label, value));
         }
     }
 
@@ -245,10 +245,10 @@ public final class CreatureDetailsViewModel {
     public record DetailPresentation(
             String name,
             String meta,
-            List<PropertyLine> coreProperties,
-            List<AbilityScore> abilities,
-            List<PropertyLine> properties,
-            List<ActionSection> sections
+            List<LabeledValue> coreProperties,
+            List<AbilityValue> abilities,
+            List<LabeledValue> properties,
+            List<ActionGroup> sections
     ) {
         public DetailPresentation {
             coreProperties = coreProperties == null ? List.of() : List.copyOf(coreProperties);
@@ -258,18 +258,18 @@ public final class CreatureDetailsViewModel {
         }
     }
 
-    public record PropertyLine(String label, String value) {
+    public record LabeledValue(String label, String text) {
     }
 
-    public record AbilityScore(String label, String value) {
+    public record AbilityValue(String shortName, String scoreText) {
     }
 
-    public record ActionSection(String title, String description, List<ActionLine> actions) {
-        public ActionSection {
+    public record ActionGroup(String heading, String leadText, List<ActionText> actions) {
+        public ActionGroup {
             actions = actions == null ? List.of() : List.copyOf(actions);
         }
     }
 
-    public record ActionLine(String name, String description) {
+    public record ActionText(String displayName, String bodyText) {
     }
 }

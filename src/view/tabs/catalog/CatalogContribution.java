@@ -173,22 +173,22 @@ public final class CatalogContribution implements ShellContribution {
                 detail.name(),
                 detail.meta(),
                 detail.coreProperties().stream()
-                        .map(line -> new CreatureDetailsView.PropertyLine(line.label(), line.value()))
+                        .map(line -> new CreatureDetailsView.PropertyLine(line.label(), line.text()))
                         .toList(),
                 detail.abilities().stream()
-                        .map(ability -> new CreatureDetailsView.AbilityScore(ability.label(), ability.value()))
+                        .map(ability -> new CreatureDetailsView.AbilityScore(ability.shortName(), ability.scoreText()))
                         .toList(),
                 detail.properties().stream()
-                        .map(line -> new CreatureDetailsView.PropertyLine(line.label(), line.value()))
+                        .map(line -> new CreatureDetailsView.PropertyLine(line.label(), line.text()))
                         .toList(),
                 detail.sections().stream()
                         .map(section -> new CreatureDetailsView.ActionSection(
-                                section.title(),
-                                section.description(),
+                                section.heading(),
+                                section.leadText(),
                                 section.actions().stream()
                                         .map(action -> new CreatureDetailsView.ActionLine(
-                                                action.name(),
-                                                action.description()))
+                                                action.displayName(),
+                                                action.bodyText()))
                                         .toList()))
                         .toList());
     }

@@ -14,6 +14,15 @@ import shell.api.ShellSlot;
 import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.api.DungeonSnapshot;
+import src.domain.mapcore.api.MapCellRef;
+import src.domain.mapcore.api.MapCellSnapshot;
+import src.domain.mapcore.api.MapCellStyle;
+import src.domain.mapcore.api.MapEdgeRef;
+import src.domain.mapcore.api.MapEdgeSnapshot;
+import src.domain.mapcore.api.MapSelectionRef;
+import src.domain.mapcore.api.MapSurfaceSnapshot;
+import src.domain.mapcore.api.MapTopologyKind;
 import src.view.views.DungeonMapMainView;
 
 public final class DungeonTravelContribution implements ShellContribution {
@@ -43,62 +52,98 @@ public final class DungeonTravelContribution implements ShellContribution {
         DungeonTravelMainView main = new DungeonTravelMainView();
         DungeonTravelStateView state = new DungeonTravelStateView();
         main.renderModelProperty().bind(Bindings.createObjectBinding(
-                () -> toRenderModel(viewModel.mapPresentationProperty().get()),
-                viewModel.mapPresentationProperty()));
+                () -> mapSnapshotToRenderModel(viewModel.snapshotProperty().get()),
+                viewModel.snapshotProperty()));
         state.stateTextProperty().bind(viewModel.stateProperty());
         controls.onRefresh(viewModel::refresh);
         viewModel.refresh();
         return new Binding(controls, main, state);
     }
 
-    private DungeonMapMainView.RenderModel toRenderModel(DungeonTravelViewModel.MapPresentation presentation) {
-        DungeonTravelViewModel.MapPresentation resolved = presentation == null
-                ? DungeonTravelViewModel.MapPresentation.empty("Travel workspace")
-                : presentation;
+    private DungeonMapMainView.RenderModel mapSnapshotToRenderModel(DungeonSnapshot snapshot) {
+        if (snapshot == null) {
+            return travelPlaceholder();
+        }
+        MapSurfaceSnapshot surface = snapshot.surface();
+        java.util.List<DungeonMapMainView.RenderCell> renderedCells = surface.allCells().stream()
+                .map(this::mapCell)
+                .toList();
+        java.util.List<DungeonMapMainView.RenderEdge> renderedEdges = surface.edges().stream()
+                .filter(this::edgeHasCoordinates)
+                .map(this::mapEdge)
+                .toList();
+        String loadMessage = renderedCells.isEmpty() ? "No dungeon map geometry available." : "";
         return new DungeonMapMainView.RenderModel(
-                resolved.title(),
-                resolved.subtitle(),
-                resolved.modeLabel(),
-                resolved.statusLabel(),
-                resolved.summaryLabel(),
-                resolved.mapLoaded(),
-                resolved.overlayMessage(),
-                DungeonMapMainView.RenderTopology.valueOf(resolved.topology().name()),
-                resolved.cells().stream()
-                        .map(this::toRenderCell)
-                        .toList(),
-                resolved.edges().stream()
-                        .map(this::toRenderEdge)
-                        .toList());
+                snapshot.mapName(),
+                surface.width() + " x " + surface.height() + " squares",
+                snapshot.mode().name(),
+                "Revision " + snapshot.revision(),
+                renderedCells.size() + " cells, " + renderedEdges.size() + " edges",
+                !renderedCells.isEmpty(),
+                loadMessage,
+                resolveTopology(surface.topology()),
+                renderedCells,
+                renderedEdges);
     }
 
-    private DungeonMapMainView.RenderCell toRenderCell(DungeonTravelViewModel.CellPresentation cell) {
+    private DungeonMapMainView.RenderModel travelPlaceholder() {
+        return new DungeonMapMainView.RenderModel(
+                "Travel workspace",
+                "",
+                "",
+                "",
+                "",
+                false,
+                "No dungeon map loaded.",
+                DungeonMapMainView.RenderTopology.SQUARE,
+                java.util.List.of(),
+                java.util.List.of());
+    }
+
+    private DungeonMapMainView.RenderCell mapCell(MapCellSnapshot cell) {
+        MapCellRef ref = cell.ref();
+        MapCellStyle resolvedStyle = cell.style() == null
+                ? new MapCellStyle(false, false, false, false, false)
+                : cell.style();
+        MapSelectionRef selected = cell.selectionRef();
         return new DungeonMapMainView.RenderCell(
-                cell.q(),
-                cell.r(),
+                ref.q(),
+                ref.r(),
                 cell.label(),
-                cell.room(),
-                cell.corridor(),
-                cell.blocked(),
-                cell.interactive(),
-                cell.current(),
-                cell.ownerKind(),
-                cell.ownerId(),
-                cell.partKind());
+                resolvedStyle.room(),
+                resolvedStyle.corridor(),
+                resolvedStyle.blocked(),
+                resolvedStyle.interactive(),
+                resolvedStyle.current(),
+                selected == null ? "" : selected.ownerKind(),
+                selected == null ? 0L : selected.ownerId(),
+                selected == null ? "" : selected.partKind());
     }
 
-    private DungeonMapMainView.RenderEdge toRenderEdge(DungeonTravelViewModel.EdgePresentation edge) {
+    private DungeonMapMainView.RenderEdge mapEdge(MapEdgeSnapshot edge) {
+        MapEdgeRef edgeRef = edge.ref();
+        MapSelectionRef selected = edge.selectionRef();
         return new DungeonMapMainView.RenderEdge(
-                edge.fromQ(),
-                edge.fromR(),
-                edge.toQ(),
-                edge.toR(),
+                edgeRef.from().q(),
+                edgeRef.from().r(),
+                edgeRef.to().q(),
+                edgeRef.to().r(),
                 edge.kind(),
                 edge.label(),
-                edge.interactive(),
-                edge.ownerKind(),
-                edge.ownerId(),
-                edge.partKind());
+                selected != null,
+                selected == null ? "" : selected.ownerKind(),
+                selected == null ? 0L : selected.ownerId(),
+                selected == null ? "" : selected.partKind());
+    }
+
+    private boolean edgeHasCoordinates(MapEdgeSnapshot edge) {
+        return edge.ref() != null && edge.ref().from() != null && edge.ref().to() != null;
+    }
+
+    private DungeonMapMainView.RenderTopology resolveTopology(MapTopologyKind topology) {
+        return topology == MapTopologyKind.HEX
+                ? DungeonMapMainView.RenderTopology.HEX
+                : DungeonMapMainView.RenderTopology.SQUARE;
     }
 
     private record Binding(

@@ -10,9 +10,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.VPos;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -23,14 +20,12 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.TextAlignment;
+import javafx.scene.shape.Line;
 
 public class DungeonMapMainView extends BorderPane {
 
@@ -42,34 +37,6 @@ public class DungeonMapMainView extends BorderPane {
     private static final double ZOOM_STEP_FACTOR = 1.1;
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
 
-    private static final Color BACKGROUND = Color.web("#12181c");
-    private static final Color GRID_MINOR = Color.web("#667782", 0.18);
-    private static final Color GRID_MEDIUM = Color.web("#738390", 0.16);
-    private static final Color GRID_MAJOR = Color.web("#8d9ca8", 0.22);
-    private static final Color GRID_MAX = Color.web("#b1bcc5", 0.28);
-    private static final Color GRID_AXIS = Color.web("#c5d1d8", 0.32);
-    private static final Color ROOM_FILL = Color.web("#2a3238");
-    private static final Color ROOM_STROKE = Color.web("#8a6a35");
-    private static final Color CORRIDOR_FILL = Color.web("#3b5053", 0.80);
-    private static final Color CORRIDOR_STROKE = Color.web("#91b6b0");
-    private static final Color CURRENT_FILL = Color.web("#5b4517");
-    private static final Color CURRENT_STROKE = Color.web("#fff0c6");
-    private static final Color OPEN_FILL = Color.web("#303940");
-    private static final Color OPEN_STROKE = Color.web("#667782");
-    private static final Color BLOCKED_FILL = Color.web("#2a2f33");
-    private static final Color BLOCKED_STROKE = Color.web("#555d64");
-    private static final Color WALL_STROKE = Color.web("#8a6a35");
-    private static final Color DOOR_STROKE = Color.web("#e5c06f");
-    private static final Color LABEL_FILL = Color.web("#181f24");
-    private static final Color LABEL_BORDER = Color.web("#8a6a35");
-    private static final Color LABEL_TEXT = Color.web("#ecedee");
-    private static final Color HUD_TEXT = Color.web("#ecedee");
-    private static final Color PLACEHOLDER = Color.web("#ecedee", 0.92);
-    private static final Color LOADED_NOTE = Color.web("#ecedee", 0.70);
-    private static final Font HUD_FONT = Font.font("SansSerif", FontWeight.BOLD, 14);
-    private static final Font LABEL_FONT = Font.font("SansSerif", FontWeight.BOLD, 12);
-    private static final Font MARKER_FONT = Font.font("SansSerif", FontWeight.BOLD, 10);
-
     private final ObjectProperty<RenderModel> renderModel = new SimpleObjectProperty<>(RenderModel.empty());
     private final Label titleLabel = new Label();
     private final Label subtitleLabel = new Label();
@@ -77,7 +44,9 @@ public class DungeonMapMainView extends BorderPane {
     private final Label statusLabel = new Label();
     private final Label summaryLabel = new Label();
     private final StackPane contentHost = new StackPane();
-    private final Canvas renderSurface = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    private final Pane sceneLayer = new Pane();
+    private final Label overlayMessage = new Label();
+    private final Label hudLabel = new Label();
     private double centerX;
     private double centerY;
     private double zoom = 1.0;
@@ -117,14 +86,24 @@ public class DungeonMapMainView extends BorderPane {
         statusLabel.setWrapText(true);
         summaryLabel.getStyleClass().add("text-muted");
         summaryLabel.setWrapText(true);
+        overlayMessage.getStyleClass().add("title-large");
+        overlayMessage.setWrapText(true);
+        overlayMessage.setMouseTransparent(true);
+        hudLabel.getStyleClass().add("text-muted");
+        hudLabel.setMouseTransparent(true);
     }
 
     private void configureContentHost() {
         contentHost.getStyleClass().add("map-workspace-content");
         contentHost.setAlignment(Pos.CENTER);
         contentHost.setFocusTraversable(true);
-        renderSurface.getStyleClass().add("dungeon-map-scene");
-        contentHost.getChildren().setAll(renderSurface);
+        sceneLayer.getStyleClass().add("dungeon-map-scene");
+        sceneLayer.setMinSize(0.0, 0.0);
+        sceneLayer.setPrefSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        contentHost.getChildren().setAll(sceneLayer, overlayMessage, hudLabel);
+        StackPane.setAlignment(overlayMessage, Pos.CENTER);
+        StackPane.setAlignment(hudLabel, Pos.BOTTOM_RIGHT);
+        StackPane.setMargin(hudLabel, new Insets(0, 16, 14, 0));
         contentHost.widthProperty().addListener((ignored, before, after) -> redraw());
         contentHost.heightProperty().addListener((ignored, before, after) -> redraw());
     }
@@ -268,142 +247,181 @@ public class DungeonMapMainView extends BorderPane {
         modeBadge.setText(model.modeLabel());
         statusLabel.setText(model.statusLabel());
         summaryLabel.setText(model.summaryLabel());
-        renderSurface.setWidth(width());
-        renderSurface.setHeight(height());
-        paint(renderSurface.getGraphicsContext2D(), model);
+        hudLabel.setText(String.format(Locale.ROOT, "x %.1f  y %.1f  z %.0f%%", centerX, centerY, zoom * 100.0));
+        sceneLayer.setPrefSize(width(), height());
+        sceneLayer.resize(width(), height());
+        renderScene(model);
     }
 
-    private void paint(GraphicsContext graphics, RenderModel model) {
-        graphics.setFill(BACKGROUND);
-        graphics.fillRect(0.0, 0.0, width(), height());
+    private void renderScene(RenderModel model) {
+        sceneLayer.getChildren().clear();
+        overlayMessage.setText("");
         if (model.topology() != RenderTopology.SQUARE) {
-            paintOverlayMessage(graphics, "Hex topology rendering is not available yet.", false);
+            overlayMessage.setText("Hex topology rendering is not available yet.");
             return;
         }
-        paintGrid(graphics);
-        paintCells(graphics, model);
-        paintEdges(graphics, model);
-        paintLabels(graphics, model);
-        paintHud(graphics);
-        paintOverlayMessage(graphics, model.overlayMessage(), model.mapLoaded());
+        renderGrid();
+        renderCells(model);
+        renderEdges(model);
+        renderLabels(model);
+        renderOverlayMessage(model);
     }
 
-    private void paintGrid(GraphicsContext graphics) {
+    private void renderGrid() {
         double scale = pixelsPerTile();
-        for (int index = 0; index < GRID_STEPS.length; index++) {
-            int gridStep = GRID_STEPS[index];
+        for (int gridStep : GRID_STEPS) {
             double pixelSpacing = scale * gridStep;
             if (pixelSpacing >= 10.0) {
-                paintGridTier(graphics, scale, gridStep, index);
+                renderGridTier(scale, gridStep);
             }
         }
-        paintAxis(graphics, scale);
+        renderAxis(scale);
     }
 
-    private void paintGridTier(GraphicsContext graphics, double scale, int spacingSquares, int tier) {
+    private void renderGridTier(double scale, int spacingSquares) {
         int minColumn = (int) Math.floor(centerX - width() / (2.0 * scale)) - spacingSquares;
         int maxColumn = (int) Math.ceil(centerX + width() / (2.0 * scale)) + spacingSquares;
         int minRow = (int) Math.floor(centerY - height() / (2.0 * scale)) - spacingSquares;
         int maxRow = (int) Math.ceil(centerY + height() / (2.0 * scale)) + spacingSquares;
-        graphics.setStroke(gridTierColor(tier));
-        graphics.setLineWidth(gridTierWidth(tier));
         for (int column = align(minColumn, spacingSquares); column <= maxColumn; column += spacingSquares) {
             if (column != 0) {
-                double x = worldToScreenX(column, scale);
-                graphics.strokeLine(x, 0.0, x, height());
+                addGridLine(worldToScreenX(column, scale), 0.0, worldToScreenX(column, scale), height());
             }
         }
         for (int row = align(minRow, spacingSquares); row <= maxRow; row += spacingSquares) {
             if (row != 0) {
-                double y = worldToScreenY(row, scale);
-                graphics.strokeLine(0.0, y, width(), y);
+                addGridLine(0.0, worldToScreenY(row, scale), width(), worldToScreenY(row, scale));
             }
         }
     }
 
-    private void paintAxis(GraphicsContext graphics, double scale) {
-        graphics.setStroke(GRID_AXIS);
-        graphics.setLineWidth(2.6);
+    private void renderAxis(double scale) {
         double axisX = worldToScreenX(0.0, scale);
         double axisY = worldToScreenY(0.0, scale);
         if (axisX >= 0.0 && axisX <= width()) {
-            graphics.strokeLine(axisX, 0.0, axisX, height());
+            addGridLine(axisX, 0.0, axisX, height());
         }
         if (axisY >= 0.0 && axisY <= height()) {
-            graphics.strokeLine(0.0, axisY, width(), axisY);
+            addGridLine(0.0, axisY, width(), axisY);
         }
     }
 
-    private void paintCells(GraphicsContext graphics, RenderModel model) {
+    private void addGridLine(double startX, double startY, double endX, double endY) {
+        Line line = new Line(startX, startY, endX, endY);
+        line.getStyleClass().add("dungeon-map-grid-line");
+        line.setMouseTransparent(true);
+        sceneLayer.getChildren().add(line);
+    }
+
+    private void renderCells(RenderModel model) {
         double scale = pixelsPerTile();
         double inset = Math.max(1.5, Math.min(5.0, scale * 0.08));
         double size = Math.max(6.0, scale - inset * 2.0);
-        double arc = Math.max(4.0, size * 0.18);
         for (RenderCell cell : model.cells()) {
             double x = worldToScreenX(cell.q(), scale) + inset;
             double y = worldToScreenY(cell.r(), scale) + inset;
             if (x + size < -8.0 || y + size < -8.0 || x > width() + 8.0 || y > height() + 8.0) {
                 continue;
             }
-            graphics.setFill(fillFor(cell));
-            graphics.fillRoundRect(x, y, size, size, arc, arc);
-            graphics.setStroke(strokeFor(cell));
-            graphics.setLineWidth(cell.current() ? 2.2 : 1.35);
-            graphics.strokeRoundRect(x, y, size, size, arc, arc);
-            if (cell.current()) {
-                graphics.setStroke(CURRENT_STROKE);
-                graphics.setLineWidth(1.1);
-                graphics.strokeRoundRect(x + 2.0, y + 2.0, Math.max(0.0, size - 4.0), Math.max(0.0, size - 4.0), arc, arc);
-            }
+            StackPane cellNode = new StackPane();
+            cellNode.getStyleClass().add("dungeon-map-cell");
+            addCellStyle(cellNode, cell);
+            cellNode.setDisable(!cell.interactive());
+            cellNode.resizeRelocate(x, y, size, size);
+            addCellContent(cellNode, cell, size);
+            sceneLayer.getChildren().add(cellNode);
         }
     }
 
-    private void paintEdges(GraphicsContext graphics, RenderModel model) {
+    private void addCellStyle(StackPane cellNode, RenderCell cell) {
+        if (cell.current()) {
+            cellNode.getStyleClass().add("dungeon-map-cell-current");
+        } else if (cell.room()) {
+            cellNode.getStyleClass().add("dungeon-map-cell-room");
+        } else if (cell.corridor()) {
+            cellNode.getStyleClass().add("dungeon-map-cell-corridor");
+        } else if (cell.blocked()) {
+            cellNode.getStyleClass().add("dungeon-map-cell-blocked");
+        } else {
+            cellNode.getStyleClass().add("dungeon-map-cell-open");
+        }
+    }
+
+    private void addCellContent(StackPane cellNode, RenderCell cell, double size) {
+        VBox content = new VBox(1);
+        content.setAlignment(Pos.CENTER);
+        content.setMouseTransparent(true);
+        if (size >= 20.0) {
+            Label glyph = new Label(glyphFor(cell));
+            glyph.getStyleClass().add("dungeon-map-cell-glyph");
+            content.getChildren().add(glyph);
+        }
+        if (size >= 30.0 && !cell.label().isBlank()) {
+            Label caption = new Label(cell.label());
+            caption.getStyleClass().add("dungeon-map-cell-caption");
+            caption.setMouseTransparent(true);
+            content.getChildren().add(caption);
+        }
+        cellNode.getChildren().add(content);
+    }
+
+    private String glyphFor(RenderCell cell) {
+        if (cell.current()) {
+            return "*";
+        }
+        if (cell.room()) {
+            return "R";
+        }
+        if (cell.corridor()) {
+            return "C";
+        }
+        if (cell.blocked()) {
+            return "X";
+        }
+        return "";
+    }
+
+    private void renderEdges(RenderModel model) {
         double scale = pixelsPerTile();
         for (RenderEdge edge : model.edges()) {
             double fromX = worldToScreenX(edge.fromQ(), scale) + scale / 2.0;
             double fromY = worldToScreenY(edge.fromR(), scale) + scale / 2.0;
             double toX = worldToScreenX(edge.toQ(), scale) + scale / 2.0;
             double toY = worldToScreenY(edge.toR(), scale) + scale / 2.0;
+            Line edgeLine = new Line(fromX, fromY, toX, toY);
+            addEdgeStyle(edgeLine, edge);
+            edgeLine.setMouseTransparent(true);
+            sceneLayer.getChildren().add(edgeLine);
             if ("door".equalsIgnoreCase(edge.kind())) {
-                graphics.setStroke(DOOR_STROKE);
-                graphics.setLineWidth(3.6);
-                graphics.strokeLine(fromX, fromY, toX, toY);
-                paintDoorMarker(graphics, edge, (fromX + toX) / 2.0, (fromY + toY) / 2.0);
-            } else {
-                graphics.setStroke(WALL_STROKE);
-                graphics.setLineWidth(edge.interactive() ? 3.0 : 2.4);
-                graphics.strokeLine(fromX, fromY, toX, toY);
+                addDoorMarker(edge, (fromX + toX) / 2.0, (fromY + toY) / 2.0);
             }
         }
     }
 
-    private void paintDoorMarker(GraphicsContext graphics, RenderEdge edge, double centerScreenX, double centerScreenY) {
-        double radius = 10.0;
-        graphics.setFill(LABEL_FILL);
-        graphics.fillOval(centerScreenX - radius, centerScreenY - radius, radius * 2.0, radius * 2.0);
-        graphics.setStroke(DOOR_STROKE);
-        graphics.setLineWidth(1.4);
-        graphics.strokeOval(centerScreenX - radius, centerScreenY - radius, radius * 2.0, radius * 2.0);
-        graphics.setFill(DOOR_STROKE);
-        graphics.setFont(MARKER_FONT);
-        graphics.setTextAlign(TextAlignment.CENTER);
-        graphics.setTextBaseline(VPos.CENTER);
-        String marker = edge.label().isBlank() ? "D" : abbreviate(edge.label(), 2);
-        graphics.fillText(marker, centerScreenX, centerScreenY + 0.5);
+    private void addEdgeStyle(Line line, RenderEdge edge) {
+        if ("door".equalsIgnoreCase(edge.kind())) {
+            line.getStyleClass().add("dungeon-map-door");
+        } else {
+            line.getStyleClass().add("dungeon-map-wall");
+        }
     }
 
-    private void paintLabels(GraphicsContext graphics, RenderModel model) {
+    private void addDoorMarker(RenderEdge edge, double centerScreenX, double centerScreenY) {
+        Label marker = new Label(edge.label().isBlank() ? "D" : abbreviate(edge.label(), 2));
+        marker.getStyleClass().add("dungeon-map-door-marker");
+        marker.setMouseTransparent(true);
+        marker.resizeRelocate(centerScreenX - 11.0, centerScreenY - 11.0, 22.0, 22.0);
+        sceneLayer.getChildren().add(marker);
+    }
+
+    private void renderLabels(RenderModel model) {
         double scale = pixelsPerTile();
         if (scale < 18.0) {
             return;
         }
         Map<String, LabelGroup> groups = collectLabelGroups(model);
-        graphics.setFont(LABEL_FONT);
-        graphics.setTextAlign(TextAlignment.CENTER);
-        graphics.setTextBaseline(VPos.CENTER);
         for (LabelGroup group : groups.values()) {
-            paintLabelGroup(graphics, scale, group);
+            addLabelGroup(scale, group);
         }
     }
 
@@ -415,12 +433,12 @@ public class DungeonMapMainView extends BorderPane {
             }
             String key = cell.ownerKind() + "|" + cell.ownerId() + "|" + cell.label();
             groups.computeIfAbsent(key, ignored -> new LabelGroup(cell.label()))
-                    .include(cell.q() + 0.5, cell.r() + 0.5, cell.current());
+                    .include(cell.q() + 0.5, cell.r() + 0.5);
         }
         return groups;
     }
 
-    private void paintLabelGroup(GraphicsContext graphics, double scale, LabelGroup group) {
+    private void addLabelGroup(double scale, LabelGroup group) {
         double screenX = worldToScreenX(group.centerX(), scale);
         double screenY = worldToScreenY(group.centerY(), scale);
         double labelWidth = Math.max(56.0, Math.min(160.0, group.label().length() * 7.1 + 18.0));
@@ -431,33 +449,17 @@ public class DungeonMapMainView extends BorderPane {
                 || screenY - labelHeight / 2.0 > height()) {
             return;
         }
-        graphics.setFill(LABEL_FILL);
-        graphics.fillRoundRect(screenX - labelWidth / 2.0, screenY - labelHeight / 2.0, labelWidth, labelHeight, 14.0, 14.0);
-        graphics.setStroke(group.current() ? CURRENT_STROKE : LABEL_BORDER);
-        graphics.setLineWidth(group.current() ? 1.6 : 1.0);
-        graphics.strokeRoundRect(screenX - labelWidth / 2.0, screenY - labelHeight / 2.0, labelWidth, labelHeight, 14.0, 14.0);
-        graphics.setFill(LABEL_TEXT);
-        graphics.fillText(group.label(), screenX, screenY + 0.5);
+        Label label = new Label(group.label());
+        label.getStyleClass().add("map-status-label");
+        label.setMouseTransparent(true);
+        label.resizeRelocate(screenX - labelWidth / 2.0, screenY - labelHeight / 2.0, labelWidth, labelHeight);
+        sceneLayer.getChildren().add(label);
     }
 
-    private void paintHud(GraphicsContext graphics) {
-        graphics.setFill(HUD_TEXT);
-        graphics.setFont(HUD_FONT);
-        graphics.setTextAlign(TextAlignment.RIGHT);
-        graphics.setTextBaseline(VPos.BOTTOM);
-        String reference = String.format(Locale.ROOT, "x %.1f  y %.1f  z %.0f%%", centerX, centerY, zoom * 100.0);
-        graphics.fillText(reference, width() - 18.0, height() - 16.0);
-    }
-
-    private void paintOverlayMessage(GraphicsContext graphics, String message, boolean mapLoaded) {
-        if (message.isBlank()) {
-            return;
-        }
-        graphics.setTextAlign(TextAlignment.CENTER);
-        graphics.setTextBaseline(VPos.CENTER);
-        graphics.setFont(Font.font("SansSerif", FontWeight.BOLD, mapLoaded ? 19.0 : 22.0));
-        graphics.setFill(mapLoaded ? LOADED_NOTE : PLACEHOLDER);
-        graphics.fillText(message, width() / 2.0, height() / 2.0);
+    private void renderOverlayMessage(RenderModel model) {
+        overlayMessage.setText(model.overlayMessage());
+        overlayMessage.setVisible(!model.overlayMessage().isBlank());
+        overlayMessage.setManaged(!model.overlayMessage().isBlank());
     }
 
     private double width() {
@@ -483,56 +485,6 @@ public class DungeonMapMainView extends BorderPane {
     private int align(int value, int spacing) {
         int remainder = Math.floorMod(value, spacing);
         return remainder == 0 ? value : value + spacing - remainder;
-    }
-
-    private Color gridTierColor(int tier) {
-        return switch (tier) {
-            case 0 -> GRID_MINOR;
-            case 1 -> GRID_MEDIUM;
-            case 2 -> GRID_MAJOR;
-            default -> GRID_MAX;
-        };
-    }
-
-    private double gridTierWidth(int tier) {
-        return switch (tier) {
-            case 0 -> 0.9;
-            case 1 -> 1.05;
-            case 2 -> 1.4;
-            default -> 1.8;
-        };
-    }
-
-    private Color fillFor(RenderCell cell) {
-        if (cell.current()) {
-            return CURRENT_FILL;
-        }
-        if (cell.room()) {
-            return ROOM_FILL;
-        }
-        if (cell.corridor()) {
-            return CORRIDOR_FILL;
-        }
-        if (cell.blocked()) {
-            return BLOCKED_FILL;
-        }
-        return OPEN_FILL;
-    }
-
-    private Color strokeFor(RenderCell cell) {
-        if (cell.current()) {
-            return CURRENT_STROKE;
-        }
-        if (cell.room()) {
-            return ROOM_STROKE;
-        }
-        if (cell.corridor()) {
-            return CORRIDOR_STROKE;
-        }
-        if (cell.blocked()) {
-            return BLOCKED_STROKE;
-        }
-        return OPEN_STROKE;
     }
 
     private String abbreviate(String text, int maxLength) {
@@ -638,17 +590,15 @@ public class DungeonMapMainView extends BorderPane {
         private double sumX;
         private double sumY;
         private int count;
-        private boolean current;
 
         private LabelGroup(String label) {
             this.label = Objects.requireNonNull(label, "label");
         }
 
-        private void include(double x, double y, boolean includedCurrent) {
+        private void include(double x, double y) {
             sumX += x;
             sumY += y;
             count++;
-            current = current || includedCurrent;
         }
 
         private String label() {
@@ -663,8 +613,5 @@ public class DungeonMapMainView extends BorderPane {
             return count == 0 ? 0.0 : sumY / count;
         }
 
-        private boolean current() {
-            return current;
-        }
     }
 }

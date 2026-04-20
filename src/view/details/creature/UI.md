@@ -30,5 +30,5 @@ It is opened by catalog rows and may be reused by later encounter-facing views.
 - Loading: `Loading stat block...`
 - Not found: `Creature not found.`
 - Storage error: `Creature details could not be loaded.`
-- Loaded: stat block content using centralized `stat-block-*` stylesheet
-  classes.
+- Loaded: stat block content using existing centralized surface, typography,
+  and separator classes until dedicated stat-block classes are restored.
