@@ -23,10 +23,18 @@ remaining review-owned rules so the enforcement set does not overclaim.
   command/query carrier and returns a same-context `published/` result or
   value carrier directly, owned by Error Prone
   `DomainApplicationServiceApiShape`.
+- `domain-root-no-nested-contracts`: root `*ApplicationService` classes must
+  not declare public or protected nested contract types such as legacy
+  factories, owned by Error Prone `DomainApplicationServiceApiShape`.
 - `domain-root-constructor-ports`: root application services may compose
   same-feature outbound ports by constructor but may not expose data, shell,
   view, JavaFX, SQL, or private implementation types in public signatures,
   owned by Error Prone `DomainPublicBoundarySignaturePurity`.
+- `domain-service-registry-root-only`: data service roots may export only the
+  same-feature root `*ApplicationService.class` through `ServiceRegistry`;
+  domain ports, nested factories, and domain internals must not be registered
+  as runtime-service keys, owned by Error Prone
+  `DomainServiceRegistryExportShape`.
 - `domain-published-direct-files`: `published/` contains direct Java files
   only, owned by `build-harness`.
 - `domain-published-carrier-shape`: public `published/` types must be records,

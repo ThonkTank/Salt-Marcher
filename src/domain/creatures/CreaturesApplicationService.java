@@ -31,12 +31,6 @@ import java.util.Objects;
  */
 public final class CreaturesApplicationService {
 
-    @FunctionalInterface
-    public interface Factory {
-
-        CreaturesApplicationService create();
-    }
-
     private final LoadCreatureFilterOptionsUseCase loadCreatureFilterOptionsUseCase;
     private final SearchCreatureCatalogUseCase searchCreatureCatalogUseCase;
     private final LoadCreatureDetailUseCase loadCreatureDetailUseCase;

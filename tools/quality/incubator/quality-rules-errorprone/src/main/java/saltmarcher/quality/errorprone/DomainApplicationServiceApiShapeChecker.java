@@ -5,10 +5,12 @@ import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.tools.javac.code.Symbol;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -21,9 +23,42 @@ import javax.lang.model.type.TypeKind;
         summary = "Root domain ApplicationService APIs must use same-context published command/query/result carriers.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainApplicationServiceApiShapeChecker extends BugChecker
-        implements BugChecker.MethodTreeMatcher {
+        implements BugChecker.MethodTreeMatcher, BugChecker.ClassTreeMatcher {
 
     private static final Pattern DOMAIN_ROOT_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)$");
+
+    @Override
+    public Description matchClass(ClassTree tree, VisitorState state) {
+        TypeElement typeElement = ASTHelpers.getSymbol(tree);
+        if (typeElement == null || !typeElement.getNestingKind().isNested()) {
+            return Description.NO_MATCH;
+        }
+        if (!typeElement.getModifiers().contains(Modifier.PUBLIC)
+                && !typeElement.getModifiers().contains(Modifier.PROTECTED)) {
+            return Description.NO_MATCH;
+        }
+
+        Element enclosingElement = typeElement.getEnclosingElement();
+        if (!(enclosingElement instanceof TypeElement enclosingType)
+                || enclosingType.getNestingKind().isNested()) {
+            return Description.NO_MATCH;
+        }
+
+        Matcher matcher = DOMAIN_ROOT_PACKAGE.matcher(
+                DataArchitectureSupport.packageName(state.getPath().getCompilationUnit()));
+        if (!matcher.matches()
+                || !enclosingType.getSimpleName().toString().endsWith("ApplicationService")) {
+            return Description.NO_MATCH;
+        }
+
+        return buildDescription(tree)
+                .setMessage("Root domain ApplicationService '"
+                        + enclosingType.getQualifiedName()
+                        + "' must not declare public or protected nested contract type '"
+                        + typeElement.getSimpleName()
+                        + "'. Export the root service directly through ServiceRegistry instead of legacy nested factories.")
+                .build();
+    }
 
     @Override
     public Description matchMethod(MethodTree tree, VisitorState state) {

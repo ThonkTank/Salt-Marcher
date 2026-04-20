@@ -22,13 +22,7 @@ public final class CreaturesServiceContribution implements ServiceContribution {
                 new SqliteCreatureCatalogQueryAdapter();
         CreaturesApplicationService applicationService = new CreaturesApplicationService(queryPort);
         builder.register(
-                CreatureCatalogLookup.class,
-                queryPort);
-        builder.register(
                 CreaturesApplicationService.class,
                 applicationService);
-        builder.register(
-                CreaturesApplicationService.Factory.class,
-                () -> applicationService);
     }
 }

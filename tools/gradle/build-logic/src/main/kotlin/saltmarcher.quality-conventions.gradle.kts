@@ -213,6 +213,7 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("DomainPublicBoundarySignaturePurity")
     options.errorprone.error("DomainPublicConcreteTypeShape")
     options.errorprone.error("DomainRoleShape")
+    options.errorprone.error("DomainServiceRegistryExportShape")
     options.errorprone.error("DomainServiceFactoryStatelessness")
     options.errorprone.error("FeatureShellApiAllowlist")
     options.errorprone.error("NullAway")

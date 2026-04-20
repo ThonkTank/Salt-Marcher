@@ -55,12 +55,6 @@ import src.domain.party.roster.value.PartyRestType;
  */
 public final class PartyApplicationService {
 
-    @FunctionalInterface
-    public interface Factory {
-
-        PartyApplicationService create();
-    }
-
     private final LoadPartySnapshotUseCase loadPartySnapshotUseCase;
     private final LoadActivePartyUseCase loadActivePartyUseCase;
     private final LoadActivePartyCompositionUseCase loadActivePartyCompositionUseCase;

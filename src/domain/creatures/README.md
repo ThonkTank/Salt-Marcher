@@ -16,8 +16,8 @@ Its public backend surface is split into:
   application-service root
 - `src/domain/creatures/published/` for public query, result, status, and payload
   types consumed by view and domain callers
-- `src/domain/creatures/application/` plus the owning domain modules for the
-  feature's exported supporting lookup coordination and outbound ports
+- `src/domain/creatures/application/` plus the owning domain modules for
+  use-case orchestration and outbound ports used by data adapters
 
 ## Documentation Set
 

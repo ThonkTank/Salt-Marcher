@@ -13,8 +13,9 @@ This document is normative for the `creatures` feature's persistence path.
 - `src/data/creatures/CreaturesServiceContribution.java` is the only root
   service entrypoint for the feature.
 - Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers the creature catalog read-only domain port through
-  the shell-owned service registry, `shell.api.ServiceRegistry`.
+- The contribution registers `CreaturesApplicationService.class` through the
+  shell-owned service registry, `shell.api.ServiceRegistry`. Domain ports are
+  implementation collaborators and must not be exported as runtime services.
 - View assembly code reads that capability only through the shell-owned
   service lookup surface. The current Java lookup method is
   `ShellRuntimeContext.services()`.
@@ -45,8 +46,8 @@ This document is normative for the `creatures` feature's persistence path.
 
 - Adding another persistence-exporting feature must not require routine edits
   outside `src/`.
-- The creatures query adapter remains registered passively; no feature-specific
-  bootstrap wiring is allowed.
+- The creatures query adapter is injected into `CreaturesApplicationService`;
+  no feature-specific bootstrap wiring is allowed.
 - Creature persistence helpers may be refactored internally as long as
-  `CreatureCatalogLookup` remains the only domain-owned read-only port
-  exported from the data slice.
+  `CreatureCatalogLookup` remains the only domain-owned read-only port used by
+  the data slice.

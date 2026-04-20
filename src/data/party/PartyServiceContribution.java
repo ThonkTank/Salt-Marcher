@@ -21,13 +21,7 @@ public final class PartyServiceContribution implements ServiceContribution {
         PartyRosterRepository repository = new SqlitePartyRosterRepository();
         PartyApplicationService service = new PartyApplicationService(repository);
         builder.register(
-                PartyRosterRepository.class,
-                repository);
-        builder.register(
                 PartyApplicationService.class,
                 service);
-        builder.register(
-                PartyApplicationService.Factory.class,
-                () -> service);
     }
 }

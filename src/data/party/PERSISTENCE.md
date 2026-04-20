@@ -15,10 +15,9 @@ This document is normative for the `party` feature's persistence path.
 - Bootstrap discovers it generically under `src/data/<feature>/`.
 - The contribution registers all exported backend capabilities through the
   shell-owned service registry, `shell.api.ServiceRegistry`.
-- The exported party runtime surface includes both
-  `PartyApplicationService.class` for direct assembly consumption and
-  `PartyApplicationService.Factory.class` for callers that still need the
-  legacy factory contract during migration.
+- The exported party runtime surface is `PartyApplicationService.class`.
+  Domain ports and nested application-service factories are implementation
+  details and must not be registered as runtime services.
 - View assembly code reads those capabilities only through the shell-owned
   runtime-capability lookup on `ShellRuntimeContext.services()`.
 
@@ -37,7 +36,7 @@ This document is normative for the `party` feature's persistence path.
 
 - Adding another persistence-exporting feature must not require routine edits
   outside `src/`.
-- The party roster write port remains registered passively; no feature-specific
-  bootstrap wiring is allowed.
+- The party roster write port remains a data-owned collaborator injected into
+  `PartyApplicationService`; no feature-specific bootstrap wiring is allowed.
 - Legacy runtime-service wiring through `RuntimeServiceProvider` or
   `RuntimeServiceRegistry` is forbidden.

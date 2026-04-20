@@ -282,8 +282,8 @@ Current mechanical ownership:
 - `PMD architecture` owns source-level root contracts for
   `*ServiceContribution`, including naming, `public final`, public no-arg
   constructor, required interface, `register(ServiceRegistry.Builder)`, no
-  instance fields, no extra public/protected members, and own-feature
-  domain-boundary-only registration into `ServiceRegistry`.
+  instance fields, no extra public/protected members, and own-feature root
+  application-service-only registration into `ServiceRegistry`.
   It also owns the mechanically stable source-level subset of data-role
   discipline: obvious mutation-method bans in `query/`, concrete source API
   bans in `repository/`, `query/`, and `mapper/`, and feature DDL literal
@@ -299,8 +299,8 @@ Current mechanical ownership:
   `repository/` adapters on write-model ports and `query/` adapters on
   read-only ports, prevents public data-owned contract/carrier
   types in adapter buckets, requires public concrete adapters to satisfy an
-  own-feature domain-owned role contract, keeps exported domain port
-  implementations out of other data buckets, and keeps exported adapters
+  own-feature domain-owned role contract, keeps domain port implementations out
+  of other data buckets, and keeps exported adapters
   dependent on own-feature gateway facade types rather than concrete gateway
   mechanics such as stores, migrators, table managers, or connection factories.
 - `ArchUnit` owns data dependence bans on `src.view`, `shell`, and
@@ -314,7 +314,7 @@ Current `Review-Only` rules in this standard:
 
 - semantic thin `*ServiceContribution` registration roots beyond the encoded
   stateless/root-contract checks
-- `repository/` and `query/` as the only exported domain-port adapter roles in
+- `repository/` and `query/` as the only domain-port adapter roles in
   the stronger semantic sense beyond the mechanically encoded contract-role
   split, public contract-placement check, contract-presence check, adapter
   placement check, and gateway-facade collaborator check

@@ -276,10 +276,12 @@ Required enforced rules:
   context-relationship coverage, and the blocking absence of
   `src/domain/mapcore`.
 - `Error Prone` owns root `ApplicationService` public command/query/result
-  carrier signatures, public boundary signature purity, root constructor port
-  composition, published-carrier shape, all published-carrier dependency bans
-  for named domain modules, and role-shape checks for aggregate, entity, value,
-  port, policy, factory, service, event, and specification packages.
+  carrier signatures, public nested-contract bans on root application services,
+  root-only domain service registry exports, public boundary signature purity,
+  root constructor port composition, published-carrier shape, all
+  published-carrier dependency bans for named domain modules, and role-shape
+  checks for aggregate, entity, value, port, policy, factory, service, event,
+  and specification packages.
 - `PMD architecture` owns source-level domain leakage bans and obvious
   application-layer policy-helper smells.
 - `ArchUnit` owns domain independence from shell, view, data, JavaFX, SQL,
