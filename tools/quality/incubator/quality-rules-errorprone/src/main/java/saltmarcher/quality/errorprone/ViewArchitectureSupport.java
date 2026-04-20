@@ -245,6 +245,10 @@ final class ViewArchitectureSupport {
     }
 
     static boolean isReusableDisplayModelReference(String referencedType) {
+        if (referencedType != null
+                && referencedType.matches("^src\\.view\\.views\\.[A-Z][A-Za-z0-9_]*DisplayModel(?:[.$].*)?$")) {
+            return true;
+        }
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null
                 && "views".equals(viewType.component())
