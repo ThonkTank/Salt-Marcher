@@ -30,9 +30,31 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
     @Override
     public Description matchClass(ClassTree tree, VisitorState state) {
         TypeElement typeElement = ASTHelpers.getSymbol(tree);
-        if (typeElement == null || !typeElement.getNestingKind().isNested()) {
+        if (typeElement == null) {
             return Description.NO_MATCH;
         }
+
+        Matcher matcher = DOMAIN_ROOT_PACKAGE.matcher(
+                DataArchitectureSupport.packageName(state.getPath().getCompilationUnit()));
+        if (!matcher.matches()) {
+            return Description.NO_MATCH;
+        }
+
+        if (!typeElement.getNestingKind().isNested()) {
+            if (!typeElement.getSimpleName().toString().endsWith("ApplicationService")) {
+                return Description.NO_MATCH;
+            }
+            if (typeElement.getModifiers().contains(Modifier.PUBLIC)
+                    && typeElement.getModifiers().contains(Modifier.FINAL)) {
+                return Description.NO_MATCH;
+            }
+            return buildDescription(tree)
+                    .setMessage("Root domain ApplicationService '"
+                            + typeElement.getQualifiedName()
+                            + "' must be a public final top-level class.")
+                    .build();
+        }
+
         if (!typeElement.getModifiers().contains(Modifier.PUBLIC)
                 && !typeElement.getModifiers().contains(Modifier.PROTECTED)) {
             return Description.NO_MATCH;
@@ -44,10 +66,7 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
             return Description.NO_MATCH;
         }
 
-        Matcher matcher = DOMAIN_ROOT_PACKAGE.matcher(
-                DataArchitectureSupport.packageName(state.getPath().getCompilationUnit()));
-        if (!matcher.matches()
-                || !enclosingType.getSimpleName().toString().endsWith("ApplicationService")) {
+        if (!enclosingType.getSimpleName().toString().endsWith("ApplicationService")) {
             return Description.NO_MATCH;
         }
 
@@ -92,6 +111,10 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
             return violation(tree, methodSymbol, feature,
                     "accept one same-feature published command/query parameter");
         }
+        if (!hasSimpleNameEnding(parameter.asType(), "Command", "Query")) {
+            return violation(tree, methodSymbol, feature,
+                    "accept one same-feature published carrier whose simple name ends with Command or Query");
+        }
         if (methodSymbol.getReturnType().getKind() == TypeKind.VOID) {
             return violation(tree, methodSymbol, feature,
                     "return a same-feature published result/value carrier instead of void");
@@ -124,5 +147,14 @@ public final class DomainApplicationServiceApiShapeChecker extends BugChecker
         }
         String qualifiedName = typeElement.getQualifiedName().toString();
         return qualifiedName.startsWith("src.domain." + feature + ".published.");
+    }
+
+    private static boolean hasSimpleNameEnding(TypeMirror typeMirror, String firstSuffix, String secondSuffix) {
+        if (!(typeMirror instanceof DeclaredType declaredType)
+                || !(declaredType.asElement() instanceof TypeElement typeElement)) {
+            return false;
+        }
+        String simpleName = typeElement.getSimpleName().toString();
+        return simpleName.endsWith(firstSuffix) || simpleName.endsWith(secondSuffix);
     }
 }

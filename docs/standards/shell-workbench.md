@@ -113,8 +113,8 @@ It exposes:
 
 - `inspector()` for publishing details/history entries into the shell-owned
   details surface
-- `services()` for looking up shell-owned runtime capabilities and
-  application-service factories through `ServiceRegistry`
+- `services()` for looking up shell-owned root application services through
+  `ServiceRegistry`
 - `session(...)` for typed per-shell shared runtime sessions
 
 Features must not bypass this gateway by importing `AppShell` or concrete

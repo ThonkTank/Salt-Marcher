@@ -18,18 +18,24 @@ remaining review-owned rules so the enforcement set does not overclaim.
 - `domain-root-presence`: every domain context exposes exactly one root
   `<PascalFeatureName>ApplicationService.java` directly under
   `src/domain/<feature>/`, owned by `build-harness`.
+- `domain-root-class-shape`: the root `*ApplicationService` must be a public
+  final top-level class, owned by Error Prone
+  `DomainApplicationServiceApiShape`.
 - `domain-root-public-api-carriers`: every public or protected method on a
   root `*ApplicationService` takes exactly one same-context `published/`
-  command/query carrier and returns a same-context `published/` result or
-  value carrier directly, owned by Error Prone
+  carrier whose type name ends in `Command` or `Query` and returns a
+  same-context `published/` result or value carrier directly, owned by Error
+  Prone
   `DomainApplicationServiceApiShape`.
 - `domain-root-no-nested-contracts`: root `*ApplicationService` classes must
   not declare public or protected nested contract types such as legacy
   factories, owned by Error Prone `DomainApplicationServiceApiShape`.
-- `domain-root-constructor-ports`: root application services may compose
-  same-feature outbound ports by constructor but may not expose data, shell,
-  view, JavaFX, SQL, or private implementation types in public signatures,
-  owned by Error Prone `DomainPublicBoundarySignaturePurity`.
+- `domain-root-constructor-composition`: root application services may expose
+  only same-feature outbound port interfaces and foreign root application
+  services in public or protected constructors; data, shell, view, JavaFX, SQL,
+  same-feature published carriers, and private implementation types are
+  forbidden there, owned by Error Prone
+  `DomainPublicBoundarySignaturePurity`.
 - `domain-service-registry-root-only`: data service roots may export only the
   same-feature root `*ApplicationService.class` through `ServiceRegistry`;
   domain ports, nested factories, and domain internals must not be registered
@@ -37,8 +43,9 @@ remaining review-owned rules so the enforcement set does not overclaim.
   `DomainServiceRegistryExportShape`.
 - `domain-published-direct-files`: `published/` contains direct Java files
   only, owned by `build-harness`.
-- `domain-published-carrier-shape`: public `published/` types must be records,
-  enums, or sealed abstractions, owned by Error Prone
+- `domain-published-carrier-shape`: top-level `published/` types must be
+  public, and public `published/` types must be records, enums, or sealed
+  abstractions, owned by Error Prone
   `DomainPublishedCarrierShape`.
 - `domain-published-no-callable-contracts`: `published/` must not contain
   callable contracts such as `*ApplicationService`, `*Service`, `*Facade`,
@@ -49,6 +56,10 @@ remaining review-owned rules so the enforcement set does not overclaim.
 - `domain-application-no-backend-port-contracts`: `application/` does not own
   backend port contracts ending `Repository`, `Lookup`, `Catalog`, or
   `Search`, owned by `build-harness`.
+- `domain-application-no-same-context-published`: `application/` use cases may
+  not depend on their own `published/` carriers; the root service translates
+  those carriers before delegation, owned by Error Prone
+  `DomainApplicationNoSameContextPublishedDependency`.
 - `domain-module-role-required`, `domain-role-direct-files`, and
   `domain-role-package-name`: named domain modules must place Java files as
   direct files under allowed role packages only: `aggregate`, `entity`,
@@ -95,6 +106,9 @@ remaining review-owned rules so the enforcement set does not overclaim.
 - `domain-named-module-private-context`: named domain modules must not depend
   on any foreign domain context, including foreign public carriers, owned by
   ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts`.
+- `domain-named-module-no-same-context-application`: named domain modules must
+  not depend on their own root package or `application/` package, owned by
+  ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary`.
 - `domain-model-roles-no-outbound-ports`: aggregate, entity, value, policy,
   factory, service, event, and specification roles must not depend on outbound
   `port/` interfaces; application use cases or adapters receive ports, owned

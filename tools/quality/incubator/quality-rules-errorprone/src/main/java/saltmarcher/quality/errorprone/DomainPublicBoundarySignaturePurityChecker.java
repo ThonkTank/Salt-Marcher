@@ -45,6 +45,8 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
     private static final Pattern APPLICATION_SERVICE_TYPE =
             Pattern.compile("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService(?:[.$].+)?$");
+    private static final Pattern ROOT_APPLICATION_SERVICE_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
             Pattern.compile("^src\\.domain\\.[^.]+\\.published\\..+");
     private static final Set<String> OUTER_LAYER_PREFIXES = Set.of(
@@ -481,10 +483,15 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         if (targetFeature == null) {
             return false;
         }
-        if (APPLICATION_SERVICE_TYPE.matcher(fqn).matches() || DOMAIN_PUBLISHED_TYPE.matcher(fqn).matches()) {
+        if (isForeignRootApplicationService(fqn, rootFeature)) {
             return false;
         }
         return !targetFeature.equals(rootFeature) || !isSameFeatureDomainPort(typeElement);
+    }
+
+    private static boolean isForeignRootApplicationService(String fqn, String rootFeature) {
+        var matcher = ROOT_APPLICATION_SERVICE_TYPE.matcher(fqn);
+        return matcher.matches() && !matcher.group(1).equals(rootFeature);
     }
 
     private static boolean isSameFeatureDomainPort(TypeElement typeElement) {

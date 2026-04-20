@@ -117,9 +117,8 @@ runtime capabilities through service contributions.
 - `src/view/statetabs/**` contributes global state tabs.
 - `src/view/dropdowns/**` may contribute top-bar dropdown windows when a
   `*Contribution` is present.
-- `shell/api/ServiceContribution` registers typed backend capabilities and
-  application-service factories into the shared shell service registry,
-  `ServiceRegistry`.
+- `shell/api/ServiceContribution` registers typed root application services
+  into the shared shell service registry, `ServiceRegistry`.
 - `shell/api/ShellRuntimeContext` provides shell-owned shared services such as
   runtime-capability lookup, details/history publishing, and per-shell runtime
   sessions.

@@ -7,10 +7,10 @@ import src.domain.encounter.published.EncounterCreature;
 import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
-import src.domain.encounter.published.EncounterGenerationRequest;
 import src.domain.encounter.published.EncounterLock;
 import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.published.GeneratedEncounter;
+import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.party.PartyApplicationService;
 
@@ -32,7 +32,7 @@ public final class EncounterApplicationService {
                 Objects.requireNonNull(creatures, "creatures"));
     }
 
-    public EncounterGenerationResult generate(EncounterGenerationRequest request) {
+    public EncounterGenerationResult generate(GenerateEncounterCommand request) {
         try {
             EncounterGenerationUseCase.GenerateResult result = generator.execute(toGenerateRequest(request));
             return new EncounterGenerationResult(
@@ -45,9 +45,9 @@ public final class EncounterApplicationService {
         }
     }
 
-    private static EncounterGenerationUseCase.GenerateRequest toGenerateRequest(EncounterGenerationRequest request) {
-        EncounterGenerationRequest effectiveRequest = request == null
-                ? new EncounterGenerationRequest(List.of(), List.of(), List.of(), EncounterDifficultyBand.defaultBand(), 5, List.of(), List.of())
+    private static EncounterGenerationUseCase.GenerateRequest toGenerateRequest(GenerateEncounterCommand request) {
+        GenerateEncounterCommand effectiveRequest = request == null
+                ? new GenerateEncounterCommand(List.of(), List.of(), List.of(), EncounterDifficultyBand.defaultBand(), 5, List.of(), List.of())
                 : request;
         return new EncounterGenerationUseCase.GenerateRequest(
                 effectiveRequest.creatureTypes(),

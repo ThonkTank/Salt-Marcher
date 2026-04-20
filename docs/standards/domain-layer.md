@@ -98,11 +98,14 @@ Rules:
 The root application service is the only public callable backend boundary of
 one domain context.
 
-- accepts same-context `published/` commands and queries
+- accepts same-context `published/` command/query carriers whose type names end
+  in `Command` or `Query`
 - returns same-context `published/` carriers
 - translates public input before entering application use cases or the model
 - translates application/model output back to published carriers
 - may receive same-feature domain port interfaces by constructor
+- may receive documented foreign root application services by constructor when
+  the context coordinates foreign public boundaries
 - does not own shell registration, data adapter construction, business policy,
   or runtime service lookup
 
@@ -276,17 +279,19 @@ Required enforced rules:
   context-relationship coverage, and the blocking absence of
   `src/domain/mapcore`.
 - `Error Prone` owns root `ApplicationService` public command/query/result
-  carrier signatures, public nested-contract bans on root application services,
-  root-only domain service registry exports, public boundary signature purity,
-  root constructor port composition, published-carrier shape, all
-  published-carrier dependency bans for named domain modules, and role-shape
-  checks for aggregate, entity, value, port, policy, factory, service, event,
-  and specification packages.
+  carrier signatures, public/final root service shape, public nested-contract
+  bans on root application services, root-only domain service registry exports,
+  public boundary signature purity, root constructor composition, same-context
+  `application/` to `published/` dependency bans, published-carrier visibility
+  and shape, all published-carrier dependency bans for named domain modules,
+  and role-shape checks for aggregate, entity, value, port, policy, factory,
+  service, event, and specification packages.
 - `PMD architecture` owns source-level domain leakage bans and obvious
   application-layer policy-helper smells.
 - `ArchUnit` owns domain independence from shell, view, data, JavaFX, SQL,
   source-local infrastructure, foreign private domain internals, named-module
-  foreign-context access, model-role outbound-port access, and feature cycles.
+  foreign-context access, named-module same-context root/application access,
+  model-role outbound-port access, and feature cycles.
 
 Review-owned rules:
 
@@ -296,6 +301,8 @@ Review-owned rules:
   procedural coordinators
 - whether published language is stable enough for ViewModels and foreign
   application services
+- whether published language avoids presentation, widget, storage, or
+  transport vocabulary beyond what simple suffix and package checks can prove
 - whether aggregates/entities/values own the behavior their names imply
 
 ## References

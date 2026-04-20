@@ -88,12 +88,10 @@ Additional rules:
 The canonical data flow is:
 
 1. shell discovery loads one feature's `*ServiceContribution`
-2. the contribution registers typed backend capabilities and
-   application-service factories into the shell-owned backend service
-   registry, `ServiceRegistry`
-3. view Binders reach those capabilities through
-   `ShellRuntimeContext.services()` only as composition input, or through an
-   application-service factory that was already assembled at the boundary
+2. the contribution assembles and registers the same-feature root application
+   service into the shell-owned backend service registry, `ServiceRegistry`
+3. view Binders obtain that root application service through
+   `ShellRuntimeContext.services()` as composition input for active roots
 4. a data `repository/` or `query/` implementation satisfies one
    same-feature domain-owned port
 5. internal `gateway/` adapters talk to SQLite, files, remote services, or
@@ -117,12 +115,14 @@ Additional rules:
 ### `<PascalFeatureName>ServiceContribution.java`
 
 `<PascalFeatureName>ServiceContribution.java` is the root registration
-entrypoint and runtime-capability registration boundary of one data feature.
+entrypoint and runtime application-service registration boundary of one data
+feature.
 
 - Responsibilities:
-  - build and register exported backend capabilities into the shell-owned
-    backend service registry
-  - register application-service factories that depend on those capabilities
+  - build and register the same-feature root domain application service into
+    the shell-owned backend service registry
+  - keep repository, query, gateway, and foreign-service wiring inside the data
+    registration root
   - keep feature discovery passive and generic
 - Allowed behavior:
   - thin adapter composition

@@ -18,13 +18,13 @@ Context Role: Generation Policy Context
 
 ## Published Language
 
-`published/` owns public generation requests, difficulty bands, locks, budget
+`published/` owns public generation commands, difficulty bands, locks, budget
 summaries, generated encounter results, encounter creature entries, and
 generation status vocabulary.
 
 The generation model must not depend on any `src.domain.*.published.*`
 carriers as invariant inputs. The application boundary translates public
-requests and foreign published results into generation values before invoking
+commands and foreign published results into generation values before invoking
 policies and factories.
 
 ## Application Boundary

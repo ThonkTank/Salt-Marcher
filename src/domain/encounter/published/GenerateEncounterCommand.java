@@ -3,7 +3,7 @@ package src.domain.encounter.published;
 import java.util.List;
 import java.util.Objects;
 
-public record EncounterGenerationRequest(
+public record GenerateEncounterCommand(
         List<String> creatureTypes,
         List<String> creatureSubtypes,
         List<String> biomes,
@@ -13,7 +13,7 @@ public record EncounterGenerationRequest(
         List<EncounterLock> lockedCreatures
 ) {
 
-    public EncounterGenerationRequest {
+    public GenerateEncounterCommand {
         creatureTypes = normalize(creatureTypes);
         creatureSubtypes = normalize(creatureSubtypes);
         biomes = normalize(biomes);

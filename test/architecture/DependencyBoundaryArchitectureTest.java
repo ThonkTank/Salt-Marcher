@@ -110,6 +110,13 @@ public final class DependencyBoundaryArchitectureTest {
                     .should(notDependOnForeignDomainFromNamedModules());
 
     @ArchTest
+    static final ArchRule domainNamedModulesMustNotReachSameContextApplicationBoundary =
+            classes()
+                    .that()
+                    .resideInAPackage("src.domain..")
+                    .should(notDependOnSameContextApplicationBoundaryFromNamedModules());
+
+    @ArchTest
     static final ArchRule domainModelRolesMustNotDependOnOutboundPorts =
             classes()
                     .that()
@@ -310,6 +317,31 @@ public final class DependencyBoundaryArchitectureTest {
                             + target.getName()
                             + "; named modules must stay within their own context";
                     events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnSameContextApplicationBoundaryFromNamedModules() {
+        return new ArchCondition<>("not depend on same-context root/application packages from named domain modules") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                String sourceFeature = domainFeatureName(item.getPackageName());
+                if (sourceFeature == null || domainNamedModuleName(item.getPackageName()) == null) {
+                    return;
+                }
+                String rootPackage = "src.domain." + sourceFeature;
+                String applicationPackage = rootPackage + ".application";
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetPackage = target.getPackageName();
+                    if (targetPackage.equals(rootPackage) || targetPackage.startsWith(applicationPackage + ".")) {
+                        String message = item.getName()
+                                + " depends on same-context application boundary "
+                                + target.getName()
+                                + "; named modules must be called by application use cases, not call back into them";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
                 }
             }
         };

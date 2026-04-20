@@ -134,8 +134,8 @@ The canonical intentional public boundaries are:
 2. shell-owned services such as details/history publishing, backend capability
    lookup, or typed runtime sessions are adapted by the co-located Binder into
    active-root collaborators
-3. backend capability lookup is a composition concern used to assemble or fetch
-   application-service factories and other runtime collaborators
+3. backend service lookup is a composition concern used to fetch root
+   application services and other runtime collaborators
 4. the shell remains passive: it hosts surfaces and scoped services, but it
    does not take over feature behavior
 

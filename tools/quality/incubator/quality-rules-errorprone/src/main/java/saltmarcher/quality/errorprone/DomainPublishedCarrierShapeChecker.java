@@ -29,7 +29,17 @@ public final class DomainPublishedCarrierShapeChecker extends BugChecker
         }
 
         TypeElement typeElement = ASTHelpers.getSymbol(tree);
-        if (typeElement == null || !typeElement.getModifiers().contains(Modifier.PUBLIC)) {
+        if (typeElement == null) {
+            return Description.NO_MATCH;
+        }
+        if (!typeElement.getNestingKind().isNested()
+                && !typeElement.getModifiers().contains(Modifier.PUBLIC)) {
+            return buildDescription(tree)
+                    .setMessage("Top-level domain published type '" + typeElement.getQualifiedName()
+                            + "' must be public so published/ exposes an explicit boundary carrier surface.")
+                    .build();
+        }
+        if (!typeElement.getModifiers().contains(Modifier.PUBLIC)) {
             return Description.NO_MATCH;
         }
         if (isAllowedCarrierShape(typeElement)) {

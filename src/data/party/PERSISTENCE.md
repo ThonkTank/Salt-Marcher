@@ -13,13 +13,13 @@ This document is normative for the `party` feature's persistence path.
 - `src/data/party/PartyServiceContribution.java` is the only root service
   entrypoint for the feature.
 - Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers all exported backend capabilities through the
+- The contribution registers the exported root application service through the
   shell-owned service registry, `shell.api.ServiceRegistry`.
 - The exported party runtime surface is `PartyApplicationService.class`.
-  Domain ports and nested application-service factories are implementation
+  Domain ports and other implementation collaborators are implementation
   details and must not be registered as runtime services.
-- View assembly code reads those capabilities only through the shell-owned
-  runtime-capability lookup on `ShellRuntimeContext.services()`.
+- View assembly code reads that root service only through the shell-owned
+  service lookup on `ShellRuntimeContext.services()`.
 
 ## Mandatory Schema
 
