@@ -6,15 +6,32 @@ invariants.
 
 # Encounter Domain Model
 
-## Feature Boundary
+## Context Role
 
-Context Type: Policy-Owning Bounded Context
+Context Role: Generation Policy Context
 
 - `encounter` is a runtime composition feature.
 - It does not own party truth or creature truth.
 - It consumes foreign application services only:
   - `src.domain.party.PartyApplicationService`
   - `src.domain.creatures.CreaturesApplicationService`
+
+## Published Language
+
+`published/` owns public generation requests, difficulty bands, locks, budget
+summaries, generated encounter results, encounter creature entries, and
+generation status vocabulary.
+
+The generation model must not depend on same-context `published/` result
+carriers as invariant inputs. The application boundary translates public
+requests into generation values before invoking policies and factories.
+
+## Application Boundary
+
+`application/` coordinates foreign party and creature application services,
+loads public inputs, delegates generation work, and maps generated results.
+`EncounterGenerationUseCase` remains orchestration and foreign-service
+coordination only.
 
 ## Architecture Status
 
@@ -30,8 +47,9 @@ Current state:
 Target state:
 
 - orchestration remains in `application/`
-- stable encounter policies remain in named domain modules and continue to move
-  toward richer domain objects where invariants justify that shape
+- stable encounter generation collaborators live under explicit
+  `generation/value/` role placement and continue to move toward separate
+  policy or factory roles when a rule set becomes independently nameable
 
 ## Write Model And Derived State
 
@@ -47,16 +65,23 @@ It derives:
 - ranked encounter alternatives
 
 Generated encounters are ephemeral derived state. They may be locked or
-excluded inside the runtime tab, but those controls remain local session state.
+excluded inside the runtime tab, but those controls remain local presentation
+or session state unless a future aggregate is introduced.
 
 ## Aggregate Model
 
 Write Model: None
 
 The v1 encounter context has no persisted aggregate root. Its policy boundary
-is the `generation/` module, which owns deterministic encounter generation,
-difficulty targeting, ranking, and role/tag heuristics over current public party
-and creature inputs.
+is the `generation/` module.
+
+- `generation/value/` owns the ephemeral generation model: drafts, entries,
+  metrics, candidate profiles, composition values, XP profiles, deterministic
+  ranking helpers, and draft creation collaborators.
+- Promote a type from `generation/value/` into `generation/policy/`,
+  `generation/factory/`, or `generation/service/` only when it becomes a
+  separately reusable domain concept instead of an internal generation-model
+  collaborator.
 
 ## Ephemeral Policy Rationale
 

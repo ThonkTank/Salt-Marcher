@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-20
 Source of Truth: Entry point and document map for the party feature.
 
 # Party Feature README
@@ -9,7 +9,8 @@ Source of Truth: Entry point and document map for the party feature.
 
 The party feature owns party composition, party persistence behavior, and the
 public backend boundary formed by
-`src/domain/party/PartyApplicationService.java` plus `src/domain/party/api/**`.
+`src/domain/party/PartyApplicationService.java` plus
+`src/domain/party/published/**`.
 
 ## Documentation Set
 

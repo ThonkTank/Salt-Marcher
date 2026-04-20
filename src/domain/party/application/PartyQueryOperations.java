@@ -16,7 +16,9 @@ import src.domain.party.published.RestCadenceUrgency;
 import src.domain.party.published.RestMilestone;
 import src.domain.party.roster.entity.PartyCharacter;
 import src.domain.party.roster.repository.PartyRosterRepository;
-import src.domain.party.roster.policy.PartyLevelProgression;
+import src.domain.party.published.MembershipState;
+import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
+import src.domain.party.roster.value.PartyMembership;
 
 import java.util.List;
 
@@ -111,14 +113,18 @@ public final class PartyQueryOperations {
                 character.identity().playerName(),
                 character.progress().level(),
                 character.progress().currentXp(),
-                PartyLevelProgression.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
-                PartyLevelProgression.readyToLevel(character.progress().level(), character.progress().currentXp()),
+                PartyLevelProgressionPolicy.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
+                PartyLevelProgressionPolicy.readyToLevel(character.progress().level(), character.progress().currentXp()),
                 character.combat().passivePerception(),
                 character.combat().armorClass(),
                 character.progress().xpSinceShortRest(),
                 character.progress().xpSinceLongRest(),
                 character.progress().shortRestsTakenSinceLongRest(),
-                character.membership().toApi());
+                toMembershipState(character.membership()));
+    }
+
+    private MembershipState toMembershipState(PartyMembership membership) {
+        return membership == PartyMembership.ACTIVE ? MembershipState.ACTIVE : MembershipState.RESERVE;
     }
 
     private RestCadenceStatus mapRestCadenceStatus(LoadAdventuringDaySummaryUseCase.RestCadenceStatus status) {

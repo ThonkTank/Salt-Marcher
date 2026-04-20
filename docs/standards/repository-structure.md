@@ -86,9 +86,18 @@ src/
   domain/
     <feature>/
       <PascalFeatureName>ApplicationService.java
-      api/              carrier types only
+      published/        published language carriers only
       application/
       <domain-module>/
+        aggregate/
+        entity/
+        value/
+        policy/
+        repository/
+        factory/
+        service/
+        event/
+        specification/
   data/
     <feature>/
       <PascalFeatureName>ServiceContribution.java
@@ -175,8 +184,9 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - The shell-workbench standard defines the semantic responsibilities of
   `AppShell`, registration contracts, cockpit surfaces, state-pane precedence,
   and allowed shell-facing API surface.
-- The domain-layer standard defines the semantic responsibilities of `api/`,
-  `application/`, and named domain modules inside one bounded context.
+- The domain-layer standard defines the semantic responsibilities of
+  `published/`, `application/`, fachlich named domain modules, and module role
+  packages inside one real domain context.
 - The data-layer standard defines the semantic responsibilities of
   `repository/`, `query/`, `gateway/`, `model/`, `mapper`, and
   `persistencecore/`.
@@ -209,16 +219,20 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   and `interactor/` structures are migration debt, not target topology.
 - The root `*ApplicationService` is the only public client-facing backend
   boundary below the view layer.
-- Domain `api/` is carrier-only and must not define callable service, facade,
-  repository, port, factory, locator, or gateway contracts.
+- Domain `published/` is carrier-only and must not define callable service,
+  facade, repository, port, factory, locator, or gateway contracts.
 - `application/` hosts application services and use-case orchestration. It is
   not the default home for behavior that belongs on an aggregate, entity, or
   value object.
-- `api/` and `application/` are the only standard technical buckets directly
-  under a domain feature root.
+- `published/` and `application/` are the only standard technical buckets
+  directly under a domain context root.
 - Additional directories under `src/domain/<feature>/` must be named domain
   modules in the ubiquitous language of that bounded context.
-- Legacy root role buckets under `src/domain/**` are forbidden by the
+- Named domain modules must contain Java files only under allowed role
+  subpackages: `aggregate/`, `entity/`, `value/`, `policy/`, `repository/`,
+  `factory/`, `service/`, `event/`, and `specification/`.
+- Legacy domain `api/` buckets, root role buckets, direct Java files under
+  named domain modules, and `src/domain/mapcore/**` are forbidden by the
   architecture harness.
 - Data implementation classes live under `repository/`, `query/`,
   `gateway/`, `model/`, or `mapper/`.

@@ -75,7 +75,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "org.json",
             "java.sql.",
             "javax.sql.",
-            "java.net.http",
+            "java.net.",
             "okhttp3.",
             "retrofit2.",
             "java.io.",

@@ -82,6 +82,10 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     }
 
     private void checkViewPanel(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
+        if (sourceFacts.relativePath().startsWith("src/view/views/")
+                && sourceFacts.simpleName().endsWith("DisplayModel")) {
+            return;
+        }
         boolean reusableGenericView = sourceFacts.relativePath().startsWith("src/view/views/")
                 && sourceFacts.simpleName().endsWith("View")
                 && !sourceFacts.simpleName().endsWith("ViewModel");

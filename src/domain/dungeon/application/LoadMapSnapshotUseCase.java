@@ -3,21 +3,23 @@ package src.domain.dungeon.application;
 import src.domain.dungeon.published.BaseMapSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
-import src.domain.dungeon.map.DungeonMap;
-import src.domain.dungeon.map.DungeonMapRepository;
+import src.domain.dungeon.map.aggregate.DungeonMap;
+import src.domain.dungeon.map.repository.DungeonDocumentRepository;
+import src.domain.dungeon.map.repository.DungeonMapRepository;
 
 /**
  * Loads the snapshot for one authored map and carries the requested viewport through.
  */
-final class LoadMapSnapshotUseCase {
+public final class LoadMapSnapshotUseCase {
 
     private final DungeonMapRepository repository;
-    private final DungeonDocumentStore documentStore;
+    private final DungeonDocumentRepository documentStore;
     private final BuildDungeonDerivedStateUseCase derive;
+    private final MapDungeonFactsUseCase mapper = new MapDungeonFactsUseCase();
 
-    LoadMapSnapshotUseCase(
+    public LoadMapSnapshotUseCase(
             DungeonMapRepository repository,
-            DungeonDocumentStore documentStore,
+            DungeonDocumentRepository documentStore,
             BuildDungeonDerivedStateUseCase derive
     ) {
         this.repository = repository;
@@ -25,14 +27,15 @@ final class LoadMapSnapshotUseCase {
         this.derive = derive;
     }
 
-    BaseMapSnapshot execute(LoadMapSnapshotQuery query) {
-        DungeonMap dungeonMap = repository.findById(query.mapId())
+    public BaseMapSnapshot execute(LoadMapSnapshotQuery query) {
+        var mapIdentity = mapper.toDomainIdentity(query.mapId());
+        DungeonMap dungeonMap = repository.findById(mapIdentity)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + query.mapId().value()));
-        documentStore.activateMap(query.mapId(), dungeonMap.metadata().mapName());
-        var document = documentStore.load(query.mapId(), dungeonMap.metadata().mapName());
-        DungeonMapSnapshot map = derive.execute(document).map();
+        documentStore.activateMap(mapIdentity, dungeonMap.metadata().mapName());
+        var document = documentStore.load(mapIdentity, dungeonMap.metadata().mapName());
+        DungeonMapSnapshot map = mapper.toPublishedSnapshot(derive.execute(document).map());
         return new BaseMapSnapshot(
-                dungeonMap.metadata().mapId(),
+                mapper.toPublishedId(dungeonMap.metadata().mapId()),
                 dungeonMap.metadata().mapName(),
                 document.revision(),
                 query.targetFloor(),

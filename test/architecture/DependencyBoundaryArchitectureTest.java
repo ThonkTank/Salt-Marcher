@@ -314,9 +314,10 @@ public final class DependencyBoundaryArchitectureTest {
     }
 
     private static ArchCondition<JavaClass> onlyDependOnDomainPublicBoundaries() {
-        return new ArchCondition<>("only depend on domain application-service roots or api carriers") {
+        return new ArchCondition<>("only depend on allowed domain public boundaries") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
+                boolean contribution = item.getSimpleName().endsWith("Contribution");
                 for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
                     JavaClass target = dependency.getTargetClass();
                     String targetPackage = target.getPackageName();
@@ -327,7 +328,8 @@ public final class DependencyBoundaryArchitectureTest {
                     if (targetFeature == null) {
                         continue;
                     }
-                    if (isFeaturePublicBoundary(targetPackage, targetFeature)) {
+                    if (isFeatureRootApplicationService(target)
+                            || isFeaturePublishedBoundary(targetPackage, targetFeature)) {
                         continue;
                     }
                     String message = item.getName() + " depends on domain internal " + target.getName();
@@ -399,8 +401,42 @@ public final class DependencyBoundaryArchitectureTest {
     }
 
     private static boolean isFeaturePublicBoundary(String packageName, String featureName) {
-        return packageName.equals("src.domain." + featureName)
-                || packageName.startsWith("src.domain." + featureName + ".api");
+        return isRootDomainPackage(packageName, featureName)
+                || isFeaturePublishedBoundary(packageName, featureName);
+    }
+
+    private static boolean isFeatureRootApplicationService(JavaClass javaClass) {
+        String packageName = javaClass.getPackageName();
+        String featureName = domainFeatureName(packageName);
+        if (featureName == null || !isRootDomainPackage(packageName, featureName)) {
+            return false;
+        }
+        String expectedRootName = "src.domain." + featureName + "."
+                + toPascalCase(featureName) + "ApplicationService";
+        return javaClass.getName().equals(expectedRootName)
+                || javaClass.getName().startsWith(expectedRootName + "$");
+    }
+
+    private static boolean isRootDomainPackage(String packageName, String featureName) {
+        return packageName.equals("src.domain." + featureName);
+    }
+
+    private static boolean isFeaturePublishedBoundary(String packageName, String featureName) {
+        return packageName.startsWith("src.domain." + featureName + ".published");
+    }
+
+    private static String toPascalCase(String featureName) {
+        StringBuilder result = new StringBuilder();
+        boolean capitalizeNext = true;
+        for (char character : featureName.toCharArray()) {
+            if (!Character.isLetterOrDigit(character)) {
+                capitalizeNext = true;
+                continue;
+            }
+            result.append(capitalizeNext ? Character.toUpperCase(character) : character);
+            capitalizeNext = false;
+        }
+        return result.toString();
     }
 
     private static String dataFeatureName(String packageName) {

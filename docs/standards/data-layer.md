@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-20
 Source of Truth: Binding data-layer architecture model, role boundaries,
 adapter responsibilities, and layer-specific enforcement status for `src/data/**`.
 
@@ -26,7 +26,7 @@ ownership leaking out of `src/domain/**`.
   module; they are not tied to a mandatory domain `query/` package or the
   thin `application/` coordination package.
 - `Data Mapper` governs translation between source-local records and domain or
-  boundary types.
+  published boundary types.
 - `Gateway` governs internal concrete-source adapters below the exported data
   boundary.
 - SaltMarcher does not adopt `Active Record` as its target model because
@@ -39,7 +39,7 @@ ownership leaking out of `src/domain/**`.
   translation belong in `src/data/**`; business rules, invariants, and policy
   decisions do not.
 - Domain-owned contracts remain the stable backend abstraction. `src/domain/**`
-  defines repository contracts, projection contracts, and boundary types;
+  defines repository contracts, read contracts, and published boundary types;
   `src/data/**` implements them.
 - `repository/` implements write-model persistence contracts.
 - `query/` implements exported read-model ports.
@@ -182,7 +182,7 @@ projection contracts.
   - source-specific helper classes should stay co-located under the same
     gateway package
   - gateways should return source-local records or tightly scoped raw results,
-    not domain or exported API types directly
+    not domain or exported published types directly
 
 ### `model/`
 
@@ -198,11 +198,11 @@ projection contracts.
 
 ### `mapper/`
 
-`mapper/` owns translation between source-local shapes and domain or boundary
-types.
+`mapper/` owns translation between source-local shapes and domain or published
+boundary types.
 
 - Responsibilities:
-  - map records, rows, or payloads into domain and API-facing results
+  - map records, rows, or payloads into domain and published-facing results
   - map canonical aggregates or snapshots back into source-local shapes for
     persistence
 - Rules:
@@ -246,10 +246,12 @@ features.
   [AbstractSqliteConnectionFactory](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/persistencecore/sqlite/AbstractSqliteConnectionFactory.java:1)
   is reusable persistence infrastructure without becoming an
   application-service boundary.
-- Migration-debt example:
-  [DungeonMapStore](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/application/DungeonMapStore.java:1)
-  is a domain-owned in-memory repository used as a transitional implementation,
-  not the target data-layer shape for long-lived persistence-backed features.
+- Transitional local-adapter example:
+  [LocalDungeonMapRepository](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/dungeon/repository/LocalDungeonMapRepository.java:1)
+  and
+  [LocalDungeonDocumentRepository](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/dungeon/repository/LocalDungeonDocumentRepository.java:1)
+  keep placeholder dungeon storage in the data layer while persistence-backed
+  storage is still pending.
 
 These examples illustrate current state and migration direction. They do not
 replace this document as the rule source.

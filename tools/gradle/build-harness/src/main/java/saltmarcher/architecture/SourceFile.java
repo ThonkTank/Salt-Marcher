@@ -89,17 +89,12 @@ record SourceFile(
             }
             case "domain" -> {
                 if (segments.size() == 4) {
-                    yield SourceKind.DOMAIN_API_ROOT;
+                    yield SourceKind.DOMAIN_ROOT;
                 }
                 yield switch (segments.get(3)) {
-                    case "api" -> SourceKind.DOMAIN_API_EXPORTED;
+                    case "published" -> SourceKind.DOMAIN_PUBLISHED;
                     case "application" -> SourceKind.DOMAIN_APPLICATION;
-                    case "entity" -> SourceKind.DOMAIN_ENTITY;
-                    case "service" -> SourceKind.DOMAIN_SERVICE;
-                    case "query" -> SourceKind.DOMAIN_QUERY;
-                    case "valueobject" -> SourceKind.DOMAIN_VALUEOBJECT;
-                    case "repository" -> SourceKind.DOMAIN_REPOSITORY;
-                    default -> SourceKind.UNKNOWN;
+                    default -> segments.size() == 6 ? SourceKind.DOMAIN_ROLE : SourceKind.UNKNOWN;
                 };
             }
             case "data" -> {

@@ -1,19 +1,35 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-20
 Source of Truth: Party feature ownership, write model, and domain invariants.
 
 # Party Domain Model
 
-## Context Shape
+## Context Role
 
-Context Type: Policy-Owning Bounded Context
+Context Role: Roster Truth Context
 
-- `party` is a policy-owning bounded context.
+- `party` is the roster truth context.
 - Its public backend boundary is
   `src/domain/party/PartyApplicationService.java`.
 - The feature owns party composition, party membership, XP progression, and
   rest-driven mutation rules.
+
+## Published Language
+
+`published/` owns public party commands, results, snapshots, status enums,
+membership states, rest carriers, and party read models returned by
+`PartyApplicationService`.
+
+The `roster/` domain module must not depend on same-context `published/`
+carriers. The application boundary translates public carriers into roster
+values before delegating to the model.
+
+## Application Boundary
+
+`application/` contains party use cases. Use cases load one `PartyRoster`,
+delegate mutation or query decisions to the roster model and policies, save
+through the repository, and map results back into `published/` carriers.
 
 ## Write Model
 
@@ -28,11 +44,13 @@ The authored write model is the persisted party roster:
 
 Aggregate Root: PartyRoster
 
-`PartyRoster` is the transaction boundary for one party roster. It owns the
-character collection, next character identity, membership assignment, XP awards,
-and rest-driven progression transitions. `PartyCharacter` is an entity inside
-that aggregate, and roster value objects own identity, progress, combat profile,
-membership, rest type, and mutation status vocabulary.
+`roster/aggregate/PartyRoster` is the transaction boundary for one party
+roster. It owns the character collection, next character identity, membership
+assignment, XP awards, and rest-driven progression transitions.
+
+`roster/entity/PartyCharacter` is an identity-bearing child entity. Roster
+value objects own identity, progress, combat profile, membership, rest type,
+and mutation status vocabulary.
 
 ## Commands And Invariants
 
@@ -73,17 +91,16 @@ internals.
 
 Current state:
 
-- `PartyRoster` already carries a substantial share of party mutation behavior
-  directly in the `roster/` domain module.
-- `roster/` owns the party aggregate, repository contract, membership, XP, and
-  rest policy types.
-- `application/` mainly coordinates repository access and exported result
-  mapping.
+- `roster/` is moving into explicit role subpackages.
+- `aggregate/`, `entity/`, `value/`, `policy/`, and `repository/` own the
+  roster model roles.
+- `application/` coordinates repository access and published result mapping.
 
 Target state:
 
 - keep party mutation rules on the roster aggregate and related roster policies
 - keep root and internal application services thin
+- remove same-context `published/` dependencies from roster role packages
 
 ## References
 

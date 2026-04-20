@@ -78,7 +78,9 @@ final class ArchitectureContext {
                             && "src".equals(segments.get(0))
                             && "domain".equals(segments.get(1))
                             && featureName.equals(segments.get(2))
-                            && !Set.of("api", "application").contains(segments.get(3)));
+                            && segments.size() == 6
+                            && !Set.of("published", "application").contains(segments.get(3))
+                            && SourceLayoutRules.isAllowedDomainRolePackage(segments.get(4)));
         } catch (IOException ignored) {
             return false;
         }

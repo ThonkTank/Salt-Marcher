@@ -6,11 +6,11 @@ import src.data.creatures.mapper.CreatureCatalogQueryMappingFacade;
 import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureDetail;
 import src.domain.creatures.published.EncounterCandidate;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.util.List;
 
-public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogQueryPort {
+public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogRepository {
 
     private final SqliteCreatureCatalogLocalGateway gateway;
 

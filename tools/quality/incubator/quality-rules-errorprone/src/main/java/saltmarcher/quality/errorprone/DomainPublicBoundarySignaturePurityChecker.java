@@ -41,10 +41,11 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         implements BugChecker.ClassTreeMatcher {
 
     private static final Pattern DOMAIN_ROOT_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)$");
-    private static final Pattern DOMAIN_API_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
+    private static final Pattern DOMAIN_PUBLISHED_PACKAGE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
     private static final Pattern APPLICATION_SERVICE_TYPE =
             Pattern.compile("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService(?:[.$].+)?$");
-    private static final Pattern DOMAIN_API_TYPE =
+    private static final Pattern DOMAIN_PUBLISHED_TYPE =
             Pattern.compile("^src\\.domain\\.[^.]+\\.published\\..+");
     private static final Set<String> OUTER_LAYER_PREFIXES = Set.of(
             "bootstrap.",
@@ -110,7 +111,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
             }
         }
 
-        if (DOMAIN_API_PACKAGE.matcher(packageName).matches()) {
+        if (DOMAIN_PUBLISHED_PACKAGE.matcher(packageName).matches()) {
             for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
                 if (isPublicOrProtected(constructor)) {
                     collectExecutableLeaks("constructor " + typeElement.getSimpleName(), constructor, leaks);
@@ -136,9 +137,9 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
     }
 
     private static String boundaryFeature(String packageName) {
-        var apiMatcher = DOMAIN_API_PACKAGE.matcher(packageName);
-        if (apiMatcher.matches()) {
-            return apiMatcher.group(1);
+        var publishedMatcher = DOMAIN_PUBLISHED_PACKAGE.matcher(packageName);
+        if (publishedMatcher.matches()) {
+            return publishedMatcher.group(1);
         }
         var rootMatcher = DOMAIN_ROOT_PACKAGE.matcher(packageName);
         if (rootMatcher.matches()) {
@@ -148,7 +149,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
     }
 
     private static boolean isBoundaryType(TypeElement typeElement, String packageName) {
-        if (DOMAIN_API_PACKAGE.matcher(packageName).matches()) {
+        if (DOMAIN_PUBLISHED_PACKAGE.matcher(packageName).matches()) {
             return true;
         }
         return isRootApplicationService(typeElement, packageName);
@@ -457,7 +458,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
             return false;
         }
         return !APPLICATION_SERVICE_TYPE.matcher(fqn).matches()
-                && !DOMAIN_API_TYPE.matcher(fqn).matches();
+                && !DOMAIN_PUBLISHED_TYPE.matcher(fqn).matches();
     }
 
     private static boolean isForbiddenRootConstructorCompositionType(
@@ -480,7 +481,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         if (targetFeature == null) {
             return false;
         }
-        if (APPLICATION_SERVICE_TYPE.matcher(fqn).matches() || DOMAIN_API_TYPE.matcher(fqn).matches()) {
+        if (APPLICATION_SERVICE_TYPE.matcher(fqn).matches() || DOMAIN_PUBLISHED_TYPE.matcher(fqn).matches()) {
             return false;
         }
         return !targetFeature.equals(rootFeature) || !isSameFeatureDomainPort(typeElement);

@@ -3,9 +3,10 @@ package src.domain.dungeon.application;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapMode;
 import src.domain.dungeon.published.DungeonSnapshot;
-import src.domain.dungeon.map.DungeonAggregate;
-import src.domain.dungeon.map.DungeonDerivedState;
-import src.domain.dungeon.map.DungeonPrimitive;
+import src.domain.dungeon.map.entity.DungeonAggregate;
+import src.domain.dungeon.map.repository.DungeonDocumentRepository;
+import src.domain.dungeon.map.value.DungeonDerivedState;
+import src.domain.dungeon.map.entity.DungeonPrimitive;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,17 +14,18 @@ import java.util.List;
 /**
  * Loads the current committed dungeon snapshot.
  */
-final class LoadDungeonSnapshotUseCase {
+public final class LoadDungeonSnapshotUseCase {
 
-    private final DungeonDocumentStore store;
+    private final DungeonDocumentRepository store;
     private final BuildDungeonDerivedStateUseCase derive;
+    private final MapDungeonFactsUseCase mapper = new MapDungeonFactsUseCase();
 
-    LoadDungeonSnapshotUseCase(DungeonDocumentStore store, BuildDungeonDerivedStateUseCase derive) {
+    public LoadDungeonSnapshotUseCase(DungeonDocumentRepository store, BuildDungeonDerivedStateUseCase derive) {
         this.store = store;
         this.derive = derive;
     }
 
-    DungeonSnapshot execute() {
+    public DungeonSnapshot execute() {
         DungeonDerivedState derived = derive.execute(store.load());
         List<String> aggregateSummaries = derived.aggregates().stream()
                 .map(this::aggregateSummary)
@@ -34,17 +36,17 @@ final class LoadDungeonSnapshotUseCase {
         return new DungeonSnapshot(
                 store.load().mapName(),
                 DungeonMapMode.EDITOR,
-                derived.map(),
+                mapper.toPublishedSnapshot(derived.map()),
                 aggregateSummaries,
                 relationSummaries,
                 store.load().revision()
         );
     }
 
-    DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
+    public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
         DungeonDerivedState derived = derive.execute(store.load());
         for (DungeonAggregate aggregate : derived.aggregates()) {
-            if (aggregate.id() == ownerId && ownerKind != null && ownerKind.equalsIgnoreCase(aggregate.label().contains("Corridor") ? "corridor" : "room")) {
+            if (aggregate.id() == ownerId && ownerKind != null && ownerKind.equalsIgnoreCase(aggregate.kind().name())) {
                 return new DungeonInspectorSnapshot(
                         aggregate.label(),
                         "Aggregate owner in committed dungeon truth.",

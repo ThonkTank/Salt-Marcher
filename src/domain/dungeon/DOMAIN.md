@@ -1,29 +1,50 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-20
 Source of Truth: Write model, ownership boundaries, and domain invariants
 for the dungeon feature.
 
 # Dungeon Domain Model
 
-## Feature Boundary
+## Context Role
 
-Context Type: Policy-Owning Bounded Context
+Context Role: Authored World-Space Context
 
-- `dungeon` is one feature slice with one application-service boundary.
-- `map/` is the named domain module for authored dungeon-map model internals.
+- `dungeon` is the authored world-space context with one application-service
+  boundary.
+- `map/` is the named domain module for authored dungeon-map model internals
+  and role packages.
 - A `DungeonMap` is the aggregate root for one authored dungeon map.
 - Editor and travel are separate presentation slices over the same dungeon
   write model.
-- Render-oriented map snapshots are read models, not the owner of dungeon
-  business truth.
+- Render-oriented display models are view-layer concerns, not dungeon domain
+  output.
+
+## Published Language
+
+`published/` owns public dungeon commands, queries, results, IDs, statuses, and
+fachliche dungeon map/world facts.
+
+Dungeon published snapshots may describe topology, areas, boundaries, cells,
+and stable dungeon references. They must not describe render layers, styles,
+canvas cells, display selections, or reusable view input.
+
+## Application Boundary
+
+`application/` owns use cases that load dungeon maps, delegate mutation to
+`map/aggregate/DungeonMap`, save through domain repositories, and map domain
+facts into `published/` carriers.
+
+Generic default service composition and in-memory storage do not belong in the
+domain application package; data-layer service contributions assemble the root
+application service with data adapters.
 
 ## Architecture Status
 
 Target state:
 
-- `DungeonMap` is the aggregate root and mutation boundary for one authored
-  map.
+- `map/aggregate/DungeonMap` is the aggregate root and mutation boundary for
+  one authored map.
 - topology repair, merge and split behaviour, identity preservation, and
   derived-state rebuild rules stay in the dungeon domain instead of leaking
   into view or data.
@@ -32,8 +53,8 @@ Current implementation gap:
 
 - the current code still leans on `DungeonDocument` plus `application/` pipelines
   for much of the active mutation flow
-- the placeholder runtime still uses domain-local in-memory default collaborators
-  instead of a dedicated outer adapter composition
+- the placeholder runtime still uses domain-local default collaborators instead
+  of dedicated outer adapter composition
 - several core types remain thinner record-style carriers than the target
   aggregate model
 - this feature is a policy-owning bounded context because editor mutations and
@@ -171,10 +192,11 @@ Core invariants:
 ## Consistency Model
 
 One map mutation targets one `DungeonMap` aggregate instance and increments its
-authored revision. Render snapshots, inspector details, route exits, and derived
-graphs are deterministic read models rebuilt from the authored map state.
-Cross-context consumers use dungeon application-service operations and `api/`
-carriers instead of reaching into `map/`.
+authored revision. Inspector details, route exits, and derived graphs are
+deterministic facts rebuilt from the authored map state. Render display state is
+translated in ViewModels. Cross-context consumers use dungeon
+application-service operations and `published/` carriers instead of reaching
+into `map/`.
 
 ## Ubiquitous Language
 
@@ -184,8 +206,8 @@ carriers instead of reaching into `map/`.
 - `RoomCatalog`: room identity and authored room-level semantics.
 - `ConnectionCatalog`: stable semantic links between areas.
 - `FeatureCatalog`: authored non-space, non-connection features.
-- `Derived State`: reproducible projections for rendering, inspector, and
-  travel.
+- `Derived State`: reproducible fachliche facts for inspector, topology, and
+  travel; reusable render input is a view-layer display model.
 
 ## Domain Policies
 

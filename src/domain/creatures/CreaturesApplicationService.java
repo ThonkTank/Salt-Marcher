@@ -7,7 +7,7 @@ import src.domain.creatures.published.CreatureFilterOptionsResult;
 import src.domain.creatures.published.EncounterCandidatesResult;
 import src.domain.creatures.published.EncounterCandidateQuery;
 import src.domain.creatures.application.CreatureQueryOperations;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.util.Objects;
 
@@ -24,7 +24,7 @@ public final class CreaturesApplicationService {
 
     private final CreatureQueryOperations queries;
 
-    public CreaturesApplicationService(CreatureCatalogQueryPort queryPort) {
+    public CreaturesApplicationService(CreatureCatalogRepository queryPort) {
         this.queries = new CreatureQueryOperations(Objects.requireNonNull(queryPort, "queryPort"));
     }
 

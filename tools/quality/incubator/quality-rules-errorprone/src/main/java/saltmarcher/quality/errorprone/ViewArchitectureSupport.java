@@ -153,9 +153,17 @@ final class ViewArchitectureSupport {
         return null;
     }
 
-    static boolean isAllowedDomainBoundary(String referencedType) {
-        return referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$")
+    static boolean isAllowedContributionDomainBoundary(String referencedType) {
+        return isAllowedViewModelDomainBoundary(referencedType);
+    }
+
+    static boolean isAllowedViewModelDomainBoundary(String referencedType) {
+        return isDomainApplicationServiceRoot(referencedType)
                 || referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+");
+    }
+
+    private static boolean isDomainApplicationServiceRoot(String referencedType) {
+        return referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$");
     }
 
     static boolean isAllowedViewModelJavafxType(String referencedType) {

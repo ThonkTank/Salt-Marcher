@@ -2,7 +2,7 @@ package src.domain.party.application;
 
 import src.domain.party.roster.entity.PartyCharacter;
 import src.domain.party.roster.repository.PartyRosterRepository;
-import src.domain.party.roster.policy.PartyAdventuringDayBudget;
+import src.domain.party.roster.policy.PartyAdventuringDayBudgetPolicy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,10 +65,10 @@ public final class LoadAdventuringDaySummaryUseCase {
 
     private CharacterRestCadence restCadenceFor(PartyCharacter character) {
         int level = character.progress().level();
-        int totalBudget = PartyAdventuringDayBudget.perCharacter(level);
+        int totalBudget = PartyAdventuringDayBudgetPolicy.perCharacter(level);
         int targetXp = switch (character.progress().shortRestsTakenSinceLongRest()) {
-            case 0 -> PartyAdventuringDayBudget.afterFirstShortRest(level);
-            case 1 -> PartyAdventuringDayBudget.afterSecondShortRest(level);
+            case 0 -> PartyAdventuringDayBudgetPolicy.afterFirstShortRest(level);
+            case 1 -> PartyAdventuringDayBudgetPolicy.afterSecondShortRest(level);
             default -> totalBudget;
         };
         RestMilestone nextMilestone = switch (character.progress().shortRestsTakenSinceLongRest()) {
@@ -89,8 +89,8 @@ public final class LoadAdventuringDaySummaryUseCase {
             return RestCadenceUrgency.OVERDUE;
         }
         int segmentSize = switch (milestone) {
-            case SHORT_REST_ONE, SHORT_REST_TWO -> PartyAdventuringDayBudget.perThird(level);
-            case LONG_REST -> PartyAdventuringDayBudget.finalSegment(level);
+            case SHORT_REST_ONE, SHORT_REST_TWO -> PartyAdventuringDayBudgetPolicy.perThird(level);
+            case LONG_REST -> PartyAdventuringDayBudgetPolicy.finalSegment(level);
         };
         int soonThreshold = Math.max(1, (int) Math.round(segmentSize * 0.25));
         return xpDelta <= soonThreshold ? RestCadenceUrgency.SOON : RestCadenceUrgency.NORMAL;

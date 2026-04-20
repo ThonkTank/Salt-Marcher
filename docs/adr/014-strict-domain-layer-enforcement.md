@@ -1,7 +1,10 @@
 # ADR 014: Strict Domain-Layer Enforcement
 
-- Status: Accepted
+- Status: Superseded by [ADR 021: Domain Layer Role Reset](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/021-domain-layer-role-reset.md:1)
 - Date: 2026-04-18
+- Supersession: ADR 021 replaces this ADR's active `api/`, broad named-module,
+  and context-type enforcement model with `published/`, tactical role packages,
+  explicit context roles, and a blocking `mapcore` removal rule.
 
 ## Context
 
@@ -45,3 +48,4 @@ SaltMarcher now enforces the DDD target model immediately.
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
+- [ADR 021: Domain Layer Role Reset](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/021-domain-layer-role-reset.md:1)

@@ -48,5 +48,5 @@ This document is normative for the `creatures` feature's persistence path.
 - The creatures query adapter remains registered passively; no feature-specific
   bootstrap wiring is allowed.
 - Creature persistence helpers may be refactored internally as long as
-  `CreatureCatalogQueryPort` remains the only domain-owned query contract
+  `CreatureCatalogRepository` remains the only domain-owned query contract
   exported from the data slice.

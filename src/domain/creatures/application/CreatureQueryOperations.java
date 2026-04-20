@@ -12,7 +12,7 @@ import src.domain.creatures.published.CreatureQueryStatus;
 import src.domain.creatures.published.CreatureReadStatus;
 import src.domain.creatures.published.EncounterCandidatesResult;
 import src.domain.creatures.published.EncounterCandidateQuery;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.util.List;
 
@@ -27,7 +27,7 @@ public final class CreatureQueryOperations {
     private final LoadCreatureDetailUseCase loadCreatureDetailUseCase;
     private final LoadEncounterCandidatesUseCase loadEncounterCandidatesUseCase;
 
-    public CreatureQueryOperations(CreatureCatalogQueryPort queryPort) {
+    public CreatureQueryOperations(CreatureCatalogRepository queryPort) {
         this.loadCreatureFilterOptionsUseCase = new LoadCreatureFilterOptionsUseCase(queryPort);
         this.searchCreatureCatalogUseCase = new SearchCreatureCatalogUseCase(queryPort);
         this.loadCreatureDetailUseCase = new LoadCreatureDetailUseCase(queryPort);

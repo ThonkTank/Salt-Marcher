@@ -1,460 +1,277 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
-Source of Truth: Binding DDD-primary domain-layer model, single callable
-application-service boundary, bounded-context structure, aggregate rules, and
+Last Reviewed: 2026-04-20
+Source of Truth: Binding role-explicit domain-layer model, published language,
+application-service boundary, tactical role packages, context roles, and
 review-versus-enforcement expectations for `src/domain/**`.
 
 # Domain Layer Standard
 
 ## Goal
 
-SaltMarcher treats each `src/domain/<feature>/` slice primarily as one DDD
-bounded context that owns business meaning, invariants, aggregates, domain
-services, domain events, and domain-owned contracts behind exactly one callable
-application-service boundary.
+SaltMarcher keeps `src/domain/**` as the application core. Domain contexts own
+fachliche truth, topology, invariants, policies, aggregates, repositories, and
+published language. They do not own presentation display models, render-layer
+contracts, shell wiring, data-source mechanics, or UI translation policy.
+
+The domain layer uses explicit tactical roles so structure is mechanically
+checkable without treating every projection or shared render contract as a
+domain context.
 
 ## Pattern Alignment
 
 - `DDD` is the primary architecture model for `src/domain/**`.
-- `Application Service` / Evans application layer govern the thin public
+- `Application Service` / Evans application layer govern the thin inbound
   backend boundary and use-case coordination.
-- `Repository` keeps its DDD / EAA meaning as a domain-owned contract over
-  authored truth.
-- `Clean Architecture`, `Onion`, and `Hexagonal` are supporting boundary
-  guides only. They govern inward dependencies and outer adapters, but they do
-  not define the canonical physical structure inside a bounded context.
-- `CQRS` and read models are optional supporting patterns, not the default
-  shape of a domain feature.
+- `Repository` keeps its DDD / EAA meaning as a domain-owned outbound contract
+  over authored truth.
+- `Clean Architecture`, `Onion`, and `Hexagonal` remain supporting boundary
+  guides for inward dependencies and outer adapters.
+- `CQRS` and read models are optional supporting patterns. They do not justify
+  domain ownership of render projections or generic shared display contracts.
 
 ## Core Principles
 
-- The domain layer is the single authored home for business rules and domain
-  language.
-- Each domain feature exposes exactly one callable client boundary:
-  `<PascalFeatureName>ApplicationService.java`.
-- `api/` is carrier-only. It may define command, query, result, snapshot, enum,
-  and sealed carrier abstractions, but it must not define alternate service,
-  facade, repository, port, or gateway interfaces for view clients.
-- Object-centred and aggregate-centred modelling is the default. Put behavior
-  on the entity, value object, aggregate, or domain service that owns the
-  concept.
-- `application/` stays thin. It coordinates tasks and delegates work to the
+- Each real domain context exposes exactly one callable client boundary:
+  `<PascalContext>ApplicationService.java`.
+- `published/` is the context's published language: commands, queries, results,
+  IDs, statuses, snapshots, and other public boundary records, enums, and
+  sealed carriers.
+- `application/` contains use-case orchestration only. Classes are named
+  `*UseCase`.
+- Fachlich named domain modules contain role subpackages for tactical DDD
+  concepts.
+- Domain modules must not depend on same-context `published/` carriers.
+  Translate carriers at the root or application boundary before entering the
   model.
-- Modules are part of the model. Physical structure under
-  `src/domain/<feature>/` must primarily follow domain concepts, conceptual
-  contours, and the ubiquitous language rather than technical role buckets.
-- Repositories and other domain-owned contracts belong to the owning domain
-  module, not to a mandatory root-level concern bucket.
-- Supporting read models are allowed only where the domain really is
-  projection-oriented or where a bounded supporting context intentionally owns
-  exported projections without owning the underlying write-model policy.
+- ViewModels own translation from domain facts into display models. Passive
+  Views render ViewModel-owned state.
+- Reusable render input belongs under `src/view/views/`, not `src/domain/**`.
 
 ## Domain Topology
 
 The canonical domain layout is:
 
 ```text
-src/domain/
-  <feature>/
-    <PascalFeatureName>ApplicationService.java
-    api/                 carrier types only
-    application/
-    <domain-module>/
-    <domain-module>/
+src/domain/<context>/
+  <PascalContext>ApplicationService.java
+  published/
+  application/
+  <domain-module>/
+    aggregate/
+    entity/
+    value/
+    policy/
+    repository/
+    factory/
+    service/
+    event/
+    specification/
 ```
 
 Rules:
 
-- `api/` is the exported boundary-carrier surface, not a callable service
-  boundary.
-- `application/` is the thin application layer.
-- Every additional directory under the feature root must be a named domain
-  module expressed in the ubiquitous language of that bounded context.
-- Domain modules may contain entities, value objects, aggregates, repository
-  contracts, domain services, factories, domain events, and other tactical DDD
-  building blocks as needed by that concept.
-- Top-level role buckets such as `entity/`, `valueobject/`, `service/`,
-  `services/`, `repository/`, and `query/` are forbidden under the target
-  model.
+- `published/` and `application/` are the only technical buckets directly under
+  a context root.
+- Every other direct directory is a fachlich named domain module, such as
+  `roster`, `map`, `generation`, or `catalog`.
+- Domain-module Java files must live under an allowed role subpackage.
+- Direct Java files under a named domain module are forbidden.
+- The allowed role package names are exactly `aggregate`, `entity`, `value`,
+  `policy`, `repository`, `factory`, `service`, `event`, and `specification`.
+- `api/` packages are removed from domain. Use `published/` without
+  compatibility aliases.
+
+## Role Definitions
+
+### `<PascalContext>ApplicationService.java`
+
+The root application service is the only callable public backend boundary of
+one domain context.
+
+- accepts public commands and queries in domain language
+- returns `published/` carriers
+- delegates to `application/` use cases or directly to the model
+- does not own business policy or instantiate infrastructure implementations
+
+### `published/`
+
+`published/` owns exported boundary carriers only.
+
+- allowed: commands, queries, results, snapshots, IDs, statuses, enums, sealed
+  carriers, and simple public boundary records
+- forbidden: callable services, facades, repositories, ports, gateways,
+  factories, locators, policy helpers, and invariant-owning objects
+- public carriers describe fachliche facts, not render layers, canvas cells,
+  styles, widget state, or display selections
+
+### `application/`
+
+`application/` owns use-case orchestration.
+
+- classes are named `*UseCase`
+- use cases load, delegate, save, call foreign application services when
+  allowed, and map results
+- generic `*Operations` coordinator buckets are migration debt where they remain
+- business rules move into aggregates, entities, values, policies, factories,
+  services, or specifications as appropriate
+
+### Domain-Module Role Packages
+
+- `aggregate/`: aggregate roots only; use final classes, not records or
+  interfaces, for mutable or behavior-owning consistency boundaries.
+- `entity/`: identity-bearing child entities; use final classes.
+- `value/`: immutable value objects, enums, sealed abstractions, or final
+  immutable classes.
+- `policy/`: stateless fachliche policies and rules.
+- `repository/`: domain-owned outbound repository contracts only; interfaces
+  end with `Repository`.
+- `factory/`: stateless creation logic that does not belong to one aggregate,
+  entity, or value object.
+- `service/`: stateless domain services for behavior that spans concepts
+  without becoming orchestration.
+- `event/`: domain events; records end with `Event`.
+- `specification/`: named predicates or constraints that are reusable domain
+  concepts.
+
+## Context Roles
+
+Every active domain context must state exactly one machine-readable
+`Context Role:` marker in `DOMAIN.md`.
+
+Current roles:
+
+- `party`: `Context Role: Roster Truth Context`. Owns roster truth,
+  membership, XP progression, rest cadence, and adventuring-day policy.
+- `creatures`: `Context Role: Reference Catalog Context`. Exports imported
+  creature catalog lookup language and reference profiles. It does not own
+  encounter ranking, choice, or creature lifecycle truth.
+- `encounter`: `Context Role: Generation Policy Context`. Consumes party and
+  creatures through their application services and published language, then
+  owns runtime encounter-generation policy.
+- `dungeon`: `Context Role: Authored World-Space Context`. Owns authored
+  dungeon world-space truth, map topology, rooms/spaces, connections, stable
+  identity, and map mutation rules.
+
+`mapcore` is not a domain context. Shared map render input belongs in the view
+layer; fachliche dungeon map/world facts belong to `dungeon/published`.
+
+## Context Relationships
+
+The domain contexts relate through application-service boundaries and
+published language, not through private model imports.
+
+- `party`: Roster Truth Context. Publishes roster, membership, XP, rest
+  cadence, and adventuring-day facts to downstream contexts.
+- `creatures`: Reference Catalog Context. Publishes imported creature catalog
+  lookup facts and encounter-candidate reference profiles to downstream policy
+  contexts.
+- `encounter`: Generation Policy Context. Consumes `party` and `creatures`
+  through their root application services and `published/` carriers, then owns
+  generation policy.
+- `dungeon`: Authored World-Space Context. Owns authored world-space truth
+  independently of party, creatures, and encounter. Views may combine dungeon
+  facts with presentation state, but that composition is not a domain
+  relationship.
+
+Reusable map display input belongs to `src/view/views`; no domain context owns
+shared render payloads.
 
 ## Interaction Flow
 
 The canonical domain interaction flow is:
 
-1. view code calls one feature's root `*ApplicationService`
-2. the application layer coordinates the use case
-3. mutation enters the owning aggregate root
-4. domain-owned contracts are satisfied by outer adapters
-5. results leave the feature as intentional `api/` carriers
+1. ViewModel calls one context's root `*ApplicationService`.
+2. The root service translates `published/` carriers into application/model
+   inputs.
+3. A `*UseCase` coordinates the task.
+4. Mutation enters the owning aggregate root when the context has a write
+   model.
+5. Domain-owned repository contracts are satisfied by outer data adapters.
+6. Results leave as intentional `published/` carriers.
+7. ViewModels translate domain facts into presentation display models.
 
-Additional rules:
-
-- The root `*ApplicationService` is the only public client-facing backend
-  boundary below the view layer.
-- Foreign clients may use `api/` types only as parameters, results, snapshots,
-  statuses, and other carriers of the root application-service boundary.
-- Domain-owned contracts are inner backend ports, not alternate client
-  boundaries.
-- Root application services must not instantiate infrastructure
-  implementations directly or hide global mutable adapter state.
-- Cross-feature access below the view layer goes only through foreign
-  application services and foreign `api/` carriers.
-
-## Role Definitions
-
-### `<PascalFeatureName>ApplicationService.java`
-
-The root application service is the public backend boundary of one bounded
-context.
-
-- Responsibilities:
-  - accept commands and queries in domain terms
-  - expose stable public operations and results
-  - delegate into the application layer or directly into the model
-- Allowed behavior:
-  - thin orchestration
-  - boundary defaulting and carrier shaping
-  - workflow coordination that does not own domain policy
-- Forbidden behavior:
-  - becoming a transaction script home
-  - owning business rules that belong on aggregates, entities, value objects,
-    or domain services
-  - acting as a composition root for infrastructure
-
-### `application/`
-
-`application/` owns thin application-layer coordination.
-
-- Responsibilities:
-  - sequence work across aggregates and domain-owned contracts
-  - coordinate one use case or a small coherent family of use cases
-  - assemble exported carriers from already-owned domain behavior
-- Rules:
-  - application code directs expressive domain objects; it does not replace
-    them
-  - if a rule naturally belongs to one domain object or aggregate, move it
-    there
-
-### `api/`
-
-`api/` owns exported boundary carriers only.
-
-- Responsibilities:
-  - define commands, queries, results, snapshots, and shared boundary types
-  - keep foreign consumers off domain internals
-- Rules:
-  - `api/` types are carriers, not invariant owners
-  - `api/` must not expose callable service, facade, repository, port, gateway,
-    factory, or locator contracts
-  - do not move domain policy into `api/` to keep model types artificially
-    thin
-
-### Named Domain Modules
-
-A named domain module is the canonical home for a cohesive set of concepts
-within one bounded context.
-
-- Responsibilities:
-  - hold the model elements that belong to one high-level domain concept
-  - give the structure names that become part of the ubiquitous language
-  - keep related invariants, policies, and contracts close together
-- Allowed contents:
-  - entities and aggregate roots
-  - value objects
-  - domain services
-  - repository contracts
-  - domain events
-  - factories and specifications
-- Rules:
-  - module names must describe domain concepts, not technical roles
-  - prefer colocation by concept over cross-cutting role directories
-  - split modules when cohesion drops or the ubiquitous language reveals a
-    clearer contour
-
-## Context Types
-
-Every feature must state its domain shape explicitly in `DOMAIN.md`.
-
-The required machine-readable marker is exactly one of:
-
-- `Context Type: Policy-Owning Bounded Context`
-- `Context Type: Supporting Read-Model Context`
-
-## Domain Context Map
-
-Every active `src/domain/<feature>` appears in this map with the same context
-type declared by the feature's `DOMAIN.md`.
-
-- `creatures`: Supporting Read-Model Context. Exports creature catalog search,
-  detail lookup, filter options, and encounter-candidate projections to
-  downstream policy contexts. It does not own encounter balancing or creature
-  write-model policy.
-- `dungeon`: Policy-Owning Bounded Context. Owns authored dungeon-map truth,
-  identity-preserving map mutation policy, derived-state rebuild rules, and
-  repository contracts for persisted maps. It publishes map snapshots and
-  summaries through its application-service and `api/` boundary.
-- `encounter`: Policy-Owning Bounded Context with no persisted v1 write model.
-  Consumes `party` and `creatures` through their application services and
-  public API carriers, then owns runtime encounter balancing, candidate
-  ranking, locks, and generated-encounter policy.
-- `mapcore`: Supporting Read-Model Context. Exports topology-neutral map
-  projection contracts shared by map-owning contexts. It does not own authored
-  dungeon, travel, or map mutation policy.
-- `party`: Policy-Owning Bounded Context. Owns party roster truth, membership,
-  XP progression, rest cadence, and adventuring-day policy. Downstream contexts
-  consume party state only through the party application-service and `api/`
-  carriers.
-
-### Default: Policy-Owning Bounded Context
-
-This is the default expectation for a domain feature.
-
-- The context owns business rules, invariants, and authored truth of its own.
-- It uses aggregates, entities, value objects, and domain services where
-  needed.
-- Encounter balancing, party mutation, dungeon editing, and similar behavior
-  belong here.
-
-### Explicit Exception: Supporting Read-Model Context
-
-A feature may instead be a supporting read-model context only when that is
-truly its job.
-
-- It owns exported projections, lookup carriers, and query coordination.
-- It does not own the write-model policy of the underlying business truth.
-- The `DOMAIN.md` must say why this is a supporting context instead of a
-  policy-owning one.
-- As soon as the feature starts to rank, validate, balance, choose, or define
-  policy of its own, it must be remodelled as a policy-owning bounded context.
-
-## Aggregate Rules
-
-- Aggregate roots are the only external mutation entrypoints for their
-  transactional consistency boundary.
-- Model true invariants inside one aggregate; do not cluster for compositional
-  convenience.
-- Prefer small aggregates.
-- Reference other aggregates by identity by default.
-- One aggregate instance modified per transaction is the default modelling
-  rule.
-- Use eventual consistency outside the aggregate boundary unless a true
-  invariant requires immediate consistency.
-
-## Tactical Object Shape
-
-Professional DDD object structure is explicit in SaltMarcher rather than
-implicit review taste.
-
-- Aggregate roots own externally visible state transitions and consistency
-  checks for their transactional boundary. Application use cases load, delegate
-  to the aggregate, save, and map results.
-- Entities own stable identity plus state-coupled behavior. Child entities do
-  not become alternate external mutation entrypoints for an aggregate.
-- Value objects are identity-free immutable records or final classes. They own
-  value-local validation, normalization, or rejection at construction/factory
-  time unless a use-case boundary intentionally converts invalid user input into
-  an exported failure result first.
-- Domain services and factories are allowed only for behavior that does not
-  naturally belong to one aggregate, entity, or value object. They must be
-  stateless and named in the ubiquitous language.
-- `api/` types are boundary carriers. Named domain modules must not depend on
-  same-feature API command, query, result, draft, snapshot, page, detail,
-  options, or payload carriers as invariant inputs. Translate those carriers at
-  the root or application boundary before entering the model.
-- Read-model helper objects may stay projection-oriented only inside a
-  supporting read-model context or inside explicitly derived-state code. When a
-  projection starts ranking, validating, balancing, or choosing policy, promote
-  the context or module into the richer policy-owning model.
+Cross-context access below the view layer goes only through foreign root
+application services and foreign `published/` carriers.
 
 ## Domain Document Contract
 
 Every `DOMAIN.md` remains a binding feature-local model contract, not a
 free-form note.
 
-Policy-owning bounded contexts must include non-empty sections named exactly:
+Each active context must include:
+
+- `## Context Role`
+- exactly one `Context Role: ...` marker
+- `## Published Language`
+- `## Application Boundary`
+- `## Ubiquitous Language`
+
+Contexts with authored truth must also include:
 
 - `## Aggregate Model`
 - `## Commands And Invariants`
 - `## Consistency Model`
-- `## Ubiquitous Language`
+- `Aggregate Root: <TypeName>` for at least one aggregate-root type
 
-They must also declare either:
+Policy contexts without persisted authored truth must include:
 
-- `Aggregate Root: <TypeName>` for at least one existing aggregate-root type in
-  a named domain module, or
-- `Write Model: None` plus a non-empty `## Ephemeral Policy Rationale` when
-  the context owns runtime policy but no persisted write model.
+- `Write Model: None`
+- `## Ephemeral Policy Rationale`
 
-Supporting read-model contexts must include non-empty sections named exactly:
-
-- `## Read-Model Boundary`
-- `## Promotion Triggers`
-
-The domain context map in this standard is the canonical system-wide map for
-domain features. Each domain feature must appear there with its role and
-integration relationship to the other bounded contexts.
+The domain-layer standard owns the system-wide context-role list. Feature
+documents own local model detail and must not redefine system-wide topology.
 
 ## Forbidden Patterns
 
 - business rules implemented in `view` or `data`
 - additional callable client boundaries beside the root
-  `<Feature>ApplicationService`
-- service, facade, repository, port, gateway, factory, or locator interfaces
-  exported from domain `api/`
-- passive aggregates or entities whose behavior lives mainly in application
-  coordinators
+  `<Context>ApplicationService`
+- domain `api/` packages or compatibility aliases
+- `published/` services, facades, repositories, ports, gateways, factories, or
+  policy helpers
+- named domain modules importing same-context `published/` carriers
+- direct Java files under named domain modules
+- role package names outside the allowed DDD role set
+- passive aggregates or entities whose behavior lives mainly in use cases
 - `application/` as a generic business-logic dump
-- modules named after technical roles instead of domain concepts
-- broad mutable object graphs across aggregates
-- mandatory root-level `entity/`, `service/`, `valueobject/`, `repository/`,
-  or `query/` buckets presented as the DDD target model
-- treating every projection-oriented context as proof that CQRS must be the
-  default domain shape
+- render projections, canvas models, styles, or display selections as domain
+  published language
+- `src/domain/mapcore/**`
 
 ## Verification Notes
 
 The canonical owner model for mechanical checks lives in the
 [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1).
 
-Current mechanical ownership:
+Required enforced rules:
 
-- `Enforced`
-  - `domain-root-presence` via `build-harness`
-    (`./gradlew :build-harness:check`)
-  - `domain-layout` via `build-harness`
-    (`./gradlew :build-harness:check`): domain sources must live under
-    `src/domain/<feature>/...`
-  - `domain-top-level-role-bucket-ban` via `build-harness`
-    (`./gradlew :build-harness:check`): top-level technical role buckets such
-    as `entity/`, `valueobject/`, `repository/`, `query/`, `service/`, and
-    `services/` are forbidden
-  - `domain-module-name-shape` via `build-harness`
-    (`./gradlew :build-harness:check`): named domain modules must use
-    lower-case package directory names matching `[a-z][a-z0-9_]*`; together
-    with the role-bucket ban this enforces that only `api/`, `application/`,
-    and named domain modules are valid direct domain buckets
-  - `domain-api-no-backend-port-contracts` via `build-harness`
-    (`./gradlew :build-harness:check`): backend port contracts such as
-    `*Repository` and `*Port` belong in named domain modules rather than
-    exported `api/`
-  - `domain-application-no-backend-port-contracts` via `build-harness`
-    (`./gradlew :build-harness:check`): backend port contracts such as
-    `*Repository` and `*Port` belong in named domain modules rather than the
-    thin use-case coordination package
-  - `domain-context-document-presence`,
-    `domain-context-shape-declared`, and
-    `domain-supporting-context-rationale` via `build-harness`
-    (`./gradlew :build-harness:check`): every domain feature needs exactly one
-    `Context Type: ...` marker in `DOMAIN.md`, and supporting read-model
-    contexts need a non-empty `## Read-Model Boundary` section
-  - `domain-context-map-complete` via `build-harness`
-    (`./gradlew :build-harness:check`): every `src/domain/<feature>` appears in
-    this standard's `## Domain Context Map`
-  - `domain-context-map-role-matches` via `build-harness`
-    (`./gradlew :build-harness:check`): every context-map feature bullet
-    includes the same context type declared by the feature's `DOMAIN.md`
-  - `domain-policy-context-required-sections` via `build-harness`
-    (`./gradlew :build-harness:check`): policy-owning `DOMAIN.md` files define
-    aggregate model, commands and invariants, consistency model, and ubiquitous
-    language sections
-  - `domain-aggregate-marker-shape` via `build-harness`
-    (`./gradlew :build-harness:check`): policy-owning contexts declare an
-    existing aggregate root in a named domain module, or explicitly declare
-    `Write Model: None` with an ephemeral-policy rationale
-  - `domain-supporting-context-promotion-triggers` via `build-harness`
-    (`./gradlew :build-harness:check`): supporting read-model contexts declare
-    promotion triggers
-  - `domain-outer-layer-independence` via `ArchUnit`
-    (`./gradlew architectureTest`)
-  - `domain-foreign-feature-public-seams-only` via `ArchUnit`
-    (`./gradlew architectureTest`)
-  - `domain-feature-cycle-freedom` via `ArchUnit`
-    (`./gradlew architectureTest`)
-  - `domain-framework-and-infra-leakage` via `PMD architecture`
-    (`./gradlew pmdArchitectureMain`)
-  - `domain-root-no-direct-infra-composition` via `PMD architecture`
-    (`./gradlew pmdArchitectureMain`)
-  - `domain-application-no-policy-helper-methods` via `PMD architecture`
-    (`./gradlew pmdArchitectureMain`): application-layer helpers must not be
-    named like rule-bearing domain policy such as `mutate*`, `validate*`,
-    `react*`, `score*`, `rank*`, `choose*`, `balance*`, `enforce*`, or
-    `calculate*`; boundary/query normalization remains review-owned
-  - `domain-no-setter-style-mutation` via `PMD architecture`
-    (`./gradlew pmdArchitectureMain`): named domain modules must not expose
-    public or protected JavaBean-style `void setX(...)` mutation methods
-  - `domain-public-boundary-no-private-or-outer-signature-leaks` via
-    `Error Prone` (`./gradlew compileJava`): public operational members on
-    root application services and public `api/` signatures must stay free of
-    outer-layer types, foreign private domain types, and same-feature internal
-    domain-module types
-  - `domain-root-constructor-port-composition` via `Error Prone`
-    (`./gradlew compileJava`): public/protected root application-service
-    constructors are composition seams and may accept same-feature
-    domain-owned port interfaces and public domain boundaries, but they must
-    not expose outer-layer types, foreign private domain types, or same-feature
-    concrete application and model collaborators
-  - `domain-module-no-api-carrier-dependency` via `Error Prone`
-    (`./gradlew compileJava`): named domain modules may not depend on
-    same-feature API command, query, result, draft, snapshot, page, detail,
-    options, or payload carriers
-  - `domain-public-concrete-type-shape` via `Error Prone`
-    (`./gradlew compileJava`): public concrete named-module domain types must
-    be records, enums, final classes, or sealed abstractions
-  - `domain-module-field-purity` via `Error Prone`
-    (`./gradlew compileJava`): public concrete named-module domain types must
-    not expose non-final instance fields or mutable public static fields
-  - `domain-api-carrier-shape` via `Error Prone`
-    (`./gradlew compileJava`): public `api/` types must be records, enums, or
-    sealed abstractions
-  - `domain-service-factory-statelessness` via `Error Prone`
-    (`./gradlew compileJava`): named-module domain types ending in `Service` or
-    `Factory` must not declare instance fields
-  - `domain-subpackage-cycle-freedom` via `ArchUnit`
-    (`./gradlew architectureTest`): direct subpackages under each domain
-    feature, including named modules, must stay cycle-free
+- `build-harness` owns root application-service presence, `published/` and
+  `application/` placement, domain `api/` removal, role subpackage topology,
+  allowed role names, direct-file bans under domain modules, `Context Role:`
+  document markers, context-role coverage, and the blocking absence of
+  `src/domain/mapcore`.
+- `Error Prone` owns public boundary signature purity, published-carrier shape,
+  same-context published dependency bans for domain modules, and role-shape
+  checks for aggregate, entity, value, repository, policy, factory, service,
+  event, and specification packages.
+- `PMD architecture` owns source-level domain leakage bans and obvious
+  application-layer policy-helper smells.
+- `ArchUnit` owns domain independence from shell, view, data, JavaFX, SQL,
+  filesystem, network, framework leakage, and package cycle freedom.
 
-Candidate mechanical checks:
-
-- `domain-single-callable-boundary`: strengthen current root-presence and
-  `api/` carrier-shape checks so public domain `api/` types cannot expose
-  callable service, facade, gateway, factory, locator, repository, or port
-  contracts. Promotion requires an explicit user request for checker work.
-
-Review-owned rules:
-
-- object-centred placement quality
-- named-module cohesion and ubiquitous-language naming beyond package shape
-- application-layer thinness beyond direct infrastructure-composition patterns
-- `api/` carrier-only discipline beyond the enforced same-feature
-  command/query/result/draft/snapshot/page/detail/options/payload carrier ban
-  and public carrier shape
-- whether a domain feature exposes only the root application service as a
-  callable client boundary while keeping `api/` carrier-only
-- whether business rules have semantically leaked into `view` or `data`
-- aggregate-root-only mutation semantics
-- whether true invariants are modelled inside one aggregate
-- whether aggregate boundaries are small and conceptually coherent
-- reference-by-identity and eventual-consistency choices across aggregate
-  boundaries
-- broad mutable object graphs across aggregates
-- one-aggregate-per-transaction as a modelling judgment
-- whether a supporting read-model context is actually justified
-- whether a declared context classification is substantively correct
-- whether domain-service or factory names are ubiquitous-language names
-- boundary/query normalization that does not own domain policy
+Review-owned rules include object-centred placement, module cohesion,
+ubiquitous-language quality, aggregate boundary quality, true invariant
+placement, and whether a published snapshot describes fachliche facts rather
+than presentation input.
 
 ## References
 
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
-- [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
-- [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)
+- [ADR 021: Domain Layer Role Reset](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/021-domain-layer-role-reset.md:1)
 - [Fowler: Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/domain-driven-design/fowler-domain-model.md:1)
 - [Fowler: Anemic Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/domain-driven-design/fowler-anemic-domain-model.md:1)
 - [Fowler: Service Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/application-layer/fowler-service-layer.md:1)
 - [Microsoft: DDD-Oriented Microservice](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-patterns/microsoft-ddd-oriented-microservice.md:1)
-- [Microsoft: Microservice Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/domain-driven-design/microsoft-microservice-domain-model.md:1)
 - [Evans: DDD Reference](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/domain-driven-design/evans-ddd-reference.pdf:1)
-- [Vernon: Effective Aggregate Design Part I](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/domain-driven-design/vernon-effective-aggregate-design-part-1.pdf:1)
-- [Vernon: Effective Aggregate Design Part II](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/domain-driven-design/vernon-effective-aggregate-design-part-2.pdf:1)

@@ -85,8 +85,8 @@ The canonical intentional public boundaries are:
 - view `*Contribution` roots as shell-facing composition adapters
 - domain `*ApplicationService` roots as the only callable public
   client-facing backend boundary below the view layer
-- `src/domain/<feature>/api/**` as carrier-only public boundary types used by
-  those application services
+- `src/domain/<feature>/published/**` as carrier-only published-language types
+  used by those application services
 - domain-owned contracts declared in named domain modules as inner backend
   ports, not alternate client boundaries
 - data `*ServiceContribution` roots as the registration boundary of one data
@@ -114,8 +114,9 @@ The canonical intentional public boundaries are:
    same-feature or foreign public `*ApplicationService`
 6. domain objects and domain-owned contracts coordinate the use case
 7. data adapters implement the required repository or projection contracts
-8. results return as domain API carriers into the ViewModel
-9. the ViewModel maps results into presentation state
+8. results return as domain published carriers into the ViewModel
+9. the ViewModel translates domain facts into presentation state or display
+   models
 10. passive views render the updated state
 
 ### Shell-Scoped Runtime Flow

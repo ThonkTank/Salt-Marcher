@@ -2,15 +2,15 @@ package src.domain.creatures.application;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.published.CreatureDetail;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.util.Objects;
 
 final class LoadCreatureDetailUseCase {
 
-    private final CreatureCatalogQueryPort queryPort;
+    private final CreatureCatalogRepository queryPort;
 
-    LoadCreatureDetailUseCase(CreatureCatalogQueryPort queryPort) {
+    LoadCreatureDetailUseCase(CreatureCatalogRepository queryPort) {
         this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
     }
 

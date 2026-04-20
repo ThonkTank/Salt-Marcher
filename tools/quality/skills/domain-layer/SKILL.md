@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including root `*ApplicationService.java`, carrier-only `api/`, `application/`, named domain modules, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, and `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including root `*ApplicationService.java`, carrier-only `published/`, `application/`, fachlich named domain modules, tactical role subpackages, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
 ---
 
 # Domain Layer
@@ -17,71 +17,92 @@ This skill is not the source of truth. If it conflicts with
 
 - any file under `src/domain/**`
 - any root `*ApplicationService.java`
-- any `api/`, `application/`, or named domain module package
+- any `published/`, `application/`, fachlich named domain module, or module
+  role package
 - any `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md` that defines or
-  reviews a domain feature
+  reviews a domain context
 
 ## Working Heuristics
 
 Before changing domain code:
 
-1. Read the feature's `DOMAIN.md` and confirm its context type.
-2. Treat the root `<Feature>ApplicationService` as the only callable public
-   client boundary for that feature.
-3. Treat `api/` as carrier-only: commands, queries, results, snapshots,
-   statuses, enums, and sealed carrier abstractions.
-4. Assign each internal type to `application/` coordination or to a named
-   domain module expressed in the ubiquitous language.
-5. Check whether behavior belongs on an aggregate, entity, value object, or
-   domain service before placing it in `application/`.
-6. Check mutation boundaries. External mutation must enter through the owning
+1. Read the context's `DOMAIN.md` and confirm its `Context Role:`.
+2. Treat the root `<Context>ApplicationService` as the only callable public
+   client boundary for that context.
+3. Treat `published/` as carrier-only published language: commands, queries,
+   results, IDs, snapshots, statuses, enums, and sealed carrier abstractions.
+4. Keep `application/` to use-case orchestration. Classes are named `*UseCase`.
+5. Assign each internal type to a fachlich named domain module and an explicit
+   role package: `aggregate`, `entity`, `value`, `policy`, `repository`,
+   `factory`, `service`, `event`, or `specification`.
+6. Check whether behavior belongs on an aggregate, entity, value object,
+   policy, factory, domain service, or specification before placing it in
+   `application/`.
+7. Check mutation boundaries. External mutation must enter through the owning
    aggregate root when the context has a write model.
-7. Check cross-feature access. Below the view layer, access goes only through
-   foreign root application services and foreign `api/` carriers.
+8. Check cross-context access. Below the view layer, access goes only through
+   foreign root application services and foreign `published/` carriers.
+9. Reject `src/domain/mapcore/**`; shared render input belongs in the view
+   layer, while fachliche dungeon map/world facts belong to `dungeon/published`.
 
 ## Role Reminders
 
 ### `*ApplicationService.java`
 
-- exactly one callable public backend boundary of one feature
+- exactly one callable public backend boundary of one context
 - accepts commands and queries in domain terms
+- returns `published/` carriers
 - thin coordination only
 - not a composition root for infrastructure
 
-### `api/`
+### `published/`
 
-- exported boundary carriers only
+- exported published-language carriers only
 - records, enums, or sealed carrier abstractions
 - not a home for service, facade, repository, port, factory, locator, gateway,
-  or invariant-owning contracts
+  policy, or invariant-owning contracts
+- not a home for render layers, styles, canvas cells, widget state, or display
+  selections
 
 ### `application/`
 
 - use-case orchestration and internal application coordination
-- coordinates domain objects and domain-owned contracts
+- coordinates domain objects, domain-owned contracts, and allowed foreign
+  application services
 - does not replace rich domain behavior
+- generic `*Operations` coordinator buckets are migration debt
 
-### Named Domain Modules
+### Domain Modules And Role Packages
 
-- cohesive domain concepts in the ubiquitous language
-- may contain entities, aggregate roots, value objects, repository contracts,
-  domain services, factories, specifications, and events as needed
-- must not be generic technical role buckets such as `entity/`, `service/`,
-  `valueobject/`, `repository/`, or `query/`
+- direct domain module names are fachlich concepts in the ubiquitous language
+- Java files inside a domain module live under a tactical role package
+- `aggregate/` contains aggregate roots only
+- `entity/` contains identity-bearing child entities
+- `value/` contains immutable value objects and enums
+- `policy/` contains stateless fachliche policies and rules
+- `repository/` contains domain-owned outbound repository contracts
+- `factory/`, `service/`, `event/`, and `specification/` are used only when
+  the corresponding DDD role exists
+- domain modules must not import same-context `published/` carriers
 
 ## Review Focus
 
 When reviewing domain-layer work, look for:
 
-- a single callable root application-service boundary per feature
-- carrier-only `api/` packages
-- rich behavior moving into aggregates, entities, value objects, and domain
-  services instead of procedural coordinators
-- thin application services without hidden adapter composition
+- a single callable root application-service boundary per context
+- carrier-only `published/` packages
+- `Context Role:` declarations matching the domain-layer standard
+- role subpackages under every named domain module
+- no direct Java files under named domain modules
+- no same-context `published/` imports from domain role packages
+- rich behavior moving into aggregates, entities, values, policies, factories,
+  specifications, or domain services instead of procedural coordinators
+- thin application use cases without hidden adapter composition
 - aggregate-root-only mutation boundaries
-- supporting read-model contexts staying free of owned domain policy
+- no `src/domain/mapcore/**`
 
 ## References
 
 - [Domain Layer Standard](../../../../docs/standards/domain-layer.md)
+- [Agent Instruction Standard](../../../../docs/standards/agent-instructions.md)
 - [AGENTS.md](../../../../AGENTS.md)

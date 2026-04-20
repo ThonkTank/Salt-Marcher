@@ -1,35 +1,49 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
-Source of Truth: Creatures feature ownership, supporting read-model boundary,
-and domain rationale.
+Last Reviewed: 2026-04-20
+Source of Truth: Creatures reference catalog ownership, published lookup
+language, and domain rationale.
 
 # Creatures Domain Model
 
-## Context Shape
+## Context Role
 
-Context Type: Supporting Read-Model Context
+Context Role: Reference Catalog Context
 
-- `creatures` is an explicit supporting read-model context.
+- `creatures` is a reference catalog context over imported creature truth.
 - Its public backend boundary is
   `src/domain/creatures/CreaturesApplicationService.java`.
 - The feature intentionally exposes catalog search, filtering, detail lookup,
-  and encounter-candidate lookup without owning encounter policy of its own.
+  and encounter-candidate lookup without owning encounter generation policy or
+  creature lifecycle truth.
 
-## Read-Model Boundary
+## Published Language
 
-- creature catalog data is loaded from the feature's persistence-backed query
-  adapter path
-- the feature owns exported query shapes and result shapes
-- the feature does not own encounter balancing, ranking, locking, or other
-  downstream runtime policies
-- this exception is justified because the feature exists to export stable
-  lookup and projection surfaces over foreign creature truth, not to own the
-  write-model policy of encounter generation
+`published/` owns public catalog queries, result pages, lookup statuses, filter
+options, creature details, action details, catalog rows, and encounter-candidate
+reference profiles.
+
+Published catalog carriers describe imported creature facts and lookup results.
+They do not encode encounter ranking, choice, balancing, or composition policy.
+
+## Application Boundary
+
+`application/` owns query normalization, paging coordination, detail lookup,
+filter option loading, and mapping imported catalog truth into `published/`
+carriers.
+
+It does not own encounter ranking, candidate scoring, or creature lifecycle
+policy.
+
+## Catalog Model
+
+`catalog/` owns the domain role packages for imported creature reference
+catalog access. Repository-like lookup contracts belong under the catalog
+module role package that matches the contract semantics.
 
 ## Promotion Triggers
 
-Promote `creatures` to a policy-owning bounded context before adding any of:
+Reclassify `creatures` before adding any of:
 
 - authored creature creation or editing policy
 - creature validation beyond query/default normalization
@@ -37,16 +51,13 @@ Promote `creatures` to a policy-owning bounded context before adding any of:
 - persisted creature lifecycle or ownership rules
 - mutable catalog truth owned by this feature rather than imported lookup data
 
-## Allowed Domain Shape
+## Ubiquitous Language
 
-- `application/` may normalize queries, page results, and reshape catalog
-  truth into exported `api/` records
-- `catalog/` owns the internal catalog query port used by application use
-  cases and implemented by the data adapter
-- read-model helpers are allowed as long as they do not become policy owners
-- if the feature begins to rank, choose, validate, or define creature policy
-  beyond query normalization, it must be promoted into the richer
-  policy-owning bounded-context shape
+- `Creature Catalog`: imported creature reference data.
+- `Creature Detail`: published reference profile for one creature.
+- `Catalog Query`: public lookup request over imported reference truth.
+- `Encounter Candidate`: reference creature profile consumed by encounter
+  generation.
 
 ## References
 

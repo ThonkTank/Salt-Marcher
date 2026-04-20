@@ -54,7 +54,7 @@ public final class PartyApplicationService {
     }
 
     public MutationResult createCharacter(CharacterDraft draft, MembershipState membership) {
-        return mutations.createCharacter(draft, PartyMembership.fromApi(membership));
+        return mutations.createCharacter(draft, toPartyMembership(membership));
     }
 
     public MutationResult updateCharacter(long id, CharacterDraft draft) {
@@ -66,7 +66,7 @@ public final class PartyApplicationService {
     }
 
     public MutationResult setMembership(long id, MembershipState membership) {
-        return mutations.setMembership(id, PartyMembership.fromApi(membership));
+        return mutations.setMembership(id, toPartyMembership(membership));
     }
 
     public MutationResult awardXp(List<Long> ids, int xpPerCharacter) {
@@ -74,6 +74,20 @@ public final class PartyApplicationService {
     }
 
     public MutationResult performRest(RestType restType) {
-        return mutations.performRest(PartyRestType.fromApi(restType));
+        return mutations.performRest(toPartyRestType(restType));
+    }
+
+    private static PartyMembership toPartyMembership(MembershipState membershipState) {
+        if (membershipState == null) {
+            return PartyMembership.RESERVE;
+        }
+        return membershipState == MembershipState.ACTIVE ? PartyMembership.ACTIVE : PartyMembership.RESERVE;
+    }
+
+    private static PartyRestType toPartyRestType(RestType restType) {
+        if (restType == null) {
+            return PartyRestType.SHORT_REST;
+        }
+        return restType == RestType.LONG_REST ? PartyRestType.LONG_REST : PartyRestType.SHORT_REST;
     }
 }

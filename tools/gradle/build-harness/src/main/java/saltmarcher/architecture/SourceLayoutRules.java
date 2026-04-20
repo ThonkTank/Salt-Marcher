@@ -11,11 +11,21 @@ final class SourceLayoutRules implements ArchitectureRule {
 
     private static final Pattern BACKEND_PORT_CONTRACT_FILE_PATTERN =
             Pattern.compile(".*(?:Repository|Port)\\.java$");
-    private static final Set<String> DOMAIN_FORBIDDEN_ROLE_BUCKETS =
+    private static final Set<String> DOMAIN_ALLOWED_ROLE_PACKAGES =
+            Set.of(
+                    "aggregate",
+                    "entity",
+                    "value",
+                    "policy",
+                    "repository",
+                    "factory",
+                    "service",
+                    "event",
+                    "specification");
+    private static final Set<String> DOMAIN_TOP_LEVEL_FORBIDDEN_BUCKETS =
             Set.of(
                     "aggregate",
                     "aggregates",
-                    "application",
                     "applications",
                     "controller",
                     "controllers",
@@ -140,15 +150,59 @@ final class SourceLayoutRules implements ArchitectureRule {
 
         String bucket = segments.get(3);
         validateDomainBucket(sourceFile.relativePath(), bucket, violations);
-        if (bucket.equals("api")
-                && BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
-            violations.add(sourceFile.relativePath(), "domain-api-no-backend-port-contracts",
-                    "Domain api/ packages are exported boundary-carrier surfaces. Backend port contracts such as *Repository or *Port belong in a named domain module.");
+        if (bucket.equals("published")) {
+            validateDomainPublishedLayout(sourceFile, violations);
+            return;
         }
-        if (bucket.equals("application")
-                && BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
+        if (bucket.equals("application")) {
+            validateDomainApplicationLayout(sourceFile, violations);
+            return;
+        }
+
+        validateDomainRoleLayout(sourceFile, violations);
+    }
+
+    private void validateDomainPublishedLayout(SourceFile sourceFile, ViolationSink violations) {
+        List<String> segments = sourceFile.relativeSegments();
+        if (segments.size() != 5) {
+            violations.add(sourceFile.relativePath(), "domain-published-direct-files",
+                    "Domain published/ boundary carriers must be direct Java files under src/domain/<context>/published/.");
+        }
+        if (BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
+            violations.add(sourceFile.relativePath(), "domain-published-no-backend-port-contracts",
+                    "Domain published/ packages are exported boundary-carrier surfaces. Backend port contracts such as *Repository or *Port belong in a named domain module role package.");
+        }
+    }
+
+    private void validateDomainApplicationLayout(SourceFile sourceFile, ViolationSink violations) {
+        List<String> segments = sourceFile.relativeSegments();
+        if (segments.size() != 5) {
+            violations.add(sourceFile.relativePath(), "domain-application-direct-usecases",
+                    "Domain application/ code must be direct *UseCase.java files under src/domain/<context>/application/.");
+        }
+        if (BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
             violations.add(sourceFile.relativePath(), "domain-application-no-backend-port-contracts",
-                    "Domain application/ packages coordinate use cases. Backend port contracts such as *Repository or *Port belong in a named domain module.");
+                    "Domain application/ packages coordinate use cases. Backend port contracts such as *Repository or *Port belong in a named domain module role package.");
+        }
+    }
+
+    private void validateDomainRoleLayout(SourceFile sourceFile, ViolationSink violations) {
+        List<String> segments = sourceFile.relativeSegments();
+        if (segments.size() < 5) {
+            violations.add(sourceFile.relativePath(), "domain-module-role-required",
+                    "Named domain modules must place Java files under src/domain/<context>/<module>/<role>/.");
+            return;
+        }
+        if (segments.size() != 6) {
+            violations.add(sourceFile.relativePath(), "domain-role-direct-files",
+                    "Domain role package Java files must be direct files under src/domain/<context>/<module>/<role>/.");
+            return;
+        }
+
+        String role = segments.get(4);
+        if (!DOMAIN_ALLOWED_ROLE_PACKAGES.contains(role)) {
+            violations.add(sourceFile.relativePath(), "domain-role-package-name",
+                    "Domain role packages must be one of: " + String.join(", ", DOMAIN_ALLOWED_ROLE_PACKAGES) + ".");
         }
     }
 
@@ -210,22 +264,34 @@ final class SourceLayoutRules implements ArchitectureRule {
     }
 
     static void validateDomainBucket(String source, String bucket, ViolationSink violations) {
-        if (bucket.equals("api") || bucket.equals("application")) {
+        if (bucket.equals("published") || bucket.equals("application")) {
             return;
         }
-        if (DOMAIN_FORBIDDEN_ROLE_BUCKETS.contains(bucket)) {
+        if (bucket.equals("api")) {
+            violations.add(source, "domain-api-bucket-removed",
+                    "Domain api/ packages have been replaced by published/.");
+            return;
+        }
+        if (DOMAIN_TOP_LEVEL_FORBIDDEN_BUCKETS.contains(bucket)) {
             violations.add(source, "domain-top-level-role-bucket-ban",
-                    "Top-level technical role buckets are forbidden under src/domain/<feature>/. Use api/, application/, or a named domain module.");
+                    "Top-level technical role buckets are forbidden under src/domain/<context>/. Use published/, application/, or a fachlich named domain module with role subpackages.");
             return;
         }
         if (!isNamedDomainModule(bucket)) {
             violations.add(source, "domain-module-name-shape",
-                    "Named domain modules under src/domain/<feature>/ must use lower-case package names matching [a-z][a-z0-9_]*.");
+                    "Named domain modules under src/domain/<context>/ must use lower-case package names matching [a-z][a-z0-9_]*.");
         }
+    }
+
+    static boolean isAllowedDomainRolePackage(String role) {
+        return DOMAIN_ALLOWED_ROLE_PACKAGES.contains(role);
     }
 
     private static boolean isNamedDomainModule(String bucket) {
         return bucket.matches("[a-z][a-z0-9_]*")
-                && !DOMAIN_FORBIDDEN_ROLE_BUCKETS.contains(bucket);
+                && !DOMAIN_TOP_LEVEL_FORBIDDEN_BUCKETS.contains(bucket)
+                && !bucket.equals("api")
+                && !bucket.equals("published")
+                && !bucket.equals("application");
     }
 }

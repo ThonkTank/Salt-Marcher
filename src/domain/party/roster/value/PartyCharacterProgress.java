@@ -1,6 +1,6 @@
 package src.domain.party.roster.value;
 
-import src.domain.party.roster.policy.PartyLevelProgression;
+import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
 
 public record PartyCharacterProgress(
         int level,
@@ -10,7 +10,7 @@ public record PartyCharacterProgress(
         int shortRestsTakenSinceLongRest
 ) {
     public PartyCharacterProgress {
-        level = PartyLevelProgression.clampLevel(level);
+        level = PartyLevelProgressionPolicy.clampLevel(level);
         currentXp = Math.max(0, currentXp);
         xpSinceLongRest = Math.max(0, xpSinceLongRest);
         xpSinceShortRest = Math.max(0, xpSinceShortRest);
@@ -20,7 +20,7 @@ public record PartyCharacterProgress(
     public PartyCharacterProgress withLevel(int nextLevel) {
         return new PartyCharacterProgress(
                 nextLevel,
-                PartyLevelProgression.normalizeCurrentXpForLevel(nextLevel, currentXp),
+                PartyLevelProgressionPolicy.normalizeCurrentXpForLevel(nextLevel, currentXp),
                 xpSinceLongRest,
                 xpSinceShortRest,
                 shortRestsTakenSinceLongRest);

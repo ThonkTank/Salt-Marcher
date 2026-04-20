@@ -1,7 +1,7 @@
 package src.domain.creatures.application;
 
 import src.domain.creatures.published.CreatureFilterOptions;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import org.jspecify.annotations.Nullable;
 import java.util.List;
@@ -53,14 +53,14 @@ final class LoadCreatureFilterOptionsUseCase {
             Map.entry("30", 155000)
     );
 
-    private final CreatureCatalogQueryPort queryPort;
+    private final CreatureCatalogRepository queryPort;
 
-    LoadCreatureFilterOptionsUseCase(CreatureCatalogQueryPort queryPort) {
+    LoadCreatureFilterOptionsUseCase(CreatureCatalogRepository queryPort) {
         this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
     }
 
     CreatureFilterOptions execute() {
-        CreatureCatalogQueryPort.DistinctFilterValues values = queryPort.loadFilterValues();
+        CreatureCatalogRepository.DistinctFilterValues values = queryPort.loadFilterValues();
         return new CreatureFilterOptions(
                 values.sizes(),
                 values.types(),

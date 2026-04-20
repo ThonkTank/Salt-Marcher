@@ -100,8 +100,8 @@ public final class CatalogViewModel {
     private final ObservableList<CatalogRow> rows = FXCollections.observableArrayList();
     private final ObservableList<FilterChip> chips = FXCollections.observableArrayList();
     private final ReadOnlyObjectWrapper<ContentKind> selectedContent = new ReadOnlyObjectWrapper<>(ContentKind.CREATURES);
-    private final ReadOnlyObjectWrapper<CreatureFilterOptions> creatureFilterOptions =
-            new ReadOnlyObjectWrapper<>(CreatureFilterOptions.empty());
+    private final ReadOnlyObjectWrapper<CreatureFilterData> creatureFilterData =
+            new ReadOnlyObjectWrapper<>(CreatureFilterData.empty());
     private final ReadOnlyStringWrapper selectedSortKey = new ReadOnlyStringWrapper(SortOption.NAME_ASC.key());
     private final ReadOnlyStringWrapper countLabel = new ReadOnlyStringWrapper("0 Monster gefunden");
     private final ReadOnlyStringWrapper pageLabel = new ReadOnlyStringWrapper("Seite 1 / 1");
@@ -152,8 +152,8 @@ public final class CatalogViewModel {
         return selectedContent.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<CreatureFilterOptions> creatureFilterOptionsProperty() {
-        return creatureFilterOptions.getReadOnlyProperty();
+    public ReadOnlyObjectProperty<CreatureFilterData> creatureFilterDataProperty() {
+        return creatureFilterData.getReadOnlyProperty();
     }
 
     public ReadOnlyStringProperty selectedSortKeyProperty() {
@@ -241,7 +241,7 @@ public final class CatalogViewModel {
 
     private void loadCreatureFilterOptions() {
         CreatureFilterOptionsResult result = creatures.loadFilterOptions();
-        creatureFilterOptions.set(result.options());
+        creatureFilterData.set(toCreatureFilterData(result.options()));
         if (result.status() != CreatureReadStatus.SUCCESS) {
             statusText.set("Filteroptionen konnten nicht vollständig geladen werden.");
         }
@@ -336,6 +336,21 @@ public final class CatalogViewModel {
         return value == null ? "" : value;
     }
 
+    private static CreatureFilterData toCreatureFilterData(CreatureFilterOptions options) {
+        CreatureFilterOptions safeOptions = options == null ? CreatureFilterOptions.empty() : options;
+        return new CreatureFilterData(
+                safeOptions.sizes(),
+                safeOptions.types(),
+                safeOptions.subtypes(),
+                safeOptions.biomes(),
+                safeOptions.alignments(),
+                safeOptions.challengeRatings());
+    }
+
+    private static List<String> copiedFilterValues(List<String> values) {
+        return values == null ? List.of() : List.copyOf(values);
+    }
+
     private static ContentKind contentKind(String key) {
         for (ContentKind kind : ContentKind.values()) {
             if (kind.key().equals(key)) {
@@ -372,6 +387,29 @@ public final class CatalogViewModel {
     public record FilterChip(String key, String label, String styleClass) {
     }
 
+    public record CreatureFilterData(
+            List<String> sizes,
+            List<String> types,
+            List<String> subtypes,
+            List<String> biomes,
+            List<String> alignments,
+            List<String> challengeRatings
+    ) {
+        public CreatureFilterData {
+            sizes = copiedFilterValues(sizes);
+            types = copiedFilterValues(types);
+            subtypes = copiedFilterValues(subtypes);
+            biomes = copiedFilterValues(biomes);
+            alignments = copiedFilterValues(alignments);
+            challengeRatings = copiedFilterValues(challengeRatings);
+        }
+
+        public static CreatureFilterData empty() {
+            return new CreatureFilterData(List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        }
+
+    }
+
     public record CreatureFilters(
             @Nullable String nameQuery,
             @Nullable String challengeRatingMin,
@@ -383,19 +421,16 @@ public final class CatalogViewModel {
             List<String> alignments
     ) {
         public CreatureFilters {
-            sizes = copyOf(sizes);
-            types = copyOf(types);
-            subtypes = copyOf(subtypes);
-            biomes = copyOf(biomes);
-            alignments = copyOf(alignments);
+            sizes = copiedFilterValues(sizes);
+            types = copiedFilterValues(types);
+            subtypes = copiedFilterValues(subtypes);
+            biomes = copiedFilterValues(biomes);
+            alignments = copiedFilterValues(alignments);
         }
 
         public static CreatureFilters empty() {
             return new CreatureFilters(null, null, null, List.of(), List.of(), List.of(), List.of(), List.of());
         }
 
-        private static List<String> copyOf(List<String> values) {
-            return values == null ? List.of() : List.copyOf(values);
-        }
     }
 }

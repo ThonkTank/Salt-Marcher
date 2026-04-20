@@ -9,14 +9,14 @@ import src.data.creatures.model.EncounterCandidateRecord;
 import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureDetail;
 import src.domain.creatures.published.EncounterCandidate;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 public final class CreatureCatalogQueryMappingFacade {
 
     private CreatureCatalogQueryMappingFacade() {
     }
 
-    public static CreatureCatalogQueryPort.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
+    public static CreatureCatalogRepository.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
         return CreatureFilterValuesMapper.toQueryValues(record);
     }
 

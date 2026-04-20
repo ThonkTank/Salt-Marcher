@@ -1,9 +1,12 @@
 # ADR 013: DDD-Primary Domain-Layer Model
 
-- Status: Accepted
+- Status: Superseded by [ADR 021: Domain Layer Role Reset](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/021-domain-layer-role-reset.md:1)
 - Date: 2026-04-18
 - Enforcement Update: ADR 014 removes the temporary mechanical tolerance for
   legacy root role buckets.
+- Supersession: ADR 021 replaces this ADR's active `api/` and broad named-module
+  topology with `published/`, tactical role packages, explicit context roles,
+  and removal of `mapcore` from the domain layer.
 
 ## Context
 
@@ -95,3 +98,4 @@ for use-case coordination and boundary definition.
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
 - [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)
+- [ADR 021: Domain Layer Role Reset](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/021-domain-layer-role-reset.md:1)

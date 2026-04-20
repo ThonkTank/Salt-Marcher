@@ -24,10 +24,18 @@ final class DomainFeatureRules implements ArchitectureRule {
             Pattern.compile("(?m)^\\s*Aggregate Root:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
     private static final Pattern WRITE_MODEL_NONE_PATTERN =
             Pattern.compile("(?m)^\\s*Write Model:\\s+None\\s*$");
-    private static final Set<String> DOMAIN_CONTEXT_TYPES =
-            Set.of("Policy-Owning Bounded Context", "Supporting Read-Model Context");
+    private static final Set<String> DOMAIN_CONTEXT_ROLES =
+            Set.of(
+                    "Roster Truth Context",
+                    "Reference Catalog Context",
+                    "Generation Policy Context",
+                    "Authored World-Space Context");
     private static final List<String> POLICY_CONTEXT_REQUIRED_SECTIONS = List.of(
             "## Aggregate Model",
+            "## Commands And Invariants",
+            "## Consistency Model",
+            "## Ubiquitous Language");
+    private static final List<String> GENERATION_POLICY_REQUIRED_SECTIONS = List.of(
             "## Commands And Invariants",
             "## Consistency Model",
             "## Ubiquitous Language");
@@ -38,8 +46,9 @@ final class DomainFeatureRules implements ArchitectureRule {
         Set<String> domainFeatures = context.domainFeatures(violations);
 
         validateDomainFeatureBoundaries(domainFeatures, sourceFiles, violations);
+        validateMapcoreRemoved(context, violations);
         validateDomainFeatureDirectories(context, violations);
-        validateDomainContextMap(context, domainFeatures, violations);
+        validateDomainContextRelationships(context, domainFeatures, violations);
         validateDomainContextDocuments(context, domainFeatures, violations);
     }
 
@@ -49,7 +58,7 @@ final class DomainFeatureRules implements ArchitectureRule {
             ViolationSink violations) {
         TreeMap<String, List<SourceFile>> rootsByFeature = new TreeMap<>();
         for (SourceFile sourceFile : sourceFiles) {
-            if (sourceFile.kind() == SourceKind.DOMAIN_API_ROOT) {
+            if (sourceFile.kind() == SourceKind.DOMAIN_ROOT) {
                 rootsByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
             }
         }
@@ -67,6 +76,14 @@ final class DomainFeatureRules implements ArchitectureRule {
             violations.add("src/domain/" + featureName, "domain-root-presence",
                     "Domain feature '" + featureName + "' must expose exactly one root application service."
                             + " Expected " + expectedDomainRootFileName(featureName) + ". Found: " + files);
+        }
+    }
+
+    private void validateMapcoreRemoved(ArchitectureContext context, ViolationSink violations) {
+        Path mapcoreRoot = context.repoRoot().resolve("src/domain/mapcore");
+        if (context.hasRepositoryContent(mapcoreRoot)) {
+            violations.add("src/domain/mapcore", "domain-mapcore-removed",
+                    "src/domain/mapcore is forbidden. Map/world facts belong to dungeon published language and render display models belong to the view layer.");
         }
     }
 
@@ -102,15 +119,15 @@ final class DomainFeatureRules implements ArchitectureRule {
         }
     }
 
-    private void validateDomainContextMap(
+    private void validateDomainContextRelationships(
             ArchitectureContext context,
             Set<String> domainFeatures,
             ViolationSink violations) {
         Path contextMapDocument = context.repoRoot().resolve("docs/standards/domain-layer.md");
         String contextMapPath = "docs/standards/domain-layer.md";
         if (!Files.isRegularFile(contextMapDocument)) {
-            violations.add(contextMapPath, "domain-context-map-complete",
-                    "Domain layer standard must define a '## Domain Context Map' section covering every domain feature.");
+            violations.add(contextMapPath, "domain-context-relationships-complete",
+                    "Domain layer standard must define a '## Context Relationships' section covering every domain context.");
             return;
         }
 
@@ -123,39 +140,43 @@ final class DomainFeatureRules implements ArchitectureRule {
             return;
         }
 
-        String section = sectionBody(content, "## Domain Context Map");
+        String section = sectionBody(content, "## Context Relationships");
         if (section.trim().isBlank()) {
-            violations.add(contextMapPath, "domain-context-map-complete",
-                    "Domain layer standard must include a non-empty '## Domain Context Map' section.");
+            violations.add(contextMapPath, "domain-context-relationships-complete",
+                    "Domain layer standard must include a non-empty '## Context Relationships' section.");
             return;
+        }
+        if (section.contains("`mapcore`") || section.contains("src/domain/mapcore")) {
+            violations.add(contextMapPath, "domain-context-relationships-no-mapcore",
+                    "Context relationships must not declare mapcore as a domain context.");
         }
 
         for (String featureName : domainFeatures) {
             Pattern featureLine = Pattern.compile("(?m)^\\s*-\\s+`" + Pattern.quote(featureName) + "`\\s*:\\s*(.+)$");
             Matcher matcher = featureLine.matcher(section);
             if (!matcher.find()) {
-                violations.add(contextMapPath, "domain-context-map-complete",
-                        "Domain context map must include a bullet for src/domain/" + featureName
+                violations.add(contextMapPath, "domain-context-relationships-complete",
+                        "Context relationships must include a bullet for src/domain/" + featureName
                                 + " using '- `" + featureName + "`: ...'.");
                 continue;
             }
-            String declaredContextType = declaredDomainContextType(context, featureName);
-            if (declaredContextType != null && !matcher.group(1).contains(declaredContextType)) {
-                violations.add(contextMapPath, "domain-context-map-role-matches",
-                        "Domain context map bullet for src/domain/" + featureName
-                                + " must include its declared context type '" + declaredContextType + "'.");
+            String declaredContextRole = declaredDomainContextRole(context, featureName);
+            if (declaredContextRole != null && !matcher.group(1).contains(declaredContextRole)) {
+                violations.add(contextMapPath, "domain-context-relationships-role-matches",
+                        "Context relationship bullet for src/domain/" + featureName
+                                + " must include its declared context role '" + declaredContextRole + "'.");
             }
         }
     }
 
-    private String declaredDomainContextType(ArchitectureContext context, String featureName) {
+    private String declaredDomainContextRole(ArchitectureContext context, String featureName) {
         Path document = context.repoRoot().resolve("src/domain").resolve(featureName).resolve("DOMAIN.md");
         if (!Files.isRegularFile(document)) {
             return null;
         }
         try {
-            List<String> declaredTypes = declaredDomainContextTypes(Files.readString(document, StandardCharsets.UTF_8));
-            return declaredTypes.size() == 1 ? declaredTypes.getFirst() : null;
+            List<String> declaredRoles = declaredDomainContextRoles(Files.readString(document, StandardCharsets.UTF_8));
+            return declaredRoles.size() == 1 ? declaredRoles.getFirst() : null;
         } catch (IOException ignored) {
             return null;
         }
@@ -183,31 +204,25 @@ final class DomainFeatureRules implements ArchitectureRule {
                 continue;
             }
 
-            List<String> declaredTypes = declaredDomainContextTypes(content);
-            if (declaredTypes.size() != 1) {
+            List<String> declaredRoles = declaredDomainContextRoles(content);
+            if (declaredRoles.size() != 1) {
                 violations.add(documentPath, "domain-context-shape-declared",
-                        "DOMAIN.md must contain exactly one context marker: 'Context Type: Policy-Owning Bounded Context'"
-                                + " or 'Context Type: Supporting Read-Model Context'.");
+                        "DOMAIN.md must contain exactly one context marker: 'Context Role: <role>'. Allowed roles: "
+                                + String.join(", ", DOMAIN_CONTEXT_ROLES) + ".");
                 continue;
             }
 
-            if ("Supporting Read-Model Context".equals(declaredTypes.getFirst())
-                    && !hasNonEmptySection(content, "## Read-Model Boundary")) {
-                violations.add(documentPath, "domain-supporting-context-rationale",
-                        "Supporting read-model contexts must include a non-empty '## Read-Model Boundary' rationale section.");
+            String role = declaredRoles.getFirst();
+            if (Set.of("Roster Truth Context", "Authored World-Space Context").contains(role)) {
+                validateAggregateOwningContextDocument(context, featureName, documentPath, content, violations);
             }
-            if ("Supporting Read-Model Context".equals(declaredTypes.getFirst())
-                    && !hasNonEmptySection(content, "## Promotion Triggers")) {
-                violations.add(documentPath, "domain-supporting-context-promotion-triggers",
-                        "Supporting read-model contexts must include a non-empty '## Promotion Triggers' section.");
-            }
-            if ("Policy-Owning Bounded Context".equals(declaredTypes.getFirst())) {
-                validatePolicyContextDocument(context, featureName, documentPath, content, violations);
+            if ("Generation Policy Context".equals(role)) {
+                validateGenerationPolicyContextDocument(documentPath, content, violations);
             }
         }
     }
 
-    private void validatePolicyContextDocument(
+    private void validateAggregateOwningContextDocument(
             ArchitectureContext context,
             String featureName,
             String documentPath,
@@ -215,8 +230,8 @@ final class DomainFeatureRules implements ArchitectureRule {
             ViolationSink violations) {
         for (String heading : POLICY_CONTEXT_REQUIRED_SECTIONS) {
             if (!hasNonEmptySection(content, heading)) {
-                violations.add(documentPath, "domain-policy-context-required-sections",
-                        "Policy-owning bounded contexts must include a non-empty '" + heading + "' section.");
+                violations.add(documentPath, "domain-role-context-required-sections",
+                        "Aggregate-owning domain roles must include a non-empty '" + heading + "' section.");
             }
         }
 
@@ -225,7 +240,7 @@ final class DomainFeatureRules implements ArchitectureRule {
         if (aggregateRoots.isEmpty()) {
             if (!writeModelNone || !hasNonEmptySection(content, "## Ephemeral Policy Rationale")) {
                 violations.add(documentPath, "domain-aggregate-marker-shape",
-                        "Policy-owning contexts must declare 'Aggregate Root: <TypeName>' for an existing named-module type,"
+                        "Aggregate-owning domain roles must declare 'Aggregate Root: <TypeName>' for an existing module role type,"
                                 + " or declare 'Write Model: None' plus a non-empty '## Ephemeral Policy Rationale'.");
             }
             return;
@@ -236,8 +251,25 @@ final class DomainFeatureRules implements ArchitectureRule {
                 violations.add(documentPath, "domain-aggregate-marker-shape",
                         "Declared aggregate root '" + aggregateRoot
                                 + "' must exist as a Java type under src/domain/" + featureName
-                                + "/<named-domain-module>/, not under api/, application/, or the feature root.");
+                                + "/<named-domain-module>/<role>/, not under published/, application/, or the feature root.");
             }
+        }
+    }
+
+    private void validateGenerationPolicyContextDocument(
+            String documentPath,
+            String content,
+            ViolationSink violations) {
+        for (String heading : GENERATION_POLICY_REQUIRED_SECTIONS) {
+            if (!hasNonEmptySection(content, heading)) {
+                violations.add(documentPath, "domain-generation-policy-required-sections",
+                        "Generation policy contexts must include a non-empty '" + heading + "' section.");
+            }
+        }
+        if (WRITE_MODEL_NONE_PATTERN.matcher(content).find()
+                && !hasNonEmptySection(content, "## Ephemeral Policy Rationale")) {
+            violations.add(documentPath, "domain-generation-policy-ephemeral-rationale",
+                    "Generation policy contexts with no write model must include a non-empty '## Ephemeral Policy Rationale' section.");
         }
     }
 
@@ -250,13 +282,13 @@ final class DomainFeatureRules implements ArchitectureRule {
         return aggregateRoots.stream().sorted().toList();
     }
 
-    private static List<String> declaredDomainContextTypes(String content) {
+    private static List<String> declaredDomainContextRoles(String content) {
         List<String> result = new ArrayList<>();
-        for (String type : DOMAIN_CONTEXT_TYPES) {
-            Matcher matcher = Pattern.compile("(?m)^\\s*Context Type:\\s+" + Pattern.quote(type) + "\\s*$")
+        for (String role : DOMAIN_CONTEXT_ROLES) {
+            Matcher matcher = Pattern.compile("(?m)^\\s*Context Role:\\s+" + Pattern.quote(role) + "\\s*$")
                     .matcher(content);
             while (matcher.find()) {
-                result.add(type);
+                result.add(role);
             }
         }
         return result.stream().sorted().toList();

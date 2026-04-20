@@ -162,9 +162,10 @@ Dependencies point inward:
 
 - bootstrap depends on shell contracts and discovery mechanics
 - shell depends on shell-owned contracts and generic runtime hosting
-- contributions use allowed shell API surface and domain public boundaries
-- ViewModels use domain public boundaries and expose bindable presentation
-  state
+- contributions use allowed shell API surface and domain application-service
+  roots
+- ViewModels use domain application-service roots and published carriers, then
+  expose bindable presentation state
 - passive Views stay below ViewModels and do not use shell or domain APIs
 - domain and data stay independent from shell implementation
 

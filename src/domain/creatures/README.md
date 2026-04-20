@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-20
 Source of Truth: Entry point and document map for the creatures feature.
 
 # Creatures Feature README
@@ -14,7 +14,7 @@ Its public backend surface is split into:
 
 - `src/domain/creatures/CreaturesApplicationService.java` as the creatures
   application-service root
-- `src/domain/creatures/api/` for public query, result, status, and payload
+- `src/domain/creatures/published/` for public query, result, status, and payload
   types consumed by view and domain callers
 - `src/domain/creatures/application/` plus the owning domain modules for the
   feature's exported supporting read-model coordination and contracts

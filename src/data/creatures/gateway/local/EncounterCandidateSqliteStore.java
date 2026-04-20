@@ -1,7 +1,7 @@
 package src.data.creatures.gateway.local;
 
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,7 +28,7 @@ final class EncounterCandidateSqliteStore {
 
     List<EncounterCandidateRecord> loadEncounterCandidates(
             Connection connection,
-            CreatureCatalogQueryPort.EncounterCandidateSpec spec
+            CreatureCatalogRepository.EncounterCandidateSpec spec
     ) throws SQLException {
         CreatureFilterTempTables.prepareEncounterFilters(connection, spec);
         try (PreparedStatement statement = connection.prepareStatement(LOAD_ENCOUNTER_CANDIDATES_SQL)) {

@@ -4,7 +4,7 @@ import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 /**
  * Root service entrypoint for the creatures feature.
@@ -18,11 +18,11 @@ public final class CreaturesServiceContribution implements ServiceContribution {
 
     @Override
     public void register(ServiceRegistry.Builder builder) {
-        CreatureCatalogQueryPort queryPort =
+        CreatureCatalogRepository queryPort =
                 new SqliteCreatureCatalogQueryAdapter();
         CreaturesApplicationService applicationService = new CreaturesApplicationService(queryPort);
         builder.register(
-                CreatureCatalogQueryPort.class,
+                CreatureCatalogRepository.class,
                 queryPort);
         builder.register(
                 CreaturesApplicationService.class,

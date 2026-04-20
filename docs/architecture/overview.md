@@ -46,9 +46,9 @@ tools/       build infrastructure, quality platforms, and engineering scripts
   not bootstrap discovery.
 - `src/view/views/` owns reusable generic passive JavaFX views shared by
   multiple contribution roots.
-- `src/domain/<feature>/` owns business meaning, invariants, policy decisions,
-  aggregates, application services, exported boundary types, and named domain
-  modules inside one bounded context.
+- `src/domain/<context>/` owns fachliche truth, invariants, policy decisions,
+  aggregates, application services, published language, and role-explicit
+  domain modules inside one real domain context.
 - `src/data/<feature>/` owns persistence and external-system adapters.
 - `src/data/persistencecore/` holds shared SQLite infrastructure reused by
   multiple persistence features without becoming an application-service
@@ -62,27 +62,23 @@ Feature documentation follows the same ownership model. System-wide documents
 stay in `docs/`, compatibility stubs live in `docs/compat/`, and feature
 documents live next to the feature code they describe.
 
-## Domain Context Map
+## Domain Context Relationships
 
-- `creatures`: Supporting Read-Model Context. Exports creature catalog search,
-  detail lookup, filter options, and encounter-candidate projections to
-  downstream policy contexts. It does not own encounter balancing or creature
-  write-model policy.
-- `dungeon`: Policy-Owning Bounded Context. Owns authored dungeon-map truth,
-  identity-preserving map mutation policy, derived-state rebuild rules, and
-  repository contracts for persisted maps. It publishes map snapshots and
-  summaries through its application-service and `api/` boundary.
-- `encounter`: Policy-Owning Bounded Context with no persisted v1 write model.
-  Consumes `party` and `creatures` through their application services and
-  public API carriers, then owns runtime encounter balancing, candidate
-  ranking, locks, and generated-encounter policy.
-- `mapcore`: Supporting Read-Model Context. Exports topology-neutral map
-  projection contracts shared by map-owning contexts. It does not own authored
-  dungeon, travel, or map mutation policy.
-- `party`: Policy-Owning Bounded Context. Owns party roster truth, membership,
-  XP progression, rest cadence, and adventuring-day policy. Downstream contexts
-  consume party state only through the party application-service and `api/`
-  carriers.
+- `party`: Roster Truth Context. Owns party roster truth, membership, XP
+  progression, rest cadence, and adventuring-day policy.
+- `creatures`: Reference Catalog Context. Exports imported creature catalog
+  lookup language, detail records, filters, and encounter-candidate reference
+  profiles. It does not own encounter balancing or creature lifecycle truth.
+- `encounter`: Generation Policy Context. Consumes `party` and `creatures`
+  through their application services and published language, then owns runtime
+  encounter generation, candidate narrowing, ranking, locks, and composition
+  policy.
+- `dungeon`: Authored World-Space Context. Owns authored dungeon map/world
+  truth, topology, rooms/spaces, connections, identity, and map mutation rules.
+  It publishes fachliche map/world facts through `published/`.
+
+`mapcore` is removed from the domain layer. Reusable map render input is a view
+display-model concern, not a domain context.
 
 ## Dependency Direction
 
@@ -94,11 +90,11 @@ Dependencies point inward toward the application core:
 - bootstrap depends on shell contracts.
 - shell owns generic cockpit hosting and must not import feature code.
 - view contributions reach shell public contracts, own ViewModels, own Views,
-  and domain application services.
+  and domain application-service roots.
 - ViewModels own presentation state and call domain application services.
 - passive Views render ViewModel state and emit user gestures without shell,
   domain, data, or ApplicationService dependencies.
-- domain code owns business rules and domain-owned ports.
+- domain code owns business rules, published language, and domain-owned ports.
 - data code implements domain-owned contracts and externalizes infrastructure
   details.
 

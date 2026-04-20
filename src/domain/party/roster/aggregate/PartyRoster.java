@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import src.domain.party.roster.entity.PartyCharacter;
-import src.domain.party.roster.policy.PartyCharacterDraftValidator;
-import src.domain.party.roster.policy.PartyLevelProgression;
-import src.domain.party.roster.policy.PartyRosterMutations;
-import src.domain.party.roster.policy.PartyRosterXpAllocator;
+import src.domain.party.roster.policy.PartyCharacterDraftValidationPolicy;
+import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
+import src.domain.party.roster.policy.PartyRosterMutationPolicy;
+import src.domain.party.roster.policy.PartyRosterXpAllocationPolicy;
 import src.domain.party.roster.value.PartyCharacterCombatProfile;
 import src.domain.party.roster.value.PartyCharacterDraft;
 import src.domain.party.roster.value.PartyCharacterIdentity;
@@ -21,9 +21,9 @@ public final class PartyRoster {
 
     private final long nextCharacterId;
     private final List<PartyCharacter> characters;
-    private final PartyCharacterDraftValidator draftValidator = new PartyCharacterDraftValidator();
-    private final PartyRosterMutations mutations = new PartyRosterMutations();
-    private final PartyRosterXpAllocator xpAllocator = new PartyRosterXpAllocator();
+    private final PartyCharacterDraftValidationPolicy draftValidator = new PartyCharacterDraftValidationPolicy();
+    private final PartyRosterMutationPolicy mutations = new PartyRosterMutationPolicy();
+    private final PartyRosterXpAllocationPolicy xpAllocator = new PartyRosterXpAllocationPolicy();
 
     public PartyRoster(long nextCharacterId, List<PartyCharacter> characters) {
         this.nextCharacterId = Math.max(1L, nextCharacterId);
@@ -56,7 +56,7 @@ public final class PartyRoster {
                 new PartyCharacterIdentity(draft.name(), draft.playerName()),
                 new PartyCharacterProgress(
                         draft.level(),
-                        PartyLevelProgression.minimumXpForLevel(draft.level()),
+                        PartyLevelProgressionPolicy.minimumXpForLevel(draft.level()),
                         0,
                         0,
                         0),
@@ -96,7 +96,7 @@ public final class PartyRoster {
     }
 
     public MutationResult awardXp(List<Long> ids, int xpPerCharacter) {
-        PartyRosterXpAllocator.Result awardResult = xpAllocator.apply(characters, ids, xpPerCharacter);
+        PartyRosterXpAllocationPolicy.Result awardResult = xpAllocator.apply(characters, ids, xpPerCharacter);
         if (!awardResult.validRequest()) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }

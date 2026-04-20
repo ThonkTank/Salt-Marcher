@@ -144,7 +144,7 @@ final class SaltMarcherSourceFacts {
     boolean isNamedDomainModuleSource() {
         return isDomainSource()
                 && segments.size() >= 5
-                && !Set.of("api", "application").contains(segments.get(3));
+                && !Set.of("published", "application").contains(segments.get(3));
     }
 
     boolean isDataSource() {

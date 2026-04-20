@@ -85,7 +85,7 @@ controls; reusable generic views live under `src/view/views`.
   contracts, their co-located ViewModel, co-located passive views, reusable
   generic passive views, detail-entry ViewModels and passive views for
   shell-owned Inspector publication, JavaFX scene `Node`, domain root
-  application services, domain `api` carriers, and ordinary
+  application-service roots and ordinary
   non-infrastructure JDK support types, but not data, bootstrap, shell host
   internals, legacy view topology, foreign non-detail view roots, private
   domain internals, or direct JDK infrastructure ownership through Error Prone
@@ -167,8 +167,8 @@ Mechanical trace:
 - Contributions may use shell public contracts, co-located ViewModels,
   co-located passive views, reusable generic passive views, detail-entry
   ViewModels and passive views for shell-owned Inspector publication, JavaFX
-  `Node`, domain application-service roots, domain `api` carriers, and ordinary
-  non-infrastructure JDK support types.
+  `Node`, domain application-service roots, and ordinary non-infrastructure JDK
+  support types.
 - Optional FXML resources stay in the view resource tree, use matching passive
   View controllers, and do not use inline scripts.
 - Details/history publication goes through shell-owned contracts.
@@ -176,8 +176,9 @@ Mechanical trace:
 - State-pane precedence is explicit: active left-bar tab content wins while
   present; otherwise registered state-pane tabs are shown.
 - Legacy component-local buckets are absent from migrated target code.
-- `src.domain.<feature>.api/**` stays carrier-only, while the callable model
-  boundary is the root application service.
+- Domain `published/` carriers stay carrier-only, while the callable model
+  boundary is the root application service. Translation from published domain
+  facts into reusable display models belongs in ViewModels.
 
 `Candidate`:
 
@@ -230,22 +231,19 @@ Mechanical trace:
 
 `Enforced`:
 
-- `domain-layout`, `domain-root-presence`, `domain-top-level-role-bucket-ban`,
-  `domain-module-name-shape`, `domain-api-no-backend-port-contracts`,
-  `domain-application-no-backend-port-contracts`,
-  `domain-context-document-presence`, `domain-context-shape-declared`,
-  `domain-supporting-context-rationale`, `domain-context-map-complete`,
-  `domain-context-map-role-matches`,
-  `domain-policy-context-required-sections`, `domain-aggregate-marker-shape`,
-  and `domain-supporting-context-promotion-triggers` via `build-harness`
-  (`:build-harness:check`). These checks cover root application-service
-  presence, the direct `api/` and `application/` allowances, lower-case named
-  domain-module package shape, bans on technical role buckets, backend-port
-  contract exclusion from `api/` and `application/`, and the required
-  `DOMAIN.md` context marker plus supporting read-model rationale, promotion
-  triggers, policy-context tactical sections, aggregate-root markers, the
-  domain-layer-standard context-map listing for every domain feature, and
-  context-map role text matching each feature's declared context marker.
+- `domain-layout`, `domain-root-presence`, `domain-api-bucket-removed`,
+  `domain-published-direct-files`, `domain-published-no-backend-port-contracts`,
+  `domain-application-usecase-shape`, `domain-module-role-package-required`,
+  `domain-module-direct-java-file-ban`, `domain-role-package-name-allowlist`,
+  `domain-role-package-java-file-shape`, `domain-context-role-declared`,
+  `domain-context-role-coverage`, and `domain-mapcore-removed` via
+  `build-harness` (`:build-harness:check`). These checks cover root
+  application-service presence, the direct `published/` and `application/`
+  allowances, lower-case named domain-module package shape, tactical role
+  subpackages, backend-port contract exclusion from `published/` and
+  `application/`, required `DOMAIN.md` `Context Role:` markers, the
+  domain-layer-standard context-role listing, and the blocking absence of
+  `src/domain/mapcore`.
 - `domain-outer-layer-independence`,
   `domain-foreign-feature-public-seams-only`, and
   `domain-feature-cycle-freedom`, and `domain-subpackage-cycle-freedom` via
@@ -259,7 +257,7 @@ Mechanical trace:
   normalization review-owned; the setter-style check blocks public/protected
   JavaBean-style `void setX(...)` mutation methods in named domain modules.
 - `domain-public-boundary-no-private-or-outer-signature-leaks`: public
-  operational members on `*ApplicationService` roots and public `api/`
+  operational members on `*ApplicationService` roots and public `published/`
   signatures stay free of outer-layer types, foreign private domain types, and
   same-feature internal domain-module types via `Error Prone` (`compileJava`).
 - `domain-root-constructor-port-composition`: public/protected root
@@ -268,20 +266,16 @@ Mechanical trace:
   interfaces and public domain boundaries, but must not expose outer-layer
   types, foreign private domain types, or same-feature concrete application
   and model collaborators via `Error Prone` (`compileJava`).
-- `domain-module-no-api-carrier-dependency`: named domain modules may not
-  depend on same-feature API command, query, result, draft, snapshot, page,
-  detail, options, or payload carriers via `Error Prone` (`compileJava`).
-- `domain-public-concrete-type-shape`: public concrete named-module domain
-  types must be records, enums, final classes, or sealed abstractions via
+- `domain-module-no-published-carrier-dependency`: named domain modules may not
+  depend on same-context `published/` command, query, result, draft, snapshot,
+  page, detail, options, or payload carriers via `Error Prone` (`compileJava`).
+- `domain-role-shape`: role packages enforce aggregate final-class roots,
+  entity final classes, value records/enums/sealed abstractions/final immutable
+  classes, repository interfaces ending `Repository`, stateless policy/factory/
+  service classes with role suffixes, and record events ending `Event` via
   `Error Prone` (`compileJava`).
-- `domain-module-field-purity`: public concrete named-module domain types must
-  not expose non-final instance fields or mutable public static fields via
-  `Error Prone` (`compileJava`).
-- `domain-api-carrier-shape`: public `api/` types must be records, enums, or
-  sealed abstractions via `Error Prone` (`compileJava`).
-- `domain-service-factory-statelessness`: named-module domain types ending in
-  `Service` or `Factory` must not declare instance fields via `Error Prone`
-  (`compileJava`).
+- `domain-published-carrier-shape`: public `published/` types must be records,
+  enums, or sealed abstractions via `Error Prone` (`compileJava`).
 
 `Candidate`:
 
@@ -294,14 +288,13 @@ Mechanical trace:
 - Object-centred placement, named-module cohesion and ubiquitous-language
   naming beyond package-shape checks and required document sections,
   application-layer thinness beyond direct infrastructure composition,
-  `api/` carrier-only discipline beyond shape and same-feature carrier
-  dependency checks, semantic business-rule leakage, aggregate mutation semantics,
-  true-invariant placement inside one aggregate, small and coherent aggregate
-  boundaries, reference-by-identity and eventual-consistency choices, broad
-  mutable object graphs across aggregates, one-aggregate-per-transaction,
-  supporting read-model justification, declared context classification quality,
-  domain-service/factory naming quality, and boundary/query normalization that
-  does not own domain policy.
+  `published/` carrier-only discipline beyond shape and same-context carrier
+  dependency checks, semantic business-rule leakage, aggregate mutation
+  semantics, true-invariant placement inside one aggregate, small and coherent
+  aggregate boundaries, reference-by-identity and eventual-consistency choices,
+  broad mutable object graphs across aggregates, one-aggregate-per-transaction,
+  declared context-role quality, domain-service/factory naming quality, and
+  boundary/query normalization that does not own domain policy.
 
 ## Data Layer
 
@@ -464,7 +457,7 @@ Mechanical trace against the data-layer standard:
 - `system-view-no-data-shortcut` and
   `system-view-domain-public-boundary-only`: view code may not reach
   `bootstrap/**` or `src.data/**`, and may depend on domain only through
-  application-service roots and public `api/` carriers through `ArchUnit`
+  application-service roots and public `published/` carriers through `ArchUnit`
   rules `viewMustNotReachBootstrapOrData` and
   `viewImplementationMustOnlyUseDomainRootsAndApis` (`architectureTest`) plus
   the view-layer `Error Prone` checks (`compileJava`).
@@ -501,7 +494,7 @@ Mechanical trace against the data-layer standard:
   registrations into `ServiceRegistry.Builder` are allowed only in data
   `*ServiceContribution` roots via `Error Prone` (`compileJava`).
 - `system-domain-boundary-carrier-purity`: public domain application-service
-  and `api/` signatures must not leak outer-layer, foreign private domain, or
+  and `published/` signatures must not leak outer-layer, foreign private domain, or
   same-feature internal domain-module types via `Error Prone` (`compileJava`).
 - `system-data-boundary-carrier-purity`: public/protected gateway return types
   must not expose domain-facing return types, and public/protected
@@ -694,9 +687,10 @@ Runtime guards outside the build-blocking harness:
   (`:build-harness:check`, `checkViewArchitecture`, `architectureTest`,
   `pmdArchitectureMain`, and `compileJava`).
 - `repository-domain-feature-layout`: domain root application-service
-  presence, direct `api/` and `application/` allowances, named-module package
-  shape, role-bucket bans, backend-port placement, and required context markers
-  are enforced by `build-harness` (`:build-harness:check`).
+  presence, direct `published/` and `application/` allowances, named-module
+  package shape, role package placement, domain `api/` removal, backend-port
+  placement, required context-role markers, and `mapcore` removal are enforced
+  by `build-harness` (`:build-harness:check`).
 - `repository-data-feature-layout`: data root service-contribution presence,
   allowed `repository/`, `query/`, `gateway/local/`, `gateway/remote/`,
   `model/`, `mapper/`, and `persistencecore/` placement, schema declaration

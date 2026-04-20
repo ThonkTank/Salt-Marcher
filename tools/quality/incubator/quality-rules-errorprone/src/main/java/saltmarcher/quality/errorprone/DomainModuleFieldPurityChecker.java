@@ -23,7 +23,7 @@ public final class DomainModuleFieldPurityChecker extends BugChecker
         implements BugChecker.ClassTreeMatcher {
 
     private static final Pattern NAMED_DOMAIN_MODULE_PACKAGE =
-            Pattern.compile("^src\\.domain\\.[^.]+\\.((?!api$|application$)[^.]+)(\\..*)?$");
+            Pattern.compile("^src\\.domain\\.[^.]+\\.((?!published$|application$)[^.]+)(\\..*)?$");
 
     @Override
     public Description matchClass(ClassTree tree, VisitorState state) {

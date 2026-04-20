@@ -1,19 +1,16 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.DungeonCorridorAggregate;
-import src.domain.dungeon.map.DungeonDerivedState;
-import src.domain.dungeon.map.DungeonDocument;
-import src.domain.dungeon.map.DungeonDoorPrimitive;
-import src.domain.dungeon.map.DungeonPrimitive;
-import src.domain.dungeon.map.DungeonRelationGraph;
-import src.domain.dungeon.map.DungeonRoomAggregate;
-import src.domain.dungeon.map.DungeonWallPrimitive;
-import src.domain.dungeon.map.DungeonCell;
-import src.domain.dungeon.published.DungeonAreaKind;
-import src.domain.dungeon.published.DungeonAreaSnapshot;
-import src.domain.dungeon.published.DungeonBoundarySnapshot;
-import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonMapSnapshot;
+import src.domain.dungeon.map.entity.DungeonAggregate;
+import src.domain.dungeon.map.entity.DungeonPrimitive;
+import src.domain.dungeon.map.value.DungeonAreaFacts;
+import src.domain.dungeon.map.value.DungeonAreaType;
+import src.domain.dungeon.map.value.DungeonBoundaryFacts;
+import src.domain.dungeon.map.value.DungeonRelationGraph;
+import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonDerivedState;
+import src.domain.dungeon.map.value.DungeonDocument;
+import src.domain.dungeon.map.value.DungeonEdge;
+import src.domain.dungeon.map.value.DungeonMapFacts;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,13 +25,17 @@ public final class BuildDungeonDerivedStateUseCase {
     public DungeonDerivedState execute(DungeonDocument document) {
         List<DungeonCell> roomCells = buildRoomCells(document);
         List<DungeonCell> corridorCells = buildCorridorCells(document);
-        DungeonRoomAggregate room = new DungeonRoomAggregate(1L, "Entry Hall", roomCells);
-        DungeonCorridorAggregate corridor = new DungeonCorridorAggregate(2L, "South Corridor", corridorCells);
-        DungeonDoorPrimitive door = new DungeonDoorPrimitive(100L, "Oak Door", new DungeonEdgeRef(roomCells.get(3).toCellRef(), corridorCells.getFirst().toCellRef()));
+        DungeonAggregate room = new DungeonAggregate(1L, DungeonAreaType.ROOM, "Entry Hall", roomCells);
+        DungeonAggregate corridor = new DungeonAggregate(2L, DungeonAreaType.CORRIDOR, "South Corridor", corridorCells);
+        DungeonPrimitive door = new DungeonPrimitive(
+                100L,
+                DOOR_KIND,
+                "Oak Door",
+                new DungeonEdge(roomCells.get(3), corridorCells.getFirst()));
 
-        List<DungeonWallPrimitive> walls = List.of(
-                new DungeonWallPrimitive(200L, new DungeonEdgeRef(roomCells.getFirst().toCellRef(), roomCells.get(1).toCellRef())),
-                new DungeonWallPrimitive(201L, new DungeonEdgeRef(roomCells.get(2).toCellRef(), roomCells.get(3).toCellRef()))
+        List<DungeonPrimitive> walls = List.of(
+                new DungeonPrimitive(200L, "wall", "North Wall", new DungeonEdge(roomCells.getFirst(), roomCells.get(1))),
+                new DungeonPrimitive(201L, "wall", "South Wall", new DungeonEdge(roomCells.get(2), roomCells.get(3)))
         );
 
         DungeonRelationGraph relations = new DungeonRelationGraph(
@@ -47,29 +48,25 @@ public final class BuildDungeonDerivedStateUseCase {
                 )
         );
 
-        DungeonMapSnapshot map = new DungeonMapSnapshot(
+        DungeonMapFacts map = new DungeonMapFacts(
                 document.topology(),
                 document.width(),
                 document.height(),
                 List.of(
-                        new DungeonAreaSnapshot(DungeonAreaKind.ROOM, room.id(), room.label(),
-                                roomCells.stream().map(DungeonCell::toCellRef).toList()),
-                        new DungeonAreaSnapshot(DungeonAreaKind.CORRIDOR, corridor.id(), corridor.label(),
-                                corridorCells.stream().map(DungeonCell::toCellRef).toList())
+                        new DungeonAreaFacts(room.kind(), room.id(), room.label(), room.cells()),
+                        new DungeonAreaFacts(corridor.kind(), corridor.id(), corridor.label(), corridor.cells())
                 ),
                 List.of(
-                        new DungeonBoundarySnapshot(DOOR_KIND, door.id(), door.label(), door.edge()),
-                        new DungeonBoundarySnapshot("wall", walls.getFirst().id(), "North Wall", walls.getFirst().edge()),
-                        new DungeonBoundarySnapshot("wall", walls.get(1).id(), "South Wall", walls.get(1).edge())
+                        new DungeonBoundaryFacts(door.kind(), door.id(), door.label(), door.edge()),
+                        new DungeonBoundaryFacts(walls.getFirst().kind(), walls.getFirst().id(), walls.getFirst().label(), walls.getFirst().edge()),
+                        new DungeonBoundaryFacts(walls.get(1).kind(), walls.get(1).id(), walls.get(1).label(), walls.get(1).edge())
                 )
         );
 
-        List<Object> primitives = new ArrayList<>();
+        List<DungeonPrimitive> primitives = new ArrayList<>();
         primitives.add(door);
         primitives.addAll(walls);
-        return new DungeonDerivedState(map, List.of(room, corridor), primitives.stream()
-                .map(DungeonPrimitive.class::cast)
-                .toList(), relations);
+        return new DungeonDerivedState(map, List.of(room, corridor), primitives, relations);
     }
 
     private List<DungeonCell> buildRoomCells(DungeonDocument document) {

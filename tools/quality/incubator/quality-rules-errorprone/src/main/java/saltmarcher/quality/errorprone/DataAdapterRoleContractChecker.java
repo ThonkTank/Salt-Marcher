@@ -57,7 +57,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
                 if (!contract.featureName().equals(role.featureName())) {
                     violations.add(role.diagnosticName + " adapter depends on foreign domain contract "
                             + contract.qualifiedName());
-                } else if (contract.role() != role.contractRole()) {
+                } else if (!role.acceptsContractRole(contract.role())) {
                     violations.add(role.diagnosticName + " adapter depends on wrong domain contract role "
                             + contract.qualifiedName());
                 }
@@ -142,7 +142,12 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
         }
 
         private boolean isOwnExpectedContract(DomainContract contract) {
-            return contract.featureName().equals(featureName) && contract.role() == contractRole;
+            return contract.featureName().equals(featureName) && acceptsContractRole(contract.role());
+        }
+
+        private boolean acceptsContractRole(ContractRole candidateRole) {
+            return candidateRole == contractRole
+                    || ("Query".equals(diagnosticName) && candidateRole == ContractRole.REPOSITORY);
         }
     }
 

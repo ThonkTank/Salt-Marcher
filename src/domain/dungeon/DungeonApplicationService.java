@@ -13,44 +13,78 @@ import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.published.SearchMapsQuery;
-import src.domain.dungeon.application.DungeonDefaultApplicationServices;
+import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.application.BuildDungeonDerivedStateUseCase;
+import src.domain.dungeon.application.CreateDungeonMapUseCase;
+import src.domain.dungeon.application.DeleteDungeonMapUseCase;
+import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
+import src.domain.dungeon.application.LoadMapSnapshotUseCase;
+import src.domain.dungeon.application.MapDungeonFactsUseCase;
+import src.domain.dungeon.application.SearchDungeonMapsUseCase;
+import src.domain.dungeon.map.repository.DungeonDocumentRepository;
+import src.domain.dungeon.map.repository.DungeonMapRepository;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Public dungeon feature facade used by editor and travel interactors.
  */
 public final class DungeonApplicationService {
 
+    private final DungeonDocumentRepository documentRepository;
+    private final LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase;
+    private final ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase;
+    private final SearchDungeonMapsUseCase searchDungeonMapsUseCase;
+    private final CreateDungeonMapUseCase createDungeonMapUseCase;
+    private final DeleteDungeonMapUseCase deleteDungeonMapUseCase;
+    private final LoadMapSnapshotUseCase loadMapSnapshotUseCase;
+    private final MapDungeonFactsUseCase mapper = new MapDungeonFactsUseCase();
+
+    public DungeonApplicationService(
+            DungeonMapRepository mapRepository,
+            DungeonDocumentRepository documentRepository
+    ) {
+        DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
+        this.documentRepository = Objects.requireNonNull(documentRepository, "documentRepository");
+        BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
+        this.loadDungeonSnapshotUseCase = new LoadDungeonSnapshotUseCase(this.documentRepository, derive);
+        this.applyDungeonEditorOperationUseCase = new ApplyDungeonEditorOperationUseCase(this.documentRepository, derive);
+        this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(repository, this.documentRepository);
+        this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository, this.documentRepository);
+        this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository, this.documentRepository);
+        this.loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(repository, this.documentRepository, derive);
+    }
+
     public DungeonSnapshot loadSnapshot() {
-        return DungeonDefaultApplicationServices.loadSnapshot();
+        return loadDungeonSnapshotUseCase.execute();
     }
 
     public DungeonOperationResult applyOperation(DungeonEditorOperation operation) {
-        return DungeonDefaultApplicationServices.applyOperation(operation);
+        return applyDungeonEditorOperationUseCase.execute(operation);
     }
 
     public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
-        return DungeonDefaultApplicationServices.describeSelection(ownerKind, ownerId);
+        return loadDungeonSnapshotUseCase.describeSelection(ownerKind, ownerId);
     }
 
     public List<DungeonMapSummary> searchMaps(SearchMapsQuery query) {
-        return DungeonDefaultApplicationServices.searchMaps(query);
+        return searchDungeonMapsUseCase.execute(query);
     }
 
     public CreateDungeonMapResult createMap(CreateDungeonMapCommand command) {
-        return DungeonDefaultApplicationServices.createMap(command);
+        return createDungeonMapUseCase.execute(command);
     }
 
     public DeleteDungeonMapResult deleteMap(DeleteDungeonMapCommand command) {
-        return DungeonDefaultApplicationServices.deleteMap(command);
+        return deleteDungeonMapUseCase.execute(command);
     }
 
     public BaseMapSnapshot loadMapSnapshot(LoadMapSnapshotQuery query) {
-        return DungeonDefaultApplicationServices.loadMapSnapshot(query);
+        return loadMapSnapshotUseCase.execute(query);
     }
 
     public void activateMap(DungeonMapId mapId, String mapName) {
-        DungeonDefaultApplicationServices.activateMap(mapId, mapName);
+        documentRepository.activateMap(mapper.toDomainIdentity(mapId), mapName);
     }
 }

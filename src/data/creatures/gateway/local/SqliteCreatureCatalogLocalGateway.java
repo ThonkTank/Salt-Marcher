@@ -5,7 +5,7 @@ import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureDetailRecord;
 import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -44,7 +44,7 @@ public final class SqliteCreatureCatalogLocalGateway {
         }
     }
 
-    public CreatureCatalogPageRecord searchCatalog(CreatureCatalogQueryPort.CatalogSearchSpec spec) {
+    public CreatureCatalogPageRecord searchCatalog(CreatureCatalogRepository.CatalogSearchSpec spec) {
         Objects.requireNonNull(spec, "spec");
         try (Connection connection = openReadyConnection()) {
             return catalogSearchStore.searchCatalog(connection, spec);
@@ -64,7 +64,7 @@ public final class SqliteCreatureCatalogLocalGateway {
         }
     }
 
-    public List<EncounterCandidateRecord> loadEncounterCandidates(CreatureCatalogQueryPort.EncounterCandidateSpec spec) {
+    public List<EncounterCandidateRecord> loadEncounterCandidates(CreatureCatalogRepository.EncounterCandidateSpec spec) {
         Objects.requireNonNull(spec, "spec");
         try (Connection connection = openReadyConnection()) {
             return encounterCandidateStore.loadEncounterCandidates(connection, spec);

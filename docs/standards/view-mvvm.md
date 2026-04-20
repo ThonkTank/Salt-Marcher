@@ -19,7 +19,7 @@ fixed cockpit slots without hard-coded feature registries.
 The roles are:
 
 - `Model`: `src/domain/**`, exposed through root `*ApplicationService`
-  boundaries and domain `api/` carriers.
+  boundaries and domain `published/` carriers.
 - `ViewModel`: one presentation model next to its owning contribution or detail
   entry, named `*ViewModel`.
 - `View`: one passive panel, dropdown, or detail view next to its owning
@@ -109,8 +109,8 @@ belongs under `src/view/state`, not under `src/view/tabs`.
 The target source dependency direction is:
 
 ```text
-Contribution -> shell.api + ViewModel + Views + domain ApplicationServices
-ViewModel    -> JavaFX beans/collections + domain ApplicationServices/api
+Contribution -> shell.api + ViewModel + Views + domain ApplicationService roots
+ViewModel    -> JavaFX beans/collections + domain ApplicationServices/published
 View         -> JavaFX UI APIs + narrow callbacks/properties only
 Model        -> no shell, view, JavaFX, or data implementation types
 Shell        -> shell contracts and generic hosting only
@@ -120,7 +120,7 @@ Runtime control may flow through listeners, emitters, bindings, callbacks, and
 activation hooks. Source dependencies still follow the direction above.
 
 Cross-feature backend access goes only through the foreign feature's root
-`*ApplicationService` and exported domain `api/` carrier types.
+`*ApplicationService` and exported domain `published/` carrier types.
 
 JDK dependencies in view-layer roles are allowed only when they are ordinary
 language, value, collection, optional, functional, or formatting support for the
@@ -156,7 +156,7 @@ Allowed dependencies:
 - the contribution's own passive `*View` classes and reusable
   `src.view.views.*`
 - root `src.domain.<feature>.<Feature>ApplicationService`
-- `src.domain.<feature>.api.*` carrier records, enums, and sealed carriers
+- `src.domain.<feature>.published.*` carrier records, enums, and sealed carriers
 - JavaFX `Node` and collection types needed to return bound slot content
 - ordinary JDK language, value, collection, optional, functional, and formatting
   types that do not own infrastructure access
@@ -188,7 +188,7 @@ Allowed dependencies:
 
 - JavaFX beans and collections
 - root `src.domain.<feature>.<Feature>ApplicationService`
-- `src.domain.<feature>.api.*` carrier records, enums, and sealed carriers
+- `src.domain.<feature>.published.*` carrier records, enums, and sealed carriers
 - private nested presentation helper or carrier types declared inside the owning
   `*ViewModel` when they do not become a second ViewModel for the root
 - ordinary JDK language, value, collection, optional, functional, and formatting
@@ -200,7 +200,7 @@ Forbidden dependencies and behavior:
 - `src.view.*View` classes
 - `src.data.*`
 - foreign private domain internals outside root application services and
-  domain `api` carriers
+  domain `published/` carriers
 - additional top-level `*ViewModel` types in the same contribution or detail root
 - view instantiation, slot binding, or bootstrap discovery
 - widget-specific layout and rendering decisions
@@ -252,7 +252,7 @@ Responsibilities:
 - expose exactly one callable client boundary per feature:
   `<Feature>ApplicationService`
 - expose only carrier records, enums, and sealed carrier abstractions under
-  `src/domain/<feature>/api/**`
+  `src/domain/<feature>/published/**`
 
 Forbidden dependencies:
 

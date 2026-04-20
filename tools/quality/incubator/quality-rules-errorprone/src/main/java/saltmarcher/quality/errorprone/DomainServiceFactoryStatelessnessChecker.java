@@ -16,13 +16,13 @@ import javax.lang.model.util.ElementFilter;
 
 @BugPattern(
         name = "DomainServiceFactoryStatelessness",
-        summary = "Named-module domain services and factories must be stateless.",
+        summary = "Named-module domain services, factories, and policies must be stateless.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainServiceFactoryStatelessnessChecker extends BugChecker
         implements BugChecker.ClassTreeMatcher {
 
     private static final Pattern NAMED_DOMAIN_MODULE_PACKAGE =
-            Pattern.compile("^src\\.domain\\.[^.]+\\.((?!api$|application$)[^.]+)(\\..*)?$");
+            Pattern.compile("^src\\.domain\\.[^.]+\\.((?!published$|application$)[^.]+)(\\..*)?$");
 
     @Override
     public Description matchClass(ClassTree tree, VisitorState state) {
@@ -32,7 +32,7 @@ public final class DomainServiceFactoryStatelessnessChecker extends BugChecker
         }
 
         TypeElement typeElement = ASTHelpers.getSymbol(tree);
-        if (typeElement == null || !isDomainServiceOrFactory(typeElement)) {
+        if (typeElement == null || !isDomainServiceFactoryOrPolicy(typeElement)) {
             return Description.NO_MATCH;
         }
 
@@ -49,12 +49,14 @@ public final class DomainServiceFactoryStatelessnessChecker extends BugChecker
         return buildDescription(tree)
                 .setMessage("Named-module domain service/factory '" + typeElement.getQualifiedName()
                         + "' declares instance field(s): " + String.join(", ", instanceFields)
-                        + ". Domain services and factories must be stateless.")
+                        + ". Domain services, factories, and policies must be stateless.")
                 .build();
     }
 
-    private static boolean isDomainServiceOrFactory(TypeElement typeElement) {
+    private static boolean isDomainServiceFactoryOrPolicy(TypeElement typeElement) {
         String simpleName = typeElement.getSimpleName().toString();
-        return simpleName.endsWith("Service") || simpleName.endsWith("Factory");
+        return simpleName.endsWith("Service")
+                || simpleName.endsWith("Factory")
+                || simpleName.endsWith("Policy");
     }
 }

@@ -5,7 +5,7 @@ import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureCatalogRecord;
 import src.domain.creatures.published.CreatureCatalogSortField;
 import src.domain.creatures.published.CreatureSortDirection;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -53,7 +53,7 @@ final class CreatureCatalogSearchSqliteStore {
     private static final String SEARCH_SIZE_DESC_SQL =
             SEARCH_SELECT_SQL + "ORDER BY size DESC, name ASC LIMIT ? OFFSET ?";
 
-    CreatureCatalogPageRecord searchCatalog(Connection connection, CreatureCatalogQueryPort.CatalogSearchSpec spec)
+    CreatureCatalogPageRecord searchCatalog(Connection connection, CreatureCatalogRepository.CatalogSearchSpec spec)
             throws SQLException {
         CreatureFilterTempTables.prepareCatalogFilters(connection, spec);
         try (PreparedStatement statement = CatalogSearchStatement.resolve(
@@ -68,7 +68,7 @@ final class CreatureCatalogSearchSqliteStore {
 
     private CreatureCatalogPageRecord executeSearch(
             PreparedStatement statement,
-            CreatureCatalogQueryPort.CatalogSearchSpec spec
+            CreatureCatalogRepository.CatalogSearchSpec spec
     ) throws SQLException {
         bindSearchParameters(statement, spec);
         List<CreatureCatalogRecord> rows = new ArrayList<>();
@@ -97,7 +97,7 @@ final class CreatureCatalogSearchSqliteStore {
 
     private void bindSearchParameters(
             PreparedStatement statement,
-            CreatureCatalogQueryPort.CatalogSearchSpec spec
+            CreatureCatalogRepository.CatalogSearchSpec spec
     ) throws SQLException {
         String nameQuery = likeSearchTerm(spec.nameQuery());
         bindNullableString(statement, 1, nameQuery);

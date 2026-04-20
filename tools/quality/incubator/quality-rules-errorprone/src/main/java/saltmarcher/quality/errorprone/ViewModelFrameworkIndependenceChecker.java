@@ -79,7 +79,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             return true;
         }
         if (referencedType.startsWith("src.domain.")) {
-            return !ViewArchitectureSupport.isAllowedDomainBoundary(referencedType);
+            return contribution
+                    ? !ViewArchitectureSupport.isAllowedContributionDomainBoundary(referencedType)
+                    : !ViewArchitectureSupport.isAllowedViewModelDomainBoundary(referencedType);
         }
         ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
         if (viewType == null) {

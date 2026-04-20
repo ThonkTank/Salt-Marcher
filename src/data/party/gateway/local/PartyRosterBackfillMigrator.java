@@ -1,7 +1,7 @@
 package src.data.party.gateway.local;
 
-import src.domain.party.roster.policy.PartyAdventuringDayBudget;
-import src.domain.party.roster.policy.PartyLevelProgression;
+import src.domain.party.roster.policy.PartyAdventuringDayBudgetPolicy;
+import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,7 +27,7 @@ final class PartyRosterBackfillMigrator {
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 int normalizedXp = Math.max(
-                        PartyLevelProgression.minimumXpForLevel(resultSet.getInt("level")),
+                        PartyLevelProgressionPolicy.minimumXpForLevel(resultSet.getInt("level")),
                         resultSet.getInt("current_xp"));
                 if (normalizedXp != resultSet.getInt("current_xp")) {
                     updates.add(new IntColumnUpdate(resultSet.getLong("id"), normalizedXp));
@@ -86,8 +86,8 @@ final class PartyRosterBackfillMigrator {
         if (safeLongRestXp == 0 || safeLongRestXp == safeShortRestXp) {
             return 0;
         }
-        int perThirdBudget = PartyAdventuringDayBudget.perThird(level);
-        int secondThreshold = PartyAdventuringDayBudget.afterSecondShortRest(level);
+        int perThirdBudget = PartyAdventuringDayBudgetPolicy.perThird(level);
+        int secondThreshold = PartyAdventuringDayBudgetPolicy.afterSecondShortRest(level);
         if (safeLongRestXp >= secondThreshold && safeShortRestXp < perThirdBudget) {
             return 2;
         }

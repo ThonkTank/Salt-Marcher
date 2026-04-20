@@ -2,24 +2,27 @@ package src.domain.dungeon.application;
 
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DeleteDungeonMapResult;
-import src.domain.dungeon.map.DungeonMapRepository;
+import src.domain.dungeon.map.repository.DungeonDocumentRepository;
+import src.domain.dungeon.map.repository.DungeonMapRepository;
 
 /**
  * Deletes an authored dungeon map aggregate.
  */
-final class DeleteDungeonMapUseCase {
+public final class DeleteDungeonMapUseCase {
 
     private final DungeonMapRepository repository;
-    private final DungeonDocumentStore documentStore;
+    private final DungeonDocumentRepository documentStore;
+    private final MapDungeonFactsUseCase mapper = new MapDungeonFactsUseCase();
 
-    DeleteDungeonMapUseCase(DungeonMapRepository repository, DungeonDocumentStore documentStore) {
+    public DeleteDungeonMapUseCase(DungeonMapRepository repository, DungeonDocumentRepository documentStore) {
         this.repository = repository;
         this.documentStore = documentStore;
     }
 
-    DeleteDungeonMapResult execute(DeleteDungeonMapCommand command) {
-        repository.delete(command.mapId());
-        documentStore.deleteMap(command.mapId());
+    public DeleteDungeonMapResult execute(DeleteDungeonMapCommand command) {
+        var mapIdentity = mapper.toDomainIdentity(command.mapId());
+        repository.delete(mapIdentity);
+        documentStore.deleteMap(mapIdentity);
         return new DeleteDungeonMapResult(command.mapId());
     }
 }

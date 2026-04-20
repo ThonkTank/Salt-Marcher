@@ -17,7 +17,6 @@ import shell.api.ShellSlot;
 import shell.api.ShellTabMode;
 import shell.api.ShellTabSpec;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.published.CreatureFilterOptions;
 import src.view.details.creature.CreatureDetailsView;
 import src.view.details.creature.CreatureDetailsViewModel;
 
@@ -56,7 +55,7 @@ public final class CatalogContribution implements ShellContribution {
         controls.setSortOptions(viewModel.sortOptions().stream().map(CatalogContribution::toControlSort).toList());
         controls.selectSort(viewModel.selectedSortKeyProperty().get());
         controls.selectContent(viewModel.selectedContentProperty().get().key());
-        controls.setCreatureFilterData(toControlFilterData(viewModel.creatureFilterOptionsProperty().get()));
+        controls.setCreatureFilterData(toControlFilterData(viewModel.creatureFilterDataProperty().get()));
         controls.setChips(toControlChips(viewModel.chips()));
 
         controls.countTextProperty().bind(viewModel.countLabelProperty());
@@ -80,7 +79,7 @@ public final class CatalogContribution implements ShellContribution {
 
         viewModel.selectedContentProperty().addListener((obs, oldValue, newValue) -> controls.selectContent(newValue.key()));
         viewModel.selectedSortKeyProperty().addListener((obs, oldValue, newValue) -> controls.selectSort(newValue));
-        viewModel.creatureFilterOptionsProperty().addListener((obs, oldValue, newValue) ->
+        viewModel.creatureFilterDataProperty().addListener((obs, oldValue, newValue) ->
                 controls.setCreatureFilterData(toControlFilterData(newValue)));
         viewModel.chips().addListener((ListChangeListener<CatalogViewModel.FilterChip>) change ->
                 controls.setChips(toControlChips(viewModel.chips())));
@@ -141,8 +140,10 @@ public final class CatalogContribution implements ShellContribution {
         return new CatalogControlsView.SortSelection(selection.key(), selection.label());
     }
 
-    private static CatalogControlsView.CreatureFilterData toControlFilterData(CreatureFilterOptions options) {
-        CreatureFilterOptions safeOptions = options == null ? CreatureFilterOptions.empty() : options;
+    private static CatalogControlsView.CreatureFilterData toControlFilterData(CatalogViewModel.CreatureFilterData options) {
+        CatalogViewModel.CreatureFilterData safeOptions = options == null
+                ? CatalogViewModel.CreatureFilterData.empty()
+                : options;
         return new CatalogControlsView.CreatureFilterData(
                 safeOptions.sizes(),
                 safeOptions.types(),

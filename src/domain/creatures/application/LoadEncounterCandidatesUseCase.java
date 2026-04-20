@@ -2,7 +2,7 @@ package src.domain.creatures.application;
 
 import src.domain.creatures.published.EncounterCandidate;
 import src.domain.creatures.published.EncounterCandidateQuery;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.util.List;
 import java.util.Objects;
@@ -30,16 +30,16 @@ final class LoadEncounterCandidatesUseCase {
     private static final int DEFAULT_LIMIT = 250;
     private static final int MAX_LIMIT = 1000;
 
-    private final CreatureCatalogQueryPort queryPort;
+    private final CreatureCatalogRepository queryPort;
 
-    LoadEncounterCandidatesUseCase(CreatureCatalogQueryPort queryPort) {
+    LoadEncounterCandidatesUseCase(CreatureCatalogRepository queryPort) {
         this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
     }
 
     LoadResult execute(EncounterCandidateQuery query) {
         if (query == null) {
             return new LoadResult(LoadStatus.SUCCESS, queryPort.loadEncounterCandidates(
-                    new CreatureCatalogQueryPort.EncounterCandidateSpec(List.of(), List.of(), List.of(), 0, Integer.MAX_VALUE, DEFAULT_LIMIT)));
+                    new CreatureCatalogRepository.EncounterCandidateSpec(List.of(), List.of(), List.of(), 0, Integer.MAX_VALUE, DEFAULT_LIMIT)));
         }
         int limit = normalizeLimit(query.limit());
         int minimumXp = Math.max(0, query.minimumXp());
@@ -49,7 +49,7 @@ final class LoadEncounterCandidatesUseCase {
         }
         return new LoadResult(
                 LoadStatus.SUCCESS,
-                queryPort.loadEncounterCandidates(new CreatureCatalogQueryPort.EncounterCandidateSpec(
+                queryPort.loadEncounterCandidates(new CreatureCatalogRepository.EncounterCandidateSpec(
                         query.types(),
                         query.subtypes(),
                         query.biomes(),

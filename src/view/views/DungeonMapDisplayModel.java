@@ -1,6 +1,14 @@
 package src.view.views;
 
 import java.util.List;
+import src.domain.dungeon.published.DungeonAreaKind;
+import src.domain.dungeon.published.DungeonAreaSnapshot;
+import src.domain.dungeon.published.DungeonBoundarySnapshot;
+import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
+import src.domain.dungeon.published.DungeonMapSnapshot;
+import src.domain.dungeon.published.DungeonSnapshot;
+import src.domain.dungeon.published.DungeonTopologyKind;
 
 /**
  * Display-owned projection consumed by the reusable dungeon map view.
@@ -42,6 +50,86 @@ public record DungeonMapDisplayModel(
                 RenderTopology.SQUARE,
                 List.of(),
                 List.of());
+    }
+
+    public static DungeonMapDisplayModel empty(String title) {
+        return new DungeonMapDisplayModel(
+                title,
+                "",
+                "",
+                "",
+                "",
+                false,
+                "No dungeon map loaded.",
+                RenderTopology.SQUARE,
+                List.of(),
+                List.of());
+    }
+
+    public static DungeonMapDisplayModel fromDungeonSnapshot(DungeonSnapshot snapshot, String placeholderTitle) {
+        if (snapshot == null) {
+            return empty(placeholderTitle);
+        }
+        DungeonMapSnapshot map = snapshot.map();
+        var renderedCells = map.areas().stream()
+                .flatMap(area -> area.cells().stream().map(cell -> renderCell(area, cell)))
+                .toList();
+        var renderedEdges = map.boundaries().stream()
+                .filter(boundary -> boundary.edge() != null
+                        && boundary.edge().from() != null
+                        && boundary.edge().to() != null)
+                .map(DungeonMapDisplayModel::renderEdge)
+                .toList();
+        boolean mapLoaded = !renderedCells.isEmpty();
+        return new DungeonMapDisplayModel(
+                snapshot.mapName(),
+                map.width() + " x " + map.height() + " squares",
+                snapshot.mode().name(),
+                "Revision " + snapshot.revision(),
+                renderedCells.size() + " cells, " + renderedEdges.size() + " edges",
+                mapLoaded,
+                mapLoaded ? "" : "No dungeon map geometry available.",
+                topology(map.topology()),
+                renderedCells,
+                renderedEdges);
+    }
+
+    private static RenderCell renderCell(DungeonAreaSnapshot area, DungeonCellRef cell) {
+        boolean room = area.kind() == DungeonAreaKind.ROOM;
+        boolean corridor = area.kind() == DungeonAreaKind.CORRIDOR;
+        return new RenderCell(
+                cell.q(),
+                cell.r(),
+                area.label(),
+                room,
+                corridor,
+                false,
+                true,
+                false,
+                room ? "room" : "corridor",
+                area.id(),
+                "area");
+    }
+
+    private static RenderEdge renderEdge(DungeonBoundarySnapshot boundary) {
+        DungeonEdgeRef edge = boundary.edge();
+        return new RenderEdge(
+                edge.from().q(),
+                edge.from().r(),
+                edge.to().q(),
+                edge.to().r(),
+                boundary.kind(),
+                boundary.label(),
+                "door".equalsIgnoreCase(boundary.kind()),
+                boundary.kind(),
+                boundary.id(),
+                "boundary");
+    }
+
+    private static RenderTopology topology(DungeonTopologyKind topology) {
+        return topology == DungeonTopologyKind.HEX
+                ? RenderTopology.HEX
+                : RenderTopology.SQUARE;
     }
 
     public enum RenderTopology {

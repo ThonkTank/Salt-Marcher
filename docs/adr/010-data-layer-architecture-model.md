@@ -20,9 +20,10 @@ That gap leaves several important decisions too implicit:
 The current codebase already points in a consistent direction. Party and
 creatures use thin `ServiceContribution` roots, domain-owned contracts,
 SQLite source adapters, source-local models, and dedicated mappers.
-At the same time, some transitional implementations such as
-`DungeonMapStore` still live outside the long-term target shape and should not
-be treated as precedent.
+At the time this ADR was accepted, some transitional implementations still
+lived outside the long-term target shape and were not to be treated as
+precedent. ADR 021 later moved the dungeon placeholder storage behind data-layer
+repository adapters.
 
 ## Decision
 

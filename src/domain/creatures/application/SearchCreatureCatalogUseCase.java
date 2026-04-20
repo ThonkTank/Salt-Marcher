@@ -5,7 +5,7 @@ import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureCatalogSortField;
 import src.domain.creatures.published.CreatureCatalogQuery;
 import src.domain.creatures.published.CreatureSortDirection;
-import src.domain.creatures.catalog.CreatureCatalogQueryPort;
+import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
 
 import java.util.List;
 import java.util.Objects;
@@ -31,9 +31,9 @@ final class SearchCreatureCatalogUseCase {
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_PAGE_SIZE = 100;
 
-    private final CreatureCatalogQueryPort queryPort;
+    private final CreatureCatalogRepository queryPort;
 
-    SearchCreatureCatalogUseCase(CreatureCatalogQueryPort queryPort) {
+    SearchCreatureCatalogUseCase(CreatureCatalogRepository queryPort) {
         this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
     }
 
@@ -135,8 +135,8 @@ final class SearchCreatureCatalogUseCase {
             boolean valid
     ) {
 
-        private CreatureCatalogQueryPort.CatalogSearchSpec toSearchSpec() {
-            return new CreatureCatalogQueryPort.CatalogSearchSpec(
+        private CreatureCatalogRepository.CatalogSearchSpec toSearchSpec() {
+            return new CreatureCatalogRepository.CatalogSearchSpec(
                     nameQuery,
                     minimumXp,
                     maximumXp,

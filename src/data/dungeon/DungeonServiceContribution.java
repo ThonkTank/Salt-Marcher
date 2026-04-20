@@ -2,6 +2,8 @@ package src.data.dungeon;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
+import src.data.dungeon.repository.LocalDungeonDocumentRepository;
+import src.data.dungeon.repository.LocalDungeonMapRepository;
 import src.domain.dungeon.DungeonApplicationService;
 
 public final class DungeonServiceContribution implements ServiceContribution {
@@ -12,6 +14,10 @@ public final class DungeonServiceContribution implements ServiceContribution {
 
     @Override
     public void register(ServiceRegistry.Builder services) {
-        services.register(DungeonApplicationService.class, new DungeonApplicationService());
+        services.register(
+                DungeonApplicationService.class,
+                new DungeonApplicationService(
+                        new LocalDungeonMapRepository(),
+                        new LocalDungeonDocumentRepository()));
     }
 }
