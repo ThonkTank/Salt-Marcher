@@ -1,6 +1,5 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.map.port.DungeonDocumentRepository;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonDocument;
@@ -11,6 +10,21 @@ import java.util.List;
  * Owns the fixed dungeon editor mutation pipeline.
  */
 public final class ApplyDungeonEditorOperationUseCase {
+
+    public sealed interface OperationInput permits
+            OperationInput.MoveRoomAnchor,
+            OperationInput.ResetDemoLayout,
+            OperationInput.NoChange {
+
+        record MoveRoomAnchor(int deltaQ, int deltaR) implements OperationInput {
+        }
+
+        record ResetDemoLayout() implements OperationInput {
+        }
+
+        record NoChange() implements OperationInput {
+        }
+    }
 
     public record OperationResultData(
             LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot,
@@ -31,7 +45,7 @@ public final class ApplyDungeonEditorOperationUseCase {
         this.derive = derive;
     }
 
-    public OperationResultData execute(DungeonEditorOperation operation) {
+    public OperationResultData execute(OperationInput operation) {
         DungeonDocument current = store.load();
         DungeonDocument mutated = apply(current, operation);
         List<String> validationMessages = mutated.validationMessages();
@@ -45,11 +59,11 @@ public final class ApplyDungeonEditorOperationUseCase {
         return new OperationResultData(snapshot, validationMessages, reactionMessages);
     }
 
-    private DungeonDocument apply(DungeonDocument current, DungeonEditorOperation operation) {
-        if (operation instanceof DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor) {
+    private DungeonDocument apply(DungeonDocument current, OperationInput operation) {
+        if (operation instanceof OperationInput.MoveRoomAnchor moveRoomAnchor) {
             return current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
         }
-        if (operation instanceof DungeonEditorOperation.ResetDemoLayout) {
+        if (operation instanceof OperationInput.ResetDemoLayout) {
             return DungeonDocument.demo();
         }
         return current;

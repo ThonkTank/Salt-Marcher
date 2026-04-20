@@ -8,16 +8,16 @@ import java.util.Objects;
 
 public final class LoadCreatureDetailUseCase {
 
-    private final CreatureCatalogLookup queryPort;
+    private final CreatureCatalogLookup lookup;
 
-    public LoadCreatureDetailUseCase(CreatureCatalogLookup queryPort) {
-        this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
+    public LoadCreatureDetailUseCase(CreatureCatalogLookup lookup) {
+        this.lookup = Objects.requireNonNull(lookup, "lookup");
     }
 
     public @Nullable CreatureProfile execute(long creatureId) {
         if (creatureId <= 0) {
             return null;
         }
-        return queryPort.loadCreatureDetail(creatureId);
+        return lookup.loadCreatureDetail(creatureId);
     }
 }

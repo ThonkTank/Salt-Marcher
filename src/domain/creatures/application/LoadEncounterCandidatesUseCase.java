@@ -43,15 +43,15 @@ public final class LoadEncounterCandidatesUseCase {
     private static final int DEFAULT_LIMIT = 250;
     private static final int MAX_LIMIT = 1000;
 
-    private final CreatureCatalogLookup queryPort;
+    private final CreatureCatalogLookup lookup;
 
-    public LoadEncounterCandidatesUseCase(CreatureCatalogLookup queryPort) {
-        this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
+    public LoadEncounterCandidatesUseCase(CreatureCatalogLookup lookup) {
+        this.lookup = Objects.requireNonNull(lookup, "lookup");
     }
 
     public LoadResult execute(CandidateQueryInput query) {
         if (query == null) {
-            return new LoadResult(LoadStatus.SUCCESS, queryPort.loadEncounterCandidates(
+            return new LoadResult(LoadStatus.SUCCESS, lookup.loadEncounterCandidates(
                     new CreatureCatalogLookup.EncounterCandidateSpec(List.of(), List.of(), List.of(), 0, Integer.MAX_VALUE, DEFAULT_LIMIT)));
         }
         int limit = normalizeLimit(query.limit());
@@ -62,7 +62,7 @@ public final class LoadEncounterCandidatesUseCase {
         }
         return new LoadResult(
                 LoadStatus.SUCCESS,
-                queryPort.loadEncounterCandidates(new CreatureCatalogLookup.EncounterCandidateSpec(
+                lookup.loadEncounterCandidates(new CreatureCatalogLookup.EncounterCandidateSpec(
                         query.types(),
                         query.subtypes(),
                         query.biomes(),

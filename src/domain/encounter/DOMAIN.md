@@ -30,7 +30,9 @@ policies and factories.
 ## Application Boundary
 
 `application/` coordinates foreign party and creature application services,
-loads public inputs, delegates generation work, and maps generated results.
+loads public inputs, translates foreign `published/` results into encounter
+application values, and delegates generation work. The root application service
+maps generated results into encounter `published/` carriers.
 `EncounterGenerationUseCase` remains orchestration and foreign-service
 coordination only.
 

@@ -52,14 +52,14 @@ public final class LoadCreatureFilterOptionsUseCase {
             Map.entry("30", 155000)
     );
 
-    private final CreatureCatalogLookup queryPort;
+    private final CreatureCatalogLookup lookup;
 
-    public LoadCreatureFilterOptionsUseCase(CreatureCatalogLookup queryPort) {
-        this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
+    public LoadCreatureFilterOptionsUseCase(CreatureCatalogLookup lookup) {
+        this.lookup = Objects.requireNonNull(lookup, "lookup");
     }
 
     public FilterOptions execute() {
-        CreatureCatalogLookup.DistinctFilterValues values = queryPort.loadFilterValues();
+        CreatureCatalogLookup.DistinctFilterValues values = lookup.loadFilterValues();
         return new FilterOptions(values, CHALLENGE_RATINGS);
     }
 

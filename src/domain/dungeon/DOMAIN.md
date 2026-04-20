@@ -32,8 +32,9 @@ canvas cells, display selections, or reusable view input.
 ## Application Boundary
 
 `application/` owns use cases that load dungeon maps, delegate mutation to
-`map/aggregate/DungeonMap`, save through domain-owned outbound ports, and map
-domain facts into `published/` carriers.
+`map/aggregate/DungeonMap`, save through domain-owned outbound ports, and
+return domain facts to the root application service. The root application
+service maps those facts into `published/` carriers.
 
 Generic default service composition and in-memory storage do not belong in the
 domain application package; data-layer service contributions assemble the root

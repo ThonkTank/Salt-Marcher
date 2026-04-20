@@ -47,10 +47,10 @@ public final class SearchCreatureCatalogUseCase {
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_PAGE_SIZE = 100;
 
-    private final CreatureCatalogLookup queryPort;
+    private final CreatureCatalogLookup lookup;
 
-    public SearchCreatureCatalogUseCase(CreatureCatalogLookup queryPort) {
-        this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
+    public SearchCreatureCatalogUseCase(CreatureCatalogLookup lookup) {
+        this.lookup = Objects.requireNonNull(lookup, "lookup");
     }
 
     public SearchResult execute(CatalogQueryInput query) {
@@ -69,7 +69,7 @@ public final class SearchCreatureCatalogUseCase {
         }
         return new SearchResult(
                 SearchStatus.SUCCESS,
-                queryPort.searchCatalog(normalizedQuery.toSearchSpec()),
+                lookup.searchCatalog(normalizedQuery.toSearchSpec()),
                 normalizedQuery.pageSize(),
                 normalizedQuery.pageOffset()
         );

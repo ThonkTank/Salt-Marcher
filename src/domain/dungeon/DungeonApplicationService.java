@@ -5,13 +5,20 @@ import src.domain.dungeon.published.CreateDungeonMapCommand;
 import src.domain.dungeon.published.CreateDungeonMapResult;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DeleteDungeonMapResult;
+import src.domain.dungeon.published.DungeonAreaKind;
+import src.domain.dungeon.published.DungeonAreaSnapshot;
+import src.domain.dungeon.published.DungeonBoundarySnapshot;
+import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorOperation;
+import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapMode;
+import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
+import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.published.SearchMapsQuery;
 import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
@@ -20,11 +27,18 @@ import src.domain.dungeon.application.CreateDungeonMapUseCase;
 import src.domain.dungeon.application.DeleteDungeonMapUseCase;
 import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.application.LoadMapSnapshotUseCase;
-import src.domain.dungeon.application.MapDungeonFactsUseCase;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.port.DungeonDocumentRepository;
 import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.map.value.DungeonAreaFacts;
+import src.domain.dungeon.map.value.DungeonAreaType;
+import src.domain.dungeon.map.value.DungeonBoundaryFacts;
+import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonEdge;
+import src.domain.dungeon.map.value.DungeonMapFacts;
+import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.map.value.DungeonTopology;
 
 import java.util.List;
 import java.util.Objects;
@@ -41,7 +55,6 @@ public final class DungeonApplicationService {
     private final CreateDungeonMapUseCase createDungeonMapUseCase;
     private final DeleteDungeonMapUseCase deleteDungeonMapUseCase;
     private final LoadMapSnapshotUseCase loadMapSnapshotUseCase;
-    private final MapDungeonFactsUseCase mapper = new MapDungeonFactsUseCase();
 
     public DungeonApplicationService(
             DungeonMapRepository mapRepository,
@@ -64,7 +77,7 @@ public final class DungeonApplicationService {
 
     public DungeonOperationResult applyOperation(DungeonEditorOperation operation) {
         ApplyDungeonEditorOperationUseCase.OperationResultData result =
-                applyDungeonEditorOperationUseCase.execute(operation);
+                applyDungeonEditorOperationUseCase.execute(toOperationInput(operation));
         return new DungeonOperationResult(
                 toPublishedSnapshot(result.snapshot()),
                 result.validationMessages(),
@@ -81,7 +94,7 @@ public final class DungeonApplicationService {
         String searchTerm = query == null ? "" : query.query();
         return searchDungeonMapsUseCase.execute(searchTerm).stream()
                 .map(summary -> new DungeonMapSummary(
-                        mapper.toPublishedId(summary.mapId()),
+                        toPublishedId(summary.mapId()),
                         summary.mapName(),
                         summary.revision()))
                 .toList();
@@ -90,13 +103,13 @@ public final class DungeonApplicationService {
     public CreateDungeonMapResult createMap(CreateDungeonMapCommand command) {
         String mapName = command == null ? "" : command.mapName();
         CreateDungeonMapUseCase.CreatedMap result = createDungeonMapUseCase.execute(mapName);
-        return new CreateDungeonMapResult(mapper.toPublishedId(result.mapId()));
+        return new CreateDungeonMapResult(toPublishedId(result.mapId()));
     }
 
     public DeleteDungeonMapResult deleteMap(DeleteDungeonMapCommand command) {
         DungeonMapId mapId = command == null ? new DungeonMapId(1L) : command.mapId();
-        return new DeleteDungeonMapResult(mapper.toPublishedId(
-                deleteDungeonMapUseCase.execute(mapper.toDomainIdentity(mapId))));
+        return new DeleteDungeonMapResult(toPublishedId(
+                deleteDungeonMapUseCase.execute(toDomainIdentity(mapId))));
     }
 
     public BaseMapSnapshot loadMapSnapshot(LoadMapSnapshotQuery query) {
@@ -104,32 +117,96 @@ public final class DungeonApplicationService {
                 ? new LoadMapSnapshotQuery(new DungeonMapId(1L), 0)
                 : query;
         LoadMapSnapshotUseCase.MapSnapshotData snapshot = loadMapSnapshotUseCase.execute(
-                mapper.toDomainIdentity(effectiveQuery.mapId()),
+                toDomainIdentity(effectiveQuery.mapId()),
                 effectiveQuery.targetFloor());
         return new BaseMapSnapshot(
-                mapper.toPublishedId(snapshot.mapId()),
+                toPublishedId(snapshot.mapId()),
                 snapshot.mapName(),
                 snapshot.revision(),
                 snapshot.targetFloor(),
-                mapper.toPublishedSnapshot(snapshot.map()),
+                toPublishedMapSnapshot(snapshot.map()),
                 snapshot.empty());
     }
 
     public void activateMap(DungeonMapId mapId, String mapName) {
-        documentRepository.activateMap(mapper.toDomainIdentity(mapId), mapName);
+        documentRepository.activateMap(toDomainIdentity(mapId), mapName);
     }
 
     private DungeonSnapshot toPublishedSnapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
         return new DungeonSnapshot(
                 snapshot.mapName(),
                 DungeonMapMode.EDITOR,
-                mapper.toPublishedSnapshot(snapshot.derived().map()),
+                toPublishedMapSnapshot(snapshot.derived().map()),
                 snapshot.derived().aggregates().stream().map(DungeonApplicationService::aggregateSummary).toList(),
                 snapshot.derived().relations().connections().stream()
                         .map(connection -> "corridor " + connection.corridorId() + " -> room " + connection.roomId()
                                 + " (" + connection.direction() + ")")
                         .toList(),
                 toPublishedRevision(snapshot.revision()));
+    }
+
+    private static ApplyDungeonEditorOperationUseCase.OperationInput toOperationInput(DungeonEditorOperation operation) {
+        if (operation instanceof DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor) {
+            return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomAnchor(
+                    moveRoomAnchor.deltaQ(),
+                    moveRoomAnchor.deltaR());
+        }
+        if (operation instanceof DungeonEditorOperation.ResetDemoLayout) {
+            return new ApplyDungeonEditorOperationUseCase.OperationInput.ResetDemoLayout();
+        }
+        return new ApplyDungeonEditorOperationUseCase.OperationInput.NoChange();
+    }
+
+    private static DungeonMapSnapshot toPublishedMapSnapshot(DungeonMapFacts facts) {
+        DungeonMapFacts safeFacts = facts == null
+                ? new DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of())
+                : facts;
+        return new DungeonMapSnapshot(
+                toPublishedTopology(safeFacts.topology()),
+                safeFacts.width(),
+                safeFacts.height(),
+                safeFacts.areas().stream().map(DungeonApplicationService::toPublishedArea).toList(),
+                safeFacts.boundaries().stream().map(DungeonApplicationService::toPublishedBoundary).toList());
+    }
+
+    private static DungeonMapId toPublishedId(DungeonMapIdentity identity) {
+        return new DungeonMapId(identity == null ? 1L : identity.value());
+    }
+
+    private static DungeonMapIdentity toDomainIdentity(DungeonMapId mapId) {
+        return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
+    }
+
+    private static DungeonAreaSnapshot toPublishedArea(DungeonAreaFacts area) {
+        return new DungeonAreaSnapshot(
+                toPublishedAreaKind(area.kind()),
+                area.id(),
+                area.label(),
+                area.cells().stream().map(DungeonApplicationService::toPublishedCell).toList());
+    }
+
+    private static DungeonBoundarySnapshot toPublishedBoundary(DungeonBoundaryFacts boundary) {
+        return new DungeonBoundarySnapshot(
+                boundary.kind(),
+                boundary.id(),
+                boundary.label(),
+                toPublishedEdge(boundary.edge()));
+    }
+
+    private static DungeonAreaKind toPublishedAreaKind(DungeonAreaType kind) {
+        return kind == DungeonAreaType.CORRIDOR ? DungeonAreaKind.CORRIDOR : DungeonAreaKind.ROOM;
+    }
+
+    private static DungeonTopologyKind toPublishedTopology(DungeonTopology topology) {
+        return topology == DungeonTopology.HEX ? DungeonTopologyKind.HEX : DungeonTopologyKind.SQUARE;
+    }
+
+    private static DungeonCellRef toPublishedCell(DungeonCell cell) {
+        return new DungeonCellRef(cell.q(), cell.r(), cell.level());
+    }
+
+    private static DungeonEdgeRef toPublishedEdge(DungeonEdge edge) {
+        return new DungeonEdgeRef(toPublishedCell(edge.from()), toPublishedCell(edge.to()));
     }
 
     private static String aggregateSummary(DungeonAggregate aggregate) {

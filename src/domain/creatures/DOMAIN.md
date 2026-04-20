@@ -29,8 +29,8 @@ They do not encode encounter ranking, choice, balancing, or composition policy.
 ## Application Boundary
 
 `application/` owns query normalization, paging coordination, detail lookup,
-filter option loading, and mapping imported catalog truth into `published/`
-carriers.
+filter option loading, and domain lookup-port coordination. The root
+application service maps imported catalog truth into `published/` carriers.
 
 It does not own encounter ranking, candidate scoring, or creature lifecycle
 policy.

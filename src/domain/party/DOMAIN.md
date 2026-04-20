@@ -29,8 +29,8 @@ values before delegating to the model.
 
 `application/` contains party use cases. Use cases load one `PartyRoster`,
 delegate mutation or query decisions to the roster model and policies, save
-through the domain-owned outbound port, and map results back into `published/`
-carriers.
+through the domain-owned outbound port, and return application/model results
+to the root application service for `published/` mapping.
 
 ## Write Model
 
@@ -94,7 +94,8 @@ Current state:
 - `roster/` is moving into explicit role subpackages.
 - `aggregate/`, `entity/`, `value/`, `policy/`, and `port/` own the
   roster model roles.
-- `application/` coordinates port access and published result mapping.
+- `application/` coordinates port access and returns application/model results
+  to the root boundary.
 
 Target state:
 

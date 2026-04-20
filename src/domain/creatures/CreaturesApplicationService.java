@@ -40,8 +40,8 @@ public final class CreaturesApplicationService {
     private final LoadCreatureDetailUseCase loadCreatureDetailUseCase;
     private final LoadEncounterCandidatesUseCase loadEncounterCandidatesUseCase;
 
-    public CreaturesApplicationService(CreatureCatalogLookup queryPort) {
-        CreatureCatalogLookup lookup = Objects.requireNonNull(queryPort, "queryPort");
+    public CreaturesApplicationService(CreatureCatalogLookup creatureCatalogLookup) {
+        CreatureCatalogLookup lookup = Objects.requireNonNull(creatureCatalogLookup, "creatureCatalogLookup");
         this.loadCreatureFilterOptionsUseCase = new LoadCreatureFilterOptionsUseCase(lookup);
         this.searchCreatureCatalogUseCase = new SearchCreatureCatalogUseCase(lookup);
         this.loadCreatureDetailUseCase = new LoadCreatureDetailUseCase(lookup);
