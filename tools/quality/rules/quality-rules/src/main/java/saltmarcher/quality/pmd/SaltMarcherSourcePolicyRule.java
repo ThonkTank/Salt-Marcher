@@ -262,7 +262,9 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
         }
 
         String simpleName = registeredType.substring(registeredType.lastIndexOf('.') + 1);
-        return simpleName.endsWith("Repository") || simpleName.endsWith("Port");
+        return simpleName.endsWith("Repository")
+                || simpleName.endsWith("Port")
+                || simpleName.endsWith("Lookup");
     }
 
     private static boolean isBootstrapOrShellSource(SaltMarcherSourceFacts sourceFacts) {

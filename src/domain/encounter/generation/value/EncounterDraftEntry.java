@@ -1,7 +1,5 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.creatures.published.EncounterCandidate;
-
 public record EncounterDraftEntry(
         EncounterCandidateProfile profile,
         int quantity
@@ -27,7 +25,7 @@ public record EncounterDraftEntry(
         return profile.role();
     }
 
-    public EncounterCandidate toCandidate() {
-        return EncounterCandidateProfiles.toCandidate(profile);
+    public EncounterCreatureFacts facts() {
+        return profile.facts();
     }
 }

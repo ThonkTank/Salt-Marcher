@@ -4,8 +4,8 @@ import src.domain.dungeon.published.BaseMapSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.repository.DungeonDocumentRepository;
-import src.domain.dungeon.map.repository.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonDocumentRepository;
+import src.domain.dungeon.map.port.DungeonMapRepository;
 
 /**
  * Loads the snapshot for one authored map and carries the requested viewport through.
@@ -39,8 +39,6 @@ public final class LoadMapSnapshotUseCase {
                 dungeonMap.metadata().mapName(),
                 document.revision(),
                 query.targetFloor(),
-                query.onionConfig(),
-                query.viewport(),
                 map,
                 map.allCells().isEmpty()
         );

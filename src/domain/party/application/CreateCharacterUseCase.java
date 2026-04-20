@@ -2,7 +2,7 @@ package src.domain.party.application;
 
 import src.domain.party.roster.value.PartyCharacterDraft;
 import src.domain.party.roster.aggregate.PartyRoster;
-import src.domain.party.roster.repository.PartyRosterRepository;
+import src.domain.party.roster.port.PartyRosterRepository;
 import src.domain.party.roster.value.PartyMembership;
 import src.domain.party.roster.value.PartyMutationStatus;
 

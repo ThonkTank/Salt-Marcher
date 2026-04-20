@@ -18,10 +18,10 @@ Context Role: Roster Truth Context
 ## Published Language
 
 `published/` owns public party commands, results, snapshots, status enums,
-membership states, rest carriers, and party read models returned by
+membership states, rest carriers, and party snapshots returned by
 `PartyApplicationService`.
 
-The `roster/` domain module must not depend on same-context `published/`
+The `roster/` domain module must not depend on any `src.domain.*.published.*`
 carriers. The application boundary translates public carriers into roster
 values before delegating to the model.
 
@@ -29,7 +29,8 @@ values before delegating to the model.
 
 `application/` contains party use cases. Use cases load one `PartyRoster`,
 delegate mutation or query decisions to the roster model and policies, save
-through the repository, and map results back into `published/` carriers.
+through the domain-owned outbound port, and map results back into `published/`
+carriers.
 
 ## Write Model
 
@@ -75,9 +76,8 @@ Core invariants:
 ## Consistency Model
 
 One roster mutation changes one `PartyRoster` aggregate instance and is saved by
-the party repository contract. Other contexts consume party state through the
-application service and exported read carriers instead of sharing roster
-internals.
+the party roster port. Other contexts consume party state through the
+application service and exported carriers instead of sharing roster internals.
 
 ## Ubiquitous Language
 
@@ -92,15 +92,15 @@ internals.
 Current state:
 
 - `roster/` is moving into explicit role subpackages.
-- `aggregate/`, `entity/`, `value/`, `policy/`, and `repository/` own the
+- `aggregate/`, `entity/`, `value/`, `policy/`, and `port/` own the
   roster model roles.
-- `application/` coordinates repository access and published result mapping.
+- `application/` coordinates port access and published result mapping.
 
 Target state:
 
 - keep party mutation rules on the roster aggregate and related roster policies
 - keep root and internal application services thin
-- remove same-context `published/` dependencies from roster role packages
+- keep roster role packages free of all `src.domain.*.published.*` dependencies
 
 ## References
 

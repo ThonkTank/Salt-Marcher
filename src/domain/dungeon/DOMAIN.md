@@ -32,8 +32,8 @@ canvas cells, display selections, or reusable view input.
 ## Application Boundary
 
 `application/` owns use cases that load dungeon maps, delegate mutation to
-`map/aggregate/DungeonMap`, save through domain repositories, and map domain
-facts into `published/` carriers.
+`map/aggregate/DungeonMap`, save through domain-owned outbound ports, and map
+domain facts into `published/` carriers.
 
 Generic default service composition and in-memory storage do not belong in the
 domain application package; data-layer service contributions assemble the root
@@ -100,8 +100,8 @@ remains partitioned.
 ## Domain Module
 
 `map/` owns the cohesive dungeon-map model. It contains the aggregate root,
-supporting entities, value objects, repository contracts over authored map
-truth, and deterministic derived-state helpers for the current implementation.
+supporting entities, value objects, outbound ports over authored map truth, and
+deterministic derived-state helpers for the current implementation.
 
 ## Domain Partitions
 
@@ -123,7 +123,7 @@ It must not own:
 - room names
 - room narrative text
 - inspector text
-- global adjacency read models
+- global adjacency projections for storage or view concerns
 
 ### SpaceCatalog
 
@@ -186,7 +186,7 @@ Core invariants:
 - Travel and editor do not fork persisted map truth.
 - Persist only authored truth and stable identity.
 - Generated topology must be reproducible from the write model.
-- Domain ownership must stay explicit; geometry, semantics, and read models do
+- Domain ownership must stay explicit; geometry, semantics, and projections do
   not collapse into one undifferentiated structure.
 
 ## Consistency Model

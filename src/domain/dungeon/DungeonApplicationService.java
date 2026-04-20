@@ -21,8 +21,8 @@ import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.application.LoadMapSnapshotUseCase;
 import src.domain.dungeon.application.MapDungeonFactsUseCase;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
-import src.domain.dungeon.map.repository.DungeonDocumentRepository;
-import src.domain.dungeon.map.repository.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonDocumentRepository;
+import src.domain.dungeon.map.port.DungeonMapRepository;
 
 import java.util.List;
 import java.util.Objects;

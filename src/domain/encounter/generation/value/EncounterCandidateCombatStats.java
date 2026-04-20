@@ -1,7 +1,5 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.creatures.published.EncounterCandidate;
-
 record EncounterCandidateCombatStats(
         int xp,
         int hitPoints,
@@ -10,7 +8,7 @@ record EncounterCandidateCombatStats(
         int legendaryActionCount
 ) {
 
-    static EncounterCandidateCombatStats fromCandidate(EncounterCandidate candidate) {
+    static EncounterCandidateCombatStats fromFacts(EncounterCreatureFacts candidate) {
         return new EncounterCandidateCombatStats(
                 candidate.xp(),
                 candidate.hitPoints(),

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-20
 Source of Truth: Persistence path and schema ownership rules for the `creatures`
 feature.
 
@@ -13,8 +13,8 @@ This document is normative for the `creatures` feature's persistence path.
 - `src/data/creatures/CreaturesServiceContribution.java` is the only root
   service entrypoint for the feature.
 - Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers the creature catalog read-model port through the
-  shell-owned service registry, `shell.api.ServiceRegistry`.
+- The contribution registers the creature catalog read-only domain port through
+  the shell-owned service registry, `shell.api.ServiceRegistry`.
 - View assembly code reads that capability only through the shell-owned
   service lookup surface. The current Java lookup method is
   `ShellRuntimeContext.services()`.
@@ -48,5 +48,5 @@ This document is normative for the `creatures` feature's persistence path.
 - The creatures query adapter remains registered passively; no feature-specific
   bootstrap wiring is allowed.
 - Creature persistence helpers may be refactored internally as long as
-  `CreatureCatalogRepository` remains the only domain-owned query contract
+  `CreatureCatalogLookup` remains the only domain-owned read-only port
   exported from the data slice.

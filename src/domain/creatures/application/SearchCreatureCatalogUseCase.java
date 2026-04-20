@@ -1,29 +1,28 @@
 package src.domain.creatures.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureCatalogSortField;
 import src.domain.creatures.published.CreatureCatalogQuery;
 import src.domain.creatures.published.CreatureSortDirection;
-import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import java.util.List;
 import java.util.Objects;
 
-final class SearchCreatureCatalogUseCase {
+public final class SearchCreatureCatalogUseCase {
 
-    enum SearchStatus {
+    public enum SearchStatus {
         SUCCESS,
         INVALID_QUERY
     }
 
-    record SearchResult(
+    public record SearchResult(
             SearchStatus status,
-            CreatureCatalogPage page,
+            CreatureCatalogLookup.CatalogPage page,
             int pageSize,
             int pageOffset
     ) {
-        boolean invalidQuery() {
+        public boolean invalidQuery() {
             return status == SearchStatus.INVALID_QUERY;
         }
     }
@@ -31,18 +30,22 @@ final class SearchCreatureCatalogUseCase {
     private static final int DEFAULT_PAGE_SIZE = 50;
     private static final int MAX_PAGE_SIZE = 100;
 
-    private final CreatureCatalogRepository queryPort;
+    private final CreatureCatalogLookup queryPort;
 
-    SearchCreatureCatalogUseCase(CreatureCatalogRepository queryPort) {
+    public SearchCreatureCatalogUseCase(CreatureCatalogLookup queryPort) {
         this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
     }
 
-    SearchResult execute(CreatureCatalogQuery query) {
+    public SearchResult execute(CreatureCatalogQuery query) {
         NormalizedCatalogQuery normalizedQuery = normalize(query);
         if (!normalizedQuery.valid()) {
             return new SearchResult(
                     SearchStatus.INVALID_QUERY,
-                    CreatureCatalogPage.empty(normalizedQuery.pageSize(), normalizedQuery.pageOffset()),
+                    new CreatureCatalogLookup.CatalogPage(
+                            List.of(),
+                            0,
+                            normalizedQuery.pageSize(),
+                            normalizedQuery.pageOffset()),
                     normalizedQuery.pageSize(),
                     normalizedQuery.pageOffset()
             );
@@ -70,8 +73,12 @@ final class SearchCreatureCatalogUseCase {
                 normalizeValues(effectiveQuery.subtypes()),
                 normalizeValues(effectiveQuery.biomes()),
                 normalizeValues(effectiveQuery.alignments()),
-                effectiveQuery.sortField() == null ? CreatureCatalogSortField.NAME : effectiveQuery.sortField(),
-                effectiveQuery.sortDirection() == null ? CreatureSortDirection.ASCENDING : effectiveQuery.sortDirection(),
+                toPortSortField(effectiveQuery.sortField() == null
+                        ? CreatureCatalogSortField.NAME
+                        : effectiveQuery.sortField()),
+                toPortSortDirection(effectiveQuery.sortDirection() == null
+                        ? CreatureSortDirection.ASCENDING
+                        : effectiveQuery.sortDirection()),
                 normalizePageSize(effectiveQuery.pageSize()),
                 Math.max(0, effectiveQuery.pageOffset()),
                 isValidChallengeRatingRange(minimumChallengeRating, maximumChallengeRating, minimumXp, maximumXp)
@@ -128,15 +135,15 @@ final class SearchCreatureCatalogUseCase {
             List<String> subtypes,
             List<String> biomes,
             List<String> alignments,
-            CreatureCatalogSortField sortField,
-            CreatureSortDirection sortDirection,
+            CreatureCatalogLookup.SortField sortField,
+            CreatureCatalogLookup.SortDirection sortDirection,
             int pageSize,
             int pageOffset,
             boolean valid
     ) {
 
-        private CreatureCatalogRepository.CatalogSearchSpec toSearchSpec() {
-            return new CreatureCatalogRepository.CatalogSearchSpec(
+        private CreatureCatalogLookup.CatalogSearchSpec toSearchSpec() {
+            return new CreatureCatalogLookup.CatalogSearchSpec(
                     nameQuery,
                     minimumXp,
                     maximumXp,
@@ -151,5 +158,21 @@ final class SearchCreatureCatalogUseCase {
                     pageOffset
             );
         }
+    }
+
+    private static CreatureCatalogLookup.SortField toPortSortField(CreatureCatalogSortField sortField) {
+        return switch (sortField) {
+            case CHALLENGE_RATING -> CreatureCatalogLookup.SortField.CHALLENGE_RATING;
+            case XP -> CreatureCatalogLookup.SortField.XP;
+            case TYPE -> CreatureCatalogLookup.SortField.TYPE;
+            case SIZE -> CreatureCatalogLookup.SortField.SIZE;
+            case NAME -> CreatureCatalogLookup.SortField.NAME;
+        };
+    }
+
+    private static CreatureCatalogLookup.SortDirection toPortSortDirection(CreatureSortDirection sortDirection) {
+        return sortDirection == CreatureSortDirection.DESCENDING
+                ? CreatureCatalogLookup.SortDirection.DESCENDING
+                : CreatureCatalogLookup.SortDirection.ASCENDING;
     }
 }

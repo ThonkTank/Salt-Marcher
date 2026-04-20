@@ -1,6 +1,5 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.encounter.published.EncounterDifficultyBand;
 
 import java.util.List;
 
@@ -20,12 +19,12 @@ final class EncounterDraftCreator {
         }
         EncounterDraftXpProfile xpProfile = xpProfile(composition.stats(), request);
         int maxAllowedAdjustedXp = EncounterDifficultyTargets.maxAdjustedXp(
-                EncounterDifficultyBand.DEADLY,
+                EncounterDifficultyIntent.DEADLY,
                 request.thresholds());
         if (xpProfile.adjustedXp() > maxAllowedAdjustedXp * MAX_DEADLY_MULTIPLE) {
             return List.of();
         }
-        EncounterDifficultyBand achievedDifficulty = EncounterDifficultyTargets.bandFor(
+        EncounterDifficultyIntent achievedDifficulty = EncounterDifficultyTargets.bandFor(
                 xpProfile.adjustedXp(),
                 request.thresholds());
         int score = EncounterDraftScorer.score(new EncounterDraftScorer.ScoreInput(

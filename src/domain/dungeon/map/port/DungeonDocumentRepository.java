@@ -1,4 +1,4 @@
-package src.domain.dungeon.map.repository;
+package src.domain.dungeon.map.port;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.value.DungeonDocument;

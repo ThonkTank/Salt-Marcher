@@ -18,7 +18,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DataAdapterRoleContract",
-        summary = "Repository adapters implement repository contracts and query adapters implement read-model contracts.",
+        summary = "Repository adapters implement write ports and query adapters implement read ports.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataAdapterRoleContractChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
@@ -51,7 +51,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
             if (isPublicNonAdapterBoundaryType(typeElement)) {
                 violations.add(role.diagnosticName + " package declares public non-adapter boundary type "
                         + typeElement.getQualifiedName()
-                        + "; data repository/query contracts and carriers belong in the owning domain boundary.");
+                        + "; data repository/query contracts and carriers belong in the owning domain port or published boundary.");
             }
             for (DomainContract contract : domainContracts) {
                 if (!contract.featureName().equals(role.featureName())) {
@@ -146,8 +146,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
         }
 
         private boolean acceptsContractRole(ContractRole candidateRole) {
-            return candidateRole == contractRole
-                    || ("Query".equals(diagnosticName) && candidateRole == ContractRole.REPOSITORY);
+            return candidateRole == contractRole;
         }
     }
 
@@ -178,7 +177,8 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
             if (simpleName.endsWith("QueryPort")
                     || simpleName.endsWith("ReadPort")
                     || simpleName.endsWith("LookupPort")
-                    || simpleName.endsWith("ProjectionPort")) {
+                    || simpleName.endsWith("ProjectionPort")
+                    || simpleName.endsWith("Lookup")) {
                 return ContractRole.QUERY;
             }
             return null;

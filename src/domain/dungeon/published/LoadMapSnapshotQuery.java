@@ -1,18 +1,14 @@
 package src.domain.dungeon.published;
 
 /**
- * Query for loading one map snapshot together with the caller's current viewport.
+ * Query for loading one authored map snapshot.
  */
 public record LoadMapSnapshotQuery(
         DungeonMapId mapId,
-        int targetFloor,
-        OnionConfig onionConfig,
-        Viewport viewport
+        int targetFloor
 ) {
 
     public LoadMapSnapshotQuery {
         targetFloor = Math.max(0, targetFloor);
-        onionConfig = onionConfig == null ? OnionConfig.defaults() : onionConfig;
-        viewport = viewport == null ? Viewport.defaultViewport() : viewport;
     }
 }

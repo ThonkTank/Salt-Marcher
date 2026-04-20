@@ -20,8 +20,8 @@ wiring in bootstrap or concrete shell host classes.
 bootstrap/   application startup and generic discovery
 shell/       passive cockpit host and shell contracts
 src/view/    cockpit contributions, ViewModels, and passive Views
-src/domain/  domain logic by feature
-src/data/    infrastructure adapters by feature
+src/domain/  hexagonal application core by context
+src/data/    outbound adapters by feature
 resources/   static resources and centralized stylesheets
 docs/        architecture overview, standards, ADRs, references, and stubs
 tools/       build infrastructure, quality platforms, and engineering scripts
@@ -44,10 +44,12 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 - `src/view/slotcontent/<slot>/<entry>/` owns reusable or standalone passive
   JavaFX content and optional slot-local ViewModels for exactly one cockpit
   slot.
-- `src/domain/<context>/` owns domain truth, invariants, policy decisions,
-  aggregates, application services, published language, and role-explicit
-  domain modules inside one real domain context.
-- `src/data/<feature>/` owns persistence and external-system adapters.
+- `src/domain/<context>/` owns the hexagonal application core: domain truth,
+  invariants, policy decisions, application services, published language,
+  outbound ports, and role-explicit domain modules inside one real domain
+  context.
+- `src/data/<feature>/` owns persistence and external-system adapters that
+  implement domain-owned outbound ports.
 - `src/data/persistencecore/` holds shared SQLite infrastructure reused by
   multiple persistence features without becoming an application-service
   boundary of its own.
@@ -94,8 +96,9 @@ Dependencies point inward toward the application core:
   application services; slotcontent ViewModels own slot-local projections.
 - passive Views render ViewModel state and emit user gestures without shell,
   domain, data, or ApplicationService dependencies.
-- domain code owns business rules, published language, and domain-owned ports.
-- data code implements domain-owned contracts and externalizes infrastructure
+- domain code owns business rules, published language, and domain-owned
+  outbound ports.
+- data code implements domain-owned outbound ports and externalizes infrastructure
   details.
 
 Below the view layer, the only public client-facing backend boundary is a
@@ -174,3 +177,4 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
 - [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)
+- [ADR 023: Hexagonal Domain Core](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/023-hexagonal-domain-core.md:1)

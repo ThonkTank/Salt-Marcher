@@ -18,13 +18,11 @@ ownership leaking out of `src/domain/**`.
 - `Ports and Adapters` / `Hexagonal Architecture` govern the relationship
   between domain-owned contracts and technology-specific adapter
   implementations.
-- `Repository` keeps its DDD / Enterprise Application Architecture meaning:
-  the domain owns repository contracts for the write model; the data layer
-  implements them.
-- `Read Model` is the preferred term for domain-owned read-only lookup and
-  projection contracts. Those contracts belong in the owning named domain
-  module; they are not tied to a mandatory domain `query/` package or the
-  thin `application/` coordination package.
+- Domain `port/` packages own outbound port interfaces. Write-model ports may
+  be named `*Repository`; read-only lookup/search/projection ports may be named
+  `*Lookup`, `*QueryPort`, `*ReadPort`, or `*ProjectionPort`.
+- Data `repository/` implements write-model domain ports. Data `query/`
+  implements read-only domain ports.
 - `Data Mapper` governs translation between source-local records and domain or
   published boundary types.
 - `Gateway` governs internal concrete-source adapters below the exported data
@@ -38,11 +36,11 @@ ownership leaking out of `src/domain/**`.
   connection lifecycle, remote protocol details, schema readiness, and payload
   translation belong in `src/data/**`; business rules, invariants, and policy
   decisions do not.
-- Domain-owned contracts remain the stable backend abstraction. `src/domain/**`
-  defines repository contracts, read contracts, and published boundary types;
-  `src/data/**` implements them.
-- `repository/` implements write-model persistence contracts.
-- `query/` implements exported read-model ports.
+- Domain-owned ports remain the stable outbound abstraction. `src/domain/**`
+  defines port interfaces and published boundary types; `src/data/**`
+  implements the ports.
+- `repository/` implements authored write-model persistence ports.
+- `query/` implements read-only lookup, search, and projection ports.
 - `gateway/` remains internal and must not become an exported API surface.
 - Source-local shapes stay source-local. Table records, remote payload DTOs,
   schema declarations, and source-specific helper types live in `model/` or
@@ -97,7 +95,7 @@ The canonical data flow is:
    `ShellRuntimeContext.services()` only as composition input, or through an
    application-service factory that was already assembled at the boundary
 4. a data `repository/` or `query/` implementation satisfies one
-   domain-owned contract
+   same-feature domain-owned port
 5. internal `gateway/` adapters talk to SQLite, files, remote services, or
    other concrete sources
 6. `mapper/` and `model/` keep source-local shapes from leaking into the
@@ -137,32 +135,32 @@ entrypoint and runtime-capability registration boundary of one data feature.
 
 ### `repository/`
 
-`repository/` owns data-layer implementations of domain-owned repository
-contracts for the write model.
+`repository/` owns data-layer implementations of domain-owned write-model
+ports.
 
 - Responsibilities:
-  - implement domain-owned repository contracts in technology-aware but
+  - implement domain-owned write-model ports in technology-aware but
     domain-safe terms
   - persist and reload the write model
   - coordinate mappers and internal gateways
 - Rules:
-  - repository implementations stay in `src/data/**`; contracts stay in
-    `src/domain/**`
+  - repository implementations stay in `src/data/**`; port interfaces stay in
+    `src/domain/<feature>/<module>/port/`
   - repository implementations must not become a second home for domain policy
-  - repository implementations are not the home for read-only projection ports
+  - repository implementations are not the home for read-only lookup,
+    search, or projection ports
 
 ### `query/`
 
-`query/` owns data-layer implementations of domain-owned read-model or
-projection contracts.
+`query/` owns data-layer implementations of domain-owned read-only ports.
 
 - Responsibilities:
-  - implement read-only search, lookup, paging, and projection contracts
+  - implement read-only search, lookup, paging, and projection ports
   - present the exported read boundary of the feature
   - coordinate mappers and internal gateways
 - Rules:
-  - query implementations stay in `src/data/**`; contracts stay in
-    `src/domain/**`
+  - query implementations stay in `src/data/**`; port interfaces stay in
+    `src/domain/<feature>/<module>/port/`
   - query implementations must stay read-only and must not become write-model
     mutation boundaries
 
@@ -219,7 +217,7 @@ features.
   - provide generic connection lifecycle helpers
   - provide generic schema or transport support reused by multiple features
 - Rules:
-  - no feature-specific repository contracts, feature records, or feature
+  - no feature-specific port contracts, feature records, or feature
     behavior
   - no public application capability registration
   - infrastructure here must stay generic enough to serve multiple owning
@@ -236,8 +234,8 @@ features.
   [SqlitePartyRosterRepository](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/repository/SqlitePartyRosterRepository.java:1)
   and
   [SqliteCreatureCatalogQueryAdapter](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/query/SqliteCreatureCatalogQueryAdapter.java:1)
-  illustrate the split between write-model repositories and exported
-  read-model adapters.
+  illustrate the split between write-model port adapters and read-only port
+  adapters.
 - Positive gateway example:
   [SqlitePartyLocalGateway](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/gateway/local/SqlitePartyLocalGateway.java:1)
   owns connection and schema-readiness mechanics instead of pushing them into
@@ -264,7 +262,7 @@ replace this document as the rule source.
   registration through `*ServiceContribution`
 - domain entities or aggregates owning SQL, remote protocol, or schema logic
 - gateways registered as public application capabilities instead of through
-  repository, query, or typed feature factories
+  repository adapters, query adapters, or typed feature factories
 - feature-specific helpers placed in `persistencecore/`
 - cross-feature dependencies on foreign private data buckets
 - duplicate schema truth spread across unrelated stores, migrators, and string
@@ -298,8 +296,8 @@ Current mechanical ownership:
   signature bans on leaking internal `model/`, `gateway/`, or
   `persistencecore` infrastructure types, including constructors.
   It also owns the compiler-precise adapter role-contract check that keeps
-  `repository/` adapters on repository contracts and `query/` adapters on
-  read-model or query contracts, prevents public data-owned contract/carrier
+  `repository/` adapters on write-model ports and `query/` adapters on
+  read-only ports, prevents public data-owned contract/carrier
   types in adapter buckets, requires public concrete adapters to satisfy an
   own-feature domain-owned role contract, keeps exported domain port
   implementations out of other data buckets, and keeps exported adapters

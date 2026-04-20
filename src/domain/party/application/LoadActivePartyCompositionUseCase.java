@@ -2,7 +2,7 @@ package src.domain.party.application;
 
 import src.domain.party.published.ActivePartyComposition;
 import src.domain.party.roster.value.PartyRosterProjection;
-import src.domain.party.roster.repository.PartyRosterRepository;
+import src.domain.party.roster.port.PartyRosterRepository;
 
 public final class LoadActivePartyCompositionUseCase {
 

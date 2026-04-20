@@ -1,6 +1,5 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.encounter.published.EncounterDifficultyBand;
 
 import java.util.Set;
 
@@ -33,15 +32,15 @@ final class EncounterDraftScorer {
     }
 
     record ScoreContext(
-            EncounterDifficultyBand targetDifficulty,
-            EncounterDifficultyBand achievedDifficulty,
+            EncounterDifficultyIntent targetDifficulty,
+            EncounterDifficultyIntent achievedDifficulty,
             EncounterDifficultyMath.Thresholds thresholds,
             EncounterDraftXpProfile xpProfile
     ) {
     }
 
     private static int scoreTargetBand(
-            EncounterDifficultyBand targetDifficulty,
+            EncounterDifficultyIntent targetDifficulty,
             int adjustedXp,
             EncounterDifficultyMath.Thresholds thresholds,
             int targetAdjustedXp

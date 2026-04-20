@@ -1,4 +1,4 @@
-package src.domain.party.roster.repository;
+package src.domain.party.roster.port;
 
 import src.domain.party.roster.aggregate.PartyRoster;
 

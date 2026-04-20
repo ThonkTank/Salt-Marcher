@@ -1,4 +1,4 @@
-package src.domain.dungeon.map.repository;
+package src.domain.dungeon.map.port;
 
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.value.DungeonMapIdentity;

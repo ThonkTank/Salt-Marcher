@@ -3,7 +3,7 @@ package src.data.dungeon.repository;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.map.repository.DungeonDocumentRepository;
+import src.domain.dungeon.map.port.DungeonDocumentRepository;
 import src.domain.dungeon.map.value.DungeonDocument;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 

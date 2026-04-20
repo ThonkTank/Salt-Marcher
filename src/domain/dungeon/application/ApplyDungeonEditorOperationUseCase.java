@@ -4,7 +4,7 @@ import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonMapMode;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
-import src.domain.dungeon.map.repository.DungeonDocumentRepository;
+import src.domain.dungeon.map.port.DungeonDocumentRepository;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonDocument;
 

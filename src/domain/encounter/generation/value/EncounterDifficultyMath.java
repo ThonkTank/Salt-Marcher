@@ -1,8 +1,5 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.encounter.published.EncounterBudgetSummary;
-import src.domain.party.published.AdventuringDaySummary;
-
 import java.util.List;
 
 public final class EncounterDifficultyMath {
@@ -121,23 +118,24 @@ public final class EncounterDifficultyMath {
         return new Thresholds(easy, medium, hard, deadly);
     }
 
-    public static EncounterBudgetSummary summarizeBudget(
+    public static BudgetSummary summarizeBudget(
             List<Integer> partyLevels,
-            AdventuringDaySummary daySummary
+            int consumedDailyXp,
+            int dailyBudgetXp
     ) {
         Thresholds thresholds = thresholdsFor(partyLevels);
-        int consumedDailyXp = daySummary == null ? 0 : Math.max(0, daySummary.consumedXp());
-        int dailyBudgetXp = daySummary == null ? 0 : Math.max(0, daySummary.totalBudgetXp());
-        return new EncounterBudgetSummary(
+        int consumedXp = Math.max(0, consumedDailyXp);
+        int budgetXp = Math.max(0, dailyBudgetXp);
+        return new BudgetSummary(
                 partyLevels,
                 averageLevel(partyLevels),
                 thresholds.easy(),
                 thresholds.medium(),
                 thresholds.hard(),
                 thresholds.deadly(),
-                dailyBudgetXp,
-                consumedDailyXp,
-                Math.max(0, dailyBudgetXp - consumedDailyXp)
+                budgetXp,
+                consumedXp,
+                Math.max(0, budgetXp - consumedXp)
         );
     }
 
@@ -161,5 +159,21 @@ public final class EncounterDifficultyMath {
             int hard,
             int deadly
     ) {
+    }
+
+    public record BudgetSummary(
+            List<Integer> activePartyLevels,
+            int averagePartyLevel,
+            int easyThreshold,
+            int mediumThreshold,
+            int hardThreshold,
+            int deadlyThreshold,
+            int dailyBudgetXp,
+            int consumedDailyXp,
+            int remainingDailyXp
+    ) {
+        public BudgetSummary {
+            activePartyLevels = activePartyLevels == null ? List.of() : List.copyOf(activePartyLevels);
+        }
     }
 }

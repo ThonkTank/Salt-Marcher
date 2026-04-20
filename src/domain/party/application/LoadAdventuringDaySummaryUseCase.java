@@ -1,7 +1,7 @@
 package src.domain.party.application;
 
 import src.domain.party.roster.entity.PartyCharacter;
-import src.domain.party.roster.repository.PartyRosterRepository;
+import src.domain.party.roster.port.PartyRosterRepository;
 import src.domain.party.roster.policy.PartyAdventuringDayBudgetPolicy;
 
 import java.util.ArrayList;

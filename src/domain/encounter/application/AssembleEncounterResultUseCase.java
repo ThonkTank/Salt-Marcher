@@ -6,7 +6,9 @@ import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.published.EncounterCreature;
+import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.GeneratedEncounter;
+import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterDraft;
 import src.domain.encounter.generation.value.EncounterDraftEntry;
 import src.domain.encounter.generation.value.EncounterDraftMetrics;
@@ -17,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-final class EncounterResultAssembler {
+final class AssembleEncounterResultUseCase {
 
     private static final int MINIMUM_BLENDED_ROLE_COUNT = 2;
     private static final int ACTION_ECONOMY_CREATURE_COUNT = 5;
@@ -25,7 +27,7 @@ final class EncounterResultAssembler {
 
     private final CreaturesApplicationService creatures;
 
-    EncounterResultAssembler(CreaturesApplicationService creatures) {
+    AssembleEncounterResultUseCase(CreaturesApplicationService creatures) {
         this.creatures = creatures;
     }
 
@@ -37,7 +39,8 @@ final class EncounterResultAssembler {
             List<EncounterCreature> creatures = new ArrayList<>();
             for (EncounterDraftEntry entry : draft.entries()) {
                 CreatureDetail detail = detailCache.computeIfAbsent(entry.creatureId(), this::loadCreatureDetailOrNull);
-                EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(entry.toCandidate(), detail);
+                EncounterCreatureFacts facts = detail == null ? entry.facts() : PrepareEncounterGenerationUseCase.toFacts(detail);
+                EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(facts);
                 creatures.add(new EncounterCreature(
                         entry.creatureId(),
                         entry.creatureName(),
@@ -49,7 +52,7 @@ final class EncounterResultAssembler {
             }
             encounters.add(new GeneratedEncounter(
                     draft.title(),
-                    draft.achievedDifficulty(),
+                    toPublishedDifficulty(draft.achievedDifficulty()),
                     metrics.creatureCount(),
                     metrics.totalBaseXp(),
                     metrics.adjustedXp(),
@@ -58,6 +61,15 @@ final class EncounterResultAssembler {
                     creatures));
         }
         return encounters;
+    }
+
+    private static EncounterDifficultyBand toPublishedDifficulty(src.domain.encounter.generation.value.EncounterDifficultyIntent intent) {
+        return switch (intent) {
+            case EASY -> EncounterDifficultyBand.EASY;
+            case MEDIUM -> EncounterDifficultyBand.MEDIUM;
+            case HARD -> EncounterDifficultyBand.HARD;
+            case DEADLY -> EncounterDifficultyBand.DEADLY;
+        };
     }
 
     private @Nullable CreatureDetail loadCreatureDetailOrNull(long creatureId) {

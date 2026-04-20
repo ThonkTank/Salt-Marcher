@@ -6,29 +6,27 @@ import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureDetailRecord;
 import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.published.CreatureCatalogPage;
-import src.domain.creatures.published.CreatureDetail;
-import src.domain.creatures.published.EncounterCandidate;
-import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.catalog.port.CreatureCatalogLookup;
+import src.domain.creatures.catalog.port.CreatureCatalogLookup.CreatureProfile;
 
 public final class CreatureCatalogQueryMappingFacade {
 
     private CreatureCatalogQueryMappingFacade() {
     }
 
-    public static CreatureCatalogRepository.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
+    public static CreatureCatalogLookup.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
         return CreatureFilterValuesMapper.toQueryValues(record);
     }
 
-    public static CreatureCatalogPage toDomain(CreatureCatalogPageRecord record) {
+    public static CreatureCatalogLookup.CatalogPage toDomain(CreatureCatalogPageRecord record) {
         return CreatureCatalogPageMapper.toDomain(record);
     }
 
-    public static @Nullable CreatureDetail toDomain(@Nullable CreatureDetailRecord record) {
+    public static @Nullable CreatureProfile toDomain(@Nullable CreatureDetailRecord record) {
         return CreatureDetailMapper.toDomain(record);
     }
 
-    public static List<EncounterCandidate> toDomain(List<EncounterCandidateRecord> records) {
+    public static List<CreatureCatalogLookup.EncounterCandidateProfile> toDomain(List<EncounterCandidateRecord> records) {
         return records.stream()
                 .map(EncounterCandidateMapper::toDomain)
                 .toList();

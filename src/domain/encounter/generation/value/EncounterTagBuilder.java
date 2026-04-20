@@ -1,9 +1,6 @@
 package src.domain.encounter.generation.value;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.creatures.published.CreatureActionDetail;
-import src.domain.creatures.published.CreatureDetail;
-import src.domain.creatures.published.EncounterCandidate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,14 +13,13 @@ final class EncounterTagBuilder {
     }
 
     static List<String> tagsFor(
-            EncounterCandidate candidate,
-            @Nullable CreatureDetail detail,
+            EncounterCreatureFacts candidate,
             @Nullable String defaultTag
     ) {
         List<String> tags = new ArrayList<>();
         addDefaultTag(tags, defaultTag);
         addCandidateTags(tags, candidate);
-        addDetailTags(tags, detail);
+        addDetailTags(tags, candidate);
         return tags.stream().distinct().limit(3).toList();
     }
 
@@ -33,16 +29,13 @@ final class EncounterTagBuilder {
         }
     }
 
-    private static void addCandidateTags(List<String> tags, EncounterCandidate candidate) {
+    private static void addCandidateTags(List<String> tags, EncounterCreatureFacts candidate) {
         if (candidate.legendaryActionCount() > 0) {
             tags.add("legendary actions");
         }
     }
 
-    private static void addDetailTags(List<String> tags, @Nullable CreatureDetail detail) {
-        if (detail == null) {
-            return;
-        }
+    private static void addDetailTags(List<String> tags, EncounterCreatureFacts detail) {
         if (detail.flySpeed() > 0) {
             tags.add("flyer");
         }
@@ -60,17 +53,17 @@ final class EncounterTagBuilder {
         }
     }
 
-    private static boolean hasResilience(CreatureDetail detail) {
+    private static boolean hasResilience(EncounterCreatureFacts detail) {
         return hasText(detail.damageResistances())
                 || hasText(detail.damageImmunities())
                 || hasText(detail.conditionImmunities());
     }
 
-    private static boolean hasActionTricks(List<CreatureActionDetail> actions) {
+    private static boolean hasActionTricks(List<EncounterCreatureFacts.ActionFacts> actions) {
         if (actions == null) {
             return false;
         }
-        for (CreatureActionDetail action : actions) {
+        for (EncounterCreatureFacts.ActionFacts action : actions) {
             String type = action.actionType();
             if ("bonus_action".equals(type) || "reaction".equals(type) || "legendary_action".equals(type)) {
                 return true;

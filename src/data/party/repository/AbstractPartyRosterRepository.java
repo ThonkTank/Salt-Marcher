@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 import src.data.party.mapper.PartyRosterMapper;
 import src.data.party.model.PartyRosterRecord;
 import src.domain.party.roster.aggregate.PartyRoster;
-import src.domain.party.roster.repository.PartyRosterRepository;
+import src.domain.party.roster.port.PartyRosterRepository;
 
 abstract class AbstractPartyRosterRepository implements PartyRosterRepository {
 

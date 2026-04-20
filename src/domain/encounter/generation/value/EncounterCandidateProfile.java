@@ -2,22 +2,16 @@ package src.domain.encounter.generation.value;
 
 public final class EncounterCandidateProfile {
 
-    private final long id;
-    private final String name;
-    private final String challengeRating;
+    private final EncounterCreatureFacts facts;
     private final EncounterCandidateCombatStats combatStats;
     private final String role;
 
     EncounterCandidateProfile(
-            long id,
-            String name,
-            String challengeRating,
+            EncounterCreatureFacts facts,
             EncounterCandidateCombatStats combatStats,
             String role
     ) {
-        this.id = id;
-        this.name = name;
-        this.challengeRating = challengeRating;
+        this.facts = facts;
         this.combatStats = combatStats;
         this.role = role;
     }
@@ -27,19 +21,23 @@ public final class EncounterCandidateProfile {
     }
 
     long id() {
-        return id;
+        return facts.id();
     }
 
     String name() {
-        return name;
+        return facts.name();
     }
 
     String challengeRating() {
-        return challengeRating;
+        return facts.challengeRating();
     }
 
     String role() {
         return role;
+    }
+
+    EncounterCreatureFacts facts() {
+        return facts;
     }
 
     int hitPoints() {

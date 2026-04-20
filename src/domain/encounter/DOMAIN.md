@@ -22,9 +22,10 @@ Context Role: Generation Policy Context
 summaries, generated encounter results, encounter creature entries, and
 generation status vocabulary.
 
-The generation model must not depend on same-context `published/` result
+The generation model must not depend on any `src.domain.*.published.*`
 carriers as invariant inputs. The application boundary translates public
-requests into generation values before invoking policies and factories.
+requests and foreign published results into generation values before invoking
+policies and factories.
 
 ## Application Boundary
 

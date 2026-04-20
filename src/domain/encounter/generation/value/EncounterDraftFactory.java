@@ -1,6 +1,5 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.encounter.published.EncounterDifficultyBand;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -28,7 +27,7 @@ public final class EncounterDraftFactory {
     }
 
     public record EncounterDraftRequest(
-            EncounterDifficultyBand targetDifficulty,
+            EncounterDifficultyIntent targetDifficulty,
             EncounterDifficultyMath.Thresholds thresholds,
             int partySize,
             Collection<EncounterCandidateProfile> lockedProfiles,

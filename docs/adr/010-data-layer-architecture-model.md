@@ -32,8 +32,9 @@ SaltMarcher adopts a dedicated data-layer architecture standard for
 
 - The data layer is the single authored home for persistence and
   external-system adaptation below the domain.
-- Domain-owned repository contracts and read-model ports remain in `src/domain/**`;
-  `src/data/**` implements them.
+- Domain-owned outbound ports remain in `src/domain/**`; `src/data/**`
+  implements them. ADR 023 later standardizes those contracts under domain
+  module `port/` packages.
 - `repository/` owns write-model persistence adapters.
 - `query/` owns exported read-only query adapters.
 - `gateway/` owns concrete source mechanics and stays internal to the owning

@@ -50,7 +50,7 @@ Layer responsibilities:
 - `src/domain/**`
   - is the application core
   - owns business meaning, invariants, application services, exported boundary
-    types, named domain modules, and domain-owned contracts
+    types, named domain modules, and domain-owned outbound ports
 - `src/data/**`
   - is the outbound adapter layer
   - implements domain-owned ports and translates between domain-facing
@@ -68,7 +68,7 @@ The binding source-dependency rule is inward-only:
    and `slotcontent ViewModel -> domain published carriers + JavaFX
    beans/collections`
 5. `View -> JavaFX UI APIs + reusable passive views`
-6. `data -> domain public boundaries and domain-owned ports`
+6. `data -> domain public boundaries and domain-owned outbound ports`
 7. `domain -> no outer layer`
 
 Additional rules:
@@ -94,7 +94,7 @@ The canonical intentional public boundaries are:
   client-facing backend boundary below the view layer
 - `src/domain/<feature>/published/**` as carrier-only published-language types
   used by those application services
-- domain-owned contracts declared in named domain modules as inner backend
+- domain-owned outbound ports declared in named domain modules as inner backend
   ports, not alternate client boundaries
 - data `*ServiceContribution` roots as the registration boundary of one data
   feature, not as a public business boundary
@@ -121,8 +121,8 @@ The canonical intentional public boundaries are:
 5. a passive view emits a user event
 6. the ViewModel translates the event into presentation state or a call to a
    same-feature or foreign public `*ApplicationService`
-7. domain objects and domain-owned contracts coordinate the use case
-8. data adapters implement the required repository or projection contracts
+7. domain objects and domain-owned ports coordinate the use case
+8. data adapters implement the required write or read-only ports
 9. results return as domain published carriers into the ViewModel
 10. the ViewModel translates domain facts into presentation state or display
    models

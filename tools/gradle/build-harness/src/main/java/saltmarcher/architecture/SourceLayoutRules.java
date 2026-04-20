@@ -10,14 +10,14 @@ import java.util.regex.Pattern;
 final class SourceLayoutRules implements ArchitectureRule {
 
     private static final Pattern BACKEND_PORT_CONTRACT_FILE_PATTERN =
-            Pattern.compile(".*(?:Repository|Port)\\.java$");
+            Pattern.compile(".*(?:Repository|Port|Lookup)\\.java$");
     private static final Set<String> DOMAIN_ALLOWED_ROLE_PACKAGES =
             Set.of(
                     "aggregate",
                     "entity",
                     "value",
                     "policy",
-                    "repository",
+                    "port",
                     "factory",
                     "service",
                     "event",
@@ -47,6 +47,8 @@ final class SourceLayoutRules implements ArchitectureRule {
                     "models",
                     "query",
                     "queries",
+                    "port",
+                    "ports",
                     "repository",
                     "repositories",
                     "service",
@@ -170,7 +172,7 @@ final class SourceLayoutRules implements ArchitectureRule {
         }
         if (BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
             violations.add(sourceFile.relativePath(), "domain-published-no-backend-port-contracts",
-                    "Domain published/ packages are exported boundary-carrier surfaces. Backend port contracts such as *Repository or *Port belong in a named domain module role package.");
+                    "Domain published/ packages are exported boundary-carrier surfaces. Backend port contracts such as *Repository, *Port or *Lookup belong in a named domain module port/ package.");
         }
     }
 
@@ -180,9 +182,13 @@ final class SourceLayoutRules implements ArchitectureRule {
             violations.add(sourceFile.relativePath(), "domain-application-direct-usecases",
                     "Domain application/ code must be direct *UseCase.java files under src/domain/<context>/application/.");
         }
+        if (!sourceFile.fileName().endsWith("UseCase.java")) {
+            violations.add(sourceFile.relativePath(), "domain-application-direct-usecases",
+                    "Domain application/ code must use *UseCase.java files.");
+        }
         if (BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
             violations.add(sourceFile.relativePath(), "domain-application-no-backend-port-contracts",
-                    "Domain application/ packages coordinate use cases. Backend port contracts such as *Repository or *Port belong in a named domain module role package.");
+                    "Domain application/ packages coordinate use cases. Backend port contracts such as *Repository, *Port or *Lookup belong in a named domain module port/ package.");
         }
     }
 

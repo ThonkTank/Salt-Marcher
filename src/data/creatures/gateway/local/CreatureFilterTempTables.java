@@ -1,6 +1,6 @@
 package src.data.creatures.gateway.local;
 
-import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -12,7 +12,7 @@ final class CreatureFilterTempTables {
 
     static void prepareCatalogFilters(
             Connection connection,
-            CreatureCatalogRepository.CatalogSearchSpec spec
+            CreatureCatalogLookup.CatalogSearchSpec spec
     ) throws SQLException {
         CreatureFilterTempTableSchema.createTempTables(connection);
         clearFilters(connection);
@@ -30,7 +30,7 @@ final class CreatureFilterTempTables {
 
     static void prepareEncounterFilters(
             Connection connection,
-            CreatureCatalogRepository.EncounterCandidateSpec spec
+            CreatureCatalogLookup.EncounterCandidateSpec spec
     ) throws SQLException {
         CreatureFilterTempTableSchema.createTempTables(connection);
         clearFilters(connection);

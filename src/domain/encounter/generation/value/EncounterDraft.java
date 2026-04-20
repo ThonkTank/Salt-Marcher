@@ -1,12 +1,11 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.encounter.published.EncounterDifficultyBand;
 
 import java.util.List;
 
 public record EncounterDraft(
         String title,
-        EncounterDifficultyBand achievedDifficulty,
+        EncounterDifficultyIntent achievedDifficulty,
         EncounterDraftMetrics metrics,
         List<EncounterDraftEntry> entries
 ) {

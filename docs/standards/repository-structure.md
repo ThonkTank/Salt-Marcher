@@ -96,7 +96,7 @@ src/
         entity/
         value/
         policy/
-        repository/
+        port/
         factory/
         service/
         event/
@@ -234,7 +234,7 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - Additional directories under `src/domain/<feature>/` must be named domain
   modules in the ubiquitous language of that bounded context.
 - Named domain modules must contain Java files only under allowed role
-  subpackages: `aggregate/`, `entity/`, `value/`, `policy/`, `repository/`,
+  subpackages: `aggregate/`, `entity/`, `value/`, `policy/`, `port/`,
   `factory/`, `service/`, `event/`, and `specification/`.
 - Legacy domain `api/` buckets, root role buckets, direct Java files under
   named domain modules, and `src/domain/mapcore/**` are forbidden by the

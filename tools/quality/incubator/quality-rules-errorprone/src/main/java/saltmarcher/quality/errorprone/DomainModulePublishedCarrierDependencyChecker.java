@@ -10,13 +10,15 @@ import java.util.regex.Pattern;
 
 @BugPattern(
         name = "DomainModuleNoPublishedCarrierDependency",
-        summary = "Named domain modules must not depend on same-feature published command/query/result carriers.",
+        summary = "Named domain modules must not depend on public published command/query/result carriers.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainModulePublishedCarrierDependencyChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
 
     private static final Pattern NAMED_DOMAIN_MODULE_PACKAGE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.((?!published$|application$)[^.]+)(\\..*)?$");
+    private static final Pattern DOMAIN_PUBLISHED_TYPE =
+            Pattern.compile("^src\\.domain\\.[^.]+\\.published\\..+");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -26,10 +28,9 @@ public final class DomainModulePublishedCarrierDependencyChecker extends BugChec
             return Description.NO_MATCH;
         }
 
-        String featureName = matcher.group(1);
         TreeSet<String> forbiddenReferences = new TreeSet<>();
         for (String referencedType : DataArchitectureSupport.collectReferencedTypes(tree)) {
-            if (isForbiddenSameFeaturePublishedCarrier(referencedType, featureName)) {
+            if (isForbiddenPublishedCarrier(referencedType)) {
                 forbiddenReferences.add(referencedType);
             }
         }
@@ -39,13 +40,13 @@ public final class DomainModulePublishedCarrierDependencyChecker extends BugChec
         }
         return buildDescription(tree)
                 .setMessage("Named domain module '" + packageName
-                        + "' depends on same-feature published carrier type(s): "
+                        + "' depends on published carrier type(s): "
                         + String.join(", ", forbiddenReferences)
                         + ". Translate published carriers at the root/application boundary before entering the model.")
                 .build();
     }
 
-    private static boolean isForbiddenSameFeaturePublishedCarrier(String referencedType, String featureName) {
-        return false;
+    private static boolean isForbiddenPublishedCarrier(String referencedType) {
+        return DOMAIN_PUBLISHED_TYPE.matcher(referencedType).matches();
     }
 }

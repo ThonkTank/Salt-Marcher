@@ -5,14 +5,18 @@ import src.domain.creatures.published.CreatureDetail;
 import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.CreatureQueryStatus;
+import src.domain.creatures.published.EncounterCandidate;
 import src.domain.creatures.published.EncounterCandidatesResult;
 import src.domain.creatures.published.EncounterCandidateQuery;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.published.EncounterBudgetSummary;
+import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationRequest;
+import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
 import src.domain.encounter.generation.value.EncounterCandidateProfiles;
 import src.domain.encounter.generation.value.EncounterDifficultyMath;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.value.EncounterDifficultyTargets;
 import src.domain.encounter.generation.value.EncounterDraft;
 import src.domain.encounter.generation.value.EncounterDraftFactory;
@@ -29,12 +33,12 @@ import java.util.Set;
 
 // PMD suppression is local: encounter generation intentionally centralizes domain adapters here; see src/domain/encounter/DOMAIN.md.
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-final class EncounterGenerationLoader {
+final class PrepareEncounterGenerationUseCase {
 
-    private EncounterGenerationLoader() {
+    private PrepareEncounterGenerationUseCase() {
     }
 
-    static EncounterGenerationPreparation prepare(
+    static EncounterGenerationPreparationUseCase prepare(
             PartyApplicationService party,
             CreaturesApplicationService creatures,
             EncounterGenerationRequest request,
@@ -62,26 +66,26 @@ final class EncounterGenerationLoader {
             return candidates.failure();
         }
         if (lockedCreatures.lockedProfiles().isEmpty() && candidates.unlockedProfiles().isEmpty()) {
-                return EncounterGenerationPreparation.failure(
+                return EncounterGenerationPreparationUseCase.failure(
                     EncounterGenerationUseCase.GenerateStatus.NO_CREATURES,
                     budget,
                     "No creatures matched the current filters.");
         }
 
         List<EncounterDraft> drafts = EncounterDraftFactory.createDrafts(new EncounterDraftFactory.EncounterDraftRequest(
-                request.targetDifficulty(),
+                toDifficultyIntent(request.targetDifficulty()),
                 thresholds,
                 partyLoad.partySize(),
                 lockedCreatures.lockedProfiles().values(),
                 lockedCreatures.lockedQuantities(),
                 candidates.unlockedProfiles()));
         if (drafts.isEmpty()) {
-            return EncounterGenerationPreparation.failure(
+            return EncounterGenerationPreparationUseCase.failure(
                     EncounterGenerationUseCase.GenerateStatus.NO_CREATURES,
                     budget,
                     "No encounter compositions fit the current request.");
         }
-        return EncounterGenerationPreparation.success(budget, drafts);
+        return EncounterGenerationPreparationUseCase.success(budget, drafts);
     }
 
     private static PartyLoadResult loadPartyState(PartyApplicationService party) {
@@ -95,7 +99,11 @@ final class EncounterGenerationLoader {
             return PartyLoadResult.failure(EncounterGenerationUseCase.GenerateStatus.NO_ACTIVE_PARTY, "No active party is available.");
         }
         EncounterDifficultyMath.Thresholds thresholds = EncounterDifficultyMath.thresholdsFor(partyLevels);
-        EncounterBudgetSummary budget = EncounterDifficultyMath.summarizeBudget(partyLevels, dayResult.summary());
+        EncounterDifficultyMath.BudgetSummary budgetSummary = EncounterDifficultyMath.summarizeBudget(
+                partyLevels,
+                dayResult.summary().consumedXp(),
+                dayResult.summary().totalBudgetXp());
+        EncounterBudgetSummary budget = toPublishedBudgetSummary(budgetSummary);
         return PartyLoadResult.success(thresholds, budget, partyLevels.size());
     }
 
@@ -137,7 +145,7 @@ final class EncounterGenerationLoader {
         List<EncounterCandidateProfile> unlockedProfiles = candidateResult.candidates().stream()
                 .filter(candidate -> !excludedCreatureIds.contains(candidate.id()))
                 .filter(candidate -> !lockedCreatureIds.contains(candidate.id()))
-                .map(candidate -> EncounterCandidateProfiles.fromCandidate(candidate, null))
+                .map(candidate -> EncounterCandidateProfiles.fromFacts(toFacts(candidate)))
                 .toList();
         return CandidateLoadResult.success(unlockedProfiles);
     }
@@ -164,9 +172,83 @@ final class EncounterGenerationLoader {
                 continue;
             }
             CreatureDetail detail = detailResult.detail();
-            profiles.put(creatureId, EncounterCandidateProfiles.fromDetail(detail));
+            profiles.put(creatureId, EncounterCandidateProfiles.fromFacts(toFacts(detail)));
         }
         return profiles;
+    }
+
+    private static EncounterCreatureFacts toFacts(EncounterCandidate candidate) {
+        return new EncounterCreatureFacts(
+                candidate.id(),
+                candidate.name(),
+                candidate.creatureType(),
+                candidate.challengeRating(),
+                candidate.xp(),
+                candidate.hitPoints(),
+                candidate.hitDiceCount(),
+                candidate.hitDiceSides(),
+                candidate.hitDiceModifier(),
+                candidate.armorClass(),
+                candidate.initiativeBonus(),
+                candidate.legendaryActionCount(),
+                0,
+                0,
+                0,
+                0,
+                null,
+                null,
+                null,
+                0,
+                List.of());
+    }
+
+    static EncounterCreatureFacts toFacts(CreatureDetail detail) {
+        return new EncounterCreatureFacts(
+                detail.id(),
+                detail.name(),
+                detail.creatureType(),
+                detail.challengeRating(),
+                detail.xp(),
+                detail.hitPoints(),
+                detail.hitDiceCount(),
+                detail.hitDiceSides(),
+                detail.hitDiceModifier(),
+                detail.armorClass(),
+                detail.initiativeBonus(),
+                detail.legendaryActionCount(),
+                detail.flySpeed(),
+                detail.swimSpeed(),
+                detail.climbSpeed(),
+                detail.burrowSpeed(),
+                detail.damageResistances(),
+                detail.damageImmunities(),
+                detail.conditionImmunities(),
+                detail.passivePerception(),
+                detail.actions().stream()
+                        .map(action -> new EncounterCreatureFacts.ActionFacts(action.actionType()))
+                        .toList());
+    }
+
+    private static EncounterDifficultyIntent toDifficultyIntent(EncounterDifficultyBand band) {
+        return switch (band == null ? EncounterDifficultyBand.defaultBand() : band) {
+            case EASY -> EncounterDifficultyIntent.EASY;
+            case MEDIUM -> EncounterDifficultyIntent.MEDIUM;
+            case HARD -> EncounterDifficultyIntent.HARD;
+            case DEADLY -> EncounterDifficultyIntent.DEADLY;
+        };
+    }
+
+    private static EncounterBudgetSummary toPublishedBudgetSummary(EncounterDifficultyMath.BudgetSummary summary) {
+        return new EncounterBudgetSummary(
+                summary.activePartyLevels(),
+                summary.averagePartyLevel(),
+                summary.easyThreshold(),
+                summary.mediumThreshold(),
+                summary.hardThreshold(),
+                summary.deadlyThreshold(),
+                summary.dailyBudgetXp(),
+                summary.consumedDailyXp(),
+                summary.remainingDailyXp());
     }
 
     private record PartyLoadResult(
@@ -181,8 +263,8 @@ final class EncounterGenerationLoader {
             return status.isSuccessful();
         }
 
-        private EncounterGenerationPreparation failure() {
-            return EncounterGenerationPreparation.failure(status, budget, message);
+        private EncounterGenerationPreparationUseCase failure() {
+            return EncounterGenerationPreparationUseCase.failure(status, budget, message);
         }
 
         private EncounterDifficultyMath.Thresholds requireThresholds() {
@@ -232,8 +314,8 @@ final class EncounterGenerationLoader {
             return status.isSuccessful();
         }
 
-        private EncounterGenerationPreparation failure() {
-            return EncounterGenerationPreparation.failure(status, budget, message);
+        private EncounterGenerationPreparationUseCase failure() {
+            return EncounterGenerationPreparationUseCase.failure(status, budget, message);
         }
 
         private static LockedCreatures success(
@@ -268,8 +350,8 @@ final class EncounterGenerationLoader {
             return status.isSuccessful();
         }
 
-        private EncounterGenerationPreparation failure() {
-            return EncounterGenerationPreparation.failure(status, null, message);
+        private EncounterGenerationPreparationUseCase failure() {
+            return EncounterGenerationPreparationUseCase.failure(status, null, message);
         }
 
         private static CandidateLoadResult success(List<EncounterCandidateProfile> unlockedProfiles) {

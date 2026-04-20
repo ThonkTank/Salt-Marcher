@@ -17,12 +17,12 @@ import javax.lang.model.util.ElementFilter;
 
 @BugPattern(
         name = "DomainRoleShape",
-        summary = "Domain role packages must use the declared tactical DDD type shapes.",
+        summary = "Domain role packages must use the declared hexagonal core type shapes.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainRoleShapeChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
     private static final Pattern DOMAIN_ROLE_PACKAGE = Pattern.compile(
-            "^src\\.domain\\.[^.]+\\.[^.]+\\.(aggregate|entity|value|policy|repository|factory|service|event|specification)$");
+            "^src\\.domain\\.[^.]+\\.[^.]+\\.(aggregate|entity|value|policy|port|factory|service|event|specification)$");
 
     @Override
     public Description matchClass(ClassTree tree, VisitorState state) {
@@ -42,7 +42,7 @@ public final class DomainRoleShapeChecker extends BugChecker implements BugCheck
             case "aggregate" -> aggregateViolation(typeElement);
             case "entity" -> entityViolation(typeElement);
             case "value" -> valueViolation(typeElement);
-            case "repository" -> repositoryViolation(typeElement);
+            case "port" -> portViolation(typeElement);
             case "policy" -> statelessRoleViolation(typeElement, "Policy");
             case "factory" -> statelessRoleViolation(typeElement, "Factory");
             case "service" -> statelessRoleViolation(typeElement, "Service");
@@ -110,10 +110,13 @@ public final class DomainRoleShapeChecker extends BugChecker implements BugCheck
         return null;
     }
 
-    private static String repositoryViolation(TypeElement typeElement) {
+    private static String portViolation(TypeElement typeElement) {
+        String simpleName = typeElement.getSimpleName().toString();
         if (typeElement.getKind() != ElementKind.INTERFACE
-                || !typeElement.getSimpleName().toString().endsWith("Repository")) {
-            return "repositories must be interfaces ending Repository.";
+                || !(simpleName.endsWith("Repository")
+                || simpleName.endsWith("Port")
+                || simpleName.endsWith("Lookup"))) {
+            return "ports must be interfaces ending Repository, Port, or Lookup.";
         }
         return null;
     }

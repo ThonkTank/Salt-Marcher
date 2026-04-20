@@ -6,7 +6,7 @@ import src.domain.encounter.generation.value.EncounterDraft;
 
 import java.util.List;
 
-record EncounterGenerationPreparation(
+record EncounterGenerationPreparationUseCase(
         EncounterGenerationUseCase.GenerateStatus status,
         @Nullable EncounterBudgetSummary budget,
         List<EncounterDraft> drafts,
@@ -17,22 +17,22 @@ record EncounterGenerationPreparation(
         return status.isSuccessful();
     }
 
-    static EncounterGenerationPreparation success(
+    static EncounterGenerationPreparationUseCase success(
             EncounterBudgetSummary budget,
             List<EncounterDraft> drafts
     ) {
-        return new EncounterGenerationPreparation(
+        return new EncounterGenerationPreparationUseCase(
                 EncounterGenerationUseCase.GenerateStatus.successfulStatus(),
                 budget,
                 drafts,
                 "Encounter options generated.");
     }
 
-    static EncounterGenerationPreparation failure(
+    static EncounterGenerationPreparationUseCase failure(
             EncounterGenerationUseCase.GenerateStatus status,
             @Nullable EncounterBudgetSummary budget,
             String message
     ) {
-        return new EncounterGenerationPreparation(status, budget, List.of(), message);
+        return new EncounterGenerationPreparationUseCase(status, budget, List.of(), message);
     }
 }

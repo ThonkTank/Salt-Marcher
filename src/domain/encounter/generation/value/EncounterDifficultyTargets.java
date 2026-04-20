@@ -1,6 +1,5 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.encounter.published.EncounterDifficultyBand;
 
 public final class EncounterDifficultyTargets {
 
@@ -34,20 +33,20 @@ public final class EncounterDifficultyTargets {
         return MULTIPLIER_STEPS[index];
     }
 
-    public static EncounterDifficultyBand bandFor(int adjustedXp, EncounterDifficultyMath.Thresholds thresholds) {
+    public static EncounterDifficultyIntent bandFor(int adjustedXp, EncounterDifficultyMath.Thresholds thresholds) {
         if (adjustedXp >= thresholds.deadly()) {
-            return EncounterDifficultyBand.DEADLY;
+            return EncounterDifficultyIntent.DEADLY;
         }
         if (adjustedXp >= thresholds.hard()) {
-            return EncounterDifficultyBand.HARD;
+            return EncounterDifficultyIntent.HARD;
         }
         if (adjustedXp >= thresholds.medium()) {
-            return EncounterDifficultyBand.MEDIUM;
+            return EncounterDifficultyIntent.MEDIUM;
         }
-        return EncounterDifficultyBand.EASY;
+        return EncounterDifficultyIntent.EASY;
     }
 
-    public static int minAdjustedXp(EncounterDifficultyBand band, EncounterDifficultyMath.Thresholds thresholds) {
+    public static int minAdjustedXp(EncounterDifficultyIntent band, EncounterDifficultyMath.Thresholds thresholds) {
         return switch (band) {
             case EASY -> Math.max(1, thresholds.easy());
             case MEDIUM -> Math.max(1, thresholds.medium());
@@ -56,7 +55,7 @@ public final class EncounterDifficultyTargets {
         };
     }
 
-    public static int maxAdjustedXp(EncounterDifficultyBand band, EncounterDifficultyMath.Thresholds thresholds) {
+    public static int maxAdjustedXp(EncounterDifficultyIntent band, EncounterDifficultyMath.Thresholds thresholds) {
         return switch (band) {
             case EASY -> Math.max(minAdjustedXp(band, thresholds), thresholds.medium() - 1);
             case MEDIUM -> Math.max(minAdjustedXp(band, thresholds), thresholds.hard() - 1);
@@ -65,7 +64,7 @@ public final class EncounterDifficultyTargets {
         };
     }
 
-    public static int targetAdjustedXp(EncounterDifficultyBand band, EncounterDifficultyMath.Thresholds thresholds) {
+    public static int targetAdjustedXp(EncounterDifficultyIntent band, EncounterDifficultyMath.Thresholds thresholds) {
         return (minAdjustedXp(band, thresholds) + maxAdjustedXp(band, thresholds)) / 2;
     }
 

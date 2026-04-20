@@ -1,4 +1,4 @@
-Status: Accepted
+Status: Superseded by [ADR 023: Hexagonal Domain Core](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/023-hexagonal-domain-core.md:1)
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-20
 Source of Truth: Decision to reset the domain layer to role-explicit
@@ -82,3 +82,4 @@ must own domain truth, policy, topology, invariants, or published language.
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
 - [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
 - [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)
+- [ADR 023: Hexagonal Domain Core](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/023-hexagonal-domain-core.md:1)

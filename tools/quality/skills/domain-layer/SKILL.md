@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including root `*ApplicationService.java`, carrier-only `published/`, `application/`, domain-concept modules, tactical role subpackages, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including root `*ApplicationService.java`, carrier-only `published/`, direct `application/*UseCase.java` files, domain-concept modules, `port/` outbound interfaces, tactical role subpackages, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
 ---
 
 # Domain Layer
@@ -31,18 +31,22 @@ Before changing domain code:
    client boundary for that context.
 3. Treat `published/` as carrier-only published language: commands, queries,
    results, IDs, snapshots, statuses, enums, and sealed carrier abstractions.
-4. Keep `application/` to use-case orchestration. Classes are named `*UseCase`.
+4. Keep `application/` to use-case orchestration. Direct Java files are named
+   `*UseCase`.
 5. Assign each internal type to a domain-concept module and an explicit
-   role package: `aggregate`, `entity`, `value`, `policy`, `repository`,
+   role package: `aggregate`, `entity`, `value`, `policy`, `port`,
    `factory`, `service`, `event`, or `specification`.
 6. Check whether behavior belongs on an aggregate, entity, value object,
    policy, factory, domain service, or specification before placing it in
    `application/`.
 7. Check mutation boundaries. External mutation must enter through the owning
    aggregate root when the context has a write model.
-8. Check cross-context access. Below the view layer, access goes only through
+8. Check published-language access. Named domain modules must not import any
+   `src.domain.*.published.*` carriers; root/application boundaries translate
+   those carriers before entering the model.
+9. Check cross-context access. Below the view layer, access goes only through
    foreign root application services and foreign `published/` carriers.
-9. Reject `src/domain/mapcore/**`; shared render input belongs in the view
+10. Reject `src/domain/mapcore/**`; shared render input belongs in the view
    layer, while domain dungeon map/world facts belong to `dungeon/published`.
 
 ## Role Reminders
@@ -67,10 +71,20 @@ Before changing domain code:
 ### `application/`
 
 - use-case orchestration and internal application coordination
-- coordinates domain objects, domain-owned contracts, and allowed foreign
+- direct Java files are named `*UseCase.java`
+- coordinates domain objects, domain-owned outbound ports, and allowed foreign
   application services
 - does not replace rich domain behavior
 - generic `*Operations` coordinator buckets are migration debt
+
+### `port/`
+
+- outbound interfaces required by the domain core
+- write-model persistence ports may end with `Repository`
+- read-only lookup, search, or projection ports may end with `Lookup`,
+  `QueryPort`, `ReadPort`, or `ProjectionPort`
+- not a home for data adapter classes, records, schemas, gateways, runtime
+  registration, SQL, filesystem, network, or JavaFX types
 
 ### Domain Modules And Role Packages
 
@@ -80,10 +94,10 @@ Before changing domain code:
 - `entity/` contains identity-bearing child entities
 - `value/` contains immutable value objects and enums
 - `policy/` contains stateless domain policies and rules
-- `repository/` contains domain-owned outbound repository contracts
+- `port/` contains domain-owned outbound port interfaces
 - `factory/`, `service/`, `event/`, and `specification/` are used only when
-  the corresponding DDD role exists
-- domain modules must not import same-context `published/` carriers
+  the corresponding tactical role exists
+- domain modules must not import any `src.domain.*.published.*` carriers
 
 ## Review Focus
 
@@ -94,7 +108,11 @@ When reviewing domain-layer work, look for:
 - `Context Role:` declarations matching the domain-layer standard
 - role subpackages under every named domain module
 - no direct Java files under named domain modules
-- no same-context `published/` imports from domain role packages
+- no `published/` imports from named domain modules
+- no `repository/`, `readmodel/`, `query/`, `gateway/`, `adapter/`, `model/`,
+  or `mapper/` role packages under domain modules
+- ports stated in domain language without data-source, shell, JavaFX, SQL,
+  filesystem, network, or runtime-registration terms
 - rich behavior moving into aggregates, entities, values, policies, factories,
   specifications, or domain services instead of procedural coordinators
 - thin application use cases without hidden adapter composition

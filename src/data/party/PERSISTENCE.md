@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-18
+Last Reviewed: 2026-04-20
 Source of Truth: Persistence path and schema ownership rules for the `party`
 feature.
 
@@ -37,7 +37,7 @@ This document is normative for the `party` feature's persistence path.
 
 - Adding another persistence-exporting feature must not require routine edits
   outside `src/`.
-- The party repository remains registered passively; no feature-specific
+- The party roster write port remains registered passively; no feature-specific
   bootstrap wiring is allowed.
 - Legacy runtime-service wiring through `RuntimeServiceProvider` or
   `RuntimeServiceRegistry` is forbidden.

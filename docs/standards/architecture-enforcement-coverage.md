@@ -237,14 +237,15 @@ Mechanical trace:
 
 - `domain-layout`, `domain-root-presence`, `domain-api-bucket-removed`,
   `domain-published-direct-files`, `domain-published-no-backend-port-contracts`,
-  `domain-application-usecase-shape`, `domain-module-role-package-required`,
-  `domain-module-direct-java-file-ban`, `domain-role-package-name-allowlist`,
-  `domain-role-package-java-file-shape`, `domain-context-role-declared`,
+  `domain-application-direct-usecases`, `domain-module-role-required`,
+  `domain-role-direct-files`, `domain-role-package-name`,
+  `domain-context-role-declared`,
   `domain-context-role-coverage`, and `domain-mapcore-removed` via
   `build-harness` (`:build-harness:check`). These checks cover root
   application-service presence, the direct `published/` and `application/`
-  allowances, lower-case named domain-module package shape, tactical role
-  subpackages, backend-port contract exclusion from `published/` and
+  allowances, direct `*UseCase.java` application file naming, lower-case
+  named domain-module package shape, role subpackages, backend-port contract
+  exclusion from `published/` and
   `application/`, required `DOMAIN.md` `Context Role:` markers, the
   domain-layer-standard context-role listing, and the blocking absence of
   `src/domain/mapcore`.
@@ -271,11 +272,12 @@ Mechanical trace:
   types, foreign private domain types, or same-feature concrete application
   and model collaborators via `Error Prone` (`compileJava`).
 - `domain-module-no-published-carrier-dependency`: named domain modules may not
-  depend on same-context `published/` command, query, result, draft, snapshot,
-  page, detail, options, or payload carriers via `Error Prone` (`compileJava`).
+  depend on any `src.domain.*.published.*` command, query, result, draft,
+  snapshot, page, detail, options, or payload carriers via `Error Prone`
+  (`compileJava`).
 - `domain-role-shape`: role packages enforce aggregate final-class roots,
   entity final classes, value records/enums/sealed abstractions/final immutable
-  classes, repository interfaces ending `Repository`, stateless policy/factory/
+  classes, port interfaces ending `Repository`, `Port`, or `Lookup`, stateless policy/factory/
   service classes with role suffixes, and record events ending `Event` via
   `Error Prone` (`compileJava`).
 - `domain-published-carrier-shape`: public `published/` types must be records,
@@ -292,7 +294,7 @@ Mechanical trace:
 - Object-centred placement, named-module cohesion and ubiquitous-language
   naming beyond package-shape checks and required document sections,
   application-layer thinness beyond direct infrastructure composition,
-  `published/` carrier-only discipline beyond shape and same-context carrier
+  `published/` carrier-only discipline beyond shape and named-module carrier
   dependency checks, semantic business-rule leakage, aggregate mutation
   semantics, true-invariant placement inside one aggregate, small and coherent
   aggregate boundaries, reference-by-identity and eventual-consistency choices,
@@ -357,8 +359,8 @@ Mechanical trace:
   query adapter signatures, including constructors, must not leak `model/`,
   `gateway/`, or `persistencecore` internal infrastructure types via
   `Error Prone` (`compileJava`).
-- `data-adapter-role-contract`: `repository/` adapters implement repository
-  contracts and `query/` adapters implement read-model/query contracts via
+- `data-adapter-role-contract`: `repository/` adapters implement authored
+  write-model ports and `query/` adapters implement read-only ports via
   `Error Prone` (`compileJava`).
 - `data-exported-adapter-gateway-collaborator-boundary`: `repository/` and
   `query/` adapters may depend on own-feature `gateway/local` or
@@ -376,7 +378,7 @@ Mechanical trace:
   adapters must satisfy an own-feature domain-owned contract for their adapter
   role via `Error Prone` (`compileJava`).
 - `data-domain-port-adapter-placement`: data classes outside `repository/` and
-  `query/` must not implement exported domain repository or read-model/query
+  `query/` must not implement exported domain write or read-only
   port contracts via `Error Prone` (`compileJava`).
 
 Mechanical trace against the data-layer standard:
@@ -390,9 +392,9 @@ Mechanical trace against the data-layer standard:
   registered service types are checked by PMD against own-feature domain
   boundaries.
 - `repository/` and `query/` as exported adapter roles are enforced by Error
-  Prone through own-feature domain contract presence, repository-versus-query
-  contract role matching, public contract placement bans, and implementation
-  placement for exported domain ports.
+  Prone through own-feature domain port presence, write-versus-read port role
+  matching, public contract placement bans, and implementation placement for
+  exported domain ports.
 - `gateway/` as the concrete-source boundary is enforced by `build-harness`
   placement, PMD concrete-source API bans outside gateways, Error Prone
   public/protected gateway return-type restrictions, and Error Prone exported
@@ -439,7 +441,7 @@ Mechanical trace against the data-layer standard:
 `Enforced`:
 
 - Pattern alignment is enforcement context, not a separate blocker. The
-  concrete Clean/Onion/Hexagonal/Service-Layer implications below are the
+  concrete layered Hexagonal Architecture implications below are the
   enforceable rule set.
 - `system-layer-topology`: active Java source roots and package-path alignment
   must stay under `bootstrap/`, `shell/api`, `shell/host`, `src/view`,
@@ -475,7 +477,7 @@ Mechanical trace against the data-layer standard:
   feature access from below the view layer must go through public domain seams
   through `ArchUnit` `dataFeaturesMustOnlyUseForeignFeatureApis`
   (`architectureTest`). Same-feature data adapter references to domain-owned
-  repository and read-model/query contracts are constrained by
+  write and read-only ports are constrained by
   `DataAdapterRoleContract` (`compileJava`) and backend-port placement checks
   in `build-harness` (`:build-harness:check`).
 - `system-shell-passive-dependency-direction` and

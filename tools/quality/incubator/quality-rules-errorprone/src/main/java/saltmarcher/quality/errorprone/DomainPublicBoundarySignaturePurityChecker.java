@@ -490,7 +490,9 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
     private static boolean isSameFeatureDomainPort(TypeElement typeElement) {
         String simpleName = typeElement.getSimpleName().toString();
         return typeElement.getKind() == ElementKind.INTERFACE
-                && (simpleName.endsWith("Repository") || simpleName.endsWith("Port"));
+                && (simpleName.endsWith("Repository")
+                || simpleName.endsWith("Port")
+                || simpleName.endsWith("Lookup"));
     }
 
     private static String domainFeatureName(String fqn) {

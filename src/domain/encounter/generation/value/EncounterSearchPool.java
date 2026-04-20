@@ -1,6 +1,5 @@
 package src.domain.encounter.generation.value;
 
-import src.domain.encounter.published.EncounterDifficultyBand;
 
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -18,7 +17,7 @@ final class EncounterSearchPool {
     static List<EncounterCandidateProfile> build(
             List<EncounterCandidateProfile> unlockedProfiles,
             EncounterDifficultyMath.Thresholds thresholds,
-            EncounterDifficultyBand targetDifficulty
+            EncounterDifficultyIntent targetDifficulty
     ) {
         int targetXp = EncounterDifficultyTargets.targetAdjustedXp(targetDifficulty, thresholds);
         Map<Long, EncounterCandidateProfile> merged = new LinkedHashMap<>();

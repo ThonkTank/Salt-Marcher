@@ -23,11 +23,11 @@ public final class EncounterGenerationUseCase {
     }
 
     public GenerateResult execute(EncounterGenerationRequest request) {
-        EncounterGenerationPreparation preparation = EncounterGenerationLoader.prepare(party, creatures, request, SEARCH_LIMIT);
+        EncounterGenerationPreparationUseCase preparation = PrepareEncounterGenerationUseCase.prepare(party, creatures, request, SEARCH_LIMIT);
         if (!preparation.success()) {
             return new GenerateResult(preparation.status(), preparation.budget(), List.of(), preparation.message());
         }
-        List<GeneratedEncounter> generatedEncounters = new EncounterResultAssembler(creatures)
+        List<GeneratedEncounter> generatedEncounters = new AssembleEncounterResultUseCase(creatures)
                 .assemble(preparation.drafts(), request.alternativeCount());
         return new GenerateResult(preparation.status(), preparation.budget(), generatedEncounters, preparation.message());
     }

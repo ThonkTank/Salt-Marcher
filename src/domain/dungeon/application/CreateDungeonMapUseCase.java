@@ -4,8 +4,8 @@ import src.domain.dungeon.published.CreateDungeonMapCommand;
 import src.domain.dungeon.published.CreateDungeonMapResult;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.repository.DungeonDocumentRepository;
-import src.domain.dungeon.map.repository.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonDocumentRepository;
+import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 
 /**

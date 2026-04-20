@@ -1,14 +1,13 @@
 package src.domain.creatures.application;
 
-import src.domain.creatures.published.CreatureFilterOptions;
-import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import org.jspecify.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Map;
 
-final class LoadCreatureFilterOptionsUseCase {
+public final class LoadCreatureFilterOptionsUseCase {
 
     private static final List<String> CHALLENGE_RATINGS = List.of(
             "0", "1/8", "1/4", "1/2",
@@ -53,21 +52,15 @@ final class LoadCreatureFilterOptionsUseCase {
             Map.entry("30", 155000)
     );
 
-    private final CreatureCatalogRepository queryPort;
+    private final CreatureCatalogLookup queryPort;
 
-    LoadCreatureFilterOptionsUseCase(CreatureCatalogRepository queryPort) {
+    public LoadCreatureFilterOptionsUseCase(CreatureCatalogLookup queryPort) {
         this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
     }
 
-    CreatureFilterOptions execute() {
-        CreatureCatalogRepository.DistinctFilterValues values = queryPort.loadFilterValues();
-        return new CreatureFilterOptions(
-                values.sizes(),
-                values.types(),
-                values.subtypes(),
-                values.biomes(),
-                values.alignments(),
-                CHALLENGE_RATINGS);
+    public FilterOptions execute() {
+        CreatureCatalogLookup.DistinctFilterValues values = queryPort.loadFilterValues();
+        return new FilterOptions(values, CHALLENGE_RATINGS);
     }
 
     static @Nullable Integer xpForChallengeRating(@Nullable String challengeRating) {
@@ -75,5 +68,39 @@ final class LoadCreatureFilterOptionsUseCase {
             return null;
         }
         return CR_TO_XP.get(challengeRating);
+    }
+
+    public record FilterOptions(
+            CreatureCatalogLookup.DistinctFilterValues values,
+            List<String> challengeRatings
+    ) {
+        private static final CreatureCatalogLookup.DistinctFilterValues EMPTY_VALUES =
+                new CreatureCatalogLookup.DistinctFilterValues(
+                        List.of(), List.of(), List.of(), List.of(), List.of());
+
+        public FilterOptions {
+            values = values == null ? EMPTY_VALUES : values;
+            challengeRatings = challengeRatings == null ? List.of() : List.copyOf(challengeRatings);
+        }
+
+        public List<String> sizes() {
+            return values.sizes();
+        }
+
+        public List<String> types() {
+            return values.types();
+        }
+
+        public List<String> subtypes() {
+            return values.subtypes();
+        }
+
+        public List<String> biomes() {
+            return values.biomes();
+        }
+
+        public List<String> alignments() {
+            return values.alignments();
+        }
     }
 }

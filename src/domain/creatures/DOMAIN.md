@@ -38,8 +38,9 @@ policy.
 ## Catalog Model
 
 `catalog/` owns the domain role packages for imported creature reference
-catalog access. Repository-like lookup contracts belong under the catalog
-module role package that matches the contract semantics.
+catalog access. Read-only catalog lookup ports belong under `catalog/port/`.
+They express domain-facing lookup needs, not data adapter placement or storage
+shape.
 
 ## Promotion Triggers
 

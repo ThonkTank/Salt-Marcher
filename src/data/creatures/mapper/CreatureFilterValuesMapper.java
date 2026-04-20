@@ -1,15 +1,15 @@
 package src.data.creatures.mapper;
 
 import src.data.creatures.model.CreatureFilterValuesRecord;
-import src.domain.creatures.catalog.repository.CreatureCatalogRepository;
+import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 public final class CreatureFilterValuesMapper {
 
     private CreatureFilterValuesMapper() {
     }
 
-    public static CreatureCatalogRepository.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
-        return new CreatureCatalogRepository.DistinctFilterValues(
+    public static CreatureCatalogLookup.DistinctFilterValues toQueryValues(CreatureFilterValuesRecord record) {
+        return new CreatureCatalogLookup.DistinctFilterValues(
                 record.sizes(),
                 record.types(),
                 record.subtypes(),

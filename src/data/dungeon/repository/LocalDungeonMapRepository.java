@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.repository.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 
 /**

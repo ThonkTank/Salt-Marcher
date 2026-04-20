@@ -2,8 +2,8 @@ package src.domain.dungeon.application;
 
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DeleteDungeonMapResult;
-import src.domain.dungeon.map.repository.DungeonDocumentRepository;
-import src.domain.dungeon.map.repository.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonDocumentRepository;
+import src.domain.dungeon.map.port.DungeonMapRepository;
 
 /**
  * Deletes an authored dungeon map aggregate.
