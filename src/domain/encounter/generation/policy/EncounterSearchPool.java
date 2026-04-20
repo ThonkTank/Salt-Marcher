@@ -1,4 +1,6 @@
-package src.domain.encounter.generation.value;
+package src.domain.encounter.generation.policy;
+
+import src.domain.encounter.generation.value.*;
 
 
 import java.util.Comparator;
@@ -6,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-final class EncounterSearchPool {
+public final class EncounterSearchPool {
 
     private static final int FIT_POOL_LIMIT = 24;
     private static final int LOW_XP_POOL_LIMIT = 16;
@@ -14,7 +16,7 @@ final class EncounterSearchPool {
     private EncounterSearchPool() {
     }
 
-    static List<EncounterCandidateProfile> build(
+    public static List<EncounterCandidateProfile> build(
             List<EncounterCandidateProfile> unlockedProfiles,
             EncounterDifficultyMath.Thresholds thresholds,
             EncounterDifficultyIntent targetDifficulty

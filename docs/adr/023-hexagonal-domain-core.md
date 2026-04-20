@@ -14,8 +14,8 @@ render-oriented `mapcore` context.
 
 The remaining model was still too mixed. It used DDD as the primary
 architecture label, kept `repository/` as a domain role package, discussed
-read models in domain placement terms, and left developers to infer which
-parts were boundary rules versus data-layer implementation concerns.
+read-side placement in domain terms, and left developers to infer which parts
+were boundary rules versus data-layer implementation concerns.
 
 That made the domain layer sound like it owned too much infrastructure. It
 also weakened the boundary between the application core and outbound adapters.
@@ -32,12 +32,11 @@ SaltMarcher adopts Hexagonal Architecture as the canonical domain-layer model.
 - Named domain modules contain tactical role packages, but DDD is vocabulary
   inside the core, not the system boundary model.
 - `port/` is the only outbound domain role package.
-- Domain `repository/` and `readmodel/` role packages are removed.
+- Domain `repository/` role packages are removed.
 - Write-model persistence needs are expressed as outbound ports that may be
   named `*Repository`, placed under `port/`.
-- Read-only lookup, search, and projection needs are expressed as outbound
-  ports such as `*Lookup`, `*QueryPort`, `*ReadPort`, or `*ProjectionPort`,
-  also placed under `port/`.
+- Read-only lookup, catalog, and search needs are expressed as outbound ports
+  such as `*Lookup`, `*Catalog`, or `*Search`, also placed under `port/`.
 - Data-layer `repository/` and `query/` packages implement those domain-owned
   ports as adapters.
 - Named domain modules must not depend on any `src.domain.*.published.*`
@@ -66,7 +65,7 @@ adapter decisions. DDD remains useful for aggregates, entities, values,
 policies, factories, domain services, events, and specifications, but it is
 not the clearest model for inter-layer communication in this codebase.
 
-### Add separate domain `repository/` and `readmodel/` role packages
+### Add separate domain `repository/` and read-side role packages
 
 Rejected because that duplicates data-layer vocabulary inside the core. The
 domain should state outbound needs through ports; the data layer decides

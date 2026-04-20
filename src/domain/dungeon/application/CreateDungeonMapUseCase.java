@@ -1,8 +1,5 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.published.CreateDungeonMapCommand;
-import src.domain.dungeon.published.CreateDungeonMapResult;
-import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.port.DungeonDocumentRepository;
 import src.domain.dungeon.map.port.DungeonMapRepository;
@@ -13,29 +10,30 @@ import src.domain.dungeon.map.value.DungeonMapIdentity;
  */
 public final class CreateDungeonMapUseCase {
 
+    public record CreatedMap(DungeonMapIdentity mapId) {
+    }
+
     private final DungeonMapRepository repository;
     private final DungeonDocumentRepository documentStore;
-    private final MapDungeonFactsUseCase mapper = new MapDungeonFactsUseCase();
 
     public CreateDungeonMapUseCase(DungeonMapRepository repository, DungeonDocumentRepository documentStore) {
         this.repository = repository;
         this.documentStore = documentStore;
     }
 
-    public CreateDungeonMapResult execute(CreateDungeonMapCommand command) {
+    public CreatedMap execute(String requestedMapName) {
         DungeonMapIdentity mapIdentity = repository.nextId();
-        DungeonMapId mapId = mapper.toPublishedId(mapIdentity);
-        String mapName = normalizeName(command);
+        String mapName = normalizeName(requestedMapName);
         DungeonMap dungeonMap = DungeonMap.empty(mapIdentity, mapName);
         repository.save(dungeonMap);
         documentStore.ensureMap(mapIdentity, mapName);
-        return new CreateDungeonMapResult(mapId);
+        return new CreatedMap(mapIdentity);
     }
 
-    private String normalizeName(CreateDungeonMapCommand command) {
-        if (command == null || command.mapName().isBlank()) {
+    private String normalizeName(String requestedMapName) {
+        if (requestedMapName == null || requestedMapName.isBlank()) {
             return "Dungeon Map";
         }
-        return command.mapName();
+        return requestedMapName;
     }
 }

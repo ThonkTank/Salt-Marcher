@@ -48,9 +48,10 @@ Current state:
 Target state:
 
 - orchestration remains in `application/`
-- stable encounter generation collaborators live under explicit
-  `generation/value/` role placement and continue to move toward separate
-  policy or factory roles when a rule set becomes independently nameable
+- immutable generation facts stay in `generation/value/`
+- named balancing, targeting, ranking, role, and tag rules live in
+  `generation/policy/`
+- deterministic draft construction lives in `generation/factory/`
 
 ## Write Model And Derived State
 
@@ -76,13 +77,14 @@ Write Model: None
 The v1 encounter context has no persisted aggregate root. Its policy boundary
 is the `generation/` module.
 
-- `generation/value/` owns the ephemeral generation model: drafts, entries,
-  metrics, candidate profiles, composition values, XP profiles, deterministic
-  ranking helpers, and draft creation collaborators.
-- Promote a type from `generation/value/` into `generation/policy/`,
-  `generation/factory/`, or `generation/service/` only when it becomes a
-  separately reusable domain concept instead of an internal generation-model
-  collaborator.
+- `generation/value/` owns immutable generation facts: drafts, entries,
+  metrics, candidate profiles, composition values, difficulty intent, and XP
+  profiles.
+- `generation/policy/` owns stateless rule sets for difficulty math, XP
+  targets, candidate narrowing, draft ranking/scoring, role classification,
+  and tag derivation.
+- `generation/factory/` owns deterministic creation of candidate profiles and
+  encounter drafts from already translated generation facts.
 
 ## Ephemeral Policy Rationale
 
@@ -119,7 +121,7 @@ are session-local controls over the next generation command.
 ## Ubiquitous Language
 
 - `EncounterDifficultyBand`: requested difficulty intent.
-- `EncounterDifficultyTargets`: budget thresholds for the active party.
+- `EncounterDifficultyTargets`: policy thresholds for the active party.
 - `EncounterDraft`: candidate generated encounter before export.
 - `EncounterCandidateProfile`: creature candidate enriched for generation.
 - `EncounterLock`: runtime mandatory creature input.

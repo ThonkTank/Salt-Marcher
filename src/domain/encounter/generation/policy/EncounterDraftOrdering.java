@@ -1,15 +1,17 @@
-package src.domain.encounter.generation.value;
+package src.domain.encounter.generation.policy;
+
+import src.domain.encounter.generation.value.*;
 
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
-final class EncounterDraftOrdering {
+public final class EncounterDraftOrdering {
 
     private EncounterDraftOrdering() {
     }
 
-    static List<EncounterDraft> topDrafts(Collection<EncounterDraft> drafts, int limit) {
+    public static List<EncounterDraft> topDrafts(Collection<EncounterDraft> drafts, int limit) {
         return drafts.stream()
                 .sorted(Comparator.comparingInt(EncounterDraftOrdering::score).reversed()
                         .thenComparingInt(EncounterDraftOrdering::targetDistance)

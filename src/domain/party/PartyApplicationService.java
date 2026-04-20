@@ -95,9 +95,10 @@ public final class PartyApplicationService {
 
     public ActivePartyCompositionResult loadActivePartyComposition() {
         try {
+            LoadActivePartyCompositionUseCase.ActiveComposition composition = loadActivePartyCompositionUseCase.execute();
             return new ActivePartyCompositionResult(
                     ReadStatus.SUCCESS,
-                    loadActivePartyCompositionUseCase.execute());
+                    new ActivePartyComposition(composition.activePartyLevels(), composition.averageActiveLevel()));
         } catch (IllegalStateException exception) {
             return new ActivePartyCompositionResult(
                     ReadStatus.STORAGE_ERROR,

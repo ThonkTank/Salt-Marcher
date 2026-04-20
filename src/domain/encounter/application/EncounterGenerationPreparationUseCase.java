@@ -1,14 +1,13 @@
 package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.generation.value.EncounterDraft;
 
 import java.util.List;
 
 record EncounterGenerationPreparationUseCase(
         EncounterGenerationUseCase.GenerateStatus status,
-        @Nullable EncounterBudgetSummary budget,
+        EncounterGenerationUseCase.@Nullable BudgetSummary budget,
         List<EncounterDraft> drafts,
         String message
 ) {
@@ -18,7 +17,7 @@ record EncounterGenerationPreparationUseCase(
     }
 
     static EncounterGenerationPreparationUseCase success(
-            EncounterBudgetSummary budget,
+            EncounterGenerationUseCase.BudgetSummary budget,
             List<EncounterDraft> drafts
     ) {
         return new EncounterGenerationPreparationUseCase(
@@ -30,7 +29,7 @@ record EncounterGenerationPreparationUseCase(
 
     static EncounterGenerationPreparationUseCase failure(
             EncounterGenerationUseCase.GenerateStatus status,
-            @Nullable EncounterBudgetSummary budget,
+            EncounterGenerationUseCase.@Nullable BudgetSummary budget,
             String message
     ) {
         return new EncounterGenerationPreparationUseCase(status, budget, List.of(), message);

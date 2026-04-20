@@ -9,18 +9,18 @@ adapter responsibilities, and layer-specific enforcement status for `src/data/**
 ## Goal
 
 SaltMarcher uses a strict data-layer model so `src/data/**` owns persistence
-and external-system adaptation behind domain-owned contracts, with one explicit
-registration root, one internal source-adapter boundary, and no business-rule
-ownership leaking out of `src/domain/**`.
+and external-system adaptation behind domain-owned outbound ports, with one
+explicit registration root, one internal source-adapter boundary, and no
+business-rule ownership leaking out of `src/domain/**`.
 
 ## Pattern Alignment
 
 - `Ports and Adapters` / `Hexagonal Architecture` govern the relationship
-  between domain-owned contracts and technology-specific adapter
+  between domain-owned outbound ports and technology-specific adapter
   implementations.
 - Domain `port/` packages own outbound port interfaces. Write-model ports may
-  be named `*Repository`; read-only lookup/search/projection ports may be named
-  `*Lookup`, `*QueryPort`, `*ReadPort`, or `*ProjectionPort`.
+  be named `*Repository`; read-only lookup, catalog, or search ports may be
+  named `*Lookup`, `*Catalog`, or `*Search`.
 - Data `repository/` implements write-model domain ports. Data `query/`
   implements read-only domain ports.
 - `Data Mapper` governs translation between source-local records and domain or

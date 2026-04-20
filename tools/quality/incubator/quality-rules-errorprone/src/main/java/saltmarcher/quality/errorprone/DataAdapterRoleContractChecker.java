@@ -18,7 +18,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DataAdapterRoleContract",
-        summary = "Repository adapters implement write ports and query adapters implement read ports.",
+        summary = "Repository adapters implement write ports and query adapters implement read-only ports.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataAdapterRoleContractChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
@@ -136,7 +136,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
             }
             java.util.regex.Matcher queryMatcher = DataArchitectureSupport.QUERY_PACKAGE.matcher(packageName);
             if (queryMatcher.matches()) {
-                return new AdapterRole("Query", ContractRole.QUERY, "read-model/query", queryMatcher.group(1));
+                return new AdapterRole("Query", ContractRole.READ_ONLY, "read-only", queryMatcher.group(1));
             }
             return null;
         }
@@ -152,7 +152,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
 
     private enum ContractRole {
         REPOSITORY,
-        QUERY
+        READ_ONLY
     }
 
     private record DomainContract(String qualifiedName, String featureName, ContractRole role) {
@@ -174,12 +174,10 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
             if (simpleName.endsWith("Repository")) {
                 return ContractRole.REPOSITORY;
             }
-            if (simpleName.endsWith("QueryPort")
-                    || simpleName.endsWith("ReadPort")
-                    || simpleName.endsWith("LookupPort")
-                    || simpleName.endsWith("ProjectionPort")
-                    || simpleName.endsWith("Lookup")) {
-                return ContractRole.QUERY;
+            if (simpleName.endsWith("Lookup")
+                    || simpleName.endsWith("Catalog")
+                    || simpleName.endsWith("Search")) {
+                return ContractRole.READ_ONLY;
             }
             return null;
         }

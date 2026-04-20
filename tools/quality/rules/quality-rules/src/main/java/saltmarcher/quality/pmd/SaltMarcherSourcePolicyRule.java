@@ -12,9 +12,9 @@ import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
 public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
 
     private static final Pattern ROOT_APPLICATION_SERVICE_COMPOSITION_PATTERN = Pattern.compile(
-            "\\bnew\\s+[A-Z][A-Za-z0-9_]*(?:Repository|QueryAdapter|QueryPort|Gateway|Store|ConnectionFactory|Migrator|TableManager)\\s*\\(");
+            "\\bnew\\s+[A-Z][A-Za-z0-9_]*(?:Repository|QueryAdapter|Lookup|Catalog|Search|Gateway|Store|ConnectionFactory|Migrator|TableManager)\\s*\\(");
     private static final Pattern ROOT_APPLICATION_SERVICE_STATIC_BACKEND_PATTERN = Pattern.compile(
-            "(?m)^\\s*private\\s+static\\s+final\\s+.*(?:Repository|QueryPort|QueryAdapter|Gateway|Store|Factory|ConnectionFactory)\\b");
+            "(?m)^\\s*private\\s+static\\s+final\\s+.*(?:Repository|Lookup|Catalog|Search|QueryAdapter|Gateway|Store|Factory|ConnectionFactory)\\b");
     private static final Pattern ENUM_BODY_PATTERN = Pattern.compile("(?s)enum\\s+%s\\s*\\{(.*?)\\}");
     private static final Pattern ENUM_CONSTANT_PATTERN = Pattern.compile("(?m)^\\s*([A-Z][A-Z0-9_]*)\\b");
     private static final Pattern PERMITS_CLAUSE_PATTERN = Pattern.compile(
@@ -263,8 +263,9 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
 
         String simpleName = registeredType.substring(registeredType.lastIndexOf('.') + 1);
         return simpleName.endsWith("Repository")
-                || simpleName.endsWith("Port")
-                || simpleName.endsWith("Lookup");
+                || simpleName.endsWith("Lookup")
+                || simpleName.endsWith("Catalog")
+                || simpleName.endsWith("Search");
     }
 
     private static boolean isBootstrapOrShellSource(SaltMarcherSourceFacts sourceFacts) {

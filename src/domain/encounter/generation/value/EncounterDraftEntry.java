@@ -21,7 +21,7 @@ public record EncounterDraftEntry(
         return profile.xp();
     }
 
-    String role() {
+    public String role() {
         return profile.role();
     }
 

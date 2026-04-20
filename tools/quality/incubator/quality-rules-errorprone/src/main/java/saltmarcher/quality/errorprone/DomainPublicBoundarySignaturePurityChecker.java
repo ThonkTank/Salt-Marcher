@@ -491,8 +491,9 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         String simpleName = typeElement.getSimpleName().toString();
         return typeElement.getKind() == ElementKind.INTERFACE
                 && (simpleName.endsWith("Repository")
-                || simpleName.endsWith("Port")
-                || simpleName.endsWith("Lookup"));
+                || simpleName.endsWith("Lookup")
+                || simpleName.endsWith("Catalog")
+                || simpleName.endsWith("Search"));
     }
 
     private static String domainFeatureName(String fqn) {

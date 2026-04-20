@@ -6,7 +6,7 @@ public final class EncounterCandidateProfile {
     private final EncounterCandidateCombatStats combatStats;
     private final String role;
 
-    EncounterCandidateProfile(
+    public EncounterCandidateProfile(
             EncounterCreatureFacts facts,
             EncounterCandidateCombatStats combatStats,
             String role
@@ -16,43 +16,43 @@ public final class EncounterCandidateProfile {
         this.role = role;
     }
 
-    int xp() {
+    public int xp() {
         return combatStats.xp();
     }
 
-    long id() {
+    public long id() {
         return facts.id();
     }
 
-    String name() {
+    public String name() {
         return facts.name();
     }
 
-    String challengeRating() {
+    public String challengeRating() {
         return facts.challengeRating();
     }
 
-    String role() {
+    public String role() {
         return role;
     }
 
-    EncounterCreatureFacts facts() {
+    public EncounterCreatureFacts facts() {
         return facts;
     }
 
-    int hitPoints() {
+    public int hitPoints() {
         return combatStats.hitPoints();
     }
 
-    int armorClass() {
+    public int armorClass() {
         return combatStats.armorClass();
     }
 
-    int initiativeBonus() {
+    public int initiativeBonus() {
         return combatStats.initiativeBonus();
     }
 
-    int legendaryActionCount() {
+    public int legendaryActionCount() {
         return combatStats.legendaryActionCount();
     }
 }

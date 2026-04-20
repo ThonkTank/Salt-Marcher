@@ -288,8 +288,8 @@ The MVVM Model role is fulfilled by `src/domain/**`.
 
 Responsibilities:
 
-- own business language, rules, invariants, policies, domain-owned contracts,
-  and application services
+- own business language, rules, invariants, policies, domain-owned outbound
+  ports, and application services
 - expose exactly one callable client boundary per feature:
   `<Feature>ApplicationService`
 - expose only carrier records, enums, and sealed carrier abstractions under
@@ -302,9 +302,9 @@ Forbidden dependencies:
 - `javafx.*`
 - `src.data.*` implementation types
 
-The domain-layer standard owns the detailed DDD structure. This standard owns
-only the MVVM-facing rule that the view layer treats each domain feature as a
-model behind one root application service.
+The domain-layer standard owns the detailed hexagonal domain-core structure.
+This standard owns only the MVVM-facing rule that the view layer treats each
+domain feature as a model behind one root application service.
 
 ## Lifecycle, Commands, And Async Work
 

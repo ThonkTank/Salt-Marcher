@@ -1,11 +1,17 @@
 package src.domain.encounter;
 
+import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.encounter.published.EncounterBudgetSummary;
+import src.domain.encounter.published.EncounterCreature;
 import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterGenerationRequest;
+import src.domain.encounter.published.EncounterLock;
 import src.domain.encounter.application.EncounterGenerationUseCase;
+import src.domain.encounter.published.GeneratedEncounter;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.party.PartyApplicationService;
 
 import java.util.List;
@@ -28,17 +34,95 @@ public final class EncounterApplicationService {
 
     public EncounterGenerationResult generate(EncounterGenerationRequest request) {
         try {
-            EncounterGenerationUseCase.GenerateResult result = generator.execute(request == null
-                    ? new EncounterGenerationRequest(List.of(), List.of(), List.of(), EncounterDifficultyBand.defaultBand(), 5, List.of(), List.of())
-                    : request);
+            EncounterGenerationUseCase.GenerateResult result = generator.execute(toGenerateRequest(request));
             return new EncounterGenerationResult(
                     mapStatus(result.status()),
-                    result.budget(),
-                    result.encounters(),
+                    toPublishedBudget(result.budget()),
+                    result.encounters().stream().map(EncounterApplicationService::toPublishedEncounter).toList(),
                     result.message());
         } catch (RuntimeException exception) {
             return new EncounterGenerationResult(EncounterGenerationStatus.defaultFailure(), null, List.of(), "Encounter generation failed.");
         }
+    }
+
+    private static EncounterGenerationUseCase.GenerateRequest toGenerateRequest(EncounterGenerationRequest request) {
+        EncounterGenerationRequest effectiveRequest = request == null
+                ? new EncounterGenerationRequest(List.of(), List.of(), List.of(), EncounterDifficultyBand.defaultBand(), 5, List.of(), List.of())
+                : request;
+        return new EncounterGenerationUseCase.GenerateRequest(
+                effectiveRequest.creatureTypes(),
+                effectiveRequest.creatureSubtypes(),
+                effectiveRequest.biomes(),
+                toDifficultyIntent(effectiveRequest.targetDifficulty()),
+                effectiveRequest.alternativeCount(),
+                effectiveRequest.excludedCreatureIds(),
+                effectiveRequest.lockedCreatures().stream()
+                        .filter(Objects::nonNull)
+                        .map(EncounterApplicationService::toLockedCreature)
+                        .toList());
+    }
+
+    private static EncounterGenerationUseCase.LockedCreature toLockedCreature(EncounterLock lock) {
+        return new EncounterGenerationUseCase.LockedCreature(lock.creatureId(), lock.quantity());
+    }
+
+    private static EncounterDifficultyIntent toDifficultyIntent(EncounterDifficultyBand band) {
+        return switch (band == null ? EncounterDifficultyBand.defaultBand() : band) {
+            case EASY -> EncounterDifficultyIntent.EASY;
+            case MEDIUM -> EncounterDifficultyIntent.MEDIUM;
+            case HARD -> EncounterDifficultyIntent.HARD;
+            case DEADLY -> EncounterDifficultyIntent.DEADLY;
+        };
+    }
+
+    private static @Nullable EncounterBudgetSummary toPublishedBudget(
+            EncounterGenerationUseCase.@Nullable BudgetSummary budget
+    ) {
+        if (budget == null) {
+            return null;
+        }
+        return new EncounterBudgetSummary(
+                budget.partyLevels(),
+                budget.averageLevel(),
+                budget.easyXp(),
+                budget.mediumXp(),
+                budget.hardXp(),
+                budget.deadlyXp(),
+                budget.dailyBudgetXp(),
+                budget.consumedDailyXp(),
+                budget.remainingDailyXp());
+    }
+
+    private static GeneratedEncounter toPublishedEncounter(EncounterGenerationUseCase.GeneratedEncounterData encounter) {
+        return new GeneratedEncounter(
+                encounter.title(),
+                toPublishedDifficulty(encounter.achievedDifficulty()),
+                encounter.creatureCount(),
+                encounter.totalBaseXp(),
+                encounter.adjustedXp(),
+                encounter.xpMultiplier(),
+                encounter.highlights(),
+                encounter.creatures().stream().map(EncounterApplicationService::toPublishedCreature).toList());
+    }
+
+    private static EncounterDifficultyBand toPublishedDifficulty(EncounterDifficultyIntent intent) {
+        return switch (intent == null ? EncounterDifficultyIntent.MEDIUM : intent) {
+            case EASY -> EncounterDifficultyBand.EASY;
+            case MEDIUM -> EncounterDifficultyBand.MEDIUM;
+            case HARD -> EncounterDifficultyBand.HARD;
+            case DEADLY -> EncounterDifficultyBand.DEADLY;
+        };
+    }
+
+    private static EncounterCreature toPublishedCreature(EncounterGenerationUseCase.EncounterCreatureData creature) {
+        return new EncounterCreature(
+                creature.creatureId(),
+                creature.name(),
+                creature.challengeRating(),
+                creature.xp(),
+                creature.quantity(),
+                creature.role(),
+                creature.tags());
     }
 
     private static EncounterGenerationStatus mapStatus(EncounterGenerationUseCase.GenerateStatus status) {

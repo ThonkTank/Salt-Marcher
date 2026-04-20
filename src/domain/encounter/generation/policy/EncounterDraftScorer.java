@@ -1,9 +1,11 @@
-package src.domain.encounter.generation.value;
+package src.domain.encounter.generation.policy;
+
+import src.domain.encounter.generation.value.*;
 
 
 import java.util.Set;
 
-final class EncounterDraftScorer {
+public final class EncounterDraftScorer {
 
     private static final int LARGE_CREATURE_GROUP = 6;
     private static final int LARGE_QUANTITY_STACK = 4;
@@ -11,7 +13,7 @@ final class EncounterDraftScorer {
     private EncounterDraftScorer() {
     }
 
-    static int score(ScoreInput input) {
+    public static int score(ScoreInput input) {
         int score = 0;
         ScoreContext context = input.context();
         EncounterDraftComposition composition = input.composition();
@@ -25,13 +27,13 @@ final class EncounterDraftScorer {
         return score;
     }
 
-    record ScoreInput(
+    public record ScoreInput(
             EncounterDraftComposition composition,
             ScoreContext context
     ) {
     }
 
-    record ScoreContext(
+    public record ScoreContext(
             EncounterDifficultyIntent targetDifficulty,
             EncounterDifficultyIntent achievedDifficulty,
             EncounterDifficultyMath.Thresholds thresholds,

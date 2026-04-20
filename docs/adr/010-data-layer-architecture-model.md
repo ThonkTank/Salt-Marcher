@@ -18,7 +18,7 @@ That gap leaves several important decisions too implicit:
 - how much business logic is allowed to accumulate in persistence code
 
 The current codebase already points in a consistent direction. Party and
-creatures use thin `ServiceContribution` roots, domain-owned contracts,
+creatures use thin `ServiceContribution` roots, domain-owned outbound ports,
 SQLite source adapters, source-local models, and dedicated mappers.
 At the time this ADR was accepted, some transitional implementations still
 lived outside the long-term target shape and were not to be treated as
@@ -33,8 +33,8 @@ SaltMarcher adopts a dedicated data-layer architecture standard for
 - The data layer is the single authored home for persistence and
   external-system adaptation below the domain.
 - Domain-owned outbound ports remain in `src/domain/**`; `src/data/**`
-  implements them. ADR 023 later standardizes those contracts under domain
-  module `port/` packages.
+  implements them. ADR 023 later standardizes those ports under domain module
+  `port/` packages.
 - `repository/` owns write-model persistence adapters.
 - `query/` owns exported read-only query adapters.
 - `gateway/` owns concrete source mechanics and stays internal to the owning

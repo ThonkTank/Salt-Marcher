@@ -14,12 +14,11 @@ public interface CreatureCatalogLookup {
             List<String> alignments
     ) {
         public DistinctFilterValues {
-            List<List<String>> normalized = normalizeLists(sizes, types, subtypes, biomes, alignments);
-            sizes = normalized.get(0);
-            types = normalized.get(1);
-            subtypes = normalized.get(2);
-            biomes = normalized.get(3);
-            alignments = normalized.get(4);
+            sizes = copyStrings(sizes);
+            types = copyStrings(types);
+            subtypes = copyStrings(subtypes);
+            biomes = copyStrings(biomes);
+            alignments = copyStrings(alignments);
         }
 
         @Override
@@ -433,12 +432,6 @@ public interface CreatureCatalogLookup {
     @Nullable CreatureProfile loadCreatureDetail(long creatureId);
 
     List<EncounterCandidateProfile> loadEncounterCandidates(EncounterCandidateSpec spec);
-
-    private static List<List<String>> normalizeLists(List<String>... values) {
-        return java.util.Arrays.stream(values)
-                .map(CreatureCatalogLookup::copyStrings)
-                .toList();
-    }
 
     private static List<String> copyStrings(List<String> values) {
         return values == null ? List.of() : List.copyOf(values);

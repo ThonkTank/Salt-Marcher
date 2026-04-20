@@ -114,9 +114,10 @@ public final class DomainRoleShapeChecker extends BugChecker implements BugCheck
         String simpleName = typeElement.getSimpleName().toString();
         if (typeElement.getKind() != ElementKind.INTERFACE
                 || !(simpleName.endsWith("Repository")
-                || simpleName.endsWith("Port")
-                || simpleName.endsWith("Lookup"))) {
-            return "ports must be interfaces ending Repository, Port, or Lookup.";
+                || simpleName.endsWith("Lookup")
+                || simpleName.endsWith("Catalog")
+                || simpleName.endsWith("Search"))) {
+            return "ports must be interfaces ending Repository, Lookup, Catalog, or Search.";
         }
         return null;
     }

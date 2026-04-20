@@ -2,9 +2,7 @@ package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encounter.published.EncounterBudgetSummary;
-import src.domain.encounter.published.EncounterGenerationRequest;
-import src.domain.encounter.published.GeneratedEncounter;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.party.PartyApplicationService;
 
 import java.util.List;
@@ -22,20 +20,93 @@ public final class EncounterGenerationUseCase {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
     }
 
-    public GenerateResult execute(EncounterGenerationRequest request) {
+    public GenerateResult execute(GenerateRequest request) {
         EncounterGenerationPreparationUseCase preparation = PrepareEncounterGenerationUseCase.prepare(party, creatures, request, SEARCH_LIMIT);
         if (!preparation.success()) {
             return new GenerateResult(preparation.status(), preparation.budget(), List.of(), preparation.message());
         }
-        List<GeneratedEncounter> generatedEncounters = new AssembleEncounterResultUseCase(creatures)
+        List<GeneratedEncounterData> generatedEncounters = new AssembleEncounterResultUseCase(creatures)
                 .assemble(preparation.drafts(), request.alternativeCount());
         return new GenerateResult(preparation.status(), preparation.budget(), generatedEncounters, preparation.message());
     }
 
+    public record GenerateRequest(
+            List<String> creatureTypes,
+            List<String> creatureSubtypes,
+            List<String> biomes,
+            EncounterDifficultyIntent targetDifficulty,
+            int alternativeCount,
+            List<Long> excludedCreatureIds,
+            List<LockedCreature> lockedCreatures
+    ) {
+        public GenerateRequest {
+            creatureTypes = creatureTypes == null ? List.of() : List.copyOf(creatureTypes);
+            creatureSubtypes = creatureSubtypes == null ? List.of() : List.copyOf(creatureSubtypes);
+            biomes = biomes == null ? List.of() : List.copyOf(biomes);
+            targetDifficulty = targetDifficulty == null ? EncounterDifficultyIntent.MEDIUM : targetDifficulty;
+            alternativeCount = Math.max(1, Math.min(10, alternativeCount <= 0 ? 5 : alternativeCount));
+            excludedCreatureIds = excludedCreatureIds == null ? List.of() : List.copyOf(excludedCreatureIds);
+            lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);
+        }
+    }
+
+    public record LockedCreature(long creatureId, int quantity) {
+        public LockedCreature {
+            quantity = Math.max(1, quantity);
+        }
+    }
+
+    public record BudgetSummary(
+            List<Integer> partyLevels,
+            int averageLevel,
+            int easyXp,
+            int mediumXp,
+            int hardXp,
+            int deadlyXp,
+            int dailyBudgetXp,
+            int consumedDailyXp,
+            int remainingDailyXp
+    ) {
+        public BudgetSummary {
+            partyLevels = partyLevels == null ? List.of() : List.copyOf(partyLevels);
+        }
+    }
+
+    public record GeneratedEncounterData(
+            String title,
+            EncounterDifficultyIntent achievedDifficulty,
+            int creatureCount,
+            int totalBaseXp,
+            int adjustedXp,
+            double xpMultiplier,
+            List<String> highlights,
+            List<EncounterCreatureData> creatures
+    ) {
+        public GeneratedEncounterData {
+            highlights = highlights == null ? List.of() : List.copyOf(highlights);
+            creatures = creatures == null ? List.of() : List.copyOf(creatures);
+        }
+    }
+
+    public record EncounterCreatureData(
+            long creatureId,
+            String name,
+            String challengeRating,
+            int xp,
+            int quantity,
+            String role,
+            List<String> tags
+    ) {
+        public EncounterCreatureData {
+            quantity = Math.max(1, quantity);
+            tags = tags == null ? List.of() : List.copyOf(tags);
+        }
+    }
+
     public record GenerateResult(
             GenerateStatus status,
-            @Nullable EncounterBudgetSummary budget,
-            List<GeneratedEncounter> encounters,
+            @Nullable BudgetSummary budget,
+            List<GeneratedEncounterData> encounters,
             String message
     ) {
 

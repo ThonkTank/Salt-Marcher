@@ -27,10 +27,10 @@ has already stayed inside the hexagon.
 - `ApplicationService` is the inbound callable boundary of one domain context.
 - `application/*UseCase` files orchestrate one use case behind that boundary.
 - `port/` contains outbound port interfaces owned by the domain core.
-- `data/**` implements outbound ports as adapters; data placement is defined
-  by the data-layer standard, not by this document.
-- `DDD` is tactical vocabulary only. It does not authorize repositories,
-  read-models, gateways, adapters, or data records to move into domain.
+- Outbound ports are implemented outside `src/domain/**`; adapter placement is
+  defined by the data-layer standard, not by this document.
+- `DDD` is tactical vocabulary only. It does not authorize gateways,
+  adapters, or data records to move into domain.
 - `Repository` is allowed only as a write-oriented outbound port interface
   name, such as `PartyRosterRepository`, placed under a domain module's
   `port/` package.
@@ -88,7 +88,7 @@ Rules:
 - Direct Java files under a named domain module are forbidden.
 - The allowed role package names are exactly `aggregate`, `entity`, `value`,
   `policy`, `port`, `factory`, `service`, `event`, and `specification`.
-- Domain `repository/`, `readmodel/`, `query/`, `gateway/`, `adapter/`,
+- Domain `repository/`, `query/`, `gateway/`, `adapter/`,
   `model/`, `mapper/`, and `api/` role buckets are forbidden.
 
 ## Boundary Terms
@@ -146,8 +146,8 @@ specification.
 `port/` owns outbound interfaces required by the domain core.
 
 - write-model persistence ports may end with `Repository`
-- read-only lookup, search, or projection ports may end with `Lookup`,
-  `QueryPort`, `ReadPort`, or `ProjectionPort`
+- read-only lookup, catalog, or search ports may end with `Lookup`, `Catalog`,
+  or `Search`
 - ports use domain language and domain-owned carrier/value types
 - ports are not storage records, not data APIs, not shell services, and not
   registration contracts
@@ -161,8 +161,7 @@ specification.
 | Root ApplicationService | `application/*UseCase` | application inputs, domain values, same-feature ports | Root translates public `published/` input before delegation. |
 | Application use case | Named domain modules | aggregates, entities, values, policies, factories, services, specifications | Use case must not pass `published/`, view, data, shell, or framework carriers into modules. |
 | Application use case | Foreign root ApplicationService | foreign public methods and foreign `published/` carriers | Boundary translates foreign published results before entering named modules. |
-| Domain core | Outside world | same-feature outbound `port/` interfaces | Outer adapters implement ports; domain imports only the port interface. |
-| Data adapter | Domain | same-feature outbound ports and public domain carriers | Adapter translates source-local data to domain-facing types. |
+| Domain core | Outside world | same-feature outbound `port/` interfaces | Implementations live outside domain; domain imports only the port interface. |
 
 ## Domain-Module Role Packages
 
@@ -247,7 +246,7 @@ documents own local model detail and must not redefine system-wide topology.
 - business rules implemented in `view` or `data`
 - additional callable client boundaries beside the root
   `<Context>ApplicationService`
-- domain `api/`, `repository/`, `readmodel/`, `query/`, `gateway/`,
+- domain `api/`, `repository/`, `query/`, `gateway/`,
   `adapter/`, `model/`, or `mapper/` role packages
 - `published/` services, facades, repositories, ports, gateways, factories, or
   policy helpers

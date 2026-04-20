@@ -1,6 +1,5 @@
 package src.domain.creatures.application;
 
-import src.domain.creatures.published.EncounterCandidateQuery;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import java.util.List;
@@ -26,6 +25,21 @@ public final class LoadEncounterCandidatesUseCase {
         }
     }
 
+    public record CandidateQueryInput(
+            List<String> types,
+            List<String> subtypes,
+            List<String> biomes,
+            int minimumXp,
+            int maximumXp,
+            int limit
+    ) {
+        public CandidateQueryInput {
+            types = types == null ? List.of() : List.copyOf(types);
+            subtypes = subtypes == null ? List.of() : List.copyOf(subtypes);
+            biomes = biomes == null ? List.of() : List.copyOf(biomes);
+        }
+    }
+
     private static final int DEFAULT_LIMIT = 250;
     private static final int MAX_LIMIT = 1000;
 
@@ -35,7 +49,7 @@ public final class LoadEncounterCandidatesUseCase {
         this.queryPort = Objects.requireNonNull(queryPort, "queryPort");
     }
 
-    public LoadResult execute(EncounterCandidateQuery query) {
+    public LoadResult execute(CandidateQueryInput query) {
         if (query == null) {
             return new LoadResult(LoadStatus.SUCCESS, queryPort.loadEncounterCandidates(
                     new CreatureCatalogLookup.EncounterCandidateSpec(List.of(), List.of(), List.of(), 0, Integer.MAX_VALUE, DEFAULT_LIMIT)));

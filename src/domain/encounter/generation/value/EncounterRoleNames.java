@@ -1,11 +1,11 @@
 package src.domain.encounter.generation.value;
 
-final class EncounterRoleNames {
+public final class EncounterRoleNames {
 
-    static final String BOSS = "Boss";
-    static final String BRUTE = "Brute";
-    static final String MINION = "Minion";
-    static final String SKIRMISHER = "Skirmisher";
+    public static final String BOSS = "Boss";
+    public static final String BRUTE = "Brute";
+    public static final String MINION = "Minion";
+    public static final String SKIRMISHER = "Skirmisher";
 
     private EncounterRoleNames() {
     }

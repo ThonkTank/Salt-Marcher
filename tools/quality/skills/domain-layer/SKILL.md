@@ -81,8 +81,8 @@ Before changing domain code:
 
 - outbound interfaces required by the domain core
 - write-model persistence ports may end with `Repository`
-- read-only lookup, search, or projection ports may end with `Lookup`,
-  `QueryPort`, `ReadPort`, or `ProjectionPort`
+- read-only lookup, catalog, or search ports may end with `Lookup`, `Catalog`,
+  or `Search`
 - not a home for data adapter classes, records, schemas, gateways, runtime
   registration, SQL, filesystem, network, or JavaFX types
 
@@ -109,7 +109,7 @@ When reviewing domain-layer work, look for:
 - role subpackages under every named domain module
 - no direct Java files under named domain modules
 - no `published/` imports from named domain modules
-- no `repository/`, `readmodel/`, `query/`, `gateway/`, `adapter/`, `model/`,
+- no `repository/`, `query/`, `gateway/`, `adapter/`, `model/`,
   or `mapper/` role packages under domain modules
 - ports stated in domain language without data-source, shell, JavaFX, SQL,
   filesystem, network, or runtime-registration terms

@@ -31,7 +31,8 @@ Use the documentation tree in this order:
 - `Service Contribution`: a feature entrypoint that registers exported runtime
   services with the passive shell.
 - `Write Model`: the authored state a feature owns and is allowed to persist.
-- `Read Model`: a read-only projection, lookup shape, or query-facing result.
+- `Outbound Port`: a domain-owned interface that states what the application
+  core needs from an outer adapter.
 - `Derived State`: any state rebuilt deterministically from the write model.
 - `Source of Truth`: the single document that is authoritative for a topic.
 

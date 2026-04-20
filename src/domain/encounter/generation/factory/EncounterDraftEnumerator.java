@@ -1,4 +1,7 @@
-package src.domain.encounter.generation.value;
+package src.domain.encounter.generation.factory;
+
+import src.domain.encounter.generation.policy.*;
+import src.domain.encounter.generation.value.*;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -16,10 +19,10 @@ final class EncounterDraftEnumerator {
     static List<EncounterDraft> enumerate(EncounterDraftBuildRequest request) {
         Map<String, EncounterDraft> drafts = new LinkedHashMap<>();
         Map<Long, Integer> baseCounts = new LinkedHashMap<>(request.lockedQuantities());
-        EncounterDraftCollector collector = new EncounterDraftCollector(drafts, profileLookup(request), request);
-        collector.add(baseCounts);
-        appendSingleCreatureDrafts(collector, baseCounts, request.pool());
-        appendDualCreatureDrafts(collector, baseCounts, request.pool());
+        Map<Long, EncounterCandidateProfile> profiles = profileLookup(request);
+        EncounterDraftCollector.add(drafts, profiles, request, baseCounts);
+        appendSingleCreatureDrafts(drafts, profiles, request, baseCounts, request.pool());
+        appendDualCreatureDrafts(drafts, profiles, request, baseCounts, request.pool());
         return EncounterDraftOrdering.topDrafts(drafts.values(), DRAFT_LIMIT);
     }
 
@@ -35,51 +38,61 @@ final class EncounterDraftEnumerator {
     }
 
     private static void appendSingleCreatureDrafts(
-            EncounterDraftCollector collector,
+            Map<String, EncounterDraft> drafts,
+            Map<Long, EncounterCandidateProfile> profiles,
+            EncounterDraftBuildRequest request,
             Map<Long, Integer> baseCounts,
             List<EncounterCandidateProfile> pool
     ) {
         for (EncounterCandidateProfile first : pool) {
-            appendSingleProfileCounts(collector, baseCounts, first);
+            appendSingleProfileCounts(drafts, profiles, request, baseCounts, first);
         }
     }
 
     private static void appendSingleProfileCounts(
-            EncounterDraftCollector collector,
+            Map<String, EncounterDraft> drafts,
+            Map<Long, EncounterCandidateProfile> profiles,
+            EncounterDraftBuildRequest request,
             Map<Long, Integer> baseCounts,
             EncounterCandidateProfile first
     ) {
         for (int firstCount = 1; firstCount <= EncounterProfileCopies.maxAdditionalCopies(first); firstCount++) {
             Map<Long, Integer> single = new LinkedHashMap<>(baseCounts);
             single.merge(first.id(), firstCount, Integer::sum);
-            collector.add(single);
+            EncounterDraftCollector.add(drafts, profiles, request, single);
         }
     }
 
     private static void appendDualCreatureDrafts(
-            EncounterDraftCollector collector,
+            Map<String, EncounterDraft> drafts,
+            Map<Long, EncounterCandidateProfile> profiles,
+            EncounterDraftBuildRequest request,
             Map<Long, Integer> baseCounts,
             List<EncounterCandidateProfile> pool
     ) {
         for (int i = 0; i < pool.size(); i++) {
-            appendDualsForFirstProfile(collector, baseCounts, pool, i);
+            appendDualsForFirstProfile(drafts, profiles, request, baseCounts, pool, i);
         }
     }
 
     private static void appendDualsForFirstProfile(
-            EncounterDraftCollector collector,
+            Map<String, EncounterDraft> drafts,
+            Map<Long, EncounterCandidateProfile> profiles,
+            EncounterDraftBuildRequest request,
             Map<Long, Integer> baseCounts,
             List<EncounterCandidateProfile> pool,
             int firstIndex
     ) {
         EncounterCandidateProfile first = pool.get(firstIndex);
         for (int j = firstIndex + 1; j < pool.size(); j++) {
-            appendDualProfileCounts(collector, baseCounts, first, pool.get(j));
+            appendDualProfileCounts(drafts, profiles, request, baseCounts, first, pool.get(j));
         }
     }
 
     private static void appendDualProfileCounts(
-            EncounterDraftCollector collector,
+            Map<String, EncounterDraft> drafts,
+            Map<Long, EncounterCandidateProfile> profiles,
+            EncounterDraftBuildRequest request,
             Map<Long, Integer> baseCounts,
             EncounterCandidateProfile first,
             EncounterCandidateProfile second
@@ -88,22 +101,26 @@ final class EncounterDraftEnumerator {
         int secondLimit = Math.min(MAX_SECOND_DUAL_COPIES, EncounterProfileCopies.maxAdditionalCopies(second));
         for (int firstCount = 1; firstCount <= firstLimit; firstCount++) {
             appendSecondProfileCounts(
-                    collector,
+                    drafts,
+                    profiles,
+                    request,
                     baseCounts,
                     new DualProfileCountRequest(first, second, firstCount, secondLimit));
         }
     }
 
     private static void appendSecondProfileCounts(
-            EncounterDraftCollector collector,
+            Map<String, EncounterDraft> drafts,
+            Map<Long, EncounterCandidateProfile> profiles,
+            EncounterDraftBuildRequest buildRequest,
             Map<Long, Integer> baseCounts,
-            DualProfileCountRequest request
+            DualProfileCountRequest dualRequest
     ) {
-        for (int secondCount = 1; secondCount <= request.secondLimit(); secondCount++) {
+        for (int secondCount = 1; secondCount <= dualRequest.secondLimit(); secondCount++) {
             Map<Long, Integer> dual = new LinkedHashMap<>(baseCounts);
-            dual.merge(request.first().id(), request.firstCount(), Integer::sum);
-            dual.merge(request.second().id(), secondCount, Integer::sum);
-            collector.add(dual);
+            dual.merge(dualRequest.first().id(), dualRequest.firstCount(), Integer::sum);
+            dual.merge(dualRequest.second().id(), secondCount, Integer::sum);
+            EncounterDraftCollector.add(drafts, profiles, buildRequest, dual);
         }
     }
 

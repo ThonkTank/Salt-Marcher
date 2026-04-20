@@ -1,8 +1,5 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapMode;
-import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.port.DungeonDocumentRepository;
 import src.domain.dungeon.map.value.DungeonDerivedState;
@@ -16,38 +13,44 @@ import java.util.List;
  */
 public final class LoadDungeonSnapshotUseCase {
 
+    public record DungeonSnapshotData(
+            String mapName,
+            DungeonDerivedState derived,
+            long revision
+    ) {
+    }
+
+    public record InspectorSnapshotData(
+            String title,
+            String description,
+            List<String> facts
+    ) {
+        public InspectorSnapshotData {
+            facts = facts == null ? List.of() : List.copyOf(facts);
+        }
+    }
+
     private final DungeonDocumentRepository store;
     private final BuildDungeonDerivedStateUseCase derive;
-    private final MapDungeonFactsUseCase mapper = new MapDungeonFactsUseCase();
 
     public LoadDungeonSnapshotUseCase(DungeonDocumentRepository store, BuildDungeonDerivedStateUseCase derive) {
         this.store = store;
         this.derive = derive;
     }
 
-    public DungeonSnapshot execute() {
-        DungeonDerivedState derived = derive.execute(store.load());
-        List<String> aggregateSummaries = derived.aggregates().stream()
-                .map(this::aggregateSummary)
-                .toList();
-        List<String> relationSummaries = derived.relations().connections().stream()
-                .map(connection -> "corridor " + connection.corridorId() + " -> room " + connection.roomId() + " (" + connection.direction() + ")")
-                .toList();
-        return new DungeonSnapshot(
-                store.load().mapName(),
-                DungeonMapMode.EDITOR,
-                mapper.toPublishedSnapshot(derived.map()),
-                aggregateSummaries,
-                relationSummaries,
-                store.load().revision()
-        );
+    public DungeonSnapshotData execute() {
+        var document = store.load();
+        return new DungeonSnapshotData(
+                document.mapName(),
+                derive.execute(document),
+                document.revision());
     }
 
-    public DungeonInspectorSnapshot describeSelection(String ownerKind, long ownerId) {
+    public InspectorSnapshotData describeSelection(String ownerKind, long ownerId) {
         DungeonDerivedState derived = derive.execute(store.load());
         for (DungeonAggregate aggregate : derived.aggregates()) {
             if (aggregate.id() == ownerId && ownerKind != null && ownerKind.equalsIgnoreCase(aggregate.kind().name())) {
-                return new DungeonInspectorSnapshot(
+                return new InspectorSnapshotData(
                         aggregate.label(),
                         "Aggregate owner in committed dungeon truth.",
                         List.of(
@@ -63,13 +66,9 @@ public final class LoadDungeonSnapshotUseCase {
                 List<String> facts = new ArrayList<>();
                 facts.add("id: " + primitive.id());
                 facts.add("kind: " + ownerKind);
-                return new DungeonInspectorSnapshot("Primitive " + ownerId, "Primitive boundary object.", facts);
+                return new InspectorSnapshotData("Primitive " + ownerId, "Primitive boundary object.", facts);
             }
         }
-        return new DungeonInspectorSnapshot("Dungeon", "No selection details available.", List.of("selection: none"));
-    }
-
-    private String aggregateSummary(DungeonAggregate aggregate) {
-        return aggregate.label() + " #" + aggregate.id();
+        return new InspectorSnapshotData("Dungeon", "No selection details available.", List.of("selection: none"));
     }
 }

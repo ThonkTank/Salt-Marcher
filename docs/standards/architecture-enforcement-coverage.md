@@ -277,9 +277,9 @@ Mechanical trace:
   (`compileJava`).
 - `domain-role-shape`: role packages enforce aggregate final-class roots,
   entity final classes, value records/enums/sealed abstractions/final immutable
-  classes, port interfaces ending `Repository`, `Port`, or `Lookup`, stateless policy/factory/
-  service classes with role suffixes, and record events ending `Event` via
-  `Error Prone` (`compileJava`).
+  classes, port interfaces ending `Repository`, `Lookup`, `Catalog`, or
+  `Search`, stateless policy/factory/service classes, and
+  record events ending `Event` via `Error Prone` (`compileJava`).
 - `domain-published-carrier-shape`: public `published/` types must be records,
   enums, or sealed abstractions via `Error Prone` (`compileJava`).
 
@@ -329,8 +329,8 @@ Mechanical trace:
   public/protected members via `PMD architecture` (`pmdArchitectureMain`).
 - `data-root-registration-boundary`: `*ServiceContribution` roots may register
   only own-feature `*ApplicationService` roots, nested application-service
-  factory types, and own-feature domain-owned `*Repository` or `*Port`
-  contracts into `ServiceRegistry` via `PMD architecture`
+  factory types, and own-feature domain-owned `*Repository`, `*Lookup`,
+  `*Catalog`, or `*Search` contracts into `ServiceRegistry` via `PMD architecture`
   (`pmdArchitectureMain`).
 - `data-query-read-only-obvious-mutation-ban`: `query/` adapters must not
   expose obvious public/protected mutation methods via `PMD architecture`
@@ -375,7 +375,7 @@ Mechanical trace:
   `ServiceRegistry.Builder.register(...)` calls must stay in data feature
   `*ServiceContribution` roots via `Error Prone` (`compileJava`).
 - `data-adapter-contract-presence`: public concrete `repository/` and `query/`
-  adapters must satisfy an own-feature domain-owned contract for their adapter
+  adapters must satisfy an own-feature domain-owned port for their adapter
   role via `Error Prone` (`compileJava`).
 - `data-domain-port-adapter-placement`: data classes outside `repository/` and
   `query/` must not implement exported domain write or read-only

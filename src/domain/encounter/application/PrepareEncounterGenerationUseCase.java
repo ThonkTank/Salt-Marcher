@@ -9,17 +9,14 @@ import src.domain.creatures.published.EncounterCandidate;
 import src.domain.creatures.published.EncounterCandidatesResult;
 import src.domain.creatures.published.EncounterCandidateQuery;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encounter.published.EncounterBudgetSummary;
-import src.domain.encounter.published.EncounterDifficultyBand;
-import src.domain.encounter.published.EncounterGenerationRequest;
 import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
-import src.domain.encounter.generation.value.EncounterCandidateProfiles;
-import src.domain.encounter.generation.value.EncounterDifficultyMath;
+import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
+import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
-import src.domain.encounter.generation.value.EncounterDifficultyTargets;
+import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
 import src.domain.encounter.generation.value.EncounterDraft;
-import src.domain.encounter.generation.value.EncounterDraftFactory;
+import src.domain.encounter.generation.factory.EncounterDraftFactory;
 import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.ReadStatus;
@@ -41,14 +38,14 @@ final class PrepareEncounterGenerationUseCase {
     static EncounterGenerationPreparationUseCase prepare(
             PartyApplicationService party,
             CreaturesApplicationService creatures,
-            EncounterGenerationRequest request,
+            EncounterGenerationUseCase.GenerateRequest request,
             int searchLimit
     ) {
         PartyLoadResult partyLoad = loadPartyState(party);
         if (!partyLoad.success()) {
             return partyLoad.failure();
         }
-        EncounterBudgetSummary budget = partyLoad.requireBudget();
+        EncounterGenerationUseCase.BudgetSummary budget = partyLoad.requireBudget();
         EncounterDifficultyMath.Thresholds thresholds = partyLoad.requireThresholds();
 
         LockedCreatures lockedCreatures = loadLockedCreatures(creatures, request, budget);
@@ -73,7 +70,7 @@ final class PrepareEncounterGenerationUseCase {
         }
 
         List<EncounterDraft> drafts = EncounterDraftFactory.createDrafts(new EncounterDraftFactory.EncounterDraftRequest(
-                toDifficultyIntent(request.targetDifficulty()),
+                request.targetDifficulty(),
                 thresholds,
                 partyLoad.partySize(),
                 lockedCreatures.lockedProfiles().values(),
@@ -103,14 +100,14 @@ final class PrepareEncounterGenerationUseCase {
                 partyLevels,
                 dayResult.summary().consumedXp(),
                 dayResult.summary().totalBudgetXp());
-        EncounterBudgetSummary budget = toPublishedBudgetSummary(budgetSummary);
+        EncounterGenerationUseCase.BudgetSummary budget = toBudgetSummary(budgetSummary);
         return PartyLoadResult.success(thresholds, budget, partyLevels.size());
     }
 
     private static LockedCreatures loadLockedCreatures(
             CreaturesApplicationService creatures,
-            EncounterGenerationRequest request,
-            EncounterBudgetSummary budget
+            EncounterGenerationUseCase.GenerateRequest request,
+            EncounterGenerationUseCase.BudgetSummary budget
     ) {
         Map<Long, Integer> lockedQuantities = toLockedQuantityMap(request.lockedCreatures());
         Map<Long, EncounterCandidateProfile> lockedProfiles = loadLockedProfiles(creatures, lockedQuantities);
@@ -122,7 +119,7 @@ final class PrepareEncounterGenerationUseCase {
 
     private static CandidateLoadResult loadUnlockedCandidates(
             CreaturesApplicationService creatures,
-            EncounterGenerationRequest request,
+            EncounterGenerationUseCase.GenerateRequest request,
             EncounterDifficultyMath.Thresholds thresholds,
             Set<Long> lockedCreatureIds,
             int searchLimit
@@ -150,9 +147,9 @@ final class PrepareEncounterGenerationUseCase {
         return CandidateLoadResult.success(unlockedProfiles);
     }
 
-    private static Map<Long, Integer> toLockedQuantityMap(List<src.domain.encounter.published.EncounterLock> locks) {
+    private static Map<Long, Integer> toLockedQuantityMap(List<EncounterGenerationUseCase.LockedCreature> locks) {
         Map<Long, Integer> quantities = new LinkedHashMap<>();
-        for (src.domain.encounter.published.EncounterLock lock : locks) {
+        for (EncounterGenerationUseCase.LockedCreature lock : locks) {
             if (lock == null || lock.creatureId() <= 0) {
                 continue;
             }
@@ -229,17 +226,8 @@ final class PrepareEncounterGenerationUseCase {
                         .toList());
     }
 
-    private static EncounterDifficultyIntent toDifficultyIntent(EncounterDifficultyBand band) {
-        return switch (band == null ? EncounterDifficultyBand.defaultBand() : band) {
-            case EASY -> EncounterDifficultyIntent.EASY;
-            case MEDIUM -> EncounterDifficultyIntent.MEDIUM;
-            case HARD -> EncounterDifficultyIntent.HARD;
-            case DEADLY -> EncounterDifficultyIntent.DEADLY;
-        };
-    }
-
-    private static EncounterBudgetSummary toPublishedBudgetSummary(EncounterDifficultyMath.BudgetSummary summary) {
-        return new EncounterBudgetSummary(
+    private static EncounterGenerationUseCase.BudgetSummary toBudgetSummary(EncounterDifficultyMath.BudgetSummary summary) {
+        return new EncounterGenerationUseCase.BudgetSummary(
                 summary.activePartyLevels(),
                 summary.averagePartyLevel(),
                 summary.easyThreshold(),
@@ -254,7 +242,7 @@ final class PrepareEncounterGenerationUseCase {
     private record PartyLoadResult(
             EncounterGenerationUseCase.GenerateStatus status,
             EncounterDifficultyMath.@Nullable Thresholds thresholds,
-            @Nullable EncounterBudgetSummary budget,
+            EncounterGenerationUseCase.@Nullable BudgetSummary budget,
             int partySize,
             String message
     ) {
@@ -274,7 +262,7 @@ final class PrepareEncounterGenerationUseCase {
             return thresholds;
         }
 
-        private EncounterBudgetSummary requireBudget() {
+        private EncounterGenerationUseCase.BudgetSummary requireBudget() {
             if (budget == null) {
                 throw new IllegalStateException("Party budget missing for successful load.");
             }
@@ -283,7 +271,7 @@ final class PrepareEncounterGenerationUseCase {
 
         private static PartyLoadResult success(
                 EncounterDifficultyMath.Thresholds thresholds,
-                EncounterBudgetSummary budget,
+                EncounterGenerationUseCase.BudgetSummary budget,
                 int partySize
         ) {
             return new PartyLoadResult(
@@ -304,7 +292,7 @@ final class PrepareEncounterGenerationUseCase {
 
     private record LockedCreatures(
             EncounterGenerationUseCase.GenerateStatus status,
-            @Nullable EncounterBudgetSummary budget,
+            EncounterGenerationUseCase.@Nullable BudgetSummary budget,
             Map<Long, Integer> lockedQuantities,
             Map<Long, EncounterCandidateProfile> lockedProfiles,
             String message
@@ -330,7 +318,7 @@ final class PrepareEncounterGenerationUseCase {
                     "");
         }
 
-        private static LockedCreatures failure(EncounterBudgetSummary budget, String message) {
+        private static LockedCreatures failure(EncounterGenerationUseCase.BudgetSummary budget, String message) {
             return new LockedCreatures(
                     EncounterGenerationUseCase.GenerateStatus.INVALID_REQUEST,
                     budget,

@@ -1,6 +1,6 @@
 package src.domain.encounter.generation.value;
 
-final class EncounterProfileCopies {
+public final class EncounterProfileCopies {
 
     private static final int HIGH_XP_COPY_LIMIT = 1_800;
     private static final int MID_XP_COPY_LIMIT = 450;
@@ -9,7 +9,7 @@ final class EncounterProfileCopies {
     private EncounterProfileCopies() {
     }
 
-    static int maxAdditionalCopies(EncounterCandidateProfile profile) {
+    public static int maxAdditionalCopies(EncounterCandidateProfile profile) {
         if (EncounterRoleNames.BOSS.equals(profile.role()) || profile.legendaryActionCount() > 0) {
             return 1;
         }

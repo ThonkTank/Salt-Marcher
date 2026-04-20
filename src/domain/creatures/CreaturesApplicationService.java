@@ -62,7 +62,7 @@ public final class CreaturesApplicationService {
 
     public CreatureCatalogPageResult searchCatalog(CreatureCatalogQuery query) {
         try {
-            SearchCreatureCatalogUseCase.SearchResult result = searchCreatureCatalogUseCase.execute(query);
+            SearchCreatureCatalogUseCase.SearchResult result = searchCreatureCatalogUseCase.execute(toCatalogQueryInput(query));
             if (result.invalidQuery()) {
                 return new CreatureCatalogPageResult(
                         CreatureQueryStatus.INVALID_QUERY,
@@ -93,7 +93,8 @@ public final class CreaturesApplicationService {
 
     public EncounterCandidatesResult loadEncounterCandidates(EncounterCandidateQuery query) {
         try {
-            LoadEncounterCandidatesUseCase.LoadResult result = loadEncounterCandidatesUseCase.execute(query);
+            LoadEncounterCandidatesUseCase.LoadResult result =
+                    loadEncounterCandidatesUseCase.execute(toCandidateQueryInput(query));
             if (result.invalidQuery()) {
                 return new EncounterCandidatesResult(CreatureQueryStatus.INVALID_QUERY, List.of());
             }
@@ -202,5 +203,57 @@ public final class CreaturesApplicationService {
                 candidate.armorClass(),
                 candidate.initiativeBonus(),
                 candidate.legendaryActionCount());
+    }
+
+    private static SearchCreatureCatalogUseCase.CatalogQueryInput toCatalogQueryInput(CreatureCatalogQuery query) {
+        CreatureCatalogQuery effectiveQuery = query == null ? CreatureCatalogQuery.defaults() : query;
+        return new SearchCreatureCatalogUseCase.CatalogQueryInput(
+                effectiveQuery.nameQuery(),
+                effectiveQuery.challengeRatingMin(),
+                effectiveQuery.challengeRatingMax(),
+                effectiveQuery.sizes(),
+                effectiveQuery.types(),
+                effectiveQuery.subtypes(),
+                effectiveQuery.biomes(),
+                effectiveQuery.alignments(),
+                toPortSortField(effectiveQuery.sortField()),
+                toPortSortDirection(effectiveQuery.sortDirection()),
+                effectiveQuery.pageSize(),
+                effectiveQuery.pageOffset());
+    }
+
+    private static CreatureCatalogLookup.SortField toPortSortField(src.domain.creatures.published.CreatureCatalogSortField sortField) {
+        return switch (sortField == null ? src.domain.creatures.published.CreatureCatalogSortField.NAME : sortField) {
+            case CHALLENGE_RATING -> CreatureCatalogLookup.SortField.CHALLENGE_RATING;
+            case XP -> CreatureCatalogLookup.SortField.XP;
+            case TYPE -> CreatureCatalogLookup.SortField.TYPE;
+            case SIZE -> CreatureCatalogLookup.SortField.SIZE;
+            case NAME -> CreatureCatalogLookup.SortField.NAME;
+        };
+    }
+
+    private static CreatureCatalogLookup.SortDirection toPortSortDirection(src.domain.creatures.published.CreatureSortDirection sortDirection) {
+        return sortDirection == src.domain.creatures.published.CreatureSortDirection.DESCENDING
+                ? CreatureCatalogLookup.SortDirection.DESCENDING
+                : CreatureCatalogLookup.SortDirection.ASCENDING;
+    }
+
+    private static LoadEncounterCandidatesUseCase.CandidateQueryInput toCandidateQueryInput(EncounterCandidateQuery query) {
+        if (query == null) {
+            return new LoadEncounterCandidatesUseCase.CandidateQueryInput(
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    0,
+                    0,
+                    0);
+        }
+        return new LoadEncounterCandidatesUseCase.CandidateQueryInput(
+                query.types(),
+                query.subtypes(),
+                query.biomes(),
+                query.minimumXp(),
+                query.maximumXp(),
+                query.limit());
     }
 }

@@ -5,14 +5,11 @@ import src.domain.creatures.published.CreatureDetail;
 import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.encounter.published.EncounterCreature;
-import src.domain.encounter.published.EncounterDifficultyBand;
-import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterDraft;
 import src.domain.encounter.generation.value.EncounterDraftEntry;
 import src.domain.encounter.generation.value.EncounterDraftMetrics;
-import src.domain.encounter.generation.value.EncounterRoleClassifier;
+import src.domain.encounter.generation.policy.EncounterRoleClassifier;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -31,17 +28,17 @@ final class AssembleEncounterResultUseCase {
         this.creatures = creatures;
     }
 
-    List<GeneratedEncounter> assemble(List<EncounterDraft> drafts, int alternativeCount) {
+    List<EncounterGenerationUseCase.GeneratedEncounterData> assemble(List<EncounterDraft> drafts, int alternativeCount) {
         Map<Long, CreatureDetail> detailCache = new LinkedHashMap<>();
-        List<GeneratedEncounter> encounters = new ArrayList<>();
+        List<EncounterGenerationUseCase.GeneratedEncounterData> encounters = new ArrayList<>();
         for (EncounterDraft draft : drafts.stream().limit(alternativeCount).toList()) {
             EncounterDraftMetrics metrics = draft.metrics();
-            List<EncounterCreature> creatures = new ArrayList<>();
+            List<EncounterGenerationUseCase.EncounterCreatureData> creatures = new ArrayList<>();
             for (EncounterDraftEntry entry : draft.entries()) {
                 CreatureDetail detail = detailCache.computeIfAbsent(entry.creatureId(), this::loadCreatureDetailOrNull);
                 EncounterCreatureFacts facts = detail == null ? entry.facts() : PrepareEncounterGenerationUseCase.toFacts(detail);
                 EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(facts);
-                creatures.add(new EncounterCreature(
+                creatures.add(new EncounterGenerationUseCase.EncounterCreatureData(
                         entry.creatureId(),
                         entry.creatureName(),
                         entry.challengeRating(),
@@ -50,9 +47,9 @@ final class AssembleEncounterResultUseCase {
                         classification.role(),
                         classification.tags()));
             }
-            encounters.add(new GeneratedEncounter(
+            encounters.add(new EncounterGenerationUseCase.GeneratedEncounterData(
                     draft.title(),
-                    toPublishedDifficulty(draft.achievedDifficulty()),
+                    draft.achievedDifficulty(),
                     metrics.creatureCount(),
                     metrics.totalBaseXp(),
                     metrics.adjustedXp(),
@@ -63,15 +60,6 @@ final class AssembleEncounterResultUseCase {
         return encounters;
     }
 
-    private static EncounterDifficultyBand toPublishedDifficulty(src.domain.encounter.generation.value.EncounterDifficultyIntent intent) {
-        return switch (intent) {
-            case EASY -> EncounterDifficultyBand.EASY;
-            case MEDIUM -> EncounterDifficultyBand.MEDIUM;
-            case HARD -> EncounterDifficultyBand.HARD;
-            case DEADLY -> EncounterDifficultyBand.DEADLY;
-        };
-    }
-
     private @Nullable CreatureDetail loadCreatureDetailOrNull(long creatureId) {
         CreatureDetailResult result = creatures.loadCreatureDetail(creatureId);
         if (result.status() != CreatureLookupStatus.SUCCESS) {
@@ -80,14 +68,17 @@ final class AssembleEncounterResultUseCase {
         return result.detail();
     }
 
-    private static List<String> highlightsFor(EncounterDraft draft, List<EncounterCreature> creatures) {
+    private static List<String> highlightsFor(
+            EncounterDraft draft,
+            List<EncounterGenerationUseCase.EncounterCreatureData> creatures
+    ) {
         EncounterDraftMetrics metrics = draft.metrics();
         List<String> highlights = new ArrayList<>();
         highlights.add("Adjusted XP " + metrics.adjustedXp() + " vs target " + metrics.targetAdjustedXp());
         if (creatures.stream().anyMatch(creature -> "Boss".equals(creature.role()))) {
             highlights.add("Includes a boss-style anchor.");
         }
-        long distinctRoles = creatures.stream().map(EncounterCreature::role).distinct().count();
+        long distinctRoles = creatures.stream().map(EncounterGenerationUseCase.EncounterCreatureData::role).distinct().count();
         if (distinctRoles >= MINIMUM_BLENDED_ROLE_COUNT) {
             highlights.add("Blends " + distinctRoles + " combat roles.");
         }

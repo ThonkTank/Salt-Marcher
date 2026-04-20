@@ -1,11 +1,12 @@
 package src.domain.encounter.generation.value;
 
+import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-record EncounterDraftBuildRequest(
+public record EncounterDraftBuildRequest(
         EncounterDifficultyIntent targetDifficulty,
         EncounterDifficultyMath.Thresholds thresholds,
         int partySize,

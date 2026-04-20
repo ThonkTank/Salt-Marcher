@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-record EncounterDraftComposition(
+public record EncounterDraftComposition(
         boolean valid,
         List<EncounterDraftEntry> entries,
         EncounterDraftCompositionStats stats,
@@ -16,7 +16,7 @@ record EncounterDraftComposition(
     private static final int MAX_CREATURES_PER_DRAFT = 8;
     private static final int MAX_BOSSES_PER_DRAFT = 1;
 
-    static EncounterDraftComposition from(
+    public static EncounterDraftComposition from(
             Map<Long, Integer> counts,
             Map<Long, EncounterCandidateProfile> profiles
     ) {
