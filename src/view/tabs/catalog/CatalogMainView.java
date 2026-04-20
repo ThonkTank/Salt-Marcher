@@ -104,7 +104,7 @@ public final class CatalogMainView extends VBox {
         private final Button button = new Button();
 
         LinkCell() {
-            button.getStyleClass().add("flat");
+            button.getStyleClass().addAll("creature-link", "flat");
             button.setOnAction(event -> {
                 RowItem row = getTableRow() == null ? null : getTableRow().getItem();
                 if (row != null) {

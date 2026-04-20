@@ -4,15 +4,32 @@
     -sm-bg-panel:    #1a2025;
     -sm-bg-card:     #232b2f;
     -sm-bg-elevated: #26282a;
+    -sm-easy:   #00c680;
+    -sm-medium: #ffb62a;
+    -sm-hard:      #d56c19;
+    -sm-hard-text: #e8843a;
+    -sm-warning:   #e8843a;
+    -sm-deadly: #e53935;
+    -sm-deadly-text: #f26866;
+    -sm-hp-healthy:  #00c680;
+    -sm-hp-wounded:  #ffb62a;
+    -sm-hp-critical: #e53935;
+    -sm-active-bg:      #3a3510;
+    -sm-active-bg-card: #423b12;
+    -sm-dead-bg:       #2a2a2a;
+    -sm-creature-link: #41a9f2;
     -sm-dungeon-wall: #8a6a35;
-    -sm-dungeon-room: #2f3a41;
-    -sm-dungeon-room-border: #b89553;
-    -sm-dungeon-corridor: #3f5658;
-    -sm-dungeon-corridor-border: #99b9b4;
-    -sm-dungeon-active: #ffb62a;
+    -sm-dungeon-room: #2a3238;
+    -sm-dungeon-room-border: #8a6a35;
+    -sm-dungeon-corridor: rgba(59, 80, 83, 0.80);
+    -sm-dungeon-corridor-border: #91b6b0;
+    -sm-dungeon-active: #5b4517;
     -sm-dungeon-active-border: #fff0c6;
-    -sm-dungeon-grid: rgba(141, 156, 168, 0.26);
-    -sm-dungeon-grid-strong: rgba(177, 188, 197, 0.18);
+    -sm-dungeon-grid-minor: rgba(102, 119, 130, 0.18);
+    -sm-dungeon-grid-medium: rgba(115, 131, 144, 0.16);
+    -sm-dungeon-grid-major: rgba(141, 156, 168, 0.22);
+    -sm-dungeon-grid-max: rgba(177, 188, 197, 0.28);
+    -sm-dungeon-grid-axis: rgba(197, 209, 216, 0.32);
 
     -sm-text-primary:   #ecedee;
     -sm-text-secondary: #a4a7ab;
@@ -33,6 +50,13 @@
     -sm-chip-sub-border:   #307070;
     -sm-chip-cr-bg:        #1a2530;
     -sm-chip-cr-border:    #305070;
+    -sm-role-minion:     #e07070;
+    -sm-role-boss:       #d97706;
+    -sm-role-soldier:    #5a9ed6;
+    -sm-role-archer:     #f9a825;
+    -sm-role-controller: #bd7fdc;
+    -sm-role-skirmisher: #5aaf5e;
+    -sm-role-support:    #ff8f00;
 
     -sm-stat-red:       #922610;
     -sm-stat-red-light: #e08060;
@@ -90,6 +114,13 @@
     -fx-text-fill: -sm-text-muted;
     -fx-font-size: 11px;
 }
+.text-warning {
+    -fx-text-fill: -sm-warning;
+}
+.difficulty-easy   { -fx-text-fill: -sm-easy; }
+.difficulty-medium { -fx-text-fill: -sm-medium; }
+.difficulty-hard   { -fx-text-fill: -sm-hard-text; }
+.difficulty-deadly { -fx-text-fill: -sm-deadly-text; }
 .title-large {
     -fx-font-weight: bold;
     -fx-font-size: 16px;
@@ -209,6 +240,19 @@
 .text-field:focused {
     -fx-border-color: -sm-accent-hover;
 }
+.quick-search-field {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-prompt-text-fill: -sm-text-muted;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 4 8;
+    -fx-font-size: 13px;
+}
+.quick-search-field:focused {
+    -fx-border-color: -sm-accent-hover;
+}
 
 .toolbar {
     -fx-background-color: -sm-bg-panel;
@@ -281,6 +325,70 @@
 .remove-btn {
     -fx-font-size: 16px;
 }
+.stat-block-pane {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-stat-red transparent -sm-stat-red transparent;
+    -fx-border-width: 3 0 3 0;
+    -fx-background-radius: 0;
+}
+.stat-block-name {
+    -fx-text-fill: -sm-stat-red-light;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Serif";
+}
+.stat-block-meta {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+.stat-block-separator {
+    -fx-background-color: -sm-stat-red;
+}
+.stat-block-abilities {
+    -fx-background-color: transparent;
+}
+.stat-block-ability-header {
+    -fx-text-fill: -sm-stat-red-light;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+.stat-block-ability-value {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.stat-block-prop-label {
+    -fx-fill: -sm-text-primary;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+.stat-block-prop-value {
+    -fx-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.stat-block-section-header {
+    -fx-text-fill: -sm-stat-red-light;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Serif";
+    -fx-border-color: transparent transparent -sm-stat-red transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.stat-block-action-name {
+    -fx-fill: -sm-text-primary;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-size: 13px;
+}
+.stat-block-action-desc {
+    -fx-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.stat-block-loading {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-style: italic;
+    -fx-padding: 16;
+}
 .stat-block-fixed-header {
     -fx-background-color: -sm-bg-elevated;
     -fx-border-color: transparent transparent -sm-border-subtle transparent;
@@ -296,6 +404,9 @@
     -fx-background-color: -sm-bg-panel;
 }
 .surface-root {
+    -fx-background-color: -sm-bg-darkest;
+}
+.filter-pane {
     -fx-background-color: -sm-bg-darkest;
 }
 .section-header {
@@ -368,35 +479,44 @@
     -fx-padding: 2 4 2 4;
 }
 .dungeon-map-scene {
-    -fx-background-color: linear-gradient(to bottom, #182025, #12181c);
+    -fx-background-color: #12181c;
     -fx-background-radius: 12;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 12;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.36), 24, 0.18, 0, 10);
 }
-.dungeon-map-grid-line {
-    -fx-stroke: -sm-dungeon-grid;
-    -fx-stroke-width: 1.0;
-}
+.dungeon-map-grid-minor { -fx-stroke: -sm-dungeon-grid-minor;  -fx-stroke-width: 0.9; }
+.dungeon-map-grid-medium { -fx-stroke: -sm-dungeon-grid-medium; -fx-stroke-width: 1.05; }
+.dungeon-map-grid-major { -fx-stroke: -sm-dungeon-grid-major;  -fx-stroke-width: 1.4; }
+.dungeon-map-grid-max { -fx-stroke: -sm-dungeon-grid-max;    -fx-stroke-width: 1.8; }
+.dungeon-map-grid-axis { -fx-stroke: -sm-dungeon-grid-axis;   -fx-stroke-width: 2.6; }
 .dungeon-map-wall {
     -fx-stroke: -sm-dungeon-wall;
     -fx-stroke-width: 3.0;
+}
+.dungeon-map-wall-noninteractive {
+    -fx-stroke-width: 2.4;
 }
 .dungeon-map-door {
     -fx-stroke: #e5c06f;
     -fx-stroke-width: 3.6;
 }
 .dungeon-map-door-marker {
-    -fx-background-color: #1a2429;
+    -fx-background-color: #181f24;
     -fx-border-color: #e5c06f;
+    -fx-border-width: 1.4;
     -fx-border-radius: 999;
     -fx-background-radius: 999;
-    -fx-min-width: 22;
-    -fx-min-height: 22;
+    -fx-min-width: 20;
+    -fx-min-height: 20;
+    -fx-pref-width: 20;
+    -fx-pref-height: 20;
+    -fx-max-width: 20;
+    -fx-max-height: 20;
     -fx-alignment: center;
     -fx-font-size: 10px;
     -fx-font-weight: bold;
-    -fx-text-fill: #fff1ae;
+    -fx-text-fill: #e5c06f;
 }
 .dungeon-map-wall-marker {
     -fx-opacity: 0;
@@ -404,10 +524,11 @@
     -fx-min-height: 0;
 }
 .dungeon-map-cell {
-    -fx-background-radius: 8;
-    -fx-border-radius: 8;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
     -fx-padding: 6;
     -fx-cursor: hand;
+    -fx-border-width: 1.35;
 }
 .dungeon-map-cell:hover {
     -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.08), 10, 0.12, 0, 0);
@@ -419,12 +540,10 @@
 .dungeon-map-cell-room {
     -fx-background-color: -sm-dungeon-room;
     -fx-border-color: -sm-dungeon-room-border;
-    -fx-border-width: 1.5;
 }
 .dungeon-map-cell-corridor {
     -fx-background-color: -sm-dungeon-corridor;
     -fx-border-color: -sm-dungeon-corridor-border;
-    -fx-border-width: 1.5;
 }
 .dungeon-map-cell-blocked {
     -fx-background-color: #2a2f33;
@@ -435,9 +554,16 @@
     -fx-border-color: #667782;
 }
 .dungeon-map-cell-current {
-    -fx-background-color: #5b4517;
+    -fx-background-color: -sm-dungeon-active;
     -fx-border-color: -sm-dungeon-active-border;
-    -fx-border-width: 2;
+    -fx-border-width: 2.2;
+}
+.dungeon-map-cell-current-inner {
+    -fx-background-color: transparent;
+    -fx-border-color: #fff0c6;
+    -fx-border-width: 1.1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
 }
 .dungeon-map-cell-glyph {
     -fx-font-size: 11px;
@@ -451,6 +577,41 @@
 .dungeon-map-cell:disabled {
     -fx-opacity: 0.58;
     -fx-cursor: default;
+}
+.dungeon-map-label {
+    -fx-background-color: #181f24;
+    -fx-border-color: #8a6a35;
+    -fx-border-width: 1;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-text-fill: #ecedee;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-min-height: 24;
+    -fx-pref-height: 24;
+}
+.dungeon-map-label-current {
+    -fx-border-color: #fff0c6;
+    -fx-border-width: 1.6;
+}
+.dungeon-map-hud {
+    -fx-text-fill: #ecedee;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-alignment: center-right;
+}
+.dungeon-map-overlay-placeholder {
+    -fx-text-fill: rgba(236, 237, 238, 0.92);
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+.dungeon-map-overlay-note {
+    -fx-text-fill: rgba(236, 237, 238, 0.70);
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
 }
 
 .control-toolbar {
@@ -544,6 +705,25 @@
     -fx-border-color: -sm-accent;
     -fx-text-fill: -sm-accent-hover;
 }
+.auto-dice-btn {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-text-fill: -sm-text-muted;
+    -fx-padding: 2 7 2 7;
+    -fx-font-size: 12px;
+}
+.auto-dice-btn:hover {
+    -fx-background-color: -sm-bg-card;
+    -fx-text-fill: -sm-text-primary;
+}
+.auto-dice-btn.active {
+    -fx-background-color: -sm-accent;
+    -fx-border-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
 .chip {
     -fx-background-radius: 3;
     -fx-border-radius: 3;
@@ -559,6 +739,222 @@
 .chip-cr      { -fx-background-color: -sm-chip-cr-bg;    -fx-border-color: -sm-chip-cr-border; }
 .chip-remove-btn {
     -fx-padding: 0 0 0 4;
+}
+.clickable {
+    -fx-cursor: hand;
+}
+.creature-link,
+.item-link {
+    -fx-text-fill: -sm-creature-link;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.button.creature-link,
+.button.item-link {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-text-fill: -sm-creature-link;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.button.creature-link:hover,
+.button.item-link:hover,
+.creature-link:hover,
+.item-link:hover {
+    -fx-underline: true;
+    -fx-background-color: transparent;
+}
+.encounter-runtime-root {
+    -fx-background-color: -sm-bg-darkest;
+}
+.encounter-mode-chip {
+    -fx-background-color: -sm-chip-type-bg;
+    -fx-border-color: -sm-chip-type-border;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+}
+.difficulty-meter-marker {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.difficulty-meter-bar {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 3;
+    -fx-min-height: 10;
+    -fx-pref-height: 10;
+    -fx-max-height: 10;
+}
+.difficulty-meter-empty {
+    -fx-background-color: -sm-bg-elevated;
+}
+.difficulty-meter-easy {
+    -fx-background-color: -sm-easy;
+    -fx-background-radius: 3 0 0 3;
+}
+.difficulty-meter-medium {
+    -fx-background-color: -sm-medium;
+}
+.difficulty-meter-hard {
+    -fx-background-color: -sm-hard;
+}
+.difficulty-meter-deadly {
+    -fx-background-color: -sm-deadly;
+    -fx-background-radius: 0 3 3 0;
+}
+.creature-card {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8 12 8 12;
+}
+.encounter-count-pill {
+    -fx-background-color: -sm-chip-size-bg;
+    -fx-border-color: -sm-chip-size-border;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+}
+.role-badge {
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 0 3 0 3;
+    -fx-font-size: 11px;
+}
+.role-minion     { -fx-border-color: -sm-role-minion;     -fx-text-fill: -sm-role-minion; }
+.role-boss       { -fx-border-color: -sm-role-boss;       -fx-text-fill: -sm-role-boss; }
+.role-soldier    { -fx-border-color: -sm-role-soldier;    -fx-text-fill: -sm-role-soldier; }
+.role-archer     { -fx-border-color: -sm-role-archer;     -fx-text-fill: -sm-role-archer; }
+.role-controller { -fx-border-color: -sm-role-controller; -fx-text-fill: -sm-role-controller; }
+.role-skirmisher { -fx-border-color: -sm-role-skirmisher; -fx-text-fill: -sm-role-skirmisher; }
+.role-support    { -fx-border-color: -sm-role-support;    -fx-text-fill: -sm-role-support; }
+.initiative-row {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8 12 8 12;
+}
+.combat-card {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent;
+    -fx-border-width: 1 1 1 3;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8 12 8 12;
+}
+.combat-card:focused {
+    -fx-border-color: -sm-accent;
+}
+.combat-card-active {
+    -fx-background-color: -sm-active-bg-card;
+    -fx-border-color: -sm-medium;
+}
+.combat-card-dead {
+    -fx-background-color: -sm-dead-bg;
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-opacity: 0.6;
+}
+.combat-card-pc {
+    -fx-border-color: -sm-accent;
+}
+.combat-turn-indicator-inactive {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 13px;
+    -fx-font-weight: normal;
+    -fx-min-width: 24;
+}
+.combat-turn-indicator {
+    -fx-text-fill: -sm-medium;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-min-width: 24;
+}
+.combat-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+.combat-name-dead {
+    -fx-text-fill: -sm-text-muted;
+}
+.combat-detail {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+.ac-badge {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+.init-badge {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 11px;
+}
+.hp-bar-track {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 3;
+    -fx-min-height: 22;
+    -fx-pref-height: 22;
+}
+.hp-bar-fill {
+    -fx-background-radius: 3;
+    -fx-min-height: 22;
+    -fx-pref-height: 22;
+}
+.hp-bar-text {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.hp-bar-text-on-track {
+    -fx-text-fill: -sm-text-primary;
+}
+.hp-bar-text-on-fill {
+    -fx-text-fill: -sm-bg-darkest;
+}
+.hp-fill-healthy { -fx-background-color: -sm-hp-healthy; }
+.hp-fill-wounded { -fx-background-color: -sm-hp-wounded; }
+.hp-fill-critical { -fx-background-color: -sm-hp-critical; }
+.edit-popup-panel {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-accent;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8;
+    -fx-spacing: 6;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
+}
+.edit-popup-panel .button {
+    -fx-padding: 3 8 3 8;
+    -fx-font-size: 13px;
+}
+.spinner-btn {
+    -fx-padding: 2 8 2 8;
+    -fx-font-size: 11px;
+    -fx-min-width: 28;
+    -fx-min-height: 28;
+}
+.encounter-result-xp {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-medium;
+}
+.encounter-result-gold {
+    -fx-font-weight: bold;
+    -fx-text-fill: #e5c06f;
 }
 
 .scroll-bar {

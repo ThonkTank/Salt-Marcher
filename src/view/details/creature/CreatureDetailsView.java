@@ -16,7 +16,7 @@ import org.jspecify.annotations.Nullable;
 public final class CreatureDetailsView extends VBox {
 
     public CreatureDetailsView() {
-        getStyleClass().add("surface-root");
+        getStyleClass().add("stat-block-pane");
         setSpacing(0);
         setPadding(new Insets(16));
         setMaxWidth(580);
@@ -25,7 +25,7 @@ public final class CreatureDetailsView extends VBox {
     public void setLoadingText(@Nullable String text) {
         if (text != null && !text.isBlank()) {
             Label loading = new Label(text);
-            loading.getStyleClass().add("text-muted");
+            loading.getStyleClass().add("stat-block-loading");
             getChildren().setAll(loading);
         }
     }
@@ -33,7 +33,7 @@ public final class CreatureDetailsView extends VBox {
     public void setErrorText(@Nullable String text) {
         if (text != null && !text.isBlank()) {
             Label error = new Label(text);
-            error.getStyleClass().add("text-muted");
+            error.getStyleClass().add("stat-block-loading");
             getChildren().setAll(error);
         }
     }
@@ -55,10 +55,10 @@ public final class CreatureDetailsView extends VBox {
 
     private void buildHeader(DetailContent detail) {
         Label name = new Label(detail.name());
-        name.getStyleClass().add("title-large");
+        name.getStyleClass().add("stat-block-name");
         name.setWrapText(true);
         Label meta = new Label(detail.meta());
-        meta.getStyleClass().add("text-muted");
+        meta.getStyleClass().add("stat-block-meta");
         meta.setWrapText(true);
         getChildren().addAll(name, meta, separator());
     }
@@ -67,8 +67,9 @@ public final class CreatureDetailsView extends VBox {
         for (PropertyLine property : properties == null ? List.<PropertyLine>of() : properties) {
             TextFlow flow = new TextFlow();
             Text label = new Text(property.label() + "  ");
-            label.getStyleClass().add("bold");
+            label.getStyleClass().add("stat-block-prop-label");
             Text value = new Text(property.value());
+            value.getStyleClass().add("stat-block-prop-value");
             flow.getChildren().addAll(label, value);
             flow.setPadding(new Insets(1, 0, 1, 0));
             getChildren().add(flow);
@@ -77,6 +78,7 @@ public final class CreatureDetailsView extends VBox {
 
     private void buildAbilityGrid(List<AbilityScore> scores) {
         GridPane abilities = new GridPane();
+        abilities.getStyleClass().add("stat-block-abilities");
         abilities.setAlignment(Pos.CENTER);
         abilities.setHgap(0);
         abilities.setPadding(new Insets(4, 0, 4, 0));
@@ -88,8 +90,9 @@ public final class CreatureDetailsView extends VBox {
             abilities.getColumnConstraints().add(constraints);
             AbilityScore score = safeScores.get(index);
             Label header = new Label(score.label());
-            header.getStyleClass().add("bold");
+            header.getStyleClass().add("stat-block-ability-header");
             Label value = new Label(score.value());
+            value.getStyleClass().add("stat-block-ability-value");
             abilities.add(header, index, 0);
             abilities.add(value, index, 1);
         }
@@ -100,13 +103,13 @@ public final class CreatureDetailsView extends VBox {
         for (ActionSection section : sections == null ? List.<ActionSection>of() : sections) {
             if (section.title() != null && !section.title().isBlank()) {
                 Label title = new Label(section.title());
-                title.getStyleClass().add("section-header");
+                title.getStyleClass().add("stat-block-section-header");
                 title.setPadding(new Insets(8, 0, 2, 0));
                 getChildren().add(title);
             }
             if (section.description() != null && !section.description().isBlank()) {
                 Label description = new Label(section.description());
-                description.getStyleClass().add("text-muted");
+                description.getStyleClass().add("stat-block-meta");
                 description.setWrapText(true);
                 getChildren().add(description);
             }
@@ -115,11 +118,12 @@ public final class CreatureDetailsView extends VBox {
                 flow.setPadding(new Insets(2, 0, 2, 0));
                 if (action.name() != null && !action.name().isBlank()) {
                     Text name = new Text(action.name() + ". ");
-                    name.getStyleClass().add("bold");
+                    name.getStyleClass().add("stat-block-action-name");
                     flow.getChildren().add(name);
                 }
                 if (action.description() != null && !action.description().isBlank()) {
                     Text description = new Text(action.description());
+                    description.getStyleClass().add("stat-block-action-desc");
                     flow.getChildren().add(description);
                 }
                 getChildren().add(flow);
@@ -129,7 +133,7 @@ public final class CreatureDetailsView extends VBox {
 
     private Region separator() {
         Region separator = new Region();
-        separator.getStyleClass().add("nav-separator");
+        separator.getStyleClass().add("stat-block-separator");
         separator.setMinHeight(2);
         separator.setMaxHeight(2);
         VBox.setMargin(separator, new Insets(6, 0, 6, 0));

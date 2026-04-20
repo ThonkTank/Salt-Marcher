@@ -242,6 +242,11 @@
                   OR (
                     target.fqn =~ 'src\\.view\\.(tabs|topbar|state|details)\\..*'
                     AND NOT (
+                      size(targetSegments) >= 5
+                      AND targetSegments[2] = 'details'
+                      AND target.viewBucket IN ['MODEL', 'VIEW']
+                    )
+                    AND NOT (
                       size(sourceSegments) >= 4
                       AND size(targetSegments) >= 4
                       AND sourceSegments[2] = targetSegments[2]
@@ -253,7 +258,7 @@
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'shell.api, same-root ViewModels, same-root or reusable passive views, and domain public boundaries only' AS ExpectedDirection,
+              'shell.api, same-root ViewModels, same-root/reusable/detail passive views, detail ViewModels, and domain public boundaries only' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
               'Contributions must not depend on old view topology, data, bootstrap, shell internals, or domain internals.' AS Details
             ORDER BY Source, Target

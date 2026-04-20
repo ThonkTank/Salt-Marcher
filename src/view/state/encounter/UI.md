@@ -38,6 +38,12 @@ Current state:
 - `Resolution` shows defeated-enemy selection, XP and loot summaries, reward
   controls, and the action that returns to encounter creation.
 
+The state pane uses centralized encounter selector roles for difficulty labels,
+the difficulty meter, roster cards, role badges, initiative rows, combat card
+states, HP bars, AC/init badges, edit popups, auto controls, and result
+highlights. The creature catalog browser remains a separate tab in the current
+state; this pane keeps only the placeholder hook controls.
+
 The first implementation is intentionally demo-backed frontend state. Real
 generation, catalog, combat, XP, and loot behavior are deferred integration
 points behind the same ViewModel actions.

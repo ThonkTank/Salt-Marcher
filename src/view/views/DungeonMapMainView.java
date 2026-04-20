@@ -86,10 +86,10 @@ public class DungeonMapMainView extends BorderPane {
         statusLabel.setWrapText(true);
         summaryLabel.getStyleClass().add("text-muted");
         summaryLabel.setWrapText(true);
-        overlayMessage.getStyleClass().add("title-large");
+        overlayMessage.getStyleClass().add("dungeon-map-overlay-placeholder");
         overlayMessage.setWrapText(true);
         overlayMessage.setMouseTransparent(true);
-        hudLabel.getStyleClass().add("text-muted");
+        hudLabel.getStyleClass().add("dungeon-map-hud");
         hudLabel.setMouseTransparent(true);
     }
 
@@ -269,28 +269,29 @@ public class DungeonMapMainView extends BorderPane {
 
     private void renderGrid() {
         double scale = pixelsPerTile();
-        for (int gridStep : GRID_STEPS) {
+        for (int index = 0; index < GRID_STEPS.length; index++) {
+            int gridStep = GRID_STEPS[index];
             double pixelSpacing = scale * gridStep;
             if (pixelSpacing >= 10.0) {
-                renderGridTier(scale, gridStep);
+                renderGridTier(scale, gridStep, gridTierStyle(index));
             }
         }
         renderAxis(scale);
     }
 
-    private void renderGridTier(double scale, int spacingSquares) {
+    private void renderGridTier(double scale, int spacingSquares, String styleClass) {
         int minColumn = (int) Math.floor(centerX - width() / (2.0 * scale)) - spacingSquares;
         int maxColumn = (int) Math.ceil(centerX + width() / (2.0 * scale)) + spacingSquares;
         int minRow = (int) Math.floor(centerY - height() / (2.0 * scale)) - spacingSquares;
         int maxRow = (int) Math.ceil(centerY + height() / (2.0 * scale)) + spacingSquares;
         for (int column = align(minColumn, spacingSquares); column <= maxColumn; column += spacingSquares) {
             if (column != 0) {
-                addGridLine(worldToScreenX(column, scale), 0.0, worldToScreenX(column, scale), height());
+                addGridLine(worldToScreenX(column, scale), 0.0, worldToScreenX(column, scale), height(), styleClass);
             }
         }
         for (int row = align(minRow, spacingSquares); row <= maxRow; row += spacingSquares) {
             if (row != 0) {
-                addGridLine(0.0, worldToScreenY(row, scale), width(), worldToScreenY(row, scale));
+                addGridLine(0.0, worldToScreenY(row, scale), width(), worldToScreenY(row, scale), styleClass);
             }
         }
     }
@@ -299,16 +300,16 @@ public class DungeonMapMainView extends BorderPane {
         double axisX = worldToScreenX(0.0, scale);
         double axisY = worldToScreenY(0.0, scale);
         if (axisX >= 0.0 && axisX <= width()) {
-            addGridLine(axisX, 0.0, axisX, height());
+            addGridLine(axisX, 0.0, axisX, height(), "dungeon-map-grid-axis");
         }
         if (axisY >= 0.0 && axisY <= height()) {
-            addGridLine(0.0, axisY, width(), axisY);
+            addGridLine(0.0, axisY, width(), axisY, "dungeon-map-grid-axis");
         }
     }
 
-    private void addGridLine(double startX, double startY, double endX, double endY) {
+    private void addGridLine(double startX, double startY, double endX, double endY, String styleClass) {
         Line line = new Line(startX, startY, endX, endY);
-        line.getStyleClass().add("dungeon-map-grid-line");
+        line.getStyleClass().add(styleClass);
         line.setMouseTransparent(true);
         sceneLayer.getChildren().add(line);
     }
@@ -328,6 +329,13 @@ public class DungeonMapMainView extends BorderPane {
             addCellStyle(cellNode, cell);
             cellNode.setDisable(!cell.interactive());
             cellNode.resizeRelocate(x, y, size, size);
+            if (cell.current()) {
+                Region inner = new Region();
+                inner.getStyleClass().add("dungeon-map-cell-current-inner");
+                inner.setMouseTransparent(true);
+                StackPane.setMargin(inner, new Insets(2));
+                cellNode.getChildren().add(inner);
+            }
             addCellContent(cellNode, cell, size);
             sceneLayer.getChildren().add(cellNode);
         }
@@ -403,6 +411,9 @@ public class DungeonMapMainView extends BorderPane {
             line.getStyleClass().add("dungeon-map-door");
         } else {
             line.getStyleClass().add("dungeon-map-wall");
+            if (!edge.interactive()) {
+                line.getStyleClass().add("dungeon-map-wall-noninteractive");
+            }
         }
     }
 
@@ -410,7 +421,7 @@ public class DungeonMapMainView extends BorderPane {
         Label marker = new Label(edge.label().isBlank() ? "D" : abbreviate(edge.label(), 2));
         marker.getStyleClass().add("dungeon-map-door-marker");
         marker.setMouseTransparent(true);
-        marker.resizeRelocate(centerScreenX - 11.0, centerScreenY - 11.0, 22.0, 22.0);
+        marker.resizeRelocate(centerScreenX - 10.0, centerScreenY - 10.0, 20.0, 20.0);
         sceneLayer.getChildren().add(marker);
     }
 
@@ -433,7 +444,7 @@ public class DungeonMapMainView extends BorderPane {
             }
             String key = cell.ownerKind() + "|" + cell.ownerId() + "|" + cell.label();
             groups.computeIfAbsent(key, ignored -> new LabelGroup(cell.label()))
-                    .include(cell.q() + 0.5, cell.r() + 0.5);
+                    .include(cell.q() + 0.5, cell.r() + 0.5, cell.current());
         }
         return groups;
     }
@@ -450,13 +461,18 @@ public class DungeonMapMainView extends BorderPane {
             return;
         }
         Label label = new Label(group.label());
-        label.getStyleClass().add("map-status-label");
+        label.getStyleClass().add("dungeon-map-label");
+        if (group.current()) {
+            label.getStyleClass().add("dungeon-map-label-current");
+        }
         label.setMouseTransparent(true);
         label.resizeRelocate(screenX - labelWidth / 2.0, screenY - labelHeight / 2.0, labelWidth, labelHeight);
         sceneLayer.getChildren().add(label);
     }
 
     private void renderOverlayMessage(RenderModel model) {
+        overlayMessage.getStyleClass().removeAll("dungeon-map-overlay-placeholder", "dungeon-map-overlay-note");
+        overlayMessage.getStyleClass().add(model.mapLoaded() ? "dungeon-map-overlay-note" : "dungeon-map-overlay-placeholder");
         overlayMessage.setText(model.overlayMessage());
         overlayMessage.setVisible(!model.overlayMessage().isBlank());
         overlayMessage.setManaged(!model.overlayMessage().isBlank());
@@ -485,6 +501,15 @@ public class DungeonMapMainView extends BorderPane {
     private int align(int value, int spacing) {
         int remainder = Math.floorMod(value, spacing);
         return remainder == 0 ? value : value + spacing - remainder;
+    }
+
+    private String gridTierStyle(int tier) {
+        return switch (tier) {
+            case 0 -> "dungeon-map-grid-minor";
+            case 1 -> "dungeon-map-grid-medium";
+            case 2 -> "dungeon-map-grid-major";
+            default -> "dungeon-map-grid-max";
+        };
     }
 
     private String abbreviate(String text, int maxLength) {
@@ -590,15 +615,17 @@ public class DungeonMapMainView extends BorderPane {
         private double sumX;
         private double sumY;
         private int count;
+        private boolean current;
 
         private LabelGroup(String label) {
             this.label = Objects.requireNonNull(label, "label");
         }
 
-        private void include(double x, double y) {
+        private void include(double x, double y, boolean includedCurrent) {
             sumX += x;
             sumY += y;
             count++;
+            current = current || includedCurrent;
         }
 
         private String label() {
@@ -611,6 +638,10 @@ public class DungeonMapMainView extends BorderPane {
 
         private double centerY() {
             return count == 0 ? 0.0 : sumY / count;
+        }
+
+        private boolean current() {
+            return current;
         }
 
     }

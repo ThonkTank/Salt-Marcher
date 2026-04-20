@@ -58,7 +58,7 @@ public final class CatalogControlsView extends VBox {
     private boolean suppressFilterEvents;
 
     public CatalogControlsView() {
-        getStyleClass().add("surface-root");
+        getStyleClass().addAll("surface-root", "filter-pane");
         setSpacing(10);
         setPadding(new Insets(8));
 
@@ -472,6 +472,7 @@ public final class CatalogControlsView extends VBox {
             if (safeOptions.size() > SEARCH_FIELD_THRESHOLD) {
                 TextField search = new TextField();
                 search.setPromptText(label + " suchen...");
+                search.getStyleClass().add("quick-search-field");
                 search.textProperty().addListener((obs, oldValue, newValue) -> filterCheckboxes(newValue));
                 popupContent.getChildren().add(search);
             }

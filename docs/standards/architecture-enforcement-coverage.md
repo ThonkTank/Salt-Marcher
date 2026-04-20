@@ -147,8 +147,9 @@ Mechanical trace:
   data, ApplicationService, Contribution, ViewModel, or foreign view-root view
   types, and no direct JDK infrastructure types.
 - Contributions may use shell public contracts, co-located ViewModels,
-  co-located passive views, reusable generic passive views, JavaFX `Node`,
-  domain application-service roots, domain `api` carriers, and ordinary
+  co-located passive views, reusable generic passive views, detail-entry
+  ViewModels and passive views for shell-owned Inspector publication, JavaFX
+  `Node`, domain application-service roots, domain `api` carriers, and ordinary
   non-infrastructure JDK support types.
 - Optional FXML resources stay in the view resource tree, use matching passive
   View controllers, and do not use inline scripts.

@@ -92,12 +92,12 @@ public final class EncounterStateView extends VBox {
     public EncounterStateView() {
         setSpacing(0);
         setPadding(new Insets(0));
-        getStyleClass().add("surface-root");
+        getStyleClass().addAll("surface-root", "encounter-runtime-root");
         setFillWidth(true);
 
         Label title = new Label("Encounter");
         title.getStyleClass().add("title-large");
-        modeLabel.getStyleClass().addAll("chip", "chip-type");
+        modeLabel.getStyleClass().add("encounter-mode-chip");
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
         HBox titleRow = new HBox(8, title, titleSpacer, modeLabel);
@@ -121,6 +121,7 @@ public final class EncounterStateView extends VBox {
         modeLabel.setText("Creation");
         setContent(builderPane);
         builderDifficultyLabel.setText(state.difficulty().difficulty());
+        updateDifficultyStyle(builderDifficultyLabel, state.difficulty().difficulty());
         builderPartyLabel.setText(state.partyLabel());
         builderXpLabel.setText("Adj. XP: " + state.difficulty().adjustedXp());
         builderMessageLabel.setText(state.message());
@@ -254,10 +255,10 @@ public final class EncounterStateView extends VBox {
         builderMessageLabel.setWrapText(true);
 
         HBox thresholdRow = new HBox(6, easyThresholdLabel, mediumThresholdLabel, hardThresholdLabel, deadlyThresholdLabel);
-        easyThresholdLabel.getStyleClass().addAll("chip", "chip-type");
-        mediumThresholdLabel.getStyleClass().addAll("chip", "chip-biome");
-        hardThresholdLabel.getStyleClass().addAll("chip", "chip-align");
-        deadlyThresholdLabel.getStyleClass().addAll("chip", "chip-cr");
+        easyThresholdLabel.getStyleClass().add("difficulty-easy");
+        mediumThresholdLabel.getStyleClass().add("difficulty-medium");
+        hardThresholdLabel.getStyleClass().add("difficulty-hard");
+        deadlyThresholdLabel.getStyleClass().add("difficulty-deadly");
 
         rosterList.setPadding(new Insets(2, 0, 2, 0));
         ScrollPane rosterScroll = new ScrollPane(rosterList);
@@ -373,9 +374,9 @@ public final class EncounterStateView extends VBox {
         title.setPadding(new Insets(0, 12, 2, 12));
         resultSubtitleLabel.getStyleClass().add("text-secondary");
         resultSubtitleLabel.setPadding(new Insets(0, 12, 8, 12));
-        resultXpLabel.getStyleClass().addAll("title-large", "bold");
+        resultXpLabel.getStyleClass().add("encounter-result-xp");
         resultPartyLabel.getStyleClass().add("text-secondary");
-        resultGoldLabel.getStyleClass().add("bold");
+        resultGoldLabel.getStyleClass().add("encounter-result-gold");
         resultLootLabel.getStyleClass().add("text-secondary");
         resultLootLabel.setWrapText(true);
 
@@ -429,11 +430,11 @@ public final class EncounterStateView extends VBox {
 
     private Node buildRosterCard(RosterCardView card) {
         VBox root = new VBox(2);
-        root.getStyleClass().add("entity-card");
+        root.getStyleClass().add("creature-card");
         HBox top = new HBox(8);
         top.setAlignment(Pos.CENTER_LEFT);
         Label count = new Label(String.valueOf(card.count()));
-        count.getStyleClass().addAll("chip", "chip-size");
+        count.getStyleClass().add("encounter-count-pill");
         Label name = new Label(card.name());
         name.getStyleClass().add("bold");
         Region spacer = new Region();
@@ -446,7 +447,7 @@ public final class EncounterStateView extends VBox {
         Label text = new Label(card.xp() + " XP | AC " + card.armorClass() + " | " + card.type());
         text.getStyleClass().add("text-secondary");
         Label role = new Label(card.role());
-        role.getStyleClass().addAll("chip", "chip-type");
+        role.getStyleClass().addAll("role-badge", roleStyle(card.role()));
         detail.getChildren().addAll(text, role);
         root.getChildren().addAll(top, detail);
         return root;
@@ -455,7 +456,7 @@ public final class EncounterStateView extends VBox {
     private Node buildInitiativeRow(InitiativeEntryView entry) {
         HBox row = new HBox(8);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("entity-card");
+        row.getStyleClass().add("initiative-row");
         Label name = new Label(entry.label());
         name.setWrapText(true);
         HBox.setHgrow(name, Priority.ALWAYS);
@@ -464,7 +465,7 @@ public final class EncounterStateView extends VBox {
         spinner.setPrefWidth(84);
         initiativeSpinnerById.put(entry.id(), spinner);
         Button reroll = new Button("\u2684");
-        reroll.getStyleClass().add("compact");
+        reroll.getStyleClass().add("spinner-btn");
         reroll.setOnAction(event -> spinner.getValueFactory().setValue(entry.initiative() + 2));
         row.getChildren().addAll(name, spinner, reroll);
         return row;
@@ -472,27 +473,27 @@ public final class EncounterStateView extends VBox {
 
     private Node buildCombatCard(CombatCardView card) {
         VBox root = new VBox(4);
-        root.getStyleClass().add("entity-card");
+        root.getStyleClass().add("combat-card");
         if (card.active()) {
-            root.getStyleClass().add("content-card");
+            root.getStyleClass().add("combat-card-active");
         } else if (!card.alive()) {
-            root.getStyleClass().add("card-surface");
+            root.getStyleClass().add("combat-card-dead");
         } else if (card.playerCharacter()) {
-            root.getStyleClass().add("card-surface");
+            root.getStyleClass().add("combat-card-pc");
         }
 
         HBox top = new HBox(8);
         top.setAlignment(Pos.CENTER_LEFT);
         Label turn = new Label(card.active() ? "\u25B6" : "");
         if (card.active()) {
-            turn.getStyleClass().add("bold");
+            turn.getStyleClass().add("combat-turn-indicator");
         } else {
-            turn.getStyleClass().add("text-muted");
+            turn.getStyleClass().add("combat-turn-indicator-inactive");
         }
         Label name = new Label(card.alive() ? card.name() : "\u2020 " + card.name());
-        name.getStyleClass().add("bold");
+        name.getStyleClass().add("combat-name");
         if (!card.alive()) {
-            name.getStyleClass().add("text-muted");
+            name.getStyleClass().add("combat-name-dead");
         }
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -500,16 +501,16 @@ public final class EncounterStateView extends VBox {
         if (!card.playerCharacter()) {
             Node hp = hpBar(card);
             Label ac = new Label("AC " + card.armorClass());
-            ac.getStyleClass().addAll("chip", "chip-cr");
+            ac.getStyleClass().add("ac-badge");
             top.getChildren().addAll(hp, ac);
         }
         Button init = new Button("Init " + card.initiative());
-        init.getStyleClass().addAll("compact", "filter-trigger");
+        init.getStyleClass().addAll("compact", "init-badge");
         init.setOnAction(event -> showInitiativePopup(init, card));
         top.getChildren().add(init);
 
         Label detail = new Label(card.detail());
-        detail.getStyleClass().add("text-secondary");
+        detail.getStyleClass().add("combat-detail");
         detail.setWrapText(true);
         root.getChildren().addAll(top, detail);
         return root;
@@ -523,21 +524,27 @@ public final class EncounterStateView extends VBox {
         return toggle;
     }
 
-    private Button hpBar(CombatCardView card) {
+    private Node hpBar(CombatCardView card) {
         double fraction = card.maxHp() > 0 ? Math.max(0.0, Math.min(1.0, (double) card.currentHp() / card.maxHp())) : 0.0;
-        Button bar = new Button((fraction <= 0.25 ? "! " : "") + card.currentHp() + " / " + card.maxHp());
-        bar.getStyleClass().addAll("compact", "filter-trigger");
-        if (fraction > 0.5) {
-            bar.getStyleClass().add("filter-trigger-active");
-        } else if (fraction > 0.25) {
-            bar.getStyleClass().add("neutral-action");
-        } else {
-            bar.getStyleClass().add("accent");
-        }
+        StackPane bar = new StackPane();
+        bar.getStyleClass().addAll("hp-bar-track", "clickable");
         bar.setMinWidth(92);
+        bar.setPrefWidth(92);
+        HBox fillHost = new HBox();
+        fillHost.setMouseTransparent(true);
+        Region fill = new Region();
+        fill.getStyleClass().addAll("hp-bar-fill", hpFillStyle(fraction));
+        fill.prefWidthProperty().bind(bar.widthProperty().multiply(fraction));
+        fillHost.getChildren().add(fill);
+        Label text = new Label((fraction <= 0.25 ? "! " : "") + card.currentHp() + " / " + card.maxHp());
+        text.getStyleClass().addAll("hp-bar-text", "hp-bar-text-on-track");
+        text.setMouseTransparent(true);
+        bar.getChildren().addAll(fillHost, text);
+        StackPane.setAlignment(fillHost, Pos.CENTER_LEFT);
+        StackPane.setAlignment(text, Pos.CENTER);
         bar.setAccessibleText(card.name() + " HP " + card.currentHp() + "/" + card.maxHp());
-        bar.setOnAction(event -> showHpPopup(bar, card));
-        bar.setTooltip(new Tooltip("HP bearbeiten"));
+        bar.setOnMouseClicked(event -> showHpPopup(bar, card));
+        Tooltip.install(bar, new Tooltip("HP bearbeiten"));
         return bar;
     }
 
@@ -584,7 +591,7 @@ public final class EncounterStateView extends VBox {
 
     private void showPopup(Node anchor, Popup popup, TextField focus, Node... nodes) {
         HBox content = new HBox(4);
-        content.getStyleClass().add("filter-dropdown");
+        content.getStyleClass().add("edit-popup-panel");
         content.setAlignment(Pos.CENTER_LEFT);
         content.getChildren().addAll(nodes);
         popup.getContent().add(content);
@@ -598,6 +605,7 @@ public final class EncounterStateView extends VBox {
 
     private TextField popupNumberField(String initial) {
         TextField field = new TextField(initial);
+        field.getStyleClass().add("quick-search-field");
         field.setPrefWidth(56);
         field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9-]*") ? change : null));
         return field;
@@ -605,7 +613,7 @@ public final class EncounterStateView extends VBox {
 
     private Button popupButton(String text) {
         Button button = new Button(text);
-        button.getStyleClass().add("compact");
+        button.getStyleClass().add("spinner-btn");
         button.setFocusTraversable(false);
         return button;
     }
@@ -734,6 +742,56 @@ public final class EncounterStateView extends VBox {
         } catch (NumberFormatException exception) {
             return fallback;
         }
+    }
+
+    private static void updateDifficultyStyle(Label label, String difficulty) {
+        label.getStyleClass().removeAll("difficulty-easy", "difficulty-medium", "difficulty-hard", "difficulty-deadly");
+        label.getStyleClass().add(difficultyStyle(difficulty));
+    }
+
+    private static String difficultyStyle(String difficulty) {
+        if ("Deadly".equalsIgnoreCase(difficulty)) {
+            return "difficulty-deadly";
+        }
+        if ("Hard".equalsIgnoreCase(difficulty)) {
+            return "difficulty-hard";
+        }
+        if ("Medium".equalsIgnoreCase(difficulty)) {
+            return "difficulty-medium";
+        }
+        return "difficulty-easy";
+    }
+
+    private static String roleStyle(String role) {
+        if ("Boss".equalsIgnoreCase(role)) {
+            return "role-boss";
+        }
+        if ("Archer".equalsIgnoreCase(role)) {
+            return "role-archer";
+        }
+        if ("Controller".equalsIgnoreCase(role)) {
+            return "role-controller";
+        }
+        if ("Skirmisher".equalsIgnoreCase(role)) {
+            return "role-skirmisher";
+        }
+        if ("Support".equalsIgnoreCase(role)) {
+            return "role-support";
+        }
+        if ("Soldier".equalsIgnoreCase(role)) {
+            return "role-soldier";
+        }
+        return "role-minion";
+    }
+
+    private static String hpFillStyle(double fraction) {
+        if (fraction > 0.5) {
+            return "hp-fill-healthy";
+        }
+        if (fraction > 0.25) {
+            return "hp-fill-wounded";
+        }
+        return "hp-fill-critical";
     }
 
     public record BuilderSettingsInput(String difficultyLabel, int balanceLevel, double amountValue, int diversityLevel) {
@@ -887,7 +945,7 @@ public final class EncounterStateView extends VBox {
             Label titleLabel = new Label(title);
             titleLabel.getStyleClass().add("text-muted");
             titleLabel.setMinWidth(86);
-            autoButton.getStyleClass().addAll("compact", "filter-trigger", "filter-trigger-active");
+            autoButton.getStyleClass().addAll("compact", "auto-dice-btn", "active");
             valueLabel.getStyleClass().add("text-secondary");
             valueLabel.setMinWidth(72);
             slider = new Slider(min, max, defaultValue);
@@ -914,9 +972,9 @@ public final class EncounterStateView extends VBox {
 
         private void setAuto(boolean auto) {
             autoButton.setSelected(auto);
-            autoButton.getStyleClass().remove("filter-trigger-active");
+            autoButton.getStyleClass().remove("active");
             if (auto) {
-                autoButton.getStyleClass().add("filter-trigger-active");
+                autoButton.getStyleClass().add("active");
             }
             slider.setDisable(auto);
         }
@@ -943,6 +1001,7 @@ public final class EncounterStateView extends VBox {
     private static final class DifficultyMeterView extends VBox {
 
         private final Label marker = new Label();
+        private final HBox meterBar = new HBox(0);
         private final HBox thresholdChips = new HBox(6);
         private final Label easy = new Label("Easy");
         private final Label medium = new Label("Medium");
@@ -951,13 +1010,19 @@ public final class EncounterStateView extends VBox {
 
         private DifficultyMeterView() {
             setSpacing(4);
-            marker.getStyleClass().addAll("text-secondary", "bold");
-            easy.getStyleClass().addAll("chip", "chip-type");
-            medium.getStyleClass().addAll("chip", "chip-biome");
-            hard.getStyleClass().addAll("chip", "chip-align");
-            deadly.getStyleClass().addAll("chip", "chip-cr");
+            marker.getStyleClass().add("difficulty-meter-marker");
+            meterBar.getStyleClass().add("difficulty-meter-bar");
+            meterBar.getChildren().addAll(
+                    meterSegment("difficulty-meter-easy"),
+                    meterSegment("difficulty-meter-medium"),
+                    meterSegment("difficulty-meter-hard"),
+                    meterSegment("difficulty-meter-deadly"));
+            easy.getStyleClass().add("difficulty-easy");
+            medium.getStyleClass().add("difficulty-medium");
+            hard.getStyleClass().add("difficulty-hard");
+            deadly.getStyleClass().add("difficulty-deadly");
             thresholdChips.getChildren().addAll(easy, medium, hard, deadly);
-            getChildren().addAll(marker, thresholdChips);
+            getChildren().addAll(marker, meterBar, thresholdChips);
         }
 
         private void update(DifficultySummaryView value) {
@@ -967,6 +1032,13 @@ public final class EncounterStateView extends VBox {
             medium.setText("Medium " + summary.medium());
             hard.setText("Hard " + summary.hard());
             deadly.setText("Deadly " + summary.deadly());
+        }
+
+        private Region meterSegment(String styleClass) {
+            Region segment = new Region();
+            segment.getStyleClass().add(styleClass);
+            HBox.setHgrow(segment, Priority.ALWAYS);
+            return segment;
         }
     }
 }
