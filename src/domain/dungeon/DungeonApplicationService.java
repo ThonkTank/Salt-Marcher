@@ -115,7 +115,9 @@ public final class DungeonApplicationService {
     public DungeonOperationResult applyOperation(ApplyDungeonEditorOperationCommand command) {
         DungeonEditorOperation operation = command == null ? null : command.operation();
         ApplyDungeonEditorOperationUseCase.OperationResultData result =
-                applyDungeonEditorOperationUseCase.execute(OperationPublication.operationInput(operation));
+                applyDungeonEditorOperationUseCase.execute(
+                        MapPublication.domainId(command == null ? null : command.mapId()),
+                        OperationPublication.operationInput(operation));
         return new DungeonOperationResult(
                 SnapshotPublication.snapshot(result.snapshot()),
                 result.validationMessages(),
@@ -222,6 +224,12 @@ public final class DungeonApplicationService {
         private static ApplyDungeonEditorOperationUseCase.OperationInput operationInput(
                 @Nullable DungeonEditorOperation operation
         ) {
+            if (operation instanceof DungeonEditorOperation.MoveRoomCluster moveRoomCluster) {
+                return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomCluster(
+                        moveRoomCluster.clusterId(),
+                        moveRoomCluster.deltaQ(),
+                        moveRoomCluster.deltaR());
+            }
             if (operation instanceof DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor) {
                 return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomAnchor(
                         moveRoomAnchor.deltaQ(),
@@ -260,7 +268,7 @@ public final class DungeonApplicationService {
             return new DungeonMapId(identity == null ? 1L : identity.value());
         }
 
-        private static DungeonMapIdentity domainId(DungeonMapId mapId) {
+        private static DungeonMapIdentity domainId(@Nullable DungeonMapId mapId) {
             return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
         }
 
@@ -268,6 +276,7 @@ public final class DungeonApplicationService {
             return new DungeonAreaSnapshot(
                     areaKind(area.kind()),
                     area.id(),
+                    area.clusterId(),
                     area.label(),
                     area.cells().stream().map(MapPublication::cell).toList());
         }

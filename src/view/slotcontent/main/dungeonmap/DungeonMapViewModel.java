@@ -4,7 +4,9 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonSnapshot;
+import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.DragPreview;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.PartyToken;
+import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.Selection;
 
 public final class DungeonMapViewModel {
 
@@ -18,6 +20,8 @@ public final class DungeonMapViewModel {
     private int projectionLevel;
     private String selectedTool = "Auswahl";
     private @Nullable PartyToken partyToken;
+    private @Nullable Selection selection;
+    private @Nullable DragPreview dragPreview;
 
     public DungeonMapViewModel(String placeholderTitle, boolean editorMode) {
         this.placeholderTitle = placeholderTitle == null || placeholderTitle.isBlank()
@@ -72,6 +76,16 @@ public final class DungeonMapViewModel {
         rebuildDisplayModel();
     }
 
+    public void showSelection(@Nullable Selection nextSelection) {
+        selection = nextSelection;
+        rebuildDisplayModel();
+    }
+
+    public void showDragPreview(@Nullable DragPreview nextDragPreview) {
+        dragPreview = nextDragPreview;
+        rebuildDisplayModel();
+    }
+
     private void rebuildDisplayModel() {
         displayModel.set(DungeonMapDisplayModel.fromDungeonSnapshot(
                 snapshot,
@@ -81,6 +95,8 @@ public final class DungeonMapViewModel {
                 overlaySettings,
                 projectionLevel,
                 selectedTool,
+                selection,
+                dragPreview,
                 partyToken));
     }
 }

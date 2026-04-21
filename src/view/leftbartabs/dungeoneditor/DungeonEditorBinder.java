@@ -3,12 +3,14 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
+import org.jspecify.annotations.Nullable;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapMainView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewModel;
 
 final class DungeonEditorBinder {
@@ -27,6 +29,9 @@ final class DungeonEditorBinder {
         DungeonEditorMainView main = new DungeonEditorMainView();
         DungeonEditorStateView state = new DungeonEditorStateView();
         main.renderModelProperty().bind(mapViewModel.displayModelProperty());
+        main.onPrimaryPressed(event -> viewModel.primaryPressed(toPointerInput(event)));
+        main.onPrimaryDragged(event -> viewModel.primaryDragged(toPointerInput(event)));
+        main.onPrimaryReleased(event -> viewModel.primaryReleased(toPointerInput(event)));
         state.stateTextProperty().bind(viewModel.stateProperty());
         controls.setOnMapSelected(viewModel::selectMap);
         controls.setOnCreateMap(viewModel::createMap);
@@ -41,6 +46,8 @@ final class DungeonEditorBinder {
         controls.levelOverlayControls().setOnOpacityChanged(viewModel::selectOverlayOpacity);
         controls.levelOverlayControls().setOnSelectedLevelsChanged(viewModel::selectOverlayLevels);
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
+        viewModel.selectionProperty().addListener((ignored, before, after) -> mapViewModel.showSelection(after));
+        viewModel.dragPreviewProperty().addListener((ignored, before, after) -> mapViewModel.showDragPreview(after));
         viewModel.mapsProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
         viewModel.selectedMapKeyProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
         viewModel.busyProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
@@ -157,6 +164,39 @@ final class DungeonEditorBinder {
             return DungeonLevelOverlayControlsView.Mode.SELECTED;
         }
         return DungeonLevelOverlayControlsView.Mode.OFF;
+    }
+
+    private static DungeonEditorViewModel.PointerInput toPointerInput(
+            DungeonMapMainView.DungeonMapPointerEvent event
+    ) {
+        return new DungeonEditorViewModel.PointerInput(
+                event.q(),
+                event.r(),
+                event.level(),
+                event.primaryButtonDown(),
+                toHitTarget(event.hitTarget()));
+    }
+
+    private static @Nullable DungeonEditorViewModel.HitTarget toHitTarget(
+            @Nullable DungeonMapMainView.DungeonMapHitTarget hitTarget
+    ) {
+        if (hitTarget == null) {
+            return null;
+        }
+        return new DungeonEditorViewModel.HitTarget(
+                toHitKind(hitTarget.kind()),
+                hitTarget.ownerId(),
+                hitTarget.clusterId(),
+                hitTarget.label());
+    }
+
+    private static DungeonEditorViewModel.HitKind toHitKind(DungeonMapMainView.DungeonMapHitKind hitKind) {
+        return switch (hitKind) {
+            case CORRIDOR -> DungeonEditorViewModel.HitKind.CORRIDOR;
+            case STAIR -> DungeonEditorViewModel.HitKind.STAIR;
+            case TRANSITION -> DungeonEditorViewModel.HitKind.TRANSITION;
+            default -> DungeonEditorViewModel.HitKind.ROOM;
+        };
     }
 
     private static DungeonEditorControlsView.MapItem toControlMapItem(DungeonEditorViewModel.MapSelection selection) {

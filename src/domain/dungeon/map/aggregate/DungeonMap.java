@@ -91,6 +91,25 @@ public final class DungeonMap {
         return withTopology(topology.moveRoomAnchor(deltaQ, deltaR), revision + 1L);
     }
 
+    public DungeonMap moveRoomCluster(long clusterId, int deltaQ, int deltaR) {
+        if (clusterId <= 0L || (deltaQ == 0 && deltaR == 0)) {
+            return this;
+        }
+        SpatialTopology nextTopology = topology.moveRoomCluster(clusterId, deltaQ, deltaR);
+        RoomCatalog nextRooms = rooms.moveClusterRooms(clusterId, deltaQ, deltaR);
+        if (nextTopology.equals(topology) && nextRooms.equals(rooms)) {
+            return this;
+        }
+        return new DungeonMap(
+                metadata,
+                nextTopology,
+                spaces,
+                nextRooms,
+                connections,
+                features,
+                revision + 1L);
+    }
+
     public DungeonMap resetDemoLayout() {
         return withTopology(SpatialTopology.demo(), revision + 1L);
     }

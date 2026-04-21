@@ -113,7 +113,11 @@ public final class DungeonSqliteGateway {
             connection.setAutoCommit(false);
             try {
                 upsertMap(connection, record);
-                ensureSeedRoom(connection, record);
+                if (record.roomClusters().isEmpty() && record.rooms().isEmpty()) {
+                    ensureSeedRoom(connection, record);
+                } else {
+                    persistAuthoredGeometry(connection, record);
+                }
                 connection.commit();
                 return record;
             } catch (SQLException exception) {
@@ -220,6 +224,138 @@ public final class DungeonSqliteGateway {
             insert.setLong(1, record.mapId());
             insert.setString(2, record.name());
             insert.executeUpdate();
+        }
+    }
+
+    private static void persistAuthoredGeometry(Connection connection, DungeonMapRecord record) throws SQLException {
+        for (DungeonRoomClusterRecord cluster : record.roomClusters()) {
+            upsertRoomCluster(connection, cluster);
+            replaceClusterVertices(connection, cluster);
+            replaceClusterBoundaries(connection, cluster);
+        }
+        for (DungeonRoomRecord room : record.rooms()) {
+            upsertRoomPosition(connection, room);
+            replaceRoomFloors(connection, room);
+        }
+    }
+
+    private static void upsertRoomCluster(Connection connection, DungeonRoomClusterRecord cluster) throws SQLException {
+        try (PreparedStatement update = connection.prepareStatement(
+                "UPDATE " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
+                        + " SET center_x=?, center_y=?, level_z=? WHERE cluster_id=? AND dungeon_map_id=?")) {
+            update.setInt(1, cluster.centerX());
+            update.setInt(2, cluster.centerY());
+            update.setInt(3, cluster.levelZ());
+            update.setLong(4, cluster.clusterId());
+            update.setLong(5, cluster.mapId());
+            if (update.executeUpdate() > 0) {
+                return;
+            }
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
+                        + "(cluster_id, dungeon_map_id, center_x, center_y, level_z) VALUES(?,?,?,?,?)")) {
+            insert.setLong(1, cluster.clusterId());
+            insert.setLong(2, cluster.mapId());
+            insert.setInt(3, cluster.centerX());
+            insert.setInt(4, cluster.centerY());
+            insert.setInt(5, cluster.levelZ());
+            insert.executeUpdate();
+        }
+    }
+
+    private static void replaceClusterVertices(Connection connection, DungeonRoomClusterRecord cluster)
+            throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                "DELETE FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE + " WHERE cluster_id=?")) {
+            delete.setLong(1, cluster.clusterId());
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE
+                        + "(cluster_id, level_z, vertex_index, relative_x, relative_y) VALUES(?,?,?,?,?)")) {
+            for (DungeonRoomClusterVertexRecord vertex : cluster.vertices()) {
+                insert.setLong(1, cluster.clusterId());
+                insert.setInt(2, vertex.levelZ());
+                insert.setInt(3, vertex.vertexIndex());
+                insert.setInt(4, vertex.relativeX());
+                insert.setInt(5, vertex.relativeY());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private static void replaceClusterBoundaries(Connection connection, DungeonRoomClusterRecord cluster)
+            throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                "DELETE FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE + " WHERE cluster_id=?")) {
+            delete.setLong(1, cluster.clusterId());
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
+                        + "(cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type)"
+                        + " VALUES(?,?,?,?,?,?)")) {
+            for (DungeonClusterBoundaryRecord boundary : cluster.boundaries()) {
+                insert.setLong(1, cluster.clusterId());
+                insert.setInt(2, boundary.levelZ());
+                insert.setInt(3, boundary.cellX());
+                insert.setInt(4, boundary.cellY());
+                insert.setString(5, boundary.edgeDirection());
+                insert.setString(6, boundary.edgeType());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private static void upsertRoomPosition(Connection connection, DungeonRoomRecord room) throws SQLException {
+        try (PreparedStatement update = connection.prepareStatement(
+                "UPDATE " + DungeonPersistenceSchema.ROOMS_TABLE
+                        + " SET component_x=?, component_y=?, level_z=? WHERE room_id=? AND dungeon_map_id=?")) {
+            update.setInt(1, room.componentX());
+            update.setInt(2, room.componentY());
+            update.setInt(3, room.levelZ());
+            update.setLong(4, room.roomId());
+            update.setLong(5, room.mapId());
+            if (update.executeUpdate() > 0) {
+                return;
+            }
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.ROOMS_TABLE
+                        + "(room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y, level_z)"
+                        + " VALUES(?,?,?,?,?,?,?,?)")) {
+            insert.setLong(1, room.roomId());
+            insert.setLong(2, room.mapId());
+            insert.setLong(3, room.clusterId());
+            insert.setString(4, room.name());
+            insert.setString(5, room.visualDescription());
+            insert.setInt(6, room.componentX());
+            insert.setInt(7, room.componentY());
+            insert.setInt(8, room.levelZ());
+            insert.executeUpdate();
+        }
+    }
+
+    private static void replaceRoomFloors(Connection connection, DungeonRoomRecord room) throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                "DELETE FROM " + DungeonPersistenceSchema.ROOM_FLOORS_TABLE + " WHERE room_id=?")) {
+            delete.setLong(1, room.roomId());
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.ROOM_FLOORS_TABLE
+                        + "(room_id, level_z, anchor_x, anchor_y) VALUES(?,?,?,?)")) {
+            for (DungeonRoomFloorRecord floor : room.floors()) {
+                insert.setLong(1, room.roomId());
+                insert.setInt(2, floor.levelZ());
+                insert.setInt(3, floor.anchorX());
+                insert.setInt(4, floor.anchorY());
+                insert.addBatch();
+            }
+            insert.executeBatch();
         }
     }
 

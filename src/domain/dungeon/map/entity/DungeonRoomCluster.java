@@ -49,6 +49,18 @@ public final class DungeonRoomCluster {
         return boundariesByLevel;
     }
 
+    public DungeonRoomCluster movedBy(int deltaQ, int deltaR) {
+        if (deltaQ == 0 && deltaR == 0) {
+            return this;
+        }
+        return new DungeonRoomCluster(
+                clusterId,
+                mapId,
+                new DungeonCell(center.q() + deltaQ, center.r() + deltaR, center.level()),
+                relativeVerticesByLevel,
+                boundariesByLevel);
+    }
+
     private static <T> Map<Integer, List<T>> copyNestedLists(Map<Integer, List<T>> source) {
         if (source == null || source.isEmpty()) {
             return Map.of();

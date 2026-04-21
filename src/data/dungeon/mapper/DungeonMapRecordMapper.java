@@ -62,15 +62,21 @@ public final class DungeonMapRecordMapper {
 
     public static DungeonMapRecord toRecord(DungeonMap dungeonMap) {
         SpatialTopology topology = dungeonMap == null ? SpatialTopology.demo() : dungeonMap.topology();
+        long mapId = dungeonMap == null ? 1L : dungeonMap.metadata().mapId().value();
         return new DungeonMapRecord(
-                dungeonMap == null ? 1L : dungeonMap.metadata().mapId().value(),
+                mapId,
                 dungeonMap == null ? "Dungeon Bastion" : dungeonMap.metadata().mapName(),
                 dungeonMap == null ? 1L : dungeonMap.revision(),
                 new DungeonTopologySeedRecord(
                         topology.width(),
                         topology.height(),
                         topology.roomAnchorQ(),
-                        topology.roomAnchorR()));
+                        topology.roomAnchorR()),
+                toClusterRecords(topology.roomClusters()),
+                toRoomRecords(dungeonMap == null ? List.of() : dungeonMap.rooms().rooms()),
+                List.of(),
+                List.of(),
+                List.of());
     }
 
     private static List<DungeonRoomCluster> toClusters(List<DungeonRoomClusterRecord> records) {
@@ -125,6 +131,115 @@ public final class DungeonMapRecordMapper {
                     new DungeonRoomNarration(
                             record.visualDescription(),
                             exitDescriptions(record.levelZ(), record.exitDescriptions()))));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonRoomClusterRecord> toClusterRecords(List<DungeonRoomCluster> clusters) {
+        List<DungeonRoomClusterRecord> result = new ArrayList<>();
+        for (DungeonRoomCluster cluster : clusters == null ? List.<DungeonRoomCluster>of() : clusters) {
+            result.add(new DungeonRoomClusterRecord(
+                    cluster.clusterId(),
+                    cluster.mapId(),
+                    cluster.center().q(),
+                    cluster.center().r(),
+                    cluster.center().level(),
+                    toVertexRecords(cluster.clusterId(), cluster.relativeVerticesByLevel()),
+                    toBoundaryRecords(cluster.clusterId(), cluster.boundariesByLevel())));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonRoomClusterVertexRecord> toVertexRecords(
+            long clusterId,
+            Map<Integer, List<DungeonCell>> verticesByLevel
+    ) {
+        List<DungeonRoomClusterVertexRecord> result = new ArrayList<>();
+        for (Map.Entry<Integer, List<DungeonCell>> entry
+                : (verticesByLevel == null ? Map.<Integer, List<DungeonCell>>of() : verticesByLevel).entrySet()) {
+            int index = 0;
+            for (DungeonCell vertex : entry.getValue()) {
+                result.add(new DungeonRoomClusterVertexRecord(
+                        clusterId,
+                        entry.getKey(),
+                        index++,
+                        vertex.q(),
+                        vertex.r()));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(
+            long clusterId,
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+    ) {
+        List<DungeonClusterBoundaryRecord> result = new ArrayList<>();
+        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry
+                : (boundariesByLevel == null ? Map.<Integer, List<DungeonClusterBoundary>>of() : boundariesByLevel)
+                        .entrySet()) {
+            for (DungeonClusterBoundary boundary : entry.getValue()) {
+                result.add(new DungeonClusterBoundaryRecord(
+                        clusterId,
+                        entry.getKey(),
+                        boundary.relativeCell().q(),
+                        boundary.relativeCell().r(),
+                        boundary.direction().name(),
+                        boundary.kind().name()));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonRoomRecord> toRoomRecords(List<DungeonRoom> rooms) {
+        List<DungeonRoomRecord> result = new ArrayList<>();
+        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+            int primaryLevel = room.primaryLevel();
+            DungeonCell primaryAnchor = room.primaryAnchor();
+            result.add(new DungeonRoomRecord(
+                    room.roomId(),
+                    room.mapId(),
+                    room.clusterId(),
+                    room.name(),
+                    room.narration().visualDescription(),
+                    primaryAnchor.q(),
+                    primaryAnchor.r(),
+                    primaryLevel,
+                    toFloorRecords(room.roomId(), room.floorAnchors(), primaryLevel),
+                    toExitDescriptionRecords(room.roomId(), room.narration().exitDescriptions())));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonRoomFloorRecord> toFloorRecords(
+            long roomId,
+            Map<Integer, DungeonCell> floorAnchors,
+            int primaryLevel
+    ) {
+        List<DungeonRoomFloorRecord> result = new ArrayList<>();
+        for (Map.Entry<Integer, DungeonCell> entry : floorAnchors.entrySet()) {
+            if (entry.getKey() == primaryLevel) {
+                continue;
+            }
+            DungeonCell anchor = entry.getValue();
+            result.add(new DungeonRoomFloorRecord(roomId, entry.getKey(), anchor.q(), anchor.r()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonRoomExitDescriptionRecord> toExitDescriptionRecords(
+            long roomId,
+            List<DungeonRoomExitDescription> exitDescriptions
+    ) {
+        List<DungeonRoomExitDescriptionRecord> result = new ArrayList<>();
+        for (DungeonRoomExitDescription exitDescription
+                : exitDescriptions == null ? List.<DungeonRoomExitDescription>of() : exitDescriptions) {
+            result.add(new DungeonRoomExitDescriptionRecord(
+                    roomId,
+                    exitDescription.roomCell().q(),
+                    exitDescription.roomCell().r(),
+                    exitDescription.direction().name(),
+                    exitDescription.description()));
         }
         return List.copyOf(result);
     }

@@ -2,6 +2,7 @@ package src.domain.dungeon.map.value;
 
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -56,6 +57,23 @@ public record SpatialTopology(
                 roomAnchorQ + deltaQ,
                 roomAnchorR + deltaR,
                 roomClusters);
+    }
+
+    public SpatialTopology moveRoomCluster(long clusterId, int deltaQ, int deltaR) {
+        if (clusterId <= 0L || (deltaQ == 0 && deltaR == 0)) {
+            return this;
+        }
+        List<DungeonRoomCluster> movedClusters = new ArrayList<>();
+        boolean changed = false;
+        for (DungeonRoomCluster cluster : roomClusters) {
+            if (cluster.clusterId() == clusterId) {
+                movedClusters.add(cluster.movedBy(deltaQ, deltaR));
+                changed = true;
+            } else {
+                movedClusters.add(cluster);
+            }
+        }
+        return changed ? withRoomClusters(movedClusters) : this;
     }
 
     public SpatialTopology withRoomClusters(List<DungeonRoomCluster> clusters) {

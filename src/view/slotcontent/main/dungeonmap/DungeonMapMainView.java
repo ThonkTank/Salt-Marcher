@@ -3,6 +3,7 @@ package src.view.slotcontent.main.dungeonmap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
@@ -54,6 +55,9 @@ public class DungeonMapMainView extends BorderPane {
     private double lastDragY;
     private boolean middleDragActive;
     private Runnable viewportChangedHandler = () -> {};
+    private Consumer<DungeonMapPointerEvent> primaryPressedHandler = ignored -> {};
+    private Consumer<DungeonMapPointerEvent> primaryDraggedHandler = ignored -> {};
+    private Consumer<DungeonMapPointerEvent> primaryReleasedHandler = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonMapMainView(String titleText) {
@@ -85,6 +89,18 @@ public class DungeonMapMainView extends BorderPane {
 
     public final void onViewportChanged(Runnable action) {
         viewportChangedHandler = action == null ? () -> {} : action;
+    }
+
+    public final void onPrimaryPressed(Consumer<DungeonMapPointerEvent> action) {
+        primaryPressedHandler = action == null ? ignored -> {} : action;
+    }
+
+    public final void onPrimaryDragged(Consumer<DungeonMapPointerEvent> action) {
+        primaryDraggedHandler = action == null ? ignored -> {} : action;
+    }
+
+    public final void onPrimaryReleased(Consumer<DungeonMapPointerEvent> action) {
+        primaryReleasedHandler = action == null ? ignored -> {} : action;
     }
 
     public final void resetCamera() {
@@ -176,10 +192,18 @@ public class DungeonMapMainView extends BorderPane {
             lastDragX = event.getX();
             lastDragY = event.getY();
             event.consume();
+        } else if (event.getButton() == MouseButton.PRIMARY) {
+            primaryPressedHandler.accept(pointerEvent(event));
+            event.consume();
         }
     }
 
     private void handleMouseDragged(MouseEvent event) {
+        if (event.isPrimaryButtonDown()) {
+            primaryDraggedHandler.accept(pointerEvent(event));
+            event.consume();
+            return;
+        }
         if (!middleDragActive) {
             return;
         }
@@ -193,6 +217,9 @@ public class DungeonMapMainView extends BorderPane {
     private void handleMouseReleased(MouseEvent event) {
         if (event.getButton() == MouseButton.MIDDLE) {
             middleDragActive = false;
+            event.consume();
+        } else if (event.getButton() == MouseButton.PRIMARY) {
+            primaryReleasedHandler.accept(pointerEvent(event));
             event.consume();
         }
     }
@@ -221,6 +248,52 @@ public class DungeonMapMainView extends BorderPane {
         }
         redraw();
         event.consume();
+    }
+
+    private DungeonMapPointerEvent pointerEvent(MouseEvent event) {
+        double worldQ = screenToWorldX(event.getX());
+        double worldR = screenToWorldY(event.getY());
+        int q = (int) Math.floor(worldQ);
+        int r = (int) Math.floor(worldR);
+        DungeonMapDisplayModel model = renderModel.get() == null ? DungeonMapDisplayModel.empty() : renderModel.get();
+        return new DungeonMapPointerEvent(
+                q,
+                r,
+                model.projectionLevel(),
+                event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
+                hitTarget(model, q, r, model.projectionLevel()));
+    }
+
+    private @org.jspecify.annotations.Nullable DungeonMapHitTarget hitTarget(
+            DungeonMapDisplayModel model,
+            int q,
+            int r,
+            int level
+    ) {
+        if (model.viewMode() != DungeonMapDisplayModel.ViewMode.GRID) {
+            return null;
+        }
+        for (int index = model.cells().size() - 1; index >= 0; index--) {
+            DungeonMapDisplayModel.RenderCell cell = model.cells().get(index);
+            if (cell.preview() || cell.q() != q || cell.r() != r || cell.z() != level) {
+                continue;
+            }
+            return new DungeonMapHitTarget(
+                    hitKind(cell.kind()),
+                    cell.ownerId(),
+                    cell.clusterId(),
+                    cell.label());
+        }
+        return null;
+    }
+
+    private static DungeonMapHitKind hitKind(DungeonMapDisplayModel.CellKind kind) {
+        return switch (kind) {
+            case ROOM -> DungeonMapHitKind.ROOM;
+            case CORRIDOR -> DungeonMapHitKind.CORRIDOR;
+            case STAIR -> DungeonMapHitKind.STAIR;
+            case TRANSITION -> DungeonMapHitKind.TRANSITION;
+        };
     }
 
     private void panByPixels(double deltaX, double deltaY) {
@@ -365,6 +438,8 @@ public class DungeonMapMainView extends BorderPane {
             gc.save();
             if (overlay) {
                 gc.setGlobalAlpha(overlayAlpha(cell.z(), model.projectionLevel(), model.overlaySettings().opacity()));
+            } else if (cell.preview()) {
+                gc.setGlobalAlpha(0.58);
             }
             gc.setFill(fillFor(cell, model.projectionLevel()));
             gc.fillRect(x, y, size, size);
@@ -527,6 +602,9 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private Color fillFor(DungeonMapDisplayModel.RenderCell cell, int projectionLevel) {
+        if (cell.preview()) {
+            return previewFill();
+        }
         if (cell.z() != projectionLevel) {
             return blend(cell.z() > projectionLevel ? roomFill() : corridorFill(),
                     cell.z() > projectionLevel ? aboveTint() : belowTint(),
@@ -544,6 +622,9 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private Color strokeFor(DungeonMapDisplayModel.RenderCell cell, int projectionLevel) {
+        if (cell.preview()) {
+            return previewStroke();
+        }
         if (cell.z() != projectionLevel) {
             return blend(roomStroke(), cell.z() > projectionLevel ? aboveTint() : belowTint(), 0.62);
         }
@@ -620,6 +701,14 @@ public class DungeonMapMainView extends BorderPane {
 
     private double worldToScreenY(double worldY) {
         return panY + worldY * gridSize();
+    }
+
+    private double screenToWorldX(double screenX) {
+        return (screenX - panX) / gridSize();
+    }
+
+    private double screenToWorldY(double screenY) {
+        return (screenY - panY) / gridSize();
     }
 
     private double normalizedOffset(double pan, double spacing) {
@@ -730,6 +819,14 @@ public class DungeonMapMainView extends BorderPane {
         return color(0xd7, 0xec, 0xe7, 1.0);
     }
 
+    private Color previewFill() {
+        return color(0xd7, 0xec, 0xe7, 0.72);
+    }
+
+    private Color previewStroke() {
+        return color(0xf1, 0xd3, 0x8a, 1.0);
+    }
+
     private Color partyFill() {
         return color(0xff, 0xb6, 0x2a, 1.0);
     }
@@ -801,5 +898,33 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private record GraphPoint(double x, double y) {
+    }
+
+    public enum DungeonMapHitKind {
+        ROOM,
+        CORRIDOR,
+        STAIR,
+        TRANSITION
+    }
+
+    public record DungeonMapHitTarget(
+            DungeonMapHitKind kind,
+            long ownerId,
+            long clusterId,
+            String label
+    ) {
+
+        public DungeonMapHitTarget {
+            label = label == null ? "" : label;
+        }
+    }
+
+    public record DungeonMapPointerEvent(
+            int q,
+            int r,
+            int level,
+            boolean primaryButtonDown,
+            @org.jspecify.annotations.Nullable DungeonMapHitTarget hitTarget
+    ) {
     }
 }

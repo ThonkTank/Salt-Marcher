@@ -73,7 +73,12 @@ public final class BuildDungeonDerivedStateUseCase {
                 List<DungeonCell> cells = roomCells.getOrDefault(room.roomId(), List.of(room.primaryAnchor()));
                 DungeonAggregate aggregate = new DungeonAggregate(room.roomId(), DungeonAreaType.ROOM, room.name(), cells);
                 aggregates.add(aggregate);
-                areas.add(new DungeonAreaFacts(aggregate.kind(), aggregate.id(), aggregate.label(), aggregate.cells()));
+                areas.add(new DungeonAreaFacts(
+                        aggregate.kind(),
+                        aggregate.id(),
+                        cluster.clusterId(),
+                        aggregate.label(),
+                        aggregate.cells()));
             }
 
             for (List<DungeonClusterBoundary> levelBoundaries : cluster.boundariesByLevel().values()) {

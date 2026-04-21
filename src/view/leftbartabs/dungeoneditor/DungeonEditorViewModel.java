@@ -19,19 +19,24 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.published.ApplyDungeonEditorOperationCommand;
 import src.domain.dungeon.published.BaseMapSnapshot;
 import src.domain.dungeon.published.CreateDungeonMapCommand;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapMode;
 import src.domain.dungeon.published.DungeonMapSummary;
+import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.SearchMapsQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.DragPreview;
+import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.Selection;
 
 public final class DungeonEditorViewModel {
 
@@ -41,6 +46,8 @@ public final class DungeonEditorViewModel {
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<DungeonSnapshot> snapshot = new ReadOnlyObjectWrapper<>();
+    private final ReadOnlyObjectWrapper<Selection> selection = new ReadOnlyObjectWrapper<>();
+    private final ReadOnlyObjectWrapper<DragPreview> dragPreview = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<List<MapSelection>> maps = new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyStringWrapper selectedMapKey = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<List<Integer>> reachableLevels = new ReadOnlyObjectWrapper<>(List.of(0));
@@ -52,6 +59,7 @@ public final class DungeonEditorViewModel {
     private final IntegerProperty projectionLevel = new SimpleIntegerProperty(0);
     private final StringProperty selectedTool = new SimpleStringProperty(DEFAULT_TOOL);
     private @Nullable DungeonMapId selectedMapId;
+    private @Nullable DragSession dragSession;
 
     public DungeonEditorViewModel(DungeonApplicationService dungeon) {
         this.dungeon = Objects.requireNonNull(dungeon, "dungeon");
@@ -68,6 +76,14 @@ public final class DungeonEditorViewModel {
 
     public ReadOnlyObjectProperty<DungeonSnapshot> snapshotProperty() {
         return snapshot.getReadOnlyProperty();
+    }
+
+    public ReadOnlyObjectProperty<Selection> selectionProperty() {
+        return selection.getReadOnlyProperty();
+    }
+
+    public ReadOnlyObjectProperty<DragPreview> dragPreviewProperty() {
+        return dragPreview.getReadOnlyProperty();
     }
 
     public ReadOnlyObjectProperty<List<MapSelection>> mapsProperty() {
@@ -107,6 +123,7 @@ public final class DungeonEditorViewModel {
         if (selection == null) {
             return;
         }
+        clearInteraction();
         selectedMapId = selection.mapId();
         selectedMapKey.set(selection.key());
         loadSelectedMap();
@@ -119,6 +136,9 @@ public final class DungeonEditorViewModel {
 
     public void selectTool(String nextTool) {
         selectedTool.set(nextTool == null || nextTool.isBlank() ? DEFAULT_TOOL : nextTool);
+        if (!DEFAULT_TOOL.equals(selectedTool.get())) {
+            clearInteraction();
+        }
         refreshStateText();
     }
 
@@ -206,10 +226,57 @@ public final class DungeonEditorViewModel {
             dungeon.deleteMap(new DeleteDungeonMapCommand(selection.mapId()));
             if (Objects.equals(selection.mapId(), selectedMapId)) {
                 selectedMapId = null;
+                clearInteraction();
             }
             refreshMaps();
             loadSelectedMap();
         });
+    }
+
+    public void primaryPressed(@Nullable PointerInput input) {
+        if (!interactionEnabled() || input == null) {
+            return;
+        }
+        HitTarget hit = input.hitTarget();
+        if (hit != null && hit.kind() == HitKind.ROOM && hit.clusterId() > 0L) {
+            Selection nextSelection = new Selection(hit.ownerId(), hit.clusterId(), hit.label());
+            selection.set(nextSelection);
+            dragSession = new DragSession(nextSelection, input.q(), input.r());
+            dragPreview.set(null);
+            refreshStateText();
+            return;
+        }
+        clearInteraction();
+    }
+
+    public void primaryDragged(@Nullable PointerInput input) {
+        if (!interactionEnabled() || dragSession == null || input == null || !input.primaryButtonDown()) {
+            return;
+        }
+        int deltaQ = input.q() - dragSession.pressQ();
+        int deltaR = input.r() - dragSession.pressR();
+        if (deltaQ == 0 && deltaR == 0) {
+            dragPreview.set(null);
+        } else {
+            dragPreview.set(new DragPreview(dragSession.selection().clusterId(), deltaQ, deltaR));
+        }
+        refreshStateText();
+    }
+
+    public void primaryReleased(@Nullable PointerInput input) {
+        if (dragSession == null || input == null) {
+            return;
+        }
+        DragSession releasedSession = dragSession;
+        dragSession = null;
+        dragPreview.set(null);
+        int deltaQ = input.q() - releasedSession.pressQ();
+        int deltaR = input.r() - releasedSession.pressR();
+        if (!interactionEnabled() || (deltaQ == 0 && deltaR == 0)) {
+            refreshStateText();
+            return;
+        }
+        moveSelectedCluster(releasedSession.selection(), deltaQ, deltaR);
     }
 
     private void refreshMaps() {
@@ -256,11 +323,53 @@ public final class DungeonEditorViewModel {
     }
 
     private void refreshStateText() {
+        Selection currentSelection = selection.get();
+        DragPreview currentPreview = dragPreview.get();
+        String selectionText = currentSelection == null
+                ? "Auswahl: Keine"
+                : "Auswahl: " + currentSelection.label() + " (Cluster " + currentSelection.clusterId() + ")";
+        String previewText = currentPreview == null || !currentPreview.active()
+                ? "Drag: inaktiv"
+                : "Drag: dq=" + currentPreview.deltaQ() + ", dr=" + currentPreview.deltaR();
         state.set("Werkzeug: " + selectedTool.get()
                 + "\nAnsicht: " + viewMode.get().label()
                 + "\nEbene: z=" + projectionLevel.get()
                 + "\n" + overlaySettings.get().mode().label()
-                + "\nWerkzeuge: Praesentationszustand bis Editor-Operationen angebunden sind.");
+                + "\n" + selectionText
+                + "\n" + previewText
+                + "\nAuswahlwerkzeug: Raumcluster koennen auf dem Raster gezogen werden.");
+    }
+
+    private void moveSelectedCluster(Selection currentSelection, int deltaQ, int deltaR) {
+        DungeonMapId mapId = selectedMapId;
+        if (mapId == null || currentSelection == null || currentSelection.clusterId() <= 0L) {
+            return;
+        }
+        withBusy(() -> {
+            DungeonOperationResult result = dungeon.applyOperation(new ApplyDungeonEditorOperationCommand(
+                    mapId,
+                    new DungeonEditorOperation.MoveRoomCluster(currentSelection.clusterId(), deltaQ, deltaR)));
+            snapshot.set(result.snapshot());
+            reachableLevels.set(levelsFrom(result.snapshot(), projectionLevel.get()));
+            status.set("Cluster verschoben: dq=" + deltaQ + ", dr=" + deltaR);
+            selection.set(currentSelection);
+        });
+        refreshStateText();
+    }
+
+    private boolean interactionEnabled() {
+        return selectedMapId != null
+                && snapshot.get() != null
+                && !busy.get()
+                && viewMode.get() == DungeonMapDisplayModel.ViewMode.GRID
+                && DEFAULT_TOOL.equals(selectedTool.get());
+    }
+
+    private void clearInteraction() {
+        dragSession = null;
+        dragPreview.set(null);
+        selection.set(null);
+        refreshStateText();
     }
 
     private void moveProjection(int offset) {
@@ -333,5 +442,39 @@ public final class DungeonEditorViewModel {
             mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
             revision = Math.max(0L, revision);
         }
+    }
+
+    public enum HitKind {
+        ROOM,
+        CORRIDOR,
+        STAIR,
+        TRANSITION
+    }
+
+    public record HitTarget(
+            HitKind kind,
+            long ownerId,
+            long clusterId,
+            String label
+    ) {
+        public HitTarget {
+            label = label == null || label.isBlank() ? kind.name() : label;
+        }
+    }
+
+    public record PointerInput(
+            int q,
+            int r,
+            int level,
+            boolean primaryButtonDown,
+            @Nullable HitTarget hitTarget
+    ) {
+    }
+
+    private record DragSession(
+            Selection selection,
+            int pressQ,
+            int pressR
+    ) {
     }
 }
