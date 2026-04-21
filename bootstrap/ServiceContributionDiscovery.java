@@ -43,12 +43,11 @@ final class ServiceContributionDiscovery {
         for (Map.Entry<String, List<String>> entry : rootClassesByFeature.entrySet()) {
             String featureName = entry.getKey();
             List<String> rootClasses = entry.getValue().stream().distinct().sorted().toList();
-            String expectedSimpleName = expectedContributionSimpleName(featureName);
             List<String> matchingClasses = rootClasses.stream()
-                    .filter(className -> className.endsWith("." + expectedSimpleName))
+                    .filter(className -> className.endsWith(CONTRIBUTION_SUFFIX))
                     .toList();
             if (matchingClasses.size() != REQUIRED_ROOT_CLASS_COUNT) {
-                throw invalidContribution(featureName, expectedSimpleName, rootClasses);
+                throw invalidContribution(featureName, rootClasses);
             }
             if (rootClasses.size() != REQUIRED_ROOT_CLASS_COUNT) {
                 throw new IllegalStateException("Data feature '" + featureName
@@ -60,30 +59,10 @@ final class ServiceContributionDiscovery {
         return resolved;
     }
 
-    private IllegalStateException invalidContribution(String featureName, String expectedSimpleName, List<String> rootClasses) {
+    private IllegalStateException invalidContribution(String featureName, List<String> rootClasses) {
         return new IllegalStateException("Data feature '" + featureName
-                + "' must expose exactly one root service contribution class named '" + expectedSimpleName
+                + "' must expose exactly one root service contribution class ending with '" + CONTRIBUTION_SUFFIX
                 + "' under src/data/" + featureName + "/. Found: " + rootClasses);
-    }
-
-    private String expectedContributionSimpleName(String featureName) {
-        StringBuilder result = new StringBuilder();
-        boolean capitalizeNext = true;
-        for (int index = 0; index < featureName.length(); index++) {
-            char character = featureName.charAt(index);
-            if (!Character.isLetterOrDigit(character)) {
-                capitalizeNext = true;
-                continue;
-            }
-            if (capitalizeNext) {
-                result.append(Character.toUpperCase(character));
-                capitalizeNext = false;
-            } else {
-                result.append(character);
-            }
-        }
-        result.append(CONTRIBUTION_SUFFIX);
-        return result.toString();
     }
 
     private @Nullable ServiceContribution instantiateContribution(ClassLoader classLoader, String className) {
@@ -97,7 +76,8 @@ final class ServiceContributionDiscovery {
         if (!ServiceContribution.class.isAssignableFrom(rawType)
                 || rawType.isInterface()
                 || Modifier.isAbstract(rawType.getModifiers())) {
-            return null;
+            throw new IllegalStateException("Service contribution " + className
+                    + " must be a concrete implementation of " + ServiceContribution.class.getName() + ".");
         }
 
         try {

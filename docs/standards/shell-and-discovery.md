@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Shell bootstrap responsibilities, discovery contracts,
 instantiation rules, registration order, and startup resolution for passive
 shell contributions.
@@ -65,8 +65,11 @@ instead of being discovered as an independent startup root.
 ### Service Discovery
 
 - scans `src/data/<feature>/` root classes
-- expects exactly one root service contribution class named
-  `<PascalFeatureName>ServiceContribution`
+- expects exactly one root service contribution class whose name ends with
+  `ServiceContribution`
+- relies on source-layout gates to enforce the canonical
+  `<Context Name>ServiceContribution` file name for contexts whose directory
+  token is not a simple PascalCase spelling
 - expects that class to implement `ServiceContribution`
 - expects a public no-arg constructor
 - registers exported capabilities into the shared shell service registry

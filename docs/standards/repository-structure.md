@@ -157,14 +157,18 @@ Binder-supplied loader functions.
 Every service-exporting data feature exposes exactly one service-registration
 entrypoint:
 
-- `src/data/<feature>/<PascalFeatureName>ServiceContribution.java`
+- `src/data/<feature>/<PascalFeatureName>ServiceContribution.java`, or
+  `src/data/<feature>/<Context Name>ServiceContribution.java` when the
+  domain context declares a machine-readable `Context Name:` marker
 - `public final`
 - public no-arg constructor
 - implements `shell.api.ServiceContribution`
 
 Each persistence-exporting feature also exposes exactly one schema declaration:
 
-- `src/data/<feature>/model/<PascalFeatureName>PersistenceSchema.java`
+- `src/data/<feature>/model/<PascalFeatureName>PersistenceSchema.java`, or
+  `src/data/<feature>/model/<Context Name>PersistenceSchema.java` when the
+  domain context declares a machine-readable `Context Name:` marker
 
 Documentation files are allowed in feature roots when they use the standard
 co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
