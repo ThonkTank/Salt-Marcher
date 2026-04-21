@@ -47,13 +47,46 @@ remain defined in the
 | `data-foreign-feature-public-boundary` | ArchUnit `dataFeaturesMustOnlyUseForeignFeatureApis` | `./gradlew checkArchitecture` | Data code reaches foreign domain features only through allowed public domain boundaries. |
 | `data-foreign-private-data-bucket-isolation` | ArchUnit `dataFeaturesMustNotReachForeignPrivateDataBuckets` | `./gradlew checkArchitecture` | Data code does not reach foreign private data buckets. |
 | `data-feature-cycles` | ArchUnit `dataFeaturesMustStayCycleFree` | `./gradlew checkArchitecture` | Data features and `persistencecore` do not form package-slice dependency cycles. |
-| `data-enforcement-coverage-complete` | build-harness `DataEnforcementCoverageRules` | `./gradlew checkArchitecture` | This coverage document lists every required enforced data-layer rule with a mechanical owner and blocking Gradle entrypoint. |
+| `data-enforcement-coverage-complete` | build-harness `DataEnforcementCoverageRules` | `./gradlew checkArchitecture` | This coverage document lists every required enforced data-layer rule with a mechanical owner and blocking Gradle entrypoint, and classifies every required data-layer rule group as enforced, enforced elsewhere, or review-owned. |
 
 ## Adjacent System Boundary Rules
 
 | Rule ID | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- |
 | `system-bootstrap-shell-feature-independence` | ArchUnit `bootstrapMustStayOutsideFeatureCode`, `bootstrapMustOnlyUseAppShellFromShellHost`, `shellMustNotReachFeatureInteractorsDomainOrData`, and `shellApiMustStayIndependentFromHostAndFeatureLayers`; PMD `SaltMarcherSourcePolicyRule` | `./gradlew checkArchitecture` | Bootstrap and shell stay outside concrete feature implementation except for the allowed shell host composition point. |
+
+## Documented Data Rule Coverage Inventory
+
+Every normative rule group in the Data Layer Standard must be represented
+below. `Enforced` points to a data/system matrix row in this document.
+`Enforced Elsewhere` points to another layer's coverage document because that
+layer owns the active-code surface. `Review-Owned` records binding data-layer
+guidance that the current tools cannot prove without low-signal inference.
+
+| Data Rule Group | Status | Coverage |
+| --- | --- | --- |
+| `data-adapter-zone-purpose` | Enforced | Covered by `data-port-adapter-role-contract`, `data-port-adapter-public-signature-boundary`, `data-gateway-domain-independence`, `data-model-domain-independence`, and `data-outer-layer-independence`. |
+| `data-ports-domain-owned` | Enforced | Covered by `data-port-adapter-role-contract`; domain-side port ownership is also covered by the domain `domain-port-boundary` rule. |
+| `data-role-bucket-placement` | Enforced | Covered by `data-root-service-contribution-only`, `data-feature-bucket-layout`, `data-feature-composition-root-presence`, and `data-feature-schema-contract`. |
+| `data-active-record-rejected` | Enforced Elsewhere | Covered by domain infrastructure-dependency and domain outer-layer independence rules; domain entities and aggregates cannot own persistence source dependencies. |
+| `data-source-mechanics-owned-by-gateway` | Enforced | Covered by `data-composition-no-source-mechanics`, `data-port-adapter-no-source-mechanics`, `data-mapper-no-source-mechanics`, `data-port-adapter-gateway-collaborator-boundary`, and `data-gateway-public-signature-boundary`. |
+| `data-source-local-shapes-owned-by-model` | Enforced | Covered by `data-feature-schema-contract`, `data-schema-table-name-owned-by-schema`, `data-port-adapter-public-signature-boundary`, and `data-model-domain-independence`. |
+| `data-single-write-model` | Review-Owned | The current gates can block duplicate source table-name literals and obvious boundary leaks, but cannot prove semantic authored-state ownership. |
+| `data-runtime-composition-root` | Enforced | Covered by `data-service-contribution-shape`, `data-service-registry-root-only`, and `data-root-service-contribution-only`. |
+| `data-bootstrap-shell-no-source-wiring` | Enforced | Covered by `data-service-registry-root-only`, `system-bootstrap-shell-feature-independence`, and shell/repository feature-independence coverage. |
+| `data-cross-feature-boundary` | Enforced | Covered by `data-foreign-feature-public-boundary`, `data-foreign-private-data-bucket-isolation`, and `data-feature-cycles`. |
+| `data-service-contribution-thinness` | Review-Owned | The gates prove root shape, statelessness, registration placement, and concrete source API absence; semantic thinness after legal wiring remains review-owned. |
+| `data-repository-write-model-role` | Enforced | Covered by `data-port-adapter-role-contract`, `data-port-adapter-no-source-mechanics`, and `data-port-adapter-public-signature-boundary`; whether a write port is semantically needed remains review-owned. |
+| `data-query-read-only-role` | Enforced | Covered by `data-query-read-only-source-shape`, `data-port-adapter-role-contract`, and `data-port-adapter-public-signature-boundary`; semantic read-only behavior remains review-owned. |
+| `data-gateway-internal-source-adapter` | Enforced | Covered by `data-feature-bucket-layout`, `data-gateway-public-signature-boundary`, `data-gateway-domain-independence`, and `data-non-root-shell-independence`. |
+| `data-model-schema-source-local` | Enforced | Covered by `data-feature-schema-contract`, `data-model-domain-independence`, `data-schema-ddl-placement`, and `data-schema-table-name-owned-by-schema`; whether records are merely renamed domain entities remains review-owned. |
+| `data-mapper-translation-only` | Review-Owned | Current gates block concrete source API leakage from mappers, but cannot prove mapping losslessness or absence of domain validation/policy. |
+| `data-persistencecore-generic-only-rule` | Enforced | Covered by `data-persistencecore-generic-only` and `data-non-root-shell-independence`; abstraction size and usefulness remain review-owned. |
+| `data-forbidden-business-policy` | Review-Owned | Stable dependency, signature, and source-token evidence is enforced where it exists; business-rule ownership without those shapes remains review-owned. |
+| `data-view-shell-private-data-access` | Enforced Elsewhere | Covered by view and shell dependency rules that ban view/shell access to data implementation packages. |
+| `data-domain-no-source-mechanics` | Enforced Elsewhere | Covered by domain forbidden-infrastructure dependency and domain outer-layer independence rules. |
+| `data-source-adapter-no-public-capabilities` | Enforced | Covered by `data-service-registry-root-only` and `data-gateway-public-signature-boundary`; future non-application-service feature factories would require a separate ADR and blocker. |
+| `data-duplicate-schema-truth` | Review-Owned | Table-name literal duplication is enforced by `data-schema-table-name-owned-by-schema`; broader schema-meaning duplication remains review-owned. |
 
 ## Source-Pattern Checks
 
@@ -96,6 +129,38 @@ Static architecture tools can prove structure, dependencies, and public API
 shape. They should not be stretched into semantic classifiers for business
 meaning. Where a rule would need runtime fixtures, broad keyword inference, or a
 large false-positive budget, it remains review-owned.
+
+## Candidate Tool Suite Extensions Not Implemented
+
+The following extensions are potentially useful, but are intentionally not part
+of the current blocking harness.
+
+- Add a compiler-backed `DataModelSourceShape` checker only if source-model
+  public type shape becomes noisy in review. It could require public
+  `model/` carriers to remain source-local records, enums, or final schema
+  utility types, but it should not try to decide whether a record name is
+  domain language or source language.
+- Add a schema-aware Gradle/build-harness rule only after the schema model has
+  an accepted column-constant convention. A useful version would compare SQL
+  table and column references against the owning `<Feature>PersistenceSchema`;
+  a broad string-literal scan before that convention would duplicate the
+  low-signal column-name heuristic rejected above.
+- Add a targeted Error Prone checker for data-root construction only if
+  composition roots repeatedly grow beyond constructor wiring. The checker
+  could block direct SQL, migration, mapper, or schema method calls from
+  `*ServiceContribution`, but semantic thinness and useful adapter boundaries
+  would still remain review-owned.
+- Add an auto-remediation recipe tool only if the project wants mechanical
+  migrations, such as moving misplaced data files or replacing duplicated table
+  literals with schema constants. Do not add a second source-policy engine only
+  to restate the current PMD and Error Prone blockers.
+- Add runtime migration or transaction verification only by explicit
+  architecture decision. The current harness policy rejects fixture selftests
+  and meta-test layers, so such a gate would need a new accepted operating
+  model rather than being hidden inside architecture enforcement.
+- Before adopting any new external tool, mirror and cite its documentation under
+  `docs/references/` according to the Source References Standard; public URLs
+  alone are not sufficient decision evidence.
 
 ## Review-Owned
 

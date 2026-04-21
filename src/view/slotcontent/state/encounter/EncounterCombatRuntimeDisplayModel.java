@@ -17,6 +17,52 @@ public final class EncounterCombatRuntimeDisplayModel {
         combatants.sort(EncounterCombatRuntimeDisplayModel::compareByTurnOrder);
     }
 
+    public static int addPlayerCombatant(
+            List<Combatant> combatants,
+            String id,
+            String name,
+            int initiative,
+            int order
+    ) {
+        combatants.add(Combatant.pc(id, name, initiative, order));
+        return order + 1;
+    }
+
+    public static int addMonsterCombatants(
+            List<Combatant> combatants,
+            String id,
+            String name,
+            long creatureId,
+            int count,
+            int hp,
+            int ac,
+            int xp,
+            String cr,
+            String type,
+            String role,
+            int initiative,
+            int order
+    ) {
+        int nextOrder = order;
+        for (int creatureIndex = 1; creatureIndex <= count; creatureIndex++) {
+            combatants.add(Combatant.monster(
+                    id,
+                    name,
+                    creatureId,
+                    count,
+                    hp,
+                    ac,
+                    xp,
+                    cr,
+                    type,
+                    role,
+                    initiative,
+                    nextOrder++,
+                    creatureIndex));
+        }
+        return nextOrder;
+    }
+
     public static void setInitiative(List<Combatant> combatants, String combatantId, int initiative) {
         TurnEntry entry = turnEntry(combatants, combatantId);
         if (entry == null) {
@@ -245,20 +291,6 @@ public final class EncounterCombatRuntimeDisplayModel {
         return byKind != 0 ? byKind : Integer.compare(left.order(), right.order());
     }
 
-    public record MonsterSpec(
-            String id,
-            String name,
-            long creatureId,
-            int count,
-            int hp,
-            int ac,
-            int xp,
-            String cr,
-            String type,
-            String role
-    ) {
-    }
-
     public record Combatant(
             String id,
             String name,
@@ -278,24 +310,35 @@ public final class EncounterCombatRuntimeDisplayModel {
             return new Combatant(id, name, true, 0, 0, 0, 0, initiative, 1, 0, "SC", "", order);
         }
 
-        public static Combatant monster(MonsterSpec monster, int initiative, int order, int creatureIndex) {
-            int hp = Math.max(1, monster.hp());
-            String name = monster.count() > 1
-                    ? monster.name() + " #" + creatureIndex
-                    : monster.name();
+        private static Combatant monster(
+                String id,
+                String name,
+                long creatureId,
+                int count,
+                int hitPoints,
+                int ac,
+                int xp,
+                String cr,
+                String type,
+                String role,
+                int initiative,
+                int order,
+                int creatureIndex
+        ) {
+            int hp = Math.max(1, hitPoints);
+            String displayName = count > 1 ? name + " #" + creatureIndex : name;
             return new Combatant(
-                    monster.id() + ":" + creatureIndex,
-                    name,
+                    id + ":" + creatureIndex,
+                    displayName,
                     false,
-                    monster.creatureId(),
+                    creatureId,
                     hp,
                     hp,
-                    monster.ac(),
+                    ac,
                     initiative,
                     1,
-                    monster.xp(),
-                    "CR " + monster.cr() + " | " + monster.type() + " | "
-                            + monster.role().toLowerCase(Locale.ROOT),
+                    xp,
+                    "CR " + cr + " | " + type + " | " + role.toLowerCase(Locale.ROOT),
                     "Kein Loot",
                     order);
         }

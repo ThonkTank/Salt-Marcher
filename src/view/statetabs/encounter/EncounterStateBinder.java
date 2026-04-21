@@ -61,8 +61,8 @@ final class EncounterStateBinder {
                     encounterSession.tuning(),
                     encounterSession.encounterTableIds());
         });
-        state.setOnPreviousAlternative(viewModel::previousGeneratedAlternative);
-        state.setOnNextAlternative(viewModel::nextGeneratedAlternative);
+        state.setOnPreviousAlternative(() -> viewModel.shiftGeneratedAlternative(-1));
+        state.setOnNextAlternative(() -> viewModel.shiftGeneratedAlternative(1));
         state.setOnReroll(() -> {
             EncounterRuntimeViewModel.EncounterFilters filters = encounterSession.filters();
             viewModel.reroll(
@@ -97,8 +97,8 @@ final class EncounterStateBinder {
                 .map(input -> new EncounterStateViewModel.InitiativeInput(input.id(), input.initiative()))
                 .toList()));
         state.setOnNextTurn(viewModel::nextTurn);
-        state.setOnDamage(viewModel::applyDamage);
-        state.setOnHeal(viewModel::heal);
+        state.setOnDamage((id, amount) -> viewModel.mutateHp(id, amount, false));
+        state.setOnHeal((id, amount) -> viewModel.mutateHp(id, amount, true));
         state.setOnSetInitiative(viewModel::setInitiative);
         state.setOnEndCombat(viewModel::endCombat);
         state.setOnAwardXp(viewModel::awardXp);

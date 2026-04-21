@@ -268,7 +268,8 @@ this document as the rule source.
   registration through `*ServiceContribution`
 - domain entities or aggregates owning SQL, remote protocol, or schema logic
 - source adapters registered as public application capabilities instead of
-  staying behind port adapters or typed feature factories
+  staying behind port adapters; any future typed feature-factory export needs
+  an explicit architecture decision and matching enforcement
 - feature-specific helpers placed in `persistencecore/`
 - cross-feature dependencies on foreign private data buckets
 - duplicate schema truth spread across unrelated stores, migrators, and string
@@ -294,7 +295,9 @@ Current mechanical ownership:
   placement, data-root same-feature root `*ApplicationService` export shape,
   adapter role contracts including inherited public/protected superclass
   methods, public signature leak bans, and source-adapter public/protected
-  signature boundaries.
+  signature boundaries. Current source-adapter public/protected signatures may
+  expose only own-feature source-model records plus `java.lang` and `java.util`
+  value or container types.
 - `ArchUnit` owns dependency direction, foreign-domain-public-boundary-only
   access, data feature cycle freedom, private-data bucket isolation,
   `gateway/` and `model/` independence from domain packages, and generic-only
@@ -304,7 +307,10 @@ Current review-owned rules cover semantic thinness of composition roots,
 business-rule exclusion, mapper translation purity, whether legal source
 facades are useful boundaries, source-helper co-location beyond `gateway/local`
 and `gateway/remote`, source-local column and field-name centralization, and
-semantic duplicate schema truth. Port adapter package and role placement, public
+semantic duplicate schema truth. Current public service-registry exports are
+limited to the same-feature root `*ApplicationService`; alternate typed
+feature-factory exports are not part of the current enforced model. Port adapter
+package and role placement, public
 adapter surface shape, source-adapter public/protected signature privacy,
 source-adapter dependency independence from domain, source-local model
 independence from domain, generic-only `persistencecore/`, and SQL table-name

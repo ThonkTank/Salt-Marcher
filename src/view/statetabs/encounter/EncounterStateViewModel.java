@@ -79,7 +79,7 @@ public final class EncounterStateViewModel {
     private int currentTurnIndex;
     private int round = 1;
 
-    public EncounterStateViewModel(
+    EncounterStateViewModel(
             EncounterApplicationService encounter,
             CreaturesApplicationService creatures,
             PartyApplicationService party
@@ -90,37 +90,37 @@ public final class EncounterStateViewModel {
         refreshPartyContext();
     }
 
-    public ReadOnlyObjectProperty<Mode> modeProperty() {
+    ReadOnlyObjectProperty<Mode> modeProperty() {
         return mode.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<BuilderState> builderStateProperty() {
+    ReadOnlyObjectProperty<BuilderState> builderStateProperty() {
         return builderState.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<InitiativeState> initiativeStateProperty() {
+    ReadOnlyObjectProperty<InitiativeState> initiativeStateProperty() {
         return initiativeState.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<CombatState> combatStateProperty() {
+    ReadOnlyObjectProperty<CombatState> combatStateProperty() {
         return combatState.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<ResultState> resultStateProperty() {
+    ReadOnlyObjectProperty<ResultState> resultStateProperty() {
         return resultState.getReadOnlyProperty();
     }
 
-    public ReadOnlyStringProperty statusProperty() {
+    ReadOnlyStringProperty statusProperty() {
         return status.getReadOnlyProperty();
     }
 
-    public void refreshPartyContext() {
+    void refreshPartyContext() {
         loadActiveParty();
         loadBudget();
         refreshBuilderState(lastSettings, contextMessage());
     }
 
-    public void generate(
+    void generate(
             BuilderSettings settings,
             List<String> types,
             List<String> subtypes,
@@ -167,7 +167,7 @@ public final class EncounterStateViewModel {
         status.set(generationSuccessText(result));
     }
 
-    public void reroll(
+    void reroll(
             List<String> types,
             List<String> subtypes,
             List<String> biomes,
@@ -178,25 +178,17 @@ public final class EncounterStateViewModel {
         generate(lastSettings, types, subtypes, biomes, difficulty, tuning, encounterTableIds);
     }
 
-    public void nextGeneratedAlternative() {
+    void shiftGeneratedAlternative(int delta) {
         if (generatedAlternatives.isEmpty()) {
             return;
         }
-        selectedAlternativeIndex = (selectedAlternativeIndex + 1) % generatedAlternatives.size();
+        selectedAlternativeIndex = Math.floorMod(
+                selectedAlternativeIndex + delta,
+                generatedAlternatives.size());
         applyGeneratedEncounter(generatedAlternatives.get(selectedAlternativeIndex));
     }
 
-    public void previousGeneratedAlternative() {
-        if (generatedAlternatives.isEmpty()) {
-            return;
-        }
-        selectedAlternativeIndex = selectedAlternativeIndex == 0
-                ? generatedAlternatives.size() - 1
-                : selectedAlternativeIndex - 1;
-        applyGeneratedEncounter(generatedAlternatives.get(selectedAlternativeIndex));
-    }
-
-    public void addCreature(long creatureId) {
+    void addCreature(long creatureId) {
         CreatureDetail detail = loadCreature(creatureId);
         if (detail == null) {
             status.set("Kreatur konnte nicht geladen werden.");
@@ -218,7 +210,7 @@ public final class EncounterStateViewModel {
         refreshBuilderState(lastSettings, "");
     }
 
-    public void incrementCreature(long creatureId) {
+    void incrementCreature(long creatureId) {
         for (int index = 0; index < roster.size(); index++) {
             EncounterCreature creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
@@ -232,7 +224,7 @@ public final class EncounterStateViewModel {
         }
     }
 
-    public void decrementCreature(long creatureId) {
+    void decrementCreature(long creatureId) {
         for (int index = 0; index < roster.size(); index++) {
             EncounterCreature creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
@@ -250,7 +242,7 @@ public final class EncounterStateViewModel {
         }
     }
 
-    public void removeCreature(long creatureId) {
+    void removeCreature(long creatureId) {
         for (int index = 0; index < roster.size(); index++) {
             EncounterCreature creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
@@ -264,7 +256,7 @@ public final class EncounterStateViewModel {
         }
     }
 
-    public void undoRemove(long token) {
+    void undoRemove(long token) {
         RemovedRosterEntry removed = pendingUndo;
         if (removed == null || removed.token() != token) {
             return;
@@ -277,7 +269,7 @@ public final class EncounterStateViewModel {
         refreshBuilderState(lastSettings, "");
     }
 
-    public void lockCurrentRoster() {
+    void lockCurrentRoster() {
         if (roster.isEmpty()) {
             status.set("Lock braucht mindestens eine Kreatur im Roster.");
             return;
@@ -291,7 +283,7 @@ public final class EncounterStateViewModel {
         refreshBuilderState(lastSettings, "");
     }
 
-    public void excludeCurrentRoster(
+    void excludeCurrentRoster(
             List<String> types,
             List<String> subtypes,
             List<String> biomes,
@@ -316,7 +308,7 @@ public final class EncounterStateViewModel {
         }
     }
 
-    public void clearConstraints() {
+    void clearConstraints() {
         if (lockedCreatures.isEmpty() && excludedCreatureIds.isEmpty()) {
             status.set("Keine Generator-Constraints aktiv.");
             return;
@@ -328,7 +320,7 @@ public final class EncounterStateViewModel {
         refreshBuilderState(lastSettings, "");
     }
 
-    public void clearRoster() {
+    void clearRoster() {
         clearGeneratedContext();
         clearPendingUndo();
         roster.clear();
@@ -336,7 +328,7 @@ public final class EncounterStateViewModel {
         refreshBuilderState(BuilderSettings.defaultSettings(), "");
     }
 
-    public void openInitiative() {
+    void openInitiative() {
         if (roster.isEmpty()) {
             status.set("Kampfstart braucht mindestens eine Kreatur.");
             return;
@@ -373,12 +365,12 @@ public final class EncounterStateViewModel {
         status.set("Initiativewerte pruefen und Kampf starten.");
     }
 
-    public void backToBuilder() {
+    void backToBuilder() {
         mode.set(Mode.BUILDER);
         status.set("Zurueck zur Encounter-Erstellung.");
     }
 
-    public void confirmInitiative(List<InitiativeInput> initiatives) {
+    void confirmInitiative(List<InitiativeInput> initiatives) {
         combatants.clear();
         int fallbackIndex = 0;
         for (InitiativeInput input : safeInputs(initiatives)) {
@@ -388,33 +380,29 @@ public final class EncounterStateViewModel {
                 continue;
             }
             if ("SC".equals(entry.kind())) {
-                combatants.add(EncounterCombatRuntimeDisplayModel.Combatant.pc(
+                fallbackIndex = EncounterCombatRuntimeDisplayModel.addPlayerCombatant(
+                        combatants,
                         entry.id(),
                         nameOnly(entry.label()),
                         initiative,
-                        fallbackIndex++));
+                        fallbackIndex);
             } else {
                 EncounterCreature creature = creature(entry.id());
                 if (creature != null) {
-                    EncounterCombatRuntimeDisplayModel.MonsterSpec monster =
-                            new EncounterCombatRuntimeDisplayModel.MonsterSpec(
-                                    creature.id(),
-                                    creature.name(),
-                                    creature.creatureId(),
-                                    creature.count(),
-                                    creature.hp(),
-                                    creature.ac(),
-                                    creature.xp(),
-                                    creature.cr(),
-                                    creature.type(),
-                                    creature.role());
-                    for (int creatureIndex = 1; creatureIndex <= creature.count(); creatureIndex++) {
-                        combatants.add(EncounterCombatRuntimeDisplayModel.Combatant.monster(
-                                monster,
-                                initiative,
-                                fallbackIndex++,
-                                creatureIndex));
-                    }
+                    fallbackIndex = EncounterCombatRuntimeDisplayModel.addMonsterCombatants(
+                            combatants,
+                            creature.id(),
+                            creature.name(),
+                            creature.creatureId(),
+                            creature.count(),
+                            creature.hp(),
+                            creature.ac(),
+                            creature.xp(),
+                            creature.cr(),
+                            creature.type(),
+                            creature.role(),
+                            initiative,
+                            fallbackIndex);
                 }
             }
         }
@@ -426,8 +414,8 @@ public final class EncounterStateViewModel {
         status.set("Kampf laeuft. HP und Initiative sind lokal editierbar.");
     }
 
-    public void nextTurn() {
-        List<EncounterCombatRuntimeDisplayModel.TurnEntry> entries = EncounterCombatRuntimeDisplayModel.turnEntries(combatants);
+    void nextTurn() {
+        var entries = EncounterCombatRuntimeDisplayModel.turnEntries(combatants);
         if (entries.isEmpty()) {
             return;
         }
@@ -446,20 +434,12 @@ public final class EncounterStateViewModel {
         refreshCombatState();
     }
 
-    public void applyDamage(String combatantId, int amount) {
-        mutateHp(combatantId, Math.max(0, amount), false);
-    }
-
-    public void heal(String combatantId, int amount) {
-        mutateHp(combatantId, Math.max(0, amount), true);
-    }
-
-    public void setInitiative(String combatantId, int initiative) {
+    void setInitiative(String combatantId, int initiative) {
         EncounterCombatRuntimeDisplayModel.setInitiative(combatants, combatantId, initiative);
         refreshCombatState();
     }
 
-    public void endCombat() {
+    void endCombat() {
         List<ResultEnemy> enemies = combatants.stream()
                 .filter(combatant -> !combatant.pc())
                 .map(combatant -> new ResultEnemy(
@@ -490,7 +470,7 @@ public final class EncounterStateViewModel {
         status.set("Kampfergebnis bereit.");
     }
 
-    public void awardXp() {
+    void awardXp() {
         ResultState current = resultState.get();
         if (current == null || current.xpAwarded() || current.perPlayerXp() <= 0 || activeParty.isEmpty()) {
             return;
@@ -507,7 +487,7 @@ public final class EncounterStateViewModel {
         }
     }
 
-    public void returnToBuilderAfterResults() {
+    void returnToBuilderAfterResults() {
         combatants.clear();
         pendingInitiativeRows.clear();
         round = 1;
@@ -532,8 +512,8 @@ public final class EncounterStateViewModel {
                 : String.join(" ", generated.highlights()));
     }
 
-    private void mutateHp(String combatantId, int amount, boolean healing) {
-        if (EncounterCombatRuntimeDisplayModel.mutateHp(combatants, combatantId, amount, healing)) {
+    void mutateHp(String combatantId, int amount, boolean healing) {
+        if (EncounterCombatRuntimeDisplayModel.mutateHp(combatants, combatantId, Math.max(0, amount), healing)) {
             refreshCombatState();
         }
     }
@@ -622,7 +602,7 @@ public final class EncounterStateViewModel {
     }
 
     private void refreshCombatState() {
-        List<EncounterCombatRuntimeDisplayModel.TurnEntry> entries = EncounterCombatRuntimeDisplayModel.turnEntries(combatants);
+        var entries = EncounterCombatRuntimeDisplayModel.turnEntries(combatants);
         if (entries.isEmpty()) {
             currentTurnIndex = -1;
         } else {
@@ -639,7 +619,7 @@ public final class EncounterStateViewModel {
         List<CombatCard> cards = new ArrayList<>();
         int aliveEnemies = 0;
         int totalEnemies = 0;
-        for (EncounterCombatRuntimeDisplayModel.Combatant combatant : combatants) {
+        for (var combatant : combatants) {
             if (!combatant.pc()) {
                 totalEnemies++;
                 if (combatant.alive()) {
@@ -648,7 +628,7 @@ public final class EncounterStateViewModel {
             }
         }
         for (int index = 0; index < entries.size(); index++) {
-            EncounterCombatRuntimeDisplayModel.TurnEntry entry = entries.get(index);
+            var entry = entries.get(index);
             cards.add(new CombatCard(
                     entry.id(),
                     entry.name(),

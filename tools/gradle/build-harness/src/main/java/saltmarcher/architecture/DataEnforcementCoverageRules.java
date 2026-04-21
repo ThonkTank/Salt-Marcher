@@ -99,7 +99,7 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
 
     private static void validateRequiredRuleGroups(String content, ViolationSink violations) {
         for (String ruleGroupId : REQUIRED_DATA_RULE_GROUPS) {
-            String line = lineContaining(content, "`" + ruleGroupId + "`");
+            String line = lineContainingRuleGroupStatus(content, "`" + ruleGroupId + "`");
             if (line == null) {
                 violations.add(COVERAGE_PATH, "data-enforcement-coverage-complete",
                         "Data enforcement coverage must classify data-layer rule group `"
@@ -117,6 +117,15 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
     private static String lineContaining(String content, String needle) {
         for (String line : content.split("\\R")) {
             if (line.contains(needle)) {
+                return line;
+            }
+        }
+        return null;
+    }
+
+    private static String lineContainingRuleGroupStatus(String content, String needle) {
+        for (String line : content.split("\\R")) {
+            if (line.contains(needle) && lineContainsRuleGroupStatus(line)) {
                 return line;
             }
         }

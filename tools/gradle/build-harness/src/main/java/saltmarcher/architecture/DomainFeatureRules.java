@@ -18,6 +18,8 @@ import java.util.stream.Stream;
 
 final class DomainFeatureRules implements ArchitectureRule {
 
+    private static final String DOMAIN_COVERAGE_PATH =
+            "docs/standards/architecture-enforcement-coverage-domain.md";
     private static final Pattern MARKDOWN_HEADING_PATTERN =
             Pattern.compile("(?m)^##\\s+.+$");
     private static final Pattern CONTEXT_BULLET_PATTERN =
@@ -38,7 +40,7 @@ final class DomainFeatureRules implements ArchitectureRule {
                     "Authored World-Space Context");
     private static final Set<String> AUTHORED_CONTEXT_ROLES =
             Set.of("Roster Truth Context", "Authored World-Space Context");
-    private static final List<String> REQUIRED_DOMAIN_COVERAGE_RULES = List.of(
+    private static final List<String> REQUIRED_ENFORCED_DOMAIN_RULES = List.of(
             "domain-root-presence",
             "domain-context-name-declared",
             "domain-root-class-shape",
@@ -75,7 +77,7 @@ final class DomainFeatureRules implements ArchitectureRule {
             "domain-root-no-infrastructure-construction-source-pattern",
             "domain-application-no-policy-helper-prefix-source-pattern",
             "domain-named-module-no-setter-mutation-source-pattern",
-            "domain-outer-layer-independence",
+            "domain-outer-layer-independence-group",
             "domain-foreign-feature-public-boundary",
             "domain-named-module-private-context",
             "domain-named-module-no-same-context-application",
@@ -91,6 +93,36 @@ final class DomainFeatureRules implements ArchitectureRule {
             "domain-feature-cycles",
             "domain-module-cycles",
             "domain-enforcement-coverage-complete");
+    private static final List<String> REQUIRED_DOMAIN_RULE_GROUPS = List.of(
+            "domain-hexagonal-core-boundary",
+            "domain-application-service-root-boundary",
+            "domain-application-usecase-orchestration",
+            "domain-root-translation-boundary",
+            "domain-published-language-carriers",
+            "domain-published-language-vocabulary",
+            "domain-port-ownership-and-signatures",
+            "domain-port-domain-language",
+            "domain-repository-port-write-orientation",
+            "domain-technical-vocabulary-rejection",
+            "domain-context-root-layout",
+            "domain-named-module-layout",
+            "domain-tactical-role-optionality",
+            "domain-role-type-shapes",
+            "domain-value-immutability",
+            "domain-service-factory-policy-statelessness",
+            "domain-service-behavior",
+            "domain-context-document-markers",
+            "domain-authored-truth-document-contract",
+            "domain-generation-policy-document-contract",
+            "domain-context-roles-standard-coverage",
+            "domain-context-relationships-public-boundary",
+            "domain-foreign-service-documentation",
+            "domain-outer-layer-independence",
+            "domain-foreign-context-private-isolation",
+            "domain-business-policy-not-in-view-data",
+            "domain-application-no-published-to-model",
+            "domain-mapcore-removed-rule",
+            "domain-enforcement-coverage-inventory");
     private static final List<String> BASE_CONTEXT_REQUIRED_SECTIONS = List.of(
             "## Context Role",
             "## Published Language",
@@ -367,12 +399,10 @@ final class DomainFeatureRules implements ArchitectureRule {
     }
 
     private void validateDomainCoverageDocument(ArchitectureContext context, ViolationSink violations) {
-        Path coverageDocument =
-                context.repoRoot().resolve("docs/standards/architecture-enforcement-coverage-domain.md");
-        String coveragePath = "docs/standards/architecture-enforcement-coverage-domain.md";
+        Path coverageDocument = context.repoRoot().resolve(DOMAIN_COVERAGE_PATH);
         if (!Files.isRegularFile(coverageDocument)) {
-            violations.add(coveragePath, "domain-enforcement-coverage-complete",
-                    "Domain enforcement coverage must document every required enforced domain rule.");
+            violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
+                    "Domain enforcement coverage must document every required enforced domain rule and rule group.");
             return;
         }
 
@@ -380,22 +410,44 @@ final class DomainFeatureRules implements ArchitectureRule {
         try {
             content = Files.readString(coverageDocument, StandardCharsets.UTF_8);
         } catch (IOException exception) {
-            violations.add(coveragePath, "file-readable",
+            violations.add(DOMAIN_COVERAGE_PATH, "file-readable",
                     "Could not read domain enforcement coverage: " + exception.getMessage());
             return;
         }
 
-        for (String ruleId : REQUIRED_DOMAIN_COVERAGE_RULES) {
+        validateRequiredEnforcedDomainRules(content, violations);
+        validateRequiredDomainRuleGroups(content, violations);
+    }
+
+    private static void validateRequiredEnforcedDomainRules(String content, ViolationSink violations) {
+        for (String ruleId : REQUIRED_ENFORCED_DOMAIN_RULES) {
             String line = lineContaining(content, "`" + ruleId + "`");
             if (line == null) {
-                violations.add(coveragePath, "domain-enforcement-coverage-complete",
+                violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
                         "Domain enforcement coverage must list required rule id `" + ruleId + "`.");
                 continue;
             }
             if (!line.contains("./gradlew") || !lineContainsMechanicalOwner(line)) {
-                violations.add(coveragePath, "domain-enforcement-coverage-complete",
+                violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
                         "Coverage row for `" + ruleId
                                 + "` must name a mechanical owner and blocking Gradle entrypoint.");
+            }
+        }
+    }
+
+    private static void validateRequiredDomainRuleGroups(String content, ViolationSink violations) {
+        for (String ruleGroupId : REQUIRED_DOMAIN_RULE_GROUPS) {
+            String line = lineContainingRuleGroupStatus(content, "`" + ruleGroupId + "`");
+            if (line == null) {
+                violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
+                        "Domain enforcement coverage must classify domain-layer rule group `"
+                                + ruleGroupId + "` as Enforced, Source-Pattern Enforced, Candidate, or Review-Owned.");
+                continue;
+            }
+            if (!lineContainsRuleGroupStatus(line)) {
+                violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
+                        "Coverage row for domain-layer rule group `" + ruleGroupId
+                                + "` must use status Enforced, Source-Pattern Enforced, Candidate, or Review-Owned.");
             }
         }
     }
@@ -512,11 +564,27 @@ final class DomainFeatureRules implements ArchitectureRule {
         return null;
     }
 
+    private static String lineContainingRuleGroupStatus(String content, String needle) {
+        for (String line : content.split("\\R")) {
+            if (line.contains(needle) && lineContainsRuleGroupStatus(line)) {
+                return line;
+            }
+        }
+        return null;
+    }
+
     private static boolean lineContainsMechanicalOwner(String line) {
         return line.contains("build-harness")
                 || line.contains("Error Prone")
                 || line.contains("PMD")
                 || line.contains("ArchUnit");
+    }
+
+    private static boolean lineContainsRuleGroupStatus(String line) {
+        return line.contains("Source-Pattern Enforced")
+                || line.contains("Review-Owned")
+                || line.contains("Candidate")
+                || line.contains("Enforced");
     }
 
     private static void validateNoStaleContextBullets(
