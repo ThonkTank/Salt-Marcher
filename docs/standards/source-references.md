@@ -47,7 +47,6 @@ The extracted text must start with source metadata:
 - `Local Source`
 - `Source Kind`
 - `Accessed`
-- a short note explaining why the source matters to SaltMarcher
 
 The extracted text is for local reading and decision support. It must preserve
 the original source's content and meaning. Agents may edit extraction artifacts

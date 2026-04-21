@@ -32,8 +32,8 @@ Before relying on an external source:
    binary originals in the specific topic folder when HTML is not useful.
 4. Create or update the readable extracted text at
    `docs/references/<topic>/<slug>.md`.
-5. Include `Original URL`, `Local Source`, `Source Kind`, `Accessed`, and a
-   short why-it-matters note in the extracted text.
+5. Include `Original URL`, `Local Source`, `Source Kind`, and `Accessed` in the
+   extracted text.
 6. Preserve the source's content and meaning in the extracted text. Edit only
    to fix parser distortion, navigation noise, broken ordering, whitespace, or
    formatting that blocks direct reading.

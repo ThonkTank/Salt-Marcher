@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.data.creatures.model.CreaturesPersistenceSchema;
 import src.data.encountertable.model.EncounterTableCandidateRecord;
 import src.data.encountertable.model.EncounterTablePersistenceSchema;
 import src.data.encountertable.model.EncounterTableSummaryRecord;
@@ -48,7 +47,8 @@ final class EncounterTableSqliteStore {
                 + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
                 + "c.ac, c.initiative_bonus, c.legendary_action_count, MAX(e.weight) AS weight "
                 + "FROM " + EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES.name() + " e "
-                + "JOIN " + CreaturesPersistenceSchema.CREATURES.name() + " c ON c.id = e.creature_id "
+                + "JOIN " + EncounterTablePersistenceSchema.REFERENCED_CREATURES_TABLE_NAME
+                + " c ON c.id = e.creature_id "
                 + "WHERE e.table_id IN (" + placeholders + ") "
                 + "AND c.xp <= ? "
                 + "GROUP BY c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "

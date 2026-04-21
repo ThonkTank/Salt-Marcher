@@ -8,6 +8,7 @@ import static src.data.persistencecore.model.SqliteTableSpec.table;
 public final class EncounterTablePersistenceSchema {
 
     public static final String DATABASE_FILE_NAME = "game.db";
+    public static final String REFERENCED_CREATURES_TABLE_NAME = "creatures";
 
     public static final SqliteTableSpec ENCOUNTER_TABLES = table(
             "encounter_tables",
@@ -18,7 +19,8 @@ public final class EncounterTablePersistenceSchema {
     public static final SqliteTableSpec ENCOUNTER_TABLE_ENTRIES = table(
             "encounter_table_entries",
             column("table_id", "INTEGER NOT NULL REFERENCES encounter_tables(table_id) ON DELETE CASCADE"),
-            column("creature_id", "INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE"),
+            column("creature_id", "INTEGER NOT NULL REFERENCES " + REFERENCED_CREATURES_TABLE_NAME
+                    + "(id) ON DELETE CASCADE"),
             column("weight", "INTEGER NOT NULL DEFAULT 1 CHECK(weight BETWEEN 1 AND 10)"));
 
     public static final SqliteTableSpec ENCOUNTER_TABLE_LOOT_LINKS = table(
@@ -32,7 +34,8 @@ public final class EncounterTablePersistenceSchema {
             "CREATE TABLE IF NOT EXISTS " + ENCOUNTER_TABLE_ENTRIES.name() + " ("
                     + "table_id INTEGER NOT NULL REFERENCES " + ENCOUNTER_TABLES.name()
                     + "(table_id) ON DELETE CASCADE, "
-                    + "creature_id INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE, "
+                    + "creature_id INTEGER NOT NULL REFERENCES " + REFERENCED_CREATURES_TABLE_NAME
+                    + "(id) ON DELETE CASCADE, "
                     + "weight INTEGER NOT NULL DEFAULT 1 CHECK(weight BETWEEN 1 AND 10), "
                     + "PRIMARY KEY(table_id, creature_id)"
                     + ")";

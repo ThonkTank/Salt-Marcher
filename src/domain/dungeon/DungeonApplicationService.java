@@ -24,8 +24,18 @@ import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyKind;
+import src.domain.dungeon.published.DungeonTravelActionKind;
+import src.domain.dungeon.published.DungeonTravelActionSnapshot;
+import src.domain.dungeon.published.DungeonTravelHeading;
+import src.domain.dungeon.published.DungeonTravelLocationKind;
+import src.domain.dungeon.published.DungeonTravelMoveResult;
+import src.domain.dungeon.published.DungeonTravelMoveStatus;
+import src.domain.dungeon.published.DungeonTravelPosition;
+import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
+import src.domain.dungeon.published.LoadDungeonTravelSurfaceQuery;
+import src.domain.dungeon.published.MoveDungeonTravelActionCommand;
 import src.domain.dungeon.published.SearchMapsQuery;
 import src.domain.dungeon.published.SearchMapsResult;
 import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
@@ -34,6 +44,8 @@ import src.domain.dungeon.application.CreateDungeonMapUseCase;
 import src.domain.dungeon.application.DeleteDungeonMapUseCase;
 import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.application.LoadMapSnapshotUseCase;
+import src.domain.dungeon.application.LoadDungeonTravelSurfaceUseCase;
+import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.port.DungeonMapRepository;
@@ -47,6 +59,10 @@ import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonTopology;
+import src.domain.dungeon.map.value.DungeonTravelActionFacts;
+import src.domain.dungeon.map.value.DungeonTravelMoveFacts;
+import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
+import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
 
 import java.util.List;
 import java.util.Objects;
@@ -62,6 +78,8 @@ public final class DungeonApplicationService {
     private final CreateDungeonMapUseCase createDungeonMapUseCase;
     private final DeleteDungeonMapUseCase deleteDungeonMapUseCase;
     private final LoadMapSnapshotUseCase loadMapSnapshotUseCase;
+    private final LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase;
+    private final MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase;
 
     public DungeonApplicationService(
             DungeonMapRepository mapRepository,
@@ -79,6 +97,8 @@ public final class DungeonApplicationService {
         this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository);
         this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository);
         this.loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(repository, derive);
+        this.loadDungeonTravelSurfaceUseCase = new LoadDungeonTravelSurfaceUseCase(repository, search, derive);
+        this.moveDungeonTravelActionUseCase = new MoveDungeonTravelActionUseCase(repository, search, derive);
     }
 
     public DungeonSnapshot loadSnapshot(LoadDungeonSnapshotQuery query) {
@@ -141,6 +161,27 @@ public final class DungeonApplicationService {
                 snapshot.targetFloor(),
                 toPublishedMapSnapshot(snapshot.map()),
                 snapshot.empty());
+    }
+
+    public DungeonTravelSurfaceSnapshot loadTravelSurface(LoadDungeonTravelSurfaceQuery query) {
+        LoadDungeonTravelSurfaceQuery effectiveQuery = query == null
+                ? new LoadDungeonTravelSurfaceQuery(null)
+                : query;
+        return toPublishedTravelSurface(loadDungeonTravelSurfaceUseCase.execute(
+                new LoadDungeonTravelSurfaceUseCase.Input(toDomainTravelPosition(effectiveQuery.position()))));
+    }
+
+    public DungeonTravelMoveResult moveTravelAction(MoveDungeonTravelActionCommand command) {
+        MoveDungeonTravelActionCommand effectiveCommand = command == null
+                ? new MoveDungeonTravelActionCommand(null, "")
+                : command;
+        DungeonTravelMoveFacts result = moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
+                toDomainTravelPosition(effectiveCommand.position()),
+                effectiveCommand.actionId()));
+        return new DungeonTravelMoveResult(
+                DungeonTravelMoveStatus.valueOf(result.status().name()),
+                result.message(),
+                toPublishedTravelSurface(result.surface()));
     }
 
     private DungeonSnapshot toPublishedSnapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
@@ -212,6 +253,51 @@ public final class DungeonApplicationService {
                 feature.destinationLabel());
     }
 
+    private static DungeonTravelSurfaceSnapshot toPublishedTravelSurface(DungeonTravelSurfaceFacts surface) {
+        return new DungeonTravelSurfaceSnapshot(
+                surface.mapName(),
+                toPublishedRevision(surface.revision()),
+                toPublishedMapSnapshot(surface.map()),
+                toPublishedTravelPosition(surface.position()),
+                surface.surfaceTitle(),
+                surface.areaLabel(),
+                surface.tileLabel(),
+                surface.headingLabel(),
+                surface.statusLabel(),
+                surface.visualDescription(),
+                surface.actions().stream().map(DungeonApplicationService::toPublishedTravelAction).toList());
+    }
+
+    private static DungeonTravelActionSnapshot toPublishedTravelAction(DungeonTravelActionFacts action) {
+        return new DungeonTravelActionSnapshot(
+                action.actionId(),
+                DungeonTravelActionKind.valueOf(action.kind().name()),
+                action.label(),
+                action.destinationLabel(),
+                action.description());
+    }
+
+    private static DungeonTravelPosition toPublishedTravelPosition(DungeonTravelPositionFacts position) {
+        return new DungeonTravelPosition(
+                toPublishedId(position.mapId()),
+                DungeonTravelLocationKind.valueOf(position.locationKind().name()),
+                position.ownerId(),
+                toPublishedCell(position.tile()),
+                DungeonTravelHeading.valueOf(position.heading().name()));
+    }
+
+    private static @Nullable DungeonTravelPositionFacts toDomainTravelPosition(@Nullable DungeonTravelPosition position) {
+        if (position == null) {
+            return null;
+        }
+        return new DungeonTravelPositionFacts(
+                toDomainIdentity(position.mapId()),
+                src.domain.dungeon.map.value.DungeonTravelLocationKind.valueOf(position.locationKind().name()),
+                position.ownerId(),
+                toDomainCell(position.tile()),
+                src.domain.dungeon.map.value.DungeonTravelHeading.valueOf(position.heading().name()));
+    }
+
     private static DungeonAreaKind toPublishedAreaKind(DungeonAreaType kind) {
         return kind == DungeonAreaType.CORRIDOR ? DungeonAreaKind.CORRIDOR : DungeonAreaKind.ROOM;
     }
@@ -222,6 +308,10 @@ public final class DungeonApplicationService {
 
     private static DungeonCellRef toPublishedCell(DungeonCell cell) {
         return new DungeonCellRef(cell.q(), cell.r(), cell.level());
+    }
+
+    private static DungeonCell toDomainCell(DungeonCellRef cell) {
+        return new DungeonCell(cell.q(), cell.r(), cell.level());
     }
 
     private static DungeonEdgeRef toPublishedEdge(DungeonEdge edge) {

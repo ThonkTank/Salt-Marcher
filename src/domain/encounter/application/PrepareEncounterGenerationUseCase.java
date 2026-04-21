@@ -280,7 +280,7 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     private static EncounterCreatureFacts toFacts(EncounterCandidate candidate) {
-        return new EncounterCreatureFacts(
+        return basicFacts(
                 candidate.id(),
                 candidate.name(),
                 candidate.creatureType(),
@@ -292,20 +292,11 @@ final class PrepareEncounterGenerationUseCase {
                 candidate.hitDiceModifier(),
                 candidate.armorClass(),
                 candidate.initiativeBonus(),
-                candidate.legendaryActionCount(),
-                0,
-                0,
-                0,
-                0,
-                null,
-                null,
-                null,
-                0,
-                List.of());
+                candidate.legendaryActionCount());
     }
 
     private static EncounterCreatureFacts toFacts(EncounterTableCandidate candidate) {
-        return new EncounterCreatureFacts(
+        return basicFacts(
                 candidate.creatureId(),
                 candidate.name(),
                 candidate.creatureType(),
@@ -317,7 +308,36 @@ final class PrepareEncounterGenerationUseCase {
                 candidate.hitDiceModifier(),
                 candidate.armorClass(),
                 candidate.initiativeBonus(),
-                candidate.legendaryActionCount(),
+                candidate.legendaryActionCount());
+    }
+
+    private static EncounterCreatureFacts basicFacts(
+            long id,
+            String name,
+            String creatureType,
+            String challengeRating,
+            int xp,
+            int hitPoints,
+            @Nullable Integer hitDiceCount,
+            @Nullable Integer hitDiceSides,
+            @Nullable Integer hitDiceModifier,
+            int armorClass,
+            int initiativeBonus,
+            int legendaryActionCount
+    ) {
+        return new EncounterCreatureFacts(
+                id,
+                name,
+                creatureType,
+                challengeRating,
+                xp,
+                hitPoints,
+                hitDiceCount,
+                hitDiceSides,
+                hitDiceModifier,
+                armorClass,
+                initiativeBonus,
+                legendaryActionCount,
                 0,
                 0,
                 0,

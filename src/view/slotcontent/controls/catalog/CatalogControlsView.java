@@ -144,7 +144,7 @@ public final class CatalogControlsView extends VBox {
         encounterTableWarningLabel.setManaged(false);
         encounterTablePopup.setAutoHide(true);
         encounterTablePopupContent.setPadding(new Insets(8));
-        encounterTablePopupContent.getStyleClass().add("filter-popup");
+        encounterTablePopupContent.getStyleClass().add("filter-dropdown");
         ScrollPane tablePopupScroller = new ScrollPane(encounterTablePopupContent);
         tablePopupScroller.setFitToWidth(true);
         tablePopupScroller.setPrefViewportWidth(260);
