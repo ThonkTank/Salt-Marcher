@@ -1,6 +1,6 @@
 package src.view.dropdowns.party;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -38,9 +38,9 @@ public final class PartyCharacterEditorTopBarView {
     private final Popup popup = new Popup();
 
     private @Nullable EditorMember editingMember;
-    private Consumer<EditorDraft> onCreate = ignored -> {};
-    private Consumer<EditorDraft> onUpdate = ignored -> {};
-    private Consumer<EditorMember> onDelete = ignored -> {};
+    private Function<EditorDraft, EditorResult> onCreate = ignored -> EditorResult.accepted();
+    private Function<EditorDraft, EditorResult> onUpdate = ignored -> EditorResult.accepted();
+    private Function<EditorMember, EditorResult> onDelete = ignored -> EditorResult.accepted();
 
     PartyCharacterEditorTopBarView() {
         panel.getStyleClass().addAll("dropdown-window", "dropdown-form", "party-editor-dropdown");
@@ -57,16 +57,16 @@ public final class PartyCharacterEditorTopBarView {
         resetTransientState();
     }
 
-    void onCreate(Consumer<EditorDraft> action) {
-        onCreate = action == null ? ignored -> {} : action;
+    void onCreate(Function<EditorDraft, EditorResult> action) {
+        onCreate = action == null ? ignored -> EditorResult.accepted() : action;
     }
 
-    void onUpdate(Consumer<EditorDraft> action) {
-        onUpdate = action == null ? ignored -> {} : action;
+    void onUpdate(Function<EditorDraft, EditorResult> action) {
+        onUpdate = action == null ? ignored -> EditorResult.accepted() : action;
     }
 
-    void onDelete(Consumer<EditorMember> action) {
-        onDelete = action == null ? ignored -> {} : action;
+    void onDelete(Function<EditorMember, EditorResult> action) {
+        onDelete = action == null ? ignored -> EditorResult.accepted() : action;
     }
 
     void showCreate(Node anchor) {
@@ -129,8 +129,8 @@ public final class PartyCharacterEditorTopBarView {
         cancelDeleteButton.setOnAction(event -> setDeleteConfirmationVisible(false));
         confirmDeleteButton.getStyleClass().addAll("party-btn", "delete");
         confirmDeleteButton.setOnAction(event -> {
-            onDelete.accept(editingMember == null ? EditorMember.empty() : editingMember);
-            hide();
+            EditorResult result = onDelete.apply(editingMember == null ? EditorMember.empty() : editingMember);
+            handleEditorResult(result);
         });
         HBox deleteActions = new HBox(8, cancelDeleteButton, confirmDeleteButton);
         deleteActions.getStyleClass().add("party-editor-delete-actions");
@@ -179,19 +179,20 @@ public final class PartyCharacterEditorTopBarView {
                 editingMember == null ? null : editingMember.id(),
                 safe(nameField.getText()).trim(),
                 safe(playerNameField.getText()).trim(),
-                parseInteger(levelField.getText(), 1),
-                parseInteger(passivePerceptionField.getText(), 10),
-                parseInteger(armorClassField.getText(), 10));
-        if (draft.name().isBlank()) {
-            showError("Charaktername fehlt.");
+                safe(levelField.getText()).trim(),
+                safe(passivePerceptionField.getText()).trim(),
+                safe(armorClassField.getText()).trim());
+        EditorResult result = editingMember == null ? onCreate.apply(draft) : onUpdate.apply(draft);
+        handleEditorResult(result);
+    }
+
+    private void handleEditorResult(EditorResult result) {
+        EditorResult safeResult = result == null ? EditorResult.rejected("Party-Aktion konnte nicht gespeichert werden.") : result;
+        if (safeResult.accepted()) {
+            hide();
             return;
         }
-        if (editingMember == null) {
-            onCreate.accept(draft);
-        } else {
-            onUpdate.accept(draft);
-        }
-        hide();
+        showError(safeResult.message());
     }
 
     private void show(Node anchor) {
@@ -271,18 +272,6 @@ public final class PartyCharacterEditorTopBarView {
         return field;
     }
 
-    private static int parseInteger(String rawValue, int fallback) {
-        String trimmed = safe(rawValue).trim();
-        if (trimmed.isEmpty()) {
-            return fallback;
-        }
-        try {
-            return Integer.parseInt(trimmed);
-        } catch (NumberFormatException exception) {
-            return fallback;
-        }
-    }
-
     private static String safe(String value) {
         return value == null ? "" : value;
     }
@@ -310,14 +299,32 @@ public final class PartyCharacterEditorTopBarView {
             @Nullable Long id,
             String name,
             String playerName,
-            int level,
-            int passivePerception,
-            int armorClass
+            String rawLevel,
+            String rawPassivePerception,
+            String rawArmorClass
     ) {
 
         EditorDraft {
             name = safe(name);
             playerName = safe(playerName);
+            rawLevel = safe(rawLevel);
+            rawPassivePerception = safe(rawPassivePerception);
+            rawArmorClass = safe(rawArmorClass);
+        }
+    }
+
+    record EditorResult(boolean accepted, String message) {
+
+        EditorResult {
+            message = safe(message);
+        }
+
+        static EditorResult accepted() {
+            return new EditorResult(true, "");
+        }
+
+        static EditorResult rejected(String message) {
+            return new EditorResult(false, message);
         }
     }
 }

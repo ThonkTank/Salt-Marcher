@@ -38,7 +38,7 @@ import src.domain.party.published.UpdateCharacterCommand;
 public final class PartyTopBarViewModel {
 
     private final PartyApplicationService party;
-    private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine Party v");
+    private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party v");
     private final ReadOnlyObjectWrapper<PanelModel> panel =
             new ReadOnlyObjectWrapper<>(PanelModel.loadingModel());
 
@@ -75,32 +75,48 @@ public final class PartyTopBarViewModel {
         return applyMutation(result, displayName(name) + " wurde zur aktiven Party hinzugefuegt.");
     }
 
-    public boolean createCharacter(CharacterDraftModel draft) {
+    public ActionResult createCharacter(CharacterDraftModel draft) {
         CharacterDraftModel safeDraft = draft == null ? CharacterDraftModel.empty() : draft;
-        MutationResult result = party.createCharacter(new CreateCharacterCommand(toCharacterDraft(safeDraft), MembershipState.ACTIVE));
-        return applyMutation(result, displayName(safeDraft.name()) + " wurde erstellt und zur Party hinzugefuegt.");
+        ParsedDraft parsedDraft = parseCharacterDraft(safeDraft);
+        if (!parsedDraft.valid()) {
+            showStatus(parsedDraft.message(), true);
+            return ActionResult.rejected(parsedDraft.message());
+        }
+        MutationResult result = party.createCharacter(new CreateCharacterCommand(
+                Objects.requireNonNull(parsedDraft.draft()),
+                MembershipState.ACTIVE));
+        return applyMutationAction(result, displayName(parsedDraft.displayName()) + " wurde erstellt und zur Party hinzugefuegt.");
     }
 
-    public boolean updateCharacter(CharacterDraftModel draft) {
+    public ActionResult updateCharacter(CharacterDraftModel draft) {
         CharacterDraftModel safeDraft = draft == null ? CharacterDraftModel.empty() : draft;
         Long draftId = safeDraft.id();
         if (draftId == null || draftId.longValue() <= 0) {
-            showStatus("Charakter konnte nicht gefunden werden.", true);
-            return false;
+            String message = "Charakter konnte nicht gefunden werden.";
+            showStatus(message, true);
+            return ActionResult.rejected(message);
+        }
+        ParsedDraft parsedDraft = parseCharacterDraft(safeDraft);
+        if (!parsedDraft.valid()) {
+            showStatus(parsedDraft.message(), true);
+            return ActionResult.rejected(parsedDraft.message());
         }
         long characterId = draftId.longValue();
-        MutationResult result = party.updateCharacter(new UpdateCharacterCommand(characterId, toCharacterDraft(safeDraft)));
-        return applyMutation(result, displayName(safeDraft.name()) + " wurde gespeichert.");
+        MutationResult result = party.updateCharacter(new UpdateCharacterCommand(
+                characterId,
+                Objects.requireNonNull(parsedDraft.draft())));
+        return applyMutationAction(result, displayName(parsedDraft.displayName()) + " wurde gespeichert.");
     }
 
-    public boolean deleteCharacter(@Nullable Long id, String name) {
+    public ActionResult deleteCharacter(@Nullable Long id, String name) {
         if (id == null || id.longValue() <= 0) {
-            showStatus("Charakter konnte nicht gefunden werden.", true);
-            return false;
+            String message = "Charakter konnte nicht gefunden werden.";
+            showStatus(message, true);
+            return ActionResult.rejected(message);
         }
         long characterId = id.longValue();
         MutationResult result = party.deleteCharacter(new DeleteCharacterCommand(characterId));
-        return applyMutation(result, displayName(name) + " wurde geloescht.");
+        return applyMutationAction(result, displayName(name) + " wurde geloescht.");
     }
 
     public boolean removeFromParty(@Nullable Long id, String name) {
@@ -153,8 +169,8 @@ public final class PartyTopBarViewModel {
         int activeCount = activeMembers.size();
         int averageLevel = safeSnapshot.summary() == null ? averageLevel(activeMembers) : safeSnapshot.summary().averageLevel();
         triggerText.set(activeCount == 0
-                ? "Keine Party v"
-                : activeCount + " Charaktere, Avg Lv " + averageLevel + " v");
+                ? "Keine _Party v"
+                : activeCount + " Charaktere, Schnitt Lv " + averageLevel + " v");
         panel.set(new PanelModel(
                 false,
                 false,
@@ -190,14 +206,19 @@ public final class PartyTopBarViewModel {
     }
 
     private boolean applyMutation(@Nullable MutationResult result, String successMessage) {
+        return applyMutationAction(result, successMessage).accepted();
+    }
+
+    private ActionResult applyMutationAction(@Nullable MutationResult result, String successMessage) {
         MutationStatus status = result == null ? MutationStatus.STORAGE_ERROR : result.status();
         if (status == MutationStatus.SUCCESS) {
             refresh();
             showStatus(successMessage, false);
-            return true;
+            return ActionResult.accepted();
         }
-        showStatus(mutationMessage(status), true);
-        return false;
+        String message = mutationMessage(status);
+        showStatus(message, true);
+        return ActionResult.rejected(message);
     }
 
     private static String mutationMessage(@Nullable MutationStatus status) {
@@ -210,14 +231,30 @@ public final class PartyTopBarViewModel {
         return "Party-Aktion konnte nicht gespeichert werden.";
     }
 
-    private static CharacterDraft toCharacterDraft(CharacterDraftModel draft) {
+    private static ParsedDraft parseCharacterDraft(CharacterDraftModel draft) {
         CharacterDraftModel safeDraft = draft == null ? CharacterDraftModel.empty() : draft;
-        return new CharacterDraft(
-                safeDraft.name(),
-                safeDraft.playerName(),
-                safeDraft.level(),
-                safeDraft.passivePerception(),
-                safeDraft.armorClass());
+        String name = safe(safeDraft.name()).trim();
+        if (name.isEmpty()) {
+            return ParsedDraft.invalid("Charaktername fehlt.");
+        }
+        ParsedInteger level = parseInteger(safeDraft.rawLevel(), "Level", 1, 20);
+        if (!level.valid()) {
+            return ParsedDraft.invalid(level.message());
+        }
+        ParsedInteger passivePerception = parseInteger(safeDraft.rawPassivePerception(), "Passive Perception", 1, 99);
+        if (!passivePerception.valid()) {
+            return ParsedDraft.invalid(passivePerception.message());
+        }
+        ParsedInteger armorClass = parseInteger(safeDraft.rawArmorClass(), "AC", 1, 99);
+        if (!armorClass.valid()) {
+            return ParsedDraft.invalid(armorClass.message());
+        }
+        return ParsedDraft.valid(new CharacterDraft(
+                name,
+                safe(safeDraft.playerName()).trim(),
+                level.value(),
+                passivePerception.value(),
+                armorClass.value()));
     }
 
     private static MemberModel toMemberModel(@Nullable PartyMemberDetails member, @Nullable RestCadenceStatus restStatus) {
@@ -299,7 +336,7 @@ public final class PartyTopBarViewModel {
             return "Keine Party-Mitglieder";
         }
         double exactAverage = activeMembers.stream().mapToInt(MemberModel::level).average().orElse(1.0);
-        return activeMembers.size() + " Charaktere  .  Avg Lv " + String.format(Locale.ROOT, "%.1f", exactAverage)
+        return activeMembers.size() + " Charaktere  .  Schnitt Lv " + String.format(Locale.ROOT, "%.1f", exactAverage)
                 + "  .  Rundung " + averageLevel;
     }
 
@@ -336,6 +373,22 @@ public final class PartyTopBarViewModel {
             return Math.max(0, Integer.parseInt(trimmed));
         } catch (NumberFormatException exception) {
             return 0;
+        }
+    }
+
+    private static ParsedInteger parseInteger(String rawValue, String label, int min, int max) {
+        String trimmed = safe(rawValue).trim();
+        if (trimmed.isEmpty()) {
+            return ParsedInteger.invalid(label + " fehlt.");
+        }
+        try {
+            int value = Integer.parseInt(trimmed);
+            if (value < min || value > max) {
+                return ParsedInteger.invalid(label + " muss zwischen " + min + " und " + max + " liegen.");
+            }
+            return ParsedInteger.valid(value);
+        } catch (NumberFormatException exception) {
+            return ParsedInteger.invalid(label + " muss eine Zahl sein.");
         }
     }
 
@@ -429,18 +482,78 @@ public final class PartyTopBarViewModel {
             @Nullable Long id,
             String name,
             String playerName,
-            int level,
-            int passivePerception,
-            int armorClass
+            String rawLevel,
+            String rawPassivePerception,
+            String rawArmorClass
     ) {
 
         public CharacterDraftModel {
             name = safe(name);
             playerName = safe(playerName);
+            rawLevel = safe(rawLevel);
+            rawPassivePerception = safe(rawPassivePerception);
+            rawArmorClass = safe(rawArmorClass);
         }
 
         static CharacterDraftModel empty() {
-            return new CharacterDraftModel(null, "", "", 1, 10, 10);
+            return new CharacterDraftModel(null, "", "", "1", "10", "10");
+        }
+    }
+
+    public record ActionResult(boolean accepted, String message) {
+
+        public ActionResult {
+            message = safe(message);
+        }
+
+        static ActionResult accepted() {
+            return new ActionResult(true, "");
+        }
+
+        static ActionResult rejected(String message) {
+            return new ActionResult(false, message);
+        }
+    }
+
+    private record ParsedDraft(@Nullable CharacterDraft draft, String message) {
+
+        ParsedDraft {
+            message = safe(message);
+        }
+
+        boolean valid() {
+            return draft != null && message.isBlank();
+        }
+
+        String displayName() {
+            return draft == null ? "" : draft.name();
+        }
+
+        static ParsedDraft valid(CharacterDraft draft) {
+            return new ParsedDraft(draft, "");
+        }
+
+        static ParsedDraft invalid(String message) {
+            return new ParsedDraft(null, message);
+        }
+    }
+
+    private record ParsedInteger(int value, String message) {
+
+        ParsedInteger {
+            message = safe(message);
+        }
+
+        boolean valid() {
+            return message.isBlank();
+        }
+
+        static ParsedInteger valid(int value) {
+            return new ParsedInteger(value, "");
+        }
+
+        static ParsedInteger invalid(String message) {
+            return new ParsedInteger(0, message);
         }
     }
 }

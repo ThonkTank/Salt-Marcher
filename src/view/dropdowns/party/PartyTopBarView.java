@@ -32,7 +32,7 @@ public final class PartyTopBarView extends HBox {
 
     private static final double POPUP_WIDTH = 380.0;
 
-    private final Button triggerButton = new Button("Keine Party v");
+    private final Button triggerButton = new Button("Keine _Party v");
     private final Popup popup = new Popup();
     private final VBox memberList = new VBox();
     private final Label summaryLabel = new Label();
@@ -123,7 +123,8 @@ public final class PartyTopBarView extends HBox {
 
     private void configureTrigger() {
         triggerButton.getStyleClass().add("text-secondary");
-        triggerButton.setTooltip(new Tooltip("Party-Panel oeffnen"));
+        triggerButton.setMnemonicParsing(true);
+        triggerButton.setTooltip(new Tooltip("Party-Panel oeffnen (Alt+P)"));
         triggerButton.setOnAction(event -> togglePopup());
     }
 
@@ -295,7 +296,7 @@ public final class PartyTopBarView extends HBox {
 
         Button removeButton = new Button("Raus");
         removeButton.getStyleClass().addAll("party-btn", "remove");
-        removeButton.setTooltip(new Tooltip("Aus aktiver Party entfernen"));
+        removeButton.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
         removeButton.setOnAction(event -> onRemoveFromParty.accept(member));
 
         Region spacer = new Region();

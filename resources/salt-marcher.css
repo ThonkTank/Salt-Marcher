@@ -788,6 +788,48 @@
     -fx-background-radius: 4 4 0 0;
 }
 
+/* ---- Travel Pane (state tab: Reise) ---- */
+.travel-pane {
+    -fx-padding: 8;
+    -fx-spacing: 8;
+}
+.travel-location-icon {
+    -fx-font-size: 13px;
+}
+.travel-status-badge {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 11px;
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 10;
+}
+.travel-day-label {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+.travel-details-grid {
+    -fx-padding: 4 0 4 0;
+}
+.travel-detail-key {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+}
+.travel-detail-value {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.travel-section-header {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 0 0 0;
+}
+.travel-placeholder {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+
 .map-workspace-header {
     -fx-background-color: rgba(26, 32, 37, 0.94);
     -fx-background-radius: 8 8 0 0;

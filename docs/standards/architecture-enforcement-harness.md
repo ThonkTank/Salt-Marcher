@@ -178,6 +178,14 @@ domain features, view components, data features, and shell packages. It is not
 the owner for file-tree topology,
 root method contracts, or compiler-precise public-signature bans.
 
+ArchUnit may use `test/resources/archunit_ignore_patterns.txt` only as a
+temporary accepted-violation ledger for existing migration debt that is too
+broad to repair in the current implementation pass. Ignore patterns must name
+the affected legacy roots or concrete debt classes, and they must not replace
+the rule definitions themselves. An ignored line is not proof of compliance; it
+only keeps `architectureTest` focused on unlisted violations until the
+underlying migration is completed.
+
 ### `jQAssistant`
 
 `jQAssistant` owns graph-shaped architecture rules where the current enforced
