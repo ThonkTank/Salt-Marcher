@@ -1,6 +1,7 @@
 package saltmarcher.architecture;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -9,6 +10,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -16,6 +19,8 @@ final class ArchitectureContext {
 
     private static final Set<String> IGNORED_REPOSITORY_SCAN_SEGMENTS =
             Set.of(".codex", ".git", ".gradle", "build");
+    private static final Pattern DOMAIN_CONTEXT_NAME_MARKER_PATTERN =
+            Pattern.compile("(?m)^\\s*Context Name:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
 
     private final Path repoRoot;
     private List<SourceFile> sourceFiles;
@@ -86,6 +91,20 @@ final class ArchitectureContext {
         }
     }
 
+    String domainContextName(String featureName) {
+        Path document = repoRoot.resolve("src/domain").resolve(featureName).resolve("DOMAIN.md");
+        if (!Files.isRegularFile(document)) {
+            return null;
+        }
+        try {
+            List<String> contextNames =
+                    declaredDomainContextNames(Files.readString(document, StandardCharsets.UTF_8));
+            return contextNames.size() == 1 ? contextNames.getFirst() : null;
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
     boolean isIgnoredRepositoryScanPath(Path path) {
         return relativeSegments(path).stream().anyMatch(IGNORED_REPOSITORY_SCAN_SEGMENTS::contains);
     }
@@ -152,5 +171,14 @@ final class ArchitectureContext {
 
     private String contextPath(Path path) {
         return relativize(path);
+    }
+
+    private static List<String> declaredDomainContextNames(String content) {
+        List<String> result = new java.util.ArrayList<>();
+        Matcher matcher = DOMAIN_CONTEXT_NAME_MARKER_PATTERN.matcher(content);
+        while (matcher.find()) {
+            result.add(matcher.group(1));
+        }
+        return result.stream().sorted().toList();
     }
 }

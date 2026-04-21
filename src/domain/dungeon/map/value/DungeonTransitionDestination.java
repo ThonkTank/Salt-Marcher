@@ -1,5 +1,7 @@
 package src.domain.dungeon.map.value;
 
+import org.jspecify.annotations.Nullable;
+
 public sealed interface DungeonTransitionDestination
         permits DungeonTransitionDestination.DungeonMapDestination,
         DungeonTransitionDestination.OverworldTileDestination {
@@ -19,7 +21,7 @@ public sealed interface DungeonTransitionDestination
 
     record DungeonMapDestination(
             long mapId,
-            Long transitionId
+            @Nullable Long transitionId
     ) implements DungeonTransitionDestination {
 
         @Override

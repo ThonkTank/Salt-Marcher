@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Maps source-local dungeon rows into the domain aggregate.
@@ -240,7 +241,7 @@ public final class DungeonMapRecordMapper {
         return List.copyOf(result);
     }
 
-    private static DungeonCell transitionAnchor(DungeonTransitionRecord record) {
+    private static @Nullable DungeonCell transitionAnchor(DungeonTransitionRecord record) {
         if (record.cellX() == null) {
             return null;
         }

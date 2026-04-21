@@ -9,7 +9,7 @@ public final class DungeonTransition {
     private final long transitionId;
     private final long mapId;
     private final String description;
-    private final DungeonCell anchor;
+    private final @Nullable DungeonCell anchor;
     private final DungeonTransitionDestination destination;
     private final @Nullable Long linkedTransitionId;
 
@@ -17,7 +17,7 @@ public final class DungeonTransition {
             long transitionId,
             long mapId,
             String description,
-            DungeonCell anchor,
+            @Nullable DungeonCell anchor,
             DungeonTransitionDestination destination,
             @Nullable Long linkedTransitionId
     ) {
@@ -43,7 +43,7 @@ public final class DungeonTransition {
         return description;
     }
 
-    public DungeonCell anchor() {
+    public @Nullable DungeonCell anchor() {
         return anchor;
     }
 

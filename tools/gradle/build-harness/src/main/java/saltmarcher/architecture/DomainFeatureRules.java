@@ -22,6 +22,8 @@ final class DomainFeatureRules implements ArchitectureRule {
             Pattern.compile("(?m)^##\\s+.+$");
     private static final Pattern CONTEXT_BULLET_PATTERN =
             Pattern.compile("(?m)^\\s*-\\s+`([^`]+)`\\s*:\\s*(.+)$");
+    private static final Pattern DOMAIN_CONTEXT_NAME_MARKER_PATTERN =
+            Pattern.compile("(?m)^\\s*Context Name:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
     private static final Pattern DOMAIN_CONTEXT_ROLE_MARKER_PATTERN =
             Pattern.compile("(?m)^\\s*Context Role:\\s+(.+?)\\s*$");
     private static final Pattern AGGREGATE_ROOT_MARKER_PATTERN =
@@ -33,10 +35,55 @@ final class DomainFeatureRules implements ArchitectureRule {
                     "Roster Truth Context",
                     "Reference Catalog Context",
                     "Generation Policy Context",
-                    "Read Model Source Context",
                     "Authored World-Space Context");
     private static final Set<String> AUTHORED_CONTEXT_ROLES =
             Set.of("Roster Truth Context", "Authored World-Space Context");
+    private static final List<String> REQUIRED_DOMAIN_COVERAGE_RULES = List.of(
+            "domain-root-presence",
+            "domain-context-name-declared",
+            "domain-root-class-shape",
+            "domain-root-public-api-carriers",
+            "domain-root-no-nested-contracts",
+            "domain-root-constructor-composition",
+            "domain-service-registry-root-only",
+            "domain-published-direct-files",
+            "domain-published-carrier-shape",
+            "domain-published-no-callable-contracts",
+            "domain-application-direct-usecases",
+            "domain-application-no-backend-port-contracts",
+            "domain-application-no-same-context-published",
+            "domain-module-role-required",
+            "domain-role-direct-files",
+            "domain-role-package-name",
+            "domain-forbidden-top-level-bucket",
+            "domain-mapcore-removed",
+            "domain-context-roles-complete",
+            "domain-context-relationships-complete",
+            "domain-context-document-presence",
+            "domain-context-shape-declared",
+            "domain-context-required-sections",
+            "domain-role-context-required-sections",
+            "domain-authored-context-write-model-required",
+            "domain-aggregate-marker-shape",
+            "domain-generation-policy-required-sections",
+            "domain-generation-policy-write-model-none",
+            "domain-generation-policy-ephemeral-rationale",
+            "domain-outer-layer-independence",
+            "domain-foreign-feature-public-boundary",
+            "domain-named-module-private-context",
+            "domain-named-module-no-same-context-application",
+            "domain-model-roles-no-outbound-ports",
+            "domain-named-module-no-published-carriers",
+            "domain-port-boundary",
+            "domain-public-boundary-signature-purity",
+            "domain-published-no-foreign-signatures",
+            "domain-role-shape",
+            "domain-field-purity",
+            "domain-public-concrete-type-shape",
+            "domain-service-factory-statelessness",
+            "domain-feature-cycles",
+            "domain-module-cycles",
+            "domain-enforcement-coverage-complete");
     private static final List<String> BASE_CONTEXT_REQUIRED_SECTIONS = List.of(
             "## Context Role",
             "## Published Language",
@@ -55,15 +102,17 @@ final class DomainFeatureRules implements ArchitectureRule {
         List<SourceFile> sourceFiles = context.sourceFiles(violations);
         Set<String> domainFeatures = context.domainFeatures(violations);
 
-        validateDomainFeatureBoundaries(domainFeatures, sourceFiles, violations);
+        validateDomainFeatureBoundaries(context, domainFeatures, sourceFiles, violations);
         validateMapcoreRemoved(context, violations);
         validateDomainFeatureDirectories(context, violations);
         validateDomainContextRoles(context, domainFeatures, violations);
         validateDomainContextRelationships(context, domainFeatures, violations);
         validateDomainContextDocuments(context, domainFeatures, violations);
+        validateDomainCoverageDocument(context, violations);
     }
 
     private void validateDomainFeatureBoundaries(
+            ArchitectureContext context,
             Set<String> domainFeatures,
             List<SourceFile> sourceFiles,
             ViolationSink violations) {
@@ -86,7 +135,7 @@ final class DomainFeatureRules implements ArchitectureRule {
                     : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
             violations.add("src/domain/" + featureName, "domain-root-presence",
                     "Domain feature '" + featureName + "' must expose exactly one root application service."
-                            + " Expected " + expectedDomainRootFileName(featureName) + ". Found: " + files);
+                            + " Expected " + expectedDomainRootFileName(featureName, context.domainContextName(featureName)) + ". Found: " + files);
         }
     }
 
@@ -279,6 +328,12 @@ final class DomainFeatureRules implements ArchitectureRule {
                 continue;
             }
 
+            List<String> declaredNames = declaredDomainContextNames(content);
+            if (declaredNames.size() != 1) {
+                violations.add(documentPath, "domain-context-name-declared",
+                        "DOMAIN.md must contain exactly one context name marker: 'Context Name: <PascalContext>'.");
+            }
+
             List<String> declaredRoles = declaredDomainContextRoles(content);
             if (declaredRoles.size() != 1) {
                 violations.add(documentPath, "domain-context-shape-declared",
@@ -300,6 +355,40 @@ final class DomainFeatureRules implements ArchitectureRule {
             }
             if ("Generation Policy Context".equals(role)) {
                 validateGenerationPolicyContextDocument(documentPath, content, violations);
+            }
+        }
+    }
+
+    private void validateDomainCoverageDocument(ArchitectureContext context, ViolationSink violations) {
+        Path coverageDocument =
+                context.repoRoot().resolve("docs/standards/architecture-enforcement-coverage-domain.md");
+        String coveragePath = "docs/standards/architecture-enforcement-coverage-domain.md";
+        if (!Files.isRegularFile(coverageDocument)) {
+            violations.add(coveragePath, "domain-enforcement-coverage-complete",
+                    "Domain enforcement coverage must document every required enforced domain rule.");
+            return;
+        }
+
+        String content;
+        try {
+            content = Files.readString(coverageDocument, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            violations.add(coveragePath, "file-readable",
+                    "Could not read domain enforcement coverage: " + exception.getMessage());
+            return;
+        }
+
+        for (String ruleId : REQUIRED_DOMAIN_COVERAGE_RULES) {
+            String line = lineContaining(content, "`" + ruleId + "`");
+            if (line == null) {
+                violations.add(coveragePath, "domain-enforcement-coverage-complete",
+                        "Domain enforcement coverage must list required rule id `" + ruleId + "`.");
+                continue;
+            }
+            if (!line.contains("./gradlew") || !lineContainsMechanicalOwner(line)) {
+                violations.add(coveragePath, "domain-enforcement-coverage-complete",
+                        "Coverage row for `" + ruleId
+                                + "` must name a mechanical owner and blocking Gradle entrypoint.");
             }
         }
     }
@@ -380,6 +469,15 @@ final class DomainFeatureRules implements ArchitectureRule {
         return aggregateRoots.stream().sorted().toList();
     }
 
+    private static List<String> declaredDomainContextNames(String content) {
+        List<String> result = new ArrayList<>();
+        Matcher matcher = DOMAIN_CONTEXT_NAME_MARKER_PATTERN.matcher(content);
+        while (matcher.find()) {
+            result.add(matcher.group(1));
+        }
+        return result.stream().sorted().toList();
+    }
+
     private static List<String> declaredDomainContextRoles(String content) {
         List<String> result = new ArrayList<>();
         Matcher matcher = DOMAIN_CONTEXT_ROLE_MARKER_PATTERN.matcher(content);
@@ -396,6 +494,22 @@ final class DomainFeatureRules implements ArchitectureRule {
             result.computeIfAbsent(matcher.group(1), ignored -> new ArrayList<>()).add(matcher.group(2));
         }
         return result;
+    }
+
+    private static String lineContaining(String content, String needle) {
+        for (String line : content.split("\\R")) {
+            if (line.contains(needle)) {
+                return line;
+            }
+        }
+        return null;
+    }
+
+    private static boolean lineContainsMechanicalOwner(String line) {
+        return line.contains("build-harness")
+                || line.contains("Error Prone")
+                || line.contains("PMD")
+                || line.contains("ArchUnit");
     }
 
     private static void validateNoStaleContextBullets(

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public final class DungeonSqliteGateway {
 
@@ -620,12 +621,12 @@ public final class DungeonSqliteGateway {
         }
     }
 
-    private static Long nullableLong(ResultSet resultSet, String column) throws SQLException {
+    private static @Nullable Long nullableLong(ResultSet resultSet, String column) throws SQLException {
         long value = resultSet.getLong(column);
         return resultSet.wasNull() ? null : value;
     }
 
-    private static Integer nullableInteger(ResultSet resultSet, String column) throws SQLException {
+    private static @Nullable Integer nullableInteger(ResultSet resultSet, String column) throws SQLException {
         int value = resultSet.getInt(column);
         return resultSet.wasNull() ? null : value;
     }

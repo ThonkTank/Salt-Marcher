@@ -1,6 +1,7 @@
 package src.data.dungeon.model;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public record DungeonStairRecord(
         long stairId,
@@ -10,7 +11,7 @@ public record DungeonStairRecord(
         int direction,
         int dimension1,
         int dimension2,
-        Long corridorId,
+        @Nullable Long corridorId,
         List<DungeonStairPathNodeRecord> pathNodes,
         List<DungeonStairExitRecord> exits
 ) {

@@ -8,38 +8,52 @@ final class ArchitectureNaming {
     }
 
     static String expectedDomainRootFileName(String feature) {
-        if (feature == null || feature.isBlank()) {
-            return "ApplicationService.java";
-        }
-        return feature.substring(0, 1).toUpperCase(Locale.ROOT)
-                + feature.substring(1)
-                + "ApplicationService.java";
+        return expectedDomainRootFileName(feature, null);
+    }
+
+    static String expectedDomainRootFileName(String feature, String contextName) {
+        return expectedFeatureFileName(feature, contextName, "ApplicationService");
     }
 
     static String expectedDataRootFileName(String feature) {
-        if (feature == null || feature.isBlank()) {
-            return "ServiceContribution.java";
-        }
-        return feature.substring(0, 1).toUpperCase(Locale.ROOT)
-                + feature.substring(1)
-                + "ServiceContribution.java";
+        return expectedFeatureFileName(feature, null, "ServiceContribution");
+    }
+
+    static String expectedDataRootFileName(String feature, String contextName) {
+        return expectedFeatureFileName(feature, contextName, "ServiceContribution");
     }
 
     static String expectedDataSchemaFileName(String feature) {
-        if (feature == null || feature.isBlank()) {
-            return "PersistenceSchema.java";
+        return expectedFeatureFileName(feature, null, "PersistenceSchema");
+    }
+
+    static String expectedDataSchemaFileName(String feature, String contextName) {
+        return expectedFeatureFileName(feature, contextName, "PersistenceSchema");
+    }
+
+    private static String expectedFeatureFileName(String feature, String contextName, String suffix) {
+        if (contextName != null && !contextName.isBlank()) {
+            return contextName + suffix + ".java";
         }
-        return feature.substring(0, 1).toUpperCase(Locale.ROOT)
-                + feature.substring(1)
-                + "PersistenceSchema.java";
+        if (feature == null || feature.isBlank()) {
+            return suffix + ".java";
+        }
+        return feature.substring(0, 1).toUpperCase(Locale.ROOT) + feature.substring(1) + suffix + ".java";
     }
 
     static boolean isFeatureFileName(String feature, String fileName, String suffix) {
+        return isFeatureFileName(feature, null, fileName, suffix);
+    }
+
+    static boolean isFeatureFileName(String feature, String contextName, String fileName, String suffix) {
         String fullSuffix = suffix + ".java";
         if (feature == null
                 || fileName == null
                 || !fileName.endsWith(fullSuffix)) {
             return false;
+        }
+        if (contextName != null && !contextName.isBlank()) {
+            return fileName.equals(contextName + fullSuffix);
         }
         String prefix = fileName.substring(0, fileName.length() - fullSuffix.length());
         return normalizeFeatureToken(prefix).equals(normalizeFeatureToken(feature));

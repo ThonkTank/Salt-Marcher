@@ -10,6 +10,8 @@ import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
+import src.domain.dungeon.published.DungeonFeatureKind;
+import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyKind;
@@ -103,6 +105,7 @@ public record DungeonMapDisplayModel(
         List<RenderCell> renderedCells = new ArrayList<>();
         List<RenderEdge> renderedEdges = new ArrayList<>();
         List<RenderLabel> renderedLabels = new ArrayList<>();
+        List<RenderMarker> renderedMarkers = new ArrayList<>();
         List<GraphNode> graphNodes = new ArrayList<>();
         List<GraphLink> graphLinks = new ArrayList<>();
 
@@ -123,19 +126,28 @@ public record DungeonMapDisplayModel(
             }
             renderedEdges.add(renderEdge(boundary));
         }
-        addRepresentativeGeometry(renderedCells, renderedEdges, renderedLabels, graphNodes, graphLinks);
+        for (DungeonFeatureSnapshot feature : map.features()) {
+            List<RenderCell> featureCells = feature.cells().stream()
+                    .map(cell -> renderFeatureCell(feature, cell, selectedTool))
+                    .toList();
+            renderedCells.addAll(featureCells);
+            if (!featureCells.isEmpty()) {
+                CellCenter center = centerOf(featureCells);
+                boolean selected = selectedFeature(feature, selectedTool);
+                renderedLabels.add(new RenderLabel(feature.label(), center.x(), center.y(), featureCells.getFirst().z(), selected));
+                renderedMarkers.add(markerForFeature(feature, center, featureCells.getFirst().z(), selected));
+            }
+        }
+        if (renderedCells.isEmpty()) {
+            addRepresentativeGeometry(renderedCells, renderedEdges, renderedLabels, graphNodes, graphLinks);
+            renderedMarkers.addAll(representativeMarkers(selectedTool));
+        }
         if (graphLinks.isEmpty() && graphNodes.size() > 1) {
             for (int index = 1; index < graphNodes.size(); index++) {
                 graphLinks.add(new GraphLink(graphNodes.get(index - 1).id(), graphNodes.get(index).id(), false));
             }
         }
         boolean mapLoaded = !renderedCells.isEmpty();
-        List<RenderMarker> markers = List.of(
-                new RenderMarker("1", 3.0, 3.98, 0, MarkerKind.DOOR, false),
-                new RenderMarker("2", 5.0, 5.50, 0, MarkerKind.DOOR, false),
-                new RenderMarker("z", 8.5, 5.5, 0, MarkerKind.STAIR, "Treppe".equals(selectedTool)),
-                new RenderMarker("->", 1.5, 3.5, 0, MarkerKind.TRANSITION, "Uebergang".equals(selectedTool))
-        );
         return new DungeonMapDisplayModel(
                 snapshot.mapName(),
                 map.width() + " x " + map.height() + " squares · z=" + projectionLevel,
@@ -153,7 +165,7 @@ public record DungeonMapDisplayModel(
                 renderedCells,
                 renderedEdges,
                 renderedLabels,
-                markers,
+                renderedMarkers,
                 graphNodes,
                 graphLinks,
                 editorMode ? null : new PartyToken(3.5, 3.5, 0, Heading.SOUTH, true));
@@ -162,6 +174,19 @@ public record DungeonMapDisplayModel(
     private static RenderCell renderCell(DungeonAreaSnapshot area, DungeonCellRef cell) {
         CellKind kind = area.kind() == DungeonAreaKind.CORRIDOR ? CellKind.CORRIDOR : CellKind.ROOM;
         return new RenderCell(cell.q(), cell.r(), cell.level(), area.label(), kind, area.id(), false, false);
+    }
+
+    private static RenderCell renderFeatureCell(DungeonFeatureSnapshot feature, DungeonCellRef cell, String selectedTool) {
+        CellKind kind = feature.kind() == DungeonFeatureKind.TRANSITION ? CellKind.TRANSITION : CellKind.STAIR;
+        return new RenderCell(
+                cell.q(),
+                cell.r(),
+                cell.level(),
+                feature.label(),
+                kind,
+                feature.id(),
+                selectedFeature(feature, selectedTool),
+                false);
     }
 
     private static RenderEdge renderEdge(DungeonBoundarySnapshot boundary) {
@@ -201,6 +226,26 @@ public record DungeonMapDisplayModel(
         edges.add(new RenderEdge(6, 4, 9, 4, 0, EdgeKind.WALL, "North wall", 10_002L, false));
         edges.add(new RenderEdge(2, 8, 6, 8, -1, EdgeKind.WALL, "Lower wall", 10_003L, false));
         linkNearbyNodes(graphNodes, graphLinks);
+    }
+
+    private static List<RenderMarker> representativeMarkers(String selectedTool) {
+        return List.of(
+                new RenderMarker("1", 3.0, 3.98, 0, MarkerKind.DOOR, false),
+                new RenderMarker("2", 5.0, 5.50, 0, MarkerKind.DOOR, false),
+                new RenderMarker("z", 8.5, 5.5, 0, MarkerKind.STAIR, "Treppe".equals(selectedTool)),
+                new RenderMarker("->", 1.5, 3.5, 0, MarkerKind.TRANSITION, selectedTool != null && selectedTool.contains("bergang"))
+        );
+    }
+
+    private static RenderMarker markerForFeature(
+            DungeonFeatureSnapshot feature,
+            CellCenter center,
+            int level,
+            boolean selected
+    ) {
+        MarkerKind kind = feature.kind() == DungeonFeatureKind.TRANSITION ? MarkerKind.TRANSITION : MarkerKind.STAIR;
+        String label = feature.kind() == DungeonFeatureKind.TRANSITION ? "->" : "z";
+        return new RenderMarker(label, center.x(), center.y(), level, kind, selected);
     }
 
     private static void addRoom(
@@ -252,6 +297,16 @@ public record DungeonMapDisplayModel(
             return false;
         }
         return area.kind() == DungeonAreaKind.ROOM && selectedTool.contains("Raum");
+    }
+
+    private static boolean selectedFeature(DungeonFeatureSnapshot feature, String selectedTool) {
+        if (feature == null || selectedTool == null) {
+            return false;
+        }
+        if (feature.kind() == DungeonFeatureKind.TRANSITION) {
+            return selectedTool.contains("bergang");
+        }
+        return selectedTool.contains("Treppe");
     }
 
     private static CellCenter centerOf(List<RenderCell> cells) {

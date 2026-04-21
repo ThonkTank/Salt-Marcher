@@ -68,12 +68,12 @@ final class SourceLayoutRules implements ArchitectureRule {
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
         for (SourceFile sourceFile : context.sourceFiles(violations)) {
-            validatePathLayout(sourceFile, violations);
+            validatePathLayout(context, sourceFile, violations);
             validatePackageMatchesPath(sourceFile, violations);
         }
     }
 
-    private void validatePathLayout(SourceFile sourceFile, ViolationSink violations) {
+    private void validatePathLayout(ArchitectureContext context, SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
         if (segments.isEmpty()) {
             return;
@@ -128,14 +128,14 @@ final class SourceLayoutRules implements ArchitectureRule {
                             "Active view Java sources must be direct files under src/view/<area>/<entry>/.");
                 }
             }
-            case "domain" -> validateDomainLayout(sourceFile, violations);
-            case "data" -> validateDataLayout(sourceFile, violations);
+            case "domain" -> validateDomainLayout(context, sourceFile, violations);
+            case "data" -> validateDataLayout(context, sourceFile, violations);
             default -> violations.add(sourceFile.relativePath(), "src-layout",
                     "Sources under src/ must live in src/view, src/domain or src/data.");
         }
     }
 
-    private void validateDomainLayout(SourceFile sourceFile, ViolationSink violations) {
+    private void validateDomainLayout(ArchitectureContext context, SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
         if (segments.size() < 4) {
             violations.add(sourceFile.relativePath(), "domain-layout",
@@ -145,7 +145,8 @@ final class SourceLayoutRules implements ArchitectureRule {
 
         if (segments.size() == 4) {
             String feature = segments.get(2);
-            if (!isFeatureFileName(feature, sourceFile.fileName(), "ApplicationService")) {
+            String contextName = context.domainContextName(feature);
+            if (!isFeatureFileName(feature, contextName, sourceFile.fileName(), "ApplicationService")) {
                 violations.add(sourceFile.relativePath(), "domain-root-presence",
                         "Only <PascalFeatureName>ApplicationService.java may live directly under src/domain/<feature>/.");
             }
@@ -214,10 +215,12 @@ final class SourceLayoutRules implements ArchitectureRule {
         }
     }
 
-    private void validateDataLayout(SourceFile sourceFile, ViolationSink violations) {
+    private void validateDataLayout(ArchitectureContext context, SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
         if (segments.size() == 4) {
-            if (!isFeatureFileName(segments.get(2), sourceFile.fileName(), "ServiceContribution")) {
+            String feature = segments.get(2);
+            String contextName = context.domainContextName(feature);
+            if (!isFeatureFileName(feature, contextName, sourceFile.fileName(), "ServiceContribution")) {
                 violations.add(sourceFile.relativePath(), "data-layout",
                         "Only <PascalFeatureName>ServiceContribution.java may live directly under src/data/<feature>/.");
             }
