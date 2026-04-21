@@ -1,9 +1,11 @@
 package src.domain.dungeon.application;
 
+import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonAggregate;
-import src.domain.dungeon.map.port.DungeonDocumentRepository;
-import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.entity.DungeonPrimitive;
+import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonMapSearch;
+import src.domain.dungeon.map.value.DungeonDerivedState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,24 +32,30 @@ public final class LoadDungeonSnapshotUseCase {
         }
     }
 
-    private final DungeonDocumentRepository store;
+    private final DungeonMapRepository repository;
+    private final DungeonMapSearch search;
     private final BuildDungeonDerivedStateUseCase derive;
 
-    public LoadDungeonSnapshotUseCase(DungeonDocumentRepository store, BuildDungeonDerivedStateUseCase derive) {
-        this.store = store;
+    public LoadDungeonSnapshotUseCase(
+            DungeonMapRepository repository,
+            DungeonMapSearch search,
+            BuildDungeonDerivedStateUseCase derive
+    ) {
+        this.repository = repository;
+        this.search = search;
         this.derive = derive;
     }
 
     public DungeonSnapshotData execute() {
-        var document = store.load();
+        DungeonMap dungeonMap = loadCurrentMap();
         return new DungeonSnapshotData(
-                document.mapName(),
-                derive.execute(document),
-                document.revision());
+                dungeonMap.metadata().mapName(),
+                derive.execute(dungeonMap),
+                dungeonMap.revision());
     }
 
     public InspectorSnapshotData describeSelection(String ownerKind, long ownerId) {
-        DungeonDerivedState derived = derive.execute(store.load());
+        DungeonDerivedState derived = derive.execute(loadCurrentMap());
         for (DungeonAggregate aggregate : derived.aggregates()) {
             if (aggregate.id() == ownerId && ownerKind != null && ownerKind.equalsIgnoreCase(aggregate.kind().name())) {
                 return new InspectorSnapshotData(
@@ -70,5 +78,10 @@ public final class LoadDungeonSnapshotUseCase {
             }
         }
         return new InspectorSnapshotData("Dungeon", "No selection details available.", List.of("selection: none"));
+    }
+
+    private DungeonMap loadCurrentMap() {
+        return search.firstMap()
+                .orElseGet(() -> DungeonMap.empty(repository.nextMapId(), "Dungeon Bastion"));
     }
 }

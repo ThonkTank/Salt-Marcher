@@ -1,8 +1,9 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.port.DungeonDocumentRepository;
+import src.domain.dungeon.map.aggregate.DungeonMap;
+import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonDocument;
 
 import java.util.List;
 
@@ -37,34 +38,41 @@ public final class ApplyDungeonEditorOperationUseCase {
         }
     }
 
-    private final DungeonDocumentRepository store;
+    private final DungeonMapRepository repository;
+    private final DungeonMapSearch search;
     private final BuildDungeonDerivedStateUseCase derive;
 
-    public ApplyDungeonEditorOperationUseCase(DungeonDocumentRepository store, BuildDungeonDerivedStateUseCase derive) {
-        this.store = store;
+    public ApplyDungeonEditorOperationUseCase(
+            DungeonMapRepository repository,
+            DungeonMapSearch search,
+            BuildDungeonDerivedStateUseCase derive
+    ) {
+        this.repository = repository;
+        this.search = search;
         this.derive = derive;
     }
 
     public OperationResultData execute(OperationInput operation) {
-        DungeonDocument current = store.load();
-        DungeonDocument mutated = apply(current, operation);
+        DungeonMap current = search.firstMap()
+                .orElseGet(() -> DungeonMap.empty(repository.nextMapId(), "Dungeon Bastion"));
+        DungeonMap mutated = apply(current, operation);
         List<String> validationMessages = mutated.validationMessages();
         List<String> reactionMessages = current.reactionMessages(mutated);
         DungeonDerivedState derived = derive.execute(mutated);
-        store.save(mutated);
+        repository.save(mutated);
         var snapshot = new LoadDungeonSnapshotUseCase.DungeonSnapshotData(
-                mutated.mapName(),
+                mutated.metadata().mapName(),
                 derived,
                 mutated.revision());
         return new OperationResultData(snapshot, validationMessages, reactionMessages);
     }
 
-    private DungeonDocument apply(DungeonDocument current, OperationInput operation) {
+    private DungeonMap apply(DungeonMap current, OperationInput operation) {
         if (operation instanceof OperationInput.MoveRoomAnchor moveRoomAnchor) {
             return current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
         }
         if (operation instanceof OperationInput.ResetDemoLayout) {
-            return DungeonDocument.demo();
+            return current.resetDemoLayout();
         }
         return current;
     }

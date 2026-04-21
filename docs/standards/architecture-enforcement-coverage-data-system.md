@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Mechanical and review-owned enforcement coverage for data and
 system architecture.
 
@@ -8,8 +8,8 @@ system architecture.
 
 ## Goal
 
-This document maps data-layer, persistencecore, gateway, repository/query, and
-system-layer rules to their local quality gates.
+This document maps data-layer, persistencecore, source-adapter,
+repository/query adapter, and system-layer rules to their local quality gates.
 
 ## Enforced
 
@@ -27,7 +27,7 @@ system-layer rules to their local quality gates.
 - Data code may depend on foreign domain only through foreign root application
   services or `published/` carriers, owned by ArchUnit
   `dataFeaturesMustOnlyUseForeignFeatureApis`.
-- Gateway, repository, query adapter, return-type, and public-signature leak
+- Source-adapter, repository, query adapter, return-type, and public-signature leak
   rules are owned by Error Prone data checkers:
   `DataAdapterGatewayCollaboratorBoundary`,
   `DataAdapterPublicSignatureLeak`, `DataAdapterRoleContract`, and
@@ -47,6 +47,6 @@ efficiency, transaction correctness, or persistence semantics.
 ## Review-Owned
 
 - whether SQL schemas and migrations express the domain persistence contract
-- whether repository/query adapters translate without losing invariants
-- whether gateway error handling and transaction boundaries are adequate
+- whether repository/query port adapters translate without losing invariants
+- whether source-adapter error handling and transaction boundaries are adequate
 - whether persistencecore abstractions remain small enough for the project

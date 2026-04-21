@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: System-wide architecture summary and entry point into the
 architecture documentation set.
 
@@ -46,10 +46,11 @@ tools/       build infrastructure, quality platforms, and engineering scripts
   slot.
 - `src/domain/<context>/` owns the hexagonal application core: domain truth,
   invariants, policy decisions, application services, published language,
-  outbound ports, and role-explicit domain modules inside one real domain
+  outbound ports, and optional tactical domain roles inside one real domain
   context.
-- `src/data/<feature>/` owns persistence and external-system adapters that
-  implement domain-owned outbound ports.
+- `src/data/<feature>/` owns outer adapters that implement domain-owned
+  outbound ports and confront concrete sources such as SQLite, files, imports,
+  or remote systems.
 - `src/data/persistencecore/` holds shared SQLite infrastructure reused by
   multiple persistence features without becoming an application-service
   boundary of its own.
@@ -98,8 +99,8 @@ Dependencies point inward toward the application core:
   domain, data, or ApplicationService dependencies.
 - domain code owns business rules, published language, and domain-owned
   outbound ports.
-- data code implements domain-owned outbound ports and externalizes infrastructure
-  details.
+- data code implements domain-owned outbound ports and externalizes source and
+  infrastructure details.
 
 Below the view layer, the only public client-facing backend boundary is a
 feature's `*ApplicationService`. The shell-owned runtime registry remains a
@@ -117,8 +118,9 @@ runtime capabilities through service contributions.
 - `src/view/statetabs/**` contributes global state tabs.
 - `src/view/dropdowns/**` may contribute top-bar dropdown windows when a
   `*Contribution` is present.
-- `shell/api/ServiceContribution` registers typed root application services
-  into the shared shell service registry, `ServiceRegistry`.
+- `shell/api/ServiceContribution` lets outer composition adapters register
+  typed root application services into the shared shell service registry,
+  `ServiceRegistry`.
 - `shell/api/ShellRuntimeContext` provides shell-owned shared services such as
   runtime-capability lookup, details/history publishing, and per-shell runtime
   sessions.
@@ -177,3 +179,4 @@ JavaFX styling is centralized under `resources/`.
 - [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)
 - [ADR 023: Hexagonal Domain Core](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/023-hexagonal-domain-core.md:1)
+- [ADR 024: Domain And Data Concept Simplification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/024-domain-data-concept-simplification.md:1)

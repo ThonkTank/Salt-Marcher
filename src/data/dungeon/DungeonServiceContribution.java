@@ -2,8 +2,8 @@ package src.data.dungeon;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
-import src.data.dungeon.repository.LocalDungeonDocumentRepository;
-import src.data.dungeon.repository.LocalDungeonMapRepository;
+import src.data.dungeon.query.SqliteDungeonMapSearch;
+import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.DungeonApplicationService;
 
 public final class DungeonServiceContribution implements ServiceContribution {
@@ -14,10 +14,12 @@ public final class DungeonServiceContribution implements ServiceContribution {
 
     @Override
     public void register(ServiceRegistry.Builder services) {
+        SqliteDungeonMapRepository repository = new SqliteDungeonMapRepository();
+        SqliteDungeonMapSearch search = new SqliteDungeonMapSearch();
         services.register(
                 DungeonApplicationService.class,
                 new DungeonApplicationService(
-                        new LocalDungeonMapRepository(),
-                        new LocalDungeonDocumentRepository()));
+                        repository,
+                        search));
     }
 }

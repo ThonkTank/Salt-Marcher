@@ -1,7 +1,6 @@
 package src.domain.dungeon.application;
 
 import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.port.DungeonDocumentRepository;
 import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 
@@ -14,19 +13,16 @@ public final class CreateDungeonMapUseCase {
     }
 
     private final DungeonMapRepository repository;
-    private final DungeonDocumentRepository documentStore;
 
-    public CreateDungeonMapUseCase(DungeonMapRepository repository, DungeonDocumentRepository documentStore) {
+    public CreateDungeonMapUseCase(DungeonMapRepository repository) {
         this.repository = repository;
-        this.documentStore = documentStore;
     }
 
     public CreatedMap execute(String requestedMapName) {
-        DungeonMapIdentity mapIdentity = repository.nextId();
+        DungeonMapIdentity mapIdentity = repository.nextMapId();
         String mapName = normalizeName(requestedMapName);
         DungeonMap dungeonMap = DungeonMap.empty(mapIdentity, mapName);
         repository.save(dungeonMap);
-        documentStore.ensureMap(mapIdentity, mapName);
         return new CreatedMap(mapIdentity);
     }
 

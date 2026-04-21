@@ -1,12 +1,23 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-21
 Source of Truth: Temporary rollout notes, phasing, and open delivery questions
 for the dungeon feature.
 
 # Dungeon Delivery Notes
 
 ## Delivery Shape
+
+Current foundation:
+
+- The dungeon root service is assembled by the data contribution with concrete
+  SQLite-backed adapters.
+- The active write model is `DungeonMap`; editor operations mutate that
+  aggregate and save through `DungeonMapRepository`.
+- Read selection uses `DungeonMapSearch`, keeping read-only map lookup separate
+  from authored persistence.
+- The SQLite schema manager creates the legacy-compatible dungeon table family
+  required for later parity work.
 
 Recommended rollout:
 
@@ -22,6 +33,9 @@ Recommended rollout:
   contracts before broad editor rollout.
 - Room and connection projections can drift if ownership rules are not enforced
   consistently.
+- The current mapper only reconstructs the topology seed from persisted room
+  coordinates; full parity needs explicit room, corridor, stair, transition,
+  and feature mapping before those behaviours can be considered preserved.
 - Advanced editor operation carriers must be introduced only with implemented
   domain policies, and their public API signatures must use API-owned carrier
   types rather than internal domain-module model types.

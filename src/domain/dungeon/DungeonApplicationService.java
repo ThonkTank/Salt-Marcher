@@ -34,8 +34,8 @@ import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.application.LoadMapSnapshotUseCase;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.map.entity.DungeonAggregate;
-import src.domain.dungeon.map.port.DungeonDocumentRepository;
 import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonAreaFacts;
 import src.domain.dungeon.map.value.DungeonAreaType;
 import src.domain.dungeon.map.value.DungeonBoundaryFacts;
@@ -62,17 +62,20 @@ public final class DungeonApplicationService {
 
     public DungeonApplicationService(
             DungeonMapRepository mapRepository,
-            DungeonDocumentRepository documentRepository
+            DungeonMapSearch mapSearch
     ) {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
-        DungeonDocumentRepository documents = Objects.requireNonNull(documentRepository, "documentRepository");
+        DungeonMapSearch search = Objects.requireNonNull(mapSearch, "mapSearch");
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
-        this.loadDungeonSnapshotUseCase = new LoadDungeonSnapshotUseCase(documents, derive);
-        this.applyDungeonEditorOperationUseCase = new ApplyDungeonEditorOperationUseCase(documents, derive);
-        this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(repository, documents);
-        this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository, documents);
-        this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository, documents);
-        this.loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(repository, documents, derive);
+        this.loadDungeonSnapshotUseCase = new LoadDungeonSnapshotUseCase(repository, search, derive);
+        this.applyDungeonEditorOperationUseCase = new ApplyDungeonEditorOperationUseCase(
+                repository,
+                search,
+                derive);
+        this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(search);
+        this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository);
+        this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository);
+        this.loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(repository, derive);
     }
 
     public DungeonSnapshot loadSnapshot(LoadDungeonSnapshotQuery query) {

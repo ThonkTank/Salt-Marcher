@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Binding system-wide layer architecture model, top-level
 dependency direction, boundary crossings, and allowed cross-layer seams.
 
@@ -96,8 +96,8 @@ The canonical intentional public boundaries are:
   used by those application services
 - domain-owned outbound ports declared in named domain modules as inner backend
   ports, not alternate client boundaries
-- data `*ServiceContribution` roots as the registration boundary of one data
-  feature, not as a public business boundary
+- data `*ServiceContribution` roots as outer composition adapters currently
+  placed in data features, not as public business boundaries
 
 ## Canonical Interaction Flows
 
@@ -146,8 +146,9 @@ The canonical intentional public boundaries are:
 - View contributions may use shell contracts for registration and delegation
   to their Binder. Cockpit binding itself belongs to the Binder.
 - `src/data/<feature>/*ServiceContribution.java` may use shell service
-  registration contracts because backend capability export is a root concern
-  of the data layer.
+  registration contracts because it is the current outer composition adapter
+  that builds concrete port adapters and registers the root domain application
+  service.
 - Inner-layer interfaces may be implemented by outer layers when runtime flow
   needs to cross outward without violating the dependency rule.
 
@@ -191,4 +192,5 @@ The per-surface rule-status matrix, including system-layer rules, lives in the
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/data-layer.md:1)
 - [ADR 012: System-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/012-system-layer-architecture-model.md:1)
+- [ADR 024: Domain And Data Concept Simplification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/024-domain-data-concept-simplification.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)

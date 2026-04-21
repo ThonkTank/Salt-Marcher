@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Write model, ownership boundaries, and domain invariants
 for the dungeon feature.
 
@@ -42,24 +42,38 @@ application service with data adapters.
 
 ## Architecture Status
 
-Target state:
+Current state:
 
 - `map/aggregate/DungeonMap` is the aggregate root and mutation boundary for
   one authored map.
-- topology repair, merge and split behaviour, identity preservation, and
+- Editor operations now tell the aggregate to mutate authored topology seeds
+  instead of rewriting a document carrier in application code.
+- The application layer coordinates load, mutate, save, search, and derive
+  flows through domain-owned outbound ports.
+- Runtime composition lives in `src/data/dungeon/DungeonServiceContribution.java`;
+  the domain service no longer constructs default persistence collaborators.
+- Search and write-model persistence are separate outbound contracts:
+  `DungeonMapSearch` for read selection and `DungeonMapRepository` for
+  authored write-model persistence and map identity allocation.
+
+Target state:
+
+- Topology repair, merge and split behaviour, identity preservation, and
   derived-state rebuild rules stay in the dungeon domain instead of leaking
   into view or data.
+- The map module grows from the current topology seed into explicit space,
+  room, connection, and feature ownership without adding ceremonial modules.
+- The editor and travel surfaces share authored map truth but keep presentation
+  state outside the domain model.
 
-Current implementation gap:
+Remaining implementation gap:
 
-- the current code still leans on `DungeonDocument` plus `application/` pipelines
-  for much of the active mutation flow
-- the placeholder runtime still uses domain-local default collaborators instead
-  of dedicated outer adapter composition
-- several core types remain thinner record-style carriers than the target
-  aggregate model
-- this feature is a policy-owning bounded context because editor mutations and
-  identity-preserving repairs are rule-bearing domain work
+- Several core types remain thinner record-style carriers than the target
+  aggregate model.
+- Full behaviour parity with the original `salt-marcher/` dungeon schema still
+  requires room-cluster, corridor, stair, transition, and feature mapping.
+- This feature remains a policy-owning bounded context because editor
+  mutations and identity-preserving repairs are rule-bearing domain work.
 
 ## Write Model And Derived State
 

@@ -1,5 +1,6 @@
 package src.domain.dungeon.application;
 
+import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.entity.DungeonPrimitive;
 import src.domain.dungeon.map.value.DungeonAreaFacts;
@@ -8,9 +9,9 @@ import src.domain.dungeon.map.value.DungeonBoundaryFacts;
 import src.domain.dungeon.map.value.DungeonRelationGraph;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonDerivedState;
-import src.domain.dungeon.map.value.DungeonDocument;
 import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonMapFacts;
+import src.domain.dungeon.map.value.SpatialTopology;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,9 +23,10 @@ public final class BuildDungeonDerivedStateUseCase {
 
     private static final String DOOR_KIND = "door";
 
-    public DungeonDerivedState execute(DungeonDocument document) {
-        List<DungeonCell> roomCells = buildRoomCells(document);
-        List<DungeonCell> corridorCells = buildCorridorCells(document);
+    public DungeonDerivedState execute(DungeonMap dungeonMap) {
+        SpatialTopology topology = dungeonMap == null ? SpatialTopology.demo() : dungeonMap.topology();
+        List<DungeonCell> roomCells = buildRoomCells(topology);
+        List<DungeonCell> corridorCells = buildCorridorCells(topology);
         DungeonAggregate room = new DungeonAggregate(1L, DungeonAreaType.ROOM, "Entry Hall", roomCells);
         DungeonAggregate corridor = new DungeonAggregate(2L, DungeonAreaType.CORRIDOR, "South Corridor", corridorCells);
         DungeonPrimitive door = new DungeonPrimitive(
@@ -49,9 +51,9 @@ public final class BuildDungeonDerivedStateUseCase {
         );
 
         DungeonMapFacts map = new DungeonMapFacts(
-                document.topology(),
-                document.width(),
-                document.height(),
+                topology.topology(),
+                topology.width(),
+                topology.height(),
                 List.of(
                         new DungeonAreaFacts(room.kind(), room.id(), room.label(), room.cells()),
                         new DungeonAreaFacts(corridor.kind(), corridor.id(), corridor.label(), corridor.cells())
@@ -69,19 +71,19 @@ public final class BuildDungeonDerivedStateUseCase {
         return new DungeonDerivedState(map, List.of(room, corridor), primitives, relations);
     }
 
-    private List<DungeonCell> buildRoomCells(DungeonDocument document) {
+    private List<DungeonCell> buildRoomCells(SpatialTopology topology) {
         List<DungeonCell> cells = new ArrayList<>();
         for (int r = 0; r < 2; r++) {
             for (int q = 0; q < 3; q++) {
-                cells.add(new DungeonCell(document.roomAnchorQ() + q, document.roomAnchorR() + r, 0));
+                cells.add(new DungeonCell(topology.roomAnchorQ() + q, topology.roomAnchorR() + r, 0));
             }
         }
         return List.copyOf(cells);
     }
 
-    private List<DungeonCell> buildCorridorCells(DungeonDocument document) {
-        int startQ = document.roomAnchorQ() + 1;
-        int startR = document.roomAnchorR() + 2;
+    private List<DungeonCell> buildCorridorCells(SpatialTopology topology) {
+        int startQ = topology.roomAnchorQ() + 1;
+        int startR = topology.roomAnchorR() + 2;
         return List.of(
                 new DungeonCell(startQ, startR, 0),
                 new DungeonCell(startQ, startR + 1, 0),

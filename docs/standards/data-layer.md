@@ -1,17 +1,19 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
-Source of Truth: Binding data-layer architecture model, role boundaries,
-adapter responsibilities, and layer-specific enforcement status for `src/data/**`.
+Last Reviewed: 2026-04-21
+Source of Truth: Binding data-layer adapter model, source-boundary roles,
+runtime composition placement, and layer-specific enforcement status for
+`src/data/**`.
 
 # Data Layer Standard
 
 ## Goal
 
-SaltMarcher uses a strict data-layer model so `src/data/**` owns persistence
-and external-system adaptation behind domain-owned outbound ports, with one
-explicit registration root, one internal source-adapter boundary, and no
-business-rule ownership leaking out of `src/domain/**`.
+SaltMarcher uses `src/data/**` as the outer adapter zone for persistence,
+imports, files, remote systems, and other concrete sources behind domain-owned
+outbound ports. Data code adapts sources to the domain core; it does not own a
+second business model, public backend layer, or policy language beside
+`src/domain/**`.
 
 ## Pattern Alignment
 
@@ -21,14 +23,34 @@ business-rule ownership leaking out of `src/domain/**`.
 - Domain `port/` packages own outbound port interfaces. Write-model ports may
   be named `*Repository`; read-only lookup, catalog, or search ports may be
   named `*Lookup`, `*Catalog`, or `*Search`.
-- Data `repository/` implements write-model domain ports. Data `query/`
-  implements read-only domain ports.
-- `Data Mapper` governs translation between source-local records and domain or
-  published boundary types.
-- `Gateway` governs internal concrete-source adapters below the exported data
-  boundary.
-- SaltMarcher does not adopt `Active Record` as its target model because
-  persistence mechanics must stay outside domain entities and aggregate roots.
+- Data package names are adapter implementation roles, not a second
+  architecture model. They exist to keep source mechanics out of the domain.
+- `repository/` is the current package for write-model port adapters.
+- `query/` is the current package for read-only port adapters.
+- `gateway/` is the current package for source adapters that confront concrete
+  sources such as SQLite, files, imports, or remote APIs.
+- `model/` is source-local schema and payload shape.
+- `mapper/` is optional translation when source shape and domain or published
+  shape are meaningfully different.
+- SaltMarcher does not adopt `Active Record` because persistence mechanics must
+  stay outside domain entities and aggregate roots.
+
+## Minimal Concept Set
+
+The standard data concepts are deliberately small:
+
+| Concept | Meaning |
+| --- | --- |
+| Composition Adapter | The root that builds concrete adapters and registers the root domain application service. |
+| Port Adapter | A concrete implementation of one domain port or a tightly related port group. |
+| Source Adapter | Code that confronts one concrete source family such as SQLite, a file, an import format, or a remote API. |
+| Source Model | Source-local records, payload DTOs, schema declarations, table names, and field names. |
+| Mapper | Translation between source-local shapes and domain or published boundary shapes when that translation is non-trivial. |
+| Shared Infrastructure | Generic technical helpers that do not know feature language. |
+
+Fowler names such as Repository, Data Mapper, and Gateway remain useful
+patterns. They are not mandatory sublayers. Use them only where they clarify
+real source, mapping, or persistence complexity.
 
 ## Core Principles
 
@@ -39,9 +61,12 @@ business-rule ownership leaking out of `src/domain/**`.
 - Domain-owned ports remain the stable outbound abstraction. `src/domain/**`
   defines port interfaces and published boundary types; `src/data/**`
   implements the ports.
-- `repository/` implements authored write-model persistence ports.
-- `query/` implements read-only lookup, search, and projection ports.
-- `gateway/` remains internal and must not become an exported API surface.
+- `repository/` implements authored write-model persistence ports when a
+  repository-style adapter is the clearest current package.
+- `query/` implements read-only lookup, search, and projection ports when a
+  separate read adapter is needed.
+- `gateway/` remains internal source-adapter code and must not become an
+  exported API surface.
 - Source-local shapes stay source-local. Table records, remote payload DTOs,
   schema declarations, and source-specific helper types live in `model/` or
   other internal data buckets, not in domain packages.
@@ -54,12 +79,13 @@ business-rule ownership leaking out of `src/domain/**`.
   stay in their owning feature.
 - The shell-owned runtime capability registration path uses
   `ServiceContribution`, `ServiceRegistry`, and
-  `ShellRuntimeContext.services()`. It is a composition seam, not a second
-  public backend layer inside the shell.
+  `ShellRuntimeContext.services()`. It is a composition seam. Its current
+  `src/data/<feature>/` placement allows concrete adapter assembly, but the
+  role is runtime composition rather than persistence or source adaptation.
 
 ## Data Topology
 
-The allowed data buckets remain:
+The allowed physical data buckets remain:
 
 ```text
 src/data/
@@ -77,7 +103,8 @@ src/data/
 
 Additional rules:
 
-- The bucket names above define both placement and semantic role.
+- The bucket names above define placement and narrow adapter roles. They do not
+  create additional business layers.
 - `persistencecore/` is shared infrastructure, not an application-service
   boundary and not a generic dumping ground for feature helpers.
 - New source-specific directories below `gateway/` require an explicit
@@ -92,17 +119,16 @@ The canonical data flow is:
    service into the shell-owned backend service registry, `ServiceRegistry`
 3. view Binders obtain that root application service through
    `ShellRuntimeContext.services()` as composition input for active roots
-4. a data `repository/` or `query/` implementation satisfies one
-   same-feature domain-owned port
-5. internal `gateway/` adapters talk to SQLite, files, remote services, or
-   other concrete sources
+4. a data port adapter satisfies one same-feature domain-owned port
+5. internal source adapters talk to SQLite, files, remote services, or other
+   concrete sources
 6. `mapper/` and `model/` keep source-local shapes from leaking into the
    domain core
 
 Additional rules:
 
-- `*ServiceContribution` is the only public registration root of a data
-  feature.
+- `*ServiceContribution` is the only runtime composition root currently placed
+  in a data feature.
 - That registration root is not a public client-facing backend boundary.
 - Data features must not require routine bootstrap edits or shell-owned
   feature-specific wiring.
@@ -114,15 +140,13 @@ Additional rules:
 
 ### `<PascalFeatureName>ServiceContribution.java`
 
-`<PascalFeatureName>ServiceContribution.java` is the root registration
-entrypoint and runtime application-service registration boundary of one data
-feature.
+`<PascalFeatureName>ServiceContribution.java` is the runtime composition
+adapter currently placed at the root of one data feature.
 
 - Responsibilities:
-  - build and register the same-feature root domain application service into
-    the shell-owned backend service registry
-  - keep repository, query, gateway, and foreign-service wiring inside the data
-    registration root
+  - build concrete port adapters and register the same-feature root domain
+    application service into the shell-owned backend service registry
+  - keep adapter and foreign-service wiring inside the composition root
   - keep feature discovery passive and generic
 - Allowed behavior:
   - thin adapter composition
@@ -131,12 +155,12 @@ feature.
 - Forbidden behavior:
   - business-rule ownership
   - feature-specific bootstrap coordination outside `register(...)`
+  - source queries, mapping rules, schema rules, or persistence mechanics
   - acting as a long procedural composition layer
 
 ### `repository/`
 
-`repository/` owns data-layer implementations of domain-owned write-model
-ports.
+`repository/` owns write-model port adapters.
 
 - Responsibilities:
   - implement domain-owned write-model ports in technology-aware but
@@ -152,11 +176,11 @@ ports.
 
 ### `query/`
 
-`query/` owns data-layer implementations of domain-owned read-only ports.
+`query/` owns read-only port adapters.
 
 - Responsibilities:
   - implement read-only search, lookup, paging, and projection ports
-  - present the exported read boundary of the feature
+  - keep read-side source access outside the domain core
   - coordinate mappers and internal gateways
 - Rules:
   - query implementations stay in `src/data/**`; port interfaces stay in
@@ -197,7 +221,8 @@ ports.
 ### `mapper/`
 
 `mapper/` owns translation between source-local shapes and domain or published
-boundary types.
+boundary types when translation is complex enough to deserve a named
+collaborator.
 
 - Responsibilities:
   - map records, rows, or payloads into domain and published-facing results
@@ -225,44 +250,25 @@ features.
 
 ## Current Repo Examples
 
-- Positive root-registration examples:
-  [PartyServiceContribution](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/PartyServiceContribution.java:1)
-  and
-  [CreaturesServiceContribution](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/CreaturesServiceContribution.java:1)
-  keep service discovery at one thin feature root.
-- Positive exported-adapter examples:
-  [SqlitePartyRosterRepository](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/repository/SqlitePartyRosterRepository.java:1)
-  and
-  [SqliteCreatureCatalogQueryAdapter](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/query/SqliteCreatureCatalogQueryAdapter.java:1)
-  illustrate the split between write-model port adapters and read-only port
-  adapters.
-- Positive gateway example:
-  [SqlitePartyLocalGateway](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/gateway/local/SqlitePartyLocalGateway.java:1)
-  owns connection and schema-readiness mechanics instead of pushing them into
-  an exported adapter root.
-- Positive shared-infrastructure example:
-  [AbstractSqliteConnectionFactory](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/persistencecore/sqlite/AbstractSqliteConnectionFactory.java:1)
-  is reusable persistence infrastructure without becoming an
-  application-service boundary.
-- Transitional local-adapter example:
-  [LocalDungeonMapRepository](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/dungeon/repository/LocalDungeonMapRepository.java:1)
-  and
-  [LocalDungeonDocumentRepository](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/dungeon/repository/LocalDungeonDocumentRepository.java:1)
-  keep placeholder dungeon storage in the data layer while persistence-backed
-  storage is still pending.
+- Composition adapters: [PartyServiceContribution](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/PartyServiceContribution.java:1)
+  and [CreaturesServiceContribution](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/CreaturesServiceContribution.java:1).
+- Port adapters: [SqlitePartyRosterRepository](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/repository/SqlitePartyRosterRepository.java:1)
+  and [SqliteCreatureCatalogQueryAdapter](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/query/SqliteCreatureCatalogQueryAdapter.java:1).
+- Source adapters and shared infrastructure: [SqlitePartyLocalGateway](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/gateway/local/SqlitePartyLocalGateway.java:1)
+  and [AbstractSqliteConnectionFactory](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/persistencecore/sqlite/AbstractSqliteConnectionFactory.java:1).
 
-These examples illustrate current state and migration direction. They do not
-replace this document as the rule source.
+Examples illustrate current state and migration direction. They do not replace
+this document as the rule source.
 
 ## Forbidden Patterns
 
 - business rules, invariants, or ranking policy implemented in `src/data/**`
 - `View` or shell code importing private data buckets directly
-- direct bootstrap or shell wiring to concrete gateways instead of
+- direct bootstrap or shell wiring to concrete source adapters instead of
   registration through `*ServiceContribution`
 - domain entities or aggregates owning SQL, remote protocol, or schema logic
-- gateways registered as public application capabilities instead of through
-  repository adapters, query adapters, or typed feature factories
+- source adapters registered as public application capabilities instead of
+  staying behind port adapters or typed feature factories
 - feature-specific helpers placed in `persistencecore/`
 - cross-feature dependencies on foreign private data buckets
 - duplicate schema truth spread across unrelated stores, migrators, and string
@@ -275,60 +281,24 @@ The per-surface rule-status matrix lives in the [Architecture Enforcement Covera
 
 Current mechanical ownership:
 
-- `build-harness` owns allowed data buckets, data-root placement, service-root
-  presence, the current stricter schema-entrypoint presence blocker below
-  `src/data/**`, `ServiceContribution` root placement, and exact table-name
-  literal ownership by the feature persistence schema.
-- `PMD architecture` owns source-level root contracts for
-  `*ServiceContribution`, including naming, `public final`, public no-arg
-  constructor, required interface, `register(ServiceRegistry.Builder)`, no
-  instance fields, no extra public/protected members, and own-feature root
-  application-service-only registration into `ServiceRegistry`.
-  It also owns the mechanically stable source-level subset of data-role
-  discipline: obvious mutation-method bans in `query/`, concrete source API
-  bans in `repository/`, `query/`, and `mapper/`, and feature DDL literal
-  placement in `model/<Feature>PersistenceSchema.java` or generic
-  `persistencecore/` infrastructure.
-- `Error Prone` owns the shell API allowlist on data
-  `*ServiceContribution` roots, direct service-registry registration placement,
-  public/protected gateway return-type bans outside JDK values/containers and
-  same-feature `model/` records, and public/protected repository/query
-  signature bans on leaking internal `model/`, `gateway/`, or
-  `persistencecore` infrastructure types, including constructors.
-  It also owns the compiler-precise adapter role-contract check that keeps
-  `repository/` adapters on write-model ports and `query/` adapters on
-  read-only ports, prevents public data-owned contract/carrier
-  types in adapter buckets, requires public concrete adapters to satisfy an
-  own-feature domain-owned role contract, keeps domain port implementations out
-  of other data buckets, and keeps exported adapters
-  dependent on own-feature gateway facade types rather than concrete gateway
-  mechanics such as stores, migrators, table managers, or connection factories.
-- `ArchUnit` owns data dependence bans on `src.view`, `shell`, and
-  `bootstrap`, foreign-domain-public-boundary-only access from internal data
-  packages, cycle freedom across data features, cross-feature dependency bans
-  on foreign private data buckets, `model/` independence from domain packages,
-  and `persistencecore/` structural independence from feature-specific data
-  packages and domain packages.
+- `build-harness` owns data bucket placement, data-root placement,
+  `ServiceContribution` root placement, schema-entrypoint presence, and table
+  literal ownership.
+- `PMD architecture` owns source-level `*ServiceContribution` contracts, obvious
+  mutation-method bans in `query/`, concrete source API bans outside source
+  adapters, and feature DDL literal placement.
+- `Error Prone` owns shell API allowlists, service-registry registration
+  placement, adapter role contracts, public signature leak bans, and source
+  adapter return-type boundaries.
+- `ArchUnit` owns dependency direction, foreign-domain-public-boundary-only
+  access, data feature cycle freedom, private-data bucket isolation,
+  `model/` independence from domain packages, and generic-only
+  `persistencecore/`.
 
-Current `Review-Only` rules in this standard:
-
-- semantic thin `*ServiceContribution` registration roots beyond the encoded
-  stateless/root-contract checks
-- `repository/` and `query/` as the only domain-port adapter roles in
-  the stronger semantic sense beyond the mechanically encoded contract-role
-  split, public contract-placement check, contract-presence check, adapter
-  placement check, and gateway-facade collaborator check
-- gateway internals staying private to the owning data feature in the stronger
-  semantic sense beyond Java-visible signatures and direct exported-adapter
-  collaborator references
-- business-rule exclusion from `src/data/**`
-- mapper translation purity beyond concrete source API bans
-- `model/` types being truly source-local data shapes rather than domain
-  entities beyond dependency and signature-leak checks
-- the semantic remainder of generic-only discipline for `persistencecore/`
-- duplicate schema truth staying out of scattered helpers and string constants
-  beyond exact table-name duplicate detection and the mechanically stable
-  feature-DDL placement rule
+Current review-owned rules cover semantic thinness of composition roots, port
+adapter placement, source-adapter privacy, business-rule exclusion, mapper
+translation purity, source-local model discipline, generic-only
+`persistencecore/`, and duplicate schema truth.
 
 Current build-harness scope is slightly stricter than the intent wording in
 this standard:
@@ -353,3 +323,4 @@ to distinguish remote-only or otherwise non-persistence-exporting data slices.
 - [ADR 002: Passive Shell With Generic Feature Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/002-passive-shell-and-discovery.md:1)
 - [ADR 008: Top-Level Repository Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/008-top-level-repository-taxonomy.md:1)
 - [ADR 010: Data-Layer Architecture Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/010-data-layer-architecture-model.md:1)
+- [ADR 024: Domain And Data Concept Simplification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/024-domain-data-concept-simplification.md:1)

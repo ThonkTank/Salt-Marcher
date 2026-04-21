@@ -3,7 +3,6 @@ package src.domain.dungeon.map.port;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -11,13 +10,11 @@ import java.util.Optional;
  */
 public interface DungeonMapRepository {
 
-    List<DungeonMap> searchByName(String query);
+    DungeonMapIdentity nextMapId();
 
     Optional<DungeonMap> findById(DungeonMapIdentity mapId);
 
     DungeonMap save(DungeonMap dungeonMap);
 
     void delete(DungeonMapIdentity mapId);
-
-    DungeonMapIdentity nextId();
 }

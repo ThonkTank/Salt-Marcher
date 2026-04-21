@@ -1,7 +1,6 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.port.DungeonDocumentRepository;
-import src.domain.dungeon.map.port.DungeonMapRepository;
+import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 
 import java.util.Comparator;
@@ -19,21 +18,19 @@ public final class SearchDungeonMapsUseCase {
     ) {
     }
 
-    private final DungeonMapRepository repository;
-    private final DungeonDocumentRepository documentStore;
+    private final DungeonMapSearch search;
 
-    public SearchDungeonMapsUseCase(DungeonMapRepository repository, DungeonDocumentRepository documentStore) {
-        this.repository = repository;
-        this.documentStore = documentStore;
+    public SearchDungeonMapsUseCase(DungeonMapSearch search) {
+        this.search = search;
     }
 
     public List<MapSummary> execute(String searchTerm) {
         String effectiveSearchTerm = searchTerm == null ? "" : searchTerm;
-        return repository.searchByName(effectiveSearchTerm).stream()
+        return search.searchByName(effectiveSearchTerm).stream()
                 .map(map -> new MapSummary(
                         map.metadata().mapId(),
                         map.metadata().mapName(),
-                        documentStore.revisionFor(map.metadata().mapId(), map.revision())))
+                        map.revision()))
                 .sorted(Comparator.comparing(MapSummary::mapName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }

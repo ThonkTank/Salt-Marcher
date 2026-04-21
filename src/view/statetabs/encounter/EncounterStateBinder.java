@@ -81,7 +81,7 @@ final class EncounterStateBinder {
         state.setOnRosterDecrement(viewModel::decrementCreature);
         state.setOnRosterRemove(viewModel::removeCreature);
         state.setOnUndoRemove(viewModel::undoRemove);
-        state.setOnOpenCreature(creatureId -> openCreatureDetails(inspector, creatures, creatureId));
+        state.setOnOpenCreature(creatureId -> inspector.push(creatureInspectorEntry(creatures, creatureId)));
         state.setOnStartInitiative(viewModel::openInitiative);
         state.setOnInitiativeBack(viewModel::backToBuilder);
         state.setOnInitiativeConfirm(inputs -> viewModel.confirmInitiative(inputs.stream()
@@ -226,24 +226,19 @@ final class EncounterStateBinder {
                 source.partySize());
     }
 
-    private static void openCreatureDetails(
-            InspectorSink inspector,
-            CreaturesApplicationService creatures,
-            long creatureId
-    ) {
-        inspector.push(new InspectorEntrySpec(
+    private static InspectorEntrySpec creatureInspectorEntry(CreaturesApplicationService creatures, long creatureId) {
+        return new InspectorEntrySpec(
                 "Creature",
                 "creature:" + creatureId,
-                () -> detailNode(creatures, creatureId),
-                null));
+                () -> creatureInspectorContent(creatures, creatureId),
+                null);
     }
 
-    private static Node detailNode(CreaturesApplicationService creatures, long creatureId) {
-        CreatureDetailsViewModel viewModel =
-                new CreatureDetailsViewModel(creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId)));
-        CreatureDetailsView view = new CreatureDetailsView();
-        viewModel.connect(view::setLoadingText, view::setErrorText, view::showDetail);
-        return view;
+    private static Node creatureInspectorContent(CreaturesApplicationService creatures, long creatureId) {
+        CreatureDetailsView detailView = new CreatureDetailsView();
+        new CreatureDetailsViewModel(creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId)))
+                .connect(detailView::setLoadingText, detailView::setErrorText, detailView::showDetail);
+        return detailView;
     }
 
     private record Binding(Node state) implements ShellBinding {

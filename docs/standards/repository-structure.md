@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Repository structure, feature layout, and public entrypoint
 rules for active application code.
 
@@ -187,11 +187,11 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   `AppShell`, registration contracts, cockpit surfaces, state-pane precedence,
   and allowed shell-facing API surface.
 - The domain-layer standard defines the semantic responsibilities of
-  `published/`, `application/`, domain-concept modules, and module role
-  packages inside one real domain context.
-- The data-layer standard defines the semantic responsibilities of
-  `repository/`, `query/`, `gateway/`, `model/`, `mapper`, and
-  `persistencecore/`.
+  `published/`, `application/`, domain-concept modules, outbound ports, and
+  optional tactical role packages inside one real domain context.
+- The data-layer standard defines the semantic responsibilities of runtime
+  composition adapters, port adapters, source adapters, source-local models,
+  optional mappers, and shared persistence infrastructure.
 
 ## Packaging Rules
 
@@ -233,23 +233,26 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
   directly under a domain context root.
 - Additional directories under `src/domain/<feature>/` must be named domain
   modules in the ubiquitous language of that bounded context.
-- Named domain modules must contain Java files only under allowed role
+- Named domain modules must contain Java files only under allowed tactical role
   subpackages: `aggregate/`, `entity/`, `value/`, `policy/`, `port/`,
-  `factory/`, `service/`, `event/`, and `specification/`.
+  `factory/`, `service/`, `event/`, and `specification/`. A module uses only
+  the roles it needs; the allowlist is not a required concept inventory.
 - Legacy domain `api/` buckets, root role buckets, direct Java files under
   named domain modules, and `src/domain/mapcore/**` are forbidden by the
   architecture harness.
 - Data implementation classes live under `repository/`, `query/`,
-  `gateway/`, `model/`, or `mapper/`.
-- `src/data/<feature>/*ServiceContribution.java` is a registration root, not a
-  public business boundary.
-- `repository/` is reserved for canonical-truth persistence adapters.
-- `query/` is reserved for exported read-only query adapters.
-- `gateway/local/` and `gateway/remote/` are internal concrete-source
-  adapters, not public capability roots.
-- `model/` is reserved for schema declarations and source-local carrier types.
-- `mapper/` is reserved for translation between source-local shapes and
-  domain-facing or boundary-facing types.
+  `gateway/`, `model/`, or `mapper/` according to the current physical
+  adapter layout.
+- `src/data/<feature>/*ServiceContribution.java` is a runtime composition
+  adapter that registers the root domain application service; it is not a
+  public business boundary and not persistence logic.
+- `repository/` is reserved for write-model port adapters.
+- `query/` is reserved for read-only port adapters.
+- `gateway/local/` and `gateway/remote/` are internal concrete source adapters,
+  not public capability roots.
+- `model/` is reserved for source-local schema declarations and carrier types.
+- `mapper/` is reserved for non-trivial translation between source-local shapes
+  and domain-facing or boundary-facing types.
 
 ## References
 
@@ -258,6 +261,7 @@ co-located filenames such as `README.md`, `SPEC.md`, `DOMAIN.md`, `UI.md`,
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/agent-instructions.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/data-layer.md:1)
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
+- [ADR 024: Domain And Data Concept Simplification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/024-domain-data-concept-simplification.md:1)
 - [Passive Workbench Shell Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-workbench.md:1)
 - [Shell Discovery And Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/shell-and-discovery.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/styling.md:1)

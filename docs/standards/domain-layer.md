@@ -1,9 +1,10 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
-Source of Truth: Binding Hexagonal Architecture model, domain-core topology,
+Last Reviewed: 2026-04-21
+Source of Truth: Binding Hexagonal Architecture model, domain-core concepts,
 published language, application-service boundary, outbound port ownership,
-context roles, and review-versus-enforcement expectations for `src/domain/**`.
+context ownership markers, and review-versus-enforcement expectations for
+`src/domain/**`.
 
 # Domain Layer Standard
 
@@ -15,10 +16,10 @@ coordination, published language, and outbound port interfaces. It does not own
 UI translation, shell registration, persistence mechanics, data-source records,
 runtime composition, SQL, filesystem, network, or framework concerns.
 
-The domain layer may use tactical DDD vocabulary inside the core. DDD is not a
-second architecture model for boundaries: it names aggregates, entities,
-values, policies, factories, services, events, and specifications after code
-has already stayed inside the hexagon.
+Hexagonal Architecture is the one boundary model. DDD vocabulary is optional
+tactical modelling language inside the core. Fowler persistence patterns and
+data-layer adapter roles are implementation tools outside the core, not
+additional domain-layer taxonomies.
 
 ## Pattern Alignment
 
@@ -29,11 +30,29 @@ has already stayed inside the hexagon.
 - `port/` contains outbound port interfaces owned by the domain core.
 - Outbound ports are implemented outside `src/domain/**`; adapter placement is
   defined by the data-layer standard, not by this document.
-- `DDD` is tactical vocabulary only. It does not authorize gateways,
-  adapters, or data records to move into domain.
+- `DDD` names tactical modelling roles only when they clarify real domain
+  behaviour. It does not require every context to contain every role.
 - `Repository` is allowed only as a write-oriented outbound port interface
   name, such as `PartyRosterRepository`, placed under a domain module's
-  `port/` package.
+  `port/` package. It is not a domain package role.
+
+## Minimal Concept Set
+
+The standard domain concepts are deliberately small:
+
+| Concept | Meaning |
+| --- | --- |
+| Context | The owning business language and decision boundary, such as `party`, `dungeon`, or `creatures`. |
+| Application Boundary | The root `<PascalContext>ApplicationService.java` callable from the view layer or allowed foreign contexts. |
+| Use Case | Application coordination behind the root boundary. |
+| Domain Model | Business objects, facts, rules, invariants, and policies owned by the context. |
+| Port | A domain-owned outbound need expressed in business language. |
+| Published Contract | Carrier-only public commands, queries, results, IDs, statuses, and snapshots. |
+
+Other names are subordinate. `aggregate`, `entity`, `value`, `policy`,
+`factory`, `service`, `event`, and `specification` are optional tactical roles
+inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
+`schema`, `record`, and `adapter` are not domain concepts.
 
 ## Core Principles
 
@@ -42,8 +61,8 @@ has already stayed inside the hexagon.
 - `published/` is exported published language: commands, queries, results,
   IDs, statuses, snapshots, and other public boundary carriers.
 - `application/` contains direct `*UseCase.java` files only.
-- Every named domain module contains role subpackages. The only outbound role
-  package is `port/`.
+- Named domain modules use role subpackages only as needed. The only outbound
+  role package is `port/`.
 - A domain port expresses what the core needs from outside. It must not expose
   SQL rows, source-local records, JavaFX, shell APIs, filesystem paths,
   network clients, transaction objects, or adapter lifecycle.
@@ -58,7 +77,7 @@ has already stayed inside the hexagon.
 
 ## Domain Topology
 
-The canonical domain layout is:
+The canonical physical domain layout is:
 
 ```text
 src/domain/<context>/
@@ -90,6 +109,11 @@ Rules:
   `policy`, `port`, `factory`, `service`, `event`, and `specification`.
 - Domain `repository/`, `query/`, `gateway/`, `adapter/`,
   `model/`, `mapper/`, and `api/` role buckets are forbidden.
+
+This layout is an enforcement shape, not a required concept inventory. A domain
+module should contain only the role packages that represent real behaviour or
+contracts in that module. Do not create empty or ceremonial role packages to
+make a context look more "DDD".
 
 ## Boundary Terms
 
@@ -166,7 +190,7 @@ specification.
 | Application use case | Foreign root ApplicationService | foreign public methods and foreign `published/` carriers | Boundary translates foreign published results before entering named modules. |
 | Domain core | Outside world | same-feature outbound `port/` interfaces | Implementations live outside domain; domain imports only the port interface. |
 
-## Domain-Module Role Packages
+## Optional Tactical Role Packages
 
 - `aggregate/`: aggregate roots and consistency boundaries.
 - `entity/`: identity-bearing child entities.
@@ -178,6 +202,11 @@ specification.
 - `service/`: stateless domain behavior spanning concepts.
 - `event/`: domain events; records end with `Event`.
 - `specification/`: named reusable predicates or constraints.
+
+These role names are local modelling aids. They must not override the hexagonal
+boundary: source access still goes through `port/`, public translation still
+happens at the root/application boundary, and persistence/source mechanics still
+belong outside `src/domain/**`.
 
 ## Context Roles
 
@@ -314,3 +343,4 @@ Review-owned rules:
 - [System Layer Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/system-layer-architecture.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/data-layer.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/quality-platforms.md:1)
+- [ADR 024: Domain And Data Concept Simplification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/024-domain-data-concept-simplification.md:1)

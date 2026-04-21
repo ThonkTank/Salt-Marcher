@@ -21,6 +21,7 @@ presentations and workflows for travel and editing.
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/SPEC.md:1)
 - [Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/DOMAIN.md:1)
 - [Delivery Notes](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/DELIVERY.md:1)
+- [Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/dungeon/PERSISTENCE.md:1)
 - [Dungeon Map Slotcontent](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/slotcontent/main/dungeonmap/dungeon-map.md:1)
 
 ## Scope

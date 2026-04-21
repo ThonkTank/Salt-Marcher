@@ -11,6 +11,6 @@ src.view.dropdowns.party.PartyTopBarView	64	48	214	1826	47
 src.view.dropdowns.party.PartyTopBarViewModel	36	37	142	506	36
 src.view.slotcontent.controls.catalog.CatalogControlsView	32	41	145	432	40
 src.view.slotcontent.main.dungeonmap.DungeonMapMainView	93	55	271	4070	53
-src.view.statetabs.encounter.EncounterStateBinder	24	51	168	274	50
-src.view.statetabs.encounter.EncounterStateView	104	58	323	5196	57
-src.view.statetabs.encounter.EncounterStateViewModel	48	48	204	826	47
+src.view.statetabs.encounter.EncounterStateBinder	30	59	212	433	58
+src.view.statetabs.encounter.EncounterStateView	141	58	386	9654	57
+src.view.statetabs.encounter.EncounterStateViewModel	60	48	226	1168	47

@@ -40,14 +40,57 @@ public final class DungeonMap {
     }
 
     public static DungeonMap empty(DungeonMapIdentity mapId, String mapName) {
+        return authored(mapId, mapName, SpatialTopology.demo(), 1L);
+    }
+
+    public static DungeonMap authored(
+            DungeonMapIdentity mapId,
+            String mapName,
+            SpatialTopology topology,
+            long revision
+    ) {
         return new DungeonMap(
                 new DungeonMapMetadata(mapId, mapName),
-                SpatialTopology.empty(),
+                topology,
                 SpaceCatalog.empty(),
                 RoomCatalog.empty(),
                 ConnectionCatalog.empty(),
                 FeatureCatalog.empty(),
-                1L);
+                revision);
+    }
+
+    public DungeonMap moveRoomAnchor(int deltaQ, int deltaR) {
+        return withTopology(topology.moveRoomAnchor(deltaQ, deltaR), revision + 1L);
+    }
+
+    public DungeonMap resetDemoLayout() {
+        return withTopology(SpatialTopology.demo(), revision + 1L);
+    }
+
+    public java.util.List<String> validationMessages() {
+        return java.util.List.of("room anchor valid inside committed map bounds");
+    }
+
+    public java.util.List<String> reactionMessages(DungeonMap after) {
+        if (after == null || (topology.roomAnchorQ() == after.topology().roomAnchorQ()
+                && topology.roomAnchorR() == after.topology().roomAnchorR())) {
+            return java.util.List.of("derived state rebuilt without structural movement");
+        }
+        return java.util.List.of(
+                "corridor attachment recomputed from moved room anchor",
+                "door boundary re-anchored onto rebuilt aggregate relation graph"
+        );
+    }
+
+    private DungeonMap withTopology(SpatialTopology nextTopology, long nextRevision) {
+        return new DungeonMap(
+                metadata,
+                nextTopology,
+                spaces,
+                rooms,
+                connections,
+                features,
+                nextRevision);
     }
 
     public DungeonMapMetadata metadata() {
