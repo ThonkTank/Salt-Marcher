@@ -3,7 +3,6 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
-import org.jspecify.annotations.Nullable;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
@@ -177,12 +176,7 @@ final class DungeonEditorBinder {
                 toHitTarget(event.hitTarget()));
     }
 
-    private static @Nullable DungeonEditorViewModel.HitTarget toHitTarget(
-            @Nullable DungeonMapMainView.DungeonMapHitTarget hitTarget
-    ) {
-        if (hitTarget == null) {
-            return null;
-        }
+    private static DungeonEditorViewModel.HitTarget toHitTarget(DungeonMapMainView.DungeonMapHitTarget hitTarget) {
         return new DungeonEditorViewModel.HitTarget(
                 toHitKind(hitTarget.kind()),
                 hitTarget.ownerId(),
@@ -192,6 +186,7 @@ final class DungeonEditorBinder {
 
     private static DungeonEditorViewModel.HitKind toHitKind(DungeonMapMainView.DungeonMapHitKind hitKind) {
         return switch (hitKind) {
+            case EMPTY -> DungeonEditorViewModel.HitKind.EMPTY;
             case CORRIDOR -> DungeonEditorViewModel.HitKind.CORRIDOR;
             case STAIR -> DungeonEditorViewModel.HitKind.STAIR;
             case TRANSITION -> DungeonEditorViewModel.HitKind.TRANSITION;

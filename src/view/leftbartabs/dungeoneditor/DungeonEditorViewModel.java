@@ -445,6 +445,7 @@ public final class DungeonEditorViewModel {
     }
 
     public enum HitKind {
+        EMPTY,
         ROOM,
         CORRIDOR,
         STAIR,
@@ -467,7 +468,7 @@ public final class DungeonEditorViewModel {
             int r,
             int level,
             boolean primaryButtonDown,
-            @Nullable HitTarget hitTarget
+            HitTarget hitTarget
     ) {
     }
 

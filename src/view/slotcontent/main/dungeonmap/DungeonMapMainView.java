@@ -264,14 +264,14 @@ public class DungeonMapMainView extends BorderPane {
                 hitTarget(model, q, r, model.projectionLevel()));
     }
 
-    private @org.jspecify.annotations.Nullable DungeonMapHitTarget hitTarget(
+    private DungeonMapHitTarget hitTarget(
             DungeonMapDisplayModel model,
             int q,
             int r,
             int level
     ) {
         if (model.viewMode() != DungeonMapDisplayModel.ViewMode.GRID) {
-            return null;
+            return DungeonMapHitTarget.empty();
         }
         for (int index = model.cells().size() - 1; index >= 0; index--) {
             DungeonMapDisplayModel.RenderCell cell = model.cells().get(index);
@@ -284,7 +284,7 @@ public class DungeonMapMainView extends BorderPane {
                     cell.clusterId(),
                     cell.label());
         }
-        return null;
+        return DungeonMapHitTarget.empty();
     }
 
     private static DungeonMapHitKind hitKind(DungeonMapDisplayModel.CellKind kind) {
@@ -901,6 +901,7 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     public enum DungeonMapHitKind {
+        EMPTY,
         ROOM,
         CORRIDOR,
         STAIR,
@@ -917,6 +918,10 @@ public class DungeonMapMainView extends BorderPane {
         public DungeonMapHitTarget {
             label = label == null ? "" : label;
         }
+
+        public static DungeonMapHitTarget empty() {
+            return new DungeonMapHitTarget(DungeonMapHitKind.EMPTY, 0L, 0L, "");
+        }
     }
 
     public record DungeonMapPointerEvent(
@@ -924,7 +929,7 @@ public class DungeonMapMainView extends BorderPane {
             int r,
             int level,
             boolean primaryButtonDown,
-            @org.jspecify.annotations.Nullable DungeonMapHitTarget hitTarget
+            DungeonMapHitTarget hitTarget
     ) {
     }
 }
