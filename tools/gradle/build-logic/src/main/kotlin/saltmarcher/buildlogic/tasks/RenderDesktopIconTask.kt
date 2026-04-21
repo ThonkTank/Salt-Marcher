@@ -60,9 +60,11 @@ abstract class RenderDesktopIconTask : DefaultTask() {
             workingDir = projectRoot.get().asFile
             executable = magickExecutable
             args(
-                sourcePath.toString(),
                 "-background",
                 "none",
+                sourcePath.toString(),
+                "-alpha",
+                "on",
                 "-resize",
                 "256x256",
                 targetPath.toString()

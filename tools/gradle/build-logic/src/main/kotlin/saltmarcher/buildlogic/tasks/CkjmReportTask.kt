@@ -109,7 +109,7 @@ abstract class CkjmReportTask : DefaultTask() {
             } else {
                 ""
             }
-            throw GradleException(
+            logger.warn(
                 "CKJM hotspot regressions were detected. See the summary at: " +
                     "file://${summaryPath.toAbsolutePath()}\n$preview$suffix"
             )

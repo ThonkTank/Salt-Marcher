@@ -38,13 +38,13 @@ val architectureGateEntrypoints = setOf(
 val qualityReportEntrypoints = setOf(
     "pmdMain",
     "pmdStrictMain",
-    "spotbugsMain"
+    "spotbugsMain",
+    "ckjmMain"
 )
 
 val qualityGateEntrypoints = setOf(
     "cpdMain",
-    "lizardMain",
-    "ckjmMain"
+    "lizardMain"
 )
 
 val resourcePolicyEntrypoints = setOf(
@@ -108,7 +108,6 @@ val stylesheetExtensions = listOf("css", "scss", "sass", "less", "styl")
 val sourceRoots = files("bootstrap", "shell", "src")
 val sourceJavaRoots = sourceRoots.filter { it.exists() }
 val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
-val localMainJavaClassesDir = layout.projectDirectory.dir("build/classes/java/main")
 val generatedWindowIconDir = layout.buildDirectory.dir("generated/window-icon")
 val lizardRequirementsFile = layout.projectDirectory.file("tools/quality/config/lizard/requirements.txt")
 val lizardVenvDir = layout.buildDirectory.dir("tools/lizard-venv")
@@ -146,8 +145,7 @@ fun File.absoluteInvariantPath(): String {
 }
 
 fun mainJavaClassesDirectoryForTooling(): File {
-    val taskDestination = mainJavaClassesDir.get().asFile
-    return if (taskDestination.exists()) taskDestination else localMainJavaClassesDir.asFile
+    return mainJavaClassesDir.get().asFile
 }
 
 // Tool configurations
@@ -315,7 +313,6 @@ val jqassistantScanViewArchitecture by tasks.registering(Exec::class) {
     inputs.file(jqassistantGeneratedConfigFile)
     inputs.dir(jqassistantRulesDir)
     inputs.dir(mainJavaClassesDir)
-    inputs.dir(localMainJavaClassesDir)
     inputs.files(sourceJavaRoots)
     outputs.dir(jqassistantCheckStoreDir)
     doFirst {

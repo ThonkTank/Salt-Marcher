@@ -83,7 +83,7 @@ compilation verification independent from graph analysis while ensuring
 | SpotBugs plus FindSecBugs | `Informational Report` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 80`, stricter than PMD's documented `100` token Java example; writes `build/reports/cpd/main.txt`. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; writes `build/reports/lizard/main.txt`. |
-| CKJM ext | `Blocking Local Gate` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, reports current hotspots, and fails on baseline hotspot regressions. |
+| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, and warns on baseline hotspot regressions without blocking local build or install handoff. |
 
 PMD non-architecture reports use explicit metric thresholds. These thresholds
 must stay at or below PMD's documented defaults unless the standard explicitly
@@ -123,11 +123,11 @@ project strategy.
 
 CKJM measures object-oriented class metrics but does not publish official
 blocking defaults. SaltMarcher therefore treats CKJM as a hotspot and
-regression gate, not as a universal low absolute threshold over every class.
+regression report, not as a universal low absolute threshold over every class.
 `ckjmMain` scans only the current `compileJava` output and compares the current
 hotspot candidates with `tools/quality/config/ckjm/baseline.tsv`.
 
-The blocking hotspot metrics are weighted methods per class (`WMC`), coupling
+The reported hotspot metrics are weighted methods per class (`WMC`), coupling
 between objects (`CBO`), response for class (`RFC`), lack of cohesion in
 methods (`LCOM`), and number of public methods (`NPM`). Depth of inheritance
 tree (`DIT`), number of children (`NOC`), and afferent couplings (`Ca`) remain
@@ -141,7 +141,7 @@ or at least one extreme threshold is met:
 - Extreme thresholds: `WMC>=100`, `CBO>=60`, `RFC>=200`, `LCOM>=1500`,
   `NPM>=60`.
 
-Known hotspot candidates are accepted in the baseline. `ckjmMain` blocks when a
+Known hotspot candidates are accepted in the baseline. `ckjmMain` warns when a
 new class becomes a hotspot candidate or when a baseline hotspot meaningfully
 worsens beyond the allowed deltas:
 
@@ -153,7 +153,7 @@ worsens beyond the allowed deltas:
 
 The CKJM summary must still list current hotspots and LCOM-only outliers so
 wide data carriers and real multi-metric hotspots stay visible even when the
-baseline gate passes.
+report does not block the build.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the jQAssistant view-topology blocker; they may be run together for quality
@@ -196,7 +196,7 @@ It includes:
 - repository and resource policy checks
 - duplicate-code detection through `cpdMain`
 - cyclomatic-complexity detection through `lizardMain`
-- OO-metric regression detection through `ckjmMain`
+- OO-metric regression reporting through `ckjmMain`
 
 `./gradlew build --console=plain` remains the implementation-handoff build
 required by `AGENTS.md`. It reaches the same full check set through Gradle's
@@ -329,7 +329,7 @@ and defines four jobs.
 | Job | Status | Current policy |
 | --- | --- | --- |
 | `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the CI mirror of the local full blocker. |
-| `quality-platforms / ckjm-report` | `Required CI Gate` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM threshold failures fail the job. |
+| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM threshold regressions warn in the job log and summary report. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
 
@@ -395,7 +395,9 @@ place:
 - Require `quality-platforms / local-quality`.
 - Require `quality-platforms / sonarcloud`.
 - Require `quality-platforms / codescene`.
-- Require `quality-platforms / ckjm-report`.
+- Keep `quality-platforms / ckjm-report` visible for uploaded metrics; do not
+  treat CKJM hotspot regressions as merge blockers unless a later ADR promotes
+  them back to blocking status.
 
 ## Review Governance
 

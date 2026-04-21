@@ -17,6 +17,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.application.tasks.CreateStartScripts
 
 plugins {
@@ -155,15 +156,20 @@ tasks.test {
 }
 
 val architectureRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/architecture-ruleset.xml")
+val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
 
 val architectureTest by tasks.registering(Test::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Run only architecture-focused test suites."
     dependsOn(tasks.named("classes"))
+    inputs.dir(mainJavaClassesDir)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     useJUnitPlatform()
     include("architecture/**")
+    doFirst {
+        systemProperty("saltmarcher.mainClassesDir", mainJavaClassesDir.get().asFile.absolutePath)
+    }
 }
 
 val pmdArchitectureMain by tasks.registering(Pmd::class) {
@@ -197,6 +203,7 @@ val installedAppDir = providers.provider {
     Paths.get(System.getProperty("user.home"), ".local", "opt", launcherName.get())
 }
 val installedDesktopIcon = installedAppDir.map { installed -> installed.resolve(desktopEntryIconRelativePath.get()) }
+val generatedWindowIconFile = layout.buildDirectory.file("generated/window-icon/${windowIconRelativePath.get()}")
 val desktopEntryFileName = providers.provider { "${launcherName.get()}.desktop" }
 val desktopEntryContent = providers.provider {
     val execPath = installedAppDir.get().resolve("bin").resolve(launcherName.get())
@@ -249,11 +256,11 @@ val prepareRuntimeImage by tasks.registering {
 val packageAppImage by tasks.registering(Exec::class) {
     group = "distribution"
     description = "Build a self-contained Linux app image with jpackage."
-    dependsOn(stageJpackageInput, prepareRuntimeImage)
+    dependsOn(stageJpackageInput, prepareRuntimeImage, tasks.named("renderDesktopIconPng"))
 
     val mainJar = tasks.named<Jar>("jar").flatMap { it.archiveFileName }
     inputs.dir(jpackageInputDir)
-    inputs.file(layout.projectDirectory.file("resources/${desktopIconSourceRelativePath.get()}"))
+    inputs.file(generatedWindowIconFile)
     inputs.dir(preparedRuntimeImageDir)
     outputs.dir(packagedAppImageDir)
 
@@ -277,7 +284,7 @@ val packageAppImage by tasks.registering(Exec::class) {
             "--name", launcherName.get(),
             "--app-version", packageVersion.get(),
             "--vendor", appDisplayName.get(),
-            "--icon", layout.projectDirectory.file("resources/${desktopIconSourceRelativePath.get()}").asFile.absolutePath,
+            "--icon", generatedWindowIconFile.get().asFile.absolutePath,
             "--runtime-image", preparedRuntimeImageDir.get().asFile.absolutePath,
             "--main-jar", mainJar.get(),
             "--main-class", mainClassName.get(),
