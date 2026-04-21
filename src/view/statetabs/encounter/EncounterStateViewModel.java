@@ -34,6 +34,8 @@ import src.domain.party.published.MutationStatus;
 import src.domain.party.published.PartyMemberSummary;
 import src.domain.party.published.ReadStatus;
 import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel;
+import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel.CombatProjection;
+import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel.ResultEnemySnapshot;
 
 public final class EncounterStateViewModel {
 
@@ -61,8 +63,8 @@ public final class EncounterStateViewModel {
             new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<InitiativeState> initiativeState =
             new ReadOnlyObjectWrapper<>(InitiativeState.empty());
-    private final ReadOnlyObjectWrapper<CombatState> combatState =
-            new ReadOnlyObjectWrapper<>(CombatState.empty());
+    private final ReadOnlyObjectWrapper<CombatProjection> combatState =
+            new ReadOnlyObjectWrapper<>(CombatProjection.empty());
     private final ReadOnlyObjectWrapper<ResultState> resultState =
             new ReadOnlyObjectWrapper<>(ResultState.empty());
     private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("Encounter bereit.");
@@ -102,7 +104,7 @@ public final class EncounterStateViewModel {
         return initiativeState.getReadOnlyProperty();
     }
 
-    ReadOnlyObjectProperty<CombatState> combatStateProperty() {
+    ReadOnlyObjectProperty<CombatProjection> combatStateProperty() {
         return combatState.getReadOnlyProperty();
     }
 
@@ -117,7 +119,9 @@ public final class EncounterStateViewModel {
     void refreshPartyContext() {
         loadActiveParty();
         loadBudget();
-        refreshBuilderState(lastSettings, contextMessage());
+        refreshBuilderState(
+                lastSettings,
+                activeParty.isEmpty() ? "Bitte zuerst aktive Party-Mitglieder anlegen." : "");
     }
 
     void generate(
@@ -135,7 +139,7 @@ public final class EncounterStateViewModel {
         List<String> effectiveBiomes = safeStrings(biomes);
         EncounterDifficultyBand effectiveDifficulty =
                 difficulty == null ? EncounterDifficultyBand.autoBand() : difficulty;
-        clearPendingUndo();
+        pendingUndo = null;
         refreshPartyContext();
         if (activeParty.isEmpty()) {
             status.set("Die aktive Party hat keine Mitglieder.");
@@ -194,8 +198,30 @@ public final class EncounterStateViewModel {
             status.set("Kreatur konnte nicht geladen werden.");
             return;
         }
-        clearPendingUndo();
-        clearGeneratedContext();
+        if (mode.get() == Mode.COMBAT) {
+            String activeTurnId = combatRuntime.activeTurnId(currentTurnIndex);
+            int initiative = 12 + Math.max(-3, Math.min(6, detail.initiativeBonus()));
+            String displayName = combatRuntime.addMonsterReinforcement(
+                    detail.name(),
+                    detail.id(),
+                    Math.max(1, detail.hitPoints()),
+                    detail.armorClass(),
+                    detail.xp(),
+                    detail.challengeRating(),
+                    detail.creatureType(),
+                    "Reinforcement",
+                    initiative);
+            currentTurnIndex = combatRuntime.turnIndexOf(activeTurnId, currentTurnIndex);
+            refreshCombatState();
+            status.set(displayName + " betritt den laufenden Kampf.");
+            return;
+        }
+        pendingUndo = null;
+        generatedAlternatives.clear();
+        selectedAlternativeIndex = 0;
+        generatedAdjustedXp = 0;
+        generatedDifficulty = "";
+        generatedTitle = "";
         for (int index = 0; index < roster.size(); index++) {
             EncounterCreature existing = roster.get(index);
             if (existing.creatureId() == detail.id()) {
@@ -214,8 +240,12 @@ public final class EncounterStateViewModel {
         for (int index = 0; index < roster.size(); index++) {
             EncounterCreature creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
-                clearPendingUndo();
-                clearGeneratedContext();
+                pendingUndo = null;
+                generatedAlternatives.clear();
+                selectedAlternativeIndex = 0;
+                generatedAdjustedXp = 0;
+                generatedDifficulty = "";
+                generatedTitle = "";
                 roster.set(index, creature.withCount(creature.count() + 1, MAX_CREATURES_PER_SLOT));
                 status.set(creature.name() + " Anzahl angepasst.");
                 refreshBuilderState(lastSettings, "");
@@ -232,8 +262,12 @@ public final class EncounterStateViewModel {
                     status.set(creature.name() + " bleibt mindestens einmal im Roster.");
                     return;
                 }
-                clearPendingUndo();
-                clearGeneratedContext();
+                pendingUndo = null;
+                generatedAlternatives.clear();
+                selectedAlternativeIndex = 0;
+                generatedAdjustedXp = 0;
+                generatedDifficulty = "";
+                generatedTitle = "";
                 roster.set(index, creature.withCount(creature.count() - 1, MAX_CREATURES_PER_SLOT));
                 status.set(creature.name() + " Anzahl angepasst.");
                 refreshBuilderState(lastSettings, "");
@@ -246,7 +280,11 @@ public final class EncounterStateViewModel {
         for (int index = 0; index < roster.size(); index++) {
             EncounterCreature creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
-                clearGeneratedContext();
+                generatedAlternatives.clear();
+                selectedAlternativeIndex = 0;
+                generatedAdjustedXp = 0;
+                generatedDifficulty = "";
+                generatedTitle = "";
                 roster.remove(index);
                 pendingUndo = new RemovedRosterEntry(++nextUndoToken, index, creature);
                 status.set(creature.name() + " wurde entfernt.");
@@ -261,7 +299,11 @@ public final class EncounterStateViewModel {
         if (removed == null || removed.token() != token) {
             return;
         }
-        clearGeneratedContext();
+        generatedAlternatives.clear();
+        selectedAlternativeIndex = 0;
+        generatedAdjustedXp = 0;
+        generatedDifficulty = "";
+        generatedTitle = "";
         int index = Math.max(0, Math.min(removed.index(), roster.size()));
         roster.add(index, removed.creature());
         pendingUndo = null;
@@ -278,7 +320,7 @@ public final class EncounterStateViewModel {
         for (EncounterCreature creature : roster) {
             lockedCreatures.add(new EncounterLock(creature.creatureId(), creature.count()));
         }
-        clearPendingUndo();
+        pendingUndo = null;
         status.set("Aktuelle Komposition fuer kommende Rerolls gesperrt.");
         refreshBuilderState(lastSettings, "");
     }
@@ -301,7 +343,7 @@ public final class EncounterStateViewModel {
             }
         }
         lockedCreatures.clear();
-        clearPendingUndo();
+        pendingUndo = null;
         generate(lastSettings, types, subtypes, biomes, difficulty, tuning, encounterTableIds);
         if (!excludedCreatureIds.isEmpty()) {
             status.set(status.get() + " Exclusions aktiv: " + excludedCreatureIds.size() + ".");
@@ -315,7 +357,7 @@ public final class EncounterStateViewModel {
         }
         lockedCreatures.clear();
         excludedCreatureIds.clear();
-        clearPendingUndo();
+        pendingUndo = null;
         status.set("Generator-Constraints geloescht.");
         refreshBuilderState(lastSettings, "");
     }
@@ -417,24 +459,15 @@ public final class EncounterStateViewModel {
     }
 
     void endCombat() {
-        List<ResultEnemy> enemies = new ArrayList<>();
-        for (var enemy : combatRuntime.resultEnemies()) {
-            enemies.add(new ResultEnemy(
-                    enemy.name(),
-                    enemy.status(),
-                    enemy.hpLoss(),
-                    enemy.xp(),
-                    enemy.defeatedByDefault(),
-                    enemy.loot()));
-        }
+        List<ResultEnemySnapshot> enemies = combatRuntime.resultEnemies();
         int eligibleXp = enemies.stream()
-                .filter(ResultEnemy::defeatedByDefault)
-                .mapToInt(ResultEnemy::xp)
+                .filter(ResultEnemySnapshot::defeatedByDefault)
+                .mapToInt(ResultEnemySnapshot::xp)
                 .sum();
         int partySize = Math.max(1, activeParty.size());
         resultState.set(new ResultState(
                 enemies,
-                enemies.stream().filter(ResultEnemy::defeatedByDefault).count(),
+                enemies.stream().filter(ResultEnemySnapshot::defeatedByDefault).count(),
                 eligibleXp,
                 eligibleXp / partySize,
                 "Kein Loot",
@@ -513,13 +546,6 @@ public final class EncounterStateViewModel {
         budget = result.status() == EncounterGenerationStatus.SUCCESS ? result.budget() : null;
     }
 
-    private String contextMessage() {
-        if (activeParty.isEmpty()) {
-            return "Bitte zuerst aktive Party-Mitglieder anlegen.";
-        }
-        return "";
-    }
-
     private void refreshBuilderState(BuilderSettings settings, String message) {
         builderState.set(builderState(settings, message));
     }
@@ -581,26 +607,7 @@ public final class EncounterStateViewModel {
     private void refreshCombatState() {
         var projection = combatRuntime.combatProjection(currentTurnIndex, round);
         currentTurnIndex = projection.currentTurnIndex();
-        List<CombatCard> cards = new ArrayList<>();
-        for (var card : projection.cards()) {
-            cards.add(new CombatCard(
-                    card.id(),
-                    card.name(),
-                    card.playerCharacter(),
-                    card.active(),
-                    card.alive(),
-                    card.currentHp(),
-                    card.maxHp(),
-                    card.armorClass(),
-                    card.initiative(),
-                    card.count(),
-                    card.detail()));
-        }
-        combatState.set(new CombatState(
-                projection.round(),
-                projection.status(),
-                cards,
-                projection.allEnemiesDefeated()));
+        combatState.set(projection);
     }
 
     private @Nullable CreatureDetail loadCreature(long creatureId) {
@@ -609,18 +616,6 @@ public final class EncounterStateViewModel {
             return null;
         }
         return result.detail();
-    }
-
-    private void clearGeneratedContext() {
-        generatedAlternatives.clear();
-        selectedAlternativeIndex = 0;
-        generatedAdjustedXp = 0;
-        generatedDifficulty = "";
-        generatedTitle = "";
-    }
-
-    private void clearPendingUndo() {
-        pendingUndo = null;
     }
 
     private static EncounterCreature fromDetail(
@@ -870,48 +865,8 @@ public final class EncounterStateViewModel {
         }
     }
 
-    public record CombatCard(
-            String id,
-            String name,
-            boolean playerCharacter,
-            boolean active,
-            boolean alive,
-            int currentHp,
-            int maxHp,
-            int armorClass,
-            int initiative,
-            int count,
-            String detail
-    ) {
-    }
-
-    public record CombatState(
-            int round,
-            String status,
-            List<CombatCard> cards,
-            boolean allEnemiesDefeated
-    ) {
-        public CombatState {
-            cards = cards == null ? List.of() : List.copyOf(cards);
-        }
-
-        static CombatState empty() {
-            return new CombatState(1, "", List.of(), false);
-        }
-    }
-
-    public record ResultEnemy(
-            String name,
-            String status,
-            int hpLoss,
-            int xp,
-            boolean defeatedByDefault,
-            String loot
-    ) {
-    }
-
     public record ResultState(
-            List<ResultEnemy> enemies,
+            List<ResultEnemySnapshot> enemies,
             long defeatedCount,
             int eligibleXp,
             int perPlayerXp,

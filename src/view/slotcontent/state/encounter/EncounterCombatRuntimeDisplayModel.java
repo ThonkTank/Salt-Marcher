@@ -61,6 +61,56 @@ public final class EncounterCombatRuntimeDisplayModel {
         return !turnEntries(combatants).isEmpty();
     }
 
+    public @Nullable String activeTurnId(int currentTurnIndex) {
+        List<TurnEntry> entries = turnEntries(combatants);
+        int index = normalizedTurnIndex(entries, currentTurnIndex);
+        return index < 0 ? null : entries.get(index).id();
+    }
+
+    public int turnIndexOf(@Nullable String combatantId, int fallbackTurnIndex) {
+        List<TurnEntry> entries = turnEntries(combatants);
+        if (combatantId != null) {
+            for (int index = 0; index < entries.size(); index++) {
+                if (entries.get(index).id().equals(combatantId)) {
+                    return index;
+                }
+            }
+        }
+        return normalizedTurnIndex(entries, fallbackTurnIndex);
+    }
+
+    public String addMonsterReinforcement(
+            String name,
+            long creatureId,
+            int hp,
+            int ac,
+            int xp,
+            String cr,
+            String type,
+            String role,
+            int initiative
+    ) {
+        int nextOrdinal = nextMonsterOrdinal(combatants, creatureId);
+        int nextOrder = nextOrder(combatants);
+        String id = "reinforcement-" + creatureId + "-" + nextOrdinal;
+        addMonsterCombatants(
+                combatants,
+                id,
+                name,
+                creatureId,
+                1,
+                hp,
+                ac,
+                xp,
+                cr,
+                type,
+                role,
+                initiative,
+                nextOrder);
+        sort(combatants);
+        return uniqueMonsterName(name, nextOrdinal);
+    }
+
     public TurnAdvance nextTurn(int currentTurnIndex, int round) {
         List<TurnEntry> entries = turnEntries(combatants);
         if (entries.isEmpty()) {
@@ -203,10 +253,12 @@ public final class EncounterCombatRuntimeDisplayModel {
             int order
     ) {
         int nextOrder = order;
+        int firstOrdinal = nextMonsterOrdinal(combatants, creatureId);
         for (int creatureIndex = 1; creatureIndex <= count; creatureIndex++) {
+            String displayName = count == 1 ? uniqueMonsterName(name, firstOrdinal) : name;
             combatants.add(Combatant.monster(
                     id,
-                    name,
+                    displayName,
                     creatureId,
                     count,
                     hp,
@@ -217,7 +269,7 @@ public final class EncounterCombatRuntimeDisplayModel {
                     role,
                     initiative,
                     nextOrder++,
-                    creatureIndex));
+                    count == 1 ? 1 : creatureIndex));
         }
         return nextOrder;
     }
@@ -406,6 +458,28 @@ public final class EncounterCombatRuntimeDisplayModel {
         }
     }
 
+    private static int nextMonsterOrdinal(List<Combatant> combatants, long creatureId) {
+        int count = 0;
+        for (Combatant combatant : combatants) {
+            if (!combatant.pc() && combatant.creatureId() == creatureId) {
+                count++;
+            }
+        }
+        return count + 1;
+    }
+
+    private static int nextOrder(List<Combatant> combatants) {
+        int order = 0;
+        for (Combatant combatant : combatants) {
+            order = Math.max(order, combatant.order() + 1);
+        }
+        return order;
+    }
+
+    private static String uniqueMonsterName(String name, int ordinal) {
+        return ordinal <= 1 ? name : name + " #" + ordinal;
+    }
+
     private static List<Integer> splitForMobSlots(int count) {
         if (count < MOB_MIN_SIZE) {
             List<Integer> singles = new ArrayList<>();
@@ -546,6 +620,10 @@ public final class EncounterCombatRuntimeDisplayModel {
     ) {
         public CombatProjection {
             cards = cards == null ? List.of() : List.copyOf(cards);
+        }
+
+        public static CombatProjection empty() {
+            return new CombatProjection(-1, 1, "", List.of(), false);
         }
     }
 

@@ -27,7 +27,8 @@ review-only boundary remain defined in the
   role-package allowlists, and domain dependency direction.
 - [Data And System Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-data-system.md:1)
   owns data-layer composition adapters, port adapters, source adapters, source
-  models, persistencecore, system layer, and bootstrap boundary coverage.
+  models, persistencecore, system layer, and bootstrap boundary coverage. This
+  routing index does not carry the data-layer rule matrix itself.
 - [Shell And Repository Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-shell-repository.md:1)
   owns shell API/host, discovery, resource, styling, repository topology, and
   documentation-shape coverage.

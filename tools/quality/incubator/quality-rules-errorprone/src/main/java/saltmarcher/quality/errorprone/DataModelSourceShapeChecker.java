@@ -37,6 +37,9 @@ public final class DataModelSourceShapeChecker extends BugChecker implements Bug
         }
 
         String featureName = modelMatcher.group(1);
+        if ("persistencecore".equals(featureName)) {
+            return Description.NO_MATCH;
+        }
         TypeElement typeElement = ASTHelpers.getSymbol(tree);
         if (typeElement == null || !isPublicOrProtected(typeElement)) {
             return Description.NO_MATCH;

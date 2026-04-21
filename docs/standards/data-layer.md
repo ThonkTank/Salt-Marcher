@@ -297,25 +297,30 @@ Current mechanical ownership:
   methods, public signature leak bans, and source-adapter public/protected
   signature boundaries. Current source-adapter public/protected signatures may
   expose only own-feature source-model records plus `java.lang` and `java.util`
-  value or container types.
+  value or container types. It also owns source-model public shape and
+  composition-root construction purity: public `model/` types must stay
+  source-local carriers or schema utilities, and `*ServiceContribution` roots
+  may call constructors and the service registry but not data adapter, gateway,
+  mapper, schema, or source-mechanics methods directly.
 - `ArchUnit` owns dependency direction, foreign-domain-public-boundary-only
   access, data feature cycle freedom, private-data bucket isolation,
   `gateway/` and `model/` independence from domain packages, and generic-only
   `persistencecore/`.
 
-Current review-owned rules cover semantic thinness of composition roots,
-business-rule exclusion, mapper translation purity, whether legal source
-facades are useful boundaries, source-helper co-location beyond `gateway/local`
-and `gateway/remote`, source-local column and field-name centralization, and
-semantic duplicate schema truth. Current public service-registry exports are
-limited to the same-feature root `*ApplicationService`; alternate typed
-feature-factory exports are not part of the current enforced model. Port adapter
-package and role placement, public
+Current review-owned rules cover residual semantic thinness of composition
+roots after legal constructor wiring, business-rule exclusion, mapper
+translation purity, whether legal source facades are useful boundaries,
+source-helper co-location beyond `gateway/local` and `gateway/remote`,
+source-local column and field-name centralization, and semantic duplicate schema
+truth. Current public service-registry exports are limited to the same-feature
+root `*ApplicationService`; alternate typed feature-factory exports are not part
+of the current enforced model. Port adapter package and role placement, public
 adapter surface shape, source-adapter public/protected signature privacy,
 source-adapter dependency independence from domain, source-local model
 independence from domain, generic-only `persistencecore/`, and SQL table-name
 literal ownership are mechanical. The data/system coverage document names the
-individual rule IDs, mechanical owners, and blocking entrypoints.
+individual rule IDs, mechanical owners, blocking entrypoints, and explicit
+decisions for remaining review-owned gaps.
 
 The source-pattern blockers intentionally stop at stable Java source/API shape.
 They are useful for concrete source API leakage, obvious query mutations,

@@ -14,6 +14,7 @@ import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.party.PartyApplicationService;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
+import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel.CombatProjection;
 import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
 final class EncounterStateBinder {
@@ -210,7 +211,7 @@ final class EncounterStateBinder {
                 .toList());
     }
 
-    private EncounterStateView.CombatStateView toCombatState(EncounterStateViewModel.CombatState source) {
+    private EncounterStateView.CombatStateView toCombatState(CombatProjection source) {
         return new EncounterStateView.CombatStateView(
                 source.round(),
                 source.status(),
