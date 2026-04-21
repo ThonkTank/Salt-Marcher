@@ -20,9 +20,16 @@ public record DungeonTravelSurfaceSnapshot(
         mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName.trim();
         revision = Math.max(0, revision);
         map = map == null ? DungeonMapSnapshot.empty() : map;
-        position = position == null ? new DungeonTravelPosition(null, null, 0L, null, null) : position;
-        surfaceTitle = surfaceTitle == null || surfaceTitle.isBlank() ? areaLabel : surfaceTitle.trim();
+        position = position == null
+                ? new DungeonTravelPosition(
+                        new DungeonMapId(1L),
+                        DungeonTravelLocationKind.TILE,
+                        0L,
+                        new DungeonCellRef(0, 0, 0),
+                        DungeonTravelHeading.defaultHeading())
+                : position;
         areaLabel = areaLabel == null || areaLabel.isBlank() ? "Kein Standort" : areaLabel.trim();
+        surfaceTitle = surfaceTitle == null || surfaceTitle.isBlank() ? areaLabel : surfaceTitle.trim();
         tileLabel = tileLabel == null ? "" : tileLabel.trim();
         headingLabel = headingLabel == null ? "" : headingLabel.trim();
         statusLabel = statusLabel == null ? "" : statusLabel.trim();

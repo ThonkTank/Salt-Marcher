@@ -10,6 +10,7 @@ import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonFeatureType;
 import src.domain.dungeon.map.value.DungeonMapFacts;
+import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonStairExit;
 import src.domain.dungeon.map.value.DungeonTransitionDestination;
 import src.domain.dungeon.map.value.DungeonTravelActionFacts;
@@ -34,7 +35,7 @@ public final class DungeonTravelSurfaceProjector {
             String statusLabel
     ) {
         DungeonMap safeMap = dungeonMap == null
-                ? DungeonMap.empty(null, "Dungeon")
+                ? DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon")
                 : dungeonMap;
         DungeonMapFacts mapFacts = derived == null ? null : derived.map();
         DungeonMapFacts safeFacts = mapFacts == null
@@ -67,7 +68,7 @@ public final class DungeonTravelSurfaceProjector {
     ) {
         DungeonCell preferredTile = preferredPosition == null ? null : preferredPosition.tile();
         DungeonTravelHeading heading = preferredPosition == null ? DungeonTravelHeading.defaultHeading() : preferredPosition.heading();
-        if (preferredTile != null && containsCell(mapFacts, preferredTile)) {
+        if (preferredPosition != null && preferredTile != null && containsCell(mapFacts, preferredTile)) {
             return new DungeonTravelPositionFacts(
                     dungeonMap.metadata().mapId(),
                     preferredPosition.locationKind(),
@@ -253,16 +254,7 @@ public final class DungeonTravelSurfaceProjector {
     }
 
     private static String destinationLabel(DungeonTransitionDestination destination) {
-        if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
-            return "Overworld-Feld " + overworld.tileId();
-        }
-        if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
-            if (dungeon.transitionId() == null) {
-                return "Dungeon " + dungeon.mapId();
-            }
-            return "Dungeon " + dungeon.mapId() + " / Uebergang " + dungeon.transitionId();
-        }
-        return "";
+        return DungeonTransitionLabels.destinationLabel(destination);
     }
 
     private record SurfaceScope(

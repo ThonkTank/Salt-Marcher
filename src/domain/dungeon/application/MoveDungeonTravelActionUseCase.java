@@ -103,7 +103,7 @@ public final class MoveDungeonTravelActionUseCase {
         DungeonMap targetMap = repository.findById(targetMapId).orElse(null);
         DungeonTransition targetTransition = targetMap == null ? null : findTransition(targetMap, destination.transitionId());
         DungeonCell anchor = targetTransition == null ? null : targetTransition.anchor();
-        if (targetMap == null || anchor == null) {
+        if (targetMap == null || targetTransition == null || anchor == null) {
             DungeonMap currentMap = loadMap(currentPosition);
             DungeonTravelSurfaceFacts surface = project(currentMap, currentPosition, "Ziel-Uebergang ist nicht verfuegbar.");
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);

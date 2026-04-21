@@ -98,6 +98,27 @@ public record DungeonMapDisplayModel(
             int projectionLevel,
             String selectedTool
     ) {
+        return fromDungeonSnapshot(
+                snapshot,
+                placeholderTitle,
+                editorMode,
+                viewMode,
+                overlayMode,
+                projectionLevel,
+                selectedTool,
+                null);
+    }
+
+    public static DungeonMapDisplayModel fromDungeonSnapshot(
+            @Nullable DungeonSnapshot snapshot,
+            String placeholderTitle,
+            boolean editorMode,
+            ViewMode viewMode,
+            OverlayMode overlayMode,
+            int projectionLevel,
+            String selectedTool,
+            @Nullable PartyToken runtimePartyToken
+    ) {
         if (snapshot == null) {
             return empty(placeholderTitle);
         }
@@ -168,7 +189,7 @@ public record DungeonMapDisplayModel(
                 renderedMarkers,
                 graphNodes,
                 graphLinks,
-                editorMode ? null : new PartyToken(3.5, 3.5, 0, Heading.SOUTH, true));
+                editorMode ? null : runtimePartyToken);
     }
 
     private static RenderCell renderCell(DungeonAreaSnapshot area, DungeonCellRef cell) {

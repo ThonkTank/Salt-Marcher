@@ -29,6 +29,10 @@ Current foundation:
 - Stair and transition read parity is active: the data layer loads stair path
   nodes, stair exits, corridor attachments, and transition destinations. The
   domain layer exposes them as authored feature facts and relation summaries.
+- Runtime travel action parity is active for stairs and transitions: the
+  travel surface derives transient actions from authored stair exits and
+  transition destinations, stores the active dungeon position in the shell
+  runtime session, and does not persist campaign-state movement yet.
 
 Recommended rollout:
 
@@ -42,21 +46,21 @@ Recommended rollout:
 - UI specifications are broader than the currently stabilized domain policies.
 - Preview behavior and undo/redo semantics need explicit implementation
   contracts before broad editor rollout.
-- Room and connection projections can drift if runtime travel action rules are
-  not derived consistently from the authored feature facts.
-- Full parity still needs runtime travel action parity, editor mutation
-  policies, and remaining non-space feature mapping before those behaviours can
-  be considered preserved.
+- Room and connection projections can drift until door traversal uses the same
+  authored relation graph as map rendering.
+- Full parity still needs door traversal, persistent campaign/world travel
+  integration, editor mutation policies, and remaining non-space feature
+  mapping before those behaviours can be considered preserved.
 - Advanced editor operation carriers must be introduced only with implemented
   domain policies, and their public API signatures must use API-owned carrier
   types rather than internal domain-module model types.
 
 ## Next Parity Step
 
-Implement runtime travel action parity next. The original implementation turns
-stair exits and transition destinations into travel-surface actions; this
-codebase now loads those authored facts but does not yet expose movement
-commands or cross-map/overworld transition execution.
+Implement door traversal parity next. The original implementation turns room
+and corridor openings into runtime door actions with destination labels and
+movement commands. This codebase now exposes stair and transition actions, but
+door traversal remains represented only as derived boundary and relation facts.
 
 ## Open Delivery Questions
 

@@ -1,16 +1,16 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
-Source of Truth: Dungeon travel left-bar tab UI structure and runtime mock
-state.
+Last Reviewed: 2026-04-21
+Source of Truth: Dungeon travel left-bar tab UI structure and transient
+runtime session state.
 
 # Dungeon Travel UI
 
 ## Component Purpose
 
 The Dungeon Travel tab is the runtime-facing cockpit root for the local dungeon
-map mock. It mirrors the legacy dungeon runtime map surface before real party
-movement and route actions are connected.
+map. It mirrors the legacy dungeon runtime map surface for transient party
+movement through currently loaded stair and transition actions.
 
 ## Visible Structure
 
@@ -18,11 +18,17 @@ movement and route actions are connected.
   reset-view actions.
 - Main content is the shared `DungeonMapMainView` canvas surface in runtime
   mode.
-- State content shows the mock party location, tile, heading, movement status,
-  and overlay mode.
+- State content shows the current transient party location, tile, heading,
+  movement status, overlay mode, and available stair or transition actions.
 
 ## Visible States
 
-- Runtime mode renders a party token and numbered door markers on the grid.
+- Runtime mode renders a party token at the transient travel position.
 - Level and overlay controls update the presentation projection only.
 - Reset view restores the canvas camera without changing dungeon state.
+- Stair actions move the party token to the selected stair exit and update the
+  projection level.
+- Dungeon transition actions move the transient session to the placed target
+  transition when the target map and transition are available.
+- Overworld transition actions report the external target without changing the
+  transient dungeon position.

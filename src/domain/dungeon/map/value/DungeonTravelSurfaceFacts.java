@@ -21,16 +21,44 @@ public record DungeonTravelSurfaceFacts(
         mapId = mapId == null ? new DungeonMapIdentity(1L) : mapId;
         mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName.trim();
         revision = Math.max(0L, revision);
-        map = map == null ? new DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of()) : map;
-        position = position == null
-                ? new DungeonTravelPositionFacts(mapId, DungeonTravelLocationKind.TILE, 0L, new DungeonCell(0, 0, 0), DungeonTravelHeading.defaultHeading())
+        map = defaultMap(map);
+        position = defaultPosition(mapId, position);
+        areaLabel = displayText(areaLabel, "Kein Standort");
+        surfaceTitle = displayText(surfaceTitle, areaLabel);
+        tileLabel = cleanText(tileLabel);
+        headingLabel = cleanText(headingLabel);
+        statusLabel = cleanText(statusLabel);
+        visualDescription = cleanText(visualDescription);
+        actions = immutableActions(actions);
+    }
+
+    private static DungeonMapFacts defaultMap(DungeonMapFacts map) {
+        return map == null ? new DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of()) : map;
+    }
+
+    private static DungeonTravelPositionFacts defaultPosition(
+            DungeonMapIdentity mapId,
+            DungeonTravelPositionFacts position
+    ) {
+        return position == null
+                ? new DungeonTravelPositionFacts(
+                        mapId,
+                        DungeonTravelLocationKind.TILE,
+                        0L,
+                        new DungeonCell(0, 0, 0),
+                        DungeonTravelHeading.defaultHeading())
                 : position;
-        surfaceTitle = surfaceTitle == null || surfaceTitle.isBlank() ? areaLabel : surfaceTitle.trim();
-        areaLabel = areaLabel == null || areaLabel.isBlank() ? "Kein Standort" : areaLabel.trim();
-        tileLabel = tileLabel == null ? "" : tileLabel.trim();
-        headingLabel = headingLabel == null ? "" : headingLabel.trim();
-        statusLabel = statusLabel == null ? "" : statusLabel.trim();
-        visualDescription = visualDescription == null ? "" : visualDescription.trim();
-        actions = actions == null ? List.of() : List.copyOf(actions);
+    }
+
+    private static String displayText(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private static String cleanText(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static List<DungeonTravelActionFacts> immutableActions(List<DungeonTravelActionFacts> actions) {
+        return actions == null ? List.of() : List.copyOf(actions);
     }
 }

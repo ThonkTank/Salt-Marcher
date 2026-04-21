@@ -108,16 +108,7 @@ public final class DungeonFeatureReadProjector {
     }
 
     private static String destinationLabel(DungeonTransitionDestination destination) {
-        if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
-            return "Overworld-Feld " + overworld.tileId();
-        }
-        if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
-            if (dungeon.transitionId() == null) {
-                return "Dungeon " + dungeon.mapId();
-            }
-            return "Dungeon " + dungeon.mapId() + " / Uebergang " + dungeon.transitionId();
-        }
-        return "";
+        return DungeonTransitionLabels.destinationLabel(destination);
     }
 
     private static DungeonRelationGraph.FeatureRelation transitionRelation(

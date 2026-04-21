@@ -9,6 +9,7 @@ import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewModel;
+import src.view.slotcontent.state.dungeontravel.DungeonTravelRuntimeViewModel;
 
 final class DungeonTravelBinder {
 
@@ -20,7 +21,13 @@ final class DungeonTravelBinder {
 
     ShellBinding bind() {
         DungeonApplicationService dungeon = runtimeContext.services().require(DungeonApplicationService.class);
-        DungeonTravelViewModel viewModel = new DungeonTravelViewModel(dungeon);
+        DungeonTravelRuntimeViewModel runtime = runtimeContext.session(
+                DungeonTravelRuntimeViewModel.class,
+                DungeonTravelRuntimeViewModel::new);
+        DungeonTravelViewModel viewModel = new DungeonTravelViewModel(
+                dungeon,
+                runtime::position,
+                runtime::updatePosition);
         DungeonMapViewModel mapViewModel = new DungeonMapViewModel("Travel workspace", false);
         DungeonTravelControlsView controls = new DungeonTravelControlsView();
         DungeonTravelMainView main = new DungeonTravelMainView();
@@ -32,7 +39,10 @@ final class DungeonTravelBinder {
         controls.onPreviousLevel(viewModel::previousLevel);
         controls.onNextLevel(viewModel::nextLevel);
         controls.onOverlayModeChanged(mode -> viewModel.selectOverlayMode(toDisplayOverlayMode(mode)));
+        state.onActionSelected(viewModel::performAction);
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
+        viewModel.partyTokenProperty().addListener((ignored, before, after) -> mapViewModel.showPartyToken(after));
+        viewModel.actionsProperty().addListener((ignored, before, after) -> state.showActions(toActionItems(after)));
         viewModel.overlayModeProperty().addListener((ignored, before, after) -> {
             mapViewModel.selectOverlayMode(after);
             controls.showOverlayMode(toControlsOverlayMode(after));
@@ -45,8 +55,21 @@ final class DungeonTravelBinder {
         controls.showOverlayMode(toControlsOverlayMode(viewModel.overlayModeProperty().get()));
         controls.showLevel(viewModel.projectionLevelProperty().get());
         controls.showMapName(viewModel.mapNameProperty().get());
+        state.showActions(toActionItems(viewModel.actionsProperty().get()));
         viewModel.refresh();
         return new Binding(controls, main, state);
+    }
+
+    private static java.util.List<DungeonTravelStateView.ActionItem> toActionItems(
+            java.util.List<src.domain.dungeon.published.DungeonTravelActionSnapshot> actions
+    ) {
+        return (actions == null ? java.util.List.<src.domain.dungeon.published.DungeonTravelActionSnapshot>of() : actions)
+                .stream()
+                .map(action -> new DungeonTravelStateView.ActionItem(
+                        action.actionId(),
+                        action.displayLabel(),
+                        action.description()))
+                .toList();
     }
 
     private static DungeonMapDisplayModel.OverlayMode toDisplayOverlayMode(String overlayMode) {

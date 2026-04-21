@@ -158,8 +158,9 @@ dependency direction.
 `Error Prone` owns compiler-precise source rules that need javac-resolved type
 information or public-signature awareness: MVVM dependency bans, view-model
 framework independence, shell API allowlists, public domain-boundary signature
-purity, public domain published-carrier shape, domain role-shape checks,
-service-registry registration placement, data-root service export shape,
+purity, domain-wide forbidden infrastructure dependency references, public
+domain published-carrier shape, domain role-shape checks, service-registry
+registration placement, data-root service export shape,
 presentation-state placement,
 JavaFX API placement between contributions, Binders, ViewModels, passive views,
 reusable slotcontent, and transitional legacy view code, visual-styling

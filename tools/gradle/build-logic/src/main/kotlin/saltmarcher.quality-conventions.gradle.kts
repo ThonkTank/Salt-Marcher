@@ -209,6 +209,7 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("DataGatewayReturnTypeBoundary")
     options.errorprone.error("DomainApplicationNoSameContextPublishedDependency")
     options.errorprone.error("DomainApplicationServiceApiShape")
+    options.errorprone.error("DomainForbiddenInfrastructureDependency")
     options.errorprone.error("DomainPublishedCarrierShape")
     options.errorprone.error("DomainModuleFieldPurity")
     options.errorprone.error("DomainModuleNoPublishedCarrierDependency")

@@ -31,10 +31,11 @@ remaining review-owned rules so the enforcement set does not overclaim.
 | `domain-application-no-backend-port-contracts` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Backend port contracts are not placed in `application/`. |
 | `domain-application-no-same-context-published` | Error Prone `DomainApplicationNoSameContextPublishedDependency` | `./gradlew compileJava` | Use cases do not depend on their own public published carriers. |
 | `domain-module-role-required` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Named domain modules place Java under tactical role packages. |
+| `domain-module-name-shape` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Named domain modules use lower-case package names matching `[a-z][a-z0-9_]*`. |
 | `domain-role-direct-files` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages contain direct Java files only. |
 | `domain-role-package-name` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages use the allowed role-name set. |
 | `domain-forbidden-top-level-bucket` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Legacy technical buckets such as `api`, `repository`, `query`, `gateway`, `adapter`, and `model` are forbidden at context root. |
-| `domain-mapcore-removed` | build-harness `DomainFeatureRules` and PMD architecture | `./gradlew checkArchitecture` | `src/domain/mapcore/**` is absent and stable source mentions are blocked. |
+| `domain-mapcore-removed` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `src/domain/mapcore/**` is absent. |
 | `domain-context-roles-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context role and no stale context. |
 | `domain-context-relationships-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context relationship and no stale context. |
 | `domain-context-document-presence` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Every active domain context has a `DOMAIN.md`. |
@@ -46,7 +47,8 @@ remaining review-owned rules so the enforcement set does not overclaim.
 | `domain-generation-policy-required-sections` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Generation policy contexts include command and consistency sections. |
 | `domain-generation-policy-write-model-none` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Generation policy contexts declare `Write Model: None`. |
 | `domain-generation-policy-ephemeral-rationale` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Generation policy contexts explain why they own no persisted authored truth. |
-| `domain-outer-layer-independence` | ArchUnit `domainMustStayIndependentFromOuterLayers` and PMD architecture | `./gradlew checkArchitecture` | Domain code does not depend on `bootstrap`, `shell`, `src.view`, or `src.data`; PMD adds forbidden-token source blockers. |
+| `domain-forbidden-infrastructure-dependency` | Error Prone `DomainForbiddenInfrastructureDependency` | `./gradlew compileJava` | Domain code does not reference compiler-resolved outer-layer, infrastructure, JavaFX, persistence, filesystem, network, JSON, or transaction types. |
+| `domain-outer-layer-independence` | ArchUnit `domainMustStayIndependentFromOuterLayers` and Error Prone `DomainForbiddenInfrastructureDependency` | `./gradlew checkArchitecture` and `./gradlew compileJava` | Domain code does not depend on `bootstrap`, `shell`, `src.view`, or `src.data`. |
 | `domain-foreign-feature-public-boundary` | ArchUnit `domainFeaturesMustOnlyUseForeignFeatureApis` and `dataFeaturesMustOnlyUseForeignFeatureApis` | `./gradlew checkArchitecture` | Domain/data code reaches foreign contexts only through foreign root services or published carriers. |
 | `domain-named-module-private-context` | ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts` | `./gradlew checkArchitecture` | Named modules do not reach any foreign domain context. |
 | `domain-named-module-no-same-context-application` | ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary` | `./gradlew checkArchitecture` | Named modules do not depend on their own root or `application/` boundary. |
@@ -65,13 +67,13 @@ remaining review-owned rules so the enforcement set does not overclaim.
 
 ## Source-Pattern Checks
 
-PMD architecture is useful for narrow, stable source-pattern blockers: JavaFX,
-SQL, shell, bootstrap, data API, filesystem, network, JSON framework, and
-`src/domain/mapcore` mentions. It also blocks simple smell patterns such as
-root service infrastructure construction, non-public `application/*UseCase`
-helper methods beginning with `score`, `rank`, `choose`, `balance`, or
-`enforce`, and public/protected JavaBean-style `void set*` mutation methods in
-named modules.
+PMD architecture is useful for narrow, stable source-pattern blockers. For
+domain code it reinforces obvious JavaFX, SQL/JDBC, filesystem, network, and
+JSON framework package-token references, and blocks simple smell patterns such
+as root service infrastructure construction, non-public
+`application/*UseCase` helper methods beginning with `score`, `rank`, `choose`,
+`balance`, or `enforce`, and public/protected JavaBean-style `void set*`
+mutation methods in named modules.
 
 These checks are intentionally classified as source-pattern blockers. They are
 not semantic proof that policy is in the right tactical role, that ports are
@@ -82,8 +84,13 @@ well named, or that published vocabulary is truly domain language.
 - whether business rules have been implemented in `view` or `data` when no
   stable dependency or forbidden-token violation exposes the leak
 - whether a use case is thin orchestration rather than hidden business policy
+- whether `application/` has become a generic operations or policy dump despite
+  passing file-name and helper-prefix checks
 - whether root application services actually translate public carriers before
   entering use cases or named modules
+- whether a foreign root application service injected into a root constructor
+  is semantically documented by the context relationship prose rather than only
+  type-compatible
 - whether application use cases pass `published/`, view, data, shell, or
   framework carriers into named modules through shapes not visible to current
   dependency and signature checks
@@ -93,6 +100,8 @@ well named, or that published vocabulary is truly domain language.
   read-only query hidden behind a permitted suffix
 - whether a chosen tactical role package is warranted by real model behaviour
   rather than ceremonial taxonomy
+- whether a named domain-module directory name is a useful ubiquitous-language
+  concept after the build proves only its package-token shape
 - whether a domain service is real cross-concept domain behavior rather than a
   procedural coordinator
 - whether additional callable client boundaries are semantically being exposed

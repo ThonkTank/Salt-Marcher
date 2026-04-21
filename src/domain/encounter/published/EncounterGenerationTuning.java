@@ -34,4 +34,32 @@ public record EncounterGenerationTuning(
     public static EncounterGenerationTuning autoTuning() {
         return new EncounterGenerationTuning(AUTO_BALANCE_LEVEL, AUTO_AMOUNT_VALUE, AUTO_DIVERSITY_LEVEL);
     }
+
+    public boolean isBalanceAuto() {
+        return autoBalance(balanceLevel);
+    }
+
+    public boolean isAmountAuto() {
+        return autoAmount(amountValue);
+    }
+
+    public boolean isDiversityAuto() {
+        return autoDiversity(diversityLevel);
+    }
+
+    public boolean hasAuto() {
+        return autoBalance(balanceLevel) || autoAmount(amountValue) || autoDiversity(diversityLevel);
+    }
+
+    private static boolean autoBalance(int candidate) {
+        return candidate == AUTO_BALANCE_LEVEL;
+    }
+
+    private static boolean autoAmount(double candidate) {
+        return candidate == AUTO_AMOUNT_VALUE;
+    }
+
+    private static boolean autoDiversity(int candidate) {
+        return candidate == AUTO_DIVERSITY_LEVEL;
+    }
 }

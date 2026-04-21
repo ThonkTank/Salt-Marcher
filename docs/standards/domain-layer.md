@@ -122,8 +122,12 @@ make a context look more "DDD".
 The root application service is the only public callable backend boundary of
 one domain context.
 
+- is a public final top-level class named
+  `<PascalContext>ApplicationService`
 - accepts same-context `published/` command/query carriers whose type names end
   in `Command` or `Query`
+- exposes public operations as exactly one command/query parameter and one
+  same-context published return carrier
 - returns same-context `published/` carriers
 - translates public input before entering application use cases or the model
 - translates application/model output back to published carriers
@@ -163,6 +167,7 @@ specification.
 
 - allowed: commands, queries, results, snapshots, IDs, statuses, enums, sealed
   carrier abstractions, and simple public boundary records
+- public top-level carriers are public records, enums, or sealed abstractions
 - forbidden: callable services, facades, repositories, ports, gateways,
   factories, locators, policy helpers, and invariant-owning objects
 - public carriers describe domain facts, not render layers, canvas cells,
@@ -202,6 +207,18 @@ specification.
 - `service/`: stateless domain behavior spanning concepts.
 - `event/`: domain events; records end with `Event`.
 - `specification/`: named reusable predicates or constraints.
+
+Mechanical type-shape rules keep those role packages concrete:
+
+- aggregate roots are classes or records; aggregate classes are final
+- entities are records, sealed abstractions, or final classes
+- values are records, enums, sealed abstractions, or final immutable classes
+- policies, factories, and services are final stateless classes
+- ports are interfaces ending `Repository`, `Lookup`, `Catalog`, or `Search`
+- events are records ending `Event`
+- specifications are final classes or interfaces ending `Specification`
+- public concrete named-module domain types are records, enums, final classes,
+  interfaces, or sealed abstractions
 
 These role names are local modelling aids. They must not override the hexagonal
 boundary: source access still goes through `port/`, public translation still
@@ -300,9 +317,13 @@ documents own local model detail and must not redefine system-wide topology.
 - named domain modules importing any `src.domain.*.published.*` carrier
 - direct Java files under named domain modules
 - role package names outside the allowed role set
+- named domain modules whose direct directory names do not use lower-case
+  package tokens matching `[a-z][a-z0-9_]*`
 - passive aggregates or entities whose behavior lives mainly in use cases, and
   JavaBean-style public/protected `void set*` mutation methods in named modules
 - `application/` as a generic business-logic dump
+- domain code referencing outer-layer or infrastructure types directly instead
+  of domain-owned outbound ports
 - render projections, canvas models, styles, or display selections as domain
   published language
 - `src/domain/mapcore/**`
@@ -319,12 +340,12 @@ Mechanical enforcement is split by evidence quality:
 - `build-harness` owns repository shape, machine-readable documentation
   markers, context coverage, and coverage-document completeness.
 - `Error Prone` owns Java type-shape, signature-purity, carrier, port, and
-  role-shape rules.
+  role-shape rules, including compiler-resolved infrastructure dependency bans.
 - `ArchUnit` owns dependency direction, foreign-boundary access, and cycle
   rules.
 - `PMD architecture` owns narrow source-pattern blockers only. It is useful for
-  stable forbidden tokens and smell patterns, but it is not semantic proof that
-  behaviour sits in the right domain role.
+  obvious forbidden package-token and smell patterns, but it is not semantic
+  proof that behaviour sits in the right domain role.
 
 Review still owns modelling judgements that cannot be cleanly inferred without
 low-signal heuristics: whether use cases are thin orchestration, ports use

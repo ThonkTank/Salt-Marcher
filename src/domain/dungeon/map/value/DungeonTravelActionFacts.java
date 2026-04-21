@@ -13,14 +13,37 @@ public record DungeonTravelActionFacts(
 ) {
 
     public DungeonTravelActionFacts {
-        actionId = actionId == null ? "" : actionId.trim();
         kind = kind == null ? DungeonTravelActionKind.STAIR : kind;
-        label = label == null || label.isBlank() ? kind.name() : label.trim();
-        destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
-        description = description == null ? "" : description.trim();
+        NormalizedAction normalized = normalize(actionId, label, destinationLabel, description, kind);
+        actionId = normalized.actionId();
+        label = normalized.label();
+        destinationLabel = normalized.destinationLabel();
+        description = normalized.description();
     }
 
     public String displayLabel() {
         return destinationLabel.isBlank() ? label : label + ": " + destinationLabel;
+    }
+
+    private static NormalizedAction normalize(
+            String actionId,
+            String label,
+            String destinationLabel,
+            String description,
+            DungeonTravelActionKind kind
+    ) {
+        return new NormalizedAction(
+                actionId == null ? "" : actionId.trim(),
+                label == null || label.isBlank() ? kind.name() : label.trim(),
+                destinationLabel == null ? "" : destinationLabel.trim(),
+                description == null ? "" : description.trim());
+    }
+
+    private record NormalizedAction(
+            String actionId,
+            String label,
+            String destinationLabel,
+            String description
+    ) {
     }
 }

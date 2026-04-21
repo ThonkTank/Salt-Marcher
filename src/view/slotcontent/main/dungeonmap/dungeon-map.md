@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Reusable dungeon map presentation structure and central style
 selector roles.
 
@@ -9,9 +9,8 @@ selector roles.
 ## Component Purpose
 
 `DungeonMapMainView` is the reusable passive map surface used by dungeon editor
-and dungeon travel contributions. It renders a canvas-based UI mock of the
-legacy dungeon map views so the local cockpit has a representation-equivalent
-surface before real editing and travel behavior is wired in.
+and dungeon travel contributions. It renders the domain-backed dungeon map
+projection and can show runtime party-token state supplied by travel.
 
 ## Visible Structure
 
@@ -22,8 +21,8 @@ surface before real editing and travel behavior is wired in.
   token from `DungeonMapDisplayModel`.
 - The View owns camera state, viewport transforms, canvas drawing, label
   placement, and technical pan/zoom/reset events.
-- `DungeonMapDisplayModel` is view-owned mock projection state. It is the
-  intended attachment point for later real domain-backed geometry.
+- `DungeonMapDisplayModel` is view-owned projection state translated from
+  domain snapshots and runtime travel session state.
 - Visual values such as colors, fills, strokes, font sizes, borders, and text
   emphasis live in `resources/salt-marcher.css`.
 
@@ -33,5 +32,6 @@ surface before real editing and travel behavior is wired in.
 - Loaded maps can show a softer note overlay while still displaying the map.
 - Editor mode shows tool/status text, selectable tool highlighting, level
   overlays, and grid/graph mode.
-- Runtime mode shows a party token, numbered door markers, current location
-  state, and resettable camera controls.
+- Runtime mode shows a party token from the active travel session, numbered
+  door markers when supplied by the display model, current location state, and
+  resettable camera controls.
