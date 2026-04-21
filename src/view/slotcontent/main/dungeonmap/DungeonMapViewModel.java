@@ -5,6 +5,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.DragPreview;
+import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.PaintPreview;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.PartyToken;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.Selection;
 
@@ -22,6 +23,7 @@ public final class DungeonMapViewModel {
     private @Nullable PartyToken partyToken;
     private @Nullable Selection selection;
     private @Nullable DragPreview dragPreview;
+    private @Nullable PaintPreview paintPreview;
 
     public DungeonMapViewModel(String placeholderTitle, boolean editorMode) {
         this.placeholderTitle = placeholderTitle == null || placeholderTitle.isBlank()
@@ -86,6 +88,11 @@ public final class DungeonMapViewModel {
         rebuildDisplayModel();
     }
 
+    public void showPaintPreview(@Nullable PaintPreview nextPaintPreview) {
+        paintPreview = nextPaintPreview;
+        rebuildDisplayModel();
+    }
+
     private void rebuildDisplayModel() {
         displayModel.set(DungeonMapDisplayModel.fromDungeonSnapshot(
                 snapshot,
@@ -97,6 +104,7 @@ public final class DungeonMapViewModel {
                 selectedTool,
                 selection,
                 dragPreview,
+                paintPreview,
                 partyToken));
     }
 }

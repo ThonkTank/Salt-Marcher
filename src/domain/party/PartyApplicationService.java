@@ -2,6 +2,7 @@ package src.domain.party;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
@@ -172,48 +173,56 @@ public final class PartyApplicationService {
     public MutationResult createCharacter(CreateCharacterCommand command) {
         CharacterDraft draft = command == null ? null : command.draft();
         MembershipState membership = command == null ? null : command.membership();
-        return new MutationResult(mapMutationStatus(createCharacterUseCase.execute(
+        return mutationResult(() -> createCharacterUseCase.execute(
                 toDomainDraft(draft),
-                toPartyMembership(membership))));
+                toPartyMembership(membership)));
     }
 
     public MutationResult updateCharacter(UpdateCharacterCommand command) {
-        return new MutationResult(mapMutationStatus(updateCharacterUseCase.execute(
+        return mutationResult(() -> updateCharacterUseCase.execute(
                 command == null ? 0L : command.id(),
-                toDomainDraft(command == null ? null : command.draft()))));
+                toDomainDraft(command == null ? null : command.draft())));
     }
 
     public MutationResult deleteCharacter(DeleteCharacterCommand command) {
         long id = command == null ? 0L : command.id();
-        return new MutationResult(mapMutationStatus(deleteCharacterUseCase.execute(id)));
+        return mutationResult(() -> deleteCharacterUseCase.execute(id));
     }
 
     public MutationResult setMembership(SetPartyMembershipCommand command) {
         long id = command == null ? 0L : command.id();
         MembershipState membership = command == null ? null : command.membership();
-        return new MutationResult(mapMutationStatus(setPartyMembershipUseCase.execute(id, toPartyMembership(membership))));
+        return mutationResult(() -> setPartyMembershipUseCase.execute(id, toPartyMembership(membership)));
     }
 
     public MutationResult awardXp(AwardPartyXpCommand command) {
         AwardPartyXpCommand effectiveCommand = command == null ? new AwardPartyXpCommand(List.of(), 0) : command;
-        return new MutationResult(mapMutationStatus(awardPartyXpUseCase.execute(
+        return mutationResult(() -> awardPartyXpUseCase.execute(
                 effectiveCommand.ids(),
-                effectiveCommand.xpPerCharacter())));
+                effectiveCommand.xpPerCharacter()));
     }
 
     public MutationResult performRest(PerformPartyRestCommand command) {
         RestType restType = command == null ? null : command.restType();
-        return new MutationResult(mapMutationStatus(performPartyRestUseCase.execute(toPartyRestType(restType))));
+        return mutationResult(() -> performPartyRestUseCase.execute(toPartyRestType(restType)));
     }
 
     public MutationResult moveCharacters(MovePartyCharactersCommand command) {
         MovePartyCharactersCommand effectiveCommand = command == null
                 ? new MovePartyCharactersCommand(List.of(), null, true)
                 : command;
-        return new MutationResult(mapMutationStatus(movePartyCharactersUseCase.execute(
+        return mutationResult(() -> movePartyCharactersUseCase.execute(
                 effectiveCommand.characterIds(),
                 toDomainTravelLocation(effectiveCommand.target()),
-                effectiveCommand.attachToPartyToken())));
+                effectiveCommand.attachToPartyToken()));
+    }
+
+    private static MutationResult mutationResult(Supplier<PartyMutationStatus> operation) {
+        try {
+            return new MutationResult(mapMutationStatus(operation.get()));
+        } catch (IllegalStateException exception) {
+            return new MutationResult(MutationStatus.STORAGE_ERROR);
+        }
     }
 
     private static PartySnapshot mapSnapshot(LoadPartySnapshotUseCase.PartySnapshotProjection projection) {

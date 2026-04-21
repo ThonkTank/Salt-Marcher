@@ -829,6 +829,12 @@
     -fx-font-size: 11px;
     -fx-font-style: italic;
 }
+.travel-action-button {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+    -fx-background-radius: 6;
+    -fx-padding: 6 8 6 8;
+}
 
 .map-workspace-header {
     -fx-background-color: rgba(26, 32, 37, 0.94);

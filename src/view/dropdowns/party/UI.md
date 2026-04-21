@@ -29,7 +29,8 @@ summary, and mutation controls call the party application service.
   rest cadence, XP controls, edit, and remove affordances.
 - The create/edit character editor is a secondary anchored dropdown with
   character, player, level, passive perception, AC, and edit-mode delete
-  confirmation controls.
+  confirmation controls. It stays open on validation or storage failures and
+  reports the field or mutation error inline.
 
 ## Interactions
 
@@ -39,8 +40,13 @@ summary, and mutation controls call the party application service.
 - Add, create, edit, delete, XP, remove, short-rest, and long-rest controls
   persist through the party application service and refresh the dropdown
   snapshot after successful mutations.
+- Character editor submission validates name, level, passive perception, and AC
+  before calling the party application service; failed validation does not close
+  the editor or mutate the party.
 - Successful party mutations publish a runtime refresh signal so the Encounter
   state tab can reload party thresholds and active combat baselines.
+- The trigger supports the party mnemonic and can be opened from the top bar
+  with `Alt+P` when focus is in the application.
 - Closing the dropdown leaves party domain state unchanged unless an explicit
   mutation action has already completed.
 
@@ -53,3 +59,6 @@ summary, and mutation controls call the party application service.
 - Storage error: the dropdown reports that party data could not be loaded.
 - Action feedback: a successful or warning-colored inline status explains the
   mutation result.
+- Editor error: invalid editor input, missing characters, or failed storage
+  writes are shown inside the editor while the entered values remain available
+  for correction.

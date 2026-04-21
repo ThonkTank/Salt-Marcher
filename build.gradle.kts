@@ -83,9 +83,6 @@ sourceSets {
         java {
             setSrcDirs(listOf("test"))
         }
-        resources {
-            setSrcDirs(listOf("test/resources"))
-        }
     }
 }
 

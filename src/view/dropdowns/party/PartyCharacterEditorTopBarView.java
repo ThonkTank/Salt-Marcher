@@ -38,9 +38,9 @@ public final class PartyCharacterEditorTopBarView {
     private final Popup popup = new Popup();
 
     private @Nullable EditorMember editingMember;
-    private Function<EditorDraft, EditorResult> onCreate = ignored -> EditorResult.accepted();
-    private Function<EditorDraft, EditorResult> onUpdate = ignored -> EditorResult.accepted();
-    private Function<EditorMember, EditorResult> onDelete = ignored -> EditorResult.accepted();
+    private Function<EditorDraft, EditorResult> onCreate = ignored -> EditorResult.success();
+    private Function<EditorDraft, EditorResult> onUpdate = ignored -> EditorResult.success();
+    private Function<EditorMember, EditorResult> onDelete = ignored -> EditorResult.success();
 
     PartyCharacterEditorTopBarView() {
         panel.getStyleClass().addAll("dropdown-window", "dropdown-form", "party-editor-dropdown");
@@ -58,15 +58,15 @@ public final class PartyCharacterEditorTopBarView {
     }
 
     void onCreate(Function<EditorDraft, EditorResult> action) {
-        onCreate = action == null ? ignored -> EditorResult.accepted() : action;
+        onCreate = action == null ? ignored -> EditorResult.success() : action;
     }
 
     void onUpdate(Function<EditorDraft, EditorResult> action) {
-        onUpdate = action == null ? ignored -> EditorResult.accepted() : action;
+        onUpdate = action == null ? ignored -> EditorResult.success() : action;
     }
 
     void onDelete(Function<EditorMember, EditorResult> action) {
-        onDelete = action == null ? ignored -> EditorResult.accepted() : action;
+        onDelete = action == null ? ignored -> EditorResult.success() : action;
     }
 
     void showCreate(Node anchor) {
@@ -187,7 +187,7 @@ public final class PartyCharacterEditorTopBarView {
     }
 
     private void handleEditorResult(EditorResult result) {
-        EditorResult safeResult = result == null ? EditorResult.rejected("Party-Aktion konnte nicht gespeichert werden.") : result;
+        EditorResult safeResult = result == null ? EditorResult.failure("Party-Aktion konnte nicht gespeichert werden.") : result;
         if (safeResult.accepted()) {
             hide();
             return;
@@ -319,11 +319,11 @@ public final class PartyCharacterEditorTopBarView {
             message = safe(message);
         }
 
-        static EditorResult accepted() {
+        static EditorResult success() {
             return new EditorResult(true, "");
         }
 
-        static EditorResult rejected(String message) {
+        static EditorResult failure(String message) {
             return new EditorResult(false, message);
         }
     }

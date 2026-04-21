@@ -68,20 +68,26 @@ room-cluster centers, room-cluster vertices, explicit cluster wall or door
 edges, corridor membership, corridor waypoints, corridor door overrides, stair
 path nodes, stair exits, stair corridor attachments, and transition destination
 rows.
-When a new map has no rooms, the gateway creates a seed room and cluster so
-the existing map surfaces still have authorable spatial truth.
+Room topology saves are full synchronizations for authored room clusters and
+rooms: retained clusters and rooms are upserted, cluster vertices and boundary
+rows are replaced, removed room rows are deleted, and removed cluster rows are
+deleted so SQLite cascade rules clear dependent rows. When a new map has no
+rooms, the gateway creates a seed room and cluster so the existing map
+surfaces still have authorable spatial truth.
 
 This is infrastructure for behavioural parity, not complete parity. Room
 semantics, cluster boundary geometry, and corridor read geometry are now
-represented. Doors, stairs, and transitions are now source-to-domain mapped as
+represented. Room paint/delete now persists through the authored room topology
+sync path. Doors, stairs, and transitions are now source-to-domain mapped as
 authored facts. Runtime local movement derives one domain traversal-link model
 from door boundaries and stair exits, while transition movement remains a
 separate runtime action for cross-map and overworld targets. Character-specific
 travel position persistence belongs to party persistence, so this dungeon step
 introduces no character-position tables, columns, or ports. Direct token-drag
-movement, editor mutation paths, cross-map dungeon transition follow-through,
-and non-space feature mapping still need follow-up work before the legacy
-dungeon behaviour is fully represented.
+movement, wall/door mutation paths, corridor/stair/transition editor mutation
+paths, cross-map dungeon transition follow-through, and non-space feature
+mapping still need follow-up work before the legacy dungeon behaviour is fully
+represented.
 
 ## Stability Rules
 

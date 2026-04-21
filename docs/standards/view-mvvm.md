@@ -83,6 +83,7 @@ src/view/
       <PascalEntry>ViewModel.java
 resources/
   view/
+    leftbartabs/<entry>/navigation-icon.svg
     leftbartabs/<entry>/<PascalEntry><Surface>.fxml
     statetabs/<entry>/<PascalEntry>StateView.fxml
     dropdowns/<entry>/<PascalEntry>TopBarView.fxml
@@ -100,6 +101,9 @@ Rules:
   `*InspectorEntry` adapter for shell Inspector entry construction.
 - `*Contribution` is shell-discovery only. It must stay thin and delegate
   runtime composition to the co-located `*Binder`.
+- Left-bar navigation icons live under `resources/view/leftbartabs/<entry>/`.
+  A contribution may reference the icon resource and pass that reference to the
+  shell; it must not construct JavaFX icon nodes itself.
 - Every active root has exactly one `*Binder` and one aggregate `*ViewModel`.
 - Existing component-local `View/`, `ViewModel/`, `assembly/`, view `api/`,
   `Model/`, `Controller/`, and `interactor/` buckets are migration debt.

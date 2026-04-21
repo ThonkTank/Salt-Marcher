@@ -22,12 +22,15 @@ Current state:
 
 - The shell title for the runtime catalog is `Encounter Builder`, matching the
   original encounter-building surface. The left navigation entry is icon-only
-  and uses the crossed-blades encounter graphic.
+  and uses the crossed-blades encounter graphic from
+  `resources/view/leftbartabs/catalog/navigation-icon.svg`.
 - `COCKPIT_CONTROLS` contains creature filters, active
   filter chips, encounter difficulty selection, Auto tuning controls, and
   encounter-table selection.
 - `COCKPIT_MAIN` contains the active catalog list, result count, sort
   selection, and page controls.
+- Because the Catalog tab does not publish active-tab state content, the shell
+  shows the global state-tab strip with `Encounter` and `Reise`.
 - Creature Inspector content is defined separately in
   [Creature Details UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/slotcontent/details/creature/UI.md:1).
 

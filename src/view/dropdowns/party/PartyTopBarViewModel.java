@@ -80,7 +80,7 @@ public final class PartyTopBarViewModel {
         ParsedDraft parsedDraft = parseCharacterDraft(safeDraft);
         if (!parsedDraft.valid()) {
             showStatus(parsedDraft.message(), true);
-            return ActionResult.rejected(parsedDraft.message());
+            return ActionResult.failure(parsedDraft.message());
         }
         MutationResult result = party.createCharacter(new CreateCharacterCommand(
                 Objects.requireNonNull(parsedDraft.draft()),
@@ -94,12 +94,12 @@ public final class PartyTopBarViewModel {
         if (draftId == null || draftId.longValue() <= 0) {
             String message = "Charakter konnte nicht gefunden werden.";
             showStatus(message, true);
-            return ActionResult.rejected(message);
+            return ActionResult.failure(message);
         }
         ParsedDraft parsedDraft = parseCharacterDraft(safeDraft);
         if (!parsedDraft.valid()) {
             showStatus(parsedDraft.message(), true);
-            return ActionResult.rejected(parsedDraft.message());
+            return ActionResult.failure(parsedDraft.message());
         }
         long characterId = draftId.longValue();
         MutationResult result = party.updateCharacter(new UpdateCharacterCommand(
@@ -112,7 +112,7 @@ public final class PartyTopBarViewModel {
         if (id == null || id.longValue() <= 0) {
             String message = "Charakter konnte nicht gefunden werden.";
             showStatus(message, true);
-            return ActionResult.rejected(message);
+            return ActionResult.failure(message);
         }
         long characterId = id.longValue();
         MutationResult result = party.deleteCharacter(new DeleteCharacterCommand(characterId));
@@ -185,7 +185,7 @@ public final class PartyTopBarViewModel {
     }
 
     private void applyStorageError() {
-        triggerText.set("Keine Party");
+        triggerText.set("Keine _Party");
         panel.set(new PanelModel(
                 false,
                 true,
@@ -214,11 +214,11 @@ public final class PartyTopBarViewModel {
         if (status == MutationStatus.SUCCESS) {
             refresh();
             showStatus(successMessage, false);
-            return ActionResult.accepted();
+            return ActionResult.success();
         }
         String message = mutationMessage(status);
         showStatus(message, true);
-        return ActionResult.rejected(message);
+        return ActionResult.failure(message);
     }
 
     private static String mutationMessage(@Nullable MutationStatus status) {
@@ -506,11 +506,11 @@ public final class PartyTopBarViewModel {
             message = safe(message);
         }
 
-        static ActionResult accepted() {
+        static ActionResult success() {
             return new ActionResult(true, "");
         }
 
-        static ActionResult rejected(String message) {
+        static ActionResult failure(String message) {
             return new ActionResult(false, message);
         }
     }

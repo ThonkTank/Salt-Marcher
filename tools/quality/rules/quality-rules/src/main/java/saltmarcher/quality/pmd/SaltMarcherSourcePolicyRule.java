@@ -57,7 +57,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "navigationGroup",
             "viewOrder",
             "defaultLanding",
-            "navigationGraphicSupplier",
+            "navigationGraphic",
             "mode");
     private static final List<String> SHELL_TOP_BAR_SPEC_COMPONENTS = List.of(
             "key",
@@ -281,7 +281,6 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             }
         }
 
-        boolean isShellLeftBarTabSpec = sourceFacts.relativePath().equals("shell/api/ShellLeftBarTabSpec.java");
         for (String sceneGraphType : SHELL_SPEC_SCENE_GRAPH_TYPES) {
             if (sourceFacts.text().contains(sceneGraphType)) {
                 asCtx(data).addViolationWithMessage(node,
@@ -289,9 +288,9 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
                                 + sceneGraphType + "'.");
             }
         }
-        if (!isShellLeftBarTabSpec && sourceFacts.text().contains("javafx.scene.Node")) {
+        if (sourceFacts.text().contains("javafx.scene.Node")) {
             asCtx(data).addViolationWithMessage(node,
-                    "Only ShellLeftBarTabSpec may expose the documented feature-owned navigation graphic Node supplier.");
+                    "Shell contribution specs must pass resource metadata and must not expose JavaFX Node suppliers.");
         }
     }
 
@@ -301,7 +300,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             SaltMarcherSourceFacts sourceFacts) {
         if (sourceFacts.relativePath().equals("shell/api/ShellLeftBarTabSpec.java")) {
             validateRecordComponents(node, data, sourceFacts, "ShellLeftBarTabSpec", SHELL_LEFT_BAR_TAB_SPEC_COMPONENTS);
-            validatePublicMethods(node, data, sourceFacts, Set.of("navigationGraphic"));
+            validatePublicMethods(node, data, sourceFacts, Set.of());
             return;
         }
         if (sourceFacts.relativePath().equals("shell/api/ShellTopBarSpec.java")) {

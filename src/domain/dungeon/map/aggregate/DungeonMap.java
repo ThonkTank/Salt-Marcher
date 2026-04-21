@@ -1,6 +1,8 @@
 package src.domain.dungeon.map.aggregate;
 
 import src.domain.dungeon.map.value.ConnectionCatalog;
+import src.domain.dungeon.map.service.DungeonRoomTopologyEditor;
+import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonMapMetadata;
 import src.domain.dungeon.map.value.FeatureCatalog;
@@ -112,6 +114,14 @@ public final class DungeonMap {
 
     public DungeonMap resetDemoLayout() {
         return withTopology(SpatialTopology.demo(), revision + 1L);
+    }
+
+    public DungeonMap paintRoomRectangle(DungeonCell start, DungeonCell end) {
+        return new DungeonRoomTopologyEditor().paintRectangle(this, start, end);
+    }
+
+    public DungeonMap deleteRoomRectangle(DungeonCell start, DungeonCell end) {
+        return new DungeonRoomTopologyEditor().deleteRectangle(this, start, end);
     }
 
     public DungeonMap rename(String mapName) {

@@ -37,11 +37,11 @@ final class PartyTopBarBinder {
                 viewModel.awardXp(request.member().id(), request.member().name(), request.rawXp())));
         panel.onShortRest(() -> publishPartyMutation(encounterSession, viewModel.shortRest()));
         panel.onLongRest(() -> publishPartyMutation(encounterSession, viewModel.longRest()));
-        panel.onCreateCharacter(draft -> publishPartyMutation(encounterSession,
+        panel.onCreateCharacter(draft -> publishEditorMutation(encounterSession,
                 viewModel.createCharacter(toDraftModel(draft))));
-        panel.onUpdateCharacter(draft -> publishPartyMutation(encounterSession,
+        panel.onUpdateCharacter(draft -> publishEditorMutation(encounterSession,
                 viewModel.updateCharacter(toDraftModel(draft))));
-        panel.onDeleteCharacter(member -> publishPartyMutation(encounterSession,
+        panel.onDeleteCharacter(member -> publishEditorMutation(encounterSession,
                 viewModel.deleteCharacter(member.id(), member.name())));
         viewModel.refresh();
         return new Binding(panel);
@@ -53,19 +53,32 @@ final class PartyTopBarBinder {
         }
     }
 
+    private static PartyCharacterEditorTopBarView.EditorResult publishEditorMutation(
+            EncounterRuntimeViewModel encounterSession,
+            PartyTopBarViewModel.ActionResult result
+    ) {
+        PartyTopBarViewModel.ActionResult safeResult = result == null
+                ? PartyTopBarViewModel.ActionResult.failure("Party-Aktion konnte nicht gespeichert werden.")
+                : result;
+        publishPartyMutation(encounterSession, safeResult.accepted());
+        return safeResult.accepted()
+                ? PartyCharacterEditorTopBarView.EditorResult.success()
+                : PartyCharacterEditorTopBarView.EditorResult.failure(safeResult.message());
+    }
+
     private static PartyTopBarViewModel.CharacterDraftModel toDraftModel(
             PartyCharacterEditorTopBarView.EditorDraft draft
     ) {
         PartyCharacterEditorTopBarView.EditorDraft safeDraft = draft == null
-                ? new PartyCharacterEditorTopBarView.EditorDraft(null, "", "", 1, 10, 10)
+                ? new PartyCharacterEditorTopBarView.EditorDraft(null, "", "", "1", "10", "10")
                 : draft;
         return new PartyTopBarViewModel.CharacterDraftModel(
                 safeDraft.id(),
                 safeDraft.name(),
                 safeDraft.playerName(),
-                safeDraft.level(),
-                safeDraft.passivePerception(),
-                safeDraft.armorClass());
+                safeDraft.rawLevel(),
+                safeDraft.rawPassivePerception(),
+                safeDraft.rawArmorClass());
     }
 
     private static PartyTopBarView.PanelContent toPanelContent(PartyTopBarViewModel.PanelModel model) {

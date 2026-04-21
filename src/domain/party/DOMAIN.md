@@ -124,4 +124,4 @@ Target state:
 
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Party Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/PERSISTENCE.md:1)
-- [Party UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/party/UI.md:1)
+- [Party UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/dropdowns/party/UI.md:1)

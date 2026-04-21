@@ -35,6 +35,7 @@ public record DungeonMapDisplayModel(
         String selectedTool,
         @Nullable Selection selection,
         @Nullable DragPreview dragPreview,
+        @Nullable PaintPreview paintPreview,
         List<RenderCell> cells,
         List<RenderEdge> edges,
         List<RenderLabel> labels,
@@ -88,6 +89,7 @@ public record DungeonMapDisplayModel(
                 "Auswahl",
                 null,
                 null,
+                null,
                 List.of(),
                 List.of(),
                 List.of(),
@@ -137,6 +139,7 @@ public record DungeonMapDisplayModel(
                 selectedTool,
                 null,
                 null,
+                null,
                 runtimePartyToken);
     }
 
@@ -160,6 +163,7 @@ public record DungeonMapDisplayModel(
                 selectedTool,
                 null,
                 null,
+                null,
                 runtimePartyToken);
     }
 
@@ -173,6 +177,7 @@ public record DungeonMapDisplayModel(
             String selectedTool,
             @Nullable Selection selection,
             @Nullable DragPreview dragPreview,
+            @Nullable PaintPreview paintPreview,
             @Nullable PartyToken runtimePartyToken
     ) {
         if (snapshot == null) {
@@ -210,6 +215,9 @@ public record DungeonMapDisplayModel(
         }
         if (dragPreview != null && dragPreview.active()) {
             addDragPreview(renderedCells, map.areas(), selection, dragPreview);
+        }
+        if (paintPreview != null && paintPreview.active()) {
+            addPaintPreview(renderedCells, paintPreview);
         }
         for (DungeonBoundarySnapshot boundary : map.boundaries()) {
             if (boundary.edge() == null || boundary.edge().from() == null || boundary.edge().to() == null) {
@@ -263,6 +271,7 @@ public record DungeonMapDisplayModel(
                 selectedTool,
                 selection,
                 dragPreview,
+                paintPreview,
                 renderedCells,
                 renderedEdges,
                 renderedLabels,
@@ -291,7 +300,8 @@ public record DungeonMapDisplayModel(
                 area.clusterId(),
                 selected,
                 false,
-                preview);
+                preview,
+                false);
     }
 
     private static RenderCell renderFeatureCell(DungeonFeatureSnapshot feature, DungeonCellRef cell, String selectedTool) {
@@ -305,6 +315,7 @@ public record DungeonMapDisplayModel(
                 feature.id(),
                 0L,
                 selectedFeature(feature, selectedTool),
+                false,
                 false,
                 false);
     }
@@ -323,6 +334,29 @@ public record DungeonMapDisplayModel(
             renderedCells.addAll(area.cells().stream()
                     .map(cell -> renderCell(area, cell, true, true, dragPreview.deltaQ(), dragPreview.deltaR()))
                     .toList());
+        }
+    }
+
+    private static void addPaintPreview(List<RenderCell> renderedCells, PaintPreview paintPreview) {
+        int minQ = Math.min(paintPreview.startQ(), paintPreview.endQ());
+        int maxQ = Math.max(paintPreview.startQ(), paintPreview.endQ());
+        int minR = Math.min(paintPreview.startR(), paintPreview.endR());
+        int maxR = Math.max(paintPreview.startR(), paintPreview.endR());
+        for (int q = minQ; q <= maxQ; q++) {
+            for (int r = minR; r <= maxR; r++) {
+                renderedCells.add(new RenderCell(
+                        q,
+                        r,
+                        paintPreview.level(),
+                        paintPreview.deleteMode() ? "Delete preview" : "Paint preview",
+                        CellKind.ROOM,
+                        0L,
+                        0L,
+                        false,
+                        false,
+                        true,
+                        paintPreview.deleteMode()));
+            }
         }
     }
 
@@ -355,9 +389,9 @@ public record DungeonMapDisplayModel(
         addCorridor(cells, corridorId, 4, 4, 2, false);
         addCorridor(cells, corridorId, 5, 4, 3, false);
         addCorridor(cells, corridorId + 1, 3, 6, 2, false);
-        cells.add(new RenderCell(8, 5, 0, "Stair", CellKind.STAIR, 3_000L, 0L, false, false, false));
-        cells.add(new RenderCell(1, 3, 0, "Transition", CellKind.TRANSITION, 4_000L, 0L, false, false, false));
-        cells.add(new RenderCell(7, 5, 1, "Balcony", CellKind.ROOM, 5_000L, 5_000L, false, true, false));
+        cells.add(new RenderCell(8, 5, 0, "Stair", CellKind.STAIR, 3_000L, 0L, false, false, false, false));
+        cells.add(new RenderCell(1, 3, 0, "Transition", CellKind.TRANSITION, 4_000L, 0L, false, false, false, false));
+        cells.add(new RenderCell(7, 5, 1, "Balcony", CellKind.ROOM, 5_000L, 5_000L, false, true, false, false));
         edges.add(new RenderEdge(4, 4, 6, 4, 0, EdgeKind.DOOR, "Door", 10_000L, false));
         edges.add(new RenderEdge(5, 6, 5, 8, 0, EdgeKind.DOOR, "Door", 10_001L, false));
         edges.add(new RenderEdge(6, 4, 9, 4, 0, EdgeKind.WALL, "North wall", 10_002L, false));
@@ -410,6 +444,7 @@ public record DungeonMapDisplayModel(
                         id,
                         selected,
                         z != 0,
+                        false,
                         false));
             }
         }
@@ -421,7 +456,18 @@ public record DungeonMapDisplayModel(
 
     private static void addCorridor(List<RenderCell> cells, long id, int q, int startR, int length, boolean selected) {
         for (int offset = 0; offset < length; offset++) {
-            cells.add(new RenderCell(q, startR + offset, 0, "Corridor", CellKind.CORRIDOR, id, 0L, selected, false, false));
+            cells.add(new RenderCell(
+                    q,
+                    startR + offset,
+                    0,
+                    "Corridor",
+                    CellKind.CORRIDOR,
+                    id,
+                    0L,
+                    selected,
+                    false,
+                    false,
+                    false));
         }
     }
 
@@ -594,7 +640,8 @@ public record DungeonMapDisplayModel(
             long clusterId,
             boolean selected,
             boolean overlay,
-            boolean preview
+            boolean preview,
+            boolean destructivePreview
     ) {
 
         public RenderCell {
@@ -678,6 +725,13 @@ public record DungeonMapDisplayModel(
 
         public boolean active() {
             return clusterId > 0L && (deltaQ != 0 || deltaR != 0);
+        }
+    }
+
+    public record PaintPreview(int startQ, int startR, int endQ, int endR, int level, boolean deleteMode) {
+
+        public boolean active() {
+            return true;
         }
     }
 

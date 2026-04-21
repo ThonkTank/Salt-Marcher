@@ -6,12 +6,20 @@ package src.domain.dungeon.published;
 public sealed interface DungeonEditorOperation permits
         DungeonEditorOperation.MoveRoomCluster,
         DungeonEditorOperation.MoveRoomAnchor,
+        DungeonEditorOperation.PaintRoomRectangle,
+        DungeonEditorOperation.DeleteRoomRectangle,
         DungeonEditorOperation.ResetDemoLayout {
 
     record MoveRoomCluster(long clusterId, int deltaQ, int deltaR) implements DungeonEditorOperation {
     }
 
     record MoveRoomAnchor(int deltaQ, int deltaR) implements DungeonEditorOperation {
+    }
+
+    record PaintRoomRectangle(DungeonCellRef start, DungeonCellRef end) implements DungeonEditorOperation {
+    }
+
+    record DeleteRoomRectangle(DungeonCellRef start, DungeonCellRef end) implements DungeonEditorOperation {
     }
 
     record ResetDemoLayout() implements DungeonEditorOperation {

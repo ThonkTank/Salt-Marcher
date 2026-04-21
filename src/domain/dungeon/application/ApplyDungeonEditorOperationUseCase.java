@@ -4,6 +4,7 @@ import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
+import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 
 import java.util.List;
@@ -18,6 +19,8 @@ public final class ApplyDungeonEditorOperationUseCase {
     public sealed interface OperationInput permits
             OperationInput.MoveRoomCluster,
             OperationInput.MoveRoomAnchor,
+            OperationInput.PaintRoomRectangle,
+            OperationInput.DeleteRoomRectangle,
             OperationInput.ResetDemoLayout,
             OperationInput.NoChange {
 
@@ -25,6 +28,12 @@ public final class ApplyDungeonEditorOperationUseCase {
         }
 
         record MoveRoomAnchor(int deltaQ, int deltaR) implements OperationInput {
+        }
+
+        record PaintRoomRectangle(DungeonCell start, DungeonCell end) implements OperationInput {
+        }
+
+        record DeleteRoomRectangle(DungeonCell start, DungeonCell end) implements OperationInput {
         }
 
         record ResetDemoLayout() implements OperationInput {
@@ -86,6 +95,16 @@ public final class ApplyDungeonEditorOperationUseCase {
         }
         if (operation instanceof OperationInput.MoveRoomAnchor moveRoomAnchor) {
             return current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
+        }
+        if (operation instanceof OperationInput.PaintRoomRectangle paintRoomRectangle) {
+            DungeonCell start = paintRoomRectangle.start();
+            DungeonCell end = paintRoomRectangle.end();
+            return start == null || end == null ? current : current.paintRoomRectangle(start, end);
+        }
+        if (operation instanceof OperationInput.DeleteRoomRectangle deleteRoomRectangle) {
+            DungeonCell start = deleteRoomRectangle.start();
+            DungeonCell end = deleteRoomRectangle.end();
+            return start == null || end == null ? current : current.deleteRoomRectangle(start, end);
         }
         if (operation instanceof OperationInput.ResetDemoLayout) {
             return current.resetDemoLayout();

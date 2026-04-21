@@ -25,7 +25,8 @@ projection and can show runtime party-token state supplied by travel.
 - `DungeonMapDisplayModel` is view-owned projection state translated from
   domain snapshots and runtime travel session state. It owns reusable
   level-overlay settings for disabled, nearby range, selected levels, and
-  opacity presentation, plus editor selection and drag-preview render state.
+  opacity presentation, plus editor selection, drag-preview render state, and
+  room paint/delete preview render state.
 - Visual values such as colors, fills, strokes, font sizes, borders, and text
   emphasis live in `resources/salt-marcher.css`.
 
@@ -34,8 +35,8 @@ projection and can show runtime party-token state supplied by travel.
 - No loaded map shows a centered placeholder overlay.
 - Loaded maps can show a softer note overlay while still displaying the map.
 - Editor mode shows tool/status text, selectable tool highlighting, configurable
-  level overlays, grid/graph mode, selected room clusters, and drag previews
-  supplied by the active editor ViewModel.
+  level overlays, grid/graph mode, selected room clusters, drag previews, and
+  room paint/delete rectangle previews supplied by the active editor ViewModel.
 - Runtime mode shows a party token from the active travel session, numbered
   door markers when supplied by the display model, current location state, and
   resettable camera controls.

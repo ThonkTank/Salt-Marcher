@@ -17,7 +17,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
                     "ContributionKey.java",
                     "InspectorEntrySpec.java",
                     "InspectorSink.java",
-                    "NavigationGraphicSupport.java",
+                    "NavigationGraphicResource.java",
                     "NavigationGroupSpec.java",
                     "ServiceContribution.java",
                     "ServiceRegistry.java",

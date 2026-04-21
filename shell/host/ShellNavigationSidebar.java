@@ -58,7 +58,7 @@ final class ShellNavigationSidebar extends VBox {
         button.setToggleGroup(navGroup);
         button.setTooltip(new Tooltip(binding.title()));
         button.setAccessibleText(binding.title());
-        Node graphic = registrationSpec.navigationGraphic();
+        Node graphic = ShellNavigationGraphicLoader.load(registrationSpec.navigationGraphic());
         if (graphic != null) {
             button.setGraphic(graphic);
             button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);

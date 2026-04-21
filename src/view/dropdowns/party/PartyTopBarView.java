@@ -3,6 +3,7 @@ package src.view.dropdowns.party;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -109,15 +110,21 @@ public final class PartyTopBarView extends HBox {
         onLongRest = action == null ? () -> {} : action;
     }
 
-    public void onCreateCharacter(Consumer<PartyCharacterEditorTopBarView.EditorDraft> action) {
+    public void onCreateCharacter(
+            Function<PartyCharacterEditorTopBarView.EditorDraft, PartyCharacterEditorTopBarView.EditorResult> action
+    ) {
         editorView.onCreate(action);
     }
 
-    public void onUpdateCharacter(Consumer<PartyCharacterEditorTopBarView.EditorDraft> action) {
+    public void onUpdateCharacter(
+            Function<PartyCharacterEditorTopBarView.EditorDraft, PartyCharacterEditorTopBarView.EditorResult> action
+    ) {
         editorView.onUpdate(action);
     }
 
-    public void onDeleteCharacter(Consumer<PartyCharacterEditorTopBarView.EditorMember> action) {
+    public void onDeleteCharacter(
+            Function<PartyCharacterEditorTopBarView.EditorMember, PartyCharacterEditorTopBarView.EditorResult> action
+    ) {
         editorView.onDelete(action);
     }
 

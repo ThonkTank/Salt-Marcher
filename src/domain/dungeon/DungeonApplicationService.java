@@ -235,6 +235,16 @@ public final class DungeonApplicationService {
                         moveRoomAnchor.deltaQ(),
                         moveRoomAnchor.deltaR());
             }
+            if (operation instanceof DungeonEditorOperation.PaintRoomRectangle paintRoomRectangle) {
+                return new ApplyDungeonEditorOperationUseCase.OperationInput.PaintRoomRectangle(
+                        MapPublication.domainCell(paintRoomRectangle.start()),
+                        MapPublication.domainCell(paintRoomRectangle.end()));
+            }
+            if (operation instanceof DungeonEditorOperation.DeleteRoomRectangle deleteRoomRectangle) {
+                return new ApplyDungeonEditorOperationUseCase.OperationInput.DeleteRoomRectangle(
+                        MapPublication.domainCell(deleteRoomRectangle.start()),
+                        MapPublication.domainCell(deleteRoomRectangle.end()));
+            }
             if (operation instanceof DungeonEditorOperation.ResetDemoLayout) {
                 return new ApplyDungeonEditorOperationUseCase.OperationInput.ResetDemoLayout();
             }

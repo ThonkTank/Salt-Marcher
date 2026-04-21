@@ -24,10 +24,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 public final class DungeonSqliteGateway {
@@ -228,15 +230,33 @@ public final class DungeonSqliteGateway {
     }
 
     private static void persistAuthoredGeometry(Connection connection, DungeonMapRecord record) throws SQLException {
+        Set<Long> clusterIds = new LinkedHashSet<>();
         for (DungeonRoomClusterRecord cluster : record.roomClusters()) {
+            clusterIds.add(cluster.clusterId());
             upsertRoomCluster(connection, cluster);
             replaceClusterVertices(connection, cluster);
             replaceClusterBoundaries(connection, cluster);
         }
+        Set<Long> roomIds = new LinkedHashSet<>();
         for (DungeonRoomRecord room : record.rooms()) {
+            roomIds.add(room.roomId());
             upsertRoomPosition(connection, room);
             replaceRoomFloors(connection, room);
         }
+        deleteRowsNotIn(
+                connection,
+                DungeonPersistenceSchema.ROOMS_TABLE,
+                "room_id",
+                "dungeon_map_id",
+                record.mapId(),
+                roomIds);
+        deleteRowsNotIn(
+                connection,
+                DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE,
+                "cluster_id",
+                "dungeon_map_id",
+                record.mapId(),
+                clusterIds);
     }
 
     private static void upsertRoomCluster(Connection connection, DungeonRoomClusterRecord cluster) throws SQLException {
@@ -313,12 +333,16 @@ public final class DungeonSqliteGateway {
     private static void upsertRoomPosition(Connection connection, DungeonRoomRecord room) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.ROOMS_TABLE
-                        + " SET component_x=?, component_y=?, level_z=? WHERE room_id=? AND dungeon_map_id=?")) {
-            update.setInt(1, room.componentX());
-            update.setInt(2, room.componentY());
-            update.setInt(3, room.levelZ());
-            update.setLong(4, room.roomId());
-            update.setLong(5, room.mapId());
+                        + " SET cluster_id=?, name=?, visual_description=?, component_x=?, component_y=?, level_z=?"
+                        + " WHERE room_id=? AND dungeon_map_id=?")) {
+            update.setLong(1, room.clusterId());
+            update.setString(2, room.name());
+            update.setString(3, room.visualDescription());
+            update.setInt(4, room.componentX());
+            update.setInt(5, room.componentY());
+            update.setInt(6, room.levelZ());
+            update.setLong(7, room.roomId());
+            update.setLong(8, room.mapId());
             if (update.executeUpdate() > 0) {
                 return;
             }
@@ -336,6 +360,37 @@ public final class DungeonSqliteGateway {
             insert.setInt(7, room.componentY());
             insert.setInt(8, room.levelZ());
             insert.executeUpdate();
+        }
+    }
+
+    private static void deleteRowsNotIn(
+            Connection connection,
+            String tableName,
+            String idColumn,
+            String mapIdColumn,
+            long mapId,
+            Set<Long> retainedIds
+    ) throws SQLException {
+        StringBuilder sql = new StringBuilder("DELETE FROM ")
+                .append(tableName)
+                .append(" WHERE ")
+                .append(mapIdColumn)
+                .append("=?");
+        if (retainedIds != null && !retainedIds.isEmpty()) {
+            sql.append(" AND ")
+                    .append(idColumn)
+                    .append(" NOT IN (")
+                    .append("?,".repeat(retainedIds.size()));
+            sql.setLength(sql.length() - 1);
+            sql.append(')');
+        }
+        try (PreparedStatement delete = connection.prepareStatement(sql.toString())) {
+            delete.setLong(1, mapId);
+            int index = 2;
+            for (Long retainedId : retainedIds == null ? Set.<Long>of() : retainedIds) {
+                delete.setLong(index++, retainedId);
+            }
+            delete.executeUpdate();
         }
     }
 
