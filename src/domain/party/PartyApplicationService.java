@@ -151,6 +151,24 @@ public final class PartyApplicationService {
         }
     }
 
+    public PartyTravelPositionsResult loadTravelPositions(LoadPartyTravelPositionsQuery query) {
+        try {
+            LoadPartyTravelPositionsQuery effectiveQuery = query == null
+                    ? new LoadPartyTravelPositionsQuery(List.of())
+                    : query;
+            LoadPartyTravelPositionsUseCase.Result result =
+                    loadPartyTravelPositionsUseCase.execute(effectiveQuery.characterIds());
+            return new PartyTravelPositionsResult(
+                    ReadStatus.SUCCESS,
+                    result.positions().stream()
+                            .map(PartyApplicationService::mapTravelPosition)
+                            .toList(),
+                    mapTravelLocation(result.partyTokenLocation()));
+        } catch (IllegalStateException exception) {
+            return new PartyTravelPositionsResult(ReadStatus.STORAGE_ERROR, List.of(), null);
+        }
+    }
+
     public MutationResult createCharacter(CreateCharacterCommand command) {
         CharacterDraft draft = command == null ? null : command.draft();
         MembershipState membership = command == null ? null : command.membership();
@@ -186,6 +204,16 @@ public final class PartyApplicationService {
     public MutationResult performRest(PerformPartyRestCommand command) {
         RestType restType = command == null ? null : command.restType();
         return new MutationResult(mapMutationStatus(performPartyRestUseCase.execute(toPartyRestType(restType))));
+    }
+
+    public MutationResult moveCharacters(MovePartyCharactersCommand command) {
+        MovePartyCharactersCommand effectiveCommand = command == null
+                ? new MovePartyCharactersCommand(List.of(), null, true)
+                : command;
+        return new MutationResult(mapMutationStatus(movePartyCharactersUseCase.execute(
+                effectiveCommand.characterIds(),
+                toDomainTravelLocation(effectiveCommand.target()),
+                effectiveCommand.attachToPartyToken())));
     }
 
     private static PartySnapshot mapSnapshot(LoadPartySnapshotUseCase.PartySnapshotProjection projection) {
