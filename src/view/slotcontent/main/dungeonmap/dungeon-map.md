@@ -20,7 +20,7 @@ projection and can show runtime party-token state supplied by travel.
   door markers, stairs, transitions, labels, graph mode, and the runtime party
   token from `DungeonMapDisplayModel`.
 - The View owns camera state, viewport transforms, canvas drawing, label
-  placement, technical pan/zoom/reset events, one-step WASD panning, and
+  placement, technical pan/zoom/reset events, toolbar-button panning, and
   passive primary-pointer events expressed as grid hits.
 - `DungeonMapDisplayModel` is view-owned projection state translated from
   domain snapshots and runtime travel session state. It owns reusable
@@ -40,6 +40,7 @@ projection and can show runtime party-token state supplied by travel.
 - Runtime mode shows a party token from the active travel session, numbered
   door markers when supplied by the display model, current location state, and
   resettable camera controls.
-- WASD camera panning moves one fixed step per key-press event. There is no
-  timer-driven or held-key camera motion. Pointer panning uses scene-stable
-  deltas so the camera does not jump when child hit targets change.
+- Camera panning is available through explicit toolbar buttons and
+  middle-pointer drag. There is no timer-driven, held-key, or raw keyboard
+  camera motion. Pointer panning uses scene-stable deltas so the camera does
+  not jump when child hit targets change.

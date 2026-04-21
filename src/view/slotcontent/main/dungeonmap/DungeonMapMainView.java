@@ -14,8 +14,6 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
@@ -104,11 +102,15 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     public final void resetCamera() {
+        resetCameraState();
+        cameraChanged();
+        contentHost.requestFocus();
+    }
+
+    private void resetCameraState() {
         panX = 0.0;
         panY = 0.0;
         zoom = 1.0;
-        redraw();
-        contentHost.requestFocus();
     }
 
     private void configureLabels() {
@@ -159,7 +161,7 @@ public class DungeonMapMainView extends BorderPane {
                 cameraButton("D", "Pan right", () -> panByPixels(-48.0, 0.0)),
                 cameraButton("-", "Zoom out", () -> zoomAround(width() / 2.0, height() / 2.0, 1.0 / ZOOM_STEP_FACTOR)),
                 cameraButton("+", "Zoom in", () -> zoomAround(width() / 2.0, height() / 2.0, ZOOM_STEP_FACTOR)),
-                cameraButton("Reset", "Reset camera", this::resetCamera)
+                cameraButton("Reset", "Reset camera", this::resetCameraState)
         );
         cameraControls.getStyleClass().add("map-camera-controls");
         return cameraControls;
@@ -171,7 +173,7 @@ public class DungeonMapMainView extends BorderPane {
         button.setTooltip(new Tooltip(tooltip));
         button.setOnAction(event -> {
             action.run();
-            redraw();
+            cameraChanged();
             contentHost.requestFocus();
         });
         return button;
@@ -182,7 +184,6 @@ public class DungeonMapMainView extends BorderPane {
         contentHost.addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
         contentHost.addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
         contentHost.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
-        contentHost.addEventFilter(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
     }
 
     private void handleMousePressed(MouseEvent event) {
@@ -210,7 +211,7 @@ public class DungeonMapMainView extends BorderPane {
         panByPixels(event.getSceneX() - lastDragSceneX, event.getSceneY() - lastDragSceneY);
         lastDragSceneX = event.getSceneX();
         lastDragSceneY = event.getSceneY();
-        redraw();
+        cameraChanged();
         event.consume();
     }
 
@@ -230,23 +231,7 @@ public class DungeonMapMainView extends BorderPane {
         } else if (event.getDeltaY() < 0.0) {
             zoomAround(event.getX(), event.getY(), 1.0 / ZOOM_STEP_FACTOR);
         }
-        redraw();
-        event.consume();
-    }
-
-    private void handleKeyPressed(KeyEvent event) {
-        if (event.getCode() == KeyCode.A) {
-            panByPixels(48.0, 0.0);
-        } else if (event.getCode() == KeyCode.D) {
-            panByPixels(-48.0, 0.0);
-        } else if (event.getCode() == KeyCode.W) {
-            panByPixels(0.0, 48.0);
-        } else if (event.getCode() == KeyCode.S) {
-            panByPixels(0.0, -48.0);
-        } else {
-            return;
-        }
-        redraw();
+        cameraChanged();
         event.consume();
     }
 
@@ -317,6 +302,11 @@ public class DungeonMapMainView extends BorderPane {
         redraw();
     }
 
+    private void cameraChanged() {
+        redraw();
+        viewportChangedHandler.run();
+    }
+
     private void redraw() {
         DungeonMapDisplayModel model = renderModel.get() == null ? DungeonMapDisplayModel.empty() : renderModel.get();
         titleLabel.setText(model.title());
@@ -330,7 +320,6 @@ public class DungeonMapMainView extends BorderPane {
                 model.projectionLevel(),
                 zoom * 100.0));
         renderScene(model);
-        viewportChangedHandler.run();
     }
 
     private void renderScene(DungeonMapDisplayModel model) {
