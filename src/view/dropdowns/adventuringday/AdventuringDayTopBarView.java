@@ -12,6 +12,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
+import src.view.slotcontent.topbar.adventuringday.AdventuringDayCalculatorView;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 public final class AdventuringDayTopBarView extends HBox {

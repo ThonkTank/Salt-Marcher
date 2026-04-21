@@ -1,4 +1,4 @@
-package src.view.dropdowns.adventuringday;
+package src.view.slotcontent.topbar.adventuringday;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-final class AdventuringDayCalculatorView extends VBox {
+public final class AdventuringDayCalculatorView extends VBox {
 
     private enum PartySourceMode {
         ACTIVE_PARTY,
@@ -58,14 +58,14 @@ final class AdventuringDayCalculatorView extends VBox {
     private final List<RowControls> rows = new ArrayList<>();
 
     private CalculationProvider calculationProvider =
-            (levels, totalGroupXp) -> AdventuringDayCalculatorModel.Calculation.empty(totalGroupXp);
+            (levels, totalGroupXp) -> Calculation.empty(totalGroupXp);
     private List<Integer> activePartyLevels = List.of();
     private PartySourceMode sourceMode = PartySourceMode.ACTIVE_PARTY;
     private boolean activePartyChangedSinceCustomEdit;
     private boolean activePartyRefreshFailed;
     private boolean rebuilding;
 
-    AdventuringDayCalculatorView() {
+    public AdventuringDayCalculatorView() {
         setSpacing(8);
         setPadding(new Insets(8, 0, 0, 0));
         DAY_FORMAT.setMinimumFractionDigits(0);
@@ -140,14 +140,14 @@ final class AdventuringDayCalculatorView extends VBox {
         updateActionState();
     }
 
-    void setCalculationProvider(CalculationProvider provider) {
+    public void setCalculationProvider(CalculationProvider provider) {
         calculationProvider = provider == null
-                ? (levels, totalGroupXp) -> AdventuringDayCalculatorModel.Calculation.empty(totalGroupXp)
+                ? (levels, totalGroupXp) -> Calculation.empty(totalGroupXp)
                 : provider;
         refreshSummary();
     }
 
-    void setActivePartySnapshot(List<Integer> levels) {
+    public void setActivePartySnapshot(List<Integer> levels) {
         List<Integer> sanitizedLevels = sanitizeLevels(levels);
         boolean changed = !sanitizedLevels.equals(activePartyLevels);
         activePartyRefreshFailed = false;
@@ -162,7 +162,7 @@ final class AdventuringDayCalculatorView extends VBox {
         refreshSummary();
     }
 
-    void markActivePartyRefreshFailed() {
+    public void markActivePartyRefreshFailed() {
         activePartyRefreshFailed = true;
         updateActionState();
         refreshSummary();
@@ -256,7 +256,7 @@ final class AdventuringDayCalculatorView extends VBox {
     }
 
     private void renderBudgetSummary(List<Integer> levels) {
-        AdventuringDayCalculatorModel.Budget budget = safeCalculation(levels, 0).budget();
+        Budget budget = safeCalculation(levels, 0).budget();
         summaryBox.getChildren().setAll(totalXpLabel, perThirdLabel, firstRestLabel, secondRestLabel);
         totalXpLabel.setText("Tag gesamt: " + formatInt(budget.totalXp()) + " XP");
         perThirdLabel.setText("Pro Drittel: ca. " + formatInt(budget.perThirdXp()) + " XP");
@@ -270,7 +270,7 @@ final class AdventuringDayCalculatorView extends VBox {
     }
 
     private void renderProgressSummary(List<Integer> levels, int totalGroupXp) {
-        AdventuringDayCalculatorModel.Progress progress = safeCalculation(levels, totalGroupXp).progress();
+        Progress progress = safeCalculation(levels, totalGroupXp).progress();
         summaryBox.getChildren().setAll(
                 totalXpLabel,
                 awardedXpLabel,
@@ -291,14 +291,14 @@ final class AdventuringDayCalculatorView extends VBox {
             timelineBox.getChildren().add(timelineEmptyLabel);
             return;
         }
-        for (AdventuringDayCalculatorModel.ProgressEvent event : progress.events()) {
+        for (ProgressEvent event : progress.events()) {
             timelineBox.getChildren().add(buildEventLabel(event));
         }
     }
 
-    private AdventuringDayCalculatorModel.Calculation safeCalculation(List<Integer> levels, int totalGroupXp) {
-        AdventuringDayCalculatorModel.Calculation calculation = calculationProvider.calculate(levels, totalGroupXp);
-        return calculation == null ? AdventuringDayCalculatorModel.Calculation.empty(totalGroupXp) : calculation;
+    private Calculation safeCalculation(List<Integer> levels, int totalGroupXp) {
+        Calculation calculation = calculationProvider.calculate(levels, totalGroupXp);
+        return calculation == null ? Calculation.empty(totalGroupXp) : calculation;
     }
 
     private void renderEmptyState() {
@@ -307,7 +307,7 @@ final class AdventuringDayCalculatorView extends VBox {
         timelineBox.getChildren().setAll(timelineTitleLabel, timelineEmptyLabel);
     }
 
-    private Label buildEventLabel(AdventuringDayCalculatorModel.ProgressEvent event) {
+    private Label buildEventLabel(ProgressEvent event) {
         String prefix = "Tag " + event.dayNumber() + ", " + formatInt(event.groupXp()) + " XP: ";
         String suffix = event.partialDay() ? " (teilweiser Tag)" : "";
         String text = switch (event.type()) {
@@ -360,12 +360,12 @@ final class AdventuringDayCalculatorView extends VBox {
         return List.copyOf(normalized);
     }
 
-    private static String formatLevelProgress(List<AdventuringDayCalculatorModel.LevelProgress> progressions) {
+    private static String formatLevelProgress(List<LevelProgress> progressions) {
         if (progressions == null || progressions.isEmpty()) {
             return "keine";
         }
         List<String> parts = new ArrayList<>();
-        for (AdventuringDayCalculatorModel.LevelProgress progression : progressions) {
+        for (LevelProgress progression : progressions) {
             StringBuilder builder = new StringBuilder();
             builder.append(progression.characterCount()).append("x L").append(progression.startLevel());
             builder.append(progression.levelUps() > 0 ? " -> L" + progression.endLevel() : " bleibt");
@@ -394,8 +394,64 @@ final class AdventuringDayCalculatorView extends VBox {
     }
 
     @FunctionalInterface
-    interface CalculationProvider {
-        AdventuringDayCalculatorModel.Calculation calculate(List<Integer> levels, int totalGroupXp);
+    public interface CalculationProvider {
+        Calculation calculate(List<Integer> levels, int totalGroupXp);
+    }
+
+    public record Calculation(Budget budget, Progress progress) {
+
+        public static Calculation empty(int totalGroupXp) {
+            return new Calculation(
+                    new Budget(0, 0, 0, 0, 0),
+                    new Progress(totalGroupXp, 0, 0, 0, 0.0, 0, 0, List.of(), List.of()));
+        }
+    }
+
+    public record Budget(
+            int totalXp,
+            int perThirdXp,
+            int firstShortRestXp,
+            int secondShortRestXp,
+            int characterCount) {
+    }
+
+    public record Progress(
+            int totalGroupXp,
+            int perCharacterAwardedXp,
+            int partySize,
+            int fullDays,
+            double totalDays,
+            int shortRests,
+            int longRests,
+            List<LevelProgress> levelProgressions,
+            List<ProgressEvent> events) {
+
+        public Progress {
+            levelProgressions = levelProgressions == null ? List.of() : List.copyOf(levelProgressions);
+            events = events == null ? List.of() : List.copyOf(events);
+        }
+    }
+
+    public record LevelProgress(
+            int startLevel,
+            int endLevel,
+            int characterCount,
+            int levelUps) {
+    }
+
+    public record ProgressEvent(
+            int groupXp,
+            ProgressEventType type,
+            int dayNumber,
+            int newLevel,
+            int affectedCharacters,
+            boolean partialDay) {
+    }
+
+    public enum ProgressEventType {
+        LEVEL_UP,
+        SHORT_REST,
+        LONG_REST
     }
 
     private final class RowControls {

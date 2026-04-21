@@ -2,11 +2,15 @@ package src.domain.dungeon.map.value;
 
 import src.domain.dungeon.map.entity.DungeonCorridor;
 import src.domain.dungeon.map.entity.DungeonRoom;
+import src.domain.dungeon.map.entity.DungeonRoomCluster;
 import src.domain.dungeon.map.entity.DungeonStair;
 import src.domain.dungeon.map.entity.DungeonTransition;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -25,6 +29,14 @@ public record DungeonMapTopology(
             RoomCatalog rooms,
             ConnectionCatalog connections
     ) {
+        return from(SpatialTopology.empty(), rooms, connections);
+    }
+
+    public static DungeonMapTopology from(
+            SpatialTopology topology,
+            RoomCatalog rooms,
+            ConnectionCatalog connections
+    ) {
         List<DungeonTopologyBinding> result = new ArrayList<>();
         for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms.rooms()) {
             result.add(new DungeonTopologyBinding(
@@ -39,6 +51,15 @@ public record DungeonMapTopology(
                     0L,
                     corridor.corridorId(),
                     "Corridor " + corridor.corridorId()));
+            for (DungeonCorridorDoorBinding doorBinding : corridor.bindings().doorBindings()) {
+                if (doorBinding.topologyRef().present()) {
+                    result.add(new DungeonTopologyBinding(
+                            doorBinding.topologyRef(),
+                            doorBinding.clusterId(),
+                            corridor.corridorId(),
+                            "Door " + doorBinding.topologyRef().id()));
+                }
+            }
         }
         for (DungeonStair stair : connections == null ? List.<DungeonStair>of() : connections.stairs()) {
             result.add(new DungeonTopologyBinding(
@@ -54,7 +75,34 @@ public record DungeonMapTopology(
                     0L,
                     transition.label()));
         }
+        for (DungeonRoomCluster cluster : topology == null ? List.<DungeonRoomCluster>of() : topology.roomClusters()) {
+            for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
+                for (DungeonClusterBoundary boundary : boundaries) {
+                    DungeonTopologyRef ref = boundary.resolvedTopologyRef(cluster.center());
+                    result.add(new DungeonTopologyBinding(
+                            ref,
+                            cluster.clusterId(),
+                            0L,
+                            labelFor(ref.kind())));
+                }
+            }
+        }
         return new DungeonMapTopology(result);
+    }
+
+    public static DungeonMapTopology merge(@Nullable DungeonMapTopology primary, DungeonMapTopology fallback) {
+        Map<DungeonTopologyRef, DungeonTopologyBinding> result = new LinkedHashMap<>();
+        for (DungeonTopologyBinding binding : primary == null ? List.<DungeonTopologyBinding>of() : primary.bindings()) {
+            if (binding.ref().present()) {
+                result.put(binding.ref(), binding);
+            }
+        }
+        for (DungeonTopologyBinding binding : fallback == null ? List.<DungeonTopologyBinding>of() : fallback.bindings()) {
+            if (binding.ref().present()) {
+                result.putIfAbsent(binding.ref(), binding);
+            }
+        }
+        return new DungeonMapTopology(new ArrayList<>(result.values()));
     }
 
     public Optional<DungeonTopologyBinding> find(DungeonTopologyRef ref) {
@@ -80,6 +128,22 @@ public record DungeonMapTopology(
                 .filter(corridorId -> corridorId > 0L)
                 .map(OptionalLong::of)
                 .orElseGet(OptionalLong::empty);
+    }
+
+    public boolean isEmpty() {
+        return bindings.isEmpty();
+    }
+
+    private static String labelFor(DungeonTopologyElementKind kind) {
+        return switch (kind == null ? DungeonTopologyElementKind.EMPTY : kind) {
+            case DOOR -> "Door";
+            case WALL -> "Wall";
+            case ROOM -> "Room";
+            case CORRIDOR -> "Corridor";
+            case STAIR -> "Stair";
+            case TRANSITION -> "Transition";
+            case EMPTY -> "";
+        };
     }
 
     public record DungeonTopologyBinding(

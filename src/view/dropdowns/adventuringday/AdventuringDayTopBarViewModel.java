@@ -50,11 +50,11 @@ final class AdventuringDayTopBarViewModel {
         applySummary(result.summary());
     }
 
-    AdventuringDayCalculatorModel.Calculation calculate(List<Integer> levels, int totalGroupXp) {
+    CalculationModel calculate(List<Integer> levels, int totalGroupXp) {
         AdventuringDayCalculationResult result = party.calculateAdventuringDay(
                 new CalculateAdventuringDayQuery(levels, totalGroupXp));
         if (result == null || result.status() != ReadStatus.SUCCESS || result.calculation() == null) {
-            return AdventuringDayCalculatorModel.Calculation.empty(totalGroupXp);
+            return CalculationModel.empty(totalGroupXp);
         }
         return mapCalculation(result.calculation());
     }
@@ -70,15 +70,15 @@ final class AdventuringDayTopBarViewModel {
         panel.set(PanelModel.loaded(summary.activePartyLevels()));
     }
 
-    private static AdventuringDayCalculatorModel.Calculation mapCalculation(AdventuringDayCalculation calculation) {
-        return new AdventuringDayCalculatorModel.Calculation(
-                new AdventuringDayCalculatorModel.Budget(
+    private static CalculationModel mapCalculation(AdventuringDayCalculation calculation) {
+        return new CalculationModel(
+                new BudgetModel(
                         calculation.budget().totalBudgetXp(),
                         calculation.budget().perThirdXp(),
                         calculation.budget().firstShortRestXp(),
                         calculation.budget().secondShortRestXp(),
                         calculation.budget().characterCount()),
-                new AdventuringDayCalculatorModel.Progress(
+                new ProgressModel(
                         calculation.progress().totalGroupXp(),
                         calculation.progress().perCharacterAwardedXp(),
                         calculation.progress().partySize(),
@@ -87,14 +87,14 @@ final class AdventuringDayTopBarViewModel {
                         calculation.progress().shortRests(),
                         calculation.progress().longRests(),
                         calculation.progress().levelProgressions().stream()
-                                .map(progress -> new AdventuringDayCalculatorModel.LevelProgress(
+                                .map(progress -> new LevelProgressModel(
                                         progress.startLevel(),
                                         progress.endLevel(),
                                         progress.characterCount(),
                                         progress.levelUps()))
                                 .toList(),
                         calculation.progress().events().stream()
-                                .map(event -> new AdventuringDayCalculatorModel.ProgressEvent(
+                                .map(event -> new ProgressEventModel(
                                         event.groupXp(),
                                         mapEventType(event.type()),
                                         event.dayNumber(),
@@ -104,16 +104,16 @@ final class AdventuringDayTopBarViewModel {
                                 .toList()));
     }
 
-    private static AdventuringDayCalculatorModel.ProgressEventType mapEventType(
+    private static ProgressEventTypeModel mapEventType(
             AdventuringDayProgressEventType type
     ) {
         if (type == null) {
-            return AdventuringDayCalculatorModel.ProgressEventType.LONG_REST;
+            return ProgressEventTypeModel.LONG_REST;
         }
         return switch (type) {
-            case LEVEL_UP -> AdventuringDayCalculatorModel.ProgressEventType.LEVEL_UP;
-            case SHORT_REST -> AdventuringDayCalculatorModel.ProgressEventType.SHORT_REST;
-            case LONG_REST -> AdventuringDayCalculatorModel.ProgressEventType.LONG_REST;
+            case LEVEL_UP -> ProgressEventTypeModel.LEVEL_UP;
+            case SHORT_REST -> ProgressEventTypeModel.SHORT_REST;
+            case LONG_REST -> ProgressEventTypeModel.LONG_REST;
         };
     }
 
@@ -149,4 +149,59 @@ final class AdventuringDayTopBarViewModel {
         }
     }
 
+    record CalculationModel(BudgetModel budget, ProgressModel progress) {
+
+        static CalculationModel empty(int totalGroupXp) {
+            return new CalculationModel(
+                    new BudgetModel(0, 0, 0, 0, 0),
+                    new ProgressModel(totalGroupXp, 0, 0, 0, 0.0, 0, 0, List.of(), List.of()));
+        }
+    }
+
+    record BudgetModel(
+            int totalXp,
+            int perThirdXp,
+            int firstShortRestXp,
+            int secondShortRestXp,
+            int characterCount) {
+    }
+
+    record ProgressModel(
+            int totalGroupXp,
+            int perCharacterAwardedXp,
+            int partySize,
+            int fullDays,
+            double totalDays,
+            int shortRests,
+            int longRests,
+            List<LevelProgressModel> levelProgressions,
+            List<ProgressEventModel> events) {
+
+        ProgressModel {
+            levelProgressions = levelProgressions == null ? List.of() : List.copyOf(levelProgressions);
+            events = events == null ? List.of() : List.copyOf(events);
+        }
+    }
+
+    record LevelProgressModel(
+            int startLevel,
+            int endLevel,
+            int characterCount,
+            int levelUps) {
+    }
+
+    record ProgressEventModel(
+            int groupXp,
+            ProgressEventTypeModel type,
+            int dayNumber,
+            int newLevel,
+            int affectedCharacters,
+            boolean partialDay) {
+    }
+
+    enum ProgressEventTypeModel {
+        LEVEL_UP,
+        SHORT_REST,
+        LONG_REST
+    }
 }

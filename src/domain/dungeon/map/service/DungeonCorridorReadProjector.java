@@ -69,7 +69,8 @@ public final class DungeonCorridorReadProjector {
                     endpoints.add(new CorridorEndpoint(
                             roomId,
                             absoluteCorridorCell(binding, cluster.center()),
-                            absoluteDoorEdge(binding, cluster.center())));
+                            absoluteDoorEdge(binding, cluster.center()),
+                            binding.topologyRef()));
                     continue;
                 }
             }
@@ -124,11 +125,16 @@ public final class DungeonCorridorReadProjector {
                 return new CorridorEndpoint(
                         roomId,
                         corridorCell,
-                        new DungeonEdge(selectedRoomCell, corridorCell));
+                        new DungeonEdge(selectedRoomCell, corridorCell),
+                        DungeonTopologyRef.empty());
             }
         }
         DungeonCell fallbackCorridorCell = new DungeonCell(selectedRoomCell.q(), selectedRoomCell.r() + 1, corridor.level());
-        return new CorridorEndpoint(roomId, fallbackCorridorCell, new DungeonEdge(selectedRoomCell, fallbackCorridorCell));
+        return new CorridorEndpoint(
+                roomId,
+                fallbackCorridorCell,
+                new DungeonEdge(selectedRoomCell, fallbackCorridorCell),
+                DungeonTopologyRef.empty());
     }
 
     private static List<DungeonCell> corridorCells(
@@ -294,7 +300,8 @@ public final class DungeonCorridorReadProjector {
         private void addEndpoint(DungeonCorridor corridor, CorridorEndpoint endpoint) {
             DungeonBoundaryKey key = DungeonBoundaryKey.from(endpoint.edge());
             if (seenBoundaries.add(key)) {
-                long doorId = key.stableId();
+                DungeonTopologyRef topologyRef = endpoint.topologyRef();
+                long doorId = topologyRef.present() ? topologyRef.id() : key.stableId();
                 DungeonPrimitive door = new DungeonPrimitive(doorId, DOOR_KIND, "Corridor Door", endpoint.edge());
                 primitiveId = Math.max(primitiveId, doorId + 1L);
                 primitives.add(door);
@@ -303,7 +310,9 @@ public final class DungeonCorridorReadProjector {
                         door.id(),
                         door.label(),
                         door.edge(),
-                        new DungeonTopologyRef(DungeonTopologyElementKind.DOOR, door.id())));
+                        topologyRef.present()
+                                ? topologyRef
+                                : new DungeonTopologyRef(DungeonTopologyElementKind.DOOR, door.id())));
                 containment.add(new DungeonRelationGraph.ContainmentRelation(corridor.corridorId(), door.id(), DOOR_KIND));
                 containment.add(new DungeonRelationGraph.ContainmentRelation(endpoint.roomId(), door.id(), DOOR_KIND));
             }
@@ -315,7 +324,15 @@ public final class DungeonCorridorReadProjector {
         }
     }
 
-    private record CorridorEndpoint(Long roomId, DungeonCell corridorCell, DungeonEdge edge) {
+    private record CorridorEndpoint(
+            Long roomId,
+            DungeonCell corridorCell,
+            DungeonEdge edge,
+            DungeonTopologyRef topologyRef
+    ) {
+        private CorridorEndpoint {
+            topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
+        }
     }
 
     private record DirectionStep(DungeonEdgeDirection direction) {

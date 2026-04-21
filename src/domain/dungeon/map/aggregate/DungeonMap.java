@@ -1,5 +1,6 @@
 package src.domain.dungeon.map.aggregate;
 
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.value.ConnectionCatalog;
 import src.domain.dungeon.map.service.DungeonRoomTopologyEditor;
 import src.domain.dungeon.map.entity.DungeonRoom;
@@ -27,6 +28,7 @@ public final class DungeonMap {
 
     private final DungeonMapMetadata metadata;
     private final SpatialTopology topology;
+    private final DungeonMapTopology topologyIndex;
     private final SpaceCatalog spaces;
     private final RoomCatalog rooms;
     private final ConnectionCatalog connections;
@@ -42,12 +44,28 @@ public final class DungeonMap {
             FeatureCatalog features,
             long revision
     ) {
+        this(metadata, topology, null, spaces, rooms, connections, features, revision);
+    }
+
+    public DungeonMap(
+            DungeonMapMetadata metadata,
+            SpatialTopology topology,
+            @Nullable DungeonMapTopology topologyIndex,
+            SpaceCatalog spaces,
+            RoomCatalog rooms,
+            ConnectionCatalog connections,
+            FeatureCatalog features,
+            long revision
+    ) {
         this.metadata = metadata;
         this.topology = topology == null ? SpatialTopology.empty() : topology;
         this.spaces = spaces == null ? SpaceCatalog.empty() : spaces;
         this.rooms = rooms == null ? RoomCatalog.empty() : rooms;
         this.connections = connections == null ? ConnectionCatalog.empty() : connections;
         this.features = features == null ? FeatureCatalog.empty() : features;
+        this.topologyIndex = DungeonMapTopology.merge(
+                topologyIndex,
+                DungeonMapTopology.from(this.topology, this.rooms, this.connections));
         this.revision = Math.max(0L, revision);
     }
 
@@ -79,9 +97,22 @@ public final class DungeonMap {
             ConnectionCatalog connections,
             long revision
     ) {
+        return authored(mapId, mapName, topology, null, rooms, connections, revision);
+    }
+
+    public static DungeonMap authored(
+            DungeonMapIdentity mapId,
+            String mapName,
+            SpatialTopology topology,
+            @Nullable DungeonMapTopology topologyIndex,
+            RoomCatalog rooms,
+            ConnectionCatalog connections,
+            long revision
+    ) {
         return new DungeonMap(
                 new DungeonMapMetadata(mapId, mapName),
                 topology,
+                topologyIndex,
                 SpaceCatalog.empty(),
                 rooms,
                 connections,
@@ -112,7 +143,7 @@ public final class DungeonMap {
     }
 
     public DungeonMapTopology topologyIndex() {
-        return DungeonMapTopology.from(rooms, connections);
+        return topologyIndex;
     }
 
     private DungeonMap moveCluster(long clusterId, int deltaQ, int deltaR) {
@@ -127,6 +158,7 @@ public final class DungeonMap {
         return new DungeonMap(
                 metadata,
                 nextTopology,
+                topologyIndex,
                 spaces,
                 nextRooms,
                 connections,
@@ -201,6 +233,7 @@ public final class DungeonMap {
         return new DungeonMap(
                 new DungeonMapMetadata(metadata.mapId(), mapName),
                 topology,
+                topologyIndex,
                 spaces,
                 rooms,
                 connections,
@@ -227,6 +260,7 @@ public final class DungeonMap {
         return new DungeonMap(
                 metadata,
                 nextTopology,
+                topologyIndex,
                 spaces,
                 rooms,
                 connections,

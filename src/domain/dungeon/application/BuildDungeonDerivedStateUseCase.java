@@ -22,7 +22,6 @@ import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonRelationGraph;
-import src.domain.dungeon.map.value.DungeonTopologyElementKind;
 import src.domain.dungeon.map.value.DungeonTopologyRef;
 import src.domain.dungeon.map.value.SpatialTopology;
 
@@ -177,11 +176,7 @@ public final class BuildDungeonDerivedStateUseCase {
         String kind = boundary.kind().primitiveKind();
         String label = boundary.kind() == DungeonClusterBoundaryKind.DOOR ? "Door" : "Wall";
         DungeonEdge edge = boundary.absoluteEdge(cluster.center());
-        DungeonTopologyRef topologyRef = new DungeonTopologyRef(
-                boundary.kind() == DungeonClusterBoundaryKind.DOOR
-                        ? DungeonTopologyElementKind.DOOR
-                        : DungeonTopologyElementKind.WALL,
-                boundaryId);
+        DungeonTopologyRef topologyRef = boundary.resolvedTopologyRef(cluster.center());
         DungeonPrimitive primitive = new DungeonPrimitive(boundaryId, kind, label, edge);
         primitives.add(primitive);
         boundaries.add(new DungeonBoundaryFacts(kind, primitive.id(), primitive.label(), primitive.edge(), topologyRef));

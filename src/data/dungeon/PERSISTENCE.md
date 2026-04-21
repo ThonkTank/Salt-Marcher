@@ -33,9 +33,10 @@ This document is normative for the dungeon feature's persistence path.
 
 - `src/data/dungeon/model/DungeonPersistenceSchema.java` is the canonical
   in-code schema declaration for dungeon persistence.
-- The current schema manager creates the legacy-compatible dungeon table
-  family:
+- The current schema manager creates one authoritative map-topology table plus
+  the legacy-compatible dungeon detail table family:
   - `dungeon_maps`
+  - `dungeon_topology_elements`
   - `dungeon_room_clusters`
   - `dungeon_rooms`
   - `dungeon_corridors`
@@ -53,31 +54,43 @@ This document is normative for the dungeon feature's persistence path.
 - Existing databases receive additive compatibility migrations for
   `dungeon_rooms.visual_description`, room-cluster center columns
   `center_x`, `center_y`, and `level_z`, legacy stair columns `shape`,
-  `direction`, `dimension1`, `dimension2`, and `corridor_id`, and transition
-  anchor columns `cell_x`, `cell_y`, and `level_z`.
+  `direction`, `dimension1`, `dimension2`, and `corridor_id`, transition
+  anchor columns `cell_x`, `cell_y`, and `level_z`, and persisted
+  `topology_element_id` columns for room-cluster edges and corridor door
+  overrides.
 - Existing legacy room clusters backed by `dungeon_structure_levels` are
   backfilled into the current center columns when those columns are first
   added. Legacy stair-anchored transitions are backfilled into the current
   nullable transition anchor columns when those columns are first added.
+- Existing legacy dungeon rows are backfilled into `dungeon_topology_elements`
+  when that table is introduced or still empty. After that point, the topology
+  element table is the SQLite source of truth for map-owned
+  `DungeonTopologyRef(kind,id)` identity and binding rows.
 
 ## Current Mapping
 
 The current adapter persists and reloads map identity, map name, topology seed,
-authored room records, room floor anchors, room visual and exit narration,
-room-cluster centers, room-cluster vertices, explicit cluster wall or door
-edges, corridor membership, corridor waypoints, corridor door overrides, stair
-path nodes, stair exits, stair corridor attachments, and transition destination
-rows.
-Those rows remain a legacy-compatible storage shape. After loading, the domain
-map is the behavioral topology owner: rooms, clusters, corridors, doors,
+authoritative topology elements, authored room records, room floor anchors,
+room visual and exit narration, room-cluster centers, room-cluster vertices,
+explicit cluster wall or door edges, corridor membership, corridor waypoints,
+corridor door overrides, stair path nodes, stair exits, stair corridor
+attachments, and transition destination rows.
+`dungeon_topology_elements` stores the persisted map-owned topology refs for
+`ROOM`, `CORRIDOR`, `DOOR`, `WALL`, `STAIR`, and `TRANSITION`. `CLUSTER` is not
+a topology ref kind; clusters remain organizational bindings stored as
+`cluster_id` on topology elements and detail rows. Legacy detail tables store
+source-local attributes and compatibility geometry. After loading, the domain
+map remains the behavioral topology owner: rooms, clusters, corridors, doors,
 stairs, and transitions bind to stable map-owned topology refs instead of
 owning mutable topology themselves.
-Room topology saves are full synchronizations for authored room clusters and
-rooms: retained clusters and rooms are upserted, cluster vertices and boundary
-rows are replaced, removed room rows are deleted, and removed cluster rows are
-deleted so SQLite cascade rules clear dependent rows. When a new map has no
-rooms, the gateway creates a seed room and cluster so the existing map
-surfaces still have authorable spatial truth.
+Map saves are full synchronizations for authored topology and its detail rows:
+retained topology elements are rewritten, retained clusters, rooms,
+connections, stairs, transitions, vertices, boundaries, floors, exit
+descriptions, waypoints, door bindings, stair path nodes, and stair exits are
+upserted or replaced, and removed rows are deleted so SQLite cascade rules
+clear dependent compatibility rows. When a new map has no rooms, the gateway
+creates a seed room, cluster, and topology element so the existing map surfaces
+still have authorable spatial truth.
 
 This is infrastructure for behavioural parity, not complete parity. Room
 semantics, cluster boundary geometry, and corridor read geometry are now
@@ -97,8 +110,12 @@ represented.
 
 - Dungeon persistence must keep authored truth in SQLite and derived editor,
   inspector, route, and render state out of the write model. SQLite table
-  ownership does not imply domain topology ownership; adapters translate the
-  legacy table family into the map-owned topology model.
+  ownership does not imply domain behavior ownership; adapters translate the
+  authoritative topology table plus legacy detail family into the map-owned
+  topology model.
+- `dungeon_topology_elements` is authoritative for persisted topology identity
+  and bindings. Legacy tables may carry `topology_element_id` for detail-row
+  correlation, but they must not become the semantic owner of topology.
 - New dungeon source fields first belong in source-local records under
   `src/data/dungeon/model/`, then map into domain-owned values or aggregate
   behaviour.

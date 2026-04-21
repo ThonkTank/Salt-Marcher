@@ -2,20 +2,13 @@ package src.data.dungeon.gateway.local;
 
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonClusterBoundaryRecord;
-import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
-import src.data.dungeon.model.DungeonCorridorRecord;
-import src.data.dungeon.model.DungeonCorridorWaypointRecord;
 import src.data.dungeon.model.DungeonRoomClusterRecord;
 import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
 import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
 import src.data.dungeon.model.DungeonPersistenceSchema;
-import src.data.dungeon.model.DungeonStairExitRecord;
-import src.data.dungeon.model.DungeonStairPathNodeRecord;
-import src.data.dungeon.model.DungeonStairRecord;
 import src.data.dungeon.model.DungeonTopologySeedRecord;
-import src.data.dungeon.model.DungeonTransitionRecord;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,7 +23,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.jspecify.annotations.Nullable;
 
 public final class DungeonSqliteGateway {
 
@@ -117,11 +109,14 @@ public final class DungeonSqliteGateway {
                 upsertMap(connection, record);
                 if (record.roomClusters().isEmpty() && record.rooms().isEmpty()) {
                     ensureSeedRoom(connection, record);
+                    DungeonSqliteTopologyElementGateway.persistSeed(connection, record.mapId());
                 } else {
                     persistAuthoredGeometry(connection, record);
+                    DungeonSqliteConnectionPersistence.persist(connection, record);
+                    DungeonSqliteTopologyElementGateway.persist(connection, record);
                 }
                 connection.commit();
-                return record;
+                return findMap(record.mapId()).orElse(record);
             } catch (SQLException exception) {
                 connection.rollback();
                 throw exception;
@@ -184,9 +179,10 @@ public final class DungeonSqliteGateway {
                 topologySeed(connection, mapId),
                 loadRoomClusters(connection, mapId),
                 loadRooms(connection, mapId),
-                loadCorridors(connection, mapId),
-                loadStairs(connection, mapId),
-                loadTransitions(connection, mapId));
+                DungeonSqliteTopologyElementGateway.load(connection, mapId),
+                DungeonSqliteConnectionLoader.loadCorridors(connection, mapId),
+                DungeonSqliteConnectionLoader.loadStairs(connection, mapId),
+                DungeonSqliteConnectionLoader.loadTransitions(connection, mapId));
     }
 
     private DungeonTopologySeedRecord topologySeed(Connection connection, long mapId) throws SQLException {
@@ -242,15 +238,16 @@ public final class DungeonSqliteGateway {
             roomIds.add(room.roomId());
             upsertRoomPosition(connection, room);
             replaceRoomFloors(connection, room);
+            replaceRoomExitDescriptions(connection, room);
         }
-        deleteRowsNotIn(
+        DungeonSqliteStatementSupport.deleteRowsNotIn(
                 connection,
                 DungeonPersistenceSchema.ROOMS_TABLE,
                 "room_id",
                 "dungeon_map_id",
                 record.mapId(),
                 roomIds);
-        deleteRowsNotIn(
+        DungeonSqliteStatementSupport.deleteRowsNotIn(
                 connection,
                 DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE,
                 "cluster_id",
@@ -315,8 +312,8 @@ public final class DungeonSqliteGateway {
         }
         try (PreparedStatement insert = connection.prepareStatement(
                 "INSERT INTO " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
-                        + "(cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type)"
-                        + " VALUES(?,?,?,?,?,?)")) {
+                        + "(cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id)"
+                        + " VALUES(?,?,?,?,?,?,?)")) {
             for (DungeonClusterBoundaryRecord boundary : cluster.boundaries()) {
                 insert.setLong(1, cluster.clusterId());
                 insert.setInt(2, boundary.levelZ());
@@ -324,6 +321,7 @@ public final class DungeonSqliteGateway {
                 insert.setInt(4, boundary.cellY());
                 insert.setString(5, boundary.edgeDirection());
                 insert.setString(6, boundary.edgeType());
+                DungeonSqliteStatementSupport.setNullableLong(insert, 7, boundary.topologyElementId());
                 insert.addBatch();
             }
             insert.executeBatch();
@@ -363,37 +361,6 @@ public final class DungeonSqliteGateway {
         }
     }
 
-    private static void deleteRowsNotIn(
-            Connection connection,
-            String tableName,
-            String idColumn,
-            String mapIdColumn,
-            long mapId,
-            Set<Long> retainedIds
-    ) throws SQLException {
-        StringBuilder sql = new StringBuilder("DELETE FROM ")
-                .append(tableName)
-                .append(" WHERE ")
-                .append(mapIdColumn)
-                .append("=?");
-        if (retainedIds != null && !retainedIds.isEmpty()) {
-            sql.append(" AND ")
-                    .append(idColumn)
-                    .append(" NOT IN (")
-                    .append("?,".repeat(retainedIds.size()));
-            sql.setLength(sql.length() - 1);
-            sql.append(')');
-        }
-        try (PreparedStatement delete = connection.prepareStatement(sql.toString())) {
-            delete.setLong(1, mapId);
-            int index = 2;
-            for (Long retainedId : retainedIds == null ? Set.<Long>of() : retainedIds) {
-                delete.setLong(index++, retainedId);
-            }
-            delete.executeUpdate();
-        }
-    }
-
     private static void replaceRoomFloors(Connection connection, DungeonRoomRecord room) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
                 "DELETE FROM " + DungeonPersistenceSchema.ROOM_FLOORS_TABLE + " WHERE room_id=?")) {
@@ -408,6 +375,30 @@ public final class DungeonSqliteGateway {
                 insert.setInt(2, floor.levelZ());
                 insert.setInt(3, floor.anchorX());
                 insert.setInt(4, floor.anchorY());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private static void replaceRoomExitDescriptions(Connection connection, DungeonRoomRecord room) throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                "DELETE FROM " + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE + " WHERE room_id=?")) {
+            delete.setLong(1, room.roomId());
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE
+                        + "(room_id, cell_x, cell_y, edge_direction, description, sort_order)"
+                        + " VALUES(?,?,?,?,?,?)")) {
+            int sortOrder = 0;
+            for (DungeonRoomExitDescriptionRecord exitDescription : room.exitDescriptions()) {
+                insert.setLong(1, room.roomId());
+                insert.setInt(2, exitDescription.cellX());
+                insert.setInt(3, exitDescription.cellY());
+                insert.setString(4, exitDescription.edgeDirection());
+                insert.setString(5, exitDescription.description());
+                insert.setInt(6, sortOrder++);
                 insert.addBatch();
             }
             insert.executeBatch();
@@ -464,7 +455,7 @@ public final class DungeonSqliteGateway {
                                     resultSet.getInt("relative_x"),
                                     resultSet.getInt("relative_y")));
                 }
-                return copyGrouped(records);
+                return DungeonSqliteStatementSupport.copyGrouped(records);
             }
         }
     }
@@ -474,7 +465,7 @@ public final class DungeonSqliteGateway {
             long mapId
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type"
+                "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
                         + " FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
                         + " WHERE cluster_id IN (SELECT cluster_id FROM "
                         + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
@@ -492,9 +483,10 @@ public final class DungeonSqliteGateway {
                                     resultSet.getInt("cell_x"),
                                     resultSet.getInt("cell_y"),
                                     resultSet.getString("edge_direction"),
-                                    resultSet.getString("edge_type")));
+                                    resultSet.getString("edge_type"),
+                                    DungeonSqliteStatementSupport.nullableLong(resultSet, "topology_element_id")));
                 }
-                return copyGrouped(records);
+                return DungeonSqliteStatementSupport.copyGrouped(records);
             }
         }
     }
@@ -551,7 +543,7 @@ public final class DungeonSqliteGateway {
                                     resultSet.getInt("anchor_x"),
                                     resultSet.getInt("anchor_y")));
                 }
-                return copyGrouped(records);
+                return DungeonSqliteStatementSupport.copyGrouped(records);
             }
         }
     }
@@ -580,254 +572,9 @@ public final class DungeonSqliteGateway {
                                     resultSet.getString("edge_direction"),
                                     resultSet.getString("description")));
                 }
-                return copyGrouped(records);
+                return DungeonSqliteStatementSupport.copyGrouped(records);
             }
         }
-    }
-
-    private static List<DungeonCorridorRecord> loadCorridors(Connection connection, long mapId) throws SQLException {
-        Map<Long, List<Long>> roomIdsByCorridor = loadCorridorMembers(connection, mapId);
-        Map<Long, List<DungeonCorridorWaypointRecord>> waypointsByCorridor = loadCorridorWaypoints(connection, mapId);
-        Map<Long, List<DungeonCorridorDoorBindingRecord>> doorBindingsByCorridor =
-                loadCorridorDoorBindings(connection, mapId);
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT corridor_id, dungeon_map_id, level_z"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE
-                        + " WHERE dungeon_map_id=? ORDER BY corridor_id")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<DungeonCorridorRecord> records = new ArrayList<>();
-                while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
-                    records.add(new DungeonCorridorRecord(
-                            corridorId,
-                            resultSet.getLong("dungeon_map_id"),
-                            resultSet.getInt("level_z"),
-                            roomIdsByCorridor.getOrDefault(corridorId, List.of()),
-                            waypointsByCorridor.getOrDefault(corridorId, List.of()),
-                            doorBindingsByCorridor.getOrDefault(corridorId, List.of())));
-                }
-                return List.copyOf(records);
-            }
-        }
-    }
-
-    private static Map<Long, List<Long>> loadCorridorMembers(Connection connection, long mapId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT c.corridor_id, m.room_id"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE + " c"
-                        + " LEFT JOIN " + DungeonPersistenceSchema.CORRIDOR_MEMBERS_TABLE
-                        + " m ON m.corridor_id=c.corridor_id"
-                        + " WHERE c.dungeon_map_id=?"
-                        + " ORDER BY c.corridor_id, m.member_order, m.room_id")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                Map<Long, List<Long>> records = new LinkedHashMap<>();
-                while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
-                    records.computeIfAbsent(corridorId, ignored -> new ArrayList<>());
-                    long roomId = resultSet.getLong("room_id");
-                    if (!resultSet.wasNull()) {
-                        records.get(corridorId).add(roomId);
-                    }
-                }
-                return copyGrouped(records);
-            }
-        }
-    }
-
-    private static Map<Long, List<DungeonCorridorWaypointRecord>> loadCorridorWaypoints(
-            Connection connection,
-            long mapId
-    ) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT corridor_id, cluster_id, relative_x, relative_y, relative_z"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDOR_WAYPOINTS_TABLE
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM "
-                        + DungeonPersistenceSchema.CORRIDORS_TABLE
-                        + " WHERE dungeon_map_id=?)"
-                        + " ORDER BY corridor_id, sort_order")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                Map<Long, List<DungeonCorridorWaypointRecord>> records = new LinkedHashMap<>();
-                while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
-                    records.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
-                            .add(new DungeonCorridorWaypointRecord(
-                                    corridorId,
-                                    resultSet.getLong("cluster_id"),
-                                    resultSet.getInt("relative_x"),
-                                    resultSet.getInt("relative_y"),
-                                    resultSet.getInt("relative_z")));
-                }
-                return copyGrouped(records);
-            }
-        }
-    }
-
-    private static Map<Long, List<DungeonCorridorDoorBindingRecord>> loadCorridorDoorBindings(
-            Connection connection,
-            long mapId
-    ) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y, edge_direction"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM "
-                        + DungeonPersistenceSchema.CORRIDORS_TABLE
-                        + " WHERE dungeon_map_id=?)"
-                        + " ORDER BY corridor_id, sort_order, room_id")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                Map<Long, List<DungeonCorridorDoorBindingRecord>> records = new LinkedHashMap<>();
-                while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
-                    records.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
-                            .add(new DungeonCorridorDoorBindingRecord(
-                                    corridorId,
-                                    resultSet.getLong("room_id"),
-                                    resultSet.getLong("cluster_id"),
-                                    resultSet.getInt("relative_cell_x"),
-                                    resultSet.getInt("relative_cell_y"),
-                                    resultSet.getString("edge_direction")));
-                }
-                return copyGrouped(records);
-            }
-        }
-    }
-
-    private static List<DungeonStairRecord> loadStairs(Connection connection, long mapId) throws SQLException {
-        Map<Long, List<DungeonStairPathNodeRecord>> pathNodesByStair = loadStairPathNodes(connection, mapId);
-        Map<Long, List<DungeonStairExitRecord>> exitsByStair = loadStairExits(connection, mapId);
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT stair_id, dungeon_map_id, name, shape, direction, dimension1, dimension2, corridor_id"
-                        + " FROM " + DungeonPersistenceSchema.STAIRS_TABLE
-                        + " WHERE dungeon_map_id=? ORDER BY stair_id")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<DungeonStairRecord> records = new ArrayList<>();
-                while (resultSet.next()) {
-                    long stairId = resultSet.getLong("stair_id");
-                    records.add(new DungeonStairRecord(
-                            stairId,
-                            resultSet.getLong("dungeon_map_id"),
-                            resultSet.getString("name"),
-                            resultSet.getString("shape"),
-                            resultSet.getInt("direction"),
-                            resultSet.getInt("dimension1"),
-                            resultSet.getInt("dimension2"),
-                            nullableLong(resultSet, "corridor_id"),
-                            pathNodesByStair.getOrDefault(stairId, List.of()),
-                            exitsByStair.getOrDefault(stairId, List.of())));
-                }
-                return List.copyOf(records);
-            }
-        }
-    }
-
-    private static Map<Long, List<DungeonStairPathNodeRecord>> loadStairPathNodes(
-            Connection connection,
-            long mapId
-    ) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT stair_id, cell_x, cell_y, cell_z"
-                        + " FROM " + DungeonPersistenceSchema.STAIR_PATH_NODES_TABLE
-                        + " WHERE stair_id IN (SELECT stair_id FROM "
-                        + DungeonPersistenceSchema.STAIRS_TABLE
-                        + " WHERE dungeon_map_id=?)"
-                        + " ORDER BY stair_id, sort_order")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                Map<Long, List<DungeonStairPathNodeRecord>> records = new LinkedHashMap<>();
-                while (resultSet.next()) {
-                    long stairId = resultSet.getLong("stair_id");
-                    records.computeIfAbsent(stairId, ignored -> new ArrayList<>())
-                            .add(new DungeonStairPathNodeRecord(
-                                    stairId,
-                                    resultSet.getInt("cell_x"),
-                                    resultSet.getInt("cell_y"),
-                                    resultSet.getInt("cell_z")));
-                }
-                return copyGrouped(records);
-            }
-        }
-    }
-
-    private static Map<Long, List<DungeonStairExitRecord>> loadStairExits(
-            Connection connection,
-            long mapId
-    ) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT stair_id, stair_exit_id, cell_x, cell_y, cell_z, label"
-                        + " FROM " + DungeonPersistenceSchema.STAIR_EXITS_TABLE
-                        + " WHERE stair_id IN (SELECT stair_id FROM "
-                        + DungeonPersistenceSchema.STAIRS_TABLE
-                        + " WHERE dungeon_map_id=?)"
-                        + " ORDER BY stair_id, stair_exit_id")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                Map<Long, List<DungeonStairExitRecord>> records = new LinkedHashMap<>();
-                while (resultSet.next()) {
-                    long stairId = resultSet.getLong("stair_id");
-                    records.computeIfAbsent(stairId, ignored -> new ArrayList<>())
-                            .add(new DungeonStairExitRecord(
-                                    stairId,
-                                    resultSet.getLong("stair_exit_id"),
-                                    resultSet.getInt("cell_x"),
-                                    resultSet.getInt("cell_y"),
-                                    resultSet.getInt("cell_z"),
-                                    resultSet.getString("label")));
-                }
-                return copyGrouped(records);
-            }
-        }
-    }
-
-    private static List<DungeonTransitionRecord> loadTransitions(Connection connection, long mapId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
-                        + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
-                        + " target_transition_id, linked_transition_id"
-                        + " FROM " + DungeonPersistenceSchema.TRANSITIONS_TABLE
-                        + " WHERE dungeon_map_id=? ORDER BY transition_id")) {
-            statement.setLong(1, mapId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<DungeonTransitionRecord> records = new ArrayList<>();
-                while (resultSet.next()) {
-                    records.add(new DungeonTransitionRecord(
-                            resultSet.getLong("transition_id"),
-                            resultSet.getLong("dungeon_map_id"),
-                            resultSet.getString("description"),
-                            nullableInteger(resultSet, "cell_x"),
-                            nullableInteger(resultSet, "cell_y"),
-                            nullableInteger(resultSet, "level_z"),
-                            resultSet.getString("destination_type"),
-                            nullableLong(resultSet, "target_overworld_map_id"),
-                            nullableLong(resultSet, "target_overworld_tile_id"),
-                            nullableLong(resultSet, "target_dungeon_map_id"),
-                            nullableLong(resultSet, "target_transition_id"),
-                            nullableLong(resultSet, "linked_transition_id")));
-                }
-                return List.copyOf(records);
-            }
-        }
-    }
-
-    private static @Nullable Long nullableLong(ResultSet resultSet, String column) throws SQLException {
-        long value = resultSet.getLong(column);
-        return resultSet.wasNull() ? null : value;
-    }
-
-    private static @Nullable Integer nullableInteger(ResultSet resultSet, String column) throws SQLException {
-        int value = resultSet.getInt(column);
-        return resultSet.wasNull() ? null : value;
-    }
-
-    private static <T> Map<Long, List<T>> copyGrouped(Map<Long, List<T>> records) {
-        Map<Long, List<T>> result = new LinkedHashMap<>();
-        for (Map.Entry<Long, List<T>> entry : records.entrySet()) {
-            result.put(entry.getKey(), List.copyOf(entry.getValue()));
-        }
-        return Map.copyOf(result);
     }
 
     private static void deleteMap(Connection connection, long mapId) throws SQLException {

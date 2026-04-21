@@ -13,6 +13,7 @@ public final class DungeonPersistenceSchema {
     public static final String ROOM_CLUSTER_VERTICES_TABLE = "dungeon_room_cluster_vertices";
     public static final String ROOM_CLUSTER_EDGES_TABLE = "dungeon_room_cluster_edges";
     public static final String ROOM_FLOORS_TABLE = "dungeon_room_floors";
+    public static final String TOPOLOGY_ELEMENTS_TABLE = "dungeon_topology_elements";
     public static final String CORRIDOR_DOOR_OVERRIDES_TABLE = "dungeon_corridor_door_overrides";
     public static final String CORRIDOR_WAYPOINTS_TABLE = "dungeon_corridor_waypoints";
     public static final String ROOM_EXIT_DESCRIPTIONS_TABLE = "dungeon_room_exit_descriptions";
@@ -82,6 +83,7 @@ public final class DungeonPersistenceSchema {
                     + "cell_y         INTEGER NOT NULL,"
                     + "edge_direction TEXT NOT NULL,"
                     + "edge_type      TEXT NOT NULL,"
+                    + "topology_element_id INTEGER,"
                     + "PRIMARY KEY (cluster_id, level_z, cell_x, cell_y, edge_direction)"
                     + ")";
 
@@ -102,8 +104,21 @@ public final class DungeonPersistenceSchema {
                     + "relative_cell_x INTEGER NOT NULL,"
                     + "relative_cell_y INTEGER NOT NULL,"
                     + "edge_direction  TEXT NOT NULL,"
+                    + "topology_element_id INTEGER,"
                     + "sort_order      INTEGER NOT NULL DEFAULT 0,"
                     + "PRIMARY KEY (corridor_id, room_id)"
+                    + ")";
+
+    public static final String CREATE_DUNGEON_TOPOLOGY_ELEMENTS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_topology_elements ("
+                    + "dungeon_map_id INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "element_kind   TEXT NOT NULL,"
+                    + "element_id     INTEGER NOT NULL,"
+                    + "cluster_id     INTEGER REFERENCES dungeon_room_clusters(cluster_id) ON DELETE SET NULL,"
+                    + "corridor_id    INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE SET NULL,"
+                    + "label          TEXT,"
+                    + "sort_order     INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY (dungeon_map_id, element_kind, element_id)"
                     + ")";
 
     public static final String CREATE_DUNGEON_CORRIDOR_WAYPOINTS_TABLE_SQL =
@@ -215,6 +230,12 @@ public final class DungeonPersistenceSchema {
     public static final String ADD_DUNGEON_TRANSITIONS_LEVEL_Z_COLUMN_SQL =
             "ALTER TABLE " + TRANSITIONS_TABLE + " ADD COLUMN level_z INTEGER";
 
+    public static final String ADD_DUNGEON_ROOM_CLUSTER_EDGES_TOPOLOGY_ELEMENT_ID_COLUMN_SQL =
+            "ALTER TABLE " + ROOM_CLUSTER_EDGES_TABLE + " ADD COLUMN topology_element_id INTEGER";
+
+    public static final String ADD_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TOPOLOGY_ELEMENT_ID_COLUMN_SQL =
+            "ALTER TABLE " + CORRIDOR_DOOR_OVERRIDES_TABLE + " ADD COLUMN topology_element_id INTEGER";
+
     public static final List<String> CREATE_TABLE_SQL = List.of(
             CREATE_DUNGEON_MAPS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL,
@@ -224,6 +245,7 @@ public final class DungeonPersistenceSchema {
             CREATE_DUNGEON_ROOM_CLUSTER_VERTICES_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTER_EDGES_TABLE_SQL,
             CREATE_DUNGEON_ROOM_FLOORS_TABLE_SQL,
+            CREATE_DUNGEON_TOPOLOGY_ELEMENTS_TABLE_SQL,
             CREATE_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TABLE_SQL,
             CREATE_DUNGEON_CORRIDOR_WAYPOINTS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_EXIT_DESCRIPTIONS_TABLE_SQL,
@@ -245,7 +267,9 @@ public final class DungeonPersistenceSchema {
             "ALTER TABLE dungeon_stairs ADD COLUMN corridor_id INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE",
             "ALTER TABLE dungeon_transitions ADD COLUMN cell_x INTEGER",
             "ALTER TABLE dungeon_transitions ADD COLUMN cell_y INTEGER",
-            "ALTER TABLE dungeon_transitions ADD COLUMN level_z INTEGER"
+            "ALTER TABLE dungeon_transitions ADD COLUMN level_z INTEGER",
+            "ALTER TABLE dungeon_room_cluster_edges ADD COLUMN topology_element_id INTEGER",
+            "ALTER TABLE dungeon_corridor_door_overrides ADD COLUMN topology_element_id INTEGER"
     );
 
     private DungeonPersistenceSchema() {

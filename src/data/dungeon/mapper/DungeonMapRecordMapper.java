@@ -1,5 +1,6 @@
 package src.data.dungeon.mapper;
 
+import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonClusterBoundaryRecord;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonRoomClusterRecord;
@@ -7,6 +8,7 @@ import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
 import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
+import src.data.dungeon.model.DungeonTopologyElementRecord;
 import src.data.dungeon.model.DungeonTopologySeedRecord;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonRoom;
@@ -17,17 +19,23 @@ import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.map.value.DungeonMapTopology;
 import src.domain.dungeon.map.value.DungeonRoomExitDescription;
 import src.domain.dungeon.map.value.DungeonRoomNarration;
 import src.domain.dungeon.map.value.DungeonTopology;
+import src.domain.dungeon.map.value.DungeonTopologyElementKind;
+import src.domain.dungeon.map.value.DungeonTopologyRef;
 import src.domain.dungeon.map.value.RoomCatalog;
 import src.domain.dungeon.map.value.SpatialTopology;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Maps source-local dungeon rows into the domain aggregate.
@@ -45,6 +53,7 @@ public final class DungeonMapRecordMapper {
         List<DungeonRoomCluster> clusters = toClusters(resolvedRecord.roomClusters());
         RoomCatalog rooms = new RoomCatalog(toRooms(resolvedRecord.rooms()));
         ConnectionCatalog connections = DungeonConnectionRecordMapper.toConnectionCatalog(resolvedRecord);
+        DungeonMapTopology topologyIndex = toTopologyIndex(resolvedRecord.topologyElements());
         return DungeonMap.authored(
                 new DungeonMapIdentity(resolvedRecord.mapId()),
                 resolvedRecord.name(),
@@ -55,6 +64,7 @@ public final class DungeonMapRecordMapper {
                         seed.roomAnchorQ(),
                         seed.roomAnchorR(),
                         clusters),
+                topologyIndex,
                 rooms,
                 connections,
                 resolvedRecord.revision());
@@ -74,9 +84,18 @@ public final class DungeonMapRecordMapper {
                         topology.roomAnchorR()),
                 toClusterRecords(topology.roomClusters()),
                 toRoomRecords(dungeonMap == null ? List.of() : dungeonMap.rooms().rooms()),
-                List.of(),
-                List.of(),
-                List.of());
+                toTopologyElementRecords(mapId, dungeonMap == null
+                        ? DungeonMapTopology.from(topology, RoomCatalog.empty(), ConnectionCatalog.empty())
+                        : dungeonMap.topologyIndex()),
+                DungeonConnectionRecordMapper.toCorridorRecords(dungeonMap == null
+                        ? ConnectionCatalog.empty()
+                        : dungeonMap.connections()),
+                DungeonConnectionRecordMapper.toStairRecords(dungeonMap == null
+                        ? ConnectionCatalog.empty()
+                        : dungeonMap.connections()),
+                DungeonConnectionRecordMapper.toTransitionRecords(dungeonMap == null
+                        ? ConnectionCatalog.empty()
+                        : dungeonMap.connections()));
     }
 
     private static List<DungeonRoomCluster> toClusters(List<DungeonRoomClusterRecord> records) {
@@ -114,7 +133,8 @@ public final class DungeonMapRecordMapper {
                             record.levelZ(),
                             new DungeonCell(record.cellX(), record.cellY(), record.levelZ()),
                             DungeonEdgeDirection.parse(record.edgeDirection()),
-                            DungeonClusterBoundaryKind.parse(record.edgeType())));
+                            DungeonClusterBoundaryKind.parse(record.edgeType()),
+                            topologyRef(record.edgeType(), record.topologyElementId())));
         }
         return copyNestedLists(result);
     }
@@ -145,7 +165,7 @@ public final class DungeonMapRecordMapper {
                     cluster.center().r(),
                     cluster.center().level(),
                     toVertexRecords(cluster.clusterId(), cluster.relativeVerticesByLevel()),
-                    toBoundaryRecords(cluster.clusterId(), cluster.boundariesByLevel())));
+                    toBoundaryRecords(cluster, cluster.boundariesByLevel())));
         }
         return List.copyOf(result);
     }
@@ -171,7 +191,7 @@ public final class DungeonMapRecordMapper {
     }
 
     private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(
-            long clusterId,
+            DungeonRoomCluster cluster,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         List<DungeonClusterBoundaryRecord> result = new ArrayList<>();
@@ -180,15 +200,78 @@ public final class DungeonMapRecordMapper {
                         .entrySet()) {
             for (DungeonClusterBoundary boundary : entry.getValue()) {
                 result.add(new DungeonClusterBoundaryRecord(
-                        clusterId,
+                        cluster.clusterId(),
                         entry.getKey(),
                         boundary.relativeCell().q(),
                         boundary.relativeCell().r(),
                         boundary.direction().name(),
-                        boundary.kind().name()));
+                        boundary.kind().name(),
+                        boundary.resolvedTopologyRef(cluster.center()).id()));
             }
         }
         return List.copyOf(result);
+    }
+
+    private static DungeonMapTopology toTopologyIndex(List<DungeonTopologyElementRecord> records) {
+        List<DungeonMapTopology.DungeonTopologyBinding> bindings = new ArrayList<>();
+        for (DungeonTopologyElementRecord record
+                : records == null ? List.<DungeonTopologyElementRecord>of() : records) {
+            DungeonTopologyElementKind kind = topologyKind(record.elementKind());
+            if (kind == DungeonTopologyElementKind.EMPTY || record.elementId() <= 0L) {
+                continue;
+            }
+            bindings.add(new DungeonMapTopology.DungeonTopologyBinding(
+                    new DungeonTopologyRef(kind, record.elementId()),
+                    record.clusterId() == null ? 0L : record.clusterId(),
+                    record.corridorId() == null ? 0L : record.corridorId(),
+                    record.label()));
+        }
+        return new DungeonMapTopology(bindings);
+    }
+
+    private static List<DungeonTopologyElementRecord> toTopologyElementRecords(
+            long mapId,
+            DungeonMapTopology topologyIndex
+    ) {
+        List<DungeonTopologyElementRecord> result = new ArrayList<>();
+        Set<DungeonTopologyRef> seen = new LinkedHashSet<>();
+        int sortOrder = 0;
+        for (DungeonMapTopology.DungeonTopologyBinding binding
+                : topologyIndex == null ? List.<DungeonMapTopology.DungeonTopologyBinding>of()
+                        : topologyIndex.bindings()) {
+            if (!binding.ref().present() || !seen.add(binding.ref())) {
+                continue;
+            }
+            result.add(new DungeonTopologyElementRecord(
+                    mapId,
+                    binding.ref().kind().name(),
+                    binding.ref().id(),
+                    binding.clusterId() <= 0L ? null : binding.clusterId(),
+                    binding.corridorId() <= 0L ? null : binding.corridorId(),
+                    binding.label(),
+                    sortOrder++));
+        }
+        return List.copyOf(result);
+    }
+
+    private static DungeonTopologyRef topologyRef(String edgeType, @Nullable Long topologyElementId) {
+        if (topologyElementId == null || topologyElementId <= 0L) {
+            return DungeonTopologyRef.empty();
+        }
+        return new DungeonTopologyRef(
+                DungeonTopologyElementKind.fromBoundaryKind(edgeType),
+                topologyElementId);
+    }
+
+    private static DungeonTopologyElementKind topologyKind(String value) {
+        if (value == null || value.isBlank()) {
+            return DungeonTopologyElementKind.EMPTY;
+        }
+        try {
+            return DungeonTopologyElementKind.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return DungeonTopologyElementKind.EMPTY;
+        }
     }
 
     private static List<DungeonRoomRecord> toRoomRecords(List<DungeonRoom> rooms) {

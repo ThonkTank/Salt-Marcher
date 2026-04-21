@@ -51,6 +51,9 @@ Current state:
   corridors, doors, stairs, and transitions bind to map topology through stable
   topology refs; they do not negotiate ownership with each other during
   mutation.
+- The data adapter persists those refs in an authoritative source-local
+  `dungeon_topology_elements` table. That table stores identity and binding
+  facts; topology behavior and mutation routing still belong to `DungeonMap`.
 - `SpatialTopology` remains a legacy-shaped geometry carrier for room-cluster
   centers, polygon vertices, and explicit internal wall or door edges loaded
   from SQLite. It is not the behavioral owner of topology.
@@ -174,6 +177,8 @@ Semantically, it owns:
 
 It must not delegate mutation ownership to a live room, cluster, corridor,
 door, or stair object.
+Persisted topology refs may be loaded from SQLite, but the persistence table is
+only source-local storage for the map-owned identity model.
 
 ### SpatialTopology
 

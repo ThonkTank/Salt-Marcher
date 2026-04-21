@@ -17,10 +17,13 @@ Current foundation:
 - The active topology ownership model is map-owned: selectable map elements
   carry stable topology refs, and `DungeonMap` resolves semantic bindings before
   applying topology mutations.
+- Dungeon SQLite persistence now stores those stable refs in an authoritative
+  topology-element table while keeping legacy room, corridor, stair, door, and
+  transition tables as detail and compatibility storage.
 - Read selection uses `DungeonMapSearch`, keeping read-only map lookup separate
   from authored persistence.
-- The SQLite schema manager creates the legacy-compatible dungeon table family
-  required for later parity work.
+- The SQLite schema manager creates the authoritative topology table and the
+  legacy-compatible dungeon detail table family required for later parity work.
 - Room and cluster read parity is active: the data layer loads room records,
   floor anchors, visual descriptions, exit descriptions, cluster centers,
   cluster vertices, and explicit internal wall or door edges. The domain layer
@@ -50,9 +53,9 @@ Recommended rollout:
 - UI specifications are broader than the currently stabilized domain policies.
 - Preview behavior and undo/redo semantics need explicit implementation
   contracts before broad editor rollout.
-- Room and connection projections can drift until every editor mutation uses
-  the same map-owned topology refs and repair services used by runtime
-  rendering and travel.
+- Room and connection projections can drift until every editor mutation writes
+  through the same map-owned topology refs and repair services that runtime
+  rendering, travel, and SQLite persistence now share.
 - Full parity still needs editor mutation policies, direct runtime token-drag
   movement, cross-map dungeon transition follow-through, and remaining
   non-space feature mapping before those behaviours can be considered

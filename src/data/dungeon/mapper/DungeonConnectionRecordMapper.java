@@ -37,6 +37,47 @@ final class DungeonConnectionRecordMapper {
                 toTransitions(record.transitions()));
     }
 
+    static List<DungeonCorridorRecord> toCorridorRecords(ConnectionCatalog connections) {
+        List<DungeonCorridorRecord> result = new ArrayList<>();
+        for (DungeonCorridor corridor : connections == null ? List.<DungeonCorridor>of() : connections.corridors()) {
+            result.add(new DungeonCorridorRecord(
+                    corridor.corridorId(),
+                    corridor.mapId(),
+                    corridor.level(),
+                    corridor.roomIds(),
+                    toWaypointRecords(corridor.corridorId(), corridor.bindings().waypoints()),
+                    toDoorBindingRecords(corridor.corridorId(), corridor.bindings().doorBindings())));
+        }
+        return List.copyOf(result);
+    }
+
+    static List<DungeonStairRecord> toStairRecords(ConnectionCatalog connections) {
+        List<DungeonStairRecord> result = new ArrayList<>();
+        for (DungeonStair stair : connections == null ? List.<DungeonStair>of() : connections.stairs()) {
+            result.add(new DungeonStairRecord(
+                    stair.stairId(),
+                    stair.mapId(),
+                    stair.name(),
+                    stair.shape().name(),
+                    directionCode(stair.direction()),
+                    stair.dimension1(),
+                    stair.dimension2(),
+                    stair.corridorId(),
+                    toStairPathRecords(stair.stairId(), stair.path()),
+                    toStairExitRecords(stair.stairId(), stair.exits())));
+        }
+        return List.copyOf(result);
+    }
+
+    static List<DungeonTransitionRecord> toTransitionRecords(ConnectionCatalog connections) {
+        List<DungeonTransitionRecord> result = new ArrayList<>();
+        for (DungeonTransition transition
+                : connections == null ? List.<DungeonTransition>of() : connections.transitions()) {
+            result.add(toTransitionRecord(transition));
+        }
+        return List.copyOf(result);
+    }
+
     private static List<DungeonCorridor> toCorridors(List<DungeonCorridorRecord> records) {
         List<DungeonCorridor> result = new ArrayList<>();
         for (DungeonCorridorRecord record : records == null ? List.<DungeonCorridorRecord>of() : records) {
@@ -72,7 +113,12 @@ final class DungeonConnectionRecordMapper {
                     record.roomId(),
                     record.clusterId(),
                     new DungeonCell(record.relativeCellX(), record.relativeCellY(), 0),
-                    DungeonEdgeDirection.parse(record.edgeDirection())));
+                    DungeonEdgeDirection.parse(record.edgeDirection()),
+                    record.topologyElementId() == null
+                            ? src.domain.dungeon.map.value.DungeonTopologyRef.empty()
+                            : new src.domain.dungeon.map.value.DungeonTopologyRef(
+                                    src.domain.dungeon.map.value.DungeonTopologyElementKind.DOOR,
+                                    record.topologyElementId())));
         }
         return List.copyOf(result);
     }
@@ -148,5 +194,119 @@ final class DungeonConnectionRecordMapper {
         return new DungeonTransitionDestination.OverworldTileDestination(
                 record.targetOverworldMapId() == null ? 0L : record.targetOverworldMapId(),
                 record.targetOverworldTileId() == null ? 0L : record.targetOverworldTileId());
+    }
+
+    private static List<DungeonCorridorWaypointRecord> toWaypointRecords(
+            long corridorId,
+            List<DungeonCorridorWaypoint> waypoints
+    ) {
+        List<DungeonCorridorWaypointRecord> result = new ArrayList<>();
+        for (DungeonCorridorWaypoint waypoint
+                : waypoints == null ? List.<DungeonCorridorWaypoint>of() : waypoints) {
+            result.add(new DungeonCorridorWaypointRecord(
+                    corridorId,
+                    waypoint.clusterId(),
+                    waypoint.relativeCell().q(),
+                    waypoint.relativeCell().r(),
+                    waypoint.level()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonCorridorDoorBindingRecord> toDoorBindingRecords(
+            long corridorId,
+            List<DungeonCorridorDoorBinding> doorBindings
+    ) {
+        List<DungeonCorridorDoorBindingRecord> result = new ArrayList<>();
+        for (DungeonCorridorDoorBinding binding
+                : doorBindings == null ? List.<DungeonCorridorDoorBinding>of() : doorBindings) {
+            result.add(new DungeonCorridorDoorBindingRecord(
+                    corridorId,
+                    binding.roomId(),
+                    binding.clusterId(),
+                    binding.relativeCell().q(),
+                    binding.relativeCell().r(),
+                    binding.direction().name(),
+                    binding.topologyRef().present() ? binding.topologyRef().id() : null));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonStairPathNodeRecord> toStairPathRecords(long stairId, List<DungeonCell> path) {
+        List<DungeonStairPathNodeRecord> result = new ArrayList<>();
+        for (DungeonCell cell : path == null ? List.<DungeonCell>of() : path) {
+            result.add(new DungeonStairPathNodeRecord(stairId, cell.q(), cell.r(), cell.level()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonStairExitRecord> toStairExitRecords(long stairId, List<DungeonStairExit> exits) {
+        List<DungeonStairExitRecord> result = new ArrayList<>();
+        for (DungeonStairExit exit : exits == null ? List.<DungeonStairExit>of() : exits) {
+            result.add(new DungeonStairExitRecord(
+                    stairId,
+                    exit.exitId(),
+                    exit.position().q(),
+                    exit.position().r(),
+                    exit.position().level(),
+                    exit.label()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static DungeonTransitionRecord toTransitionRecord(DungeonTransition transition) {
+        DungeonCell anchor = transition.anchor();
+        DestinationRecord destination = destinationRecord(transition.destination());
+        return new DungeonTransitionRecord(
+                transition.transitionId(),
+                transition.mapId(),
+                transition.description(),
+                anchor == null ? null : anchor.q(),
+                anchor == null ? null : anchor.r(),
+                anchor == null ? null : anchor.level(),
+                destination.destinationType(),
+                destination.targetOverworldMapId(),
+                destination.targetOverworldTileId(),
+                destination.targetDungeonMapId(),
+                destination.targetTransitionId(),
+                transition.linkedTransitionId());
+    }
+
+    private static DestinationRecord destinationRecord(DungeonTransitionDestination destination) {
+        if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
+            return new DestinationRecord(
+                    "DUNGEON_MAP",
+                    null,
+                    null,
+                    dungeon.mapId(),
+                    dungeon.transitionId());
+        }
+        if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
+            return new DestinationRecord(
+                    "OVERWORLD_TILE",
+                    overworld.mapId(),
+                    overworld.tileId(),
+                    null,
+                    null);
+        }
+        return new DestinationRecord("OVERWORLD_TILE", 0L, 0L, null, null);
+    }
+
+    private static int directionCode(DungeonEdgeDirection direction) {
+        return switch (direction == null ? DungeonEdgeDirection.NORTH : direction) {
+            case EAST -> 1;
+            case SOUTH -> 2;
+            case WEST -> 3;
+            case NORTH -> 0;
+        };
+    }
+
+    private record DestinationRecord(
+            String destinationType,
+            @Nullable Long targetOverworldMapId,
+            @Nullable Long targetOverworldTileId,
+            @Nullable Long targetDungeonMapId,
+            @Nullable Long targetTransitionId
+    ) {
     }
 }
