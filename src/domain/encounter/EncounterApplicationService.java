@@ -13,9 +13,13 @@ import src.domain.encounter.published.EncounterBudgetResult;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterCreature;
 import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationAdvisory;
+import src.domain.encounter.published.EncounterGenerationDiagnostics;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterGenerationResult;
+import src.domain.encounter.published.EncounterGenerationSolutionQuality;
 import src.domain.encounter.published.EncounterGenerationStatus;
+import src.domain.encounter.published.EncounterGenerationStopCategory;
 import src.domain.encounter.published.EncounterLock;
 import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.published.GenerateEncounterCommand;
@@ -70,7 +74,9 @@ public final class EncounterApplicationService {
                     mapStatus(result.status()),
                     toPublishedBudget(result.budget()),
                     result.encounters().stream().map(EncounterApplicationService::toPublishedEncounter).toList(),
-                    result.message());
+                    result.message(),
+                    toPublishedDiagnostics(result.diagnostics()),
+                    result.advisories().stream().map(EncounterApplicationService::toPublishedAdvisory).toList());
         } catch (RuntimeException exception) {
             return new EncounterGenerationResult(EncounterGenerationStatus.defaultFailure(), null, List.of(), "Encounter generation failed.");
         }
@@ -92,8 +98,10 @@ public final class EncounterApplicationService {
                 effectiveRequest.creatureSubtypes(),
                 effectiveRequest.biomes(),
                 toDifficultyIntent(effectiveRequest.targetDifficulty()),
+                effectiveRequest.targetDifficulty() != null && effectiveRequest.targetDifficulty().isAuto(),
                 effectiveRequest.alternativeCount(),
                 toTuningIntent(effectiveRequest.tuning()),
+                effectiveRequest.generationSeed(),
                 effectiveRequest.encounterTableIds(),
                 effectiveRequest.excludedCreatureIds(),
                 effectiveRequest.lockedCreatures().stream()
@@ -116,6 +124,7 @@ public final class EncounterApplicationService {
 
     private static EncounterDifficultyIntent toDifficultyIntent(EncounterDifficultyBand band) {
         return switch (band == null ? EncounterDifficultyBand.defaultBand() : band) {
+            case AUTO -> EncounterDifficultyIntent.MEDIUM;
             case EASY -> EncounterDifficultyIntent.EASY;
             case MEDIUM -> EncounterDifficultyIntent.MEDIUM;
             case HARD -> EncounterDifficultyIntent.HARD;
@@ -191,11 +200,63 @@ public final class EncounterApplicationService {
                 creature.tags());
     }
 
+    private static @Nullable EncounterGenerationDiagnostics toPublishedDiagnostics(
+            EncounterGenerationUseCase.@Nullable GenerationDiagnostics diagnostics
+    ) {
+        if (diagnostics == null) {
+            return null;
+        }
+        return new EncounterGenerationDiagnostics(
+                toPublishedDifficulty(diagnostics.resolvedDifficulty()),
+                toPublishedTuning(diagnostics.resolvedTuning()),
+                toPublishedQuality(diagnostics.solutionQuality()),
+                toPublishedStopCategory(diagnostics.stopCategory()),
+                diagnostics.candidatePoolSize(),
+                diagnostics.attempts(),
+                diagnostics.candidateEvaluations());
+    }
+
+    private static EncounterGenerationTuning toPublishedTuning(EncounterTuningIntent tuning) {
+        EncounterTuningIntent effective = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
+        return new EncounterGenerationTuning(
+                effective.balanceLevel(),
+                effective.amountValue(),
+                effective.diversityLevel());
+    }
+
+    private static EncounterGenerationSolutionQuality toPublishedQuality(
+            EncounterGenerationUseCase.GenerationSolutionQuality quality
+    ) {
+        return switch (quality == null ? EncounterGenerationUseCase.GenerationSolutionQuality.FALLBACK : quality) {
+            case EXACT -> EncounterGenerationSolutionQuality.EXACT;
+            case FALLBACK -> EncounterGenerationSolutionQuality.FALLBACK;
+        };
+    }
+
+    private static EncounterGenerationStopCategory toPublishedStopCategory(
+            EncounterGenerationUseCase.GenerationStopCategory category
+    ) {
+        return switch (category == null ? EncounterGenerationUseCase.GenerationStopCategory.SEARCH_EXHAUSTED : category) {
+            case COMPLETED -> EncounterGenerationStopCategory.COMPLETED;
+            case SEARCH_EXHAUSTED -> EncounterGenerationStopCategory.SEARCH_EXHAUSTED;
+        };
+    }
+
+    private static EncounterGenerationAdvisory toPublishedAdvisory(
+            EncounterGenerationUseCase.GenerationAdvisory advisory
+    ) {
+        return switch (advisory) {
+            case AUTO_RESOLVED -> EncounterGenerationAdvisory.AUTO_RESOLVED;
+            case FALLBACK_USED -> EncounterGenerationAdvisory.FALLBACK_USED;
+        };
+    }
+
     private static EncounterGenerationStatus mapStatus(EncounterGenerationUseCase.GenerateStatus status) {
         return switch (status) {
             case SUCCESS -> EncounterGenerationStatus.SUCCESS;
             case NO_ACTIVE_PARTY -> EncounterGenerationStatus.NO_ACTIVE_PARTY;
             case NO_CREATURES -> EncounterGenerationStatus.NO_CREATURES;
+            case NO_SOLUTION -> EncounterGenerationStatus.NO_SOLUTION;
             case INVALID_REQUEST -> EncounterGenerationStatus.INVALID_REQUEST;
             case STORAGE_ERROR -> EncounterGenerationStatus.STORAGE_ERROR;
         };

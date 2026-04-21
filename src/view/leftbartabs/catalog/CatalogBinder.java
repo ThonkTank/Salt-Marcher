@@ -179,6 +179,9 @@ final class CatalogBinder {
     }
 
     private static EncounterDifficultyBand toDifficultyBand(String key) {
+        if ("auto".equals(key)) {
+            return EncounterDifficultyBand.AUTO;
+        }
         if ("easy".equals(key)) {
             return EncounterDifficultyBand.EASY;
         }

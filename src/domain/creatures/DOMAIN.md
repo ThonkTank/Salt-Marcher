@@ -9,6 +9,7 @@ language, and domain rationale.
 ## Context Role
 
 Context Role: Reference Catalog Context
+Context Name: Creatures
 
 - `creatures` is a reference catalog context over imported creature truth.
 - Its public backend boundary is

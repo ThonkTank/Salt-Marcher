@@ -23,8 +23,8 @@ Current state:
 ## Visible Surfaces
 
 - `COCKPIT_CONTROLS` contains content selection, creature filters, active
-  filter chips, encounter difficulty selection, encounter-table selection,
-  sort selection, result count, and page controls.
+  filter chips, encounter difficulty selection, Auto tuning controls,
+  encounter-table selection, sort selection, result count, and page controls.
 - `COCKPIT_MAIN` contains the active catalog list.
 - Creature Inspector content is defined separately in
   [Creature Details UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/slotcontent/details/creature/UI.md:1).
@@ -41,6 +41,9 @@ Current state:
 - Creature type, subtype, biome, encounter difficulty, amount, balance, and
   diversity selections publish runtime encounter-generation inputs for the
   Encounter state tab.
+- Encounter difficulty defaults to Auto. The amount, balance, and diversity
+  controls each expose an Auto toggle; while Auto is selected, the slider is
+  disabled and the published value is the Auto sentinel for that tuning field.
 - Encounter-table multi-selection publishes selected table IDs for the
   Encounter state tab; an empty selection means normal monster catalog
   generation.

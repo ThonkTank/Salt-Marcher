@@ -24,6 +24,20 @@ public record DungeonRelationGraph(
         this(containment, connections, List.of());
     }
 
+    public List<String> summaries() {
+        java.util.ArrayList<String> result = new java.util.ArrayList<>();
+        connections.stream()
+                .map(connection -> "corridor " + connection.corridorId() + " -> room " + connection.roomId()
+                        + " (" + connection.direction() + ")")
+                .forEach(result::add);
+        featureRelations.stream()
+                .map(relation -> relation.ownerKind() + " " + relation.ownerId()
+                        + " -> " + relation.targetKind() + " " + relation.targetId()
+                        + " (" + relation.relationKind() + ")")
+                .forEach(result::add);
+        return List.copyOf(result);
+    }
+
     public record ContainmentRelation(long aggregateId, long memberId, String memberKind) {
     }
 

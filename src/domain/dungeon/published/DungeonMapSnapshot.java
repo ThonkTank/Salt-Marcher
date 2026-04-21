@@ -12,12 +12,12 @@ public record DungeonMapSnapshot(
 ) {
 
     public DungeonMapSnapshot {
-        topology = topology == null ? DungeonTopologyKind.SQUARE : topology;
-        width = Math.max(1, width);
-        height = Math.max(1, height);
-        areas = areas == null ? List.of() : List.copyOf(areas);
-        boundaries = boundaries == null ? List.of() : List.copyOf(boundaries);
-        features = features == null ? List.of() : List.copyOf(features);
+        topology = defaultTopology(topology);
+        width = positiveDimension(width);
+        height = positiveDimension(height);
+        areas = immutableAreas(areas);
+        boundaries = immutableBoundaries(boundaries);
+        features = immutableFeatures(features);
     }
 
     public DungeonMapSnapshot(
@@ -39,5 +39,25 @@ public record DungeonMapSnapshot(
                         areas.stream().flatMap(area -> area.cells().stream()),
                         features.stream().flatMap(feature -> feature.cells().stream()))
                 .toList();
+    }
+
+    private static DungeonTopologyKind defaultTopology(DungeonTopologyKind topology) {
+        return topology == null ? DungeonTopologyKind.SQUARE : topology;
+    }
+
+    private static int positiveDimension(int dimension) {
+        return Math.max(1, dimension);
+    }
+
+    private static List<DungeonAreaSnapshot> immutableAreas(List<DungeonAreaSnapshot> areas) {
+        return areas == null ? List.of() : List.copyOf(areas);
+    }
+
+    private static List<DungeonBoundarySnapshot> immutableBoundaries(List<DungeonBoundarySnapshot> boundaries) {
+        return boundaries == null ? List.of() : List.copyOf(boundaries);
+    }
+
+    private static List<DungeonFeatureSnapshot> immutableFeatures(List<DungeonFeatureSnapshot> features) {
+        return features == null ? List.of() : List.copyOf(features);
     }
 }

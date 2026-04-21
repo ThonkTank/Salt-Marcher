@@ -9,6 +9,7 @@ invariants.
 ## Context Role
 
 Context Role: Generation Policy Context
+Context Name: Encounter
 
 - `encounter` is a runtime composition feature.
 - It does not own party truth or creature truth.
@@ -22,6 +23,9 @@ Context Role: Generation Policy Context
 `published/` owns public generation and budget-load commands, difficulty
 bands, generator tuning, locks, budget summaries, generated encounter results,
 encounter creature entries, and generation status vocabulary.
+`EncounterDifficultyBand.AUTO` and Auto tuning sentinels are public request
+language only. The application boundary resolves them into concrete generation
+values before invoking draft construction.
 
 The generation model must not depend on any `src.domain.*.published.*`
 carriers as invariant inputs. The application boundary translates public
@@ -72,6 +76,9 @@ It derives:
 - encounter-table-constrained candidate pools
 - role hints for encounter composition
 - ranked encounter alternatives
+- generator diagnostics describing the resolved difficulty/tuning attempt,
+  search quality, stop category, candidate-pool size, and attempt/evaluation
+  counts
 - party-derived budget summaries for the active runtime session
 
 Generated encounters are ephemeral derived state. They may be locked or
@@ -117,6 +124,10 @@ Core invariants:
 - encounter math is computed from public party data, not duplicated persistence
 - selected encounter tables replace creature filter sourcing for that
   generation pass
+- Auto difficulty and Auto tuning are resolved deterministically from the
+  generation seed and request fingerprint before draft enumeration
+- a non-empty candidate pool with no viable draft is distinguished from an
+  empty candidate pool
 - foreign feature internals remain hidden behind their API boundaries
 - generator ranking must be deterministic for the same inputs
 - locked creatures remain mandatory inputs until cleared by the user
@@ -144,6 +155,12 @@ are session-local controls over the next generation command.
 - candidate filtering may narrow by creature type, subtype, and biome
 - generator tuning may prefer smaller or larger creature counts, narrower or
   wider XP spread, and lower or higher statblock diversity
+- Auto generation first tries a neutral resolved configuration, then up to a
+  bounded set of seeded variants, and returns an exact match when a resolved
+  target difficulty is met
+- when no exact match exists but drafts are available, generation returns the
+  best-ranked fallback with a fallback advisory instead of treating it as a
+  creature-source failure
 - role hints are heuristic derived state; they do not become persisted creature
   truth
 - the feature may enrich final suggestions with creature-detail tags without

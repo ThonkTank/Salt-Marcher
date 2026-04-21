@@ -71,9 +71,12 @@ documents live next to the feature code they describe.
   lookup language, detail records, filters, and encounter-candidate reference
   profiles. It does not own encounter balancing or creature lifecycle truth.
 - `encounter`: Generation Policy Context. Consumes `party` and `creatures`
-  through their application services and published language, then owns runtime
-  encounter generation, candidate narrowing, ranking, locks, and composition
-  policy.
+  plus encounter-table reference data through their application services and
+  published language, then owns runtime encounter generation, candidate
+  narrowing, ranking, locks, and composition policy.
+- `encountertable`: Reference Catalog Context. Publishes read-only
+  encounter-table summaries and weighted candidate rows for generator input
+  without owning creature truth or encounter-generation policy.
 - `dungeon`: Authored World-Space Context. Owns authored dungeon map/world
   truth, topology, rooms/spaces, connections, identity, and map mutation rules.
   It publishes domain map/world facts through `published/`.

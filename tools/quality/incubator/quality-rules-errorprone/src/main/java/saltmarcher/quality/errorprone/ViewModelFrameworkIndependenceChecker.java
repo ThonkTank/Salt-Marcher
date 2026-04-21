@@ -163,7 +163,11 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         if (tree.getSourceFile() == null) {
             return "";
         }
-        String sourceText = state.getSourceForNode(tree);
-        return sourceText == null ? "" : sourceText;
+        try {
+            String sourceText = state.getSourceForNode(tree);
+            return sourceText == null ? "" : sourceText;
+        } catch (IllegalArgumentException ignored) {
+            return "";
+        }
     }
 }

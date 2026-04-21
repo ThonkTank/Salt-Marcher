@@ -1,6 +1,7 @@
 package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.encounter.application.EncounterGenerationUseCase.GenerationDiagnostics;
 import src.domain.creatures.published.CreatureDetail;
 import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureLookupStatus;
@@ -17,7 +18,9 @@ import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.LoadEncounterTableCandidatesQuery;
 import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
+import src.domain.encounter.generation.value.EncounterGenerationAttempt;
 import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
+import src.domain.encounter.generation.policy.EncounterAutoTuningPolicy;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
 import src.domain.encounter.generation.value.EncounterDraft;
@@ -33,11 +36,14 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 // PMD suppression is local: encounter generation intentionally centralizes domain adapters here; see src/domain/encounter/DOMAIN.md.
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 final class PrepareEncounterGenerationUseCase {
+
+    private static final int AUTO_ATTEMPT_LIMIT = 12;
 
     private PrepareEncounterGenerationUseCase() {
     }
@@ -78,21 +84,74 @@ final class PrepareEncounterGenerationUseCase {
                     "No creatures matched the current filters.");
         }
 
-        List<EncounterDraft> drafts = EncounterDraftFactory.createDrafts(new EncounterDraftFactory.EncounterDraftRequest(
-                request.targetDifficulty(),
+        GenerationSearchResult searchResult = generateDrafts(
+                request,
                 thresholds,
                 partyLoad.partySize(),
-                request.tuning(),
-                lockedCreatures.lockedProfiles().values(),
-                lockedCreatures.lockedQuantities(),
-                candidates.unlockedProfiles()));
-        if (drafts.isEmpty()) {
+                lockedCreatures,
+                candidates.unlockedProfiles());
+        if (searchResult.drafts().isEmpty()) {
             return EncounterGenerationPreparationUseCase.failure(
-                    EncounterGenerationUseCase.GenerateStatus.NO_CREATURES,
+                    EncounterGenerationUseCase.GenerateStatus.NO_SOLUTION,
                     budget,
                     "No encounter compositions fit the current request.");
         }
-        return EncounterGenerationPreparationUseCase.success(budget, drafts);
+        return EncounterGenerationPreparationUseCase.success(
+                budget,
+                searchResult.drafts(),
+                searchResult.message(),
+                searchResult.diagnostics(),
+                searchResult.advisories());
+    }
+
+    private static GenerationSearchResult generateDrafts(
+            EncounterGenerationUseCase.GenerateRequest request,
+            EncounterDifficultyMath.Thresholds thresholds,
+            int partySize,
+            LockedCreatures lockedCreatures,
+            List<EncounterCandidateProfile> unlockedProfiles
+    ) {
+        List<EncounterGenerationAttempt> attempts = EncounterAutoTuningPolicy.resolveAttempts(
+                request.targetDifficulty(),
+                request.targetDifficultyAuto(),
+                request.tuning(),
+                effectiveSeed(request),
+                AUTO_ATTEMPT_LIMIT);
+        SearchAccumulator accumulator = SearchAccumulator.empty(lockedCreatures.lockedProfiles().size() + unlockedProfiles.size());
+        for (EncounterGenerationAttempt attempt : attempts) {
+            List<EncounterDraft> drafts = EncounterDraftFactory.createDrafts(new EncounterDraftFactory.EncounterDraftRequest(
+                    attempt.targetDifficulty(),
+                    thresholds,
+                    partySize,
+                    attempt.tuning(),
+                    lockedCreatures.lockedProfiles().values(),
+                    lockedCreatures.lockedQuantities(),
+                    unlockedProfiles));
+            accumulator = accumulator.record(attempt, drafts);
+            List<EncounterDraft> exactDrafts = drafts.stream()
+                    .filter(draft -> draft.achievedDifficulty() == attempt.targetDifficulty())
+                    .toList();
+            if (!exactDrafts.isEmpty()) {
+                return accumulator.exact(attempt, exactDrafts);
+            }
+        }
+        return accumulator.fallback();
+    }
+
+    private static long effectiveSeed(EncounterGenerationUseCase.GenerateRequest request) {
+        if (request.generationSeed() > 0L) {
+            return request.generationSeed();
+        }
+        return Integer.toUnsignedLong(Objects.hash(
+                request.creatureTypes(),
+                request.creatureSubtypes(),
+                request.biomes(),
+                request.targetDifficulty(),
+                request.targetDifficultyAuto(),
+                request.tuning(),
+                request.encounterTableIds(),
+                request.excludedCreatureIds(),
+                request.lockedCreatures()));
     }
 
     private static PartyLoadResult loadPartyState(PartyApplicationService party) {
@@ -393,7 +452,118 @@ final class PrepareEncounterGenerationUseCase {
                     budget,
                     Map.of(),
                     Map.of(),
+                message);
+        }
+    }
+
+    private record SearchAccumulator(
+            int candidatePoolSize,
+            int attempts,
+            int candidateEvaluations,
+            @Nullable EncounterGenerationAttempt bestFallbackAttempt,
+            List<EncounterDraft> bestFallbackDrafts
+    ) {
+
+        private static SearchAccumulator empty(int candidatePoolSize) {
+            return new SearchAccumulator(candidatePoolSize, 0, 0, null, List.of());
+        }
+
+        private SearchAccumulator record(EncounterGenerationAttempt attempt, List<EncounterDraft> drafts) {
+            List<EncounterDraft> safeDrafts = drafts == null ? List.of() : List.copyOf(drafts);
+            if (safeDrafts.isEmpty()) {
+                return new SearchAccumulator(
+                        candidatePoolSize,
+                        attempts + 1,
+                        candidateEvaluations,
+                        bestFallbackAttempt,
+                        bestFallbackDrafts);
+            }
+            EncounterGenerationAttempt nextFallbackAttempt = bestFallbackAttempt;
+            List<EncounterDraft> nextFallbackDrafts = bestFallbackDrafts;
+            if (nextFallbackDrafts.isEmpty()
+                    || EncounterAutoTuningPolicy.prefersFallbackDrafts(safeDrafts, nextFallbackDrafts)) {
+                nextFallbackAttempt = attempt;
+                nextFallbackDrafts = safeDrafts;
+            }
+            return new SearchAccumulator(
+                    candidatePoolSize,
+                    attempts + 1,
+                    candidateEvaluations + safeDrafts.size(),
+                    nextFallbackAttempt,
+                    nextFallbackDrafts);
+        }
+
+        private GenerationSearchResult exact(EncounterGenerationAttempt attempt, List<EncounterDraft> drafts) {
+            return result(
+                    attempt,
+                    drafts,
+                    EncounterGenerationUseCase.GenerationSolutionQuality.EXACT,
+                    "Encounter options generated.");
+        }
+
+        private GenerationSearchResult fallback() {
+            if (bestFallbackAttempt == null || bestFallbackDrafts.isEmpty()) {
+                return new GenerationSearchResult(
+                        List.of(),
+                        null,
+                        List.of(),
+                        "No encounter compositions fit the current request.");
+            }
+            return result(
+                    bestFallbackAttempt,
+                    bestFallbackDrafts,
+                    EncounterGenerationUseCase.GenerationSolutionQuality.FALLBACK,
+                    "No exact target found; best fallback encounter options generated.");
+        }
+
+        private GenerationSearchResult result(
+                EncounterGenerationAttempt attempt,
+                List<EncounterDraft> drafts,
+                EncounterGenerationUseCase.GenerationSolutionQuality quality,
+                String message
+        ) {
+            List<EncounterGenerationUseCase.GenerationAdvisory> advisories =
+                    advisoriesFor(attempt.autoResolved(), quality);
+            return new GenerationSearchResult(
+                    drafts,
+                    new EncounterGenerationUseCase.GenerationDiagnostics(
+                            attempt.targetDifficulty(),
+                            attempt.tuning(),
+                            quality,
+                            EncounterGenerationUseCase.GenerationStopCategory.COMPLETED,
+                            candidatePoolSize,
+                            attempts,
+                            candidateEvaluations),
+                    advisories,
                     message);
+        }
+
+        private static List<EncounterGenerationUseCase.GenerationAdvisory> advisoriesFor(
+                boolean autoResolved,
+                EncounterGenerationUseCase.GenerationSolutionQuality quality
+        ) {
+            List<EncounterGenerationUseCase.GenerationAdvisory> advisories = new java.util.ArrayList<>();
+            if (autoResolved) {
+                advisories.add(EncounterGenerationUseCase.GenerationAdvisory.AUTO_RESOLVED);
+            }
+            if (quality == EncounterGenerationUseCase.GenerationSolutionQuality.FALLBACK) {
+                advisories.add(EncounterGenerationUseCase.GenerationAdvisory.FALLBACK_USED);
+            }
+            return List.copyOf(advisories);
+        }
+    }
+
+    private record GenerationSearchResult(
+            List<EncounterDraft> drafts,
+            @Nullable GenerationDiagnostics diagnostics,
+            List<EncounterGenerationUseCase.GenerationAdvisory> advisories,
+            String message
+    ) {
+
+        private GenerationSearchResult {
+            drafts = drafts == null ? List.of() : List.copyOf(drafts);
+            advisories = advisories == null ? List.of() : List.copyOf(advisories);
+            message = message == null ? "" : message;
         }
     }
 

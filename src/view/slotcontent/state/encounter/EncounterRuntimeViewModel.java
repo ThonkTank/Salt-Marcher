@@ -14,9 +14,9 @@ public final class EncounterRuntimeViewModel {
     private final ReadOnlyObjectWrapper<EncounterFilters> filters =
             new ReadOnlyObjectWrapper<>(EncounterFilters.empty());
     private final ReadOnlyObjectWrapper<EncounterDifficultyBand> difficulty =
-            new ReadOnlyObjectWrapper<>(EncounterDifficultyBand.defaultBand());
+            new ReadOnlyObjectWrapper<>(EncounterDifficultyBand.autoBand());
     private final ReadOnlyObjectWrapper<EncounterGenerationTuning> tuning =
-            new ReadOnlyObjectWrapper<>(EncounterGenerationTuning.defaultTuning());
+            new ReadOnlyObjectWrapper<>(EncounterGenerationTuning.autoTuning());
     private final ReadOnlyObjectWrapper<List<Long>> encounterTableIds =
             new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyObjectWrapper<CreatureAddRequest> creatureAddRequest =
@@ -56,12 +56,12 @@ public final class EncounterRuntimeViewModel {
 
     public EncounterDifficultyBand difficulty() {
         EncounterDifficultyBand current = difficulty.get();
-        return current == null ? EncounterDifficultyBand.defaultBand() : current;
+        return current == null ? EncounterDifficultyBand.autoBand() : current;
     }
 
     public EncounterGenerationTuning tuning() {
         EncounterGenerationTuning current = tuning.get();
-        return current == null ? EncounterGenerationTuning.defaultTuning() : current;
+        return current == null ? EncounterGenerationTuning.autoTuning() : current;
     }
 
     public List<Long> encounterTableIds() {
@@ -74,7 +74,7 @@ public final class EncounterRuntimeViewModel {
     }
 
     public void selectDifficulty(EncounterDifficultyBand nextDifficulty) {
-        difficulty.set(nextDifficulty == null ? EncounterDifficultyBand.defaultBand() : nextDifficulty);
+        difficulty.set(nextDifficulty == null ? EncounterDifficultyBand.autoBand() : nextDifficulty);
     }
 
     public void updateTuning(int balanceLevel, double amountValue, int diversityLevel) {

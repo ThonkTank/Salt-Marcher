@@ -9,6 +9,7 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.party.PartyApplicationService;
@@ -127,10 +128,17 @@ final class EncounterStateBinder {
     ) {
         EncounterGenerationTuning tuning = encounterSession.tuning();
         return new EncounterStateViewModel.BuilderSettings(
-                encounterSession.difficulty().name(),
+                difficultyLabel(encounterSession.difficulty()),
                 tuning.balanceLevel(),
                 tuning.amountValue(),
                 tuning.diversityLevel());
+    }
+
+    private static String difficultyLabel(EncounterDifficultyBand difficulty) {
+        if (difficulty == null || difficulty.isAuto()) {
+            return "Auto";
+        }
+        return difficulty.name();
     }
 
     private void render(EncounterStateView state, EncounterStateViewModel viewModel) {

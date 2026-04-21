@@ -11,7 +11,8 @@ feature.
 Provide a runtime encounter builder that:
 
 - uses the active party as the balancing baseline
-- generates several encounter alternatives for one requested difficulty band
+- generates several encounter alternatives for one requested or automatically
+  resolved difficulty band
 - explains why an alternative fits the target
 - supports iterative rerolling through lock and exclude controls
 - can use selected encounter tables as curated generator sources
@@ -28,8 +29,8 @@ Provide a runtime encounter builder that:
    left-bar tab is not claiming the state pane.
 2. The state tab reads the active party and current creature
    filter options.
-3. The user selects a difficulty and optional type, subtype, biome filters, or
-   encounter tables.
+3. The user selects Auto or an explicit difficulty and optional type, subtype,
+   biome filters, tuning controls, or encounter tables.
 4. The user generates encounter alternatives.
 5. The user inspects a selected alternative, then rerolls, locks, or excludes
    as needed.
@@ -44,6 +45,14 @@ Provide a runtime encounter builder that:
 - support multi-select creature filters with visible active-filter chips
 - support generator tuning for creature amount, XP-spread balance, and
   statblock diversity
+- support Auto difficulty and Auto tuning for amount, XP-spread balance, and
+  statblock diversity; Auto values are sent as sentinel request values and are
+  resolved by the generator for each generation pass
+- return compact generation diagnostics with resolved difficulty, resolved
+  tuning, solution quality, search stop category, candidate-pool size,
+  attempt count, and candidate-evaluation count
+- return best fallback encounter options with an advisory when no exact target
+  difficulty can be generated from the available candidates
 - support encounter-table selection as an alternate generator source
 - show a non-blocking `Loot-Konflikt` warning when selected encounter tables
   reference multiple linked loot-table IDs
@@ -61,6 +70,10 @@ Provide a runtime encounter builder that:
 - generated encounters remain derived runtime output, not write-model state
 - a party with no active members yields a clear empty-state message
 - generator output includes adjusted XP and a difficulty-band label
+- Auto generation exposes the resolved difficulty and tuning through result
+  diagnostics without changing the generated encounter roster ownership model
+- a non-empty candidate pool that cannot produce a composition yields
+  `NO_SOLUTION`; an empty candidate pool remains `NO_CREATURES`
 - lock and exclude actions change subsequent rerolls without requiring shell
   restarts
 - excluding the current composition immediately regenerates alternatives using

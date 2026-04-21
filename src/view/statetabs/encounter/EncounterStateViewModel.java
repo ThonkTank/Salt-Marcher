@@ -19,6 +19,8 @@ import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterBudgetResult;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationAdvisory;
+import src.domain.encounter.published.EncounterGenerationDiagnostics;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
@@ -75,6 +77,7 @@ public final class EncounterStateViewModel {
     private String generatedTitle = "";
     private @Nullable RemovedRosterEntry pendingUndo;
     private long nextUndoToken;
+    private long nextGenerationSeed;
     private int currentTurnIndex;
     private int round = 1;
 
@@ -133,7 +136,7 @@ public final class EncounterStateViewModel {
         List<String> effectiveSubtypes = safeStrings(subtypes);
         List<String> effectiveBiomes = safeStrings(biomes);
         EncounterDifficultyBand effectiveDifficulty =
-                difficulty == null ? EncounterDifficultyBand.defaultBand() : difficulty;
+                difficulty == null ? EncounterDifficultyBand.autoBand() : difficulty;
         clearPendingUndo();
         refreshPartyContext();
         if (activeParty.isEmpty()) {
@@ -147,7 +150,8 @@ public final class EncounterStateViewModel {
                 effectiveBiomes,
                 effectiveDifficulty,
                 5,
-                tuning == null ? EncounterGenerationTuning.defaultTuning() : tuning,
+                tuning == null ? EncounterGenerationTuning.autoTuning() : tuning,
+                ++nextGenerationSeed,
                 safeIds(encounterTableIds),
                 List.copyOf(excludedCreatureIds),
                 List.copyOf(lockedCreatures)));
@@ -162,7 +166,7 @@ public final class EncounterStateViewModel {
         generatedAlternatives.addAll(result.encounters());
         selectedAlternativeIndex = 0;
         applyGeneratedEncounter(generatedAlternatives.getFirst());
-        status.set(generatedAlternatives.size() + " Encounter-Optionen generiert.");
+        status.set(generationSuccessText(result));
     }
 
     public void reroll(
@@ -719,6 +723,7 @@ public final class EncounterStateViewModel {
 
     private static String difficultyLabel(EncounterDifficultyBand band) {
         return switch (band == null ? EncounterDifficultyBand.MEDIUM : band) {
+            case AUTO -> "Auto";
             case EASY -> "Easy";
             case MEDIUM -> "Medium";
             case HARD -> "Hard";
@@ -726,10 +731,34 @@ public final class EncounterStateViewModel {
         };
     }
 
+    private String generationSuccessText(EncounterGenerationResult result) {
+        StringBuilder text = new StringBuilder(generatedAlternatives.size() + " Encounter-Optionen generiert.");
+        EncounterGenerationDiagnostics diagnostics = result.diagnostics();
+        if (diagnostics != null) {
+            text.append(" Ziel: ")
+                    .append(difficultyLabel(diagnostics.resolvedDifficulty()))
+                    .append(", Tuning: ")
+                    .append(tuningLabel(diagnostics.resolvedTuning()))
+                    .append('.');
+        }
+        if (result.advisories().contains(EncounterGenerationAdvisory.FALLBACK_USED)) {
+            text.append(" Fallback verwendet.");
+        }
+        return text.toString();
+    }
+
+    private static String tuningLabel(EncounterGenerationTuning tuning) {
+        EncounterGenerationTuning effective = tuning == null ? EncounterGenerationTuning.defaultTuning() : tuning;
+        return "B" + effective.balanceLevel()
+                + "/M" + Math.round(effective.amountValue())
+                + "/D" + effective.diversityLevel();
+    }
+
     private static String generationStatusText(EncounterGenerationStatus status) {
         return switch (status == null ? EncounterGenerationStatus.defaultFailure() : status) {
             case NO_ACTIVE_PARTY -> "Die aktive Party hat keine Mitglieder.";
             case NO_CREATURES -> "Keine Kreaturen passen zu diesen Filtern.";
+            case NO_SOLUTION -> "Keine passende Encounter-Komposition gefunden.";
             case INVALID_REQUEST -> "Encounter-Filter sind ungueltig.";
             case STORAGE_ERROR -> "Encounter konnte nicht generiert werden.";
             case SUCCESS -> "Encounter generiert.";
@@ -792,7 +821,7 @@ public final class EncounterStateViewModel {
             int diversityLevel
     ) {
         public static BuilderSettings defaultSettings() {
-            return new BuilderSettings("Auto", 3, 3.0, 3);
+            return new BuilderSettings("Auto", -1, -1.0, -1);
         }
     }
 

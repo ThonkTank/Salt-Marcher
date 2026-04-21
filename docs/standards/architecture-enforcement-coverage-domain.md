@@ -10,155 +10,72 @@ canonical Domain Layer Standard.
 
 This document maps the rules in
 [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
-to the local quality gates that actually block violations. It also names the
+to local quality gates that actually block violations. It also names the
 remaining review-owned rules so the enforcement set does not overclaim.
 
-## Enforced
+## Enforced Rule Matrix
 
-- `domain-root-presence`: every domain context exposes exactly one root
-  `<PascalFeatureName>ApplicationService.java` directly under
-  `src/domain/<feature>/`, owned by `build-harness`.
-- `domain-root-class-shape`: the root `*ApplicationService` must be a public
-  final top-level class, owned by Error Prone
-  `DomainApplicationServiceApiShape`.
-- `domain-root-public-api-carriers`: every public or protected method on a
-  root `*ApplicationService` takes exactly one same-context `published/`
-  carrier whose type name ends in `Command` or `Query` and returns a
-  same-context `published/` result or value carrier directly, owned by Error
-  Prone
-  `DomainApplicationServiceApiShape`.
-- `domain-root-no-nested-contracts`: root `*ApplicationService` classes must
-  not declare public or protected nested contract types such as legacy
-  factories, owned by Error Prone `DomainApplicationServiceApiShape`.
-- `domain-root-constructor-composition`: root application services may expose
-  only same-feature outbound port interfaces under a named module `port/`
-  package and foreign root application services in public or protected
-  constructors; data, shell, view, JavaFX, SQL, same-feature published carriers,
-  and private implementation types are forbidden there, owned by Error Prone
-  `DomainPublicBoundarySignaturePurity`.
-- `domain-service-registry-root-only`: data service roots may export only the
-  same-feature root `*ApplicationService.class` through `ServiceRegistry`;
-  domain ports, nested factories, and domain internals must not be registered
-  as runtime-service keys, owned by Error Prone
-  `DomainServiceRegistryExportShape`.
-- `domain-published-direct-files`: `published/` contains direct Java files
-  only, owned by `build-harness`.
-- `domain-published-carrier-shape`: top-level `published/` types must be
-  public, and public `published/` types must be records, enums, or sealed
-  abstractions, owned by Error Prone
-  `DomainPublishedCarrierShape`.
-- `domain-published-no-callable-contracts`: `published/` must not contain
-  callable contracts such as `*ApplicationService`, `*Service`, `*Facade`,
-  `*Repository`, `*Lookup`, `*Catalog`, `*Search`, `*Port`, `*Gateway`,
-  `*Factory`, `*Locator`, or `*Policy`, owned by `build-harness`.
-- `domain-application-direct-usecases`: `application/` contains direct
-  `*UseCase.java` files only, owned by `build-harness`.
-- `domain-application-no-backend-port-contracts`: `application/` does not own
-  backend port contracts ending `Repository`, `Lookup`, `Catalog`, or
-  `Search`, owned by `build-harness`.
-- `domain-application-no-same-context-published`: `application/` use cases may
-  not depend on their own `published/` carriers; the root service translates
-  those carriers before delegation, owned by Error Prone
-  `DomainApplicationNoSameContextPublishedDependency`.
-- `domain-module-role-required`, `domain-role-direct-files`, and
-  `domain-role-package-name`: when a named domain module contains Java files,
-  those files must be direct files under one of the allowed tactical role
-  packages: `aggregate`, `entity`, `value`, `policy`, `port`, `factory`,
-  `service`, `event`, or `specification`, owned by `build-harness`. This is a
-  package allowlist and direct-file rule, not a requirement to create every
-  role package.
-- `domain-forbidden-top-level-bucket`: legacy direct buckets such as `api`,
-  `repository`, `query`, `gateway`, `adapter`, `controller`, `model`,
-  `service`, `usecase`, and plural role buckets are forbidden directly under
-  `src/domain/<feature>/`, owned by `build-harness`.
-- `domain-mapcore-removed`: `src/domain/mapcore/**` is forbidden, owned by
-  `build-harness` and PMD architecture source policy.
-- `domain-context-roles-complete` and
-  `domain-context-relationships-complete`: `docs/standards/domain-layer.md`
-  must include every active domain context in `## Context Roles` and
-  `## Context Relationships`, must not include stale context bullets, and the
-  declared role must match each context's `DOMAIN.md`, owned by
-  `build-harness`.
-- `domain-context-document-presence`, `domain-context-shape-declared`, and
-  `domain-context-required-sections`: every `src/domain/<feature>/DOMAIN.md`
-  must exist, declare exactly one `Context Role: ...` marker using an allowed
-  role value, and include non-empty `## Context Role`, `## Published Language`,
-  `## Application Boundary`, and `## Ubiquitous Language` sections, owned by
-  `build-harness`.
-- `domain-role-context-required-sections`,
-  `domain-authored-context-write-model-required`, and
-  `domain-aggregate-marker-shape`: authored truth contexts must include
-  `## Aggregate Model`, `## Commands And Invariants`, and
-  `## Consistency Model`, must not declare `Write Model: None`, and must
-  declare `Aggregate Root: <TypeName>` markers that resolve to existing named
-  module role types, owned by `build-harness`.
-- `domain-generation-policy-required-sections`,
-  `domain-generation-policy-write-model-none`, and
-  `domain-generation-policy-ephemeral-rationale`: generation policy contexts
-  must include commands and consistency sections, declare `Write Model: None`,
-  and explain the absence of authored truth in
-  `## Ephemeral Policy Rationale`, owned by `build-harness`.
-- `domain-outer-layer-independence`: domain code must not depend on
-  `bootstrap`, `shell`, `src.view`, or `src.data`, owned by ArchUnit
-  `domainMustStayIndependentFromOuterLayers` and PMD architecture source
-  policy.
-- `domain-foreign-feature-public-boundary`: domain and data code may use only
-  foreign root application services or foreign `published/` carriers, owned by
-  ArchUnit `domainFeaturesMustOnlyUseForeignFeatureApis` and
-  `dataFeaturesMustOnlyUseForeignFeatureApis`.
-- `domain-named-module-private-context`: named domain modules must not depend
-  on any foreign domain context, including foreign public carriers, owned by
-  ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts`.
-- `domain-named-module-no-same-context-application`: named domain modules must
-  not depend on their own root package or `application/` package, owned by
-  ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary`.
-- `domain-model-roles-no-outbound-ports`: aggregate, entity, value, policy,
-  factory, service, event, and specification roles must not depend on outbound
-  `port/` interfaces; application use cases or adapters receive ports, owned
-  by ArchUnit `domainModelRolesMustNotDependOnOutboundPorts`.
-- `domain-named-module-no-published-carriers`: named modules must not import
-  same-feature or foreign `published/` carriers, owned by Error Prone
-  `DomainModuleNoPublishedCarrierDependency`.
-- `domain-port-boundary`: outbound ports must not be implemented under
-  `src/domain/**`, `*Repository` domain types must be port interfaces under a
-  named module `port/` package, and port signatures must not expose outer-layer,
-  source-local, transaction, persistence, filesystem, network, or adapter
-  lifecycle types, owned by Error Prone `DomainPortBoundary`.
-- `domain-public-boundary-signature-purity`: root application-service and
-  `published/` public signatures must not expose outer-layer, source-local,
-  transaction, persistence, filesystem, network, or adapter lifecycle types,
-  owned by Error Prone `DomainPublicBoundarySignaturePurity`.
-- `domain-role-shape`: aggregate, entity, value, port, policy, factory,
-  service, event, and specification packages must use their declared type
-  shapes, owned by Error Prone `DomainRoleShape`.
-- `domain-field-purity` and `domain-public-concrete-type-shape`: shared
-  domain-module field and concrete-type shape constraints are owned by Error
-  Prone `DomainModuleFieldPurity` and `DomainPublicConcreteTypeShape`.
-- `domain-service-factory-statelessness`: domain `service/` and `factory/`
-  role classes are stateless, owned by Error Prone
-  `DomainServiceFactoryStatelessness`.
-- `domain-feature-cycles` and `domain-module-cycles`: feature and named-module
-  dependency cycles are forbidden, owned by ArchUnit
-  `domainFeaturesMustStayCycleFree` and `domainSubpackagesMustStayCycleFree`.
+| Rule ID | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- |
+| `domain-root-presence` | build-harness `DomainFeatureRules` and `SourceLayoutRules` | `./gradlew checkArchitecture` | Each active context has exactly one root service file named from `Context Name:`. |
+| `domain-context-name-declared` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Every `DOMAIN.md` has exactly one `Context Name: <PascalContext>` marker. |
+| `domain-root-class-shape` | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root application services are public final top-level boundary classes. |
+| `domain-root-public-api-carriers` | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root public methods use same-context command/query inputs and same-context published results. |
+| `domain-root-no-nested-contracts` | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root services do not publish nested public/protected contract types. |
+| `domain-root-constructor-composition` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Root constructors expose only same-feature ports or foreign root application services. |
+| `domain-service-registry-root-only` | Error Prone `DomainServiceRegistryExportShape` | `./gradlew compileJava` | Data service roots export only their same-feature root application service key. |
+| `domain-published-direct-files` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | `published/` carriers are direct files under `src/domain/<context>/published/`. |
+| `domain-published-carrier-shape` | Error Prone `DomainPublishedCarrierShape` | `./gradlew compileJava` | Public published types are public records, enums, or sealed abstractions. |
+| `domain-published-no-callable-contracts` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | `published/` does not contain callable service, repository, port, gateway, factory, locator, or policy contracts by suffix. |
+| `domain-application-direct-usecases` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | `application/` contains direct `*UseCase.java` files only. |
+| `domain-application-no-backend-port-contracts` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Backend port contracts are not placed in `application/`. |
+| `domain-application-no-same-context-published` | Error Prone `DomainApplicationNoSameContextPublishedDependency` | `./gradlew compileJava` | Use cases do not depend on their own public published carriers. |
+| `domain-module-role-required` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Named domain modules place Java under tactical role packages. |
+| `domain-role-direct-files` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages contain direct Java files only. |
+| `domain-role-package-name` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages use the allowed role-name set. |
+| `domain-forbidden-top-level-bucket` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Legacy technical buckets such as `api`, `repository`, `query`, `gateway`, `adapter`, and `model` are forbidden at context root. |
+| `domain-mapcore-removed` | build-harness `DomainFeatureRules` and PMD architecture | `./gradlew checkArchitecture` | `src/domain/mapcore/**` is absent and stable source mentions are blocked. |
+| `domain-context-roles-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context role and no stale context. |
+| `domain-context-relationships-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context relationship and no stale context. |
+| `domain-context-document-presence` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Every active domain context has a `DOMAIN.md`. |
+| `domain-context-shape-declared` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Every `DOMAIN.md` has exactly one allowed `Context Role:` marker. |
+| `domain-context-required-sections` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Every `DOMAIN.md` includes non-empty base context sections. |
+| `domain-role-context-required-sections` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Authored truth contexts include aggregate, command, and consistency sections. |
+| `domain-authored-context-write-model-required` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Authored truth contexts do not declare `Write Model: None`. |
+| `domain-aggregate-marker-shape` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Authored truth contexts declare aggregate roots that resolve to named-module role types. |
+| `domain-generation-policy-required-sections` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Generation policy contexts include command and consistency sections. |
+| `domain-generation-policy-write-model-none` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Generation policy contexts declare `Write Model: None`. |
+| `domain-generation-policy-ephemeral-rationale` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Generation policy contexts explain why they own no persisted authored truth. |
+| `domain-outer-layer-independence` | ArchUnit `domainMustStayIndependentFromOuterLayers` and PMD architecture | `./gradlew checkArchitecture` | Domain code does not depend on `bootstrap`, `shell`, `src.view`, or `src.data`; PMD adds forbidden-token source blockers. |
+| `domain-foreign-feature-public-boundary` | ArchUnit `domainFeaturesMustOnlyUseForeignFeatureApis` and `dataFeaturesMustOnlyUseForeignFeatureApis` | `./gradlew checkArchitecture` | Domain/data code reaches foreign contexts only through foreign root services or published carriers. |
+| `domain-named-module-private-context` | ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts` | `./gradlew checkArchitecture` | Named modules do not reach any foreign domain context. |
+| `domain-named-module-no-same-context-application` | ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary` | `./gradlew checkArchitecture` | Named modules do not depend on their own root or `application/` boundary. |
+| `domain-model-roles-no-outbound-ports` | ArchUnit `domainModelRolesMustNotDependOnOutboundPorts` | `./gradlew checkArchitecture` | Model role packages do not depend on outbound ports. |
+| `domain-named-module-no-published-carriers` | Error Prone `DomainModuleNoPublishedCarrierDependency` | `./gradlew compileJava` | Named modules import no same-context or foreign published carriers. |
+| `domain-port-boundary` | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound ports are domain-owned interfaces with infrastructure-free signatures and no domain implementations. |
+| `domain-public-boundary-signature-purity` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root and published signatures do not leak outer-layer or private domain types. |
+| `domain-published-no-foreign-signatures` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root and published signatures do not expose foreign published carriers. |
+| `domain-role-shape` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Tactical role packages use their declared type shapes. |
+| `domain-field-purity` | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Domain module fields avoid mutable or framework-backed public state. |
+| `domain-public-concrete-type-shape` | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public concrete domain types satisfy the project shape constraints. |
+| `domain-service-factory-statelessness` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Domain services and factories remain stateless. |
+| `domain-feature-cycles` | ArchUnit `domainFeaturesMustStayCycleFree` | `./gradlew checkArchitecture` | Domain features do not form dependency cycles. |
+| `domain-module-cycles` | ArchUnit `domainSubpackagesMustStayCycleFree` | `./gradlew checkArchitecture` | Named domain modules do not form dependency cycles. |
+| `domain-enforcement-coverage-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | This coverage document lists every required domain enforcement rule with owner and entrypoint. |
 
 ## Source-Pattern Checks
 
-PMD architecture owns narrow source-pattern blockers for obvious domain leaks
-such as JavaFX, SQL, shell, bootstrap, data API, filesystem, network, JSON
-framework, and `src/domain/mapcore` mentions.
+PMD architecture is useful for narrow, stable source-pattern blockers: JavaFX,
+SQL, shell, bootstrap, data API, filesystem, network, JSON framework, and
+`src/domain/mapcore` mentions. It also blocks simple smell patterns such as
+root service infrastructure construction, non-public `application/*UseCase`
+helper methods beginning with `score`, `rank`, `choose`, `balance`, or
+`enforce`, and public/protected JavaBean-style `void set*` mutation methods in
+named modules.
 
-PMD also owns these narrow source-pattern blockers:
-
-- root `*ApplicationService` direct construction or static caching of obvious
-  port-adapter/source-adapter infrastructure
-- non-public `application/*UseCase` helper methods beginning with
-  `score`, `rank`, `choose`, `balance`, or `enforce`
-- public/protected JavaBean-style `void set*` mutation methods in named domain
-  modules
-
-These checks are intentionally treated as smell blockers. They are useful for
-stable forbidden tokens and naming patterns; they are not semantic proof that
-behavior sits in the right domain role.
+These checks are intentionally classified as source-pattern blockers. They are
+not semantic proof that policy is in the right tactical role, that ports are
+well named, or that published vocabulary is truly domain language.
 
 ## Review-Owned
 
@@ -168,8 +85,8 @@ behavior sits in the right domain role.
 - whether root application services actually translate public carriers before
   entering use cases or named modules
 - whether application use cases pass `published/`, view, data, shell, or
-  framework carriers into named modules through shapes not visible to the
-  current dependency and signature checks
+  framework carriers into named modules through shapes not visible to current
+  dependency and signature checks
 - whether an outbound port is named in domain language rather than in storage
   or vendor language
 - whether a `Repository` port is genuinely write-oriented rather than a
@@ -184,6 +101,8 @@ behavior sits in the right domain role.
   and event behavior is rich enough for the role name when that role is used
 - whether `published/` language is stable and intentionally versioned enough
   for view models and foreign contexts
+- whether `published/` carriers are passive boundary language rather than
+  invariant-owning objects hidden behind allowed record, enum, or sealed shapes
 - whether `published/` names such as row, selection, cell, or summary describe
   domain facts rather than presentation or storage concepts
 - whether commands, invariants, consistency notes, and ubiquitous language in
@@ -192,5 +111,5 @@ behavior sits in the right domain role.
   prose without changing the machine-readable context markers
 
 These remain review-owned because the available local tools would either need
-fixtures, brittle semantic inference, or broad text heuristics that would
-produce low-signal results.
+runtime fixtures, brittle semantic inference, or broad text heuristics that
+would produce low-signal results.

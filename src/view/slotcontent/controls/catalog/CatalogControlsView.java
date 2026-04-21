@@ -35,6 +35,9 @@ import org.jspecify.annotations.Nullable;
 
 public final class CatalogControlsView extends VBox {
 
+    private static final int AUTO_LEVEL = -1;
+    private static final double AUTO_AMOUNT = -1.0;
+
     private final ToggleGroup contentGroup = new ToggleGroup();
     private final FlowPane contentRow = new FlowPane(4, 4);
     private final TextField searchField = new TextField();
@@ -55,6 +58,9 @@ public final class CatalogControlsView extends VBox {
     private final Slider encounterAmountSlider = tuningSlider(3.0, 1.0, 5.0);
     private final Slider encounterBalanceSlider = tuningSlider(3.0, 1.0, 5.0);
     private final Slider encounterDiversitySlider = tuningSlider(2.0, 1.0, 4.0);
+    private final CheckBox encounterAmountAuto = new CheckBox("Auto");
+    private final CheckBox encounterBalanceAuto = new CheckBox("Auto");
+    private final CheckBox encounterDiversityAuto = new CheckBox("Auto");
     private final Label encounterAmountLabel = new Label();
     private final Label encounterBalanceLabel = new Label();
     private final Label encounterDiversityLabel = new Label();
@@ -118,11 +124,12 @@ public final class CatalogControlsView extends VBox {
 
         encounterDifficultyCombo.setMaxWidth(Double.MAX_VALUE);
         encounterDifficultyCombo.setItems(FXCollections.observableArrayList(
+                new DifficultySelection("auto", "Auto"),
                 new DifficultySelection("easy", "Easy"),
                 new DifficultySelection("medium", "Medium"),
                 new DifficultySelection("hard", "Hard"),
                 new DifficultySelection("deadly", "Deadly")));
-        encounterDifficultyCombo.getSelectionModel().select(1);
+        encounterDifficultyCombo.getSelectionModel().select(0);
         encounterDifficultyCombo.setOnAction(event -> {
             DifficultySelection selection = encounterDifficultyCombo.getValue();
             if (selection != null && encounterDifficultyChangedHandler != null) {
@@ -148,6 +155,12 @@ public final class CatalogControlsView extends VBox {
             updateEncounterTuningLabels();
             fireEncounterTuningChanged();
         };
+        encounterAmountAuto.setSelected(true);
+        encounterBalanceAuto.setSelected(true);
+        encounterDiversityAuto.setSelected(true);
+        encounterAmountAuto.setOnAction(event -> tuningChanged.run());
+        encounterBalanceAuto.setOnAction(event -> tuningChanged.run());
+        encounterDiversityAuto.setOnAction(event -> tuningChanged.run());
         encounterAmountSlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
         encounterBalanceSlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
         encounterDiversitySlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
@@ -185,9 +198,9 @@ public final class CatalogControlsView extends VBox {
                 encounterDifficultyCombo,
                 encounterTableButton,
                 encounterTableWarningLabel,
-                tuningRow("Menge", encounterAmountSlider, encounterAmountLabel),
-                tuningRow("Balance", encounterBalanceSlider, encounterBalanceLabel),
-                tuningRow("Diversität", encounterDiversitySlider, encounterDiversityLabel),
+                tuningRow("Menge", encounterAmountSlider, encounterAmountLabel, encounterAmountAuto),
+                tuningRow("Balance", encounterBalanceSlider, encounterBalanceLabel, encounterBalanceAuto),
+                tuningRow("Diversität", encounterDiversitySlider, encounterDiversityLabel, encounterDiversityAuto),
                 sortLabel,
                 sortCombo,
                 countLabel,
@@ -494,9 +507,9 @@ public final class CatalogControlsView extends VBox {
             return;
         }
         encounterTuningChangedHandler.accept(new EncounterTuningSelection(
-                (int) Math.round(encounterBalanceSlider.getValue()),
-                encounterAmountSlider.getValue(),
-                (int) Math.round(encounterDiversitySlider.getValue())));
+                encounterBalanceAuto.isSelected() ? AUTO_LEVEL : (int) Math.round(encounterBalanceSlider.getValue()),
+                encounterAmountAuto.isSelected() ? AUTO_AMOUNT : encounterAmountSlider.getValue(),
+                encounterDiversityAuto.isSelected() ? AUTO_LEVEL : (int) Math.round(encounterDiversitySlider.getValue())));
     }
 
     private static Slider tuningSlider(double value, double min, double max) {
@@ -509,21 +522,29 @@ public final class CatalogControlsView extends VBox {
         return slider;
     }
 
-    private static HBox tuningRow(String title, Slider slider, Label valueLabel) {
+    private static HBox tuningRow(String title, Slider slider, Label valueLabel, CheckBox autoToggle) {
         Label label = new Label(title);
         label.getStyleClass().add("text-muted");
         valueLabel.getStyleClass().add("text-secondary");
         valueLabel.setMinWidth(72);
-        HBox row = new HBox(6, label, slider, valueLabel);
+        autoToggle.getStyleClass().add("compact");
+        HBox row = new HBox(6, label, autoToggle, slider, valueLabel);
         row.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(slider, Priority.ALWAYS);
         return row;
     }
 
     private void updateEncounterTuningLabels() {
-        encounterAmountLabel.setText(amountLabel(encounterAmountSlider.getValue()));
-        encounterBalanceLabel.setText(balanceLabel((int) Math.round(encounterBalanceSlider.getValue())));
-        encounterDiversityLabel.setText((int) Math.round(encounterDiversitySlider.getValue()) + " Typen");
+        encounterAmountSlider.setDisable(encounterAmountAuto.isSelected());
+        encounterBalanceSlider.setDisable(encounterBalanceAuto.isSelected());
+        encounterDiversitySlider.setDisable(encounterDiversityAuto.isSelected());
+        encounterAmountLabel.setText(encounterAmountAuto.isSelected() ? "Auto" : amountLabel(encounterAmountSlider.getValue()));
+        encounterBalanceLabel.setText(encounterBalanceAuto.isSelected()
+                ? "Auto"
+                : balanceLabel((int) Math.round(encounterBalanceSlider.getValue())));
+        encounterDiversityLabel.setText(encounterDiversityAuto.isSelected()
+                ? "Auto"
+                : (int) Math.round(encounterDiversitySlider.getValue()) + " Typen");
     }
 
     private static String amountLabel(double value) {

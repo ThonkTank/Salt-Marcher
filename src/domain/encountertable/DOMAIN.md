@@ -8,10 +8,11 @@ boundary rules.
 
 ## Context Role
 
-Context Role: Read Model Source Context
+Context Role: Reference Catalog Context
+Context Name: EncounterTable
 
-- `encountertable` owns authored encounter-table membership as a read-only
-  source for generator candidate pools.
+- `encountertable` publishes authored encounter-table membership as a
+  read-only reference catalog for generator candidate pools.
 - It does not own creature truth or loot truth.
 - It exposes encounter-table summaries and weighted candidate rows through its
   own application service.

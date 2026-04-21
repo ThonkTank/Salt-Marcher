@@ -49,8 +49,10 @@ creature details through the creature application service.
 
 - `Generieren` creates ranked encounter alternatives from the active party and
   the latest catalog type, subtype, biome, difficulty, amount, balance, and
-  diversity selections. When catalog encounter tables are selected, generation
-  uses those table IDs instead of the type, subtype, and biome candidate source.
+  diversity selections. Auto difficulty or Auto tuning values are resolved by
+  the generator for that request and reported in the generation status line.
+  When catalog encounter tables are selected, generation uses those table IDs
+  instead of the type, subtype, and biome candidate source.
 - Previous and next controls switch among the currently generated alternatives.
 - `Reroll` regenerates alternatives from the latest catalog filters and active
   difficulty.
@@ -78,6 +80,8 @@ creature details through the creature application service.
   can be populated through catalog `+Add` or `Generieren`.
 - Generated roster: difficulty, thresholds, adjusted XP, generator title, and
   creature cards are visible.
+- Auto-resolved generation: the status line includes the resolved target and
+  tuning summary; fallback generation adds a fallback note.
 - Active generator constraints: a compact Locks/Excluded summary is visible in
   the creation summary row.
 - Encounter-table loot conflict: the Catalog controls show `Loot-Konflikt`;

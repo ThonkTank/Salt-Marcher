@@ -40,11 +40,23 @@ public final class EncounterGenerationUseCase {
                 request,
                 SEARCH_LIMIT);
         if (!preparation.success()) {
-            return new GenerateResult(preparation.status(), preparation.budget(), List.of(), preparation.message());
+            return new GenerateResult(
+                    preparation.status(),
+                    preparation.budget(),
+                    List.of(),
+                    preparation.message(),
+                    preparation.diagnostics(),
+                    preparation.advisories());
         }
         List<GeneratedEncounterData> generatedEncounters = new AssembleEncounterResultUseCase(creatures)
                 .assemble(preparation.drafts(), request.alternativeCount());
-        return new GenerateResult(preparation.status(), preparation.budget(), generatedEncounters, preparation.message());
+        return new GenerateResult(
+                preparation.status(),
+                preparation.budget(),
+                generatedEncounters,
+                preparation.message(),
+                preparation.diagnostics(),
+                preparation.advisories());
     }
 
     public record GenerateRequest(
@@ -52,8 +64,10 @@ public final class EncounterGenerationUseCase {
             List<String> creatureSubtypes,
             List<String> biomes,
             EncounterDifficultyIntent targetDifficulty,
+            boolean targetDifficultyAuto,
             int alternativeCount,
             EncounterTuningIntent tuning,
+            long generationSeed,
             List<Long> encounterTableIds,
             List<Long> excludedCreatureIds,
             List<LockedCreature> lockedCreatures
@@ -65,6 +79,7 @@ public final class EncounterGenerationUseCase {
             targetDifficulty = targetDifficulty == null ? EncounterDifficultyIntent.MEDIUM : targetDifficulty;
             alternativeCount = Math.max(1, Math.min(10, alternativeCount <= 0 ? 5 : alternativeCount));
             tuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
+            generationSeed = Math.max(0L, generationSeed);
             encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
             excludedCreatureIds = excludedCreatureIds == null ? List.of() : List.copyOf(excludedCreatureIds);
             lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);
@@ -128,12 +143,45 @@ public final class EncounterGenerationUseCase {
             GenerateStatus status,
             @Nullable BudgetSummary budget,
             List<GeneratedEncounterData> encounters,
-            String message
+            String message,
+            @Nullable GenerationDiagnostics diagnostics,
+            List<GenerationAdvisory> advisories
     ) {
 
         public GenerateResult {
             encounters = encounters == null ? List.of() : List.copyOf(encounters);
             message = message == null ? "" : message;
+            advisories = advisories == null ? List.of() : List.copyOf(advisories);
+        }
+
+        public GenerateResult(
+                GenerateStatus status,
+                @Nullable BudgetSummary budget,
+                List<GeneratedEncounterData> encounters,
+                String message
+        ) {
+            this(status, budget, encounters, message, null, List.of());
+        }
+    }
+
+    public record GenerationDiagnostics(
+            EncounterDifficultyIntent resolvedDifficulty,
+            EncounterTuningIntent resolvedTuning,
+            GenerationSolutionQuality solutionQuality,
+            GenerationStopCategory stopCategory,
+            int candidatePoolSize,
+            int attempts,
+            int candidateEvaluations
+    ) {
+
+        public GenerationDiagnostics {
+            resolvedDifficulty = resolvedDifficulty == null ? EncounterDifficultyIntent.MEDIUM : resolvedDifficulty;
+            resolvedTuning = resolvedTuning == null ? EncounterTuningIntent.defaultIntent() : resolvedTuning;
+            solutionQuality = solutionQuality == null ? GenerationSolutionQuality.FALLBACK : solutionQuality;
+            stopCategory = stopCategory == null ? GenerationStopCategory.SEARCH_EXHAUSTED : stopCategory;
+            candidatePoolSize = Math.max(0, candidatePoolSize);
+            attempts = Math.max(0, attempts);
+            candidateEvaluations = Math.max(0, candidateEvaluations);
         }
     }
 
@@ -141,6 +189,7 @@ public final class EncounterGenerationUseCase {
         SUCCESS,
         NO_ACTIVE_PARTY,
         NO_CREATURES,
+        NO_SOLUTION,
         INVALID_REQUEST,
         STORAGE_ERROR;
 
@@ -151,5 +200,20 @@ public final class EncounterGenerationUseCase {
         boolean isSuccessful() {
             return this == SUCCESS;
         }
+    }
+
+    public enum GenerationSolutionQuality {
+        EXACT,
+        FALLBACK
+    }
+
+    public enum GenerationStopCategory {
+        COMPLETED,
+        SEARCH_EXHAUSTED
+    }
+
+    public enum GenerationAdvisory {
+        AUTO_RESOLVED,
+        FALLBACK_USED
     }
 }

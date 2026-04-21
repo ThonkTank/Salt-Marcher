@@ -938,7 +938,7 @@ public final class EncounterStateView extends VBox {
 
     public record BuilderSettingsInput(String difficultyLabel, int balanceLevel, double amountValue, int diversityLevel) {
         static BuilderSettingsInput defaultInput() {
-            return new BuilderSettingsInput("Auto", 3, 3.0, 3);
+            return new BuilderSettingsInput("Auto", -1, -1.0, -1);
         }
     }
 

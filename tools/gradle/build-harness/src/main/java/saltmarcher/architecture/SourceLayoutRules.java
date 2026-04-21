@@ -277,12 +277,12 @@ final class SourceLayoutRules implements ArchitectureRule {
             return;
         }
         if (bucket.equals("api")) {
-            violations.add(source, "domain-api-bucket-removed",
+            violations.add(source, "domain-forbidden-top-level-bucket",
                     "Domain api/ packages have been replaced by published/.");
             return;
         }
         if (DOMAIN_TOP_LEVEL_FORBIDDEN_BUCKETS.contains(bucket)) {
-            violations.add(source, "domain-top-level-role-bucket-ban",
+            violations.add(source, "domain-forbidden-top-level-bucket",
                     "Top-level technical role buckets are forbidden under src/domain/<context>/. Use published/, application/, or a domain-concept module with role subpackages.");
             return;
         }

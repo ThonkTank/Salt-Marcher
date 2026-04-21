@@ -9,6 +9,7 @@ for the dungeon feature.
 ## Context Role
 
 Context Role: Authored World-Space Context
+Context Name: Dungeon
 
 - `dungeon` is the authored world-space context with one application-service
   boundary.

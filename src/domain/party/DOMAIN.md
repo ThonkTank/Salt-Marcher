@@ -8,6 +8,7 @@ Source of Truth: Party feature ownership, write model, and domain invariants.
 ## Context Role
 
 Context Role: Roster Truth Context
+Context Name: Party
 
 - `party` is the roster truth context.
 - Its public backend boundary is

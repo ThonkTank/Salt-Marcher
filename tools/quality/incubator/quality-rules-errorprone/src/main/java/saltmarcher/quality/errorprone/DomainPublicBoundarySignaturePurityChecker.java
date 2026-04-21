@@ -35,7 +35,7 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 
 @BugPattern(
         name = "DomainPublicBoundarySignaturePurity",
-        summary = "Public domain boundary signatures must stay free of outer-layer and private domain types.",
+        summary = "Public domain boundary signatures must stay free of outer-layer, private domain, and foreign published types.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         implements BugChecker.ClassTreeMatcher {
@@ -43,12 +43,10 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
     private static final Pattern DOMAIN_ROOT_PACKAGE = Pattern.compile("^src\\.domain\\.([^.]+)$");
     private static final Pattern DOMAIN_PUBLISHED_PACKAGE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published(\\..*)?$");
-    private static final Pattern APPLICATION_SERVICE_TYPE =
-            Pattern.compile("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService(?:[.$].+)?$");
     private static final Pattern ROOT_APPLICATION_SERVICE_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
-            Pattern.compile("^src\\.domain\\.[^.]+\\.published\\..+");
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\..+");
     private static final Pattern DOMAIN_PORT_TYPE =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+\\.port\\.[^.]+(?:Repository|Lookup|Catalog|Search)$");
     private static final Set<String> OUTER_LAYER_PREFIXES = Set.of(
@@ -86,7 +84,8 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         String packageName = state.getPath().getCompilationUnit().getPackageName() == null
                 ? ""
                 : state.getPath().getCompilationUnit().getPackageName().toString();
-        if (boundaryFeature(packageName) == null) {
+        String sourceFeature = boundaryFeature(packageName);
+        if (sourceFeature == null) {
             return Description.NO_MATCH;
         }
 
@@ -100,36 +99,36 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
 
         List<String> leaks = new ArrayList<>();
 
-        collectTypeLeak("extends", typeElement.getSuperclass(), leaks);
+        collectTypeLeak("extends", typeElement.getSuperclass(), sourceFeature, leaks);
         for (TypeMirror implementedInterface : typeElement.getInterfaces()) {
-            collectTypeLeak("implements", implementedInterface, leaks);
+            collectTypeLeak("implements", implementedInterface, sourceFeature, leaks);
         }
         for (TypeParameterElement typeParameter : typeElement.getTypeParameters()) {
             for (TypeMirror bound : typeParameter.getBounds()) {
-                collectTypeLeak("type bound of " + typeParameter.getSimpleName(), bound, leaks);
+                collectTypeLeak("type bound of " + typeParameter.getSimpleName(), bound, sourceFeature, leaks);
             }
         }
         if (typeElement.getKind() == ElementKind.RECORD) {
             for (RecordComponentElement recordComponent : typeElement.getRecordComponents()) {
-                collectTypeLeak("record component " + recordComponent.getSimpleName(), recordComponent.asType(), leaks);
+                collectTypeLeak("record component " + recordComponent.getSimpleName(), recordComponent.asType(), sourceFeature, leaks);
             }
         }
 
         for (VariableElement field : ElementFilter.fieldsIn(typeElement.getEnclosedElements())) {
             if (isPublicOrProtected(field)) {
-                collectTypeLeak("field " + field.getSimpleName(), field.asType(), leaks);
+                collectTypeLeak("field " + field.getSimpleName(), field.asType(), sourceFeature, leaks);
             }
         }
         for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
             if (isPublicOrProtected(method)) {
-                collectExecutableLeaks(String.valueOf(method.getSimpleName()), method, leaks);
+                collectExecutableLeaks(String.valueOf(method.getSimpleName()), method, sourceFeature, leaks);
             }
         }
 
         if (DOMAIN_PUBLISHED_PACKAGE.matcher(packageName).matches()) {
             for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
                 if (isPublicOrProtected(constructor)) {
-                    collectExecutableLeaks("constructor " + typeElement.getSimpleName(), constructor, leaks);
+                    collectExecutableLeaks("constructor " + typeElement.getSimpleName(), constructor, sourceFeature, leaks);
                 }
             }
         }
@@ -146,7 +145,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         }
         return buildDescription(tree)
                 .setMessage("Public domain boundary type '" + typeElement.getQualifiedName()
-                        + "' leaks outer-layer or private domain types in its signature: "
+                        + "' leaks outer-layer, private domain, or foreign published types in its signature: "
                         + String.join("; ", leaks))
                 .build();
     }
@@ -193,22 +192,23 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
     private static void collectExecutableLeaks(
             String executableName,
             ExecutableElement executable,
+            String sourceFeature,
             List<String> leaks) {
-        collectTypeLeak("return type of " + executableName, executable.getReturnType(), leaks);
+        collectTypeLeak("return type of " + executableName, executable.getReturnType(), sourceFeature, leaks);
         for (VariableElement parameter : executable.getParameters()) {
-            collectTypeLeak("parameter " + parameter.getSimpleName() + " of " + executableName, parameter.asType(), leaks);
+            collectTypeLeak("parameter " + parameter.getSimpleName() + " of " + executableName, parameter.asType(), sourceFeature, leaks);
         }
         for (TypeMirror thrownType : executable.getThrownTypes()) {
-            collectTypeLeak("throws clause of " + executableName, thrownType, leaks);
+            collectTypeLeak("throws clause of " + executableName, thrownType, sourceFeature, leaks);
         }
         for (TypeParameterElement typeParameter : executable.getTypeParameters()) {
             for (TypeMirror bound : typeParameter.getBounds()) {
-                collectTypeLeak("type bound of " + typeParameter.getSimpleName() + " in " + executableName, bound, leaks);
+                collectTypeLeak("type bound of " + typeParameter.getSimpleName() + " in " + executableName, bound, sourceFeature, leaks);
             }
         }
         TypeMirror executableType = executable.asType();
         if (executableType instanceof ExecutableType) {
-            collectTypeLeak("executable signature of " + executableName, executableType, leaks);
+            collectTypeLeak("executable signature of " + executableName, executableType, sourceFeature, leaks);
         }
     }
 
@@ -245,14 +245,18 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         }
     }
 
-    private static void collectTypeLeak(String position, TypeMirror typeMirror, List<String> leaks) {
+    private static void collectTypeLeak(
+            String position,
+            TypeMirror typeMirror,
+            String sourceFeature,
+            List<String> leaks) {
         if (typeMirror == null) {
             return;
         }
         typeMirror.accept(new SimpleTypeVisitor14<Void, Void>() {
             @Override
             public Void visitDeclared(DeclaredType declaredType, Void unused) {
-                addLeakIfNeeded(position, declaredType.asElement(), leaks);
+                addLeakIfNeeded(position, declaredType.asElement(), sourceFeature, leaks);
                 for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
                     typeArgument.accept(this, null);
                 }
@@ -319,7 +323,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
 
             @Override
             public Void visitError(ErrorType errorType, Void unused) {
-                addLeakIfNeeded(position, errorType.asElement(), leaks);
+                addLeakIfNeeded(position, errorType.asElement(), sourceFeature, leaks);
                 return null;
             }
 
@@ -434,10 +438,14 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         }, null);
     }
 
-    private static void addLeakIfNeeded(String position, Element element, List<String> leaks) {
+    private static void addLeakIfNeeded(
+            String position,
+            Element element,
+            String sourceFeature,
+            List<String> leaks) {
         if (element instanceof TypeElement typeElement) {
             String fqn = typeElement.getQualifiedName().toString();
-            if (isForbiddenLeak(fqn)) {
+            if (isForbiddenLeak(fqn, sourceFeature)) {
                 leaks.add(position + " -> " + fqn);
             }
         }
@@ -456,7 +464,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         }
     }
 
-    private static boolean isForbiddenLeak(String fqn) {
+    private static boolean isForbiddenLeak(String fqn, String sourceFeature) {
         if (fqn == null || fqn.isBlank()) {
             return false;
         }
@@ -475,8 +483,8 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         if (domainFeatureName(fqn) == null) {
             return false;
         }
-        return !APPLICATION_SERVICE_TYPE.matcher(fqn).matches()
-                && !DOMAIN_PUBLISHED_TYPE.matcher(fqn).matches();
+        var publishedMatcher = DOMAIN_PUBLISHED_TYPE.matcher(fqn);
+        return !publishedMatcher.matches() || !publishedMatcher.group(1).equals(sourceFeature);
     }
 
     private static boolean isForbiddenRootConstructorCompositionType(

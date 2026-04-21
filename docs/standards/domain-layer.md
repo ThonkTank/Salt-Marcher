@@ -211,7 +211,10 @@ belong outside `src/domain/**`.
 ## Context Roles
 
 Every active domain context must state exactly one machine-readable
-`Context Role:` marker in `DOMAIN.md`.
+`Context Role:` marker and exactly one machine-readable `Context Name:`
+marker in `DOMAIN.md`. `Context Name:` is the canonical PascalCase token for
+root service, data contribution, and schema file names when the directory name
+is not already a simple PascalCase spelling.
 
 Current roles:
 
@@ -221,11 +224,12 @@ Current roles:
   creature catalog lookup language and reference profiles. It does not own
   encounter ranking, choice, or creature lifecycle truth.
 - `encounter`: `Context Role: Generation Policy Context`. Consumes party and
-  creatures through their application services and published language, then
-  owns runtime encounter-generation policy.
-- `encountertable`: `Context Role: Read Model Source Context`. Publishes
+  creatures plus encounter-table reference data through their application
+  services and published language, then owns runtime encounter-generation
+  policy.
+- `encountertable`: `Context Role: Reference Catalog Context`. Publishes
   authored encounter-table membership as read-only generator input without
-  owning creature truth or encounter-generation policy.
+  owning creature truth, table mutation policy, or encounter-generation policy.
 - `dungeon`: `Context Role: Authored World-Space Context`. Owns authored
   dungeon world-space truth, map topology, rooms/spaces, connections, stable
   identity, and map mutation rules.
@@ -241,11 +245,13 @@ published language, not through private model imports.
 
 - `party`: Roster Truth Context. Publishes roster, membership, XP, rest cadence, and
   adventuring-day facts to downstream contexts.
-- `creatures`: Reference Catalog Context. Publishes imported creature catalog lookup facts and
-  encounter-candidate reference profiles to downstream policy contexts.
-- `encounter`: Generation Policy Context. Consumes `party` and `creatures` through their root
-  application services and `published/` carriers, then owns generation policy.
-- `encountertable`: Read Model Source Context. Consumes creature persistence
+- `creatures`: Reference Catalog Context. Publishes imported creature catalog
+  lookup facts and encounter-candidate reference profiles to downstream policy
+  contexts.
+- `encounter`: Generation Policy Context. Consumes `party`, `creatures`, and
+  `encountertable` through their root application services and `published/`
+  carriers, then owns generation policy.
+- `encountertable`: Reference Catalog Context. Consumes creature persistence
   snapshots through its data source adapter, then publishes table summaries and
   weighted candidate rows through its root application service.
 - `dungeon`: Authored World-Space Context. Owns authored world-space truth independently of party,
@@ -261,6 +267,7 @@ Each active context must include:
 
 - `## Context Role`
 - exactly one `Context Role: ...` marker
+- exactly one `Context Name: <PascalContext>` marker
 - `## Published Language`
 - `## Application Boundary`
 - `## Ubiquitous Language`
@@ -304,46 +311,26 @@ documents own local model detail and must not redefine system-wide topology.
 
 The canonical owner model for mechanical checks lives in the
 [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1).
+The domain-specific rule matrix lives in
+[Domain Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-domain.md:1).
 
-Required enforced rules:
+Mechanical enforcement is split by evidence quality:
 
-- `build-harness` owns root application-service presence, `published/` and
-  `application/` placement, `application/*UseCase.java` naming, domain `api/`
-  removal, role subpackage topology, allowed role names, direct-file bans under
-  domain modules, callable-contract bans in `published/`, `Context Role:`
-  document markers, required `DOMAIN.md` sections, authored aggregate-root
-  markers, generation-policy required sections and `Write Model: None`
-  declarations, context-role and
-  context-relationship coverage, and the blocking absence of
-  `src/domain/mapcore`.
-- `Error Prone` owns root `ApplicationService` public command/query/result
-  carrier signatures, public/final root service shape, public nested-contract
-  bans on root application services, root-only domain service registry exports,
-  public boundary signature purity, root constructor composition, same-context
-  `application/` to `published/` dependency bans, published-carrier visibility
-  and shape, all published-carrier dependency bans for named domain modules,
-  outbound-port implementation placement, infrastructure-free port signatures,
-  and role-shape checks for aggregate, entity, value, port, policy, factory,
-  service, event, and specification packages.
-- `PMD architecture` owns source-level domain leakage bans, JavaBean-style
-  mutation smells, root infrastructure-composition smells, and obvious
-  application-layer policy-helper smells.
-- `ArchUnit` owns domain independence from shell, view, data, JavaFX, SQL,
-  source-local infrastructure, foreign private domain internals, named-module
-  foreign-context access, named-module same-context root/application access,
-  model-role outbound-port access, and feature cycles.
+- `build-harness` owns repository shape, machine-readable documentation
+  markers, context coverage, and coverage-document completeness.
+- `Error Prone` owns Java type-shape, signature-purity, carrier, port, and
+  role-shape rules.
+- `ArchUnit` owns dependency direction, foreign-boundary access, and cycle
+  rules.
+- `PMD architecture` owns narrow source-pattern blockers only. It is useful for
+  stable forbidden tokens and smell patterns, but it is not semantic proof that
+  behaviour sits in the right domain role.
 
-Review-owned rules:
-
-- whether use cases are thin orchestration rather than hidden policy
-- whether ports are stated in domain language rather than data-source terms
-- whether domain services are real cross-concept domain behavior rather than
-  procedural coordinators
-- whether published language is stable enough for ViewModels and foreign
-  application services
-- whether published language avoids presentation, widget, storage, or
-  transport vocabulary beyond what simple suffix and package checks can prove
-- whether aggregates/entities/values own the behavior their names imply
+Review still owns modelling judgements that cannot be cleanly inferred without
+low-signal heuristics: whether use cases are thin orchestration, ports use
+domain language, domain services represent real cross-concept behavior,
+published language is stable and passive, and aggregates/entities/values own
+the behavior their names imply.
 
 ## References
 
