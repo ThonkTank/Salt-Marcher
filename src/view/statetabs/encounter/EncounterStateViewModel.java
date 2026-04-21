@@ -458,6 +458,24 @@ public final class EncounterStateViewModel {
         refreshCombatState();
     }
 
+    void addPartyMemberToCombat(long partyMemberId, int initiative) {
+        if (mode.get() != Mode.COMBAT) {
+            return;
+        }
+        PartyMember member = partyMember(partyMemberId);
+        if (member == null) {
+            status.set("SC konnte nicht geladen werden.");
+            return;
+        }
+        String activeTurnId = combatRuntime.activeTurnId(currentTurnIndex);
+        boolean added = combatRuntime.addPlayerToRunningCombat(member.id(), member.name(), initiative);
+        currentTurnIndex = combatRuntime.turnIndexOf(activeTurnId, currentTurnIndex);
+        refreshCombatState();
+        status.set(added
+                ? member.name() + " betritt den laufenden Kampf."
+                : member.name() + " ist bereits im Kampf.");
+    }
+
     void endCombat() {
         List<ResultEnemySnapshot> enemies = combatRuntime.resultEnemies();
         int eligibleXp = enemies.stream()
@@ -725,6 +743,15 @@ public final class EncounterStateViewModel {
         for (EncounterCreature creature : roster) {
             if (creature.id().equals(id)) {
                 return creature;
+            }
+        }
+        return null;
+    }
+
+    private @Nullable PartyMember partyMember(long id) {
+        for (PartyMember member : activeParty) {
+            if (member.numericId() == id) {
+                return member;
             }
         }
         return null;

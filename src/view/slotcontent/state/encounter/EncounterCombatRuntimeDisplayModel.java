@@ -111,6 +111,17 @@ public final class EncounterCombatRuntimeDisplayModel {
         return uniqueMonsterName(name, nextOrdinal);
     }
 
+    public boolean addPlayerToRunningCombat(String id, String name, int initiative) {
+        for (Combatant combatant : combatants) {
+            if (combatant.id().equals(id)) {
+                return false;
+            }
+        }
+        combatants.add(Combatant.pc(id, name, initiative, nextOrder(combatants)));
+        sort(combatants);
+        return true;
+    }
+
     public TurnAdvance nextTurn(int currentTurnIndex, int round) {
         List<TurnEntry> entries = turnEntries(combatants);
         if (entries.isEmpty()) {

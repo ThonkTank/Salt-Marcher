@@ -26,7 +26,18 @@ public final class PartyPersistenceSchema {
             column("short_rests_taken_since_long_rest", INTEGER_ZERO_DEFAULT),
             column("passive_perception", "INTEGER NOT NULL DEFAULT 10"),
             column("ac", "INTEGER NOT NULL DEFAULT 10"),
-            column("in_party", "INTEGER NOT NULL DEFAULT 1"));
+            column("in_party", "INTEGER NOT NULL DEFAULT 1"),
+            column("travel_location_kind", "TEXT"),
+            column("travel_dungeon_map_id", "INTEGER"),
+            column("travel_dungeon_location_kind", "TEXT"),
+            column("travel_dungeon_owner_id", "INTEGER"),
+            column("travel_dungeon_q", "INTEGER"),
+            column("travel_dungeon_r", "INTEGER"),
+            column("travel_dungeon_level", "INTEGER"),
+            column("travel_dungeon_heading", "TEXT"),
+            column("travel_overworld_map_id", "INTEGER"),
+            column("travel_overworld_tile_id", "INTEGER"),
+            column("attached_to_party_token", "INTEGER NOT NULL DEFAULT 1"));
 
     public static final SqliteTableSpec PARTY_ROSTER_METADATA = table(
             "party_roster_metadata",
@@ -45,7 +56,18 @@ public final class PartyPersistenceSchema {
                     + "short_rests_taken_since_long_rest INTEGER NOT NULL DEFAULT 0, "
                     + "passive_perception INTEGER NOT NULL DEFAULT 10, "
                     + "ac INTEGER NOT NULL DEFAULT 10, "
-                    + "in_party INTEGER NOT NULL DEFAULT 1"
+                    + "in_party INTEGER NOT NULL DEFAULT 1, "
+                    + "travel_location_kind TEXT, "
+                    + "travel_dungeon_map_id INTEGER, "
+                    + "travel_dungeon_location_kind TEXT, "
+                    + "travel_dungeon_owner_id INTEGER, "
+                    + "travel_dungeon_q INTEGER, "
+                    + "travel_dungeon_r INTEGER, "
+                    + "travel_dungeon_level INTEGER, "
+                    + "travel_dungeon_heading TEXT, "
+                    + "travel_overworld_map_id INTEGER, "
+                    + "travel_overworld_tile_id INTEGER, "
+                    + "attached_to_party_token INTEGER NOT NULL DEFAULT 1"
                     + ")";
 
     public static final String CREATE_PARTY_ROSTER_METADATA_TABLE_SQL =
@@ -80,6 +102,39 @@ public final class PartyPersistenceSchema {
 
     public static final String ADD_IN_PARTY_COLUMN_SQL =
             "ALTER TABLE player_characters ADD COLUMN in_party INTEGER NOT NULL DEFAULT 1";
+
+    public static final String ADD_TRAVEL_LOCATION_KIND_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_location_kind TEXT";
+
+    public static final String ADD_TRAVEL_DUNGEON_MAP_ID_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_dungeon_map_id INTEGER";
+
+    public static final String ADD_TRAVEL_DUNGEON_LOCATION_KIND_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_dungeon_location_kind TEXT";
+
+    public static final String ADD_TRAVEL_DUNGEON_OWNER_ID_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_dungeon_owner_id INTEGER";
+
+    public static final String ADD_TRAVEL_DUNGEON_Q_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_dungeon_q INTEGER";
+
+    public static final String ADD_TRAVEL_DUNGEON_R_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_dungeon_r INTEGER";
+
+    public static final String ADD_TRAVEL_DUNGEON_LEVEL_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_dungeon_level INTEGER";
+
+    public static final String ADD_TRAVEL_DUNGEON_HEADING_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_dungeon_heading TEXT";
+
+    public static final String ADD_TRAVEL_OVERWORLD_MAP_ID_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_overworld_map_id INTEGER";
+
+    public static final String ADD_TRAVEL_OVERWORLD_TILE_ID_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN travel_overworld_tile_id INTEGER";
+
+    public static final String ADD_ATTACHED_TO_PARTY_TOKEN_COLUMN_SQL =
+            "ALTER TABLE player_characters ADD COLUMN attached_to_party_token INTEGER NOT NULL DEFAULT 1";
 
     private PartyPersistenceSchema() {
     }
