@@ -40,6 +40,9 @@ projection and can show runtime party-token state supplied by travel.
 - Runtime mode shows a party token from the active travel session, numbered
   door markers when supplied by the display model, current location state, and
   resettable camera controls.
+- Resize and layout redraw the same camera state against a top-left anchored
+  canvas layer; startup shell layout changes do not pan or recenter the
+  viewport.
 - Camera panning is available through explicit toolbar buttons and
   middle-pointer drag. There is no timer-driven, held-key, or raw keyboard
   camera motion. Pointer panning uses scene-stable deltas so the camera does

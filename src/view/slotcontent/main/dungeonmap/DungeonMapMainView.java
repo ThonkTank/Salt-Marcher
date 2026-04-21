@@ -19,6 +19,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -43,6 +44,7 @@ public class DungeonMapMainView extends BorderPane {
     private final Label statusLabel = new Label();
     private final Label summaryLabel = new Label();
     private final StackPane contentHost = new StackPane();
+    private final Pane canvasLayer = new Pane();
     private final Canvas canvas = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     private final Label overlayMessage = new Label();
     private final Label hudLabel = new Label();
@@ -104,7 +106,7 @@ public class DungeonMapMainView extends BorderPane {
     public final void resetCamera() {
         resetCameraState();
         cameraChanged();
-        contentHost.requestFocus();
+        canvasLayer.requestFocus();
     }
 
     private void resetCameraState() {
@@ -131,14 +133,20 @@ public class DungeonMapMainView extends BorderPane {
     private void configureContentHost() {
         contentHost.getStyleClass().add("map-workspace-content");
         contentHost.setAlignment(Pos.CENTER);
-        contentHost.setFocusTraversable(true);
+        canvasLayer.setMinSize(0.0, 0.0);
+        canvasLayer.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        canvasLayer.setFocusTraversable(true);
         canvas.getStyleClass().add("dungeon-map-canvas");
-        contentHost.getChildren().setAll(canvas, overlayMessage, hudLabel);
+        canvas.widthProperty().bind(canvasLayer.widthProperty());
+        canvas.heightProperty().bind(canvasLayer.heightProperty());
+        canvas.widthProperty().addListener((ignored, before, after) -> redraw());
+        canvas.heightProperty().addListener((ignored, before, after) -> redraw());
+        canvasLayer.getChildren().setAll(canvas);
+        contentHost.getChildren().setAll(canvasLayer, overlayMessage, hudLabel);
+        StackPane.setAlignment(canvasLayer, Pos.TOP_LEFT);
         StackPane.setAlignment(overlayMessage, Pos.CENTER);
         StackPane.setAlignment(hudLabel, Pos.BOTTOM_RIGHT);
         StackPane.setMargin(hudLabel, new Insets(0, 16, 14, 0));
-        contentHost.widthProperty().addListener((ignored, before, after) -> resizeCanvas());
-        contentHost.heightProperty().addListener((ignored, before, after) -> resizeCanvas());
     }
 
     private HBox buildHeader() {
@@ -174,20 +182,20 @@ public class DungeonMapMainView extends BorderPane {
         button.setOnAction(event -> {
             action.run();
             cameraChanged();
-            contentHost.requestFocus();
+            canvasLayer.requestFocus();
         });
         return button;
     }
 
     private void installInteractionHandlers() {
-        contentHost.addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleMousePressed);
-        contentHost.addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
-        contentHost.addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
-        contentHost.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
+        canvasLayer.addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleMousePressed);
+        canvasLayer.addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
+        canvasLayer.addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
+        canvasLayer.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
     }
 
     private void handleMousePressed(MouseEvent event) {
-        contentHost.requestFocus();
+        canvasLayer.requestFocus();
         if (event.getButton() == MouseButton.MIDDLE) {
             middleDragActive = true;
             lastDragSceneX = event.getSceneX();
@@ -294,12 +302,6 @@ public class DungeonMapMainView extends BorderPane {
         panX = canvasX - (canvasX - panX) * scale;
         panY = canvasY - (canvasY - panY) * scale;
         zoom = nextZoom;
-    }
-
-    private void resizeCanvas() {
-        canvas.setWidth(width());
-        canvas.setHeight(height());
-        redraw();
     }
 
     private void cameraChanged() {
@@ -675,11 +677,11 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private double width() {
-        return contentHost.getWidth() > 1.0 ? contentHost.getWidth() : DEFAULT_WIDTH;
+        return canvas.getWidth() > 1.0 ? canvas.getWidth() : DEFAULT_WIDTH;
     }
 
     private double height() {
-        return contentHost.getHeight() > 1.0 ? contentHost.getHeight() : DEFAULT_HEIGHT;
+        return canvas.getHeight() > 1.0 ? canvas.getHeight() : DEFAULT_HEIGHT;
     }
 
     private double gridSize() {
