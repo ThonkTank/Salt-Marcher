@@ -250,6 +250,57 @@ public final class PartyApplicationService {
                 toMembershipState(character.membership()));
     }
 
+    private static PartyTravelPositionSnapshot mapTravelPosition(
+            LoadPartyTravelPositionsUseCase.TravelPosition position
+    ) {
+        return new PartyTravelPositionSnapshot(
+                position.characterId(),
+                position.attachedToPartyToken(),
+                mapTravelLocation(position.location()));
+    }
+
+    private static @Nullable PartyTravelLocationSnapshot mapTravelLocation(
+            @Nullable PartyTravelLocation location
+    ) {
+        if (location instanceof src.domain.party.roster.value.PartyDungeonTravelLocation dungeon) {
+            return new PartyDungeonTravelLocationSnapshot(
+                    dungeon.mapId(),
+                    PartyDungeonTravelLocationKind.valueOf(dungeon.locationKind().name()),
+                    dungeon.ownerId(),
+                    new PartyTravelTile(
+                            dungeon.tile().q(),
+                            dungeon.tile().r(),
+                            dungeon.tile().level()),
+                    PartyTravelHeading.valueOf(dungeon.heading().name()));
+        }
+        if (location instanceof src.domain.party.roster.value.PartyOverworldTravelLocation overworld) {
+            return new PartyOverworldTravelLocationSnapshot(overworld.mapId(), overworld.tileId());
+        }
+        return null;
+    }
+
+    private static @Nullable PartyTravelLocation toDomainTravelLocation(
+            @Nullable PartyTravelLocationSnapshot location
+    ) {
+        if (location instanceof PartyDungeonTravelLocationSnapshot dungeon) {
+            return new src.domain.party.roster.value.PartyDungeonTravelLocation(
+                    dungeon.mapId(),
+                    src.domain.party.roster.value.PartyDungeonTravelLocationKind.valueOf(dungeon.locationKind().name()),
+                    dungeon.ownerId(),
+                    new src.domain.party.roster.value.PartyTravelTile(
+                            dungeon.tile().q(),
+                            dungeon.tile().r(),
+                            dungeon.tile().level()),
+                    src.domain.party.roster.value.PartyTravelHeading.valueOf(dungeon.heading().name()));
+        }
+        if (location instanceof PartyOverworldTravelLocationSnapshot overworld) {
+            return new src.domain.party.roster.value.PartyOverworldTravelLocation(
+                    overworld.mapId(),
+                    overworld.tileId());
+        }
+        return null;
+    }
+
     private static RestCadenceStatus mapRestCadenceStatus(LoadAdventuringDaySummaryUseCase.RestCadenceStatus status) {
         return new RestCadenceStatus(
                 status.characterId(),
