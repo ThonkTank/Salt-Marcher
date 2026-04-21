@@ -313,6 +313,7 @@ Required enforced rules:
   public boundary signature purity, root constructor composition, same-context
   `application/` to `published/` dependency bans, published-carrier visibility
   and shape, all published-carrier dependency bans for named domain modules,
+  outbound-port implementation placement, infrastructure-free port signatures,
   and role-shape checks for aggregate, entity, value, port, policy, factory,
   service, event, and specification packages.
 - `PMD architecture` owns source-level domain leakage bans and obvious

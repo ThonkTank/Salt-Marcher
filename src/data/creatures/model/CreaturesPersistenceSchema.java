@@ -78,6 +78,12 @@ public final class CreaturesPersistenceSchema {
             column("description", TEXT_TYPE),
             column("to_hit_bonus", INTEGER_TYPE));
 
+    public static final String TEMP_FILTER_SIZES_TABLE = "sm_temp_filter_sizes";
+    public static final String TEMP_FILTER_TYPES_TABLE = "sm_temp_filter_types";
+    public static final String TEMP_FILTER_ALIGNMENTS_TABLE = "sm_temp_filter_alignments";
+    public static final String TEMP_FILTER_SUBTYPES_TABLE = "sm_temp_filter_subtypes";
+    public static final String TEMP_FILTER_BIOMES_TABLE = "sm_temp_filter_biomes";
+
     public static final String CREATE_CREATURES_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS creatures ("
                     + "id INTEGER PRIMARY KEY, "

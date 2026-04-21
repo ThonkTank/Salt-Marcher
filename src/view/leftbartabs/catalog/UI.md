@@ -38,8 +38,9 @@ Current state:
   the query.
 - Size, type, subtype, biome, and alignment filters use searchable multi-select
   popups.
-- Creature type, subtype, biome, and encounter difficulty selections publish
-  runtime encounter-generation inputs for the Encounter state tab.
+- Creature type, subtype, biome, encounter difficulty, amount, balance, and
+  diversity selections publish runtime encounter-generation inputs for the
+  Encounter state tab.
 - Active chips remove their corresponding filter when clicked.
 - `Leeren` clears all creature filters and reloads the first page.
 - Sort changes reset to page one.

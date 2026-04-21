@@ -278,15 +278,17 @@ this document as the rule source.
 
 The canonical owner model, rule-status vocabulary, and blocking-task mapping live in the [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1).
 The per-surface rule-status matrix lives in the [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1).
+The data/system enforcement matrix lives in the [Data And System Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-data-system.md:1).
 
 Current mechanical ownership:
 
 - `build-harness` owns data bucket placement, data-root placement,
-  `ServiceContribution` root placement, schema-entrypoint presence, and table
-  literal ownership.
+  `ServiceContribution` root placement, package path alignment,
+  schema-entrypoint presence, and schema-owned SQL table-name references.
 - `PMD architecture` owns source-level `*ServiceContribution` contracts, obvious
-  mutation-method bans in `query/`, concrete source API bans outside source
-  adapters, and feature DDL literal placement.
+  mutation-method bans in `query/`, concrete source API bans in composition
+  adapters, repositories, queries, and mappers, and feature DDL literal
+  placement.
 - `Error Prone` owns shell API allowlists, service-registry registration
   placement, adapter role contracts, public signature leak bans, and source
   adapter return-type boundaries.
@@ -298,7 +300,8 @@ Current mechanical ownership:
 Current review-owned rules cover semantic thinness of composition roots, port
 adapter placement, source-adapter privacy, business-rule exclusion, mapper
 translation purity, source-local model discipline, generic-only
-`persistencecore/`, and duplicate schema truth.
+`persistencecore/`, source-local column and field-name centralization, and
+semantic duplicate schema truth. SQL table-name literal ownership is mechanical.
 
 Current build-harness scope is slightly stricter than the intent wording in
 this standard:

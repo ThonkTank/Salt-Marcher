@@ -8,11 +8,16 @@ import java.sql.Statement;
 
 final class CreatureFilterTempTableSchema {
 
-    private static final String CLEAR_TEMP_FILTER_SIZES_SQL = "DELETE FROM sm_temp_filter_sizes";
-    private static final String CLEAR_TEMP_FILTER_TYPES_SQL = "DELETE FROM sm_temp_filter_types";
-    private static final String CLEAR_TEMP_FILTER_ALIGNMENTS_SQL = "DELETE FROM sm_temp_filter_alignments";
-    private static final String CLEAR_TEMP_FILTER_SUBTYPES_SQL = "DELETE FROM sm_temp_filter_subtypes";
-    private static final String CLEAR_TEMP_FILTER_BIOMES_SQL = "DELETE FROM sm_temp_filter_biomes";
+    private static final String CLEAR_TEMP_FILTER_SIZES_SQL =
+            "DELETE FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE;
+    private static final String CLEAR_TEMP_FILTER_TYPES_SQL =
+            "DELETE FROM " + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE;
+    private static final String CLEAR_TEMP_FILTER_ALIGNMENTS_SQL =
+            "DELETE FROM " + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE;
+    private static final String CLEAR_TEMP_FILTER_SUBTYPES_SQL =
+            "DELETE FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE;
+    private static final String CLEAR_TEMP_FILTER_BIOMES_SQL =
+            "DELETE FROM " + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE;
 
     private CreatureFilterTempTableSchema() {
     }

@@ -3,6 +3,7 @@ package src.domain.encounter.application;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.party.PartyApplicationService;
 
 import java.util.List;
@@ -36,6 +37,7 @@ public final class EncounterGenerationUseCase {
             List<String> biomes,
             EncounterDifficultyIntent targetDifficulty,
             int alternativeCount,
+            EncounterTuningIntent tuning,
             List<Long> excludedCreatureIds,
             List<LockedCreature> lockedCreatures
     ) {
@@ -45,6 +47,7 @@ public final class EncounterGenerationUseCase {
             biomes = biomes == null ? List.of() : List.copyOf(biomes);
             targetDifficulty = targetDifficulty == null ? EncounterDifficultyIntent.MEDIUM : targetDifficulty;
             alternativeCount = Math.max(1, Math.min(10, alternativeCount <= 0 ? 5 : alternativeCount));
+            tuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
             excludedCreatureIds = excludedCreatureIds == null ? List.of() : List.copyOf(excludedCreatureIds);
             lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);
         }

@@ -19,6 +19,7 @@ import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterBudgetResult;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterLock;
@@ -123,7 +124,8 @@ public final class EncounterStateViewModel {
             List<String> types,
             List<String> subtypes,
             List<String> biomes,
-            EncounterDifficultyBand difficulty
+            EncounterDifficultyBand difficulty,
+            EncounterGenerationTuning tuning
     ) {
         lastSettings = settings == null ? BuilderSettings.defaultSettings() : settings;
         List<String> effectiveTypes = safeStrings(types);
@@ -144,6 +146,7 @@ public final class EncounterStateViewModel {
                 effectiveBiomes,
                 effectiveDifficulty,
                 5,
+                tuning == null ? EncounterGenerationTuning.defaultTuning() : tuning,
                 List.copyOf(excludedCreatureIds),
                 List.copyOf(lockedCreatures)));
         if (result.status() != EncounterGenerationStatus.SUCCESS || result.encounters().isEmpty()) {
@@ -164,9 +167,10 @@ public final class EncounterStateViewModel {
             List<String> types,
             List<String> subtypes,
             List<String> biomes,
-            EncounterDifficultyBand difficulty
+            EncounterDifficultyBand difficulty,
+            EncounterGenerationTuning tuning
     ) {
-        generate(lastSettings, types, subtypes, biomes, difficulty);
+        generate(lastSettings, types, subtypes, biomes, difficulty, tuning);
     }
 
     public void nextGeneratedAlternative() {
@@ -286,7 +290,8 @@ public final class EncounterStateViewModel {
             List<String> types,
             List<String> subtypes,
             List<String> biomes,
-            EncounterDifficultyBand difficulty
+            EncounterDifficultyBand difficulty,
+            EncounterGenerationTuning tuning
     ) {
         if (roster.isEmpty()) {
             status.set("Exclude braucht mindestens eine Kreatur im Roster.");
@@ -300,7 +305,7 @@ public final class EncounterStateViewModel {
         excludedCreatureIds.addAll(exclusions);
         lockedCreatures.clear();
         clearPendingUndo();
-        generate(lastSettings, types, subtypes, biomes, difficulty);
+        generate(lastSettings, types, subtypes, biomes, difficulty, tuning);
         if (!excludedCreatureIds.isEmpty()) {
             status.set(status.get() + " Exclusions aktiv: " + excludedCreatureIds.size() + ".");
         }

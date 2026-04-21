@@ -17,6 +17,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
@@ -45,6 +46,12 @@ public final class CatalogControlsView extends VBox {
     private final FlowPane chipsPane = new FlowPane(4, 2);
     private final ComboBox<SortSelection> sortCombo = new ComboBox<>();
     private final ComboBox<DifficultySelection> encounterDifficultyCombo = new ComboBox<>();
+    private final Slider encounterAmountSlider = tuningSlider(3.0, 1.0, 5.0);
+    private final Slider encounterBalanceSlider = tuningSlider(3.0, 1.0, 5.0);
+    private final Slider encounterDiversitySlider = tuningSlider(2.0, 1.0, 4.0);
+    private final Label encounterAmountLabel = new Label();
+    private final Label encounterBalanceLabel = new Label();
+    private final Label encounterDiversityLabel = new Label();
     private final Label countLabel = new Label("0 Monster gefunden");
     private final Label pageLabel = new Label("Seite 1 / 1");
     private final Button previousButton = new Button("◀ Zurück");
@@ -55,6 +62,7 @@ public final class CatalogControlsView extends VBox {
     private @Nullable Consumer<CreatureFilterState> filterChangedHandler;
     private @Nullable Consumer<String> sortChangedHandler;
     private @Nullable Consumer<String> encounterDifficultyChangedHandler;
+    private @Nullable Consumer<EncounterTuningSelection> encounterTuningChangedHandler;
     private @Nullable Runnable previousPageHandler;
     private @Nullable Runnable nextPageHandler;
     private boolean suppressFilterEvents;
@@ -111,6 +119,14 @@ public final class CatalogControlsView extends VBox {
                 encounterDifficultyChangedHandler.accept(selection.key());
             }
         });
+        Runnable tuningChanged = () -> {
+            updateEncounterTuningLabels();
+            fireEncounterTuningChanged();
+        };
+        encounterAmountSlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
+        encounterBalanceSlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
+        encounterDiversitySlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
+        updateEncounterTuningLabels();
 
         HBox pagination = new HBox(8, previousButton, pageLabel, nextButton);
         pagination.setAlignment(Pos.CENTER_LEFT);
@@ -142,6 +158,9 @@ public final class CatalogControlsView extends VBox {
                 chipsPane,
                 encounterLabel,
                 encounterDifficultyCombo,
+                tuningRow("Menge", encounterAmountSlider, encounterAmountLabel),
+                tuningRow("Balance", encounterBalanceSlider, encounterBalanceLabel),
+                tuningRow("Diversität", encounterDiversitySlider, encounterDiversityLabel),
                 sortLabel,
                 sortCombo,
                 countLabel,
@@ -249,6 +268,10 @@ public final class CatalogControlsView extends VBox {
         encounterDifficultyChangedHandler = handler;
     }
 
+    public void setOnEncounterTuningChanged(Consumer<EncounterTuningSelection> handler) {
+        encounterTuningChangedHandler = handler;
+    }
+
     public void setOnPreviousPage(Runnable handler) {
         previousPageHandler = handler;
     }
@@ -299,6 +322,64 @@ public final class CatalogControlsView extends VBox {
         filterChangedHandler.accept(buildFilterState());
     }
 
+    private void fireEncounterTuningChanged() {
+        if (encounterTuningChangedHandler == null) {
+            return;
+        }
+        encounterTuningChangedHandler.accept(new EncounterTuningSelection(
+                (int) Math.round(encounterBalanceSlider.getValue()),
+                encounterAmountSlider.getValue(),
+                (int) Math.round(encounterDiversitySlider.getValue())));
+    }
+
+    private static Slider tuningSlider(double value, double min, double max) {
+        Slider slider = new Slider(min, max, value);
+        slider.setSnapToTicks(true);
+        slider.setMajorTickUnit(1.0);
+        slider.setMinorTickCount(0);
+        slider.setBlockIncrement(1.0);
+        slider.setMaxWidth(Double.MAX_VALUE);
+        return slider;
+    }
+
+    private static HBox tuningRow(String title, Slider slider, Label valueLabel) {
+        Label label = new Label(title);
+        label.getStyleClass().add("text-muted");
+        valueLabel.getStyleClass().add("text-secondary");
+        valueLabel.setMinWidth(72);
+        HBox row = new HBox(6, label, slider, valueLabel);
+        row.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(slider, Priority.ALWAYS);
+        return row;
+    }
+
+    private void updateEncounterTuningLabels() {
+        encounterAmountLabel.setText(amountLabel(encounterAmountSlider.getValue()));
+        encounterBalanceLabel.setText(balanceLabel((int) Math.round(encounterBalanceSlider.getValue())));
+        encounterDiversityLabel.setText((int) Math.round(encounterDiversitySlider.getValue()) + " Typen");
+    }
+
+    private static String amountLabel(double value) {
+        int rounded = Math.max(1, Math.min(5, (int) Math.round(value)));
+        return switch (rounded) {
+            case 1 -> "Boss++";
+            case 2 -> "Boss+";
+            case 3 -> "Neutral";
+            case 4 -> "Minions+";
+            default -> "Minions++";
+        };
+    }
+
+    private static String balanceLabel(int value) {
+        return switch (Math.max(1, Math.min(5, value))) {
+            case 1 -> "Extreme++";
+            case 2 -> "Extreme+";
+            case 3 -> "Neutral";
+            case 4 -> "Peers+";
+            default -> "Peers++";
+        };
+    }
+
     private CreatureFilterState buildFilterState() {
         return new CreatureFilterState(
                 normalized(searchField.getText()),
@@ -346,6 +427,9 @@ public final class CatalogControlsView extends VBox {
         public String toString() {
             return label;
         }
+    }
+
+    public record EncounterTuningSelection(int balanceLevel, double amountValue, int diversityLevel) {
     }
 
     public record CreatureFilterData(

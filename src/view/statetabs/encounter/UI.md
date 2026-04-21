@@ -22,8 +22,8 @@ workflow in one local state-tab surface:
 - return to encounter creation
 
 The creature catalog browser and encounter filter/tuning controls are separate
-left-bar tab content. They publish add-creature, filter, and difficulty intent
-signals to this dialog through runtime session state.
+left-bar tab content. They publish add-creature, filter, difficulty intent, and
+generator tuning signals to this dialog through runtime session state.
 
 ## Visible Surfaces
 
@@ -48,7 +48,8 @@ creature details through the creature application service.
 ## Interactions
 
 - `Generieren` creates ranked encounter alternatives from the active party and
-  the latest catalog type, subtype, biome, and difficulty selections.
+  the latest catalog type, subtype, biome, difficulty, amount, balance, and
+  diversity selections.
 - Previous and next controls switch among the currently generated alternatives.
 - `Reroll` regenerates alternatives from the latest catalog filters and active
   difficulty.

@@ -1,10 +1,18 @@
 package src.domain.encounter.generation.factory;
 
-import src.domain.encounter.generation.policy.*;
-import src.domain.encounter.generation.value.*;
-
-
 import java.util.List;
+import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
+import src.domain.encounter.generation.policy.EncounterDraftScorer;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.generation.value.EncounterDraft;
+import src.domain.encounter.generation.value.EncounterDraftBuildRequest;
+import src.domain.encounter.generation.value.EncounterDraftComposition;
+import src.domain.encounter.generation.value.EncounterDraftCompositionStats;
+import src.domain.encounter.generation.value.EncounterDraftEntries;
+import src.domain.encounter.generation.value.EncounterDraftEntry;
+import src.domain.encounter.generation.value.EncounterDraftMetrics;
+import src.domain.encounter.generation.value.EncounterDraftTitle;
+import src.domain.encounter.generation.value.EncounterDraftXpProfile;
 
 final class EncounterDraftCreator {
 
@@ -36,7 +44,9 @@ final class EncounterDraftCreator {
                         request.targetDifficulty(),
                         achievedDifficulty,
                         request.thresholds(),
-                        xpProfile)));
+                        xpProfile,
+                        request.tuning(),
+                        request.partySize())));
         List<EncounterDraftEntry> entries = EncounterDraftEntries.sorted(composition.entries());
         return List.of(new EncounterDraft(
                 EncounterDraftTitle.from(entries),

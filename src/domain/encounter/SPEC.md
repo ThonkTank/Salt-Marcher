@@ -40,6 +40,8 @@ Provide a runtime encounter builder that:
 - expose a runtime budget load path so the state UI can show thresholds before
   generation
 - support multi-select creature filters with visible active-filter chips
+- support generator tuning for creature amount, XP-spread balance, and
+  statblock diversity
 - expose creature composition, role hints, and generator highlights
 - allow catalog creature rows to be added directly to the current encounter
   roster as runtime derived state

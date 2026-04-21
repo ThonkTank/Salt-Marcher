@@ -1,5 +1,7 @@
 package src.data.creatures.gateway.local;
 
+import src.data.creatures.model.CreaturesPersistenceSchema;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,9 +12,11 @@ import java.util.List;
 final class CreatureDetailStringValuesSqliteStore {
 
     private static final String LOAD_CREATURE_SUBTYPES_SQL =
-            "SELECT subtype FROM creature_subtypes WHERE creature_id = ? ORDER BY subtype";
+            "SELECT subtype FROM " + CreaturesPersistenceSchema.CREATURE_SUBTYPES.name()
+                    + " WHERE creature_id = ? ORDER BY subtype";
     private static final String LOAD_CREATURE_BIOMES_SQL =
-            "SELECT biome FROM creature_biomes WHERE creature_id = ? ORDER BY biome";
+            "SELECT biome FROM " + CreaturesPersistenceSchema.CREATURE_BIOMES.name()
+                    + " WHERE creature_id = ? ORDER BY biome";
 
     List<String> loadSubtypes(Connection connection, long creatureId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(LOAD_CREATURE_SUBTYPES_SQL)) {

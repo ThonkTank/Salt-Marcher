@@ -14,6 +14,15 @@ final class DataPersistenceRules implements ArchitectureRule {
 
     private static final Pattern SCHEMA_TABLE_NAME_PATTERN =
             Pattern.compile("\\btable\\s*\\(\\s*\"([^\"]+)\"");
+    private static final Pattern SCHEMA_TABLE_CONSTANT_PATTERN =
+            Pattern.compile("\\b[A-Z][A-Z0-9_]*_TABLE\\s*=\\s*\"([^\"]+)\"");
+    private static final Pattern SCHEMA_CREATE_TABLE_PATTERN =
+            Pattern.compile("\\bCREATE\\s+(?:TEMP\\s+)?TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\b",
+                    Pattern.CASE_INSENSITIVE);
+    private static final Pattern JAVA_STRING_LITERAL_PATTERN =
+            Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");
+    private static final Pattern SQL_TABLE_REFERENCE_PATTERN =
+            Pattern.compile("\\b(?:FROM|JOIN|INTO|UPDATE|TABLE|REFERENCES)\\b");
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
@@ -71,12 +80,12 @@ final class DataPersistenceRules implements ArchitectureRule {
             if (sourceFile.kind() != SourceKind.DATA_SCHEMA) {
                 continue;
             }
-            Matcher matcher = SCHEMA_TABLE_NAME_PATTERN.matcher(sourceFile.content());
-            while (matcher.find()) {
-                tableNamesByFeature
-                        .computeIfAbsent(sourceFile.featureName(), ignored -> new TreeSet<>())
-                        .add(matcher.group(1));
-            }
+            Set<String> tableNames = tableNamesByFeature.computeIfAbsent(
+                    sourceFile.featureName(),
+                    ignored -> new TreeSet<>());
+            collectMatches(SCHEMA_TABLE_NAME_PATTERN, sourceFile.content(), tableNames);
+            collectMatches(SCHEMA_TABLE_CONSTANT_PATTERN, sourceFile.content(), tableNames);
+            collectMatches(SCHEMA_CREATE_TABLE_PATTERN, sourceFile.content(), tableNames);
         }
 
         for (SourceFile sourceFile : sourceFiles) {
@@ -84,13 +93,40 @@ final class DataPersistenceRules implements ArchitectureRule {
                 continue;
             }
             Set<String> tableNames = tableNamesByFeature.getOrDefault(sourceFile.featureName(), Set.of());
-            for (String tableName : tableNames) {
-                if (sourceFile.content().contains("\"" + tableName + "\"")) {
-                    violations.add(sourceFile.relativePath(), "data-schema-table-name-owned-by-schema",
-                            "Table name literal '" + tableName
-                                    + "' must be owned by the feature persistence schema. Reference the schema constant instead of duplicating the literal.");
+            Matcher stringLiteralMatcher = JAVA_STRING_LITERAL_PATTERN.matcher(sourceFile.content());
+            while (stringLiteralMatcher.find()) {
+                String literal = unquoteJavaStringLiteral(stringLiteralMatcher.group());
+                if (!SQL_TABLE_REFERENCE_PATTERN.matcher(literal).find()) {
+                    continue;
+                }
+                for (String tableName : tableNames) {
+                    if (containsTableName(literal, tableName)) {
+                        violations.add(sourceFile.relativePath(), "data-schema-table-name-owned-by-schema",
+                                "Table name literal '" + tableName
+                                        + "' must be owned by the feature persistence schema. Reference the schema constant instead of duplicating the literal.");
+                    }
                 }
             }
         }
+    }
+
+    private static void collectMatches(Pattern pattern, String content, Set<String> matches) {
+        Matcher matcher = pattern.matcher(content);
+        while (matcher.find()) {
+            matches.add(matcher.group(1));
+        }
+    }
+
+    private static String unquoteJavaStringLiteral(String literal) {
+        if (literal.length() < 2) {
+            return literal;
+        }
+        return literal.substring(1, literal.length() - 1);
+    }
+
+    private static boolean containsTableName(String literal, String tableName) {
+        return Pattern.compile("(?i)(?<![A-Za-z0-9_])" + Pattern.quote(tableName) + "(?![A-Za-z0-9_])")
+                .matcher(literal)
+                .find();
     }
 }

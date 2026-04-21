@@ -9,6 +9,7 @@ public record GenerateEncounterCommand(
         List<String> biomes,
         EncounterDifficultyBand targetDifficulty,
         int alternativeCount,
+        EncounterGenerationTuning tuning,
         List<Long> excludedCreatureIds,
         List<EncounterLock> lockedCreatures
 ) {
@@ -19,8 +20,29 @@ public record GenerateEncounterCommand(
         biomes = normalize(biomes);
         targetDifficulty = targetDifficulty == null ? EncounterDifficultyBand.defaultBand() : targetDifficulty;
         alternativeCount = Math.max(1, Math.min(10, alternativeCount <= 0 ? 5 : alternativeCount));
+        tuning = tuning == null ? EncounterGenerationTuning.defaultTuning() : tuning;
         excludedCreatureIds = excludedCreatureIds == null ? List.of() : List.copyOf(excludedCreatureIds);
         lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);
+    }
+
+    public GenerateEncounterCommand(
+            List<String> creatureTypes,
+            List<String> creatureSubtypes,
+            List<String> biomes,
+            EncounterDifficultyBand targetDifficulty,
+            int alternativeCount,
+            List<Long> excludedCreatureIds,
+            List<EncounterLock> lockedCreatures
+    ) {
+        this(
+                creatureTypes,
+                creatureSubtypes,
+                biomes,
+                targetDifficulty,
+                alternativeCount,
+                EncounterGenerationTuning.defaultTuning(),
+                excludedCreatureIds,
+                lockedCreatures);
     }
 
     @Override

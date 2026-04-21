@@ -1,5 +1,6 @@
 package src.data.party.gateway.local;
 
+import src.data.party.model.PartyPersistenceSchema;
 import src.domain.party.roster.policy.PartyAdventuringDayBudgetPolicy;
 import src.domain.party.roster.policy.PartyLevelProgressionPolicy;
 
@@ -13,13 +14,15 @@ import java.util.List;
 final class PartyRosterBackfillMigrator {
 
     private static final String SELECT_LEVEL_AND_CURRENT_XP_SQL =
-            "SELECT id, level, current_xp FROM player_characters";
+            "SELECT id, level, current_xp FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
     private static final String UPDATE_CURRENT_XP_SQL =
-            "UPDATE player_characters SET current_xp = ? WHERE id = ?";
+            "UPDATE " + PartyPersistenceSchema.PLAYER_CHARACTERS.name() + " SET current_xp = ? WHERE id = ?";
     private static final String SELECT_SHORT_REST_CADENCE_INPUTS_SQL =
-            "SELECT id, level, xp_since_long_rest, xp_since_short_rest FROM player_characters";
+            "SELECT id, level, xp_since_long_rest, xp_since_short_rest FROM "
+                    + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
     private static final String UPDATE_SHORT_REST_CADENCE_SQL =
-            "UPDATE player_characters SET short_rests_taken_since_long_rest = ? WHERE id = ?";
+            "UPDATE " + PartyPersistenceSchema.PLAYER_CHARACTERS.name()
+                    + " SET short_rests_taken_since_long_rest = ? WHERE id = ?";
 
     void normalizeExistingXp(Connection connection) throws SQLException {
         List<IntColumnUpdate> updates = new ArrayList<>();

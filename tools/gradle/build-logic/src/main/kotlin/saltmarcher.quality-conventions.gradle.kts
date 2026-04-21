@@ -212,6 +212,7 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("DomainPublishedCarrierShape")
     options.errorprone.error("DomainModuleFieldPurity")
     options.errorprone.error("DomainModuleNoPublishedCarrierDependency")
+    options.errorprone.error("DomainPortBoundary")
     options.errorprone.error("DomainPublicBoundarySignaturePurity")
     options.errorprone.error("DomainPublicConcreteTypeShape")
     options.errorprone.error("DomainRoleShape")

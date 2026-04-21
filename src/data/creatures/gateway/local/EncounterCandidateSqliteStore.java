@@ -1,5 +1,6 @@
 package src.data.creatures.gateway.local;
 
+import src.data.creatures.model.CreaturesPersistenceSchema;
 import src.data.creatures.model.EncounterCandidateRecord;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
@@ -14,16 +15,21 @@ final class EncounterCandidateSqliteStore {
 
     private static final String LOAD_ENCOUNTER_CANDIDATES_SQL =
             "SELECT id, name, creature_type, cr, xp, hp, hit_dice_count, hit_dice_sides, hit_dice_modifier, "
-                    + "ac, initiative_bonus, legendary_action_count FROM creatures "
+                    + "ac, initiative_bonus, legendary_action_count FROM "
+                    + CreaturesPersistenceSchema.CREATURES.name()
+                    + " "
                     + "WHERE xp >= ? AND xp <= ? "
-                    + "AND ((SELECT COUNT(*) FROM sm_temp_filter_types) = 0 "
-                    + "OR LOWER(creature_type) IN (SELECT value FROM sm_temp_filter_types)) "
-                    + "AND ((SELECT COUNT(*) FROM sm_temp_filter_subtypes) = 0 "
-                    + "OR id IN (SELECT creature_id FROM creature_subtypes "
-                    + "WHERE LOWER(subtype) IN (SELECT value FROM sm_temp_filter_subtypes))) "
-                    + "AND ((SELECT COUNT(*) FROM sm_temp_filter_biomes) = 0 "
-                    + "OR id IN (SELECT creature_id FROM creature_biomes "
-                    + "WHERE LOWER(biome) IN (SELECT value FROM sm_temp_filter_biomes))) "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + ") = 0 "
+                    + "OR LOWER(creature_type) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + ")) "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + ") = 0 "
+                    + "OR id IN (SELECT creature_id FROM " + CreaturesPersistenceSchema.CREATURE_SUBTYPES.name()
+                    + " WHERE LOWER(subtype) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + "))) "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + ") = 0 "
+                    + "OR id IN (SELECT creature_id FROM " + CreaturesPersistenceSchema.CREATURE_BIOMES.name()
+                    + " WHERE LOWER(biome) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + "))) "
                     + "ORDER BY xp ASC, name ASC LIMIT ?";
 
     List<EncounterCandidateRecord> loadEncounterCandidates(

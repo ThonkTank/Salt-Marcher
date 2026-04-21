@@ -1,5 +1,7 @@
 package src.data.party.gateway.local;
 
+import src.data.party.model.PartyPersistenceSchema;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,9 +10,10 @@ import java.sql.SQLException;
 final class PartyRosterMetadataInitializer {
 
     private static final String INITIALIZE_NEXT_CHARACTER_ID_SQL =
-            "UPDATE party_roster_metadata SET next_character_id = MAX(next_character_id, ?) WHERE singleton_id = 1";
+            "UPDATE " + PartyPersistenceSchema.PARTY_ROSTER_METADATA.name()
+                    + " SET next_character_id = MAX(next_character_id, ?) WHERE singleton_id = 1";
     private static final String QUERY_MAX_CHARACTER_ID_SQL =
-            "SELECT COALESCE(MAX(id), 0) AS max_id FROM player_characters";
+            "SELECT COALESCE(MAX(id), 0) AS max_id FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
 
     void initializeNextCharacterId(Connection connection) throws SQLException {
         long nextId = queryMaxCharacterId(connection) + 1L;

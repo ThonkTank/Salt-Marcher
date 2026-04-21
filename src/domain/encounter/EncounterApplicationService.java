@@ -12,12 +12,14 @@ import src.domain.encounter.published.EncounterBudgetResult;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterCreature;
 import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterLock;
 import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.published.LoadEncounterBudgetQuery;
+import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.party.PartyApplicationService;
 
 /**
@@ -74,6 +76,7 @@ public final class EncounterApplicationService {
                 effectiveRequest.biomes(),
                 toDifficultyIntent(effectiveRequest.targetDifficulty()),
                 effectiveRequest.alternativeCount(),
+                toTuningIntent(effectiveRequest.tuning()),
                 effectiveRequest.excludedCreatureIds(),
                 effectiveRequest.lockedCreatures().stream()
                         .filter(Objects::nonNull)
@@ -83,6 +86,14 @@ public final class EncounterApplicationService {
 
     private static EncounterGenerationUseCase.LockedCreature toLockedCreature(EncounterLock lock) {
         return new EncounterGenerationUseCase.LockedCreature(lock.creatureId(), lock.quantity());
+    }
+
+    private static EncounterTuningIntent toTuningIntent(EncounterGenerationTuning tuning) {
+        EncounterGenerationTuning effective = tuning == null ? EncounterGenerationTuning.defaultTuning() : tuning;
+        return new EncounterTuningIntent(
+                effective.balanceLevel(),
+                effective.amountValue(),
+                effective.diversityLevel());
     }
 
     private static EncounterDifficultyIntent toDifficultyIntent(EncounterDifficultyBand band) {

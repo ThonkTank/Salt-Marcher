@@ -19,8 +19,8 @@ Context Role: Generation Policy Context
 ## Published Language
 
 `published/` owns public generation and budget-load commands, difficulty
-bands, locks, budget summaries, generated encounter results, encounter creature
-entries, and generation status vocabulary.
+bands, generator tuning, locks, budget summaries, generated encounter results,
+encounter creature entries, and generation status vocabulary.
 
 The generation model must not depend on any `src.domain.*.published.*`
 carriers as invariant inputs. The application boundary translates public
@@ -83,11 +83,11 @@ The v1 encounter context has no persisted aggregate root. Its policy boundary
 is the `generation/` module.
 
 - `generation/value/` owns immutable generation facts: drafts, entries,
-  metrics, candidate profiles, composition values, difficulty intent, and XP
-  profiles.
+  metrics, candidate profiles, composition values, difficulty intent, tuning
+  intent, and XP profiles.
 - `generation/policy/` owns stateless rule sets for difficulty math, XP
-  targets, candidate narrowing, draft ranking/scoring, role classification,
-  and tag derivation.
+  targets, generator tuning targets, candidate narrowing, draft
+  ranking/scoring, role classification, and tag derivation.
 - `generation/factory/` owns deterministic creation of candidate profiles and
   encounter drafts from already translated generation facts.
 
@@ -137,6 +137,8 @@ are session-local controls over the next generation command.
 - difficulty evaluation uses encounter thresholds plus monster-count
   multipliers
 - candidate filtering may narrow by creature type, subtype, and biome
+- generator tuning may prefer smaller or larger creature counts, narrower or
+  wider XP spread, and lower or higher statblock diversity
 - role hints are heuristic derived state; they do not become persisted creature
   truth
 - the feature may enrich final suggestions with creature-detail tags without

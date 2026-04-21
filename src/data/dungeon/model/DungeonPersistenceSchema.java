@@ -8,6 +8,18 @@ public final class DungeonPersistenceSchema {
     public static final String MAPS_TABLE = "dungeon_maps";
     public static final String ROOMS_TABLE = "dungeon_rooms";
     public static final String ROOM_CLUSTERS_TABLE = "dungeon_room_clusters";
+    public static final String CORRIDORS_TABLE = "dungeon_corridors";
+    public static final String CORRIDOR_MEMBERS_TABLE = "dungeon_corridor_members";
+    public static final String ROOM_CLUSTER_VERTICES_TABLE = "dungeon_room_cluster_vertices";
+    public static final String ROOM_CLUSTER_EDGES_TABLE = "dungeon_room_cluster_edges";
+    public static final String ROOM_FLOORS_TABLE = "dungeon_room_floors";
+    public static final String CORRIDOR_DOOR_OVERRIDES_TABLE = "dungeon_corridor_door_overrides";
+    public static final String CORRIDOR_WAYPOINTS_TABLE = "dungeon_corridor_waypoints";
+    public static final String ROOM_EXIT_DESCRIPTIONS_TABLE = "dungeon_room_exit_descriptions";
+    public static final String STAIRS_TABLE = "dungeon_stairs";
+    public static final String STAIR_PATH_NODES_TABLE = "dungeon_stair_path_nodes";
+    public static final String STAIR_EXITS_TABLE = "dungeon_stair_exits";
+    public static final String TRANSITIONS_TABLE = "dungeon_transitions";
 
     public static final String CREATE_DUNGEON_MAPS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS dungeon_maps ("

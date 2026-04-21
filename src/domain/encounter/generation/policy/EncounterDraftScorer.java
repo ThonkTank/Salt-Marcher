@@ -24,6 +24,7 @@ public final class EncounterDraftScorer {
         score += scoreEntryCount(composition.entries().size());
         score += scoreRoleSynergy(composition.roles());
         score += scoreCompositionPenalties(composition);
+        score += EncounterTuningTargets.score(composition, context.tuning(), context.partySize());
         return score;
     }
 
@@ -37,8 +38,14 @@ public final class EncounterDraftScorer {
             EncounterDifficultyIntent targetDifficulty,
             EncounterDifficultyIntent achievedDifficulty,
             EncounterDifficultyMath.Thresholds thresholds,
-            EncounterDraftXpProfile xpProfile
+            EncounterDraftXpProfile xpProfile,
+            EncounterTuningIntent tuning,
+            int partySize
     ) {
+        public ScoreContext {
+            tuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
+            partySize = Math.max(1, partySize);
+        }
     }
 
     private static int scoreTargetBand(

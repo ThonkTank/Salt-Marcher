@@ -1,5 +1,7 @@
 package src.data.party.gateway.local;
 
+import src.data.party.model.PartyPersistenceSchema;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,11 +10,13 @@ import java.sql.SQLException;
 final class PartyRosterMetadataSqliteStore {
 
     private static final String LOAD_NEXT_CHARACTER_ID_SQL =
-            "SELECT next_character_id FROM party_roster_metadata WHERE singleton_id = 1";
+            "SELECT next_character_id FROM " + PartyPersistenceSchema.PARTY_ROSTER_METADATA.name()
+                    + " WHERE singleton_id = 1";
     private static final String SAVE_NEXT_CHARACTER_ID_SQL =
-            "UPDATE party_roster_metadata SET next_character_id = ? WHERE singleton_id = 1";
+            "UPDATE " + PartyPersistenceSchema.PARTY_ROSTER_METADATA.name()
+                    + " SET next_character_id = ? WHERE singleton_id = 1";
     private static final String QUERY_MAX_CHARACTER_ID_SQL =
-            "SELECT COALESCE(MAX(id), 0) AS max_id FROM player_characters";
+            "SELECT COALESCE(MAX(id), 0) AS max_id FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
 
     long loadNextCharacterId(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(LOAD_NEXT_CHARACTER_ID_SQL);

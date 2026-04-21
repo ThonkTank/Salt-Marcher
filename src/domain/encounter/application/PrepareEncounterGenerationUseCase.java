@@ -76,6 +76,7 @@ final class PrepareEncounterGenerationUseCase {
                 request.targetDifficulty(),
                 thresholds,
                 partyLoad.partySize(),
+                request.tuning(),
                 lockedCreatures.lockedProfiles().values(),
                 lockedCreatures.lockedQuantities(),
                 candidates.unlockedProfiles()));

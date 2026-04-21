@@ -1,14 +1,17 @@
 package src.domain.encounter.generation.factory;
 
-import src.domain.encounter.generation.policy.*;
-import src.domain.encounter.generation.value.*;
-
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import src.domain.encounter.generation.policy.EncounterDifficultyMath;
+import src.domain.encounter.generation.policy.EncounterSearchPool;
+import src.domain.encounter.generation.value.EncounterCandidateProfile;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.generation.value.EncounterDraft;
+import src.domain.encounter.generation.value.EncounterDraftBuildRequest;
+import src.domain.encounter.generation.value.EncounterTuningIntent;
 
 public final class EncounterDraftFactory {
 
@@ -24,6 +27,7 @@ public final class EncounterDraftFactory {
                 request.targetDifficulty(),
                 request.thresholds(),
                 request.partySize(),
+                request.tuning(),
                 request.lockedProfiles(),
                 request.lockedQuantities(),
                 pool));
@@ -33,12 +37,14 @@ public final class EncounterDraftFactory {
             EncounterDifficultyIntent targetDifficulty,
             EncounterDifficultyMath.Thresholds thresholds,
             int partySize,
+            EncounterTuningIntent tuning,
             Collection<EncounterCandidateProfile> lockedProfiles,
             Map<Long, Integer> lockedQuantities,
             List<EncounterCandidateProfile> unlockedProfiles
     ) {
 
         public EncounterDraftRequest {
+            tuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
             lockedProfiles = lockedProfiles == null ? List.of() : List.copyOf(lockedProfiles);
             lockedQuantities = lockedQuantities == null
                     ? Map.of()

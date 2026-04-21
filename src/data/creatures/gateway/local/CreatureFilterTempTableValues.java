@@ -1,5 +1,7 @@
 package src.data.creatures.gateway.local;
 
+import src.data.creatures.model.CreaturesPersistenceSchema;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -10,15 +12,15 @@ import java.util.Objects;
 final class CreatureFilterTempTableValues {
 
     private static final String INSERT_TEMP_FILTER_SIZE_SQL =
-            "INSERT INTO sm_temp_filter_sizes(value) VALUES (?)";
+            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + "(value) VALUES (?)";
     private static final String INSERT_TEMP_FILTER_TYPE_SQL =
-            "INSERT INTO sm_temp_filter_types(value) VALUES (?)";
+            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + "(value) VALUES (?)";
     private static final String INSERT_TEMP_FILTER_ALIGNMENT_SQL =
-            "INSERT INTO sm_temp_filter_alignments(value) VALUES (?)";
+            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + "(value) VALUES (?)";
     private static final String INSERT_TEMP_FILTER_SUBTYPE_SQL =
-            "INSERT INTO sm_temp_filter_subtypes(value) VALUES (?)";
+            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + "(value) VALUES (?)";
     private static final String INSERT_TEMP_FILTER_BIOME_SQL =
-            "INSERT INTO sm_temp_filter_biomes(value) VALUES (?)";
+            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + "(value) VALUES (?)";
 
     private CreatureFilterTempTableValues() {
     }

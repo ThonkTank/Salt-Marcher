@@ -118,6 +118,15 @@ remaining review-owned rules so the enforcement set does not overclaim.
 - `domain-named-module-no-published-carriers`: named modules must not import
   same-feature or foreign `published/` carriers, owned by Error Prone
   `DomainModuleNoPublishedCarrierDependency`.
+- `domain-port-boundary`: outbound ports must not be implemented under
+  `src/domain/**`, `*Repository` domain types must be port interfaces under a
+  named module `port/` package, and port signatures must not expose outer-layer,
+  source-local, transaction, persistence, filesystem, network, or adapter
+  lifecycle types, owned by Error Prone `DomainPortBoundary`.
+- `domain-public-boundary-signature-purity`: root application-service and
+  `published/` public signatures must not expose outer-layer, source-local,
+  transaction, persistence, filesystem, network, or adapter lifecycle types,
+  owned by Error Prone `DomainPublicBoundarySignaturePurity`.
 - `domain-role-shape`: aggregate, entity, value, port, policy, factory,
   service, event, and specification packages must use their declared type
   shapes, owned by Error Prone `DomainRoleShape`.
@@ -151,6 +160,8 @@ proof that behavior sits in the right domain role.
   and event behavior is rich enough for the role name when that role is used
 - whether `published/` language is stable and intentionally versioned enough
   for view models and foreign contexts
+- whether `published/` names such as row, selection, cell, or summary describe
+  domain facts rather than presentation or storage concepts
 - whether commands, invariants, consistency notes, and ubiquitous language in
   `DOMAIN.md` accurately describe real behavior
 

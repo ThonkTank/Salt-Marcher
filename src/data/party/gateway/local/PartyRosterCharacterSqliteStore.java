@@ -1,6 +1,7 @@
 package src.data.party.gateway.local;
 
 import src.data.party.model.PartyCharacterRecord;
+import src.data.party.model.PartyPersistenceSchema;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,14 +16,15 @@ final class PartyRosterCharacterSqliteStore {
 
     private static final String LOAD_CHARACTERS_SQL =
             "SELECT id, name, player_name, level, current_xp, xp_since_long_rest, xp_since_short_rest,"
-                    + " short_rests_taken_since_long_rest, passive_perception, ac, in_party FROM player_characters"
+                    + " short_rests_taken_since_long_rest, passive_perception, ac, in_party FROM "
+                    + PartyPersistenceSchema.PLAYER_CHARACTERS.name()
                     + " ORDER BY id";
     private static final String LOAD_CHARACTER_IDS_SQL =
-            "SELECT id FROM player_characters";
+            "SELECT id FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name();
     private static final String DELETE_CHARACTER_SQL =
-            "DELETE FROM player_characters WHERE id = ?";
+            "DELETE FROM " + PartyPersistenceSchema.PLAYER_CHARACTERS.name() + " WHERE id = ?";
     private static final String UPSERT_CHARACTER_SQL =
-            "INSERT INTO player_characters("
+            "INSERT INTO " + PartyPersistenceSchema.PLAYER_CHARACTERS.name() + "("
                     + "id, name, player_name, level, current_xp, xp_since_long_rest, xp_since_short_rest,"
                     + " short_rests_taken_since_long_rest, passive_perception, ac, in_party)"
                     + " VALUES(?,?,?,?,?,?,?,?,?,?,?)"

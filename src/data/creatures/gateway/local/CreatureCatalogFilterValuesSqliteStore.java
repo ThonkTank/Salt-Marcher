@@ -1,6 +1,7 @@
 package src.data.creatures.gateway.local;
 
 import src.data.creatures.model.CreatureFilterValuesRecord;
+import src.data.creatures.model.CreaturesPersistenceSchema;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -15,19 +16,20 @@ final class CreatureCatalogFilterValuesSqliteStore {
             List.of("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan");
 
     private static final String LOAD_DISTINCT_SIZES_SQL =
-            "SELECT DISTINCT size FROM creatures WHERE size IS NOT NULL AND TRIM(size) != '' ORDER BY size";
+            "SELECT DISTINCT size FROM " + CreaturesPersistenceSchema.CREATURES.name()
+                    + " WHERE size IS NOT NULL AND TRIM(size) != '' ORDER BY size";
     private static final String LOAD_DISTINCT_TYPES_SQL =
-            "SELECT DISTINCT creature_type FROM creatures "
-                    + "WHERE creature_type IS NOT NULL AND TRIM(creature_type) != '' ORDER BY creature_type";
+            "SELECT DISTINCT creature_type FROM " + CreaturesPersistenceSchema.CREATURES.name()
+                    + " WHERE creature_type IS NOT NULL AND TRIM(creature_type) != '' ORDER BY creature_type";
     private static final String LOAD_DISTINCT_SUBTYPES_SQL =
-            "SELECT DISTINCT subtype FROM creature_subtypes "
-                    + "WHERE subtype IS NOT NULL AND TRIM(subtype) != '' ORDER BY subtype";
+            "SELECT DISTINCT subtype FROM " + CreaturesPersistenceSchema.CREATURE_SUBTYPES.name()
+                    + " WHERE subtype IS NOT NULL AND TRIM(subtype) != '' ORDER BY subtype";
     private static final String LOAD_DISTINCT_BIOMES_SQL =
-            "SELECT DISTINCT biome FROM creature_biomes "
-                    + "WHERE biome IS NOT NULL AND TRIM(biome) != '' ORDER BY biome";
+            "SELECT DISTINCT biome FROM " + CreaturesPersistenceSchema.CREATURE_BIOMES.name()
+                    + " WHERE biome IS NOT NULL AND TRIM(biome) != '' ORDER BY biome";
     private static final String LOAD_DISTINCT_ALIGNMENTS_SQL =
-            "SELECT DISTINCT alignment FROM creatures "
-                    + "WHERE alignment IS NOT NULL AND TRIM(alignment) != '' ORDER BY alignment";
+            "SELECT DISTINCT alignment FROM " + CreaturesPersistenceSchema.CREATURES.name()
+                    + " WHERE alignment IS NOT NULL AND TRIM(alignment) != '' ORDER BY alignment";
 
     CreatureFilterValuesRecord loadFilterValues(Connection connection) throws SQLException {
         return new CreatureFilterValuesRecord(

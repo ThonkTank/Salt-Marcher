@@ -1,15 +1,22 @@
 package src.domain.encounter.generation.factory;
 
-import src.domain.encounter.generation.policy.*;
-import src.domain.encounter.generation.value.*;
-
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import src.domain.encounter.generation.policy.EncounterDraftCollector;
+import src.domain.encounter.generation.policy.EncounterDraftOrdering;
+import src.domain.encounter.generation.policy.EncounterTuningTargets;
+import src.domain.encounter.generation.value.EncounterCandidateProfile;
+import src.domain.encounter.generation.value.EncounterDraft;
+import src.domain.encounter.generation.value.EncounterDraftBuildRequest;
+import src.domain.encounter.generation.value.EncounterProfileCopies;
 
 final class EncounterDraftEnumerator {
 
     private static final int DRAFT_LIMIT = 30;
+    private static final int DIVERSITY_POOL_LIMIT = 12;
     private static final int MAX_FIRST_DUAL_COPIES = 3;
     private static final int MAX_SECOND_DUAL_COPIES = 4;
 
@@ -23,6 +30,7 @@ final class EncounterDraftEnumerator {
         EncounterDraftCollector.add(drafts, profiles, request, baseCounts);
         appendSingleCreatureDrafts(drafts, profiles, request, baseCounts, request.pool());
         appendDualCreatureDrafts(drafts, profiles, request, baseCounts, request.pool());
+        appendDiversityDrafts(drafts, profiles, request, baseCounts, request.pool());
         return EncounterDraftOrdering.topDrafts(drafts.values(), DRAFT_LIMIT);
     }
 
@@ -72,6 +80,89 @@ final class EncounterDraftEnumerator {
     ) {
         for (int i = 0; i < pool.size(); i++) {
             appendDualsForFirstProfile(drafts, profiles, request, baseCounts, pool, i);
+        }
+    }
+
+    private static void appendDiversityDrafts(
+            Map<String, EncounterDraft> drafts,
+            Map<Long, EncounterCandidateProfile> profiles,
+            EncounterDraftBuildRequest request,
+            Map<Long, Integer> baseCounts,
+            List<EncounterCandidateProfile> pool
+    ) {
+        EncounterTuningTargets.Targets targets =
+                EncounterTuningTargets.targetsFor(request.tuning(), request.partySize());
+        int additionalDistinct = targets.targetDistinctStatBlocks() - baseCounts.size();
+        if (additionalDistinct <= 2 || pool.size() < additionalDistinct) {
+            return;
+        }
+        List<EncounterCandidateProfile> candidates = pool.subList(0, Math.min(pool.size(), DIVERSITY_POOL_LIMIT));
+        appendDiversityCombinations(new DiversityDraftRequest(
+                drafts,
+                profiles,
+                request,
+                baseCounts,
+                candidates,
+                additionalDistinct,
+                targets.targetCreatureCount()), new ArrayList<>(), 0);
+    }
+
+    private static void appendDiversityCombinations(
+            DiversityDraftRequest diversityRequest,
+            List<EncounterCandidateProfile> selected,
+            int startIndex
+    ) {
+        if (selected.size() == diversityRequest.additionalDistinct()) {
+            Map<Long, Integer> counts = new LinkedHashMap<>(diversityRequest.baseCounts());
+            for (EncounterCandidateProfile profile : selected) {
+                counts.merge(profile.id(), 1, Integer::sum);
+            }
+            topUpCounts(counts, selected, diversityRequest.targetCreatureCount());
+            EncounterDraftCollector.add(
+                    diversityRequest.drafts(),
+                    diversityRequest.profiles(),
+                    diversityRequest.request(),
+                    counts);
+            return;
+        }
+        int remaining = diversityRequest.additionalDistinct() - selected.size();
+        for (int index = startIndex; index <= diversityRequest.candidates().size() - remaining; index++) {
+            selected.add(diversityRequest.candidates().get(index));
+            appendDiversityCombinations(diversityRequest, selected, index + 1);
+            selected.removeLast();
+        }
+    }
+
+    private static void topUpCounts(
+            Map<Long, Integer> counts,
+            List<EncounterCandidateProfile> selected,
+            int targetCreatureCount
+    ) {
+        int creatureCount = counts.values().stream().mapToInt(Integer::intValue).sum();
+        if (creatureCount >= targetCreatureCount || selected.isEmpty()) {
+            return;
+        }
+        List<EncounterCandidateProfile> byLowXp = selected.stream()
+                .sorted(Comparator.comparingInt(EncounterCandidateProfile::xp)
+                        .thenComparing(EncounterCandidateProfile::name, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+        while (creatureCount < targetCreatureCount) {
+            boolean added = false;
+            for (EncounterCandidateProfile profile : byLowXp) {
+                int current = counts.getOrDefault(profile.id(), 0);
+                if (current >= EncounterProfileCopies.maxAdditionalCopies(profile)) {
+                    continue;
+                }
+                counts.put(profile.id(), current + 1);
+                creatureCount++;
+                added = true;
+                if (creatureCount >= targetCreatureCount) {
+                    break;
+                }
+            }
+            if (!added) {
+                return;
+            }
         }
     }
 
@@ -129,6 +220,17 @@ final class EncounterDraftEnumerator {
             EncounterCandidateProfile second,
             int firstCount,
             int secondLimit
+    ) {
+    }
+
+    private record DiversityDraftRequest(
+            Map<String, EncounterDraft> drafts,
+            Map<Long, EncounterCandidateProfile> profiles,
+            EncounterDraftBuildRequest request,
+            Map<Long, Integer> baseCounts,
+            List<EncounterCandidateProfile> candidates,
+            int additionalDistinct,
+            int targetCreatureCount
     ) {
     }
 }

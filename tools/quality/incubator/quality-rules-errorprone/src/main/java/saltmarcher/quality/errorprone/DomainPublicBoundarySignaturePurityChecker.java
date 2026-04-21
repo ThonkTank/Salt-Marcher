@@ -61,11 +61,22 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
             "jakarta.json.",
             "com.fasterxml.jackson.",
             "org.json.",
-            "java.net.http.",
+            "java.net.",
             "okhttp3.",
             "retrofit2.",
             "java.io.",
-            "java.nio.file."
+            "java.nio.file.",
+            "javax.transaction.",
+            "jakarta.transaction.",
+            "javax.persistence.",
+            "jakarta.persistence.",
+            "org.jooq.",
+            "org.hibernate.",
+            "com.zaxxer.hikari."
+    );
+    private static final Set<String> OUTER_LAYER_TYPES = Set.of(
+            "java.lang.AutoCloseable",
+            "java.io.Closeable"
     );
 
     @Override
@@ -447,6 +458,9 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         if (fqn == null || fqn.isBlank()) {
             return false;
         }
+        if (OUTER_LAYER_TYPES.contains(fqn)) {
+            return true;
+        }
         for (String outerPrefix : OUTER_LAYER_PREFIXES) {
             if (fqn.startsWith(outerPrefix)) {
                 return true;
@@ -469,6 +483,9 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
             String rootFeature) {
         if (fqn == null || fqn.isBlank()) {
             return false;
+        }
+        if (OUTER_LAYER_TYPES.contains(fqn)) {
+            return true;
         }
         for (String outerPrefix : OUTER_LAYER_PREFIXES) {
             if (fqn.startsWith(outerPrefix)) {

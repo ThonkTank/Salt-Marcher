@@ -69,6 +69,10 @@ final class CatalogBinder {
         });
         controls.setOnSortChanged(viewModel::selectSort);
         controls.setOnEncounterDifficultyChanged(key -> encounterSession.selectDifficulty(toDifficultyBand(key)));
+        controls.setOnEncounterTuningChanged(selection -> encounterSession.updateTuning(
+                selection.balanceLevel(),
+                selection.amountValue(),
+                selection.diversityLevel()));
         controls.setOnPreviousPage(viewModel::previousPage);
         controls.setOnNextPage(viewModel::nextPage);
 

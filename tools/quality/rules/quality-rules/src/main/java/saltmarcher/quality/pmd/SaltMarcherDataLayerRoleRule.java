@@ -11,7 +11,7 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
     private static final Pattern PUBLIC_OR_PROTECTED_METHOD_PATTERN = Pattern.compile(
             "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern SCHEMA_DDL_LITERAL_PATTERN = Pattern.compile(
-            "\"[^\"]*\\b(?:CREATE\\s+(?:TABLE|INDEX|UNIQUE\\s+INDEX)|ALTER\\s+TABLE|DROP\\s+TABLE)\\b[^\"]*\"",
+            "\"[^\"]*\\b(?:CREATE\\s+(?:TEMP\\s+)?(?:TABLE|INDEX|UNIQUE\\s+INDEX)|ALTER\\s+TABLE|DROP\\s+TABLE)\\b[^\"]*\"",
             Pattern.CASE_INSENSITIVE);
     private static final Set<String> CONCRETE_SOURCE_TOKENS = Set.of(
             "java.sql.",
@@ -44,7 +44,7 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         }
 
         if (sourceFacts.isDataSource()) {
-            if (isRepositoryQueryOrMapper(sourceFacts)) {
+            if (isCompositionAdapterRepositoryQueryOrMapper(sourceFacts)) {
                 validateNoConcreteSourceMechanics(node, data, sourceFacts);
             }
             if (isQuery(sourceFacts)) {
@@ -63,7 +63,7 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         for (String token : CONCRETE_SOURCE_TOKENS) {
             if (sourceFacts.text().contains(token)) {
                 asCtx(data).addViolationWithMessage(node,
-                        "Data repository/, query/, and mapper/ port-adapter code must not own concrete source mechanics such as '"
+                        "Data composition adapter, repository/, query/, and mapper/ code must not own concrete source mechanics such as '"
                                 + token + "'. Move source-specific work into a source adapter under gateway/.");
             }
         }
@@ -101,6 +101,10 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
 
     private static boolean isRepositoryQueryOrMapper(SaltMarcherSourceFacts sourceFacts) {
         return isRepository(sourceFacts) || isQuery(sourceFacts) || isMapper(sourceFacts);
+    }
+
+    private static boolean isCompositionAdapterRepositoryQueryOrMapper(SaltMarcherSourceFacts sourceFacts) {
+        return sourceFacts.isDataRoot() || isRepositoryQueryOrMapper(sourceFacts);
     }
 
     private static boolean isRepository(SaltMarcherSourceFacts sourceFacts) {

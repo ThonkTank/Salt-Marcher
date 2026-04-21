@@ -3,6 +3,7 @@ package src.data.creatures.gateway.local;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureActionRecord;
 import src.data.creatures.model.CreatureDetailRecord;
+import src.data.creatures.model.CreaturesPersistenceSchema;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,9 +20,11 @@ final class CreatureDetailSqliteStore {
                     + "burrow_speed, str, dex, con, intel, wis, cha, initiative_bonus, proficiency_bonus, "
                     + "saving_throws, skills, damage_vulnerabilities, damage_resistances, damage_immunities, "
                     + "condition_immunities, senses, passive_perception, languages, legendary_action_count "
-                    + "FROM creatures WHERE id = ?";
+                    + "FROM " + CreaturesPersistenceSchema.CREATURES.name() + " WHERE id = ?";
     private static final String LOAD_CREATURE_ACTIONS_SQL =
-            "SELECT action_type, name, description, to_hit_bonus FROM creature_actions WHERE creature_id = ? "
+            "SELECT action_type, name, description, to_hit_bonus FROM "
+                    + CreaturesPersistenceSchema.CREATURE_ACTIONS.name()
+                    + " WHERE creature_id = ? "
                     + "ORDER BY CASE action_type "
                     + "WHEN 'trait' THEN 0 "
                     + "WHEN 'action' THEN 1 "

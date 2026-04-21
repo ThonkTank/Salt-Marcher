@@ -148,10 +148,10 @@ semantic role richness, or graph-shaped view topology.
 root entrypoint contracts, required root methods, thin stateless contribution
 roots, shell contribution spec selection, inline styling bans, domain source
 token bans, application-layer policy-helper naming bans, setter-style domain
-mutation bans, port-adapter concrete-source bans, and legacy wiring type bans
-already modeled at source level. It is not the owner for graph topology, full
-compiler-signature checks, semantic adapter adequacy, or package dependency
-direction.
+mutation bans, data composition/port-adapter concrete-source bans, and legacy
+wiring type bans already modeled at source level. It is not the owner for graph
+topology, full compiler-signature checks, semantic adapter adequacy, or package
+dependency direction.
 
 ### `Error Prone`
 

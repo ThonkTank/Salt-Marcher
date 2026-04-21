@@ -7,6 +7,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationTuning;
 
 public final class EncounterRuntimeViewModel {
 
@@ -14,6 +15,8 @@ public final class EncounterRuntimeViewModel {
             new ReadOnlyObjectWrapper<>(EncounterFilters.empty());
     private final ReadOnlyObjectWrapper<EncounterDifficultyBand> difficulty =
             new ReadOnlyObjectWrapper<>(EncounterDifficultyBand.defaultBand());
+    private final ReadOnlyObjectWrapper<EncounterGenerationTuning> tuning =
+            new ReadOnlyObjectWrapper<>(EncounterGenerationTuning.defaultTuning());
     private final ReadOnlyObjectWrapper<CreatureAddRequest> creatureAddRequest =
             new ReadOnlyObjectWrapper<>();
     private final ReadOnlyStringWrapper partyRefreshToken = new ReadOnlyStringWrapper("");
@@ -27,6 +30,10 @@ public final class EncounterRuntimeViewModel {
 
     public ReadOnlyObjectProperty<EncounterDifficultyBand> difficultyProperty() {
         return difficulty.getReadOnlyProperty();
+    }
+
+    public ReadOnlyObjectProperty<EncounterGenerationTuning> tuningProperty() {
+        return tuning.getReadOnlyProperty();
     }
 
     public ReadOnlyObjectProperty<CreatureAddRequest> creatureAddRequestProperty() {
@@ -46,12 +53,21 @@ public final class EncounterRuntimeViewModel {
         return current == null ? EncounterDifficultyBand.defaultBand() : current;
     }
 
+    public EncounterGenerationTuning tuning() {
+        EncounterGenerationTuning current = tuning.get();
+        return current == null ? EncounterGenerationTuning.defaultTuning() : current;
+    }
+
     public void updateFilters(List<String> types, List<String> subtypes, List<String> biomes) {
         filters.set(new EncounterFilters(types, subtypes, biomes));
     }
 
     public void selectDifficulty(EncounterDifficultyBand nextDifficulty) {
         difficulty.set(nextDifficulty == null ? EncounterDifficultyBand.defaultBand() : nextDifficulty);
+    }
+
+    public void updateTuning(int balanceLevel, double amountValue, int diversityLevel) {
+        tuning.set(new EncounterGenerationTuning(balanceLevel, amountValue, diversityLevel));
     }
 
     public void requestCreatureAdd(long creatureId) {

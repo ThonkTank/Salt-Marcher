@@ -3,6 +3,7 @@ package src.data.creatures.gateway.local;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureCatalogRecord;
+import src.data.creatures.model.CreaturesPersistenceSchema;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup.SortDirection;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup.SortField;
@@ -19,22 +20,26 @@ final class CreatureCatalogSearchSqliteStore {
 
     private static final String SEARCH_SELECT_SQL =
             "SELECT id, name, size, creature_type, alignment, cr, xp, hp, ac, COUNT(*) OVER() AS total_count "
-                    + "FROM creatures WHERE "
+                    + "FROM " + CreaturesPersistenceSchema.CREATURES.name() + " WHERE "
                     + "(? IS NULL OR LOWER(name) LIKE LOWER(?)) "
                     + "AND (? IS NULL OR xp >= ?) "
                     + "AND (? IS NULL OR xp <= ?) "
-                    + "AND ((SELECT COUNT(*) FROM sm_temp_filter_sizes) = 0 "
-                    + "OR LOWER(size) IN (SELECT value FROM sm_temp_filter_sizes)) "
-                    + "AND ((SELECT COUNT(*) FROM sm_temp_filter_types) = 0 "
-                    + "OR LOWER(creature_type) IN (SELECT value FROM sm_temp_filter_types)) "
-                    + "AND ((SELECT COUNT(*) FROM sm_temp_filter_alignments) = 0 "
-                    + "OR LOWER(alignment) IN (SELECT value FROM sm_temp_filter_alignments)) "
-                    + "AND ((SELECT COUNT(*) FROM sm_temp_filter_subtypes) = 0 "
-                    + "OR id IN (SELECT creature_id FROM creature_subtypes "
-                    + "WHERE LOWER(subtype) IN (SELECT value FROM sm_temp_filter_subtypes))) "
-                    + "AND ((SELECT COUNT(*) FROM sm_temp_filter_biomes) = 0 "
-                    + "OR id IN (SELECT creature_id FROM creature_biomes "
-                    + "WHERE LOWER(biome) IN (SELECT value FROM sm_temp_filter_biomes))) ";
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + ") = 0 "
+                    + "OR LOWER(size) IN (SELECT value FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + ")) "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + ") = 0 "
+                    + "OR LOWER(creature_type) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + ")) "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + ") = 0 "
+                    + "OR LOWER(alignment) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + ")) "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + ") = 0 "
+                    + "OR id IN (SELECT creature_id FROM " + CreaturesPersistenceSchema.CREATURE_SUBTYPES.name()
+                    + " WHERE LOWER(subtype) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + "))) "
+                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + ") = 0 "
+                    + "OR id IN (SELECT creature_id FROM " + CreaturesPersistenceSchema.CREATURE_BIOMES.name()
+                    + " WHERE LOWER(biome) IN (SELECT value FROM "
+                    + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + "))) ";
 
     private static final String SEARCH_NAME_ASC_SQL =
             SEARCH_SELECT_SQL + "ORDER BY name ASC LIMIT ? OFFSET ?";
