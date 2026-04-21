@@ -237,6 +237,11 @@ tests, PMD architecture checks, jQAssistant analysis, and build-harness
 architecture checks must not report success by being skipped as `UP-TO-DATE` or
 restored from Gradle's build cache.
 
+Architecture gates must also prove that their target surface was actually
+loaded. A bytecode or graph gate that checks zero target classes, nodes, or
+relationships is a defective gate configuration and must fail through a focused
+import or scan smoke check instead of being counted as successful enforcement.
+
 This does not override real task dependencies. For example, bytecode- or
 test-output-dependent checks may still be skipped after a failed compile because
 their prerequisite output was not produced.

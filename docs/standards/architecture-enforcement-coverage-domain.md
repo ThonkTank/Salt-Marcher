@@ -166,6 +166,22 @@ structural, type-resolved, or dependency-visible:
 - `PMD architecture` is useful for narrow AST/source-pattern smells and is not
   semantic proof.
 
+### Signal Quality
+
+Rows owned by `ArchUnit` are valid only when `architectureTest` imports the
+production classes under the architecture roots it claims to check:
+`bootstrap`, `shell`, `src.domain`, `src.view`, and `src.data`. The
+`ArchitectureImportSmokeTest` is the guard for that contract. If it fails, the
+ArchUnit-owned rows in the matrix are not providing usable enforcement signal,
+even if the rule definitions themselves are still correct.
+
+Rows owned by `Error Prone` must fail through `compileJava`, where javac-resolved
+types and signatures are available. Rows owned by `build-harness` must be backed
+by concrete file-tree, marker, or coverage-document evidence. Rows owned by
+`PMD architecture` remain source-pattern checks only; they are allowed to block
+narrow stable smells, but they are not evidence that a use case is semantically
+thin or that a domain service models real cross-concept behavior.
+
 Do not add blockers that scan broad words such as `row`, `record`, `selection`,
 `cell`, `summary`, `style`, `display`, or `model` across all domain source.
 Those terms can be legitimate domain language in some contexts and would turn

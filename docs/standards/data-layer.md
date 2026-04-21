@@ -287,10 +287,10 @@ Current mechanical ownership:
   `ServiceContribution` root placement, package path alignment,
   schema-entrypoint presence, schema-owned SQL table-name references, and the
   required data-enforcement coverage matrix.
-- `PMD architecture` owns source-level `*ServiceContribution` contracts, obvious
-  public/protected mutation-method bans in `query/`, concrete source API bans in
-  composition adapters, repositories, queries, and mappers, and feature DDL literal
-  placement.
+- `PMD architecture` owns source-level `*ServiceContribution` contracts,
+  AST-visible public/protected mutation-method bans in `query/`, concrete
+  source API bans in composition adapters, repositories, queries, and mappers,
+  and AST-visible feature DDL string literal placement.
 - `Error Prone` owns shell API allowlists, service-registry registration
   placement, data-root same-feature root `*ApplicationService` export shape,
   adapter role contracts including inherited public/protected superclass
@@ -325,12 +325,13 @@ individual rule IDs, mechanical owners, blocking entrypoints, and explicit
 decisions for remaining review-owned gaps.
 
 The source-pattern blockers intentionally stop at stable Java source/API shape.
-They are useful for concrete source API leakage, obvious query mutation surfaces,
-mutation-shaped gateway calls from query adapters, same-feature root
-`*ApplicationService` registration shape, and source-local gateway signatures.
-They are not evidence for persistence semantics such as transaction correctness,
-query performance, migration safety, runtime side-effect freedom, or
-invariant-preserving mapper behavior.
+They are useful for concrete source API leakage, AST-visible query mutation
+surfaces, mutation-shaped gateway calls from query adapters, same-feature root
+`*ApplicationService` registration shape, source-local gateway signatures, and
+DDL string literals outside the owning schema declaration. They are not evidence
+for persistence semantics such as transaction correctness, query performance,
+migration safety, runtime side-effect freedom, or invariant-preserving mapper
+behavior.
 
 Current build-harness scope is slightly stricter than the intent wording in
 this standard:

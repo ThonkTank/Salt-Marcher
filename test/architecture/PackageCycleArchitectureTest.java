@@ -3,21 +3,12 @@ package architecture;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
-import com.tngtech.archunit.junit.CacheMode;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.dependencies.SliceAssignment;
 import com.tngtech.archunit.library.dependencies.SliceIdentifier;
-import com.tngtech.archunit.core.importer.ImportOption;
 
-@AnalyzeClasses(
-        packages = {"bootstrap", "shell", "src.domain", "src.view", "src.data"},
-        importOptions = {
-                ImportOption.DoNotIncludeTests.class,
-                ImportOption.DoNotIncludeJars.class
-        },
-        cacheMode = CacheMode.PER_CLASS)
+@AnalyzeMainClasses
 public final class PackageCycleArchitectureTest {
 
     private static final SliceAssignment VIEW_COMPONENT_SLICE_ASSIGNMENT = new SliceAssignment() {

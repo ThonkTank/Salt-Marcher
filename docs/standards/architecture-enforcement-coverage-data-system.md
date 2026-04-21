@@ -51,6 +51,26 @@ remain defined in the
 | `data-feature-cycles` | ArchUnit `dataFeaturesMustStayCycleFree` | `./gradlew checkArchitecture` | Data features and `persistencecore` do not form package-slice dependency cycles. |
 | `data-enforcement-coverage-complete` | build-harness `DataEnforcementCoverageRules` | `./gradlew checkArchitecture` | This coverage document lists every required enforced data-layer rule with a mechanical owner and blocking Gradle entrypoint, and classifies every required data-layer rule group as enforced, enforced elsewhere, or review-owned. |
 
+## Precision Classes
+
+Mechanical enforcement in this document has three precision levels:
+
+- structural proof: file topology, root/schema presence, Java package
+  alignment, bytecode-visible dependencies, package-slice cycles, and
+  compiler-visible public/protected API shape
+- source-pattern proof: narrow Java source patterns that have stable
+  architecture meaning in this repo, such as concrete source API references,
+  DDL string literal placement, query mutation method names, mutation-shaped
+  gateway calls, and table-name literals in SQL-shaped strings
+- review-owned semantics: persistence behavior, transaction safety, mapper
+  losslessness, business-rule ownership, runtime read-only behavior, and
+  whether a legal adapter abstraction is useful rather than ceremonial
+
+Only structural proof and intentionally narrow source-pattern proof may be
+listed as `Enforced`. Semantic rules stay review-owned unless a future standard
+or ADR creates a precise source, compiler, bytecode, or runtime signal with an
+acceptable false-positive budget.
+
 ## Adjacent System Boundary Rules
 
 | Rule ID | Mechanical Owner | Blocking Entrypoint | What It Proves |
@@ -97,11 +117,12 @@ guidance that the current tools cannot prove without low-signal inference.
 ## Source-Pattern Checks
 
 PMD architecture source rules block stable source-shape smells rather than
-semantic persistence behavior. Current PMD blockers cover obvious query mutation
-prefixes, concrete source API tokens outside gateways, feature DDL literal
-placement, and root entrypoint shape. They intentionally stop at source-pattern
-evidence and do not prove query efficiency, transaction correctness, mapping
-correctness, or that a legal composition root is semantically thin.
+semantic persistence behavior. Current PMD blockers cover concrete source API
+tokens outside gateways, AST-visible public/protected query mutation method
+prefixes, AST-visible feature DDL string literal placement, and root entrypoint
+shape. They intentionally stop at source-pattern evidence and do not prove query
+efficiency, transaction correctness, mapping correctness, runtime side-effect
+freedom, or that a legal composition root is semantically thin.
 
 Error Prone signature rules are compiler-backed boundary checks. The
 port-adapter rule proves public concrete repository/query adapters expose only
@@ -155,6 +176,7 @@ large false-positive budget, it remains review-owned.
 | Source-model public shape | Error Prone can inspect public compiler symbols and signatures with low false-positive risk. | Enforced by `data-model-source-shape`; semantic source-vs-domain naming remains review-owned. |
 | Composition-root source work | Error Prone can distinguish constructor wiring from direct method calls in data roots. | Enforced by `data-service-contribution-construction-purity`; semantic graph size remains review-owned. |
 | Duplicate table names | build-harness can inspect Java string literals that look like SQL under the current uppercase SQL convention. | Already enforced by `data-schema-table-name-owned-by-schema`. |
+| Query mutation source shape and DDL placement | PMD can inspect Java AST method declarations and string literals, which is precise enough for these narrow source-shape rules. | Keep enforced through `SaltMarcherDataLayerRoleRule`; do not extend this into runtime read-only or migration correctness claims. |
 | Duplicate column/schema meaning | Current schemas do not define stable column constants for every field. Broad literal scans would flag common terms such as `id`, `name`, `type`, and `level`. | Keep review-owned until a column-constant convention exists; then prefer a schema-aware build-harness rule backed by a SQL parser. |
 | Source-local field-name centralization | Current tools can enforce schema-owned table-name references, but broad field-name scans cannot distinguish source schema references from ordinary payload, domain, or UI vocabulary. | Keep review-owned under `data-source-field-name-centralization`; after an accepted field or column constant convention, add a schema-aware build-harness rule rather than a broad text scan. |
 | Mapper losslessness and business policy | Available static evidence is dependency, signature, and narrow forbidden-token shape; semantic policy inference would be broad and brittle. | Keep review-owned; do not add keyword classifiers. |

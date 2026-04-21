@@ -49,60 +49,72 @@ final class DomainFeatureRules implements ArchitectureRule {
                     "Roster Truth Context",
                     "Party Character State Context",
                     "Authored World-Space Context");
-    private static final List<String> REQUIRED_ENFORCED_DOMAIN_RULES = List.of(
-            "domain-root-presence",
-            "domain-context-name-declared",
-            "domain-root-class-shape",
-            "domain-root-public-api-carriers",
-            "domain-root-no-nested-contracts",
-            "domain-root-constructor-composition",
-            "domain-service-registry-root-only",
-            "domain-published-direct-files",
-            "domain-published-carrier-shape",
-            "domain-published-no-callable-contracts",
-            "domain-application-direct-usecases",
-            "domain-application-no-generic-usecase-names",
-            "domain-application-no-backend-port-contracts",
-            "domain-application-no-same-context-published",
-            "domain-module-role-required",
-            "domain-module-name-shape",
-            "domain-role-direct-files",
-            "domain-role-package-name",
-            "domain-forbidden-top-level-bucket",
-            "domain-mapcore-removed",
-            "domain-context-roles-complete",
-            "domain-context-relationships-complete",
-            "domain-context-document-presence",
-            "domain-context-shape-declared",
-            "domain-context-required-sections",
-            "domain-role-context-required-sections",
-            "domain-authored-context-write-model-required",
-            "domain-aggregate-marker-shape",
-            "domain-generation-policy-required-sections",
-            "domain-generation-policy-write-model-none",
-            "domain-generation-policy-ephemeral-rationale",
-            "domain-forbidden-infrastructure-dependency",
-            "domain-source-no-infrastructure-token-source-pattern",
-            "domain-root-no-infrastructure-construction-source-pattern",
-            "domain-application-no-policy-helper-prefix-source-pattern",
-            "domain-named-module-no-setter-mutation-source-pattern",
-            "domain-outer-layer-independence",
-            "domain-foreign-feature-public-boundary",
-            "domain-named-module-private-context",
-            "domain-named-module-no-same-context-application",
-            "domain-model-roles-no-outbound-ports",
-            "domain-named-module-no-published-carriers",
-            "domain-port-boundary",
-            "domain-public-boundary-signature-purity",
-            "domain-published-no-foreign-signatures",
-            "domain-viewmodel-domain-boundary-shape",
-            "domain-role-shape",
-            "domain-field-purity",
-            "domain-public-concrete-type-shape",
-            "domain-service-factory-statelessness",
-            "domain-feature-cycles",
-            "domain-module-cycles",
-            "domain-enforcement-coverage-complete");
+    private static final List<DomainRuleExpectation> REQUIRED_ENFORCED_DOMAIN_RULES = List.of(
+            rule("domain-root-presence", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-context-name-declared", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-root-class-shape", "Error Prone", "./gradlew compileJava"),
+            rule("domain-root-public-api-carriers", "Error Prone", "./gradlew compileJava"),
+            rule("domain-root-no-nested-contracts", "Error Prone", "./gradlew compileJava"),
+            rule("domain-root-constructor-composition", "Error Prone", "./gradlew compileJava"),
+            rule("domain-service-registry-root-only", "Error Prone", "./gradlew compileJava"),
+            rule("domain-published-direct-files", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-published-carrier-shape", "Error Prone", "./gradlew compileJava"),
+            rule("domain-published-no-callable-contracts", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-application-direct-usecases", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-application-no-generic-usecase-names", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-application-no-backend-port-contracts", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-application-no-same-context-published", "Error Prone", "./gradlew compileJava"),
+            rule("domain-module-role-required", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-module-name-shape", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-role-direct-files", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-role-package-name", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-forbidden-top-level-bucket", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-mapcore-removed", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-context-roles-complete", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-context-relationships-complete", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-context-document-presence", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-context-shape-declared", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-context-required-sections", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-role-context-required-sections", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-authored-context-write-model-required", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-aggregate-marker-shape", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-generation-policy-required-sections", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-generation-policy-write-model-none", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-generation-policy-ephemeral-rationale", "build-harness", "./gradlew checkArchitecture"),
+            rule("domain-forbidden-infrastructure-dependency", "Error Prone", "./gradlew compileJava"),
+            rule("domain-source-no-infrastructure-token-source-pattern",
+                    "PMD",
+                    List.of("./gradlew pmdArchitectureMain", "./gradlew checkArchitecture")),
+            rule("domain-root-no-infrastructure-construction-source-pattern",
+                    "PMD",
+                    List.of("./gradlew pmdArchitectureMain", "./gradlew checkArchitecture")),
+            rule("domain-application-no-policy-helper-prefix-source-pattern",
+                    "PMD",
+                    List.of("./gradlew pmdArchitectureMain", "./gradlew checkArchitecture")),
+            rule("domain-named-module-no-setter-mutation-source-pattern",
+                    "PMD",
+                    List.of("./gradlew pmdArchitectureMain", "./gradlew checkArchitecture")),
+            rule("domain-outer-layer-independence",
+                    List.of("ArchUnit", "Error Prone"),
+                    List.of("./gradlew checkArchitecture", "./gradlew compileJava")),
+            rule("domain-foreign-feature-public-boundary", "ArchUnit", "./gradlew checkArchitecture"),
+            rule("domain-named-module-private-context", "ArchUnit", "./gradlew checkArchitecture"),
+            rule("domain-named-module-no-same-context-application", "ArchUnit", "./gradlew checkArchitecture"),
+            rule("domain-model-roles-no-outbound-ports", "ArchUnit", "./gradlew checkArchitecture"),
+            rule("domain-named-module-no-published-carriers", "Error Prone", "./gradlew compileJava"),
+            rule("domain-port-boundary", "Error Prone", "./gradlew compileJava"),
+            rule("domain-public-boundary-signature-purity", "Error Prone", "./gradlew compileJava"),
+            rule("domain-published-no-foreign-signatures", "Error Prone", "./gradlew compileJava"),
+            rule("domain-viewmodel-domain-boundary-shape",
+                    List.of("Error Prone", "ArchUnit", "jQAssistant"),
+                    List.of("./gradlew compileJava", "./gradlew checkArchitecture", "./gradlew checkViewArchitecture")),
+            rule("domain-role-shape", "Error Prone", "./gradlew compileJava"),
+            rule("domain-field-purity", "Error Prone", "./gradlew compileJava"),
+            rule("domain-public-concrete-type-shape", "Error Prone", "./gradlew compileJava"),
+            rule("domain-service-factory-statelessness", "Error Prone", "./gradlew compileJava"),
+            rule("domain-feature-cycles", "ArchUnit", "./gradlew checkArchitecture"),
+            rule("domain-module-cycles", "ArchUnit", "./gradlew checkArchitecture"),
+            rule("domain-enforcement-coverage-complete", "build-harness", "./gradlew checkArchitecture"));
     private static final List<String> REQUIRED_DOMAIN_RULE_GROUPS = List.of(
             "domain-hexagonal-core-boundary",
             "domain-application-service-root-boundary",
@@ -438,12 +450,27 @@ final class DomainFeatureRules implements ArchitectureRule {
     }
 
     private static void validateRequiredEnforcedDomainRules(String content, ViolationSink violations) {
-        for (String ruleId : REQUIRED_ENFORCED_DOMAIN_RULES) {
-            String line = lineContainingMechanicalOwner(content, "`" + ruleId + "`");
+        for (DomainRuleExpectation rule : REQUIRED_ENFORCED_DOMAIN_RULES) {
+            String line = lineContainingMechanicalOwner(content, "`" + rule.ruleId() + "`");
             if (line == null) {
                 violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
-                        "Domain enforcement coverage row for `" + ruleId
+                        "Domain enforcement coverage row for `" + rule.ruleId()
                                 + "` must name a mechanical owner and blocking Gradle entrypoint.");
+                continue;
+            }
+            for (String ownerToken : rule.ownerTokens()) {
+                if (!line.contains(ownerToken)) {
+                    violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
+                            "Domain enforcement coverage row for `" + rule.ruleId()
+                                    + "` must name mechanical owner `" + ownerToken + "`.");
+                }
+            }
+            for (String entrypointToken : rule.entrypointTokens()) {
+                if (!line.contains(entrypointToken)) {
+                    violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
+                            "Domain enforcement coverage row for `" + rule.ruleId()
+                                    + "` must name blocking entrypoint `" + entrypointToken + "`.");
+                }
             }
         }
     }
@@ -658,6 +685,33 @@ final class DomainFeatureRules implements ArchitectureRule {
                 || line.contains("Review-Owned")
                 || line.contains("Candidate")
                 || line.contains("Enforced");
+    }
+
+    private static DomainRuleExpectation rule(
+            String ruleId,
+            String ownerToken,
+            String entrypointToken) {
+        return rule(ruleId, List.of(ownerToken), List.of(entrypointToken));
+    }
+
+    private static DomainRuleExpectation rule(
+            String ruleId,
+            String ownerToken,
+            List<String> entrypointTokens) {
+        return rule(ruleId, List.of(ownerToken), entrypointTokens);
+    }
+
+    private static DomainRuleExpectation rule(
+            String ruleId,
+            List<String> ownerTokens,
+            List<String> entrypointTokens) {
+        return new DomainRuleExpectation(ruleId, ownerTokens, entrypointTokens);
+    }
+
+    private record DomainRuleExpectation(
+            String ruleId,
+            List<String> ownerTokens,
+            List<String> entrypointTokens) {
     }
 
     private static void validateNoStaleContextBullets(

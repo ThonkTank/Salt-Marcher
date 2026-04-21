@@ -6,23 +6,14 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.importer.ImportOption;
-import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
-import com.tngtech.archunit.junit.CacheMode;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.Set;
 
-@AnalyzeClasses(
-        packages = {"bootstrap", "shell", "src.domain", "src.view", "src.data"},
-        importOptions = {
-                ImportOption.DoNotIncludeTests.class,
-                ImportOption.DoNotIncludeJars.class
-        },
-        cacheMode = CacheMode.PER_CLASS)
+@AnalyzeMainClasses
 public final class DependencyBoundaryArchitectureTest {
 
     private static final Set<String> DOMAIN_INTERNAL_MODEL_ROLES = Set.of(

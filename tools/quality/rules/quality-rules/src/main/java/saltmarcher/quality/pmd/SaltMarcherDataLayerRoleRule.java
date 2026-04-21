@@ -1,16 +1,15 @@
 package saltmarcher.quality.pmd;
 
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
+import net.sourceforge.pmd.lang.java.ast.ASTMethodDeclaration;
+import net.sourceforge.pmd.lang.java.ast.ASTStringLiteral;
+import net.sourceforge.pmd.lang.java.ast.ModifierOwner;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
 
 public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
 
-    private static final Pattern PUBLIC_OR_PROTECTED_METHOD_PATTERN = Pattern.compile(
-            "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
-    private static final Pattern JAVA_STRING_LITERAL_PATTERN = Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");
     private static final Pattern SCHEMA_DDL_TEXT_PATTERN = Pattern.compile(
             "\\b(?:CREATE\\s+(?:TEMP\\s+)?(?:TABLE|INDEX|UNIQUE\\s+INDEX)|ALTER\\s+TABLE|DROP\\s+TABLE)\\b",
             Pattern.CASE_INSENSITIVE);
@@ -76,11 +75,13 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
             Object data,
             SaltMarcherSourceFacts sourceFacts
     ) {
-        Matcher matcher = PUBLIC_OR_PROTECTED_METHOD_PATTERN.matcher(codeTextWithoutCommentsAndStrings(sourceFacts.text()));
-        while (matcher.find()) {
-            String methodName = matcher.group(1);
+        for (ASTMethodDeclaration method : node.descendants(ASTMethodDeclaration.class)) {
+            String methodName = method.getName();
+            if (!isPublicOrProtected(method)) {
+                continue;
+            }
             if (isMutationMethodName(methodName)) {
-                asCtx(data).addViolationWithMessage(node,
+                asCtx(data).addViolationWithMessage(method,
                         "Data query/ adapters must stay read-only and must not expose mutation method '"
                                 + methodName + "'.");
             }
@@ -95,11 +96,10 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         if (isFeaturePersistenceSchema(sourceFacts) || sourceFacts.relativePath().startsWith("src/data/persistencecore/")) {
             return;
         }
-        Matcher literalMatcher = JAVA_STRING_LITERAL_PATTERN.matcher(sourceFacts.text());
-        while (literalMatcher.find()) {
-            String literal = unquoteJavaStringLiteral(literalMatcher.group());
+        for (ASTStringLiteral literalNode : node.descendants(ASTStringLiteral.class)) {
+            String literal = literalNode.getConstValue();
             if (SCHEMA_DDL_TEXT_PATTERN.matcher(literal).find()) {
-                asCtx(data).addViolationWithMessage(node,
+                asCtx(data).addViolationWithMessage(literalNode,
                         "Feature schema DDL must live in the owning data model/<Feature>PersistenceSchema.java declaration.");
                 return;
             }
@@ -140,8 +140,8 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         return QUERY_MUTATION_METHOD_PREFIXES.stream().anyMatch(normalized::startsWith);
     }
 
-    private static String unquoteJavaStringLiteral(String literal) {
-        return literal.length() < 2 ? literal : literal.substring(1, literal.length() - 1);
+    private static boolean isPublicOrProtected(ASTMethodDeclaration method) {
+        return method.getEffectiveVisibility().isAtLeast(ModifierOwner.Visibility.V_PROTECTED);
     }
 
     private static String codeTextWithoutCommentsAndStrings(String text) {

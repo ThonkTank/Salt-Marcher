@@ -159,6 +159,7 @@ val architectureRulesetFile = layout.projectDirectory.file("tools/quality/config
 val architectureTest by tasks.registering(Test::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Run only architecture-focused test suites."
+    dependsOn(tasks.named("classes"))
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     useJUnitPlatform()
