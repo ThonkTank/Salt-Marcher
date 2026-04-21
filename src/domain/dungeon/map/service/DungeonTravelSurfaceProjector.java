@@ -44,6 +44,7 @@ public final class DungeonTravelSurfaceProjector {
         DungeonTravelPositionFacts position = resolvePosition(safeMap, safeFacts, preferredPosition);
         SurfaceScope scope = surfaceScope(safeFacts, position.tile());
         List<DungeonTravelActionFacts> actions = new ArrayList<>();
+        actions.addAll(new DungeonDoorActionCatalog().describe(safeMap, derived, scope.area(), scope.cells(), position));
         actions.addAll(stairActions(safeMap, scope, position));
         actions.addAll(transitionActions(safeMap, scope, position));
         return new DungeonTravelSurfaceFacts(
@@ -90,6 +91,7 @@ public final class DungeonTravelSurfaceProjector {
         DungeonAreaFacts area = areaAt(mapFacts, activeTile);
         if (area != null) {
             return new SurfaceScope(
+                    area,
                     area.label(),
                     area.label(),
                     "Bereich " + area.label(),
@@ -98,12 +100,14 @@ public final class DungeonTravelSurfaceProjector {
         DungeonFeatureFacts feature = featureAt(mapFacts, activeTile);
         if (feature != null) {
             return new SurfaceScope(
+                    null,
                     feature.label(),
                     feature.label(),
                     feature.description().isBlank() ? feature.label() : feature.description(),
                     sameLevelCells(feature.cells(), activeTile.level()));
         }
         return new SurfaceScope(
+                null,
                 "Dungeon-Feld",
                 "Feld " + activeTile.q() + "," + activeTile.r(),
                 "",
@@ -258,6 +262,7 @@ public final class DungeonTravelSurfaceProjector {
     }
 
     private record SurfaceScope(
+            @Nullable DungeonAreaFacts area,
             String title,
             String areaLabel,
             String description,

@@ -39,7 +39,7 @@ public final class DungeonTravelStateView extends VBox {
         actions.getChildren().clear();
         List<ActionItem> safeItems = items == null ? List.of() : items;
         if (safeItems.isEmpty()) {
-            Label hint = new Label("Keine Treppen oder Uebergaenge am aktuellen Standort.");
+            Label hint = new Label("Keine Reiseaktionen am aktuellen Standort.");
             hint.getStyleClass().add("text-muted");
             hint.setWrapText(true);
             actions.getChildren().add(hint);

@@ -57,7 +57,20 @@ public final class MoveDungeonTravelActionUseCase {
         if (action.kind() == DungeonTravelActionKind.STAIR) {
             return moveThroughStair(currentMap, action);
         }
+        if (action.kind() == DungeonTravelActionKind.DOOR) {
+            return moveThroughDoor(currentMap, action);
+        }
         return moveThroughTransition(currentMap, currentSurface.position(), action);
+    }
+
+    private DungeonTravelMoveFacts moveThroughDoor(DungeonMap currentMap, DungeonTravelActionFacts action) {
+        DungeonTravelPositionFacts target = action.targetPosition();
+        if (target == null) {
+            DungeonTravelSurfaceFacts surface = project(currentMap, null, "Tuerziel ist nicht verfuegbar.");
+            return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
+        }
+        DungeonTravelSurfaceFacts surface = project(currentMap, target, "Tuer benutzt.");
+        return moveResult(DungeonTravelMoveStatus.SUCCESS, "Tuer benutzt.", surface);
     }
 
     private DungeonTravelMoveFacts moveThroughStair(DungeonMap currentMap, DungeonTravelActionFacts action) {

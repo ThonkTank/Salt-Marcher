@@ -58,9 +58,9 @@ Current state:
 - `ConnectionCatalog` now also carries authored stair and transition identity,
   stair path nodes, stair exits, corridor attachments, and transition
   destination facts loaded from the legacy write model.
-- Runtime travel surfaces now derive transient stair and transition actions
-  from committed authored map truth. The travel session position is runtime
-  presentation state and is not persisted as authored dungeon truth.
+- Runtime travel surfaces now derive transient door, stair, and transition
+  actions from committed authored map truth. The travel session position is
+  runtime presentation state and is not persisted as authored dungeon truth.
 - Editor operations now tell the aggregate to mutate authored topology seeds
   instead of rewriting a document carrier in application code.
 - The application layer coordinates load, mutate, save, search, and derive
@@ -86,13 +86,13 @@ Remaining implementation gap:
 - Several core types remain thinner record-style carriers than the target
   aggregate model.
 - Full behaviour parity with the original `salt-marcher/` dungeon schema still
-  requires editor mutation, door traversal, persistent campaign/world travel
-  integration, and remaining non-space feature mapping.
+  requires editor mutation, persistent campaign/world travel integration, and
+  remaining non-space feature mapping.
 - The current derived-state rebuild hydrates rooms from cluster polygons and
   internal wall or door boundaries, then derives corridor cells and door
   relations from authored corridor membership, waypoints, and door bindings.
-  Stair exits and transition destinations are now represented as authored
-  feature facts and exposed as transient runtime travel actions.
+  Door boundaries, stair exits, and transition destinations are now represented
+  as authored facts and exposed as transient runtime travel actions.
 - This feature remains a policy-owning bounded context because editor
   mutations and identity-preserving repairs are rule-bearing domain work.
 
@@ -257,10 +257,10 @@ into `map/`.
 - `DungeonTransition`: authored map or overworld transition with stable
   identity, optional placement, destination, and link reference.
 - `DungeonTravelSurface`: derived runtime description for the party's current
-  dungeon location, including transient actions for available stairs and
-  transitions.
+  dungeon location, including transient actions for available doors, stairs,
+  and transitions.
 - `DungeonTravelAction`: transient runtime command target derived from authored
-  stair exits or transition destinations.
+  door boundaries, stair exits, or transition destinations.
 - `FeatureCatalog`: authored non-space, non-connection features.
 - `Derived State`: reproducible domain facts for inspector, topology, and
   travel; reusable render input is a view-layer display model.
