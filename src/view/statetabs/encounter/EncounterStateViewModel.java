@@ -102,7 +102,7 @@ public final class EncounterStateViewModel {
                 1,
                 "Humanoid",
                 "SOLDIER"));
-        status.set("Demo-Kreatur aus dem spaeteren Catalog-Hook hinzugefuegt.");
+        status.set("Demo-Kreatur aus dem spaeteren Add-Hook hinzugefuegt.");
         refreshBuilderState(BuilderSettings.defaultSettings());
     }
 
@@ -293,8 +293,8 @@ public final class EncounterStateViewModel {
                 settings == null ? BuilderSettings.defaultSettings() : settings,
                 !roster.isEmpty(),
                 roster.isEmpty()
-                        ? "Monster per Catalog-Hook hinzufuegen oder Demo-Encounter generieren."
-                        : "Demo-Roster bereit fuer Initiative und Kampfstart.");
+                        ? "Monster per +Add hinzufuegen..."
+                        : "Der Generator hat einen repraesentativen Demo-Encounter erstellt.");
     }
 
     private void refreshCombatState() {

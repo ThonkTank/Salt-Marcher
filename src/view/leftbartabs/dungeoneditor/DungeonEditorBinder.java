@@ -60,33 +60,33 @@ final class DungeonEditorBinder {
         return new Binding(controls, main, state);
     }
 
-    private static DungeonMapDisplayModel.ViewMode toDisplayViewMode(DungeonEditorControlsView.ViewMode viewMode) {
-        return viewMode == DungeonEditorControlsView.ViewMode.GRAPH
+    private static DungeonMapDisplayModel.ViewMode toDisplayViewMode(String viewMode) {
+        return DungeonEditorControlsView.VIEW_GRAPH.equals(viewMode)
                 ? DungeonMapDisplayModel.ViewMode.GRAPH
                 : DungeonMapDisplayModel.ViewMode.GRID;
     }
 
-    private static DungeonEditorControlsView.ViewMode toControlsViewMode(DungeonMapDisplayModel.ViewMode viewMode) {
+    private static String toControlsViewMode(DungeonMapDisplayModel.ViewMode viewMode) {
         return viewMode == DungeonMapDisplayModel.ViewMode.GRAPH
-                ? DungeonEditorControlsView.ViewMode.GRAPH
-                : DungeonEditorControlsView.ViewMode.GRID;
+                ? DungeonEditorControlsView.VIEW_GRAPH
+                : DungeonEditorControlsView.VIEW_GRID;
     }
 
-    private static DungeonMapDisplayModel.OverlayMode toDisplayOverlayMode(
-            DungeonEditorControlsView.OverlayMode overlayMode) {
-        return switch (overlayMode == null ? DungeonEditorControlsView.OverlayMode.OFF : overlayMode) {
-            case OFF -> DungeonMapDisplayModel.OverlayMode.OFF;
-            case NEARBY -> DungeonMapDisplayModel.OverlayMode.NEARBY;
-            case SELECTED -> DungeonMapDisplayModel.OverlayMode.SELECTED;
-        };
+    private static DungeonMapDisplayModel.OverlayMode toDisplayOverlayMode(String overlayMode) {
+        if (DungeonEditorControlsView.OVERLAY_NEARBY.equals(overlayMode)) {
+            return DungeonMapDisplayModel.OverlayMode.NEARBY;
+        }
+        if (DungeonEditorControlsView.OVERLAY_SELECTED.equals(overlayMode)) {
+            return DungeonMapDisplayModel.OverlayMode.SELECTED;
+        }
+        return DungeonMapDisplayModel.OverlayMode.OFF;
     }
 
-    private static DungeonEditorControlsView.OverlayMode toControlsOverlayMode(
-            DungeonMapDisplayModel.OverlayMode overlayMode) {
+    private static String toControlsOverlayMode(DungeonMapDisplayModel.OverlayMode overlayMode) {
         return switch (overlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : overlayMode) {
-            case OFF -> DungeonEditorControlsView.OverlayMode.OFF;
-            case NEARBY -> DungeonEditorControlsView.OverlayMode.NEARBY;
-            case SELECTED -> DungeonEditorControlsView.OverlayMode.SELECTED;
+            case OFF -> DungeonEditorControlsView.OVERLAY_OFF;
+            case NEARBY -> DungeonEditorControlsView.OVERLAY_NEARBY;
+            case SELECTED -> DungeonEditorControlsView.OVERLAY_SELECTED;
         };
     }
 

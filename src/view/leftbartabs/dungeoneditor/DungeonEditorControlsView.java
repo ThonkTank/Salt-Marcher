@@ -1,23 +1,26 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.function.Consumer;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 
-public final class DungeonEditorControlsView extends VBox {
+public final class DungeonEditorControlsView extends DungeonControlPanelView {
+
+    static final String VIEW_GRID = "Grid";
+    static final String VIEW_GRAPH = "Graph";
+    static final String OVERLAY_OFF = "Aus";
+    static final String OVERLAY_NEARBY = "Nachbarn";
+    static final String OVERLAY_SELECTED = "Auswahl";
 
     private static final String SELECT_TOOL = "Auswahl";
     private static final String ROOM_TOOL = "Raum";
@@ -34,8 +37,8 @@ public final class DungeonEditorControlsView extends VBox {
     private final Label levelLabel = new Label("Ebene z=0");
     private final Button previousLevelButton = new Button("Ebene -");
     private final Button nextLevelButton = new Button("Ebene +");
-    private final ToggleButton gridButton = toolToggle(ViewMode.GRID.label());
-    private final ToggleButton graphButton = toolToggle(ViewMode.GRAPH.label());
+    private final ToggleButton gridButton = toolToggle(VIEW_GRID);
+    private final ToggleButton graphButton = toolToggle(VIEW_GRAPH);
     private final ToggleButton selectButton = toolToggle(SELECT_TOOL);
     private final Button roomButton = toolButton(ROOM_TOOL);
     private final Button wallButton = toolButton(WALL_TOOL);
@@ -44,35 +47,34 @@ public final class DungeonEditorControlsView extends VBox {
     private final Button stairButton = toolButton(STAIR_TOOL);
     private final Button transitionButton = toolButton(TRANSITION_TOOL);
     private final Button overlayButton = new Button();
-    private final Popup overlayPopup = new Popup();
     private final ToggleGroup viewModeGroup = new ToggleGroup();
     private final ToggleGroup toolGroup = new ToggleGroup();
-    private Consumer<ViewMode> onViewModeChanged = ignored -> {};
+    private final Popup overlayPopup;
+    private Consumer<String> onViewModeChanged = ignored -> {};
     private Consumer<String> onToolChanged = ignored -> {};
-    private Consumer<OverlayMode> onOverlayModeChanged = ignored -> {};
+    private Consumer<String> onOverlayModeChanged = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonEditorControlsView() {
-        getStyleClass().addAll("surface-root", "dungeon-editor-toolbar");
-        setSpacing(10);
-        setPadding(new Insets(12));
+        super("");
+        overlayPopup = createOverlayPopup(
+                mode -> onOverlayModeChanged.accept(mode),
+                OVERLAY_OFF,
+                OVERLAY_NEARBY,
+                OVERLAY_SELECTED);
+        getStyleClass().add("dungeon-editor-toolbar");
         setFillWidth(true);
         configureMapControls();
         configureViewModeControls();
         configureToolControls();
-        configureOverlayPopup();
         getChildren().addAll(mapSection(), toolSection());
     }
 
     public void onRefresh(Runnable action) {
-        createButton.setOnAction(event -> {
-            if (action != null) {
-                action.run();
-            }
-        });
+        bindAction(createButton, action);
     }
 
-    public void onViewModeChanged(Consumer<ViewMode> action) {
+    public void onViewModeChanged(Consumer<String> action) {
         onViewModeChanged = action == null ? ignored -> {} : action;
     }
 
@@ -81,22 +83,14 @@ public final class DungeonEditorControlsView extends VBox {
     }
 
     public void onPreviousLevel(Runnable action) {
-        previousLevelButton.setOnAction(event -> {
-            if (action != null) {
-                action.run();
-            }
-        });
+        bindAction(previousLevelButton, action);
     }
 
     public void onNextLevel(Runnable action) {
-        nextLevelButton.setOnAction(event -> {
-            if (action != null) {
-                action.run();
-            }
-        });
+        bindAction(nextLevelButton, action);
     }
 
-    public void onOverlayModeChanged(Consumer<OverlayMode> action) {
+    public void onOverlayModeChanged(Consumer<String> action) {
         onOverlayModeChanged = action == null ? ignored -> {} : action;
     }
 
@@ -108,12 +102,9 @@ public final class DungeonEditorControlsView extends VBox {
         statusLabel.setText(statusText == null ? "" : statusText);
     }
 
-    public void showViewMode(ViewMode viewMode) {
-        if (viewMode == ViewMode.GRAPH) {
-            graphButton.setSelected(true);
-        } else {
-            gridButton.setSelected(true);
-        }
+    public void showViewMode(String viewMode) {
+        graphButton.setSelected(VIEW_GRAPH.equals(viewMode));
+        gridButton.setSelected(!VIEW_GRAPH.equals(viewMode));
     }
 
     public void showTool(String tool) {
@@ -127,9 +118,8 @@ public final class DungeonEditorControlsView extends VBox {
         markSelected(transitionButton, TRANSITION_TOOL.equals(selectedTool));
     }
 
-    public void showOverlayMode(OverlayMode overlayMode) {
-        OverlayMode resolved = overlayMode == null ? OverlayMode.OFF : overlayMode;
-        overlayButton.setText(resolved.label());
+    public void showOverlayMode(String overlayMode) {
+        overlayButton.setText(overlayMode == null || overlayMode.isBlank() ? OVERLAY_OFF : overlayMode);
     }
 
     private void configureMapControls() {
@@ -142,7 +132,7 @@ public final class DungeonEditorControlsView extends VBox {
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
         overlayButton.getStyleClass().addAll("toolbar-action-button", "dungeon-overlay-trigger");
-        overlayButton.setOnAction(event -> toggleOverlayPopup(overlayButton));
+        overlayButton.setOnAction(event -> togglePopup(overlayPopup, overlayButton));
     }
 
     private void configureViewModeControls() {
@@ -156,7 +146,7 @@ public final class DungeonEditorControlsView extends VBox {
                 }
                 return;
             }
-            onViewModeChanged.accept(newToggle == graphButton ? ViewMode.GRAPH : ViewMode.GRID);
+            onViewModeChanged.accept(newToggle == graphButton ? VIEW_GRAPH : VIEW_GRID);
         });
     }
 
@@ -170,24 +160,6 @@ public final class DungeonEditorControlsView extends VBox {
         corridorButton.setOnAction(event -> selectTool(CORRIDOR_TOOL));
         stairButton.setOnAction(event -> selectTool(STAIR_TOOL));
         transitionButton.setOnAction(event -> selectTool(TRANSITION_TOOL));
-    }
-
-    private void configureOverlayPopup() {
-        VBox content = new VBox(6);
-        content.setPadding(new Insets(8));
-        content.getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown");
-        content.getChildren().addAll(
-                overlayOption(OverlayMode.OFF),
-                overlayOption(OverlayMode.NEARBY),
-                overlayOption(OverlayMode.SELECTED));
-        overlayPopup.getContent().setAll(content);
-        overlayPopup.setAutoHide(true);
-        overlayPopup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                overlayPopup.hide();
-                event.consume();
-            }
-        });
     }
 
     private VBox mapSection() {
@@ -208,37 +180,9 @@ public final class DungeonEditorControlsView extends VBox {
         return group;
     }
 
-    private Button overlayOption(OverlayMode mode) {
-        Button button = new Button(mode.label());
-        button.getStyleClass().add("tool-btn");
-        button.setMaxWidth(Double.MAX_VALUE);
-        button.setOnAction(event -> {
-            onOverlayModeChanged.accept(mode);
-            overlayPopup.hide();
-        });
-        return button;
-    }
-
     private void selectTool(String tool) {
         showTool(tool);
         onToolChanged.accept(tool);
-    }
-
-    private void toggleOverlayPopup(Node anchor) {
-        if (overlayPopup.isShowing()) {
-            overlayPopup.hide();
-            return;
-        }
-        var bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            overlayPopup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 2.0);
-        }
-    }
-
-    private static Label sectionLabel(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().addAll("section-header", "text-muted");
-        return label;
     }
 
     private static ToggleButton toolToggle(String text) {
@@ -255,12 +199,6 @@ public final class DungeonEditorControlsView extends VBox {
         return button;
     }
 
-    private static Region spacer() {
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        return spacer;
-    }
-
     private static void markSelected(Button button, boolean selected) {
         if (selected) {
             if (!button.getStyleClass().contains("selected")) {
@@ -268,37 +206,6 @@ public final class DungeonEditorControlsView extends VBox {
             }
         } else {
             button.getStyleClass().remove("selected");
-        }
-    }
-
-    enum ViewMode {
-        GRID("Grid"),
-        GRAPH("Graph");
-
-        private final String label;
-
-        ViewMode(String label) {
-            this.label = label;
-        }
-
-        String label() {
-            return label;
-        }
-    }
-
-    enum OverlayMode {
-        OFF("Aus"),
-        NEARBY("Nachbarn"),
-        SELECTED("Auswahl");
-
-        private final String label;
-
-        OverlayMode(String label) {
-            this.label = label;
-        }
-
-        String label() {
-            return label;
         }
     }
 }

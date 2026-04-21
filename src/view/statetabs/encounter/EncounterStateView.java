@@ -21,7 +21,6 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -37,17 +36,21 @@ public final class EncounterStateView extends VBox {
     private final Label status = new Label();
     private final StackPane contentArea = new StackPane();
 
-    private final BuilderControlPanel builderControls = new BuilderControlPanel();
     private final DifficultyMeterView difficultyMeter = new DifficultyMeterView();
     private final Label builderDifficultyLabel = new Label();
+    private final Label builderTemplateLabel = new Label();
     private final Label builderPartyLabel = new Label();
     private final Label builderXpLabel = new Label();
-    private final Label builderMessageLabel = new Label();
     private final Label easyThresholdLabel = new Label();
     private final Label mediumThresholdLabel = new Label();
     private final Label hardThresholdLabel = new Label();
     private final Label deadlyThresholdLabel = new Label();
     private final VBox rosterList = new VBox(6);
+    private final Label rosterPlaceholder = new Label("Monster per +Add hinzufuegen...");
+    private final ScrollPane rosterScroll = new ScrollPane(rosterList);
+    private final StackPane rosterHost = new StackPane(rosterPlaceholder, rosterScroll);
+    private final VBox advisoryRegion = new VBox(4);
+    private final Button builderStartCombatButton = new Button("_Kampf starten");
     private final VBox builderPane = buildBuilderPane();
 
     private final Map<String, Spinner<Integer>> initiativeSpinnerById = new LinkedHashMap<>();
@@ -75,8 +78,6 @@ public final class EncounterStateView extends VBox {
     private final VBox resultsPane = buildResultsPane();
 
     private Consumer<BuilderSettingsInput> onGenerate = settings -> { };
-    private Runnable onAddDemoCreature = () -> { };
-    private Runnable onClearRoster = () -> { };
     private Runnable onStartInitiative = () -> { };
     private Runnable onInitiativeBack = () -> { };
     private Consumer<List<InitiativeInputView>> onInitiativeConfirm = entries -> { };
@@ -95,22 +96,13 @@ public final class EncounterStateView extends VBox {
         getStyleClass().addAll("surface-root", "encounter-runtime-root");
         setFillWidth(true);
 
-        Label title = new Label("Encounter");
-        title.getStyleClass().add("title-large");
-        modeLabel.getStyleClass().add("encounter-mode-chip");
-        Region titleSpacer = new Region();
-        HBox.setHgrow(titleSpacer, Priority.ALWAYS);
-        HBox titleRow = new HBox(8, title, titleSpacer, modeLabel);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-        titleRow.setPadding(new Insets(10, 12, 4, 12));
-
-        status.getStyleClass().add("text-secondary");
-        status.setWrapText(true);
-        status.setPadding(new Insets(0, 12, 8, 12));
-
+        modeLabel.setVisible(false);
+        modeLabel.setManaged(false);
+        status.setVisible(false);
+        status.setManaged(false);
         VBox.setVgrow(contentArea, Priority.ALWAYS);
         contentArea.getChildren().setAll(builderPane);
-        getChildren().addAll(titleRow, status, contentArea);
+        getChildren().add(contentArea);
     }
 
     public StringProperty statusTextProperty() {
@@ -122,15 +114,15 @@ public final class EncounterStateView extends VBox {
         setContent(builderPane);
         builderDifficultyLabel.setText(state.difficulty().difficulty());
         updateDifficultyStyle(builderDifficultyLabel, state.difficulty().difficulty());
+        builderTemplateLabel.setText(state.templateLabel());
         builderPartyLabel.setText(state.partyLabel());
         builderXpLabel.setText("Adj. XP: " + state.difficulty().adjustedXp());
-        builderMessageLabel.setText(state.message());
         easyThresholdLabel.setText("Easy " + state.difficulty().easy());
         mediumThresholdLabel.setText("Med. " + state.difficulty().medium());
         hardThresholdLabel.setText("Hard " + state.difficulty().hard());
         deadlyThresholdLabel.setText("Deadly " + state.difficulty().deadly());
-        builderControls.apply(state.settings());
         difficultyMeter.update(state.difficulty());
+        builderStartCombatButton.setDisable(!state.canStartCombat());
         rebuildRoster(state);
     }
 
@@ -143,7 +135,7 @@ public final class EncounterStateView extends VBox {
         for (InitiativeEntryView entry : state.entries()) {
             if (!entry.kind().equals(currentKind)) {
                 currentKind = entry.kind();
-                Label header = sectionHeader(currentKind);
+                Label header = sectionHeader("SC".equals(currentKind) ? "Spieler" : currentKind);
                 header.setPadding(new Insets(8, 0, 0, 0));
                 initiativeList.getChildren().add(header);
             }
@@ -178,14 +170,6 @@ public final class EncounterStateView extends VBox {
 
     public void setOnGenerate(Consumer<BuilderSettingsInput> callback) {
         onGenerate = callback == null ? settings -> { } : callback;
-    }
-
-    public void setOnAddDemoCreature(Runnable callback) {
-        onAddDemoCreature = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnClearRoster(Runnable callback) {
-        onClearRoster = callback == null ? () -> { } : callback;
     }
 
     public void setOnStartInitiative(Runnable callback) {
@@ -229,31 +213,27 @@ public final class EncounterStateView extends VBox {
     }
 
     private VBox buildBuilderPane() {
-        VBox content = new VBox(8);
-        content.setPadding(new Insets(0, 12, 10, 12));
+        VBox content = new VBox(0);
+        content.setPadding(new Insets(8));
 
-        Label filterHeader = sectionHeader("FILTER");
-        HBox filterHooks = new HBox(6);
-        filterHooks.setAlignment(Pos.CENTER_LEFT);
-        Button catalogHook = new Button("Catalog-Hook");
-        catalogHook.getStyleClass().addAll("compact", "filter-trigger");
-        catalogHook.setTooltip(new Tooltip("Platzhalter fuer den separat migrierten Creature Catalog."));
-        Button allCreatures = new Button("Alle Monster");
-        allCreatures.getStyleClass().addAll("compact", "filter-trigger-active");
-        Label hookNote = new Label("Katalog verdrahtet spaeter Add/Statblock.");
-        hookNote.getStyleClass().add("text-muted");
-        hookNote.setWrapText(true);
-        filterHooks.getChildren().addAll(catalogHook, allCreatures);
+        Label title = new Label("Encounter");
+        title.getStyleClass().add("title");
+        title.setPadding(new Insets(0, 0, 4, 0));
+        Button saveEncounterButton = new Button("Speichern");
+        saveEncounterButton.getStyleClass().addAll("compact", "neutral-action");
+        saveEncounterButton.setDisable(true);
+        saveEncounterButton.setTooltip(new Tooltip("Persistenz wird spaeter angebunden."));
+        Region titleSpacer = new Region();
+        HBox.setHgrow(titleSpacer, Priority.ALWAYS);
+        HBox titleRow = new HBox(8, title, titleSpacer, saveEncounterButton);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        Label encounterHeader = sectionHeader("ENCOUNTER");
-        HBox summaryRow = new HBox(8, builderDifficultyLabel, builderPartyLabel);
+        HBox summaryRow = new HBox(8, builderDifficultyLabel, builderTemplateLabel, builderPartyLabel);
         summaryRow.setAlignment(Pos.CENTER_LEFT);
-        builderDifficultyLabel.getStyleClass().add("bold");
+        builderDifficultyLabel.getStyleClass().add("text-secondary");
+        builderTemplateLabel.getStyleClass().addAll("small", "text-secondary");
         builderPartyLabel.getStyleClass().add("text-secondary");
         builderXpLabel.getStyleClass().add("bold");
-        builderMessageLabel.getStyleClass().add("text-muted");
-        builderMessageLabel.setWrapText(true);
-
         HBox thresholdRow = new HBox(6, easyThresholdLabel, mediumThresholdLabel, hardThresholdLabel, deadlyThresholdLabel);
         easyThresholdLabel.getStyleClass().add("difficulty-easy");
         mediumThresholdLabel.getStyleClass().add("difficulty-medium");
@@ -261,43 +241,41 @@ public final class EncounterStateView extends VBox {
         deadlyThresholdLabel.getStyleClass().add("difficulty-deadly");
 
         rosterList.setPadding(new Insets(2, 0, 2, 0));
-        ScrollPane rosterScroll = new ScrollPane(rosterList);
         rosterScroll.setFitToWidth(true);
         rosterScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        VBox.setVgrow(rosterScroll, Priority.ALWAYS);
+        rosterScroll.setVisible(false);
+        rosterScroll.setManaged(false);
+        rosterPlaceholder.getStyleClass().add("text-muted");
+        rosterHost.setAlignment(Pos.TOP_LEFT);
+        VBox.setVgrow(rosterHost, Priority.ALWAYS);
 
-        Button addDemoButton = new Button("+ Demo");
-        addDemoButton.getStyleClass().addAll("neutral-action", "compact");
-        addDemoButton.setOnAction(event -> onAddDemoCreature.run());
-        Button clearButton = new Button("Leeren");
-        clearButton.getStyleClass().addAll("neutral-action", "compact");
-        clearButton.setOnAction(event -> onClearRoster.run());
+        advisoryRegion.setPadding(new Insets(8, 0, 0, 0));
+        advisoryRegion.setVisible(false);
+        advisoryRegion.setManaged(false);
+
         Button generateButton = new Button("_Generieren");
         generateButton.getStyleClass().add("neutral-action");
         generateButton.setMaxWidth(Double.MAX_VALUE);
-        generateButton.setOnAction(event -> onGenerate.accept(builderControls.input()));
-        Button startCombatButton = new Button("_Kampf starten");
-        startCombatButton.getStyleClass().add("accent");
-        startCombatButton.setMaxWidth(Double.MAX_VALUE);
-        startCombatButton.setOnAction(event -> onStartInitiative.run());
+        generateButton.setTooltip(new Tooltip("Demo-Encounter generieren (Alt+G)"));
+        generateButton.setOnAction(event -> onGenerate.accept(BuilderSettingsInput.defaultInput()));
+        builderStartCombatButton.getStyleClass().add("accent");
+        builderStartCombatButton.setMaxWidth(Double.MAX_VALUE);
+        builderStartCombatButton.setDisable(true);
+        builderStartCombatButton.setOnAction(event -> onStartInitiative.run());
         HBox.setHgrow(generateButton, Priority.ALWAYS);
-        HBox.setHgrow(startCombatButton, Priority.ALWAYS);
-        HBox actionRow = new HBox(8, addDemoButton, clearButton, generateButton, startCombatButton);
+        HBox.setHgrow(builderStartCombatButton, Priority.ALWAYS);
+        HBox actionRow = new HBox(12, generateButton, builderStartCombatButton);
         actionRow.setAlignment(Pos.CENTER_LEFT);
+        actionRow.setPadding(new Insets(8, 0, 0, 0));
 
         content.getChildren().addAll(
-                filterHeader,
-                filterHooks,
-                hookNote,
-                separator(),
-                encounterHeader,
-                builderControls,
+                titleRow,
                 summaryRow,
                 difficultyMeter,
                 thresholdRow,
                 builderXpLabel,
-                builderMessageLabel,
-                rosterScroll,
+                rosterHost,
+                advisoryRegion,
                 separator(),
                 actionRow);
         return content;
@@ -306,7 +284,7 @@ public final class EncounterStateView extends VBox {
     private VBox buildInitiativePane() {
         VBox root = new VBox(0);
         Label title = new Label("Initiative");
-        title.getStyleClass().add("title-large");
+        title.getStyleClass().add("title");
         title.setPadding(new Insets(0, 12, 6, 12));
         initiativeList.setPadding(new Insets(0, 12, 8, 12));
         ScrollPane scroll = new ScrollPane(initiativeList);
@@ -334,7 +312,7 @@ public final class EncounterStateView extends VBox {
 
     private VBox buildCombatPane() {
         VBox root = new VBox(0);
-        combatRoundLabel.getStyleClass().add("title-large");
+        combatRoundLabel.getStyleClass().add("title");
         combatRoundLabel.setPadding(new Insets(0, 12, 2, 12));
         combatStatusLabel.getStyleClass().add("text-secondary");
         combatStatusLabel.setPadding(new Insets(0, 12, 6, 12));
@@ -370,7 +348,7 @@ public final class EncounterStateView extends VBox {
     private VBox buildResultsPane() {
         VBox root = new VBox(0);
         Label title = new Label("Kampfergebnis");
-        title.getStyleClass().add("title-large");
+        title.getStyleClass().add("title");
         title.setPadding(new Insets(0, 12, 2, 12));
         resultSubtitleLabel.getStyleClass().add("text-secondary");
         resultSubtitleLabel.setPadding(new Insets(0, 12, 8, 12));
@@ -416,47 +394,86 @@ public final class EncounterStateView extends VBox {
 
     private void rebuildRoster(BuilderStateView state) {
         rosterList.getChildren().clear();
+        advisoryRegion.getChildren().clear();
         if (state.roster().isEmpty()) {
-            Label placeholder = new Label(state.message());
-            placeholder.getStyleClass().add("text-muted");
-            placeholder.setWrapText(true);
-            rosterList.getChildren().add(placeholder);
+            rosterPlaceholder.setText("Monster per +Add hinzufuegen...");
+            rosterPlaceholder.setVisible(true);
+            rosterPlaceholder.setManaged(true);
+            rosterScroll.setVisible(false);
+            rosterScroll.setManaged(false);
+            advisoryRegion.setVisible(false);
+            advisoryRegion.setManaged(false);
             return;
         }
+        rosterPlaceholder.setVisible(false);
+        rosterPlaceholder.setManaged(false);
+        rosterScroll.setVisible(true);
+        rosterScroll.setManaged(true);
         for (RosterCardView card : state.roster()) {
             rosterList.getChildren().add(buildRosterCard(card));
+        }
+        if (!state.message().isBlank()) {
+            Label title = new Label("Hinweise");
+            title.getStyleClass().addAll("small", "text-secondary");
+            Label row = new Label(state.message());
+            row.getStyleClass().add("text-secondary");
+            row.setWrapText(true);
+            advisoryRegion.getChildren().addAll(title, row);
+            advisoryRegion.setVisible(true);
+            advisoryRegion.setManaged(true);
+        } else {
+            advisoryRegion.setVisible(false);
+            advisoryRegion.setManaged(false);
         }
     }
 
     private Node buildRosterCard(RosterCardView card) {
-        VBox root = new VBox(2);
+        VBox root = new VBox(0);
         root.getStyleClass().add("creature-card");
-        HBox top = new HBox(8);
-        top.setAlignment(Pos.CENTER_LEFT);
+
+        Button minus = new Button("-");
+        minus.getStyleClass().add("compact");
         Label count = new Label(String.valueOf(card.count()));
-        count.getStyleClass().add("encounter-count-pill");
-        Label name = new Label(card.name());
-        name.getStyleClass().add("bold");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label cr = new Label("CR " + card.challengeRating());
-        cr.getStyleClass().addAll("chip", "chip-cr");
-        top.getChildren().addAll(count, name, spacer, cr);
+        count.getStyleClass().add("bold");
+        count.setMinWidth(24);
+        count.setAlignment(Pos.CENTER);
+        Button plus = new Button("+");
+        plus.getStyleClass().add("compact");
+        HBox quantity = new HBox(2, minus, count, plus);
+        quantity.setAlignment(Pos.CENTER);
+
+        Button name = new Button(card.name());
+        name.getStyleClass().add("creature-link");
+        name.setTooltip(new Tooltip("Statblock-Hook wird spaeter angebunden."));
 
         HBox detail = new HBox(4);
-        Label text = new Label(card.xp() + " XP | AC " + card.armorClass() + " | " + card.type());
+        detail.setAlignment(Pos.CENTER_LEFT);
+        Label text = new Label("CR " + card.challengeRating() + "  |  " + card.xp() + " XP  |  " + card.type());
         text.getStyleClass().add("text-secondary");
         Label role = new Label(card.role());
-        role.getStyleClass().addAll("role-badge", roleStyle(card.role()));
+        role.getStyleClass().addAll("small", "role-badge", roleStyle(card.role()));
         detail.getChildren().addAll(text, role);
-        root.getChildren().addAll(top, detail);
+
+        VBox info = new VBox(2, name, detail);
+        HBox.setHgrow(info, Priority.ALWAYS);
+
+        Label expand = new Label("\u25BC");
+        expand.getStyleClass().addAll("text-muted", "clickable");
+        Button remove = new Button("\u00d7");
+        remove.getStyleClass().addAll("compact", "remove-btn");
+        VBox right = new VBox(4, expand, remove);
+        right.setAlignment(Pos.CENTER_RIGHT);
+
+        HBox summary = new HBox(8, quantity, info, right);
+        summary.setAlignment(Pos.CENTER_LEFT);
+        root.getChildren().add(summary);
         return root;
     }
 
     private Node buildInitiativeRow(InitiativeEntryView entry) {
         HBox row = new HBox(8);
         row.setAlignment(Pos.CENTER_LEFT);
-        row.getStyleClass().add("initiative-row");
+        row.setPadding(new Insets(0, 0, 0, 12));
         Label name = new Label(entry.label());
         name.setWrapText(true);
         HBox.setHgrow(name, Priority.ALWAYS);
@@ -795,13 +812,18 @@ public final class EncounterStateView extends VBox {
     }
 
     public record BuilderSettingsInput(String difficultyLabel, int balanceLevel, double amountValue, int diversityLevel) {
+        static BuilderSettingsInput defaultInput() {
+            return new BuilderSettingsInput("Auto", 3, 3.0, 3);
+        }
     }
 
     public record BuilderStateView(
             String partyLabel,
+            String templateLabel,
             DifficultySummaryView difficulty,
             BuilderSettingsInput settings,
             List<RosterCardView> roster,
+            boolean canStartCombat,
             String message
     ) {
         public BuilderStateView {
@@ -879,159 +901,40 @@ public final class EncounterStateView extends VBox {
         }
     }
 
-    private static final class BuilderControlPanel extends VBox {
+    private static final class DifficultyMeterView extends StackPane {
 
-        private final EncounterSlider difficulty =
-                new EncounterSlider("Schwierigkeit", 1, 4, 2, true, this::difficultyName);
-        private final EncounterSlider balance =
-                new EncounterSlider("Balance", 1, 5, 3, true, value -> value <= 1 ? "Extreme" : value >= 5 ? "Durchschnitt" : "");
-        private final EncounterSlider amount =
-                new EncounterSlider("Menge", 1, 5, 3, false, value -> value <= 1 ? "Boss" : value >= 5 ? "Minions" : "");
-        private final EncounterSlider diversity =
-                new EncounterSlider("Diversitaet", 1, 4, 3, true, value -> String.valueOf((int) Math.round(value)));
-
-        private BuilderControlPanel() {
-            setSpacing(5);
-            getChildren().addAll(difficulty, balance, amount, diversity);
-        }
-
-        private BuilderSettingsInput input() {
-            return new BuilderSettingsInput(
-                    difficulty.isAuto() ? "Auto" : difficultyName(difficulty.value()),
-                    (int) Math.round(balance.value()),
-                    amount.value(),
-                    (int) Math.round(diversity.value()));
-        }
-
-        private void apply(BuilderSettingsInput settings) {
-            if (settings == null) {
-                return;
-            }
-            difficulty.setAuto("Auto".equalsIgnoreCase(settings.difficultyLabel()));
-            balance.setValue(settings.balanceLevel());
-            amount.setValue(settings.amountValue());
-            diversity.setValue(settings.diversityLevel());
-        }
-
-        private String difficultyName(double value) {
-            int index = Math.max(1, Math.min(4, (int) Math.round(value)));
-            return switch (index) {
-                case 1 -> "Easy";
-                case 2 -> "Medium";
-                case 3 -> "Hard";
-                default -> "Deadly";
-            };
-        }
-    }
-
-    private static final class EncounterSlider extends HBox {
-
-        private final Slider slider;
-        private final ToggleButton autoButton = new ToggleButton("\u2685");
-        private final Label valueLabel = new Label();
-        private final SliderLabelFormatter formatter;
-
-        private EncounterSlider(
-                String title,
-                double min,
-                double max,
-                double defaultValue,
-                boolean snapToTicks,
-                SliderLabelFormatter formatter
-        ) {
-            this.formatter = formatter;
-            setSpacing(4);
-            setAlignment(Pos.CENTER_LEFT);
-            Label titleLabel = new Label(title);
-            titleLabel.getStyleClass().add("text-muted");
-            titleLabel.setMinWidth(86);
-            autoButton.getStyleClass().addAll("compact", "auto-dice-btn", "active");
-            valueLabel.getStyleClass().add("text-secondary");
-            valueLabel.setMinWidth(72);
-            slider = new Slider(min, max, defaultValue);
-            slider.setShowTickLabels(true);
-            slider.setShowTickMarks(true);
-            slider.setSnapToTicks(snapToTicks);
-            slider.setMajorTickUnit(1);
-            slider.setMinorTickCount(snapToTicks ? 0 : 4);
-            slider.setDisable(true);
-            HBox.setHgrow(slider, Priority.ALWAYS);
-            autoButton.setOnAction(event -> {
-                setAuto(autoButton.isSelected());
-                refresh();
-            });
-            autoButton.setSelected(true);
-            slider.valueProperty().addListener((obs, oldValue, newValue) -> refresh());
-            getChildren().addAll(titleLabel, autoButton, valueLabel, slider);
-            refresh();
-        }
-
-        private boolean isAuto() {
-            return autoButton.isSelected();
-        }
-
-        private void setAuto(boolean auto) {
-            autoButton.setSelected(auto);
-            autoButton.getStyleClass().remove("active");
-            if (auto) {
-                autoButton.getStyleClass().add("active");
-            }
-            slider.setDisable(auto);
-        }
-
-        private double value() {
-            return slider.getValue();
-        }
-
-        private void setValue(double value) {
-            slider.setValue(value);
-            refresh();
-        }
-
-        private void refresh() {
-            valueLabel.setText(isAuto() ? "Auto" : formatter.label(slider.getValue()));
-        }
-    }
-
-    @FunctionalInterface
-    private interface SliderLabelFormatter {
-        String label(double value);
-    }
-
-    private static final class DifficultyMeterView extends VBox {
-
-        private final Label marker = new Label();
         private final HBox meterBar = new HBox(0);
-        private final HBox thresholdChips = new HBox(6);
-        private final Label easy = new Label("Easy");
-        private final Label medium = new Label("Medium");
-        private final Label hard = new Label("Hard");
-        private final Label deadly = new Label("Deadly");
+        private final Region marker = new Region();
+        private double markerFraction;
 
         private DifficultyMeterView() {
-            setSpacing(4);
-            marker.getStyleClass().add("difficulty-meter-marker");
+            setMinHeight(28);
+            setPrefHeight(28);
+            setMaxHeight(28);
             meterBar.getStyleClass().add("difficulty-meter-bar");
             meterBar.getChildren().addAll(
                     meterSegment("difficulty-meter-easy"),
                     meterSegment("difficulty-meter-medium"),
                     meterSegment("difficulty-meter-hard"),
                     meterSegment("difficulty-meter-deadly"));
-            easy.getStyleClass().add("difficulty-easy");
-            medium.getStyleClass().add("difficulty-medium");
-            hard.getStyleClass().add("difficulty-hard");
-            deadly.getStyleClass().add("difficulty-deadly");
-            thresholdChips.getChildren().addAll(easy, medium, hard, deadly);
-            getChildren().addAll(marker, meterBar, thresholdChips);
+            meterBar.setMaxHeight(12);
+            marker.getStyleClass().add("difficulty-meter-marker");
+            marker.setMinSize(2, 22);
+            marker.setPrefSize(2, 22);
+            marker.setMaxSize(2, 22);
+            marker.setMouseTransparent(true);
+            getChildren().addAll(meterBar, marker);
+            StackPane.setAlignment(meterBar, Pos.CENTER);
+            StackPane.setAlignment(marker, Pos.CENTER_LEFT);
+            widthProperty().addListener((obs, oldValue, newValue) -> positionMarker());
         }
 
         private void update(DifficultySummaryView value) {
             DifficultySummaryView summary = value == null ? new DifficultySummaryView(0, 0, 0, 0, 0, "") : value;
-            marker.setText("Marker: " + summary.adjustedXp() + " XP | " + summary.difficulty());
-            easy.setText("Easy " + summary.easy());
-            medium.setText("Medium " + summary.medium());
-            hard.setText("Hard " + summary.hard());
-            deadly.setText("Deadly " + summary.deadly());
+            double maxXp = Math.max(1.0, summary.deadly() * 1.5);
+            markerFraction = Math.max(0.0, Math.min(1.0, summary.adjustedXp() / maxXp));
+            marker.setVisible(summary.adjustedXp() > 0);
+            positionMarker();
         }
 
         private Region meterSegment(String styleClass) {
@@ -1039,6 +942,15 @@ public final class EncounterStateView extends VBox {
             segment.getStyleClass().add(styleClass);
             HBox.setHgrow(segment, Priority.ALWAYS);
             return segment;
+        }
+
+        private void positionMarker() {
+            double markerWidth = marker.prefWidth(-1);
+            double width = getWidth();
+            if (width <= 0) {
+                return;
+            }
+            marker.setTranslateX((width * markerFraction) - (width / 2.0) - (markerWidth / 2.0));
         }
     }
 }

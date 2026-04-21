@@ -78,13 +78,11 @@ public final class DungeonEditorViewModel {
     }
 
     public void previousLevel() {
-        projectionLevel.set(projectionLevel.get() - 1);
-        refreshStateText();
+        moveProjection(-1);
     }
 
     public void nextLevel() {
-        projectionLevel.set(projectionLevel.get() + 1);
-        refreshStateText();
+        moveProjection(1);
     }
 
     public void refresh() {
@@ -100,5 +98,10 @@ public final class DungeonEditorViewModel {
                 + "\nEbene: z=" + projectionLevel.get()
                 + "\n" + overlayMode.get().label()
                 + "\nUI-Mock: Interaktionen aktualisieren nur Praesentationszustand.");
+    }
+
+    private void moveProjection(int offset) {
+        projectionLevel.set(projectionLevel.get() + offset);
+        refreshStateText();
     }
 }

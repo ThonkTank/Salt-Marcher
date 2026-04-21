@@ -29,8 +29,6 @@ final class EncounterStateBinder {
                 input.balanceLevel(),
                 input.amountValue(),
                 input.diversityLevel())));
-        state.setOnAddDemoCreature(viewModel::addDemoCreature);
-        state.setOnClearRoster(viewModel::clearRoster);
         state.setOnStartInitiative(viewModel::openInitiative);
         state.setOnInitiativeBack(viewModel::backToBuilder);
         state.setOnInitiativeConfirm(inputs -> viewModel.confirmInitiative(inputs.stream()
@@ -70,6 +68,7 @@ final class EncounterStateBinder {
                 .average().orElse(1.0));
         return new EncounterStateView.BuilderStateView(
                 partyLabel,
+                source.roster().isEmpty() ? "" : "Demo-Vorlage",
                 new EncounterStateView.DifficultySummaryView(
                         difficulty.easy(),
                         difficulty.medium(),
@@ -92,6 +91,7 @@ final class EncounterStateBinder {
                                 creature.role(),
                                 creature.count()))
                         .toList(),
+                source.canStartCombat(),
                 source.message());
     }
 

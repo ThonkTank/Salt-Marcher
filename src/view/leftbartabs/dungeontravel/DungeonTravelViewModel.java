@@ -50,24 +50,33 @@ public final class DungeonTravelViewModel {
     }
 
     public void selectOverlayMode(DungeonMapDisplayModel.OverlayMode nextOverlayMode) {
-        overlayMode.set(nextOverlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : nextOverlayMode);
-        refreshStateText();
+        updateOverlay(nextOverlayMode);
     }
 
     public void previousLevel() {
-        projectionLevel.set(projectionLevel.get() - 1);
-        refreshStateText();
+        moveProjectionLevel(-1);
     }
 
     public void nextLevel() {
-        projectionLevel.set(projectionLevel.get() + 1);
-        refreshStateText();
+        moveProjectionLevel(1);
     }
 
     public void refresh() {
         DungeonSnapshot loaded = dungeon.loadSnapshot(new LoadDungeonSnapshotQuery());
         snapshot.set(loaded);
         mapName.set(loaded.mapName());
+        refreshStateText();
+    }
+
+    private void updateOverlay(DungeonMapDisplayModel.OverlayMode nextOverlayMode) {
+        DungeonMapDisplayModel.OverlayMode resolved =
+                nextOverlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : nextOverlayMode;
+        overlayMode.set(resolved);
+        refreshStateText();
+    }
+
+    private void moveProjectionLevel(int delta) {
+        projectionLevel.set(projectionLevel.get() + delta);
         refreshStateText();
     }
 

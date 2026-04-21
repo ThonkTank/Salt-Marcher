@@ -12,8 +12,8 @@ The Encounter state tab owns the compact encounter dialog shown in the
 global `COCKPIT_STATE` pane when the active left-bar tab does not provide its
 own state content.
 
-The dialog migrates the original Salt-Marcher encounter workflow into one
-state-pane surface:
+The dialog visually mirrors the original Salt-Marcher encounter state-pane
+workflow in one local state-tab surface:
 
 - encounter creation
 - initiative entry
@@ -21,16 +21,17 @@ state-pane surface:
 - combat result resolution
 - return to encounter creation
 
-The creature catalog browser is not part of this surface. The catalog is a
-separate tab and later supplies add-creature and stat-block hooks to this
-dialog.
+The creature catalog browser and encounter filter/tuning controls are not part
+of this surface. They belong to left-bar tab content and later supply
+add-creature, generation, and stat-block hooks to this dialog.
 
 ## Visible Surfaces
 
 Current state:
 
-- `Creation` shows filter and catalog-hook placeholders, encounter tuning
-  controls, a difficulty meter, roster cards, and generate/start actions.
+- `Creation` shows the original compact encounter roster dialog: title row,
+  difficulty and party summary, difficulty meter, thresholds, adjusted XP,
+  roster cards, and generate/start actions.
 - `Initiative` shows one editable initiative row for each party member and
   encounter creature.
 - `Combat` shows round status, combat cards, HP bars, AC and initiative badges,
@@ -40,9 +41,9 @@ Current state:
 
 The state pane uses centralized encounter selector roles for difficulty labels,
 the difficulty meter, roster cards, role badges, initiative rows, combat card
-states, HP bars, AC/init badges, edit popups, auto controls, and result
-highlights. The creature catalog browser remains a separate tab in the current
-state; this pane keeps only the placeholder hook controls.
+states, HP bars, AC/init badges, edit popups, and result highlights. The
+creature catalog browser and filter controls remain separate left-bar surfaces
+in the current state; this pane contains no catalog or filter controls.
 
 The first implementation is intentionally demo-backed frontend state. Real
 generation, catalog, combat, XP, and loot behavior are deferred integration
@@ -51,7 +52,6 @@ points behind the same ViewModel actions.
 ## Interactions
 
 - `Generieren` creates a demo encounter roster.
-- `+ Demo` simulates a future catalog add-creature hook.
 - `Kampf starten` opens initiative entry when the roster has creatures.
 - `Alle wuerfeln` updates visible initiative spinner values.
 - Confirming initiative opens the combat tracker.
@@ -64,8 +64,8 @@ points behind the same ViewModel actions.
 
 ## Visible States
 
-- Empty roster: the creation view explains that creatures can be added through
-  the future catalog hook or by generating demo content.
+- Empty roster: the creation view mirrors the original `+Add` placeholder and
+  can be populated with demo content through `Generieren`.
 - Generated roster: difficulty, thresholds, adjusted XP, and creature cards are
   visible.
 - Live combat: the active turn is highlighted and defeated monsters use the

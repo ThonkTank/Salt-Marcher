@@ -49,21 +49,21 @@ final class DungeonTravelBinder {
         return new Binding(controls, main, state);
     }
 
-    private static DungeonMapDisplayModel.OverlayMode toDisplayOverlayMode(
-            DungeonTravelControlsView.OverlayMode overlayMode) {
-        return switch (overlayMode == null ? DungeonTravelControlsView.OverlayMode.OFF : overlayMode) {
-            case OFF -> DungeonMapDisplayModel.OverlayMode.OFF;
-            case NEARBY -> DungeonMapDisplayModel.OverlayMode.NEARBY;
-            case SELECTED -> DungeonMapDisplayModel.OverlayMode.SELECTED;
-        };
+    private static DungeonMapDisplayModel.OverlayMode toDisplayOverlayMode(String overlayMode) {
+        if (DungeonTravelControlsView.OVERLAY_NEARBY.equals(overlayMode)) {
+            return DungeonMapDisplayModel.OverlayMode.NEARBY;
+        }
+        if (DungeonTravelControlsView.OVERLAY_SELECTED.equals(overlayMode)) {
+            return DungeonMapDisplayModel.OverlayMode.SELECTED;
+        }
+        return DungeonMapDisplayModel.OverlayMode.OFF;
     }
 
-    private static DungeonTravelControlsView.OverlayMode toControlsOverlayMode(
-            DungeonMapDisplayModel.OverlayMode overlayMode) {
+    private static String toControlsOverlayMode(DungeonMapDisplayModel.OverlayMode overlayMode) {
         return switch (overlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : overlayMode) {
-            case OFF -> DungeonTravelControlsView.OverlayMode.OFF;
-            case NEARBY -> DungeonTravelControlsView.OverlayMode.NEARBY;
-            case SELECTED -> DungeonTravelControlsView.OverlayMode.SELECTED;
+            case OFF -> DungeonTravelControlsView.OVERLAY_OFF;
+            case NEARBY -> DungeonTravelControlsView.OVERLAY_NEARBY;
+            case SELECTED -> DungeonTravelControlsView.OVERLAY_SELECTED;
         };
     }
 

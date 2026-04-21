@@ -6,7 +6,9 @@ src.domain.dungeon.DungeonApplicationService	23	65	126	237	60
 src.domain.encounter.application.PrepareEncounterGenerationUseCase	14	41	141	91	39
 src.domain.party.PartyApplicationService	21	63	115	190	57
 src.view.leftbartabs.catalog.CatalogBinder	31	59	166	463	58
+src.view.dropdowns.party.PartyCharacterEditorTopBarView	45	33	133	842	32
+src.view.dropdowns.party.PartyTopBarView	64	48	214	1826	47
 src.view.slotcontent.controls.catalog.CatalogControlsView	32	41	145	432	40
-src.view.slotcontent.main.dungeonmap.DungeonMapMainView	55	41	197	1247	39
+src.view.slotcontent.main.dungeonmap.DungeonMapMainView	93	55	271	4070	53
 src.view.statetabs.encounter.EncounterStateBinder	21	42	146	210	41
 src.view.statetabs.encounter.EncounterStateView	104	58	323	5196	57
