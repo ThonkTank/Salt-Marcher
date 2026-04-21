@@ -1,8 +1,8 @@
 package src.data.creatures.gateway.local;
 
 import src.data.creatures.model.CreaturesPersistenceSchema;
+import src.data.creatures.model.EncounterCandidateCriteriaRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,7 +34,7 @@ final class EncounterCandidateSqliteStore {
 
     List<EncounterCandidateRecord> loadEncounterCandidates(
             Connection connection,
-            CreatureCatalogLookup.EncounterCandidateSpec spec
+            EncounterCandidateCriteriaRecord spec
     ) throws SQLException {
         CreatureFilterTempTables.prepareEncounterFilters(connection, spec);
         try (PreparedStatement statement = connection.prepareStatement(LOAD_ENCOUNTER_CANDIDATES_SQL)) {

@@ -26,7 +26,8 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogL
 
     @Override
     public CatalogPage searchCatalog(CatalogSearchSpec spec) {
-        return CreatureCatalogQueryMappingFacade.toDomain(gateway.searchCatalog(spec));
+        return CreatureCatalogQueryMappingFacade.toDomain(
+                gateway.searchCatalog(CreatureCatalogQueryMappingFacade.toSearchCriteria(spec)));
     }
 
     @Override
@@ -36,7 +37,8 @@ public final class SqliteCreatureCatalogQueryAdapter implements CreatureCatalogL
 
     @Override
     public List<EncounterCandidateProfile> loadEncounterCandidates(EncounterCandidateSpec spec) {
-        return CreatureCatalogQueryMappingFacade.toDomain(gateway.loadEncounterCandidates(spec));
+        return CreatureCatalogQueryMappingFacade.toDomain(
+                gateway.loadEncounterCandidates(CreatureCatalogQueryMappingFacade.toEncounterCriteria(spec)));
     }
 
     private static SqliteCreatureCatalogLocalGateway requireGateway(SqliteCreatureCatalogLocalGateway gateway) {

@@ -11,14 +11,19 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 
 @BugPattern(
         name = "DataGatewayReturnTypeBoundary",
-        summary = "Source-adapter packages must not expose domain or exported backend types as method return values.",
+        summary = "Source-adapter packages must not expose domain or exported backend types in public signatures.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
@@ -39,18 +44,42 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
         }
 
         List<String> violations = new ArrayList<>();
+        collectTypeViolation("extends", typeElement.getSuperclass(), featureName, violations);
+        for (TypeMirror implementedInterface : typeElement.getInterfaces()) {
+            collectTypeViolation("implements", implementedInterface, featureName, violations);
+        }
+        for (TypeParameterElement typeParameter : typeElement.getTypeParameters()) {
+            for (TypeMirror bound : typeParameter.getBounds()) {
+                collectTypeViolation("type bound of " + typeParameter.getSimpleName(), bound, featureName, violations);
+            }
+        }
+        if (typeElement.getKind() == ElementKind.RECORD) {
+            for (RecordComponentElement recordComponent : typeElement.getRecordComponents()) {
+                collectTypeViolation(
+                        "record component " + recordComponent.getSimpleName(),
+                        recordComponent.asType(),
+                        featureName,
+                        violations);
+            }
+        }
+
+        for (VariableElement field : ElementFilter.fieldsIn(typeElement.getEnclosedElements())) {
+            if (field.getModifiers().contains(Modifier.PUBLIC) || field.getModifiers().contains(Modifier.PROTECTED)) {
+                collectTypeViolation("field " + field.getSimpleName(), field.asType(), featureName, violations);
+            }
+        }
+        for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
+            if (constructor.getModifiers().contains(Modifier.PUBLIC)
+                    || constructor.getModifiers().contains(Modifier.PROTECTED)) {
+                collectExecutableViolations("constructor " + typeElement.getSimpleName(), constructor, featureName, violations);
+            }
+        }
         for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
             if (!method.getModifiers().contains(Modifier.PUBLIC)
                     && !method.getModifiers().contains(Modifier.PROTECTED)) {
                 continue;
             }
-            Set<String> referencedTypes = new LinkedHashSet<>();
-            DataArchitectureSupport.collectTypeReferences(method.getReturnType(), referencedTypes);
-            for (String referencedType : referencedTypes) {
-                if (!isAllowedGatewayReturnType(referencedType, featureName)) {
-                    violations.add("return type of " + method.getSimpleName() + " -> " + referencedType);
-                }
-            }
+            collectExecutableViolations(String.valueOf(method.getSimpleName()), method, featureName, violations);
         }
 
         if (violations.isEmpty()) {
@@ -58,7 +87,7 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
         }
         return buildDescription(tree)
                 .setMessage("Source-adapter package '" + packageName
-                        + "' exposes return types outside source-local data records or JDK value/container types: "
+                        + "' exposes public/protected signature types outside source-local data records or JDK value/container types: "
                         + String.join("; ", violations))
                 .build();
     }
@@ -68,7 +97,50 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
         return matcher.matches() ? matcher.group(1) : null;
     }
 
-    private static boolean isAllowedGatewayReturnType(String referencedType, String featureName) {
+    private static void collectExecutableViolations(
+            String executableName,
+            ExecutableElement executable,
+            String featureName,
+            List<String> violations
+    ) {
+        collectTypeViolation("return type of " + executableName, executable.getReturnType(), featureName, violations);
+        for (VariableElement parameter : executable.getParameters()) {
+            collectTypeViolation(
+                    "parameter " + parameter.getSimpleName() + " of " + executableName,
+                    parameter.asType(),
+                    featureName,
+                    violations);
+        }
+        for (TypeMirror thrownType : executable.getThrownTypes()) {
+            collectTypeViolation("throws clause of " + executableName, thrownType, featureName, violations);
+        }
+        for (TypeParameterElement typeParameter : executable.getTypeParameters()) {
+            for (TypeMirror bound : typeParameter.getBounds()) {
+                collectTypeViolation(
+                        "type bound of " + typeParameter.getSimpleName() + " in " + executableName,
+                        bound,
+                        featureName,
+                        violations);
+            }
+        }
+    }
+
+    private static void collectTypeViolation(
+            String position,
+            TypeMirror typeMirror,
+            String featureName,
+            List<String> violations
+    ) {
+        Set<String> referencedTypes = new LinkedHashSet<>();
+        DataArchitectureSupport.collectTypeReferences(typeMirror, referencedTypes);
+        for (String referencedType : referencedTypes) {
+            if (!isAllowedGatewaySignatureType(referencedType, featureName)) {
+                violations.add(position + " -> " + referencedType);
+            }
+        }
+    }
+
+    private static boolean isAllowedGatewaySignatureType(String referencedType, String featureName) {
         if (referencedType.startsWith("src.data." + featureName + ".model.")) {
             return true;
         }

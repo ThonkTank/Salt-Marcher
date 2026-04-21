@@ -17,6 +17,8 @@ public final class EncounterRuntimeViewModel {
             new ReadOnlyObjectWrapper<>(EncounterDifficultyBand.defaultBand());
     private final ReadOnlyObjectWrapper<EncounterGenerationTuning> tuning =
             new ReadOnlyObjectWrapper<>(EncounterGenerationTuning.defaultTuning());
+    private final ReadOnlyObjectWrapper<List<Long>> encounterTableIds =
+            new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyObjectWrapper<CreatureAddRequest> creatureAddRequest =
             new ReadOnlyObjectWrapper<>();
     private final ReadOnlyStringWrapper partyRefreshToken = new ReadOnlyStringWrapper("");
@@ -34,6 +36,10 @@ public final class EncounterRuntimeViewModel {
 
     public ReadOnlyObjectProperty<EncounterGenerationTuning> tuningProperty() {
         return tuning.getReadOnlyProperty();
+    }
+
+    public ReadOnlyObjectProperty<List<Long>> encounterTableIdsProperty() {
+        return encounterTableIds.getReadOnlyProperty();
     }
 
     public ReadOnlyObjectProperty<CreatureAddRequest> creatureAddRequestProperty() {
@@ -58,6 +64,11 @@ public final class EncounterRuntimeViewModel {
         return current == null ? EncounterGenerationTuning.defaultTuning() : current;
     }
 
+    public List<Long> encounterTableIds() {
+        List<Long> current = encounterTableIds.get();
+        return current == null ? List.of() : List.copyOf(current);
+    }
+
     public void updateFilters(List<String> types, List<String> subtypes, List<String> biomes) {
         filters.set(new EncounterFilters(types, subtypes, biomes));
     }
@@ -68,6 +79,10 @@ public final class EncounterRuntimeViewModel {
 
     public void updateTuning(int balanceLevel, double amountValue, int diversityLevel) {
         tuning.set(new EncounterGenerationTuning(balanceLevel, amountValue, diversityLevel));
+    }
+
+    public void updateEncounterTables(List<Long> tableIds) {
+        encounterTableIds.set(copyIds(tableIds));
     }
 
     public void requestCreatureAdd(long creatureId) {
@@ -107,6 +122,17 @@ public final class EncounterRuntimeViewModel {
                     .distinct()
                     .toList();
         }
+    }
+
+    private static List<Long> copyIds(List<Long> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        return values.stream()
+                .filter(Objects::nonNull)
+                .filter(value -> value > 0)
+                .distinct()
+                .toList();
     }
 
     public record CreatureAddRequest(

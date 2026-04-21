@@ -8,11 +8,16 @@ public final class EncounterCandidateProfiles {
     }
 
     public static EncounterCandidateProfile fromFacts(EncounterCreatureFacts candidate) {
+        return fromFacts(candidate, 1);
+    }
+
+    public static EncounterCandidateProfile fromFacts(EncounterCreatureFacts candidate, int selectionWeight) {
         EncounterRoleClassifier.Classification classification = EncounterRoleClassifier.classify(candidate);
         return new EncounterCandidateProfile(
                 candidate,
                 EncounterCandidateCombatStats.fromFacts(candidate),
-                classification.role());
+                classification.role(),
+                selectionWeight);
     }
 
     static int componentDistance(EncounterCandidateProfile profile, int targetXp) {

@@ -125,7 +125,8 @@ public final class EncounterStateViewModel {
             List<String> subtypes,
             List<String> biomes,
             EncounterDifficultyBand difficulty,
-            EncounterGenerationTuning tuning
+            EncounterGenerationTuning tuning,
+            List<Long> encounterTableIds
     ) {
         lastSettings = settings == null ? BuilderSettings.defaultSettings() : settings;
         List<String> effectiveTypes = safeStrings(types);
@@ -147,6 +148,7 @@ public final class EncounterStateViewModel {
                 effectiveDifficulty,
                 5,
                 tuning == null ? EncounterGenerationTuning.defaultTuning() : tuning,
+                safeIds(encounterTableIds),
                 List.copyOf(excludedCreatureIds),
                 List.copyOf(lockedCreatures)));
         if (result.status() != EncounterGenerationStatus.SUCCESS || result.encounters().isEmpty()) {
@@ -168,9 +170,10 @@ public final class EncounterStateViewModel {
             List<String> subtypes,
             List<String> biomes,
             EncounterDifficultyBand difficulty,
-            EncounterGenerationTuning tuning
+            EncounterGenerationTuning tuning,
+            List<Long> encounterTableIds
     ) {
-        generate(lastSettings, types, subtypes, biomes, difficulty, tuning);
+        generate(lastSettings, types, subtypes, biomes, difficulty, tuning, encounterTableIds);
     }
 
     public void nextGeneratedAlternative() {
@@ -291,7 +294,8 @@ public final class EncounterStateViewModel {
             List<String> subtypes,
             List<String> biomes,
             EncounterDifficultyBand difficulty,
-            EncounterGenerationTuning tuning
+            EncounterGenerationTuning tuning,
+            List<Long> encounterTableIds
     ) {
         if (roster.isEmpty()) {
             status.set("Exclude braucht mindestens eine Kreatur im Roster.");
@@ -305,7 +309,7 @@ public final class EncounterStateViewModel {
         excludedCreatureIds.addAll(exclusions);
         lockedCreatures.clear();
         clearPendingUndo();
-        generate(lastSettings, types, subtypes, biomes, difficulty, tuning);
+        generate(lastSettings, types, subtypes, biomes, difficulty, tuning, encounterTableIds);
         if (!excludedCreatureIds.isEmpty()) {
             status.set(status.get() + " Exclusions aktiv: " + excludedCreatureIds.size() + ".");
         }
@@ -765,6 +769,10 @@ public final class EncounterStateViewModel {
     }
 
     private static List<String> safeStrings(List<String> values) {
+        return values == null ? List.of() : List.copyOf(values);
+    }
+
+    private static List<Long> safeIds(List<Long> values) {
         return values == null ? List.of() : List.copyOf(values);
     }
 

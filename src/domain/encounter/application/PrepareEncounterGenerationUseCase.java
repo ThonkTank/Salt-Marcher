@@ -10,6 +10,10 @@ import src.domain.creatures.published.EncounterCandidatesResult;
 import src.domain.creatures.published.EncounterCandidateQuery;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.encountertable.published.EncounterTableCandidate;
+import src.domain.encountertable.published.EncounterTableCandidatesResult;
+import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
 import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
@@ -40,6 +44,7 @@ final class PrepareEncounterGenerationUseCase {
     static EncounterGenerationPreparationUseCase prepare(
             PartyApplicationService party,
             CreaturesApplicationService creatures,
+            @Nullable EncounterTableApplicationService encounterTables,
             EncounterGenerationUseCase.GenerateRequest request,
             int searchLimit
     ) {
@@ -57,6 +62,7 @@ final class PrepareEncounterGenerationUseCase {
 
         CandidateLoadResult candidates = loadUnlockedCandidates(
                 creatures,
+                encounterTables,
                 request,
                 thresholds,
                 lockedCreatures.lockedProfiles().keySet(),
@@ -123,6 +129,7 @@ final class PrepareEncounterGenerationUseCase {
 
     private static CandidateLoadResult loadUnlockedCandidates(
             CreaturesApplicationService creatures,
+            @Nullable EncounterTableApplicationService encounterTables,
             EncounterGenerationUseCase.GenerateRequest request,
             EncounterDifficultyMath.Thresholds thresholds,
             Set<Long> lockedCreatureIds,
@@ -130,6 +137,9 @@ final class PrepareEncounterGenerationUseCase {
     ) {
         Set<Long> excludedCreatureIds = new LinkedHashSet<>(request.excludedCreatureIds());
         excludedCreatureIds.removeAll(lockedCreatureIds);
+        if (!request.encounterTableIds().isEmpty()) {
+            return loadTableCandidates(encounterTables, request, thresholds, excludedCreatureIds, lockedCreatureIds);
+        }
         EncounterCandidatesResult candidateResult = creatures.loadEncounterCandidates(new EncounterCandidateQuery(
                 request.creatureTypes(),
                 request.creatureSubtypes(),
@@ -147,6 +157,34 @@ final class PrepareEncounterGenerationUseCase {
                 .filter(candidate -> !excludedCreatureIds.contains(candidate.id()))
                 .filter(candidate -> !lockedCreatureIds.contains(candidate.id()))
                 .map(candidate -> EncounterCandidateProfiles.fromFacts(toFacts(candidate)))
+                .toList();
+        return CandidateLoadResult.success(unlockedProfiles);
+    }
+
+    private static CandidateLoadResult loadTableCandidates(
+            @Nullable EncounterTableApplicationService encounterTables,
+            EncounterGenerationUseCase.GenerateRequest request,
+            EncounterDifficultyMath.Thresholds thresholds,
+            Set<Long> excludedCreatureIds,
+            Set<Long> lockedCreatureIds
+    ) {
+        if (encounterTables == null) {
+            return CandidateLoadResult.failure(
+                    "Encounter tables are not available.",
+                    EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR);
+        }
+        EncounterTableCandidatesResult candidateResult = encounterTables.loadGenerationCandidates(
+                request.encounterTableIds(),
+                EncounterDifficultyTargets.candidateMaxXp(thresholds));
+        if (candidateResult.status() != EncounterTableReadStatus.SUCCESS) {
+            return CandidateLoadResult.failure(
+                    "Encounter table data could not be loaded.",
+                    EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR);
+        }
+        List<EncounterCandidateProfile> unlockedProfiles = candidateResult.candidates().stream()
+                .filter(candidate -> !excludedCreatureIds.contains(candidate.creatureId()))
+                .filter(candidate -> !lockedCreatureIds.contains(candidate.creatureId()))
+                .map(candidate -> EncounterCandidateProfiles.fromFacts(toFacts(candidate), candidate.weight()))
                 .toList();
         return CandidateLoadResult.success(unlockedProfiles);
     }
@@ -181,6 +219,31 @@ final class PrepareEncounterGenerationUseCase {
     private static EncounterCreatureFacts toFacts(EncounterCandidate candidate) {
         return new EncounterCreatureFacts(
                 candidate.id(),
+                candidate.name(),
+                candidate.creatureType(),
+                candidate.challengeRating(),
+                candidate.xp(),
+                candidate.hitPoints(),
+                candidate.hitDiceCount(),
+                candidate.hitDiceSides(),
+                candidate.hitDiceModifier(),
+                candidate.armorClass(),
+                candidate.initiativeBonus(),
+                candidate.legendaryActionCount(),
+                0,
+                0,
+                0,
+                0,
+                null,
+                null,
+                null,
+                0,
+                List.of());
+    }
+
+    private static EncounterCreatureFacts toFacts(EncounterTableCandidate candidate) {
+        return new EncounterCreatureFacts(
+                candidate.creatureId(),
                 candidate.name(),
                 candidate.creatureType(),
                 candidate.challengeRating(),

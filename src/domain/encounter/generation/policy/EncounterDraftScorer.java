@@ -26,6 +26,7 @@ public final class EncounterDraftScorer {
         score += context.achievedDifficulty() == context.targetDifficulty() ? 140 : 0;
         score += scoreEntryCount(composition.entries().size());
         score += scoreRoleSynergy(composition.roles());
+        score += scoreSelectionWeights(composition);
         score += scoreCompositionPenalties(composition);
         score += EncounterTuningTargets.score(composition, context.tuning(), context.partySize());
         return score;
@@ -86,6 +87,14 @@ public final class EncounterDraftScorer {
         }
         if (roles.contains(EncounterRoleNames.BRUTE) && roles.contains(EncounterRoleNames.SKIRMISHER)) {
             score += 70;
+        }
+        return score;
+    }
+
+    private static int scoreSelectionWeights(EncounterDraftComposition composition) {
+        int score = 0;
+        for (EncounterDraftEntry entry : composition.entries()) {
+            score += (entry.selectionWeight() - 1) * 18 * Math.min(3, entry.quantity());
         }
         return score;
     }

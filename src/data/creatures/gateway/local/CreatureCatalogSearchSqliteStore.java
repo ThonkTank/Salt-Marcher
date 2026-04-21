@@ -3,10 +3,10 @@ package src.data.creatures.gateway.local;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureCatalogRecord;
+import src.data.creatures.model.CreatureCatalogSearchCriteriaRecord;
+import src.data.creatures.model.CreatureCatalogSearchCriteriaRecord.SortDirection;
+import src.data.creatures.model.CreatureCatalogSearchCriteriaRecord.SortField;
 import src.data.creatures.model.CreaturesPersistenceSchema;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup.SortDirection;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup.SortField;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -58,7 +58,7 @@ final class CreatureCatalogSearchSqliteStore {
     private static final String SEARCH_SIZE_DESC_SQL =
             SEARCH_SELECT_SQL + "ORDER BY size DESC, name ASC LIMIT ? OFFSET ?";
 
-    CreatureCatalogPageRecord searchCatalog(Connection connection, CreatureCatalogLookup.CatalogSearchSpec spec)
+    CreatureCatalogPageRecord searchCatalog(Connection connection, CreatureCatalogSearchCriteriaRecord spec)
             throws SQLException {
         CreatureFilterTempTables.prepareCatalogFilters(connection, spec);
         try (PreparedStatement statement = CatalogSearchStatement.resolve(
@@ -73,7 +73,7 @@ final class CreatureCatalogSearchSqliteStore {
 
     private CreatureCatalogPageRecord executeSearch(
             PreparedStatement statement,
-            CreatureCatalogLookup.CatalogSearchSpec spec
+            CreatureCatalogSearchCriteriaRecord spec
     ) throws SQLException {
         bindSearchParameters(statement, spec);
         List<CreatureCatalogRecord> rows = new ArrayList<>();
@@ -102,7 +102,7 @@ final class CreatureCatalogSearchSqliteStore {
 
     private void bindSearchParameters(
             PreparedStatement statement,
-            CreatureCatalogLookup.CatalogSearchSpec spec
+            CreatureCatalogSearchCriteriaRecord spec
     ) throws SQLException {
         String nameQuery = likeSearchTerm(spec.nameQuery());
         bindNullableString(statement, 1, nameQuery);

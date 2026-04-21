@@ -2,6 +2,7 @@ package src.domain.encounter.application;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.party.PartyApplicationService;
@@ -15,14 +16,29 @@ public final class EncounterGenerationUseCase {
 
     private final PartyApplicationService party;
     private final CreaturesApplicationService creatures;
+    private final @Nullable EncounterTableApplicationService encounterTables;
 
     public EncounterGenerationUseCase(PartyApplicationService party, CreaturesApplicationService creatures) {
+        this(party, creatures, null);
+    }
+
+    public EncounterGenerationUseCase(
+            PartyApplicationService party,
+            CreaturesApplicationService creatures,
+            @Nullable EncounterTableApplicationService encounterTables
+    ) {
         this.party = Objects.requireNonNull(party, "party");
         this.creatures = Objects.requireNonNull(creatures, "creatures");
+        this.encounterTables = encounterTables;
     }
 
     public GenerateResult execute(GenerateRequest request) {
-        EncounterGenerationPreparationUseCase preparation = PrepareEncounterGenerationUseCase.prepare(party, creatures, request, SEARCH_LIMIT);
+        EncounterGenerationPreparationUseCase preparation = PrepareEncounterGenerationUseCase.prepare(
+                party,
+                creatures,
+                encounterTables,
+                request,
+                SEARCH_LIMIT);
         if (!preparation.success()) {
             return new GenerateResult(preparation.status(), preparation.budget(), List.of(), preparation.message());
         }
@@ -38,6 +54,7 @@ public final class EncounterGenerationUseCase {
             EncounterDifficultyIntent targetDifficulty,
             int alternativeCount,
             EncounterTuningIntent tuning,
+            List<Long> encounterTableIds,
             List<Long> excludedCreatureIds,
             List<LockedCreature> lockedCreatures
     ) {
@@ -48,6 +65,7 @@ public final class EncounterGenerationUseCase {
             targetDifficulty = targetDifficulty == null ? EncounterDifficultyIntent.MEDIUM : targetDifficulty;
             alternativeCount = Math.max(1, Math.min(10, alternativeCount <= 0 ? 5 : alternativeCount));
             tuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
+            encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
             excludedCreatureIds = excludedCreatureIds == null ? List.of() : List.copyOf(excludedCreatureIds);
             lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);
         }

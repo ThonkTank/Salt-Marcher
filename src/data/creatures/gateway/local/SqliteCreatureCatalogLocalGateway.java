@@ -2,10 +2,11 @@ package src.data.creatures.gateway.local;
 
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogPageRecord;
+import src.data.creatures.model.CreatureCatalogSearchCriteriaRecord;
 import src.data.creatures.model.CreatureDetailRecord;
 import src.data.creatures.model.CreatureFilterValuesRecord;
+import src.data.creatures.model.EncounterCandidateCriteriaRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
-import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -44,7 +45,7 @@ public final class SqliteCreatureCatalogLocalGateway {
         }
     }
 
-    public CreatureCatalogPageRecord searchCatalog(CreatureCatalogLookup.CatalogSearchSpec spec) {
+    public CreatureCatalogPageRecord searchCatalog(CreatureCatalogSearchCriteriaRecord spec) {
         Objects.requireNonNull(spec, "spec");
         try (Connection connection = openReadyConnection()) {
             return catalogSearchStore.searchCatalog(connection, spec);
@@ -64,7 +65,7 @@ public final class SqliteCreatureCatalogLocalGateway {
         }
     }
 
-    public List<EncounterCandidateRecord> loadEncounterCandidates(CreatureCatalogLookup.EncounterCandidateSpec spec) {
+    public List<EncounterCandidateRecord> loadEncounterCandidates(EncounterCandidateCriteriaRecord spec) {
         Objects.requireNonNull(spec, "spec");
         try (Connection connection = openReadyConnection()) {
             return encounterCandidateStore.loadEncounterCandidates(connection, spec);

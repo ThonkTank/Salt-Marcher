@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
@@ -33,10 +34,19 @@ public final class EncounterApplicationService {
     private final LoadEncounterBudgetUseCase loadBudgetUseCase;
 
     public EncounterApplicationService(PartyApplicationService party, CreaturesApplicationService creatures) {
+        this(party, creatures, null);
+    }
+
+    public EncounterApplicationService(
+            PartyApplicationService party,
+            CreaturesApplicationService creatures,
+            @Nullable EncounterTableApplicationService encounterTables
+    ) {
         PartyApplicationService partyService = Objects.requireNonNull(party, "party");
         this.generator = new EncounterGenerationUseCase(
                 partyService,
-                Objects.requireNonNull(creatures, "creatures"));
+                Objects.requireNonNull(creatures, "creatures"),
+                encounterTables);
         this.loadBudgetUseCase = new LoadEncounterBudgetUseCase(partyService);
     }
 
@@ -68,7 +78,14 @@ public final class EncounterApplicationService {
 
     private static EncounterGenerationUseCase.GenerateRequest toGenerateRequest(GenerateEncounterCommand request) {
         GenerateEncounterCommand effectiveRequest = request == null
-                ? new GenerateEncounterCommand(List.of(), List.of(), List.of(), EncounterDifficultyBand.defaultBand(), 5, List.of(), List.of())
+                ? new GenerateEncounterCommand(
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        EncounterDifficultyBand.defaultBand(),
+                        5,
+                        List.of(),
+                        List.of())
                 : request;
         return new EncounterGenerationUseCase.GenerateRequest(
                 effectiveRequest.creatureTypes(),
@@ -77,6 +94,7 @@ public final class EncounterApplicationService {
                 toDifficultyIntent(effectiveRequest.targetDifficulty()),
                 effectiveRequest.alternativeCount(),
                 toTuningIntent(effectiveRequest.tuning()),
+                effectiveRequest.encounterTableIds(),
                 effectiveRequest.excludedCreatureIds(),
                 effectiveRequest.lockedCreatures().stream()
                         .filter(Objects::nonNull)

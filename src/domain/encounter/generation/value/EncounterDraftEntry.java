@@ -25,6 +25,10 @@ public record EncounterDraftEntry(
         return profile.role();
     }
 
+    public int selectionWeight() {
+        return profile.selectionWeight();
+    }
+
     public EncounterCreatureFacts facts() {
         return profile.facts();
     }

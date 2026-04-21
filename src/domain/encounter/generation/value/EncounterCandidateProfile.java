@@ -5,15 +5,26 @@ public final class EncounterCandidateProfile {
     private final EncounterCreatureFacts facts;
     private final EncounterCandidateCombatStats combatStats;
     private final String role;
+    private final int selectionWeight;
 
     public EncounterCandidateProfile(
             EncounterCreatureFacts facts,
             EncounterCandidateCombatStats combatStats,
             String role
     ) {
+        this(facts, combatStats, role, 1);
+    }
+
+    public EncounterCandidateProfile(
+            EncounterCreatureFacts facts,
+            EncounterCandidateCombatStats combatStats,
+            String role,
+            int selectionWeight
+    ) {
         this.facts = facts;
         this.combatStats = combatStats;
         this.role = role;
+        this.selectionWeight = Math.max(1, Math.min(10, selectionWeight));
     }
 
     public int xp() {
@@ -54,5 +65,9 @@ public final class EncounterCandidateProfile {
 
     public int legendaryActionCount() {
         return combatStats.legendaryActionCount();
+    }
+
+    public int selectionWeight() {
+        return selectionWeight;
     }
 }

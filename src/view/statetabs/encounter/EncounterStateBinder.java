@@ -10,6 +10,7 @@ import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterGenerationTuning;
+import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.party.PartyApplicationService;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
@@ -25,7 +26,9 @@ final class EncounterStateBinder {
     ShellBinding bind() {
         PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
-        EncounterApplicationService encounters = new EncounterApplicationService(party, creatures);
+        EncounterTableApplicationService encounterTables =
+                runtimeContext.services().require(EncounterTableApplicationService.class);
+        EncounterApplicationService encounters = new EncounterApplicationService(party, creatures, encounterTables);
         EncounterRuntimeViewModel encounterSession = runtimeContext.session(
                 EncounterRuntimeViewModel.class,
                 EncounterRuntimeViewModel::new);
@@ -54,7 +57,8 @@ final class EncounterStateBinder {
                     filters.subtypes(),
                     filters.biomes(),
                     encounterSession.difficulty(),
-                    encounterSession.tuning());
+                    encounterSession.tuning(),
+                    encounterSession.encounterTableIds());
         });
         state.setOnPreviousAlternative(viewModel::previousGeneratedAlternative);
         state.setOnNextAlternative(viewModel::nextGeneratedAlternative);
@@ -65,7 +69,8 @@ final class EncounterStateBinder {
                     filters.subtypes(),
                     filters.biomes(),
                     encounterSession.difficulty(),
-                    encounterSession.tuning());
+                    encounterSession.tuning(),
+                    encounterSession.encounterTableIds());
         });
         state.setOnLockCurrent(viewModel::lockCurrentRoster);
         state.setOnExcludeCurrent(() -> {
@@ -75,7 +80,8 @@ final class EncounterStateBinder {
                     filters.subtypes(),
                     filters.biomes(),
                     encounterSession.difficulty(),
-                    encounterSession.tuning());
+                    encounterSession.tuning(),
+                    encounterSession.encounterTableIds());
         });
         state.setOnClearConstraints(viewModel::clearConstraints);
         state.setOnRosterIncrement(viewModel::incrementCreature);
