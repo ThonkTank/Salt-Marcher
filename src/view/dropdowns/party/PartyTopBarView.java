@@ -47,6 +47,7 @@ public final class PartyTopBarView extends HBox {
     private final ObservableList<MemberView> availableMembers = FXCollections.observableArrayList();
     private final FilteredList<MemberView> filteredMembers = new FilteredList<>(availableMembers);
     private final PartyCharacterEditorTopBarView editorView = new PartyCharacterEditorTopBarView();
+    private boolean actionsDisabled;
 
     private Runnable onOpen = () -> {};
     private Consumer<MemberView> onAddExisting = ignored -> {};
@@ -72,6 +73,7 @@ public final class PartyTopBarView extends HBox {
 
     public void showPanel(PanelContent content) {
         PanelContent safeContent = content == null ? PanelContent.loadingContent() : content;
+        actionsDisabled = safeContent.actionsDisabled();
         renderMembers(safeContent);
         availableMembers.setAll(safeContent.reserveMembers());
         searchField.clear();
@@ -81,8 +83,11 @@ public final class PartyTopBarView extends HBox {
         restSummaryLabel.setText(safeContent.restSummaryText());
         restSummaryLabel.setVisible(!safeContent.restSummaryText().isBlank());
         restSummaryLabel.setManaged(restSummaryLabel.isVisible());
-        shortRestButton.setDisable(safeContent.restActionsDisabled());
-        longRestButton.setDisable(safeContent.restActionsDisabled());
+        shortRestButton.setDisable(safeContent.restActionsDisabled() || actionsDisabled);
+        longRestButton.setDisable(safeContent.restActionsDisabled() || actionsDisabled);
+        searchField.setDisable(actionsDisabled);
+        suggestionList.setDisable(actionsDisabled);
+        newCharacterButton.setDisable(actionsDisabled);
         showActionStatus(safeContent.actionStatus(), safeContent.actionStatusError());
     }
 
@@ -283,6 +288,8 @@ public final class PartyTopBarView extends HBox {
         xpButton.getStyleClass().add("compact");
         xpButton.setOnAction(event -> onAwardXp.accept(new AwardXpRequest(member, xpField.getText())));
         xpField.setOnAction(event -> onAwardXp.accept(new AwardXpRequest(member, xpField.getText())));
+        xpField.setDisable(actionsDisabled);
+        xpButton.setDisable(actionsDisabled);
         HBox xpActions = new HBox(6, xpField, xpButton);
         xpActions.getStyleClass().add("party-xp-actions");
 
@@ -290,11 +297,13 @@ public final class PartyTopBarView extends HBox {
         editButton.getStyleClass().addAll("party-btn", "edit");
         editButton.setTooltip(new Tooltip("Charakter bearbeiten"));
         editButton.setOnAction(event -> editorView.showEdit(editButton, toEditorMember(member)));
+        editButton.setDisable(actionsDisabled);
 
         Button removeButton = new Button("Raus");
         removeButton.getStyleClass().addAll("party-btn", "remove");
         removeButton.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
         removeButton.setOnAction(event -> onRemoveFromParty.accept(member));
+        removeButton.setDisable(actionsDisabled);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -344,6 +353,9 @@ public final class PartyTopBarView extends HBox {
     }
 
     private void addSelectedSuggestion() {
+        if (actionsDisabled) {
+            return;
+        }
         MemberView selected = suggestionList.getSelectionModel().getSelectedItem();
         if (selected != null) {
             onAddExisting.accept(selected);
@@ -353,6 +365,9 @@ public final class PartyTopBarView extends HBox {
     }
 
     private void addFirstFilteredMember() {
+        if (actionsDisabled) {
+            return;
+        }
         if (!filteredMembers.isEmpty()) {
             onAddExisting.accept(filteredMembers.get(0));
             suggestionList.setVisible(false);
@@ -404,7 +419,8 @@ public final class PartyTopBarView extends HBox {
             String restSummaryText,
             String actionStatus,
             boolean actionStatusError,
-            boolean restActionsDisabled
+            boolean restActionsDisabled,
+            boolean actionsDisabled
     ) {
 
         public PanelContent {
@@ -417,7 +433,7 @@ public final class PartyTopBarView extends HBox {
         }
 
         public static PanelContent loadingContent() {
-            return new PanelContent(true, false, "", List.of(), List.of(), "Lade...", "", "", false, true);
+            return new PanelContent(true, false, "", List.of(), List.of(), "Lade...", "", "", false, true, true);
         }
     }
 

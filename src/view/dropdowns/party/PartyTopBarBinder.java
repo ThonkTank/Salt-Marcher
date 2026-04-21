@@ -28,39 +28,30 @@ final class PartyTopBarBinder {
         panel.showPanel(toPanelContent(viewModel.panelProperty().get()));
         viewModel.triggerTextProperty().addListener((ignored, before, after) -> panel.setTriggerText(after));
         viewModel.panelProperty().addListener((ignored, before, after) -> panel.showPanel(toPanelContent(after)));
+        viewModel.mutationTokenProperty().addListener((ignored, before, after) -> encounterSession.partyChanged());
         panel.onOpen(viewModel::refresh);
-        panel.onAddExisting(member -> publishPartyMutation(encounterSession,
-                viewModel.addExisting(member.id(), member.name())));
-        panel.onRemoveFromParty(member -> publishPartyMutation(encounterSession,
-                viewModel.removeFromParty(member.id(), member.name())));
-        panel.onAwardXp(request -> publishPartyMutation(encounterSession,
-                viewModel.awardXp(request.member().id(), request.member().name(), request.rawXp())));
-        panel.onShortRest(() -> publishPartyMutation(encounterSession, viewModel.shortRest()));
-        panel.onLongRest(() -> publishPartyMutation(encounterSession, viewModel.longRest()));
-        panel.onCreateCharacter(draft -> publishEditorMutation(encounterSession,
-                viewModel.createCharacter(toDraftModel(draft))));
-        panel.onUpdateCharacter(draft -> publishEditorMutation(encounterSession,
-                viewModel.updateCharacter(toDraftModel(draft))));
-        panel.onDeleteCharacter(member -> publishEditorMutation(encounterSession,
-                viewModel.deleteCharacter(member.id(), member.name())));
+        panel.onAddExisting(member -> viewModel.addExisting(member.id(), member.name()));
+        panel.onRemoveFromParty(member -> viewModel.removeFromParty(member.id(), member.name()));
+        panel.onAwardXp(request -> viewModel.awardXp(
+                request.member().id(),
+                request.member().name(),
+                request.rawXp()));
+        panel.onShortRest(viewModel::shortRest);
+        panel.onLongRest(viewModel::longRest);
+        panel.onCreateCharacter(draft -> toEditorResult(viewModel.createCharacter(toDraftModel(draft))));
+        panel.onUpdateCharacter(draft -> toEditorResult(viewModel.updateCharacter(toDraftModel(draft))));
+        panel.onDeleteCharacter(member -> toEditorResult(viewModel.deleteCharacter(member.id(), member.name())));
         viewModel.refresh();
         return new Binding(panel);
     }
 
-    private static void publishPartyMutation(EncounterRuntimeViewModel encounterSession, boolean changed) {
-        if (changed) {
-            encounterSession.partyChanged();
-        }
-    }
-
-    private static PartyCharacterEditorTopBarView.EditorResult publishEditorMutation(
-            EncounterRuntimeViewModel encounterSession,
-            PartyTopBarViewModel.ActionResult result
-    ) {
+    private static PartyCharacterEditorTopBarView.EditorResult toEditorResult(PartyTopBarViewModel.ActionResult result) {
         PartyTopBarViewModel.ActionResult safeResult = result == null
                 ? PartyTopBarViewModel.ActionResult.failure("Party-Aktion konnte nicht gespeichert werden.")
                 : result;
-        publishPartyMutation(encounterSession, safeResult.accepted());
+        if (safeResult.pending()) {
+            return PartyCharacterEditorTopBarView.EditorResult.pending(safeResult.message());
+        }
         return safeResult.accepted()
                 ? PartyCharacterEditorTopBarView.EditorResult.success()
                 : PartyCharacterEditorTopBarView.EditorResult.failure(safeResult.message());
@@ -95,7 +86,8 @@ final class PartyTopBarBinder {
                 safeModel.restSummaryText(),
                 safeModel.actionStatus(),
                 safeModel.actionStatusError(),
-                safeModel.restActionsDisabled());
+                safeModel.restActionsDisabled(),
+                safeModel.actionsDisabled());
     }
 
     private static PartyTopBarView.MemberView toMemberView(PartyTopBarViewModel.MemberModel member) {

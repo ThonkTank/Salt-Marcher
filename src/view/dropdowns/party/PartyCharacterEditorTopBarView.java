@@ -38,6 +38,7 @@ public final class PartyCharacterEditorTopBarView {
     private final Popup popup = new Popup();
 
     private @Nullable EditorMember editingMember;
+    private boolean pending;
     private Function<EditorDraft, EditorResult> onCreate = ignored -> EditorResult.success();
     private Function<EditorDraft, EditorResult> onUpdate = ignored -> EditorResult.success();
     private Function<EditorMember, EditorResult> onDelete = ignored -> EditorResult.success();
@@ -104,6 +105,10 @@ public final class PartyCharacterEditorTopBarView {
         popup.hide();
     }
 
+    void completeAsync(EditorResult result) {
+        handleEditorResult(result);
+    }
+
     private void configureFields() {
         configureField(nameField, "Charaktername");
         configureField(playerNameField, "Spielername");
@@ -129,6 +134,9 @@ public final class PartyCharacterEditorTopBarView {
         cancelDeleteButton.setOnAction(event -> setDeleteConfirmationVisible(false));
         confirmDeleteButton.getStyleClass().addAll("party-btn", "delete");
         confirmDeleteButton.setOnAction(event -> {
+            if (pending) {
+                return;
+            }
             EditorResult result = onDelete.apply(editingMember == null ? EditorMember.empty() : editingMember);
             handleEditorResult(result);
         });
@@ -175,6 +183,9 @@ public final class PartyCharacterEditorTopBarView {
     }
 
     private void submit() {
+        if (pending) {
+            return;
+        }
         EditorDraft draft = new EditorDraft(
                 editingMember == null ? null : editingMember.id(),
                 safe(nameField.getText()).trim(),
@@ -188,6 +199,12 @@ public final class PartyCharacterEditorTopBarView {
 
     private void handleEditorResult(EditorResult result) {
         EditorResult safeResult = result == null ? EditorResult.failure("Party-Aktion konnte nicht gespeichert werden.") : result;
+        if (safeResult.pending()) {
+            setPending(true);
+            showInfo(safeResult.message().isBlank() ? "Speichere..." : safeResult.message());
+            return;
+        }
+        setPending(false);
         if (safeResult.accepted()) {
             hide();
             return;
@@ -216,6 +233,12 @@ public final class PartyCharacterEditorTopBarView {
         nameField.requestFocus();
     }
 
+    private void showInfo(String message) {
+        errorLabel.setText(safe(message));
+        errorLabel.setVisible(true);
+        errorLabel.setManaged(true);
+    }
+
     private void resetError() {
         errorLabel.setText("");
         errorLabel.setVisible(false);
@@ -223,6 +246,7 @@ public final class PartyCharacterEditorTopBarView {
     }
 
     private void resetTransientState() {
+        setPending(false);
         resetError();
         setDeleteConfirmationVisible(false);
     }
@@ -236,7 +260,21 @@ public final class PartyCharacterEditorTopBarView {
     }
 
     private void updateSubmitDisabled() {
-        submitButton.setDisable(safe(nameField.getText()).isBlank());
+        submitButton.setDisable(pending || safe(nameField.getText()).isBlank());
+    }
+
+    private void setPending(boolean active) {
+        pending = active;
+        nameField.setDisable(active);
+        playerNameField.setDisable(active);
+        levelField.setDisable(active);
+        passivePerceptionField.setDisable(active);
+        armorClassField.setDisable(active);
+        revealDeleteButton.setDisable(active);
+        cancelDeleteButton.setDisable(active);
+        confirmDeleteButton.setDisable(active);
+        cancelButton.setDisable(active);
+        updateSubmitDisabled();
     }
 
     private void populateFields(
@@ -313,18 +351,22 @@ public final class PartyCharacterEditorTopBarView {
         }
     }
 
-    record EditorResult(boolean accepted, String message) {
+    record EditorResult(boolean accepted, boolean pending, String message) {
 
         EditorResult {
             message = safe(message);
         }
 
         static EditorResult success() {
-            return new EditorResult(true, "");
+            return new EditorResult(true, false, "");
         }
 
         static EditorResult failure(String message) {
-            return new EditorResult(false, message);
+            return new EditorResult(false, false, message);
+        }
+
+        static EditorResult pending(String message) {
+            return new EditorResult(false, true, message);
         }
     }
 }

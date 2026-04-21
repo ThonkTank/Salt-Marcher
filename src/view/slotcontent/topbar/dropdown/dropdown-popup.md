@@ -1,26 +1,26 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-21
-Source of Truth: Shared top-bar dropdown popup positioning helper.
+Source of Truth: Shared top-bar dropdown helper slotcontent.
 
-# Dropdown Popup Slotcontent
+# Dropdown Helper Slotcontent
 
 ## Component Purpose
 
-The dropdown popup slotcontent helper centralizes the repeated top-bar popup
-toggle and trailing-edge positioning behavior used by dropdown Views.
+The dropdown helper slotcontent centralizes repeated top-bar popup mechanics
+that are reusable across shell dropdown roots.
 
 Current state:
 
-- The helper shows or hides an already-owned JavaFX `Popup`.
-- The owning dropdown View still owns trigger text, content, callbacks, and
-  popup content construction.
+- `DropdownPopupView` shows or hides an already-owned JavaFX `Popup`.
+- The owning dropdown root still owns trigger text, content, callbacks, service
+  lookup, and popup content construction.
 
 ## Visible Surfaces
 
 - No standalone shell surface is registered by this slotcontent unit.
-- Top-bar dropdown Views use it to align popups to the trailing edge of their
-  trigger button.
+- Top-bar dropdown Views use the popup helper to align popups to the trailing
+  edge of their trigger button.
 
 ## Interactions
 

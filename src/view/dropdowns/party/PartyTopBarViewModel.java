@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.ReadOnlyLongWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -41,6 +43,10 @@ public final class PartyTopBarViewModel {
     private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party \u25be");
     private final ReadOnlyObjectWrapper<PanelModel> panel =
             new ReadOnlyObjectWrapper<>(PanelModel.loadingModel());
+    private final ReadOnlyLongWrapper mutationToken = new ReadOnlyLongWrapper();
+
+    private long nextRequestId;
+    private boolean mutationInFlight;
 
     public PartyTopBarViewModel(PartyApplicationService party) {
         this.party = Objects.requireNonNull(party, "party");
@@ -54,107 +60,215 @@ public final class PartyTopBarViewModel {
         return panel.getReadOnlyProperty();
     }
 
-    public void refresh() {
-        panel.set(PanelModel.loadingModel());
-        PartySnapshotResult snapshotResult = party.loadSnapshot(new LoadPartySnapshotQuery());
-        if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
-            applyStorageError();
-            return;
-        }
-        AdventuringDayResult dayResult = party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery());
-        applySnapshot(snapshotResult.snapshot(), dayResult);
+    public ReadOnlyLongProperty mutationTokenProperty() {
+        return mutationToken.getReadOnlyProperty();
     }
 
-    public boolean addExisting(@Nullable Long id, String name) {
+    PanelData loadPanelData() {
+        PartySnapshotResult snapshotResult = party.loadSnapshot(new LoadPartySnapshotQuery());
+        AdventuringDayResult dayResult = snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS
+                ? null
+                : party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery());
+        return new PanelData(snapshotResult, dayResult);
+    }
+
+    public void refresh() {
+        long requestId = nextRequestId();
+        panel.set(PanelModel.loadingModel());
+        try {
+            applyLoadResult(requestId, loadPanelData());
+        } catch (RuntimeException exception) {
+            applyStorageErrorIfCurrent(requestId);
+        }
+    }
+
+    public ActionResult addExisting(@Nullable Long id, String name) {
         if (id == null || id.longValue() <= 0) {
-            showStatus("Charakter konnte nicht gefunden werden.", true);
-            return false;
+            return rejectedMutation("Charakter konnte nicht gefunden werden.");
         }
         long characterId = id.longValue();
-        MutationResult result = party.setMembership(new SetPartyMembershipCommand(characterId, MembershipState.ACTIVE));
-        return applyMutation(result, displayName(name) + " wurde zur aktiven Party hinzugefuegt.");
+        return submitMutation(
+                () -> party.setMembership(new SetPartyMembershipCommand(characterId, MembershipState.ACTIVE)),
+                displayName(name) + " wurde zur aktiven Party hinzugefuegt.");
     }
 
     public ActionResult createCharacter(CharacterDraftModel draft) {
         CharacterDraftModel safeDraft = draft == null ? CharacterDraftModel.empty() : draft;
         ParsedDraft parsedDraft = parseCharacterDraft(safeDraft);
         if (!parsedDraft.valid()) {
-            showStatus(parsedDraft.message(), true);
-            return ActionResult.failure(parsedDraft.message());
+            return rejectedMutation(parsedDraft.message());
         }
-        MutationResult result = party.createCharacter(new CreateCharacterCommand(
-                Objects.requireNonNull(parsedDraft.draft()),
-                MembershipState.ACTIVE));
-        return applyMutationAction(result, displayName(parsedDraft.displayName()) + " wurde erstellt und zur Party hinzugefuegt.");
+        return submitMutation(
+                () -> party.createCharacter(new CreateCharacterCommand(
+                        Objects.requireNonNull(parsedDraft.draft()),
+                        MembershipState.ACTIVE)),
+                displayName(parsedDraft.displayName()) + " wurde erstellt und zur Party hinzugefuegt.");
     }
 
     public ActionResult updateCharacter(CharacterDraftModel draft) {
         CharacterDraftModel safeDraft = draft == null ? CharacterDraftModel.empty() : draft;
         Long draftId = safeDraft.id();
         if (draftId == null || draftId.longValue() <= 0) {
-            String message = "Charakter konnte nicht gefunden werden.";
-            showStatus(message, true);
-            return ActionResult.failure(message);
+            return rejectedMutation("Charakter konnte nicht gefunden werden.");
         }
         ParsedDraft parsedDraft = parseCharacterDraft(safeDraft);
         if (!parsedDraft.valid()) {
-            showStatus(parsedDraft.message(), true);
-            return ActionResult.failure(parsedDraft.message());
+            return rejectedMutation(parsedDraft.message());
         }
         long characterId = draftId.longValue();
-        MutationResult result = party.updateCharacter(new UpdateCharacterCommand(
-                characterId,
-                Objects.requireNonNull(parsedDraft.draft())));
-        return applyMutationAction(result, displayName(parsedDraft.displayName()) + " wurde gespeichert.");
+        return submitMutation(
+                () -> party.updateCharacter(new UpdateCharacterCommand(
+                        characterId,
+                        Objects.requireNonNull(parsedDraft.draft()))),
+                displayName(parsedDraft.displayName()) + " wurde gespeichert.");
     }
 
     public ActionResult deleteCharacter(@Nullable Long id, String name) {
         if (id == null || id.longValue() <= 0) {
-            String message = "Charakter konnte nicht gefunden werden.";
+            return rejectedMutation("Charakter konnte nicht gefunden werden.");
+        }
+        long characterId = id.longValue();
+        return submitMutation(
+                () -> party.deleteCharacter(new DeleteCharacterCommand(characterId)),
+                displayName(name) + " wurde geloescht.");
+    }
+
+    public ActionResult removeFromParty(@Nullable Long id, String name) {
+        if (id == null || id.longValue() <= 0) {
+            return rejectedMutation("Charakter konnte nicht gefunden werden.");
+        }
+        long characterId = id.longValue();
+        return submitMutation(
+                () -> party.setMembership(new SetPartyMembershipCommand(characterId, MembershipState.RESERVE)),
+                displayName(name) + " wurde aus der aktiven Party entfernt.");
+    }
+
+    public ActionResult awardXp(@Nullable Long id, String name, String rawXp) {
+        int xp = parsePositiveInt(rawXp);
+        if (xp <= 0) {
+            return rejectedMutation("XP muss groesser als 0 sein.");
+        }
+        if (id == null || id.longValue() <= 0) {
+            return rejectedMutation("Charakter konnte nicht gefunden werden.");
+        }
+        long characterId = id.longValue();
+        return submitMutation(
+                () -> party.awardXp(new AwardPartyXpCommand(List.of(characterId), xp)),
+                displayName(name) + " erhielt " + xp + " XP.");
+    }
+
+    public ActionResult shortRest() {
+        return submitMutation(
+                () -> party.performRest(new PerformPartyRestCommand(RestType.SHORT_REST)),
+                "Short Rest wurde fuer die aktive Party ausgefuehrt.");
+    }
+
+    public ActionResult longRest() {
+        return submitMutation(
+                () -> party.performRest(new PerformPartyRestCommand(RestType.LONG_REST)),
+                "Long Rest wurde fuer die aktive Party ausgefuehrt.");
+    }
+
+    private void applyLoadResult(long requestId, PanelData data) {
+        if (!currentRequest(requestId)) {
+            return;
+        }
+        PartySnapshotResult snapshotResult = data == null ? null : data.snapshotResult();
+        if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
+            applyStorageError();
+            return;
+        }
+        applySnapshot(snapshotResult.snapshot(), data.dayResult(), "", false);
+    }
+
+    private void applyStorageErrorIfCurrent(long requestId) {
+        if (currentRequest(requestId)) {
+            applyStorageError();
+        }
+    }
+
+    private ActionResult submitMutation(MutationOperation operation, String successMessage) {
+        if (mutationInFlight) {
+            return rejectedMutation("Party-Aktion laeuft bereits.");
+        }
+        long requestId = nextRequestId();
+        mutationInFlight = true;
+        panel.set(safePanel().withPending("Speichere..."));
+        try {
+            return applyMutationResult(requestId, loadAfterMutation(operation, successMessage));
+        } catch (RuntimeException exception) {
+            return applyMutationFailure(requestId);
+        }
+    }
+
+    private MutationAndLoadResult loadAfterMutation(
+            MutationOperation operation,
+            String successMessage
+    ) {
+        MutationResult mutationResult = operation.get();
+        MutationStatus status = mutationResult == null ? MutationStatus.STORAGE_ERROR : mutationResult.status();
+        PanelData data = status == MutationStatus.SUCCESS ? loadPanelData() : null;
+        return new MutationAndLoadResult(mutationResult, data, successMessage);
+    }
+
+    private void applyMutationResult(
+            long requestId,
+            MutationAndLoadResult result,
+            CompletionHandler onComplete
+    ) {
+        if (!currentRequest(requestId)) {
+            complete(onComplete, ActionResult.failure("Party-Aktion wurde von einer neueren Anfrage ueberholt."));
+            return;
+        }
+        mutationInFlight = false;
+        MutationStatus status = result == null || result.mutationResult() == null
+                ? MutationStatus.STORAGE_ERROR
+                : result.mutationResult().status();
+        if (status != MutationStatus.SUCCESS) {
+            String message = mutationMessage(status);
+            showStatus(message, true);
+            complete(onComplete, ActionResult.failure(message));
+            return;
+        }
+        PanelData data = result.panelData();
+        if (data == null) {
+            String message = "Party konnte nach der Aenderung nicht neu geladen werden.";
+            applyStorageError();
             showStatus(message, true);
             return ActionResult.failure(message);
         }
-        long characterId = id.longValue();
-        MutationResult result = party.deleteCharacter(new DeleteCharacterCommand(characterId));
-        return applyMutationAction(result, displayName(name) + " wurde geloescht.");
-    }
-
-    public boolean removeFromParty(@Nullable Long id, String name) {
-        if (id == null || id.longValue() <= 0) {
-            showStatus("Charakter konnte nicht gefunden werden.", true);
-            return false;
+        PartySnapshotResult snapshotResult = data.snapshotResult();
+        if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
+            String message = "Party konnte nach der Aenderung nicht neu geladen werden.";
+            applyStorageError();
+            showStatus(message, true);
+            complete(onComplete, ActionResult.failure(message));
+            return;
         }
-        long characterId = id.longValue();
-        MutationResult result = party.setMembership(new SetPartyMembershipCommand(characterId, MembershipState.RESERVE));
-        return applyMutation(result, displayName(name) + " wurde aus der aktiven Party entfernt.");
+        AdventuringDayResult dayResult = data == null ? null : data.dayResult();
+        applySnapshot(snapshotResult.snapshot(), dayResult, result.successMessage(), false);
+        publishMutation();
+        complete(onComplete, ActionResult.success());
     }
 
-    public boolean awardXp(@Nullable Long id, String name, String rawXp) {
-        int xp = parsePositiveInt(rawXp);
-        if (xp <= 0) {
-            showStatus("XP muss groesser als 0 sein.", true);
-            return false;
+    private void applyMutationFailure(long requestId, CompletionHandler onComplete) {
+        if (!currentRequest(requestId)) {
+            complete(onComplete, ActionResult.failure("Party-Aktion wurde von einer neueren Anfrage ueberholt."));
+            return;
         }
-        if (id == null || id.longValue() <= 0) {
-            showStatus("Charakter konnte nicht gefunden werden.", true);
-            return false;
-        }
-        long characterId = id.longValue();
-        MutationResult result = party.awardXp(new AwardPartyXpCommand(List.of(characterId), xp));
-        return applyMutation(result, displayName(name) + " erhielt " + xp + " XP.");
+        mutationInFlight = false;
+        String message = "Party-Aktion konnte nicht gespeichert werden.";
+        showStatus(message, true);
+        complete(onComplete, ActionResult.failure(message));
+            return;
     }
 
-    public boolean shortRest() {
-        MutationResult result = party.performRest(new PerformPartyRestCommand(RestType.SHORT_REST));
-        return applyMutation(result, "Short Rest wurde fuer die aktive Party ausgefuehrt.");
-    }
-
-    public boolean longRest() {
-        MutationResult result = party.performRest(new PerformPartyRestCommand(RestType.LONG_REST));
-        return applyMutation(result, "Long Rest wurde fuer die aktive Party ausgefuehrt.");
-    }
-
-    private void applySnapshot(@Nullable PartySnapshot snapshot, @Nullable AdventuringDayResult dayResult) {
+    private void applySnapshot(
+            @Nullable PartySnapshot snapshot,
+            @Nullable AdventuringDayResult dayResult,
+            String statusMessage,
+            boolean statusError
+    ) {
         PartySnapshot safeSnapshot = snapshot == null ? emptySnapshot() : snapshot;
         @Nullable AdventuringDaySummary daySummary = dayResult == null || dayResult.status() != ReadStatus.SUCCESS
                 ? null
@@ -179,12 +293,14 @@ public final class PartyTopBarViewModel {
                 reserveMembers,
                 summaryText(activeMembers, averageLevel),
                 restSummary(daySummary),
-                "",
-                false,
-                activeMembers.isEmpty()));
+                statusMessage,
+                statusError,
+                activeMembers.isEmpty(),
+                false));
     }
 
     private void applyStorageError() {
+        mutationInFlight = false;
         triggerText.set("Keine _Party \u25be");
         panel.set(new PanelModel(
                 false,
@@ -196,6 +312,7 @@ public final class PartyTopBarViewModel {
                 "",
                 "Party konnte nicht geladen werden.",
                 true,
+                true,
                 true));
     }
 
@@ -205,20 +322,27 @@ public final class PartyTopBarViewModel {
         panel.set(safeCurrent.withStatus(message, error));
     }
 
-    private boolean applyMutation(@Nullable MutationResult result, String successMessage) {
-        return applyMutationAction(result, successMessage).accepted();
+    private PanelModel safePanel() {
+        PanelModel current = panel.get();
+        return current == null ? PanelModel.loadingModel() : current;
     }
 
-    private ActionResult applyMutationAction(@Nullable MutationResult result, String successMessage) {
-        MutationStatus status = result == null ? MutationStatus.STORAGE_ERROR : result.status();
-        if (status == MutationStatus.SUCCESS) {
-            refresh();
-            showStatus(successMessage, false);
-            return ActionResult.success();
-        }
-        String message = mutationMessage(status);
+    private long nextRequestId() {
+        return ++nextRequestId;
+    }
+
+    private boolean currentRequest(long requestId) {
+        return requestId == nextRequestId;
+    }
+
+    private void publishMutation() {
+        mutationToken.set(mutationToken.get() + 1L);
+    }
+
+    private ActionResult rejectedMutation(String message) {
         showStatus(message, true);
-        return ActionResult.failure(message);
+        complete(onComplete, ActionResult.failure(message));
+            return;
     }
 
     private static String mutationMessage(@Nullable MutationStatus status) {
@@ -411,7 +535,8 @@ public final class PartyTopBarViewModel {
             String restSummaryText,
             String actionStatus,
             boolean actionStatusError,
-            boolean restActionsDisabled
+            boolean restActionsDisabled,
+            boolean actionsDisabled
     ) {
 
         public PanelModel {
@@ -434,6 +559,7 @@ public final class PartyTopBarViewModel {
                     "",
                     "",
                     false,
+                    true,
                     true);
         }
 
@@ -448,7 +574,23 @@ public final class PartyTopBarViewModel {
                     restSummaryText,
                     status,
                     error,
-                    restActionsDisabled);
+                    restActionsDisabled,
+                    actionsDisabled);
+        }
+
+        PanelModel withPending(String status) {
+            return new PanelModel(
+                    loading,
+                    storageError,
+                    storageMessage,
+                    activeMembers,
+                    reserveMembers,
+                    summaryText,
+                    restSummaryText,
+                    status,
+                    false,
+                    true,
+                    true);
         }
     }
 
@@ -500,18 +642,22 @@ public final class PartyTopBarViewModel {
         }
     }
 
-    public record ActionResult(boolean accepted, String message) {
+    public record ActionResult(boolean accepted, boolean pending, String message) {
 
         public ActionResult {
             message = safe(message);
         }
 
         static ActionResult success() {
-            return new ActionResult(true, "");
+            return new ActionResult(true, false, "");
         }
 
         static ActionResult failure(String message) {
-            return new ActionResult(false, message);
+            return new ActionResult(false, false, message);
+        }
+
+        static ActionResult pending(String message) {
+            return new ActionResult(false, true, message);
         }
     }
 
@@ -554,6 +700,28 @@ public final class PartyTopBarViewModel {
 
         static ParsedInteger invalid(String message) {
             return new ParsedInteger(0, message);
+        }
+    }
+
+    @FunctionalInterface
+    private interface MutationOperation {
+        MutationResult get();
+    }
+
+    record PanelData(
+            @Nullable PartySnapshotResult snapshotResult,
+            @Nullable AdventuringDayResult dayResult
+    ) {
+    }
+
+    private record MutationAndLoadResult(
+            @Nullable MutationResult mutationResult,
+            @Nullable PanelData panelData,
+            String successMessage
+    ) {
+
+        MutationAndLoadResult {
+            successMessage = safe(successMessage);
         }
     }
 }
