@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Persistence path and schema ownership rules for the `party`
 feature.
 
@@ -28,9 +28,29 @@ This document is normative for the `party` feature's persistence path.
 - The schema currently owns:
   - `player_characters`
   - `party_roster_metadata`
+- `player_characters` stores character-owned travel columns for dungeon and
+  overworld locations plus the party-token attachment flag. These columns are
+  part of character state, not a campaign-level travel table and not dungeon
+  authored truth.
 - `SqlitePartyLocalGateway` must derive table creation and additive column
   migration from this schema artifact instead of spreading canonical
   definitions across unrelated classes.
+
+## Current Mapping
+
+Party persistence stores the character roster, membership, progression, combat
+profile, and character-specific runtime travel state in the party write model.
+Travel state is represented as scalar references to the owning space:
+
+- dungeon travel location stores map id, local owner id, local tile coordinate,
+  level, location kind, and heading
+- overworld travel location stores overworld map id and tile id
+- party-token attachment stores whether a character currently follows the
+  shared party token position
+
+The data layer maps those columns through source-local party records into
+party-domain values. Dungeon persistence remains responsible for authored map
+truth only; it does not persist character positions.
 
 ## Stability Rules
 
@@ -40,3 +60,5 @@ This document is normative for the `party` feature's persistence path.
   `PartyApplicationService`; no feature-specific bootstrap wiring is allowed.
 - Legacy runtime-service wiring through `RuntimeServiceProvider` or
   `RuntimeServiceRegistry` is forbidden.
+- Character-specific runtime state belongs in party persistence unless another
+  bounded context owns the character information itself.

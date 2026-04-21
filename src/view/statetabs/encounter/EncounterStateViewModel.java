@@ -34,6 +34,7 @@ import src.domain.party.published.MutationStatus;
 import src.domain.party.published.PartyMemberSummary;
 import src.domain.party.published.ReadStatus;
 import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel;
+import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel.CombatCardSnapshot;
 import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel.CombatProjection;
 import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel.ResultEnemySnapshot;
 
@@ -114,6 +115,16 @@ public final class EncounterStateViewModel {
 
     ReadOnlyStringProperty statusProperty() {
         return status.getReadOnlyProperty();
+    }
+
+    List<PartyMember> missingCombatPartyMembers() {
+        List<String> activePcIds = combatState.get().cards().stream()
+                .filter(CombatCardSnapshot::playerCharacter)
+                .map(CombatCardSnapshot::id)
+                .toList();
+        return activeParty.stream()
+                .filter(member -> !activePcIds.contains(member.id()))
+                .toList();
     }
 
     void refreshPartyContext() {

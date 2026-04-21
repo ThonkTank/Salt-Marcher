@@ -1,5 +1,6 @@
 package src.view.statetabs.encounter;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
@@ -14,6 +15,7 @@ import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.party.PartyApplicationService;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
+import src.view.slotcontent.state.encounter.EncounterCombatPartyMemberButtonView;
 import src.view.slotcontent.state.encounter.EncounterCombatRuntimeDisplayModel.CombatProjection;
 import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
@@ -146,9 +148,9 @@ final class EncounterStateBinder {
         switch (viewModel.modeProperty().get()) {
             case BUILDER -> state.showBuilder(toBuilderState(viewModel.builderStateProperty().get()));
             case INITIATIVE -> state.showInitiative(toInitiativeState(viewModel.initiativeStateProperty().get()));
-            case COMBAT -> state.showCombat(toCombatState(
-                    viewModel.combatStateProperty().get(),
-                    viewModel.builderStateProperty().get()));
+            case COMBAT -> state.showCombat(
+                    toCombatState(viewModel.combatStateProperty().get(), viewModel.missingCombatPartyMembers()),
+                    viewModel::addPartyMemberToCombat);
             case RESULTS -> state.showResults(toResultState(viewModel.resultStateProperty().get()));
         }
     }
@@ -215,7 +217,7 @@ final class EncounterStateBinder {
 
     private EncounterStateView.CombatStateView toCombatState(
             CombatProjection source,
-            EncounterStateViewModel.BuilderState builderState
+            List<EncounterStateViewModel.PartyMember> missingPartyMembers
     ) {
         return new EncounterStateView.CombatStateView(
                 source.round(),
@@ -235,27 +237,12 @@ final class EncounterStateBinder {
                                 card.detail()))
                         .toList(),
                 source.allEnemiesDefeated(),
-                missingPartyMembers(source, builderState));
-    }
-
-    private static List<EncounterStateView.CombatPartyMemberView> missingPartyMembers(
-            CombatProjection source,
-            EncounterStateViewModel.BuilderState builderState
-    ) {
-        List<String> activePcIds = source.cards().stream()
-                .filter(CombatProjection.CombatCardSnapshot::playerCharacter)
-                .map(CombatProjection.CombatCardSnapshot::id)
-                .toList();
-        if (builderState == null) {
-            return List.of();
-        }
-        return builderState.party().stream()
-                .filter(member -> !activePcIds.contains(member.id()))
-                .map(member -> new EncounterStateView.CombatPartyMemberView(
-                        member.numericId(),
-                        member.name(),
-                        member.level()))
-                .toList();
+                missingPartyMembers.stream()
+                        .map(member -> new EncounterCombatPartyMemberButtonView.Candidate(
+                                member.numericId(),
+                                member.name(),
+                                member.level()))
+                        .toList());
     }
 
     private EncounterStateView.ResultStateView toResultState(EncounterStateViewModel.ResultState source) {

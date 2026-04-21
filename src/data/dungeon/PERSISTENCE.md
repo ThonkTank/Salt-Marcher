@@ -76,11 +76,12 @@ semantics, cluster boundary geometry, and corridor read geometry are now
 represented. Doors, stairs, and transitions are now source-to-domain mapped as
 authored facts. Runtime local movement derives one domain traversal-link model
 from door boundaries and stair exits, while transition movement remains a
-separate runtime action for cross-map and overworld targets. This runtime state
-is stored only in the shell session; this step introduces no new persistence
-tables, columns, or ports. Persistent campaign/world movement, direct
-token-drag movement, editor mutation paths, and non-space feature mapping still
-need follow-up work before the legacy dungeon behaviour is fully represented.
+separate runtime action for cross-map and overworld targets. Character-specific
+travel position persistence belongs to party persistence, so this dungeon step
+introduces no character-position tables, columns, or ports. Direct token-drag
+movement, editor mutation paths, cross-map dungeon transition follow-through,
+and non-space feature mapping still need follow-up work before the legacy
+dungeon behaviour is fully represented.
 
 ## Stability Rules
 

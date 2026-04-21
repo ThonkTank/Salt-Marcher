@@ -31,6 +31,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.state.encounter.EncounterCombatPartyMemberButtonView;
 
 public final class EncounterStateView extends VBox {
 
@@ -69,7 +70,6 @@ public final class EncounterStateView extends VBox {
     private final Label combatRoundLabel = new Label();
     private final Label combatStatusLabel = new Label();
     private final VBox combatCardList = new VBox(6);
-    private final Button addPartyButton = new Button("SC hinzufuegen");
     private final HBox endCombatContainer = new HBox(6);
     private final VBox combatPane = buildCombatPane();
 
@@ -106,12 +106,10 @@ public final class EncounterStateView extends VBox {
     private BiConsumer<String, Integer> onDamage = (id, amount) -> { };
     private BiConsumer<String, Integer> onHeal = (id, amount) -> { };
     private BiConsumer<String, Integer> onSetInitiative = (id, initiative) -> { };
-    private CombatPartyAddHandler onAddPartyMember = (id, initiative) -> { };
     private Runnable onEndCombat = () -> { };
     private Runnable onAwardXp = () -> { };
     private Runnable onReturnToBuilder = () -> { };
     private ResultStateView lastResultState = ResultStateView.empty();
-    private List<CombatPartyMemberView> lastCombatPartyCandidates = List.of();
 
     public EncounterStateView() {
         setSpacing(0);
@@ -175,16 +173,16 @@ public final class EncounterStateView extends VBox {
         }
     }
 
-    public void showCombat(CombatStateView state) {
+    public void showCombat(CombatStateView state, EncounterCombatPartyMemberButtonView.AddHandler onAddPartyMember) {
         modeLabel.setText("Combat");
         setContent(combatPane);
         combatRoundLabel.setText("Runde " + state.round());
         combatStatusLabel.setText(state.status());
-        lastCombatPartyCandidates = state.missingPartyMembers();
-        addPartyButton.setDisable(lastCombatPartyCandidates.isEmpty());
-        addPartyButton.setTooltip(new Tooltip(lastCombatPartyCandidates.isEmpty()
-                ? "Alle aktiven SCs sind im Kampf."
-                : "Aktives Party-Mitglied in den laufenden Kampf aufnehmen."));
+        Node addPartyNode = combatPane.lookup("#encounter-add-party-button");
+        if (addPartyNode instanceof EncounterCombatPartyMemberButtonView addPartyButton) {
+            addPartyButton.updateCandidates(state.missingPartyMembers());
+            addPartyButton.updateAddHandler(onAddPartyMember);
+        }
         combatCardList.getChildren().clear();
         for (CombatCardView card : state.cards()) {
             combatCardList.getChildren().add(buildCombatCard(card));
@@ -279,10 +277,6 @@ public final class EncounterStateView extends VBox {
 
     public void setOnSetInitiative(BiConsumer<String, Integer> callback) {
         onSetInitiative = callback == null ? (id, initiative) -> { } : callback;
-    }
-
-    public void setOnAddPartyMember(CombatPartyAddHandler callback) {
-        onAddPartyMember = callback == null ? (id, initiative) -> { } : callback;
     }
 
     public void setOnEndCombat(Runnable callback) {
@@ -432,10 +426,7 @@ public final class EncounterStateView extends VBox {
         combatStatusLabel.getStyleClass().add("text-secondary");
         combatStatusLabel.setPadding(new Insets(0, 12, 6, 12));
 
-        addPartyButton.getStyleClass().addAll("compact", "neutral-action");
-        addPartyButton.setDisable(true);
-        addPartyButton.setTooltip(new Tooltip("Alle aktiven SCs sind im Kampf."));
-        addPartyButton.setOnAction(event -> showAddPartyMemberPopup(addPartyButton));
+        EncounterCombatPartyMemberButtonView addPartyButton = new EncounterCombatPartyMemberButtonView();
         HBox actions = new HBox(addPartyButton);
         actions.setAlignment(Pos.CENTER_RIGHT);
         actions.setPadding(new Insets(0, 12, 4, 12));
@@ -1027,9 +1018,16 @@ public final class EncounterStateView extends VBox {
     ) {
     }
 
-    public record CombatStateView(int round, String status, List<CombatCardView> cards, boolean allEnemiesDefeated) {
+    public record CombatStateView(
+            int round,
+            String status,
+            List<CombatCardView> cards,
+            boolean allEnemiesDefeated,
+            List<EncounterCombatPartyMemberButtonView.Candidate> missingPartyMembers
+    ) {
         public CombatStateView {
             cards = cards == null ? List.of() : List.copyOf(cards);
+            missingPartyMembers = missingPartyMembers == null ? List.of() : List.copyOf(missingPartyMembers);
         }
     }
 

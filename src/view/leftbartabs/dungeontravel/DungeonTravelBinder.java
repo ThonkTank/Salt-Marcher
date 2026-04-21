@@ -7,9 +7,9 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
+import src.domain.party.PartyApplicationService;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewModel;
-import src.view.slotcontent.state.dungeontravel.DungeonTravelRuntimeViewModel;
 
 final class DungeonTravelBinder {
 
@@ -21,13 +21,10 @@ final class DungeonTravelBinder {
 
     ShellBinding bind() {
         DungeonApplicationService dungeon = runtimeContext.services().require(DungeonApplicationService.class);
-        DungeonTravelRuntimeViewModel runtime = runtimeContext.session(
-                DungeonTravelRuntimeViewModel.class,
-                DungeonTravelRuntimeViewModel::new);
+        PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
         DungeonTravelViewModel viewModel = new DungeonTravelViewModel(
                 dungeon,
-                runtime::position,
-                runtime::updatePosition);
+                party);
         DungeonMapViewModel mapViewModel = new DungeonMapViewModel("Travel workspace", false);
         DungeonTravelControlsView controls = new DungeonTravelControlsView();
         DungeonTravelMainView main = new DungeonTravelMainView();

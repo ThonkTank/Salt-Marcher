@@ -12,6 +12,7 @@ import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonTransitionDestination;
 import src.domain.dungeon.map.value.DungeonTravelActionFacts;
 import src.domain.dungeon.map.value.DungeonTravelActionKind;
+import src.domain.dungeon.map.value.DungeonTravelExternalTargetFacts;
 import src.domain.dungeon.map.value.DungeonTravelLocationKind;
 import src.domain.dungeon.map.value.DungeonTravelMoveFacts;
 import src.domain.dungeon.map.value.DungeonTravelMoveStatus;
@@ -81,7 +82,11 @@ public final class MoveDungeonTravelActionUseCase {
                     currentMap,
                     currentPosition,
                     "Uebergang fuehrt zum Overworld-Feld " + overworld.tileId() + ".");
-            return moveResult(DungeonTravelMoveStatus.EXTERNAL_TARGET, surface.statusLabel(), surface);
+            return moveResult(
+                    DungeonTravelMoveStatus.EXTERNAL_TARGET,
+                    surface.statusLabel(),
+                    surface,
+                    new DungeonTravelExternalTargetFacts.OverworldTile(overworld.mapId(), overworld.tileId()));
         }
         if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
             return moveToDungeonTransition(currentPosition, dungeon);
@@ -157,6 +162,15 @@ public final class MoveDungeonTravelActionUseCase {
             String message,
             DungeonTravelSurfaceFacts surface
     ) {
-        return new DungeonTravelMoveFacts(status, message, surface);
+        return moveResult(status, message, surface, null);
+    }
+
+    private static DungeonTravelMoveFacts moveResult(
+            DungeonTravelMoveStatus status,
+            String message,
+            DungeonTravelSurfaceFacts surface,
+            @Nullable DungeonTravelExternalTargetFacts externalTarget
+    ) {
+        return new DungeonTravelMoveFacts(status, message, surface, externalTarget);
     }
 }

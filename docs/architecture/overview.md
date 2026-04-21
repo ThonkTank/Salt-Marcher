@@ -65,8 +65,9 @@ documents live next to the feature code they describe.
 
 ## Domain Context Relationships
 
-- `party`: Roster Truth Context. Owns party roster truth, membership, XP
-  progression, rest cadence, and adventuring-day policy.
+- `party`: Party Character State Context. Owns party roster truth, membership,
+  XP progression, rest cadence, adventuring-day policy, and character-specific
+  runtime travel state.
 - `creatures`: Reference Catalog Context. Exports imported creature catalog
   lookup language, detail records, filters, and encounter-candidate reference
   profiles. It does not own encounter balancing or creature lifecycle truth.

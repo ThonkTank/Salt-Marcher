@@ -35,11 +35,15 @@ final class DomainFeatureRules implements ArchitectureRule {
     private static final Set<String> DOMAIN_CONTEXT_ROLES =
             Set.of(
                     "Roster Truth Context",
+                    "Party Character State Context",
                     "Reference Catalog Context",
                     "Generation Policy Context",
                     "Authored World-Space Context");
     private static final Set<String> AUTHORED_CONTEXT_ROLES =
-            Set.of("Roster Truth Context", "Authored World-Space Context");
+            Set.of(
+                    "Roster Truth Context",
+                    "Party Character State Context",
+                    "Authored World-Space Context");
     private static final List<String> REQUIRED_ENFORCED_DOMAIN_RULES = List.of(
             "domain-root-presence",
             "domain-context-name-declared",

@@ -236,8 +236,9 @@ is not already a simple PascalCase spelling.
 
 Current roles:
 
-- `party`: `Context Role: Roster Truth Context`. Owns roster truth,
-  membership, XP progression, rest cadence, and adventuring-day policy.
+- `party`: `Context Role: Party Character State Context`. Owns roster truth,
+  membership, XP progression, rest cadence, adventuring-day policy, and
+  character-specific runtime travel state.
 - `creatures`: `Context Role: Reference Catalog Context`. Exports imported
   creature catalog lookup language and reference profiles. It does not own
   encounter ranking, choice, or creature lifecycle truth.
@@ -261,8 +262,9 @@ belongs in the view layer; domain dungeon map/world facts belong to
 The domain contexts relate through root application-service boundaries and
 published language, not through private model imports.
 
-- `party`: Roster Truth Context. Publishes roster, membership, XP, rest cadence, and
-  adventuring-day facts to downstream contexts.
+- `party`: Party Character State Context. Publishes roster, membership, XP,
+  rest cadence, adventuring-day facts, and character travel position facts to
+  downstream contexts.
 - `creatures`: Reference Catalog Context. Publishes imported creature catalog
   lookup facts and encounter-candidate reference profiles to downstream policy
   contexts.

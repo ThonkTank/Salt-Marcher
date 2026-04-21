@@ -1,20 +1,20 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Party feature ownership, write model, and domain invariants.
 
 # Party Domain Model
 
 ## Context Role
 
-Context Role: Roster Truth Context
+Context Role: Party Character State Context
 Context Name: Party
 
-- `party` is the roster truth context.
+- `party` is the party character state context.
 - Its public backend boundary is
   `src/domain/party/PartyApplicationService.java`.
-- The feature owns party composition, party membership, XP progression, and
-  rest-driven mutation rules.
+- The feature owns party composition, party membership, XP progression,
+  rest-driven mutation rules, and character-specific runtime travel position.
 
 ## Published Language
 
@@ -35,12 +35,14 @@ to the root application service for `published/` mapping.
 
 ## Write Model
 
-The authored write model is the persisted party roster:
+The authored write model is the persisted party roster and character state:
 
 - stable character identity
 - party membership state
 - level and XP progression
 - combat profile values owned by the party feature
+- character-specific travel location and whether that character is attached to
+  the party token
 
 ## Aggregate Model
 
@@ -52,7 +54,7 @@ assignment, XP awards, and rest-driven progression transitions.
 
 `roster/entity/PartyCharacter` is an identity-bearing child entity. Roster
 value objects own identity, progress, combat profile, membership, rest type,
-and mutation status vocabulary.
+travel position, and mutation status vocabulary.
 
 ## Commands And Invariants
 
@@ -64,6 +66,7 @@ Commands entering the aggregate are:
 - set membership
 - award XP
 - perform rest
+- move characters to a dungeon or overworld travel location
 
 Core invariants:
 
@@ -72,6 +75,10 @@ Core invariants:
   state
 - XP and level progression remain internally consistent after award and rest
   operations
+- character-specific travel location is stored with the character, not in a
+  campaign-level model, shell session, dungeon map, or view model
+- the party token is derived from attached character travel state instead of
+  being a separate write model
 - external mutation enters through the owning roster aggregate
 
 ## Consistency Model
@@ -86,6 +93,10 @@ application service and exported carriers instead of sharing roster internals.
 - `PartyCharacter`: identity-bearing character inside the roster.
 - `PartyMembership`: active or reserve participation state.
 - `PartyCharacterProgress`: level, XP, and rest-cadence progress.
+- `PartyCharacterTravelState`: character-owned runtime travel state and party
+  token attachment.
+- `PartyTravelLocation`: character travel target in a dungeon or overworld
+  space.
 - `PartyRestType`: short-rest or long-rest roster transition.
 
 ## Architecture Status
@@ -97,12 +108,17 @@ Current state:
   roster model roles.
 - `application/` coordinates port access and returns application/model results
   to the root boundary.
+- Dungeon travel now persists active character positions through the party
+  application boundary instead of storing them in shell runtime session state
+  or a campaign-level model.
 
 Target state:
 
 - keep party mutation rules on the roster aggregate and related roster policies
 - keep root and internal application services thin
 - keep roster role packages free of all `src.domain.*.published.*` dependencies
+- keep character-specific state, including dungeon and overworld travel
+  position, with the character aggregate state
 
 ## References
 

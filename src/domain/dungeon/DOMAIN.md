@@ -58,11 +58,11 @@ Current state:
 - `ConnectionCatalog` now also carries authored stair and transition identity,
   stair path nodes, stair exits, corridor attachments, and transition
   destination facts loaded from the legacy write model.
-- Runtime travel surfaces now derive transient traversal and transition
-  actions from committed authored map truth. Local door and stair movement
+- Runtime travel surfaces now derive traversal and transition actions from
+  committed authored map truth. Local door and stair movement
   share one `DungeonTraversalLink` model: two known dungeon tiles connected by
-  a party-traversible link. The travel session position is runtime
-  presentation state and is not persisted as authored dungeon truth.
+  a party-traversible link. The active character travel position is owned by
+  `party` character state and is not persisted as authored dungeon truth.
 - Editor operations now tell the aggregate to mutate authored topology seeds
   instead of rewriting a document carrier in application code.
 - The application layer coordinates load, mutate, save, search, and derive
@@ -88,15 +88,16 @@ Remaining implementation gap:
 - Several core types remain thinner record-style carriers than the target
   aggregate model.
 - Full behaviour parity with the original `salt-marcher/` dungeon schema still
-  requires editor mutation, persistent campaign/world travel integration, and
-  remaining non-space feature mapping.
+  requires editor mutation, direct token-drag movement, cross-map dungeon
+  transition follow-through, and remaining non-space feature mapping.
 - The current derived-state rebuild hydrates rooms from cluster polygons and
   internal wall or door boundaries, then derives corridor cells and door
   relations from authored corridor membership, waypoints, and door bindings.
   Door boundaries and stair exits are now projected into one derived traversal
   link model. Transition destinations remain authored facts and are exposed as
   runtime travel actions because cross-map and overworld targets are not always
-  two known local dungeon tiles.
+  two known local dungeon tiles. Character position persistence is delegated to
+  the party boundary.
 - This feature remains a policy-owning bounded context because editor
   mutations and identity-preserving repairs are rule-bearing domain work.
 
@@ -112,7 +113,7 @@ Derived state must not become a second source of truth. This includes:
 - travel exits
 - render overlays
 - editor runtime state
-- travel runtime state
+- character travel runtime state
 
 ## Canonical Aggregate
 
@@ -264,8 +265,8 @@ into `map/`.
   exactly two dungeon tiles. Door and stair authored inputs both become this
   model before runtime movement is exposed.
 - `DungeonTravelSurface`: derived runtime description for the party's current
-  dungeon location, including transient actions for available traversal links
-  and transitions.
+  dungeon location, including actions for available traversal links and
+  transitions.
 - `DungeonTravelAction`: transient runtime command target derived from
   traversal links or transition destinations.
 - `FeatureCatalog`: authored non-space, non-connection features.

@@ -26,6 +26,7 @@ import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.DungeonTravelActionKind;
 import src.domain.dungeon.published.DungeonTravelActionSnapshot;
+import src.domain.dungeon.published.DungeonTravelExternalTarget;
 import src.domain.dungeon.published.DungeonTravelHeading;
 import src.domain.dungeon.published.DungeonTravelLocationKind;
 import src.domain.dungeon.published.DungeonTravelMoveResult;
@@ -60,6 +61,7 @@ import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonTopology;
 import src.domain.dungeon.map.value.DungeonTravelActionFacts;
+import src.domain.dungeon.map.value.DungeonTravelExternalTargetFacts;
 import src.domain.dungeon.map.value.DungeonTravelMoveFacts;
 import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
 import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
@@ -311,7 +313,17 @@ public final class DungeonApplicationService {
             return new DungeonTravelMoveResult(
                     DungeonTravelMoveStatus.valueOf(result.status().name()),
                     result.message(),
-                    surface(result.surface()));
+                    surface(result.surface()),
+                    externalTarget(result.externalTarget()));
+        }
+
+        private static @Nullable DungeonTravelExternalTarget externalTarget(
+                @Nullable DungeonTravelExternalTargetFacts externalTarget
+        ) {
+            if (externalTarget instanceof DungeonTravelExternalTargetFacts.OverworldTile overworld) {
+                return new DungeonTravelExternalTarget.OverworldTile(overworld.mapId(), overworld.tileId());
+            }
+            return null;
         }
 
         private static DungeonTravelSurfaceSnapshot surface(DungeonTravelSurfaceFacts surface) {

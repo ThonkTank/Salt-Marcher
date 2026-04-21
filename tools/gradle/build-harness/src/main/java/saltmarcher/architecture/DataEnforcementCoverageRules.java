@@ -44,6 +44,7 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
             "data-active-record-rejected",
             "data-source-mechanics-owned-by-gateway",
             "data-source-local-shapes-owned-by-model",
+            "data-source-field-name-centralization",
             "data-single-write-model",
             "data-runtime-composition-root",
             "data-bootstrap-shell-no-source-wiring",

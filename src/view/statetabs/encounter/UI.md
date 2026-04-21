@@ -73,6 +73,9 @@ creature details through the creature application service.
   still show a runtime mob projection when at least four alive monsters share
   the same creature identity and initiative.
 - `Weiter` advances the active combat turn and round display.
+- `SC hinzufuegen` opens a compact popup for active party members that are not
+  already in the running combat; each row accepts an initiative value before
+  adding that character to the turn order.
 - HP bars open a compact damage/heal popup.
 - Initiative badges open a compact set-initiative popup.
 - `Kampf beenden` requires a second confirmation before showing results.
@@ -99,6 +102,9 @@ creature details through the creature application service.
 - Combat reinforcement: catalog `+Add` creates a new combat monster without
   mutating the creation roster, preserves the current active turn highlight,
   and includes the reinforcement in result XP eligibility.
+- Missing combat party member: the add-SC action is disabled when every active
+  party member is already represented, and adding an SC preserves the current
+  active turn highlight.
 - Runtime mob combat: three or fewer matching monsters stay as individual
   cards, four to ten matching monsters become one `xN` mob card, and larger
   matching groups split into mob cards of four to ten members. Mob damage

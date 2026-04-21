@@ -1,5 +1,6 @@
 package src.data.party.mapper;
 
+import org.jspecify.annotations.Nullable;
 import src.data.party.model.PartyCharacterRecord;
 import src.domain.party.roster.entity.PartyCharacter;
 import src.domain.party.roster.value.PartyCharacterTravelState;
@@ -70,7 +71,7 @@ final class PartyCharacterMapper {
                 travel.attachedToPartyToken());
     }
 
-    private static PartyTravelLocation toDomainTravelLocation(PartyCharacterRecord.Travel travel) {
+    private static @Nullable PartyTravelLocation toDomainTravelLocation(PartyCharacterRecord.Travel travel) {
         if ("DUNGEON".equalsIgnoreCase(travel.locationKind())) {
             return new PartyDungeonTravelLocation(
                     valueOrDefault(travel.dungeonMapId(), 1L),
@@ -137,11 +138,11 @@ final class PartyCharacterMapper {
                 safeTravel.attachedToPartyToken());
     }
 
-    private static long valueOrDefault(Long value, long fallback) {
+    private static long valueOrDefault(@Nullable Long value, long fallback) {
         return value == null ? fallback : value;
     }
 
-    private static int valueOrDefault(Integer value, int fallback) {
+    private static int valueOrDefault(@Nullable Integer value, int fallback) {
         return value == null ? fallback : value;
     }
 }

@@ -32,9 +32,8 @@ Current foundation:
 - Runtime travel action parity is active for local traversal links and
   transitions: the travel surface derives one local tile-to-tile traversal
   model from authored door boundaries and stair exits, derives separate
-  transition actions for cross-map or overworld targets, stores the active
-  dungeon position in the shell runtime session, and does not persist
-  campaign-state movement yet.
+  transition actions for cross-map or overworld targets, and stores active
+  character travel positions through the party character-state boundary.
 
 Recommended rollout:
 
@@ -51,8 +50,8 @@ Recommended rollout:
 - Room and connection projections can drift until editor mutation and topology
   repair consistently rebuild the same authored relation graph used by runtime
   rendering and travel.
-- Full parity still needs persistent campaign/world travel integration, editor
-  mutation policies, direct runtime token-drag movement, and remaining
+- Full parity still needs editor mutation policies, direct runtime token-drag
+  movement, cross-map dungeon transition follow-through, and remaining
   non-space feature mapping before those behaviours can be considered
   preserved.
 - Advanced editor operation carriers must be introduced only with implemented
@@ -61,11 +60,11 @@ Recommended rollout:
 
 ## Next Parity Step
 
-Implement persistent runtime travel integration next. The original runtime
-updates campaign/world state as movement happens and also supports direct token
-drag movement on the dungeon surface. This codebase now derives local traversal
-actions and transition actions, but keeps the active party position in the
-shell runtime session only.
+Implement direct token movement next. The original runtime updates character
+position when the party token is moved on the dungeon surface, not only when a
+listed travel action is selected. This codebase now persists action-driven
+movement through the party character-state model, but token-drag movement still
+needs to feed the same party-owned travel position command path.
 
 ## Open Delivery Questions
 
