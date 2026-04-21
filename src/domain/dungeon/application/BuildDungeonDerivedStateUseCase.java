@@ -6,6 +6,7 @@ import src.domain.dungeon.map.entity.DungeonPrimitive;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
 import src.domain.dungeon.map.service.DungeonCorridorReadProjector;
+import src.domain.dungeon.map.service.DungeonFeatureReadProjector;
 import src.domain.dungeon.map.value.DungeonAreaFacts;
 import src.domain.dungeon.map.value.DungeonAreaType;
 import src.domain.dungeon.map.value.DungeonBoundaryKey;
@@ -16,6 +17,7 @@ import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonEdgeDirection;
+import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonRelationGraph;
 import src.domain.dungeon.map.value.SpatialTopology;
@@ -50,8 +52,10 @@ public final class BuildDungeonDerivedStateUseCase {
         List<DungeonPrimitive> primitives = new ArrayList<>();
         List<DungeonAreaFacts> areas = new ArrayList<>();
         List<DungeonBoundaryFacts> boundaries = new ArrayList<>();
+        List<DungeonFeatureFacts> features = new ArrayList<>();
         List<DungeonRelationGraph.ContainmentRelation> containment = new ArrayList<>();
         List<DungeonRelationGraph.ConnectionRelation> connections = new ArrayList<>();
+        List<DungeonRelationGraph.FeatureRelation> featureRelations = new ArrayList<>();
         Map<Long, List<DungeonRoom>> roomsByCluster = roomsByCluster(dungeonMap.rooms().rooms());
         Map<Long, DungeonRoom> roomsById = roomsById(dungeonMap.rooms().rooms());
         Map<Long, DungeonRoomCluster> clustersById = clustersById(topology.roomClusters());
@@ -124,18 +128,24 @@ public final class BuildDungeonDerivedStateUseCase {
         boundaries.addAll(corridorProjection.boundaries());
         containment.addAll(corridorProjection.containment());
         connections.addAll(corridorProjection.connections());
+        DungeonFeatureReadProjector.Result featureProjection = new DungeonFeatureReadProjector().project(
+                dungeonMap.connections().stairs(),
+                dungeonMap.connections().transitions());
+        features.addAll(featureProjection.features());
+        featureRelations.addAll(featureProjection.relations());
 
         DungeonMapFacts map = new DungeonMapFacts(
                 topology.topology(),
                 topology.width(),
                 topology.height(),
                 areas,
-                boundaries);
+                boundaries,
+                features);
         return new DungeonDerivedState(
                 map,
                 aggregates,
                 primitives,
-                new DungeonRelationGraph(containment, connections));
+                new DungeonRelationGraph(containment, connections, featureRelations));
     }
 
     private static long addBoundary(

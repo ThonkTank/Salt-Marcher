@@ -14,6 +14,8 @@ import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonEdgeRef;
+import src.domain.dungeon.published.DungeonFeatureKind;
+import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapMode;
@@ -41,10 +43,13 @@ import src.domain.dungeon.map.value.DungeonAreaType;
 import src.domain.dungeon.map.value.DungeonBoundaryFacts;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonEdge;
+import src.domain.dungeon.map.value.DungeonFeatureFacts;
+import src.domain.dungeon.map.value.DungeonFeatureType;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonTopology;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -146,11 +151,22 @@ public final class DungeonApplicationService {
                 DungeonMapMode.EDITOR,
                 toPublishedMapSnapshot(snapshot.derived().map()),
                 snapshot.derived().aggregates().stream().map(DungeonApplicationService::aggregateSummary).toList(),
-                snapshot.derived().relations().connections().stream()
-                        .map(connection -> "corridor " + connection.corridorId() + " -> room " + connection.roomId()
-                                + " (" + connection.direction() + ")")
-                        .toList(),
+                relationSummaries(snapshot),
                 toPublishedRevision(snapshot.revision()));
+    }
+
+    private static List<String> relationSummaries(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
+        List<String> result = new ArrayList<>();
+        snapshot.derived().relations().connections().stream()
+                .map(connection -> "corridor " + connection.corridorId() + " -> room " + connection.roomId()
+                        + " (" + connection.direction() + ")")
+                .forEach(result::add);
+        snapshot.derived().relations().featureRelations().stream()
+                .map(relation -> relation.ownerKind() + " " + relation.ownerId()
+                        + " -> " + relation.targetKind() + " " + relation.targetId()
+                        + " (" + relation.relationKind() + ")")
+                .forEach(result::add);
+        return List.copyOf(result);
     }
 
     private static ApplyDungeonEditorOperationUseCase.OperationInput toOperationInput(@Nullable DungeonEditorOperation operation) {
@@ -174,7 +190,8 @@ public final class DungeonApplicationService {
                 safeFacts.width(),
                 safeFacts.height(),
                 safeFacts.areas().stream().map(DungeonApplicationService::toPublishedArea).toList(),
-                safeFacts.boundaries().stream().map(DungeonApplicationService::toPublishedBoundary).toList());
+                safeFacts.boundaries().stream().map(DungeonApplicationService::toPublishedBoundary).toList(),
+                safeFacts.features().stream().map(DungeonApplicationService::toPublishedFeature).toList());
     }
 
     private static DungeonMapId toPublishedId(DungeonMapIdentity identity) {
@@ -201,8 +218,22 @@ public final class DungeonApplicationService {
                 toPublishedEdge(boundary.edge()));
     }
 
+    private static DungeonFeatureSnapshot toPublishedFeature(DungeonFeatureFacts feature) {
+        return new DungeonFeatureSnapshot(
+                toPublishedFeatureKind(feature.kind()),
+                feature.id(),
+                feature.label(),
+                feature.cells().stream().map(DungeonApplicationService::toPublishedCell).toList(),
+                feature.description(),
+                feature.destinationLabel());
+    }
+
     private static DungeonAreaKind toPublishedAreaKind(DungeonAreaType kind) {
         return kind == DungeonAreaType.CORRIDOR ? DungeonAreaKind.CORRIDOR : DungeonAreaKind.ROOM;
+    }
+
+    private static DungeonFeatureKind toPublishedFeatureKind(DungeonFeatureType kind) {
+        return kind == DungeonFeatureType.TRANSITION ? DungeonFeatureKind.TRANSITION : DungeonFeatureKind.STAIR;
     }
 
     private static DungeonTopologyKind toPublishedTopology(DungeonTopology topology) {

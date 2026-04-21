@@ -11,7 +11,11 @@ import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
 import src.data.dungeon.model.DungeonPersistenceSchema;
+import src.data.dungeon.model.DungeonStairExitRecord;
+import src.data.dungeon.model.DungeonStairPathNodeRecord;
+import src.data.dungeon.model.DungeonStairRecord;
 import src.data.dungeon.model.DungeonTopologySeedRecord;
+import src.data.dungeon.model.DungeonTransitionRecord;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -173,7 +177,9 @@ public final class DungeonSqliteGateway {
                 topologySeed(connection, mapId),
                 loadRoomClusters(connection, mapId),
                 loadRooms(connection, mapId),
-                loadCorridors(connection, mapId));
+                loadCorridors(connection, mapId),
+                loadStairs(connection, mapId),
+                loadTransitions(connection, mapId));
     }
 
     private DungeonTopologySeedRecord topologySeed(Connection connection, long mapId) throws SQLException {
@@ -495,6 +501,133 @@ public final class DungeonSqliteGateway {
                 return copyGrouped(records);
             }
         }
+    }
+
+    private static List<DungeonStairRecord> loadStairs(Connection connection, long mapId) throws SQLException {
+        Map<Long, List<DungeonStairPathNodeRecord>> pathNodesByStair = loadStairPathNodes(connection, mapId);
+        Map<Long, List<DungeonStairExitRecord>> exitsByStair = loadStairExits(connection, mapId);
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT stair_id, dungeon_map_id, name, shape, direction, dimension1, dimension2, corridor_id"
+                        + " FROM " + DungeonPersistenceSchema.STAIRS_TABLE
+                        + " WHERE dungeon_map_id=? ORDER BY stair_id")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<DungeonStairRecord> records = new ArrayList<>();
+                while (resultSet.next()) {
+                    long stairId = resultSet.getLong("stair_id");
+                    records.add(new DungeonStairRecord(
+                            stairId,
+                            resultSet.getLong("dungeon_map_id"),
+                            resultSet.getString("name"),
+                            resultSet.getString("shape"),
+                            resultSet.getInt("direction"),
+                            resultSet.getInt("dimension1"),
+                            resultSet.getInt("dimension2"),
+                            nullableLong(resultSet, "corridor_id"),
+                            pathNodesByStair.getOrDefault(stairId, List.of()),
+                            exitsByStair.getOrDefault(stairId, List.of())));
+                }
+                return List.copyOf(records);
+            }
+        }
+    }
+
+    private static Map<Long, List<DungeonStairPathNodeRecord>> loadStairPathNodes(
+            Connection connection,
+            long mapId
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT stair_id, cell_x, cell_y, cell_z"
+                        + " FROM " + DungeonPersistenceSchema.STAIR_PATH_NODES_TABLE
+                        + " WHERE stair_id IN (SELECT stair_id FROM "
+                        + DungeonPersistenceSchema.STAIRS_TABLE
+                        + " WHERE dungeon_map_id=?)"
+                        + " ORDER BY stair_id, sort_order")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<DungeonStairPathNodeRecord>> records = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    long stairId = resultSet.getLong("stair_id");
+                    records.computeIfAbsent(stairId, ignored -> new ArrayList<>())
+                            .add(new DungeonStairPathNodeRecord(
+                                    stairId,
+                                    resultSet.getInt("cell_x"),
+                                    resultSet.getInt("cell_y"),
+                                    resultSet.getInt("cell_z")));
+                }
+                return copyGrouped(records);
+            }
+        }
+    }
+
+    private static Map<Long, List<DungeonStairExitRecord>> loadStairExits(
+            Connection connection,
+            long mapId
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT stair_id, stair_exit_id, cell_x, cell_y, cell_z, label"
+                        + " FROM " + DungeonPersistenceSchema.STAIR_EXITS_TABLE
+                        + " WHERE stair_id IN (SELECT stair_id FROM "
+                        + DungeonPersistenceSchema.STAIRS_TABLE
+                        + " WHERE dungeon_map_id=?)"
+                        + " ORDER BY stair_id, stair_exit_id")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<DungeonStairExitRecord>> records = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    long stairId = resultSet.getLong("stair_id");
+                    records.computeIfAbsent(stairId, ignored -> new ArrayList<>())
+                            .add(new DungeonStairExitRecord(
+                                    stairId,
+                                    resultSet.getLong("stair_exit_id"),
+                                    resultSet.getInt("cell_x"),
+                                    resultSet.getInt("cell_y"),
+                                    resultSet.getInt("cell_z"),
+                                    resultSet.getString("label")));
+                }
+                return copyGrouped(records);
+            }
+        }
+    }
+
+    private static List<DungeonTransitionRecord> loadTransitions(Connection connection, long mapId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
+                        + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
+                        + " target_transition_id, linked_transition_id"
+                        + " FROM " + DungeonPersistenceSchema.TRANSITIONS_TABLE
+                        + " WHERE dungeon_map_id=? ORDER BY transition_id")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<DungeonTransitionRecord> records = new ArrayList<>();
+                while (resultSet.next()) {
+                    records.add(new DungeonTransitionRecord(
+                            resultSet.getLong("transition_id"),
+                            resultSet.getLong("dungeon_map_id"),
+                            resultSet.getString("description"),
+                            nullableInteger(resultSet, "cell_x"),
+                            nullableInteger(resultSet, "cell_y"),
+                            nullableInteger(resultSet, "level_z"),
+                            resultSet.getString("destination_type"),
+                            nullableLong(resultSet, "target_overworld_map_id"),
+                            nullableLong(resultSet, "target_overworld_tile_id"),
+                            nullableLong(resultSet, "target_dungeon_map_id"),
+                            nullableLong(resultSet, "target_transition_id"),
+                            nullableLong(resultSet, "linked_transition_id")));
+                }
+                return List.copyOf(records);
+            }
+        }
+    }
+
+    private static Long nullableLong(ResultSet resultSet, String column) throws SQLException {
+        long value = resultSet.getLong(column);
+        return resultSet.wasNull() ? null : value;
+    }
+
+    private static Integer nullableInteger(ResultSet resultSet, String column) throws SQLException {
+        int value = resultSet.getInt(column);
+        return resultSet.wasNull() ? null : value;
     }
 
     private static <T> Map<Long, List<T>> copyGrouped(Map<Long, List<T>> records) {

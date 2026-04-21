@@ -23,6 +23,15 @@ public enum DungeonEdgeDirection {
         return valueOf(value.trim().toUpperCase(Locale.ROOT));
     }
 
+    public static DungeonEdgeDirection fromCode(int code) {
+        return switch (code) {
+            case 1 -> EAST;
+            case 2 -> SOUTH;
+            case 3 -> WEST;
+            default -> NORTH;
+        };
+    }
+
     public DungeonCell neighborOf(DungeonCell cell) {
         if (cell == null) {
             return new DungeonCell(deltaQ, deltaR, 0);

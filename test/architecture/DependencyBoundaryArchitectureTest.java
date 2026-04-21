@@ -552,10 +552,10 @@ public final class DependencyBoundaryArchitectureTest {
         if (featureName == null || !isRootDomainPackage(packageName, featureName)) {
             return false;
         }
-        String expectedRootName = "src.domain." + featureName + "."
-                + toPascalCase(featureName) + "ApplicationService";
-        return javaClass.getName().equals(expectedRootName)
-                || javaClass.getName().startsWith(expectedRootName + "$");
+        String simpleName = javaClass.getSimpleName();
+        return simpleName.endsWith("ApplicationService")
+                && normalizeFeatureToken(simpleName.substring(0, simpleName.length() - "ApplicationService".length()))
+                .equals(normalizeFeatureToken(featureName));
     }
 
     private static boolean isRootDomainPackage(String packageName, String featureName) {
@@ -566,16 +566,12 @@ public final class DependencyBoundaryArchitectureTest {
         return packageName.startsWith("src.domain." + featureName + ".published");
     }
 
-    private static String toPascalCase(String featureName) {
+    private static String normalizeFeatureToken(String value) {
         StringBuilder result = new StringBuilder();
-        boolean capitalizeNext = true;
-        for (char character : featureName.toCharArray()) {
-            if (!Character.isLetterOrDigit(character)) {
-                capitalizeNext = true;
-                continue;
+        for (char character : value.toCharArray()) {
+            if (Character.isLetterOrDigit(character)) {
+                result.append(Character.toLowerCase(character));
             }
-            result.append(capitalizeNext ? Character.toUpperCase(character) : character);
-            capitalizeNext = false;
         }
         return result.toString();
     }
