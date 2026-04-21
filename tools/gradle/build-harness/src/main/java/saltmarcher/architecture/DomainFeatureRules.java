@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -24,6 +25,10 @@ final class DomainFeatureRules implements ArchitectureRule {
             Pattern.compile("(?m)^##\\s+.+$");
     private static final Pattern CONTEXT_BULLET_PATTERN =
             Pattern.compile("(?m)^\\s*-\\s+`([^`]+)`\\s*:\\s*(.+)$");
+    private static final Pattern MARKDOWN_TABLE_BACKTICK_ROW_PATTERN =
+            Pattern.compile("^\\|\\s*`([^`]+)`\\s*\\|\\s*([^|]+?)\\s*\\|\\s*(.*?)\\s*\\|\\s*$");
+    private static final Pattern BACKTICK_ID_PATTERN =
+            Pattern.compile("`([^`]+)`");
     private static final Pattern DOMAIN_CONTEXT_NAME_MARKER_PATTERN =
             Pattern.compile("(?m)^\\s*Context Name:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
     private static final Pattern DOMAIN_CONTEXT_ROLE_MARKER_PATTERN =
@@ -90,6 +95,7 @@ final class DomainFeatureRules implements ArchitectureRule {
             "domain-port-boundary",
             "domain-public-boundary-signature-purity",
             "domain-published-no-foreign-signatures",
+            "domain-viewmodel-domain-boundary-shape",
             "domain-role-shape",
             "domain-field-purity",
             "domain-public-concrete-type-shape",
@@ -127,8 +133,11 @@ final class DomainFeatureRules implements ArchitectureRule {
             "domain-foreign-service-documentation",
             "domain-outer-layer-independence-group",
             "domain-foreign-context-private-isolation",
+            "domain-viewmodel-domain-consumption",
+            "domain-viewmodel-presentation-translation",
             "domain-business-policy-not-in-view-data",
             "domain-application-no-published-to-model",
+            "domain-service-infrastructure-and-carrier-boundary",
             "domain-mapcore-removed-rule",
             "domain-enforcement-coverage-inventory");
     private static final List<String> BASE_CONTEXT_REQUIRED_SECTIONS = List.of(
@@ -425,6 +434,7 @@ final class DomainFeatureRules implements ArchitectureRule {
 
         validateRequiredEnforcedDomainRules(content, violations);
         validateRequiredDomainRuleGroups(content, violations);
+        validateInventoryCoverageReferencesKnownRuleIds(content, violations);
     }
 
     private static void validateRequiredEnforcedDomainRules(String content, ViolationSink violations) {
@@ -453,6 +463,56 @@ final class DomainFeatureRules implements ArchitectureRule {
                                 + "` must use status Enforced, Source-Pattern Enforced, Candidate, or Review-Owned.");
             }
         }
+    }
+
+    private static void validateInventoryCoverageReferencesKnownRuleIds(
+            String content,
+            ViolationSink violations) {
+        Set<String> documentedMechanicalRuleIds = documentedMechanicalRuleIds(content);
+        for (String line : content.split("\\R")) {
+            Matcher row = MARKDOWN_TABLE_BACKTICK_ROW_PATTERN.matcher(line);
+            if (!row.matches()) {
+                continue;
+            }
+            String ruleGroupId = row.group(1);
+            String status = row.group(2).trim();
+            if (!"Enforced".equals(status) && !"Source-Pattern Enforced".equals(status)) {
+                continue;
+            }
+            List<String> referencedRuleIds = backtickIds(row.group(3)).stream()
+                    .filter(ruleId -> ruleId.startsWith("domain-"))
+                    .toList();
+            boolean referencesDocumentedRule = referencedRuleIds.stream().anyMatch(documentedMechanicalRuleIds::contains);
+            if (!referencesDocumentedRule) {
+                violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
+                        "Enforced coverage row for domain-layer rule group `" + ruleGroupId
+                                + "` must reference at least one domain rule ID from the Enforced Rule Matrix"
+                                + " or Source-Pattern Checks.");
+            }
+        }
+    }
+
+    private static Set<String> documentedMechanicalRuleIds(String content) {
+        Set<String> result = new TreeSet<>();
+        for (String line : content.split("\\R")) {
+            if (!line.contains("./gradlew") || !lineContainsMechanicalOwner(line)) {
+                continue;
+            }
+            Matcher row = MARKDOWN_TABLE_BACKTICK_ROW_PATTERN.matcher(line);
+            if (row.matches()) {
+                result.add(row.group(1));
+            }
+        }
+        return result;
+    }
+
+    private static List<String> backtickIds(String content) {
+        List<String> result = new ArrayList<>();
+        Matcher matcher = BACKTICK_ID_PATTERN.matcher(content);
+        while (matcher.find()) {
+            result.add(matcher.group(1));
+        }
+        return result;
     }
 
     private void validateBaseContextDocument(
@@ -589,7 +649,8 @@ final class DomainFeatureRules implements ArchitectureRule {
         return line.contains("build-harness")
                 || line.contains("Error Prone")
                 || line.contains("PMD")
-                || line.contains("ArchUnit");
+                || line.contains("ArchUnit")
+                || line.contains("jQAssistant");
     }
 
     private static boolean lineContainsRuleGroupStatus(String line) {

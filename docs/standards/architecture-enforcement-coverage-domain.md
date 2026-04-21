@@ -61,6 +61,7 @@ is the canonical domain-specific coverage inventory.
 | `domain-port-boundary` | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound ports are domain-owned interfaces with infrastructure-free signatures and no domain implementations. |
 | `domain-public-boundary-signature-purity` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root and published signatures do not leak outer-layer or private domain types. |
 | `domain-published-no-foreign-signatures` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root and published signatures do not expose foreign published carriers. |
+| `domain-viewmodel-domain-boundary-shape` | View enforcement coverage with Error Prone `ViewModelFrameworkIndependence`, ArchUnit `viewActiveRootsAndViewModelsMustOnlyUseAllowedDomainBoundaries`, and jQAssistant `saltmarcher:MvvmViewModelDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | Active-root ViewModels reach domain through root application services or published carriers; slotcontent ViewModels reach domain through published carriers only. |
 | `domain-role-shape` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Tactical role packages use their declared type shapes. |
 | `domain-field-purity` | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public domain module fields do not expose mutable state. |
 | `domain-public-concrete-type-shape` | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public concrete domain types satisfy the project shape constraints. |
@@ -119,8 +120,11 @@ cannot prove without low-signal inference.
 | `domain-foreign-service-documentation` | Review-Owned | Constructor type compatibility is covered by `domain-root-constructor-composition`; whether the foreign service is semantically documented by relationship prose remains review-owned. |
 | `domain-outer-layer-independence-group` | Enforced | Covered by `domain-outer-layer-independence`, `domain-forbidden-infrastructure-dependency`, and the PMD infrastructure source-pattern row. |
 | `domain-foreign-context-private-isolation` | Enforced | Covered by `domain-foreign-feature-public-boundary`, `domain-named-module-private-context`, and `domain-feature-cycles`. |
+| `domain-viewmodel-domain-consumption` | Enforced | Covered by `domain-viewmodel-domain-boundary-shape`; the dependency shape is owned by view enforcement because the source files live under `src/view/**`. |
+| `domain-viewmodel-presentation-translation` | Review-Owned | The dependency gates prove which domain contracts a ViewModel may call, but cannot prove that presentation state is translated before and after the call. |
 | `domain-business-policy-not-in-view-data` | Review-Owned | Stable dependency and signature evidence is enforced where present; business-rule ownership without such evidence requires design review. |
 | `domain-application-no-published-to-model` | Enforced | Covered by `domain-application-no-same-context-published`, `domain-named-module-no-published-carriers`, and `domain-named-module-no-same-context-application`. |
+| `domain-service-infrastructure-and-carrier-boundary` | Enforced | Covered by `domain-forbidden-infrastructure-dependency`, `domain-outer-layer-independence`, `domain-model-roles-no-outbound-ports`, and `domain-named-module-no-published-carriers`. |
 | `domain-mapcore-removed-rule` | Enforced | Covered by `domain-mapcore-removed`. |
 | `domain-enforcement-coverage-inventory` | Enforced | Covered by `domain-enforcement-coverage-complete`, which requires this document to list the enforced rule IDs and classify this inventory. |
 
@@ -181,11 +185,21 @@ The configured top-level domain buckets that are stable enough for
 `services`, `specification`, `specifications`, `usecase`, `usecases`,
 `valueobject`, `valueobjects`, `view`, and `viewmodel`.
 
-Do not add a new static-analysis engine for the current domain gaps. The
-existing owners already cover the high-signal evidence classes: file topology,
-source patterns, javac-resolved signatures, bytecode dependencies, and graph
-rules. A future engine must first identify a domain rule that these owners
-cannot express cleanly and that is not actually a semantic modelling judgment.
+### Tool Fit Decisions
+
+| Candidate | Current Fit | Decision |
+| --- | --- | --- |
+| Existing build-harness | Exact file topology, package layout, required documents, marker presence, and coverage-document consistency. | Use for additional domain coverage bookkeeping and path-shaped rules. |
+| Existing Error Prone checks | Compiler-resolved Java types, signatures, constructors, fields, and domain boundary leaks. | Keep as primary owner for type-aware blockers. |
+| Existing ArchUnit checks | Bytecode-visible dependency direction, foreign-context access, and cycles. | Keep as primary owner for dependency topology. |
+| Existing PMD architecture rule | Narrow AST/source-pattern smells. | Keep only for stable source patterns; do not treat as semantic proof. |
+| jQAssistant | Graph-shaped topology where existing source and bytecode checks are insufficient. | Already useful for view topology; add for domain only after a concrete graph-shaped domain rule exists. |
+| OpenRewrite | Type-attributed rewrites and migration recipes. | Useful for future auto-remediation, not a new blocker for current domain enforcement. |
+| CodeQL | Data-flow analysis across Java. | Reserve for future dataflow/security-style rules; too heavy and indirect for current local architecture blockers. |
+| Semgrep or Spoon | Additional source-pattern or Java AST analysis. | Do not add; they overlap PMD/Error Prone for the current domain gaps. |
+
+A future engine must first identify a domain rule that these owners cannot
+express cleanly and that is not actually a semantic modelling judgment.
 
 ## Review-Owned
 
@@ -198,6 +212,8 @@ cannot express cleanly and that is not actually a semantic modelling judgment.
   passing file-name and helper-prefix checks
 - whether root application services actually translate public carriers before
   entering use cases or named modules
+- whether active-root ViewModels actually translate presentation state before
+  and after calls to root application services
 - whether a foreign root application service injected into a root constructor
   is semantically documented by the context relationship prose rather than only
   type-compatible
@@ -250,3 +266,8 @@ would produce low-signal results.
 - [Error Prone Plugin Checks](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/error-prone-plugin-checks.md:1)
 - [PMD Writing Java Rules](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/pmd-writing-java-rules.md:1)
 - [jQAssistant User Manual](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/jqassistant-user-manual.md:1)
+- [OpenRewrite Recipes](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/openrewrite-recipes.md:1)
+- [OpenRewrite Type Attribution](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/openrewrite-type-attribution.md:1)
+- [Semgrep Writing Rules Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/semgrep-writing-rules-overview.md:1)
+- [CodeQL Java Data Flow](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/codeql-java-data-flow.md:1)
+- [Spoon Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/spoon-overview.md:1)

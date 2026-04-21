@@ -24,7 +24,8 @@ review-only boundary remain defined in the
 - [Domain Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-domain.md:1)
   owns Domain Layer Standard coverage, including domain context documents,
   public application boundaries, published carriers, named modules, tactical
-  role-package allowlists, and domain dependency direction.
+  role-package allowlists, and domain dependency direction. This routing index
+  does not carry the domain-layer rule matrix itself.
 - [Data And System Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-data-system.md:1)
   owns data-layer composition adapters, port adapters, source adapters, source
   models, persistencecore, system layer, and bootstrap boundary coverage. This
