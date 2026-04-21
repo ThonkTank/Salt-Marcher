@@ -203,7 +203,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
                         || sourceFacts.text().contains(".getInstance(")
                         || ROOT_APPLICATION_SERVICE_STATIC_BACKEND_PATTERN.matcher(sourceFacts.text()).find()) {
                     asCtx(data).addViolationWithMessage(node,
-                            "Root application services must stay thin and must not instantiate or cache repository/query/gateway/store infrastructure directly.");
+                            "Root application services must stay thin and must not instantiate or cache data port-adapter or source-adapter infrastructure directly.");
                 }
             }
             if (sourceFacts.isDomainApplicationSource()) {

@@ -14,7 +14,7 @@ import java.util.List;
 
 @BugPattern(
         name = "ServiceRegistryRegistrationPlacement",
-        summary = "ServiceRegistry registrations must stay in data feature service contribution roots.",
+        summary = "ServiceRegistry registrations must stay in data feature composition adapter roots.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ServiceRegistryRegistrationPlacementChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -48,7 +48,7 @@ public final class ServiceRegistryRegistrationPlacementChecker extends BugChecke
         return buildDescription(tree)
                 .setMessage("Package '" + packageName
                         + "' registers services directly in shell.api.ServiceRegistry.Builder."
-                        + " Runtime service registration belongs only in src/data/<feature>/<Feature>ServiceContribution.java."
+                        + " Runtime service registration belongs only in the data feature composition adapter at src/data/<feature>/<Feature>ServiceContribution.java."
                         + " Found: " + String.join(", ", registrations))
                 .build();
     }

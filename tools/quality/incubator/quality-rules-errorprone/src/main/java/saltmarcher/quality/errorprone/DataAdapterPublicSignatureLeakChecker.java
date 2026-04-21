@@ -22,7 +22,7 @@ import javax.lang.model.util.ElementFilter;
 
 @BugPattern(
         name = "DataAdapterPublicSignatureLeak",
-        summary = "Repository and query adapter signatures must not leak internal data model or gateway types.",
+        summary = "Repository/query port-adapter signatures must not leak source-local model or source-adapter types.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataAdapterPublicSignatureLeakChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
@@ -76,8 +76,8 @@ public final class DataAdapterPublicSignatureLeakChecker extends BugChecker impl
             return Description.NO_MATCH;
         }
         return buildDescription(tree)
-                .setMessage("Public adapter type '" + tree.getSimpleName()
-                        + "' leaks internal data-layer types: " + String.join("; ", leaks))
+                .setMessage("Public port-adapter type '" + tree.getSimpleName()
+                        + "' leaks internal data-layer source types: " + String.join("; ", leaks))
                 .build();
     }
 

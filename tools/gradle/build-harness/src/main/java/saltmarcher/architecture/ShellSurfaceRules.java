@@ -119,7 +119,7 @@ final class ShellSurfaceRules implements ArchitectureRule {
                 continue;
             }
             violations.add(sourceFile.relativePath(), "service-contribution-placement",
-                    "ServiceContribution roots are a data-feature registration boundary. Place them at src/data/<feature>/<Feature>ServiceContribution.java.");
+                    "ServiceContribution roots are runtime composition adapters currently placed under data features. Place them at src/data/<feature>/<Feature>ServiceContribution.java.");
         }
     }
 

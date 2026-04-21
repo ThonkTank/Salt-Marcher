@@ -200,19 +200,19 @@ final class SourceLayoutRules implements ArchitectureRule {
         List<String> segments = sourceFile.relativeSegments();
         if (segments.size() < 5) {
             violations.add(sourceFile.relativePath(), "domain-module-role-required",
-                    "Named domain modules must place Java files under src/domain/<context>/<module>/<role>/.");
+                    "Named domain modules must place Java files under an allowed tactical role package at src/domain/<context>/<module>/<role>/. This is a package allowlist, not a required role inventory.");
             return;
         }
         if (segments.size() != 6) {
             violations.add(sourceFile.relativePath(), "domain-role-direct-files",
-                    "Domain role package Java files must be direct files under src/domain/<context>/<module>/<role>/.");
+                    "Domain tactical role package Java files must be direct files under src/domain/<context>/<module>/<role>/.");
             return;
         }
 
         String role = segments.get(4);
         if (!DOMAIN_ALLOWED_ROLE_PACKAGES.contains(role)) {
             violations.add(sourceFile.relativePath(), "domain-role-package-name",
-                    "Domain role packages must be one of: " + String.join(", ", DOMAIN_ALLOWED_ROLE_PACKAGES) + ".");
+                    "Domain tactical role packages must be one of: " + String.join(", ", DOMAIN_ALLOWED_ROLE_PACKAGES) + ".");
         }
     }
 
@@ -236,7 +236,7 @@ final class SourceLayoutRules implements ArchitectureRule {
         if (segments.size() < 5) {
             violations.add(sourceFile.relativePath(), "data-layout",
                     "Data sources must live under src/data/<feature>/<Feature>ServiceContribution.java,"
-                            + " repository, query, gateway, model or mapper.");
+                            + " repository, query, gateway, model, or mapper according to the current adapter layout.");
             return;
         }
 
@@ -247,12 +247,11 @@ final class SourceLayoutRules implements ArchitectureRule {
             case "gateway" -> {
                 if (segments.size() < 6 || !Set.of("local", "remote").contains(segments.get(4))) {
                     violations.add(sourceFile.relativePath(), "data-layout",
-                            "Gateways must live under gateway/local or gateway/remote.");
+                            "Source adapters in the physical gateway/ package must live under gateway/local or gateway/remote.");
                 }
             }
             default -> violations.add(sourceFile.relativePath(), "data-layout",
-                    "Only a data root contribution, repository/, query/, gateway/local/, gateway/remote/, model/ and mapper/"
-                            + " are allowed in data features.");
+                    "Only a composition adapter root, repository/ and query/ port adapters, gateway/local/ and gateway/remote/ source adapters, model/ source models, and mapper/ translators are allowed in data features.");
         }
     }
 

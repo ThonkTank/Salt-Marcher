@@ -50,7 +50,7 @@ final class DataPersistenceRules implements ArchitectureRule {
                         ? "none found"
                         : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
                 violations.add("src/data/" + featureName, "persistence-root-entrypoint",
-                        "Persistently wired data feature '" + featureName + "' must expose exactly one root persistence contribution."
+                        "Persistence-exporting data feature '" + featureName + "' must expose exactly one composition adapter root."
                                 + " Found: " + files);
             }
 
@@ -59,7 +59,7 @@ final class DataPersistenceRules implements ArchitectureRule {
                         ? "none found"
                         : schemas.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
                 violations.add("src/data/" + featureName, "persistence-schema-contract",
-                        "Persistently wired data feature '" + featureName + "' must expose exactly one schema declaration."
+                        "Persistence-exporting data feature '" + featureName + "' must expose exactly one source-model schema declaration."
                                 + " Found: " + files);
             }
         }

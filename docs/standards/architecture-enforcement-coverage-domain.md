@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Mechanical and review-owned enforcement coverage for the
 canonical Domain Layer Standard.
 
@@ -61,10 +61,12 @@ remaining review-owned rules so the enforcement set does not overclaim.
   those carriers before delegation, owned by Error Prone
   `DomainApplicationNoSameContextPublishedDependency`.
 - `domain-module-role-required`, `domain-role-direct-files`, and
-  `domain-role-package-name`: named domain modules must place Java files as
-  direct files under allowed role packages only: `aggregate`, `entity`,
-  `value`, `policy`, `port`, `factory`, `service`, `event`, and
-  `specification`, owned by `build-harness`.
+  `domain-role-package-name`: when a named domain module contains Java files,
+  those files must be direct files under one of the allowed tactical role
+  packages: `aggregate`, `entity`, `value`, `policy`, `port`, `factory`,
+  `service`, `event`, or `specification`, owned by `build-harness`. This is a
+  package allowlist and direct-file rule, not a requirement to create every
+  role package.
 - `domain-forbidden-top-level-bucket`: legacy direct buckets such as `api`,
   `repository`, `query`, `gateway`, `adapter`, `controller`, `model`,
   `service`, `usecase`, and plural role buckets are forbidden directly under
@@ -143,8 +145,10 @@ proof that behavior sits in the right domain role.
 - whether a use case is thin orchestration rather than hidden business policy
 - whether an outbound port is named in domain language rather than in storage
   or vendor language
+- whether a chosen tactical role package is warranted by real model behaviour
+  rather than ceremonial taxonomy
 - whether aggregate, entity, value, policy, factory, service, specification,
-  and event behavior is rich enough for the role name
+  and event behavior is rich enough for the role name when that role is used
 - whether `published/` language is stable and intentionally versioned enough
   for view models and foreign contexts
 - whether commands, invariants, consistency notes, and ubiquitous language in

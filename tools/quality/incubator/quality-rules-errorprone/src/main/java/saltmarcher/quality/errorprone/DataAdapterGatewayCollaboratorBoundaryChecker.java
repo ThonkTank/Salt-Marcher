@@ -12,7 +12,7 @@ import java.util.regex.Matcher;
 
 @BugPattern(
         name = "DataAdapterGatewayCollaboratorBoundary",
-        summary = "Repository and query adapters must depend on gateway facades, not concrete gateway mechanics.",
+        summary = "Repository/query port adapters must depend on source-adapter facades, not concrete source mechanics.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataAdapterGatewayCollaboratorBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -45,9 +45,9 @@ public final class DataAdapterGatewayCollaboratorBoundaryChecker extends BugChec
         }
         return buildDescription(tree)
                 .setMessage(adapterPackage.roleName() + " adapter package '" + packageName
-                        + "' depends directly on concrete gateway mechanics: "
+                        + "' depends directly on concrete source-adapter mechanics: "
                         + String.join(", ", violations)
-                        + ". Coordinate source work through an own-feature gateway facade type ending in 'Gateway'.")
+                        + ". Coordinate source work through an own-feature source-adapter facade type ending in 'Gateway'.")
                 .build();
     }
 

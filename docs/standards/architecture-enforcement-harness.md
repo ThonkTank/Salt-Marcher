@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Mechanical ownership, execution model, rule-status vocabulary,
 and review-only boundary for build-blocking architecture enforcement on active
 code surfaces.
@@ -63,6 +63,12 @@ harness.
   the standard remains the canonical source of truth and the check must be
   documented as migration debt rather than treated as the real architecture
   model.
+- The harness enforces stable physical shapes, dependency boundaries, and
+  signature contracts. It must not turn optional domain roles or data adapter
+  implementation patterns into required concept inventories.
+- Rule identifiers may remain stable across vocabulary resets, but diagnostics
+  and coverage documents must use the canonical terms from the current layer
+  standards.
 
 ## Rule Status Vocabulary
 
@@ -92,6 +98,12 @@ SaltMarcher assigns mechanical ownership by the dominant shape of the rule.
 
 These rules are defined by file placement, allowed buckets, package-path
 alignment, or required roots and schema declarations.
+
+For `src/domain/**`, these rules prove that Java files live under allowed
+tactical role packages; they do not prove that every tactical role exists or is
+needed. For `src/data/**`, they prove the current physical adapter layout:
+composition adapter root, port-adapter packages, source-adapter packages,
+source model, optional mapper, and shared infrastructure.
 
 ### Source Policy Rules
 
@@ -128,7 +140,7 @@ directly expressed from the file tree: layout, package-path alignment,
 feature-root presence, topological bucket names, view-root composition,
 persistence schema contracts, and bans on fixture-based harness selftests. It
 is not the owner for dependency direction, compiler-resolved signature checks,
-or graph-shaped view topology.
+semantic role richness, or graph-shaped view topology.
 
 ### `PMD architecture`
 
@@ -136,9 +148,10 @@ or graph-shaped view topology.
 root entrypoint contracts, required root methods, thin stateless contribution
 roots, shell contribution spec selection, inline styling bans, domain source
 token bans, application-layer policy-helper naming bans, setter-style domain
-mutation bans, data role source-mechanics bans, and legacy wiring type bans
+mutation bans, port-adapter concrete-source bans, and legacy wiring type bans
 already modeled at source level. It is not the owner for graph topology, full
-compiler-signature checks, or package dependency direction.
+compiler-signature checks, semantic adapter adequacy, or package dependency
+direction.
 
 ### `Error Prone`
 
@@ -150,9 +163,9 @@ service-registry registration placement, presentation-state placement,
 JavaFX API placement between contributions, Binders, ViewModels, passive views,
 reusable slotcontent, and transitional legacy view code, visual-styling
 exceptions, reflection-bypass bans, and public API signature leaks from
-private buckets, including compiler-visible data adapter collaborator
-boundaries. It is not the owner for repository topology or broad package graph
-rules.
+private buckets, including compiler-visible data port-adapter and
+source-adapter collaborator boundaries. It is not the owner for repository
+topology or broad package graph rules.
 
 ### `ArchUnit`
 
@@ -304,6 +317,9 @@ The preferred diagnostic shape is:
 
 Where the engine allows it, diagnostics should use the canonical architecture
 terms already present in the layer standards rather than tool-internal jargon.
+Stable rule IDs are allowed to retain historical names when renaming them would
+create avoidable build-logic churn, but their summaries and user-facing
+messages should explain the current model.
 
 ## Rule Lifecycle
 
@@ -354,3 +370,4 @@ not a backlog omission.
 - [ADR 006: Layered View-Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/006-jqassistant-owns-view-architecture-enforcement.md:1)
 - [ADR 014: Strict Domain-Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/014-strict-domain-layer-enforcement.md:1)
 - [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/016-architecture-enforcement-operating-model.md:1)
+- [ADR 024: Domain And Data Concept Simplification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/024-domain-data-concept-simplification.md:1)

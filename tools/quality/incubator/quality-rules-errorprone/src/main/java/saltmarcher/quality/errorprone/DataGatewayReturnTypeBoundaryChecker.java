@@ -18,7 +18,7 @@ import javax.lang.model.util.ElementFilter;
 
 @BugPattern(
         name = "DataGatewayReturnTypeBoundary",
-        summary = "Gateway packages must not expose domain or exported backend types as method return values.",
+        summary = "Source-adapter packages must not expose domain or exported backend types as method return values.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
@@ -57,7 +57,7 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
             return Description.NO_MATCH;
         }
         return buildDescription(tree)
-                .setMessage("Gateway package '" + packageName
+                .setMessage("Source-adapter package '" + packageName
                         + "' exposes return types outside source-local data records or JDK value/container types: "
                         + String.join("; ", violations))
                 .build();

@@ -63,8 +63,8 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         for (String token : CONCRETE_SOURCE_TOKENS) {
             if (sourceFacts.text().contains(token)) {
                 asCtx(data).addViolationWithMessage(node,
-                        "Data repository/, query/, and mapper/ code must not own concrete source mechanics such as '"
-                                + token + "'. Move source-specific work into gateway/.");
+                        "Data repository/, query/, and mapper/ port-adapter code must not own concrete source mechanics such as '"
+                                + token + "'. Move source-specific work into a source adapter under gateway/.");
             }
         }
     }

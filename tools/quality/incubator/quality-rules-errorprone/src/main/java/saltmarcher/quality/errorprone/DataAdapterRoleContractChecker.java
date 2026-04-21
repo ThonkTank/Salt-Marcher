@@ -18,7 +18,7 @@ import javax.lang.model.type.TypeMirror;
 
 @BugPattern(
         name = "DataAdapterRoleContract",
-        summary = "Repository adapters implement write ports and query adapters implement read-only ports.",
+        summary = "Repository/query port adapters implement the matching domain-owned outbound port roles.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class DataAdapterRoleContractChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
@@ -51,7 +51,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
             if (isPublicNonAdapterBoundaryType(typeElement)) {
                 violations.add(role.diagnosticName + " package declares public non-adapter boundary type "
                         + typeElement.getQualifiedName()
-                        + "; data repository/query contracts and carriers belong in the owning domain port or published boundary.");
+                        + "; data repository/query packages contain port adapters, while contracts and carriers belong in the owning domain port or published boundary.");
             }
             for (DomainContract contract : domainContracts) {
                 if (!contract.featureName().equals(role.featureName())) {
@@ -64,7 +64,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
             }
             if (isPublicConcrete(typeElement) && domainContracts.stream().noneMatch(role::isOwnExpectedContract)) {
                 violations.add(role.diagnosticName + " adapter must satisfy one own-feature "
-                        + role.expectedContractDescription + " contract.");
+                        + role.expectedContractDescription + " domain port contract.");
             }
         }
 
@@ -73,7 +73,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
         }
 
         return buildDescription(tree)
-                .setMessage("Data adapter role contract violation in '" + tree.getSimpleName()
+                .setMessage("Data port-adapter contract violation in '" + tree.getSimpleName()
                         + "': " + String.join("; ", violations))
                 .build();
     }
