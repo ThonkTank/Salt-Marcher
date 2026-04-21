@@ -64,7 +64,7 @@ final class DungeonTraversalActionCatalog {
         if (source == null || target == null) {
             return null;
         }
-        return new TraversalCandidate(link, source, target, direction(source.tile(), target.tile()));
+        return new TraversalCandidate(link, source, target, link.directionFrom(source.tile()));
     }
 
     private static List<DungeonTravelActionFacts> actions(
@@ -215,20 +215,6 @@ final class DungeonTraversalActionCatalog {
             case 2 -> "Hinter euch";
             default -> "Links von euch";
         };
-    }
-
-    private static @Nullable DungeonEdgeDirection direction(DungeonCell source, DungeonCell target) {
-        if (source.level() != target.level()) {
-            return null;
-        }
-        int deltaQ = target.q() - source.q();
-        int deltaR = target.r() - source.r();
-        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-            if (direction.deltaQ() == deltaQ && direction.deltaR() == deltaR) {
-                return direction;
-            }
-        }
-        return null;
     }
 
     private static int sourceOrder(DungeonTraversalSourceKind kind) {

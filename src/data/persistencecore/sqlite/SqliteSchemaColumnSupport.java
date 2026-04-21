@@ -24,4 +24,16 @@ public final class SqliteSchemaColumnSupport {
         }
         return false;
     }
+
+    public static boolean hasTable(Connection connection, String tableName) throws SQLException {
+        DatabaseMetaData metadata = connection.getMetaData();
+        try (ResultSet resultSet = metadata.getTables(null, null, tableName, null)) {
+            while (resultSet.next()) {
+                if (tableName.equalsIgnoreCase(resultSet.getString("TABLE_NAME"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

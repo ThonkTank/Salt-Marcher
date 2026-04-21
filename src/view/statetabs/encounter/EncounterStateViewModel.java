@@ -320,14 +320,6 @@ public final class EncounterStateViewModel {
         refreshBuilderState(lastSettings, "");
     }
 
-    void clearRoster() {
-        clearGeneratedContext();
-        clearPendingUndo();
-        roster.clear();
-        status.set("Encounter-Roster geleert.");
-        refreshBuilderState(BuilderSettings.defaultSettings(), "");
-    }
-
     void openInitiative() {
         if (roster.isEmpty()) {
             status.set("Kampfstart braucht mindestens eine Kreatur.");
@@ -425,15 +417,16 @@ public final class EncounterStateViewModel {
     }
 
     void endCombat() {
-        List<ResultEnemy> enemies = combatRuntime.resultEnemies().stream()
-                .map(enemy -> new ResultEnemy(
-                        enemy.name(),
-                        enemy.status(),
-                        enemy.hpLoss(),
-                        enemy.xp(),
-                        enemy.defeatedByDefault(),
-                        enemy.loot()))
-                .toList();
+        List<ResultEnemy> enemies = new ArrayList<>();
+        for (var enemy : combatRuntime.resultEnemies()) {
+            enemies.add(new ResultEnemy(
+                    enemy.name(),
+                    enemy.status(),
+                    enemy.hpLoss(),
+                    enemy.xp(),
+                    enemy.defeatedByDefault(),
+                    enemy.loot()));
+        }
         int eligibleXp = enemies.stream()
                 .filter(ResultEnemy::defeatedByDefault)
                 .mapToInt(ResultEnemy::xp)
@@ -588,20 +581,21 @@ public final class EncounterStateViewModel {
     private void refreshCombatState() {
         var projection = combatRuntime.combatProjection(currentTurnIndex, round);
         currentTurnIndex = projection.currentTurnIndex();
-        List<CombatCard> cards = projection.cards().stream()
-                .map(card -> new CombatCard(
-                        card.id(),
-                        card.name(),
-                        card.playerCharacter(),
-                        card.active(),
-                        card.alive(),
-                        card.currentHp(),
-                        card.maxHp(),
-                        card.armorClass(),
-                        card.initiative(),
-                        card.count(),
-                        card.detail()))
-                .toList();
+        List<CombatCard> cards = new ArrayList<>();
+        for (var card : projection.cards()) {
+            cards.add(new CombatCard(
+                    card.id(),
+                    card.name(),
+                    card.playerCharacter(),
+                    card.active(),
+                    card.alive(),
+                    card.currentHp(),
+                    card.maxHp(),
+                    card.armorClass(),
+                    card.initiative(),
+                    card.count(),
+                    card.detail()));
+        }
         combatState.set(new CombatState(
                 projection.round(),
                 projection.status(),
@@ -937,7 +931,8 @@ public final class EncounterStateViewModel {
             return new ResultState(List.of(), 0, 0, 0, "Kein Loot", "", "", false, false, 1);
         }
 
-        ResultState withAwardStatus(String text, boolean awarded) {
+        @SuppressWarnings("ParameterName")
+        ResultState withAwardStatus(String awardStatus, boolean awarded) {
             return new ResultState(
                     enemies,
                     defeatedCount,
@@ -945,7 +940,7 @@ public final class EncounterStateViewModel {
                     perPlayerXp,
                     goldSummary,
                     lootDetail,
-                    text,
+                    awardStatus,
                     awarded,
                     !awarded && canAwardXp,
                     partySize);

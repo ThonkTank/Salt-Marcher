@@ -49,13 +49,17 @@ public record DungeonTraversalLink(
 
     public DungeonTravelHeading headingFrom(DungeonCell sourceTile, DungeonTravelHeading currentHeading) {
         DungeonTravelHeading fallback = currentHeading == null ? DungeonTravelHeading.defaultHeading() : currentHeading;
+        DungeonEdgeDirection direction = directionFrom(sourceTile);
+        return direction == null ? fallback : DungeonTravelHeading.valueOf(direction.name());
+    }
+
+    public @Nullable DungeonEdgeDirection directionFrom(DungeonCell sourceTile) {
         DungeonTraversalEndpoint sourceEndpoint = endpoint(sourceTile);
         DungeonTraversalEndpoint targetEndpoint = sourceEndpoint == null ? null : oppositeOf(sourceEndpoint);
         if (sourceEndpoint == null || targetEndpoint == null) {
-            return fallback;
+            return null;
         }
-        DungeonEdgeDirection direction = cardinalDirection(sourceEndpoint.tile(), targetEndpoint.tile());
-        return direction == null ? fallback : DungeonTravelHeading.valueOf(direction.name());
+        return cardinalDirection(sourceEndpoint.tile(), targetEndpoint.tile());
     }
 
     public String directionalActionId(DungeonCell sourceTile) {

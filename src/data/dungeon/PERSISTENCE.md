@@ -51,8 +51,14 @@ This document is normative for the dungeon feature's persistence path.
   - `dungeon_stair_exits`
   - `dungeon_transitions`
 - Existing databases receive additive compatibility migrations for
-  `dungeon_rooms.visual_description` and the legacy stair columns
-  `shape`, `direction`, `dimension1`, `dimension2`, and `corridor_id`.
+  `dungeon_rooms.visual_description`, room-cluster center columns
+  `center_x`, `center_y`, and `level_z`, legacy stair columns `shape`,
+  `direction`, `dimension1`, `dimension2`, and `corridor_id`, and transition
+  anchor columns `cell_x`, `cell_y`, and `level_z`.
+- Existing legacy room clusters backed by `dungeon_structure_levels` are
+  backfilled into the current center columns when those columns are first
+  added. Legacy stair-anchored transitions are backfilled into the current
+  nullable transition anchor columns when those columns are first added.
 
 ## Current Mapping
 
