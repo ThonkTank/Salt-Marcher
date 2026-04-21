@@ -42,6 +42,11 @@ Current state:
 - Encounter difficulty defaults to Auto. The amount, balance, and diversity
   controls each expose an Auto toggle; while Auto is selected, the slider is
   disabled and the published value is the Auto sentinel for that tuning field.
+- When a tuning slider is manually enabled, its value label mirrors the
+  original encounter builder: difficulty shows the active party's adjusted XP
+  range, balance shows `Extreme++` through `Durchschnitt++`, amount shows
+  `Boss++` through `Minions++`, and diversity shows `1 Typ` through
+  `4 Typen`.
 - Encounter-table multi-selection publishes selected table IDs for the
   Encounter state tab; an empty selection means normal monster catalog
   generation.

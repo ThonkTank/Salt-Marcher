@@ -10,12 +10,16 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterTuningPreviewLabels;
+import src.domain.encounter.published.LoadEncounterTuningPreviewQuery;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.EncounterTableSummary;
 import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
+import src.domain.party.PartyApplicationService;
 import src.view.slotcontent.controls.catalog.CatalogControlsView;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 import src.view.slotcontent.main.catalog.CatalogMainView;
@@ -33,28 +37,43 @@ final class CatalogBinder {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterTableApplicationService encounterTables =
                 runtimeContext.services().require(EncounterTableApplicationService.class);
-        EncounterRuntimeViewModel encounterSession = runtimeContext.session(
-                EncounterRuntimeViewModel.class,
-                EncounterRuntimeViewModel::new);
+        EncounterApplicationService encounters = encounterService(creatures, encounterTables);
+        EncounterRuntimeViewModel encounterSession = encounterSession();
         CatalogViewModel viewModel = new CatalogViewModel(creatures);
         CatalogControlsView controls = new CatalogControlsView();
         CatalogMainView main = new CatalogMainView();
-        bindControls(viewModel, controls, encounterSession, encounterTables);
+        bindControls(viewModel, controls, encounterSession, encounterTables, encounters);
         bindMain(runtimeContext.inspector(), creatures, encounterSession, viewModel, main);
         viewModel.loadInitial();
         return new Binding(controls, main);
+    }
+
+    private EncounterApplicationService encounterService(
+            CreaturesApplicationService creatures,
+            EncounterTableApplicationService encounterTables
+    ) {
+        PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
+        return new EncounterApplicationService(party, creatures, encounterTables);
+    }
+
+    private EncounterRuntimeViewModel encounterSession() {
+        return runtimeContext.session(
+                EncounterRuntimeViewModel.class,
+                EncounterRuntimeViewModel::new);
     }
 
     private static void bindControls(
             CatalogViewModel viewModel,
             CatalogControlsView controls,
             EncounterRuntimeViewModel encounterSession,
-            EncounterTableApplicationService encounterTables
+            EncounterTableApplicationService encounterTables,
+            EncounterApplicationService encounters
     ) {
         controls.setCreatureFilterData(toControlFilterData(viewModel.creatureFilterDataProperty().get()));
         controls.setChips(toControlChips(viewModel.chips()));
         controls.setEncounterTables(loadEncounterTableSelections(encounterTables));
         controls.selectEncounterTables(encounterSession.encounterTableIds());
+        refreshTuningPreview(controls, encounters);
 
         controls.setOnCreatureFiltersChanged(filter -> {
             encounterSession.updateFilters(filter.types(), filter.subtypes(), filter.biomes());
@@ -79,6 +98,8 @@ final class CatalogBinder {
                 controls.setCreatureFilterData(toControlFilterData(newValue)));
         viewModel.chips().addListener((ListChangeListener<CatalogViewModel.FilterChip>) change ->
                 controls.setChips(toControlChips(viewModel.chips())));
+        encounterSession.partyRefreshTokenProperty().addListener((obs, oldValue, newValue) ->
+                refreshTuningPreview(controls, encounters));
     }
 
     private static void bindMain(
@@ -155,6 +176,35 @@ final class CatalogBinder {
     ) {
         return chips.stream()
                 .map(chip -> new CatalogControlsView.FilterChipView(chip.key(), chip.label(), chip.styleClass()))
+                .toList();
+    }
+
+    private static void refreshTuningPreview(
+            CatalogControlsView controls,
+            EncounterApplicationService encounters
+    ) {
+        controls.setEncounterTuningPreview(toControlTuningPreview(
+                encounters.loadTuningPreview(new LoadEncounterTuningPreviewQuery()).labels()));
+    }
+
+    private static CatalogControlsView.EncounterTuningPreview toControlTuningPreview(
+            EncounterTuningPreviewLabels labels
+    ) {
+        EncounterTuningPreviewLabels safeLabels = labels == null
+                ? new EncounterTuningPreviewLabels(List.of(), List.of(), List.of(), List.of())
+                : labels;
+        return new CatalogControlsView.EncounterTuningPreview(
+                toControlPreviewLabels(safeLabels.difficultyLabels()),
+                toControlPreviewLabels(safeLabels.balanceLabels()),
+                toControlPreviewLabels(safeLabels.amountLabels()),
+                toControlPreviewLabels(safeLabels.diversityLabels()));
+    }
+
+    private static List<CatalogControlsView.SliderPreviewLabel> toControlPreviewLabels(
+            List<EncounterTuningPreviewLabels.PreviewLabel> labels
+    ) {
+        return labels.stream()
+                .map(label -> new CatalogControlsView.SliderPreviewLabel(label.value(), label.label()))
                 .toList();
     }
 

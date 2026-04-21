@@ -43,6 +43,9 @@ carriers.
 coordination only.
 `LoadEncounterBudgetUseCase` exposes party-derived encounter thresholds without
 constructing a generated encounter.
+`LoadEncounterTuningPreviewQuery` exposes read-only slider preview labels for
+the catalog controls. It derives party-specific difficulty XP ranges and
+static tuning label text, but does not create or mutate encounter state.
 
 ## Architecture Status
 
@@ -80,6 +83,7 @@ It derives:
   search quality, stop category, candidate-pool size, and attempt/evaluation
   counts
 - party-derived budget summaries for the active runtime session
+- party-derived tuning preview labels for catalog encounter controls
 
 Generated encounters are ephemeral derived state. They may be locked or
 excluded inside the state tab, but those controls remain local presentation

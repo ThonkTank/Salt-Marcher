@@ -1,5 +1,6 @@
 package src.domain.encounter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -21,9 +22,12 @@ import src.domain.encounter.published.EncounterGenerationSolutionQuality;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterGenerationStopCategory;
 import src.domain.encounter.published.EncounterLock;
+import src.domain.encounter.published.EncounterTuningPreviewLabels;
+import src.domain.encounter.published.EncounterTuningPreviewResult;
 import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.published.LoadEncounterBudgetQuery;
+import src.domain.encounter.published.LoadEncounterTuningPreviewQuery;
 import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.party.PartyApplicationService;
 
@@ -64,6 +68,23 @@ public final class EncounterApplicationService {
                     result.message());
         } catch (RuntimeException exception) {
             return new EncounterBudgetResult(EncounterGenerationStatus.STORAGE_ERROR, null, "Encounter budget could not be loaded.");
+        }
+    }
+
+    public EncounterTuningPreviewResult loadTuningPreview(LoadEncounterTuningPreviewQuery query) {
+        Objects.requireNonNull(query, "query");
+        try {
+            LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
+            EncounterBudgetSummary budget = toPublishedBudget(result.budget());
+            return new EncounterTuningPreviewResult(
+                    mapBudgetStatus(result.status()),
+                    tuningPreviewLabels(budget),
+                    result.message());
+        } catch (RuntimeException exception) {
+            return new EncounterTuningPreviewResult(
+                    EncounterGenerationStatus.STORAGE_ERROR,
+                    tuningPreviewLabels(null),
+                    "Encounter tuning preview could not be loaded.");
         }
     }
 
@@ -222,6 +243,79 @@ public final class EncounterApplicationService {
                 effective.balanceLevel(),
                 effective.amountValue(),
                 effective.diversityLevel());
+    }
+
+    private static EncounterTuningPreviewLabels tuningPreviewLabels(@Nullable EncounterBudgetSummary budget) {
+        int averageLevel = budget == null ? 1 : Math.max(1, Math.min(20, budget.averageLevel()));
+        int partySize = budget == null || budget.partyLevels().isEmpty() ? 1 : Math.max(1, budget.partyLevels().size());
+        return new EncounterTuningPreviewLabels(
+                List.of(
+                        previewLabel(1.0, difficultyRangeLabel(EncounterDifficultyBand.EASY, averageLevel, partySize)),
+                        previewLabel(2.0, difficultyRangeLabel(EncounterDifficultyBand.MEDIUM, averageLevel, partySize)),
+                        previewLabel(3.0, difficultyRangeLabel(EncounterDifficultyBand.HARD, averageLevel, partySize)),
+                        previewLabel(4.0, difficultyRangeLabel(EncounterDifficultyBand.DEADLY, averageLevel, partySize))),
+                List.of(
+                        previewLabel(1.0, "Extreme++"),
+                        previewLabel(2.0, "Extreme+"),
+                        previewLabel(3.0, "Neutral"),
+                        previewLabel(4.0, "Durchschnitt+"),
+                        previewLabel(5.0, "Durchschnitt++")),
+                List.of(
+                        previewLabel(1.0, "Boss++"),
+                        previewLabel(2.0, "Boss+"),
+                        previewLabel(3.0, "Ausgeglichen"),
+                        previewLabel(4.0, "Minions+"),
+                        previewLabel(5.0, "Minions++")),
+                List.of(
+                        previewLabel(1.0, "1 Typ"),
+                        previewLabel(2.0, "2 Typen"),
+                        previewLabel(3.0, "3 Typen"),
+                        previewLabel(4.0, "4 Typen")));
+    }
+
+    private static EncounterTuningPreviewLabels.PreviewLabel previewLabel(double value, String label) {
+        return new EncounterTuningPreviewLabels.PreviewLabel(value, label);
+    }
+
+    private static String difficultyRangeLabel(EncounterDifficultyBand band, int averageLevel, int partySize) {
+        DifficultyPreviewRange range = difficultyPreviewRange(band, averageLevel, partySize);
+        return range.lowerAdjustedXp() + "-" + range.upperAdjustedXp() + " XP";
+    }
+
+    private static DifficultyPreviewRange difficultyPreviewRange(
+            EncounterDifficultyBand band,
+            int averageLevel,
+            int partySize
+    ) {
+        EncounterDifficultyMath.Thresholds thresholds = thresholdsForAverageParty(averageLevel, partySize);
+        int deadly125 = (int) Math.round(thresholds.deadly() * 1.25);
+        return switch (band == null ? EncounterDifficultyBand.MEDIUM : band) {
+            case EASY -> new DifficultyPreviewRange(
+                    thresholds.easy(),
+                    Math.max(thresholds.easy(), thresholds.medium() - 1));
+            case MEDIUM, AUTO -> new DifficultyPreviewRange(
+                    thresholds.medium(),
+                    Math.max(thresholds.medium(), thresholds.hard() - 1));
+            case HARD -> new DifficultyPreviewRange(
+                    thresholds.hard(),
+                    Math.max(thresholds.hard(), thresholds.deadly() - 1));
+            case DEADLY -> new DifficultyPreviewRange(
+                    thresholds.deadly(),
+                    Math.max(thresholds.deadly(), deadly125));
+        };
+    }
+
+    private static EncounterDifficultyMath.Thresholds thresholdsForAverageParty(int averageLevel, int partySize) {
+        int level = Math.max(1, Math.min(20, averageLevel));
+        int size = Math.max(1, partySize);
+        List<Integer> partyLevels = new ArrayList<>(size);
+        for (int index = 0; index < size; index++) {
+            partyLevels.add(level);
+        }
+        return EncounterDifficultyMath.thresholdsFor(partyLevels);
+    }
+
+    private record DifficultyPreviewRange(int lowerAdjustedXp, int upperAdjustedXp) {
     }
 
     private static EncounterGenerationSolutionQuality toPublishedQuality(

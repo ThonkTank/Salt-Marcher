@@ -54,6 +54,10 @@ public final class CatalogControlsView extends VBox {
             new Tooltip("Mehrere Encounter-Tabellen können kombiniert werden.");
     private final Popup encounterTablePopup = new Popup();
     private final VBox encounterTablePopupContent = new VBox(2);
+    private final Map<Integer, String> difficultyPreviewLabels = new LinkedHashMap<>(defaultDifficultyPreviewLabels());
+    private final Map<Integer, String> balancePreviewLabels = new LinkedHashMap<>(defaultBalancePreviewLabels());
+    private final Map<Integer, String> amountPreviewLabels = new LinkedHashMap<>(defaultAmountPreviewLabels());
+    private final Map<Integer, String> diversityPreviewLabels = new LinkedHashMap<>(defaultDiversityPreviewLabels());
     private final TuningControl difficultyControl = new TuningControl(
             "Schwierigkeit",
             1.0,
@@ -62,7 +66,7 @@ public final class CatalogControlsView extends VBox {
             true,
             "Schwierigkeitsbereich des Encounters",
             new DifficultyTickLabelFormatter(),
-            value -> difficultyLabel((int) Math.round(value)),
+            value -> previewLabel(difficultyPreviewLabels, value, difficultyLabel((int) Math.round(value))),
             1.0,
             this::fireEncounterDifficultyChanged);
     private final TuningControl balanceControl = new TuningControl(
@@ -73,7 +77,7 @@ public final class CatalogControlsView extends VBox {
             true,
             "1: CR-Extreme bevorzugen, 5: CR-Durchschnitt bevorzugen",
             new EndpointTickLabelFormatter("Extreme", "Durchschnitt"),
-            value -> balanceLabel((int) Math.round(value)),
+            value -> previewLabel(balancePreviewLabels, value, balanceLabel((int) Math.round(value))),
             null,
             this::fireEncounterTuningChanged);
     private final TuningControl amountControl = new TuningControl(
@@ -84,7 +88,7 @@ public final class CatalogControlsView extends VBox {
             false,
             "1: Bosse bevorzugen, 5: Minions bevorzugen",
             new EndpointTickLabelFormatter("Boss", "Minions"),
-            CatalogControlsView::amountLabel,
+            value -> previewLabel(amountPreviewLabels, value, amountLabel(value)),
             1.0,
             this::fireEncounterTuningChanged);
     private final TuningControl diversityControl = new TuningControl(
@@ -95,7 +99,7 @@ public final class CatalogControlsView extends VBox {
             true,
             "1: ein Statblock, 4: vier unterschiedliche Statblocks",
             new EndpointTickLabelFormatter("1", "4"),
-            value -> (int) Math.round(value) + " Typen",
+            value -> previewLabel(diversityPreviewLabels, value, diversityLabel((int) Math.round(value))),
             null,
             this::fireEncounterTuningChanged);
     private final PauseTransition debounce = new PauseTransition(Duration.millis(300));
@@ -225,6 +229,18 @@ public final class CatalogControlsView extends VBox {
 
     public void setOnEncounterTuningChanged(Consumer<EncounterTuningSelection> handler) {
         encounterTuningChangedHandler = handler;
+    }
+
+    public void setEncounterTuningPreview(EncounterTuningPreview preview) {
+        EncounterTuningPreview safePreview = preview == null ? EncounterTuningPreview.empty() : preview;
+        replacePreviewLabels(difficultyPreviewLabels, safePreview.difficultyLabels(), defaultDifficultyPreviewLabels());
+        replacePreviewLabels(balancePreviewLabels, safePreview.balanceLabels(), defaultBalancePreviewLabels());
+        replacePreviewLabels(amountPreviewLabels, safePreview.amountLabels(), defaultAmountPreviewLabels());
+        replacePreviewLabels(diversityPreviewLabels, safePreview.diversityLabels(), defaultDiversityPreviewLabels());
+        difficultyControl.refreshDisplay();
+        balanceControl.refreshDisplay();
+        amountControl.refreshDisplay();
+        diversityControl.refreshDisplay();
     }
 
     private void clearFilters() {
@@ -495,12 +511,17 @@ public final class CatalogControlsView extends VBox {
         };
     }
 
+    private static String diversityLabel(int value) {
+        int rounded = Math.max(1, Math.min(4, value));
+        return rounded == 1 ? "1 Typ" : rounded + " Typen";
+    }
+
     private static String amountLabel(double value) {
         int rounded = Math.max(1, Math.min(5, (int) Math.round(value)));
         return switch (rounded) {
             case 1 -> "Boss++";
             case 2 -> "Boss+";
-            case 3 -> "Neutral";
+            case 3 -> "Ausgeglichen";
             case 4 -> "Minions+";
             default -> "Minions++";
         };
@@ -511,9 +532,66 @@ public final class CatalogControlsView extends VBox {
             case 1 -> "Extreme++";
             case 2 -> "Extreme+";
             case 3 -> "Neutral";
-            case 4 -> "Peers+";
-            default -> "Peers++";
+            case 4 -> "Durchschnitt+";
+            default -> "Durchschnitt++";
         };
+    }
+
+    private static String previewLabel(Map<Integer, String> labels, double value, String fallback) {
+        String label = labels.get((int) Math.round(value));
+        return label == null || label.isBlank() ? fallback : label;
+    }
+
+    private static void replacePreviewLabels(
+            Map<Integer, String> target,
+            List<SliderPreviewLabel> labels,
+            Map<Integer, String> fallback
+    ) {
+        target.clear();
+        target.putAll(fallback);
+        if (labels == null || labels.isEmpty()) {
+            return;
+        }
+        for (SliderPreviewLabel label : labels) {
+            if (label == null || label.label().isBlank()) {
+                continue;
+            }
+            target.put((int) Math.round(label.value()), label.label());
+        }
+    }
+
+    private static Map<Integer, String> defaultDifficultyPreviewLabels() {
+        return Map.of(
+                1, "25-49 XP",
+                2, "50-74 XP",
+                3, "75-99 XP",
+                4, "100-125 XP");
+    }
+
+    private static Map<Integer, String> defaultBalancePreviewLabels() {
+        return Map.of(
+                1, "Extreme++",
+                2, "Extreme+",
+                3, "Neutral",
+                4, "Durchschnitt+",
+                5, "Durchschnitt++");
+    }
+
+    private static Map<Integer, String> defaultAmountPreviewLabels() {
+        return Map.of(
+                1, "Boss++",
+                2, "Boss+",
+                3, "Ausgeglichen",
+                4, "Minions+",
+                5, "Minions++");
+    }
+
+    private static Map<Integer, String> defaultDiversityPreviewLabels() {
+        return Map.of(
+                1, "1 Typ",
+                2, "2 Typen",
+                3, "3 Typen",
+                4, "4 Typen");
     }
 
     public record EncounterTuningSelection(int balanceLevel, double amountValue, int diversityLevel) {
@@ -569,7 +647,35 @@ public final class CatalogControlsView extends VBox {
     public record FilterChipView(String key, String label, String styleClass) {
     }
 
+    public record SliderPreviewLabel(double value, String label) {
+        public SliderPreviewLabel {
+            label = label == null ? "" : label;
+        }
+    }
+
+    public record EncounterTuningPreview(
+            List<SliderPreviewLabel> difficultyLabels,
+            List<SliderPreviewLabel> balanceLabels,
+            List<SliderPreviewLabel> amountLabels,
+            List<SliderPreviewLabel> diversityLabels
+    ) {
+        public EncounterTuningPreview {
+            difficultyLabels = copyPreviewLabels(difficultyLabels);
+            balanceLabels = copyPreviewLabels(balanceLabels);
+            amountLabels = copyPreviewLabels(amountLabels);
+            diversityLabels = copyPreviewLabels(diversityLabels);
+        }
+
+        static EncounterTuningPreview empty() {
+            return new EncounterTuningPreview(List.of(), List.of(), List.of(), List.of());
+        }
+    }
+
     private static List<String> copyOf(List<String> values) {
+        return values == null ? List.of() : List.copyOf(values);
+    }
+
+    private static List<SliderPreviewLabel> copyPreviewLabels(List<SliderPreviewLabel> values) {
         return values == null ? List.of() : List.copyOf(values);
     }
 
@@ -865,6 +971,10 @@ public final class CatalogControlsView extends VBox {
             if (styleClass != null && !styleClass.isBlank() && !slider.getStyleClass().contains(styleClass)) {
                 slider.getStyleClass().add(styleClass);
             }
+        }
+
+        void refreshDisplay() {
+            updateValueLabel();
         }
 
         private void updateValueLabel() {
