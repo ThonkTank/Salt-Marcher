@@ -68,6 +68,10 @@ room-cluster centers, room-cluster vertices, explicit cluster wall or door
 edges, corridor membership, corridor waypoints, corridor door overrides, stair
 path nodes, stair exits, stair corridor attachments, and transition destination
 rows.
+Those rows remain a legacy-compatible storage shape. After loading, the domain
+map is the behavioral topology owner: rooms, clusters, corridors, doors,
+stairs, and transitions bind to stable map-owned topology refs instead of
+owning mutable topology themselves.
 Room topology saves are full synchronizations for authored room clusters and
 rooms: retained clusters and rooms are upserted, cluster vertices and boundary
 rows are replaced, removed room rows are deleted, and removed cluster rows are
@@ -92,7 +96,9 @@ represented.
 ## Stability Rules
 
 - Dungeon persistence must keep authored truth in SQLite and derived editor,
-  inspector, route, and render state out of the write model.
+  inspector, route, and render state out of the write model. SQLite table
+  ownership does not imply domain topology ownership; adapters translate the
+  legacy table family into the map-owned topology model.
 - New dungeon source fields first belong in source-local records under
   `src/data/dungeon/model/`, then map into domain-owned values or aggregate
   behaviour.

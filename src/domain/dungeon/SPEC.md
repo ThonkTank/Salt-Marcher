@@ -94,6 +94,9 @@ Expected capabilities:
 - Travel and editor keep independent local camera state for pan and zoom.
 - Loading and floor selection are available before advanced editing tools.
 - Selections and inspections are visible and understandable to the user.
+- Editor gestures identify selected map topology elements by stable topology
+  ref. The domain map resolves room, cluster, corridor, door, stair, and
+  transition bindings internally.
 - In-progress edits provide visible preview feedback.
 - Undo and redo apply to committed editor operations.
 - Runtime travel state is not treated as authored dungeon truth.

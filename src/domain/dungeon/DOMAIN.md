@@ -47,17 +47,19 @@ Current state:
 
 - `map/aggregate/DungeonMap` is the aggregate root and mutation boundary for
   one authored map.
-- `SpatialTopology` now carries authored room-cluster geometry loaded from the
-  legacy write model: cluster centers, polygon vertices, and explicit internal
-  wall or door edges.
+- `DungeonMap` owns authored topology for the whole map. Rooms, clusters,
+  corridors, doors, stairs, and transitions bind to map topology through stable
+  topology refs; they do not negotiate ownership with each other during
+  mutation.
+- `SpatialTopology` remains a legacy-shaped geometry carrier for room-cluster
+  centers, polygon vertices, and explicit internal wall or door edges loaded
+  from SQLite. It is not the behavioral owner of topology.
 - `RoomCatalog` now carries authored room identity, names, floor anchors, and
   narration loaded from the legacy write model.
-- `ConnectionCatalog` now carries authored corridor identity, ordered room
-  membership, relative waypoints, and room door bindings loaded from the
-  legacy write model.
-- `ConnectionCatalog` now also carries authored stair and transition identity,
-  stair path nodes, stair exits, corridor attachments, and transition
-  destination facts loaded from the legacy write model.
+- `ConnectionCatalog` carries semantic connection descriptors and bindings:
+  corridor identity, ordered room membership, relative waypoints, room door
+  bindings, stair descriptors, corridor attachments, and transition destination
+  facts. The map interprets those bindings when topology is rebuilt or mutated.
 - Runtime travel surfaces now derive traversal and transition actions from
   committed authored map truth. Local door and stair movement
   share one `DungeonTraversalLink` model: two known dungeon tiles connected by
@@ -85,8 +87,9 @@ Target state:
 - Topology repair, merge and split behaviour, identity preservation, and
   derived-state rebuild rules stay in the dungeon domain instead of leaking
   into view or data.
-- The map module grows from the current topology seed into explicit space,
-  room, connection, and feature ownership without adding ceremonial modules.
+- The map module grows around map-owned topology with explicit semantic
+  bindings for spaces, rooms, connections, and features without adding
+  ceremonial modules.
 - The editor and travel surfaces share authored map truth but keep presentation
   state outside the domain model.
 
@@ -98,9 +101,10 @@ Remaining implementation gap:
   requires wall and door editing, corridor editing, stair editing, transition
   editing, narration editing, direct token-drag movement, cross-map dungeon
   transition follow-through, and remaining non-space feature mapping.
-- The current derived-state rebuild hydrates rooms from cluster polygons and
-  internal wall or door boundaries, then derives corridor cells and door
-  relations from authored corridor membership, waypoints, and door bindings.
+- The current derived-state rebuild hydrates rooms from map-owned topology
+  interpreted through cluster polygons and internal wall or door boundaries,
+  then derives corridor cells and door relations from authored corridor
+  membership, waypoints, and door bindings.
   Door boundaries and stair exits are now projected into one derived traversal
   link model. Transition destinations remain authored facts and are exposed as
   runtime travel actions because cross-map and overworld targets are not always
@@ -136,6 +140,7 @@ DungeonMap
 - DungeonMapId id
 - DungeonMapMetadata metadata
 - SpatialTopology topology
+- DungeonMapTopology topologyIndex
 - SpaceCatalog spaces
 - RoomCatalog rooms
 - ConnectionCatalog connections
@@ -143,8 +148,9 @@ DungeonMap
 - long revision
 ```
 
-The aggregate is the transaction boundary for one map. Internal ownership still
-remains partitioned.
+The aggregate is the transaction boundary and the only behavioral topology
+owner for one map. Internal catalogs partition semantic bindings and authored
+metadata, but they do not own mutable topology.
 
 ## Domain Module
 
@@ -154,25 +160,40 @@ deterministic derived-state helpers for the current implementation.
 
 ## Domain Partitions
 
-### SpatialTopology
+### DungeonMap / DungeonMapTopology
 
-Responsibility: canonical spatial truth.
+Responsibility: canonical topology ownership and binding resolution.
 
 Semantically, it owns:
+
+- stable topology refs for selectable and mutable map elements
+- which semantic descriptor binds to which topology ref
+- map-level mutation routing for rooms, corridors, doors, stairs, transitions,
+  and generated topology
+- topology repair, route regeneration, and derived-state rebuild triggers
+
+It must not delegate mutation ownership to a live room, cluster, corridor,
+door, or stair object.
+
+### SpatialTopology
+
+Responsibility: legacy-compatible authored geometry carrier.
+
+Semantically, it carries:
 
 - which tiles are traversable interior
 - which explicit internal wall edges exist
 - authored room-cluster polygon vertices
 - authored internal door boundaries
-- corridor node and segment ownership
-- authored door geometry
-- stair planning input
-- owner-tagged generated topology for corridor and stair structures
+- authored door geometry as map-interpreted edge data
 
 It must not own:
 
 - room names
 - room narrative text
+- map-level topology mutation policy
+- corridor routing policy
+- door, stair, or transition ownership
 - inspector text
 - global adjacency projections for storage or view concerns
 
@@ -203,7 +224,7 @@ It does not own traversal projections or render geometry.
 
 ### ConnectionCatalog
 
-Responsibility: stable semantic connections between spaces or rooms.
+Responsibility: stable semantic connection descriptors and bindings.
 
 It owns:
 
@@ -216,9 +237,11 @@ It owns:
 - authored transition placement, destination, and link references
 - traversability semantics and notes
 - relationship semantics between connected areas
+- bindings that allow the map to resolve which topology refs participate in a
+  corridor, door, stair, or transition
 
-It does not own generated corridor route cells, view traversal state, or
-cross-context travel execution.
+It does not own generated corridor route cells, door topology, view traversal
+state, or cross-context travel execution.
 
 ### FeatureCatalog
 
@@ -261,7 +284,10 @@ into `map/`.
 ## Ubiquitous Language
 
 - `DungeonMap`: authored map aggregate root.
-- `SpatialTopology`: canonical spatial truth.
+- `DungeonMapTopology`: map-owned topology index of stable refs and semantic
+  bindings.
+- `SpatialTopology`: legacy-compatible authored geometry carrier interpreted by
+  the map.
 - `SpaceCatalog`: stable space identity and shared space semantics.
 - `RoomCatalog`: room identity and authored room-level semantics.
 - `ConnectionCatalog`: stable semantic links between areas.
@@ -288,7 +314,8 @@ The feature relies on explicit policies for:
 
 - merge and split behavior
 - topology repair
-- route regeneration
+- route regeneration owned by the map and delegated to stateless routing
+  services
 - conflict resolution after edits
 - identity preservation for authored objects
 

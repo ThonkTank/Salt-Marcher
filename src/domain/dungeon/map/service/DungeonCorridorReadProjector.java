@@ -16,6 +16,8 @@ import src.domain.dungeon.map.value.DungeonCorridorWaypoint;
 import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonRelationGraph;
+import src.domain.dungeon.map.value.DungeonTopologyElementKind;
+import src.domain.dungeon.map.value.DungeonTopologyRef;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -66,8 +68,8 @@ public final class DungeonCorridorReadProjector {
                 if (cluster != null) {
                     endpoints.add(new CorridorEndpoint(
                             roomId,
-                            binding.absoluteCorridorCell(cluster.center()),
-                            binding.absoluteDoorEdge(cluster.center())));
+                            absoluteCorridorCell(binding, cluster.center()),
+                            absoluteDoorEdge(binding, cluster.center())));
                     continue;
                 }
             }
@@ -77,6 +79,24 @@ public final class DungeonCorridorReadProjector {
             }
         }
         return List.copyOf(endpoints);
+    }
+
+    private static DungeonCell absoluteRoomCell(DungeonCorridorDoorBinding binding, DungeonCell clusterCenter) {
+        DungeonCell relativeCell = binding.relativeCell();
+        DungeonCell center = clusterCenter == null ? new DungeonCell(0, 0, relativeCell.level()) : clusterCenter;
+        return new DungeonCell(
+                center.q() + relativeCell.q(),
+                center.r() + relativeCell.r(),
+                center.level());
+    }
+
+    private static DungeonCell absoluteCorridorCell(DungeonCorridorDoorBinding binding, DungeonCell clusterCenter) {
+        return binding.direction().neighborOf(absoluteRoomCell(binding, clusterCenter));
+    }
+
+    private static DungeonEdge absoluteDoorEdge(DungeonCorridorDoorBinding binding, DungeonCell clusterCenter) {
+        DungeonCell roomCell = absoluteRoomCell(binding, clusterCenter);
+        return new DungeonEdge(roomCell, binding.direction().neighborOf(roomCell));
     }
 
     private static @Nullable CorridorEndpoint derivedEndpoint(
@@ -274,10 +294,16 @@ public final class DungeonCorridorReadProjector {
         private void addEndpoint(DungeonCorridor corridor, CorridorEndpoint endpoint) {
             DungeonBoundaryKey key = DungeonBoundaryKey.from(endpoint.edge());
             if (seenBoundaries.add(key)) {
-                DungeonPrimitive door = new DungeonPrimitive(primitiveId, DOOR_KIND, "Corridor Door", endpoint.edge());
-                primitiveId++;
+                long doorId = key.stableId();
+                DungeonPrimitive door = new DungeonPrimitive(doorId, DOOR_KIND, "Corridor Door", endpoint.edge());
+                primitiveId = Math.max(primitiveId, doorId + 1L);
                 primitives.add(door);
-                boundaries.add(new DungeonBoundaryFacts(door.kind(), door.id(), door.label(), door.edge()));
+                boundaries.add(new DungeonBoundaryFacts(
+                        door.kind(),
+                        door.id(),
+                        door.label(),
+                        door.edge(),
+                        new DungeonTopologyRef(DungeonTopologyElementKind.DOOR, door.id())));
                 containment.add(new DungeonRelationGraph.ContainmentRelation(corridor.corridorId(), door.id(), DOOR_KIND));
                 containment.add(new DungeonRelationGraph.ContainmentRelation(endpoint.roomId(), door.id(), DOOR_KIND));
             }

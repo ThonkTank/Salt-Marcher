@@ -8,8 +8,20 @@ public record DungeonFeatureSnapshot(
         String label,
         List<DungeonCellRef> cells,
         String description,
-        String destinationLabel
+        String destinationLabel,
+        DungeonTopologyElementRef topologyRef
 ) {
+
+    public DungeonFeatureSnapshot(
+            DungeonFeatureKind kind,
+            long id,
+            String label,
+            List<DungeonCellRef> cells,
+            String description,
+            String destinationLabel
+    ) {
+        this(kind, id, label, cells, description, destinationLabel, defaultTopologyRef(kind, id));
+    }
 
     public DungeonFeatureSnapshot {
         kind = defaultKind(kind);
@@ -18,6 +30,9 @@ public record DungeonFeatureSnapshot(
         cells = immutableCells(cells);
         description = cleanText(description);
         destinationLabel = cleanText(destinationLabel);
+        topologyRef = topologyRef == null
+                ? new DungeonTopologyElementRef(featureTopologyKind(kind), id)
+                : topologyRef;
     }
 
     private static DungeonFeatureKind defaultKind(DungeonFeatureKind kind) {
@@ -38,5 +53,16 @@ public record DungeonFeatureSnapshot(
 
     private static String cleanText(String text) {
         return text == null ? "" : text.trim();
+    }
+
+    private static DungeonTopologyElementKind featureTopologyKind(DungeonFeatureKind kind) {
+        return kind == DungeonFeatureKind.TRANSITION
+                ? DungeonTopologyElementKind.TRANSITION
+                : DungeonTopologyElementKind.STAIR;
+    }
+
+    private static DungeonTopologyElementRef defaultTopologyRef(DungeonFeatureKind kind, long id) {
+        DungeonFeatureKind safeKind = defaultKind(kind);
+        return new DungeonTopologyElementRef(featureTopologyKind(safeKind), positiveId(id));
     }
 }

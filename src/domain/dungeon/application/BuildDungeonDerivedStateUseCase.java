@@ -22,6 +22,8 @@ import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonRelationGraph;
+import src.domain.dungeon.map.value.DungeonTopologyElementKind;
+import src.domain.dungeon.map.value.DungeonTopologyRef;
 import src.domain.dungeon.map.value.SpatialTopology;
 
 import java.util.ArrayList;
@@ -170,13 +172,19 @@ public final class BuildDungeonDerivedStateUseCase {
         if (!seenBoundaries.add(key)) {
             return primitiveId;
         }
-        long nextPrimitiveId = primitiveId + 1L;
+        long boundaryId = key.stableId();
+        long nextPrimitiveId = Math.max(primitiveId, boundaryId + 1L);
         String kind = boundary.kind().primitiveKind();
         String label = boundary.kind() == DungeonClusterBoundaryKind.DOOR ? "Door" : "Wall";
         DungeonEdge edge = boundary.absoluteEdge(cluster.center());
-        DungeonPrimitive primitive = new DungeonPrimitive(primitiveId, kind, label, edge);
+        DungeonTopologyRef topologyRef = new DungeonTopologyRef(
+                boundary.kind() == DungeonClusterBoundaryKind.DOOR
+                        ? DungeonTopologyElementKind.DOOR
+                        : DungeonTopologyElementKind.WALL,
+                boundaryId);
+        DungeonPrimitive primitive = new DungeonPrimitive(boundaryId, kind, label, edge);
         primitives.add(primitive);
-        boundaries.add(new DungeonBoundaryFacts(kind, primitive.id(), primitive.label(), primitive.edge()));
+        boundaries.add(new DungeonBoundaryFacts(kind, primitive.id(), primitive.label(), primitive.edge(), topologyRef));
 
         List<Long> touchingRoomIds = touchingRoomIds(edge, roomCells);
         for (Long roomId : touchingRoomIds) {
@@ -240,14 +248,22 @@ public final class BuildDungeonDerivedStateUseCase {
         DungeonAggregate room = new DungeonAggregate(1L, DungeonAreaType.ROOM, "Entry Hall", roomCells);
         DungeonAggregate corridor = new DungeonAggregate(2L, DungeonAreaType.CORRIDOR, "South Corridor", corridorCells);
         DungeonPrimitive door = new DungeonPrimitive(
-                100L,
+                DungeonBoundaryKey.from(new DungeonEdge(roomCells.get(3), corridorCells.getFirst())).stableId(),
                 DOOR_KIND,
                 "Oak Door",
                 new DungeonEdge(roomCells.get(3), corridorCells.getFirst()));
 
         List<DungeonPrimitive> walls = List.of(
-                new DungeonPrimitive(200L, "wall", "North Wall", new DungeonEdge(roomCells.getFirst(), roomCells.get(1))),
-                new DungeonPrimitive(201L, "wall", "South Wall", new DungeonEdge(roomCells.get(2), roomCells.get(3)))
+                new DungeonPrimitive(
+                        DungeonBoundaryKey.from(new DungeonEdge(roomCells.getFirst(), roomCells.get(1))).stableId(),
+                        "wall",
+                        "North Wall",
+                        new DungeonEdge(roomCells.getFirst(), roomCells.get(1))),
+                new DungeonPrimitive(
+                        DungeonBoundaryKey.from(new DungeonEdge(roomCells.get(2), roomCells.get(3))).stableId(),
+                        "wall",
+                        "South Wall",
+                        new DungeonEdge(roomCells.get(2), roomCells.get(3)))
         );
 
         DungeonRelationGraph relations = new DungeonRelationGraph(

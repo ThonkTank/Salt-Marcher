@@ -24,6 +24,7 @@ import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyKind;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.DungeonTravelActionKind;
 import src.domain.dungeon.published.DungeonTravelActionSnapshot;
 import src.domain.dungeon.published.DungeonTravelExternalTarget;
@@ -62,6 +63,7 @@ import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.map.value.DungeonTopologyRef;
 import src.domain.dungeon.map.value.DungeonTopology;
 import src.domain.dungeon.map.value.DungeonTravelActionFacts;
 import src.domain.dungeon.map.value.DungeonTravelExternalTargetFacts;
@@ -224,11 +226,11 @@ public final class DungeonApplicationService {
         private static ApplyDungeonEditorOperationUseCase.OperationInput operationInput(
                 @Nullable DungeonEditorOperation operation
         ) {
-            if (operation instanceof DungeonEditorOperation.MoveRoomCluster moveRoomCluster) {
-                return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomCluster(
-                        moveRoomCluster.clusterId(),
-                        moveRoomCluster.deltaQ(),
-                        moveRoomCluster.deltaR());
+            if (operation instanceof DungeonEditorOperation.MoveTopologyElement moveTopologyElement) {
+                return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveTopologyElement(
+                        MapPublication.domainTopologyRef(moveTopologyElement.ref()),
+                        moveTopologyElement.deltaQ(),
+                        moveTopologyElement.deltaR());
             }
             if (operation instanceof DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor) {
                 return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomAnchor(
@@ -288,7 +290,8 @@ public final class DungeonApplicationService {
                     area.id(),
                     area.clusterId(),
                     area.label(),
-                    area.cells().stream().map(MapPublication::cell).toList());
+                    area.cells().stream().map(MapPublication::cell).toList(),
+                    topologyRef(area.topologyRef()));
         }
 
         private static DungeonBoundarySnapshot boundary(DungeonBoundaryFacts boundary) {
@@ -296,7 +299,8 @@ public final class DungeonApplicationService {
                     boundary.kind(),
                     boundary.id(),
                     boundary.label(),
-                    edge(boundary.edge()));
+                    edge(boundary.edge()),
+                    topologyRef(boundary.topologyRef()));
         }
 
         private static DungeonFeatureSnapshot feature(DungeonFeatureFacts feature) {
@@ -306,7 +310,8 @@ public final class DungeonApplicationService {
                     feature.label(),
                     feature.cells().stream().map(MapPublication::cell).toList(),
                     feature.description(),
-                    feature.destinationLabel());
+                    feature.destinationLabel(),
+                    topologyRef(feature.topologyRef()));
         }
 
         private static DungeonAreaKind areaKind(DungeonAreaType kind) {
@@ -315,6 +320,24 @@ public final class DungeonApplicationService {
 
         private static DungeonTopologyKind topology(DungeonTopology topology) {
             return topology == DungeonTopology.HEX ? DungeonTopologyKind.HEX : DungeonTopologyKind.SQUARE;
+        }
+
+        private static DungeonTopologyElementRef topologyRef(DungeonTopologyRef ref) {
+            if (ref == null) {
+                return DungeonTopologyElementRef.empty();
+            }
+            return new DungeonTopologyElementRef(
+                    src.domain.dungeon.published.DungeonTopologyElementKind.valueOf(ref.kind().name()),
+                    ref.id());
+        }
+
+        private static DungeonTopologyRef domainTopologyRef(@Nullable DungeonTopologyElementRef ref) {
+            if (ref == null) {
+                return DungeonTopologyRef.empty();
+            }
+            return new DungeonTopologyRef(
+                    src.domain.dungeon.map.value.DungeonTopologyElementKind.valueOf(ref.kind().name()),
+                    ref.id());
         }
 
         private static DungeonCellRef cell(DungeonCell cell) {

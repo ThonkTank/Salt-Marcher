@@ -6,6 +6,7 @@ import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.map.value.DungeonTopologyRef;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,14 +18,14 @@ import org.jspecify.annotations.Nullable;
 public final class ApplyDungeonEditorOperationUseCase {
 
     public sealed interface OperationInput permits
-            OperationInput.MoveRoomCluster,
+            OperationInput.MoveTopologyElement,
             OperationInput.MoveRoomAnchor,
             OperationInput.PaintRoomRectangle,
             OperationInput.DeleteRoomRectangle,
             OperationInput.ResetDemoLayout,
             OperationInput.NoChange {
 
-        record MoveRoomCluster(long clusterId, int deltaQ, int deltaR) implements OperationInput {
+        record MoveTopologyElement(DungeonTopologyRef ref, int deltaQ, int deltaR) implements OperationInput {
         }
 
         record MoveRoomAnchor(int deltaQ, int deltaR) implements OperationInput {
@@ -87,11 +88,11 @@ public final class ApplyDungeonEditorOperationUseCase {
     }
 
     private DungeonMap apply(DungeonMap current, OperationInput operation) {
-        if (operation instanceof OperationInput.MoveRoomCluster moveRoomCluster) {
-            return current.moveRoomCluster(
-                    moveRoomCluster.clusterId(),
-                    moveRoomCluster.deltaQ(),
-                    moveRoomCluster.deltaR());
+        if (operation instanceof OperationInput.MoveTopologyElement moveTopologyElement) {
+            return current.moveTopologyElement(
+                    moveTopologyElement.ref(),
+                    moveTopologyElement.deltaQ(),
+                    moveTopologyElement.deltaR());
         }
         if (operation instanceof OperationInput.MoveRoomAnchor moveRoomAnchor) {
             return current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());

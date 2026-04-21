@@ -182,6 +182,8 @@ final class DungeonEditorBinder {
                 toHitKind(hitTarget.kind()),
                 hitTarget.ownerId(),
                 hitTarget.clusterId(),
+                hitTarget.topologyRefKind(),
+                hitTarget.topologyRefId(),
                 hitTarget.label());
     }
 

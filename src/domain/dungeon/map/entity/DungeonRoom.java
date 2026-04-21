@@ -66,18 +66,6 @@ public final class DungeonRoom {
         return narration;
     }
 
-    public DungeonRoom movedBy(int deltaQ, int deltaR) {
-        if (deltaQ == 0 && deltaR == 0) {
-            return this;
-        }
-        Map<Integer, DungeonCell> movedAnchors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, DungeonCell> entry : floorAnchors.entrySet()) {
-            DungeonCell anchor = entry.getValue();
-            movedAnchors.put(entry.getKey(), new DungeonCell(anchor.q() + deltaQ, anchor.r() + deltaR, anchor.level()));
-        }
-        return new DungeonRoom(roomId, mapId, clusterId, name, movedAnchors, narration);
-    }
-
     private static Map<Integer, DungeonCell> copyFloorAnchors(Map<Integer, DungeonCell> source) {
         if (source == null || source.isEmpty()) {
             return Map.of();

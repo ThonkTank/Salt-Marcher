@@ -15,6 +15,7 @@ import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyKind;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
 
 /**
  * Display-owned render contract consumed by the reusable dungeon map view.
@@ -298,6 +299,7 @@ public record DungeonMapDisplayModel(
                 kind,
                 area.id(),
                 area.clusterId(),
+                topologyRef(area.topologyRef()),
                 selected,
                 false,
                 preview,
@@ -314,6 +316,7 @@ public record DungeonMapDisplayModel(
                 kind,
                 feature.id(),
                 0L,
+                topologyRef(feature.topologyRef()),
                 selectedFeature(feature, selectedTool),
                 false,
                 false,
@@ -352,6 +355,7 @@ public record DungeonMapDisplayModel(
                         CellKind.ROOM,
                         0L,
                         0L,
+                        TopologyRef.empty(),
                         false,
                         false,
                         true,
@@ -372,6 +376,7 @@ public record DungeonMapDisplayModel(
                 door ? EdgeKind.DOOR : EdgeKind.WALL,
                 boundary.label(),
                 boundary.id(),
+                topologyRef(boundary.topologyRef()),
                 false);
     }
 
@@ -389,13 +394,19 @@ public record DungeonMapDisplayModel(
         addCorridor(cells, corridorId, 4, 4, 2, false);
         addCorridor(cells, corridorId, 5, 4, 3, false);
         addCorridor(cells, corridorId + 1, 3, 6, 2, false);
-        cells.add(new RenderCell(8, 5, 0, "Stair", CellKind.STAIR, 3_000L, 0L, false, false, false, false));
-        cells.add(new RenderCell(1, 3, 0, "Transition", CellKind.TRANSITION, 4_000L, 0L, false, false, false, false));
-        cells.add(new RenderCell(7, 5, 1, "Balcony", CellKind.ROOM, 5_000L, 5_000L, false, true, false, false));
-        edges.add(new RenderEdge(4, 4, 6, 4, 0, EdgeKind.DOOR, "Door", 10_000L, false));
-        edges.add(new RenderEdge(5, 6, 5, 8, 0, EdgeKind.DOOR, "Door", 10_001L, false));
-        edges.add(new RenderEdge(6, 4, 9, 4, 0, EdgeKind.WALL, "North wall", 10_002L, false));
-        edges.add(new RenderEdge(2, 8, 6, 8, -1, EdgeKind.WALL, "Lower wall", 10_003L, false));
+        cells.add(new RenderCell(
+                8, 5, 0, "Stair", CellKind.STAIR, 3_000L, 0L, new TopologyRef("STAIR", 3_000L),
+                false, false, false, false));
+        cells.add(new RenderCell(
+                1, 3, 0, "Transition", CellKind.TRANSITION, 4_000L, 0L, new TopologyRef("TRANSITION", 4_000L),
+                false, false, false, false));
+        cells.add(new RenderCell(
+                7, 5, 1, "Balcony", CellKind.ROOM, 5_000L, 5_000L, new TopologyRef("ROOM", 5_000L),
+                false, true, false, false));
+        edges.add(new RenderEdge(4, 4, 6, 4, 0, EdgeKind.DOOR, "Door", 10_000L, new TopologyRef("DOOR", 10_000L), false));
+        edges.add(new RenderEdge(5, 6, 5, 8, 0, EdgeKind.DOOR, "Door", 10_001L, new TopologyRef("DOOR", 10_001L), false));
+        edges.add(new RenderEdge(6, 4, 9, 4, 0, EdgeKind.WALL, "North wall", 10_002L, new TopologyRef("WALL", 10_002L), false));
+        edges.add(new RenderEdge(2, 8, 6, 8, -1, EdgeKind.WALL, "Lower wall", 10_003L, new TopologyRef("WALL", 10_003L), false));
         linkNearbyNodes(graphNodes, graphLinks);
     }
 
@@ -442,6 +453,7 @@ public record DungeonMapDisplayModel(
                         CellKind.ROOM,
                         id,
                         id,
+                        new TopologyRef("ROOM", id),
                         selected,
                         z != 0,
                         false,
@@ -464,6 +476,7 @@ public record DungeonMapDisplayModel(
                     CellKind.CORRIDOR,
                     id,
                     0L,
+                    new TopologyRef("CORRIDOR", id),
                     selected,
                     false,
                     false,
@@ -516,6 +529,13 @@ public record DungeonMapDisplayModel(
 
     private static RenderTopology topology(DungeonTopologyKind topology) {
         return topology == DungeonTopologyKind.HEX ? RenderTopology.HEX : RenderTopology.SQUARE;
+    }
+
+    private static TopologyRef topologyRef(DungeonTopologyElementRef ref) {
+        if (ref == null) {
+            return TopologyRef.empty();
+        }
+        return new TopologyRef(ref.kind().name(), ref.id());
     }
 
     public enum RenderTopology {
@@ -638,6 +658,7 @@ public record DungeonMapDisplayModel(
             CellKind kind,
             long ownerId,
             long clusterId,
+            TopologyRef topologyRef,
             boolean selected,
             boolean overlay,
             boolean preview,
@@ -647,6 +668,7 @@ public record DungeonMapDisplayModel(
         public RenderCell {
             label = label == null ? "" : label;
             kind = kind == null ? CellKind.ROOM : kind;
+            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
         }
     }
 
@@ -659,12 +681,14 @@ public record DungeonMapDisplayModel(
             EdgeKind kind,
             String label,
             long ownerId,
+            TopologyRef topologyRef,
             boolean selected
     ) {
 
         public RenderEdge {
             kind = kind == null ? EdgeKind.WALL : kind;
             label = label == null ? "" : label;
+            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
         }
     }
 
@@ -708,12 +732,29 @@ public record DungeonMapDisplayModel(
         }
     }
 
-    public record Selection(long areaId, long clusterId, String label) {
+    public record Selection(long areaId, long clusterId, String label, TopologyRef topologyRef) {
+
+        public Selection(long areaId, long clusterId, String label) {
+            this(areaId, clusterId, label, new TopologyRef("ROOM", areaId));
+        }
 
         public Selection {
             areaId = Math.max(0L, areaId);
             clusterId = Math.max(0L, clusterId);
             label = label == null ? "" : label;
+            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+        }
+    }
+
+    public record TopologyRef(String kind, long id) {
+
+        public TopologyRef {
+            kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+            id = Math.max(0L, id);
+        }
+
+        public static TopologyRef empty() {
+            return new TopologyRef("EMPTY", 0L);
         }
     }
 

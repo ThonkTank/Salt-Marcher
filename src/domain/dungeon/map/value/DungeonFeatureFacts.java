@@ -8,8 +8,20 @@ public record DungeonFeatureFacts(
         String label,
         List<DungeonCell> cells,
         String description,
-        String destinationLabel
+        String destinationLabel,
+        DungeonTopologyRef topologyRef
 ) {
+
+    public DungeonFeatureFacts(
+            DungeonFeatureType kind,
+            long id,
+            String label,
+            List<DungeonCell> cells,
+            String description,
+            String destinationLabel
+    ) {
+        this(kind, id, label, cells, description, destinationLabel, defaultTopologyRef(kind, id));
+    }
 
     public DungeonFeatureFacts {
         kind = kind == null ? DungeonFeatureType.STAIR : kind;
@@ -18,5 +30,14 @@ public record DungeonFeatureFacts(
         cells = cells == null ? List.of() : List.copyOf(cells);
         description = description == null ? "" : description.trim();
         destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
+        topologyRef = topologyRef == null
+                ? new DungeonTopologyRef(DungeonTopologyElementKind.fromFeatureType(kind), id)
+                : topologyRef;
+    }
+
+    private static DungeonTopologyRef defaultTopologyRef(DungeonFeatureType kind, long id) {
+        DungeonFeatureType safeKind = kind == null ? DungeonFeatureType.STAIR : kind;
+        long safeId = Math.max(1L, id);
+        return new DungeonTopologyRef(DungeonTopologyElementKind.fromFeatureType(safeKind), safeId);
     }
 }

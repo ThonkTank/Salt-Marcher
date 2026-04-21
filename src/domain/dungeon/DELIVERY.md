@@ -14,6 +14,9 @@ Current foundation:
   SQLite-backed adapters.
 - The active write model is `DungeonMap`; editor operations mutate that
   aggregate and save through `DungeonMapRepository`.
+- The active topology ownership model is map-owned: selectable map elements
+  carry stable topology refs, and `DungeonMap` resolves semantic bindings before
+  applying topology mutations.
 - Read selection uses `DungeonMapSearch`, keeping read-only map lookup separate
   from authored persistence.
 - The SQLite schema manager creates the legacy-compatible dungeon table family
@@ -47,8 +50,8 @@ Recommended rollout:
 - UI specifications are broader than the currently stabilized domain policies.
 - Preview behavior and undo/redo semantics need explicit implementation
   contracts before broad editor rollout.
-- Room and connection projections can drift until editor mutation and topology
-  repair consistently rebuild the same authored relation graph used by runtime
+- Room and connection projections can drift until every editor mutation uses
+  the same map-owned topology refs and repair services used by runtime
   rendering and travel.
 - Full parity still needs editor mutation policies, direct runtime token-drag
   movement, cross-map dungeon transition follow-through, and remaining
@@ -71,4 +74,4 @@ needs to feed the same party-owned travel position command path.
 - Which editor tools are mandatory for the first usable milestone?
 - What minimal room-inspector content is required for travel to feel complete?
 - Which topology-repair policies must be locked before editor history is
-  considered stable?
+  considered stable, especially for door, corridor, stair, and transition edits?

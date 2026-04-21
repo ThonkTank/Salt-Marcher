@@ -14,10 +14,10 @@ src.view.leftbartabs.dungeoneditor.DungeonEditorViewModel	58	51	204	1257	50
 src.view.leftbartabs.dungeontravel.DungeonTravelViewModel	28	48	129	242	47
 src.view.dropdowns.party.PartyCharacterEditorTopBarView	45	33	133	842	32
 src.view.dropdowns.party.PartyTopBarView	64	48	214	1826	47
-src.view.dropdowns.party.PartyTopBarViewModel	36	37	159	506	36
+src.view.dropdowns.party.PartyTopBarViewModel	57	46	195	1426	45
 src.view.slotcontent.controls.catalog.CatalogControlsView	65	50	257	1930	49
 src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView	34	43	146	481	39
-src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel	50	34	136	1177	32
+src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel	50	34	155	1328	32
 src.view.slotcontent.main.dungeonmap.DungeonMapMainView	117	64	324	6737	62
 src.view.statetabs.encounter.EncounterStateBinder	30	59	212	433	58
 src.view.statetabs.encounter.EncounterStateView	141	58	386	9654	57

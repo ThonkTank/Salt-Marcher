@@ -211,14 +211,9 @@ public final class PartyTopBarViewModel {
         return new MutationAndLoadResult(mutationResult, data, successMessage);
     }
 
-    private void applyMutationResult(
-            long requestId,
-            MutationAndLoadResult result,
-            CompletionHandler onComplete
-    ) {
+    private ActionResult applyMutationResult(long requestId, MutationAndLoadResult result) {
         if (!currentRequest(requestId)) {
-            complete(onComplete, ActionResult.failure("Party-Aktion wurde von einer neueren Anfrage ueberholt."));
-            return;
+            return ActionResult.failure("Party-Aktion wurde von einer neueren Anfrage ueberholt.");
         }
         mutationInFlight = false;
         MutationStatus status = result == null || result.mutationResult() == null
@@ -227,8 +222,7 @@ public final class PartyTopBarViewModel {
         if (status != MutationStatus.SUCCESS) {
             String message = mutationMessage(status);
             showStatus(message, true);
-            complete(onComplete, ActionResult.failure(message));
-            return;
+            return ActionResult.failure(message);
         }
         PanelData data = result.panelData();
         if (data == null) {
@@ -242,25 +236,21 @@ public final class PartyTopBarViewModel {
             String message = "Party konnte nach der Aenderung nicht neu geladen werden.";
             applyStorageError();
             showStatus(message, true);
-            complete(onComplete, ActionResult.failure(message));
-            return;
+            return ActionResult.failure(message);
         }
-        AdventuringDayResult dayResult = data == null ? null : data.dayResult();
-        applySnapshot(snapshotResult.snapshot(), dayResult, result.successMessage(), false);
+        applySnapshot(snapshotResult.snapshot(), data.dayResult(), result.successMessage(), false);
         publishMutation();
-        complete(onComplete, ActionResult.success());
+        return ActionResult.success();
     }
 
-    private void applyMutationFailure(long requestId, CompletionHandler onComplete) {
+    private ActionResult applyMutationFailure(long requestId) {
         if (!currentRequest(requestId)) {
-            complete(onComplete, ActionResult.failure("Party-Aktion wurde von einer neueren Anfrage ueberholt."));
-            return;
+            return ActionResult.failure("Party-Aktion wurde von einer neueren Anfrage ueberholt.");
         }
         mutationInFlight = false;
         String message = "Party-Aktion konnte nicht gespeichert werden.";
         showStatus(message, true);
-        complete(onComplete, ActionResult.failure(message));
-            return;
+        return ActionResult.failure(message);
     }
 
     private void applySnapshot(
@@ -341,8 +331,7 @@ public final class PartyTopBarViewModel {
 
     private ActionResult rejectedMutation(String message) {
         showStatus(message, true);
-        complete(onComplete, ActionResult.failure(message));
-            return;
+        return ActionResult.failure(message);
     }
 
     private static String mutationMessage(@Nullable MutationStatus status) {

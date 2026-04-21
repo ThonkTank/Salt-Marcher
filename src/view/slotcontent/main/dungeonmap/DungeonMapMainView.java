@@ -295,6 +295,8 @@ public class DungeonMapMainView extends BorderPane {
                     hitKind(cell.kind()),
                     cell.ownerId(),
                     cell.clusterId(),
+                    cell.topologyRef().kind(),
+                    cell.topologyRef().id(),
                     cell.label());
         }
         return DungeonMapHitTarget.empty();
@@ -1004,15 +1006,19 @@ public class DungeonMapMainView extends BorderPane {
             DungeonMapHitKind kind,
             long ownerId,
             long clusterId,
+            String topologyRefKind,
+            long topologyRefId,
             String label
     ) {
 
         public DungeonMapHitTarget {
+            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? "EMPTY" : topologyRefKind;
+            topologyRefId = Math.max(0L, topologyRefId);
             label = label == null ? "" : label;
         }
 
         public static DungeonMapHitTarget empty() {
-            return new DungeonMapHitTarget(DungeonMapHitKind.EMPTY, 0L, 0L, "");
+            return new DungeonMapHitTarget(DungeonMapHitKind.EMPTY, 0L, 0L, "EMPTY", 0L, "");
         }
     }
 

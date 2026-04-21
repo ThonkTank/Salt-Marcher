@@ -31,6 +31,8 @@ import src.domain.dungeon.published.DungeonMapMode;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
+import src.domain.dungeon.published.DungeonTopologyElementKind;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.SearchMapsQuery;
@@ -254,7 +256,10 @@ public final class DungeonEditorViewModel {
         }
         HitTarget hit = input.hitTarget();
         if (hit != null && hit.kind() == HitKind.ROOM && hit.clusterId() > 0L) {
-            Selection nextSelection = new Selection(hit.ownerId(), hit.clusterId(), hit.label());
+            DungeonMapDisplayModel.TopologyRef topologyRef =
+                    new DungeonMapDisplayModel.TopologyRef(hit.topologyRefKind(), hit.topologyRefId());
+            DungeonMapDisplayModel.Selection nextSelection =
+                    new DungeonMapDisplayModel.Selection(hit.ownerId(), hit.clusterId(), hit.label(), topologyRef);
             selection.set(nextSelection);
             dragSession = new DragSession(nextSelection, input.q(), input.r());
             dragPreview.set(null);
@@ -357,7 +362,8 @@ public final class DungeonEditorViewModel {
         DragPreview currentPreview = dragPreview.get();
         String selectionText = currentSelection == null
                 ? "Auswahl: Keine"
-                : "Auswahl: " + currentSelection.label() + " (Cluster " + currentSelection.clusterId() + ")";
+                : "Auswahl: " + currentSelection.label()
+                        + " (" + currentSelection.topologyRef().kind() + " " + currentSelection.topologyRef().id() + ")";
         String previewText = currentPreview == null || !currentPreview.active()
                 ? "Drag: inaktiv"
                 : "Drag: dq=" + currentPreview.deltaQ() + ", dr=" + currentPreview.deltaR();
@@ -368,7 +374,7 @@ public final class DungeonEditorViewModel {
                 + "\n" + selectionText
                 + "\n" + previewText
                 + "\n" + paintInteraction.stateText()
-                + "\nAuswahlwerkzeug: Raumcluster koennen auf dem Raster gezogen werden."
+                + "\nAuswahlwerkzeug: Topologieelemente koennen auf dem Raster gezogen werden."
                 + "\nRaumwerkzeug: Rechteck ziehen und beim Loslassen anwenden.");
     }
 
@@ -380,10 +386,13 @@ public final class DungeonEditorViewModel {
         withBusy(() -> {
             DungeonOperationResult result = dungeon.applyOperation(new ApplyDungeonEditorOperationCommand(
                     mapId,
-                    new DungeonEditorOperation.MoveRoomCluster(currentSelection.clusterId(), deltaQ, deltaR)));
+                    new DungeonEditorOperation.MoveTopologyElement(
+                            toTopologyElementRef(currentSelection.topologyRef()),
+                            deltaQ,
+                            deltaR)));
             snapshot.set(result.snapshot());
             reachableLevels.set(levelsFrom(result.snapshot(), projectionLevel.get()));
-            status.set("Cluster verschoben: dq=" + deltaQ + ", dr=" + deltaR);
+            status.set("Topologieelement verschoben: dq=" + deltaQ + ", dr=" + deltaR);
             selection.set(currentSelection);
         });
         refreshStateText();
@@ -410,6 +419,19 @@ public final class DungeonEditorViewModel {
                 && snapshot.get() != null
                 && !busy.get()
                 && viewMode.get() == DungeonMapDisplayModel.ViewMode.GRID;
+    }
+
+    private static DungeonTopologyElementRef toTopologyElementRef(DungeonMapDisplayModel.TopologyRef ref) {
+        DungeonMapDisplayModel.TopologyRef safeRef = ref == null ? DungeonMapDisplayModel.TopologyRef.empty() : ref;
+        return new DungeonTopologyElementRef(toTopologyElementKind(safeRef.kind()), safeRef.id());
+    }
+
+    private static DungeonTopologyElementKind toTopologyElementKind(String kind) {
+        try {
+            return DungeonTopologyElementKind.valueOf(kind == null ? "" : kind.trim());
+        } catch (IllegalArgumentException exception) {
+            return DungeonTopologyElementKind.EMPTY;
+        }
     }
 
     private void clearInteraction() {
@@ -508,9 +530,16 @@ public final class DungeonEditorViewModel {
             HitKind kind,
             long ownerId,
             long clusterId,
+            String topologyRefKind,
+            long topologyRefId,
             String label
     ) {
         public HitTarget {
+            kind = kind == null ? HitKind.EMPTY : kind;
+            ownerId = Math.max(0L, ownerId);
+            clusterId = Math.max(0L, clusterId);
+            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? "EMPTY" : topologyRefKind.trim();
+            topologyRefId = Math.max(0L, topologyRefId);
             label = label == null || label.isBlank() ? kind.name() : label;
         }
     }
