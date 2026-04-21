@@ -1,6 +1,12 @@
 package src.data.dungeon.gateway.local;
 
 import src.data.dungeon.model.DungeonMapRecord;
+import src.data.dungeon.model.DungeonClusterBoundaryRecord;
+import src.data.dungeon.model.DungeonRoomClusterRecord;
+import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
+import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
+import src.data.dungeon.model.DungeonRoomFloorRecord;
+import src.data.dungeon.model.DungeonRoomRecord;
 import src.data.dungeon.model.DungeonTopologySeedRecord;
 
 import java.sql.Connection;
@@ -9,8 +15,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 public final class DungeonSqliteGateway {
@@ -152,7 +160,9 @@ public final class DungeonSqliteGateway {
                 mapId,
                 resultSet.getString("name"),
                 1L,
-                topologySeed(connection, mapId));
+                topologySeed(connection, mapId),
+                loadRoomClusters(connection, mapId),
+                loadRooms(connection, mapId));
     }
 
     private DungeonTopologySeedRecord topologySeed(Connection connection, long mapId) throws SQLException {
@@ -193,6 +203,175 @@ public final class DungeonSqliteGateway {
             insert.setString(2, record.name());
             insert.executeUpdate();
         }
+    }
+
+    private static List<DungeonRoomClusterRecord> loadRoomClusters(Connection connection, long mapId) throws SQLException {
+        Map<Long, List<DungeonRoomClusterVertexRecord>> verticesByCluster = loadClusterVertices(connection, mapId);
+        Map<Long, List<DungeonClusterBoundaryRecord>> boundariesByCluster = loadClusterBoundaries(connection, mapId);
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT cluster_id, dungeon_map_id, center_x, center_y, level_z"
+                        + " FROM dungeon_room_clusters WHERE dungeon_map_id=? ORDER BY cluster_id")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<DungeonRoomClusterRecord> records = new ArrayList<>();
+                while (resultSet.next()) {
+                    long clusterId = resultSet.getLong("cluster_id");
+                    records.add(new DungeonRoomClusterRecord(
+                            clusterId,
+                            resultSet.getLong("dungeon_map_id"),
+                            resultSet.getInt("center_x"),
+                            resultSet.getInt("center_y"),
+                            resultSet.getInt("level_z"),
+                            verticesByCluster.getOrDefault(clusterId, List.of()),
+                            boundariesByCluster.getOrDefault(clusterId, List.of())));
+                }
+                return List.copyOf(records);
+            }
+        }
+    }
+
+    private static Map<Long, List<DungeonRoomClusterVertexRecord>> loadClusterVertices(
+            Connection connection,
+            long mapId
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT cluster_id, level_z, vertex_index, relative_x, relative_y"
+                        + " FROM dungeon_room_cluster_vertices"
+                        + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
+                        + " ORDER BY cluster_id, level_z, vertex_index")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<DungeonRoomClusterVertexRecord>> records = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    long clusterId = resultSet.getLong("cluster_id");
+                    records.computeIfAbsent(clusterId, ignored -> new ArrayList<>())
+                            .add(new DungeonRoomClusterVertexRecord(
+                                    clusterId,
+                                    resultSet.getInt("level_z"),
+                                    resultSet.getInt("vertex_index"),
+                                    resultSet.getInt("relative_x"),
+                                    resultSet.getInt("relative_y")));
+                }
+                return copyGrouped(records);
+            }
+        }
+    }
+
+    private static Map<Long, List<DungeonClusterBoundaryRecord>> loadClusterBoundaries(
+            Connection connection,
+            long mapId
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type"
+                        + " FROM dungeon_room_cluster_edges"
+                        + " WHERE cluster_id IN (SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)"
+                        + " ORDER BY cluster_id, level_z, cell_y, cell_x, edge_direction")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<DungeonClusterBoundaryRecord>> records = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    long clusterId = resultSet.getLong("cluster_id");
+                    records.computeIfAbsent(clusterId, ignored -> new ArrayList<>())
+                            .add(new DungeonClusterBoundaryRecord(
+                                    clusterId,
+                                    resultSet.getInt("level_z"),
+                                    resultSet.getInt("cell_x"),
+                                    resultSet.getInt("cell_y"),
+                                    resultSet.getString("edge_direction"),
+                                    resultSet.getString("edge_type")));
+                }
+                return copyGrouped(records);
+            }
+        }
+    }
+
+    private static List<DungeonRoomRecord> loadRooms(Connection connection, long mapId) throws SQLException {
+        Map<Long, List<DungeonRoomFloorRecord>> floorsByRoom = loadRoomFloors(connection, mapId);
+        Map<Long, List<DungeonRoomExitDescriptionRecord>> exitsByRoom = loadRoomExitDescriptions(connection, mapId);
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y, level_z"
+                        + " FROM dungeon_rooms WHERE dungeon_map_id=? ORDER BY room_id")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<DungeonRoomRecord> records = new ArrayList<>();
+                while (resultSet.next()) {
+                    long roomId = resultSet.getLong("room_id");
+                    records.add(new DungeonRoomRecord(
+                            roomId,
+                            resultSet.getLong("dungeon_map_id"),
+                            resultSet.getLong("cluster_id"),
+                            resultSet.getString("name"),
+                            resultSet.getString("visual_description"),
+                            resultSet.getInt("component_x"),
+                            resultSet.getInt("component_y"),
+                            resultSet.getInt("level_z"),
+                            floorsByRoom.getOrDefault(roomId, List.of()),
+                            exitsByRoom.getOrDefault(roomId, List.of())));
+                }
+                return List.copyOf(records);
+            }
+        }
+    }
+
+    private static Map<Long, List<DungeonRoomFloorRecord>> loadRoomFloors(
+            Connection connection,
+            long mapId
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT room_id, level_z, anchor_x, anchor_y"
+                        + " FROM dungeon_room_floors"
+                        + " WHERE room_id IN (SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)"
+                        + " ORDER BY room_id, level_z")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<DungeonRoomFloorRecord>> records = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    long roomId = resultSet.getLong("room_id");
+                    records.computeIfAbsent(roomId, ignored -> new ArrayList<>())
+                            .add(new DungeonRoomFloorRecord(
+                                    roomId,
+                                    resultSet.getInt("level_z"),
+                                    resultSet.getInt("anchor_x"),
+                                    resultSet.getInt("anchor_y")));
+                }
+                return copyGrouped(records);
+            }
+        }
+    }
+
+    private static Map<Long, List<DungeonRoomExitDescriptionRecord>> loadRoomExitDescriptions(
+            Connection connection,
+            long mapId
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT room_id, cell_x, cell_y, edge_direction, description"
+                        + " FROM dungeon_room_exit_descriptions"
+                        + " WHERE room_id IN (SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)"
+                        + " ORDER BY room_id, sort_order, cell_y, cell_x, edge_direction")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<DungeonRoomExitDescriptionRecord>> records = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    long roomId = resultSet.getLong("room_id");
+                    records.computeIfAbsent(roomId, ignored -> new ArrayList<>())
+                            .add(new DungeonRoomExitDescriptionRecord(
+                                    roomId,
+                                    resultSet.getInt("cell_x"),
+                                    resultSet.getInt("cell_y"),
+                                    resultSet.getString("edge_direction"),
+                                    resultSet.getString("description")));
+                }
+                return copyGrouped(records);
+            }
+        }
+    }
+
+    private static <T> Map<Long, List<T>> copyGrouped(Map<Long, List<T>> records) {
+        Map<Long, List<T>> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, List<T>> entry : records.entrySet()) {
+            result.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(result);
     }
 
     private static void deleteMap(Connection connection, long mapId) throws SQLException {

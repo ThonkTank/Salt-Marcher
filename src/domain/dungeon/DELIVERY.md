@@ -18,6 +18,10 @@ Current foundation:
   from authored persistence.
 - The SQLite schema manager creates the legacy-compatible dungeon table family
   required for later parity work.
+- Room and cluster read parity is active: the data layer loads room records,
+  floor anchors, visual descriptions, exit descriptions, cluster centers,
+  cluster vertices, and explicit internal wall or door edges. The domain layer
+  hydrates room cells and boundary facts from those authored inputs.
 
 Recommended rollout:
 
@@ -31,14 +35,20 @@ Recommended rollout:
 - UI specifications are broader than the currently stabilized domain policies.
 - Preview behavior and undo/redo semantics need explicit implementation
   contracts before broad editor rollout.
-- Room and connection projections can drift if ownership rules are not enforced
-  consistently.
-- The current mapper only reconstructs the topology seed from persisted room
-  coordinates; full parity needs explicit room, corridor, stair, transition,
-  and feature mapping before those behaviours can be considered preserved.
+- Room and connection projections can drift if corridor, stair, and transition
+  ownership rules are not enforced consistently.
+- Full parity still needs explicit corridor, stair, transition, and feature
+  mapping before those behaviours can be considered preserved.
 - Advanced editor operation carriers must be introduced only with implemented
   domain policies, and their public API signatures must use API-owned carrier
   types rather than internal domain-module model types.
+
+## Next Parity Step
+
+Implement corridor read parity next. The original implementation derives
+runtime corridor paths from corridor membership, waypoints, and door overrides;
+this codebase now has the compatible schema tables but does not yet map those
+rows into `ConnectionCatalog` or derived relation facts.
 
 ## Open Delivery Questions
 

@@ -46,6 +46,11 @@ Current state:
 
 - `map/aggregate/DungeonMap` is the aggregate root and mutation boundary for
   one authored map.
+- `SpatialTopology` now carries authored room-cluster geometry loaded from the
+  legacy write model: cluster centers, polygon vertices, and explicit internal
+  wall or door edges.
+- `RoomCatalog` now carries authored room identity, names, floor anchors, and
+  narration loaded from the legacy write model.
 - Editor operations now tell the aggregate to mutate authored topology seeds
   instead of rewriting a document carrier in application code.
 - The application layer coordinates load, mutate, save, search, and derive
@@ -71,7 +76,10 @@ Remaining implementation gap:
 - Several core types remain thinner record-style carriers than the target
   aggregate model.
 - Full behaviour parity with the original `salt-marcher/` dungeon schema still
-  requires room-cluster, corridor, stair, transition, and feature mapping.
+  requires corridor, stair, transition, and feature mapping.
+- The current derived-state rebuild hydrates rooms from cluster polygons and
+  internal wall or door boundaries, but corridor routing, stair exits, and
+  transition destinations are not yet represented in the domain facts.
 - This feature remains a policy-owning bounded context because editor
   mutations and identity-preserving repairs are rule-bearing domain work.
 
@@ -128,6 +136,8 @@ Semantically, it owns:
 
 - which tiles are traversable interior
 - which explicit internal wall edges exist
+- authored room-cluster polygon vertices
+- authored internal door boundaries
 - corridor node and segment ownership
 - authored door geometry
 - stair planning input
@@ -159,6 +169,8 @@ It owns:
 
 - room identity
 - room names and authored descriptions
+- per-floor room anchors
+- authored room exit descriptions
 - room-level authorial metadata that survives topology rebuilds
 
 It does not own traversal projections or render geometry.

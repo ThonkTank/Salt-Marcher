@@ -59,6 +59,23 @@ public final class DungeonMap {
                 revision);
     }
 
+    public static DungeonMap authored(
+            DungeonMapIdentity mapId,
+            String mapName,
+            SpatialTopology topology,
+            RoomCatalog rooms,
+            long revision
+    ) {
+        return new DungeonMap(
+                new DungeonMapMetadata(mapId, mapName),
+                topology,
+                SpaceCatalog.empty(),
+                rooms,
+                ConnectionCatalog.empty(),
+                FeatureCatalog.empty(),
+                revision);
+    }
+
     public DungeonMap moveRoomAnchor(int deltaQ, int deltaR) {
         return withTopology(topology.moveRoomAnchor(deltaQ, deltaR), revision + 1L);
     }

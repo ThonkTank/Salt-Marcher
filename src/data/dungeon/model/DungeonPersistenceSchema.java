@@ -81,6 +81,40 @@ public final class DungeonPersistenceSchema {
                     + "PRIMARY KEY (room_id, level_z)"
                     + ")";
 
+    public static final String CREATE_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_corridor_door_overrides ("
+                    + "corridor_id     INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                    + "room_id         INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                    + "cluster_id      INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
+                    + "relative_cell_x INTEGER NOT NULL,"
+                    + "relative_cell_y INTEGER NOT NULL,"
+                    + "edge_direction  TEXT NOT NULL,"
+                    + "sort_order      INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY (corridor_id, room_id)"
+                    + ")";
+
+    public static final String CREATE_DUNGEON_CORRIDOR_WAYPOINTS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_corridor_waypoints ("
+                    + "corridor_id INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                    + "sort_order  INTEGER NOT NULL,"
+                    + "cluster_id  INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
+                    + "relative_x  INTEGER NOT NULL,"
+                    + "relative_y  INTEGER NOT NULL,"
+                    + "relative_z  INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY (corridor_id, sort_order)"
+                    + ")";
+
+    public static final String CREATE_DUNGEON_ROOM_EXIT_DESCRIPTIONS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_room_exit_descriptions ("
+                    + "room_id        INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                    + "cell_x         INTEGER NOT NULL,"
+                    + "cell_y         INTEGER NOT NULL,"
+                    + "edge_direction TEXT NOT NULL,"
+                    + "description    TEXT,"
+                    + "sort_order     INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY (room_id, cell_x, cell_y, edge_direction)"
+                    + ")";
+
     public static final String CREATE_DUNGEON_STAIRS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS dungeon_stairs ("
                     + "stair_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -138,10 +172,22 @@ public final class DungeonPersistenceSchema {
             CREATE_DUNGEON_ROOM_CLUSTER_VERTICES_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTER_EDGES_TABLE_SQL,
             CREATE_DUNGEON_ROOM_FLOORS_TABLE_SQL,
+            CREATE_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TABLE_SQL,
+            CREATE_DUNGEON_CORRIDOR_WAYPOINTS_TABLE_SQL,
+            CREATE_DUNGEON_ROOM_EXIT_DESCRIPTIONS_TABLE_SQL,
             CREATE_DUNGEON_STAIRS_TABLE_SQL,
             CREATE_DUNGEON_STAIR_PATH_NODES_TABLE_SQL,
             CREATE_DUNGEON_STAIR_EXITS_TABLE_SQL,
             CREATE_DUNGEON_TRANSITIONS_TABLE_SQL
+    );
+
+    public static final List<String> COMPATIBILITY_ALTER_TABLE_SQL = List.of(
+            "ALTER TABLE dungeon_rooms ADD COLUMN visual_description TEXT",
+            "ALTER TABLE dungeon_stairs ADD COLUMN shape TEXT NOT NULL DEFAULT 'LADDER'",
+            "ALTER TABLE dungeon_stairs ADD COLUMN direction INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE dungeon_stairs ADD COLUMN dimension1 INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE dungeon_stairs ADD COLUMN dimension2 INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE dungeon_stairs ADD COLUMN corridor_id INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE"
     );
 
     private DungeonPersistenceSchema() {

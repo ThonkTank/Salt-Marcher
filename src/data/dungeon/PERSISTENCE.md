@@ -43,21 +43,29 @@ This document is normative for the dungeon feature's persistence path.
   - `dungeon_room_cluster_vertices`
   - `dungeon_room_cluster_edges`
   - `dungeon_room_floors`
+  - `dungeon_corridor_door_overrides`
+  - `dungeon_corridor_waypoints`
+  - `dungeon_room_exit_descriptions`
   - `dungeon_stairs`
   - `dungeon_stair_path_nodes`
   - `dungeon_stair_exits`
   - `dungeon_transitions`
+- Existing databases receive additive compatibility migrations for
+  `dungeon_rooms.visual_description` and the legacy stair columns
+  `shape`, `direction`, `dimension1`, `dimension2`, and `corridor_id`.
 
 ## Current Mapping
 
-The current adapter persists and reloads the map identity, map name, and a
-topology seed derived from room coordinates. When a new map has no rooms, the
-gateway creates a seed room and cluster so the existing map surfaces still have
-authorable spatial truth.
+The current adapter persists and reloads map identity, map name, topology seed,
+authored room records, room floor anchors, room visual and exit narration,
+room-cluster centers, room-cluster vertices, and explicit cluster wall or door
+edges. When a new map has no rooms, the gateway creates a seed room and cluster
+so the existing map surfaces still have authorable spatial truth.
 
 This is infrastructure for behavioural parity, not complete parity. Room
-semantics, corridor membership, door and wall geometry, stairs, transitions,
-and non-space features still need explicit source-to-domain mapping before the
+semantics and cluster boundary geometry are now represented. Corridor
+membership, corridor waypoints and door overrides, stairs, transitions, and
+non-space features still need explicit source-to-domain mapping before the
 legacy dungeon behaviour is fully represented.
 
 ## Stability Rules

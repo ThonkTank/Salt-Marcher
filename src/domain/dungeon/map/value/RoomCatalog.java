@@ -1,11 +1,28 @@
 package src.domain.dungeon.map.value;
 
+import src.domain.dungeon.map.entity.DungeonRoom;
+
+import java.util.List;
+import java.util.Optional;
+
 /**
- * Empty authored room catalog placeholder for the first real map slice.
+ * Authored rooms loaded from the dungeon write model.
  */
-public record RoomCatalog() {
+public record RoomCatalog(
+        List<DungeonRoom> rooms
+) {
+
+    public RoomCatalog {
+        rooms = rooms == null ? List.of() : List.copyOf(rooms);
+    }
 
     public static RoomCatalog empty() {
-        return new RoomCatalog();
+        return new RoomCatalog(List.of());
+    }
+
+    public Optional<DungeonRoom> findRoom(long roomId) {
+        return rooms.stream()
+                .filter(room -> room.roomId() == roomId)
+                .findFirst();
     }
 }

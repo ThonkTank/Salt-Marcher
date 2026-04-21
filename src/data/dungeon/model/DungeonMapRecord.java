@@ -1,5 +1,7 @@
 package src.data.dungeon.model;
 
+import java.util.List;
+
 /**
  * Source-local dungeon map catalog row.
  */
@@ -7,12 +9,25 @@ public record DungeonMapRecord(
         long mapId,
         String name,
         long revision,
-        DungeonTopologySeedRecord topologySeed
+        DungeonTopologySeedRecord topologySeed,
+        List<DungeonRoomClusterRecord> roomClusters,
+        List<DungeonRoomRecord> rooms
 ) {
+
+    public DungeonMapRecord(
+            long mapId,
+            String name,
+            long revision,
+            DungeonTopologySeedRecord topologySeed
+    ) {
+        this(mapId, name, revision, topologySeed, List.of(), List.of());
+    }
 
     public DungeonMapRecord {
         name = name == null || name.isBlank() ? "Dungeon " + mapId : name.trim();
         revision = Math.max(1L, revision);
         topologySeed = topologySeed == null ? DungeonTopologySeedRecord.demo() : topologySeed;
+        roomClusters = roomClusters == null ? List.of() : List.copyOf(roomClusters);
+        rooms = rooms == null ? List.of() : List.copyOf(rooms);
     }
 }

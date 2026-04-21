@@ -1,5 +1,9 @@
 package src.domain.dungeon.map.value;
 
+import src.domain.dungeon.map.entity.DungeonRoomCluster;
+
+import java.util.List;
+
 /**
  * Minimal authored spatial truth for the current dungeon parity foundation.
  *
@@ -13,8 +17,19 @@ public record SpatialTopology(
         int width,
         int height,
         int roomAnchorQ,
-        int roomAnchorR
+        int roomAnchorR,
+        List<DungeonRoomCluster> roomClusters
 ) {
+
+    public SpatialTopology(
+            DungeonTopology topology,
+            int width,
+            int height,
+            int roomAnchorQ,
+            int roomAnchorR
+    ) {
+        this(topology, width, height, roomAnchorQ, roomAnchorR, List.of());
+    }
 
     public SpatialTopology {
         topology = topology == null ? DungeonTopology.SQUARE : topology;
@@ -22,6 +37,7 @@ public record SpatialTopology(
         height = Math.max(6, height);
         roomAnchorQ = Math.max(1, Math.min(width - 4, roomAnchorQ));
         roomAnchorR = Math.max(1, Math.min(height - 4, roomAnchorR));
+        roomClusters = roomClusters == null ? List.of() : List.copyOf(roomClusters);
     }
 
     public static SpatialTopology empty() {
@@ -38,6 +54,15 @@ public record SpatialTopology(
                 width,
                 height,
                 roomAnchorQ + deltaQ,
-                roomAnchorR + deltaR);
+                roomAnchorR + deltaR,
+                roomClusters);
+    }
+
+    public SpatialTopology withRoomClusters(List<DungeonRoomCluster> clusters) {
+        return new SpatialTopology(topology, width, height, roomAnchorQ, roomAnchorR, clusters);
+    }
+
+    public boolean hasAuthoredRooms() {
+        return !roomClusters.isEmpty();
     }
 }
