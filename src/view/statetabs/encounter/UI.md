@@ -60,7 +60,9 @@ creature details through the creature application service.
 - `Exclude` adds the current creature IDs to generator exclusions, clears active
   locks, and rerolls immediately.
 - `Clear` removes active generator locks and exclusions.
-- Catalog `+Add` actions append the selected creature to the runtime roster.
+- Catalog `+Add` actions append the selected creature to the runtime roster in
+  creation mode and add the selected creature as a reinforcement in active
+  combat.
 - Roster `+`, `-`, and remove controls adjust slot quantity or remove a slot;
   a single undo action can restore the most recently removed slot.
 - A roster creature name opens the creature details inspector.
@@ -94,6 +96,9 @@ creature details through the creature application service.
   or generator mutation replaces it.
 - Live combat: the active turn is highlighted and defeated monsters use the
   dead-card style.
+- Combat reinforcement: catalog `+Add` creates a new combat monster without
+  mutating the creation roster, preserves the current active turn highlight,
+  and includes the reinforcement in result XP eligibility.
 - Runtime mob combat: three or fewer matching monsters stay as individual
   cards, four to ten matching monsters become one `xN` mob card, and larger
   matching groups split into mob cards of four to ten members. Mob damage
