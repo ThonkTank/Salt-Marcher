@@ -275,7 +275,7 @@ public final class DungeonRoomCellProjector {
         return (from.equals(cell) && to.equals(neighbor)) || (from.equals(neighbor) && to.equals(cell));
     }
 
-    private static List<DungeonCell> sortedCells(Iterable<DungeonCell> cells) {
+    public static List<DungeonCell> sortedCells(Iterable<DungeonCell> cells) {
         List<DungeonCell> result = new ArrayList<>();
         for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
             if (cell != null) {

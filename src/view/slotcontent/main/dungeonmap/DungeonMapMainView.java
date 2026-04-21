@@ -621,7 +621,7 @@ public class DungeonMapMainView extends BorderPane {
 
     private Color fillFor(DungeonMapDisplayModel.RenderCell cell, int projectionLevel) {
         if (cell.preview()) {
-            return cell.destructivePreview() ? destructivePreviewFill() : previewFill();
+            return cell.destructivePreview() ? color(0x99, 0x43, 0x3d, 0.62) : previewFill();
         }
         if (cell.z() != projectionLevel) {
             return blend(cell.z() > projectionLevel ? roomFill() : corridorFill(),
@@ -641,7 +641,7 @@ public class DungeonMapMainView extends BorderPane {
 
     private Color strokeFor(DungeonMapDisplayModel.RenderCell cell, int projectionLevel) {
         if (cell.preview()) {
-            return cell.destructivePreview() ? destructivePreviewStroke() : previewStroke();
+            return cell.destructivePreview() ? color(0xff, 0xc1, 0x87, 1.0) : previewStroke();
         }
         if (cell.z() != projectionLevel) {
             return blend(roomStroke(), cell.z() > projectionLevel ? aboveTint() : belowTint(), 0.62);
@@ -843,14 +843,6 @@ public class DungeonMapMainView extends BorderPane {
 
     private Color previewStroke() {
         return color(0xf1, 0xd3, 0x8a, 1.0);
-    }
-
-    private Color destructivePreviewFill() {
-        return color(0x99, 0x43, 0x3d, 0.62);
-    }
-
-    private Color destructivePreviewStroke() {
-        return color(0xff, 0xc1, 0x87, 1.0);
     }
 
     private Color partyFill() {

@@ -55,7 +55,7 @@ public final class DungeonRoomTopologyEditor {
             }
         }
         Map<Integer, List<DungeonCell>> nextCells = new LinkedHashMap<>(target.cellsByLevel());
-        nextCells.put(start.level(), sortedCells(targetLevelCells));
+        nextCells.put(start.level(), DungeonRoomCellProjector.sortedCells(targetLevelCells));
         nextClusters.add(target.withCellsByLevel(nextCells));
         return rebuilt(dungeonMap, nextClusters, cellProjector);
     }
@@ -92,11 +92,11 @@ public final class DungeonRoomTopologyEditor {
                 Map<Integer, List<DungeonCell>> componentCells = new LinkedHashMap<>();
                 if (first) {
                     componentCells.putAll(otherLevels);
-                    componentCells.put(start.level(), sortedCells(component));
+                    componentCells.put(start.level(), DungeonRoomCellProjector.sortedCells(component));
                     nextClusters.add(work.withCellsByLevel(componentCells));
                     first = false;
                 } else {
-                    componentCells.put(start.level(), sortedCells(component));
+                    componentCells.put(start.level(), DungeonRoomCellProjector.sortedCells(component));
                     long clusterId = ids.nextClusterId();
                     long roomId = ids.nextRoomId();
                     nextClusters.add(new ClusterWork(
@@ -178,7 +178,7 @@ public final class DungeonRoomTopologyEditor {
 
     private static List<DungeonRoom> roomsFor(ClusterWork work) {
         DungeonRoom template = work.rooms().isEmpty() ? null : work.rooms().getFirst();
-        DungeonCell anchor = sortedCells(work.allCells()).stream().findFirst().orElse(null);
+        DungeonCell anchor = DungeonRoomCellProjector.sortedCells(work.allCells()).stream().findFirst().orElse(null);
         if (anchor == null) {
             return List.of();
         }
@@ -196,7 +196,7 @@ public final class DungeonRoomTopologyEditor {
         Map<Integer, DungeonCell> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonCell>> entry : cellsByLevel.entrySet()) {
             if (!entry.getValue().isEmpty()) {
-                result.put(entry.getKey(), sortedCells(entry.getValue()).getFirst());
+                result.put(entry.getKey(), DungeonRoomCellProjector.sortedCells(entry.getValue()).getFirst());
             }
         }
         return Map.copyOf(result);
@@ -220,7 +220,7 @@ public final class DungeonRoomTopologyEditor {
     }
 
     private static DungeonRoomCluster newCluster(long clusterId, long mapId, Set<DungeonCell> cells) {
-        DungeonCell center = sortedCells(cells).getFirst();
+        DungeonCell center = DungeonRoomCellProjector.sortedCells(cells).getFirst();
         return new DungeonRoomCluster(clusterId, mapId, center, Map.of(), Map.of());
     }
 
@@ -289,25 +289,9 @@ public final class DungeonRoomTopologyEditor {
         }
         Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<DungeonCell>> entry : grouped.entrySet()) {
-            result.put(entry.getKey(), sortedCells(entry.getValue()));
+            result.put(entry.getKey(), DungeonRoomCellProjector.sortedCells(entry.getValue()));
         }
         return Map.copyOf(result);
-    }
-
-    private static List<DungeonCell> sortedCells(Iterable<DungeonCell> cells) {
-        List<DungeonCell> result = new ArrayList<>();
-        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
-            if (cell != null) {
-                result.add(cell);
-            }
-        }
-        return result.stream()
-                .distinct()
-                .sorted(Comparator
-                        .comparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .toList();
     }
 
     private record ClusterWork(
@@ -330,7 +314,7 @@ public final class DungeonRoomTopologyEditor {
             for (List<DungeonCell> cells : cellsByLevel.values()) {
                 result.addAll(cells);
             }
-            return sortedCells(result);
+            return DungeonRoomCellProjector.sortedCells(result);
         }
 
         ClusterWork withCellsByLevel(Map<Integer, List<DungeonCell>> nextCellsByLevel) {

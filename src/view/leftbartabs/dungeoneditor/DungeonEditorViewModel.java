@@ -36,22 +36,19 @@ import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.SearchMapsQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.DragPreview;
-import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.PaintPreview;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.Selection;
 
 public final class DungeonEditorViewModel {
 
     private static final String DEFAULT_TOOL = "Auswahl";
-    private static final String ROOM_PAINT_TOOL = "Raum malen";
-    private static final String ROOM_DELETE_TOOL = "Raum loeschen";
 
     private final DungeonApplicationService dungeon;
+    private final DungeonEditorPaintInteractionViewModel paintInteraction = new DungeonEditorPaintInteractionViewModel();
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<DungeonSnapshot> snapshot = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<Selection> selection = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<DragPreview> dragPreview = new ReadOnlyObjectWrapper<>();
-    private final ReadOnlyObjectWrapper<PaintPreview> paintPreview = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<List<MapSelection>> maps = new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyStringWrapper selectedMapKey = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<List<Integer>> reachableLevels = new ReadOnlyObjectWrapper<>(List.of(0));
@@ -64,7 +61,6 @@ public final class DungeonEditorViewModel {
     private final StringProperty selectedTool = new SimpleStringProperty(DEFAULT_TOOL);
     private @Nullable DungeonMapId selectedMapId;
     private @Nullable DragSession dragSession;
-    private @Nullable PaintSession paintSession;
 
     public DungeonEditorViewModel(DungeonApplicationService dungeon) {
         this.dungeon = Objects.requireNonNull(dungeon, "dungeon");
@@ -91,8 +87,8 @@ public final class DungeonEditorViewModel {
         return dragPreview.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<PaintPreview> paintPreviewProperty() {
-        return paintPreview.getReadOnlyProperty();
+    public ReadOnlyObjectProperty<DungeonMapDisplayModel.PaintPreview> paintPreviewProperty() {
+        return paintInteraction.paintPreviewProperty();
     }
 
     public ReadOnlyObjectProperty<List<MapSelection>> mapsProperty() {
@@ -246,17 +242,9 @@ public final class DungeonEditorViewModel {
         if (!interactionEnabled() || input == null) {
             return;
         }
-        if (roomPaintToolSelected()) {
+        if (paintInteraction.press(input, selectedTool.get())) {
             selection.set(null);
             dragSession = null;
-            paintSession = new PaintSession(
-                    input.q(),
-                    input.r(),
-                    input.q(),
-                    input.r(),
-                    input.level(),
-                    ROOM_DELETE_TOOL.equals(selectedTool.get()));
-            paintPreview.set(toPreview(paintSession));
             refreshStateText();
             return;
         }
@@ -280,9 +268,7 @@ public final class DungeonEditorViewModel {
         if (!interactionEnabled() || input == null || !input.primaryButtonDown()) {
             return;
         }
-        if (paintSession != null && roomPaintToolSelected()) {
-            paintSession = paintSession.withEnd(input.q(), input.r());
-            paintPreview.set(toPreview(paintSession));
+        if (paintInteraction.drag(input, selectedTool.get())) {
             refreshStateText();
             return;
         }
@@ -300,14 +286,10 @@ public final class DungeonEditorViewModel {
     }
 
     public void primaryReleased(@Nullable PointerInput input) {
-        if (paintSession != null) {
-            PaintSession releasedSession = input == null
-                    ? paintSession
-                    : paintSession.withEnd(input.q(), input.r());
-            paintSession = null;
-            paintPreview.set(null);
-            if (interactionEnabled() && roomPaintToolSelected()) {
-                applyPaintSession(releasedSession);
+        DungeonEditorPaintInteractionViewModel.PaintCommit paintCommit = paintInteraction.release(input, selectedTool.get());
+        if (paintCommit != null) {
+            if (interactionEnabled()) {
+                applyPaintCommit(paintCommit);
             }
             refreshStateText();
             return;
@@ -379,19 +361,13 @@ public final class DungeonEditorViewModel {
         String previewText = currentPreview == null || !currentPreview.active()
                 ? "Drag: inaktiv"
                 : "Drag: dq=" + currentPreview.deltaQ() + ", dr=" + currentPreview.deltaR();
-        PaintPreview currentPaintPreview = paintPreview.get();
-        String paintText = currentPaintPreview == null || !currentPaintPreview.active()
-                ? "Raumvorschau: inaktiv"
-                : "Raumvorschau: "
-                + (currentPaintPreview.deleteMode() ? "loeschen" : "malen")
-                + " z=" + currentPaintPreview.level();
         state.set("Werkzeug: " + selectedTool.get()
                 + "\nAnsicht: " + viewMode.get().label()
                 + "\nEbene: z=" + projectionLevel.get()
                 + "\n" + overlaySettings.get().mode().label()
                 + "\n" + selectionText
                 + "\n" + previewText
-                + "\n" + paintText
+                + "\n" + paintInteraction.stateText()
                 + "\nAuswahlwerkzeug: Raumcluster koennen auf dem Raster gezogen werden."
                 + "\nRaumwerkzeug: Rechteck ziehen und beim Loslassen anwenden.");
     }
@@ -413,21 +389,18 @@ public final class DungeonEditorViewModel {
         refreshStateText();
     }
 
-    private void applyPaintSession(PaintSession session) {
+    private void applyPaintCommit(DungeonEditorPaintInteractionViewModel.PaintCommit commit) {
         DungeonMapId mapId = selectedMapId;
-        if (mapId == null || session == null) {
+        if (mapId == null || commit == null) {
             return;
         }
-        DungeonCellRef start = new DungeonCellRef(session.startQ(), session.startR(), session.level());
-        DungeonCellRef end = new DungeonCellRef(session.endQ(), session.endR(), session.level());
-        DungeonEditorOperation operation = session.deleteMode()
-                ? new DungeonEditorOperation.DeleteRoomRectangle(start, end)
-                : new DungeonEditorOperation.PaintRoomRectangle(start, end);
         withBusy(() -> {
-            DungeonOperationResult result = dungeon.applyOperation(new ApplyDungeonEditorOperationCommand(mapId, operation));
+            DungeonOperationResult result = dungeon.applyOperation(new ApplyDungeonEditorOperationCommand(
+                    mapId,
+                    commit.operation()));
             snapshot.set(result.snapshot());
             reachableLevels.set(levelsFrom(result.snapshot(), projectionLevel.get()));
-            status.set(session.deleteMode() ? "Raumflaeche geloescht." : "Raumflaeche gemalt.");
+            status.set(commit.status());
             selection.set(null);
         });
     }
@@ -441,29 +414,14 @@ public final class DungeonEditorViewModel {
 
     private void clearInteraction() {
         dragSession = null;
-        paintSession = null;
+        paintInteraction.clear();
         dragPreview.set(null);
-        paintPreview.set(null);
         selection.set(null);
         refreshStateText();
     }
 
     private boolean selectionToolSelected() {
         return DEFAULT_TOOL.equals(selectedTool.get());
-    }
-
-    private boolean roomPaintToolSelected() {
-        return ROOM_PAINT_TOOL.equals(selectedTool.get()) || ROOM_DELETE_TOOL.equals(selectedTool.get());
-    }
-
-    private static PaintPreview toPreview(PaintSession session) {
-        return new PaintPreview(
-                session.startQ(),
-                session.startR(),
-                session.endQ(),
-                session.endR(),
-                session.level(),
-                session.deleteMode());
     }
 
     private void moveProjection(int offset) {
@@ -573,17 +531,4 @@ public final class DungeonEditorViewModel {
     ) {
     }
 
-    private record PaintSession(
-            int startQ,
-            int startR,
-            int endQ,
-            int endR,
-            int level,
-            boolean deleteMode
-    ) {
-
-        PaintSession withEnd(int nextEndQ, int nextEndR) {
-            return new PaintSession(startQ, startR, nextEndQ, nextEndR, level, deleteMode);
-        }
-    }
 }

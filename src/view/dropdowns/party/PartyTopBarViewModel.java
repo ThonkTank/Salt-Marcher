@@ -38,7 +38,7 @@ import src.domain.party.published.UpdateCharacterCommand;
 public final class PartyTopBarViewModel {
 
     private final PartyApplicationService party;
-    private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party v");
+    private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party \u25be");
     private final ReadOnlyObjectWrapper<PanelModel> panel =
             new ReadOnlyObjectWrapper<>(PanelModel.loadingModel());
 
@@ -169,8 +169,8 @@ public final class PartyTopBarViewModel {
         int activeCount = activeMembers.size();
         int averageLevel = safeSnapshot.summary() == null ? averageLevel(activeMembers) : safeSnapshot.summary().averageLevel();
         triggerText.set(activeCount == 0
-                ? "Keine _Party v"
-                : activeCount + " Charaktere, Schnitt Lv " + averageLevel + " v");
+                ? "Keine _Party \u25be"
+                : activeCount + " Charaktere, \u00d8 Lv " + averageLevel + " \u25be");
         panel.set(new PanelModel(
                 false,
                 false,
@@ -185,7 +185,7 @@ public final class PartyTopBarViewModel {
     }
 
     private void applyStorageError() {
-        triggerText.set("Keine _Party");
+        triggerText.set("Keine _Party \u25be");
         panel.set(new PanelModel(
                 false,
                 true,

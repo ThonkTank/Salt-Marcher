@@ -373,6 +373,12 @@
     -fx-font-size: 11px;
     -fx-text-fill: -sm-text-muted;
 }
+.adventuring-day-popup-body {
+    -fx-padding: 10 12 12 12;
+}
+.adventuring-day-summary-grid {
+    -fx-padding: 2 0 4 0;
+}
 .dropdown-window {
     -fx-background-color: -sm-bg-panel;
     -fx-border-color: -sm-border-subtle;

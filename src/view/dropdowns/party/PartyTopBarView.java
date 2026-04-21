@@ -7,7 +7,6 @@ import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -28,12 +27,13 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 public final class PartyTopBarView extends HBox {
 
     private static final double POPUP_WIDTH = 380.0;
 
-    private final Button triggerButton = new Button("Keine _Party v");
+    private final Button triggerButton = new Button("Keine _Party \u25be");
     private final Popup popup = new Popup();
     private final VBox memberList = new VBox();
     private final Label summaryLabel = new Label();
@@ -235,17 +235,7 @@ public final class PartyTopBarView extends HBox {
     }
 
     private void togglePopup() {
-        if (popup.isShowing()) {
-            popup.hide();
-            return;
-        }
-        onOpen.run();
-        triggerButton.applyCss();
-        triggerButton.layout();
-        Bounds bounds = triggerButton.localToScreen(triggerButton.getBoundsInLocal());
-        if (bounds != null) {
-            popup.show(triggerButton, bounds.getMaxX() - POPUP_WIDTH, bounds.getMaxY() + 2.0);
-        }
+        DropdownPopupView.toggleTrailing(popup, triggerButton, POPUP_WIDTH, onOpen);
     }
 
     private void renderMembers(PanelContent content) {

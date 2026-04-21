@@ -20,8 +20,9 @@ summary, and mutation controls call the party application service.
 
 - `TOP_BAR` hosts the party dropdown trigger and dropdown content through the
   shell top-bar contribution contract.
-- The dropdown trigger shows either no-party text or the active character count
-  with average level.
+- The dropdown trigger shows only party membership state: no-party text or the
+  active character count with average level. Adventuring-day rest-budget state
+  is shown by the separate Adventuring Day top-bar contribution.
 - The dropdown content shows a `PARTY` header, active member rows, rest action
   controls, reserve-character search suggestions, a new-character affordance,
   a summary footer, and compact feedback when party data cannot be loaded.
