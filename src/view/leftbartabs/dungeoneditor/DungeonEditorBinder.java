@@ -7,8 +7,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
-import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayMode;
-import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlaySettings;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewModel;
 
@@ -37,10 +36,10 @@ final class DungeonEditorBinder {
         controls.onToolChanged(viewModel::selectTool);
         controls.onPreviousLevel(viewModel::previousLevel);
         controls.onNextLevel(viewModel::nextLevel);
-        controls.onOverlayModeChanged(mode -> viewModel.selectOverlayMode(toDisplayOverlayMode(mode)));
-        controls.onOverlayRangeChanged(viewModel::selectOverlayRange);
-        controls.onOverlayOpacityChanged(viewModel::selectOverlayOpacity);
-        controls.onSelectedOverlayLevelsChanged(viewModel::selectOverlayLevels);
+        controls.levelOverlayControls().setOnModeChanged(mode -> viewModel.selectOverlayMode(toDisplayOverlayMode(mode)));
+        controls.levelOverlayControls().setOnRangeChanged(viewModel::selectOverlayRange);
+        controls.levelOverlayControls().setOnOpacityChanged(viewModel::selectOverlayOpacity);
+        controls.levelOverlayControls().setOnSelectedLevelsChanged(viewModel::selectOverlayLevels);
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
         viewModel.mapsProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
         viewModel.selectedMapKeyProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
@@ -118,33 +117,46 @@ final class DungeonEditorBinder {
                 : DungeonEditorControlsView.VIEW_GRID;
     }
 
-    private static DungeonMapDisplayModel.OverlayMode toDisplayOverlayMode(DungeonLevelOverlayMode overlayMode) {
-        return switch (overlayMode == null ? DungeonLevelOverlayMode.OFF : overlayMode) {
-            case OFF -> DungeonMapDisplayModel.OverlayMode.OFF;
-            case NEARBY -> DungeonMapDisplayModel.OverlayMode.NEARBY;
-            case SELECTED -> DungeonMapDisplayModel.OverlayMode.SELECTED;
-        };
+    private static DungeonMapDisplayModel.OverlayMode toDisplayOverlayMode(
+            DungeonLevelOverlayControlsView.Mode overlayMode
+    ) {
+        if (overlayMode == DungeonLevelOverlayControlsView.Mode.NEARBY) {
+            return DungeonMapDisplayModel.OverlayMode.NEARBY;
+        }
+        if (overlayMode == DungeonLevelOverlayControlsView.Mode.SELECTED) {
+            return DungeonMapDisplayModel.OverlayMode.SELECTED;
+        }
+        return DungeonMapDisplayModel.OverlayMode.OFF;
     }
 
-    private static DungeonLevelOverlaySettings toControlsOverlaySettings(
+    private static DungeonLevelOverlayControlsView.Settings toControlsOverlaySettings(
             DungeonMapDisplayModel.LevelOverlaySettings settings
     ) {
-        DungeonMapDisplayModel.LevelOverlaySettings resolved = settings == null
-                ? DungeonMapDisplayModel.LevelOverlaySettings.off()
-                : settings;
-        return new DungeonLevelOverlaySettings(
-                toControlsOverlayMode(resolved.mode()),
-                resolved.levelRange(),
-                resolved.opacity(),
-                resolved.selectedLevels());
+        if (settings == null) {
+            return new DungeonLevelOverlayControlsView.Settings(
+                    DungeonLevelOverlayControlsView.Mode.OFF,
+                    2,
+                    0.35,
+                    java.util.List.of());
+        }
+        DungeonLevelOverlayControlsView.Mode mode = toControlsOverlayMode(settings.mode());
+        return new DungeonLevelOverlayControlsView.Settings(
+                mode,
+                settings.levelRange(),
+                settings.opacity(),
+                settings.selectedLevels());
     }
 
-    private static DungeonLevelOverlayMode toControlsOverlayMode(DungeonMapDisplayModel.OverlayMode overlayMode) {
-        return switch (overlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : overlayMode) {
-            case OFF -> DungeonLevelOverlayMode.OFF;
-            case NEARBY -> DungeonLevelOverlayMode.NEARBY;
-            case SELECTED -> DungeonLevelOverlayMode.SELECTED;
-        };
+    private static DungeonLevelOverlayControlsView.Mode toControlsOverlayMode(
+            DungeonMapDisplayModel.OverlayMode overlayMode
+    ) {
+        if (overlayMode == DungeonMapDisplayModel.OverlayMode.NEARBY) {
+            return DungeonLevelOverlayControlsView.Mode.NEARBY;
+        }
+        if (overlayMode == DungeonMapDisplayModel.OverlayMode.SELECTED) {
+            return DungeonLevelOverlayControlsView.Mode.SELECTED;
+        }
+        return DungeonLevelOverlayControlsView.Mode.OFF;
     }
 
     private static DungeonEditorControlsView.MapItem toControlMapItem(DungeonEditorViewModel.MapSelection selection) {
