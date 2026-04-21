@@ -25,31 +25,6 @@ public record CreatureCatalogSearchCriteriaRecord(
         alignments = copyStrings(alignments);
     }
 
-    @Override
-    public List<String> sizes() {
-        return copyStrings(sizes);
-    }
-
-    @Override
-    public List<String> types() {
-        return copyStrings(types);
-    }
-
-    @Override
-    public List<String> subtypes() {
-        return copyStrings(subtypes);
-    }
-
-    @Override
-    public List<String> biomes() {
-        return copyStrings(biomes);
-    }
-
-    @Override
-    public List<String> alignments() {
-        return copyStrings(alignments);
-    }
-
     private static List<String> copyStrings(List<String> values) {
         return values == null ? List.of() : List.copyOf(values);
     }
