@@ -146,7 +146,9 @@ final class EncounterStateBinder {
         switch (viewModel.modeProperty().get()) {
             case BUILDER -> state.showBuilder(toBuilderState(viewModel.builderStateProperty().get()));
             case INITIATIVE -> state.showInitiative(toInitiativeState(viewModel.initiativeStateProperty().get()));
-            case COMBAT -> state.showCombat(toCombatState(viewModel.combatStateProperty().get()));
+            case COMBAT -> state.showCombat(toCombatState(
+                    viewModel.combatStateProperty().get(),
+                    viewModel.builderStateProperty().get()));
             case RESULTS -> state.showResults(toResultState(viewModel.resultStateProperty().get()));
         }
     }
@@ -211,7 +213,10 @@ final class EncounterStateBinder {
                 .toList());
     }
 
-    private EncounterStateView.CombatStateView toCombatState(CombatProjection source) {
+    private EncounterStateView.CombatStateView toCombatState(
+            CombatProjection source,
+            EncounterStateViewModel.BuilderState builderState
+    ) {
         return new EncounterStateView.CombatStateView(
                 source.round(),
                 source.status(),
@@ -229,7 +234,28 @@ final class EncounterStateBinder {
                                 card.count(),
                                 card.detail()))
                         .toList(),
-                source.allEnemiesDefeated());
+                source.allEnemiesDefeated(),
+                missingPartyMembers(source, builderState));
+    }
+
+    private static List<EncounterStateView.CombatPartyMemberView> missingPartyMembers(
+            CombatProjection source,
+            EncounterStateViewModel.BuilderState builderState
+    ) {
+        List<String> activePcIds = source.cards().stream()
+                .filter(CombatProjection.CombatCardSnapshot::playerCharacter)
+                .map(CombatProjection.CombatCardSnapshot::id)
+                .toList();
+        if (builderState == null) {
+            return List.of();
+        }
+        return builderState.party().stream()
+                .filter(member -> !activePcIds.contains(member.id()))
+                .map(member -> new EncounterStateView.CombatPartyMemberView(
+                        member.numericId(),
+                        member.name(),
+                        member.level()))
+                .toList();
     }
 
     private EncounterStateView.ResultStateView toResultState(EncounterStateViewModel.ResultState source) {

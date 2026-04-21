@@ -69,6 +69,7 @@ public final class EncounterStateView extends VBox {
     private final Label combatRoundLabel = new Label();
     private final Label combatStatusLabel = new Label();
     private final VBox combatCardList = new VBox(6);
+    private final Button addPartyButton = new Button("SC hinzufuegen");
     private final HBox endCombatContainer = new HBox(6);
     private final VBox combatPane = buildCombatPane();
 
@@ -105,10 +106,12 @@ public final class EncounterStateView extends VBox {
     private BiConsumer<String, Integer> onDamage = (id, amount) -> { };
     private BiConsumer<String, Integer> onHeal = (id, amount) -> { };
     private BiConsumer<String, Integer> onSetInitiative = (id, initiative) -> { };
+    private CombatPartyAddHandler onAddPartyMember = (id, initiative) -> { };
     private Runnable onEndCombat = () -> { };
     private Runnable onAwardXp = () -> { };
     private Runnable onReturnToBuilder = () -> { };
     private ResultStateView lastResultState = ResultStateView.empty();
+    private List<CombatPartyMemberView> lastCombatPartyCandidates = List.of();
 
     public EncounterStateView() {
         setSpacing(0);
@@ -177,6 +180,11 @@ public final class EncounterStateView extends VBox {
         setContent(combatPane);
         combatRoundLabel.setText("Runde " + state.round());
         combatStatusLabel.setText(state.status());
+        lastCombatPartyCandidates = state.missingPartyMembers();
+        addPartyButton.setDisable(lastCombatPartyCandidates.isEmpty());
+        addPartyButton.setTooltip(new Tooltip(lastCombatPartyCandidates.isEmpty()
+                ? "Alle aktiven SCs sind im Kampf."
+                : "Aktives Party-Mitglied in den laufenden Kampf aufnehmen."));
         combatCardList.getChildren().clear();
         for (CombatCardView card : state.cards()) {
             combatCardList.getChildren().add(buildCombatCard(card));
@@ -271,6 +279,10 @@ public final class EncounterStateView extends VBox {
 
     public void setOnSetInitiative(BiConsumer<String, Integer> callback) {
         onSetInitiative = callback == null ? (id, initiative) -> { } : callback;
+    }
+
+    public void setOnAddPartyMember(CombatPartyAddHandler callback) {
+        onAddPartyMember = callback == null ? (id, initiative) -> { } : callback;
     }
 
     public void setOnEndCombat(Runnable callback) {
@@ -420,10 +432,10 @@ public final class EncounterStateView extends VBox {
         combatStatusLabel.getStyleClass().add("text-secondary");
         combatStatusLabel.setPadding(new Insets(0, 12, 6, 12));
 
-        Button addPartyButton = new Button("SC hinzufuegen");
         addPartyButton.getStyleClass().addAll("compact", "neutral-action");
         addPartyButton.setDisable(true);
-        addPartyButton.setTooltip(new Tooltip("Party wird im Party-Panel gepflegt."));
+        addPartyButton.setTooltip(new Tooltip("Alle aktiven SCs sind im Kampf."));
+        addPartyButton.setOnAction(event -> showAddPartyMemberPopup(addPartyButton));
         HBox actions = new HBox(addPartyButton);
         actions.setAlignment(Pos.CENTER_RIGHT);
         actions.setPadding(new Insets(0, 12, 4, 12));

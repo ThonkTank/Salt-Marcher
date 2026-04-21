@@ -10,6 +10,8 @@ final class PartyRosterSchemaMigrator {
             new PartyRosterCharacterProfileColumnMigrator();
     private final PartyRosterCharacterProgressColumnMigrator progressColumnMigrator =
             new PartyRosterCharacterProgressColumnMigrator();
+    private final PartyRosterCharacterTravelColumnMigrator travelColumnMigrator =
+            new PartyRosterCharacterTravelColumnMigrator();
     private final PartyRosterBackfillMigrator backfillMigrator = new PartyRosterBackfillMigrator();
     private final PartyRosterMetadataInitializer metadataInitializer = new PartyRosterMetadataInitializer();
 
@@ -19,6 +21,7 @@ final class PartyRosterSchemaMigrator {
         progressColumnMigrator.ensureXpColumns(connection);
         ensureShortRestCadenceColumn(connection);
         profileColumnMigrator.ensureMembershipColumns(connection);
+        travelColumnMigrator.ensureTravelColumns(connection);
         backfillMigrator.normalizeExistingXp(connection);
         metadataInitializer.initializeNextCharacterId(connection);
     }
