@@ -102,15 +102,15 @@ public final class DungeonApplicationService {
     }
 
     public DungeonSnapshot loadSnapshot(LoadDungeonSnapshotQuery query) {
-        return PublishedTranslator.snapshot(loadDungeonSnapshotUseCase.execute());
+        return SnapshotPublication.snapshot(loadDungeonSnapshotUseCase.execute());
     }
 
     public DungeonOperationResult applyOperation(ApplyDungeonEditorOperationCommand command) {
         DungeonEditorOperation operation = command == null ? null : command.operation();
         ApplyDungeonEditorOperationUseCase.OperationResultData result =
-                applyDungeonEditorOperationUseCase.execute(PublishedTranslator.operationInput(operation));
+                applyDungeonEditorOperationUseCase.execute(OperationPublication.operationInput(operation));
         return new DungeonOperationResult(
-                PublishedTranslator.snapshot(result.snapshot()),
+                SnapshotPublication.snapshot(result.snapshot()),
                 result.validationMessages(),
                 result.reactionMessages());
     }
@@ -127,7 +127,7 @@ public final class DungeonApplicationService {
     public SearchMapsResult searchMaps(SearchMapsQuery query) {
         String searchTerm = query == null ? "" : query.query();
         List<DungeonMapSummary> maps = searchDungeonMapsUseCase.execute(searchTerm).stream()
-                .map(PublishedTranslator::mapSummary)
+                .map(MapPublication::summary)
                 .toList();
         return new SearchMapsResult(maps);
     }
@@ -135,13 +135,13 @@ public final class DungeonApplicationService {
     public CreateDungeonMapResult createMap(CreateDungeonMapCommand command) {
         String mapName = command == null ? "" : command.mapName();
         CreateDungeonMapUseCase.CreatedMap result = createDungeonMapUseCase.execute(mapName);
-        return new CreateDungeonMapResult(PublishedTranslator.mapId(result.mapId()));
+        return new CreateDungeonMapResult(MapPublication.id(result.mapId()));
     }
 
     public DeleteDungeonMapResult deleteMap(DeleteDungeonMapCommand command) {
         DungeonMapId mapId = command == null ? new DungeonMapId(1L) : command.mapId();
-        return new DeleteDungeonMapResult(PublishedTranslator.mapId(
-                deleteDungeonMapUseCase.execute(PublishedTranslator.domainMapId(mapId))));
+        return new DeleteDungeonMapResult(MapPublication.id(
+                deleteDungeonMapUseCase.execute(MapPublication.domainId(mapId))));
     }
 
     public BaseMapSnapshot loadMapSnapshot(LoadMapSnapshotQuery query) {
@@ -149,14 +149,14 @@ public final class DungeonApplicationService {
                 ? new LoadMapSnapshotQuery(new DungeonMapId(1L), 0)
                 : query;
         LoadMapSnapshotUseCase.MapSnapshotData snapshot = loadMapSnapshotUseCase.execute(
-                PublishedTranslator.domainMapId(effectiveQuery.mapId()),
+                MapPublication.domainId(effectiveQuery.mapId()),
                 effectiveQuery.targetFloor());
         return new BaseMapSnapshot(
-                PublishedTranslator.mapId(snapshot.mapId()),
+                MapPublication.id(snapshot.mapId()),
                 snapshot.mapName(),
                 snapshot.revision(),
                 snapshot.targetFloor(),
-                PublishedTranslator.mapSnapshot(snapshot.map()),
+                MapPublication.snapshot(snapshot.map()),
                 snapshot.empty());
     }
 
@@ -164,8 +164,8 @@ public final class DungeonApplicationService {
         LoadDungeonTravelSurfaceQuery effectiveQuery = query == null
                 ? new LoadDungeonTravelSurfaceQuery(null)
                 : query;
-        return PublishedTranslator.travelSurface(loadDungeonTravelSurfaceUseCase.execute(
-                new LoadDungeonTravelSurfaceUseCase.Input(PublishedTranslator.travelPosition(effectiveQuery.position()))));
+        return TravelPublication.surface(loadDungeonTravelSurfaceUseCase.execute(
+                new LoadDungeonTravelSurfaceUseCase.Input(TravelPublication.position(effectiveQuery.position()))));
     }
 
     public DungeonTravelMoveResult moveTravelAction(MoveDungeonTravelActionCommand command) {
@@ -173,24 +173,34 @@ public final class DungeonApplicationService {
                 ? new MoveDungeonTravelActionCommand(null, "")
                 : command;
         DungeonTravelMoveFacts result = moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
-                PublishedTranslator.travelPosition(effectiveCommand.position()),
+                TravelPublication.position(effectiveCommand.position()),
                 effectiveCommand.actionId()));
-        return PublishedTranslator.travelMoveResult(result);
+        return TravelPublication.moveResult(result);
     }
 
-    private static final class PublishedTranslator {
+    private static final class SnapshotPublication {
 
-        private PublishedTranslator() {
+        private SnapshotPublication() {
         }
 
         private static DungeonSnapshot snapshot(LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot) {
             return new DungeonSnapshot(
                     snapshot.mapName(),
                     DungeonMapMode.EDITOR,
-                    mapSnapshot(snapshot.derived().map()),
-                    snapshot.derived().aggregates().stream().map(PublishedTranslator::aggregateSummary).toList(),
+                    MapPublication.snapshot(snapshot.derived().map()),
+                    snapshot.derived().aggregates().stream().map(SnapshotPublication::aggregateSummary).toList(),
                     snapshot.derived().relations().summaries(),
-                    revision(snapshot.revision()));
+                    MapPublication.revision(snapshot.revision()));
+        }
+
+        private static String aggregateSummary(DungeonAggregate aggregate) {
+            return aggregate.label() + " #" + aggregate.id();
+        }
+    }
+
+    private static final class OperationPublication {
+
+        private OperationPublication() {
         }
 
         private static ApplyDungeonEditorOperationUseCase.OperationInput operationInput(
@@ -206,12 +216,18 @@ public final class DungeonApplicationService {
             }
             return new ApplyDungeonEditorOperationUseCase.OperationInput.NoChange();
         }
+    }
 
-        private static DungeonMapSummary mapSummary(SearchDungeonMapsUseCase.MapSummary summary) {
-            return new DungeonMapSummary(mapId(summary.mapId()), summary.mapName(), summary.revision());
+    private static final class MapPublication {
+
+        private MapPublication() {
         }
 
-        private static DungeonMapSnapshot mapSnapshot(DungeonMapFacts facts) {
+        private static DungeonMapSummary summary(SearchDungeonMapsUseCase.MapSummary summary) {
+            return new DungeonMapSummary(id(summary.mapId()), summary.mapName(), summary.revision());
+        }
+
+        private static DungeonMapSnapshot snapshot(DungeonMapFacts facts) {
             DungeonMapFacts safeFacts = facts == null
                     ? new DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of())
                     : facts;
@@ -219,16 +235,16 @@ public final class DungeonApplicationService {
                     topology(safeFacts.topology()),
                     safeFacts.width(),
                     safeFacts.height(),
-                    safeFacts.areas().stream().map(PublishedTranslator::area).toList(),
-                    safeFacts.boundaries().stream().map(PublishedTranslator::boundary).toList(),
-                    safeFacts.features().stream().map(PublishedTranslator::feature).toList());
+                    safeFacts.areas().stream().map(MapPublication::area).toList(),
+                    safeFacts.boundaries().stream().map(MapPublication::boundary).toList(),
+                    safeFacts.features().stream().map(MapPublication::feature).toList());
         }
 
-        private static DungeonMapId mapId(DungeonMapIdentity identity) {
+        private static DungeonMapId id(DungeonMapIdentity identity) {
             return new DungeonMapId(identity == null ? 1L : identity.value());
         }
 
-        private static DungeonMapIdentity domainMapId(DungeonMapId mapId) {
+        private static DungeonMapIdentity domainId(DungeonMapId mapId) {
             return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
         }
 
@@ -237,7 +253,7 @@ public final class DungeonApplicationService {
                     areaKind(area.kind()),
                     area.id(),
                     area.label(),
-                    area.cells().stream().map(PublishedTranslator::cell).toList());
+                    area.cells().stream().map(MapPublication::cell).toList());
         }
 
         private static DungeonBoundarySnapshot boundary(DungeonBoundaryFacts boundary) {
@@ -253,61 +269,9 @@ public final class DungeonApplicationService {
                     DungeonFeatureKind.valueOf(feature.kind().name()),
                     feature.id(),
                     feature.label(),
-                    feature.cells().stream().map(PublishedTranslator::cell).toList(),
+                    feature.cells().stream().map(MapPublication::cell).toList(),
                     feature.description(),
                     feature.destinationLabel());
-        }
-
-        private static DungeonTravelMoveResult travelMoveResult(DungeonTravelMoveFacts result) {
-            return new DungeonTravelMoveResult(
-                    DungeonTravelMoveStatus.valueOf(result.status().name()),
-                    result.message(),
-                    travelSurface(result.surface()));
-        }
-
-        private static DungeonTravelSurfaceSnapshot travelSurface(DungeonTravelSurfaceFacts surface) {
-            return new DungeonTravelSurfaceSnapshot(
-                    surface.mapName(),
-                    revision(surface.revision()),
-                    mapSnapshot(surface.map()),
-                    travelPosition(surface.position()),
-                    surface.surfaceTitle(),
-                    surface.areaLabel(),
-                    surface.tileLabel(),
-                    surface.headingLabel(),
-                    surface.statusLabel(),
-                    surface.visualDescription(),
-                    surface.actions().stream().map(PublishedTranslator::travelAction).toList());
-        }
-
-        private static DungeonTravelActionSnapshot travelAction(DungeonTravelActionFacts action) {
-            return new DungeonTravelActionSnapshot(
-                    action.actionId(),
-                    DungeonTravelActionKind.valueOf(action.kind().name()),
-                    action.label(),
-                    action.destinationLabel(),
-                    action.description());
-        }
-
-        private static DungeonTravelPosition travelPosition(DungeonTravelPositionFacts position) {
-            return new DungeonTravelPosition(
-                    mapId(position.mapId()),
-                    DungeonTravelLocationKind.valueOf(position.locationKind().name()),
-                    position.ownerId(),
-                    cell(position.tile()),
-                    DungeonTravelHeading.valueOf(position.heading().name()));
-        }
-
-        private static @Nullable DungeonTravelPositionFacts travelPosition(@Nullable DungeonTravelPosition position) {
-            if (position == null) {
-                return null;
-            }
-            return new DungeonTravelPositionFacts(
-                    domainMapId(position.mapId()),
-                    src.domain.dungeon.map.value.DungeonTravelLocationKind.valueOf(position.locationKind().name()),
-                    position.ownerId(),
-                    domainCell(position.tile()),
-                    src.domain.dungeon.map.value.DungeonTravelHeading.valueOf(position.heading().name()));
         }
 
         private static DungeonAreaKind areaKind(DungeonAreaType kind) {
@@ -330,15 +294,69 @@ public final class DungeonApplicationService {
             return new DungeonEdgeRef(cell(edge.from()), cell(edge.to()));
         }
 
-        private static String aggregateSummary(DungeonAggregate aggregate) {
-            return aggregate.label() + " #" + aggregate.id();
-        }
-
         private static int revision(long revision) {
             if (revision > Integer.MAX_VALUE) {
                 return Integer.MAX_VALUE;
             }
             return Math.max(0, (int) revision);
+        }
+    }
+
+    private static final class TravelPublication {
+
+        private TravelPublication() {
+        }
+
+        private static DungeonTravelMoveResult moveResult(DungeonTravelMoveFacts result) {
+            return new DungeonTravelMoveResult(
+                    DungeonTravelMoveStatus.valueOf(result.status().name()),
+                    result.message(),
+                    surface(result.surface()));
+        }
+
+        private static DungeonTravelSurfaceSnapshot surface(DungeonTravelSurfaceFacts surface) {
+            return new DungeonTravelSurfaceSnapshot(
+                    surface.mapName(),
+                    MapPublication.revision(surface.revision()),
+                    MapPublication.snapshot(surface.map()),
+                    position(surface.position()),
+                    surface.surfaceTitle(),
+                    surface.areaLabel(),
+                    surface.tileLabel(),
+                    surface.headingLabel(),
+                    surface.statusLabel(),
+                    surface.visualDescription(),
+                    surface.actions().stream().map(TravelPublication::action).toList());
+        }
+
+        private static DungeonTravelActionSnapshot action(DungeonTravelActionFacts action) {
+            return new DungeonTravelActionSnapshot(
+                    action.actionId(),
+                    DungeonTravelActionKind.valueOf(action.kind().name()),
+                    action.label(),
+                    action.destinationLabel(),
+                    action.description());
+        }
+
+        private static DungeonTravelPosition position(DungeonTravelPositionFacts position) {
+            return new DungeonTravelPosition(
+                    MapPublication.id(position.mapId()),
+                    DungeonTravelLocationKind.valueOf(position.locationKind().name()),
+                    position.ownerId(),
+                    MapPublication.cell(position.tile()),
+                    DungeonTravelHeading.valueOf(position.heading().name()));
+        }
+
+        private static @Nullable DungeonTravelPositionFacts position(@Nullable DungeonTravelPosition position) {
+            if (position == null) {
+                return null;
+            }
+            return new DungeonTravelPositionFacts(
+                    MapPublication.domainId(position.mapId()),
+                    src.domain.dungeon.map.value.DungeonTravelLocationKind.valueOf(position.locationKind().name()),
+                    position.ownerId(),
+                    MapPublication.domainCell(position.tile()),
+                    src.domain.dungeon.map.value.DungeonTravelHeading.valueOf(position.heading().name()));
         }
     }
 }

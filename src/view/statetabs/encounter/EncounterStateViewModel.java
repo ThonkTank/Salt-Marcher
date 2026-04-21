@@ -40,6 +40,8 @@ import src.domain.party.published.ReadStatus;
 public final class EncounterStateViewModel {
 
     private static final int MAX_CREATURES_PER_SLOT = 20;
+    private static final int MOB_MIN_SIZE = 4;
+    private static final int MAX_CREATURES_PER_MOB = 10;
 
     public enum Mode {
         BUILDER,
@@ -395,15 +397,21 @@ public final class EncounterStateViewModel {
             } else {
                 EncounterCreature creature = creature(entry.id());
                 if (creature != null) {
-                    combatants.add(Combatant.monster(creature, initiative, fallbackIndex++));
+                    for (int creatureIndex = 1; creatureIndex <= creature.count(); creatureIndex++) {
+                        combatants.add(Combatant.monster(creature, initiative, fallbackIndex++, creatureIndex));
+                    }
                 }
             }
         }
         combatants.sort((left, right) -> {
             int byInitiative = Integer.compare(right.initiative(), left.initiative());
-            return byInitiative != 0 ? byInitiative : Integer.compare(left.order(), right.order());
+            if (byInitiative != 0) {
+                return byInitiative;
+            }
+            int byKind = Boolean.compare(!left.pc(), !right.pc());
+            return byKind != 0 ? byKind : Integer.compare(left.order(), right.order());
         });
-        currentTurnIndex = combatants.isEmpty() ? -1 : 0;
+        currentTurnIndex = turnEntries().isEmpty() ? -1 : 0;
         round = 1;
         mode.set(Mode.COMBAT);
         refreshCombatState();
@@ -411,16 +419,17 @@ public final class EncounterStateViewModel {
     }
 
     public void nextTurn() {
-        if (combatants.isEmpty()) {
+        List<CombatTurnEntry> entries = turnEntries();
+        if (entries.isEmpty()) {
             return;
         }
         int next = currentTurnIndex;
-        for (int attempts = 0; attempts < combatants.size(); attempts++) {
-            next = (next + 1) % combatants.size();
+        for (int attempts = 0; attempts < entries.size(); attempts++) {
+            next = (next + 1) % entries.size();
             if (next == 0) {
                 round++;
             }
-            if (combatants.get(next).alive()) {
+            if (entries.get(next).alive()) {
                 currentTurnIndex = next;
                 refreshCombatState();
                 return;
@@ -430,26 +439,31 @@ public final class EncounterStateViewModel {
     }
 
     public void applyDamage(String combatantId, int amount) {
-        mutateHp(combatantId, -Math.max(0, amount));
+        mutateHp(combatantId, Math.max(0, amount), false);
     }
 
     public void heal(String combatantId, int amount) {
-        mutateHp(combatantId, Math.max(0, amount));
+        mutateHp(combatantId, Math.max(0, amount), true);
     }
 
     public void setInitiative(String combatantId, int initiative) {
-        for (int index = 0; index < combatants.size(); index++) {
-            Combatant combatant = combatants.get(index);
-            if (combatant.id().equals(combatantId)) {
-                combatants.set(index, combatant.withInitiative(initiative));
+        CombatTurnEntry entry = null;
+        for (CombatTurnEntry candidate : turnEntries()) {
+            if (candidate.id().equals(combatantId)) {
+                entry = candidate;
                 break;
             }
         }
-        combatants.sort((left, right) -> {
-            int byInitiative = Integer.compare(right.initiative(), left.initiative());
-            return byInitiative != 0 ? byInitiative : Integer.compare(left.order(), right.order());
-        });
-        currentTurnIndex = Math.max(0, Math.min(currentTurnIndex, combatants.size() - 1));
+        if (entry != null) {
+            Set<String> ids = Set.copyOf(entry.memberIds());
+            for (int index = 0; index < combatants.size(); index++) {
+                Combatant combatant = combatants.get(index);
+                if (ids.contains(combatant.id())) {
+                    combatants.set(index, combatant.withInitiative(initiative));
+                }
+            }
+        }
+        combatants.sort(COMBATANT_ORDER);
         refreshCombatState();
     }
 
@@ -526,13 +540,65 @@ public final class EncounterStateViewModel {
                 : String.join(" ", generated.highlights()));
     }
 
-    private void mutateHp(String combatantId, int delta) {
-        for (int index = 0; index < combatants.size(); index++) {
-            Combatant combatant = combatants.get(index);
-            if (combatant.id().equals(combatantId) && !combatant.pc()) {
-                int hp = Math.max(0, Math.min(combatant.maxHp(), combatant.currentHp() + delta));
-                combatants.set(index, combatant.withHp(hp));
+    private void mutateHp(String combatantId, int amount, boolean healing) {
+        if (amount <= 0) {
+            return;
+        }
+        CombatTurnEntry entry = null;
+        for (CombatTurnEntry candidate : turnEntries()) {
+            if (candidate.id().equals(combatantId)) {
+                entry = candidate;
                 break;
+            }
+        }
+        if (entry == null || entry.pc()) {
+            return;
+        }
+        Set<String> ids = Set.copyOf(entry.memberIds());
+        if (healing) {
+            List<Combatant> targets = new ArrayList<>();
+            for (Combatant combatant : combatants) {
+                if (ids.contains(combatant.id()) && combatant.alive()) {
+                    targets.add(combatant);
+                }
+            }
+            targets.sort((left, right) -> {
+                int byHp = Integer.compare(left.currentHp(), right.currentHp());
+                return byHp != 0 ? byHp : left.name().compareTo(right.name());
+            });
+            if (!targets.isEmpty()) {
+                Combatant target = targets.getFirst();
+                for (int index = 0; index < combatants.size(); index++) {
+                    if (combatants.get(index).id().equals(target.id())) {
+                        combatants.set(index, target.withHp(Math.min(target.maxHp(), target.currentHp() + amount)));
+                        break;
+                    }
+                }
+            }
+        } else {
+            int remaining = amount;
+            List<Combatant> targets = new ArrayList<>();
+            for (Combatant combatant : combatants) {
+                if (ids.contains(combatant.id()) && combatant.alive()) {
+                    targets.add(combatant);
+                }
+            }
+            targets.sort((left, right) -> {
+                int byHp = Integer.compare(left.currentHp(), right.currentHp());
+                return byHp != 0 ? byHp : left.name().compareTo(right.name());
+            });
+            for (Combatant target : targets) {
+                if (remaining <= 0) {
+                    break;
+                }
+                int damage = Math.min(remaining, target.currentHp());
+                for (int index = 0; index < combatants.size(); index++) {
+                    if (combatants.get(index).id().equals(target.id())) {
+                        combatants.set(index, target.withHp(target.currentHp() - damage));
+                        break;
+                    }
+                }
+                remaining -= damage;
             }
         }
         refreshCombatState();
@@ -622,33 +688,196 @@ public final class EncounterStateViewModel {
     }
 
     private void refreshCombatState() {
+        List<CombatTurnEntry> entries = turnEntries();
+        if (entries.isEmpty()) {
+            currentTurnIndex = -1;
+        } else {
+            currentTurnIndex = Math.max(0, Math.min(currentTurnIndex, entries.size() - 1));
+            if (!entries.get(currentTurnIndex).alive()) {
+                for (int index = 0; index < entries.size(); index++) {
+                    if (entries.get(index).alive()) {
+                        currentTurnIndex = index;
+                        break;
+                    }
+                }
+            }
+        }
         List<CombatCard> cards = new ArrayList<>();
         int aliveEnemies = 0;
         int totalEnemies = 0;
-        for (int index = 0; index < combatants.size(); index++) {
-            Combatant combatant = combatants.get(index);
-            boolean active = index == currentTurnIndex && combatant.alive();
+        for (Combatant combatant : combatants) {
             if (!combatant.pc()) {
                 totalEnemies++;
                 if (combatant.alive()) {
                     aliveEnemies++;
                 }
             }
+        }
+        for (int index = 0; index < entries.size(); index++) {
+            CombatTurnEntry entry = entries.get(index);
             cards.add(new CombatCard(
+                    entry.id(),
+                    entry.name(),
+                    entry.pc(),
+                    index == currentTurnIndex && entry.alive(),
+                    entry.alive(),
+                    entry.currentHp(),
+                    entry.maxHp(),
+                    entry.ac(),
+                    entry.initiative(),
+                    entry.count(),
+                    entry.detail()));
+        }
+        String statusText = aliveEnemies + "/" + totalEnemies + " - " + liveDifficulty(totalEnemies, aliveEnemies);
+        combatState.set(new CombatState(round, statusText, cards, totalEnemies > 0 && aliveEnemies == 0));
+    }
+
+    private List<CombatTurnEntry> turnEntries() {
+        List<CombatTurnEntry> entries = new ArrayList<>();
+        List<List<Combatant>> aliveMonsterBuckets = new ArrayList<>();
+        List<Combatant> deadMonsters = new ArrayList<>();
+
+        for (Combatant combatant : combatants) {
+            if (combatant.pc()) {
+                entries.add(new CombatTurnEntry(
+                        combatant.id(),
+                        combatant.name(),
+                        true,
+                        true,
+                        combatant.currentHp(),
+                        combatant.maxHp(),
+                        combatant.ac(),
+                        combatant.initiative(),
+                        combatant.count(),
+                        combatant.detail(),
+                        combatant.order(),
+                        List.of(combatant.id())));
+            } else if (combatant.alive()) {
+                List<Combatant> bucket = null;
+                for (List<Combatant> candidate : aliveMonsterBuckets) {
+                    Combatant sample = candidate.getFirst();
+                    if (sample.creatureId() == combatant.creatureId()
+                            && sample.initiative() == combatant.initiative()) {
+                        bucket = candidate;
+                        break;
+                    }
+                }
+                if (bucket == null) {
+                    bucket = new ArrayList<>();
+                    aliveMonsterBuckets.add(bucket);
+                }
+                bucket.add(combatant);
+            } else {
+                deadMonsters.add(combatant);
+            }
+        }
+
+        for (List<Combatant> members : aliveMonsterBuckets) {
+            members.sort((left, right) -> {
+                int byHp = Integer.compare(left.currentHp(), right.currentHp());
+                return byHp != 0 ? byHp : left.name().compareTo(right.name());
+            });
+            int offset = 0;
+            int partIndex = 0;
+            for (int partSize : splitForMobSlots(members.size())) {
+                List<Combatant> part = members.subList(offset, offset + partSize);
+                offset += partSize;
+                if (partSize >= MOB_MIN_SIZE) {
+                    Combatant front = part.getFirst();
+                    String frontName = front.name();
+                    int marker = frontName.lastIndexOf(" #");
+                    String name = (marker > 0 ? frontName.substring(0, marker) : frontName) + " (Mob)";
+                    List<String> memberIds = new ArrayList<>();
+                    for (Combatant member : part) {
+                        memberIds.add(member.id());
+                    }
+                    entries.add(new CombatTurnEntry(
+                            "mob:" + front.creatureId() + ":" + front.initiative() + ":" + partIndex++,
+                            name,
+                            false,
+                            true,
+                            front.currentHp(),
+                            front.maxHp(),
+                            front.ac(),
+                            front.initiative(),
+                            partSize,
+                            front.detail() + " | x" + partSize,
+                            front.order(),
+                            memberIds));
+                } else {
+                    for (Combatant member : part) {
+                        entries.add(new CombatTurnEntry(
+                                member.id(),
+                                member.name(),
+                                false,
+                                true,
+                                member.currentHp(),
+                                member.maxHp(),
+                                member.ac(),
+                                member.initiative(),
+                                member.count(),
+                                member.detail(),
+                                member.order(),
+                                List.of(member.id())));
+                    }
+                }
+            }
+        }
+        deadMonsters.sort((left, right) -> {
+            int byInitiative = Integer.compare(right.initiative(), left.initiative());
+            return byInitiative != 0 ? byInitiative : Integer.compare(left.order(), right.order());
+        });
+        for (Combatant combatant : deadMonsters) {
+            entries.add(new CombatTurnEntry(
                     combatant.id(),
                     combatant.name(),
-                    combatant.pc(),
-                    active,
-                    combatant.alive(),
+                    false,
+                    false,
                     combatant.currentHp(),
                     combatant.maxHp(),
                     combatant.ac(),
                     combatant.initiative(),
                     combatant.count(),
-                    combatant.detail()));
+                    combatant.detail(),
+                    combatant.order(),
+                    List.of(combatant.id())));
         }
-        String statusText = aliveEnemies + "/" + totalEnemies + " - " + liveDifficulty(totalEnemies, aliveEnemies);
-        combatState.set(new CombatState(round, statusText, cards, totalEnemies > 0 && aliveEnemies == 0));
+        entries.sort((left, right) -> {
+            int byInitiative = Integer.compare(right.initiative(), left.initiative());
+            if (byInitiative != 0) {
+                return byInitiative;
+            }
+            int byKind = Boolean.compare(!left.pc(), !right.pc());
+            return byKind != 0 ? byKind : Integer.compare(left.order(), right.order());
+        });
+        return entries;
+    }
+
+    private static List<Integer> splitForMobSlots(int count) {
+        if (count <= 0) {
+            return List.of();
+        }
+        if (count < MOB_MIN_SIZE) {
+            List<Integer> singles = new ArrayList<>();
+            for (int index = 0; index < count; index++) {
+                singles.add(1);
+            }
+            return singles;
+        }
+        if (count <= MAX_CREATURES_PER_MOB) {
+            return List.of(count);
+        }
+        int groupCount = (int) Math.ceil(count / (double) MAX_CREATURES_PER_MOB);
+        while (count < MOB_MIN_SIZE * groupCount) {
+            groupCount++;
+        }
+        int base = count / groupCount;
+        int remainder = count % groupCount;
+        List<Integer> parts = new ArrayList<>();
+        for (int index = 0; index < groupCount; index++) {
+            parts.add(base + (index < remainder ? 1 : 0));
+        }
+        return parts;
     }
 
     private @Nullable CreatureDetail loadCreature(long creatureId) {
@@ -1008,6 +1237,7 @@ public final class EncounterStateViewModel {
             String id,
             String name,
             boolean pc,
+            long creatureId,
             int currentHp,
             int maxHp,
             int ac,
@@ -1019,21 +1249,25 @@ public final class EncounterStateViewModel {
             int order
     ) {
         static Combatant pc(String id, String name, int initiative, int order) {
-            return new Combatant(id, name, true, 0, 0, 0, initiative, 1, 0, "SC", "", order);
+            return new Combatant(id, name, true, 0, 0, 0, 0, initiative, 1, 0, "SC", "", order);
         }
 
-        static Combatant monster(EncounterCreature creature, int initiative, int order) {
-            int hp = creature.hp() * Math.max(1, creature.count());
+        static Combatant monster(EncounterCreature creature, int initiative, int order, int creatureIndex) {
+            int hp = Math.max(1, creature.hp());
+            String name = creature.count() > 1
+                    ? creature.name() + " #" + creatureIndex
+                    : creature.name();
             return new Combatant(
-                    creature.id(),
-                    creature.count() > 1 ? creature.name() + " x" + creature.count() : creature.name(),
+                    creature.id() + ":" + creatureIndex,
+                    name,
                     false,
+                    creature.creatureId(),
                     hp,
                     hp,
                     creature.ac(),
                     initiative,
-                    creature.count(),
-                    creature.totalXp(),
+                    1,
+                    creature.xp(),
                     "CR " + creature.cr() + " | " + creature.type() + " | " + creature.role().toLowerCase(Locale.ROOT),
                     "Kein Loot",
                     order);
@@ -1044,11 +1278,30 @@ public final class EncounterStateViewModel {
         }
 
         Combatant withHp(int hitPoints) {
-            return new Combatant(id, name, pc, hitPoints, maxHp, ac, initiative, count, xp, detail, loot, order);
+            return new Combatant(id, name, pc, creatureId, hitPoints, maxHp, ac, initiative, count, xp, detail, loot, order);
         }
 
         Combatant withInitiative(int value) {
-            return new Combatant(id, name, pc, currentHp, maxHp, ac, value, count, xp, detail, loot, order);
+            return new Combatant(id, name, pc, creatureId, currentHp, maxHp, ac, value, count, xp, detail, loot, order);
+        }
+    }
+
+    private record CombatTurnEntry(
+            String id,
+            String name,
+            boolean pc,
+            boolean alive,
+            int currentHp,
+            int maxHp,
+            int ac,
+            int initiative,
+            int count,
+            String detail,
+            int order,
+            List<String> memberIds
+    ) {
+        private CombatTurnEntry {
+            memberIds = memberIds == null ? List.of() : List.copyOf(memberIds);
         }
     }
 }

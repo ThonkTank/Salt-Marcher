@@ -641,6 +641,11 @@ public final class EncounterStateView extends VBox {
         top.getChildren().addAll(turn, name, spacer);
         if (!card.playerCharacter()) {
             Node hp = hpBar(card);
+            if (card.count() > 1) {
+                Label count = new Label("x" + card.count());
+                count.getStyleClass().add("ac-badge");
+                top.getChildren().add(count);
+            }
             Label ac = new Label("AC " + card.armorClass());
             ac.getStyleClass().add("ac-badge");
             top.getChildren().addAll(hp, ac);

@@ -67,6 +67,9 @@ creature details through the creature application service.
 - `Kampf starten` opens initiative entry when the roster has creatures.
 - `Alle wuerfeln` updates visible initiative spinner values.
 - Confirming initiative opens the combat tracker.
+- Combat internally keeps one entry per individual monster. A combat card may
+  still show a runtime mob projection when at least four alive monsters share
+  the same creature identity and initiative.
 - `Weiter` advances the active combat turn and round display.
 - HP bars open a compact damage/heal popup.
 - Initiative badges open a compact set-initiative popup.
@@ -91,6 +94,12 @@ creature details through the creature application service.
   or generator mutation replaces it.
 - Live combat: the active turn is highlighted and defeated monsters use the
   dead-card style.
+- Runtime mob combat: three or fewer matching monsters stay as individual
+  cards, four to ten matching monsters become one `xN` mob card, and larger
+  matching groups split into mob cards of four to ten members. Mob damage
+  spills into the lowest-HP members first, mob healing restores the lowest-HP
+  alive member, and mob initiative edits apply to every member in that mob
+  card.
 - All enemies defeated: the end-combat button receives accent emphasis.
 - Results awarded: the XP action becomes disabled and the status line confirms
   the party award.
