@@ -1,15 +1,15 @@
 package src.view.slotcontent.main.dungeonmap;
 
-import java.util.EnumSet;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import javafx.animation.AnimationTimer;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
@@ -30,6 +30,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Window;
 
 public class DungeonMapMainView extends BorderPane {
 
@@ -41,6 +42,7 @@ public class DungeonMapMainView extends BorderPane {
     private static final double ZOOM_STEP_FACTOR = 1.1;
     private static final double KEYBOARD_PAN_PIXELS_PER_SECOND = 420.0;
     private static final double MAX_KEYBOARD_FRAME_SECONDS = 1.0 / 15.0;
+    private static final long KEYBOARD_PAN_KEY_TIMEOUT_NANOS = 350_000_000L;
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
     private final ObjectProperty<DungeonMapDisplayModel> renderModel =
             new SimpleObjectProperty<>(DungeonMapDisplayModel.empty());
@@ -60,6 +62,15 @@ public class DungeonMapMainView extends BorderPane {
     private double lastDragSceneY;
     private boolean middleDragActive;
     private final KeyboardPanState keyboardPan = new KeyboardPanState();
+    private final ChangeListener<Boolean> windowFocusListener = (ignored, before, focused) -> {
+        if (!focused) {
+            cancelCameraGestureState();
+        }
+    };
+    private final ChangeListener<Window> sceneWindowListener = (ignored, before, after) -> {
+        detachWindowFocusListener(before);
+        attachWindowFocusListener(after);
+    };
     private Runnable viewportChangedHandler = () -> {};
     private Consumer<DungeonMapPointerEvent> primaryPressedHandler = ignored -> {};
     private Consumer<DungeonMapPointerEvent> primaryDraggedHandler = ignored -> {};
@@ -142,8 +153,15 @@ public class DungeonMapMainView extends BorderPane {
             }
         });
         contentHost.sceneProperty().addListener((ignored, before, after) -> {
+            if (before != null) {
+                before.windowProperty().removeListener(sceneWindowListener);
+                detachWindowFocusListener(before.getWindow());
+            }
             if (after == null) {
                 cancelCameraGestureState();
+            } else {
+                after.windowProperty().addListener(sceneWindowListener);
+                attachWindowFocusListener(after.getWindow());
             }
         });
         canvas.getStyleClass().add("dungeon-map-canvas");
@@ -319,6 +337,23 @@ public class DungeonMapMainView extends BorderPane {
     private void cancelCameraGestureState() {
         middleDragActive = false;
         keyboardPan.cancel();
+    }
+
+    private void attachWindowFocusListener(Window window) {
+        if (window == null) {
+            return;
+        }
+        window.focusedProperty().removeListener(windowFocusListener);
+        window.focusedProperty().addListener(windowFocusListener);
+        if (!window.isFocused()) {
+            cancelCameraGestureState();
+        }
+    }
+
+    private void detachWindowFocusListener(Window window) {
+        if (window != null) {
+            window.focusedProperty().removeListener(windowFocusListener);
+        }
     }
 
     private void zoomAround(double canvasX, double canvasY, double factor) {
@@ -922,14 +957,16 @@ public class DungeonMapMainView extends BorderPane {
 
     private final class KeyboardPanState extends AnimationTimer {
 
-        private final Set<KeyCode> activeKeys = EnumSet.noneOf(KeyCode.class);
+        private final Map<KeyCode, Long> activeKeys = new EnumMap<>(KeyCode.class);
         private long lastFrameNanos;
 
         boolean press(KeyCode keyCode) {
             if (!isPanKey(keyCode)) {
                 return false;
             }
-            if (activeKeys.add(keyCode)) {
+            boolean wasIdle = activeKeys.isEmpty();
+            activeKeys.put(keyCode, System.nanoTime());
+            if (wasIdle) {
                 lastFrameNanos = 0L;
                 start();
             }
@@ -940,11 +977,11 @@ public class DungeonMapMainView extends BorderPane {
             if (!isPanKey(keyCode)) {
                 return false;
             }
-            activeKeys.remove(keyCode);
+            boolean removed = activeKeys.remove(keyCode) != null;
             if (activeKeys.isEmpty()) {
                 cancel();
             }
-            return true;
+            return removed;
         }
 
         void cancel() {
@@ -955,6 +992,7 @@ public class DungeonMapMainView extends BorderPane {
 
         @Override
         public void handle(long now) {
+            expireStaleKeys();
             if (activeKeys.isEmpty()) {
                 cancel();
                 return;
@@ -980,13 +1018,18 @@ public class DungeonMapMainView extends BorderPane {
 
         private double panAxis(KeyCode positiveKey, KeyCode negativeKey) {
             double delta = 0.0;
-            if (activeKeys.contains(positiveKey)) {
+            if (activeKeys.containsKey(positiveKey)) {
                 delta += 1.0;
             }
-            if (activeKeys.contains(negativeKey)) {
+            if (activeKeys.containsKey(negativeKey)) {
                 delta -= 1.0;
             }
             return delta;
+        }
+
+        private void expireStaleKeys() {
+            long now = System.nanoTime();
+            activeKeys.entrySet().removeIf(entry -> now - entry.getValue() > KEYBOARD_PAN_KEY_TIMEOUT_NANOS);
         }
 
         private boolean isPanKey(KeyCode keyCode) {

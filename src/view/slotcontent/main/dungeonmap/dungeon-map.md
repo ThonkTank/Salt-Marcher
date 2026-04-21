@@ -40,6 +40,7 @@ projection and can show runtime party-token state supplied by travel.
 - Runtime mode shows a party token from the active travel session, numbered
   door markers when supplied by the display model, current location state, and
   resettable camera controls.
-- WASD camera panning continues only while the corresponding key remains held
-  and is cancelled when the map surface loses focus. Pointer panning uses
+- WASD camera panning continues only while the corresponding key remains held.
+  It is cancelled when the map surface or window loses focus, and stale key
+  state expires if JavaFX misses a key-release event. Pointer panning uses
   scene-stable deltas so the camera does not jump when child hit targets change.
