@@ -1,10 +1,12 @@
 package src.domain.dungeon.application;
 
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.entity.DungeonPrimitive;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
+import src.domain.dungeon.map.entity.DungeonStair;
 import src.domain.dungeon.map.service.DungeonCorridorReadProjector;
 import src.domain.dungeon.map.service.DungeonFeatureReadProjector;
 import src.domain.dungeon.map.value.DungeonAreaFacts;
@@ -20,6 +22,11 @@ import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonRelationGraph;
+import src.domain.dungeon.map.value.DungeonStairExit;
+import src.domain.dungeon.map.value.DungeonTraversalEndpoint;
+import src.domain.dungeon.map.value.DungeonTraversalLink;
+import src.domain.dungeon.map.value.DungeonTraversalSource;
+import src.domain.dungeon.map.value.DungeonTraversalSourceKind;
 import src.domain.dungeon.map.value.SpatialTopology;
 
 import java.util.ArrayDeque;
@@ -28,6 +35,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -145,7 +153,8 @@ public final class BuildDungeonDerivedStateUseCase {
                 map,
                 aggregates,
                 primitives,
-                new DungeonRelationGraph(containment, connections, featureRelations));
+                new DungeonRelationGraph(containment, connections, featureRelations),
+                traversalLinks(dungeonMap, map));
     }
 
     private static long addBoundary(
@@ -467,7 +476,105 @@ public final class BuildDungeonDerivedStateUseCase {
         List<DungeonPrimitive> primitives = new ArrayList<>();
         primitives.add(door);
         primitives.addAll(walls);
-        return new DungeonDerivedState(map, List.of(room, corridor), primitives, relations);
+        return new DungeonDerivedState(
+                map,
+                List.of(room, corridor),
+                primitives,
+                relations,
+                traversalLinks(null, map));
+    }
+
+    private static List<DungeonTraversalLink> traversalLinks(@Nullable DungeonMap dungeonMap, DungeonMapFacts map) {
+        List<DungeonTraversalLink> result = new ArrayList<>();
+        result.addAll(doorTraversalLinks(map));
+        if (dungeonMap != null) {
+            result.addAll(stairTraversalLinks(dungeonMap, map));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonTraversalLink> doorTraversalLinks(DungeonMapFacts map) {
+        if (map == null) {
+            return List.of();
+        }
+        Set<DungeonCell> traversableCells = new LinkedHashSet<>(map.allCells());
+        List<DungeonTraversalLink> result = new ArrayList<>();
+        for (DungeonBoundaryFacts boundary : map.boundaries()) {
+            DungeonEdge edge = boundary.edge();
+            if (!DOOR_KIND.equalsIgnoreCase(boundary.kind())
+                    || edge == null
+                    || edge.from() == null
+                    || edge.to() == null
+                    || !traversableCells.contains(edge.from())
+                    || !traversableCells.contains(edge.to())) {
+                continue;
+            }
+            result.add(new DungeonTraversalLink(
+                    traversalKey(DungeonTraversalSourceKind.DOOR, boundary.id(), edge.from(), edge.to()),
+                    new DungeonTraversalSource(DungeonTraversalSourceKind.DOOR, boundary.id(), boundary.label()),
+                    traversalEndpoint(map, edge.from()),
+                    traversalEndpoint(map, edge.to())));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonTraversalLink> stairTraversalLinks(DungeonMap dungeonMap, DungeonMapFacts map) {
+        if (dungeonMap == null || map == null) {
+            return List.of();
+        }
+        List<DungeonTraversalLink> result = new ArrayList<>();
+        for (DungeonStair stair : dungeonMap.connections().stairs()) {
+            List<DungeonStairExit> exits = stair.exits();
+            for (int leftIndex = 0; leftIndex < exits.size(); leftIndex++) {
+                for (int rightIndex = leftIndex + 1; rightIndex < exits.size(); rightIndex++) {
+                    DungeonStairExit left = exits.get(leftIndex);
+                    DungeonStairExit right = exits.get(rightIndex);
+                    result.add(new DungeonTraversalLink(
+                            traversalKey(DungeonTraversalSourceKind.STAIR, stair.stairId(), left.position(), right.position()),
+                            new DungeonTraversalSource(DungeonTraversalSourceKind.STAIR, stair.stairId(), stair.name()),
+                            stairEndpoint(map, left),
+                            stairEndpoint(map, right)));
+                }
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static DungeonTraversalEndpoint traversalEndpoint(DungeonMapFacts map, DungeonCell tile) {
+        DungeonAreaFacts area = areaAt(map, tile);
+        return new DungeonTraversalEndpoint(tile, area == null ? 0L : area.id(), area == null ? "" : area.label());
+    }
+
+    private static DungeonTraversalEndpoint stairEndpoint(DungeonMapFacts map, DungeonStairExit exit) {
+        DungeonAreaFacts area = areaAt(map, exit.position());
+        return new DungeonTraversalEndpoint(exit.position(), area == null ? 0L : area.id(), exit.label());
+    }
+
+    private static @Nullable DungeonAreaFacts areaAt(DungeonMapFacts map, DungeonCell tile) {
+        if (map == null || tile == null) {
+            return null;
+        }
+        return map.areas().stream()
+                .filter(area -> area.cells().contains(tile))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String traversalKey(
+            DungeonTraversalSourceKind sourceKind,
+            long sourceId,
+            DungeonCell first,
+            DungeonCell second
+    ) {
+        String left = cellKey(first);
+        String right = cellKey(second);
+        String ordered = left.compareTo(right) <= 0 ? left + ":" + right : right + ":" + left;
+        return sourceKind.name().toLowerCase(Locale.ROOT) + ":" + sourceId + ":" + ordered;
+    }
+
+    private static String cellKey(DungeonCell cell) {
+        DungeonCell safeCell = cell == null ? new DungeonCell(0, 0, 0) : cell;
+        return safeCell.q() + "," + safeCell.r() + "," + safeCell.level();
     }
 
     private List<DungeonCell> buildRoomCells(SpatialTopology topology) {

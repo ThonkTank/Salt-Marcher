@@ -68,12 +68,13 @@ the existing map surfaces still have authorable spatial truth.
 This is infrastructure for behavioural parity, not complete parity. Room
 semantics, cluster boundary geometry, and corridor read geometry are now
 represented. Doors, stairs, and transitions are now source-to-domain mapped as
-authored facts. Runtime door, stair, and transition movement is derived from
-those loaded facts and stored only in the shell runtime session; this step
-introduces no new persistence tables, columns, or ports. Persistent
-campaign/world movement, direct token-drag movement, editor mutation paths, and
-non-space feature mapping still need follow-up work before the legacy dungeon
-behaviour is fully represented.
+authored facts. Runtime local movement derives one domain traversal-link model
+from door boundaries and stair exits, while transition movement remains a
+separate runtime action for cross-map and overworld targets. This runtime state
+is stored only in the shell session; this step introduces no new persistence
+tables, columns, or ports. Persistent campaign/world movement, direct
+token-drag movement, editor mutation paths, and non-space feature mapping still
+need follow-up work before the legacy dungeon behaviour is fully represented.
 
 ## Stability Rules
 

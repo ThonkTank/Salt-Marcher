@@ -10,7 +10,166 @@ public final class EncounterCombatRuntimeDisplayModel {
     private static final int MOB_MIN_SIZE = 4;
     private static final int MAX_CREATURES_PER_MOB = 10;
 
-    private EncounterCombatRuntimeDisplayModel() {
+    private final List<Combatant> combatants = new ArrayList<>();
+
+    public EncounterCombatRuntimeDisplayModel() {
+    }
+
+    public void clear() {
+        combatants.clear();
+    }
+
+    public int addPlayer(String id, String name, int initiative, int order) {
+        return addPlayerCombatant(combatants, id, name, initiative, order);
+    }
+
+    public int addMonsters(
+            String id,
+            String name,
+            long creatureId,
+            int count,
+            int hp,
+            int ac,
+            int xp,
+            String cr,
+            String type,
+            String role,
+            int initiative,
+            int order
+    ) {
+        return addMonsterCombatants(
+                combatants,
+                id,
+                name,
+                creatureId,
+                count,
+                hp,
+                ac,
+                xp,
+                cr,
+                type,
+                role,
+                initiative,
+                order);
+    }
+
+    public void sort() {
+        sort(combatants);
+    }
+
+    public boolean hasTurnEntries() {
+        return !turnEntries(combatants).isEmpty();
+    }
+
+    public TurnAdvance nextTurn(int currentTurnIndex, int round) {
+        List<TurnEntry> entries = turnEntries(combatants);
+        if (entries.isEmpty()) {
+            return new TurnAdvance(currentTurnIndex, round);
+        }
+        int next = currentTurnIndex;
+        int nextRound = round;
+        for (int attempts = 0; attempts < entries.size(); attempts++) {
+            next = (next + 1) % entries.size();
+            if (next == 0) {
+                nextRound++;
+            }
+            if (entries.get(next).alive()) {
+                return new TurnAdvance(next, nextRound);
+            }
+        }
+        return new TurnAdvance(currentTurnIndex, round);
+    }
+
+    public void setInitiative(String combatantId, int initiative) {
+        setInitiative(combatants, combatantId, initiative);
+    }
+
+    public boolean mutateHp(String combatantId, int amount, boolean healing) {
+        return mutateHp(combatants, combatantId, amount, healing);
+    }
+
+    public List<ResultEnemySnapshot> resultEnemies() {
+        return combatants.stream()
+                .filter(combatant -> !combatant.pc())
+                .map(combatant -> new ResultEnemySnapshot(
+                        combatant.name(),
+                        combatant.alive() ? "Lebt" : "Tot",
+                        Math.max(0, combatant.maxHp() - combatant.currentHp()),
+                        combatant.xp(),
+                        !combatant.alive(),
+                        combatant.loot()))
+                .toList();
+    }
+
+    public CombatProjection combatProjection(int requestedTurnIndex, int round) {
+        List<TurnEntry> entries = turnEntries(combatants);
+        int currentTurnIndex = normalizedTurnIndex(entries, requestedTurnIndex);
+        List<CombatCardSnapshot> cards = new ArrayList<>();
+        int aliveEnemies = 0;
+        int totalEnemies = 0;
+        for (Combatant combatant : combatants) {
+            if (!combatant.pc()) {
+                totalEnemies++;
+                if (combatant.alive()) {
+                    aliveEnemies++;
+                }
+            }
+        }
+        for (int index = 0; index < entries.size(); index++) {
+            TurnEntry entry = entries.get(index);
+            cards.add(new CombatCardSnapshot(
+                    entry.id(),
+                    entry.name(),
+                    entry.pc(),
+                    index == currentTurnIndex && entry.alive(),
+                    entry.alive(),
+                    entry.currentHp(),
+                    entry.maxHp(),
+                    entry.ac(),
+                    entry.initiative(),
+                    entry.count(),
+                    entry.detail()));
+        }
+        String statusText = aliveEnemies + "/" + totalEnemies + " - " + liveDifficulty(totalEnemies, aliveEnemies);
+        return new CombatProjection(
+                currentTurnIndex,
+                round,
+                statusText,
+                cards,
+                totalEnemies > 0 && aliveEnemies == 0);
+    }
+
+    private static int normalizedTurnIndex(List<TurnEntry> entries, int requestedTurnIndex) {
+        if (entries.isEmpty()) {
+            return -1;
+        }
+        int currentTurnIndex = Math.max(0, Math.min(requestedTurnIndex, entries.size() - 1));
+        if (entries.get(currentTurnIndex).alive()) {
+            return currentTurnIndex;
+        }
+        for (int index = 0; index < entries.size(); index++) {
+            if (entries.get(index).alive()) {
+                return index;
+            }
+        }
+        return currentTurnIndex;
+    }
+
+    private static String liveDifficulty(int totalEnemies, int aliveEnemies) {
+        if (totalEnemies == 0) {
+            return "Keine Gegner";
+        }
+        double ratio = aliveEnemies / (double) totalEnemies;
+        if (ratio <= 0.25) {
+            return "Kippt";
+        }
+        if (ratio <= 0.5) {
+            return "Unter Kontrolle";
+        }
+        if (ratio <= 0.75) {
+            return "Gefaehrlich";
+        }
+        return "Volle Staerke";
     }
 
     public static void sort(List<Combatant> combatants) {
@@ -373,5 +532,45 @@ public final class EncounterCombatRuntimeDisplayModel {
         public TurnEntry {
             memberIds = memberIds == null ? List.of() : List.copyOf(memberIds);
         }
+    }
+
+    public record TurnAdvance(int currentTurnIndex, int round) {
+    }
+
+    public record CombatProjection(
+            int currentTurnIndex,
+            int round,
+            String status,
+            List<CombatCardSnapshot> cards,
+            boolean allEnemiesDefeated
+    ) {
+        public CombatProjection {
+            cards = cards == null ? List.of() : List.copyOf(cards);
+        }
+    }
+
+    public record CombatCardSnapshot(
+            String id,
+            String name,
+            boolean playerCharacter,
+            boolean active,
+            boolean alive,
+            int currentHp,
+            int maxHp,
+            int armorClass,
+            int initiative,
+            int count,
+            String detail
+    ) {
+    }
+
+    public record ResultEnemySnapshot(
+            String name,
+            String status,
+            int hpLoss,
+            int xp,
+            boolean defeatedByDefault,
+            String loot
+    ) {
     }
 }

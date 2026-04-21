@@ -10,7 +10,7 @@ public record DungeonTravelActionSnapshot(
 
     public DungeonTravelActionSnapshot {
         actionId = actionId == null ? "" : actionId.trim();
-        kind = kind == null ? DungeonTravelActionKind.STAIR : kind;
+        kind = kind == null ? DungeonTravelActionKind.TRAVERSAL : kind;
         label = label == null || label.isBlank() ? kind.name() : label.trim();
         destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
         description = description == null ? "" : description.trim();

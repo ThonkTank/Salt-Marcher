@@ -58,9 +58,11 @@ Current state:
 - `ConnectionCatalog` now also carries authored stair and transition identity,
   stair path nodes, stair exits, corridor attachments, and transition
   destination facts loaded from the legacy write model.
-- Runtime travel surfaces now derive transient door, stair, and transition
-  actions from committed authored map truth. The travel session position is
-  runtime presentation state and is not persisted as authored dungeon truth.
+- Runtime travel surfaces now derive transient traversal and transition
+  actions from committed authored map truth. Local door and stair movement
+  share one `DungeonTraversalLink` model: two known dungeon tiles connected by
+  a party-traversible link. The travel session position is runtime
+  presentation state and is not persisted as authored dungeon truth.
 - Editor operations now tell the aggregate to mutate authored topology seeds
   instead of rewriting a document carrier in application code.
 - The application layer coordinates load, mutate, save, search, and derive
@@ -91,8 +93,10 @@ Remaining implementation gap:
 - The current derived-state rebuild hydrates rooms from cluster polygons and
   internal wall or door boundaries, then derives corridor cells and door
   relations from authored corridor membership, waypoints, and door bindings.
-  Door boundaries, stair exits, and transition destinations are now represented
-  as authored facts and exposed as transient runtime travel actions.
+  Door boundaries and stair exits are now projected into one derived traversal
+  link model. Transition destinations remain authored facts and are exposed as
+  runtime travel actions because cross-map and overworld targets are not always
+  two known local dungeon tiles.
 - This feature remains a policy-owning bounded context because editor
   mutations and identity-preserving repairs are rule-bearing domain work.
 
@@ -256,11 +260,14 @@ into `map/`.
   occupied cells, exits, and corridor attachment.
 - `DungeonTransition`: authored map or overworld transition with stable
   identity, optional placement, destination, and link reference.
+- `DungeonTraversalLink`: derived local party-traversible connection between
+  exactly two dungeon tiles. Door and stair authored inputs both become this
+  model before runtime movement is exposed.
 - `DungeonTravelSurface`: derived runtime description for the party's current
-  dungeon location, including transient actions for available doors, stairs,
+  dungeon location, including transient actions for available traversal links
   and transitions.
-- `DungeonTravelAction`: transient runtime command target derived from authored
-  door boundaries, stair exits, or transition destinations.
+- `DungeonTravelAction`: transient runtime command target derived from
+  traversal links or transition destinations.
 - `FeatureCatalog`: authored non-space, non-connection features.
 - `Derived State`: reproducible domain facts for inspector, topology, and
   travel; reusable render input is a view-layer display model.

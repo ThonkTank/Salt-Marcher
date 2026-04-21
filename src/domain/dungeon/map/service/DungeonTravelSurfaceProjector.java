@@ -2,7 +2,6 @@ package src.domain.dungeon.map.service;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.entity.DungeonStair;
 import src.domain.dungeon.map.entity.DungeonTransition;
 import src.domain.dungeon.map.value.DungeonAreaFacts;
 import src.domain.dungeon.map.value.DungeonCell;
@@ -11,7 +10,6 @@ import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonFeatureType;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
-import src.domain.dungeon.map.value.DungeonStairExit;
 import src.domain.dungeon.map.value.DungeonTransitionDestination;
 import src.domain.dungeon.map.value.DungeonTravelActionFacts;
 import src.domain.dungeon.map.value.DungeonTravelActionKind;
@@ -44,8 +42,7 @@ public final class DungeonTravelSurfaceProjector {
         DungeonTravelPositionFacts position = resolvePosition(safeMap, safeFacts, preferredPosition);
         SurfaceScope scope = surfaceScope(safeFacts, position.tile());
         List<DungeonTravelActionFacts> actions = new ArrayList<>();
-        actions.addAll(new DungeonDoorActionCatalog().describe(safeMap, derived, scope.area(), scope.cells(), position));
-        actions.addAll(stairActions(safeMap, scope, position));
+        actions.addAll(new DungeonTraversalActionCatalog().describe(safeMap, derived, scope.area(), scope.cells(), position));
         actions.addAll(transitionActions(safeMap, scope, position));
         return new DungeonTravelSurfaceFacts(
                 safeMap.metadata().mapId(),
@@ -114,48 +111,6 @@ public final class DungeonTravelSurfaceProjector {
                 Set.of(activeTile));
     }
 
-    private static List<DungeonTravelActionFacts> stairActions(
-            DungeonMap dungeonMap,
-            SurfaceScope scope,
-            DungeonTravelPositionFacts position
-    ) {
-        List<DungeonTravelActionFacts> result = new ArrayList<>();
-        Set<DungeonCell> surfaceCells = scope.cells();
-        int activeLevel = position.tile().level();
-        for (DungeonStair stair : dungeonMap.connections().stairs()) {
-            Set<DungeonCell> originPositions = new LinkedHashSet<>();
-            for (DungeonStairExit exit : stair.exitsAtLevel(activeLevel)) {
-                if (surfaceCells.contains(exit.position())) {
-                    originPositions.add(exit.position());
-                }
-            }
-            if (originPositions.isEmpty()) {
-                continue;
-            }
-            for (DungeonStairExit exit : stair.exits()) {
-                if (originPositions.contains(exit.position()) || position.tile().equals(exit.position())) {
-                    continue;
-                }
-                result.add(new DungeonTravelActionFacts(
-                        stairActionId(stair.stairId(), exit.position()),
-                        DungeonTravelActionKind.STAIR,
-                        stair.name(),
-                        exit.label(),
-                        "Ueber " + stair.name() + " gelangt ihr zu " + exit.label() + ".",
-                        new DungeonTravelPositionFacts(
-                                dungeonMap.metadata().mapId(),
-                                DungeonTravelLocationKind.STAIR_EXIT,
-                                stair.stairId(),
-                                exit.position(),
-                                position.heading()),
-                        null));
-            }
-        }
-        return result.stream()
-                .sorted(Comparator.comparing(DungeonTravelActionFacts::displayLabel, String.CASE_INSENSITIVE_ORDER))
-                .toList();
-    }
-
     private static List<DungeonTravelActionFacts> transitionActions(
             DungeonMap dungeonMap,
             SurfaceScope scope,
@@ -186,10 +141,6 @@ public final class DungeonTravelSurfaceProjector {
         return result.stream()
                 .sorted(Comparator.comparing(DungeonTravelActionFacts::displayLabel, String.CASE_INSENSITIVE_ORDER))
                 .toList();
-    }
-
-    public static String stairActionId(long stairId, DungeonCell target) {
-        return "stair:" + stairId + ":" + target.q() + "," + target.r() + "," + target.level();
     }
 
     public static String transitionActionId(long transitionId) {

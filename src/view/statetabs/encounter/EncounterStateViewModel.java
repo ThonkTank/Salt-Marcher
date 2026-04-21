@@ -55,7 +55,7 @@ public final class EncounterStateViewModel {
     private final List<EncounterLock> lockedCreatures = new ArrayList<>();
     private final List<Long> excludedCreatureIds = new ArrayList<>();
     private final List<InitiativeEntry> pendingInitiativeRows = new ArrayList<>();
-    private final List<EncounterCombatRuntimeDisplayModel.Combatant> combatants = new ArrayList<>();
+    private final EncounterCombatRuntimeDisplayModel combatRuntime = new EncounterCombatRuntimeDisplayModel();
     private final ReadOnlyObjectWrapper<Mode> mode = new ReadOnlyObjectWrapper<>(Mode.BUILDER);
     private final ReadOnlyObjectWrapper<BuilderState> builderState =
             new ReadOnlyObjectWrapper<>();
@@ -371,7 +371,7 @@ public final class EncounterStateViewModel {
     }
 
     void confirmInitiative(List<InitiativeInput> initiatives) {
-        combatants.clear();
+        combatRuntime.clear();
         int fallbackIndex = 0;
         for (InitiativeInput input : safeInputs(initiatives)) {
             InitiativeEntry entry = initiativeEntry(input.id());
@@ -380,8 +380,7 @@ public final class EncounterStateViewModel {
                 continue;
             }
             if ("SC".equals(entry.kind())) {
-                fallbackIndex = EncounterCombatRuntimeDisplayModel.addPlayerCombatant(
-                        combatants,
+                fallbackIndex = combatRuntime.addPlayer(
                         entry.id(),
                         nameOnly(entry.label()),
                         initiative,
@@ -389,8 +388,7 @@ public final class EncounterStateViewModel {
             } else {
                 EncounterCreature creature = creature(entry.id());
                 if (creature != null) {
-                    fallbackIndex = EncounterCombatRuntimeDisplayModel.addMonsterCombatants(
-                            combatants,
+                    fallbackIndex = combatRuntime.addMonsters(
                             creature.id(),
                             creature.name(),
                             creature.creatureId(),
@@ -406,8 +404,8 @@ public final class EncounterStateViewModel {
                 }
             }
         }
-        EncounterCombatRuntimeDisplayModel.sort(combatants);
-        currentTurnIndex = EncounterCombatRuntimeDisplayModel.turnEntries(combatants).isEmpty() ? -1 : 0;
+        combatRuntime.sort();
+        currentTurnIndex = combatRuntime.hasTurnEntries() ? 0 : -1;
         round = 1;
         mode.set(Mode.COMBAT);
         refreshCombatState();
@@ -415,40 +413,26 @@ public final class EncounterStateViewModel {
     }
 
     void nextTurn() {
-        var entries = EncounterCombatRuntimeDisplayModel.turnEntries(combatants);
-        if (entries.isEmpty()) {
-            return;
-        }
-        int next = currentTurnIndex;
-        for (int attempts = 0; attempts < entries.size(); attempts++) {
-            next = (next + 1) % entries.size();
-            if (next == 0) {
-                round++;
-            }
-            if (entries.get(next).alive()) {
-                currentTurnIndex = next;
-                refreshCombatState();
-                return;
-            }
-        }
+        var turn = combatRuntime.nextTurn(currentTurnIndex, round);
+        currentTurnIndex = turn.currentTurnIndex();
+        round = turn.round();
         refreshCombatState();
     }
 
     void setInitiative(String combatantId, int initiative) {
-        EncounterCombatRuntimeDisplayModel.setInitiative(combatants, combatantId, initiative);
+        combatRuntime.setInitiative(combatantId, initiative);
         refreshCombatState();
     }
 
     void endCombat() {
-        List<ResultEnemy> enemies = combatants.stream()
-                .filter(combatant -> !combatant.pc())
-                .map(combatant -> new ResultEnemy(
-                        combatant.name(),
-                        combatant.alive() ? "Lebt" : "Tot",
-                        Math.max(0, combatant.maxHp() - combatant.currentHp()),
-                        combatant.xp(),
-                        !combatant.alive(),
-                        combatant.loot()))
+        List<ResultEnemy> enemies = combatRuntime.resultEnemies().stream()
+                .map(enemy -> new ResultEnemy(
+                        enemy.name(),
+                        enemy.status(),
+                        enemy.hpLoss(),
+                        enemy.xp(),
+                        enemy.defeatedByDefault(),
+                        enemy.loot()))
                 .toList();
         int eligibleXp = enemies.stream()
                 .filter(ResultEnemy::defeatedByDefault)
@@ -488,7 +472,7 @@ public final class EncounterStateViewModel {
     }
 
     void returnToBuilderAfterResults() {
-        combatants.clear();
+        combatRuntime.clear();
         pendingInitiativeRows.clear();
         round = 1;
         currentTurnIndex = 0;
@@ -513,7 +497,7 @@ public final class EncounterStateViewModel {
     }
 
     void mutateHp(String combatantId, int amount, boolean healing) {
-        if (EncounterCombatRuntimeDisplayModel.mutateHp(combatants, combatantId, Math.max(0, amount), healing)) {
+        if (combatRuntime.mutateHp(combatantId, Math.max(0, amount), healing)) {
             refreshCombatState();
         }
     }
@@ -602,48 +586,27 @@ public final class EncounterStateViewModel {
     }
 
     private void refreshCombatState() {
-        var entries = EncounterCombatRuntimeDisplayModel.turnEntries(combatants);
-        if (entries.isEmpty()) {
-            currentTurnIndex = -1;
-        } else {
-            currentTurnIndex = Math.max(0, Math.min(currentTurnIndex, entries.size() - 1));
-            if (!entries.get(currentTurnIndex).alive()) {
-                for (int index = 0; index < entries.size(); index++) {
-                    if (entries.get(index).alive()) {
-                        currentTurnIndex = index;
-                        break;
-                    }
-                }
-            }
-        }
-        List<CombatCard> cards = new ArrayList<>();
-        int aliveEnemies = 0;
-        int totalEnemies = 0;
-        for (var combatant : combatants) {
-            if (!combatant.pc()) {
-                totalEnemies++;
-                if (combatant.alive()) {
-                    aliveEnemies++;
-                }
-            }
-        }
-        for (int index = 0; index < entries.size(); index++) {
-            var entry = entries.get(index);
-            cards.add(new CombatCard(
-                    entry.id(),
-                    entry.name(),
-                    entry.pc(),
-                    index == currentTurnIndex && entry.alive(),
-                    entry.alive(),
-                    entry.currentHp(),
-                    entry.maxHp(),
-                    entry.ac(),
-                    entry.initiative(),
-                    entry.count(),
-                    entry.detail()));
-        }
-        String statusText = aliveEnemies + "/" + totalEnemies + " - " + liveDifficulty(totalEnemies, aliveEnemies);
-        combatState.set(new CombatState(round, statusText, cards, totalEnemies > 0 && aliveEnemies == 0));
+        var projection = combatRuntime.combatProjection(currentTurnIndex, round);
+        currentTurnIndex = projection.currentTurnIndex();
+        List<CombatCard> cards = projection.cards().stream()
+                .map(card -> new CombatCard(
+                        card.id(),
+                        card.name(),
+                        card.playerCharacter(),
+                        card.active(),
+                        card.alive(),
+                        card.currentHp(),
+                        card.maxHp(),
+                        card.armorClass(),
+                        card.initiative(),
+                        card.count(),
+                        card.detail()))
+                .toList();
+        combatState.set(new CombatState(
+                projection.round(),
+                projection.status(),
+                cards,
+                projection.allEnemiesDefeated()));
     }
 
     private @Nullable CreatureDetail loadCreature(long creatureId) {
@@ -758,16 +721,6 @@ public final class EncounterStateViewModel {
             case STORAGE_ERROR -> "Encounter konnte nicht generiert werden.";
             case SUCCESS -> "Encounter generiert.";
         };
-    }
-
-    private String liveDifficulty(int totalEnemies, int aliveEnemies) {
-        if (totalEnemies == 0) {
-            return "Keine Gegner";
-        }
-        if (aliveEnemies == 0) {
-            return "Besiegt";
-        }
-        return aliveEnemies < totalEnemies ? "Medium" : "Hard";
     }
 
     private @Nullable InitiativeEntry initiativeEntry(String id) {

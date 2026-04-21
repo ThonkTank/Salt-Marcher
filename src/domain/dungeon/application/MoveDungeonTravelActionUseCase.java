@@ -54,33 +54,20 @@ public final class MoveDungeonTravelActionUseCase {
         if (action == null) {
             return moveResult(DungeonTravelMoveStatus.INVALID_ACTION, "Aktion ist nicht verfuegbar.", currentSurface);
         }
-        if (action.kind() == DungeonTravelActionKind.STAIR) {
-            return moveThroughStair(currentMap, action);
-        }
-        if (action.kind() == DungeonTravelActionKind.DOOR) {
-            return moveThroughDoor(currentMap, action);
+        if (action.kind() == DungeonTravelActionKind.TRAVERSAL) {
+            return moveThroughTraversal(currentMap, action);
         }
         return moveThroughTransition(currentMap, currentSurface.position(), action);
     }
 
-    private DungeonTravelMoveFacts moveThroughDoor(DungeonMap currentMap, DungeonTravelActionFacts action) {
+    private DungeonTravelMoveFacts moveThroughTraversal(DungeonMap currentMap, DungeonTravelActionFacts action) {
         DungeonTravelPositionFacts target = action.targetPosition();
         if (target == null) {
-            DungeonTravelSurfaceFacts surface = project(currentMap, null, "Tuerziel ist nicht verfuegbar.");
+            DungeonTravelSurfaceFacts surface = project(currentMap, null, "Reiseziel ist nicht verfuegbar.");
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
         }
-        DungeonTravelSurfaceFacts surface = project(currentMap, target, "Tuer benutzt.");
-        return moveResult(DungeonTravelMoveStatus.SUCCESS, "Tuer benutzt.", surface);
-    }
-
-    private DungeonTravelMoveFacts moveThroughStair(DungeonMap currentMap, DungeonTravelActionFacts action) {
-        DungeonTravelPositionFacts target = action.targetPosition();
-        if (target == null) {
-            DungeonTravelSurfaceFacts surface = project(currentMap, null, "Treppenziel ist nicht verfuegbar.");
-            return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
-        }
-        DungeonTravelSurfaceFacts surface = project(currentMap, target, "Treppe benutzt.");
-        return moveResult(DungeonTravelMoveStatus.SUCCESS, "Treppe benutzt.", surface);
+        DungeonTravelSurfaceFacts surface = project(currentMap, target, "Reiseaktion ausgefuehrt.");
+        return moveResult(DungeonTravelMoveStatus.SUCCESS, "Reiseaktion ausgefuehrt.", surface);
     }
 
     private DungeonTravelMoveFacts moveThroughTransition(

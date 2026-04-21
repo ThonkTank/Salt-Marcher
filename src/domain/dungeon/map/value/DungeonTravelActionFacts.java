@@ -13,7 +13,7 @@ public record DungeonTravelActionFacts(
 ) {
 
     public DungeonTravelActionFacts {
-        kind = kind == null ? DungeonTravelActionKind.STAIR : kind;
+        kind = kind == null ? DungeonTravelActionKind.TRAVERSAL : kind;
         NormalizedAction normalized = normalize(actionId, label, destinationLabel, description, kind);
         actionId = normalized.actionId();
         label = normalized.label();

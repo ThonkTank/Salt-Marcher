@@ -83,15 +83,10 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
 
     private static void validateRequiredEnforcedRules(String content, ViolationSink violations) {
         for (String ruleId : REQUIRED_ENFORCED_DATA_RULES) {
-            String line = lineContaining(content, "`" + ruleId + "`");
+            String line = lineContainingMechanicalOwner(content, "`" + ruleId + "`");
             if (line == null) {
                 violations.add(COVERAGE_PATH, "data-enforcement-coverage-complete",
-                        "Data enforcement coverage must list required rule id `" + ruleId + "`.");
-                continue;
-            }
-            if (!line.contains("./gradlew") || !lineContainsMechanicalOwner(line)) {
-                violations.add(COVERAGE_PATH, "data-enforcement-coverage-complete",
-                        "Coverage row for `" + ruleId
+                        "Data enforcement coverage row for `" + ruleId
                                 + "` must name a mechanical owner and blocking Gradle entrypoint.");
             }
         }
@@ -114,18 +109,18 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
         }
     }
 
-    private static String lineContaining(String content, String needle) {
+    private static String lineContainingRuleGroupStatus(String content, String needle) {
         for (String line : content.split("\\R")) {
-            if (line.contains(needle)) {
+            if (line.contains(needle) && lineContainsRuleGroupStatus(line)) {
                 return line;
             }
         }
         return null;
     }
 
-    private static String lineContainingRuleGroupStatus(String content, String needle) {
+    private static String lineContainingMechanicalOwner(String content, String needle) {
         for (String line : content.split("\\R")) {
-            if (line.contains(needle) && lineContainsRuleGroupStatus(line)) {
+            if (line.contains(needle) && line.contains("./gradlew") && lineContainsMechanicalOwner(line)) {
                 return line;
             }
         }

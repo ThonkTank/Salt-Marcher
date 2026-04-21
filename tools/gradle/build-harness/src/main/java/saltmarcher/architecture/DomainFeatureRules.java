@@ -77,7 +77,7 @@ final class DomainFeatureRules implements ArchitectureRule {
             "domain-root-no-infrastructure-construction-source-pattern",
             "domain-application-no-policy-helper-prefix-source-pattern",
             "domain-named-module-no-setter-mutation-source-pattern",
-            "domain-outer-layer-independence-group",
+            "domain-outer-layer-independence",
             "domain-foreign-feature-public-boundary",
             "domain-named-module-private-context",
             "domain-named-module-no-same-context-application",
@@ -117,7 +117,7 @@ final class DomainFeatureRules implements ArchitectureRule {
             "domain-context-roles-standard-coverage",
             "domain-context-relationships-public-boundary",
             "domain-foreign-service-documentation",
-            "domain-outer-layer-independence",
+            "domain-outer-layer-independence-group",
             "domain-foreign-context-private-isolation",
             "domain-business-policy-not-in-view-data",
             "domain-application-no-published-to-model",
@@ -421,15 +421,10 @@ final class DomainFeatureRules implements ArchitectureRule {
 
     private static void validateRequiredEnforcedDomainRules(String content, ViolationSink violations) {
         for (String ruleId : REQUIRED_ENFORCED_DOMAIN_RULES) {
-            String line = lineContaining(content, "`" + ruleId + "`");
+            String line = lineContainingMechanicalOwner(content, "`" + ruleId + "`");
             if (line == null) {
                 violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
-                        "Domain enforcement coverage must list required rule id `" + ruleId + "`.");
-                continue;
-            }
-            if (!line.contains("./gradlew") || !lineContainsMechanicalOwner(line)) {
-                violations.add(DOMAIN_COVERAGE_PATH, "domain-enforcement-coverage-complete",
-                        "Coverage row for `" + ruleId
+                        "Domain enforcement coverage row for `" + ruleId
                                 + "` must name a mechanical owner and blocking Gradle entrypoint.");
             }
         }
@@ -567,6 +562,15 @@ final class DomainFeatureRules implements ArchitectureRule {
     private static String lineContainingRuleGroupStatus(String content, String needle) {
         for (String line : content.split("\\R")) {
             if (line.contains(needle) && lineContainsRuleGroupStatus(line)) {
+                return line;
+            }
+        }
+        return null;
+    }
+
+    private static String lineContainingMechanicalOwner(String content, String needle) {
+        for (String line : content.split("\\R")) {
+            if (line.contains(needle) && line.contains("./gradlew") && lineContainsMechanicalOwner(line)) {
                 return line;
             }
         }

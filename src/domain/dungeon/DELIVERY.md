@@ -29,11 +29,12 @@ Current foundation:
 - Stair and transition read parity is active: the data layer loads stair path
   nodes, stair exits, corridor attachments, and transition destinations. The
   domain layer exposes them as authored feature facts and relation summaries.
-- Runtime travel action parity is active for doors, stairs, and transitions:
-  the travel surface derives transient actions from authored door boundaries,
-  stair exits, and transition destinations, stores the active dungeon position
-  in the shell runtime session, and does not persist campaign-state movement
-  yet.
+- Runtime travel action parity is active for local traversal links and
+  transitions: the travel surface derives one local tile-to-tile traversal
+  model from authored door boundaries and stair exits, derives separate
+  transition actions for cross-map or overworld targets, stores the active
+  dungeon position in the shell runtime session, and does not persist
+  campaign-state movement yet.
 
 Recommended rollout:
 
@@ -62,9 +63,9 @@ Recommended rollout:
 
 Implement persistent runtime travel integration next. The original runtime
 updates campaign/world state as movement happens and also supports direct token
-drag movement on the dungeon surface. This codebase now derives local door,
-stair, and transition actions, but keeps the active party position in the shell
-runtime session only.
+drag movement on the dungeon surface. This codebase now derives local traversal
+actions and transition actions, but keeps the active party position in the
+shell runtime session only.
 
 ## Open Delivery Questions
 

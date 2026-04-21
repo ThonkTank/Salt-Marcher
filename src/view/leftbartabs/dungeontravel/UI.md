@@ -10,7 +10,7 @@ runtime session state.
 
 The Dungeon Travel tab is the runtime-facing cockpit root for the local dungeon
 map. It mirrors the legacy dungeon runtime map surface for transient party
-movement through currently loaded door, stair, and transition actions.
+movement through currently loaded traversal and transition actions.
 
 ## Visible Structure
 
@@ -26,10 +26,9 @@ movement through currently loaded door, stair, and transition actions.
 - Runtime mode renders a party token at the transient travel position.
 - Level and overlay controls update the presentation projection only.
 - Reset view restores the canvas camera without changing dungeon state.
-- Door actions move the party token across the selected authored door boundary
-  and update the token heading to face the traversal direction.
-- Stair actions move the party token to the selected stair exit and update the
-  projection level.
+- Traversal actions move the party token across the selected local traversible
+  link. Door-sourced traversal faces the target tile; stair-sourced traversal
+  keeps the current heading while updating the projection level when needed.
 - Dungeon transition actions move the transient session to the placed target
   transition when the target map and transition are available.
 - Overworld transition actions report the external target without changing the
