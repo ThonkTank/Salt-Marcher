@@ -147,7 +147,9 @@ not shell discovery or view instantiation.
 Reusable or standalone single-slot content lives under
 `src/view/slotcontent/<slot>/<entry>/`. Slotcontent Views are passive JavaFX
 content; slotcontent ViewModels are optional projection models and must not
-call application services.
+call application services. Detail slotcontent may also provide a
+`*InspectorEntry.java` adapter that builds shell Inspector entry specs from
+Binder-supplied loader functions.
 
 Every service-exporting data feature exposes exactly one service-registration
 entrypoint:

@@ -76,6 +76,8 @@ src/view/
     details/<entry>/
       <PascalEntry>View.java
       <PascalEntry>ViewModel.java
+      <PascalEntry>DisplayModel.java
+      <PascalEntry>InspectorEntry.java
     topbar/<entry>/
       <PascalEntry>View.java
       <PascalEntry>ViewModel.java
@@ -94,7 +96,8 @@ Rules:
 - `src/view/dropdowns/<entry>/` defines a dropdown-capable UI unit. It has a
   `*Contribution` only when bootstrap should discover it directly.
 - `src/view/slotcontent/<slot>/<entry>/` defines one reusable or standalone
-  content unit for exactly one cockpit slot.
+  content unit for exactly one cockpit slot. Detail slotcontent may also own a
+  `*InspectorEntry` adapter for shell Inspector entry construction.
 - `*Contribution` is shell-discovery only. It must stay thin and delegate
   runtime composition to the co-located `*Binder`.
 - Every active root has exactly one `*Binder` and one aggregate `*ViewModel`.
@@ -198,7 +201,8 @@ Allowed dependencies:
 - shell public contracts allowed for contributions
 - the same-root active ViewModel and passive Views
 - slotcontent Views, ViewModels, and display models
-- detail slotcontent Views and ViewModels when publishing inspector entries
+- detail slotcontent Views, ViewModels, display models, and InspectorEntry
+  adapters when publishing inspector entries
 - root `src.domain.<feature>.<Feature>ApplicationService`
 - `src.domain.<feature>.published.*` carrier records, enums, and sealed carriers
 - JavaFX `Node` and collection types needed for bound slot content
@@ -263,6 +267,9 @@ Responsibilities:
 - provide reusable or standalone slot content under `src/view/slotcontent`
   when multiple active roots share one cockpit surface structure or when a
   feature publishes detail/dropdown content through a binder
+- keep reusable Inspector entry construction in slotcontent-owned
+  `*InspectorEntry` adapters instead of duplicating detail-entry assembly in
+  active-root Binders
 
 Allowed dependencies:
 

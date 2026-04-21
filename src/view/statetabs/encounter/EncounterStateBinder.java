@@ -3,17 +3,14 @@ package src.view.statetabs.encounter;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
-import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.party.PartyApplicationService;
-import src.view.slotcontent.details.creature.CreatureDetailsView;
-import src.view.slotcontent.details.creature.CreatureDetailsViewModel;
+import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
 final class EncounterStateBinder {
@@ -81,7 +78,8 @@ final class EncounterStateBinder {
         state.setOnRosterDecrement(viewModel::decrementCreature);
         state.setOnRosterRemove(viewModel::removeCreature);
         state.setOnUndoRemove(viewModel::undoRemove);
-        state.setOnOpenCreature(creatureId -> inspector.push(creatureInspectorEntry(creatures, creatureId)));
+        state.setOnOpenCreature(creatureId ->
+                inspector.push(CreatureDetailsInspectorEntry.create(creatureId, creatures::loadCreatureDetail)));
         state.setOnStartInitiative(viewModel::openInitiative);
         state.setOnInitiativeBack(viewModel::backToBuilder);
         state.setOnInitiativeConfirm(inputs -> viewModel.confirmInitiative(inputs.stream()
@@ -224,21 +222,6 @@ final class EncounterStateBinder {
                 source.xpAwarded(),
                 source.canAwardXp(),
                 source.partySize());
-    }
-
-    private static InspectorEntrySpec creatureInspectorEntry(CreaturesApplicationService creatures, long creatureId) {
-        return new InspectorEntrySpec(
-                "Creature",
-                "creature:" + creatureId,
-                () -> creatureInspectorContent(creatures, creatureId),
-                null);
-    }
-
-    private static Node creatureInspectorContent(CreaturesApplicationService creatures, long creatureId) {
-        CreatureDetailsView detailView = new CreatureDetailsView();
-        new CreatureDetailsViewModel(creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId)))
-                .connect(detailView::setLoadingText, detailView::setErrorText, detailView::showDetail);
-        return detailView;
     }
 
     private record Binding(Node state) implements ShellBinding {

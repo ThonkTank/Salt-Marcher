@@ -5,17 +5,14 @@ import java.util.Map;
 import java.util.Objects;
 import javafx.collections.ListChangeListener;
 import javafx.scene.Node;
-import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.published.EncounterDifficultyBand;
 import src.view.slotcontent.controls.catalog.CatalogControlsView;
-import src.view.slotcontent.details.creature.CreatureDetailsView;
-import src.view.slotcontent.details.creature.CreatureDetailsViewModel;
+import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 import src.view.slotcontent.main.catalog.CatalogMainView;
 import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
@@ -105,19 +102,7 @@ final class CatalogBinder {
             CreaturesApplicationService creatures,
             long creatureId
     ) {
-        inspector.push(new InspectorEntrySpec(
-                "Creature",
-                "creature:" + creatureId,
-                () -> detailNode(creatures, creatureId),
-                null));
-    }
-
-    private static Node detailNode(CreaturesApplicationService creatures, long creatureId) {
-        CreatureDetailsViewModel viewModel =
-                new CreatureDetailsViewModel(creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId)));
-        CreatureDetailsView view = new CreatureDetailsView();
-        viewModel.connect(view::setLoadingText, view::setErrorText, view::showDetail);
-        return view;
+        inspector.push(CreatureDetailsInspectorEntry.create(creatureId, creatures::loadCreatureDetail));
     }
 
     private static CatalogControlsView.ContentItem toControlContent(CatalogViewModel.CatalogContent content) {

@@ -59,6 +59,9 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
         if (ViewArchitectureSupport.isBinderSource(tree)) {
             return ShellPolicy.BINDER;
         }
+        if (ViewArchitectureSupport.isInspectorEntrySource(tree)) {
+            return ShellPolicy.INSPECTOR_ENTRY;
+        }
         if (ViewArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName).matches()) {
             return ShellPolicy.DATA_ROOT;
         }
@@ -99,6 +102,12 @@ public final class FeatureShellApiAllowlistChecker extends BugChecker
             @Override
             boolean isAllowed(String referencedType) {
                 return ViewArchitectureSupport.isAllowedDataRootShellType(referencedType);
+            }
+        },
+        INSPECTOR_ENTRY {
+            @Override
+            boolean isAllowed(String referencedType) {
+                return ViewArchitectureSupport.isAllowedInspectorEntryShellType(referencedType);
             }
         };
 

@@ -109,6 +109,10 @@ final class SaltMarcherSourceFacts {
         return isSlotcontentSource() && simpleName.endsWith("DisplayModel");
     }
 
+    boolean isViewInspectorEntrySource() {
+        return isSlotcontentSource() && simpleName.endsWith("InspectorEntry");
+    }
+
     boolean isViewModelSource() {
         return (isActiveViewRootSource() || isSlotcontentSource()) && simpleName.endsWith("ViewModel");
     }
@@ -126,6 +130,7 @@ final class SaltMarcherSourceFacts {
                 && !isViewBinderSource()
                 && !isViewModelSource()
                 && !isViewSupportModelSource()
+                && !isViewInspectorEntrySource()
                 && !isViewPanelSource();
     }
 

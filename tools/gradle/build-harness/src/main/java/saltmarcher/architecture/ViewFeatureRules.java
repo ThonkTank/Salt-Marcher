@@ -42,9 +42,12 @@ final class ViewFeatureRules implements ArchitectureRule {
                     "Slotcontent roots are reusable passive content and must not define *Contribution.java or *Binder.java files.");
             return;
         }
-        if (!isPassiveViewFile(sourceFile) && !isViewModelFile(sourceFile) && !isReusableDisplayModelFile(sourceFile)) {
+        if (!isPassiveViewFile(sourceFile)
+                && !isViewModelFile(sourceFile)
+                && !isReusableDisplayModelFile(sourceFile)
+                && !isInspectorEntryFile(sourceFile)) {
             violations.add(sourceFile.relativePath(), "view-slotcontent-root-shape",
-                    "Slotcontent sources must be passive *View.java files, optional *ViewModel.java files, or reusable *DisplayModel.java files.");
+                    "Slotcontent sources must be passive *View.java files, optional *ViewModel.java files, reusable *DisplayModel.java files, or *InspectorEntry.java adapters.");
         }
     }
 
@@ -113,6 +116,10 @@ final class ViewFeatureRules implements ArchitectureRule {
 
     private static boolean isReusableDisplayModelFile(SourceFile sourceFile) {
         return sourceFile.fileName().endsWith("DisplayModel.java");
+    }
+
+    private static boolean isInspectorEntryFile(SourceFile sourceFile) {
+        return sourceFile.fileName().endsWith("InspectorEntry.java");
     }
 
     private record ViewRoot(String area, String entry) implements Comparable<ViewRoot> {

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Creature Inspector detail entry structure and visible stat
 block behavior.
 
@@ -10,6 +10,8 @@ block behavior.
 
 The creature detail entry renders a read-only stat block in the shell Inspector.
 It is opened by catalog rows and may be reused by later encounter-facing views.
+The slotcontent unit owns the reusable Inspector entry adapter so active-root
+Binders do not duplicate detail-entry assembly.
 
 ## Visible Surfaces
 
@@ -19,8 +21,10 @@ It is opened by catalog rows and may be reused by later encounter-facing views.
 
 ## Interactions
 
-- The owning active-root Binder loads one creature by id through the creatures
-  application service and passes the read result into this slotcontent unit.
+- The owning active-root Binder pushes the slotcontent-owned Inspector entry
+  and supplies a creature-detail loader from the creatures application service.
+- The Inspector entry constructs the shell entry spec, loads one creature by id,
+  and binds the result into this slotcontent unit.
 - The entry does not mutate creature data.
 - Missing or inaccessible details show a compact error message inside the
   Inspector content area.

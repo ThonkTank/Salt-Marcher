@@ -63,6 +63,8 @@ final class ViewArchitectureSupport {
             "shell.api.ShellLeftBarTabMode",
             "shell.api.ShellLeftBarTabSpec",
             "shell.api.ShellTopBarSpec");
+    private static final Set<String> INSPECTOR_ENTRY_ALLOWED_SHELL_TYPES = Set.of(
+            "shell.api.InspectorEntrySpec");
     private static final Set<String> DATA_ROOT_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ServiceContribution",
             "shell.api.ServiceRegistry");
@@ -96,6 +98,11 @@ final class ViewArchitectureSupport {
     static boolean isViewModelSource(CompilationUnitTree tree) {
         return VIEW_MODEL_PACKAGE.matcher(packageName(tree)).matches()
                 && sourceFileName(tree).endsWith("ViewModel.java");
+    }
+
+    static boolean isInspectorEntrySource(CompilationUnitTree tree) {
+        return VIEW_MODEL_PACKAGE.matcher(packageName(tree)).matches()
+                && sourceFileName(tree).endsWith("InspectorEntry.java");
     }
 
     static boolean isPanelViewSource(CompilationUnitTree tree) {
@@ -233,6 +240,9 @@ final class ViewArchitectureSupport {
             if (topLevelSimpleName.endsWith("ViewModel")) {
                 return new ViewTypeInfo(segments[1], "MODEL");
             }
+            if (topLevelSimpleName.endsWith("InspectorEntry")) {
+                return new ViewTypeInfo(segments[1], "INSPECTOR_ENTRY");
+            }
             return new ViewTypeInfo(segments[1], "VIEW");
         }
         if (Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[0]) && segments.length >= 3) {
@@ -279,6 +289,13 @@ final class ViewArchitectureSupport {
         return false;
     }
 
+    static boolean isSlotcontentInspectorEntryReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && Set.of("controls", "main", "state", "details", "topbar").contains(viewType.component())
+                && "INSPECTOR_ENTRY".equals(viewType.bucket());
+    }
+
     static boolean isSlotcontentModelReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null
@@ -302,7 +319,8 @@ final class ViewArchitectureSupport {
 
     static boolean isDetailEntryReference(String referencedType) {
         return isDetailEntryViewReference(referencedType)
-                || isDetailEntryViewModelReference(referencedType);
+                || isDetailEntryViewModelReference(referencedType)
+                || isSlotcontentInspectorEntryReference(referencedType);
     }
 
     static boolean isSameViewRootOrReusablePassiveViewReference(String sourcePackageName, String referencedType) {
@@ -338,6 +356,10 @@ final class ViewArchitectureSupport {
 
     static boolean isAllowedDataRootShellType(String referencedType) {
         return isAllowedShellType(referencedType, DATA_ROOT_ALLOWED_SHELL_TYPES);
+    }
+
+    static boolean isAllowedInspectorEntryShellType(String referencedType) {
+        return isAllowedShellType(referencedType, INSPECTOR_ENTRY_ALLOWED_SHELL_TYPES);
     }
 
     private static boolean isAllowedShellType(String referencedType, Set<String> allowedTypes) {

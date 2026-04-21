@@ -21,7 +21,8 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         boolean contribution = ViewArchitectureSupport.isContributionSource(tree);
         boolean binder = ViewArchitectureSupport.isBinderSource(tree);
         boolean viewModel = ViewArchitectureSupport.isViewModelSource(tree);
-        if (!contribution && !binder && !viewModel) {
+        boolean inspectorEntry = ViewArchitectureSupport.isInspectorEntrySource(tree);
+        if (!contribution && !binder && !viewModel && !inspectorEntry) {
             return Description.NO_MATCH;
         }
 
@@ -32,6 +33,7 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
                     referencedType,
                     contribution,
                     binder,
+                    inspectorEntry,
                     packageName,
                     sourceText,
                     forbiddenReferences);
@@ -51,13 +53,14 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             String qualifiedName,
             boolean contribution,
             boolean binder,
+            boolean inspectorEntry,
             String sourcePackageName,
             String sourceText,
             Set<String> forbiddenReferences) {
         if (qualifiedName == null || qualifiedName.isBlank()) {
             return;
         }
-        if (isForbidden(qualifiedName, contribution, binder, sourcePackageName, sourceText)) {
+        if (isForbidden(qualifiedName, contribution, binder, inspectorEntry, sourcePackageName, sourceText)) {
             forbiddenReferences.add(qualifiedName);
         }
     }
@@ -66,6 +69,7 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             String referencedType,
             boolean contribution,
             boolean binder,
+            boolean inspectorEntry,
             String sourcePackageName,
             String sourceText) {
         if ("java.util.concurrent.Callable".equals(referencedType)
@@ -80,6 +84,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             if (contribution) {
                 return true;
             }
+            if (inspectorEntry) {
+                return !referencedType.equals("javafx.scene.Node");
+            }
             return binder
                     ? !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType)
                     : !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
@@ -90,6 +97,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             }
             if (binder) {
                 return !ViewArchitectureSupport.isAllowedBinderShellType(referencedType);
+            }
+            if (inspectorEntry) {
+                return !ViewArchitectureSupport.isAllowedInspectorEntryShellType(referencedType);
             }
             return true;
         }
@@ -137,6 +147,12 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
                         sourcePackageName, referencedType);
             }
             return true;
+        }
+        if (inspectorEntry) {
+            return !("MODEL".equals(viewType.bucket())
+                    || "VIEW".equals(viewType.bucket())
+                    || "INSPECTOR_ENTRY".equals(viewType.bucket()))
+                    || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
         }
         return !"MODEL".equals(viewType.bucket())
                 || (!ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)
