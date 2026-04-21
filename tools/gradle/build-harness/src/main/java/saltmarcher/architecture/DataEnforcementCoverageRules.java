@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 final class DataEnforcementCoverageRules implements ArchitectureRule {
 
@@ -56,6 +58,9 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
             "data-model-schema-source-local",
             "data-mapper-translation-only",
             "data-persistencecore-generic-only-rule",
+            "data-pattern-vocabulary-optional",
+            "data-gateway-helper-co-location",
+            "data-persistencecore-semantic-genericity",
             "data-forbidden-business-policy",
             "data-view-shell-private-data-access",
             "data-domain-no-source-mechanics",
@@ -80,31 +85,41 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
             return;
         }
 
-        validateRequiredEnforcedRules(content, violations);
-        validateRequiredRuleGroups(content, violations);
+        List<TableRow> enforcedRuleRows = tableRowsUnderHeading(content, "## Enforced Rule Matrix");
+        List<TableRow> ruleGroupRows = tableRowsUnderHeading(content, "## Documented Data Rule Coverage Inventory");
+        validateRequiredEnforcedRules(enforcedRuleRows, violations);
+        validateRequiredRuleGroups(ruleGroupRows, violations);
     }
 
-    private static void validateRequiredEnforcedRules(String content, ViolationSink violations) {
+    private static void validateRequiredEnforcedRules(List<TableRow> rows, ViolationSink violations) {
+        Map<String, TableRow> rowsByRuleId = rowsByFirstCell(rows);
         for (String ruleId : REQUIRED_ENFORCED_DATA_RULES) {
-            String line = lineContainingMechanicalOwner(content, "`" + ruleId + "`");
-            if (line == null) {
+            TableRow row = rowsByRuleId.get(ruleId);
+            if (row == null) {
                 violations.add(COVERAGE_PATH, "data-enforcement-coverage-complete",
                         "Data enforcement coverage row for `" + ruleId
                                 + "` must name a mechanical owner and blocking Gradle entrypoint.");
+                continue;
+            }
+            if (!lineContainsMechanicalOwner(row.cell(1)) || !row.cell(2).contains("./gradlew")) {
+                violations.add(COVERAGE_PATH, "data-enforcement-coverage-complete",
+                        "Data enforcement coverage row for `" + ruleId
+                                + "` must name a mechanical owner and blocking Gradle entrypoint in the enforced matrix.");
             }
         }
     }
 
-    private static void validateRequiredRuleGroups(String content, ViolationSink violations) {
+    private static void validateRequiredRuleGroups(List<TableRow> rows, ViolationSink violations) {
+        Map<String, TableRow> rowsByRuleGroup = rowsByFirstCell(rows);
         for (String ruleGroupId : REQUIRED_DATA_RULE_GROUPS) {
-            String line = lineContainingRuleGroupStatus(content, "`" + ruleGroupId + "`");
-            if (line == null) {
+            TableRow row = rowsByRuleGroup.get(ruleGroupId);
+            if (row == null) {
                 violations.add(COVERAGE_PATH, "data-enforcement-coverage-complete",
                         "Data enforcement coverage must classify data-layer rule group `"
                                 + ruleGroupId + "` as Enforced, Enforced Elsewhere, or Review-Owned.");
                 continue;
             }
-            if (!lineContainsRuleGroupStatus(line)) {
+            if (!isAllowedRuleGroupStatus(row.cell(1))) {
                 violations.add(COVERAGE_PATH, "data-enforcement-coverage-complete",
                         "Coverage row for data-layer rule group `" + ruleGroupId
                                 + "` must use status Enforced, Enforced Elsewhere, or Review-Owned.");
@@ -112,22 +127,53 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
         }
     }
 
-    private static String lineContainingRuleGroupStatus(String content, String needle) {
-        for (String line : content.split("\\R")) {
-            if (line.contains(needle) && lineContainsRuleGroupStatus(line)) {
-                return line;
+    private static List<TableRow> tableRowsUnderHeading(String content, String heading) {
+        List<String> lines = List.of(content.split("\\R"));
+        int headingIndex = -1;
+        for (int index = 0; index < lines.size(); index++) {
+            if (lines.get(index).strip().equals(heading)) {
+                headingIndex = index;
+                break;
             }
         }
-        return null;
+        if (headingIndex < 0) {
+            return List.of();
+        }
+
+        java.util.ArrayList<TableRow> rows = new java.util.ArrayList<>();
+        for (int index = headingIndex + 1; index < lines.size(); index++) {
+            String line = lines.get(index);
+            if (line.startsWith("## ")) {
+                break;
+            }
+            if (!line.startsWith("|")) {
+                continue;
+            }
+            if (line.contains("---")) {
+                continue;
+            }
+            TableRow row = TableRow.from(line);
+            if (row.cells().size() >= 3 && !row.cell(0).equals("Rule ID") && !row.cell(0).equals("Data Rule Group")) {
+                rows.add(row);
+            }
+        }
+        return rows;
     }
 
-    private static String lineContainingMechanicalOwner(String content, String needle) {
-        for (String line : content.split("\\R")) {
-            if (line.contains(needle) && line.contains("./gradlew") && lineContainsMechanicalOwner(line)) {
-                return line;
-            }
+    private static Map<String, TableRow> rowsByFirstCell(List<TableRow> rows) {
+        Map<String, TableRow> result = new LinkedHashMap<>();
+        for (TableRow row : rows) {
+            result.put(unquoteCodeCell(row.cell(0)), row);
         }
-        return null;
+        return result;
+    }
+
+    private static String unquoteCodeCell(String cell) {
+        String stripped = cell.strip();
+        if (stripped.startsWith("`") && stripped.endsWith("`") && stripped.length() >= 2) {
+            return stripped.substring(1, stripped.length() - 1);
+        }
+        return stripped;
     }
 
     private static boolean lineContainsMechanicalOwner(String line) {
@@ -138,9 +184,25 @@ final class DataEnforcementCoverageRules implements ArchitectureRule {
                 || line.contains("Gradle");
     }
 
-    private static boolean lineContainsRuleGroupStatus(String line) {
-        return line.contains("Enforced Elsewhere")
-                || line.contains("Enforced")
-                || line.contains("Review-Owned");
+    private static boolean isAllowedRuleGroupStatus(String cell) {
+        String status = cell.strip();
+        return status.equals("Enforced")
+                || status.equals("Enforced Elsewhere")
+                || status.equals("Review-Owned");
+    }
+
+    private record TableRow(List<String> cells) {
+
+        private String cell(int index) {
+            return index < cells.size() ? cells.get(index).strip() : "";
+        }
+
+        private static TableRow from(String line) {
+            String trimmed = line.strip();
+            String body = trimmed.substring(1, trimmed.length() - 1);
+            return new TableRow(List.of(body.split("\\|", -1)).stream()
+                    .map(String::strip)
+                    .toList());
+        }
     }
 }

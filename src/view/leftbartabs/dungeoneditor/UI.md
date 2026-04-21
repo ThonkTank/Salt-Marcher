@@ -1,30 +1,35 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
-Source of Truth: Dungeon editor left-bar tab UI structure and mock interaction
-state.
+Last Reviewed: 2026-04-21
+Source of Truth: Dungeon editor left-bar tab UI structure and control-panel
+interaction state.
 
 # Dungeon Editor UI
 
 ## Component Purpose
 
 The Dungeon Editor tab is the editor-facing cockpit root for the local dungeon
-map mock. It mirrors the legacy dungeon editor shell enough to validate layout,
-visual representation, and future wiring seams before real edit operations are
-connected.
+map. It mirrors the legacy dungeon editor shell control panel for map
+selection, map lifecycle actions, view projection, overlay settings, and tool
+family selection while full authored edit operations are still pending.
 
 ## Visible Structure
 
-- Controls show a dungeon selector, create/edit actions, grid/graph toggles,
-  level buttons, overlay trigger, and the editor tool families.
+- Controls show a dungeon selector, create/edit/delete actions,
+  grid/graph toggles, level buttons, full level-overlay settings, and the
+  editor tool families.
 - Main content is the shared `DungeonMapMainView` canvas surface in editor
   mode.
 - State content shows the active tool, view mode, projection level, overlay
-  mode, and the fact that this pass mutates presentation state only.
+  mode, and whether the selected tool is still presentation-only.
 
 ## Visible States
 
-- Tool selection updates highlighted controls and the mock map selection
-  emphasis.
+- The dungeon selector loads the selected map; create, rename, and delete call
+  the dungeon application service.
+- Tool selection updates highlighted controls and presentation state. Tool
+  gestures do not yet commit authored dungeon edit operations.
 - Grid/graph toggles switch the central map representation.
-- Level and overlay controls update only the view projection.
+- Level controls update the active map projection.
+- Overlay controls support off, nearby-level range, selected levels, and
+  opacity settings.

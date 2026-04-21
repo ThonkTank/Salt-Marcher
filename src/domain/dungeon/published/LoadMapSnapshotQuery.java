@@ -7,8 +7,4 @@ public record LoadMapSnapshotQuery(
         DungeonMapId mapId,
         int targetFloor
 ) {
-
-    public LoadMapSnapshotQuery {
-        targetFloor = Math.max(0, targetFloor);
-    }
 }

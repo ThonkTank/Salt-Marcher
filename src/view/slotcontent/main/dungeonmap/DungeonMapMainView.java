@@ -53,6 +53,7 @@ public class DungeonMapMainView extends BorderPane {
     private double lastDragX;
     private double lastDragY;
     private boolean middleDragActive;
+    private Runnable viewportChangedHandler = () -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonMapMainView(String titleText) {
@@ -80,6 +81,10 @@ public class DungeonMapMainView extends BorderPane {
 
     public final double zoom() {
         return zoom;
+    }
+
+    public final void onViewportChanged(Runnable action) {
+        viewportChangedHandler = action == null ? () -> {} : action;
     }
 
     public final void resetCamera() {
@@ -250,6 +255,7 @@ public class DungeonMapMainView extends BorderPane {
                 model.projectionLevel(),
                 zoom * 100.0));
         renderScene(model);
+        viewportChangedHandler.run();
     }
 
     private void renderScene(DungeonMapDisplayModel model) {
@@ -347,10 +353,7 @@ public class DungeonMapMainView extends BorderPane {
     private void drawCells(GraphicsContext gc, DungeonMapDisplayModel model, boolean includeOverlay) {
         for (DungeonMapDisplayModel.RenderCell cell : model.cells()) {
             boolean overlay = cell.z() != model.projectionLevel();
-            if (overlay && (!includeOverlay || model.overlayMode() == DungeonMapDisplayModel.OverlayMode.OFF)) {
-                continue;
-            }
-            if (model.overlayMode() == DungeonMapDisplayModel.OverlayMode.SELECTED && overlay && Math.abs(cell.z()) != 1) {
+            if (overlay && (!includeOverlay || !includeOverlayLevel(model, cell.z()))) {
                 continue;
             }
             double x = worldToScreenX(cell.q());
@@ -361,7 +364,7 @@ public class DungeonMapMainView extends BorderPane {
             }
             gc.save();
             if (overlay) {
-                gc.setGlobalAlpha(overlayAlpha(cell.z(), model.projectionLevel()));
+                gc.setGlobalAlpha(overlayAlpha(cell.z(), model.projectionLevel(), model.overlaySettings().opacity()));
             }
             gc.setFill(fillFor(cell, model.projectionLevel()));
             gc.fillRect(x, y, size, size);
@@ -375,12 +378,12 @@ public class DungeonMapMainView extends BorderPane {
     private void drawEdges(GraphicsContext gc, DungeonMapDisplayModel model, boolean includeOverlay) {
         for (DungeonMapDisplayModel.RenderEdge edge : model.edges()) {
             boolean overlay = edge.z() != model.projectionLevel();
-            if (overlay && (!includeOverlay || model.overlayMode() == DungeonMapDisplayModel.OverlayMode.OFF)) {
+            if (overlay && (!includeOverlay || !includeOverlayLevel(model, edge.z()))) {
                 continue;
             }
             gc.save();
             if (overlay) {
-                gc.setGlobalAlpha(overlayAlpha(edge.z(), model.projectionLevel()));
+                gc.setGlobalAlpha(overlayAlpha(edge.z(), model.projectionLevel(), model.overlaySettings().opacity()));
             }
             gc.setStroke(edge.kind() == DungeonMapDisplayModel.EdgeKind.DOOR
                     ? doorStroke()
@@ -396,7 +399,7 @@ public class DungeonMapMainView extends BorderPane {
         gc.setTextAlign(TextAlignment.CENTER);
         for (DungeonMapDisplayModel.RenderMarker marker : model.markers()) {
             boolean overlay = marker.z() != model.projectionLevel();
-            if (overlay && (!includeOverlay || model.overlayMode() == DungeonMapDisplayModel.OverlayMode.OFF)) {
+            if (overlay && (!includeOverlay || !includeOverlayLevel(model, marker.z()))) {
                 continue;
             }
             double cx = worldToScreenX(marker.q());
@@ -404,7 +407,7 @@ public class DungeonMapMainView extends BorderPane {
             double radius = marker.kind() == DungeonMapDisplayModel.MarkerKind.DOOR ? 10.0 : 12.0;
             gc.save();
             if (overlay) {
-                gc.setGlobalAlpha(overlayAlpha(marker.z(), model.projectionLevel()));
+                gc.setGlobalAlpha(overlayAlpha(marker.z(), model.projectionLevel(), model.overlaySettings().opacity()));
             }
             gc.setFill(markerFill(marker));
             gc.fillRoundRect(cx - radius, cy - radius, radius * 2.0, radius * 2.0, 10.0, 10.0);
@@ -426,7 +429,7 @@ public class DungeonMapMainView extends BorderPane {
         for (DungeonMapDisplayModel.RenderLabel label : model.labels()) {
             boolean overlay = label.z() != model.projectionLevel();
             if (label.label().isBlank()
-                    || (overlay && (!includeOverlay || model.overlayMode() == DungeonMapDisplayModel.OverlayMode.OFF))) {
+                    || (overlay && (!includeOverlay || !includeOverlayLevel(model, label.z())))) {
                 continue;
             }
             double width = Math.max(56.0, Math.min(180.0, label.label().length() * 7.2 + 16.0));
@@ -437,7 +440,7 @@ public class DungeonMapMainView extends BorderPane {
             }
             gc.save();
             if (overlay) {
-                gc.setGlobalAlpha(overlayAlpha(label.z(), model.projectionLevel()));
+                gc.setGlobalAlpha(overlayAlpha(label.z(), model.projectionLevel(), model.overlaySettings().opacity()));
             }
             gc.setFill(labelFill());
             gc.fillRoundRect(x, y, width, 24.0, 14.0, 14.0);
@@ -646,9 +649,18 @@ public class DungeonMapMainView extends BorderPane {
         };
     }
 
-    private double overlayAlpha(int z, int projectionLevel) {
+    private boolean includeOverlayLevel(DungeonMapDisplayModel model, int level) {
+        DungeonMapDisplayModel.LevelOverlaySettings settings = model.overlaySettings();
+        return switch (settings.mode()) {
+            case OFF -> false;
+            case NEARBY -> Math.abs(level - model.projectionLevel()) <= settings.levelRange();
+            case SELECTED -> settings.selectedLevels().contains(level);
+        };
+    }
+
+    private double overlayAlpha(int z, int projectionLevel, double configuredOpacity) {
         int distance = Math.max(1, Math.abs(z - projectionLevel));
-        return Math.max(0.16, Math.min(0.56, 0.35 / Math.sqrt(distance)));
+        return Math.max(0.05, Math.min(0.95, configuredOpacity / Math.sqrt(distance)));
     }
 
     private double hudLabelWidth(String text) {

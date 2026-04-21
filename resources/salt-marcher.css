@@ -443,6 +443,159 @@
     -fx-border-color: -sm-accent-hover;
 }
 
+/* ---- TableView ---- */
+.table-view {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent;
+}
+.table-view .filler {
+    -fx-background-color: -sm-bg-elevated;
+}
+.table-view .column-header-background {
+    -fx-background-color: -sm-bg-elevated;
+}
+.table-view .column-header-background .filler {
+    -fx-background-color: -sm-bg-elevated;
+}
+.table-view .column-header {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
+.table-view .column-header .label {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+.table-view .table-row-cell {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-cell-size: 28px;
+}
+.table-view .table-row-cell:selected {
+    -fx-background-color: -sm-accent;
+}
+.table-view .table-row-cell .table-cell {
+    -fx-text-fill: -sm-text-primary;
+}
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: -sm-text-primary;
+}
+.table-view .table-row-cell:empty {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent;
+}
+.table-view .placeholder .label {
+    -fx-text-fill: -sm-text-muted;
+}
+
+/* ---- ComboBox ---- */
+.combo-box {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+.combo-box .list-cell {
+    -fx-text-fill: -sm-text-primary;
+    -fx-background-color: -sm-bg-elevated;
+    -fx-font-size: 13px;
+}
+.combo-box .arrow-button {
+    -fx-background-color: -sm-bg-elevated;
+}
+.combo-box .arrow {
+    -fx-background-color: -sm-text-secondary;
+}
+.combo-box-popup .list-view {
+    -fx-background-color: -sm-bg-elevated;
+}
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: -sm-bg-card;
+}
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+
+/* ---- Slider ---- */
+.slider .track {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 3;
+    -fx-pref-height: 4;
+}
+.slider .thumb {
+    -fx-background-color: -sm-accent;
+    -fx-background-radius: 6;
+    -fx-pref-width: 14;
+    -fx-pref-height: 14;
+}
+.slider .thumb:hover {
+    -fx-background-color: -sm-accent-hover;
+}
+.slider:disabled .thumb {
+    -fx-background-color: -sm-text-muted;
+}
+.slider:disabled .track {
+    -fx-background-color: derive(-sm-bg-elevated, -10%);
+}
+.slider .axis {
+    -fx-tick-label-fill: -sm-text-muted;
+    -fx-font-size: 10px;
+}
+.difficulty-slider .track {
+    -fx-background-color:
+        linear-gradient(to right,
+            -sm-easy 0%,   -sm-easy 25%,
+            -sm-medium 25%, -sm-medium 50%,
+            -sm-hard 50%,  -sm-hard 75%,
+            -sm-deadly 75%, -sm-deadly 100%);
+}
+
+/* ---- CheckBox ---- */
+.check-box {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.check-box .box {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 3;
+}
+.check-box:selected .box {
+    -fx-background-color: -sm-accent;
+    -fx-border-color: -sm-accent;
+}
+.check-box:selected .box .mark {
+    -fx-background-color: -sm-text-primary;
+}
+.check-box:focused .box {
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-width: 2;
+}
+
+/* ---- Spinner ---- */
+.spinner {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+}
+.spinner .text-field {
+    -fx-border-color: transparent;
+}
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: -sm-bg-elevated;
+}
+.spinner .increment-arrow-button .increment-arrow,
+.spinner .decrement-arrow-button .decrement-arrow {
+    -fx-background-color: -sm-text-secondary;
+}
+
 .toolbar {
     -fx-background-color: -sm-bg-panel;
     -fx-padding: 6 12 6 12;
@@ -591,6 +744,12 @@
 
 .control-panel {
     -fx-background-color: -sm-bg-panel;
+}
+.control-separator {
+    -fx-background-color: -sm-border-subtle;
+    -fx-min-height: 1;
+    -fx-pref-height: 1;
+    -fx-max-height: 1;
 }
 .surface-root {
     -fx-background-color: -sm-bg-darkest;
@@ -965,7 +1124,12 @@
 .chip-align   { -fx-background-color: -sm-chip-align-bg; -fx-border-color: -sm-chip-align-border; }
 .chip-cr      { -fx-background-color: -sm-chip-cr-bg;    -fx-border-color: -sm-chip-cr-border; }
 .chip-remove-btn {
-    -fx-padding: 0 0 0 4;
+    -fx-padding: 0 4 0 4;
+    -fx-font-size: 11px;
+    -fx-min-width: 24;
+    -fx-pref-width: 24;
+    -fx-max-width: 24;
+    -fx-min-height: 24;
 }
 .clickable {
     -fx-cursor: hand;

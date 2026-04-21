@@ -17,11 +17,12 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
     private static final Set<String> CONCRETE_SOURCE_TOKENS = Set.of(
             "java.sql.",
             "javax.sql.",
+            "java.net.",
             "java.net.http.",
             "okhttp3.",
             "retrofit2.",
             "java.nio.file.",
-            "java.io.File");
+            "java.io.");
     private static final Set<String> QUERY_MUTATION_METHOD_PREFIXES = Set.of(
             "add",
             "create",

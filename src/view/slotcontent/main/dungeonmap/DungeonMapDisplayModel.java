@@ -29,7 +29,7 @@ public record DungeonMapDisplayModel(
         String overlayMessage,
         RenderTopology topology,
         ViewMode viewMode,
-        OverlayMode overlayMode,
+        LevelOverlaySettings overlaySettings,
         int projectionLevel,
         boolean editorMode,
         String selectedTool,
@@ -51,7 +51,7 @@ public record DungeonMapDisplayModel(
         overlayMessage = overlayMessage == null ? "" : overlayMessage;
         topology = topology == null ? RenderTopology.SQUARE : topology;
         viewMode = viewMode == null ? ViewMode.GRID : viewMode;
-        overlayMode = overlayMode == null ? OverlayMode.OFF : overlayMode;
+        overlaySettings = overlaySettings == null ? LevelOverlaySettings.defaults() : overlaySettings;
         selectedTool = selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
         cells = cells == null ? List.of() : List.copyOf(cells);
         edges = edges == null ? List.of() : List.copyOf(edges);
@@ -59,6 +59,10 @@ public record DungeonMapDisplayModel(
         markers = markers == null ? List.of() : List.copyOf(markers);
         graphNodes = graphNodes == null ? List.of() : List.copyOf(graphNodes);
         graphLinks = graphLinks == null ? List.of() : List.copyOf(graphLinks);
+    }
+
+    public OverlayMode overlayMode() {
+        return overlaySettings.mode();
     }
 
     public static DungeonMapDisplayModel empty() {
@@ -76,7 +80,7 @@ public record DungeonMapDisplayModel(
                 "No dungeon map loaded.",
                 RenderTopology.SQUARE,
                 ViewMode.GRID,
-                OverlayMode.OFF,
+                LevelOverlaySettings.off(),
                 0,
                 true,
                 "Auswahl",
@@ -103,7 +107,7 @@ public record DungeonMapDisplayModel(
                 placeholderTitle,
                 editorMode,
                 viewMode,
-                overlayMode,
+                LevelOverlaySettings.of(overlayMode),
                 projectionLevel,
                 selectedTool,
                 null);
@@ -119,9 +123,33 @@ public record DungeonMapDisplayModel(
             String selectedTool,
             @Nullable PartyToken runtimePartyToken
     ) {
+        return fromDungeonSnapshot(
+                snapshot,
+                placeholderTitle,
+                editorMode,
+                viewMode,
+                LevelOverlaySettings.of(overlayMode),
+                projectionLevel,
+                selectedTool,
+                runtimePartyToken);
+    }
+
+    public static DungeonMapDisplayModel fromDungeonSnapshot(
+            @Nullable DungeonSnapshot snapshot,
+            String placeholderTitle,
+            boolean editorMode,
+            ViewMode viewMode,
+            LevelOverlaySettings overlaySettings,
+            int projectionLevel,
+            String selectedTool,
+            @Nullable PartyToken runtimePartyToken
+    ) {
         if (snapshot == null) {
             return empty(placeholderTitle);
         }
+        LevelOverlaySettings resolvedOverlay = overlaySettings == null
+                ? LevelOverlaySettings.defaults()
+                : overlaySettings;
         DungeonMapSnapshot map = snapshot.map();
         List<RenderCell> renderedCells = new ArrayList<>();
         List<RenderEdge> renderedEdges = new ArrayList<>();
@@ -174,12 +202,13 @@ public record DungeonMapDisplayModel(
                 map.width() + " x " + map.height() + " squares · z=" + projectionLevel,
                 viewMode.label(),
                 editorMode ? selectedTool : "Token auf der Karte ziehen",
-                renderedCells.size() + " cells, " + renderedEdges.size() + " edges · " + overlayMode.label(),
+                renderedCells.size() + " cells, " + renderedEdges.size() + " edges · "
+                        + resolvedOverlay.mode().label(),
                 mapLoaded,
                 mapLoaded ? "" : "No dungeon map geometry available.",
                 topology(map.topology()),
                 viewMode,
-                overlayMode,
+                resolvedOverlay,
                 projectionLevel,
                 editorMode,
                 selectedTool,
@@ -378,6 +407,41 @@ public record DungeonMapDisplayModel(
 
         public String label() {
             return label;
+        }
+    }
+
+    public record LevelOverlaySettings(
+            OverlayMode mode,
+            int levelRange,
+            double opacity,
+            List<Integer> selectedLevels
+    ) {
+
+        private static final int DEFAULT_LEVEL_RANGE = 2;
+        private static final int MAX_LEVEL_RANGE = 6;
+        private static final double DEFAULT_OPACITY = 0.35;
+
+        public LevelOverlaySettings {
+            mode = mode == null ? OverlayMode.OFF : mode;
+            levelRange = Math.max(1, Math.min(MAX_LEVEL_RANGE, levelRange));
+            opacity = Math.max(0.05, Math.min(0.95, opacity));
+            selectedLevels = selectedLevels == null ? List.of() : selectedLevels.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .sorted()
+                    .toList();
+        }
+
+        public static LevelOverlaySettings defaults() {
+            return new LevelOverlaySettings(OverlayMode.NEARBY, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
+        }
+
+        public static LevelOverlaySettings off() {
+            return new LevelOverlaySettings(OverlayMode.OFF, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
+        }
+
+        public static LevelOverlaySettings of(OverlayMode mode) {
+            return new LevelOverlaySettings(mode, DEFAULT_LEVEL_RANGE, DEFAULT_OPACITY, List.of());
         }
     }
 

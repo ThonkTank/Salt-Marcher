@@ -11,25 +11,39 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 
 @BugPattern(
-        name = "DataServiceContributionConstructionPurity",
-        summary = "Data ServiceContribution roots must stay limited to constructor wiring and service registration.",
+        name = "DataQueryGatewayMutationBoundary",
+        summary = "Query adapters must not call mutation-shaped gateway operations.",
         severity = BugPattern.SeverityLevel.ERROR)
-public final class DataServiceContributionConstructionPurityChecker extends BugChecker
+public final class DataQueryGatewayMutationBoundaryChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
 
-    private static final String SERVICE_REGISTRY_BUILDER = "shell.api.ServiceRegistry.Builder";
+    private static final Set<String> MUTATION_METHOD_PREFIXES = Set.of(
+            "add",
+            "create",
+            "delete",
+            "insert",
+            "mutate",
+            "persist",
+            "remove",
+            "save",
+            "set",
+            "store",
+            "update",
+            "upsert",
+            "write");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
         String packageName = DataArchitectureSupport.packageName(tree);
-        Matcher rootMatcher = DataArchitectureSupport.DATA_ROOT_PACKAGE.matcher(packageName);
-        if (!rootMatcher.matches()) {
+        Matcher queryMatcher = DataArchitectureSupport.QUERY_PACKAGE.matcher(packageName);
+        if (!queryMatcher.matches()) {
             return Description.NO_MATCH;
         }
-        String featureName = rootMatcher.group(1);
+        String featureName = queryMatcher.group(1);
 
         List<String> violations = new ArrayList<>();
         new TreePathScanner<Void, Void>() {
@@ -39,13 +53,10 @@ public final class DataServiceContributionConstructionPurityChecker extends BugC
                 if (symbol == null) {
                     return super.visitMethodInvocation(methodInvocation, unused);
                 }
-                if ("register".contentEquals(symbol.getSimpleName())
-                        && SERVICE_REGISTRY_BUILDER.equals(ownerTypeName(symbol))) {
-                    return super.visitMethodInvocation(methodInvocation, unused);
-                }
+                String methodName = symbol.getSimpleName().toString();
                 String ownerTypeName = ownerTypeName(symbol);
-                if (isForbiddenRootCall(ownerTypeName, featureName)) {
-                    violations.add(methodInvocation + " -> " + ownerTypeName);
+                if (isMutationMethodName(methodName) && isOwnFeatureGatewayType(ownerTypeName, featureName)) {
+                    violations.add(methodInvocation + " -> " + ownerTypeName + "." + methodName);
                 }
                 return super.visitMethodInvocation(methodInvocation, unused);
             }
@@ -55,28 +66,28 @@ public final class DataServiceContributionConstructionPurityChecker extends BugC
             return Description.NO_MATCH;
         }
         return buildDescription(tree)
-                .setMessage("Data ServiceContribution root '" + packageName
-                        + "' must perform constructor wiring and ServiceRegistry registration only."
-                        + " Move source mechanics, schema, mapper, repository/query, or gateway method calls behind adapters. Found: "
+                .setMessage("Data query adapter package '" + packageName
+                        + "' must stay read-only and must not call mutation-shaped gateway operations: "
                         + String.join("; ", violations))
                 .build();
     }
 
-    private static boolean isForbiddenRootCall(String ownerTypeName, String featureName) {
+    private static boolean isMutationMethodName(String methodName) {
+        String normalized = methodName.toLowerCase();
+        return MUTATION_METHOD_PREFIXES.stream().anyMatch(normalized::startsWith);
+    }
+
+    private static boolean isOwnFeatureGatewayType(String ownerTypeName, String featureName) {
         if (ownerTypeName == null) {
             return false;
         }
-        if (ownerTypeName.startsWith("src.data." + featureName + ".")) {
-            return true;
-        }
-        return ownerTypeName.startsWith("java.sql.")
-                || ownerTypeName.startsWith("javax.sql.")
-                || ownerTypeName.startsWith("java.io.")
-                || ownerTypeName.startsWith("java.net.")
-                || ownerTypeName.startsWith("java.nio.file.")
-                || ownerTypeName.startsWith("java.net.http.")
-                || ownerTypeName.startsWith("okhttp3.")
-                || ownerTypeName.startsWith("retrofit2.");
+        Matcher matcher = DataArchitectureSupport.GATEWAY_PACKAGE.matcher(packageName(ownerTypeName));
+        return matcher.matches() && matcher.group(1).equals(featureName);
+    }
+
+    private static String packageName(String qualifiedName) {
+        int separator = qualifiedName.lastIndexOf('.');
+        return separator < 0 ? "" : qualifiedName.substring(0, separator);
     }
 
     private static String ownerTypeName(Symbol symbol) {

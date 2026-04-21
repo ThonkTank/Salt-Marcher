@@ -95,6 +95,17 @@ public final class DungeonMap {
         return withTopology(SpatialTopology.demo(), revision + 1L);
     }
 
+    public DungeonMap rename(String mapName) {
+        return new DungeonMap(
+                new DungeonMapMetadata(metadata.mapId(), mapName),
+                topology,
+                spaces,
+                rooms,
+                connections,
+                features,
+                revision + 1L);
+    }
+
     public java.util.List<String> validationMessages() {
         return java.util.List.of("room anchor valid inside committed map bounds");
     }

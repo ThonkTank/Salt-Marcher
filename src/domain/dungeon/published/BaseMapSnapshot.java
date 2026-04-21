@@ -15,7 +15,6 @@ public record BaseMapSnapshot(
     public BaseMapSnapshot {
         mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
         revision = Math.max(0L, revision);
-        currentFloor = Math.max(0, currentFloor);
         map = map == null ? DungeonMapSnapshot.empty() : map;
     }
 }

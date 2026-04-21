@@ -32,7 +32,7 @@ remain defined in the
 | `data-composition-no-source-mechanics` | PMD `SaltMarcherDataLayerRoleRule` | `./gradlew checkArchitecture` | Composition adapters do not reference narrow concrete source APIs such as JDBC, file, HTTP-client, or filesystem packages. |
 | `data-port-adapter-no-source-mechanics` | PMD `SaltMarcherDataLayerRoleRule` | `./gradlew checkArchitecture` | `repository/` and `query/` port adapters do not reference narrow concrete source APIs directly. |
 | `data-mapper-no-source-mechanics` | PMD `SaltMarcherDataLayerRoleRule` | `./gradlew checkArchitecture` | `mapper/` code does not reference narrow concrete source APIs directly. |
-| `data-query-read-only-source-shape` | PMD `SaltMarcherDataLayerRoleRule`, Error Prone `DataAdapterRoleContract` | `./gradlew checkArchitecture` and `./gradlew compileJava` | Query adapters implement read-only lookup/catalog/search domain ports and do not expose public/protected mutation-prefixed methods visible to the source-pattern check. |
+| `data-query-read-only-source-shape` | PMD `SaltMarcherDataLayerRoleRule`, Error Prone `DataAdapterRoleContract` and `DataQueryGatewayMutationBoundary` | `./gradlew checkArchitecture` and `./gradlew compileJava` | Query adapters implement read-only lookup/catalog/search domain ports, do not expose public/protected mutation-prefixed methods visible to the source-pattern check, and do not call mutation-prefixed own-feature gateway operations. |
 | `data-schema-ddl-placement` | PMD `SaltMarcherDataLayerRoleRule` | `./gradlew checkArchitecture` | Feature DDL string literals live in the owning `model/<Feature>PersistenceSchema.java` declaration or shared `persistencecore`, not scattered through feature helpers. |
 | `data-schema-table-name-owned-by-schema` | build-harness `DataPersistenceRules` | `./gradlew checkArchitecture` | SQL string literals outside the schema reference schema-owned table names through constants rather than duplicating table-name literals. |
 | `data-port-adapter-role-contract` | Error Prone `DataAdapterRoleContract` | `./gradlew compileJava` | Public concrete repository/query adapters implement matching own-feature domain ports, use repository ports only from `repository/` and read-only ports only from `query/`, and expose no public/protected adapter methods beyond matching port contracts, including inherited public/protected superclass methods. |
@@ -85,6 +85,9 @@ guidance that the current tools cannot prove without low-signal inference.
 | `data-model-schema-source-local` | Enforced | Covered by `data-feature-schema-contract`, `data-model-source-shape`, `data-model-domain-independence`, `data-schema-ddl-placement`, and `data-schema-table-name-owned-by-schema`; whether records are merely renamed domain entities remains review-owned. |
 | `data-mapper-translation-only` | Review-Owned | Current gates block concrete source API leakage from mappers, but cannot prove mapping losslessness or absence of domain validation/policy. |
 | `data-persistencecore-generic-only-rule` | Enforced | Covered by `data-persistencecore-generic-only` and `data-non-root-shell-independence`; abstraction size and usefulness remain review-owned. |
+| `data-pattern-vocabulary-optional` | Review-Owned | Current gates do not require a Fowler-pattern concept inventory. They enforce legal placement when code exists; whether a Repository, Data Mapper, or Gateway abstraction clarifies a specific source remains design review. |
+| `data-gateway-helper-co-location` | Review-Owned | `data-feature-bucket-layout` enforces `gateway/local` and `gateway/remote` placement; finer helper grouping inside one source family remains review-owned because useful co-location is contextual. |
+| `data-persistencecore-semantic-genericity` | Review-Owned | `data-persistencecore-generic-only` blocks feature-specific data and domain dependencies; whether a dependency-clean helper is still too feature-shaped, broad, or ceremonial remains review-owned. |
 | `data-forbidden-business-policy` | Review-Owned | Stable dependency, signature, and source-token evidence is enforced where it exists; business-rule ownership without those shapes remains review-owned. |
 | `data-view-shell-private-data-access` | Enforced Elsewhere | Covered by view and shell dependency rules that ban view/shell access to data implementation packages. |
 | `data-domain-no-source-mechanics` | Enforced Elsewhere | Covered by domain forbidden-infrastructure dependency and domain outer-layer independence rules. |
@@ -111,8 +114,10 @@ public `model/` types remain source-local carriers or schema utilities, without
 trying to judge whether a type name is semantically domain-shaped. The
 composition-root construction rule proves roots call only constructors and the
 service registry; direct method calls into data adapters, gateways, schema, or
-mappers remain outside roots. These checks do not prove that method bodies
-preserve invariants or that mapper logic is lossless.
+mappers remain outside roots. The query gateway mutation rule proves query
+adapters do not call mutation-prefixed own-feature gateway operations. These
+checks do not prove that method bodies preserve invariants, that mapper logic is
+lossless, or that every apparently read-only query is runtime side-effect-free.
 
 ArchUnit dependency rules prove bytecode-visible dependency direction and cycle
 freedom. The gateway/domain rule blocks direct source-adapter dependency on
@@ -122,6 +127,11 @@ code is semantically free of business meaning.
 The build-harness table-name blocker inspects Java string literals that look
 like repository SQL using the repo's uppercase SQL keyword convention. It does
 not treat prose such as exception messages as SQL evidence.
+
+The build-harness coverage blocker parses the enforced-rule and rule-inventory
+tables in this document. It proves required rows have a documented owner,
+blocking Gradle entrypoint, and accepted status vocabulary; it does not prove the
+named PMD, Error Prone, or ArchUnit classes semantically implement those rules.
 
 ## Non-Blocking Or Rejected Heuristics
 
@@ -148,7 +158,7 @@ large false-positive budget, it remains review-owned.
 | Duplicate column/schema meaning | Current schemas do not define stable column constants for every field. Broad literal scans would flag common terms such as `id`, `name`, `type`, and `level`. | Keep review-owned until a column-constant convention exists; then prefer a schema-aware build-harness rule backed by a SQL parser. |
 | Source-local field-name centralization | Current tools can enforce schema-owned table-name references, but broad field-name scans cannot distinguish source schema references from ordinary payload, domain, or UI vocabulary. | Keep review-owned under `data-source-field-name-centralization`; after an accepted field or column constant convention, add a schema-aware build-harness rule rather than a broad text scan. |
 | Mapper losslessness and business policy | Available static evidence is dependency, signature, and narrow forbidden-token shape; semantic policy inference would be broad and brittle. | Keep review-owned; do not add keyword classifiers. |
-| Query semantic read-only behavior | Current tools can prove read-only port role and obvious mutation method prefixes, not runtime mutation semantics. | Keep review-owned unless a future ADR accepts runtime verification. |
+| Query semantic read-only behavior | Current tools can prove read-only port role, obvious public mutation method prefixes, and mutation-prefixed calls to own-feature gateway APIs, not runtime mutation semantics. | Enforce the stable API-shape evidence through `data-query-read-only-source-shape`; keep semantic read-only behavior review-owned unless a future ADR accepts runtime verification. |
 | New source-policy engine | Semgrep and Spoon overlap existing PMD/Error Prone source checks; CodeQL is stronger for dataflow but heavier than needed for local architecture blockers. | Do not add. Use OpenRewrite only for future auto-remediation, and JSQLParser only for future schema-aware SQL parsing. |
 
 ## Candidate Tool Suite Extensions Not Implemented
@@ -177,8 +187,8 @@ of the current blocking harness.
 
 - whether SQL schemas and migrations express the domain persistence contract
 - whether repository/query port adapters translate without losing invariants
-- whether query adapters are semantically read-only when no stable public API or
-  dependency violation exposes mutation
+- whether query adapters are semantically read-only when no stable public API,
+  gateway-call, or dependency violation exposes mutation
 - whether source-adapter error handling and transaction boundaries are adequate
 - whether a source adapter facade ending in `Gateway` is a useful boundary or
   just naming ceremony

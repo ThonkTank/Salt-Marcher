@@ -58,7 +58,7 @@ final class DataPersistenceRules implements ArchitectureRule {
                 String files = roots.isEmpty()
                         ? "none found"
                         : roots.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
-                violations.add("src/data/" + featureName, "persistence-root-entrypoint",
+                violations.add("src/data/" + featureName, "data-feature-composition-root-presence",
                         "Persistence-exporting data feature '" + featureName + "' must expose exactly one composition adapter root."
                                 + " Found: " + files);
             }
@@ -67,7 +67,7 @@ final class DataPersistenceRules implements ArchitectureRule {
                 String files = schemas.isEmpty()
                         ? "none found"
                         : schemas.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
-                violations.add("src/data/" + featureName, "persistence-schema-contract",
+                violations.add("src/data/" + featureName, "data-feature-schema-contract",
                         "Persistence-exporting data feature '" + featureName + "' must expose exactly one source-model schema declaration."
                                 + " Found: " + files);
             }

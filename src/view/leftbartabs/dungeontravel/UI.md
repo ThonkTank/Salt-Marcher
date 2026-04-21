@@ -14,8 +14,8 @@ through currently loaded traversal and transition actions.
 
 ## Visible Structure
 
-- Controls show zoom, map name, level buttons, overlay trigger, refresh, and
-  reset-view actions.
+- Controls show live zoom, map name, level buttons, full level-overlay
+  settings, refresh, and reset-view actions.
 - Main content is the shared `DungeonMapMainView` canvas surface in runtime
   mode.
 - State content shows the current party travel location, tile, heading,
@@ -25,7 +25,10 @@ through currently loaded traversal and transition actions.
 
 - Runtime mode renders a party token at the party-owned active character travel
   position.
-- Level and overlay controls update the presentation projection only.
+- Level and overlay controls update the presentation projection only. Overlay
+  settings support off, nearby-level range, selected levels, and opacity.
+- Pan, zoom, and reset-view redraws feed the current canvas zoom back into the
+  control panel.
 - Reset view restores the canvas camera without changing dungeon state.
 - Traversal actions move the party token across the selected local traversible
   link. Door-sourced traversal faces the target tile; stair-sourced traversal

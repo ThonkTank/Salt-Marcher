@@ -15,24 +15,22 @@ presentations through one generic tab ViewModel.
 Current state:
 
 - Creatures is the only functional catalog content.
-- Items and Spells are visible disabled placeholders until their local
-  application services exist.
 - Creature detail display is published to the shell Inspector through the
   creature detail entry.
 
 ## Visible Surfaces
 
-- `COCKPIT_CONTROLS` contains content selection, creature filters, active
-  filter chips, encounter difficulty selection, Auto tuning controls,
-  encounter-table selection, sort selection, result count, and page controls.
-- `COCKPIT_MAIN` contains the active catalog list.
+- `COCKPIT_CONTROLS` contains creature filters, active
+  filter chips, encounter difficulty selection, Auto tuning controls, and
+  encounter-table selection.
+- `COCKPIT_MAIN` contains the active catalog list, result count, sort
+  selection, and page controls.
 - Creature Inspector content is defined separately in
   [Creature Details UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/slotcontent/details/creature/UI.md:1).
 
 ## Interactions
 
-- Selecting `Creatures` keeps the creature catalog active.
-- `Items` and `Spells` remain disabled and do not trigger backend calls.
+- The tab opens directly to the creature catalog.
 - Name search debounces before applying filters.
 - CR min/max clamps to a valid range and omits default full-range bounds from
   the query.
@@ -48,7 +46,7 @@ Current state:
   Encounter state tab; an empty selection means normal monster catalog
   generation.
 - Selecting encounter tables shows active chips. Multiple selected tables with
-  different linked loot-table IDs show a non-blocking `Loot-Konflikt` warning.
+  different linked loot-table IDs mark the table trigger with `Loot-Konflikt`.
 - Active chips remove their corresponding filter when clicked.
 - `Leeren` clears all creature filters and reloads the first page.
 - Sort changes reset to page one.
@@ -64,4 +62,3 @@ Current state:
 - Empty: the list reports that no monsters match the current filters.
 - Invalid filter: the list reports invalid filters.
 - Storage error: the list reports a catalog load failure.
-- Disabled content: unavailable catalog kinds are visible but not selectable.

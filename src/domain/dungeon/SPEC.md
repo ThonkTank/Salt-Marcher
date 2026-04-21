@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
+Last Reviewed: 2026-04-21
 Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
 the dungeon feature.
 
@@ -58,7 +58,7 @@ The editor surface is an authoring-oriented tab for changing dungeon truth.
 
 Expected capabilities:
 
-- create and delete maps
+- create, rename, and delete maps
 - select editing tools
 - preview edits before commit
 - commit authored spatial and semantic changes

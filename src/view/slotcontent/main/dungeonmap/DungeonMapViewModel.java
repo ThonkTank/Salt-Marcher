@@ -13,7 +13,8 @@ public final class DungeonMapViewModel {
     private final ReadOnlyObjectWrapper<DungeonMapDisplayModel> displayModel;
     private @Nullable DungeonSnapshot snapshot;
     private DungeonMapDisplayModel.ViewMode viewMode = DungeonMapDisplayModel.ViewMode.GRID;
-    private DungeonMapDisplayModel.OverlayMode overlayMode = DungeonMapDisplayModel.OverlayMode.NEARBY;
+    private DungeonMapDisplayModel.LevelOverlaySettings overlaySettings =
+            DungeonMapDisplayModel.LevelOverlaySettings.defaults();
     private int projectionLevel;
     private String selectedTool = "Auswahl";
     private @Nullable PartyToken partyToken;
@@ -41,7 +42,18 @@ public final class DungeonMapViewModel {
     }
 
     public void selectOverlayMode(DungeonMapDisplayModel.OverlayMode nextOverlayMode) {
-        overlayMode = nextOverlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : nextOverlayMode;
+        overlaySettings = new DungeonMapDisplayModel.LevelOverlaySettings(
+                nextOverlayMode,
+                overlaySettings.levelRange(),
+                overlaySettings.opacity(),
+                overlaySettings.selectedLevels());
+        rebuildDisplayModel();
+    }
+
+    public void showOverlaySettings(DungeonMapDisplayModel.LevelOverlaySettings nextOverlaySettings) {
+        overlaySettings = nextOverlaySettings == null
+                ? DungeonMapDisplayModel.LevelOverlaySettings.off()
+                : nextOverlaySettings;
         rebuildDisplayModel();
     }
 
@@ -66,7 +78,7 @@ public final class DungeonMapViewModel {
                 placeholderTitle,
                 editorMode,
                 viewMode,
-                overlayMode,
+                overlaySettings,
                 projectionLevel,
                 selectedTool,
                 partyToken));

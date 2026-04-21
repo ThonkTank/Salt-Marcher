@@ -209,6 +209,7 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("DataAdapterRoleContract")
     options.errorprone.error("DataGatewayReturnTypeBoundary")
     options.errorprone.error("DataModelSourceShape")
+    options.errorprone.error("DataQueryGatewayMutationBoundary")
     options.errorprone.error("DataServiceContributionConstructionPurity")
     options.errorprone.error("DomainApplicationNoSameContextPublishedDependency")
     options.errorprone.error("DomainApplicationServiceApiShape")

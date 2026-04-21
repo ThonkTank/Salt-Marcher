@@ -37,6 +37,8 @@ import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.published.LoadDungeonTravelSurfaceQuery;
 import src.domain.dungeon.published.MoveDungeonTravelActionCommand;
+import src.domain.dungeon.published.RenameDungeonMapCommand;
+import src.domain.dungeon.published.RenameDungeonMapResult;
 import src.domain.dungeon.published.SearchMapsQuery;
 import src.domain.dungeon.published.SearchMapsResult;
 import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
@@ -47,6 +49,7 @@ import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.application.LoadMapSnapshotUseCase;
 import src.domain.dungeon.application.LoadDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
+import src.domain.dungeon.application.RenameDungeonMapUseCase;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.port.DungeonMapRepository;
@@ -78,6 +81,7 @@ public final class DungeonApplicationService {
     private final ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase;
     private final SearchDungeonMapsUseCase searchDungeonMapsUseCase;
     private final CreateDungeonMapUseCase createDungeonMapUseCase;
+    private final RenameDungeonMapUseCase renameDungeonMapUseCase;
     private final DeleteDungeonMapUseCase deleteDungeonMapUseCase;
     private final LoadMapSnapshotUseCase loadMapSnapshotUseCase;
     private final LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase;
@@ -97,6 +101,7 @@ public final class DungeonApplicationService {
                 derive);
         this.searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(search);
         this.createDungeonMapUseCase = new CreateDungeonMapUseCase(repository);
+        this.renameDungeonMapUseCase = new RenameDungeonMapUseCase(repository);
         this.deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository);
         this.loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(repository, derive);
         this.loadDungeonTravelSurfaceUseCase = new LoadDungeonTravelSurfaceUseCase(repository, search, derive);
@@ -138,6 +143,15 @@ public final class DungeonApplicationService {
         String mapName = command == null ? "" : command.mapName();
         CreateDungeonMapUseCase.CreatedMap result = createDungeonMapUseCase.execute(mapName);
         return new CreateDungeonMapResult(MapPublication.id(result.mapId()));
+    }
+
+    public RenameDungeonMapResult renameMap(RenameDungeonMapCommand command) {
+        DungeonMapId mapId = command == null ? new DungeonMapId(1L) : command.mapId();
+        String mapName = command == null ? "" : command.mapName();
+        RenameDungeonMapUseCase.RenamedMap result = renameDungeonMapUseCase.execute(
+                MapPublication.domainId(mapId),
+                mapName);
+        return new RenameDungeonMapResult(MapPublication.id(result.mapId()));
     }
 
     public DeleteDungeonMapResult deleteMap(DeleteDungeonMapCommand command) {

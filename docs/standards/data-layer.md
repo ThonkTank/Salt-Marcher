@@ -288,8 +288,8 @@ Current mechanical ownership:
   schema-entrypoint presence, schema-owned SQL table-name references, and the
   required data-enforcement coverage matrix.
 - `PMD architecture` owns source-level `*ServiceContribution` contracts, obvious
-  mutation-method bans in `query/`, concrete source API bans in composition
-  adapters, repositories, queries, and mappers, and feature DDL literal
+  public/protected mutation-method bans in `query/`, concrete source API bans in
+  composition adapters, repositories, queries, and mappers, and feature DDL literal
   placement.
 - `Error Prone` owns shell API allowlists, service-registry registration
   placement, data-root same-feature root `*ApplicationService` export shape,
@@ -297,11 +297,13 @@ Current mechanical ownership:
   methods, public signature leak bans, and source-adapter public/protected
   signature boundaries. Current source-adapter public/protected signatures may
   expose only own-feature source-model records plus `java.lang` and `java.util`
-  value or container types. It also owns source-model public shape and
-  composition-root construction purity: public `model/` types must stay
-  source-local carriers or schema utilities, and `*ServiceContribution` roots
-  may call constructors and the service registry but not data adapter, gateway,
-  mapper, schema, or source-mechanics methods directly.
+  value or container types. It also owns source-model public shape, query
+  adapter calls to mutation-shaped gateway APIs, and composition-root
+  construction purity: public `model/` types must stay source-local carriers or
+  schema utilities, `query/` adapters must not call mutation-prefixed
+  own-feature gateway methods, and `*ServiceContribution` roots may call
+  constructors and the service registry but not data adapter, gateway, mapper,
+  schema, or source-mechanics methods directly.
 - `ArchUnit` owns dependency direction, foreign-domain-public-boundary-only
   access, data feature cycle freedom, private-data bucket isolation,
   `gateway/` and `model/` independence from domain packages, and generic-only
@@ -323,10 +325,11 @@ individual rule IDs, mechanical owners, blocking entrypoints, and explicit
 decisions for remaining review-owned gaps.
 
 The source-pattern blockers intentionally stop at stable Java source/API shape.
-They are useful for concrete source API leakage, obvious query mutations,
-same-feature root `*ApplicationService` registration shape, and source-local
-gateway signatures. They are not evidence for persistence semantics such as
-transaction correctness, query performance, migration safety, or
+They are useful for concrete source API leakage, obvious query mutation surfaces,
+mutation-shaped gateway calls from query adapters, same-feature root
+`*ApplicationService` registration shape, and source-local gateway signatures.
+They are not evidence for persistence semantics such as transaction correctness,
+query performance, migration safety, runtime side-effect freedom, or
 invariant-preserving mapper behavior.
 
 Current build-harness scope is slightly stricter than the intent wording in

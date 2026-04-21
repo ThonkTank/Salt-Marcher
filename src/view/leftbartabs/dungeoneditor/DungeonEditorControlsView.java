@@ -1,36 +1,56 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
+import javafx.util.StringConverter;
+import org.jspecify.annotations.Nullable;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 
 public final class DungeonEditorControlsView extends DungeonControlPanelView {
 
     static final String VIEW_GRID = "Grid";
     static final String VIEW_GRAPH = "Graph";
-    static final String OVERLAY_OFF = "Aus";
-    static final String OVERLAY_NEARBY = "Nachbarn";
-    static final String OVERLAY_SELECTED = "Auswahl";
+    static final String SELECT_TOOL = "Auswahl";
+    static final String ROOM_PAINT_TOOL = "Raum malen";
+    static final String ROOM_DELETE_TOOL = "Raum loeschen";
+    static final String WALL_CREATE_TOOL = "Wand setzen";
+    static final String WALL_DELETE_TOOL = "Wand loeschen";
+    static final String DOOR_CREATE_TOOL = "Tuer setzen";
+    static final String DOOR_DELETE_TOOL = "Tuer loeschen";
+    static final String CORRIDOR_CREATE_TOOL = "Korridor erstellen";
+    static final String CORRIDOR_DELETE_TOOL = "Korridor loeschen";
+    static final String STAIR_CREATE_TOOL = "Treppe erstellen";
+    static final String STAIR_DELETE_TOOL = "Treppe loeschen";
+    static final String TRANSITION_CREATE_TOOL = "Uebergang erstellen";
+    static final String TRANSITION_DELETE_TOOL = "Uebergang loeschen";
 
-    private static final String SELECT_TOOL = "Auswahl";
-    private static final String ROOM_TOOL = "Raum";
-    private static final String WALL_TOOL = "Wand";
-    private static final String DOOR_TOOL = "Tuer";
-    private static final String CORRIDOR_TOOL = "Korridor";
-    private static final String STAIR_TOOL = "Treppe";
-    private static final String TRANSITION_TOOL = "Uebergang";
+    private static final String ROOM_FAMILY = "Raum";
+    private static final String WALL_FAMILY = "Wand";
+    private static final String DOOR_FAMILY = "Tuer";
+    private static final String CORRIDOR_FAMILY = "Korridor";
+    private static final String STAIR_FAMILY = "Treppe";
+    private static final String TRANSITION_FAMILY = "Uebergang";
 
-    private final ComboBox<String> mapSelector = new ComboBox<>();
+    private final ComboBox<MapItem> mapSelector = new ComboBox<>();
     private final Button createButton = new Button("Neuen Dungeon");
     private final Button editButton = new Button("Dungeon bearbeiten");
     private final Label statusLabel = new Label();
@@ -40,38 +60,65 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private final ToggleButton gridButton = toolToggle(VIEW_GRID);
     private final ToggleButton graphButton = toolToggle(VIEW_GRAPH);
     private final ToggleButton selectButton = toolToggle(SELECT_TOOL);
-    private final Button roomButton = toolButton(ROOM_TOOL);
-    private final Button wallButton = toolButton(WALL_TOOL);
-    private final Button doorButton = toolButton(DOOR_TOOL);
-    private final Button corridorButton = toolButton(CORRIDOR_TOOL);
-    private final Button stairButton = toolButton(STAIR_TOOL);
-    private final Button transitionButton = toolButton(TRANSITION_TOOL);
-    private final Button overlayButton = new Button();
+    private final Button roomButton = toolButton(ROOM_FAMILY);
+    private final Button wallButton = toolButton(WALL_FAMILY);
+    private final Button doorButton = toolButton(DOOR_FAMILY);
+    private final Button corridorButton = toolButton(CORRIDOR_FAMILY);
+    private final Button stairButton = toolButton(STAIR_FAMILY);
+    private final Button transitionButton = toolButton(TRANSITION_FAMILY);
+    private final DungeonLevelOverlayControlsView overlayControls =
+            new DungeonLevelOverlayControlsView(this::sectionLabel);
     private final ToggleGroup viewModeGroup = new ToggleGroup();
     private final ToggleGroup toolGroup = new ToggleGroup();
-    private final Popup overlayPopup;
+    private final Popup mapEditorPopup = new Popup();
+    private final Label mapEditorTitle = new Label();
+    private final TextField mapNameField = new TextField();
+    private final Label mapEditorError = new Label();
+    private final Button cancelMapEditButton = new Button("Abbrechen");
+    private final Button deleteMapButton = new Button("Dungeon loeschen");
+    private final Button saveMapButton = new Button("Speichern");
+    private HBox deleteConfirmRow;
+    private final Popup toolPopup = new Popup();
+    private final Button primaryToolOption = toolButton("");
+    private final Button secondaryToolOption = toolButton("");
+    private Consumer<String> onMapSelected = ignored -> {};
+    private Consumer<String> onCreateMap = ignored -> {};
+    private Consumer<MapNameRequest> onRenameMap = ignored -> {};
+    private Consumer<String> onDeleteMap = ignored -> {};
     private Consumer<String> onViewModeChanged = ignored -> {};
     private Consumer<String> onToolChanged = ignored -> {};
-    private Consumer<String> onOverlayModeChanged = ignored -> {};
+    private boolean syncingMaps;
+    private boolean syncingViewMode;
+    private boolean createMode;
+    private String editingMapKey = "";
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonEditorControlsView() {
         super("");
-        overlayPopup = createOverlayPopup(
-                mode -> onOverlayModeChanged.accept(mode),
-                OVERLAY_OFF,
-                OVERLAY_NEARBY,
-                OVERLAY_SELECTED);
         getStyleClass().add("dungeon-editor-toolbar");
         setFillWidth(true);
         configureMapControls();
         configureViewModeControls();
         configureToolControls();
+        configureMapEditorPopup();
+        configureToolPopup();
         getChildren().addAll(mapSection(), toolSection());
     }
 
-    public void onRefresh(Runnable action) {
-        bindAction(createButton, action);
+    public void setOnMapSelected(Consumer<String> action) {
+        onMapSelected = action == null ? ignored -> {} : action;
+    }
+
+    public void setOnCreateMap(Consumer<String> action) {
+        onCreateMap = action == null ? ignored -> {} : action;
+    }
+
+    public void setOnRenameMap(Consumer<MapNameRequest> action) {
+        onRenameMap = action == null ? ignored -> {} : action;
+    }
+
+    public void setOnDeleteMap(Consumer<String> action) {
+        onDeleteMap = action == null ? ignored -> {} : action;
     }
 
     public void onViewModeChanged(Consumer<String> action) {
@@ -90,49 +137,90 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         bindAction(nextLevelButton, action);
     }
 
-    public void onOverlayModeChanged(Consumer<String> action) {
-        onOverlayModeChanged = action == null ? ignored -> {} : action;
+    public DungeonLevelOverlayControlsView levelOverlayControls() {
+        return overlayControls;
+    }
+
+    public void showMaps(List<MapItem> maps, String selectedKey, boolean busy, String statusText) {
+        syncingMaps = true;
+        List<MapItem> safeMaps = maps == null ? List.of() : List.copyOf(maps);
+        mapSelector.getItems().setAll(safeMaps);
+        MapItem selected = safeMaps.stream()
+                .filter(item -> Objects.equals(item.key(), selectedKey))
+                .findFirst()
+                .orElse(null);
+        if (selected == null && !safeMaps.isEmpty()) {
+            selected = safeMaps.getFirst();
+        }
+        mapSelector.getSelectionModel().select(selected);
+        mapSelector.setDisable(busy || safeMaps.isEmpty());
+        createButton.setDisable(busy);
+        editButton.setDisable(busy || selected == null);
+        statusLabel.setText(statusText == null ? "" : statusText);
+        syncingMaps = false;
     }
 
     public void showLevel(int level) {
         levelLabel.setText("Ebene z=" + level);
     }
 
-    public void showStatus(String statusText) {
-        statusLabel.setText(statusText == null ? "" : statusText);
+    public void showLevels(List<Integer> levels, int activeLevel, boolean busy, boolean navigationEnabled) {
+        showLevel(activeLevel);
+        previousLevelButton.setDisable(busy || !navigationEnabled);
+        nextLevelButton.setDisable(busy || !navigationEnabled);
+    }
+
+    public void showOverlaySettings(DungeonLevelOverlayControlsView.Settings settings, boolean disabled) {
+        overlayControls.showSettings(settings, disabled);
     }
 
     public void showViewMode(String viewMode) {
+        syncingViewMode = true;
         graphButton.setSelected(VIEW_GRAPH.equals(viewMode));
         gridButton.setSelected(!VIEW_GRAPH.equals(viewMode));
+        syncingViewMode = false;
     }
 
     public void showTool(String tool) {
         String selectedTool = tool == null || tool.isBlank() ? SELECT_TOOL : tool;
         selectButton.setSelected(SELECT_TOOL.equals(selectedTool));
-        markSelected(roomButton, ROOM_TOOL.equals(selectedTool));
-        markSelected(wallButton, WALL_TOOL.equals(selectedTool));
-        markSelected(doorButton, DOOR_TOOL.equals(selectedTool));
-        markSelected(corridorButton, CORRIDOR_TOOL.equals(selectedTool));
-        markSelected(stairButton, STAIR_TOOL.equals(selectedTool));
-        markSelected(transitionButton, TRANSITION_TOOL.equals(selectedTool));
+        markSelected(roomButton, isRoomTool(selectedTool));
+        markSelected(wallButton, isWallTool(selectedTool));
+        markSelected(doorButton, isDoorTool(selectedTool));
+        markSelected(corridorButton, isCorridorTool(selectedTool));
+        markSelected(stairButton, isStairTool(selectedTool));
+        markSelected(transitionButton, isTransitionTool(selectedTool));
     }
 
-    public void showOverlayMode(String overlayMode) {
-        overlayButton.setText(overlayMode == null || overlayMode.isBlank() ? OVERLAY_OFF : overlayMode);
+    public void hideMapEditor() {
+        mapEditorPopup.hide();
     }
 
     private void configureMapControls() {
-        mapSelector.getItems().setAll("Gefrorene Krypta", "Verlassener Schacht", "Mondgrab");
-        mapSelector.getSelectionModel().selectFirst();
+        mapSelector.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(MapItem item) {
+                return item == null ? "" : item.mapName();
+            }
+
+            @Override
+            public @Nullable MapItem fromString(String string) {
+                return null;
+            }
+        });
         mapSelector.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(mapSelector, Priority.ALWAYS);
+        mapSelector.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> {
+            editButton.setDisable(after == null);
+            if (!syncingMaps && after != null) {
+                onMapSelected.accept(after.key());
+            }
+        });
+        createButton.setOnAction(event -> showCreatePopup(createButton));
+        editButton.setOnAction(event -> showEditPopup(editButton));
         statusLabel.getStyleClass().add("text-muted");
         statusLabel.setWrapText(true);
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
-        overlayButton.getStyleClass().addAll("toolbar-action-button", "dungeon-overlay-trigger");
-        overlayButton.setOnAction(event -> togglePopup(overlayPopup, overlayButton));
     }
 
     private void configureViewModeControls() {
@@ -140,6 +228,9 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         graphButton.setToggleGroup(viewModeGroup);
         gridButton.setSelected(true);
         viewModeGroup.selectedToggleProperty().addListener((ignored, oldToggle, newToggle) -> {
+            if (syncingViewMode) {
+                return;
+            }
             if (newToggle == null) {
                 if (oldToggle != null) {
                     oldToggle.setSelected(true);
@@ -154,30 +245,170 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         selectButton.setToggleGroup(toolGroup);
         selectButton.setSelected(true);
         selectButton.setOnAction(event -> selectTool(SELECT_TOOL));
-        roomButton.setOnAction(event -> selectTool(ROOM_TOOL));
-        wallButton.setOnAction(event -> selectTool(WALL_TOOL));
-        doorButton.setOnAction(event -> selectTool(DOOR_TOOL));
-        corridorButton.setOnAction(event -> selectTool(CORRIDOR_TOOL));
-        stairButton.setOnAction(event -> selectTool(STAIR_TOOL));
-        transitionButton.setOnAction(event -> selectTool(TRANSITION_TOOL));
+        roomButton.setOnAction(event -> activateToolFamily(roomButton, ROOM_PAINT_TOOL, ROOM_DELETE_TOOL));
+        wallButton.setOnAction(event -> activateToolFamily(wallButton, WALL_CREATE_TOOL, WALL_DELETE_TOOL));
+        doorButton.setOnAction(event -> activateToolFamily(doorButton, DOOR_CREATE_TOOL, DOOR_DELETE_TOOL));
+        corridorButton.setOnAction(event -> activateToolFamily(corridorButton, CORRIDOR_CREATE_TOOL, CORRIDOR_DELETE_TOOL));
+        stairButton.setOnAction(event -> activateToolFamily(stairButton, STAIR_CREATE_TOOL, STAIR_DELETE_TOOL));
+        transitionButton.setOnAction(event -> activateToolFamily(
+                transitionButton,
+                TRANSITION_CREATE_TOOL,
+                TRANSITION_DELETE_TOOL));
+    }
+
+    private void configureMapEditorPopup() {
+        mapEditorTitle.getStyleClass().add("dropdown-title");
+        mapEditorError.getStyleClass().add("text-warning");
+        mapEditorError.setWrapText(true);
+        mapEditorError.setManaged(false);
+        mapEditorError.setVisible(false);
+
+        Button cancelDeleteButton = new Button("Abbrechen");
+        Button confirmDeleteButton = new Button("Loeschen");
+        Label deleteLabel = new Label("Dungeon loeschen?");
+        deleteLabel.getStyleClass().add("text-warning");
+        Region deleteSpacer = new Region();
+        HBox.setHgrow(deleteSpacer, Priority.ALWAYS);
+        deleteConfirmRow = new HBox(8, deleteLabel, deleteSpacer, cancelDeleteButton, confirmDeleteButton);
+        deleteConfirmRow.setVisible(false);
+        deleteConfirmRow.setManaged(false);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox actionRow = new HBox(8, cancelMapEditButton, deleteMapButton, spacer, saveMapButton);
+        actionRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox panel = new VBox(10, mapEditorTitle, mapNameField, mapEditorError, deleteConfirmRow, actionRow);
+        panel.setPadding(new Insets(10));
+        panel.getStyleClass().addAll("dropdown-window", "dropdown-form");
+        mapEditorPopup.getContent().setAll(panel);
+        mapEditorPopup.setAutoHide(true);
+        mapEditorPopup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                mapEditorPopup.hide();
+                event.consume();
+            }
+        });
+        cancelMapEditButton.setOnAction(event -> mapEditorPopup.hide());
+        deleteMapButton.setOnAction(event -> showDeleteConfirmation(true));
+        cancelDeleteButton.setOnAction(event -> showDeleteConfirmation(false));
+        confirmDeleteButton.setOnAction(event -> {
+            onDeleteMap.accept(editingMapKey);
+            mapEditorPopup.hide();
+        });
+        saveMapButton.setOnAction(event -> submitMapEditor());
+        mapNameField.setOnAction(event -> submitMapEditor());
+    }
+
+    private void configureToolPopup() {
+        HBox panel = new HBox(8, primaryToolOption, secondaryToolOption);
+        panel.setPadding(new Insets(8));
+        panel.getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown");
+        toolPopup.getContent().setAll(panel);
+        toolPopup.setAutoHide(true);
     }
 
     private VBox mapSection() {
-        HBox mapRow = new HBox(8, mapSelector, createButton, editButton, gridButton, graphButton);
-        mapRow.setAlignment(Pos.CENTER_LEFT);
-        HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, spacer(), overlayButton);
+        HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, spacer(), overlayControls.trigger());
         levelRow.setAlignment(Pos.CENTER_LEFT);
-        VBox group = new VBox(6, sectionLabel("Dungeon"), mapRow, statusLabel, levelRow);
+        HBox actionRow = new HBox(8, createButton, editButton);
+        actionRow.setAlignment(Pos.CENTER_LEFT);
+        HBox viewModeRow = new HBox(8, gridButton, graphButton);
+        viewModeRow.setAlignment(Pos.CENTER_LEFT);
+        VBox group = new VBox(6, sectionLabel("Dungeon"), mapSelector, actionRow, statusLabel, levelRow, viewModeRow);
         group.getStyleClass().add("editor-toolbar-group");
         return group;
     }
 
     private VBox toolSection() {
-        HBox row = new HBox(6, selectButton, roomButton, wallButton, doorButton, corridorButton, stairButton, transitionButton);
-        row.setAlignment(Pos.CENTER_LEFT);
+        FlowPane row = new FlowPane(6, 6, selectButton, roomButton, wallButton, doorButton,
+                corridorButton, stairButton, transitionButton);
+        row.setPrefWrapLength(220);
         VBox group = new VBox(6, sectionLabel("Werkzeug"), row);
         group.getStyleClass().add("editor-toolbar-group");
         return group;
+    }
+
+    private void showCreatePopup(Node anchor) {
+        createMode = true;
+        editingMapKey = "";
+        mapEditorTitle.setText("Neuen Dungeon anlegen");
+        mapNameField.setText("Dungeon");
+        saveMapButton.setText("Erstellen");
+        deleteMapButton.setVisible(false);
+        deleteMapButton.setManaged(false);
+        showDeleteConfirmation(false);
+        showMapEditor(anchor);
+    }
+
+    private void showEditPopup(Node anchor) {
+        MapItem selected = mapSelector.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+        createMode = false;
+        editingMapKey = selected.key();
+        mapEditorTitle.setText("Dungeon bearbeiten");
+        mapNameField.setText(selected.mapName());
+        saveMapButton.setText("Speichern");
+        deleteMapButton.setVisible(true);
+        deleteMapButton.setManaged(true);
+        showDeleteConfirmation(false);
+        showMapEditor(anchor);
+    }
+
+    private void showMapEditor(Node anchor) {
+        mapEditorError.setText("");
+        mapEditorError.setVisible(false);
+        mapEditorError.setManaged(false);
+        var bounds = anchor.localToScreen(anchor.getBoundsInLocal());
+        if (bounds != null) {
+            mapEditorPopup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 2.0);
+            mapNameField.requestFocus();
+            mapNameField.selectAll();
+        }
+    }
+
+    private void submitMapEditor() {
+        String mapName = mapNameField.getText() == null ? "" : mapNameField.getText().strip();
+        if (mapName.isBlank()) {
+            mapEditorError.setText("Name fehlt.");
+            mapEditorError.setVisible(true);
+            mapEditorError.setManaged(true);
+            mapNameField.requestFocus();
+            return;
+        }
+        if (createMode) {
+            onCreateMap.accept(mapName);
+        } else {
+            onRenameMap.accept(new MapNameRequest(editingMapKey, mapName));
+        }
+        mapEditorPopup.hide();
+    }
+
+    private void showDeleteConfirmation(boolean visible) {
+        deleteConfirmRow.setVisible(visible);
+        deleteConfirmRow.setManaged(visible);
+        deleteMapButton.setVisible(!visible && !createMode);
+        deleteMapButton.setManaged(!visible && !createMode);
+    }
+
+    private void activateToolFamily(Button anchor, String primaryTool, String secondaryTool) {
+        selectTool(primaryTool);
+        primaryToolOption.setText(primaryTool);
+        secondaryToolOption.setText(secondaryTool);
+        primaryToolOption.setOnAction(event -> {
+            selectTool(primaryTool);
+            toolPopup.hide();
+        });
+        secondaryToolOption.setOnAction(event -> {
+            selectTool(secondaryTool);
+            toolPopup.hide();
+        });
+        var bounds = anchor.localToScreen(anchor.getBoundsInLocal());
+        if (bounds != null) {
+            toolPopup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 2.0);
+        }
     }
 
     private void selectTool(String tool) {
@@ -206,6 +437,50 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             }
         } else {
             button.getStyleClass().remove("selected");
+        }
+    }
+
+    private static boolean isRoomTool(String tool) {
+        return ROOM_PAINT_TOOL.equals(tool) || ROOM_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isWallTool(String tool) {
+        return WALL_CREATE_TOOL.equals(tool) || WALL_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isDoorTool(String tool) {
+        return DOOR_CREATE_TOOL.equals(tool) || DOOR_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isCorridorTool(String tool) {
+        return CORRIDOR_CREATE_TOOL.equals(tool) || CORRIDOR_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isStairTool(String tool) {
+        return STAIR_CREATE_TOOL.equals(tool) || STAIR_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isTransitionTool(String tool) {
+        return TRANSITION_CREATE_TOOL.equals(tool) || TRANSITION_DELETE_TOOL.equals(tool);
+    }
+
+    public record MapItem(
+            String key,
+            long mapId,
+            String mapName,
+            long revision
+    ) {
+        public MapItem {
+            key = key == null ? "" : key;
+            mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
+            revision = Math.max(0L, revision);
+        }
+    }
+
+    public record MapNameRequest(String key, String mapName) {
+        public MapNameRequest {
+            key = key == null ? "" : key;
+            mapName = mapName == null ? "" : mapName.strip();
         }
     }
 }

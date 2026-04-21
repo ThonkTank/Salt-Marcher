@@ -49,8 +49,8 @@ public final class DungeonTravelViewModel {
     private final ReadOnlyObjectWrapper<DungeonMapDisplayModel.PartyToken> partyToken = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper mapName = new ReadOnlyStringWrapper("Dungeon");
-    private final ObjectProperty<DungeonMapDisplayModel.OverlayMode> overlayMode =
-            new SimpleObjectProperty<>(DungeonMapDisplayModel.OverlayMode.NEARBY);
+    private final ObjectProperty<DungeonMapDisplayModel.LevelOverlaySettings> overlaySettings =
+            new SimpleObjectProperty<>(DungeonMapDisplayModel.LevelOverlaySettings.defaults());
     private final IntegerProperty projectionLevel = new SimpleIntegerProperty(0);
     private @Nullable DungeonTravelSurfaceSnapshot currentSurface;
     private List<Long> partyTokenCharacterIds = List.of();
@@ -84,8 +84,8 @@ public final class DungeonTravelViewModel {
         return mapName.getReadOnlyProperty();
     }
 
-    public ObjectProperty<DungeonMapDisplayModel.OverlayMode> overlayModeProperty() {
-        return overlayMode;
+    public ObjectProperty<DungeonMapDisplayModel.LevelOverlaySettings> overlaySettingsProperty() {
+        return overlaySettings;
     }
 
     public IntegerProperty projectionLevelProperty() {
@@ -93,7 +93,39 @@ public final class DungeonTravelViewModel {
     }
 
     public void selectOverlayMode(DungeonMapDisplayModel.OverlayMode nextOverlayMode) {
-        updateOverlay(nextOverlayMode);
+        DungeonMapDisplayModel.LevelOverlaySettings current = overlaySettings.get();
+        updateOverlay(new DungeonMapDisplayModel.LevelOverlaySettings(
+                nextOverlayMode,
+                current.levelRange(),
+                current.opacity(),
+                current.selectedLevels()));
+    }
+
+    public void selectOverlayRange(int levelRange) {
+        DungeonMapDisplayModel.LevelOverlaySettings current = overlaySettings.get();
+        updateOverlay(new DungeonMapDisplayModel.LevelOverlaySettings(
+                current.mode(),
+                levelRange,
+                current.opacity(),
+                current.selectedLevels()));
+    }
+
+    public void selectOverlayOpacity(double opacity) {
+        DungeonMapDisplayModel.LevelOverlaySettings current = overlaySettings.get();
+        updateOverlay(new DungeonMapDisplayModel.LevelOverlaySettings(
+                current.mode(),
+                current.levelRange(),
+                opacity,
+                current.selectedLevels()));
+    }
+
+    public void selectOverlayLevels(List<Integer> levels) {
+        DungeonMapDisplayModel.LevelOverlaySettings current = overlaySettings.get();
+        updateOverlay(new DungeonMapDisplayModel.LevelOverlaySettings(
+                current.mode(),
+                current.levelRange(),
+                current.opacity(),
+                levels));
     }
 
     public void previousLevel() {
@@ -112,7 +144,7 @@ public final class DungeonTravelViewModel {
                     + "Tile: -\n"
                     + "Heading: -\n"
                     + "Status: Gruppe befindet sich ausserhalb des Dungeons\n"
-                    + overlayMode.get().label());
+                    + overlaySettings.get().mode().label());
             return;
         }
         DungeonTravelPosition position = toDungeonPosition(activeTravel.partyLocation());
@@ -137,7 +169,7 @@ public final class DungeonTravelViewModel {
                     + "Tile: -\n"
                     + "Heading: -\n"
                     + "Status: " + result.message() + "\n"
-                    + overlayMode.get().label());
+                    + overlaySettings.get().mode().label());
             return;
         }
         if (result.status() == src.domain.dungeon.published.DungeonTravelMoveStatus.SUCCESS) {
@@ -146,10 +178,10 @@ public final class DungeonTravelViewModel {
         applySurface(result.surface());
     }
 
-    private void updateOverlay(DungeonMapDisplayModel.OverlayMode nextOverlayMode) {
-        DungeonMapDisplayModel.OverlayMode resolved =
-                nextOverlayMode == null ? DungeonMapDisplayModel.OverlayMode.OFF : nextOverlayMode;
-        overlayMode.set(resolved);
+    private void updateOverlay(DungeonMapDisplayModel.LevelOverlaySettings nextOverlaySettings) {
+        overlaySettings.set(nextOverlaySettings == null
+                ? DungeonMapDisplayModel.LevelOverlaySettings.off()
+                : nextOverlaySettings);
         if (currentSurface == null) {
             refreshStateText();
         } else {
@@ -252,7 +284,7 @@ public final class DungeonTravelViewModel {
                     + "Tile: -\n"
                     + "Heading: -\n"
                     + "Status: Overworld-Ziel konnte nicht gespeichert werden\n"
-                    + overlayMode.get().label());
+                    + overlaySettings.get().mode().label());
         }
     }
 
@@ -285,7 +317,7 @@ public final class DungeonTravelViewModel {
                 + "Tile: z=" + projectionLevel.get() + "\n"
                 + "Heading: Sueden\n"
                 + "Status: Token auf der Karte ziehen\n"
-                + overlayMode.get().label());
+                + overlaySettings.get().mode().label());
     }
 
     private void refreshStateText(DungeonTravelSurfaceSnapshot surface) {
@@ -293,7 +325,7 @@ public final class DungeonTravelViewModel {
                 + "Tile: " + surface.tileLabel() + "\n"
                 + "Heading: " + surface.headingLabel() + "\n"
                 + "Status: " + (surface.statusLabel().isBlank() ? "Token auf der Karte ziehen" : surface.statusLabel()) + "\n"
-                + overlayMode.get().label());
+                + overlaySettings.get().mode().label());
     }
 
     private static DungeonMapDisplayModel.PartyToken toPartyToken(DungeonTravelPosition position) {

@@ -1,15 +1,16 @@
 package src.view.slotcontent.controls.catalog;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javafx.animation.PauseTransition;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
@@ -21,16 +22,17 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
 
 public final class CatalogControlsView extends VBox {
@@ -38,8 +40,6 @@ public final class CatalogControlsView extends VBox {
     private static final int AUTO_LEVEL = -1;
     private static final double AUTO_AMOUNT = -1.0;
 
-    private final ToggleGroup contentGroup = new ToggleGroup();
-    private final FlowPane contentRow = new FlowPane(4, 4);
     private final TextField searchField = new TextField();
     private final CrRangeSelector crRange = new CrRangeSelector(this::fireFilterChanged);
     private final SearchableFilterButton sizeFilter = new SearchableFilterButton("Größe", this::fireFilterChanged);
@@ -49,47 +49,71 @@ public final class CatalogControlsView extends VBox {
     private final SearchableFilterButton alignmentFilter = new SearchableFilterButton("Gesinnung", this::fireFilterChanged);
     private final FlowPane filterRow = new FlowPane(4, 4);
     private final FlowPane chipsPane = new FlowPane(4, 2);
-    private final ComboBox<SortSelection> sortCombo = new ComboBox<>();
-    private final ComboBox<DifficultySelection> encounterDifficultyCombo = new ComboBox<>();
-    private final Button encounterTableButton = new Button("Tabellen: alle Monster");
+    private final Button encounterTableButton = new Button("Tabelle ▾");
+    private final Tooltip encounterTableTooltip =
+            new Tooltip("Mehrere Encounter-Tabellen können kombiniert werden.");
     private final Popup encounterTablePopup = new Popup();
-    private final VBox encounterTablePopupContent = new VBox(4);
-    private final Label encounterTableWarningLabel = new Label();
-    private final Slider encounterAmountSlider = tuningSlider(3.0, 1.0, 5.0);
-    private final Slider encounterBalanceSlider = tuningSlider(3.0, 1.0, 5.0);
-    private final Slider encounterDiversitySlider = tuningSlider(2.0, 1.0, 4.0);
-    private final CheckBox encounterAmountAuto = new CheckBox("Auto");
-    private final CheckBox encounterBalanceAuto = new CheckBox("Auto");
-    private final CheckBox encounterDiversityAuto = new CheckBox("Auto");
-    private final Label encounterAmountLabel = new Label();
-    private final Label encounterBalanceLabel = new Label();
-    private final Label encounterDiversityLabel = new Label();
-    private final Label countLabel = new Label("0 Monster gefunden");
-    private final Label pageLabel = new Label("Seite 1 / 1");
-    private final Button previousButton = new Button("◀ Zurück");
-    private final Button nextButton = new Button("Weiter ▶");
+    private final VBox encounterTablePopupContent = new VBox(2);
+    private final TuningControl difficultyControl = new TuningControl(
+            "Schwierigkeit",
+            1.0,
+            4.0,
+            2.0,
+            true,
+            "Schwierigkeitsbereich des Encounters",
+            new DifficultyTickLabelFormatter(),
+            value -> difficultyLabel((int) Math.round(value)),
+            1.0,
+            this::fireEncounterDifficultyChanged);
+    private final TuningControl balanceControl = new TuningControl(
+            "Balance",
+            1.0,
+            5.0,
+            3.0,
+            true,
+            "1: CR-Extreme bevorzugen, 5: CR-Durchschnitt bevorzugen",
+            new EndpointTickLabelFormatter("Extreme", "Durchschnitt"),
+            value -> balanceLabel((int) Math.round(value)),
+            null,
+            this::fireEncounterTuningChanged);
+    private final TuningControl amountControl = new TuningControl(
+            "Menge",
+            1.0,
+            5.0,
+            3.0,
+            false,
+            "1: Bosse bevorzugen, 5: Minions bevorzugen",
+            new EndpointTickLabelFormatter("Boss", "Minions"),
+            CatalogControlsView::amountLabel,
+            1.0,
+            this::fireEncounterTuningChanged);
+    private final TuningControl diversityControl = new TuningControl(
+            "Diversität",
+            1.0,
+            4.0,
+            3.0,
+            true,
+            "1: ein Statblock, 4: vier unterschiedliche Statblocks",
+            new EndpointTickLabelFormatter("1", "4"),
+            value -> (int) Math.round(value) + " Typen",
+            null,
+            this::fireEncounterTuningChanged);
     private final PauseTransition debounce = new PauseTransition(Duration.millis(300));
 
-    private @Nullable Consumer<String> contentSelectionHandler;
     private @Nullable Consumer<CreatureFilterState> filterChangedHandler;
-    private @Nullable Consumer<String> sortChangedHandler;
     private @Nullable Consumer<String> encounterDifficultyChangedHandler;
     private @Nullable Consumer<EncounterTuningSelection> encounterTuningChangedHandler;
     private @Nullable Consumer<List<Long>> encounterTablesChangedHandler;
-    private @Nullable Runnable previousPageHandler;
-    private @Nullable Runnable nextPageHandler;
     private List<FilterChipView> activeFilterChips = List.of();
     private List<EncounterTableSelection> encounterTables = List.of();
     private List<Long> selectedEncounterTableIds = List.of();
+    private final Map<Long, CheckBox> encounterTableCheckboxes = new LinkedHashMap<>();
     private boolean suppressFilterEvents;
 
     public CatalogControlsView() {
-        getStyleClass().addAll("surface-root", "filter-pane");
-        setSpacing(10);
-        setPadding(new Insets(8));
-
-        Label title = new Label("Catalog");
-        title.getStyleClass().add("panel-title");
+        setSpacing(0);
+        setPadding(new Insets(0));
+        difficultyControl.addSliderStyleClass("difficulty-slider");
 
         searchField.setPromptText("Monster suchen...");
         searchField.setMaxWidth(Double.MAX_VALUE);
@@ -102,6 +126,15 @@ public final class CatalogControlsView extends VBox {
         Button clearButton = new Button("Leeren");
         clearButton.getStyleClass().addAll("compact", "flat");
         clearButton.setOnAction(event -> clearFilters());
+
+        encounterTableButton.getStyleClass().addAll("compact", "filter-trigger");
+        encounterTableButton.setTooltip(encounterTableTooltip);
+        encounterTableButton.setOnAction(event -> toggleEncounterTablePopup());
+        encounterTablePopup.setAutoHide(true);
+        encounterTablePopupContent.getStyleClass().add("filter-dropdown");
+        encounterTablePopupContent.setPadding(new Insets(8));
+        encounterTablePopup.getContent().add(encounterTablePopupContent);
+
         filterRow.getChildren().addAll(
                 crRange,
                 sizeFilter,
@@ -109,128 +142,40 @@ public final class CatalogControlsView extends VBox {
                 subtypeFilter,
                 biomeFilter,
                 alignmentFilter,
+                encounterTableButton,
                 clearButton);
         filterRow.prefWrapLengthProperty().bind(widthProperty().subtract(16));
         chipsPane.prefWrapLengthProperty().bind(widthProperty().subtract(16));
         chipsPane.setMinHeight(24);
 
-        sortCombo.setMaxWidth(Double.MAX_VALUE);
-        sortCombo.setOnAction(event -> {
-            SortSelection selection = sortCombo.getValue();
-            if (selection != null && sortChangedHandler != null) {
-                sortChangedHandler.accept(selection.key());
-            }
-        });
+        VBox filterPane = new VBox(4, searchRow, filterRow, chipsPane);
+        filterPane.getStyleClass().add("filter-pane");
+        filterPane.setPadding(new Insets(6, 8, 6, 8));
 
-        encounterDifficultyCombo.setMaxWidth(Double.MAX_VALUE);
-        encounterDifficultyCombo.setItems(FXCollections.observableArrayList(
-                new DifficultySelection("auto", "Auto"),
-                new DifficultySelection("easy", "Easy"),
-                new DifficultySelection("medium", "Medium"),
-                new DifficultySelection("hard", "Hard"),
-                new DifficultySelection("deadly", "Deadly")));
-        encounterDifficultyCombo.getSelectionModel().select(0);
-        encounterDifficultyCombo.setOnAction(event -> {
-            DifficultySelection selection = encounterDifficultyCombo.getValue();
-            if (selection != null && encounterDifficultyChangedHandler != null) {
-                encounterDifficultyChangedHandler.accept(selection.key());
-            }
-        });
-        encounterTableButton.getStyleClass().addAll("compact", "filter-trigger");
-        encounterTableButton.setMaxWidth(Double.MAX_VALUE);
-        encounterTableButton.setOnAction(event -> toggleEncounterTablePopup());
-        encounterTableWarningLabel.getStyleClass().add("text-secondary");
-        encounterTableWarningLabel.setVisible(false);
-        encounterTableWarningLabel.setManaged(false);
-        encounterTablePopup.setAutoHide(true);
-        encounterTablePopupContent.setPadding(new Insets(8));
-        encounterTablePopupContent.getStyleClass().add("filter-dropdown");
-        ScrollPane tablePopupScroller = new ScrollPane(encounterTablePopupContent);
-        tablePopupScroller.setFitToWidth(true);
-        tablePopupScroller.setPrefViewportWidth(260);
-        tablePopupScroller.setPrefViewportHeight(240);
-        encounterTablePopup.getContent().add(tablePopupScroller);
+        VBox filterRegion = new VBox(filterPane);
+        filterRegion.setPadding(new Insets(0, 4, 0, 4));
+
+        Label filterHeader = new Label("FILTER");
+        filterHeader.getStyleClass().addAll("section-header", "text-muted");
+
+        Label encounterHeader = new Label("ENCOUNTER");
+        encounterHeader.getStyleClass().addAll("section-header", "text-muted");
+
+        HBox controlRow = new HBox(8, difficultyControl, balanceControl, amountControl, diversityControl);
+        HBox.setHgrow(difficultyControl, Priority.ALWAYS);
+        HBox.setHgrow(balanceControl, Priority.ALWAYS);
+        HBox.setHgrow(amountControl, Priority.ALWAYS);
+        HBox.setHgrow(diversityControl, Priority.ALWAYS);
+
+        VBox sliderGrid = new VBox(4, controlRow);
+        sliderGrid.setMaxWidth(Double.MAX_VALUE);
+        sliderGrid.setPadding(new Insets(0, 4, 0, 4));
+
+        VBox filterSection = new VBox(0, filterHeader, filterRegion);
+        VBox encounterSection = new VBox(0, encounterHeader, sliderGrid);
+        getChildren().setAll(filterSection, controlSeparator(), encounterSection);
+        setMaxHeight(Double.MAX_VALUE);
         updateEncounterTableControls();
-        Runnable tuningChanged = () -> {
-            updateEncounterTuningLabels();
-            fireEncounterTuningChanged();
-        };
-        encounterAmountAuto.setSelected(true);
-        encounterBalanceAuto.setSelected(true);
-        encounterDiversityAuto.setSelected(true);
-        encounterAmountAuto.setOnAction(event -> tuningChanged.run());
-        encounterBalanceAuto.setOnAction(event -> tuningChanged.run());
-        encounterDiversityAuto.setOnAction(event -> tuningChanged.run());
-        encounterAmountSlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
-        encounterBalanceSlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
-        encounterDiversitySlider.valueProperty().addListener((obs, oldValue, newValue) -> tuningChanged.run());
-        updateEncounterTuningLabels();
-
-        HBox pagination = new HBox(8, previousButton, pageLabel, nextButton);
-        pagination.setAlignment(Pos.CENTER_LEFT);
-        previousButton.getStyleClass().add("compact");
-        nextButton.getStyleClass().add("compact");
-        previousButton.setOnAction(event -> {
-            if (previousPageHandler != null) {
-                previousPageHandler.run();
-            }
-        });
-        nextButton.setOnAction(event -> {
-            if (nextPageHandler != null) {
-                nextPageHandler.run();
-            }
-        });
-
-        Label sortLabel = new Label("Sortierung");
-        sortLabel.getStyleClass().add("text-muted");
-        Label encounterLabel = new Label("Encounter");
-        encounterLabel.getStyleClass().add("text-muted");
-        countLabel.getStyleClass().add("text-secondary");
-        pageLabel.getStyleClass().add("text-secondary");
-
-        getChildren().addAll(
-                title,
-                contentRow,
-                searchRow,
-                filterRow,
-                chipsPane,
-                encounterLabel,
-                encounterDifficultyCombo,
-                encounterTableButton,
-                encounterTableWarningLabel,
-                tuningRow("Menge", encounterAmountSlider, encounterAmountLabel, encounterAmountAuto),
-                tuningRow("Balance", encounterBalanceSlider, encounterBalanceLabel, encounterBalanceAuto),
-                tuningRow("Diversität", encounterDiversitySlider, encounterDiversityLabel, encounterDiversityAuto),
-                sortLabel,
-                sortCombo,
-                countLabel,
-                pagination);
-    }
-
-    public void setContents(List<ContentItem> contents) {
-        contentRow.getChildren().clear();
-        for (ContentItem content : contents == null ? List.<ContentItem>of() : contents) {
-            ToggleButton button = new ToggleButton(content.label());
-            button.getStyleClass().addAll("compact", "filter-trigger");
-            button.setUserData(content.key());
-            button.setToggleGroup(contentGroup);
-            button.setDisable(!content.enabled());
-            button.setOnAction(event -> {
-                if (contentSelectionHandler != null) {
-                    contentSelectionHandler.accept(String.valueOf(button.getUserData()));
-                }
-            });
-            contentRow.getChildren().add(button);
-        }
-    }
-
-    public void selectContent(String key) {
-        for (ToggleButton button : contentButtons()) {
-            if (Objects.equals(button.getUserData(), key)) {
-                button.setSelected(true);
-                return;
-            }
-        }
     }
 
     public void setCreatureFilterData(CreatureFilterData data) {
@@ -246,35 +191,6 @@ public final class CatalogControlsView extends VBox {
         } finally {
             suppressFilterEvents = false;
         }
-    }
-
-    public void setSortOptions(List<SortSelection> selections) {
-        sortCombo.setItems(FXCollections.observableArrayList(selections == null ? List.of() : selections));
-    }
-
-    public void selectSort(String key) {
-        for (SortSelection selection : sortCombo.getItems()) {
-            if (selection.key().equals(key)) {
-                sortCombo.getSelectionModel().select(selection);
-                return;
-            }
-        }
-    }
-
-    public StringProperty countTextProperty() {
-        return countLabel.textProperty();
-    }
-
-    public StringProperty pageTextProperty() {
-        return pageLabel.textProperty();
-    }
-
-    public BooleanProperty previousDisableProperty() {
-        return previousButton.disableProperty();
-    }
-
-    public BooleanProperty nextDisableProperty() {
-        return nextButton.disableProperty();
     }
 
     public void setChips(List<FilterChipView> chips) {
@@ -299,33 +215,8 @@ public final class CatalogControlsView extends VBox {
         encounterTablesChangedHandler = handler;
     }
 
-    private void renderChips() {
-        chipsPane.getChildren().clear();
-        List<FilterChipView> allChips = new ArrayList<>(activeFilterChips);
-        allChips.addAll(encounterTableChips());
-        for (FilterChipView chip : allChips) {
-            HBox chipNode = new HBox(2);
-            chipNode.getStyleClass().addAll("chip", chip.styleClass());
-            Label label = new Label(chip.label());
-            Button remove = new Button("×");
-            remove.getStyleClass().addAll("flat", "compact", "chip-remove-btn");
-            remove.setAccessibleText("Entfernen: " + chip.label());
-            remove.setOnAction(event -> clearChip(chip.key()));
-            chipNode.getChildren().addAll(label, remove);
-            chipsPane.getChildren().add(chipNode);
-        }
-    }
-
-    public void setOnContentSelected(Consumer<String> handler) {
-        contentSelectionHandler = handler;
-    }
-
     public void setOnCreatureFiltersChanged(Consumer<CreatureFilterState> handler) {
         filterChangedHandler = handler;
-    }
-
-    public void setOnSortChanged(Consumer<String> handler) {
-        sortChangedHandler = handler;
     }
 
     public void setOnEncounterDifficultyChanged(Consumer<String> handler) {
@@ -334,14 +225,6 @@ public final class CatalogControlsView extends VBox {
 
     public void setOnEncounterTuningChanged(Consumer<EncounterTuningSelection> handler) {
         encounterTuningChangedHandler = handler;
-    }
-
-    public void setOnPreviousPage(Runnable handler) {
-        previousPageHandler = handler;
-    }
-
-    public void setOnNextPage(Runnable handler) {
-        nextPageHandler = handler;
     }
 
     private void clearFilters() {
@@ -358,6 +241,23 @@ public final class CatalogControlsView extends VBox {
             suppressFilterEvents = false;
         }
         fireFilterChanged();
+    }
+
+    private void renderChips() {
+        chipsPane.getChildren().clear();
+        List<FilterChipView> allChips = new ArrayList<>(activeFilterChips);
+        allChips.addAll(encounterTableChips());
+        for (FilterChipView chip : allChips) {
+            HBox chipNode = new HBox(2);
+            chipNode.getStyleClass().addAll("chip", chip.styleClass());
+            Label label = new Label(chip.label());
+            Button remove = new Button("×");
+            remove.getStyleClass().addAll("flat", "compact", "chip-remove-btn");
+            remove.setAccessibleText("Entfernen: " + chip.label());
+            remove.setOnAction(event -> clearChip(chip.key()));
+            chipNode.getChildren().addAll(label, remove);
+            chipsPane.getChildren().add(chipNode);
+        }
     }
 
     private void clearChip(String key) {
@@ -390,12 +290,26 @@ public final class CatalogControlsView extends VBox {
         renderEncounterTablePopup();
         Bounds bounds = encounterTableButton.localToScreen(encounterTableButton.getBoundsInLocal());
         if (bounds != null) {
-            encounterTablePopup.show(encounterTableButton, bounds.getMinX(), bounds.getMaxY() + 4);
+            encounterTablePopup.show(encounterTableButton, bounds.getMinX(), bounds.getMaxY() + 2);
         }
     }
 
     private void renderEncounterTablePopup() {
         encounterTablePopupContent.getChildren().clear();
+        encounterTableCheckboxes.clear();
+
+        Button clearAll = new Button("(Alle Monster)");
+        clearAll.setMaxWidth(Double.MAX_VALUE);
+        clearAll.getStyleClass().addAll("flat", "compact");
+        clearAll.setOnAction(event -> {
+            selectedEncounterTableIds = List.of();
+            encounterTablePopup.hide();
+            fireEncounterTablesChanged();
+            updateEncounterTableControls();
+            renderChips();
+        });
+        encounterTablePopupContent.getChildren().add(clearAll);
+
         if (encounterTables.isEmpty()) {
             Label empty = new Label("Keine Encounter-Tabellen gefunden");
             empty.getStyleClass().add("text-secondary");
@@ -404,8 +318,11 @@ public final class CatalogControlsView extends VBox {
         }
         for (EncounterTableSelection table : encounterTables) {
             CheckBox checkbox = new CheckBox(table.name());
+            checkbox.setUserData(table.tableId());
+            checkbox.setMaxWidth(Double.MAX_VALUE);
             checkbox.setSelected(selectedEncounterTableIds.contains(table.tableId()));
             checkbox.setOnAction(event -> toggleEncounterTableSelection(table.tableId(), checkbox.isSelected()));
+            encounterTableCheckboxes.put(table.tableId(), checkbox);
             encounterTablePopupContent.getChildren().add(checkbox);
         }
     }
@@ -430,6 +347,10 @@ public final class CatalogControlsView extends VBox {
         } catch (NumberFormatException exception) {
             return;
         }
+        CheckBox checkbox = encounterTableCheckboxes.get(tableId);
+        if (checkbox != null) {
+            checkbox.setSelected(false);
+        }
         toggleEncounterTableSelection(tableId, false);
     }
 
@@ -440,18 +361,23 @@ public final class CatalogControlsView extends VBox {
     }
 
     private void updateEncounterTableControls() {
-        if (selectedEncounterTableIds.isEmpty()) {
-            encounterTableButton.setText("Tabellen: alle Monster");
-        } else if (selectedEncounterTableIds.size() == 1) {
-            EncounterTableSelection selected = selectedEncounterTables().getFirst();
-            encounterTableButton.setText("Tabelle: " + selected.name());
-        } else {
-            encounterTableButton.setText("Tabellen: " + selectedEncounterTableIds.size());
-        }
+        encounterTableButton.getStyleClass().remove("filter-trigger-active");
         boolean lootConflict = hasLinkedLootConflict();
-        encounterTableWarningLabel.setText(lootConflict ? "Loot-Konflikt" : "");
-        encounterTableWarningLabel.setVisible(lootConflict);
-        encounterTableWarningLabel.setManaged(lootConflict);
+        if (selectedEncounterTableIds.isEmpty()) {
+            encounterTableButton.setText("Tabelle ▾");
+        } else if (selectedEncounterTableIds.size() == 1) {
+            encounterTableButton.setText(selectedEncounterTables().getFirst().name() + " ▾");
+            encounterTableButton.getStyleClass().add("filter-trigger-active");
+        } else if (lootConflict) {
+            encounterTableButton.setText("Tabellen (" + selectedEncounterTableIds.size() + ", Loot-Konflikt) ▾");
+            encounterTableButton.getStyleClass().add("filter-trigger-active");
+        } else {
+            encounterTableButton.setText("Tabellen (" + selectedEncounterTableIds.size() + ") ▾");
+            encounterTableButton.getStyleClass().add("filter-trigger-active");
+        }
+        encounterTableTooltip.setText(lootConflict
+                ? "Mehrere ausgewählte Tabellen verweisen auf unterschiedliche Loot-Tabellen. Kampfstart bleibt blockiert, bis höchstens eine verknüpfte Loot-Tabelle aktiv ist."
+                : "Mehrere Encounter-Tabellen können kombiniert werden.");
     }
 
     private List<FilterChipView> encounterTableChips() {
@@ -459,8 +385,8 @@ public final class CatalogControlsView extends VBox {
         for (EncounterTableSelection table : selectedEncounterTables()) {
             chips.add(new FilterChipView(
                     "encounter-table:" + table.tableId(),
-                    "Tabelle: " + table.name(),
-                    "chip-accent"));
+                    table.name(),
+                    "chip-table"));
         }
         return chips;
     }
@@ -502,49 +428,71 @@ public final class CatalogControlsView extends VBox {
         filterChangedHandler.accept(buildFilterState());
     }
 
+    private void fireEncounterDifficultyChanged() {
+        if (encounterDifficultyChangedHandler != null) {
+            encounterDifficultyChangedHandler.accept(difficultyControl.isAuto()
+                    ? "auto"
+                    : difficultyKey((int) Math.round(difficultyControl.rawValue())));
+        }
+    }
+
     private void fireEncounterTuningChanged() {
         if (encounterTuningChangedHandler == null) {
             return;
         }
         encounterTuningChangedHandler.accept(new EncounterTuningSelection(
-                encounterBalanceAuto.isSelected() ? AUTO_LEVEL : (int) Math.round(encounterBalanceSlider.getValue()),
-                encounterAmountAuto.isSelected() ? AUTO_AMOUNT : encounterAmountSlider.getValue(),
-                encounterDiversityAuto.isSelected() ? AUTO_LEVEL : (int) Math.round(encounterDiversitySlider.getValue())));
+                balanceControl.isAuto() ? AUTO_LEVEL : (int) Math.round(balanceControl.rawValue()),
+                amountControl.isAuto() ? AUTO_AMOUNT : amountControl.rawValue(),
+                diversityControl.isAuto() ? AUTO_LEVEL : (int) Math.round(diversityControl.rawValue())));
     }
 
-    private static Slider tuningSlider(double value, double min, double max) {
-        Slider slider = new Slider(min, max, value);
-        slider.setSnapToTicks(true);
-        slider.setMajorTickUnit(1.0);
-        slider.setMinorTickCount(0);
-        slider.setBlockIncrement(1.0);
-        slider.setMaxWidth(Double.MAX_VALUE);
-        return slider;
+    private CreatureFilterState buildFilterState() {
+        return new CreatureFilterState(
+                normalized(searchField.getText()),
+                crRange.minimumFilterValue(),
+                crRange.maximumFilterValue(),
+                sizeFilter.selectedValues(),
+                typeFilter.selectedValues(),
+                subtypeFilter.selectedValues(),
+                biomeFilter.selectedValues(),
+                alignmentFilter.selectedValues());
     }
 
-    private static HBox tuningRow(String title, Slider slider, Label valueLabel, CheckBox autoToggle) {
-        Label label = new Label(title);
-        label.getStyleClass().add("text-muted");
-        valueLabel.getStyleClass().add("text-secondary");
-        valueLabel.setMinWidth(72);
-        autoToggle.getStyleClass().add("compact");
-        HBox row = new HBox(6, label, autoToggle, slider, valueLabel);
-        row.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(slider, Priority.ALWAYS);
-        return row;
+    private static Region controlSeparator() {
+        Region separator = new Region();
+        separator.getStyleClass().add("control-separator");
+        return separator;
     }
 
-    private void updateEncounterTuningLabels() {
-        encounterAmountSlider.setDisable(encounterAmountAuto.isSelected());
-        encounterBalanceSlider.setDisable(encounterBalanceAuto.isSelected());
-        encounterDiversitySlider.setDisable(encounterDiversityAuto.isSelected());
-        encounterAmountLabel.setText(encounterAmountAuto.isSelected() ? "Auto" : amountLabel(encounterAmountSlider.getValue()));
-        encounterBalanceLabel.setText(encounterBalanceAuto.isSelected()
-                ? "Auto"
-                : balanceLabel((int) Math.round(encounterBalanceSlider.getValue())));
-        encounterDiversityLabel.setText(encounterDiversityAuto.isSelected()
-                ? "Auto"
-                : (int) Math.round(encounterDiversitySlider.getValue()) + " Typen");
+    private static String valuePart(String key) {
+        int separator = key.indexOf(':');
+        return separator < 0 ? key : key.substring(separator + 1);
+    }
+
+    private static @Nullable String normalized(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String difficultyKey(int value) {
+        return switch (Math.max(1, Math.min(4, value))) {
+            case 1 -> "easy";
+            case 3 -> "hard";
+            case 4 -> "deadly";
+            default -> "medium";
+        };
+    }
+
+    private static String difficultyLabel(int value) {
+        return switch (Math.max(1, Math.min(4, value))) {
+            case 1 -> "Easy";
+            case 3 -> "Hard";
+            case 4 -> "Deadly";
+            default -> "Medium";
+        };
     }
 
     private static String amountLabel(double value) {
@@ -566,55 +514,6 @@ public final class CatalogControlsView extends VBox {
             case 4 -> "Peers+";
             default -> "Peers++";
         };
-    }
-
-    private CreatureFilterState buildFilterState() {
-        return new CreatureFilterState(
-                normalized(searchField.getText()),
-                crRange.minimumFilterValue(),
-                crRange.maximumFilterValue(),
-                sizeFilter.selectedValues(),
-                typeFilter.selectedValues(),
-                subtypeFilter.selectedValues(),
-                biomeFilter.selectedValues(),
-                alignmentFilter.selectedValues());
-    }
-
-    private List<ToggleButton> contentButtons() {
-        return contentRow.getChildren().stream()
-                .filter(ToggleButton.class::isInstance)
-                .map(ToggleButton.class::cast)
-                .toList();
-    }
-
-    private static String valuePart(String key) {
-        int separator = key.indexOf(':');
-        return separator < 0 ? key : key.substring(separator + 1);
-    }
-
-    private static @Nullable String normalized(@Nullable String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    public record ContentItem(String key, String label, boolean enabled) {
-    }
-
-    public record SortSelection(String key, String label) {
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
-    public record DifficultySelection(String key, String label) {
-        @Override
-        public String toString() {
-            return label;
-        }
     }
 
     public record EncounterTuningSelection(int balanceLevel, double amountValue, int diversityLevel) {
@@ -686,6 +585,7 @@ public final class CatalogControlsView extends VBox {
             setSpacing(2);
             Label crLabel = new Label("CR");
             crLabel.getStyleClass().addAll("text-muted", "bold");
+            crLabel.setMinWidth(20);
             minimum.setAccessibleText("Minimaler CR");
             maximum.setAccessibleText("Maximaler CR");
             minimum.setPrefWidth(65);
@@ -875,6 +775,162 @@ public final class CatalogControlsView extends VBox {
             if (!popup.isShowing()) {
                 setAccessibleText(getText());
             }
+        }
+    }
+
+    private static final class TuningControl extends HBox {
+
+        private final Slider slider;
+        private final Button autoButton;
+        private final Label valueLabel;
+        private final Function<Double, String> valueLabelFormatter;
+        private final Runnable onChange;
+        private boolean autoMode = true;
+
+        TuningControl(
+                String title,
+                double min,
+                double max,
+                double defaultValue,
+                boolean snapToTicks,
+                String tooltip,
+                StringConverter<Double> labelFormatter,
+                Function<Double, String> valueLabelFormatter,
+                @Nullable Double majorTickUnitOverride,
+                Runnable onChange
+        ) {
+            setSpacing(4);
+            setAlignment(Pos.CENTER_LEFT);
+            this.valueLabelFormatter = valueLabelFormatter;
+            this.onChange = onChange;
+
+            Label titleLabel = new Label(title);
+            titleLabel.getStyleClass().add("text-muted");
+            titleLabel.setMinWidth(Region.USE_PREF_SIZE);
+
+            autoButton = new Button("⚅");
+            autoButton.getStyleClass().addAll("compact", "auto-dice-btn", "active");
+            autoButton.setMinWidth(Region.USE_PREF_SIZE);
+            autoButton.setAccessibleText(title + " automatisch bestimmen");
+
+            valueLabel = new Label();
+            valueLabel.getStyleClass().add("text-secondary");
+            valueLabel.setMinWidth(56);
+            valueLabel.setPrefWidth(56);
+
+            slider = new Slider(min, max, defaultValue);
+            slider.setShowTickLabels(true);
+            slider.setShowTickMarks(true);
+            if (snapToTicks) {
+                slider.setSnapToTicks(true);
+                slider.setMajorTickUnit(1);
+                slider.setMinorTickCount(0);
+            } else {
+                slider.setMajorTickUnit(majorTickUnitOverride != null ? majorTickUnitOverride : (max - min) / 3);
+            }
+            if (labelFormatter != null) {
+                slider.setLabelFormatter(labelFormatter);
+            }
+            slider.setDisable(true);
+            slider.setAccessibleRoleDescription(title);
+            slider.setAccessibleText(tooltip);
+            HBox.setHgrow(slider, Priority.ALWAYS);
+
+            autoButton.setOnAction(event -> {
+                autoMode = !autoMode;
+                slider.setDisable(autoMode);
+                updateAutoButtonState();
+                updateValueLabel();
+                fireChanged();
+            });
+            slider.valueProperty().addListener((obs, oldValue, newValue) -> {
+                updateValueLabel();
+                fireChanged();
+            });
+            updateAutoButtonState();
+            updateValueLabel();
+
+            getChildren().addAll(titleLabel, autoButton, valueLabel, slider);
+        }
+
+        boolean isAuto() {
+            return autoMode;
+        }
+
+        double rawValue() {
+            return slider.getValue();
+        }
+
+        void addSliderStyleClass(String styleClass) {
+            if (styleClass != null && !styleClass.isBlank() && !slider.getStyleClass().contains(styleClass)) {
+                slider.getStyleClass().add(styleClass);
+            }
+        }
+
+        private void updateValueLabel() {
+            if (autoMode) {
+                valueLabel.setText("");
+                return;
+            }
+            valueLabel.setText(valueLabelFormatter == null ? "" : valueLabelFormatter.apply(slider.getValue()));
+        }
+
+        private void updateAutoButtonState() {
+            autoButton.getStyleClass().remove("active");
+            if (autoMode) {
+                autoButton.getStyleClass().add("active");
+            }
+        }
+
+        private void fireChanged() {
+            if (onChange != null) {
+                onChange.run();
+            }
+        }
+    }
+
+    private static final class DifficultyTickLabelFormatter extends StringConverter<Double> {
+        @Override
+        public String toString(Double value) {
+            return difficultyLabel(value == null ? 2 : (int) Math.round(value));
+        }
+
+        @Override
+        public Double fromString(String value) {
+            return 0.0;
+        }
+    }
+
+    private static final class EndpointTickLabelFormatter extends StringConverter<Double> {
+
+        private final String minimumLabel;
+        private final String maximumLabel;
+
+        EndpointTickLabelFormatter(String minimumLabel, String maximumLabel) {
+            this.minimumLabel = minimumLabel;
+            this.maximumLabel = maximumLabel;
+        }
+
+        @Override
+        public String toString(Double value) {
+            if (value == null) {
+                return "";
+            }
+            if (value <= 1.0) {
+                return minimumLabel;
+            }
+            if (value >= 4.0 && "4".equals(maximumLabel)) {
+                return maximumLabel;
+            }
+            if (value >= 5.0) {
+                return maximumLabel;
+            }
+            return "";
+        }
+
+        @Override
+        public Double fromString(String value) {
+            return 0.0;
         }
     }
 }

@@ -231,20 +231,20 @@ final class SourceLayoutRules implements ArchitectureRule {
             String feature = segments.get(2);
             String contextName = context.domainContextName(feature);
             if (!isFeatureFileName(feature, contextName, sourceFile.fileName(), "ServiceContribution")) {
-                violations.add(sourceFile.relativePath(), "data-layout",
+                violations.add(sourceFile.relativePath(), "data-root-service-contribution-only",
                         "Only <PascalFeatureName>ServiceContribution.java may live directly under src/data/<feature>/.");
             }
             return;
         }
         if ("persistencecore".equals(segments.get(2))) {
             if (segments.size() < 5 || !Set.of("sqlite", "model").contains(segments.get(3))) {
-                violations.add(sourceFile.relativePath(), "data-layout",
+                violations.add(sourceFile.relativePath(), "data-feature-bucket-layout",
                         "Persistencecore sources must live under src/data/persistencecore/sqlite or src/data/persistencecore/model.");
             }
             return;
         }
         if (segments.size() < 5) {
-            violations.add(sourceFile.relativePath(), "data-layout",
+            violations.add(sourceFile.relativePath(), "data-feature-bucket-layout",
                     "Data sources must live under src/data/<feature>/<Feature>ServiceContribution.java,"
                             + " repository, query, gateway, model, or mapper according to the current adapter layout.");
             return;
@@ -256,11 +256,11 @@ final class SourceLayoutRules implements ArchitectureRule {
             }
             case "gateway" -> {
                 if (segments.size() < 6 || !Set.of("local", "remote").contains(segments.get(4))) {
-                    violations.add(sourceFile.relativePath(), "data-layout",
+                    violations.add(sourceFile.relativePath(), "data-feature-bucket-layout",
                             "Source adapters in the physical gateway/ package must live under gateway/local or gateway/remote.");
                 }
             }
-            default -> violations.add(sourceFile.relativePath(), "data-layout",
+            default -> violations.add(sourceFile.relativePath(), "data-feature-bucket-layout",
                     "Only a composition adapter root, repository/ and query/ port adapters, gateway/local/ and gateway/remote/ source adapters, model/ source models, and mapper/ translators are allowed in data features.");
         }
     }

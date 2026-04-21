@@ -63,8 +63,8 @@ Current state:
   share one `DungeonTraversalLink` model: two known dungeon tiles connected by
   a party-traversible link. The active character travel position is owned by
   `party` character state and is not persisted as authored dungeon truth.
-- Editor operations now tell the aggregate to mutate authored topology seeds
-  instead of rewriting a document carrier in application code.
+- Editor operations now tell the aggregate to mutate authored map metadata and
+  topology seeds instead of rewriting a document carrier in application code.
 - The application layer coordinates load, mutate, save, search, and derive
   flows through domain-owned outbound ports.
 - Runtime composition lives in `src/data/dungeon/DungeonServiceContribution.java`;
@@ -227,6 +227,7 @@ It owns:
 Commands entering the map model include:
 
 - create map
+- rename map
 - delete map
 - apply editor operation
 - rebuild derived state from authored truth

@@ -1,18 +1,13 @@
 package src.view.leftbartabs.dungeontravel;
 
-import java.util.function.Consumer;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.stage.Popup;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
+import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 
 public final class DungeonTravelControlsView extends DungeonControlPanelView {
-
-    static final String OVERLAY_OFF = "Aus";
-    static final String OVERLAY_NEARBY = "Nachbarn";
-    static final String OVERLAY_SELECTED = "Auswahl";
 
     private final Label zoomLabel = new Label("Zoom: 100%");
     private final Label mapLabel = new Label("Dungeon");
@@ -21,18 +16,12 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private final Button resetViewButton = new Button("Reset view");
     private final Button previousLevelButton = new Button("Ebene -");
     private final Button nextLevelButton = new Button("Ebene +");
-    private final Button overlayButton = new Button();
-    private final Popup overlayPopup;
-    private Consumer<String> onOverlayModeChanged = ignored -> {};
+    private final DungeonLevelOverlayControlsView overlayControls =
+            new DungeonLevelOverlayControlsView(this::sectionLabel);
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonTravelControlsView() {
         super("");
-        overlayPopup = createOverlayPopup(
-                mode -> onOverlayModeChanged.accept(mode),
-                OVERLAY_OFF,
-                OVERLAY_NEARBY,
-                OVERLAY_SELECTED);
         getStyleClass().add("dungeon-editor-toolbar");
         getChildren().addAll(sectionLabel("Dungeon"), zoomLabel, mapLabel, levelRow(), actionRow());
     }
@@ -53,26 +42,34 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         bindAction(nextLevelButton, action);
     }
 
-    public void onOverlayModeChanged(Consumer<String> action) {
-        onOverlayModeChanged = action == null ? ignored -> {} : action;
+    public DungeonLevelOverlayControlsView levelOverlayControls() {
+        return overlayControls;
     }
 
     public void showMapName(String mapName) {
         mapLabel.setText(mapName == null || mapName.isBlank() ? "Dungeon" : mapName);
     }
 
+    public void showZoom(double zoom) {
+        zoomLabel.setText("Zoom: " + Math.round(zoom * 100.0) + "%");
+    }
+
     public void showLevel(int level) {
         levelLabel.setText("Ebene z=" + level);
     }
 
-    public void showOverlayMode(String overlayMode) {
-        overlayButton.setText(overlayMode == null || overlayMode.isBlank() ? OVERLAY_OFF : overlayMode);
+    public void showLevels(int activeLevel, boolean busy, boolean navigationEnabled) {
+        showLevel(activeLevel);
+        previousLevelButton.setDisable(busy || !navigationEnabled);
+        nextLevelButton.setDisable(busy || !navigationEnabled);
+    }
+
+    public void showOverlaySettings(DungeonLevelOverlayControlsView.Settings settings, boolean disabled) {
+        overlayControls.showSettings(settings, disabled);
     }
 
     private HBox levelRow() {
-        overlayButton.getStyleClass().addAll("toolbar-action-button", "dungeon-overlay-trigger");
-        overlayButton.setOnAction(event -> togglePopup(overlayPopup, overlayButton));
-        HBox row = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, spacer(), overlayButton);
+        HBox row = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, spacer(), overlayControls.trigger());
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }

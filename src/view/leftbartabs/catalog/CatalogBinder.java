@@ -51,20 +51,11 @@ final class CatalogBinder {
             EncounterRuntimeViewModel encounterSession,
             EncounterTableApplicationService encounterTables
     ) {
-        controls.setContents(viewModel.contents().stream().map(CatalogBinder::toControlContent).toList());
-        controls.setSortOptions(viewModel.sortOptions().stream().map(CatalogBinder::toControlSort).toList());
-        controls.selectSort(viewModel.selectedSortKeyProperty().get());
-        controls.selectContent(viewModel.selectedContentProperty().get().key());
         controls.setCreatureFilterData(toControlFilterData(viewModel.creatureFilterDataProperty().get()));
         controls.setChips(toControlChips(viewModel.chips()));
         controls.setEncounterTables(loadEncounterTableSelections(encounterTables));
         controls.selectEncounterTables(encounterSession.encounterTableIds());
 
-        controls.countTextProperty().bind(viewModel.countLabelProperty());
-        controls.pageTextProperty().bind(viewModel.pageLabelProperty());
-        controls.previousDisableProperty().bind(viewModel.previousPageAvailableProperty().not());
-        controls.nextDisableProperty().bind(viewModel.nextPageAvailableProperty().not());
-        controls.setOnContentSelected(viewModel::selectContent);
         controls.setOnCreatureFiltersChanged(filter -> {
             encounterSession.updateFilters(filter.types(), filter.subtypes(), filter.biomes());
             viewModel.applyCreatureFilters(new CatalogViewModel.CreatureFilters(
@@ -77,18 +68,13 @@ final class CatalogBinder {
                         filter.biomes(),
                         filter.alignments()));
         });
-        controls.setOnSortChanged(viewModel::selectSort);
         controls.setOnEncounterDifficultyChanged(key -> encounterSession.selectDifficulty(toDifficultyBand(key)));
         controls.setOnEncounterTuningChanged(selection -> encounterSession.updateTuning(
                 selection.balanceLevel(),
                 selection.amountValue(),
                 selection.diversityLevel()));
         controls.setOnEncounterTablesChanged(encounterSession::updateEncounterTables);
-        controls.setOnPreviousPage(viewModel::previousPage);
-        controls.setOnNextPage(viewModel::nextPage);
 
-        viewModel.selectedContentProperty().addListener((obs, oldValue, newValue) -> controls.selectContent(newValue.key()));
-        viewModel.selectedSortKeyProperty().addListener((obs, oldValue, newValue) -> controls.selectSort(newValue));
         viewModel.creatureFilterDataProperty().addListener((obs, oldValue, newValue) ->
                 controls.setCreatureFilterData(toControlFilterData(newValue)));
         viewModel.chips().addListener((ListChangeListener<CatalogViewModel.FilterChip>) change ->
@@ -103,13 +89,23 @@ final class CatalogBinder {
             CatalogMainView main
     ) {
         main.setRowAction("+Add", "Zum Encounter hinzufuegen", encounterSession::requestCreatureAdd);
+        main.setSortOptions(viewModel.sortOptions().stream().map(CatalogBinder::toMainSort).toList());
+        main.selectSort(viewModel.selectedSortKeyProperty().get());
         main.setColumns(viewModel.columns().stream().map(CatalogBinder::toMainColumn).toList());
         main.setRows(viewModel.rows().stream().map(CatalogBinder::toMainRow).toList());
         main.setPlaceholderText(viewModel.placeholderTextProperty().get());
         main.setOnRowOpen(creatureId -> openCreatureDetails(inspector, creatures, creatureId));
+        main.countTextProperty().bind(viewModel.countLabelProperty());
+        main.pageTextProperty().bind(viewModel.pageLabelProperty());
+        main.previousDisableProperty().bind(viewModel.previousPageAvailableProperty().not());
+        main.nextDisableProperty().bind(viewModel.nextPageAvailableProperty().not());
+        main.setOnSortChanged(viewModel::selectSort);
+        main.setOnPreviousPage(viewModel::previousPage);
+        main.setOnNextPage(viewModel::nextPage);
         viewModel.rows().addListener((ListChangeListener<CatalogViewModel.CatalogRow>) change ->
                 main.setRows(viewModel.rows().stream().map(CatalogBinder::toMainRow).toList()));
         viewModel.placeholderTextProperty().addListener((obs, oldValue, newValue) -> main.setPlaceholderText(newValue));
+        viewModel.selectedSortKeyProperty().addListener((obs, oldValue, newValue) -> main.selectSort(newValue));
     }
 
     private static void openCreatureDetails(
@@ -118,14 +114,6 @@ final class CatalogBinder {
             long creatureId
     ) {
         inspector.push(CreatureDetailsInspectorEntry.create(creatureId, creatures::loadCreatureDetail));
-    }
-
-    private static CatalogControlsView.ContentItem toControlContent(CatalogViewModel.CatalogContent content) {
-        return new CatalogControlsView.ContentItem(content.key(), content.label(), content.enabled());
-    }
-
-    private static CatalogControlsView.SortSelection toControlSort(CatalogViewModel.SortSelection selection) {
-        return new CatalogControlsView.SortSelection(selection.key(), selection.label());
     }
 
     private static CatalogControlsView.CreatureFilterData toControlFilterData(CatalogViewModel.CreatureFilterData options) {
@@ -172,6 +160,10 @@ final class CatalogBinder {
 
     private static CatalogMainView.ColumnItem toMainColumn(CatalogViewModel.CatalogColumn column) {
         return new CatalogMainView.ColumnItem(column.key(), column.label());
+    }
+
+    private static CatalogMainView.SortSelection toMainSort(CatalogViewModel.SortSelection selection) {
+        return new CatalogMainView.SortSelection(selection.key(), selection.label());
     }
 
     private static CatalogMainView.RowItem toMainRow(CatalogViewModel.CatalogRow row) {
