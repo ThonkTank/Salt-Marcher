@@ -20,6 +20,10 @@ final class DomainFeatureRules implements ArchitectureRule {
 
     private static final Pattern MARKDOWN_HEADING_PATTERN =
             Pattern.compile("(?m)^##\\s+.+$");
+    private static final Pattern CONTEXT_BULLET_PATTERN =
+            Pattern.compile("(?m)^\\s*-\\s+`([^`]+)`\\s*:\\s*(.+)$");
+    private static final Pattern DOMAIN_CONTEXT_ROLE_MARKER_PATTERN =
+            Pattern.compile("(?m)^\\s*Context Role:\\s+(.+?)\\s*$");
     private static final Pattern AGGREGATE_ROOT_MARKER_PATTERN =
             Pattern.compile("(?m)^\\s*Aggregate Root:\\s+([A-Z][A-Za-z0-9_]*)\\s*$");
     private static final Pattern WRITE_MODEL_NONE_PATTERN =
@@ -152,22 +156,29 @@ final class DomainFeatureRules implements ArchitectureRule {
                     "Domain layer standard must include a non-empty '## Context Relationships' section.");
             return;
         }
-        if (section.contains("`mapcore`") || section.contains("src/domain/mapcore")) {
-            violations.add(contextMapPath, "domain-context-relationships-no-mapcore",
-                    "Context relationships must not declare mapcore as a domain context.");
-        }
+        TreeMap<String, List<String>> declaredBullets = contextBullets(section);
+        validateNoStaleContextBullets(
+                contextMapPath,
+                "domain-context-relationships-no-stale-contexts",
+                declaredBullets.keySet(),
+                domainFeatures,
+                violations);
 
         for (String featureName : domainFeatures) {
-            Pattern featureLine = Pattern.compile("(?m)^\\s*-\\s+`" + Pattern.quote(featureName) + "`\\s*:\\s*(.+)$");
-            Matcher matcher = featureLine.matcher(section);
-            if (!matcher.find()) {
+            List<String> bullets = declaredBullets.getOrDefault(featureName, List.of());
+            if (bullets.isEmpty()) {
                 violations.add(contextMapPath, "domain-context-relationships-complete",
                         "Context relationships must include a bullet for src/domain/" + featureName
                                 + " using '- `" + featureName + "`: ...'.");
                 continue;
             }
+            if (bullets.size() > 1) {
+                violations.add(contextMapPath, "domain-context-relationships-complete",
+                        "Context relationships must include exactly one bullet for src/domain/" + featureName + ".");
+                continue;
+            }
             String declaredContextRole = declaredDomainContextRole(context, featureName);
-            if (declaredContextRole != null && !matcher.group(1).contains(declaredContextRole)) {
+            if (declaredContextRole != null && !bullets.getFirst().contains(declaredContextRole)) {
                 violations.add(contextMapPath, "domain-context-relationships-role-matches",
                         "Context relationship bullet for src/domain/" + featureName
                                 + " must include its declared context role '" + declaredContextRole + "'.");
@@ -202,22 +213,29 @@ final class DomainFeatureRules implements ArchitectureRule {
                     "Domain layer standard must include a non-empty '## Context Roles' section.");
             return;
         }
-        if (section.contains("`mapcore`") || section.contains("src/domain/mapcore")) {
-            violations.add(contextMapPath, "domain-context-roles-no-mapcore",
-                    "Context roles must not declare mapcore as a domain context.");
-        }
+        TreeMap<String, List<String>> declaredBullets = contextBullets(section);
+        validateNoStaleContextBullets(
+                contextMapPath,
+                "domain-context-roles-no-stale-contexts",
+                declaredBullets.keySet(),
+                domainFeatures,
+                violations);
 
         for (String featureName : domainFeatures) {
-            Pattern featureLine = Pattern.compile("(?m)^\\s*-\\s+`" + Pattern.quote(featureName) + "`\\s*:\\s*(.+)$");
-            Matcher matcher = featureLine.matcher(section);
-            if (!matcher.find()) {
+            List<String> bullets = declaredBullets.getOrDefault(featureName, List.of());
+            if (bullets.isEmpty()) {
                 violations.add(contextMapPath, "domain-context-roles-complete",
                         "Context roles must include a bullet for src/domain/" + featureName
                                 + " using '- `" + featureName + "`: <role>'.");
                 continue;
             }
+            if (bullets.size() > 1) {
+                violations.add(contextMapPath, "domain-context-roles-complete",
+                        "Context roles must include exactly one bullet for src/domain/" + featureName + ".");
+                continue;
+            }
             String declaredContextRole = declaredDomainContextRole(context, featureName);
-            if (declaredContextRole != null && !matcher.group(1).contains(declaredContextRole)) {
+            if (declaredContextRole != null && !bullets.getFirst().contains(declaredContextRole)) {
                 violations.add(contextMapPath, "domain-context-roles-role-matches",
                         "Context role bullet for src/domain/" + featureName
                                 + " must include its declared context role '" + declaredContextRole + "'.");
@@ -269,6 +287,12 @@ final class DomainFeatureRules implements ArchitectureRule {
             }
 
             String role = declaredRoles.getFirst();
+            if (!DOMAIN_CONTEXT_ROLES.contains(role)) {
+                violations.add(documentPath, "domain-context-shape-declared",
+                        "DOMAIN.md declares unsupported context role '" + role
+                                + "'. Allowed roles: " + String.join(", ", DOMAIN_CONTEXT_ROLES) + ".");
+                continue;
+            }
             validateBaseContextDocument(documentPath, content, violations);
             if (AUTHORED_CONTEXT_ROLES.contains(role)) {
                 validateAggregateOwningContextDocument(context, featureName, documentPath, content, violations);
@@ -357,14 +381,35 @@ final class DomainFeatureRules implements ArchitectureRule {
 
     private static List<String> declaredDomainContextRoles(String content) {
         List<String> result = new ArrayList<>();
-        for (String role : DOMAIN_CONTEXT_ROLES) {
-            Matcher matcher = Pattern.compile("(?m)^\\s*Context Role:\\s+" + Pattern.quote(role) + "\\s*$")
-                    .matcher(content);
-            while (matcher.find()) {
-                result.add(role);
-            }
+        Matcher matcher = DOMAIN_CONTEXT_ROLE_MARKER_PATTERN.matcher(content);
+        while (matcher.find()) {
+            result.add(matcher.group(1));
         }
         return result.stream().sorted().toList();
+    }
+
+    private static TreeMap<String, List<String>> contextBullets(String section) {
+        TreeMap<String, List<String>> result = new TreeMap<>();
+        Matcher matcher = CONTEXT_BULLET_PATTERN.matcher(section);
+        while (matcher.find()) {
+            result.computeIfAbsent(matcher.group(1), ignored -> new ArrayList<>()).add(matcher.group(2));
+        }
+        return result;
+    }
+
+    private static void validateNoStaleContextBullets(
+            String contextMapPath,
+            String rule,
+            Set<String> declaredContexts,
+            Set<String> activeContexts,
+            ViolationSink violations) {
+        for (String declaredContext : declaredContexts) {
+            if (!activeContexts.contains(declaredContext)) {
+                violations.add(contextMapPath, rule,
+                        "Domain layer standard must not declare stale context bullet '" + declaredContext
+                                + "'. Active contexts are: " + String.join(", ", activeContexts) + ".");
+            }
+        }
     }
 
     private static boolean hasNonEmptySection(String content, String heading) {

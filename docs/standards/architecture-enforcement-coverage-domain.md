@@ -31,10 +31,10 @@ remaining review-owned rules so the enforcement set does not overclaim.
   not declare public or protected nested contract types such as legacy
   factories, owned by Error Prone `DomainApplicationServiceApiShape`.
 - `domain-root-constructor-composition`: root application services may expose
-  only same-feature outbound port interfaces and foreign root application
-  services in public or protected constructors; data, shell, view, JavaFX, SQL,
-  same-feature published carriers, and private implementation types are
-  forbidden there, owned by Error Prone
+  only same-feature outbound port interfaces under a named module `port/`
+  package and foreign root application services in public or protected
+  constructors; data, shell, view, JavaFX, SQL, same-feature published carriers,
+  and private implementation types are forbidden there, owned by Error Prone
   `DomainPublicBoundarySignaturePurity`.
 - `domain-service-registry-root-only`: data service roots may export only the
   same-feature root `*ApplicationService.class` through `ServiceRegistry`;
@@ -76,12 +76,13 @@ remaining review-owned rules so the enforcement set does not overclaim.
 - `domain-context-roles-complete` and
   `domain-context-relationships-complete`: `docs/standards/domain-layer.md`
   must include every active domain context in `## Context Roles` and
-  `## Context Relationships`, and the declared role must match each
-  context's `DOMAIN.md`, owned by `build-harness`.
+  `## Context Relationships`, must not include stale context bullets, and the
+  declared role must match each context's `DOMAIN.md`, owned by
+  `build-harness`.
 - `domain-context-document-presence`, `domain-context-shape-declared`, and
   `domain-context-required-sections`: every `src/domain/<feature>/DOMAIN.md`
-  must exist, declare exactly one allowed `Context Role: ...`, and include
-  non-empty `## Context Role`, `## Published Language`,
+  must exist, declare exactly one `Context Role: ...` marker using an allowed
+  role value, and include non-empty `## Context Role`, `## Published Language`,
   `## Application Boundary`, and `## Ubiquitous Language` sections, owned by
   `build-harness`.
 - `domain-role-context-required-sections`,
@@ -143,19 +144,42 @@ remaining review-owned rules so the enforcement set does not overclaim.
 ## Source-Pattern Checks
 
 PMD architecture owns narrow source-pattern blockers for obvious domain leaks
-such as JavaFX, SQL, shell, bootstrap, data API, and `src/domain/mapcore`
-mentions, plus application-layer helper names that indicate hidden policy in
-use cases. These checks are intentionally treated as smell blockers. They are
-useful for stable forbidden tokens and naming patterns; they are not semantic
-proof that behavior sits in the right domain role.
+such as JavaFX, SQL, shell, bootstrap, data API, filesystem, network, JSON
+framework, and `src/domain/mapcore` mentions.
+
+PMD also owns these narrow source-pattern blockers:
+
+- root `*ApplicationService` direct construction or static caching of obvious
+  port-adapter/source-adapter infrastructure
+- non-public `application/*UseCase` helper methods beginning with
+  `score`, `rank`, `choose`, `balance`, or `enforce`
+- public/protected JavaBean-style `void set*` mutation methods in named domain
+  modules
+
+These checks are intentionally treated as smell blockers. They are useful for
+stable forbidden tokens and naming patterns; they are not semantic proof that
+behavior sits in the right domain role.
 
 ## Review-Owned
 
+- whether business rules have been implemented in `view` or `data` when no
+  stable dependency or forbidden-token violation exposes the leak
 - whether a use case is thin orchestration rather than hidden business policy
+- whether root application services actually translate public carriers before
+  entering use cases or named modules
+- whether application use cases pass `published/`, view, data, shell, or
+  framework carriers into named modules through shapes not visible to the
+  current dependency and signature checks
 - whether an outbound port is named in domain language rather than in storage
   or vendor language
+- whether a `Repository` port is genuinely write-oriented rather than a
+  read-only query hidden behind a permitted suffix
 - whether a chosen tactical role package is warranted by real model behaviour
   rather than ceremonial taxonomy
+- whether a domain service is real cross-concept domain behavior rather than a
+  procedural coordinator
+- whether additional callable client boundaries are semantically being exposed
+  through names or usage patterns that do not match the blocked suffixes
 - whether aggregate, entity, value, policy, factory, service, specification,
   and event behavior is rich enough for the role name when that role is used
 - whether `published/` language is stable and intentionally versioned enough
@@ -164,6 +188,8 @@ proof that behavior sits in the right domain role.
   domain facts rather than presentation or storage concepts
 - whether commands, invariants, consistency notes, and ubiquitous language in
   `DOMAIN.md` accurately describe real behavior
+- whether feature-local domain documents redefine system-wide topology in
+  prose without changing the machine-readable context markers
 
 These remain review-owned because the available local tools would either need
 fixtures, brittle semantic inference, or broad text heuristics that would

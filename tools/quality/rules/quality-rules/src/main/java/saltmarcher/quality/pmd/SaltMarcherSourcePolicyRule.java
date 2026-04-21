@@ -25,7 +25,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "(?m)^\\s*public\\s+(?:synchronized\\s+)?(?:<[^>]+>\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern DOMAIN_APPLICATION_POLICY_HELPER_PATTERN = Pattern.compile(
             "(?m)^\\s*(?!(?:public\\b))(?:(?:private|protected)\\s+)?(?:static\\s+)?(?:<[^>]+>\\s+)?[A-Za-z0-9_<>, ?.@\\[\\]]+\\s+"
-                    + "((?:mutate|validate|react|score|rank|choose|balance|enforce|calculate)[A-Za-z0-9_]*)\\s*\\(");
+                    + "((?:score|rank|choose|balance|enforce)[A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern DOMAIN_SETTER_STYLE_MUTATION_PATTERN = Pattern.compile(
             "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?void\\s+(set[A-Z][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern FEATURE_SPECIFIC_PACKAGE_REFERENCE_PATTERN = Pattern.compile(

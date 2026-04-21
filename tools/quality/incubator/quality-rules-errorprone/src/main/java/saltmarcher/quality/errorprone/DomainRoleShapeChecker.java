@@ -43,9 +43,9 @@ public final class DomainRoleShapeChecker extends BugChecker implements BugCheck
             case "entity" -> entityViolation(typeElement);
             case "value" -> valueViolation(typeElement);
             case "port" -> portViolation(typeElement);
-            case "policy" -> statelessRoleViolation(typeElement, "Policy");
-            case "factory" -> statelessRoleViolation(typeElement, "Factory");
-            case "service" -> statelessRoleViolation(typeElement, "Service");
+            case "policy" -> finalClassRoleViolation(typeElement, "Policy");
+            case "factory" -> finalClassRoleViolation(typeElement, "Factory");
+            case "service" -> finalClassRoleViolation(typeElement, "Service");
             case "event" -> eventViolation(typeElement);
             case "specification" -> specificationViolation(typeElement);
             default -> null;
@@ -122,21 +122,10 @@ public final class DomainRoleShapeChecker extends BugChecker implements BugCheck
         return null;
     }
 
-    private static String statelessRoleViolation(TypeElement typeElement, String suffix) {
+    private static String finalClassRoleViolation(TypeElement typeElement, String suffix) {
         if (typeElement.getKind() != ElementKind.CLASS
                 || !typeElement.getModifiers().contains(Modifier.FINAL)) {
             return suffix.toLowerCase() + " role types must be final classes.";
-        }
-
-        List<String> instanceFields = new ArrayList<>();
-        for (VariableElement field : ElementFilter.fieldsIn(typeElement.getEnclosedElements())) {
-            if (!field.getModifiers().contains(Modifier.STATIC)) {
-                instanceFields.add(field.getSimpleName().toString());
-            }
-        }
-        if (!instanceFields.isEmpty()) {
-            return suffix.toLowerCase() + " role types must be stateless. Instance fields: "
-                    + String.join(", ", instanceFields) + ".";
         }
         return null;
     }

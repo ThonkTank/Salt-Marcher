@@ -49,6 +49,8 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
             Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+ApplicationService$");
     private static final Pattern DOMAIN_PUBLISHED_TYPE =
             Pattern.compile("^src\\.domain\\.[^.]+\\.published\\..+");
+    private static final Pattern DOMAIN_PORT_TYPE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.[^.]+\\.port\\.[^.]+(?:Repository|Lookup|Catalog|Search)$");
     private static final Set<String> OUTER_LAYER_PREFIXES = Set.of(
             "bootstrap.",
             "shell.",
@@ -503,7 +505,7 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         if (isForeignRootApplicationService(fqn, rootFeature)) {
             return false;
         }
-        return !targetFeature.equals(rootFeature) || !isSameFeatureDomainPort(typeElement);
+        return !targetFeature.equals(rootFeature) || !isSameFeatureDomainPort(typeElement, rootFeature);
     }
 
     private static boolean isForeignRootApplicationService(String fqn, String rootFeature) {
@@ -511,13 +513,12 @@ public final class DomainPublicBoundarySignaturePurityChecker extends BugChecker
         return matcher.matches() && !matcher.group(1).equals(rootFeature);
     }
 
-    private static boolean isSameFeatureDomainPort(TypeElement typeElement) {
-        String simpleName = typeElement.getSimpleName().toString();
-        return typeElement.getKind() == ElementKind.INTERFACE
-                && (simpleName.endsWith("Repository")
-                || simpleName.endsWith("Lookup")
-                || simpleName.endsWith("Catalog")
-                || simpleName.endsWith("Search"));
+    private static boolean isSameFeatureDomainPort(TypeElement typeElement, String rootFeature) {
+        if (typeElement.getKind() != ElementKind.INTERFACE) {
+            return false;
+        }
+        var matcher = DOMAIN_PORT_TYPE.matcher(typeElement.getQualifiedName().toString());
+        return matcher.matches() && matcher.group(1).equals(rootFeature);
     }
 
     private static String domainFeatureName(String fqn) {

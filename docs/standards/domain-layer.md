@@ -262,12 +262,13 @@ Each active context must include:
 Contexts with authored truth must also include:
 
 - `## Aggregate Model`
-- `## Commands And Invariants`
-- `## Consistency Model`
+- `## Commands And Invariants` and `## Consistency Model`
 - `Aggregate Root: <TypeName>` for at least one aggregate-root type
 
 Policy contexts without persisted authored truth must include:
 
+- `## Commands And Invariants`
+- `## Consistency Model`
 - `Write Model: None`
 - `## Ephemeral Policy Rationale`
 
@@ -286,7 +287,8 @@ documents own local model detail and must not redefine system-wide topology.
 - named domain modules importing any `src.domain.*.published.*` carrier
 - direct Java files under named domain modules
 - role package names outside the allowed role set
-- passive aggregates or entities whose behavior lives mainly in use cases
+- passive aggregates or entities whose behavior lives mainly in use cases, and
+  JavaBean-style public/protected `void set*` mutation methods in named modules
 - `application/` as a generic business-logic dump
 - render projections, canvas models, styles, or display selections as domain
   published language
@@ -304,7 +306,8 @@ Required enforced rules:
   removal, role subpackage topology, allowed role names, direct-file bans under
   domain modules, callable-contract bans in `published/`, `Context Role:`
   document markers, required `DOMAIN.md` sections, authored aggregate-root
-  markers, generation-policy `Write Model: None` declarations, context-role and
+  markers, generation-policy required sections and `Write Model: None`
+  declarations, context-role and
   context-relationship coverage, and the blocking absence of
   `src/domain/mapcore`.
 - `Error Prone` owns root `ApplicationService` public command/query/result
@@ -316,7 +319,8 @@ Required enforced rules:
   outbound-port implementation placement, infrastructure-free port signatures,
   and role-shape checks for aggregate, entity, value, port, policy, factory,
   service, event, and specification packages.
-- `PMD architecture` owns source-level domain leakage bans and obvious
+- `PMD architecture` owns source-level domain leakage bans, JavaBean-style
+  mutation smells, root infrastructure-composition smells, and obvious
   application-layer policy-helper smells.
 - `ArchUnit` owns domain independence from shell, view, data, JavaFX, SQL,
   source-local infrastructure, foreign private domain internals, named-module
