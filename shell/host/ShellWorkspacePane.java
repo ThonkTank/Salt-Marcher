@@ -7,6 +7,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
@@ -44,8 +45,8 @@ final class ShellWorkspacePane extends SplitPane {
         ShellFx.addStyleClass(controlsPanel, "control-panel");
         controlsPanel.setPrefWidth(240);
         controlsPanel.setMinWidth(200);
-        controlsPanel.setMinHeight(0);
-        controlsPanel.setMaxHeight(Double.MAX_VALUE);
+        controlsPanel.setMinHeight(Region.USE_PREF_SIZE);
+        controlsPanel.setMaxHeight(Region.USE_PREF_SIZE);
         controlsPanel.setMaxWidth(Double.MAX_VALUE);
         controlsPanel.setFillWidth(true);
 
@@ -114,9 +115,12 @@ final class ShellWorkspacePane extends SplitPane {
     private void applyControls(@Nullable Node controls) {
         ShellFx.clearChildren(controlsPanel);
         if (controls != null) {
-            Node hostedControls = ShellContentLayout.shellOwned(controls);
-            ShellFx.addChild(controlsPanel, hostedControls);
-            VBox.setVgrow(hostedControls, Priority.ALWAYS);
+            if (controls instanceof Region region) {
+                region.setMinWidth(0.0);
+                region.setMaxWidth(Double.MAX_VALUE);
+            }
+            ShellFx.addChild(controlsPanel, controls);
+            VBox.setVgrow(controls, Priority.NEVER);
         }
         controlsPanel.setVisible(controls != null);
         controlsPanel.setManaged(controls != null);
