@@ -1,8 +1,10 @@
 package src.view.statetabs.encounter;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -19,6 +21,7 @@ import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
+import src.domain.encounter.published.EncounterLock;
 import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.published.LoadEncounterBudgetQuery;
@@ -33,6 +36,8 @@ import src.domain.party.published.ReadStatus;
 
 public final class EncounterStateViewModel {
 
+    private static final int MAX_CREATURES_PER_SLOT = 20;
+
     public enum Mode {
         BUILDER,
         INITIATIVE,
@@ -46,6 +51,8 @@ public final class EncounterStateViewModel {
     private final List<PartyMember> activeParty = new ArrayList<>();
     private final List<EncounterCreature> roster = new ArrayList<>();
     private final List<GeneratedEncounter> generatedAlternatives = new ArrayList<>();
+    private final List<EncounterLock> lockedCreatures = new ArrayList<>();
+    private final List<Long> excludedCreatureIds = new ArrayList<>();
     private final List<InitiativeEntry> pendingInitiativeRows = new ArrayList<>();
     private final List<Combatant> combatants = new ArrayList<>();
     private final ReadOnlyObjectWrapper<Mode> mode = new ReadOnlyObjectWrapper<>(Mode.BUILDER);
@@ -65,6 +72,8 @@ public final class EncounterStateViewModel {
     private int generatedAdjustedXp;
     private String generatedDifficulty = "";
     private String generatedTitle = "";
+    private @Nullable RemovedRosterEntry pendingUndo;
+    private long nextUndoToken;
     private int currentTurnIndex;
     private int round = 1;
 
@@ -117,6 +126,12 @@ public final class EncounterStateViewModel {
             EncounterDifficultyBand difficulty
     ) {
         lastSettings = settings == null ? BuilderSettings.defaultSettings() : settings;
+        List<String> effectiveTypes = safeStrings(types);
+        List<String> effectiveSubtypes = safeStrings(subtypes);
+        List<String> effectiveBiomes = safeStrings(biomes);
+        EncounterDifficultyBand effectiveDifficulty =
+                difficulty == null ? EncounterDifficultyBand.defaultBand() : difficulty;
+        clearPendingUndo();
         refreshPartyContext();
         if (activeParty.isEmpty()) {
             status.set("Die aktive Party hat keine Mitglieder.");
@@ -124,13 +139,13 @@ public final class EncounterStateViewModel {
             return;
         }
         EncounterGenerationResult result = encounter.generate(new GenerateEncounterCommand(
-                types,
-                subtypes,
-                biomes,
-                difficulty == null ? EncounterDifficultyBand.defaultBand() : difficulty,
+                effectiveTypes,
+                effectiveSubtypes,
+                effectiveBiomes,
+                effectiveDifficulty,
                 5,
-                List.of(),
-                List.of()));
+                List.copyOf(excludedCreatureIds),
+                List.copyOf(lockedCreatures)));
         if (result.status() != EncounterGenerationStatus.SUCCESS || result.encounters().isEmpty()) {
             generatedAlternatives.clear();
             selectedAlternativeIndex = 0;
@@ -143,6 +158,15 @@ public final class EncounterStateViewModel {
         selectedAlternativeIndex = 0;
         applyGeneratedEncounter(generatedAlternatives.getFirst());
         status.set(generatedAlternatives.size() + " Encounter-Optionen generiert.");
+    }
+
+    public void reroll(
+            List<String> types,
+            List<String> subtypes,
+            List<String> biomes,
+            EncounterDifficultyBand difficulty
+    ) {
+        generate(lastSettings, types, subtypes, biomes, difficulty);
     }
 
     public void nextGeneratedAlternative() {
@@ -169,15 +193,12 @@ public final class EncounterStateViewModel {
             status.set("Kreatur konnte nicht geladen werden.");
             return;
         }
-        generatedAlternatives.clear();
-        selectedAlternativeIndex = 0;
-        generatedAdjustedXp = 0;
-        generatedDifficulty = "";
-        generatedTitle = "";
+        clearPendingUndo();
+        clearGeneratedContext();
         for (int index = 0; index < roster.size(); index++) {
             EncounterCreature existing = roster.get(index);
             if (existing.creatureId() == detail.id()) {
-                roster.set(index, existing.withCount(existing.count() + 1));
+                roster.set(index, existing.withCount(existing.count() + 1, MAX_CREATURES_PER_SLOT));
                 status.set(detail.name() + " wurde zum Encounter hinzugefuegt.");
                 refreshBuilderState(lastSettings, "");
                 return;
@@ -188,12 +209,119 @@ public final class EncounterStateViewModel {
         refreshBuilderState(lastSettings, "");
     }
 
+    public void incrementCreature(long creatureId) {
+        for (int index = 0; index < roster.size(); index++) {
+            EncounterCreature creature = roster.get(index);
+            if (creature.creatureId() == creatureId) {
+                clearPendingUndo();
+                clearGeneratedContext();
+                roster.set(index, creature.withCount(creature.count() + 1, MAX_CREATURES_PER_SLOT));
+                status.set(creature.name() + " Anzahl angepasst.");
+                refreshBuilderState(lastSettings, "");
+                return;
+            }
+        }
+    }
+
+    public void decrementCreature(long creatureId) {
+        for (int index = 0; index < roster.size(); index++) {
+            EncounterCreature creature = roster.get(index);
+            if (creature.creatureId() == creatureId) {
+                if (creature.count() <= 1) {
+                    status.set(creature.name() + " bleibt mindestens einmal im Roster.");
+                    return;
+                }
+                clearPendingUndo();
+                clearGeneratedContext();
+                roster.set(index, creature.withCount(creature.count() - 1, MAX_CREATURES_PER_SLOT));
+                status.set(creature.name() + " Anzahl angepasst.");
+                refreshBuilderState(lastSettings, "");
+                return;
+            }
+        }
+    }
+
+    public void removeCreature(long creatureId) {
+        for (int index = 0; index < roster.size(); index++) {
+            EncounterCreature creature = roster.get(index);
+            if (creature.creatureId() == creatureId) {
+                clearGeneratedContext();
+                roster.remove(index);
+                pendingUndo = new RemovedRosterEntry(++nextUndoToken, index, creature);
+                status.set(creature.name() + " wurde entfernt.");
+                refreshBuilderState(lastSettings, "");
+                return;
+            }
+        }
+    }
+
+    public void undoRemove(long token) {
+        RemovedRosterEntry removed = pendingUndo;
+        if (removed == null || removed.token() != token) {
+            return;
+        }
+        clearGeneratedContext();
+        int index = Math.max(0, Math.min(removed.index(), roster.size()));
+        roster.add(index, removed.creature());
+        pendingUndo = null;
+        status.set(removed.creature().name() + " wurde wiederhergestellt.");
+        refreshBuilderState(lastSettings, "");
+    }
+
+    public void lockCurrentRoster() {
+        if (roster.isEmpty()) {
+            status.set("Lock braucht mindestens eine Kreatur im Roster.");
+            return;
+        }
+        lockedCreatures.clear();
+        for (EncounterCreature creature : roster) {
+            lockedCreatures.add(new EncounterLock(creature.creatureId(), creature.count()));
+        }
+        clearPendingUndo();
+        status.set("Aktuelle Komposition fuer kommende Rerolls gesperrt.");
+        refreshBuilderState(lastSettings, "");
+    }
+
+    public void excludeCurrentRoster(
+            List<String> types,
+            List<String> subtypes,
+            List<String> biomes,
+            EncounterDifficultyBand difficulty
+    ) {
+        if (roster.isEmpty()) {
+            status.set("Exclude braucht mindestens eine Kreatur im Roster.");
+            return;
+        }
+        Set<Long> exclusions = new LinkedHashSet<>(excludedCreatureIds);
+        for (EncounterCreature creature : roster) {
+            exclusions.add(creature.creatureId());
+        }
+        excludedCreatureIds.clear();
+        excludedCreatureIds.addAll(exclusions);
+        lockedCreatures.clear();
+        clearPendingUndo();
+        generate(lastSettings, types, subtypes, biomes, difficulty);
+        if (!excludedCreatureIds.isEmpty()) {
+            status.set(status.get() + " Exclusions aktiv: " + excludedCreatureIds.size() + ".");
+        }
+    }
+
+    public void clearConstraints() {
+        if (lockedCreatures.isEmpty() && excludedCreatureIds.isEmpty()) {
+            status.set("Keine Generator-Constraints aktiv.");
+            return;
+        }
+        lockedCreatures.clear();
+        excludedCreatureIds.clear();
+        clearPendingUndo();
+        status.set("Generator-Constraints geloescht.");
+        refreshBuilderState(lastSettings, "");
+    }
+
     public void clearRoster() {
-        generatedAlternatives.clear();
+        clearGeneratedContext();
+        clearPendingUndo();
         roster.clear();
-        generatedAdjustedXp = 0;
-        generatedDifficulty = "";
-        generatedTitle = "";
         status.set("Encounter-Roster geleert.");
         refreshBuilderState(BuilderSettings.defaultSettings(), "");
     }
@@ -445,7 +573,29 @@ public final class EncounterStateViewModel {
                 difficulty,
                 settings == null ? BuilderSettings.defaultSettings() : settings,
                 !roster.isEmpty() && !activeParty.isEmpty(),
+                generatedAlternatives.size() > 1,
+                generatedAlternatives.size() > 1,
+                !activeParty.isEmpty(),
+                !roster.isEmpty(),
+                !roster.isEmpty(),
+                !lockedCreatures.isEmpty() || !excludedCreatureIds.isEmpty(),
+                constraintsLabel(),
+                pendingUndo,
                 message == null ? "" : message);
+    }
+
+    private String constraintsLabel() {
+        if (lockedCreatures.isEmpty() && excludedCreatureIds.isEmpty()) {
+            return "";
+        }
+        List<String> labels = new ArrayList<>();
+        if (!lockedCreatures.isEmpty()) {
+            labels.add("Locks " + lockedCreatures.size());
+        }
+        if (!excludedCreatureIds.isEmpty()) {
+            labels.add("Excluded " + excludedCreatureIds.size());
+        }
+        return String.join(" | ", labels);
     }
 
     private String titleLabel() {
@@ -494,6 +644,18 @@ public final class EncounterStateViewModel {
             return null;
         }
         return result.detail();
+    }
+
+    private void clearGeneratedContext() {
+        generatedAlternatives.clear();
+        selectedAlternativeIndex = 0;
+        generatedAdjustedXp = 0;
+        generatedDifficulty = "";
+        generatedTitle = "";
+    }
+
+    private void clearPendingUndo() {
+        pendingUndo = null;
     }
 
     private static EncounterCreature fromDetail(
@@ -597,6 +759,10 @@ public final class EncounterStateViewModel {
         return initiatives == null ? List.of() : List.copyOf(initiatives);
     }
 
+    private static List<String> safeStrings(List<String> values) {
+        return values == null ? List.of() : List.copyOf(values);
+    }
+
     private static String nameOnly(String label) {
         int detailStart = label.indexOf(" (");
         return detailStart < 0 ? label : label.substring(0, detailStart);
@@ -643,9 +809,24 @@ public final class EncounterStateViewModel {
             return xp * count;
         }
 
-        EncounterCreature withCount(int nextCount) {
-            return new EncounterCreature(id, creatureId, name, cr, xp, hp, ac, initiativeBonus, type, role, nextCount, tags);
+        EncounterCreature withCount(int nextCount, int maxCount) {
+            return new EncounterCreature(
+                    id,
+                    creatureId,
+                    name,
+                    cr,
+                    xp,
+                    hp,
+                    ac,
+                    initiativeBonus,
+                    type,
+                    role,
+                    Math.max(1, Math.min(maxCount, nextCount)),
+                    tags);
         }
+    }
+
+    public record RemovedRosterEntry(long token, int index, EncounterCreature creature) {
     }
 
     public record DifficultySummary(
@@ -665,12 +846,21 @@ public final class EncounterStateViewModel {
             DifficultySummary difficulty,
             BuilderSettings settings,
             boolean canStartCombat,
+            boolean canPreviousAlternative,
+            boolean canNextAlternative,
+            boolean canReroll,
+            boolean canLockCurrent,
+            boolean canExcludeCurrent,
+            boolean canClearConstraints,
+            String constraintsLabel,
+            @Nullable RemovedRosterEntry pendingUndo,
             String message
     ) {
         public BuilderState {
             party = party == null ? List.of() : List.copyOf(party);
             roster = roster == null ? List.of() : List.copyOf(roster);
             templateLabel = templateLabel == null ? "" : templateLabel;
+            constraintsLabel = constraintsLabel == null ? "" : constraintsLabel;
             message = message == null ? "" : message;
         }
     }

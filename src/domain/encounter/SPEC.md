@@ -45,6 +45,8 @@ Provide a runtime encounter builder that:
   roster as runtime derived state
 - let the user lock the current composition and reroll around it
 - let the user exclude the current composition and reroll away from it
+- let the user clear active lock and exclusion constraints without restarting
+  the shell
 
 ## Acceptance Criteria
 
@@ -54,3 +56,5 @@ Provide a runtime encounter builder that:
 - generator output includes adjusted XP and a difficulty-band label
 - lock and exclude actions change subsequent rerolls without requiring shell
   restarts
+- excluding the current composition immediately regenerates alternatives using
+  the current filter and difficulty selections

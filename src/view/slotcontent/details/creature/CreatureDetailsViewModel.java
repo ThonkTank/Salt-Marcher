@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Consumer;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -20,7 +21,7 @@ public final class CreatureDetailsViewModel {
     private static final NumberFormat INTEGER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
 
     private final CreatureDetailResult result;
-    private final ReadOnlyObjectWrapper<DetailPresentation> detail = new ReadOnlyObjectWrapper<>();
+    private final ReadOnlyObjectWrapper<CreatureDetailsDisplayModel> detail = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyStringWrapper loadingText = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper errorText = new ReadOnlyStringWrapper("");
 
@@ -28,7 +29,7 @@ public final class CreatureDetailsViewModel {
         this.result = Objects.requireNonNull(result, "result");
     }
 
-    public ReadOnlyObjectProperty<DetailPresentation> detailProperty() {
+    public ReadOnlyObjectProperty<CreatureDetailsDisplayModel> detailProperty() {
         return detail.getReadOnlyProperty();
     }
 
@@ -38,6 +39,30 @@ public final class CreatureDetailsViewModel {
 
     public ReadOnlyStringProperty errorTextProperty() {
         return errorText.getReadOnlyProperty();
+    }
+
+    public void connect(
+            Consumer<String> loadingSink,
+            Consumer<String> errorSink,
+            Consumer<CreatureDetailsDisplayModel> detailSink
+    ) {
+        Consumer<String> safeLoadingSink = loadingSink == null ? ignored -> { } : loadingSink;
+        Consumer<String> safeErrorSink = errorSink == null ? ignored -> { } : errorSink;
+        Consumer<CreatureDetailsDisplayModel> safeDetailSink = detailSink == null ? ignored -> { } : detailSink;
+        safeLoadingSink.accept(loadingText.get());
+        safeErrorSink.accept(errorText.get());
+        loadingText.addListener((obs, oldValue, newValue) -> safeLoadingSink.accept(newValue));
+        errorText.addListener((obs, oldValue, newValue) -> safeErrorSink.accept(newValue));
+        detail.addListener((obs, oldValue, newValue) -> {
+            if (newValue != null) {
+                safeDetailSink.accept(newValue);
+            }
+        });
+        load();
+        CreatureDetailsDisplayModel current = detail.get();
+        if (current != null) {
+            safeDetailSink.accept(current);
+        }
     }
 
     public void load() {
@@ -52,8 +77,8 @@ public final class CreatureDetailsViewModel {
         detail.set(toPresentation(result.detail()));
     }
 
-    private static DetailPresentation toPresentation(CreatureDetail creature) {
-        return new DetailPresentation(
+    private static CreatureDetailsDisplayModel toPresentation(CreatureDetail creature) {
+        return new CreatureDetailsDisplayModel(
                 creature.name(),
                 meta(creature),
                 coreProperties(creature),
@@ -78,19 +103,19 @@ public final class CreatureDetailsViewModel {
         return meta.toString();
     }
 
-    private static List<LabeledValue> coreProperties(CreatureDetail creature) {
-        List<LabeledValue> lines = new ArrayList<>();
+    private static List<CreatureDetailsDisplayModel.PropertyLine> coreProperties(CreatureDetail creature) {
+        List<CreatureDetailsDisplayModel.PropertyLine> lines = new ArrayList<>();
         String armorClassNotes = creature.armorClassNotes();
         String hitDiceExpression = creature.hitDiceExpression();
-        lines.add(new LabeledValue("Armor Class", creature.armorClass()
+        lines.add(new CreatureDetailsDisplayModel.PropertyLine("Armor Class", creature.armorClass()
                 + (present(armorClassNotes) ? " (" + armorClassNotes + ")" : "")));
-        lines.add(new LabeledValue("Hit Points", creature.hitPoints()
+        lines.add(new CreatureDetailsDisplayModel.PropertyLine("Hit Points", creature.hitPoints()
                 + (present(hitDiceExpression) ? " (" + hitDiceExpression + ")" : "")));
-        lines.add(new LabeledValue("Speed", speed(creature)));
+        lines.add(new CreatureDetailsDisplayModel.PropertyLine("Speed", speed(creature)));
         return lines;
     }
 
-    private static List<AbilityValue> abilities(CreatureDetail creature) {
+    private static List<CreatureDetailsDisplayModel.AbilityScore> abilities(CreatureDetail creature) {
         return List.of(
                 ability("STR", creature.strength()),
                 ability("DEX", creature.dexterity()),
@@ -100,14 +125,14 @@ public final class CreatureDetailsViewModel {
                 ability("CHA", creature.charisma()));
     }
 
-    private static AbilityValue ability(String label, int value) {
+    private static CreatureDetailsDisplayModel.AbilityScore ability(String label, int value) {
         int modifier = Math.floorDiv(value - 10, 2);
         String modifierText = modifier >= 0 ? "+" + modifier : String.valueOf(modifier);
-        return new AbilityValue(label, value + " (" + modifierText + ")");
+        return new CreatureDetailsDisplayModel.AbilityScore(label, value + " (" + modifierText + ")");
     }
 
-    private static List<LabeledValue> properties(CreatureDetail creature) {
-        List<LabeledValue> lines = new ArrayList<>();
+    private static List<CreatureDetailsDisplayModel.PropertyLine> properties(CreatureDetail creature) {
+        List<CreatureDetailsDisplayModel.PropertyLine> lines = new ArrayList<>();
         addIfPresent(lines, "Saving Throws", formatDelimited(creature.savingThrows()));
         addIfPresent(lines, "Skills", formatDelimited(creature.skills()));
         addIfPresent(lines, "Damage Vulnerabilities", creature.damageVulnerabilities());
@@ -116,27 +141,27 @@ public final class CreatureDetailsViewModel {
         addIfPresent(lines, "Condition Immunities", creature.conditionImmunities());
         addIfPresent(lines, "Senses", senses(creature));
         addIfPresent(lines, "Languages", creature.languages());
-        lines.add(new LabeledValue("Challenge", creature.challengeRating()
+        lines.add(new CreatureDetailsDisplayModel.PropertyLine("Challenge", creature.challengeRating()
                 + " (" + INTEGER_FORMAT.format(creature.xp()) + " XP)"));
         if (creature.proficiencyBonus() > 0) {
-            lines.add(new LabeledValue("Proficiency Bonus", "+" + creature.proficiencyBonus()));
+            lines.add(new CreatureDetailsDisplayModel.PropertyLine("Proficiency Bonus", "+" + creature.proficiencyBonus()));
         }
         return lines;
     }
 
-    private static List<ActionGroup> sections(CreatureDetail creature) {
-        List<ActionGroup> sections = new ArrayList<>();
-        List<ActionText> actions = creature.actions().stream()
+    private static List<CreatureDetailsDisplayModel.ActionGroup> sections(CreatureDetail creature) {
+        List<CreatureDetailsDisplayModel.ActionGroup> sections = new ArrayList<>();
+        List<CreatureDetailsDisplayModel.ActionLine> actions = creature.actions().stream()
                 .map(CreatureDetailsViewModel::actionLine)
                 .toList();
         if (!actions.isEmpty()) {
-            sections.add(new ActionGroup("Actions", "", actions));
+            sections.add(new CreatureDetailsDisplayModel.ActionGroup("Actions", "", actions));
         }
         return sections;
     }
 
-    private static ActionText actionLine(CreatureActionDetail action) {
-        return new ActionText(action.name(), action.description());
+    private static CreatureDetailsDisplayModel.ActionLine actionLine(CreatureActionDetail action) {
+        return new CreatureDetailsDisplayModel.ActionLine(action.name(), action.description());
     }
 
     private static String speed(CreatureDetail creature) {
@@ -221,9 +246,13 @@ public final class CreatureDetailsViewModel {
         target.append(value);
     }
 
-    private static void addIfPresent(List<LabeledValue> lines, String label, @Nullable String value) {
+    private static void addIfPresent(
+            List<CreatureDetailsDisplayModel.PropertyLine> lines,
+            String label,
+            @Nullable String value
+    ) {
         if (value != null && !value.isBlank()) {
-            lines.add(new LabeledValue(label, value));
+            lines.add(new CreatureDetailsDisplayModel.PropertyLine(label, value));
         }
     }
 
@@ -238,34 +267,4 @@ public final class CreatureDetailsViewModel {
         return "Creature details could not be loaded.";
     }
 
-    public record DetailPresentation(
-            String name,
-            String meta,
-            List<LabeledValue> coreProperties,
-            List<AbilityValue> abilities,
-            List<LabeledValue> properties,
-            List<ActionGroup> sections
-    ) {
-        public DetailPresentation {
-            coreProperties = coreProperties == null ? List.of() : List.copyOf(coreProperties);
-            abilities = abilities == null ? List.of() : List.copyOf(abilities);
-            properties = properties == null ? List.of() : List.copyOf(properties);
-            sections = sections == null ? List.of() : List.copyOf(sections);
-        }
-    }
-
-    public record LabeledValue(String label, String text) {
-    }
-
-    public record AbilityValue(String shortName, String scoreText) {
-    }
-
-    public record ActionGroup(String heading, String leadText, List<ActionText> actions) {
-        public ActionGroup {
-            actions = actions == null ? List.of() : List.copyOf(actions);
-        }
-    }
-
-    public record ActionText(String displayName, String bodyText) {
-    }
 }

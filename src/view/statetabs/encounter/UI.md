@@ -31,7 +31,7 @@ Current state:
 
 - `Creation` shows the original compact encounter roster dialog: title row,
   difficulty and party summary, difficulty meter, thresholds, adjusted XP,
-  roster cards, and generate/start actions.
+  generator controls, roster cards, and generate/start actions.
 - `Initiative` shows one editable initiative row for each party member and
   encounter creature.
 - `Combat` shows round status, combat cards, HP bars, AC and initiative badges,
@@ -49,7 +49,17 @@ creature details through the creature application service.
 
 - `Generieren` creates ranked encounter alternatives from the active party and
   the latest catalog type, subtype, biome, and difficulty selections.
+- Previous and next controls switch among the currently generated alternatives.
+- `Reroll` regenerates alternatives from the latest catalog filters and active
+  difficulty.
+- `Lock` stores the current roster as generator locks for following rerolls.
+- `Exclude` adds the current creature IDs to generator exclusions, clears active
+  locks, and rerolls immediately.
+- `Clear` removes active generator locks and exclusions.
 - Catalog `+Add` actions append the selected creature to the runtime roster.
+- Roster `+`, `-`, and remove controls adjust slot quantity or remove a slot;
+  a single undo action can restore the most recently removed slot.
+- A roster creature name opens the creature details inspector.
 - `Kampf starten` opens initiative entry when the roster has creatures.
 - `Alle wuerfeln` updates visible initiative spinner values.
 - Confirming initiative opens the combat tracker.
@@ -66,6 +76,10 @@ creature details through the creature application service.
   can be populated through catalog `+Add` or `Generieren`.
 - Generated roster: difficulty, thresholds, adjusted XP, generator title, and
   creature cards are visible.
+- Active generator constraints: a compact Locks/Excluded summary is visible in
+  the creation summary row.
+- Removed roster slot: a one-action undo notice is visible until another roster
+  or generator mutation replaces it.
 - Live combat: the active turn is highlighted and defeated monsters use the
   dead-card style.
 - All enemies defeated: the end-combat button receives accent emphasis.

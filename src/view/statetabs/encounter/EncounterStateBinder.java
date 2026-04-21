@@ -3,12 +3,17 @@ package src.view.statetabs.encounter;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.party.PartyApplicationService;
+import src.view.slotcontent.details.creature.CreatureDetailsView;
+import src.view.slotcontent.details.creature.CreatureDetailsViewModel;
 import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
 final class EncounterStateBinder {
@@ -29,7 +34,7 @@ final class EncounterStateBinder {
         EncounterStateViewModel viewModel = new EncounterStateViewModel(encounters, creatures, party);
         EncounterStateView state = new EncounterStateView();
         state.statusTextProperty().bind(viewModel.statusProperty());
-        wireActions(state, viewModel, encounterSession);
+        wireActions(runtimeContext.inspector(), creatures, state, viewModel, encounterSession);
         wireSession(encounterSession, viewModel);
         wireRendering(state, viewModel);
         render(state, viewModel);
@@ -37,6 +42,8 @@ final class EncounterStateBinder {
     }
 
     private void wireActions(
+            InspectorSink inspector,
+            CreaturesApplicationService creatures,
             EncounterStateView state,
             EncounterStateViewModel viewModel,
             EncounterRuntimeViewModel encounterSession
@@ -54,6 +61,27 @@ final class EncounterStateBinder {
                     filters.biomes(),
                     encounterSession.difficulty());
         });
+        state.setOnPreviousAlternative(viewModel::previousGeneratedAlternative);
+        state.setOnNextAlternative(viewModel::nextGeneratedAlternative);
+        state.setOnReroll(() -> {
+            EncounterRuntimeViewModel.EncounterFilters filters = encounterSession.filters();
+            viewModel.reroll(filters.types(), filters.subtypes(), filters.biomes(), encounterSession.difficulty());
+        });
+        state.setOnLockCurrent(viewModel::lockCurrentRoster);
+        state.setOnExcludeCurrent(() -> {
+            EncounterRuntimeViewModel.EncounterFilters filters = encounterSession.filters();
+            viewModel.excludeCurrentRoster(
+                    filters.types(),
+                    filters.subtypes(),
+                    filters.biomes(),
+                    encounterSession.difficulty());
+        });
+        state.setOnClearConstraints(viewModel::clearConstraints);
+        state.setOnRosterIncrement(viewModel::incrementCreature);
+        state.setOnRosterDecrement(viewModel::decrementCreature);
+        state.setOnRosterRemove(viewModel::removeCreature);
+        state.setOnUndoRemove(viewModel::undoRemove);
+        state.setOnOpenCreature(creatureId -> openCreatureDetails(inspector, creatures, creatureId));
         state.setOnStartInitiative(viewModel::openInitiative);
         state.setOnInitiativeBack(viewModel::backToBuilder);
         state.setOnInitiativeConfirm(inputs -> viewModel.confirmInitiative(inputs.stream()
@@ -118,6 +146,7 @@ final class EncounterStateBinder {
                         settings.diversityLevel()),
                 source.roster().stream()
                         .map(creature -> new EncounterStateView.RosterCardView(
+                                creature.creatureId(),
                                 creature.name(),
                                 creature.cr(),
                                 creature.totalXp(),
@@ -127,6 +156,18 @@ final class EncounterStateBinder {
                                 creature.count()))
                         .toList(),
                 source.canStartCombat(),
+                source.canPreviousAlternative(),
+                source.canNextAlternative(),
+                source.canReroll(),
+                source.canLockCurrent(),
+                source.canExcludeCurrent(),
+                source.canClearConstraints(),
+                source.constraintsLabel(),
+                source.pendingUndo() == null
+                        ? null
+                        : new EncounterStateView.UndoRemoveView(
+                                source.pendingUndo().token(),
+                                source.pendingUndo().creature().name()),
                 source.message());
     }
 
@@ -183,6 +224,26 @@ final class EncounterStateBinder {
                 source.xpAwarded(),
                 source.canAwardXp(),
                 source.partySize());
+    }
+
+    private static void openCreatureDetails(
+            InspectorSink inspector,
+            CreaturesApplicationService creatures,
+            long creatureId
+    ) {
+        inspector.push(new InspectorEntrySpec(
+                "Creature",
+                "creature:" + creatureId,
+                () -> detailNode(creatures, creatureId),
+                null));
+    }
+
+    private static Node detailNode(CreaturesApplicationService creatures, long creatureId) {
+        CreatureDetailsViewModel viewModel =
+                new CreatureDetailsViewModel(creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId)));
+        CreatureDetailsView view = new CreatureDetailsView();
+        viewModel.connect(view::setLoadingText, view::setErrorText, view::showDetail);
+        return view;
     }
 
     private record Binding(Node state) implements ShellBinding {

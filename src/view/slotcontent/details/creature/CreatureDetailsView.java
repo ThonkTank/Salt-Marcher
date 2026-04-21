@@ -38,7 +38,7 @@ public final class CreatureDetailsView extends VBox {
         }
     }
 
-    public void showDetail(@Nullable DetailContent detail) {
+    public void showDetail(@Nullable CreatureDetailsDisplayModel detail) {
         if (detail == null) {
             return;
         }
@@ -53,7 +53,7 @@ public final class CreatureDetailsView extends VBox {
         buildSections(detail.sections());
     }
 
-    private void buildHeader(DetailContent detail) {
+    private void buildHeader(CreatureDetailsDisplayModel detail) {
         Label name = new Label(detail.name());
         name.getStyleClass().add("stat-block-name");
         name.setWrapText(true);
@@ -63,8 +63,9 @@ public final class CreatureDetailsView extends VBox {
         getChildren().addAll(name, meta, separator());
     }
 
-    private void addProperties(List<PropertyLine> properties) {
-        for (PropertyLine property : properties == null ? List.<PropertyLine>of() : properties) {
+    private void addProperties(List<CreatureDetailsDisplayModel.PropertyLine> properties) {
+        for (CreatureDetailsDisplayModel.PropertyLine property
+                : properties == null ? List.<CreatureDetailsDisplayModel.PropertyLine>of() : properties) {
             TextFlow flow = new TextFlow();
             Text label = new Text(property.label() + "  ");
             label.getStyleClass().add("stat-block-prop-label");
@@ -76,19 +77,19 @@ public final class CreatureDetailsView extends VBox {
         }
     }
 
-    private void buildAbilityGrid(List<AbilityScore> scores) {
+    private void buildAbilityGrid(List<CreatureDetailsDisplayModel.AbilityScore> scores) {
         GridPane abilities = new GridPane();
         abilities.getStyleClass().add("stat-block-abilities");
         abilities.setAlignment(Pos.CENTER);
         abilities.setHgap(0);
         abilities.setPadding(new Insets(4, 0, 4, 0));
-        List<AbilityScore> safeScores = scores == null ? List.of() : scores;
+        List<CreatureDetailsDisplayModel.AbilityScore> safeScores = scores == null ? List.of() : scores;
         for (int index = 0; index < safeScores.size(); index++) {
             ColumnConstraints constraints = new ColumnConstraints();
             constraints.setPercentWidth(100.0 / safeScores.size());
             constraints.setHalignment(HPos.CENTER);
             abilities.getColumnConstraints().add(constraints);
-            AbilityScore score = safeScores.get(index);
+            CreatureDetailsDisplayModel.AbilityScore score = safeScores.get(index);
             Label header = new Label(score.label());
             header.getStyleClass().add("stat-block-ability-header");
             Label value = new Label(score.value());
@@ -99,8 +100,9 @@ public final class CreatureDetailsView extends VBox {
         getChildren().add(abilities);
     }
 
-    private void buildSections(List<ActionSection> sections) {
-        for (ActionSection section : sections == null ? List.<ActionSection>of() : sections) {
+    private void buildSections(List<CreatureDetailsDisplayModel.ActionGroup> sections) {
+        for (CreatureDetailsDisplayModel.ActionGroup section
+                : sections == null ? List.<CreatureDetailsDisplayModel.ActionGroup>of() : sections) {
             if (section.title() != null && !section.title().isBlank()) {
                 Label title = new Label(section.title());
                 title.getStyleClass().add("stat-block-section-header");
@@ -113,7 +115,7 @@ public final class CreatureDetailsView extends VBox {
                 description.setWrapText(true);
                 getChildren().add(description);
             }
-            for (ActionLine action : section.actions()) {
+            for (CreatureDetailsDisplayModel.ActionLine action : section.actions()) {
                 TextFlow flow = new TextFlow();
                 flow.setPadding(new Insets(2, 0, 2, 0));
                 if (action.name() != null && !action.name().isBlank()) {
@@ -140,34 +142,4 @@ public final class CreatureDetailsView extends VBox {
         return separator;
     }
 
-    public record DetailContent(
-            String name,
-            String meta,
-            List<PropertyLine> coreProperties,
-            List<AbilityScore> abilities,
-            List<PropertyLine> properties,
-            List<ActionSection> sections
-    ) {
-        public DetailContent {
-            coreProperties = coreProperties == null ? List.of() : List.copyOf(coreProperties);
-            abilities = abilities == null ? List.of() : List.copyOf(abilities);
-            properties = properties == null ? List.of() : List.copyOf(properties);
-            sections = sections == null ? List.of() : List.copyOf(sections);
-        }
-    }
-
-    public record PropertyLine(String label, String value) {
-    }
-
-    public record AbilityScore(String label, String value) {
-    }
-
-    public record ActionSection(String title, String description, List<ActionLine> actions) {
-        public ActionSection {
-            actions = actions == null ? List.of() : List.copyOf(actions);
-        }
-    }
-
-    public record ActionLine(String name, String description) {
-    }
 }

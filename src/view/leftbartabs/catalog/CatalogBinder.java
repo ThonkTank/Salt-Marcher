@@ -13,9 +13,9 @@ import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.published.EncounterDifficultyBand;
+import src.view.slotcontent.controls.catalog.CatalogControlsView;
 import src.view.slotcontent.details.creature.CreatureDetailsView;
 import src.view.slotcontent.details.creature.CreatureDetailsViewModel;
-import src.view.slotcontent.controls.catalog.CatalogControlsView;
 import src.view.slotcontent.main.catalog.CatalogMainView;
 import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
@@ -116,20 +116,7 @@ final class CatalogBinder {
         CreatureDetailsViewModel viewModel =
                 new CreatureDetailsViewModel(creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId)));
         CreatureDetailsView view = new CreatureDetailsView();
-        view.setLoadingText(viewModel.loadingTextProperty().get());
-        view.setErrorText(viewModel.errorTextProperty().get());
-        viewModel.detailProperty().addListener((obs, oldValue, newValue) -> {
-            if (newValue != null) {
-                view.showDetail(toViewDetail(newValue));
-            }
-        });
-        viewModel.errorTextProperty().addListener((obs, oldValue, newValue) -> view.setErrorText(newValue));
-        viewModel.loadingTextProperty().addListener((obs, oldValue, newValue) -> view.setLoadingText(newValue));
-        viewModel.load();
-        CreatureDetailsViewModel.DetailPresentation detail = viewModel.detailProperty().get();
-        if (detail != null) {
-            view.showDetail(toViewDetail(detail));
-        }
+        viewModel.connect(view::setLoadingText, view::setErrorText, view::showDetail);
         return view;
     }
 
@@ -181,31 +168,6 @@ final class CatalogBinder {
             return EncounterDifficultyBand.DEADLY;
         }
         return EncounterDifficultyBand.MEDIUM;
-    }
-
-    private static CreatureDetailsView.DetailContent toViewDetail(CreatureDetailsViewModel.DetailPresentation detail) {
-        return new CreatureDetailsView.DetailContent(
-                detail.name(),
-                detail.meta(),
-                detail.coreProperties().stream()
-                        .map(line -> new CreatureDetailsView.PropertyLine(line.label(), line.text()))
-                        .toList(),
-                detail.abilities().stream()
-                        .map(ability -> new CreatureDetailsView.AbilityScore(ability.shortName(), ability.scoreText()))
-                        .toList(),
-                detail.properties().stream()
-                        .map(line -> new CreatureDetailsView.PropertyLine(line.label(), line.text()))
-                        .toList(),
-                detail.sections().stream()
-                        .map(section -> new CreatureDetailsView.ActionSection(
-                                section.heading(),
-                                section.leadText(),
-                                section.actions().stream()
-                                        .map(action -> new CreatureDetailsView.ActionLine(
-                                                action.displayName(),
-                                                action.bodyText()))
-                                        .toList()))
-                        .toList());
     }
 
     private record Binding(Node controls, Node main) implements ShellBinding {

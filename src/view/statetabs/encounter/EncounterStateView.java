@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Bounds;
@@ -29,6 +30,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.util.StringConverter;
+import org.jspecify.annotations.Nullable;
 
 public final class EncounterStateView extends VBox {
 
@@ -40,6 +42,7 @@ public final class EncounterStateView extends VBox {
     private final Label builderDifficultyLabel = new Label();
     private final Label builderTemplateLabel = new Label();
     private final Label builderPartyLabel = new Label();
+    private final Label builderConstraintsLabel = new Label();
     private final Label builderXpLabel = new Label();
     private final Label easyThresholdLabel = new Label();
     private final Label mediumThresholdLabel = new Label();
@@ -50,6 +53,12 @@ public final class EncounterStateView extends VBox {
     private final ScrollPane rosterScroll = new ScrollPane(rosterList);
     private final StackPane rosterHost = new StackPane(rosterPlaceholder, rosterScroll);
     private final VBox advisoryRegion = new VBox(4);
+    private final Button previousAlternativeButton = new Button("<");
+    private final Button nextAlternativeButton = new Button(">");
+    private final Button rerollButton = new Button("Reroll");
+    private final Button lockCurrentButton = new Button("Lock");
+    private final Button excludeCurrentButton = new Button("Exclude");
+    private final Button clearConstraintsButton = new Button("Clear");
     private final Button builderStartCombatButton = new Button("_Kampf starten");
     private final VBox builderPane = buildBuilderPane();
 
@@ -78,6 +87,17 @@ public final class EncounterStateView extends VBox {
     private final VBox resultsPane = buildResultsPane();
 
     private Consumer<BuilderSettingsInput> onGenerate = settings -> { };
+    private Runnable onPreviousAlternative = () -> { };
+    private Runnable onNextAlternative = () -> { };
+    private Runnable onReroll = () -> { };
+    private Runnable onLockCurrent = () -> { };
+    private Runnable onExcludeCurrent = () -> { };
+    private Runnable onClearConstraints = () -> { };
+    private LongConsumer onRosterIncrement = id -> { };
+    private LongConsumer onRosterDecrement = id -> { };
+    private LongConsumer onRosterRemove = id -> { };
+    private LongConsumer onUndoRemove = token -> { };
+    private LongConsumer onOpenCreature = id -> { };
     private Runnable onStartInitiative = () -> { };
     private Runnable onInitiativeBack = () -> { };
     private Consumer<List<InitiativeInputView>> onInitiativeConfirm = entries -> { };
@@ -116,12 +136,21 @@ public final class EncounterStateView extends VBox {
         updateDifficultyStyle(builderDifficultyLabel, state.difficulty().difficulty());
         builderTemplateLabel.setText(state.templateLabel());
         builderPartyLabel.setText(state.partyLabel());
+        builderConstraintsLabel.setText(state.constraintsLabel());
+        builderConstraintsLabel.setVisible(!state.constraintsLabel().isBlank());
+        builderConstraintsLabel.setManaged(!state.constraintsLabel().isBlank());
         builderXpLabel.setText("Adj. XP: " + state.difficulty().adjustedXp());
         easyThresholdLabel.setText("Easy " + state.difficulty().easy());
         mediumThresholdLabel.setText("Med. " + state.difficulty().medium());
         hardThresholdLabel.setText("Hard " + state.difficulty().hard());
         deadlyThresholdLabel.setText("Deadly " + state.difficulty().deadly());
         difficultyMeter.update(state.difficulty());
+        previousAlternativeButton.setDisable(!state.canPreviousAlternative());
+        nextAlternativeButton.setDisable(!state.canNextAlternative());
+        rerollButton.setDisable(!state.canReroll());
+        lockCurrentButton.setDisable(!state.canLockCurrent());
+        excludeCurrentButton.setDisable(!state.canExcludeCurrent());
+        clearConstraintsButton.setDisable(!state.canClearConstraints());
         builderStartCombatButton.setDisable(!state.canStartCombat());
         rebuildRoster(state);
     }
@@ -170,6 +199,50 @@ public final class EncounterStateView extends VBox {
 
     public void setOnGenerate(Consumer<BuilderSettingsInput> callback) {
         onGenerate = callback == null ? settings -> { } : callback;
+    }
+
+    public void setOnPreviousAlternative(Runnable callback) {
+        onPreviousAlternative = callback == null ? () -> { } : callback;
+    }
+
+    public void setOnNextAlternative(Runnable callback) {
+        onNextAlternative = callback == null ? () -> { } : callback;
+    }
+
+    public void setOnReroll(Runnable callback) {
+        onReroll = callback == null ? () -> { } : callback;
+    }
+
+    public void setOnLockCurrent(Runnable callback) {
+        onLockCurrent = callback == null ? () -> { } : callback;
+    }
+
+    public void setOnExcludeCurrent(Runnable callback) {
+        onExcludeCurrent = callback == null ? () -> { } : callback;
+    }
+
+    public void setOnClearConstraints(Runnable callback) {
+        onClearConstraints = callback == null ? () -> { } : callback;
+    }
+
+    public void setOnRosterIncrement(LongConsumer callback) {
+        onRosterIncrement = callback == null ? id -> { } : callback;
+    }
+
+    public void setOnRosterDecrement(LongConsumer callback) {
+        onRosterDecrement = callback == null ? id -> { } : callback;
+    }
+
+    public void setOnRosterRemove(LongConsumer callback) {
+        onRosterRemove = callback == null ? id -> { } : callback;
+    }
+
+    public void setOnUndoRemove(LongConsumer callback) {
+        onUndoRemove = callback == null ? token -> { } : callback;
+    }
+
+    public void setOnOpenCreature(LongConsumer callback) {
+        onOpenCreature = callback == null ? id -> { } : callback;
     }
 
     public void setOnStartInitiative(Runnable callback) {
@@ -228,11 +301,12 @@ public final class EncounterStateView extends VBox {
         HBox titleRow = new HBox(8, title, titleSpacer, saveEncounterButton);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        HBox summaryRow = new HBox(8, builderDifficultyLabel, builderTemplateLabel, builderPartyLabel);
+        HBox summaryRow = new HBox(8, builderDifficultyLabel, builderTemplateLabel, builderPartyLabel, builderConstraintsLabel);
         summaryRow.setAlignment(Pos.CENTER_LEFT);
         builderDifficultyLabel.getStyleClass().add("text-secondary");
         builderTemplateLabel.getStyleClass().addAll("small", "text-secondary");
         builderPartyLabel.getStyleClass().add("text-secondary");
+        builderConstraintsLabel.getStyleClass().addAll("small", "text-secondary");
         builderXpLabel.getStyleClass().add("bold");
         HBox thresholdRow = new HBox(6, easyThresholdLabel, mediumThresholdLabel, hardThresholdLabel, deadlyThresholdLabel);
         easyThresholdLabel.getStyleClass().add("difficulty-easy");
@@ -258,6 +332,34 @@ public final class EncounterStateView extends VBox {
         generateButton.setMaxWidth(Double.MAX_VALUE);
         generateButton.setTooltip(new Tooltip("Encounter aus Catalog-Filtern generieren (Alt+G)"));
         generateButton.setOnAction(event -> onGenerate.accept(BuilderSettingsInput.defaultInput()));
+        previousAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
+        previousAlternativeButton.setTooltip(new Tooltip("Vorherige Generator-Alternative"));
+        previousAlternativeButton.setOnAction(event -> onPreviousAlternative.run());
+        nextAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
+        nextAlternativeButton.setTooltip(new Tooltip("Naechste Generator-Alternative"));
+        nextAlternativeButton.setOnAction(event -> onNextAlternative.run());
+        rerollButton.getStyleClass().addAll("compact", "neutral-action");
+        rerollButton.setTooltip(new Tooltip("Mit aktuellen Filtern neu wuerfeln"));
+        rerollButton.setOnAction(event -> onReroll.run());
+        lockCurrentButton.getStyleClass().addAll("compact", "neutral-action");
+        lockCurrentButton.setTooltip(new Tooltip("Aktuelles Roster fuer kommende Rerolls festhalten"));
+        lockCurrentButton.setOnAction(event -> onLockCurrent.run());
+        excludeCurrentButton.getStyleClass().addAll("compact", "neutral-action");
+        excludeCurrentButton.setTooltip(new Tooltip("Aktuelle Kreaturen ausschliessen und neu wuerfeln"));
+        excludeCurrentButton.setOnAction(event -> onExcludeCurrent.run());
+        clearConstraintsButton.getStyleClass().addAll("compact", "neutral-action");
+        clearConstraintsButton.setTooltip(new Tooltip("Locks und Exclusions loeschen"));
+        clearConstraintsButton.setOnAction(event -> onClearConstraints.run());
+        HBox generatorControls = new HBox(
+                6,
+                previousAlternativeButton,
+                nextAlternativeButton,
+                rerollButton,
+                lockCurrentButton,
+                excludeCurrentButton,
+                clearConstraintsButton);
+        generatorControls.setAlignment(Pos.CENTER_LEFT);
+        generatorControls.setPadding(new Insets(6, 0, 0, 0));
         builderStartCombatButton.getStyleClass().add("accent");
         builderStartCombatButton.setMaxWidth(Double.MAX_VALUE);
         builderStartCombatButton.setDisable(true);
@@ -274,6 +376,7 @@ public final class EncounterStateView extends VBox {
                 difficultyMeter,
                 thresholdRow,
                 builderXpLabel,
+                generatorControls,
                 rosterHost,
                 advisoryRegion,
                 separator(),
@@ -401,8 +504,7 @@ public final class EncounterStateView extends VBox {
             rosterPlaceholder.setManaged(true);
             rosterScroll.setVisible(false);
             rosterScroll.setManaged(false);
-            advisoryRegion.setVisible(false);
-            advisoryRegion.setManaged(false);
+            rebuildAdvisory(state);
             return;
         }
         rosterPlaceholder.setVisible(false);
@@ -412,6 +514,21 @@ public final class EncounterStateView extends VBox {
         for (RosterCardView card : state.roster()) {
             rosterList.getChildren().add(buildRosterCard(card));
         }
+        rebuildAdvisory(state);
+    }
+
+    private void rebuildAdvisory(BuilderStateView state) {
+        if (state.pendingUndo() != null) {
+            UndoRemoveView undo = state.pendingUndo();
+            Label removed = new Label(undo.creatureName() + " entfernt.");
+            removed.getStyleClass().add("text-secondary");
+            Button undoButton = new Button("Rueckgaengig");
+            undoButton.getStyleClass().addAll("compact", "neutral-action");
+            undoButton.setOnAction(event -> onUndoRemove.accept(undo.token()));
+            HBox row = new HBox(8, removed, undoButton);
+            row.setAlignment(Pos.CENTER_LEFT);
+            advisoryRegion.getChildren().add(row);
+        }
         if (!state.message().isBlank()) {
             Label title = new Label("Hinweise");
             title.getStyleClass().addAll("small", "text-secondary");
@@ -419,11 +536,13 @@ public final class EncounterStateView extends VBox {
             row.getStyleClass().add("text-secondary");
             row.setWrapText(true);
             advisoryRegion.getChildren().addAll(title, row);
-            advisoryRegion.setVisible(true);
-            advisoryRegion.setManaged(true);
-        } else {
+        }
+        if (advisoryRegion.getChildren().isEmpty()) {
             advisoryRegion.setVisible(false);
             advisoryRegion.setManaged(false);
+        } else {
+            advisoryRegion.setVisible(true);
+            advisoryRegion.setManaged(true);
         }
     }
 
@@ -433,18 +552,22 @@ public final class EncounterStateView extends VBox {
 
         Button minus = new Button("-");
         minus.getStyleClass().add("compact");
+        minus.setDisable(card.count() <= 1);
+        minus.setOnAction(event -> onRosterDecrement.accept(card.creatureId()));
         Label count = new Label(String.valueOf(card.count()));
         count.getStyleClass().add("bold");
         count.setMinWidth(24);
         count.setAlignment(Pos.CENTER);
         Button plus = new Button("+");
         plus.getStyleClass().add("compact");
+        plus.setOnAction(event -> onRosterIncrement.accept(card.creatureId()));
         HBox quantity = new HBox(2, minus, count, plus);
         quantity.setAlignment(Pos.CENTER);
 
         Button name = new Button(card.name());
         name.getStyleClass().add("creature-link");
-        name.setTooltip(new Tooltip("Statblock-Hook wird spaeter angebunden."));
+        name.setTooltip(new Tooltip("Creature details oeffnen"));
+        name.setOnAction(event -> onOpenCreature.accept(card.creatureId()));
 
         HBox detail = new HBox(4);
         detail.setAlignment(Pos.CENTER_LEFT);
@@ -461,6 +584,7 @@ public final class EncounterStateView extends VBox {
         expand.getStyleClass().addAll("text-muted", "clickable");
         Button remove = new Button("\u00d7");
         remove.getStyleClass().addAll("compact", "remove-btn");
+        remove.setOnAction(event -> onRosterRemove.accept(card.creatureId()));
         VBox right = new VBox(4, expand, remove);
         right.setAlignment(Pos.CENTER_RIGHT);
 
@@ -825,10 +949,19 @@ public final class EncounterStateView extends VBox {
             BuilderSettingsInput settings,
             List<RosterCardView> roster,
             boolean canStartCombat,
+            boolean canPreviousAlternative,
+            boolean canNextAlternative,
+            boolean canReroll,
+            boolean canLockCurrent,
+            boolean canExcludeCurrent,
+            boolean canClearConstraints,
+            String constraintsLabel,
+            @Nullable UndoRemoveView pendingUndo,
             String message
     ) {
         public BuilderStateView {
             roster = roster == null ? List.of() : List.copyOf(roster);
+            constraintsLabel = constraintsLabel == null ? "" : constraintsLabel;
         }
     }
 
@@ -836,6 +969,7 @@ public final class EncounterStateView extends VBox {
     }
 
     public record RosterCardView(
+            long creatureId,
             String name,
             String challengeRating,
             int xp,
@@ -844,6 +978,9 @@ public final class EncounterStateView extends VBox {
             String role,
             int count
     ) {
+    }
+
+    public record UndoRemoveView(long token, String creatureName) {
     }
 
     public record InitiativeEntryView(String id, String label, String kind, int initiative) {
