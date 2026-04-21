@@ -254,14 +254,11 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             return false;
         }
 
-        String applicationService = domainFeaturePrefix
-                + SaltMarcherSourceFacts.toPascalCaseSuffix(featureName, "ApplicationService");
-        if (registeredType.equals(applicationService)
-                || registeredType.startsWith(applicationService + ".")) {
+        String simpleName = registeredType.substring(registeredType.lastIndexOf('.') + 1);
+        if (simpleName.endsWith("ApplicationService")) {
             return true;
         }
 
-        String simpleName = registeredType.substring(registeredType.lastIndexOf('.') + 1);
         return simpleName.endsWith("Repository")
                 || simpleName.endsWith("Lookup")
                 || simpleName.endsWith("Catalog")

@@ -290,18 +290,27 @@ Current mechanical ownership:
   adapters, repositories, queries, and mappers, and feature DDL literal
   placement.
 - `Error Prone` owns shell API allowlists, service-registry registration
-  placement, adapter role contracts, public signature leak bans, and source
-  adapter return-type boundaries.
+  placement, data-root service export shape, adapter role contracts, public
+  signature leak bans, and source-adapter public/protected signature
+  boundaries.
 - `ArchUnit` owns dependency direction, foreign-domain-public-boundary-only
   access, data feature cycle freedom, private-data bucket isolation,
   `model/` independence from domain packages, and generic-only
   `persistencecore/`.
 
-Current review-owned rules cover semantic thinness of composition roots, port
-adapter placement, source-adapter privacy, business-rule exclusion, mapper
-translation purity, source-local model discipline, generic-only
-`persistencecore/`, source-local column and field-name centralization, and
-semantic duplicate schema truth. SQL table-name literal ownership is mechanical.
+Current review-owned rules cover semantic thinness of composition roots,
+business-rule exclusion, mapper translation purity, whether legal source
+facades are useful boundaries, source-local column and field-name
+centralization, and semantic duplicate schema truth. Port adapter package and
+role placement, public adapter surface shape, source-adapter public/protected
+signature privacy, source-local model independence from domain, generic-only
+`persistencecore/`, and SQL table-name literal ownership are mechanical.
+
+The source-pattern blockers intentionally stop at stable Java source/API shape.
+They are useful for concrete source API leakage, obvious query mutations, legal
+service registration shape, and source-local gateway signatures. They are not
+evidence for persistence semantics such as transaction correctness, query
+performance, migration safety, or invariant-preserving mapper behavior.
 
 Current build-harness scope is slightly stricter than the intent wording in
 this standard:

@@ -23,8 +23,8 @@ Current state:
 ## Visible Surfaces
 
 - `COCKPIT_CONTROLS` contains content selection, creature filters, active
-  filter chips, encounter difficulty selection, sort selection, result count,
-  and page controls.
+  filter chips, encounter difficulty selection, encounter-table selection,
+  sort selection, result count, and page controls.
 - `COCKPIT_MAIN` contains the active catalog list.
 - Creature Inspector content is defined separately in
   [Creature Details UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/slotcontent/details/creature/UI.md:1).
@@ -41,6 +41,11 @@ Current state:
 - Creature type, subtype, biome, encounter difficulty, amount, balance, and
   diversity selections publish runtime encounter-generation inputs for the
   Encounter state tab.
+- Encounter-table multi-selection publishes selected table IDs for the
+  Encounter state tab; an empty selection means normal monster catalog
+  generation.
+- Selecting encounter tables shows active chips. Multiple selected tables with
+  different linked loot-table IDs show a non-blocking `Loot-Konflikt` warning.
 - Active chips remove their corresponding filter when clicked.
 - `Leeren` clears all creature filters and reloads the first page.
 - Sort changes reset to page one.

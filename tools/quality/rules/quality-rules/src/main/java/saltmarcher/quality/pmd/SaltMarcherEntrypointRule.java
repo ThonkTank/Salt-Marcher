@@ -108,7 +108,7 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     }
 
     private void checkServiceRoot(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
-        if (!sourceFacts.fileName().equals(sourceFacts.expectedServiceRootFileName())) {
+        if (!sourceFacts.isExpectedServiceRootFileName()) {
             asCtx(data).addViolationWithMessage(node,
                     "Root service entrypoint must be named '" + sourceFacts.expectedServiceRootFileName() + "'.");
         }
@@ -137,7 +137,7 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     }
 
     private void checkPersistenceSchema(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
-        if (!sourceFacts.fileName().equals(sourceFacts.expectedPersistenceSchemaFileName())) {
+        if (!sourceFacts.isExpectedPersistenceSchemaFileName()) {
             asCtx(data).addViolationWithMessage(node,
                     "Persistence schema must be named '" + sourceFacts.expectedPersistenceSchemaFileName() + "'.");
         }

@@ -33,4 +33,25 @@ final class ArchitectureNaming {
                 + feature.substring(1)
                 + "PersistenceSchema.java";
     }
+
+    static boolean isFeatureFileName(String feature, String fileName, String suffix) {
+        String fullSuffix = suffix + ".java";
+        if (feature == null
+                || fileName == null
+                || !fileName.endsWith(fullSuffix)) {
+            return false;
+        }
+        String prefix = fileName.substring(0, fileName.length() - fullSuffix.length());
+        return normalizeFeatureToken(prefix).equals(normalizeFeatureToken(feature));
+    }
+
+    private static String normalizeFeatureToken(String value) {
+        StringBuilder normalized = new StringBuilder();
+        for (char character : value.toCharArray()) {
+            if (Character.isLetterOrDigit(character)) {
+                normalized.append(Character.toLowerCase(character));
+            }
+        }
+        return normalized.toString();
+    }
 }

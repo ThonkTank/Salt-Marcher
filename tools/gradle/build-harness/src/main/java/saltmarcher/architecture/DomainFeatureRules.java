@@ -33,6 +33,7 @@ final class DomainFeatureRules implements ArchitectureRule {
                     "Roster Truth Context",
                     "Reference Catalog Context",
                     "Generation Policy Context",
+                    "Read Model Source Context",
                     "Authored World-Space Context");
     private static final Set<String> AUTHORED_CONTEXT_ROLES =
             Set.of("Roster Truth Context", "Authored World-Space Context");

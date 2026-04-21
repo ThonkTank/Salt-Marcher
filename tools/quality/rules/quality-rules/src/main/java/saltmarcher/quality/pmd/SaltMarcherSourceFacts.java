@@ -330,8 +330,16 @@ final class SaltMarcherSourceFacts {
         return toPascalCaseSuffix(featureName(), "ServiceContribution") + ".java";
     }
 
+    boolean isExpectedServiceRootFileName() {
+        return isFeatureFileName("ServiceContribution");
+    }
+
     String expectedPersistenceSchemaFileName() {
         return toPascalCaseSuffix(featureName(), "PersistenceSchema") + ".java";
+    }
+
+    boolean isExpectedPersistenceSchemaFileName() {
+        return isFeatureFileName("PersistenceSchema");
     }
 
     private boolean startsWith(String... prefix) {
@@ -359,6 +367,25 @@ final class SaltMarcherSourceFacts {
         }
         result.append(suffix);
         return result.toString();
+    }
+
+    private boolean isFeatureFileName(String suffix) {
+        String fullSuffix = suffix + ".java";
+        if (!fileName().endsWith(fullSuffix)) {
+            return false;
+        }
+        String prefix = fileName().substring(0, fileName().length() - fullSuffix.length());
+        return normalizeFeatureToken(prefix).equals(normalizeFeatureToken(featureName()));
+    }
+
+    private static String normalizeFeatureToken(String value) {
+        StringBuilder normalized = new StringBuilder();
+        for (char character : value.toCharArray()) {
+            if (Character.isLetterOrDigit(character)) {
+                normalized.append(Character.toLowerCase(character));
+            }
+        }
+        return normalized.toString();
     }
 
     static List<String> orderedSetOf(String... values) {

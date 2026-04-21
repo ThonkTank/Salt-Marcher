@@ -49,7 +49,8 @@ creature details through the creature application service.
 
 - `Generieren` creates ranked encounter alternatives from the active party and
   the latest catalog type, subtype, biome, difficulty, amount, balance, and
-  diversity selections.
+  diversity selections. When catalog encounter tables are selected, generation
+  uses those table IDs instead of the type, subtype, and biome candidate source.
 - Previous and next controls switch among the currently generated alternatives.
 - `Reroll` regenerates alternatives from the latest catalog filters and active
   difficulty.
@@ -79,6 +80,9 @@ creature details through the creature application service.
   creature cards are visible.
 - Active generator constraints: a compact Locks/Excluded summary is visible in
   the creation summary row.
+- Encounter-table loot conflict: the Catalog controls show `Loot-Konflikt`;
+  combat start remains available because loot assignment is not part of this
+  runtime surface.
 - Removed roster slot: a one-action undo notice is visible until another roster
   or generator mutation replaces it.
 - Live combat: the active turn is highlighted and defeated monsters use the

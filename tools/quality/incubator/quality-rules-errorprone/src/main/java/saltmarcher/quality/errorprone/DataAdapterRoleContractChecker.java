@@ -6,6 +6,7 @@ import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.ClassTree;
+import com.sun.tools.javac.code.Type;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -238,9 +239,16 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
     private static String methodSignature(ExecutableElement method, VisitorState state) {
         List<String> parameterTypes = new ArrayList<>();
         for (VariableElement parameter : method.getParameters()) {
-            parameterTypes.add(state.getTypes().erasure(parameter.asType()).toString());
+            parameterTypes.add(erasedTypeName(parameter.asType(), state));
         }
         return method.getSimpleName() + "(" + String.join(",", parameterTypes) + ")";
+    }
+
+    private static String erasedTypeName(TypeMirror typeMirror, VisitorState state) {
+        if (typeMirror instanceof Type javacType) {
+            return state.getTypes().erasure(javacType).toString();
+        }
+        return typeMirror.toString();
     }
 
     private record AdapterRole(

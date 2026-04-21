@@ -11,6 +11,11 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.encountertable.published.EncounterTableCatalogResult;
+import src.domain.encountertable.published.EncounterTableReadStatus;
+import src.domain.encountertable.published.EncounterTableSummary;
+import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
 import src.view.slotcontent.controls.catalog.CatalogControlsView;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 import src.view.slotcontent.main.catalog.CatalogMainView;
@@ -26,13 +31,15 @@ final class CatalogBinder {
 
     ShellBinding bind() {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
+        EncounterTableApplicationService encounterTables =
+                runtimeContext.services().require(EncounterTableApplicationService.class);
         EncounterRuntimeViewModel encounterSession = runtimeContext.session(
                 EncounterRuntimeViewModel.class,
                 EncounterRuntimeViewModel::new);
         CatalogViewModel viewModel = new CatalogViewModel(creatures);
         CatalogControlsView controls = new CatalogControlsView();
         CatalogMainView main = new CatalogMainView();
-        bindControls(viewModel, controls, encounterSession);
+        bindControls(viewModel, controls, encounterSession, encounterTables);
         bindMain(runtimeContext.inspector(), creatures, encounterSession, viewModel, main);
         viewModel.loadInitial();
         return new Binding(controls, main);
@@ -41,7 +48,8 @@ final class CatalogBinder {
     private static void bindControls(
             CatalogViewModel viewModel,
             CatalogControlsView controls,
-            EncounterRuntimeViewModel encounterSession
+            EncounterRuntimeViewModel encounterSession,
+            EncounterTableApplicationService encounterTables
     ) {
         controls.setContents(viewModel.contents().stream().map(CatalogBinder::toControlContent).toList());
         controls.setSortOptions(viewModel.sortOptions().stream().map(CatalogBinder::toControlSort).toList());
@@ -49,6 +57,8 @@ final class CatalogBinder {
         controls.selectContent(viewModel.selectedContentProperty().get().key());
         controls.setCreatureFilterData(toControlFilterData(viewModel.creatureFilterDataProperty().get()));
         controls.setChips(toControlChips(viewModel.chips()));
+        controls.setEncounterTables(loadEncounterTableSelections(encounterTables));
+        controls.selectEncounterTables(encounterSession.encounterTableIds());
 
         controls.countTextProperty().bind(viewModel.countLabelProperty());
         controls.pageTextProperty().bind(viewModel.pageLabelProperty());
@@ -73,6 +83,7 @@ final class CatalogBinder {
                 selection.balanceLevel(),
                 selection.amountValue(),
                 selection.diversityLevel()));
+        controls.setOnEncounterTablesChanged(encounterSession::updateEncounterTables);
         controls.setOnPreviousPage(viewModel::previousPage);
         controls.setOnNextPage(viewModel::nextPage);
 
@@ -128,6 +139,27 @@ final class CatalogBinder {
                 safeOptions.biomes(),
                 safeOptions.alignments(),
                 safeOptions.challengeRatings());
+    }
+
+    private static List<CatalogControlsView.EncounterTableSelection> loadEncounterTableSelections(
+            EncounterTableApplicationService encounterTables
+    ) {
+        EncounterTableCatalogResult result = encounterTables.loadSummaries(new LoadEncounterTableSummariesQuery());
+        if (result.status() != EncounterTableReadStatus.SUCCESS) {
+            return List.of();
+        }
+        return result.tables().stream()
+                .map(CatalogBinder::toEncounterTableSelection)
+                .toList();
+    }
+
+    private static CatalogControlsView.EncounterTableSelection toEncounterTableSelection(
+            EncounterTableSummary summary
+    ) {
+        return new CatalogControlsView.EncounterTableSelection(
+                summary.tableId(),
+                summary.name(),
+                summary.linkedLootTableId());
     }
 
     private static List<CatalogControlsView.FilterChipView> toControlChips(

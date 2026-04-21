@@ -6,6 +6,8 @@ import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -44,84 +46,119 @@ final class DataArchitectureSupport {
         if (typeMirror == null) {
             return;
         }
+        Set<TypeMirror> visitedTypeMirrors = Collections.newSetFromMap(new IdentityHashMap<>());
         typeMirror.accept(new SimpleTypeVisitor14<Void, Void>() {
             @Override
             public Void visitDeclared(DeclaredType declaredType, Void unused) {
+                if (!visitOnce(declaredType)) {
+                    return null;
+                }
                 Element element = declaredType.asElement();
                 if (element instanceof TypeElement typeElement) {
                     addReference(typeElement.getQualifiedName().toString(), referencedTypes);
                 }
                 for (TypeMirror typeArgument : declaredType.getTypeArguments()) {
-                    typeArgument.accept(this, null);
+                    scanType(typeArgument);
                 }
                 return null;
             }
 
             @Override
             public Void visitArray(ArrayType arrayType, Void unused) {
-                arrayType.getComponentType().accept(this, null);
+                if (!visitOnce(arrayType)) {
+                    return null;
+                }
+                scanType(arrayType.getComponentType());
                 return null;
             }
 
             @Override
             public Void visitTypeVariable(TypeVariable typeVariable, Void unused) {
-                typeVariable.getUpperBound().accept(this, null);
+                if (!visitOnce(typeVariable)) {
+                    return null;
+                }
+                scanType(typeVariable.getUpperBound());
                 TypeMirror lowerBound = typeVariable.getLowerBound();
                 if (lowerBound != null) {
-                    lowerBound.accept(this, null);
+                    scanType(lowerBound);
                 }
                 return null;
             }
 
             @Override
             public Void visitWildcard(WildcardType wildcardType, Void unused) {
+                if (!visitOnce(wildcardType)) {
+                    return null;
+                }
                 if (wildcardType.getExtendsBound() != null) {
-                    wildcardType.getExtendsBound().accept(this, null);
+                    scanType(wildcardType.getExtendsBound());
                 }
                 if (wildcardType.getSuperBound() != null) {
-                    wildcardType.getSuperBound().accept(this, null);
+                    scanType(wildcardType.getSuperBound());
                 }
                 return null;
             }
 
             @Override
             public Void visitExecutable(ExecutableType executableType, Void unused) {
-                executableType.getReturnType().accept(this, null);
+                if (!visitOnce(executableType)) {
+                    return null;
+                }
+                scanType(executableType.getReturnType());
                 for (TypeMirror parameterType : executableType.getParameterTypes()) {
-                    parameterType.accept(this, null);
+                    scanType(parameterType);
                 }
                 for (TypeMirror thrownType : executableType.getThrownTypes()) {
-                    thrownType.accept(this, null);
+                    scanType(thrownType);
                 }
                 for (TypeMirror typeVariable : executableType.getTypeVariables()) {
-                    typeVariable.accept(this, null);
+                    scanType(typeVariable);
                 }
                 return null;
             }
 
             @Override
             public Void visitIntersection(IntersectionType intersectionType, Void unused) {
+                if (!visitOnce(intersectionType)) {
+                    return null;
+                }
                 for (TypeMirror bound : intersectionType.getBounds()) {
-                    bound.accept(this, null);
+                    scanType(bound);
                 }
                 return null;
             }
 
             @Override
             public Void visitUnion(UnionType unionType, Void unused) {
+                if (!visitOnce(unionType)) {
+                    return null;
+                }
                 for (TypeMirror alternative : unionType.getAlternatives()) {
-                    alternative.accept(this, null);
+                    scanType(alternative);
                 }
                 return null;
             }
 
             @Override
             public Void visitError(ErrorType errorType, Void unused) {
+                if (!visitOnce(errorType)) {
+                    return null;
+                }
                 Element element = errorType.asElement();
                 if (element instanceof TypeElement typeElement) {
                     addReference(typeElement.getQualifiedName().toString(), referencedTypes);
                 }
                 return null;
+            }
+
+            private void scanType(TypeMirror candidateTypeMirror) {
+                if (candidateTypeMirror != null) {
+                    candidateTypeMirror.accept(this, null);
+                }
+            }
+
+            private boolean visitOnce(TypeMirror candidateTypeMirror) {
+                return visitedTypeMirrors.add(candidateTypeMirror);
             }
 
             @Override

@@ -37,7 +37,7 @@ public final class DomainServiceRegistryExportShapeChecker extends BugChecker
         }
 
         String feature = packageMatcher.group(1);
-        String expectedService = "src.domain." + feature + "." + toPascalCase(feature) + "ApplicationService";
+        String expectedService = "src.domain." + feature + ".*ApplicationService";
         List<String> violations = new ArrayList<>();
         new TreePathScanner<Void, Void>() {
             @Override
@@ -52,7 +52,7 @@ public final class DomainServiceRegistryExportShapeChecker extends BugChecker
 
                 String serviceKey = classLiteralTypeName(methodInvocation.getArguments().get(0));
                 if (serviceKey.startsWith("src.domain.")
-                        && !expectedService.equals(serviceKey)) {
+                        && !isSameFeatureRootApplicationService(serviceKey, feature)) {
                     violations.add(serviceKey);
                 }
                 return super.visitMethodInvocation(methodInvocation, null);
@@ -94,17 +94,12 @@ public final class DomainServiceRegistryExportShapeChecker extends BugChecker
         return "";
     }
 
-    private static String toPascalCase(String featureName) {
-        StringBuilder result = new StringBuilder();
-        boolean capitalizeNext = true;
-        for (char character : featureName.toCharArray()) {
-            if (!Character.isLetterOrDigit(character)) {
-                capitalizeNext = true;
-                continue;
-            }
-            result.append(capitalizeNext ? Character.toUpperCase(character) : character);
-            capitalizeNext = false;
+    private static boolean isSameFeatureRootApplicationService(String serviceKey, String feature) {
+        String expectedPrefix = "src.domain." + feature + ".";
+        if (!serviceKey.startsWith(expectedPrefix)) {
+            return false;
         }
-        return result.toString();
+        String simpleName = serviceKey.substring(expectedPrefix.length());
+        return !simpleName.contains(".") && simpleName.endsWith("ApplicationService");
     }
 }

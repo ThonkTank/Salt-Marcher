@@ -58,6 +58,9 @@ Use the documentation tree in this order:
 - Work on agent-facing instruction artifacts must use the repo-owned
   `agent-instruction-engineering` skill and follow the canonical agent
   instruction standard.
+- Work that uses external sources or local source evidence for decisions must
+  use the repo-owned `source-references` skill and follow the canonical source
+  references standard.
 - Work under `src/domain/**` must follow the canonical domain-layer standard
   before changes are made or reviewed. The repo-owned `domain-layer` skill is
   supporting guidance only and must not override the canonical standard.
@@ -149,6 +152,8 @@ Use the documentation tree in this order:
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/agent-instructions.md:1)
+- [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/source-references.md:1)
+- [Source References Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/source-references/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)

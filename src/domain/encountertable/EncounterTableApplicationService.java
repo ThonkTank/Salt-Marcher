@@ -12,6 +12,8 @@ import src.domain.encountertable.published.EncounterTableCandidatesResult;
 import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.EncounterTableSummary;
+import src.domain.encountertable.published.LoadEncounterTableCandidatesQuery;
+import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
 
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public final class EncounterTableApplicationService {
@@ -25,7 +27,7 @@ public final class EncounterTableApplicationService {
         this.loadCandidatesUseCase = new LoadEncounterTableCandidatesUseCase(safeCatalog);
     }
 
-    public EncounterTableCatalogResult loadSummaries() {
+    public EncounterTableCatalogResult loadSummaries(LoadEncounterTableSummariesQuery query) {
         try {
             return new EncounterTableCatalogResult(
                     EncounterTableReadStatus.SUCCESS,
@@ -37,11 +39,14 @@ public final class EncounterTableApplicationService {
         }
     }
 
-    public EncounterTableCandidatesResult loadGenerationCandidates(List<Long> tableIds, int maximumXp) {
+    public EncounterTableCandidatesResult loadGenerationCandidates(LoadEncounterTableCandidatesQuery query) {
+        LoadEncounterTableCandidatesQuery effectiveQuery = query == null
+                ? new LoadEncounterTableCandidatesQuery(List.of(), 0)
+                : query;
         try {
             return new EncounterTableCandidatesResult(
                     EncounterTableReadStatus.SUCCESS,
-                    loadCandidatesUseCase.execute(tableIds, maximumXp).stream()
+                    loadCandidatesUseCase.execute(effectiveQuery.tableIds(), effectiveQuery.maximumXp()).stream()
                             .map(EncounterTableApplicationService::toPublishedCandidate)
                             .toList());
         } catch (RuntimeException exception) {

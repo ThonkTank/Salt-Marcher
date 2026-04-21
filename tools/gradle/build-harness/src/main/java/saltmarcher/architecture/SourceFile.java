@@ -1,7 +1,6 @@
 package saltmarcher.architecture;
 
-import static saltmarcher.architecture.ArchitectureNaming.expectedDataRootFileName;
-import static saltmarcher.architecture.ArchitectureNaming.expectedDataSchemaFileName;
+import static saltmarcher.architecture.ArchitectureNaming.isFeatureFileName;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -108,7 +107,7 @@ record SourceFile(
             }
             case "data" -> {
                 if (segments.size() == 4) {
-                    yield fileName.equals(expectedDataRootFileName(extractFeatureName(segments)))
+                    yield isFeatureFileName(extractFeatureName(segments), fileName, "ServiceContribution")
                             ? SourceKind.DATA_ROOT
                             : SourceKind.UNKNOWN;
                 }
@@ -118,7 +117,7 @@ record SourceFile(
                 if ("persistencecore".equals(segments.get(2))) {
                     yield switch (segments.get(3)) {
                         case "sqlite" -> SourceKind.DATA_PERSISTENCECORE_SQLITE;
-                        case "model" -> fileName.equals(expectedDataSchemaFileName(extractFeatureName(segments)))
+                        case "model" -> isFeatureFileName(extractFeatureName(segments), fileName, "PersistenceSchema")
                                 ? SourceKind.DATA_SCHEMA
                                 : SourceKind.DATA_MODEL;
                         default -> SourceKind.UNKNOWN;
@@ -127,7 +126,7 @@ record SourceFile(
                 yield switch (segments.get(3)) {
                     case "repository" -> SourceKind.DATA_REPOSITORY;
                     case "query" -> SourceKind.DATA_QUERY;
-                    case "model" -> fileName.equals(expectedDataSchemaFileName(extractFeatureName(segments)))
+                    case "model" -> isFeatureFileName(extractFeatureName(segments), fileName, "PersistenceSchema")
                             ? SourceKind.DATA_SCHEMA
                             : SourceKind.DATA_MODEL;
                     case "mapper" -> SourceKind.DATA_MAPPER;

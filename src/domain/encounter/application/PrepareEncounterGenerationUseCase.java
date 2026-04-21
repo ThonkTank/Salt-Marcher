@@ -14,6 +14,7 @@ import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.EncounterTableCandidate;
 import src.domain.encountertable.published.EncounterTableCandidatesResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
+import src.domain.encountertable.published.LoadEncounterTableCandidatesQuery;
 import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
 import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
@@ -174,8 +175,9 @@ final class PrepareEncounterGenerationUseCase {
                     EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR);
         }
         EncounterTableCandidatesResult candidateResult = encounterTables.loadGenerationCandidates(
-                request.encounterTableIds(),
-                EncounterDifficultyTargets.candidateMaxXp(thresholds));
+                new LoadEncounterTableCandidatesQuery(
+                        request.encounterTableIds(),
+                        EncounterDifficultyTargets.candidateMaxXp(thresholds)));
         if (candidateResult.status() != EncounterTableReadStatus.SUCCESS) {
             return CandidateLoadResult.failure(
                     "Encounter table data could not be loaded.",

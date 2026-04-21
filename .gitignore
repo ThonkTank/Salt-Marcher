@@ -4,3 +4,5 @@ build/
 src/.codex
 tools/**/.gradle/
 tools/**/build/
+docs/references/
+tools/html/

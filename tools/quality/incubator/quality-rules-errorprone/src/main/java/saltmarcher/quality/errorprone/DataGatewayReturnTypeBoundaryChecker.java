@@ -42,6 +42,9 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
         if (typeElement == null) {
             return Description.NO_MATCH;
         }
+        if (!isPublicOrProtected(typeElement)) {
+            return Description.NO_MATCH;
+        }
 
         List<String> violations = new ArrayList<>();
         collectTypeViolation("extends", typeElement.getSuperclass(), featureName, violations);
@@ -64,19 +67,17 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
         }
 
         for (VariableElement field : ElementFilter.fieldsIn(typeElement.getEnclosedElements())) {
-            if (field.getModifiers().contains(Modifier.PUBLIC) || field.getModifiers().contains(Modifier.PROTECTED)) {
+            if (isPublicOrProtected(field)) {
                 collectTypeViolation("field " + field.getSimpleName(), field.asType(), featureName, violations);
             }
         }
         for (ExecutableElement constructor : ElementFilter.constructorsIn(typeElement.getEnclosedElements())) {
-            if (constructor.getModifiers().contains(Modifier.PUBLIC)
-                    || constructor.getModifiers().contains(Modifier.PROTECTED)) {
+            if (isPublicOrProtected(constructor)) {
                 collectExecutableViolations("constructor " + typeElement.getSimpleName(), constructor, featureName, violations);
             }
         }
         for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
-            if (!method.getModifiers().contains(Modifier.PUBLIC)
-                    && !method.getModifiers().contains(Modifier.PROTECTED)) {
+            if (!isPublicOrProtected(method)) {
                 continue;
             }
             collectExecutableViolations(String.valueOf(method.getSimpleName()), method, featureName, violations);
@@ -123,6 +124,11 @@ public final class DataGatewayReturnTypeBoundaryChecker extends BugChecker imple
                         violations);
             }
         }
+    }
+
+    private static boolean isPublicOrProtected(javax.lang.model.element.Element element) {
+        return element.getModifiers().contains(Modifier.PUBLIC)
+                || element.getModifiers().contains(Modifier.PROTECTED);
     }
 
     private static void collectTypeViolation(

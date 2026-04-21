@@ -1,9 +1,11 @@
 package src.view.slotcontent.controls.catalog;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import javafx.animation.PauseTransition;
 import javafx.beans.property.BooleanProperty;
@@ -46,6 +48,10 @@ public final class CatalogControlsView extends VBox {
     private final FlowPane chipsPane = new FlowPane(4, 2);
     private final ComboBox<SortSelection> sortCombo = new ComboBox<>();
     private final ComboBox<DifficultySelection> encounterDifficultyCombo = new ComboBox<>();
+    private final Button encounterTableButton = new Button("Tabellen: alle Monster");
+    private final Popup encounterTablePopup = new Popup();
+    private final VBox encounterTablePopupContent = new VBox(4);
+    private final Label encounterTableWarningLabel = new Label();
     private final Slider encounterAmountSlider = tuningSlider(3.0, 1.0, 5.0);
     private final Slider encounterBalanceSlider = tuningSlider(3.0, 1.0, 5.0);
     private final Slider encounterDiversitySlider = tuningSlider(2.0, 1.0, 4.0);
@@ -63,8 +69,12 @@ public final class CatalogControlsView extends VBox {
     private @Nullable Consumer<String> sortChangedHandler;
     private @Nullable Consumer<String> encounterDifficultyChangedHandler;
     private @Nullable Consumer<EncounterTuningSelection> encounterTuningChangedHandler;
+    private @Nullable Consumer<List<Long>> encounterTablesChangedHandler;
     private @Nullable Runnable previousPageHandler;
     private @Nullable Runnable nextPageHandler;
+    private List<FilterChipView> activeFilterChips = List.of();
+    private List<EncounterTableSelection> encounterTables = List.of();
+    private List<Long> selectedEncounterTableIds = List.of();
     private boolean suppressFilterEvents;
 
     public CatalogControlsView() {
@@ -119,6 +129,21 @@ public final class CatalogControlsView extends VBox {
                 encounterDifficultyChangedHandler.accept(selection.key());
             }
         });
+        encounterTableButton.getStyleClass().addAll("compact", "filter-trigger");
+        encounterTableButton.setMaxWidth(Double.MAX_VALUE);
+        encounterTableButton.setOnAction(event -> toggleEncounterTablePopup());
+        encounterTableWarningLabel.getStyleClass().add("text-secondary");
+        encounterTableWarningLabel.setVisible(false);
+        encounterTableWarningLabel.setManaged(false);
+        encounterTablePopup.setAutoHide(true);
+        encounterTablePopupContent.setPadding(new Insets(8));
+        encounterTablePopupContent.getStyleClass().add("filter-popup");
+        ScrollPane tablePopupScroller = new ScrollPane(encounterTablePopupContent);
+        tablePopupScroller.setFitToWidth(true);
+        tablePopupScroller.setPrefViewportWidth(260);
+        tablePopupScroller.setPrefViewportHeight(240);
+        encounterTablePopup.getContent().add(tablePopupScroller);
+        updateEncounterTableControls();
         Runnable tuningChanged = () -> {
             updateEncounterTuningLabels();
             fireEncounterTuningChanged();
@@ -158,6 +183,8 @@ public final class CatalogControlsView extends VBox {
                 chipsPane,
                 encounterLabel,
                 encounterDifficultyCombo,
+                encounterTableButton,
+                encounterTableWarningLabel,
                 tuningRow("Menge", encounterAmountSlider, encounterAmountLabel),
                 tuningRow("Balance", encounterBalanceSlider, encounterBalanceLabel),
                 tuningRow("Diversität", encounterDiversitySlider, encounterDiversityLabel),
@@ -238,8 +265,32 @@ public final class CatalogControlsView extends VBox {
     }
 
     public void setChips(List<FilterChipView> chips) {
+        activeFilterChips = chips == null ? List.of() : List.copyOf(chips);
+        renderChips();
+    }
+
+    public void setEncounterTables(List<EncounterTableSelection> tables) {
+        encounterTables = tables == null ? List.of() : List.copyOf(tables);
+        selectedEncounterTableIds = availableEncounterTableIds(selectedEncounterTableIds);
+        updateEncounterTableControls();
+        renderChips();
+    }
+
+    public void selectEncounterTables(List<Long> tableIds) {
+        selectedEncounterTableIds = availableEncounterTableIds(tableIds);
+        updateEncounterTableControls();
+        renderChips();
+    }
+
+    public void setOnEncounterTablesChanged(Consumer<List<Long>> handler) {
+        encounterTablesChangedHandler = handler;
+    }
+
+    private void renderChips() {
         chipsPane.getChildren().clear();
-        for (FilterChipView chip : chips == null ? List.<FilterChipView>of() : chips) {
+        List<FilterChipView> allChips = new ArrayList<>(activeFilterChips);
+        allChips.addAll(encounterTableChips());
+        for (FilterChipView chip : allChips) {
             HBox chipNode = new HBox(2);
             chipNode.getStyleClass().addAll("chip", chip.styleClass());
             Label label = new Label(chip.label());
@@ -311,8 +362,124 @@ public final class CatalogControlsView extends VBox {
             biomeFilter.removeValue(valuePart(key));
         } else if (key.startsWith("alignment:")) {
             alignmentFilter.removeValue(valuePart(key));
+        } else if (key.startsWith("encounter-table:")) {
+            removeEncounterTableSelection(valuePart(key));
+            return;
         }
         fireFilterChanged();
+    }
+
+    private void toggleEncounterTablePopup() {
+        if (encounterTablePopup.isShowing()) {
+            encounterTablePopup.hide();
+            return;
+        }
+        renderEncounterTablePopup();
+        Bounds bounds = encounterTableButton.localToScreen(encounterTableButton.getBoundsInLocal());
+        if (bounds != null) {
+            encounterTablePopup.show(encounterTableButton, bounds.getMinX(), bounds.getMaxY() + 4);
+        }
+    }
+
+    private void renderEncounterTablePopup() {
+        encounterTablePopupContent.getChildren().clear();
+        if (encounterTables.isEmpty()) {
+            Label empty = new Label("Keine Encounter-Tabellen gefunden");
+            empty.getStyleClass().add("text-secondary");
+            encounterTablePopupContent.getChildren().add(empty);
+            return;
+        }
+        for (EncounterTableSelection table : encounterTables) {
+            CheckBox checkbox = new CheckBox(table.name());
+            checkbox.setSelected(selectedEncounterTableIds.contains(table.tableId()));
+            checkbox.setOnAction(event -> toggleEncounterTableSelection(table.tableId(), checkbox.isSelected()));
+            encounterTablePopupContent.getChildren().add(checkbox);
+        }
+    }
+
+    private void toggleEncounterTableSelection(long tableId, boolean selected) {
+        LinkedHashSet<Long> ids = new LinkedHashSet<>(selectedEncounterTableIds);
+        if (selected) {
+            ids.add(tableId);
+        } else {
+            ids.remove(tableId);
+        }
+        selectedEncounterTableIds = List.copyOf(ids);
+        fireEncounterTablesChanged();
+        updateEncounterTableControls();
+        renderChips();
+    }
+
+    private void removeEncounterTableSelection(String tableIdText) {
+        long tableId;
+        try {
+            tableId = Long.parseLong(tableIdText);
+        } catch (NumberFormatException exception) {
+            return;
+        }
+        toggleEncounterTableSelection(tableId, false);
+    }
+
+    private void fireEncounterTablesChanged() {
+        if (encounterTablesChangedHandler != null) {
+            encounterTablesChangedHandler.accept(List.copyOf(selectedEncounterTableIds));
+        }
+    }
+
+    private void updateEncounterTableControls() {
+        if (selectedEncounterTableIds.isEmpty()) {
+            encounterTableButton.setText("Tabellen: alle Monster");
+        } else if (selectedEncounterTableIds.size() == 1) {
+            EncounterTableSelection selected = selectedEncounterTables().getFirst();
+            encounterTableButton.setText("Tabelle: " + selected.name());
+        } else {
+            encounterTableButton.setText("Tabellen: " + selectedEncounterTableIds.size());
+        }
+        boolean lootConflict = hasLinkedLootConflict();
+        encounterTableWarningLabel.setText(lootConflict ? "Loot-Konflikt" : "");
+        encounterTableWarningLabel.setVisible(lootConflict);
+        encounterTableWarningLabel.setManaged(lootConflict);
+    }
+
+    private List<FilterChipView> encounterTableChips() {
+        List<FilterChipView> chips = new ArrayList<>();
+        for (EncounterTableSelection table : selectedEncounterTables()) {
+            chips.add(new FilterChipView(
+                    "encounter-table:" + table.tableId(),
+                    "Tabelle: " + table.name(),
+                    "chip-accent"));
+        }
+        return chips;
+    }
+
+    private List<EncounterTableSelection> selectedEncounterTables() {
+        Set<Long> selectedIds = new LinkedHashSet<>(selectedEncounterTableIds);
+        return encounterTables.stream()
+                .filter(table -> selectedIds.contains(table.tableId()))
+                .toList();
+    }
+
+    private List<Long> availableEncounterTableIds(List<Long> tableIds) {
+        if (tableIds == null || tableIds.isEmpty()) {
+            return List.of();
+        }
+        Set<Long> availableIds = encounterTables.stream()
+                .map(EncounterTableSelection::tableId)
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        return tableIds.stream()
+                .filter(Objects::nonNull)
+                .filter(availableIds::contains)
+                .distinct()
+                .toList();
+    }
+
+    private boolean hasLinkedLootConflict() {
+        long distinctLinkedLootTables = selectedEncounterTables().stream()
+                .map(EncounterTableSelection::linkedLootTableId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .count();
+        return distinctLinkedLootTables > 1;
     }
 
     private void fireFilterChanged() {
@@ -430,6 +597,12 @@ public final class CatalogControlsView extends VBox {
     }
 
     public record EncounterTuningSelection(int balanceLevel, double amountValue, int diversityLevel) {
+    }
+
+    public record EncounterTableSelection(long tableId, String name, @Nullable Long linkedLootTableId) {
+        public EncounterTableSelection {
+            name = name == null || name.isBlank() ? "Tabelle " + tableId : name;
+        }
     }
 
     public record CreatureFilterData(

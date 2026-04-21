@@ -125,7 +125,7 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
     private static boolean isFeaturePersistenceSchema(SaltMarcherSourceFacts sourceFacts) {
         return sourceFacts.relativePath().startsWith("src/data/")
                 && sourceFacts.relativePath().contains("/model/")
-                && sourceFacts.fileName().equals(sourceFacts.expectedPersistenceSchemaFileName());
+                && sourceFacts.isExpectedPersistenceSchemaFileName();
     }
 
     private static boolean isMutationMethodName(String methodName) {

@@ -1,6 +1,7 @@
 package src.data.creatures.mapper;
 
 import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureCatalogSearchCriteriaRecord;
@@ -32,8 +33,8 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.subtypes(),
                 spec.biomes(),
                 spec.alignments(),
-                toSearchSortField(spec.sortField()),
-                toSearchSortDirection(spec.sortDirection()),
+                toSearchSortField(Objects.requireNonNull(spec.sortField(), "sortField")),
+                toSearchSortDirection(Objects.requireNonNull(spec.sortDirection(), "sortDirection")),
                 spec.pageSize(),
                 spec.pageOffset());
     }
@@ -64,21 +65,15 @@ public final class CreatureCatalogQueryMappingFacade {
                 .toList();
     }
 
-    private static @Nullable CreatureCatalogSearchCriteriaRecord.SortField toSearchSortField(
-            @Nullable CreatureCatalogLookup.SortField sortField
+    private static CreatureCatalogSearchCriteriaRecord.SortField toSearchSortField(
+            CreatureCatalogLookup.SortField sortField
     ) {
-        if (sortField == null) {
-            return null;
-        }
         return CreatureCatalogSearchCriteriaRecord.SortField.valueOf(sortField.name());
     }
 
-    private static @Nullable CreatureCatalogSearchCriteriaRecord.SortDirection toSearchSortDirection(
-            @Nullable CreatureCatalogLookup.SortDirection sortDirection
+    private static CreatureCatalogSearchCriteriaRecord.SortDirection toSearchSortDirection(
+            CreatureCatalogLookup.SortDirection sortDirection
     ) {
-        if (sortDirection == null) {
-            return null;
-        }
         return CreatureCatalogSearchCriteriaRecord.SortDirection.valueOf(sortDirection.name());
     }
 }

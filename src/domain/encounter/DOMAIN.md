@@ -15,6 +15,7 @@ Context Role: Generation Policy Context
 - It consumes foreign application services only:
   - `src.domain.party.PartyApplicationService`
   - `src.domain.creatures.CreaturesApplicationService`
+  - `src.domain.encountertable.EncounterTableApplicationService`
 
 ## Published Language
 
@@ -29,10 +30,11 @@ policies and factories.
 
 ## Application Boundary
 
-`application/` coordinates foreign party and creature application services,
-loads public inputs, translates foreign `published/` results into encounter
-application values, and delegates generation work. The root application service
-maps generated results into encounter `published/` carriers.
+`application/` coordinates foreign party, creature, and encounter-table
+application services, loads public inputs, translates foreign `published/`
+results into encounter application values, and delegates generation work. The
+root application service maps generated results into encounter `published/`
+carriers.
 `EncounterGenerationUseCase` remains orchestration and foreign-service
 coordination only.
 `LoadEncounterBudgetUseCase` exposes party-derived encounter thresholds without
@@ -67,6 +69,7 @@ It derives:
 
 - party-specific encounter thresholds
 - encounter-ready candidate pools
+- encounter-table-constrained candidate pools
 - role hints for encounter composition
 - ranked encounter alternatives
 - party-derived budget summaries for the active runtime session
@@ -112,6 +115,8 @@ Core invariants:
 
 - the active party is the balancing baseline
 - encounter math is computed from public party data, not duplicated persistence
+- selected encounter tables replace creature filter sourcing for that
+  generation pass
 - foreign feature internals remain hidden behind their API boundaries
 - generator ranking must be deterministic for the same inputs
 - locked creatures remain mandatory inputs until cleared by the user

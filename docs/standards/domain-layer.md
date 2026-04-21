@@ -223,6 +223,9 @@ Current roles:
 - `encounter`: `Context Role: Generation Policy Context`. Consumes party and
   creatures through their application services and published language, then
   owns runtime encounter-generation policy.
+- `encountertable`: `Context Role: Read Model Source Context`. Publishes
+  authored encounter-table membership as read-only generator input without
+  owning creature truth or encounter-generation policy.
 - `dungeon`: `Context Role: Authored World-Space Context`. Owns authored
   dungeon world-space truth, map topology, rooms/spaces, connections, stable
   identity, and map mutation rules.
@@ -242,6 +245,9 @@ published language, not through private model imports.
   encounter-candidate reference profiles to downstream policy contexts.
 - `encounter`: Generation Policy Context. Consumes `party` and `creatures` through their root
   application services and `published/` carriers, then owns generation policy.
+- `encountertable`: Read Model Source Context. Consumes creature persistence
+  snapshots through its data source adapter, then publishes table summaries and
+  weighted candidate rows through its root application service.
 - `dungeon`: Authored World-Space Context. Owns authored world-space truth independently of party,
   creatures, and encounter. Views may combine dungeon facts with presentation
   state, but that composition is not a domain relationship.

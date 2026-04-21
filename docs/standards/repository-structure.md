@@ -52,6 +52,9 @@ Additional constraints:
   scripts.
 - `tools/quality/skills/` owns repo-versioned Codex skills and their bundled
   references.
+- `docs/references/` owns local-only source mirrors and readable extracts for
+  source-backed decisions. It is ignored by Git unless a specific file is
+  explicitly approved for publication.
 - `docs/compat/` is reserved for deprecated compatibility stubs and must not
   become canonical again.
 

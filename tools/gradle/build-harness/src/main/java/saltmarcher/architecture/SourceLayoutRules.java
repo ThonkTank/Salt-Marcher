@@ -1,7 +1,6 @@
 package saltmarcher.architecture;
 
-import static saltmarcher.architecture.ArchitectureNaming.expectedDataRootFileName;
-import static saltmarcher.architecture.ArchitectureNaming.expectedDomainRootFileName;
+import static saltmarcher.architecture.ArchitectureNaming.isFeatureFileName;
 
 import java.util.List;
 import java.util.Set;
@@ -146,8 +145,7 @@ final class SourceLayoutRules implements ArchitectureRule {
 
         if (segments.size() == 4) {
             String feature = segments.get(2);
-            String expected = expectedDomainRootFileName(feature);
-            if (!sourceFile.fileName().equals(expected)) {
+            if (!isFeatureFileName(feature, sourceFile.fileName(), "ApplicationService")) {
                 violations.add(sourceFile.relativePath(), "domain-root-presence",
                         "Only <PascalFeatureName>ApplicationService.java may live directly under src/domain/<feature>/.");
             }
@@ -219,8 +217,7 @@ final class SourceLayoutRules implements ArchitectureRule {
     private void validateDataLayout(SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
         if (segments.size() == 4) {
-            String expected = expectedDataRootFileName(segments.get(2));
-            if (!sourceFile.fileName().equals(expected)) {
+            if (!isFeatureFileName(segments.get(2), sourceFile.fileName(), "ServiceContribution")) {
                 violations.add(sourceFile.relativePath(), "data-layout",
                         "Only <PascalFeatureName>ServiceContribution.java may live directly under src/data/<feature>/.");
             }

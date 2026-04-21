@@ -14,6 +14,7 @@ Provide a runtime encounter builder that:
 - generates several encounter alternatives for one requested difficulty band
 - explains why an alternative fits the target
 - supports iterative rerolling through lock and exclude controls
+- can use selected encounter tables as curated generator sources
 
 ## Non-Goals
 
@@ -27,7 +28,8 @@ Provide a runtime encounter builder that:
    left-bar tab is not claiming the state pane.
 2. The state tab reads the active party and current creature
    filter options.
-3. The user selects a difficulty and optional type, subtype, or biome filters.
+3. The user selects a difficulty and optional type, subtype, biome filters, or
+   encounter tables.
 4. The user generates encounter alternatives.
 5. The user inspects a selected alternative, then rerolls, locks, or excludes
    as needed.
@@ -42,6 +44,9 @@ Provide a runtime encounter builder that:
 - support multi-select creature filters with visible active-filter chips
 - support generator tuning for creature amount, XP-spread balance, and
   statblock diversity
+- support encounter-table selection as an alternate generator source
+- show a non-blocking `Loot-Konflikt` warning when selected encounter tables
+  reference multiple linked loot-table IDs
 - expose creature composition, role hints, and generator highlights
 - allow catalog creature rows to be added directly to the current encounter
   roster as runtime derived state
@@ -60,3 +65,5 @@ Provide a runtime encounter builder that:
   restarts
 - excluding the current composition immediately regenerates alternatives using
   the current filter and difficulty selections
+- selecting encounter tables limits generated candidates to those tables and
+  ignores type, subtype, and biome filters for that generation run

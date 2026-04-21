@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreaturesPersistenceSchema;
 import src.data.encountertable.model.EncounterTableCandidateRecord;
 import src.data.encountertable.model.EncounterTablePersistenceSchema;
@@ -43,7 +43,7 @@ final class EncounterTableSqliteStore {
         if (tableIds == null || tableIds.isEmpty()) {
             return List.of();
         }
-        String placeholders = tableIds.stream().map(tableId -> "?").collect(Collectors.joining(","));
+        String placeholders = placeholders(tableIds.size());
         String sql = "SELECT c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
                 + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
                 + "c.ac, c.initiative_bonus, c.legendary_action_count, MAX(e.weight) AS weight "
@@ -90,12 +90,23 @@ final class EncounterTableSqliteStore {
         return candidates;
     }
 
-    private static Integer getNullableInt(ResultSet resultSet, String column) throws SQLException {
+    private static String placeholders(int count) {
+        StringBuilder builder = new StringBuilder();
+        for (int index = 0; index < count; index++) {
+            if (index > 0) {
+                builder.append(',');
+            }
+            builder.append('?');
+        }
+        return builder.toString();
+    }
+
+    private static @Nullable Integer getNullableInt(ResultSet resultSet, String column) throws SQLException {
         int value = resultSet.getInt(column);
         return resultSet.wasNull() ? null : value;
     }
 
-    private static Long getNullableLong(ResultSet resultSet, String column) throws SQLException {
+    private static @Nullable Long getNullableLong(ResultSet resultSet, String column) throws SQLException {
         long value = resultSet.getLong(column);
         return resultSet.wasNull() ? null : value;
     }

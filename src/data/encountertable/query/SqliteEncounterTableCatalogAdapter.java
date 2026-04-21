@@ -2,6 +2,7 @@ package src.data.encountertable.query;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.ArrayList;
 import src.data.encountertable.gateway.local.SqliteEncounterTableLocalGateway;
 import src.data.encountertable.mapper.EncounterTableMapper;
 import src.domain.encountertable.catalog.port.EncounterTableCatalog;
@@ -22,15 +23,16 @@ public final class SqliteEncounterTableCatalogAdapter implements EncounterTableC
 
     @Override
     public List<EncounterTableSummaryData> loadSummaries() {
-        return gateway.loadSummaries().stream()
-                .map(EncounterTableMapper::toDomain)
-                .toList();
+        List<EncounterTableSummaryData> summaries = new ArrayList<>();
+        gateway.loadSummaries().forEach(record -> summaries.add(EncounterTableMapper.toDomain(record)));
+        return List.copyOf(summaries);
     }
 
     @Override
     public List<EncounterTableCandidateData> loadGenerationCandidates(List<Long> tableIds, int maximumXp) {
-        return gateway.loadGenerationCandidates(tableIds, maximumXp).stream()
-                .map(EncounterTableMapper::toDomain)
-                .toList();
+        List<EncounterTableCandidateData> candidates = new ArrayList<>();
+        gateway.loadGenerationCandidates(tableIds, maximumXp)
+                .forEach(record -> candidates.add(EncounterTableMapper.toDomain(record)));
+        return List.copyOf(candidates);
     }
 }

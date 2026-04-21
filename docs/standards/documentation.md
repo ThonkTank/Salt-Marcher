@@ -55,6 +55,9 @@ instead of restating it.
   Reusable standards. One topic per file.
 - `docs/adr/NNN-*.md`
   One architecture decision per file.
+- `docs/references/**`
+  Local-only source mirrors and readable extracts governed by the
+  Source References Standard, not canonical SaltMarcher policy by themselves.
 - `docs/compat/**`
   Deprecated compatibility stubs that point to canonical documents elsewhere.
 
@@ -91,6 +94,9 @@ for example `TESTING.md`, but fixed filenames above are preferred.
   sources.
 - Central `docs/compat/...` content may exist only as compatibility stubs and
   must not remain canonical.
+- `docs/references/...` content supports decisions with source evidence; it
+  must not define SaltMarcher policy unless a standard, ADR, or feature
+  document adopts that interpretation.
 
 ## Writing Rules
 
