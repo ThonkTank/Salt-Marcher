@@ -5,14 +5,17 @@ import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.entity.DungeonPrimitive;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
+import src.domain.dungeon.map.service.DungeonCorridorReadProjector;
 import src.domain.dungeon.map.value.DungeonAreaFacts;
 import src.domain.dungeon.map.value.DungeonAreaType;
+import src.domain.dungeon.map.value.DungeonBoundaryKey;
 import src.domain.dungeon.map.value.DungeonBoundaryFacts;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonEdge;
+import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonMapFacts;
 import src.domain.dungeon.map.value.DungeonRelationGraph;
 import src.domain.dungeon.map.value.SpatialTopology;
@@ -50,11 +53,17 @@ public final class BuildDungeonDerivedStateUseCase {
         List<DungeonRelationGraph.ContainmentRelation> containment = new ArrayList<>();
         List<DungeonRelationGraph.ConnectionRelation> connections = new ArrayList<>();
         Map<Long, List<DungeonRoom>> roomsByCluster = roomsByCluster(dungeonMap.rooms().rooms());
+        Map<Long, DungeonRoom> roomsById = roomsById(dungeonMap.rooms().rooms());
+        Map<Long, DungeonRoomCluster> clustersById = clustersById(topology.roomClusters());
+        Map<Long, List<DungeonCell>> allRoomCells = new LinkedHashMap<>();
+        Set<DungeonBoundaryKey> seenBoundaries = new LinkedHashSet<>();
+        DungeonCorridorReadProjector corridorReadProjector = new DungeonCorridorReadProjector();
         long primitiveId = 1_000L;
 
         for (DungeonRoomCluster cluster : topology.roomClusters()) {
             List<DungeonRoom> clusterRooms = roomsByCluster.getOrDefault(cluster.clusterId(), List.of());
             Map<Long, List<DungeonCell>> roomCells = hydrateCluster(cluster, clusterRooms);
+            allRoomCells.putAll(roomCells);
             for (DungeonRoom room : clusterRooms) {
                 List<DungeonCell> cells = roomCells.getOrDefault(room.roomId(), List.of(room.primaryAnchor()));
                 DungeonAggregate aggregate = new DungeonAggregate(room.roomId(), DungeonAreaType.ROOM, room.name(), cells);
@@ -62,7 +71,6 @@ public final class BuildDungeonDerivedStateUseCase {
                 areas.add(new DungeonAreaFacts(aggregate.kind(), aggregate.id(), aggregate.label(), aggregate.cells()));
             }
 
-            Set<BoundaryKey> seenBoundaries = new LinkedHashSet<>();
             for (List<DungeonClusterBoundary> levelBoundaries : cluster.boundariesByLevel().values()) {
                 for (DungeonClusterBoundary boundary : levelBoundaries) {
                     primitiveId = addBoundary(
@@ -104,6 +112,18 @@ public final class BuildDungeonDerivedStateUseCase {
                 }
             }
         }
+        DungeonCorridorReadProjector.Result corridorProjection = corridorReadProjector.project(
+                dungeonMap.connections().corridors(),
+                clustersById,
+                roomsById,
+                allRoomCells,
+                primitiveId);
+        aggregates.addAll(corridorProjection.aggregates());
+        primitives.addAll(corridorProjection.primitives());
+        areas.addAll(corridorProjection.areas());
+        boundaries.addAll(corridorProjection.boundaries());
+        containment.addAll(corridorProjection.containment());
+        connections.addAll(corridorProjection.connections());
 
         DungeonMapFacts map = new DungeonMapFacts(
                 topology.topology(),
@@ -123,13 +143,13 @@ public final class BuildDungeonDerivedStateUseCase {
             DungeonClusterBoundary boundary,
             long primitiveId,
             Map<Long, List<DungeonCell>> roomCells,
-            Set<BoundaryKey> seenBoundaries,
+            Set<DungeonBoundaryKey> seenBoundaries,
             List<DungeonPrimitive> primitives,
             List<DungeonBoundaryFacts> boundaries,
             List<DungeonRelationGraph.ContainmentRelation> containment,
             List<DungeonRelationGraph.ConnectionRelation> connections
     ) {
-        BoundaryKey key = BoundaryKey.from(boundary.absoluteEdge(cluster.center()));
+        DungeonBoundaryKey key = DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center()));
         if (!seenBoundaries.add(key)) {
             return primitiveId;
         }
@@ -377,6 +397,22 @@ public final class BuildDungeonDerivedStateUseCase {
         return Map.copyOf(result);
     }
 
+    private static Map<Long, DungeonRoom> roomsById(List<DungeonRoom> rooms) {
+        Map<Long, DungeonRoom> result = new LinkedHashMap<>();
+        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+            result.put(room.roomId(), room);
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Long, DungeonRoomCluster> clustersById(List<DungeonRoomCluster> clusters) {
+        Map<Long, DungeonRoomCluster> result = new LinkedHashMap<>();
+        for (DungeonRoomCluster cluster : clusters == null ? List.<DungeonRoomCluster>of() : clusters) {
+            result.put(cluster.clusterId(), cluster);
+        }
+        return Map.copyOf(result);
+    }
+
     private DungeonDerivedState demoState(SpatialTopology topology) {
         List<DungeonCell> roomCells = buildRoomCells(topology);
         List<DungeonCell> corridorCells = buildCorridorCells(topology);
@@ -444,27 +480,13 @@ public final class BuildDungeonDerivedStateUseCase {
         );
     }
 
-    private record BoundaryKey(DungeonCell lower, DungeonCell upper) {
-
-        static BoundaryKey from(DungeonEdge edge) {
-            DungeonCell from = edge.from();
-            DungeonCell to = edge.to();
-            int comparison = Comparator
-                    .comparingInt(DungeonCell::level)
-                    .thenComparingInt(DungeonCell::r)
-                    .thenComparingInt(DungeonCell::q)
-                    .compare(from, to);
-            return comparison <= 0 ? new BoundaryKey(from, to) : new BoundaryKey(to, from);
-        }
-    }
-
-    private record DirectionStep(src.domain.dungeon.map.value.DungeonEdgeDirection direction) {
+    private record DirectionStep(DungeonEdgeDirection direction) {
 
         private static final List<DirectionStep> CARDINAL = List.of(
-                new DirectionStep(src.domain.dungeon.map.value.DungeonEdgeDirection.NORTH),
-                new DirectionStep(src.domain.dungeon.map.value.DungeonEdgeDirection.EAST),
-                new DirectionStep(src.domain.dungeon.map.value.DungeonEdgeDirection.SOUTH),
-                new DirectionStep(src.domain.dungeon.map.value.DungeonEdgeDirection.WEST));
+                new DirectionStep(DungeonEdgeDirection.NORTH),
+                new DirectionStep(DungeonEdgeDirection.EAST),
+                new DirectionStep(DungeonEdgeDirection.SOUTH),
+                new DirectionStep(DungeonEdgeDirection.WEST));
 
         DungeonCell neighbor(DungeonCell cell) {
             return direction.neighborOf(cell);

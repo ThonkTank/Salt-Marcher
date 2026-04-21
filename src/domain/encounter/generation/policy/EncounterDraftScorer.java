@@ -1,9 +1,12 @@
 package src.domain.encounter.generation.policy;
 
-import src.domain.encounter.generation.value.*;
-
-
 import java.util.Set;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.generation.value.EncounterDraftComposition;
+import src.domain.encounter.generation.value.EncounterDraftEntry;
+import src.domain.encounter.generation.value.EncounterDraftXpProfile;
+import src.domain.encounter.generation.value.EncounterRoleNames;
+import src.domain.encounter.generation.value.EncounterTuningIntent;
 
 public final class EncounterDraftScorer {
 

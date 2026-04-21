@@ -11,7 +11,8 @@ public record DungeonMapRecord(
         long revision,
         DungeonTopologySeedRecord topologySeed,
         List<DungeonRoomClusterRecord> roomClusters,
-        List<DungeonRoomRecord> rooms
+        List<DungeonRoomRecord> rooms,
+        List<DungeonCorridorRecord> corridors
 ) {
 
     public DungeonMapRecord(
@@ -20,7 +21,7 @@ public record DungeonMapRecord(
             long revision,
             DungeonTopologySeedRecord topologySeed
     ) {
-        this(mapId, name, revision, topologySeed, List.of(), List.of());
+        this(mapId, name, revision, topologySeed, List.of(), List.of(), List.of());
     }
 
     public DungeonMapRecord {
@@ -29,5 +30,6 @@ public record DungeonMapRecord(
         topologySeed = topologySeed == null ? DungeonTopologySeedRecord.demo() : topologySeed;
         roomClusters = roomClusters == null ? List.of() : List.copyOf(roomClusters);
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
+        corridors = corridors == null ? List.of() : List.copyOf(corridors);
     }
 }

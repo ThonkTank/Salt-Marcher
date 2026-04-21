@@ -64,6 +64,7 @@ public final class DungeonMap {
             String mapName,
             SpatialTopology topology,
             RoomCatalog rooms,
+            ConnectionCatalog connections,
             long revision
     ) {
         return new DungeonMap(
@@ -71,9 +72,19 @@ public final class DungeonMap {
                 topology,
                 SpaceCatalog.empty(),
                 rooms,
-                ConnectionCatalog.empty(),
+                connections,
                 FeatureCatalog.empty(),
                 revision);
+    }
+
+    public static DungeonMap authored(
+            DungeonMapIdentity mapId,
+            String mapName,
+            SpatialTopology topology,
+            RoomCatalog rooms,
+            long revision
+    ) {
+        return authored(mapId, mapName, topology, rooms, ConnectionCatalog.empty(), revision);
     }
 
     public DungeonMap moveRoomAnchor(int deltaQ, int deltaR) {

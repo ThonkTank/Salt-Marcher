@@ -51,6 +51,9 @@ Current state:
   wall or door edges.
 - `RoomCatalog` now carries authored room identity, names, floor anchors, and
   narration loaded from the legacy write model.
+- `ConnectionCatalog` now carries authored corridor identity, ordered room
+  membership, relative waypoints, and room door bindings loaded from the
+  legacy write model.
 - Editor operations now tell the aggregate to mutate authored topology seeds
   instead of rewriting a document carrier in application code.
 - The application layer coordinates load, mutate, save, search, and derive
@@ -76,10 +79,12 @@ Remaining implementation gap:
 - Several core types remain thinner record-style carriers than the target
   aggregate model.
 - Full behaviour parity with the original `salt-marcher/` dungeon schema still
-  requires corridor, stair, transition, and feature mapping.
+  requires stair, transition, and feature mapping.
 - The current derived-state rebuild hydrates rooms from cluster polygons and
-  internal wall or door boundaries, but corridor routing, stair exits, and
-  transition destinations are not yet represented in the domain facts.
+  internal wall or door boundaries, then derives corridor cells and door
+  relations from authored corridor membership, waypoints, and door bindings.
+  Stair exits and transition destinations are not yet represented in the
+  domain facts.
 - This feature remains a policy-owning bounded context because editor
   mutations and identity-preserving repairs are rule-bearing domain work.
 
@@ -183,10 +188,13 @@ It owns:
 
 - connection identity
 - connection kind such as door or stair
+- authored corridor room membership
+- authored corridor waypoints and door bindings
 - traversability semantics and notes
 - relationship semantics between connected areas
 
-It does not own the canonical door edge geometry or generated stair geometry.
+It does not own generated corridor route cells, generated stair geometry, or
+view traversal state.
 
 ### FeatureCatalog
 
@@ -232,6 +240,7 @@ into `map/`.
 - `SpaceCatalog`: stable space identity and shared space semantics.
 - `RoomCatalog`: room identity and authored room-level semantics.
 - `ConnectionCatalog`: stable semantic links between areas.
+- `DungeonCorridor`: authored corridor membership and route binding truth.
 - `FeatureCatalog`: authored non-space, non-connection features.
 - `Derived State`: reproducible domain facts for inspector, topology, and
   travel; reusable render input is a view-layer display model.

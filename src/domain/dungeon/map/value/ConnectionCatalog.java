@@ -1,11 +1,21 @@
 package src.domain.dungeon.map.value;
 
+import src.domain.dungeon.map.entity.DungeonCorridor;
+
+import java.util.List;
+
 /**
- * Empty authored connection catalog placeholder for the first real map slice.
+ * Authored map connections loaded from dungeon write-model truth.
  */
-public record ConnectionCatalog() {
+public record ConnectionCatalog(
+        List<DungeonCorridor> corridors
+) {
+
+    public ConnectionCatalog {
+        corridors = corridors == null ? List.of() : List.copyOf(corridors);
+    }
 
     public static ConnectionCatalog empty() {
-        return new ConnectionCatalog();
+        return new ConnectionCatalog(List.of());
     }
 }

@@ -14,7 +14,6 @@ import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
 import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.policy.EncounterDifficultyTargets;
 import src.domain.encounter.generation.value.EncounterDraft;
 import src.domain.encounter.generation.factory.EncounterDraftFactory;

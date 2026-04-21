@@ -22,6 +22,10 @@ Current foundation:
   floor anchors, visual descriptions, exit descriptions, cluster centers,
   cluster vertices, and explicit internal wall or door edges. The domain layer
   hydrates room cells and boundary facts from those authored inputs.
+- Corridor read parity is active: the data layer loads corridor membership,
+  waypoints, and door overrides. The domain layer derives corridor areas,
+  corridor door boundaries, and room-to-corridor relation facts from those
+  authored inputs.
 
 Recommended rollout:
 
@@ -35,20 +39,20 @@ Recommended rollout:
 - UI specifications are broader than the currently stabilized domain policies.
 - Preview behavior and undo/redo semantics need explicit implementation
   contracts before broad editor rollout.
-- Room and connection projections can drift if corridor, stair, and transition
+- Room and connection projections can drift if stair and transition
   ownership rules are not enforced consistently.
-- Full parity still needs explicit corridor, stair, transition, and feature
-  mapping before those behaviours can be considered preserved.
+- Full parity still needs explicit stair, transition, and feature mapping
+  before those behaviours can be considered preserved.
 - Advanced editor operation carriers must be introduced only with implemented
   domain policies, and their public API signatures must use API-owned carrier
   types rather than internal domain-module model types.
 
 ## Next Parity Step
 
-Implement corridor read parity next. The original implementation derives
-runtime corridor paths from corridor membership, waypoints, and door overrides;
-this codebase now has the compatible schema tables but does not yet map those
-rows into `ConnectionCatalog` or derived relation facts.
+Implement stair and transition read parity next. The original implementation
+loads stair path nodes, stair exits, and map/overworld transition destinations;
+this codebase has compatible schema tables but does not yet map those rows into
+domain feature or connection facts.
 
 ## Open Delivery Questions
 

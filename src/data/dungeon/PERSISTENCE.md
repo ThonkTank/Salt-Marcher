@@ -58,15 +58,16 @@ This document is normative for the dungeon feature's persistence path.
 
 The current adapter persists and reloads map identity, map name, topology seed,
 authored room records, room floor anchors, room visual and exit narration,
-room-cluster centers, room-cluster vertices, and explicit cluster wall or door
-edges. When a new map has no rooms, the gateway creates a seed room and cluster
-so the existing map surfaces still have authorable spatial truth.
+room-cluster centers, room-cluster vertices, explicit cluster wall or door
+edges, corridor membership, corridor waypoints, and corridor door overrides.
+When a new map has no rooms, the gateway creates a seed room and cluster so
+the existing map surfaces still have authorable spatial truth.
 
 This is infrastructure for behavioural parity, not complete parity. Room
-semantics and cluster boundary geometry are now represented. Corridor
-membership, corridor waypoints and door overrides, stairs, transitions, and
-non-space features still need explicit source-to-domain mapping before the
-legacy dungeon behaviour is fully represented.
+semantics, cluster boundary geometry, and corridor read geometry are now
+represented. Stairs, transitions, and non-space features still need explicit
+source-to-domain mapping before the legacy dungeon behaviour is fully
+represented.
 
 ## Stability Rules
 

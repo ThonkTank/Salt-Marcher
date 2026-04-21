@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import src.domain.encounter.generation.policy.EncounterDraftCollector;
 import src.domain.encounter.generation.policy.EncounterDraftOrdering;
 import src.domain.encounter.generation.policy.EncounterTuningTargets;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;

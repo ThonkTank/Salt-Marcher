@@ -7,6 +7,7 @@ import src.domain.encounter.generation.value.EncounterTuningIntent;
 public final class EncounterTuningTargets {
 
     private static final int MAX_TARGET_CREATURES = 8;
+    private static final int MIN_BALANCE_ENTRIES = 2;
     private static final int BOSS_BIAS_MAX_BALANCE_LEVEL = 2;
     private static final double EXTREME_SPREAD = 2.0;
     private static final double MIXED_SPREAD = 1.6;
@@ -73,7 +74,7 @@ public final class EncounterTuningTargets {
     }
 
     private static int scoreBalance(EncounterDraftComposition composition, EncounterTuningIntent tuning) {
-        if (composition.entries().size() < 2) {
+        if (composition.entries().size() < MIN_BALANCE_ENTRIES) {
             return tuning.balanceLevel() <= BOSS_BIAS_MAX_BALANCE_LEVEL ? 45 : 20;
         }
         double spread = xpSpread(composition);

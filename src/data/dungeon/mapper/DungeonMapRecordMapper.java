@@ -1,6 +1,9 @@
 package src.data.dungeon.mapper;
 
 import src.data.dungeon.model.DungeonClusterBoundaryRecord;
+import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
+import src.data.dungeon.model.DungeonCorridorRecord;
+import src.data.dungeon.model.DungeonCorridorWaypointRecord;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonRoomClusterRecord;
 import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
@@ -9,9 +12,14 @@ import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
 import src.data.dungeon.model.DungeonTopologySeedRecord;
 import src.domain.dungeon.map.aggregate.DungeonMap;
+import src.domain.dungeon.map.entity.DungeonCorridor;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
+import src.domain.dungeon.map.value.ConnectionCatalog;
 import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonCorridorBindings;
+import src.domain.dungeon.map.value.DungeonCorridorDoorBinding;
+import src.domain.dungeon.map.value.DungeonCorridorWaypoint;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonEdgeDirection;
@@ -43,6 +51,7 @@ public final class DungeonMapRecordMapper {
         DungeonTopologySeedRecord seed = resolvedRecord.topologySeed();
         List<DungeonRoomCluster> clusters = toClusters(resolvedRecord.roomClusters());
         RoomCatalog rooms = new RoomCatalog(toRooms(resolvedRecord.rooms()));
+        ConnectionCatalog connections = new ConnectionCatalog(toCorridors(resolvedRecord.corridors()));
         return DungeonMap.authored(
                 new DungeonMapIdentity(resolvedRecord.mapId()),
                 resolvedRecord.name(),
@@ -54,6 +63,7 @@ public final class DungeonMapRecordMapper {
                         seed.roomAnchorR(),
                         clusters),
                 rooms,
+                connections,
                 resolvedRecord.revision());
     }
 
@@ -122,6 +132,46 @@ public final class DungeonMapRecordMapper {
                     new DungeonRoomNarration(
                             record.visualDescription(),
                             exitDescriptions(record.levelZ(), record.exitDescriptions()))));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonCorridor> toCorridors(List<DungeonCorridorRecord> records) {
+        List<DungeonCorridor> result = new ArrayList<>();
+        for (DungeonCorridorRecord record : records == null ? List.<DungeonCorridorRecord>of() : records) {
+            result.add(new DungeonCorridor(
+                    record.corridorId(),
+                    record.mapId(),
+                    record.levelZ(),
+                    record.roomIds(),
+                    new DungeonCorridorBindings(
+                            toWaypoints(record.waypoints()),
+                            toDoorBindings(record.doorBindings()))));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonCorridorWaypoint> toWaypoints(List<DungeonCorridorWaypointRecord> records) {
+        List<DungeonCorridorWaypoint> result = new ArrayList<>();
+        for (DungeonCorridorWaypointRecord record
+                : records == null ? List.<DungeonCorridorWaypointRecord>of() : records) {
+            result.add(new DungeonCorridorWaypoint(
+                    record.clusterId(),
+                    new DungeonCell(record.relativeX(), record.relativeY(), record.relativeZ()),
+                    record.relativeZ()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonCorridorDoorBinding> toDoorBindings(List<DungeonCorridorDoorBindingRecord> records) {
+        List<DungeonCorridorDoorBinding> result = new ArrayList<>();
+        for (DungeonCorridorDoorBindingRecord record
+                : records == null ? List.<DungeonCorridorDoorBindingRecord>of() : records) {
+            result.add(new DungeonCorridorDoorBinding(
+                    record.roomId(),
+                    record.clusterId(),
+                    new DungeonCell(record.relativeCellX(), record.relativeCellY(), 0),
+                    DungeonEdgeDirection.parse(record.edgeDirection())));
         }
         return List.copyOf(result);
     }
