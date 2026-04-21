@@ -10,6 +10,8 @@ import src.domain.party.application.LoadActivePartyCompositionUseCase;
 import src.domain.party.application.LoadActivePartyUseCase;
 import src.domain.party.application.LoadAdventuringDaySummaryUseCase;
 import src.domain.party.application.LoadPartySnapshotUseCase;
+import src.domain.party.application.LoadPartyTravelPositionsUseCase;
+import src.domain.party.application.MovePartyCharactersUseCase;
 import src.domain.party.application.PerformPartyRestUseCase;
 import src.domain.party.application.SetPartyMembershipUseCase;
 import src.domain.party.application.UpdateCharacterUseCase;
@@ -26,15 +28,25 @@ import src.domain.party.published.LoadActivePartyCompositionQuery;
 import src.domain.party.published.LoadActivePartyQuery;
 import src.domain.party.published.LoadAdventuringDaySummaryQuery;
 import src.domain.party.published.LoadPartySnapshotQuery;
+import src.domain.party.published.LoadPartyTravelPositionsQuery;
 import src.domain.party.published.MembershipState;
+import src.domain.party.published.MovePartyCharactersCommand;
 import src.domain.party.published.MutationResult;
 import src.domain.party.published.MutationStatus;
 import src.domain.party.published.PerformPartyRestCommand;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
+import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
 import src.domain.party.published.PartyMemberDetails;
 import src.domain.party.published.PartyMemberSummary;
+import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.domain.party.published.PartySnapshot;
 import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartySummary;
+import src.domain.party.published.PartyTravelHeading;
+import src.domain.party.published.PartyTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelPositionSnapshot;
+import src.domain.party.published.PartyTravelPositionsResult;
+import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
 import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestCadenceUrgency;
@@ -49,6 +61,7 @@ import src.domain.party.roster.value.PartyCharacterDraft;
 import src.domain.party.roster.value.PartyMembership;
 import src.domain.party.roster.value.PartyMutationStatus;
 import src.domain.party.roster.value.PartyRestType;
+import src.domain.party.roster.value.PartyTravelLocation;
 
 /**
  * Public backend facade for party management.
@@ -59,12 +72,14 @@ public final class PartyApplicationService {
     private final LoadActivePartyUseCase loadActivePartyUseCase;
     private final LoadActivePartyCompositionUseCase loadActivePartyCompositionUseCase;
     private final LoadAdventuringDaySummaryUseCase loadAdventuringDaySummaryUseCase;
+    private final LoadPartyTravelPositionsUseCase loadPartyTravelPositionsUseCase;
     private final CreateCharacterUseCase createCharacterUseCase;
     private final UpdateCharacterUseCase updateCharacterUseCase;
     private final DeleteCharacterUseCase deleteCharacterUseCase;
     private final SetPartyMembershipUseCase setPartyMembershipUseCase;
     private final AwardPartyXpUseCase awardPartyXpUseCase;
     private final PerformPartyRestUseCase performPartyRestUseCase;
+    private final MovePartyCharactersUseCase movePartyCharactersUseCase;
 
     public PartyApplicationService(PartyRosterRepository rosterRepository) {
         PartyRosterRepository repository = Objects.requireNonNull(rosterRepository, "rosterRepository");
@@ -72,12 +87,14 @@ public final class PartyApplicationService {
         this.loadActivePartyUseCase = new LoadActivePartyUseCase(repository);
         this.loadActivePartyCompositionUseCase = new LoadActivePartyCompositionUseCase(repository);
         this.loadAdventuringDaySummaryUseCase = new LoadAdventuringDaySummaryUseCase(repository);
+        this.loadPartyTravelPositionsUseCase = new LoadPartyTravelPositionsUseCase(repository);
         this.createCharacterUseCase = new CreateCharacterUseCase(repository);
         this.updateCharacterUseCase = new UpdateCharacterUseCase(repository);
         this.deleteCharacterUseCase = new DeleteCharacterUseCase(repository);
         this.setPartyMembershipUseCase = new SetPartyMembershipUseCase(repository);
         this.awardPartyXpUseCase = new AwardPartyXpUseCase(repository);
         this.performPartyRestUseCase = new PerformPartyRestUseCase(repository);
+        this.movePartyCharactersUseCase = new MovePartyCharactersUseCase(repository);
     }
 
     public PartySnapshotResult loadSnapshot(LoadPartySnapshotQuery query) {

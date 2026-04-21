@@ -16,6 +16,7 @@ import src.domain.party.roster.value.PartyMembership;
 import src.domain.party.roster.value.PartyMutationStatus;
 import src.domain.party.roster.value.PartyRestType;
 import src.domain.party.roster.value.PartyRosterProjection;
+import src.domain.party.roster.value.PartyTravelLocation;
 
 public final class PartyRoster {
 
@@ -111,6 +112,20 @@ public final class PartyRoster {
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters.size());
         for (PartyCharacter character : characters) {
             nextCharacters.add(character.membership().isActive() ? character.afterRest(restType) : character);
+        }
+        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
+    }
+
+    public MutationResult moveCharacters(List<Long> ids, PartyTravelLocation location, boolean attachToPartyToken) {
+        if (location == null || ids == null || ids.isEmpty()) {
+            return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
+        }
+        List<PartyCharacter> nextCharacters = mutations.replace(
+                characters,
+                ids,
+                character -> character.moveTo(location, attachToPartyToken));
+        if (nextCharacters.isEmpty()) {
+            return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
         }
         return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, nextCharacters));
     }
