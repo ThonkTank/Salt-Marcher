@@ -14,16 +14,26 @@ import org.jspecify.annotations.Nullable;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
+import src.domain.party.published.AwardPartyXpCommand;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.DeleteCharacterCommand;
 import src.domain.party.published.LoadAdventuringDaySummaryQuery;
 import src.domain.party.published.LoadPartySnapshotQuery;
 import src.domain.party.published.MembershipState;
+import src.domain.party.published.MutationResult;
+import src.domain.party.published.MutationStatus;
 import src.domain.party.published.PartyMemberDetails;
 import src.domain.party.published.PartySnapshot;
 import src.domain.party.published.PartySnapshotResult;
 import src.domain.party.published.PartySummary;
+import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.ReadStatus;
 import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestCadenceUrgency;
+import src.domain.party.published.RestType;
+import src.domain.party.published.SetPartyMembershipCommand;
+import src.domain.party.published.UpdateCharacterCommand;
 
 public final class PartyTopBarViewModel {
 
@@ -55,41 +65,77 @@ public final class PartyTopBarViewModel {
         applySnapshot(snapshotResult.snapshot(), dayResult);
     }
 
-    public void mockAddExisting(String name) {
-        showStatus(displayName(name) + " wuerde zur aktiven Party hinzugefuegt.", false);
+    public boolean addExisting(@Nullable Long id, String name) {
+        if (id == null || id.longValue() <= 0) {
+            showStatus("Charakter konnte nicht gefunden werden.", true);
+            return false;
+        }
+        long characterId = id.longValue();
+        MutationResult result = party.setMembership(new SetPartyMembershipCommand(characterId, MembershipState.ACTIVE));
+        return applyMutation(result, displayName(name) + " wurde zur aktiven Party hinzugefuegt.");
     }
 
-    public void mockCreateCharacter(String name) {
-        showStatus(displayName(name) + " wuerde erstellt und zur Party hinzugefuegt.", false);
+    public boolean createCharacter(CharacterDraftModel draft) {
+        CharacterDraftModel safeDraft = draft == null ? CharacterDraftModel.empty() : draft;
+        MutationResult result = party.createCharacter(new CreateCharacterCommand(toCharacterDraft(safeDraft), MembershipState.ACTIVE));
+        return applyMutation(result, displayName(safeDraft.name()) + " wurde erstellt und zur Party hinzugefuegt.");
     }
 
-    public void mockUpdateCharacter(String name) {
-        showStatus(displayName(name) + " wuerde gespeichert.", false);
+    public boolean updateCharacter(CharacterDraftModel draft) {
+        CharacterDraftModel safeDraft = draft == null ? CharacterDraftModel.empty() : draft;
+        Long draftId = safeDraft.id();
+        if (draftId == null || draftId.longValue() <= 0) {
+            showStatus("Charakter konnte nicht gefunden werden.", true);
+            return false;
+        }
+        long characterId = draftId.longValue();
+        MutationResult result = party.updateCharacter(new UpdateCharacterCommand(characterId, toCharacterDraft(safeDraft)));
+        return applyMutation(result, displayName(safeDraft.name()) + " wurde gespeichert.");
     }
 
-    public void mockDeleteCharacter(String name) {
-        showStatus(displayName(name) + " wuerde dauerhaft geloescht.", true);
+    public boolean deleteCharacter(@Nullable Long id, String name) {
+        if (id == null || id.longValue() <= 0) {
+            showStatus("Charakter konnte nicht gefunden werden.", true);
+            return false;
+        }
+        long characterId = id.longValue();
+        MutationResult result = party.deleteCharacter(new DeleteCharacterCommand(characterId));
+        return applyMutation(result, displayName(name) + " wurde geloescht.");
     }
 
-    public void mockRemoveFromParty(String name) {
-        showStatus(displayName(name) + " wuerde aus der aktiven Party entfernt.", false);
+    public boolean removeFromParty(@Nullable Long id, String name) {
+        if (id == null || id.longValue() <= 0) {
+            showStatus("Charakter konnte nicht gefunden werden.", true);
+            return false;
+        }
+        long characterId = id.longValue();
+        MutationResult result = party.setMembership(new SetPartyMembershipCommand(characterId, MembershipState.RESERVE));
+        return applyMutation(result, displayName(name) + " wurde aus der aktiven Party entfernt.");
     }
 
-    public void mockAwardXp(String name, String rawXp) {
+    public boolean awardXp(@Nullable Long id, String name, String rawXp) {
         int xp = parsePositiveInt(rawXp);
         if (xp <= 0) {
             showStatus("XP muss groesser als 0 sein.", true);
-            return;
+            return false;
         }
-        showStatus(displayName(name) + " wuerde " + xp + " XP erhalten.", false);
+        if (id == null || id.longValue() <= 0) {
+            showStatus("Charakter konnte nicht gefunden werden.", true);
+            return false;
+        }
+        long characterId = id.longValue();
+        MutationResult result = party.awardXp(new AwardPartyXpCommand(List.of(characterId), xp));
+        return applyMutation(result, displayName(name) + " erhielt " + xp + " XP.");
     }
 
-    public void mockShortRest() {
-        showStatus("Short Rest wuerde fuer die aktive Party ausgefuehrt.", false);
+    public boolean shortRest() {
+        MutationResult result = party.performRest(new PerformPartyRestCommand(RestType.SHORT_REST));
+        return applyMutation(result, "Short Rest wurde fuer die aktive Party ausgefuehrt.");
     }
 
-    public void mockLongRest() {
-        showStatus("Long Rest wuerde fuer die aktive Party ausgefuehrt.", false);
+    public boolean longRest() {
+        MutationResult result = party.performRest(new PerformPartyRestCommand(RestType.LONG_REST));
+        return applyMutation(result, "Long Rest wurde fuer die aktive Party ausgefuehrt.");
     }
 
     private void applySnapshot(@Nullable PartySnapshot snapshot, @Nullable AdventuringDayResult dayResult) {
@@ -123,7 +169,7 @@ public final class PartyTopBarViewModel {
     }
 
     private void applyStorageError() {
-        triggerText.set("Keine Party v");
+        triggerText.set("Keine Party");
         panel.set(new PanelModel(
                 false,
                 true,
@@ -141,6 +187,37 @@ public final class PartyTopBarViewModel {
         PanelModel current = panel.get();
         PanelModel safeCurrent = current == null ? PanelModel.loadingModel() : current;
         panel.set(safeCurrent.withStatus(message, error));
+    }
+
+    private boolean applyMutation(@Nullable MutationResult result, String successMessage) {
+        MutationStatus status = result == null ? MutationStatus.STORAGE_ERROR : result.status();
+        if (status == MutationStatus.SUCCESS) {
+            refresh();
+            showStatus(successMessage, false);
+            return true;
+        }
+        showStatus(mutationMessage(status), true);
+        return false;
+    }
+
+    private static String mutationMessage(@Nullable MutationStatus status) {
+        if (status == MutationStatus.NOT_FOUND) {
+            return "Charakter konnte nicht gefunden werden.";
+        }
+        if (status == MutationStatus.INVALID_INPUT) {
+            return "Eingaben sind ungueltig.";
+        }
+        return "Party-Aktion konnte nicht gespeichert werden.";
+    }
+
+    private static CharacterDraft toCharacterDraft(CharacterDraftModel draft) {
+        CharacterDraftModel safeDraft = draft == null ? CharacterDraftModel.empty() : draft;
+        return new CharacterDraft(
+                safeDraft.name(),
+                safeDraft.playerName(),
+                safeDraft.level(),
+                safeDraft.passivePerception(),
+                safeDraft.armorClass());
     }
 
     private static MemberModel toMemberModel(@Nullable PartyMemberDetails member, @Nullable RestCadenceStatus restStatus) {
@@ -345,6 +422,25 @@ public final class PartyTopBarViewModel {
             progressionText = safe(progressionText);
             restText = safe(restText);
             restStyleClass = safe(restStyleClass);
+        }
+    }
+
+    public record CharacterDraftModel(
+            @Nullable Long id,
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass
+    ) {
+
+        public CharacterDraftModel {
+            name = safe(name);
+            playerName = safe(playerName);
+        }
+
+        static CharacterDraftModel empty() {
+            return new CharacterDraftModel(null, "", "", 1, 10, 10);
         }
     }
 }

@@ -44,6 +44,7 @@ public final class CatalogControlsView extends VBox {
     private final FlowPane filterRow = new FlowPane(4, 4);
     private final FlowPane chipsPane = new FlowPane(4, 2);
     private final ComboBox<SortSelection> sortCombo = new ComboBox<>();
+    private final ComboBox<DifficultySelection> encounterDifficultyCombo = new ComboBox<>();
     private final Label countLabel = new Label("0 Monster gefunden");
     private final Label pageLabel = new Label("Seite 1 / 1");
     private final Button previousButton = new Button("◀ Zurück");
@@ -53,6 +54,7 @@ public final class CatalogControlsView extends VBox {
     private @Nullable Consumer<String> contentSelectionHandler;
     private @Nullable Consumer<CreatureFilterState> filterChangedHandler;
     private @Nullable Consumer<String> sortChangedHandler;
+    private @Nullable Consumer<String> encounterDifficultyChangedHandler;
     private @Nullable Runnable previousPageHandler;
     private @Nullable Runnable nextPageHandler;
     private boolean suppressFilterEvents;
@@ -96,6 +98,20 @@ public final class CatalogControlsView extends VBox {
             }
         });
 
+        encounterDifficultyCombo.setMaxWidth(Double.MAX_VALUE);
+        encounterDifficultyCombo.setItems(FXCollections.observableArrayList(
+                new DifficultySelection("easy", "Easy"),
+                new DifficultySelection("medium", "Medium"),
+                new DifficultySelection("hard", "Hard"),
+                new DifficultySelection("deadly", "Deadly")));
+        encounterDifficultyCombo.getSelectionModel().select(1);
+        encounterDifficultyCombo.setOnAction(event -> {
+            DifficultySelection selection = encounterDifficultyCombo.getValue();
+            if (selection != null && encounterDifficultyChangedHandler != null) {
+                encounterDifficultyChangedHandler.accept(selection.key());
+            }
+        });
+
         HBox pagination = new HBox(8, previousButton, pageLabel, nextButton);
         pagination.setAlignment(Pos.CENTER_LEFT);
         previousButton.getStyleClass().add("compact");
@@ -113,6 +129,8 @@ public final class CatalogControlsView extends VBox {
 
         Label sortLabel = new Label("Sortierung");
         sortLabel.getStyleClass().add("text-muted");
+        Label encounterLabel = new Label("Encounter");
+        encounterLabel.getStyleClass().add("text-muted");
         countLabel.getStyleClass().add("text-secondary");
         pageLabel.getStyleClass().add("text-secondary");
 
@@ -122,6 +140,8 @@ public final class CatalogControlsView extends VBox {
                 searchRow,
                 filterRow,
                 chipsPane,
+                encounterLabel,
+                encounterDifficultyCombo,
                 sortLabel,
                 sortCombo,
                 countLabel,
@@ -225,6 +245,10 @@ public final class CatalogControlsView extends VBox {
         sortChangedHandler = handler;
     }
 
+    public void setOnEncounterDifficultyChanged(Consumer<String> handler) {
+        encounterDifficultyChangedHandler = handler;
+    }
+
     public void setOnPreviousPage(Runnable handler) {
         previousPageHandler = handler;
     }
@@ -311,6 +335,13 @@ public final class CatalogControlsView extends VBox {
     }
 
     public record SortSelection(String key, String label) {
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    public record DifficultySelection(String key, String label) {
         @Override
         public String toString() {
             return label;

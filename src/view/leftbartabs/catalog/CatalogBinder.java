@@ -12,10 +12,12 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
+import src.domain.encounter.published.EncounterDifficultyBand;
 import src.view.slotcontent.details.creature.CreatureDetailsView;
 import src.view.slotcontent.details.creature.CreatureDetailsViewModel;
 import src.view.slotcontent.controls.catalog.CatalogControlsView;
 import src.view.slotcontent.main.catalog.CatalogMainView;
+import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
 final class CatalogBinder {
 
@@ -27,16 +29,23 @@ final class CatalogBinder {
 
     ShellBinding bind() {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
+        EncounterRuntimeViewModel encounterSession = runtimeContext.session(
+                EncounterRuntimeViewModel.class,
+                EncounterRuntimeViewModel::new);
         CatalogViewModel viewModel = new CatalogViewModel(creatures);
         CatalogControlsView controls = new CatalogControlsView();
         CatalogMainView main = new CatalogMainView();
-        bindControls(viewModel, controls);
-        bindMain(runtimeContext.inspector(), creatures, viewModel, main);
+        bindControls(viewModel, controls, encounterSession);
+        bindMain(runtimeContext.inspector(), creatures, encounterSession, viewModel, main);
         viewModel.loadInitial();
         return new Binding(controls, main);
     }
 
-    private static void bindControls(CatalogViewModel viewModel, CatalogControlsView controls) {
+    private static void bindControls(
+            CatalogViewModel viewModel,
+            CatalogControlsView controls,
+            EncounterRuntimeViewModel encounterSession
+    ) {
         controls.setContents(viewModel.contents().stream().map(CatalogBinder::toControlContent).toList());
         controls.setSortOptions(viewModel.sortOptions().stream().map(CatalogBinder::toControlSort).toList());
         controls.selectSort(viewModel.selectedSortKeyProperty().get());
@@ -49,8 +58,9 @@ final class CatalogBinder {
         controls.previousDisableProperty().bind(viewModel.previousPageAvailableProperty().not());
         controls.nextDisableProperty().bind(viewModel.nextPageAvailableProperty().not());
         controls.setOnContentSelected(viewModel::selectContent);
-        controls.setOnCreatureFiltersChanged(filter ->
-                viewModel.applyCreatureFilters(new CatalogViewModel.CreatureFilters(
+        controls.setOnCreatureFiltersChanged(filter -> {
+            encounterSession.updateFilters(filter.types(), filter.subtypes(), filter.biomes());
+            viewModel.applyCreatureFilters(new CatalogViewModel.CreatureFilters(
                         filter.nameQuery(),
                         filter.challengeRatingMin(),
                         filter.challengeRatingMax(),
@@ -58,8 +68,10 @@ final class CatalogBinder {
                         filter.types(),
                         filter.subtypes(),
                         filter.biomes(),
-                        filter.alignments())));
+                        filter.alignments()));
+        });
         controls.setOnSortChanged(viewModel::selectSort);
+        controls.setOnEncounterDifficultyChanged(key -> encounterSession.selectDifficulty(toDifficultyBand(key)));
         controls.setOnPreviousPage(viewModel::previousPage);
         controls.setOnNextPage(viewModel::nextPage);
 
@@ -74,9 +86,11 @@ final class CatalogBinder {
     private static void bindMain(
             InspectorSink inspector,
             CreaturesApplicationService creatures,
+            EncounterRuntimeViewModel encounterSession,
             CatalogViewModel viewModel,
             CatalogMainView main
     ) {
+        main.setRowAction("+Add", "Zum Encounter hinzufuegen", encounterSession::requestCreatureAdd);
         main.setColumns(viewModel.columns().stream().map(CatalogBinder::toMainColumn).toList());
         main.setRows(viewModel.rows().stream().map(CatalogBinder::toMainRow).toList());
         main.setPlaceholderText(viewModel.placeholderTextProperty().get());
@@ -154,6 +168,19 @@ final class CatalogBinder {
 
     private static CatalogMainView.RowItem toMainRow(CatalogViewModel.CatalogRow row) {
         return new CatalogMainView.RowItem(row.id(), row.cells());
+    }
+
+    private static EncounterDifficultyBand toDifficultyBand(String key) {
+        if ("easy".equals(key)) {
+            return EncounterDifficultyBand.EASY;
+        }
+        if ("hard".equals(key)) {
+            return EncounterDifficultyBand.HARD;
+        }
+        if ("deadly".equals(key)) {
+            return EncounterDifficultyBand.DEADLY;
+        }
+        return EncounterDifficultyBand.MEDIUM;
     }
 
     private static CreatureDetailsView.DetailContent toViewDetail(CreatureDetailsViewModel.DetailPresentation detail) {

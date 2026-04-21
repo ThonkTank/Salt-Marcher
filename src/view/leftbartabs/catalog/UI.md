@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Catalog left-bar tab composition, content selection, filter
 controls, list management, and main list behavior.
 
@@ -23,7 +23,8 @@ Current state:
 ## Visible Surfaces
 
 - `COCKPIT_CONTROLS` contains content selection, creature filters, active
-  filter chips, sort selection, result count, and page controls.
+  filter chips, encounter difficulty selection, sort selection, result count,
+  and page controls.
 - `COCKPIT_MAIN` contains the active catalog list.
 - Creature Inspector content is defined separately in
   [Creature Details UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/slotcontent/details/creature/UI.md:1).
@@ -37,12 +38,16 @@ Current state:
   the query.
 - Size, type, subtype, biome, and alignment filters use searchable multi-select
   popups.
+- Creature type, subtype, biome, and encounter difficulty selections publish
+  runtime encounter-generation inputs for the Encounter state tab.
 - Active chips remove their corresponding filter when clicked.
 - `Leeren` clears all creature filters and reloads the first page.
 - Sort changes reset to page one.
 - Previous and next page controls move in fixed 50-row pages.
 - Clicking a creature name or pressing Enter on a selected row opens that
   creature in the shell Inspector.
+- Clicking a creature row's `+Add` action publishes an add-creature request to
+  the Encounter state tab.
 
 ## Visible States
 

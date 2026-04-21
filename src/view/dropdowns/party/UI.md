@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Party top-bar dropdown structure, interactions, and visible
 states.
 
@@ -13,10 +13,8 @@ party snapshot. It gives a compact read-only overview of active party members,
 party composition, and adventuring-day readiness without becoming a left-bar
 left-bar tab.
 
-Current state: the dropdown is a representation-focused UI mock. It reads the
-real party snapshot and adventuring-day summary, but mutation controls only
-show mock feedback so later work can attach real behavior without changing the
-surface shape.
+Current state: the dropdown reads the real party snapshot and adventuring-day
+summary, and mutation controls call the party application service.
 
 ## Visible Surfaces
 
@@ -39,8 +37,12 @@ surface shape.
   Binder and ViewModel.
 - Search filters reserve-character suggestions locally.
 - Add, create, edit, delete, XP, remove, short-rest, and long-rest controls
-  currently report mock feedback only and do not mutate party roster data.
-- Closing the dropdown leaves party domain state unchanged.
+  persist through the party application service and refresh the dropdown
+  snapshot after successful mutations.
+- Successful party mutations publish a runtime refresh signal so the Encounter
+  state tab can reload party thresholds and active combat baselines.
+- Closing the dropdown leaves party domain state unchanged unless an explicit
+  mutation action has already completed.
 
 ## Visible States
 
@@ -49,5 +51,5 @@ surface shape.
 - Empty: no active party members are available.
 - Loaded: member summaries and adventuring-day status are visible.
 - Storage error: the dropdown reports that party data could not be loaded.
-- Mock action feedback: a successful or warning-colored inline status explains
-  which later action would have run.
+- Action feedback: a successful or warning-colored inline status explains the
+  mutation result.

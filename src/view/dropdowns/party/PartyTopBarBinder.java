@@ -7,6 +7,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
+import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
 final class PartyTopBarBinder {
 
@@ -18,6 +19,9 @@ final class PartyTopBarBinder {
 
     ShellBinding bind() {
         PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
+        EncounterRuntimeViewModel encounterSession = runtimeContext.session(
+                EncounterRuntimeViewModel.class,
+                EncounterRuntimeViewModel::new);
         PartyTopBarViewModel viewModel = new PartyTopBarViewModel(party);
         PartyTopBarView panel = new PartyTopBarView();
         panel.setTriggerText(viewModel.triggerTextProperty().get());
@@ -25,16 +29,43 @@ final class PartyTopBarBinder {
         viewModel.triggerTextProperty().addListener((ignored, before, after) -> panel.setTriggerText(after));
         viewModel.panelProperty().addListener((ignored, before, after) -> panel.showPanel(toPanelContent(after)));
         panel.onOpen(viewModel::refresh);
-        panel.onAddExisting(member -> viewModel.mockAddExisting(member.name()));
-        panel.onRemoveFromParty(member -> viewModel.mockRemoveFromParty(member.name()));
-        panel.onAwardXp(request -> viewModel.mockAwardXp(request.member().name(), request.rawXp()));
-        panel.onShortRest(viewModel::mockShortRest);
-        panel.onLongRest(viewModel::mockLongRest);
-        panel.onCreateCharacter(draft -> viewModel.mockCreateCharacter(draft.name()));
-        panel.onUpdateCharacter(draft -> viewModel.mockUpdateCharacter(draft.name()));
-        panel.onDeleteCharacter(member -> viewModel.mockDeleteCharacter(member.name()));
+        panel.onAddExisting(member -> publishPartyMutation(encounterSession,
+                viewModel.addExisting(member.id(), member.name())));
+        panel.onRemoveFromParty(member -> publishPartyMutation(encounterSession,
+                viewModel.removeFromParty(member.id(), member.name())));
+        panel.onAwardXp(request -> publishPartyMutation(encounterSession,
+                viewModel.awardXp(request.member().id(), request.member().name(), request.rawXp())));
+        panel.onShortRest(() -> publishPartyMutation(encounterSession, viewModel.shortRest()));
+        panel.onLongRest(() -> publishPartyMutation(encounterSession, viewModel.longRest()));
+        panel.onCreateCharacter(draft -> publishPartyMutation(encounterSession,
+                viewModel.createCharacter(toDraftModel(draft))));
+        panel.onUpdateCharacter(draft -> publishPartyMutation(encounterSession,
+                viewModel.updateCharacter(toDraftModel(draft))));
+        panel.onDeleteCharacter(member -> publishPartyMutation(encounterSession,
+                viewModel.deleteCharacter(member.id(), member.name())));
         viewModel.refresh();
         return new Binding(panel);
+    }
+
+    private static void publishPartyMutation(EncounterRuntimeViewModel encounterSession, boolean changed) {
+        if (changed) {
+            encounterSession.partyChanged();
+        }
+    }
+
+    private static PartyTopBarViewModel.CharacterDraftModel toDraftModel(
+            PartyCharacterEditorTopBarView.EditorDraft draft
+    ) {
+        PartyCharacterEditorTopBarView.EditorDraft safeDraft = draft == null
+                ? new PartyCharacterEditorTopBarView.EditorDraft(null, "", "", 1, 10, 10)
+                : draft;
+        return new PartyTopBarViewModel.CharacterDraftModel(
+                safeDraft.id(),
+                safeDraft.name(),
+                safeDraft.playerName(),
+                safeDraft.level(),
+                safeDraft.passivePerception(),
+                safeDraft.armorClass());
     }
 
     private static PartyTopBarView.PanelContent toPanelContent(PartyTopBarViewModel.PanelModel model) {

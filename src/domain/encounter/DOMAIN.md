@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Encounter feature ownership, runtime truth model, and domain
 invariants.
 
@@ -18,9 +18,9 @@ Context Role: Generation Policy Context
 
 ## Published Language
 
-`published/` owns public generation commands, difficulty bands, locks, budget
-summaries, generated encounter results, encounter creature entries, and
-generation status vocabulary.
+`published/` owns public generation and budget-load commands, difficulty
+bands, locks, budget summaries, generated encounter results, encounter creature
+entries, and generation status vocabulary.
 
 The generation model must not depend on any `src.domain.*.published.*`
 carriers as invariant inputs. The application boundary translates public
@@ -35,6 +35,8 @@ application values, and delegates generation work. The root application service
 maps generated results into encounter `published/` carriers.
 `EncounterGenerationUseCase` remains orchestration and foreign-service
 coordination only.
+`LoadEncounterBudgetUseCase` exposes party-derived encounter thresholds without
+constructing a generated encounter.
 
 ## Architecture Status
 
@@ -67,6 +69,7 @@ It derives:
 - encounter-ready candidate pools
 - role hints for encounter composition
 - ranked encounter alternatives
+- party-derived budget summaries for the active runtime session
 
 Generated encounters are ephemeral derived state. They may be locked or
 excluded inside the state tab, but those controls remain local presentation

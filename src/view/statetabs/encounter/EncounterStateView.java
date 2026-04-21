@@ -256,7 +256,7 @@ public final class EncounterStateView extends VBox {
         Button generateButton = new Button("_Generieren");
         generateButton.getStyleClass().add("neutral-action");
         generateButton.setMaxWidth(Double.MAX_VALUE);
-        generateButton.setTooltip(new Tooltip("Demo-Encounter generieren (Alt+G)"));
+        generateButton.setTooltip(new Tooltip("Encounter aus Catalog-Filtern generieren (Alt+G)"));
         generateButton.setOnAction(event -> onGenerate.accept(BuilderSettingsInput.defaultInput()));
         builderStartCombatButton.getStyleClass().add("accent");
         builderStartCombatButton.setMaxWidth(Double.MAX_VALUE);
@@ -320,7 +320,7 @@ public final class EncounterStateView extends VBox {
         Button addPartyButton = new Button("SC hinzufuegen");
         addPartyButton.getStyleClass().addAll("compact", "neutral-action");
         addPartyButton.setDisable(true);
-        addPartyButton.setTooltip(new Tooltip("Demo-Platzhalter fuer spaetere Party-Erweiterung."));
+        addPartyButton.setTooltip(new Tooltip("Party wird im Party-Panel gepflegt."));
         HBox actions = new HBox(addPartyButton);
         actions.setAlignment(Pos.CENTER_RIGHT);
         actions.setPadding(new Insets(0, 12, 4, 12));
@@ -695,12 +695,13 @@ public final class EncounterStateView extends VBox {
         int thresholdPercent = (int) Math.round(resultThresholdSlider.getValue() * 100);
         int fractionPercent = (int) Math.round(resultFractionSlider.getValue() * 100);
         int awardedXp = (int) Math.round(selectedXp * resultFractionSlider.getValue());
-        int perPlayer = awardedXp / 4;
+        int partySize = Math.max(1, lastResultState.partySize());
+        int perPlayer = awardedXp / partySize;
         resultSubtitleLabel.setText(selectedCount + " Gegner besiegt | " + selectedXp + " XP");
         resultThresholdValueLabel.setText(thresholdPercent + "%");
         resultFractionValueLabel.setText(fractionPercent + "%");
         resultXpLabel.setText(perPlayer + " XP");
-        resultPartyLabel.setText("pro Spieler  (4 Spieler | " + awardedXp + " XP gesamt)");
+        resultPartyLabel.setText("pro Spieler  (" + partySize + " Spieler | " + awardedXp + " XP gesamt)");
         resultGoldLabel.setText(lastResultState.goldSummary());
         resultLootLabel.setText(lastResultState.lootDetail());
     }
@@ -890,14 +891,16 @@ public final class EncounterStateView extends VBox {
             String lootDetail,
             String awardStatus,
             boolean xpAwarded,
-            boolean canAwardXp
+            boolean canAwardXp,
+            int partySize
     ) {
         public ResultStateView {
             enemies = enemies == null ? List.of() : List.copyOf(enemies);
+            partySize = Math.max(1, partySize);
         }
 
         static ResultStateView empty() {
-            return new ResultStateView(List.of(), 0, 0, 0, "Kein Loot", "", "", false, false);
+            return new ResultStateView(List.of(), 0, 0, 0, "Kein Loot", "", "", false, false, 1);
         }
     }
 

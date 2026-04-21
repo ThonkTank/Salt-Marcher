@@ -6,29 +6,54 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.domain.creatures.CreaturesApplicationService;
+import src.domain.encounter.EncounterApplicationService;
+import src.domain.party.PartyApplicationService;
+import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
 
 final class EncounterStateBinder {
 
+    private final ShellRuntimeContext runtimeContext;
+
     EncounterStateBinder(ShellRuntimeContext runtimeContext) {
-        Objects.requireNonNull(runtimeContext, "runtimeContext");
+        this.runtimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
     }
 
     ShellBinding bind() {
-        EncounterStateViewModel viewModel = new EncounterStateViewModel();
+        PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
+        CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
+        EncounterApplicationService encounters = new EncounterApplicationService(party, creatures);
+        EncounterRuntimeViewModel encounterSession = runtimeContext.session(
+                EncounterRuntimeViewModel.class,
+                EncounterRuntimeViewModel::new);
+        EncounterStateViewModel viewModel = new EncounterStateViewModel(encounters, creatures, party);
         EncounterStateView state = new EncounterStateView();
         state.statusTextProperty().bind(viewModel.statusProperty());
-        wireActions(state, viewModel);
+        wireActions(state, viewModel, encounterSession);
+        wireSession(encounterSession, viewModel);
         wireRendering(state, viewModel);
         render(state, viewModel);
         return new Binding(state);
     }
 
-    private void wireActions(EncounterStateView state, EncounterStateViewModel viewModel) {
-        state.setOnGenerate(input -> viewModel.generate(new EncounterStateViewModel.BuilderSettings(
-                input.difficultyLabel(),
-                input.balanceLevel(),
-                input.amountValue(),
-                input.diversityLevel())));
+    private void wireActions(
+            EncounterStateView state,
+            EncounterStateViewModel viewModel,
+            EncounterRuntimeViewModel encounterSession
+    ) {
+        state.setOnGenerate(input -> {
+            EncounterRuntimeViewModel.EncounterFilters filters = encounterSession.filters();
+            viewModel.generate(
+                    new EncounterStateViewModel.BuilderSettings(
+                            input.difficultyLabel(),
+                            input.balanceLevel(),
+                            input.amountValue(),
+                            input.diversityLevel()),
+                    filters.types(),
+                    filters.subtypes(),
+                    filters.biomes(),
+                    encounterSession.difficulty());
+        });
         state.setOnStartInitiative(viewModel::openInitiative);
         state.setOnInitiativeBack(viewModel::backToBuilder);
         state.setOnInitiativeConfirm(inputs -> viewModel.confirmInitiative(inputs.stream()
@@ -41,6 +66,16 @@ final class EncounterStateBinder {
         state.setOnEndCombat(viewModel::endCombat);
         state.setOnAwardXp(viewModel::awardXp);
         state.setOnReturnToBuilder(viewModel::returnToBuilderAfterResults);
+    }
+
+    private void wireSession(EncounterRuntimeViewModel encounterSession, EncounterStateViewModel viewModel) {
+        encounterSession.creatureAddRequestProperty().addListener((obs, oldRequest, newRequest) -> {
+            if (newRequest != null) {
+                viewModel.addCreature(newRequest.creatureId());
+            }
+        });
+        encounterSession.partyRefreshTokenProperty().addListener((obs, oldToken, newToken) ->
+                viewModel.refreshPartyContext());
     }
 
     private void wireRendering(EncounterStateView state, EncounterStateViewModel viewModel) {
@@ -68,7 +103,7 @@ final class EncounterStateBinder {
                 .average().orElse(1.0));
         return new EncounterStateView.BuilderStateView(
                 partyLabel,
-                source.roster().isEmpty() ? "" : "Demo-Vorlage",
+                source.templateLabel(),
                 new EncounterStateView.DifficultySummaryView(
                         difficulty.easy(),
                         difficulty.medium(),
@@ -146,7 +181,8 @@ final class EncounterStateBinder {
                 source.lootDetail(),
                 source.awardStatus(),
                 source.xpAwarded(),
-                source.canAwardXp());
+                source.canAwardXp(),
+                source.partySize());
     }
 
     private record Binding(Node state) implements ShellBinding {

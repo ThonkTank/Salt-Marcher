@@ -8,6 +8,28 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
+import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.CreatureDetailResult;
+import src.domain.creatures.published.CreatureLookupStatus;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
+import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.EncounterBudgetResult;
+import src.domain.encounter.published.EncounterBudgetSummary;
+import src.domain.encounter.published.EncounterDifficultyBand;
+import src.domain.encounter.published.EncounterGenerationResult;
+import src.domain.encounter.published.EncounterGenerationStatus;
+import src.domain.encounter.published.GenerateEncounterCommand;
+import src.domain.encounter.published.GeneratedEncounter;
+import src.domain.encounter.published.LoadEncounterBudgetQuery;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.ActivePartyResult;
+import src.domain.party.published.AwardPartyXpCommand;
+import src.domain.party.published.LoadActivePartyQuery;
+import src.domain.party.published.MutationResult;
+import src.domain.party.published.MutationStatus;
+import src.domain.party.published.PartyMemberSummary;
+import src.domain.party.published.ReadStatus;
 
 public final class EncounterStateViewModel {
 
@@ -18,34 +40,44 @@ public final class EncounterStateViewModel {
         RESULTS
     }
 
-    private static final List<PartyMember> DEMO_PARTY = List.of(
-            new PartyMember("pc-1", "Mira", 5),
-            new PartyMember("pc-2", "Tarek", 5),
-            new PartyMember("pc-3", "Nuala", 4),
-            new PartyMember("pc-4", "Brom", 4));
-    private static final List<EncounterCreature> DEMO_GENERATED_ROSTER = List.of(
-            new EncounterCreature("ghoul", "Ghoul", "1", 200, 22, 12, 2, "Undead", "SKIRMISHER"),
-            new EncounterCreature("cult-fanatic", "Cult Fanatic", "2", 450, 33, 13, 2, "Humanoid", "SUPPORT"),
-            new EncounterCreature("shadow", "Shadow", "1/2", 100, 16, 12, 2, "Undead", "MINION"));
-
+    private final EncounterApplicationService encounter;
+    private final CreaturesApplicationService creatures;
+    private final PartyApplicationService party;
+    private final List<PartyMember> activeParty = new ArrayList<>();
     private final List<EncounterCreature> roster = new ArrayList<>();
+    private final List<GeneratedEncounter> generatedAlternatives = new ArrayList<>();
     private final List<InitiativeEntry> pendingInitiativeRows = new ArrayList<>();
     private final List<Combatant> combatants = new ArrayList<>();
     private final ReadOnlyObjectWrapper<Mode> mode = new ReadOnlyObjectWrapper<>(Mode.BUILDER);
     private final ReadOnlyObjectWrapper<BuilderState> builderState =
-            new ReadOnlyObjectWrapper<>(emptyBuilderState());
+            new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<InitiativeState> initiativeState =
             new ReadOnlyObjectWrapper<>(InitiativeState.empty());
     private final ReadOnlyObjectWrapper<CombatState> combatState =
             new ReadOnlyObjectWrapper<>(CombatState.empty());
     private final ReadOnlyObjectWrapper<ResultState> resultState =
             new ReadOnlyObjectWrapper<>(ResultState.empty());
-    private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper(
-            "Demo-UI bereit. Katalog- und Combat-Services werden spaeter angebunden.");
+    private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("Encounter bereit.");
 
+    private @Nullable EncounterBudgetSummary budget;
+    private BuilderSettings lastSettings = BuilderSettings.defaultSettings();
+    private int selectedAlternativeIndex;
+    private int generatedAdjustedXp;
+    private String generatedDifficulty = "";
+    private String generatedTitle = "";
     private int currentTurnIndex;
     private int round = 1;
-    private int generationCount;
+
+    public EncounterStateViewModel(
+            EncounterApplicationService encounter,
+            CreaturesApplicationService creatures,
+            PartyApplicationService party
+    ) {
+        this.encounter = java.util.Objects.requireNonNull(encounter, "encounter");
+        this.creatures = java.util.Objects.requireNonNull(creatures, "creatures");
+        this.party = java.util.Objects.requireNonNull(party, "party");
+        refreshPartyContext();
+    }
 
     public ReadOnlyObjectProperty<Mode> modeProperty() {
         return mode.getReadOnlyProperty();
@@ -71,45 +103,99 @@ public final class EncounterStateViewModel {
         return status.getReadOnlyProperty();
     }
 
-    public void generate(BuilderSettings settings) {
-        generationCount++;
-        roster.clear();
-        roster.addAll(DEMO_GENERATED_ROSTER);
-        if (generationCount % 2 == 0) {
-            roster.add(new EncounterCreature(
-                    "reef-shark",
-                    "Reef Shark",
-                    "1/2",
-                    100,
-                    22,
-                    12,
-                    2,
-                    "Beast",
-                    "MINION"));
-        }
-        status.set("Demo-Encounter generiert: " + label(settings.difficultyLabel()) + ".");
-        refreshBuilderState(settings);
+    public void refreshPartyContext() {
+        loadActiveParty();
+        loadBudget();
+        refreshBuilderState(lastSettings, contextMessage());
     }
 
-    public void addDemoCreature() {
-        roster.add(new EncounterCreature(
-                "sahuagin",
-                "Sahuagin",
-                "1/2",
-                100,
-                22,
-                12,
-                1,
-                "Humanoid",
-                "SOLDIER"));
-        status.set("Demo-Kreatur aus dem spaeteren Add-Hook hinzugefuegt.");
-        refreshBuilderState(BuilderSettings.defaultSettings());
+    public void generate(
+            BuilderSettings settings,
+            List<String> types,
+            List<String> subtypes,
+            List<String> biomes,
+            EncounterDifficultyBand difficulty
+    ) {
+        lastSettings = settings == null ? BuilderSettings.defaultSettings() : settings;
+        refreshPartyContext();
+        if (activeParty.isEmpty()) {
+            status.set("Die aktive Party hat keine Mitglieder.");
+            refreshBuilderState(lastSettings, "Bitte zuerst aktive Party-Mitglieder anlegen.");
+            return;
+        }
+        EncounterGenerationResult result = encounter.generate(new GenerateEncounterCommand(
+                types,
+                subtypes,
+                biomes,
+                difficulty == null ? EncounterDifficultyBand.defaultBand() : difficulty,
+                5,
+                List.of(),
+                List.of()));
+        if (result.status() != EncounterGenerationStatus.SUCCESS || result.encounters().isEmpty()) {
+            generatedAlternatives.clear();
+            selectedAlternativeIndex = 0;
+            status.set(result.message().isBlank() ? generationStatusText(result.status()) : result.message());
+            refreshBuilderState(lastSettings, status.get());
+            return;
+        }
+        generatedAlternatives.clear();
+        generatedAlternatives.addAll(result.encounters());
+        selectedAlternativeIndex = 0;
+        applyGeneratedEncounter(generatedAlternatives.getFirst());
+        status.set(generatedAlternatives.size() + " Encounter-Optionen generiert.");
+    }
+
+    public void nextGeneratedAlternative() {
+        if (generatedAlternatives.isEmpty()) {
+            return;
+        }
+        selectedAlternativeIndex = (selectedAlternativeIndex + 1) % generatedAlternatives.size();
+        applyGeneratedEncounter(generatedAlternatives.get(selectedAlternativeIndex));
+    }
+
+    public void previousGeneratedAlternative() {
+        if (generatedAlternatives.isEmpty()) {
+            return;
+        }
+        selectedAlternativeIndex = selectedAlternativeIndex == 0
+                ? generatedAlternatives.size() - 1
+                : selectedAlternativeIndex - 1;
+        applyGeneratedEncounter(generatedAlternatives.get(selectedAlternativeIndex));
+    }
+
+    public void addCreature(long creatureId) {
+        CreatureDetail detail = loadCreature(creatureId);
+        if (detail == null) {
+            status.set("Kreatur konnte nicht geladen werden.");
+            return;
+        }
+        generatedAlternatives.clear();
+        selectedAlternativeIndex = 0;
+        generatedAdjustedXp = 0;
+        generatedDifficulty = "";
+        generatedTitle = "";
+        for (int index = 0; index < roster.size(); index++) {
+            EncounterCreature existing = roster.get(index);
+            if (existing.creatureId() == detail.id()) {
+                roster.set(index, existing.withCount(existing.count() + 1));
+                status.set(detail.name() + " wurde zum Encounter hinzugefuegt.");
+                refreshBuilderState(lastSettings, "");
+                return;
+            }
+        }
+        roster.add(fromDetail(detail, 1, "Manual", List.of()));
+        status.set(detail.name() + " wurde zum Encounter hinzugefuegt.");
+        refreshBuilderState(lastSettings, "");
     }
 
     public void clearRoster() {
+        generatedAlternatives.clear();
         roster.clear();
+        generatedAdjustedXp = 0;
+        generatedDifficulty = "";
+        generatedTitle = "";
         status.set("Encounter-Roster geleert.");
-        refreshBuilderState(BuilderSettings.defaultSettings());
+        refreshBuilderState(BuilderSettings.defaultSettings(), "");
     }
 
     public void openInitiative() {
@@ -117,9 +203,16 @@ public final class EncounterStateViewModel {
             status.set("Kampfstart braucht mindestens eine Kreatur.");
             return;
         }
+        if (activeParty.isEmpty()) {
+            loadActiveParty();
+        }
+        if (activeParty.isEmpty()) {
+            status.set("Kampfstart braucht aktive Party-Mitglieder.");
+            return;
+        }
         pendingInitiativeRows.clear();
-        for (int index = 0; index < DEMO_PARTY.size(); index++) {
-            PartyMember member = DEMO_PARTY.get(index);
+        for (int index = 0; index < activeParty.size(); index++) {
+            PartyMember member = activeParty.get(index);
             pendingInitiativeRows.add(new InitiativeEntry(
                     member.id(),
                     member.name() + " (Lv. " + member.level() + ")",
@@ -173,7 +266,7 @@ public final class EncounterStateViewModel {
         round = 1;
         mode.set(Mode.COMBAT);
         refreshCombatState();
-        status.set("Demo-Kampf laeuft. HP und Initiative sind lokal editierbar.");
+        status.set("Kampf laeuft. HP und Initiative sind lokal editierbar.");
     }
 
     public void nextTurn() {
@@ -231,27 +324,40 @@ public final class EncounterStateViewModel {
                         combatant.loot()))
                 .toList();
         int eligibleXp = enemies.stream()
-                .filter(enemy -> enemy.defeatedByDefault())
+                .filter(ResultEnemy::defeatedByDefault)
                 .mapToInt(ResultEnemy::xp)
                 .sum();
-        int perPlayerXp = eligibleXp / Math.max(1, DEMO_PARTY.size());
+        int partySize = Math.max(1, activeParty.size());
         resultState.set(new ResultState(
                 enemies,
                 enemies.stream().filter(ResultEnemy::defeatedByDefault).count(),
                 eligibleXp,
-                perPlayerXp,
-                "42 gp",
-                "Loot-Pool gesamt (42 gp durch tote Gegner)",
+                eligibleXp / partySize,
+                "Kein Loot",
+                "Loot-Persistenz ist in diesem Generator-Pass nicht angebunden.",
                 "",
                 false,
-                true));
+                !activeParty.isEmpty(),
+                partySize));
         mode.set(Mode.RESULTS);
         status.set("Kampfergebnis bereit.");
     }
 
     public void awardXp() {
         ResultState current = resultState.get();
-        resultState.set(current.withAwardStatus("XP an die Demo-Party verteilt.", true));
+        if (current == null || current.xpAwarded() || current.perPlayerXp() <= 0 || activeParty.isEmpty()) {
+            return;
+        }
+        MutationResult result = party.awardXp(new AwardPartyXpCommand(
+                activeParty.stream().map(PartyMember::numericId).toList(),
+                current.perPlayerXp()));
+        boolean success = result != null && result.status() == MutationStatus.SUCCESS;
+        resultState.set(current.withAwardStatus(
+                success ? "XP an die aktive Party verteilt." : "XP konnte nicht verteilt werden.",
+                success));
+        if (success) {
+            refreshPartyContext();
+        }
     }
 
     public void returnToBuilderAfterResults() {
@@ -261,6 +367,22 @@ public final class EncounterStateViewModel {
         currentTurnIndex = 0;
         mode.set(Mode.BUILDER);
         status.set("Kampf abgeschlossen. Neuer Encounter kann erstellt werden.");
+    }
+
+    private void applyGeneratedEncounter(GeneratedEncounter generated) {
+        roster.clear();
+        for (src.domain.encounter.published.EncounterCreature creature : generated.creatures()) {
+            CreatureDetail detail = loadCreature(creature.creatureId());
+            roster.add(detail == null
+                    ? fromGeneratedFallback(creature)
+                    : fromDetail(detail, creature.quantity(), creature.role(), creature.tags()));
+        }
+        generatedAdjustedXp = generated.adjustedXp();
+        generatedDifficulty = difficultyLabel(generated.achievedDifficulty());
+        generatedTitle = generated.title();
+        refreshBuilderState(lastSettings, generated.highlights().isEmpty()
+                ? "Encounter-Option " + (selectedAlternativeIndex + 1) + " von " + generatedAlternatives.size()
+                : String.join(" ", generated.highlights()));
     }
 
     private void mutateHp(String combatantId, int delta) {
@@ -275,26 +397,65 @@ public final class EncounterStateViewModel {
         refreshCombatState();
     }
 
-    private void refreshBuilderState(BuilderSettings settings) {
-        builderState.set(builderState(settings));
+    private void loadActiveParty() {
+        ActivePartyResult result = party.loadActiveParty(new LoadActivePartyQuery());
+        activeParty.clear();
+        if (result.status() != ReadStatus.SUCCESS) {
+            return;
+        }
+        for (PartyMemberSummary member : result.members()) {
+            if (member != null && member.id() != null) {
+                activeParty.add(new PartyMember("pc-" + member.id(), member.id(), member.name(), member.level()));
+            }
+        }
     }
 
-    private BuilderState emptyBuilderState() {
-        return builderState(BuilderSettings.defaultSettings());
+    private void loadBudget() {
+        EncounterBudgetResult result = encounter.loadBudget(new LoadEncounterBudgetQuery());
+        budget = result.status() == EncounterGenerationStatus.SUCCESS ? result.budget() : null;
     }
 
-    private BuilderState builderState(BuilderSettings settings) {
-        int adjustedXp = roster.stream().mapToInt(EncounterCreature::totalXp).sum();
-        String difficulty = adjustedXp >= 1_600 ? "Deadly" : adjustedXp >= 900 ? "Hard" : adjustedXp >= 600 ? "Medium" : "Easy";
+    private String contextMessage() {
+        if (activeParty.isEmpty()) {
+            return "Bitte zuerst aktive Party-Mitglieder anlegen.";
+        }
+        return "";
+    }
+
+    private void refreshBuilderState(BuilderSettings settings, String message) {
+        builderState.set(builderState(settings, message));
+    }
+
+    private BuilderState builderState(BuilderSettings settings, String message) {
+        EncounterBudgetSummary currentBudget = budget;
+        int adjustedXp = generatedAdjustedXp > 0 ? generatedAdjustedXp : roster.stream().mapToInt(EncounterCreature::totalXp).sum();
+        DifficultySummary difficulty = currentBudget == null
+                ? new DifficultySummary(0, 0, 0, 0, adjustedXp, roster.isEmpty() ? "" : "Keine Party")
+                : new DifficultySummary(
+                        currentBudget.easyXp(),
+                        currentBudget.mediumXp(),
+                        currentBudget.hardXp(),
+                        currentBudget.deadlyXp(),
+                        adjustedXp,
+                        generatedDifficulty.isBlank() ? evaluateDifficulty(adjustedXp, currentBudget) : generatedDifficulty);
         return new BuilderState(
-                List.copyOf(DEMO_PARTY),
+                List.copyOf(activeParty),
                 List.copyOf(roster),
-                new DifficultySummary(300, 600, 900, 1_600, adjustedXp, difficulty),
+                titleLabel(),
+                difficulty,
                 settings == null ? BuilderSettings.defaultSettings() : settings,
-                !roster.isEmpty(),
-                roster.isEmpty()
-                        ? "Monster per +Add hinzufuegen..."
-                        : "Der Generator hat einen repraesentativen Demo-Encounter erstellt.");
+                !roster.isEmpty() && !activeParty.isEmpty(),
+                message == null ? "" : message);
+    }
+
+    private String titleLabel() {
+        if (generatedTitle.isBlank()) {
+            return roster.isEmpty() ? "" : "Manuelles Encounter";
+        }
+        if (generatedAlternatives.size() <= 1) {
+            return generatedTitle;
+        }
+        return generatedTitle + " (" + (selectedAlternativeIndex + 1) + "/" + generatedAlternatives.size() + ")";
     }
 
     private void refreshCombatState() {
@@ -325,6 +486,83 @@ public final class EncounterStateViewModel {
         }
         String statusText = aliveEnemies + "/" + totalEnemies + " - " + liveDifficulty(totalEnemies, aliveEnemies);
         combatState.set(new CombatState(round, statusText, cards, totalEnemies > 0 && aliveEnemies == 0));
+    }
+
+    private @Nullable CreatureDetail loadCreature(long creatureId) {
+        CreatureDetailResult result = creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId));
+        if (result.status() != CreatureLookupStatus.SUCCESS) {
+            return null;
+        }
+        return result.detail();
+    }
+
+    private static EncounterCreature fromDetail(
+            CreatureDetail detail,
+            int quantity,
+            String role,
+            List<String> tags
+    ) {
+        return new EncounterCreature(
+                "monster-" + detail.id(),
+                detail.id(),
+                detail.name(),
+                detail.challengeRating(),
+                detail.xp(),
+                Math.max(1, detail.hitPoints()),
+                detail.armorClass(),
+                detail.initiativeBonus(),
+                detail.creatureType(),
+                role == null || role.isBlank() ? "Creature" : role,
+                Math.max(1, quantity),
+                tags);
+    }
+
+    private static EncounterCreature fromGeneratedFallback(src.domain.encounter.published.EncounterCreature creature) {
+        return new EncounterCreature(
+                "monster-" + creature.creatureId(),
+                creature.creatureId(),
+                creature.name(),
+                creature.challengeRating(),
+                creature.xp(),
+                1,
+                10,
+                0,
+                "",
+                creature.role(),
+                creature.quantity(),
+                creature.tags());
+    }
+
+    private static String evaluateDifficulty(int adjustedXp, EncounterBudgetSummary budget) {
+        if (adjustedXp >= budget.deadlyXp()) {
+            return "Deadly";
+        }
+        if (adjustedXp >= budget.hardXp()) {
+            return "Hard";
+        }
+        if (adjustedXp >= budget.mediumXp()) {
+            return "Medium";
+        }
+        return adjustedXp <= 0 ? "" : "Easy";
+    }
+
+    private static String difficultyLabel(EncounterDifficultyBand band) {
+        return switch (band == null ? EncounterDifficultyBand.MEDIUM : band) {
+            case EASY -> "Easy";
+            case MEDIUM -> "Medium";
+            case HARD -> "Hard";
+            case DEADLY -> "Deadly";
+        };
+    }
+
+    private static String generationStatusText(EncounterGenerationStatus status) {
+        return switch (status == null ? EncounterGenerationStatus.defaultFailure() : status) {
+            case NO_ACTIVE_PARTY -> "Die aktive Party hat keine Mitglieder.";
+            case NO_CREATURES -> "Keine Kreaturen passen zu diesen Filtern.";
+            case INVALID_REQUEST -> "Encounter-Filter sind ungueltig.";
+            case STORAGE_ERROR -> "Encounter konnte nicht generiert werden.";
+            case SUCCESS -> "Encounter generiert.";
+        };
     }
 
     private String liveDifficulty(int totalEnemies, int aliveEnemies) {
@@ -368,10 +606,6 @@ public final class EncounterStateViewModel {
         return value >= 0 ? "+" + value : String.valueOf(value);
     }
 
-    private static String label(String value) {
-        return value == null || value.isBlank() ? "Auto" : value;
-    }
-
     public record BuilderSettings(
             String difficultyLabel,
             int balanceLevel,
@@ -383,11 +617,12 @@ public final class EncounterStateViewModel {
         }
     }
 
-    public record PartyMember(String id, String name, int level) {
+    public record PartyMember(String id, long numericId, String name, int level) {
     }
 
     public record EncounterCreature(
             String id,
+            long creatureId,
             String name,
             String cr,
             int xp,
@@ -396,24 +631,20 @@ public final class EncounterStateViewModel {
             int initiativeBonus,
             String type,
             String role,
-            int count
+            int count,
+            List<String> tags
     ) {
-        public EncounterCreature(
-                String id,
-                String name,
-                String cr,
-                int xp,
-                int hp,
-                int ac,
-                int initiativeBonus,
-                String type,
-                String role
-        ) {
-            this(id, name, cr, xp, hp, ac, initiativeBonus, type, role, 1);
+        public EncounterCreature {
+            count = Math.max(1, count);
+            tags = tags == null ? List.of() : List.copyOf(tags);
         }
 
         int totalXp() {
             return xp * count;
+        }
+
+        EncounterCreature withCount(int nextCount) {
+            return new EncounterCreature(id, creatureId, name, cr, xp, hp, ac, initiativeBonus, type, role, nextCount, tags);
         }
     }
 
@@ -430,6 +661,7 @@ public final class EncounterStateViewModel {
     public record BuilderState(
             List<PartyMember> party,
             List<EncounterCreature> roster,
+            String templateLabel,
             DifficultySummary difficulty,
             BuilderSettings settings,
             boolean canStartCombat,
@@ -438,6 +670,8 @@ public final class EncounterStateViewModel {
         public BuilderState {
             party = party == null ? List.of() : List.copyOf(party);
             roster = roster == null ? List.of() : List.copyOf(roster);
+            templateLabel = templateLabel == null ? "" : templateLabel;
+            message = message == null ? "" : message;
         }
     }
 
@@ -506,17 +740,19 @@ public final class EncounterStateViewModel {
             String lootDetail,
             String awardStatus,
             boolean xpAwarded,
-            boolean canAwardXp
+            boolean canAwardXp,
+            int partySize
     ) {
         public ResultState {
             enemies = enemies == null ? List.of() : List.copyOf(enemies);
+            partySize = Math.max(1, partySize);
         }
 
         static ResultState empty() {
-            return new ResultState(List.of(), 0, 0, 0, "Kein Loot", "", "", false, false);
+            return new ResultState(List.of(), 0, 0, 0, "Kein Loot", "", "", false, false, 1);
         }
 
-        ResultState withAwardStatus(String status, boolean awarded) {
+        ResultState withAwardStatus(String text, boolean awarded) {
             return new ResultState(
                     enemies,
                     defeatedCount,
@@ -524,9 +760,10 @@ public final class EncounterStateViewModel {
                     perPlayerXp,
                     goldSummary,
                     lootDetail,
-                    status,
+                    text,
                     awarded,
-                    !awarded && canAwardXp);
+                    !awarded && canAwardXp,
+                    partySize);
         }
     }
 
@@ -561,7 +798,7 @@ public final class EncounterStateViewModel {
                     creature.count(),
                     creature.totalXp(),
                     "CR " + creature.cr() + " | " + creature.type() + " | " + creature.role().toLowerCase(Locale.ROOT),
-                    "14 gp",
+                    "Kein Loot",
                     order);
         }
 

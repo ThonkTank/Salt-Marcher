@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: User-facing behavior and acceptance criteria for the encounter
 feature.
 
@@ -37,8 +37,12 @@ Provide a runtime encounter builder that:
 - show active-party thresholds for easy, medium, hard, and deadly encounters
 - show daily-budget context from the party feature
 - generate multiple ranked alternatives instead of one opaque result
+- expose a runtime budget load path so the state UI can show thresholds before
+  generation
 - support multi-select creature filters with visible active-filter chips
 - expose creature composition, role hints, and generator highlights
+- allow catalog creature rows to be added directly to the current encounter
+  roster as runtime derived state
 - let the user lock the current composition and reroll around it
 - let the user exclude the current composition and reroll away from it
 

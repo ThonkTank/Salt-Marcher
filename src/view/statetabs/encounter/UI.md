@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-04-21
 Source of Truth: Encounter runtime state-pane dialog composition,
 interactions, and visible states.
 
@@ -21,9 +21,9 @@ workflow in one local state-tab surface:
 - combat result resolution
 - return to encounter creation
 
-The creature catalog browser and encounter filter/tuning controls are not part
-of this surface. They belong to left-bar tab content and later supply
-add-creature, generation, and stat-block hooks to this dialog.
+The creature catalog browser and encounter filter/tuning controls are separate
+left-bar tab content. They publish add-creature, filter, and difficulty intent
+signals to this dialog through runtime session state.
 
 ## Visible Surfaces
 
@@ -41,17 +41,15 @@ Current state:
 
 The state pane uses centralized encounter selector roles for difficulty labels,
 the difficulty meter, roster cards, role badges, initiative rows, combat card
-states, HP bars, AC/init badges, edit popups, and result highlights. The
-creature catalog browser and filter controls remain separate left-bar surfaces
-in the current state; this pane contains no catalog or filter controls.
-
-The first implementation is intentionally demo-backed frontend state. Real
-generation, catalog, combat, XP, and loot behavior are deferred integration
-points behind the same ViewModel actions.
+states, HP bars, AC/init badges, edit popups, and result highlights. It reads
+active-party thresholds from the encounter application service and resolves
+creature details through the creature application service.
 
 ## Interactions
 
-- `Generieren` creates a demo encounter roster.
+- `Generieren` creates ranked encounter alternatives from the active party and
+  the latest catalog type, subtype, biome, and difficulty selections.
+- Catalog `+Add` actions append the selected creature to the runtime roster.
 - `Kampf starten` opens initiative entry when the roster has creatures.
 - `Alle wuerfeln` updates visible initiative spinner values.
 - Confirming initiative opens the combat tracker.
@@ -59,20 +57,20 @@ points behind the same ViewModel actions.
 - HP bars open a compact damage/heal popup.
 - Initiative badges open a compact set-initiative popup.
 - `Kampf beenden` requires a second confirmation before showing results.
-- `XP verteilen` marks the demo XP action as completed.
+- `XP verteilen` awards the current per-player XP result to the active party.
 - `Abschliessen` returns to encounter creation.
 
 ## Visible States
 
 - Empty roster: the creation view mirrors the original `+Add` placeholder and
-  can be populated with demo content through `Generieren`.
-- Generated roster: difficulty, thresholds, adjusted XP, and creature cards are
-  visible.
+  can be populated through catalog `+Add` or `Generieren`.
+- Generated roster: difficulty, thresholds, adjusted XP, generator title, and
+  creature cards are visible.
 - Live combat: the active turn is highlighted and defeated monsters use the
   dead-card style.
 - All enemies defeated: the end-combat button receives accent emphasis.
 - Results awarded: the XP action becomes disabled and the status line confirms
-  the demo award.
+  the party award.
 
 ## References
 

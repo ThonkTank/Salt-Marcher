@@ -1,21 +1,24 @@
 package src.domain.encounter;
 
+import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.encounter.application.EncounterGenerationUseCase;
+import src.domain.encounter.application.LoadEncounterBudgetUseCase;
+import src.domain.encounter.generation.policy.EncounterDifficultyMath;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.published.EncounterBudgetResult;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterCreature;
 import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterLock;
-import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.published.GenerateEncounterCommand;
-import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.published.LoadEncounterBudgetQuery;
 import src.domain.party.PartyApplicationService;
-
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Public encounter-generator facade that composes party and creature
@@ -25,11 +28,27 @@ import java.util.Objects;
 public final class EncounterApplicationService {
 
     private final EncounterGenerationUseCase generator;
+    private final LoadEncounterBudgetUseCase loadBudgetUseCase;
 
     public EncounterApplicationService(PartyApplicationService party, CreaturesApplicationService creatures) {
+        PartyApplicationService partyService = Objects.requireNonNull(party, "party");
         this.generator = new EncounterGenerationUseCase(
-                Objects.requireNonNull(party, "party"),
+                partyService,
                 Objects.requireNonNull(creatures, "creatures"));
+        this.loadBudgetUseCase = new LoadEncounterBudgetUseCase(partyService);
+    }
+
+    public EncounterBudgetResult loadBudget(LoadEncounterBudgetQuery query) {
+        Objects.requireNonNull(query, "query");
+        try {
+            LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
+            return new EncounterBudgetResult(
+                    mapBudgetStatus(result.status()),
+                    toPublishedBudget(result.budget()),
+                    result.message());
+        } catch (RuntimeException exception) {
+            return new EncounterBudgetResult(EncounterGenerationStatus.STORAGE_ERROR, null, "Encounter budget could not be loaded.");
+        }
     }
 
     public EncounterGenerationResult generate(GenerateEncounterCommand request) {
@@ -93,6 +112,24 @@ public final class EncounterApplicationService {
                 budget.remainingDailyXp());
     }
 
+    private static @Nullable EncounterBudgetSummary toPublishedBudget(
+            EncounterDifficultyMath.@Nullable BudgetSummary budget
+    ) {
+        if (budget == null) {
+            return null;
+        }
+        return new EncounterBudgetSummary(
+                budget.activePartyLevels(),
+                budget.averagePartyLevel(),
+                budget.easyThreshold(),
+                budget.mediumThreshold(),
+                budget.hardThreshold(),
+                budget.deadlyThreshold(),
+                budget.dailyBudgetXp(),
+                budget.consumedDailyXp(),
+                budget.remainingDailyXp());
+    }
+
     private static GeneratedEncounter toPublishedEncounter(EncounterGenerationUseCase.GeneratedEncounterData encounter) {
         return new GeneratedEncounter(
                 encounter.title(),
@@ -131,6 +168,14 @@ public final class EncounterApplicationService {
             case NO_ACTIVE_PARTY -> EncounterGenerationStatus.NO_ACTIVE_PARTY;
             case NO_CREATURES -> EncounterGenerationStatus.NO_CREATURES;
             case INVALID_REQUEST -> EncounterGenerationStatus.INVALID_REQUEST;
+            case STORAGE_ERROR -> EncounterGenerationStatus.STORAGE_ERROR;
+        };
+    }
+
+    private static EncounterGenerationStatus mapBudgetStatus(LoadEncounterBudgetUseCase.Status status) {
+        return switch (status) {
+            case SUCCESS -> EncounterGenerationStatus.SUCCESS;
+            case NO_ACTIVE_PARTY -> EncounterGenerationStatus.NO_ACTIVE_PARTY;
             case STORAGE_ERROR -> EncounterGenerationStatus.STORAGE_ERROR;
         };
     }
