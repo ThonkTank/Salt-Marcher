@@ -20,6 +20,9 @@ Current state:
 
 ## Visible Surfaces
 
+- The shell title for the runtime catalog is `Encounter Builder`, matching the
+  original encounter-building surface. The left navigation entry is icon-only
+  and uses the crossed-blades encounter graphic.
 - `COCKPIT_CONTROLS` contains creature filters, active
   filter chips, encounter difficulty selection, Auto tuning controls, and
   encounter-table selection.

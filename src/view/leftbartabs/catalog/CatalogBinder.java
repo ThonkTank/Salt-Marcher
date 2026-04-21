@@ -240,12 +240,12 @@ final class CatalogBinder {
 
         @Override
         public String title() {
-            return "Catalog";
+            return "Encounter Builder";
         }
 
         @Override
         public String navigationLabel() {
-            return "Catalog";
+            return "";
         }
 
         @Override

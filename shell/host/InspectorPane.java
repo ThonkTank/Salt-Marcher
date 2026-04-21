@@ -133,7 +133,7 @@ final class InspectorPane extends VBox implements InspectorSink {
     }
 
     private void showPlaceholder() {
-        detailTitle.setText("");
+        detailTitle.setText("Details");
         ShellFx.setChildren(detailContent, placeholderHost);
         detailScroll.setContent(detailContent);
         ShellFx.clearChildren(footerHost);
