@@ -63,8 +63,13 @@ Current state:
   share one `DungeonTraversalLink` model: two known dungeon tiles connected by
   a party-traversible link. The active character travel position is owned by
   `party` character state and is not persisted as authored dungeon truth.
-- Editor operations now tell the aggregate to mutate authored map metadata and
-  topology seeds instead of rewriting a document carrier in application code.
+- Editor operations now tell the aggregate to mutate authored map metadata,
+  topology seeds, and selected room-cluster placement instead of rewriting a
+  document carrier in application code.
+- The first interactive editor mutation is map- and cluster-targeted room
+  cluster movement. It moves the selected cluster center and all room floor
+  anchors in that cluster, then rebuilds derived map state from persisted
+  authored truth.
 - The application layer coordinates load, mutate, save, search, and derive
   flows through domain-owned outbound ports.
 - Runtime composition lives in `src/data/dungeon/DungeonServiceContribution.java`;
@@ -88,8 +93,10 @@ Remaining implementation gap:
 - Several core types remain thinner record-style carriers than the target
   aggregate model.
 - Full behaviour parity with the original `salt-marcher/` dungeon schema still
-  requires editor mutation, direct token-drag movement, cross-map dungeon
-  transition follow-through, and remaining non-space feature mapping.
+  requires room paint/delete, wall and door editing, corridor editing, stair
+  editing, transition editing, narration editing, direct token-drag movement,
+  cross-map dungeon transition follow-through, and remaining non-space feature
+  mapping.
 - The current derived-state rebuild hydrates rooms from cluster polygons and
   internal wall or door boundaries, then derives corridor cells and door
   relations from authored corridor membership, waypoints, and door bindings.

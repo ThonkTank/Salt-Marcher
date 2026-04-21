@@ -93,7 +93,7 @@ public final class ApplyDungeonEditorOperationUseCase {
         return current;
     }
 
-    private DungeonMap currentMap(DungeonMapIdentity mapId) {
+    private DungeonMap currentMap(@Nullable DungeonMapIdentity mapId) {
         Optional<DungeonMap> selectedMap = mapId == null ? Optional.empty() : repository.findById(mapId);
         return selectedMap.or(() -> search.firstMap())
                 .orElseGet(() -> DungeonMap.empty(repository.nextMapId(), "Dungeon Bastion"));
