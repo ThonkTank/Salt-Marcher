@@ -18,6 +18,12 @@ interpretation.
 Git and must not be pushed to public repositories unless the user explicitly
 approves a specific source file that is safe to publish.
 
+`docs/references/` is not a staging area for product import corpora,
+production database source material, generated catalog inputs, or other runtime
+data sources. Keep those in a dedicated local data cache or the owning
+production-data location, and cite their concrete local path when they inform a
+decision.
+
 ## External Source Rules
 
 When an agent uses an external source for research, architecture, behavior,
@@ -58,6 +64,10 @@ evidence, cite the repo path directly, with a line number when practical.
 
 Do not copy local source files into reference extracts just to make a decision.
 The repository file is already the local source.
+
+Do not move product import corpora, production database source material, or
+generated catalog inputs into `docs/references/`. They are local sources, not
+reference mirrors.
 
 ## Decision Citation Rules
 

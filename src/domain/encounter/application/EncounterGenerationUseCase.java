@@ -204,7 +204,11 @@ public final class EncounterGenerationUseCase {
 
     public enum GenerationSolutionQuality {
         EXACT,
-        FALLBACK
+        FALLBACK;
+
+        public boolean isFallback() {
+            return this == FALLBACK;
+        }
     }
 
     public enum GenerationStopCategory {

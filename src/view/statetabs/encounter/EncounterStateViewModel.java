@@ -151,7 +151,7 @@ public final class EncounterStateViewModel {
                 effectiveDifficulty,
                 5,
                 tuning == null ? EncounterGenerationTuning.autoTuning() : tuning,
-                ++nextGenerationSeed,
+                nextGenerationSeed(),
                 safeIds(encounterTableIds),
                 List.copyOf(excludedCreatureIds),
                 List.copyOf(lockedCreatures)));
@@ -812,6 +812,11 @@ public final class EncounterStateViewModel {
 
     private static String signed(int value) {
         return value >= 0 ? "+" + value : String.valueOf(value);
+    }
+
+    private long nextGenerationSeed() {
+        nextGenerationSeed += 1L;
+        return nextGenerationSeed;
     }
 
     public record BuilderSettings(

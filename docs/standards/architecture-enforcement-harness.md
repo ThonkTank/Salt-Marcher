@@ -159,7 +159,8 @@ dependency direction.
 information or public-signature awareness: MVVM dependency bans, view-model
 framework independence, shell API allowlists, public domain-boundary signature
 purity, public domain published-carrier shape, domain role-shape checks,
-service-registry registration placement, presentation-state placement,
+service-registry registration placement, data-root service export shape,
+presentation-state placement,
 JavaFX API placement between contributions, Binders, ViewModels, passive views,
 reusable slotcontent, and transitional legacy view code, visual-styling
 exceptions, reflection-bypass bans, and public API signature leaks from
@@ -171,8 +172,9 @@ topology or broad package graph rules.
 
 `ArchUnit` owns bytecode-visible dependency direction, foreign-boundary access,
 and cycle rules: top-level layer direction, domain and data foreign-feature
-access constraints, and cycle freedom across domain features, view components,
-data features, and shell packages. It is not the owner for file-tree topology,
+access constraints, data gateway/domain independence, and cycle freedom across
+domain features, view components, data features, and shell packages. It is not
+the owner for file-tree topology,
 root method contracts, or compiler-precise public-signature bans.
 
 ### `jQAssistant`

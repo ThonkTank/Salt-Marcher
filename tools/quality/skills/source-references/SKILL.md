@@ -15,6 +15,12 @@ for agent work.
 This skill applies to external web pages, PDFs, documentation, articles,
 standards, package docs, and local repository files used as evidence.
 
+`docs/references/` is an evidence mirror, not a staging area for product import
+corpora, production database source material, generated catalog inputs, or
+other runtime data sources. Keep those in the project's local data cache or
+owning production-data location, then cite their concrete local path when they
+inform a decision.
+
 ## Required Workflow
 
 Before relying on an external source:
@@ -39,6 +45,9 @@ Before relying on a local source:
 1. Read the repo file directly.
 2. Cite the repo path and line number when practical.
 3. Do not mirror the repo file into `docs/references/`.
+4. Do not move product import corpora, production database source material, or
+   generated catalog inputs into `docs/references/`; cite their local path
+   directly.
 
 ## Citation Rules
 

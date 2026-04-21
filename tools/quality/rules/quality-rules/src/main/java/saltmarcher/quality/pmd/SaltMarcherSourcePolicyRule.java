@@ -254,15 +254,8 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             return false;
         }
 
-        String simpleName = registeredType.substring(registeredType.lastIndexOf('.') + 1);
-        if (simpleName.endsWith("ApplicationService")) {
-            return true;
-        }
-
-        return simpleName.endsWith("Repository")
-                || simpleName.endsWith("Lookup")
-                || simpleName.endsWith("Catalog")
-                || simpleName.endsWith("Search");
+        String remainder = registeredType.substring(domainFeaturePrefix.length());
+        return !remainder.contains(".") && remainder.endsWith("ApplicationService");
     }
 
     private static boolean isBootstrapOrShellSource(SaltMarcherSourceFacts sourceFacts) {

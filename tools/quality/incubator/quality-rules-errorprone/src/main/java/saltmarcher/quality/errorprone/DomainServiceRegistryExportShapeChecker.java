@@ -50,10 +50,12 @@ public final class DomainServiceRegistryExportShapeChecker extends BugChecker
                     return super.visitMethodInvocation(methodInvocation, null);
                 }
 
-                String serviceKey = classLiteralTypeName(methodInvocation.getArguments().get(0));
-                if (serviceKey.startsWith("src.domain.")
-                        && !isSameFeatureRootApplicationService(serviceKey, feature)) {
-                    violations.add(serviceKey);
+                Tree serviceKeyArgument = methodInvocation.getArguments().get(0);
+                String serviceKey = classLiteralTypeName(serviceKeyArgument);
+                if (!isSameFeatureRootApplicationService(serviceKey, feature)) {
+                    violations.add(serviceKey.isBlank()
+                            ? "<unresolved service key: " + serviceKeyArgument + ">"
+                            : serviceKey);
                 }
                 return super.visitMethodInvocation(methodInvocation, null);
             }
@@ -65,7 +67,7 @@ public final class DomainServiceRegistryExportShapeChecker extends BugChecker
         return buildDescription(tree)
                 .setMessage("Data service root for feature '" + feature
                         + "' may export only " + expectedService
-                        + " through shell.api.ServiceRegistry. Forbidden domain service keys: "
+                        + " through shell.api.ServiceRegistry. Forbidden service keys: "
                         + String.join(", ", violations))
                 .build();
     }

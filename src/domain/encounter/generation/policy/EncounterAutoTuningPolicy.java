@@ -24,6 +24,8 @@ public final class EncounterAutoTuningPolicy {
     private EncounterAutoTuningPolicy() {
     }
 
+    // PMD: the branching is the bounded Auto resolution policy; splitting it would obscure the generated attempt order.
+    @SuppressWarnings({"PMD.CognitiveComplexity", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     public static List<EncounterGenerationAttempt> resolveAttempts(
             EncounterDifficultyIntent requestedDifficulty,
             boolean difficultyAuto,

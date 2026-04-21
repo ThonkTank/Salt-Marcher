@@ -199,6 +199,15 @@ public final class DependencyBoundaryArchitectureTest {
                     .resideInAPackage("src.domain..");
 
     @ArchTest
+    static final ArchRule dataGatewaysMustStayIndependentFromDomainTypes =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.data..gateway..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAPackage("src.domain..");
+
+    @ArchTest
     static final ArchRule persistencecoreMustStayIndependentFromFeatureSpecificDataPackages =
             classes()
                     .that()

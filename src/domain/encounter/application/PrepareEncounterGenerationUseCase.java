@@ -37,6 +37,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ArrayList;
 import java.util.Set;
 
 // PMD suppression is local: encounter generation intentionally centralizes domain adapters here; see src/domain/encounter/DOMAIN.md.
@@ -44,6 +45,7 @@ import java.util.Set;
 final class PrepareEncounterGenerationUseCase {
 
     private static final int AUTO_ATTEMPT_LIMIT = 12;
+    private static final long NO_GENERATION_SEED = 0L;
 
     private PrepareEncounterGenerationUseCase() {
     }
@@ -139,7 +141,7 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     private static long effectiveSeed(EncounterGenerationUseCase.GenerateRequest request) {
-        if (request.generationSeed() > 0L) {
+        if (request.generationSeed() > NO_GENERATION_SEED) {
             return request.generationSeed();
         }
         return Integer.toUnsignedLong(Objects.hash(
@@ -542,11 +544,11 @@ final class PrepareEncounterGenerationUseCase {
                 boolean autoResolved,
                 EncounterGenerationUseCase.GenerationSolutionQuality quality
         ) {
-            List<EncounterGenerationUseCase.GenerationAdvisory> advisories = new java.util.ArrayList<>();
+            List<EncounterGenerationUseCase.GenerationAdvisory> advisories = new ArrayList<>();
             if (autoResolved) {
                 advisories.add(EncounterGenerationUseCase.GenerationAdvisory.AUTO_RESOLVED);
             }
-            if (quality == EncounterGenerationUseCase.GenerationSolutionQuality.FALLBACK) {
+            if (quality.isFallback()) {
                 advisories.add(EncounterGenerationUseCase.GenerationAdvisory.FALLBACK_USED);
             }
             return List.copyOf(advisories);

@@ -227,28 +227,28 @@ public final class EncounterApplicationService {
     private static EncounterGenerationSolutionQuality toPublishedQuality(
             EncounterGenerationUseCase.GenerationSolutionQuality quality
     ) {
-        return switch (quality == null ? EncounterGenerationUseCase.GenerationSolutionQuality.FALLBACK : quality) {
-            case EXACT -> EncounterGenerationSolutionQuality.EXACT;
-            case FALLBACK -> EncounterGenerationSolutionQuality.FALLBACK;
-        };
+        if (quality == EncounterGenerationUseCase.GenerationSolutionQuality.EXACT) {
+            return EncounterGenerationSolutionQuality.EXACT;
+        }
+        return EncounterGenerationSolutionQuality.FALLBACK;
     }
 
     private static EncounterGenerationStopCategory toPublishedStopCategory(
             EncounterGenerationUseCase.GenerationStopCategory category
     ) {
-        return switch (category == null ? EncounterGenerationUseCase.GenerationStopCategory.SEARCH_EXHAUSTED : category) {
-            case COMPLETED -> EncounterGenerationStopCategory.COMPLETED;
-            case SEARCH_EXHAUSTED -> EncounterGenerationStopCategory.SEARCH_EXHAUSTED;
-        };
+        if (category == EncounterGenerationUseCase.GenerationStopCategory.COMPLETED) {
+            return EncounterGenerationStopCategory.COMPLETED;
+        }
+        return EncounterGenerationStopCategory.SEARCH_EXHAUSTED;
     }
 
     private static EncounterGenerationAdvisory toPublishedAdvisory(
             EncounterGenerationUseCase.GenerationAdvisory advisory
     ) {
-        return switch (advisory) {
-            case AUTO_RESOLVED -> EncounterGenerationAdvisory.AUTO_RESOLVED;
-            case FALLBACK_USED -> EncounterGenerationAdvisory.FALLBACK_USED;
-        };
+        if (advisory == EncounterGenerationUseCase.GenerationAdvisory.AUTO_RESOLVED) {
+            return EncounterGenerationAdvisory.AUTO_RESOLVED;
+        }
+        return EncounterGenerationAdvisory.FALLBACK_USED;
     }
 
     private static EncounterGenerationStatus mapStatus(EncounterGenerationUseCase.GenerateStatus status) {
