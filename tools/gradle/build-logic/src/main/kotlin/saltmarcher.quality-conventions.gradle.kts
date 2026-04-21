@@ -207,6 +207,8 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("DataAdapterPublicSignatureLeak")
     options.errorprone.error("DataAdapterRoleContract")
     options.errorprone.error("DataGatewayReturnTypeBoundary")
+    options.errorprone.error("DataModelSourceShape")
+    options.errorprone.error("DataServiceContributionConstructionPurity")
     options.errorprone.error("DomainApplicationNoSameContextPublishedDependency")
     options.errorprone.error("DomainApplicationServiceApiShape")
     options.errorprone.error("DomainForbiddenInfrastructureDependency")

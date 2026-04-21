@@ -108,7 +108,8 @@ Rules:
 - The allowed role package names are exactly `aggregate`, `entity`, `value`,
   `policy`, `port`, `factory`, `service`, `event`, and `specification`.
 - Domain `repository/`, `query/`, `gateway/`, `adapter/`,
-  `model/`, `mapper/`, and `api/` role buckets are forbidden.
+  `model/`, `mapper/`, `schema/`, `record/`, and `api/` technical
+  buckets are forbidden as direct context buckets or role packages.
 
 This layout is an enforcement shape, not a required concept inventory. A domain
 module should contain only the role packages that represent real behaviour or
@@ -311,7 +312,8 @@ documents own local model detail and must not redefine system-wide topology.
 - additional callable client boundaries beside the root
   `<Context>ApplicationService`
 - domain `api/`, `repository/`, `query/`, `gateway/`,
-  `adapter/`, `model/`, or `mapper/` role packages
+  `adapter/`, `model/`, `mapper/`, `schema/`, or `record/` technical
+  packages
 - `published/` services, facades, repositories, ports, gateways, factories, or
   policy helpers
 - named domain modules importing any `src.domain.*.published.*` carrier
@@ -348,10 +350,11 @@ Mechanical enforcement is split by evidence quality:
   proof that behaviour sits in the right domain role.
 
 Review still owns modelling judgements that cannot be cleanly inferred without
-low-signal heuristics: whether use cases are thin orchestration, ports use
-domain language, domain services represent real cross-concept behavior,
-published language is stable and passive, and aggregates/entities/values own
-the behavior their names imply.
+low-signal heuristics: whether use cases and root application services are thin
+coordination rather than hidden business policy, ports use domain language,
+domain services represent real cross-concept behavior, published language is
+stable and passive, and aggregates/entities/values own the behavior their names
+imply.
 
 ## References
 

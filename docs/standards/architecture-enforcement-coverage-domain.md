@@ -38,7 +38,7 @@ is the canonical domain-specific coverage inventory.
 | `domain-module-name-shape` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Named domain modules use lower-case package names matching `[a-z][a-z0-9_]*`. |
 | `domain-role-direct-files` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages contain direct Java files only. |
 | `domain-role-package-name` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages use the allowed role-name set. |
-| `domain-forbidden-top-level-bucket` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Legacy technical buckets such as `api`, `repository`, `query`, `gateway`, `adapter`, and `model` are forbidden at context root. |
+| `domain-forbidden-top-level-bucket` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Exact legacy technical buckets such as `api`, `repository`, `query`, `gateway`, `adapter`, `model`, `mapper`, `schema`, and `record` are forbidden at context root. |
 | `domain-mapcore-removed` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `src/domain/mapcore/**` is absent. |
 | `domain-context-roles-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context role and no stale context. |
 | `domain-context-relationships-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context relationship and no stale context. |
@@ -92,26 +92,30 @@ cannot prove without low-signal inference.
 | --- | --- | --- |
 | `domain-hexagonal-core-boundary` | Enforced | Covered by `domain-outer-layer-independence`, `domain-forbidden-infrastructure-dependency`, `domain-port-boundary`, and `domain-service-registry-root-only`. |
 | `domain-application-service-root-boundary` | Enforced | Covered by `domain-root-presence`, `domain-root-class-shape`, `domain-root-public-api-carriers`, `domain-root-no-nested-contracts`, and `domain-root-constructor-composition`. |
-| `domain-application-usecase-orchestration` | Enforced | Covered structurally by `domain-application-direct-usecases`, `domain-application-no-generic-usecase-names`, `domain-application-no-backend-port-contracts`, and `domain-application-no-same-context-published`; semantic thinness remains review-owned. |
+| `domain-application-usecase-orchestration` | Enforced | Covered structurally by `domain-application-direct-usecases`, `domain-application-no-generic-usecase-names`, `domain-application-no-backend-port-contracts`, and `domain-application-no-same-context-published`. |
+| `domain-application-thinness-and-policy-placement` | Review-Owned | Whether use cases and root application services are thin coordination rather than hidden business policy requires design review; PMD source patterns only block narrow helper-name smells. |
 | `domain-root-translation-boundary` | Review-Owned | Current gates prove public carrier shape and block named-module published dependencies, but cannot prove that method bodies translate before delegation. |
 | `domain-published-language-carriers` | Enforced | Covered by `domain-published-direct-files`, `domain-published-carrier-shape`, `domain-published-no-callable-contracts`, `domain-public-boundary-signature-purity`, and `domain-published-no-foreign-signatures`. |
 | `domain-published-language-vocabulary` | Review-Owned | The gates block callable-contract suffixes and boundary leaks; whether names describe domain facts instead of render, storage, or widget concepts requires review. |
 | `domain-port-ownership-and-signatures` | Enforced | Covered by `domain-port-boundary`, `domain-model-roles-no-outbound-ports`, and `domain-public-boundary-signature-purity`. |
 | `domain-port-domain-language` | Review-Owned | Compiler checks can prove type ownership and infrastructure-free signatures, but not whether a port name is business language rather than vendor or storage language. |
 | `domain-repository-port-write-orientation` | Review-Owned | `domain-port-boundary` proves `Repository` placement and interface shape; whether the port is genuinely write-oriented is semantic. |
-| `domain-technical-vocabulary-rejection` | Review-Owned | Package buckets such as `api`, `repository`, `query`, `gateway`, `adapter`, `model`, and `mapper` are covered by `domain-forbidden-top-level-bucket`; broader type-name or prose vocabulary bans would be broad lexical heuristics. |
+| `domain-technical-bucket-rejection` | Enforced | Exact top-level technical buckets such as `api`, `repository`, `query`, `gateway`, `adapter`, `model`, `mapper`, `schema`, and `record` are covered by `domain-forbidden-top-level-bucket`; role-package placement is covered by `domain-role-package-name`. |
+| `domain-technical-vocabulary-rejection` | Review-Owned | Broader type-name, method-name, local-variable, or prose vocabulary bans would be broad lexical heuristics unless the standard narrows a specific stable suffix, package, or public signature shape. |
 | `domain-context-root-layout` | Enforced | Covered by `domain-root-presence`, `domain-published-direct-files`, `domain-application-direct-usecases`, and `domain-forbidden-top-level-bucket`. |
 | `domain-named-module-layout` | Enforced | Covered by `domain-module-role-required`, `domain-module-name-shape`, `domain-role-direct-files`, and `domain-role-package-name`. |
 | `domain-tactical-role-optionality` | Review-Owned | The topology checks prove allowed role placement; whether a role package represents real behavior rather than ceremony is review-owned. |
 | `domain-role-type-shapes` | Enforced | Covered by `domain-role-shape`, `domain-public-concrete-type-shape`, and `domain-field-purity`. |
-| `domain-value-immutability` | Enforced | Covered by `domain-role-shape` and `domain-field-purity` for shallow Java type and field shape; deep immutability of referenced objects remains review-owned. |
+| `domain-value-shallow-shape` | Enforced | Covered by `domain-role-shape` and `domain-field-purity` for shallow Java type and field shape. |
+| `domain-value-immutability` | Review-Owned | Deep immutability of referenced objects and behavioral immutability remain review-owned once shallow type and field shape passes. |
 | `domain-service-factory-policy-statelessness` | Enforced | Covered by `domain-role-shape` and `domain-service-factory-statelessness`. |
 | `domain-service-behavior` | Review-Owned | The gates prove package/type shape and statelessness, but cannot prove that a domain service is real cross-concept domain behavior rather than procedural coordination. |
 | `domain-context-document-markers` | Enforced | Covered by `domain-context-document-presence`, `domain-context-name-declared`, `domain-context-shape-declared`, and `domain-context-required-sections`. |
 | `domain-authored-truth-document-contract` | Enforced | Covered by `domain-role-context-required-sections`, `domain-authored-context-write-model-required`, and `domain-aggregate-marker-shape`. |
 | `domain-generation-policy-document-contract` | Enforced | Covered by `domain-generation-policy-required-sections`, `domain-generation-policy-write-model-none`, and `domain-generation-policy-ephemeral-rationale`. |
 | `domain-context-roles-standard-coverage` | Enforced | Covered by `domain-context-roles-complete` and context marker checks. |
-| `domain-context-relationships-public-boundary` | Enforced | Covered by `domain-context-relationships-complete`, `domain-foreign-feature-public-boundary`, `domain-named-module-private-context`, and `domain-named-module-no-published-carriers`; prose accuracy remains review-owned. |
+| `domain-context-relationships-public-boundary` | Enforced | Covered by `domain-context-relationships-complete`, `domain-foreign-feature-public-boundary`, `domain-named-module-private-context`, and `domain-named-module-no-published-carriers`. |
+| `domain-context-relationship-prose-accuracy` | Review-Owned | The build proves relationship bullets exist and match context roles, but whether the prose accurately describes ownership and collaboration remains review-owned. |
 | `domain-foreign-service-documentation` | Review-Owned | Constructor type compatibility is covered by `domain-root-constructor-composition`; whether the foreign service is semantically documented by relationship prose remains review-owned. |
 | `domain-outer-layer-independence-group` | Enforced | Covered by `domain-outer-layer-independence`, `domain-forbidden-infrastructure-dependency`, and the PMD infrastructure source-pattern row. |
 | `domain-foreign-context-private-isolation` | Enforced | Covered by `domain-foreign-feature-public-boundary`, `domain-named-module-private-context`, and `domain-feature-cycles`. |
@@ -158,9 +162,11 @@ structural, type-resolved, or dependency-visible:
 Do not add blockers that scan broad words such as `row`, `record`, `selection`,
 `cell`, `summary`, `style`, `display`, or `model` across all domain source.
 Those terms can be legitimate domain language in some contexts and would turn
-the harness into a low-signal vocabulary classifier. Type-name or prose
-judgment for such terms remains review-owned unless a future standard narrows a
-specific stable suffix, package, or public signature shape.
+the harness into a low-signal vocabulary classifier. Exact top-level technical
+package names such as `schema/` and `record/` are stable enough for
+`build-harness`; type-name or prose judgment for such terms remains
+review-owned unless a future standard narrows a specific stable suffix,
+package, or public signature shape.
 
 Do not add a new static-analysis engine for the current domain gaps. The
 existing owners already cover the high-signal evidence classes: file topology,
@@ -173,6 +179,8 @@ cannot express cleanly and that is not actually a semantic modelling judgment.
 - whether business rules have been implemented in `view` or `data` when no
   stable dependency or forbidden-token violation exposes the leak
 - whether a use case is thin orchestration rather than hidden business policy
+- whether a root application service is thin boundary coordination rather than
+  hidden business policy
 - whether `application/` has become a generic operations or policy dump despite
   passing file-name and helper-prefix checks
 - whether root application services actually translate public carriers before

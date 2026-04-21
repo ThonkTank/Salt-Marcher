@@ -30,6 +30,8 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 final class DataArchitectureSupport {
 
     static final Pattern GATEWAY_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)\\.gateway\\.(local|remote)(\\..*)?$");
+    static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
+    static final Pattern MODEL_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)\\.model(\\..*)?$");
     static final Pattern REPOSITORY_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)\\.repository(\\..*)?$");
     static final Pattern QUERY_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)\\.query(\\..*)?$");
     private static final Pattern INTERNAL_DATA_LEAK_PATTERN =
