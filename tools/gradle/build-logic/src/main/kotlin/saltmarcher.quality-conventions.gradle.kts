@@ -200,6 +200,7 @@ tasks.named<JavaCompile>("compileJava") {
     dependsOn(gradle.includedBuild("quality-rules-errorprone").task(":jar"))
     options.errorprone.enabled.set(true)
     options.errorprone.disableWarningsInGeneratedCode.set(true)
+    options.errorprone.disable("DuplicateBranches")
     options.errorprone.disable("StringConcatToTextBlock")
     options.errorprone.disable("ThreadJoinLoop")
     options.errorprone.error("EqualsNull")

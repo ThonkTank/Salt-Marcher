@@ -21,18 +21,18 @@ import javax.lang.model.util.ElementFilter;
 public final class DomainServiceFactoryStatelessnessChecker extends BugChecker
         implements BugChecker.ClassTreeMatcher {
 
-    private static final Pattern NAMED_DOMAIN_MODULE_PACKAGE =
-            Pattern.compile("^src\\.domain\\.[^.]+\\.((?!published$|application$)[^.]+)(\\..*)?$");
+    private static final Pattern DOMAIN_STATELESS_ROLE_PACKAGE =
+            Pattern.compile("^src\\.domain\\.[^.]+\\.[^.]+\\.(policy|factory|service)$");
 
     @Override
     public Description matchClass(ClassTree tree, VisitorState state) {
         String packageName = DataArchitectureSupport.packageName(state.getPath().getCompilationUnit());
-        if (!NAMED_DOMAIN_MODULE_PACKAGE.matcher(packageName).matches()) {
+        if (!DOMAIN_STATELESS_ROLE_PACKAGE.matcher(packageName).matches()) {
             return Description.NO_MATCH;
         }
 
         TypeElement typeElement = ASTHelpers.getSymbol(tree);
-        if (typeElement == null || !isDomainServiceFactoryOrPolicy(typeElement)) {
+        if (typeElement == null || typeElement.getNestingKind().isNested()) {
             return Description.NO_MATCH;
         }
 
@@ -47,16 +47,9 @@ public final class DomainServiceFactoryStatelessnessChecker extends BugChecker
             return Description.NO_MATCH;
         }
         return buildDescription(tree)
-                .setMessage("Named-module domain service/factory '" + typeElement.getQualifiedName()
+                .setMessage("Named-module domain policy/factory/service role '" + typeElement.getQualifiedName()
                         + "' declares instance field(s): " + String.join(", ", instanceFields)
                         + ". Domain services, factories, and policies must be stateless.")
                 .build();
-    }
-
-    private static boolean isDomainServiceFactoryOrPolicy(TypeElement typeElement) {
-        String simpleName = typeElement.getSimpleName().toString();
-        return simpleName.endsWith("Service")
-                || simpleName.endsWith("Factory")
-                || simpleName.endsWith("Policy");
     }
 }

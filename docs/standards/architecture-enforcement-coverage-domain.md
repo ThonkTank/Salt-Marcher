@@ -38,7 +38,7 @@ is the canonical domain-specific coverage inventory.
 | `domain-module-name-shape` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Named domain modules use lower-case package names matching `[a-z][a-z0-9_]*`. |
 | `domain-role-direct-files` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages contain direct Java files only. |
 | `domain-role-package-name` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages use the allowed role-name set. |
-| `domain-forbidden-top-level-bucket` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Exact legacy technical buckets such as `api`, `repository`, `query`, `gateway`, `adapter`, `model`, `mapper`, `schema`, and `record` are forbidden at context root. |
+| `domain-forbidden-top-level-bucket` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Configured legacy technical and tactical-role buckets are forbidden at context root. |
 | `domain-mapcore-removed` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `src/domain/mapcore/**` is absent. |
 | `domain-context-roles-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context role and no stale context. |
 | `domain-context-relationships-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context relationship and no stale context. |
@@ -64,7 +64,7 @@ is the canonical domain-specific coverage inventory.
 | `domain-role-shape` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Tactical role packages use their declared type shapes. |
 | `domain-field-purity` | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public domain module fields do not expose mutable state. |
 | `domain-public-concrete-type-shape` | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public concrete domain types satisfy the project shape constraints. |
-| `domain-service-factory-statelessness` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Domain services, factories, and policies remain stateless. |
+| `domain-service-factory-statelessness` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Top-level types in named-module `policy/`, `factory/`, and `service/` role packages declare no instance fields. |
 | `domain-feature-cycles` | ArchUnit `domainFeaturesMustStayCycleFree` | `./gradlew checkArchitecture` | Domain features do not form dependency cycles. |
 | `domain-module-cycles` | ArchUnit `domainSubpackagesMustStayCycleFree` | `./gradlew checkArchitecture` | Named domain modules do not form dependency cycles. |
 | `domain-enforcement-coverage-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | This coverage document lists every required domain enforcement rule with owner and entrypoint, and classifies every required domain-layer rule group as enforced, source-pattern enforced, candidate, or review-owned. |
@@ -91,8 +91,8 @@ cannot prove without low-signal inference.
 | Domain Rule Group | Status | Coverage |
 | --- | --- | --- |
 | `domain-hexagonal-core-boundary` | Enforced | Covered by `domain-outer-layer-independence`, `domain-forbidden-infrastructure-dependency`, `domain-port-boundary`, and `domain-service-registry-root-only`. |
-| `domain-application-service-root-boundary` | Enforced | Covered by `domain-root-presence`, `domain-root-class-shape`, `domain-root-public-api-carriers`, `domain-root-no-nested-contracts`, and `domain-root-constructor-composition`. |
-| `domain-application-usecase-orchestration` | Enforced | Covered structurally by `domain-application-direct-usecases`, `domain-application-no-generic-usecase-names`, `domain-application-no-backend-port-contracts`, and `domain-application-no-same-context-published`. |
+| `domain-application-service-root-boundary` | Enforced | Covered structurally by `domain-root-presence`, `domain-root-class-shape`, `domain-root-public-api-carriers`, `domain-root-no-nested-contracts`, and `domain-root-constructor-composition`; thin coordination remains review-owned. |
+| `domain-application-usecase-orchestration` | Enforced | Covered structurally by `domain-application-direct-usecases`, `domain-application-no-generic-usecase-names`, `domain-application-no-backend-port-contracts`, and `domain-application-no-same-context-published`; actual orchestration semantics remain review-owned. |
 | `domain-application-thinness-and-policy-placement` | Review-Owned | Whether use cases and root application services are thin coordination rather than hidden business policy requires design review; PMD source patterns only block narrow helper-name smells. |
 | `domain-root-translation-boundary` | Review-Owned | Current gates prove public carrier shape and block named-module published dependencies, but cannot prove that method bodies translate before delegation. |
 | `domain-published-language-carriers` | Enforced | Covered by `domain-published-direct-files`, `domain-published-carrier-shape`, `domain-published-no-callable-contracts`, `domain-public-boundary-signature-purity`, and `domain-published-no-foreign-signatures`. |
@@ -100,7 +100,7 @@ cannot prove without low-signal inference.
 | `domain-port-ownership-and-signatures` | Enforced | Covered by `domain-port-boundary`, `domain-model-roles-no-outbound-ports`, and `domain-public-boundary-signature-purity`. |
 | `domain-port-domain-language` | Review-Owned | Compiler checks can prove type ownership and infrastructure-free signatures, but not whether a port name is business language rather than vendor or storage language. |
 | `domain-repository-port-write-orientation` | Review-Owned | `domain-port-boundary` proves `Repository` placement and interface shape; whether the port is genuinely write-oriented is semantic. |
-| `domain-technical-bucket-rejection` | Enforced | Exact top-level technical buckets such as `api`, `repository`, `query`, `gateway`, `adapter`, `model`, `mapper`, `schema`, and `record` are covered by `domain-forbidden-top-level-bucket`; role-package placement is covered by `domain-role-package-name`. |
+| `domain-technical-bucket-rejection` | Enforced | Configured top-level technical buckets are covered by `domain-forbidden-top-level-bucket`; role-package placement is covered by `domain-role-package-name`. |
 | `domain-technical-vocabulary-rejection` | Review-Owned | Broader type-name, method-name, local-variable, or prose vocabulary bans would be broad lexical heuristics unless the standard narrows a specific stable suffix, package, or public signature shape. |
 | `domain-context-root-layout` | Enforced | Covered by `domain-root-presence`, `domain-published-direct-files`, `domain-application-direct-usecases`, and `domain-forbidden-top-level-bucket`. |
 | `domain-named-module-layout` | Enforced | Covered by `domain-module-role-required`, `domain-module-name-shape`, `domain-role-direct-files`, and `domain-role-package-name`. |
@@ -136,7 +136,10 @@ mutation methods in named modules.
 
 These checks are intentionally classified as source-pattern blockers. They are
 not semantic proof that policy is in the right tactical role, that ports are
-well named, or that published vocabulary is truly domain language.
+well named, or that published vocabulary is truly domain language. In
+particular, the policy-helper prefix rule is a naming-smell blocker only; it
+must not be treated as proof that use cases are thin or that all business
+policy is modelled in named modules.
 
 | Rule ID | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- |
@@ -167,6 +170,16 @@ package names such as `schema/` and `record/` are stable enough for
 `build-harness`; type-name or prose judgment for such terms remains
 review-owned unless a future standard narrows a specific stable suffix,
 package, or public signature shape.
+
+The configured top-level domain buckets that are stable enough for
+`build-harness` enforcement are `adapter`, `adapters`, `aggregate`,
+`aggregates`, `applications`, `controller`, `controllers`, `datasource`,
+`datasources`, `entity`, `entities`, `event`, `events`, `factory`,
+`factories`, `gateway`, `gateways`, `interactor`, `interactors`, `mapper`,
+`mappers`, `model`, `models`, `query`, `queries`, `port`, `ports`, `record`,
+`records`, `repository`, `repositories`, `schema`, `schemas`, `service`,
+`services`, `specification`, `specifications`, `usecase`, `usecases`,
+`valueobject`, `valueobjects`, `view`, and `viewmodel`.
 
 Do not add a new static-analysis engine for the current domain gaps. The
 existing owners already cover the high-signal evidence classes: file topology,
