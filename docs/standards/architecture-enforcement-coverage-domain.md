@@ -13,6 +13,9 @@ This document maps the rules in
 to local quality gates that actually block violations. It also names the
 remaining review-owned rules so the enforcement set does not overclaim.
 
+The umbrella coverage document is an enforcement routing index. This document
+is the canonical domain-specific coverage inventory.
+
 ## Enforced Rule Matrix
 
 | Rule ID | Mechanical Owner | Blocking Entrypoint | What It Proves |
@@ -28,6 +31,7 @@ remaining review-owned rules so the enforcement set does not overclaim.
 | `domain-published-carrier-shape` | Error Prone `DomainPublishedCarrierShape` | `./gradlew compileJava` | Public published types are public records, enums, or sealed abstractions. |
 | `domain-published-no-callable-contracts` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | `published/` does not contain callable service, repository, port, gateway, factory, locator, or policy contracts by suffix. |
 | `domain-application-direct-usecases` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | `application/` contains direct `*UseCase.java` files only. |
+| `domain-application-no-generic-usecase-names` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | `application/` use case filenames do not encode generic operations, helper, adapter, repository, mapper, or policy buckets. |
 | `domain-application-no-backend-port-contracts` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Backend port contracts are not placed in `application/`. |
 | `domain-application-no-same-context-published` | Error Prone `DomainApplicationNoSameContextPublishedDependency` | `./gradlew compileJava` | Use cases do not depend on their own public published carriers. |
 | `domain-module-role-required` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Named domain modules place Java under tactical role packages. |
@@ -58,12 +62,21 @@ remaining review-owned rules so the enforcement set does not overclaim.
 | `domain-public-boundary-signature-purity` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root and published signatures do not leak outer-layer or private domain types. |
 | `domain-published-no-foreign-signatures` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root and published signatures do not expose foreign published carriers. |
 | `domain-role-shape` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Tactical role packages use their declared type shapes. |
-| `domain-field-purity` | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Domain module fields avoid mutable or framework-backed public state. |
+| `domain-field-purity` | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public domain module fields do not expose mutable state. |
 | `domain-public-concrete-type-shape` | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public concrete domain types satisfy the project shape constraints. |
-| `domain-service-factory-statelessness` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Domain services and factories remain stateless. |
+| `domain-service-factory-statelessness` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Domain services, factories, and policies remain stateless. |
 | `domain-feature-cycles` | ArchUnit `domainFeaturesMustStayCycleFree` | `./gradlew checkArchitecture` | Domain features do not form dependency cycles. |
 | `domain-module-cycles` | ArchUnit `domainSubpackagesMustStayCycleFree` | `./gradlew checkArchitecture` | Named domain modules do not form dependency cycles. |
 | `domain-enforcement-coverage-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | This coverage document lists every required domain enforcement rule with owner and entrypoint. |
+
+## Coverage Inventory
+
+Domain enforcement coverage is complete when every rule in the Domain Layer
+Standard is represented by one of three things: an enforced matrix row, an
+enforced source-pattern row, or an explicit review-owned bullet. The
+build-harness verifies required enforced rule IDs are documented with a
+mechanical owner and blocking Gradle entrypoint. It does not attempt to infer
+semantic coverage from prose.
 
 ## Source-Pattern Checks
 
@@ -78,6 +91,13 @@ mutation methods in named modules.
 These checks are intentionally classified as source-pattern blockers. They are
 not semantic proof that policy is in the right tactical role, that ports are
 well named, or that published vocabulary is truly domain language.
+
+| Rule ID | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- |
+| `domain-source-no-infrastructure-token-source-pattern` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Domain source text does not contain the configured JavaFX, SQL/JDBC, filesystem, network, or JSON framework package tokens. |
+| `domain-root-no-infrastructure-construction-source-pattern` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Root application service source text does not directly construct or cache obvious infrastructure-style collaborators. |
+| `domain-application-no-policy-helper-prefix-source-pattern` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Non-public `application/*UseCase` helpers do not use the configured policy-heavy prefixes `score`, `rank`, `choose`, `balance`, or `enforce`. |
+| `domain-named-module-no-setter-mutation-source-pattern` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Named modules do not expose public or protected JavaBean-style `void set*` mutation methods by source shape. |
 
 ## Review-Owned
 
@@ -102,6 +122,9 @@ well named, or that published vocabulary is truly domain language.
   rather than ceremonial taxonomy
 - whether a named domain-module directory name is a useful ubiquitous-language
   concept after the build proves only its package-token shape
+- whether the context role and relationship prose in the Domain Layer Standard
+  accurately describes ownership and collaboration after the build proves only
+  marker presence and stale-context coverage
 - whether a domain service is real cross-concept domain behavior rather than a
   procedural coordinator
 - whether additional callable client boundaries are semantically being exposed

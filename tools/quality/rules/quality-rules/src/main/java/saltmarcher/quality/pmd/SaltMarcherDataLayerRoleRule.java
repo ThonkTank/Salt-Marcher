@@ -10,8 +10,9 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
 
     private static final Pattern PUBLIC_OR_PROTECTED_METHOD_PATTERN = Pattern.compile(
             "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
-    private static final Pattern SCHEMA_DDL_LITERAL_PATTERN = Pattern.compile(
-            "\"[^\"]*\\b(?:CREATE\\s+(?:TEMP\\s+)?(?:TABLE|INDEX|UNIQUE\\s+INDEX)|ALTER\\s+TABLE|DROP\\s+TABLE)\\b[^\"]*\"",
+    private static final Pattern JAVA_STRING_LITERAL_PATTERN = Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");
+    private static final Pattern SCHEMA_DDL_TEXT_PATTERN = Pattern.compile(
+            "\\b(?:CREATE\\s+(?:TEMP\\s+)?(?:TABLE|INDEX|UNIQUE\\s+INDEX)|ALTER\\s+TABLE|DROP\\s+TABLE)\\b",
             Pattern.CASE_INSENSITIVE);
     private static final Set<String> CONCRETE_SOURCE_TOKENS = Set.of(
             "java.sql.",
@@ -61,7 +62,7 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
             SaltMarcherSourceFacts sourceFacts
     ) {
         for (String token : CONCRETE_SOURCE_TOKENS) {
-            if (sourceFacts.text().contains(token)) {
+            if (codeTextWithoutCommentsAndStrings(sourceFacts.text()).contains(token)) {
                 asCtx(data).addViolationWithMessage(node,
                         "Data composition adapter, repository/, query/, and mapper/ code must not own concrete source mechanics such as '"
                                 + token + "'. Move source-specific work into a source adapter under gateway/.");
@@ -74,7 +75,7 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
             Object data,
             SaltMarcherSourceFacts sourceFacts
     ) {
-        Matcher matcher = PUBLIC_OR_PROTECTED_METHOD_PATTERN.matcher(sourceFacts.text());
+        Matcher matcher = PUBLIC_OR_PROTECTED_METHOD_PATTERN.matcher(codeTextWithoutCommentsAndStrings(sourceFacts.text()));
         while (matcher.find()) {
             String methodName = matcher.group(1);
             if (isMutationMethodName(methodName)) {
@@ -93,9 +94,14 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
         if (isFeaturePersistenceSchema(sourceFacts) || sourceFacts.relativePath().startsWith("src/data/persistencecore/")) {
             return;
         }
-        if (SCHEMA_DDL_LITERAL_PATTERN.matcher(sourceFacts.text()).find()) {
-            asCtx(data).addViolationWithMessage(node,
-                    "Feature schema DDL must live in the owning data model/<Feature>PersistenceSchema.java declaration.");
+        Matcher literalMatcher = JAVA_STRING_LITERAL_PATTERN.matcher(sourceFacts.text());
+        while (literalMatcher.find()) {
+            String literal = unquoteJavaStringLiteral(literalMatcher.group());
+            if (SCHEMA_DDL_TEXT_PATTERN.matcher(literal).find()) {
+                asCtx(data).addViolationWithMessage(node,
+                        "Feature schema DDL must live in the owning data model/<Feature>PersistenceSchema.java declaration.");
+                return;
+            }
         }
     }
 
@@ -131,5 +137,89 @@ public final class SaltMarcherDataLayerRoleRule extends AbstractJavaRule {
     private static boolean isMutationMethodName(String methodName) {
         String normalized = methodName.toLowerCase();
         return QUERY_MUTATION_METHOD_PREFIXES.stream().anyMatch(normalized::startsWith);
+    }
+
+    private static String unquoteJavaStringLiteral(String literal) {
+        return literal.length() < 2 ? literal : literal.substring(1, literal.length() - 1);
+    }
+
+    private static String codeTextWithoutCommentsAndStrings(String text) {
+        StringBuilder result = new StringBuilder(text.length());
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+        boolean inString = false;
+        boolean inChar = false;
+        boolean escaped = false;
+        for (int index = 0; index < text.length(); index++) {
+            char current = text.charAt(index);
+            char next = index + 1 < text.length() ? text.charAt(index + 1) : '\0';
+            if (inLineComment) {
+                if (current == '\n' || current == '\r') {
+                    inLineComment = false;
+                    result.append(current);
+                } else {
+                    result.append(' ');
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (current == '*' && next == '/') {
+                    inBlockComment = false;
+                    result.append("  ");
+                    index++;
+                } else {
+                    result.append(current == '\n' || current == '\r' ? current : ' ');
+                }
+                continue;
+            }
+            if (escaped) {
+                escaped = false;
+                result.append(' ');
+                continue;
+            }
+            if (current == '\\' && (inString || inChar)) {
+                escaped = true;
+                result.append(' ');
+                continue;
+            }
+            if (inString) {
+                if (current == '"') {
+                    inString = false;
+                }
+                result.append(current == '\n' || current == '\r' ? current : ' ');
+                continue;
+            }
+            if (inChar) {
+                if (current == '\'') {
+                    inChar = false;
+                }
+                result.append(current == '\n' || current == '\r' ? current : ' ');
+                continue;
+            }
+            if (current == '/' && next == '/') {
+                inLineComment = true;
+                result.append("  ");
+                index++;
+                continue;
+            }
+            if (current == '/' && next == '*') {
+                inBlockComment = true;
+                result.append("  ");
+                index++;
+                continue;
+            }
+            if (current == '"') {
+                inString = true;
+                result.append(' ');
+                continue;
+            }
+            if (current == '\'') {
+                inChar = true;
+                result.append(' ');
+                continue;
+            }
+            result.append(current);
+        }
+        return result.toString();
     }
 }

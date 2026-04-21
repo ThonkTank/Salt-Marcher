@@ -71,6 +71,7 @@ public final class DataAdapterPublicSignatureLeakChecker extends BugChecker impl
                 collectExecutableLeaks(String.valueOf(method.getSimpleName()), method, leaks);
             }
         }
+        collectInheritedMethodLeaks(typeElement, typeElement, leaks, new LinkedHashSet<>());
 
         if (leaks.isEmpty()) {
             return Description.NO_MATCH;
@@ -95,6 +96,35 @@ public final class DataAdapterPublicSignatureLeakChecker extends BugChecker impl
             }
         }
         collectTypeLeak("executable signature of " + executableName, executable.asType(), leaks);
+    }
+
+    private static void collectInheritedMethodLeaks(
+            TypeElement ownerType,
+            TypeElement currentType,
+            List<String> leaks,
+            Set<String> visitedTypes
+    ) {
+        String qualifiedName = currentType.getQualifiedName().toString();
+        if (!visitedTypes.add(qualifiedName) || "java.lang.Object".equals(qualifiedName)) {
+            return;
+        }
+        if (!currentType.equals(ownerType)) {
+            for (ExecutableElement method : ElementFilter.methodsIn(currentType.getEnclosedElements())) {
+                if ((method.getModifiers().contains(Modifier.PUBLIC)
+                        || method.getModifiers().contains(Modifier.PROTECTED))
+                        && !method.getModifiers().contains(Modifier.STATIC)) {
+                    collectExecutableLeaks(
+                            method.getSimpleName() + " inherited from " + currentType.getQualifiedName(),
+                            method,
+                            leaks);
+                }
+            }
+        }
+        TypeMirror superclass = currentType.getSuperclass();
+        if (superclass instanceof javax.lang.model.type.DeclaredType declaredType
+                && declaredType.asElement() instanceof TypeElement superclassElement) {
+            collectInheritedMethodLeaks(ownerType, superclassElement, leaks, visitedTypes);
+        }
     }
 
     private static void collectTypeLeak(String position, TypeMirror typeMirror, List<String> leaks) {

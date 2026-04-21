@@ -22,7 +22,8 @@ public final class ArchitectureChecker {
                 new ViewFeatureRules(),
                 new DomainFeatureRules(),
                 new ShellSurfaceRules(),
-                new DataPersistenceRules());
+                new DataPersistenceRules(),
+                new DataEnforcementCoverageRules());
 
         for (ArchitectureRule rule : rules) {
             rule.check(context, sink);

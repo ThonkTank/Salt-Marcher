@@ -71,7 +71,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
                         + role.expectedContractDescription + " domain port contract.");
             }
             if (isPublicConcrete(typeElement)) {
-                violations.addAll(publicMethodViolations(typeElement, role, state));
+                violations.addAll(exposedMethodViolations(typeElement, role, state));
             }
         }
 
@@ -129,7 +129,7 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
                 && !isPublicConcrete(typeElement);
     }
 
-    private static List<String> publicMethodViolations(
+    private static List<String> exposedMethodViolations(
             TypeElement typeElement,
             AdapterRole role,
             VisitorState state
@@ -144,20 +144,47 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
         }
 
         List<String> violations = new ArrayList<>();
-        for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements())) {
-            if (!isPublicOrProtected(method)) {
-                continue;
-            }
-            String signature = methodSignature(method, state);
+        for (ExposedMethod method : exposedMethods(typeElement)) {
+            String signature = methodSignature(method.method(), state);
             if (!contractMethodSignatures.contains(signature)) {
                 violations.add(role.diagnosticName + " adapter exposes public/protected method "
-                        + method.getSimpleName()
+                        + method.method().getSimpleName()
+                        + method.originDescription()
                         + " that is not declared by an own-feature "
                         + role.expectedContractDescription
                         + " domain port contract");
             }
         }
         return violations;
+    }
+
+    private static List<ExposedMethod> exposedMethods(TypeElement typeElement) {
+        List<ExposedMethod> methods = new ArrayList<>();
+        collectExposedMethods(typeElement, typeElement, methods, new LinkedHashSet<>());
+        return methods;
+    }
+
+    private static void collectExposedMethods(
+            TypeElement ownerType,
+            TypeElement currentType,
+            List<ExposedMethod> methods,
+            Set<String> visitedTypes
+    ) {
+        String qualifiedName = currentType.getQualifiedName().toString();
+        if (!visitedTypes.add(qualifiedName) || "java.lang.Object".equals(qualifiedName)) {
+            return;
+        }
+        boolean inherited = !currentType.equals(ownerType);
+        for (ExecutableElement method : ElementFilter.methodsIn(currentType.getEnclosedElements())) {
+            if (isPublicOrProtected(method) && (!inherited || !method.getModifiers().contains(Modifier.STATIC))) {
+                methods.add(new ExposedMethod(method, inherited ? currentType : null));
+            }
+        }
+        TypeMirror superclass = currentType.getSuperclass();
+        if (superclass instanceof DeclaredType declaredType
+                && declaredType.asElement() instanceof TypeElement superclassElement) {
+            collectExposedMethods(ownerType, superclassElement, methods, visitedTypes);
+        }
     }
 
     private static Set<TypeElement> ownExpectedContractTypes(TypeElement typeElement, AdapterRole role) {
@@ -276,6 +303,13 @@ public final class DataAdapterRoleContractChecker extends BugChecker implements 
 
         private boolean acceptsContractRole(ContractRole candidateRole) {
             return candidateRole == contractRole;
+        }
+    }
+
+    private record ExposedMethod(ExecutableElement method, TypeElement inheritedFrom) {
+
+        private String originDescription() {
+            return inheritedFrom == null ? "" : " inherited from " + inheritedFrom.getQualifiedName();
         }
     }
 

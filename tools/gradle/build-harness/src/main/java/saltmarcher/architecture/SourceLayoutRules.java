@@ -10,6 +10,8 @@ final class SourceLayoutRules implements ArchitectureRule {
 
     private static final Pattern BACKEND_PORT_CONTRACT_FILE_PATTERN =
             Pattern.compile(".*(?:Repository|Lookup|Catalog|Search)\\.java$");
+    private static final Pattern GENERIC_USE_CASE_FILE_PATTERN =
+            Pattern.compile(".*(?:Operations|Helper|Adapter|Repository|Mapper|Policy)UseCase\\.java$");
     private static final Pattern PUBLISHED_CALLABLE_CONTRACT_FILE_PATTERN =
             Pattern.compile(".*(?:ApplicationService|Service|Facade|Repository|Lookup|Catalog|Search|Port|Gateway|Factory|Locator|Policy)\\.java$");
     private static final Set<String> DOMAIN_ALLOWED_ROLE_PACKAGES =
@@ -188,6 +190,10 @@ final class SourceLayoutRules implements ArchitectureRule {
         if (!sourceFile.fileName().endsWith("UseCase.java")) {
             violations.add(sourceFile.relativePath(), "domain-application-direct-usecases",
                     "Domain application/ code must use *UseCase.java files.");
+        }
+        if (GENERIC_USE_CASE_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
+            violations.add(sourceFile.relativePath(), "domain-application-no-generic-usecase-names",
+                    "Domain application/ use cases must be named for a specific user or application action, not generic operations, helper, adapter, repository, mapper, or policy buckets.");
         }
         if (BACKEND_PORT_CONTRACT_FILE_PATTERN.matcher(sourceFile.fileName()).matches()) {
             violations.add(sourceFile.relativePath(), "domain-application-no-backend-port-contracts",

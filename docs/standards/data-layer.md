@@ -284,15 +284,17 @@ Current mechanical ownership:
 
 - `build-harness` owns data bucket placement, data-root placement,
   `ServiceContribution` root placement, package path alignment,
-  schema-entrypoint presence, and schema-owned SQL table-name references.
+  schema-entrypoint presence, schema-owned SQL table-name references, and the
+  required data-enforcement coverage matrix.
 - `PMD architecture` owns source-level `*ServiceContribution` contracts, obvious
   mutation-method bans in `query/`, concrete source API bans in composition
   adapters, repositories, queries, and mappers, and feature DDL literal
   placement.
 - `Error Prone` owns shell API allowlists, service-registry registration
   placement, data-root same-feature root `*ApplicationService` export shape,
-  adapter role contracts, public signature leak bans, and source-adapter
-  public/protected signature boundaries.
+  adapter role contracts including inherited public/protected superclass
+  methods, public signature leak bans, and source-adapter public/protected
+  signature boundaries.
 - `ArchUnit` owns dependency direction, foreign-domain-public-boundary-only
   access, data feature cycle freedom, private-data bucket isolation,
   `gateway/` and `model/` independence from domain packages, and generic-only
@@ -306,7 +308,8 @@ semantic duplicate schema truth. Port adapter package and role placement, public
 adapter surface shape, source-adapter public/protected signature privacy,
 source-adapter dependency independence from domain, source-local model
 independence from domain, generic-only `persistencecore/`, and SQL table-name
-literal ownership are mechanical.
+literal ownership are mechanical. The data/system coverage document names the
+individual rule IDs, mechanical owners, and blocking entrypoints.
 
 The source-pattern blockers intentionally stop at stable Java source/API shape.
 They are useful for concrete source API leakage, obvious query mutations,

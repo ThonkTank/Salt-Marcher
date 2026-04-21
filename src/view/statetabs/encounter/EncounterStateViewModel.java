@@ -1,10 +1,8 @@
 package src.view.statetabs.encounter;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -307,12 +305,11 @@ public final class EncounterStateViewModel {
             status.set("Exclude braucht mindestens eine Kreatur im Roster.");
             return;
         }
-        Set<Long> exclusions = new LinkedHashSet<>(excludedCreatureIds);
         for (EncounterCreature creature : roster) {
-            exclusions.add(creature.creatureId());
+            if (!excludedCreatureIds.contains(creature.creatureId())) {
+                excludedCreatureIds.add(creature.creatureId());
+            }
         }
-        excludedCreatureIds.clear();
-        excludedCreatureIds.addAll(exclusions);
         lockedCreatures.clear();
         clearPendingUndo();
         generate(lastSettings, types, subtypes, biomes, difficulty, tuning, encounterTableIds);
@@ -403,7 +400,7 @@ public final class EncounterStateViewModel {
                 }
             }
         }
-        CombatRuntime.sort(combatants);
+        combatants.sort(CombatRuntime::compareByTurnOrder);
         currentTurnIndex = CombatRuntime.turnEntries(combatants).isEmpty() ? -1 : 0;
         round = 1;
         mode.set(Mode.COMBAT);
@@ -1081,23 +1078,19 @@ public final class EncounterStateViewModel {
         private CombatRuntime() {
         }
 
-        private static void sort(List<Combatant> combatants) {
-            combatants.sort(CombatRuntime::compareByTurnOrder);
-        }
-
         private static void setInitiative(List<Combatant> combatants, String combatantId, int initiative) {
             CombatTurnEntry entry = turnEntry(combatants, combatantId);
             if (entry == null) {
                 return;
             }
-            Set<String> ids = Set.copyOf(entry.memberIds());
+            List<String> ids = entry.memberIds();
             for (int index = 0; index < combatants.size(); index++) {
                 Combatant combatant = combatants.get(index);
                 if (ids.contains(combatant.id())) {
                     combatants.set(index, combatant.withInitiative(initiative));
                 }
             }
-            sort(combatants);
+            combatants.sort(CombatRuntime::compareByTurnOrder);
         }
 
         private static boolean mutateHp(
@@ -1113,12 +1106,13 @@ public final class EncounterStateViewModel {
             if (entry == null || entry.pc()) {
                 return false;
             }
-            List<Combatant> targets = aliveMembers(combatants, Set.copyOf(entry.memberIds()));
+            List<Combatant> targets = aliveMembers(combatants, entry.memberIds());
             if (targets.isEmpty()) {
                 return false;
             }
             if (healing) {
-                replace(combatants, targets.getFirst(), amount);
+                Combatant target = targets.getFirst();
+                replace(combatants, target, Math.min(target.maxHp(), target.currentHp() + amount));
             } else {
                 damage(combatants, targets, amount);
             }
@@ -1217,9 +1211,12 @@ public final class EncounterStateViewModel {
             for (Combatant member : part) {
                 memberIds.add(member.id());
             }
+            String frontName = front.name();
+            int marker = frontName.lastIndexOf(" #");
+            String name = (marker > 0 ? frontName.substring(0, marker) : frontName) + " (Mob)";
             return new CombatTurnEntry(
                     "mob:" + front.creatureId() + ":" + front.initiative() + ":" + partIndex,
-                    mobName(front.name()),
+                    name,
                     false,
                     true,
                     front.currentHp(),
@@ -1232,11 +1229,6 @@ public final class EncounterStateViewModel {
                     memberIds);
         }
 
-        private static String mobName(String frontName) {
-            int marker = frontName.lastIndexOf(" #");
-            return (marker > 0 ? frontName.substring(0, marker) : frontName) + " (Mob)";
-        }
-
         private static @Nullable CombatTurnEntry turnEntry(List<Combatant> combatants, String id) {
             for (CombatTurnEntry entry : turnEntries(combatants)) {
                 if (entry.id().equals(id)) {
@@ -1246,7 +1238,7 @@ public final class EncounterStateViewModel {
             return null;
         }
 
-        private static List<Combatant> aliveMembers(List<Combatant> combatants, Set<String> ids) {
+        private static List<Combatant> aliveMembers(List<Combatant> combatants, List<String> ids) {
             List<Combatant> targets = new ArrayList<>();
             for (Combatant combatant : combatants) {
                 if (ids.contains(combatant.id()) && combatant.alive()) {
@@ -1257,8 +1249,7 @@ public final class EncounterStateViewModel {
             return targets;
         }
 
-        private static void replace(List<Combatant> combatants, Combatant target, int healing) {
-            int hp = Math.min(target.maxHp(), target.currentHp() + healing);
+        private static void replace(List<Combatant> combatants, Combatant target, int hp) {
             for (int index = 0; index < combatants.size(); index++) {
                 if (combatants.get(index).id().equals(target.id())) {
                     combatants.set(index, target.withHp(hp));
@@ -1274,17 +1265,8 @@ public final class EncounterStateViewModel {
                     return;
                 }
                 int appliedDamage = Math.min(remaining, target.currentHp());
-                replaceDamage(combatants, target, target.currentHp() - appliedDamage);
+                replace(combatants, target, target.currentHp() - appliedDamage);
                 remaining -= appliedDamage;
-            }
-        }
-
-        private static void replaceDamage(List<Combatant> combatants, Combatant target, int hp) {
-            for (int index = 0; index < combatants.size(); index++) {
-                if (combatants.get(index).id().equals(target.id())) {
-                    combatants.set(index, target.withHp(hp));
-                    return;
-                }
             }
         }
 
