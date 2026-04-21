@@ -6,3 +6,4 @@ tools/**/.gradle/
 tools/**/build/
 docs/references/
 tools/html/
+.local/dnd-source/

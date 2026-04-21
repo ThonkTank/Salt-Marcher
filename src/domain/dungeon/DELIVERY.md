@@ -26,6 +26,9 @@ Current foundation:
   waypoints, and door overrides. The domain layer derives corridor areas,
   corridor door boundaries, and room-to-corridor relation facts from those
   authored inputs.
+- Stair and transition read parity is active: the data layer loads stair path
+  nodes, stair exits, corridor attachments, and transition destinations. The
+  domain layer exposes them as authored feature facts and relation summaries.
 
 Recommended rollout:
 
@@ -39,20 +42,21 @@ Recommended rollout:
 - UI specifications are broader than the currently stabilized domain policies.
 - Preview behavior and undo/redo semantics need explicit implementation
   contracts before broad editor rollout.
-- Room and connection projections can drift if stair and transition
-  ownership rules are not enforced consistently.
-- Full parity still needs explicit stair, transition, and feature mapping
-  before those behaviours can be considered preserved.
+- Room and connection projections can drift if runtime travel action rules are
+  not derived consistently from the authored feature facts.
+- Full parity still needs runtime travel action parity, editor mutation
+  policies, and remaining non-space feature mapping before those behaviours can
+  be considered preserved.
 - Advanced editor operation carriers must be introduced only with implemented
   domain policies, and their public API signatures must use API-owned carrier
   types rather than internal domain-module model types.
 
 ## Next Parity Step
 
-Implement stair and transition read parity next. The original implementation
-loads stair path nodes, stair exits, and map/overworld transition destinations;
-this codebase has compatible schema tables but does not yet map those rows into
-domain feature or connection facts.
+Implement runtime travel action parity next. The original implementation turns
+stair exits and transition destinations into travel-surface actions; this
+codebase now loads those authored facts but does not yet expose movement
+commands or cross-map/overworld transition execution.
 
 ## Open Delivery Questions
 
