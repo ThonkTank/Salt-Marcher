@@ -19,8 +19,8 @@ Context Name: Party
 ## Published Language
 
 `published/` owns public party commands, results, snapshots, status enums,
-membership states, rest carriers, and party snapshots returned by
-`PartyApplicationService`.
+membership states, rest carriers, adventuring-day calculation carriers, and
+party snapshots returned by `PartyApplicationService`.
 
 The `roster/` domain module must not depend on any `src.domain.*.published.*`
 carriers. The application boundary translates public carriers into roster
@@ -79,6 +79,8 @@ Core invariants:
   campaign-level model, shell session, dungeon map, or view model
 - the party token is derived from attached character travel state instead of
   being a separate write model
+- adventuring-day budget and progress calculations use party-owned level and
+  rest-budget policies and are exposed through published read carriers
 - external mutation enters through the owning roster aggregate
 
 ## Consistency Model

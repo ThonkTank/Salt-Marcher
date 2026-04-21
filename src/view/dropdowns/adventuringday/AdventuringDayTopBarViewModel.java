@@ -1,6 +1,7 @@
 package src.view.dropdowns.adventuringday;
 
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -9,8 +10,12 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.published.AdventuringDayCalculation;
+import src.domain.party.published.AdventuringDayCalculationResult;
+import src.domain.party.published.AdventuringDayProgressEventType;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
+import src.domain.party.published.CalculateAdventuringDayQuery;
 import src.domain.party.published.LoadAdventuringDaySummaryQuery;
 import src.domain.party.published.ReadStatus;
 
@@ -39,29 +44,77 @@ final class AdventuringDayTopBarViewModel {
         AdventuringDayResult result = party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery());
         if (result == null || result.status() != ReadStatus.SUCCESS) {
             triggerText.set("Rastbudget nicht verf\u00fcgbar \u25be");
-            panel.set(PanelModel.error("Rastbudget konnte nicht geladen werden."));
+            panel.set(PanelModel.errorModel());
             return;
         }
         applySummary(result.summary());
     }
 
+    AdventuringDayCalculatorModel.Calculation calculate(List<Integer> levels, int totalGroupXp) {
+        AdventuringDayCalculationResult result = party.calculateAdventuringDay(
+                new CalculateAdventuringDayQuery(levels, totalGroupXp));
+        if (result == null || result.status() != ReadStatus.SUCCESS || result.calculation() == null) {
+            return AdventuringDayCalculatorModel.Calculation.empty(totalGroupXp);
+        }
+        return mapCalculation(result.calculation());
+    }
+
     private void applySummary(@Nullable AdventuringDaySummary summary) {
         if (summary == null || summary.activePartyLevels().isEmpty()) {
             triggerText.set("Kein Rastbudget \u25be");
-            panel.set(PanelModel.empty("Keine aktive Party f\u00fcr das Rastbudget."));
+            panel.set(PanelModel.emptyModel());
             return;
         }
         triggerText.set("SR " + format(summary.remainingToShortRest())
                 + " \u00b7 LR " + format(summary.remainingToLongRest()) + " \u25be");
-        panel.set(new PanelModel(
-                false,
-                false,
-                false,
-                "Short Rest in " + format(summary.remainingToShortRest()) + " XP",
-                "Long Rest in " + format(summary.remainingToLongRest()) + " XP",
-                format(summary.consumedXp()) + " / " + format(summary.totalBudgetXp())
-                        + " XP · " + summary.consumedPercent() + "% Tagesbudget",
-                ""));
+        panel.set(PanelModel.loaded(summary.activePartyLevels()));
+    }
+
+    private static AdventuringDayCalculatorModel.Calculation mapCalculation(AdventuringDayCalculation calculation) {
+        return new AdventuringDayCalculatorModel.Calculation(
+                new AdventuringDayCalculatorModel.Budget(
+                        calculation.budget().totalBudgetXp(),
+                        calculation.budget().perThirdXp(),
+                        calculation.budget().firstShortRestXp(),
+                        calculation.budget().secondShortRestXp(),
+                        calculation.budget().characterCount()),
+                new AdventuringDayCalculatorModel.Progress(
+                        calculation.progress().totalGroupXp(),
+                        calculation.progress().perCharacterAwardedXp(),
+                        calculation.progress().partySize(),
+                        calculation.progress().fullDays(),
+                        calculation.progress().totalDays(),
+                        calculation.progress().shortRests(),
+                        calculation.progress().longRests(),
+                        calculation.progress().levelProgressions().stream()
+                                .map(progress -> new AdventuringDayCalculatorModel.LevelProgress(
+                                        progress.startLevel(),
+                                        progress.endLevel(),
+                                        progress.characterCount(),
+                                        progress.levelUps()))
+                                .toList(),
+                        calculation.progress().events().stream()
+                                .map(event -> new AdventuringDayCalculatorModel.ProgressEvent(
+                                        event.groupXp(),
+                                        mapEventType(event.type()),
+                                        event.dayNumber(),
+                                        event.newLevel(),
+                                        event.affectedCharacters(),
+                                        event.partialDay()))
+                                .toList()));
+    }
+
+    private static AdventuringDayCalculatorModel.ProgressEventType mapEventType(
+            AdventuringDayProgressEventType type
+    ) {
+        if (type == null) {
+            return AdventuringDayCalculatorModel.ProgressEventType.LONG_REST;
+        }
+        return switch (type) {
+            case LEVEL_UP -> AdventuringDayCalculatorModel.ProgressEventType.LEVEL_UP;
+            case SHORT_REST -> AdventuringDayCalculatorModel.ProgressEventType.SHORT_REST;
+            case LONG_REST -> AdventuringDayCalculatorModel.ProgressEventType.LONG_REST;
+        };
     }
 
     private static String format(int value) {
@@ -72,33 +125,28 @@ final class AdventuringDayTopBarViewModel {
             boolean loading,
             boolean error,
             boolean empty,
-            String shortRestText,
-            String longRestText,
-            String budgetText,
-            String message
+            List<Integer> activePartyLevels
     ) {
 
         PanelModel {
-            shortRestText = safe(shortRestText);
-            longRestText = safe(longRestText);
-            budgetText = safe(budgetText);
-            message = safe(message);
+            activePartyLevels = activePartyLevels == null ? List.of() : List.copyOf(activePartyLevels);
         }
 
         static PanelModel loadingModel() {
-            return new PanelModel(true, false, false, "", "", "", "Lade...");
+            return new PanelModel(true, false, false, List.of());
         }
 
-        static PanelModel empty(String message) {
-            return new PanelModel(false, false, true, "", "", "", message);
+        static PanelModel emptyModel() {
+            return new PanelModel(false, false, true, List.of());
         }
 
-        static PanelModel error(String message) {
-            return new PanelModel(false, true, false, "", "", "", message);
+        static PanelModel errorModel() {
+            return new PanelModel(false, true, false, List.of());
+        }
+
+        static PanelModel loaded(List<Integer> activePartyLevels) {
+            return new PanelModel(false, false, false, activePartyLevels);
         }
     }
 
-    private static String safe(@Nullable String value) {
-        return value == null ? "" : value;
-    }
 }

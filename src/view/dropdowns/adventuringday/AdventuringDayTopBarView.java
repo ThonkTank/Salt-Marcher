@@ -5,8 +5,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -16,15 +16,11 @@ import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 public final class AdventuringDayTopBarView extends HBox {
 
-    private static final double POPUP_WIDTH = 340.0;
+    private static final double POPUP_WIDTH = 420.0;
 
     private final Button triggerButton = new Button("Rastbudget \u25be");
     private final Popup popup = new Popup();
-    private final Label messageLabel = new Label();
-    private final Label shortRestValue = new Label();
-    private final Label longRestValue = new Label();
-    private final Label budgetValue = new Label();
-    private final GridPane summaryGrid = new GridPane();
+    private final AdventuringDayCalculatorView calculatorPane = new AdventuringDayCalculatorView();
     private Runnable onOpen = () -> {};
 
     AdventuringDayTopBarView() {
@@ -41,17 +37,15 @@ public final class AdventuringDayTopBarView extends HBox {
 
     void showPanel(PanelContent content) {
         PanelContent safeContent = content == null ? PanelContent.loadingContent() : content;
-        shortRestValue.setText(safeContent.shortRestText());
-        longRestValue.setText(safeContent.longRestText());
-        budgetValue.setText(safeContent.budgetText());
-        boolean showSummary = !safeContent.loading() && !safeContent.error() && !safeContent.empty();
-        summaryGrid.setVisible(showSummary);
-        summaryGrid.setManaged(showSummary);
-        messageLabel.setText(safeContent.message());
-        messageLabel.setVisible(!safeContent.message().isBlank());
-        messageLabel.setManaged(messageLabel.isVisible());
-        messageLabel.getStyleClass().removeAll("text-muted", "text-warning");
-        messageLabel.getStyleClass().add(safeContent.error() ? "text-warning" : "text-muted");
+        if (safeContent.error()) {
+            calculatorPane.markActivePartyRefreshFailed();
+            return;
+        }
+        calculatorPane.setActivePartySnapshot(safeContent.activePartyLevels());
+    }
+
+    void setCalculationProvider(AdventuringDayCalculatorView.CalculationProvider provider) {
+        calculatorPane.setCalculationProvider(provider);
     }
 
     void onOpen(Runnable action) {
@@ -66,7 +60,7 @@ public final class AdventuringDayTopBarView extends HBox {
 
     private void configurePopup() {
         VBox panel = buildPanel();
-        panel.getStyleClass().add("party-panel");
+        panel.getStyleClass().addAll("party-panel", "adventuring-day-toolbar-popup");
         popup.setAutoHide(true);
         popup.setHideOnEscape(true);
         popup.getContent().add(panel);
@@ -86,27 +80,17 @@ public final class AdventuringDayTopBarView extends HBox {
         header.getStyleClass().add("party-header");
         header.setAlignment(Pos.CENTER_LEFT);
 
-        summaryGrid.getStyleClass().add("adventuring-day-summary-grid");
-        summaryGrid.setHgap(12);
-        summaryGrid.setVgap(6);
-        addRow(0, "Short Rest", shortRestValue);
-        addRow(1, "Long Rest", longRestValue);
-        addRow(2, "Tagesbudget", budgetValue);
+        ScrollPane scrollPane = new ScrollPane(calculatorPane);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setPrefViewportHeight(560);
+        scrollPane.setMaxHeight(560);
+        scrollPane.getStyleClass().add("adventuring-day-scroll");
 
-        messageLabel.setWrapText(true);
-        messageLabel.setPadding(new Insets(8, 12, 8, 12));
-
-        VBox body = new VBox(8, summaryGrid, messageLabel);
-        body.getStyleClass().add("adventuring-day-popup-body");
+        VBox body = new VBox(scrollPane);
+        body.setPadding(new Insets(0, 12, 12, 12));
         return new VBox(header, body);
-    }
-
-    private void addRow(int row, String labelText, Label valueLabel) {
-        Label label = new Label(labelText);
-        label.getStyleClass().add("text-muted");
-        valueLabel.getStyleClass().add("text-secondary");
-        summaryGrid.add(label, 0, row);
-        summaryGrid.add(valueLabel, 1, row);
     }
 
     private void togglePopup() {
@@ -117,25 +101,15 @@ public final class AdventuringDayTopBarView extends HBox {
             boolean loading,
             boolean error,
             boolean empty,
-            String shortRestText,
-            String longRestText,
-            String budgetText,
-            String message
+            java.util.List<Integer> activePartyLevels
     ) {
 
         PanelContent {
-            shortRestText = safe(shortRestText);
-            longRestText = safe(longRestText);
-            budgetText = safe(budgetText);
-            message = safe(message);
+            activePartyLevels = activePartyLevels == null ? java.util.List.of() : java.util.List.copyOf(activePartyLevels);
         }
 
         static PanelContent loadingContent() {
-            return new PanelContent(true, false, false, "", "", "", "Lade...");
+            return new PanelContent(true, false, false, java.util.List.of());
         }
-    }
-
-    private static String safe(String value) {
-        return value == null ? "" : value;
     }
 }

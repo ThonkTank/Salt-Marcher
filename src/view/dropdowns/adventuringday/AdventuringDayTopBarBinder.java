@@ -21,6 +21,7 @@ final class AdventuringDayTopBarBinder {
         AdventuringDayTopBarViewModel viewModel = new AdventuringDayTopBarViewModel(party);
         AdventuringDayTopBarView view = new AdventuringDayTopBarView();
         view.triggerTextProperty().bind(viewModel.triggerTextProperty());
+        view.setCalculationProvider(viewModel::calculate);
         view.showPanel(toPanelContent(viewModel.panelProperty().get()));
         viewModel.panelProperty().addListener((ignored, before, after) -> view.showPanel(toPanelContent(after)));
         view.onOpen(viewModel::refresh);
@@ -36,10 +37,7 @@ final class AdventuringDayTopBarBinder {
                 safeModel.loading(),
                 safeModel.error(),
                 safeModel.empty(),
-                safeModel.shortRestText(),
-                safeModel.longRestText(),
-                safeModel.budgetText(),
-                safeModel.message());
+                safeModel.activePartyLevels());
     }
 
     private record Binding(Node topBar) implements ShellBinding {

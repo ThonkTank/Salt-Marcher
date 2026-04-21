@@ -125,6 +125,10 @@
     -fx-font-weight: bold;
     -fx-font-size: 16px;
 }
+.large {
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
 .title {
     -fx-font-weight: bold;
     -fx-font-size: 15px;
@@ -373,11 +377,19 @@
     -fx-font-size: 11px;
     -fx-text-fill: -sm-text-muted;
 }
-.adventuring-day-popup-body {
-    -fx-padding: 10 12 12 12;
+.adventuring-day-toolbar-popup {
+    -fx-min-width: 380;
+    -fx-pref-width: 420;
 }
-.adventuring-day-summary-grid {
-    -fx-padding: 2 0 4 0;
+.adventuring-day-toolbar-popup .scroll-pane,
+.adventuring-day-toolbar-popup .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+.adventuring-day-scroll,
+.adventuring-day-timeline-scroll,
+.adventuring-day-scroll > .viewport,
+.adventuring-day-timeline-scroll > .viewport {
+    -fx-background-color: transparent;
 }
 .dropdown-window {
     -fx-background-color: -sm-bg-panel;

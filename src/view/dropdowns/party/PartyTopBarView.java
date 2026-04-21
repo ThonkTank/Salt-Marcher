@@ -33,7 +33,7 @@ public final class PartyTopBarView extends HBox {
 
     private static final double POPUP_WIDTH = 380.0;
 
-    private final Button triggerButton = new Button("Keine _Party \u25be");
+    private final Button triggerButton = new Button("Keine _Party \u25bc");
     private final Popup popup = new Popup();
     private final VBox memberList = new VBox();
     private final Label summaryLabel = new Label();

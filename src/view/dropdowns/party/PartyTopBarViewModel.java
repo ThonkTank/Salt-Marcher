@@ -40,7 +40,7 @@ import src.domain.party.published.UpdateCharacterCommand;
 public final class PartyTopBarViewModel {
 
     private final PartyApplicationService party;
-    private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party \u25be");
+    private final ReadOnlyStringWrapper triggerText = new ReadOnlyStringWrapper("Keine _Party \u25bc");
     private final ReadOnlyObjectWrapper<PanelModel> panel =
             new ReadOnlyObjectWrapper<>(PanelModel.loadingModel());
     private final ReadOnlyLongWrapper mutationToken = new ReadOnlyLongWrapper();
@@ -273,8 +273,8 @@ public final class PartyTopBarViewModel {
         int activeCount = activeMembers.size();
         int averageLevel = safeSnapshot.summary() == null ? averageLevel(activeMembers) : safeSnapshot.summary().averageLevel();
         triggerText.set(activeCount == 0
-                ? "Keine _Party \u25be"
-                : activeCount + " Charaktere, \u00d8 Lv " + averageLevel + " \u25be");
+                ? "Keine _Party \u25bc"
+                : activeCount + " Charaktere, \u00d8 Lv " + averageLevel + " \u25bc");
         panel.set(new PanelModel(
                 false,
                 false,
@@ -291,7 +291,7 @@ public final class PartyTopBarViewModel {
 
     private void applyStorageError() {
         mutationInFlight = false;
-        triggerText.set("Keine _Party \u25be");
+        triggerText.set("Keine _Party \u25bc");
         panel.set(new PanelModel(
                 false,
                 true,

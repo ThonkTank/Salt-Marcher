@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import src.domain.party.application.AwardPartyXpUseCase;
+import src.domain.party.application.CalculateAdventuringDayUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
 import src.domain.party.application.DeleteCharacterUseCase;
 import src.domain.party.application.LoadActivePartyCompositionUseCase;
@@ -19,9 +20,17 @@ import src.domain.party.application.UpdateCharacterUseCase;
 import src.domain.party.published.ActivePartyComposition;
 import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.ActivePartyResult;
+import src.domain.party.published.AdventuringDayBudget;
+import src.domain.party.published.AdventuringDayCalculation;
+import src.domain.party.published.AdventuringDayCalculationResult;
+import src.domain.party.published.AdventuringDayLevelProgress;
+import src.domain.party.published.AdventuringDayProgress;
+import src.domain.party.published.AdventuringDayProgressEvent;
+import src.domain.party.published.AdventuringDayProgressEventType;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
 import src.domain.party.published.AwardPartyXpCommand;
+import src.domain.party.published.CalculateAdventuringDayQuery;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.DeleteCharacterCommand;
@@ -73,6 +82,7 @@ public final class PartyApplicationService {
     private final LoadActivePartyUseCase loadActivePartyUseCase;
     private final LoadActivePartyCompositionUseCase loadActivePartyCompositionUseCase;
     private final LoadAdventuringDaySummaryUseCase loadAdventuringDaySummaryUseCase;
+    private final CalculateAdventuringDayUseCase calculateAdventuringDayUseCase;
     private final LoadPartyTravelPositionsUseCase loadPartyTravelPositionsUseCase;
     private final CreateCharacterUseCase createCharacterUseCase;
     private final UpdateCharacterUseCase updateCharacterUseCase;
@@ -88,6 +98,7 @@ public final class PartyApplicationService {
         this.loadActivePartyUseCase = new LoadActivePartyUseCase(repository);
         this.loadActivePartyCompositionUseCase = new LoadActivePartyCompositionUseCase(repository);
         this.loadAdventuringDaySummaryUseCase = new LoadAdventuringDaySummaryUseCase(repository);
+        this.calculateAdventuringDayUseCase = new CalculateAdventuringDayUseCase();
         this.loadPartyTravelPositionsUseCase = new LoadPartyTravelPositionsUseCase(repository);
         this.createCharacterUseCase = new CreateCharacterUseCase(repository);
         this.updateCharacterUseCase = new UpdateCharacterUseCase(repository);
@@ -149,6 +160,23 @@ public final class PartyApplicationService {
             return new AdventuringDayResult(
                     ReadStatus.STORAGE_ERROR,
                     new AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of()));
+        }
+    }
+
+    public AdventuringDayCalculationResult calculateAdventuringDay(CalculateAdventuringDayQuery query) {
+        try {
+            CalculateAdventuringDayQuery effectiveQuery = query == null
+                    ? new CalculateAdventuringDayQuery(List.of(), 0)
+                    : query;
+            return new AdventuringDayCalculationResult(
+                    ReadStatus.SUCCESS,
+                    mapAdventuringDayCalculation(calculateAdventuringDayUseCase.execute(
+                            effectiveQuery.levels(),
+                            effectiveQuery.totalGroupXp())));
+        } catch (IllegalStateException exception) {
+            return new AdventuringDayCalculationResult(
+                    ReadStatus.STORAGE_ERROR,
+                    mapAdventuringDayCalculation(calculateAdventuringDayUseCase.execute(List.of(), 0)));
         }
     }
 
@@ -324,6 +352,62 @@ public final class PartyApplicationService {
                     case SOON -> RestCadenceUrgency.SOON;
                     case OVERDUE -> RestCadenceUrgency.OVERDUE;
                 });
+    }
+
+    private static AdventuringDayCalculation mapAdventuringDayCalculation(
+            CalculateAdventuringDayUseCase.Result result
+    ) {
+        return new AdventuringDayCalculation(
+                mapAdventuringDayBudget(result.budget()),
+                mapAdventuringDayProgress(result.progress()));
+    }
+
+    private static AdventuringDayBudget mapAdventuringDayBudget(CalculateAdventuringDayUseCase.Budget budget) {
+        return new AdventuringDayBudget(
+                budget.totalXp(),
+                budget.perThirdXp(),
+                budget.firstShortRestXp(),
+                budget.secondShortRestXp(),
+                budget.characterCount());
+    }
+
+    private static AdventuringDayProgress mapAdventuringDayProgress(CalculateAdventuringDayUseCase.Progress progress) {
+        return new AdventuringDayProgress(
+                progress.totalGroupXp(),
+                progress.perCharacterAwardedXp(),
+                progress.partySize(),
+                progress.fullDays(),
+                progress.totalDays(),
+                progress.shortRests(),
+                progress.longRests(),
+                progress.levelProgressions().stream()
+                        .map(PartyApplicationService::mapAdventuringDayLevelProgress)
+                        .toList(),
+                progress.events().stream()
+                        .map(PartyApplicationService::mapAdventuringDayProgressEvent)
+                        .toList());
+    }
+
+    private static AdventuringDayLevelProgress mapAdventuringDayLevelProgress(
+            CalculateAdventuringDayUseCase.LevelProgress progress
+    ) {
+        return new AdventuringDayLevelProgress(
+                progress.startLevel(),
+                progress.endLevel(),
+                progress.characterCount(),
+                progress.levelUps());
+    }
+
+    private static AdventuringDayProgressEvent mapAdventuringDayProgressEvent(
+            CalculateAdventuringDayUseCase.ProgressEvent event
+    ) {
+        return new AdventuringDayProgressEvent(
+                event.groupXp(),
+                AdventuringDayProgressEventType.valueOf(event.type().name()),
+                event.dayNumber(),
+                event.newLevel(),
+                event.affectedCharacters(),
+                event.partialDay());
     }
 
     private static PartySnapshot emptySnapshot() {
