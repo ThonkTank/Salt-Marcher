@@ -8,7 +8,8 @@ public record DungeonMapSnapshot(
         int height,
         List<DungeonAreaSnapshot> areas,
         List<DungeonBoundarySnapshot> boundaries,
-        List<DungeonFeatureSnapshot> features
+        List<DungeonFeatureSnapshot> features,
+        List<DungeonEditorHandleSnapshot> editorHandles
 ) {
 
     public DungeonMapSnapshot {
@@ -18,6 +19,7 @@ public record DungeonMapSnapshot(
         areas = immutableAreas(areas);
         boundaries = immutableBoundaries(boundaries);
         features = immutableFeatures(features);
+        editorHandles = immutableEditorHandles(editorHandles);
     }
 
     public DungeonMapSnapshot(
@@ -27,11 +29,22 @@ public record DungeonMapSnapshot(
             List<DungeonAreaSnapshot> areas,
             List<DungeonBoundarySnapshot> boundaries
     ) {
-        this(topology, width, height, areas, boundaries, List.of());
+        this(topology, width, height, areas, boundaries, List.of(), List.of());
+    }
+
+    public DungeonMapSnapshot(
+            DungeonTopologyKind topology,
+            int width,
+            int height,
+            List<DungeonAreaSnapshot> areas,
+            List<DungeonBoundarySnapshot> boundaries,
+            List<DungeonFeatureSnapshot> features
+    ) {
+        this(topology, width, height, areas, boundaries, features, List.of());
     }
 
     public static DungeonMapSnapshot empty() {
-        return new DungeonMapSnapshot(DungeonTopologyKind.SQUARE, 1, 1, List.of(), List.of(), List.of());
+        return new DungeonMapSnapshot(DungeonTopologyKind.SQUARE, 1, 1, List.of(), List.of(), List.of(), List.of());
     }
 
     public List<DungeonCellRef> allCells() {
@@ -59,5 +72,11 @@ public record DungeonMapSnapshot(
 
     private static List<DungeonFeatureSnapshot> immutableFeatures(List<DungeonFeatureSnapshot> features) {
         return features == null ? List.of() : List.copyOf(features);
+    }
+
+    private static List<DungeonEditorHandleSnapshot> immutableEditorHandles(
+            List<DungeonEditorHandleSnapshot> editorHandles
+    ) {
+        return editorHandles == null ? List.of() : List.copyOf(editorHandles);
     }
 }

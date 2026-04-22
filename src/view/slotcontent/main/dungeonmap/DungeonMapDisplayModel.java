@@ -9,6 +9,9 @@ import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEditorHandleKind;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
+import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonFeatureKind;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
@@ -217,6 +220,7 @@ public record DungeonMapDisplayModel(
         }
         if (dragPreview != null && dragPreview.active()) {
             addDragPreview(renderedCells, map.areas(), selection, dragPreview);
+            addHandleDragPreview(renderedMarkers, dragPreview);
         }
         if (paintPreview != null && paintPreview.active()) {
             addPaintPreview(renderedCells, paintPreview);
@@ -246,6 +250,9 @@ public record DungeonMapDisplayModel(
                         selected));
                 renderedMarkers.add(markerForFeature(feature, center, featureCells.getFirst().z(), selected));
             }
+        }
+        for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
+            renderedMarkers.add(markerForHandle(handle, selection));
         }
         if (renderedCells.isEmpty()) {
             addRepresentativeGeometry(renderedCells, renderedEdges, renderedLabels, graphNodes, graphLinks);
@@ -365,6 +372,28 @@ public record DungeonMapDisplayModel(
         }
     }
 
+    private static void addHandleDragPreview(List<RenderMarker> renderedMarkers, DragPreview dragPreview) {
+        if (dragPreview.clusterId() > 0L && dragPreview.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
+            return;
+        }
+        DungeonCellRef cell = dragPreview.handleRef().cell();
+        MarkerKind kind = switch (dragPreview.handleRef().kind()) {
+            case DOOR -> MarkerKind.DOOR;
+            case STAIR_ANCHOR -> MarkerKind.STAIR;
+            case CORRIDOR_WAYPOINT -> MarkerKind.WAYPOINT;
+            case CLUSTER_LABEL -> MarkerKind.CLUSTER;
+        };
+        String label = dragPreview.label().isBlank() ? "*" : dragPreview.label();
+        renderedMarkers.add(new RenderMarker(
+                label,
+                cell.q() + dragPreview.deltaQ() + 0.5,
+                cell.r() + dragPreview.deltaR() + 0.5,
+                cell.level() + dragPreview.deltaLevel(),
+                kind,
+                true,
+                dragPreview.handleRef()));
+    }
+
     private static void addPaintPreview(List<RenderCell> renderedCells, PaintPreview paintPreview) {
         int minQ = Math.min(paintPreview.startQ(), paintPreview.endQ());
         int maxQ = Math.max(paintPreview.startQ(), paintPreview.endQ());
@@ -453,6 +482,30 @@ public record DungeonMapDisplayModel(
         MarkerKind kind = feature.kind() == DungeonFeatureKind.TRANSITION ? MarkerKind.TRANSITION : MarkerKind.STAIR;
         String label = feature.kind() == DungeonFeatureKind.TRANSITION ? "->" : "z";
         return new RenderMarker(label, center.x(), center.y(), level, kind, selected);
+    }
+
+    private static RenderMarker markerForHandle(DungeonEditorHandleSnapshot handle, @Nullable Selection selection) {
+        DungeonEditorHandleRef ref = handle.ref();
+        MarkerKind kind = switch (ref.kind()) {
+            case DOOR -> MarkerKind.DOOR;
+            case STAIR_ANCHOR -> MarkerKind.STAIR;
+            case CORRIDOR_WAYPOINT -> MarkerKind.WAYPOINT;
+            case CLUSTER_LABEL -> MarkerKind.CLUSTER;
+        };
+        String label = switch (ref.kind()) {
+            case DOOR -> "D";
+            case STAIR_ANCHOR -> "z";
+            case CORRIDOR_WAYPOINT -> "•";
+            case CLUSTER_LABEL -> "";
+        };
+        return new RenderMarker(
+                label,
+                handle.cell().q() + 0.5,
+                handle.cell().r() + 0.5,
+                handle.cell().level(),
+                kind,
+                selection != null && ref.equals(selection.handleRef()),
+                ref);
     }
 
     private static void addRoom(
@@ -648,7 +701,9 @@ public record DungeonMapDisplayModel(
     public enum MarkerKind {
         DOOR,
         STAIR,
-        TRANSITION
+        TRANSITION,
+        WAYPOINT,
+        CLUSTER
     }
 
     public enum Heading {
@@ -733,11 +788,72 @@ public record DungeonMapDisplayModel(
         }
     }
 
-    public record RenderMarker(String label, double q, double r, int z, MarkerKind kind, boolean selected) {
+    public record RenderMarker(
+            String label,
+            double q,
+            double r,
+            int z,
+            MarkerKind kind,
+            boolean selected,
+            DungeonEditorHandleRef handleRef
+    ) {
+
+        public RenderMarker(String label, double q, double r, int z, MarkerKind kind, boolean selected) {
+            this(label, q, r, z, kind, selected, emptyHandleRef(0L, 0L));
+        }
 
         public RenderMarker {
             label = label == null ? "" : label;
             kind = kind == null ? MarkerKind.DOOR : kind;
+            handleRef = handleRef == null ? emptyHandleRef(0L, 0L) : handleRef;
+        }
+
+        public String handleKind() {
+            return handleRef.kind().name();
+        }
+
+        public long handleOwnerId() {
+            return handleRef.ownerId();
+        }
+
+        public long handleClusterId() {
+            return handleRef.clusterId();
+        }
+
+        public long handleCorridorId() {
+            return handleRef.corridorId();
+        }
+
+        public long handleRoomId() {
+            return handleRef.roomId();
+        }
+
+        public int handleIndex() {
+            return handleRef.index();
+        }
+
+        public String handleDirection() {
+            return handleRef.direction();
+        }
+
+        public String handleTopologyRefKind() {
+            return handleRef.topologyRef().kind().name();
+        }
+
+        public long handleTopologyRefId() {
+            return handleRef.topologyRef().id();
+        }
+
+        public int handleQ() {
+            return handleRef.cell().q();
+        }
+
+        public int handleR() {
+            return handleRef.cell().r();
+        }
+
+        public int handleLevel() {
+            return handleRef.cell().level();
         }
     }
 
@@ -763,7 +879,8 @@ public record DungeonMapDisplayModel(
             long clusterId,
             String label,
             TopologyRef topologyRef,
-            boolean clusterSelection
+            boolean clusterSelection,
+            DungeonEditorHandleRef handleRef
     ) {
 
         public Selection(long areaId, long clusterId, String label) {
@@ -774,11 +891,22 @@ public record DungeonMapDisplayModel(
             this(areaId, clusterId, label, topologyRef, false);
         }
 
+        public Selection(
+                long areaId,
+                long clusterId,
+                String label,
+                TopologyRef topologyRef,
+                boolean clusterSelection
+        ) {
+            this(areaId, clusterId, label, topologyRef, clusterSelection, emptyHandleRef(areaId, clusterId));
+        }
+
         public Selection {
             areaId = Math.max(0L, areaId);
             clusterId = Math.max(0L, clusterId);
             label = label == null ? "" : label;
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+            handleRef = handleRef == null ? emptyHandleRef(areaId, clusterId) : handleRef;
         }
     }
 
@@ -792,20 +920,40 @@ public record DungeonMapDisplayModel(
         public static TopologyRef empty() {
             return new TopologyRef("EMPTY", 0L);
         }
+
+        public DungeonTopologyElementRef toPublished() {
+            return new DungeonTopologyElementRef(
+                    src.domain.dungeon.published.DungeonTopologyElementKind.valueOf(kind),
+                    id);
+        }
     }
 
-    public record DragPreview(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
+    public record DragPreview(
+            long clusterId,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel,
+            DungeonEditorHandleRef handleRef,
+            String label
+    ) {
 
         public DragPreview(long clusterId, int deltaQ, int deltaR) {
             this(clusterId, deltaQ, deltaR, 0);
         }
 
+        public DragPreview(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
+            this(clusterId, deltaQ, deltaR, deltaLevel, emptyHandleRef(0L, clusterId), "");
+        }
+
         public DragPreview {
             clusterId = Math.max(0L, clusterId);
+            handleRef = handleRef == null ? emptyHandleRef(0L, clusterId) : handleRef;
+            label = label == null ? "" : label;
         }
 
         public boolean active() {
-            return clusterId > 0L && (deltaQ != 0 || deltaR != 0 || deltaLevel != 0);
+            return (clusterId > 0L || handleRef.ownerId() > 0L)
+                    && (deltaQ != 0 || deltaR != 0 || deltaLevel != 0);
         }
     }
 
@@ -814,6 +962,19 @@ public record DungeonMapDisplayModel(
         public boolean active() {
             return true;
         }
+    }
+
+    private static DungeonEditorHandleRef emptyHandleRef(long ownerId, long clusterId) {
+        return new DungeonEditorHandleRef(
+                DungeonEditorHandleKind.CLUSTER_LABEL,
+                DungeonTopologyElementRef.empty(),
+                Math.max(0L, ownerId),
+                Math.max(0L, clusterId),
+                0L,
+                Math.max(0L, ownerId),
+                0,
+                new DungeonCellRef(0, 0, 0),
+                "");
     }
 
     private record CellCenter(double x, double y) {

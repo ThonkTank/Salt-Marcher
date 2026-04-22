@@ -12,7 +12,7 @@ The Dungeon Editor tab is the editor-facing cockpit root for authored dungeon
 maps. It keeps the compact current control layout while carrying the original
 Auswahl tool behavior through the map-owned topology model: presentation
 selection, drag preview, persisted grid and level movement for selected
-topology refs, and room narration editing.
+editor handles, and room narration editing.
 
 ## Visible Structure
 
@@ -36,11 +36,11 @@ topology refs, and room narration editing.
   narration in the state pane. `Raum malen` and `Raum loeschen` commit
   active-level rectangle mutations. The remaining non-room editor tool
   families are still pending authored operations.
-- In grid mode, clicking a room, room label, stair, or transition selects its
-  topology ref. Dragging a cluster-backed selection shows a preview for the
-  associated room-cluster grouping, Ctrl-scroll changes the drag target level,
-  and release commits q/r/z movement through the domain map. Empty grid clicks
-  clear selection.
+- In grid mode, clicking a room, room label, stair, transition, door handle,
+  corridor waypoint, stair anchor, or cluster label selects the owning topology
+  ref. Dragging a selectable editor handle shows a live preview, Ctrl-scroll
+  changes the drag target level, and release commits q/r/z movement through
+  the domain map. Empty grid clicks clear selection.
 - Saving a narration card persists room visual description and exit
   descriptions through the dungeon write model; the state pane refreshes from
   committed authored truth.

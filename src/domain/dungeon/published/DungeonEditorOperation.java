@@ -5,6 +5,7 @@ package src.domain.dungeon.published;
  */
 public sealed interface DungeonEditorOperation permits
         DungeonEditorOperation.MoveTopologyElement,
+        DungeonEditorOperation.MoveEditorHandle,
         DungeonEditorOperation.MoveRoomAnchor,
         DungeonEditorOperation.PaintRoomRectangle,
         DungeonEditorOperation.DeleteRoomRectangle,
@@ -20,6 +21,14 @@ public sealed interface DungeonEditorOperation permits
         public MoveTopologyElement(DungeonTopologyElementRef ref, int deltaQ, int deltaR) {
             this(ref, deltaQ, deltaR, 0);
         }
+    }
+
+    record MoveEditorHandle(
+            DungeonEditorHandleRef ref,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) implements DungeonEditorOperation {
     }
 
     record MoveRoomAnchor(int deltaQ, int deltaR) implements DungeonEditorOperation {

@@ -12,6 +12,9 @@ import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEditorHandleKind;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
+import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonFeatureKind;
@@ -59,6 +62,10 @@ import src.domain.dungeon.map.value.DungeonAreaFacts;
 import src.domain.dungeon.map.value.DungeonAreaType;
 import src.domain.dungeon.map.value.DungeonBoundaryFacts;
 import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonEditorHandle;
+import src.domain.dungeon.map.value.DungeonEditorHandleFacts;
+import src.domain.dungeon.map.value.DungeonEditorHandleType;
+import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonFeatureFacts;
 import src.domain.dungeon.map.value.DungeonMapFacts;
@@ -127,6 +134,15 @@ public final class DungeonApplicationService {
                 result.reactionMessages());
     }
 
+    public DungeonSnapshot previewOperation(ApplyDungeonEditorOperationCommand command) {
+        DungeonEditorOperation operation = command == null ? null : command.operation();
+        ApplyDungeonEditorOperationUseCase.OperationResultData result =
+                applyDungeonEditorOperationUseCase.preview(
+                        MapPublication.domainId(command == null ? null : command.mapId()),
+                        OperationPublication.operationInput(operation));
+        return SnapshotPublication.snapshot(result.snapshot());
+    }
+
     public DungeonInspectorSnapshot describeSelection(DescribeDungeonSelectionQuery query) {
         DescribeDungeonSelectionQuery effectiveQuery = query == null
                 ? new DescribeDungeonSelectionQuery(new DungeonMapId(1L), DungeonTopologyElementRef.empty(), 0L, false)
@@ -185,7 +201,7 @@ public final class DungeonApplicationService {
                 snapshot.mapName(),
                 snapshot.revision(),
                 snapshot.targetFloor(),
-                MapPublication.snapshot(snapshot.map()),
+                    MapPublication.snapshot(snapshot.map()),
                 snapshot.empty());
     }
 
@@ -216,7 +232,7 @@ public final class DungeonApplicationService {
             return new DungeonSnapshot(
                     snapshot.mapName(),
                     DungeonMapMode.EDITOR,
-                    MapPublication.snapshot(snapshot.derived().map()),
+                    MapPublication.snapshot(snapshot.derived().map(), snapshot.editorHandles()),
                     snapshot.derived().aggregates().stream().map(SnapshotPublication::aggregateSummary).toList(),
                     snapshot.derived().relations().summaries(),
                     MapPublication.revision(snapshot.revision()));
@@ -241,6 +257,13 @@ public final class DungeonApplicationService {
                         moveTopologyElement.deltaQ(),
                         moveTopologyElement.deltaR(),
                         moveTopologyElement.deltaLevel());
+            }
+            if (operation instanceof DungeonEditorOperation.MoveEditorHandle moveEditorHandle) {
+                return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveEditorHandle(
+                        MapPublication.domainHandle(moveEditorHandle.ref()),
+                        moveEditorHandle.deltaQ(),
+                        moveEditorHandle.deltaR(),
+                        moveEditorHandle.deltaLevel());
             }
             if (operation instanceof DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor) {
                 return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomAnchor(
@@ -280,6 +303,10 @@ public final class DungeonApplicationService {
         }
 
         private static DungeonMapSnapshot snapshot(DungeonMapFacts facts) {
+            return snapshot(facts, List.of());
+        }
+
+        private static DungeonMapSnapshot snapshot(DungeonMapFacts facts, List<DungeonEditorHandleFacts> handles) {
             DungeonMapFacts safeFacts = facts == null
                     ? new DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of())
                     : facts;
@@ -289,7 +316,8 @@ public final class DungeonApplicationService {
                     safeFacts.height(),
                     safeFacts.areas().stream().map(MapPublication::area).toList(),
                     safeFacts.boundaries().stream().map(MapPublication::boundary).toList(),
-                    safeFacts.features().stream().map(MapPublication::feature).toList());
+                    safeFacts.features().stream().map(MapPublication::feature).toList(),
+                    handles == null ? List.of() : handles.stream().map(MapPublication::handle).toList());
         }
 
         private static DungeonMapId id(DungeonMapIdentity identity) {
@@ -328,6 +356,26 @@ public final class DungeonApplicationService {
                     feature.description(),
                     feature.destinationLabel(),
                     topologyRef(feature.topologyRef()));
+        }
+
+        private static DungeonEditorHandleSnapshot handle(DungeonEditorHandleFacts handle) {
+            return new DungeonEditorHandleSnapshot(
+                    handleRef(handle.handle()),
+                    handle.label(),
+                    cell(handle.handle().cell()));
+        }
+
+        private static DungeonEditorHandleRef handleRef(DungeonEditorHandle handle) {
+            return new DungeonEditorHandleRef(
+                    DungeonEditorHandleKind.valueOf(handle.type().name()),
+                    topologyRef(handle.topologyRef()),
+                    handle.ownerId(),
+                    handle.clusterId(),
+                    handle.corridorId(),
+                    handle.roomId(),
+                    handle.index(),
+                    cell(handle.cell()),
+                    handle.direction().name());
         }
 
         private static DungeonInspectorSnapshot.RoomNarrationCard roomNarration(
@@ -385,12 +433,37 @@ public final class DungeonApplicationService {
                     ref.id());
         }
 
+        private static DungeonEditorHandle domainHandle(@Nullable DungeonEditorHandleRef ref) {
+            if (ref == null) {
+                return new DungeonEditorHandle(
+                        DungeonEditorHandleType.CLUSTER_LABEL,
+                        DungeonTopologyRef.empty(),
+                        0L,
+                        0L,
+                        0L,
+                        0L,
+                        0,
+                        new DungeonCell(0, 0, 0),
+                        DungeonEdgeDirection.NORTH);
+            }
+            return new DungeonEditorHandle(
+                    DungeonEditorHandleType.valueOf(ref.kind().name()),
+                    domainTopologyRef(ref.topologyRef()),
+                    ref.ownerId(),
+                    ref.clusterId(),
+                    ref.corridorId(),
+                    ref.roomId(),
+                    ref.index(),
+                    domainCell(ref.cell()),
+                    ref.direction().isBlank() ? DungeonEdgeDirection.NORTH : DungeonEdgeDirection.parse(ref.direction()));
+        }
+
         private static DungeonCellRef cell(DungeonCell cell) {
             return new DungeonCellRef(cell.q(), cell.r(), cell.level());
         }
 
         private static DungeonCell domainCell(DungeonCellRef cell) {
-            return new DungeonCell(cell.q(), cell.r(), cell.level());
+            return cell == null ? new DungeonCell(0, 0, 0) : new DungeonCell(cell.q(), cell.r(), cell.level());
         }
 
         private static DungeonEdgeRef edge(DungeonEdge edge) {

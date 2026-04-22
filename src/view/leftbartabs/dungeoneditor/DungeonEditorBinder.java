@@ -8,7 +8,11 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
 import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEditorHandleKind;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
+import src.domain.dungeon.published.DungeonTopologyElementKind;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapMainView;
@@ -237,12 +241,25 @@ final class DungeonEditorBinder {
                 hitTarget.clusterId(),
                 hitTarget.topologyRefKind(),
                 hitTarget.topologyRefId(),
-                hitTarget.label());
+                hitTarget.label(),
+                new DungeonEditorHandleRef(
+                        DungeonEditorHandleKind.valueOf(hitTarget.handleKind()),
+                        new DungeonTopologyElementRef(
+                                DungeonTopologyElementKind.valueOf(hitTarget.topologyRefKind()),
+                                hitTarget.topologyRefId()),
+                        hitTarget.ownerId(),
+                        hitTarget.clusterId(),
+                        hitTarget.handleCorridorId(),
+                        hitTarget.handleRoomId(),
+                        hitTarget.handleIndex(),
+                        new DungeonCellRef(hitTarget.handleQ(), hitTarget.handleR(), hitTarget.handleLevel()),
+                        hitTarget.handleDirection()));
     }
 
     private static DungeonEditorViewModel.HitKind toHitKind(DungeonMapMainView.DungeonMapHitKind hitKind) {
         return switch (hitKind) {
             case EMPTY -> DungeonEditorViewModel.HitKind.EMPTY;
+            case HANDLE -> DungeonEditorViewModel.HitKind.HANDLE;
             case LABEL -> DungeonEditorViewModel.HitKind.LABEL;
             case CORRIDOR -> DungeonEditorViewModel.HitKind.CORRIDOR;
             case STAIR -> DungeonEditorViewModel.HitKind.STAIR;

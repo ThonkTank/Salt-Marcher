@@ -5,6 +5,7 @@ import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonEditorHandle;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonRoomExitDescription;
 import src.domain.dungeon.map.value.DungeonRoomNarration;
@@ -21,6 +22,7 @@ public final class ApplyDungeonEditorOperationUseCase {
 
     public sealed interface OperationInput permits
             OperationInput.MoveTopologyElement,
+            OperationInput.MoveEditorHandle,
             OperationInput.MoveRoomAnchor,
             OperationInput.PaintRoomRectangle,
             OperationInput.DeleteRoomRectangle,
@@ -29,6 +31,10 @@ public final class ApplyDungeonEditorOperationUseCase {
             OperationInput.NoChange {
 
         record MoveTopologyElement(DungeonTopologyRef ref, int deltaQ, int deltaR, int deltaLevel)
+                implements OperationInput {
+        }
+
+        record MoveEditorHandle(DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel)
                 implements OperationInput {
         }
 
@@ -95,11 +101,17 @@ public final class ApplyDungeonEditorOperationUseCase {
         List<String> reactionMessages = current.reactionMessages(mutated);
         DungeonDerivedState derived = derive.execute(mutated);
         DungeonMap saved = repository.save(mutated);
-        var snapshot = new LoadDungeonSnapshotUseCase.DungeonSnapshotData(
-                saved.metadata().mapName(),
-                derived,
-                saved.revision());
+        var snapshot = snapshot(saved, derived);
         return new OperationResultData(snapshot, validationMessages, reactionMessages);
+    }
+
+    public OperationResultData preview(@Nullable DungeonMapIdentity mapId, OperationInput operation) {
+        DungeonMap current = currentMap(mapId);
+        DungeonMap mutated = apply(current, operation);
+        return new OperationResultData(
+                snapshot(mutated, derive.execute(mutated)),
+                mutated.validationMessages(),
+                current.reactionMessages(mutated));
     }
 
     private DungeonMap apply(DungeonMap current, OperationInput operation) {
@@ -109,6 +121,13 @@ public final class ApplyDungeonEditorOperationUseCase {
                     moveTopologyElement.deltaQ(),
                     moveTopologyElement.deltaR(),
                     moveTopologyElement.deltaLevel());
+        }
+        if (operation instanceof OperationInput.MoveEditorHandle moveEditorHandle) {
+            return current.moveEditorHandle(
+                    moveEditorHandle.handle(),
+                    moveEditorHandle.deltaQ(),
+                    moveEditorHandle.deltaR(),
+                    moveEditorHandle.deltaLevel());
         }
         if (operation instanceof OperationInput.MoveRoomAnchor moveRoomAnchor) {
             return current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
@@ -134,6 +153,14 @@ public final class ApplyDungeonEditorOperationUseCase {
             return current.resetDemoLayout();
         }
         return current;
+    }
+
+    private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot(DungeonMap dungeonMap, DungeonDerivedState derived) {
+        return new LoadDungeonSnapshotUseCase.DungeonSnapshotData(
+                dungeonMap.metadata().mapName(),
+                derived,
+                LoadDungeonSnapshotUseCase.editorHandles(dungeonMap),
+                dungeonMap.revision());
     }
 
     private DungeonMap currentMap(@Nullable DungeonMapIdentity mapId) {

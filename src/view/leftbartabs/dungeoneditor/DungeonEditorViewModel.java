@@ -25,6 +25,8 @@ import src.domain.dungeon.published.CreateDungeonMapCommand;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DescribeDungeonSelectionQuery;
 import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEditorHandleKind;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
@@ -247,40 +249,43 @@ public final class DungeonEditorViewModel {
         });
     }
 
-    public void primaryPressed(@Nullable PointerInput input) {
+    public boolean primaryPressed(@Nullable PointerInput input) {
         if (!interactionEnabled() || input == null) {
-            return;
+            return false;
         }
         if (paintInteraction.press(input, selectedTool.get())) {
             selection.set(null);
             dragSession = null;
             refreshStateText();
-            return;
+            return true;
         }
         if (!selectionToolSelected()) {
             clearInteraction();
-            return;
+            return false;
         }
         HitTarget hit = input.hitTarget();
         if (selectableHit(hit)) {
             DungeonMapDisplayModel.TopologyRef topologyRef =
                     new DungeonMapDisplayModel.TopologyRef(hit.topologyRefKind(), hit.topologyRefId());
+            DungeonEditorHandleRef handleRef = dragHandleRef(hit);
             DungeonMapDisplayModel.Selection nextSelection = new DungeonMapDisplayModel.Selection(
                     hit.ownerId(),
                     hit.clusterId(),
                     hit.label(),
                     topologyRef,
-                    hit.kind() == HitKind.LABEL);
+                    clusterSelection(hit),
+                    handleRef);
             selection.set(nextSelection);
-            dragSession = hit.clusterId() > 0L
-                    ? DragSession.start(nextSelection, input.q(), input.r(), input.level())
+            dragSession = draggableHit(hit)
+                    ? DragSession.start(nextSelection, input.q(), input.r(), input.level(), snapshot.get())
                     : null;
             dragPreview.set(null);
             refreshInspector();
             refreshStateText();
-            return;
+            return dragSession != null;
         }
         clearInteraction();
+        return false;
     }
 
     public void primaryDragged(@Nullable PointerInput input) {
@@ -295,13 +300,12 @@ public final class DungeonEditorViewModel {
             return;
         }
         dragSession = dragSession.withCurrentPointer(input.q(), input.r());
-        int deltaQ = dragSession.deltaQ();
-        int deltaR = dragSession.deltaR();
-        int deltaLevel = dragSession.currentLevel() - dragSession.pressLevel();
-        if (deltaQ == 0 && deltaR == 0 && deltaLevel == 0) {
+        if (!dragSession.moved()) {
             dragPreview.set(null);
+            snapshot.set(dragSession.baseSnapshot());
         } else {
-            dragPreview.set(new DragPreview(dragSession.selection().clusterId(), deltaQ, deltaR, deltaLevel));
+            showDragPreview(dragSession);
+            previewDragMutation(dragSession);
         }
         refreshStateText();
     }
@@ -321,15 +325,12 @@ public final class DungeonEditorViewModel {
         DragSession releasedSession = dragSession;
         dragSession = null;
         dragPreview.set(null);
-        int deltaQ = input.q() - releasedSession.pressQ();
-        int deltaR = input.r() - releasedSession.pressR();
-        int deltaLevel = releasedSession.currentLevel() - releasedSession.pressLevel();
-        if (!interactionEnabled() || !selectionToolSelected()
-                || (deltaQ == 0 && deltaR == 0 && deltaLevel == 0)) {
+        snapshot.set(releasedSession.baseSnapshot());
+        if (!interactionEnabled() || !selectionToolSelected() || !releasedSession.moved()) {
             refreshStateText();
             return;
         }
-        moveSelectedTopology(releasedSession.selection(), deltaQ, deltaR, deltaLevel);
+        moveSelectedHandle(releasedSession);
     }
 
     public void levelScrolled(int delta) {
@@ -343,11 +344,8 @@ public final class DungeonEditorViewModel {
         int nextLevel = dragSession.currentLevel() + delta;
         dragSession = dragSession.withCurrentLevel(nextLevel);
         projectionLevel.set(nextLevel);
-        dragPreview.set(new DragPreview(
-                dragSession.selection().clusterId(),
-                dragSession.deltaQ(),
-                dragSession.deltaR(),
-                dragSession.currentLevel() - dragSession.pressLevel()));
+        showDragPreview(dragSession);
+        previewDragMutation(dragSession);
         refreshStateText();
     }
 
@@ -439,26 +437,55 @@ public final class DungeonEditorViewModel {
                 + "\nRaumwerkzeug: Rechteck ziehen und beim Loslassen anwenden.");
     }
 
-    private void moveSelectedTopology(Selection currentSelection, int deltaQ, int deltaR, int deltaLevel) {
+    private void moveSelectedHandle(DragSession releasedSession) {
+        Selection currentSelection = releasedSession.selection();
         DungeonMapId mapId = selectedMapId;
-        if (mapId == null || currentSelection == null || currentSelection.clusterId() <= 0L) {
+        if (mapId == null || currentSelection == null || currentSelection.handleRef().ownerId() <= 0L) {
             return;
         }
         withBusy(() -> {
             DungeonOperationResult result = dungeon.applyOperation(new ApplyDungeonEditorOperationCommand(
                     mapId,
-                    new DungeonEditorOperation.MoveTopologyElement(
-                            toTopologyElementRef(currentSelection.topologyRef()),
-                            deltaQ,
-                            deltaR,
-                            deltaLevel)));
+                    new DungeonEditorOperation.MoveEditorHandle(
+                            currentSelection.handleRef(),
+                            releasedSession.deltaQ(),
+                            releasedSession.deltaR(),
+                            releasedSession.deltaLevel())));
             snapshot.set(result.snapshot());
             reachableLevels.set(levelsFrom(result.snapshot(), projectionLevel.get()));
-            status.set("Topologieelement verschoben: dq=" + deltaQ + ", dr=" + deltaR + ", dz=" + deltaLevel);
+            status.set("Topologieelement verschoben: dq=" + releasedSession.deltaQ()
+                    + ", dr=" + releasedSession.deltaR()
+                    + ", dz=" + releasedSession.deltaLevel());
             selection.set(currentSelection);
             refreshInspector();
         });
         refreshStateText();
+    }
+
+    private void previewDragMutation(DragSession session) {
+        DungeonMapId mapId = selectedMapId;
+        if (mapId == null || session == null || !session.moved()) {
+            return;
+        }
+        DungeonSnapshot preview = dungeon.previewOperation(new ApplyDungeonEditorOperationCommand(
+                mapId,
+                new DungeonEditorOperation.MoveEditorHandle(
+                        session.selection().handleRef(),
+                        session.deltaQ(),
+                        session.deltaR(),
+                        session.deltaLevel())));
+        snapshot.set(preview);
+        reachableLevels.set(levelsFrom(preview, projectionLevel.get()));
+    }
+
+    private void showDragPreview(DragSession session) {
+        dragPreview.set(new DragPreview(
+                session.selection().clusterId(),
+                session.deltaQ(),
+                session.deltaR(),
+                session.deltaLevel(),
+                session.selection().handleRef(),
+                session.selection().label()));
     }
 
     private void applyPaintCommit(PaintInteraction.PaintCommit commit) {
@@ -528,6 +555,33 @@ public final class DungeonEditorViewModel {
                 && !"EMPTY".equals(hit.topologyRefKind());
     }
 
+    private static boolean draggableHit(HitTarget hit) {
+        return hit != null
+                && (hit.kind() == HitKind.HANDLE || hit.kind() == HitKind.LABEL)
+                && (hit.clusterId() > 0L || hit.handleRef().ownerId() > 0L);
+    }
+
+    private static boolean clusterSelection(HitTarget hit) {
+        return hit.kind() == HitKind.LABEL
+                || hit.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL;
+    }
+
+    private static DungeonEditorHandleRef dragHandleRef(HitTarget hit) {
+        if (hit.kind() == HitKind.HANDLE) {
+            return hit.handleRef();
+        }
+        return new DungeonEditorHandleRef(
+                DungeonEditorHandleKind.CLUSTER_LABEL,
+                new DungeonTopologyElementRef(DungeonTopologyElementKind.valueOf(hit.topologyRefKind()), hit.topologyRefId()),
+                hit.ownerId(),
+                hit.clusterId(),
+                0L,
+                hit.ownerId(),
+                0,
+                new DungeonCellRef(0, 0, 0),
+                "");
+    }
+
     private boolean selectionToolSelected() {
         return DEFAULT_TOOL.equals(selectedTool.get());
     }
@@ -570,6 +624,7 @@ public final class DungeonEditorViewModel {
             for (DungeonFeatureSnapshot feature : snapshot.map().features()) {
                 addCellLevels(levels, feature.cells());
             }
+            snapshot.map().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
         }
         if (levels.isEmpty()) {
             levels.add(fallbackLevel);
@@ -606,6 +661,7 @@ public final class DungeonEditorViewModel {
 
     public enum HitKind {
         EMPTY,
+        HANDLE,
         LABEL,
         ROOM,
         CORRIDOR,
@@ -619,7 +675,8 @@ public final class DungeonEditorViewModel {
             long clusterId,
             String topologyRefKind,
             long topologyRefId,
-            String label
+            String label,
+            DungeonEditorHandleRef handleRef
     ) {
         public HitTarget {
             kind = kind == null ? HitKind.EMPTY : kind;
@@ -628,6 +685,20 @@ public final class DungeonEditorViewModel {
             topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? "EMPTY" : topologyRefKind.trim();
             topologyRefId = Math.max(0L, topologyRefId);
             label = label == null || label.isBlank() ? kind.name() : label;
+            handleRef = handleRef == null
+                    ? new DungeonEditorHandleRef(
+                            DungeonEditorHandleKind.CLUSTER_LABEL,
+                            new DungeonTopologyElementRef(
+                                    DungeonTopologyElementKind.valueOf(topologyRefKind),
+                                    topologyRefId),
+                            ownerId,
+                            clusterId,
+                            0L,
+                            ownerId,
+                            0,
+                            new DungeonCellRef(0, 0, 0),
+                            "")
+                    : handleRef;
         }
     }
 
@@ -752,10 +823,17 @@ public final class DungeonEditorViewModel {
             int currentQ,
             int currentR,
             int pressLevel,
-            int currentLevel
+            int currentLevel,
+            @Nullable DungeonSnapshot baseSnapshot
     ) {
-        static DragSession start(Selection selection, int pressQ, int pressR, int pressLevel) {
-            return new DragSession(selection, pressQ, pressR, pressQ, pressR, pressLevel, pressLevel);
+        static DragSession start(
+                Selection selection,
+                int pressQ,
+                int pressR,
+                int pressLevel,
+                @Nullable DungeonSnapshot baseSnapshot
+        ) {
+            return new DragSession(selection, pressQ, pressR, pressQ, pressR, pressLevel, pressLevel, baseSnapshot);
         }
 
         int deltaQ() {
@@ -766,12 +844,20 @@ public final class DungeonEditorViewModel {
             return currentR - pressR;
         }
 
+        int deltaLevel() {
+            return currentLevel - pressLevel;
+        }
+
+        boolean moved() {
+            return deltaQ() != 0 || deltaR() != 0 || deltaLevel() != 0;
+        }
+
         DragSession withCurrentPointer(int nextQ, int nextR) {
-            return new DragSession(selection, pressQ, pressR, nextQ, nextR, pressLevel, currentLevel);
+            return new DragSession(selection, pressQ, pressR, nextQ, nextR, pressLevel, currentLevel, baseSnapshot);
         }
 
         DragSession withCurrentLevel(int nextLevel) {
-            return new DragSession(selection, pressQ, pressR, currentQ, currentR, pressLevel, nextLevel);
+            return new DragSession(selection, pressQ, pressR, currentQ, currentR, pressLevel, nextLevel, baseSnapshot);
         }
     }
 

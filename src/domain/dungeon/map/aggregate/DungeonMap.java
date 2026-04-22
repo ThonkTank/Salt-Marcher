@@ -5,12 +5,20 @@ import src.domain.dungeon.map.value.ConnectionCatalog;
 import src.domain.dungeon.map.service.DungeonRoomTopologyEditor;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
+import src.domain.dungeon.map.entity.DungeonCorridor;
+import src.domain.dungeon.map.entity.DungeonStair;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
+import src.domain.dungeon.map.value.DungeonCorridorBindings;
+import src.domain.dungeon.map.value.DungeonCorridorDoorBinding;
+import src.domain.dungeon.map.value.DungeonCorridorWaypoint;
+import src.domain.dungeon.map.value.DungeonEditorHandle;
+import src.domain.dungeon.map.value.DungeonEditorHandleType;
 import src.domain.dungeon.map.value.DungeonMapTopology;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonMapMetadata;
 import src.domain.dungeon.map.value.DungeonRoomNarration;
+import src.domain.dungeon.map.value.DungeonStairExit;
 import src.domain.dungeon.map.value.FeatureCatalog;
 import src.domain.dungeon.map.value.RoomCatalog;
 import src.domain.dungeon.map.value.SpaceCatalog;
@@ -148,6 +156,28 @@ public final class DungeonMap {
         return clusterId.isPresent() ? moveCluster(clusterId.getAsLong(), deltaQ, deltaR, deltaLevel) : this;
     }
 
+    public DungeonMap moveEditorHandle(DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+        if (handle == null || (deltaQ == 0 && deltaR == 0 && deltaLevel == 0)) {
+            return this;
+        }
+        if (handle.type() == DungeonEditorHandleType.CLUSTER_LABEL) {
+            long clusterId = handle.clusterId() > 0L
+                    ? handle.clusterId()
+                    : topologyIndex().clusterIdFor(handle.topologyRef()).orElse(0L);
+            return moveCluster(clusterId, deltaQ, deltaR, deltaLevel);
+        }
+        if (handle.type() == DungeonEditorHandleType.DOOR) {
+            return moveDoorBinding(handle, deltaQ, deltaR, deltaLevel);
+        }
+        if (handle.type() == DungeonEditorHandleType.CORRIDOR_WAYPOINT) {
+            return moveCorridorWaypoint(handle, deltaQ, deltaR, deltaLevel);
+        }
+        if (handle.type() == DungeonEditorHandleType.STAIR_ANCHOR) {
+            return moveStairAnchor(handle, deltaQ, deltaR, deltaLevel);
+        }
+        return this;
+    }
+
     public DungeonMapTopology topologyIndex() {
         return topologyIndex;
     }
@@ -267,6 +297,125 @@ public final class DungeonMap {
             result.put(entry.getKey() + deltaLevel, movedBoundaries);
         }
         return Map.copyOf(result);
+    }
+
+    private DungeonMap moveDoorBinding(DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+        List<DungeonCorridor> movedCorridors = new ArrayList<>();
+        boolean changed = false;
+        for (DungeonCorridor corridor : connections.corridors()) {
+            if (corridor.corridorId() != handle.corridorId()) {
+                movedCorridors.add(corridor);
+                continue;
+            }
+            List<DungeonCorridorDoorBinding> bindings = new ArrayList<>();
+            for (int index = 0; index < corridor.bindings().doorBindings().size(); index++) {
+                DungeonCorridorDoorBinding binding = corridor.bindings().doorBindings().get(index);
+                if (index == handle.index() && binding.roomId() == handle.roomId()) {
+                    bindings.add(new DungeonCorridorDoorBinding(
+                            binding.roomId(),
+                            binding.clusterId(),
+                            movedCell(binding.relativeCell(), deltaQ, deltaR, deltaLevel),
+                            binding.direction(),
+                            binding.topologyRef()));
+                    changed = true;
+                } else {
+                    bindings.add(binding);
+                }
+            }
+            movedCorridors.add(new DungeonCorridor(
+                    corridor.corridorId(),
+                    corridor.mapId(),
+                    corridor.level(),
+                    corridor.roomIds(),
+                    new DungeonCorridorBindings(corridor.bindings().waypoints(), bindings)));
+        }
+        return changed ? withConnections(new ConnectionCatalog(movedCorridors, connections.stairs(), connections.transitions())) : this;
+    }
+
+    private DungeonMap moveCorridorWaypoint(DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+        List<DungeonCorridor> movedCorridors = new ArrayList<>();
+        boolean changed = false;
+        for (DungeonCorridor corridor : connections.corridors()) {
+            if (corridor.corridorId() != handle.corridorId()) {
+                movedCorridors.add(corridor);
+                continue;
+            }
+            List<DungeonCorridorWaypoint> waypoints = new ArrayList<>();
+            for (int index = 0; index < corridor.bindings().waypoints().size(); index++) {
+                DungeonCorridorWaypoint waypoint = corridor.bindings().waypoints().get(index);
+                if (index == handle.index()) {
+                    DungeonCell moved = movedCell(waypoint.relativeCell(), deltaQ, deltaR, deltaLevel);
+                    waypoints.add(new DungeonCorridorWaypoint(waypoint.clusterId(), moved, waypoint.level() + deltaLevel));
+                    changed = true;
+                } else {
+                    waypoints.add(waypoint);
+                }
+            }
+            movedCorridors.add(new DungeonCorridor(
+                    corridor.corridorId(),
+                    corridor.mapId(),
+                    corridor.level(),
+                    corridor.roomIds(),
+                    new DungeonCorridorBindings(waypoints, corridor.bindings().doorBindings())));
+        }
+        return changed ? withConnections(new ConnectionCatalog(movedCorridors, connections.stairs(), connections.transitions())) : this;
+    }
+
+    private DungeonMap moveStairAnchor(DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
+        List<DungeonStair> movedStairs = new ArrayList<>();
+        boolean changed = false;
+        for (DungeonStair stair : connections.stairs()) {
+            if (stair.stairId() != handle.ownerId()) {
+                movedStairs.add(stair);
+                continue;
+            }
+            int pathSize = stair.path().size();
+            List<DungeonCell> path = new ArrayList<>(stair.path());
+            List<DungeonStairExit> exits = new ArrayList<>(stair.exits());
+            if (handle.index() < pathSize) {
+                path.set(handle.index(), movedCell(path.get(handle.index()), deltaQ, deltaR, deltaLevel));
+                changed = true;
+            } else {
+                int exitIndex = handle.index() - pathSize;
+                if (exitIndex >= 0 && exitIndex < exits.size()) {
+                    DungeonStairExit exit = exits.get(exitIndex);
+                    exits.set(exitIndex, new DungeonStairExit(
+                            exit.exitId(),
+                            movedCell(exit.position(), deltaQ, deltaR, deltaLevel),
+                            exit.label()));
+                    changed = true;
+                }
+            }
+            movedStairs.add(new DungeonStair(
+                    stair.stairId(),
+                    stair.mapId(),
+                    stair.name(),
+                    stair.shape(),
+                    stair.direction(),
+                    stair.dimension1(),
+                    stair.dimension2(),
+                    path,
+                    exits,
+                    stair.corridorId()));
+        }
+        return changed ? withConnections(new ConnectionCatalog(connections.corridors(), movedStairs, connections.transitions())) : this;
+    }
+
+    private DungeonMap withConnections(ConnectionCatalog nextConnections) {
+        return new DungeonMap(
+                metadata,
+                topology,
+                topologyIndex,
+                spaces,
+                rooms,
+                nextConnections,
+                features,
+                revision + 1L);
+    }
+
+    private static DungeonCell movedCell(DungeonCell cell, int deltaQ, int deltaR, int deltaLevel) {
+        DungeonCell safeCell = cell == null ? new DungeonCell(0, 0, 0) : cell;
+        return new DungeonCell(safeCell.q() + deltaQ, safeCell.r() + deltaR, safeCell.level() + deltaLevel);
     }
 
     public DungeonMap saveRoomNarration(long roomId, DungeonRoomNarration narration) {

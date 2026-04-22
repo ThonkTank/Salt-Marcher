@@ -71,16 +71,16 @@ Current state:
 - Editor operations now tell the aggregate to mutate authored map metadata,
   topology seeds, selected topology placement, and room narration instead of
   rewriting a document carrier in application code.
-- Interactive editor mutations now include selected room-cluster movement and
-  room rectangle paint/delete. Cluster movement resolves the selected
-  `DungeonTopologyRef` through the map-owned topology index, relocates the
-  selected cluster center, shifts room floor anchors, and supports level
-  movement without introducing a public `CLUSTER` topology kind. Room
-  paint/delete rewrites authored cluster cell geometry, preserves stable
-  identities for the primary surviving component, allocates deterministic
-  local IDs for new split components, and rebuilds derived map state from
-  persisted authored truth. Room narration saves update `RoomCatalog` through
-  the aggregate and stay authored room semantics.
+- Interactive editor mutations now include selected editor-handle movement and
+  room rectangle paint/delete. Handle movement resolves cluster labels, doors,
+  corridor waypoints, and stair anchors through the map-owned topology index,
+  then mutates the owning authored structure without adding marker-only
+  ownership to topology elements or introducing a public `CLUSTER` topology
+  kind. Room paint/delete rewrites authored cluster cell geometry, preserves
+  stable identities for the primary surviving component, allocates
+  deterministic local IDs for new split components, and rebuilds derived map
+  state from persisted authored truth. Room narration saves update
+  `RoomCatalog` through the aggregate and stay authored room semantics.
 - The application layer coordinates load, mutate, save, search, and derive
   flows through domain-owned outbound ports.
 - Runtime composition lives in `src/data/dungeon/DungeonServiceContribution.java`;

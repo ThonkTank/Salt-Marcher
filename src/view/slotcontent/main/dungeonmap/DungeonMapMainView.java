@@ -3,6 +3,7 @@ package src.view.slotcontent.main.dungeonmap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
@@ -40,8 +41,9 @@ public class DungeonMapMainView extends BorderPane {
     private double lastDragSceneX;
     private double lastDragSceneY;
     private boolean middleDragActive;
+    private boolean primaryInteractionActive;
     private Runnable viewportChangedHandler = () -> {};
-    private Consumer<DungeonMapPointerEvent> primaryPressedHandler = ignored -> {};
+    private Function<DungeonMapPointerEvent, Boolean> primaryPressedHandler = ignored -> false;
     private Consumer<DungeonMapPointerEvent> primaryDraggedHandler = ignored -> {};
     private Consumer<DungeonMapPointerEvent> primaryReleasedHandler = ignored -> {};
     private Consumer<Integer> levelScrolledHandler = ignored -> {};
@@ -70,8 +72,8 @@ public class DungeonMapMainView extends BorderPane {
         viewportChangedHandler = action == null ? () -> {} : action;
     }
 
-    public final void onPrimaryPressed(Consumer<DungeonMapPointerEvent> action) {
-        primaryPressedHandler = action == null ? ignored -> {} : action;
+    public final void onPrimaryPressed(Function<DungeonMapPointerEvent, Boolean> action) {
+        primaryPressedHandler = action == null ? ignored -> false : action;
     }
 
     public final void onPrimaryDragged(Consumer<DungeonMapPointerEvent> action) {
@@ -136,14 +138,14 @@ public class DungeonMapMainView extends BorderPane {
             lastDragSceneY = event.getSceneY();
             event.consume();
         } else if (event.getButton() == MouseButton.PRIMARY) {
-            primaryPressedHandler.accept(pointerEvent(event));
+            primaryInteractionActive = Boolean.TRUE.equals(primaryPressedHandler.apply(pointerEvent(event, true)));
             event.consume();
         }
     }
 
     private void handleMouseDragged(MouseEvent event) {
-        if (event.isPrimaryButtonDown()) {
-            primaryDraggedHandler.accept(pointerEvent(event));
+        if (primaryInteractionActive) {
+            primaryDraggedHandler.accept(pointerEvent(event, true));
             event.consume();
             return;
         }
@@ -162,7 +164,10 @@ public class DungeonMapMainView extends BorderPane {
             middleDragActive = false;
             event.consume();
         } else if (event.getButton() == MouseButton.PRIMARY) {
-            primaryReleasedHandler.accept(pointerEvent(event));
+            if (primaryInteractionActive) {
+                primaryReleasedHandler.accept(pointerEvent(event, true));
+            }
+            primaryInteractionActive = false;
             event.consume();
         }
     }
@@ -183,7 +188,7 @@ public class DungeonMapMainView extends BorderPane {
         event.consume();
     }
 
-    private DungeonMapPointerEvent pointerEvent(MouseEvent event) {
+    private DungeonMapPointerEvent pointerEvent(MouseEvent event, boolean primaryButtonDown) {
         double worldQ = screenToWorldX(event.getX());
         double worldR = screenToWorldY(event.getY());
         int q = (int) Math.floor(worldQ);
@@ -193,7 +198,7 @@ public class DungeonMapMainView extends BorderPane {
                 q,
                 r,
                 model.projectionLevel(),
-                event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
+                primaryButtonDown,
                 hitTarget(model, q, r, worldQ, worldR, model.projectionLevel()));
     }
 
@@ -207,6 +212,10 @@ public class DungeonMapMainView extends BorderPane {
     ) {
         if (model.viewMode() != DungeonMapDisplayModel.ViewMode.GRID) {
             return DungeonMapHitTarget.empty();
+        }
+        DungeonMapHitTarget markerHit = markerHitTarget(model, worldQ, worldR, level);
+        if (markerHit.kind() != DungeonMapHitKind.EMPTY) {
+            return markerHit;
         }
         DungeonMapHitTarget labelHit = labelHitTarget(model, worldQ, worldR, level);
         if (labelHit.kind() != DungeonMapHitKind.EMPTY) {
@@ -224,6 +233,42 @@ public class DungeonMapMainView extends BorderPane {
                     cell.topologyRef().kind(),
                     cell.topologyRef().id(),
                     cell.label());
+        }
+        return DungeonMapHitTarget.empty();
+    }
+
+    private DungeonMapHitTarget markerHitTarget(
+            DungeonMapDisplayModel model,
+            double worldQ,
+            double worldR,
+            int level
+    ) {
+        double radiusInCells = Math.max(0.28, 11.0 / gridSize());
+        for (int index = model.markers().size() - 1; index >= 0; index--) {
+            DungeonMapDisplayModel.RenderMarker marker = model.markers().get(index);
+            if (marker.z() != level || marker.handleOwnerId() <= 0L) {
+                continue;
+            }
+            double deltaQ = worldQ - marker.q();
+            double deltaR = worldR - marker.r();
+            if (Math.hypot(deltaQ, deltaR) > radiusInCells) {
+                continue;
+            }
+            return new DungeonMapHitTarget(
+                    DungeonMapHitKind.HANDLE,
+                    marker.handleOwnerId(),
+                    marker.handleClusterId(),
+                    marker.handleTopologyRefKind(),
+                    marker.handleTopologyRefId(),
+                    marker.label(),
+                    marker.handleKind(),
+                    marker.handleCorridorId(),
+                    marker.handleRoomId(),
+                    marker.handleIndex(),
+                    marker.handleQ(),
+                    marker.handleR(),
+                    marker.handleLevel(),
+                    marker.handleDirection());
         }
         return DungeonMapHitTarget.empty();
     }
@@ -602,6 +647,8 @@ public class DungeonMapMainView extends BorderPane {
             case DOOR -> labelFill();
             case STAIR -> stairFill();
             case TRANSITION -> transitionFill();
+            case WAYPOINT -> previewFill();
+            case CLUSTER -> labelFill();
         };
     }
 
@@ -610,6 +657,8 @@ public class DungeonMapMainView extends BorderPane {
             case DOOR -> doorStroke();
             case STAIR -> corridorStroke();
             case TRANSITION -> transitionStroke();
+            case WAYPOINT -> previewStroke();
+            case CLUSTER -> labelBorder();
         };
     }
 
@@ -856,6 +905,7 @@ public class DungeonMapMainView extends BorderPane {
 
     public enum DungeonMapHitKind {
         EMPTY,
+        HANDLE,
         LABEL,
         ROOM,
         CORRIDOR,
@@ -869,13 +919,37 @@ public class DungeonMapMainView extends BorderPane {
             long clusterId,
             String topologyRefKind,
             long topologyRefId,
-            String label
+            String label,
+            String handleKind,
+            long handleCorridorId,
+            long handleRoomId,
+            int handleIndex,
+            int handleQ,
+            int handleR,
+            int handleLevel,
+            String handleDirection
     ) {
+
+        public DungeonMapHitTarget(
+                DungeonMapHitKind kind,
+                long ownerId,
+                long clusterId,
+                String topologyRefKind,
+                long topologyRefId,
+                String label
+        ) {
+            this(kind, ownerId, clusterId, topologyRefKind, topologyRefId, label,
+                    "CLUSTER_LABEL", 0L, ownerId, 0, 0, 0, 0, "");
+        }
 
         public DungeonMapHitTarget {
             topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? "EMPTY" : topologyRefKind;
             topologyRefId = Math.max(0L, topologyRefId);
             label = label == null ? "" : label;
+            handleKind = handleKind == null || handleKind.isBlank() ? "CLUSTER_LABEL" : handleKind;
+            handleCorridorId = Math.max(0L, handleCorridorId);
+            handleRoomId = Math.max(0L, handleRoomId);
+            handleDirection = handleDirection == null ? "" : handleDirection;
         }
 
         public static DungeonMapHitTarget empty() {
