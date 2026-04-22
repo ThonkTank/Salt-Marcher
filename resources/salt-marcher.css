@@ -1095,9 +1095,6 @@
 .dungeon-toolbar-menu {
     -fx-min-height: 28;
 }
-.dungeon-tool-menu-button {
-    -fx-min-height: 28;
-}
 .dungeon-stepper-group,
 .dungeon-segment-group {
     -fx-background-color: -sm-bg-elevated;

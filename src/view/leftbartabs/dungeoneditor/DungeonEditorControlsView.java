@@ -9,11 +9,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.RadioMenuItem;
-import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
@@ -66,19 +62,12 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private final ToggleButton gridButton = toolToggle(VIEW_GRID);
     private final ToggleButton graphButton = toolToggle(VIEW_GRAPH);
     private final ToggleButton selectButton = toolToggle(SELECT_TOOL);
-    private final MenuButton toolMenuButton = new MenuButton("Werkzeug: " + SELECT_TOOL);
-    private final RadioMenuItem roomPaintItem = toolMenuItem(ROOM_PAINT_TOOL);
-    private final RadioMenuItem roomDeleteItem = toolMenuItem(ROOM_DELETE_TOOL);
-    private final RadioMenuItem wallCreateItem = toolMenuItem(WALL_CREATE_TOOL);
-    private final RadioMenuItem wallDeleteItem = toolMenuItem(WALL_DELETE_TOOL);
-    private final RadioMenuItem doorCreateItem = toolMenuItem(DOOR_CREATE_TOOL);
-    private final RadioMenuItem doorDeleteItem = toolMenuItem(DOOR_DELETE_TOOL);
-    private final RadioMenuItem corridorCreateItem = toolMenuItem(CORRIDOR_CREATE_TOOL);
-    private final RadioMenuItem corridorDeleteItem = toolMenuItem(CORRIDOR_DELETE_TOOL);
-    private final RadioMenuItem stairCreateItem = toolMenuItem(STAIR_CREATE_TOOL);
-    private final RadioMenuItem stairDeleteItem = toolMenuItem(STAIR_DELETE_TOOL);
-    private final RadioMenuItem transitionCreateItem = toolMenuItem(TRANSITION_CREATE_TOOL);
-    private final RadioMenuItem transitionDeleteItem = toolMenuItem(TRANSITION_DELETE_TOOL);
+    private final Button roomButton = toolButton(ROOM_FAMILY);
+    private final Button wallButton = toolButton(WALL_FAMILY);
+    private final Button doorButton = toolButton(DOOR_FAMILY);
+    private final Button corridorButton = toolButton(CORRIDOR_FAMILY);
+    private final Button stairButton = toolButton(STAIR_FAMILY);
+    private final Button transitionButton = toolButton(TRANSITION_FAMILY);
     private final DungeonLevelOverlayControlsView overlayControls =
             new DungeonLevelOverlayControlsView(this::sectionLabel);
     private final ToggleGroup viewModeGroup = new ToggleGroup();
@@ -91,6 +80,9 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private final Button saveMapButton = new Button("Speichern");
     private HBox deleteConfirmRow;
     private HBox mapEditorActionRow;
+    private final Popup toolPopup = new Popup();
+    private final Button primaryToolOption = toolButton("");
+    private final Button secondaryToolOption = toolButton("");
     private Consumer<String> onMapSelected = ignored -> {};
     private Consumer<String> onCreateMap = ignored -> {};
     private Consumer<MapNameRequest> onRenameMap = ignored -> {};
@@ -112,6 +104,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         configureViewModeControls();
         configureToolControls();
         configureMapEditorPopup();
+        configureToolPopup();
         getChildren().setAll(dungeonRow(), projectionRow(), toolRow());
     }
 
@@ -198,20 +191,12 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     public void showTool(String tool) {
         String selectedTool = normalizeTool(tool);
         selectButton.setSelected(SELECT_TOOL.equals(selectedTool));
-        roomPaintItem.setSelected(ROOM_PAINT_TOOL.equals(selectedTool));
-        roomDeleteItem.setSelected(ROOM_DELETE_TOOL.equals(selectedTool));
-        wallCreateItem.setSelected(WALL_CREATE_TOOL.equals(selectedTool));
-        wallDeleteItem.setSelected(WALL_DELETE_TOOL.equals(selectedTool));
-        doorCreateItem.setSelected(DOOR_CREATE_TOOL.equals(selectedTool));
-        doorDeleteItem.setSelected(DOOR_DELETE_TOOL.equals(selectedTool));
-        corridorCreateItem.setSelected(CORRIDOR_CREATE_TOOL.equals(selectedTool));
-        corridorDeleteItem.setSelected(CORRIDOR_DELETE_TOOL.equals(selectedTool));
-        stairCreateItem.setSelected(STAIR_CREATE_TOOL.equals(selectedTool));
-        stairDeleteItem.setSelected(STAIR_DELETE_TOOL.equals(selectedTool));
-        transitionCreateItem.setSelected(TRANSITION_CREATE_TOOL.equals(selectedTool));
-        transitionDeleteItem.setSelected(TRANSITION_DELETE_TOOL.equals(selectedTool));
-        toolMenuButton.setText("Werkzeug: " + toolSummary(selectedTool));
-        toolMenuButton.setAccessibleText("Aktives Werkzeug: " + selectedTool);
+        markSelected(roomButton, isRoomTool(selectedTool));
+        markSelected(wallButton, isWallTool(selectedTool));
+        markSelected(doorButton, isDoorTool(selectedTool));
+        markSelected(corridorButton, isCorridorTool(selectedTool));
+        markSelected(stairButton, isStairTool(selectedTool));
+        markSelected(transitionButton, isTransitionTool(selectedTool));
     }
 
     public void hideMapEditor() {
@@ -282,30 +267,22 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         selectButton.setToggleGroup(toolGroup);
         selectButton.setSelected(true);
         selectButton.setOnAction(event -> selectTool(SELECT_TOOL));
-        toolMenuButton.getStyleClass().addAll("tool-btn", "dungeon-tool-menu-button");
-        toolMenuButton.setMinWidth(Region.USE_PREF_SIZE);
         describe(selectButton, "Auswahlwerkzeug aktivieren");
-        describe(toolMenuButton, "Editor-Werkzeug aus gruppiertem Menue waehlen");
-        bindToolItem(roomPaintItem, ROOM_PAINT_TOOL);
-        bindToolItem(roomDeleteItem, ROOM_DELETE_TOOL);
-        bindToolItem(wallCreateItem, WALL_CREATE_TOOL);
-        bindToolItem(wallDeleteItem, WALL_DELETE_TOOL);
-        bindToolItem(doorCreateItem, DOOR_CREATE_TOOL);
-        bindToolItem(doorDeleteItem, DOOR_DELETE_TOOL);
-        bindToolItem(corridorCreateItem, CORRIDOR_CREATE_TOOL);
-        bindToolItem(corridorDeleteItem, CORRIDOR_DELETE_TOOL);
-        bindToolItem(stairCreateItem, STAIR_CREATE_TOOL);
-        bindToolItem(stairDeleteItem, STAIR_DELETE_TOOL);
-        bindToolItem(transitionCreateItem, TRANSITION_CREATE_TOOL);
-        bindToolItem(transitionDeleteItem, TRANSITION_DELETE_TOOL);
-        toolMenuButton.getItems().setAll(
-                toolFamilyMenu(ROOM_FAMILY, roomPaintItem, roomDeleteItem),
-                toolFamilyMenu(WALL_FAMILY, wallCreateItem, wallDeleteItem),
-                toolFamilyMenu(DOOR_FAMILY, doorCreateItem, doorDeleteItem),
-                new SeparatorMenuItem(),
-                toolFamilyMenu(CORRIDOR_FAMILY, corridorCreateItem, corridorDeleteItem),
-                toolFamilyMenu(STAIR_FAMILY, stairCreateItem, stairDeleteItem),
-                toolFamilyMenu(TRANSITION_FAMILY, transitionCreateItem, transitionDeleteItem));
+        describe(roomButton, "Raumwerkzeug waehlen");
+        describe(wallButton, "Wandwerkzeug waehlen");
+        describe(doorButton, "Tuerwerkzeug waehlen");
+        describe(corridorButton, "Korridorwerkzeug waehlen");
+        describe(stairButton, "Treppenwerkzeug waehlen");
+        describe(transitionButton, "Uebergangswerkzeug waehlen");
+        roomButton.setOnAction(event -> activateToolFamily(roomButton, ROOM_PAINT_TOOL, ROOM_DELETE_TOOL));
+        wallButton.setOnAction(event -> activateToolFamily(wallButton, WALL_CREATE_TOOL, WALL_DELETE_TOOL));
+        doorButton.setOnAction(event -> activateToolFamily(doorButton, DOOR_CREATE_TOOL, DOOR_DELETE_TOOL));
+        corridorButton.setOnAction(event -> activateToolFamily(corridorButton, CORRIDOR_CREATE_TOOL, CORRIDOR_DELETE_TOOL));
+        stairButton.setOnAction(event -> activateToolFamily(stairButton, STAIR_CREATE_TOOL, STAIR_DELETE_TOOL));
+        transitionButton.setOnAction(event -> activateToolFamily(
+                transitionButton,
+                TRANSITION_CREATE_TOOL,
+                TRANSITION_DELETE_TOOL));
     }
 
     private void configureMapEditorPopup() {
@@ -358,6 +335,20 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         mapNameField.setOnAction(event -> submitMapEditor());
     }
 
+    private void configureToolPopup() {
+        HBox panel = new HBox(8, primaryToolOption, secondaryToolOption);
+        panel.setPadding(new Insets(10));
+        panel.getStyleClass().addAll("dropdown-window", "dropdown-form");
+        toolPopup.getContent().setAll(panel);
+        toolPopup.setAutoHide(true);
+        toolPopup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                toolPopup.hide();
+                event.consume();
+            }
+        });
+    }
+
     private HBox dungeonRow() {
         HBox.setHgrow(mapSelector, Priority.ALWAYS);
         HBox row = compactControlRow(mapSelector, mapActionButton, statusLabel);
@@ -375,7 +366,8 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     }
 
     private HBox toolRow() {
-        HBox row = compactControlRow(selectButton, toolMenuButton);
+        HBox row = compactControlRow(selectButton, roomButton, wallButton, doorButton,
+                corridorButton, stairButton, transitionButton);
         row.getStyleClass().add("dungeon-control-tool-row");
         return row;
     }
@@ -487,21 +479,29 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         deleteConfirmRow.setManaged(visible);
     }
 
+    private void activateToolFamily(Button anchor, String primaryTool, String secondaryTool) {
+        selectTool(primaryTool);
+        primaryToolOption.setText(primaryTool);
+        secondaryToolOption.setText(secondaryTool);
+        primaryToolOption.setOnAction(event -> {
+            selectTool(primaryTool);
+            toolPopup.hide();
+        });
+        secondaryToolOption.setOnAction(event -> {
+            selectTool(secondaryTool);
+            toolPopup.hide();
+        });
+        var bounds = anchor.localToScreen(anchor.getBoundsInLocal());
+        if (bounds != null) {
+            toolPopup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 2.0);
+            primaryToolOption.requestFocus();
+        }
+    }
+
     private void selectTool(String tool) {
         String selectedTool = normalizeTool(tool);
         showTool(selectedTool);
         onToolChanged.accept(selectedTool);
-    }
-
-    private void bindToolItem(RadioMenuItem item, String tool) {
-        item.setToggleGroup(toolGroup);
-        item.setOnAction(event -> selectTool(tool));
-    }
-
-    private static Menu toolFamilyMenu(String label, RadioMenuItem primary, RadioMenuItem secondary) {
-        Menu menu = new Menu(label);
-        menu.getItems().setAll(primary, secondary);
-        return menu;
     }
 
     private static ToggleButton toolToggle(String text) {
@@ -511,8 +511,11 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         return button;
     }
 
-    private static RadioMenuItem toolMenuItem(String text) {
-        return new RadioMenuItem(text);
+    private static Button toolButton(String text) {
+        Button button = new Button(text);
+        button.getStyleClass().add("tool-btn");
+        button.setMinWidth(Region.USE_PREF_SIZE);
+        return button;
     }
 
     private static String normalizeTool(String tool) {
@@ -536,8 +539,38 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
                 || TRANSITION_DELETE_TOOL.equals(tool);
     }
 
-    private static String toolSummary(String tool) {
-        return SELECT_TOOL.equals(tool) ? SELECT_TOOL : tool;
+    private static void markSelected(Button button, boolean selected) {
+        if (selected) {
+            if (!button.getStyleClass().contains("selected")) {
+                button.getStyleClass().add("selected");
+            }
+        } else {
+            button.getStyleClass().remove("selected");
+        }
+    }
+
+    private static boolean isRoomTool(String tool) {
+        return ROOM_PAINT_TOOL.equals(tool) || ROOM_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isWallTool(String tool) {
+        return WALL_CREATE_TOOL.equals(tool) || WALL_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isDoorTool(String tool) {
+        return DOOR_CREATE_TOOL.equals(tool) || DOOR_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isCorridorTool(String tool) {
+        return CORRIDOR_CREATE_TOOL.equals(tool) || CORRIDOR_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isStairTool(String tool) {
+        return STAIR_CREATE_TOOL.equals(tool) || STAIR_DELETE_TOOL.equals(tool);
+    }
+
+    private static boolean isTransitionTool(String tool) {
+        return TRANSITION_CREATE_TOOL.equals(tool) || TRANSITION_DELETE_TOOL.equals(tool);
     }
 
     public record MapItem(

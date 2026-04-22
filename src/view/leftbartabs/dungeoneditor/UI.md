@@ -32,11 +32,14 @@ editor handles, and room narration editing.
   geometry is painted. Successful map loading is represented by the selected
   dropdown value rather than a duplicate status message.
 - Tool selection updates highlighted controls and presentation state. The
-  Auswahl tool selects map-owned topology refs for rooms, labels, stairs, and
-  transitions. Selected room and cluster labels expose editable room
-  narration in the state pane. `Raum malen` and `Raum loeschen` commit
-  active-level rectangle mutations. The remaining non-room editor tool
-  families are still pending authored operations.
+  Auswahl tool stays directly visible. Room, wall, door, corridor, stair, and
+  transition families stay directly visible as tool buttons; clicking a family
+  selects its primary tool and opens the family's two-option tool popup for the
+  primary and delete variants. Auswahl selects map-owned topology refs for
+  rooms, labels, stairs, and transitions. Selected room and cluster labels
+  expose editable room narration in the state pane. `Raum malen` and `Raum
+  loeschen` commit active-level rectangle mutations. The remaining non-room
+  editor tool families are still pending authored operations.
 - In grid mode, clicking a room, room label, stair, transition, door handle,
   corridor waypoint, stair anchor, or cluster label selects the owning topology
   ref. Dragging a selectable editor handle keeps the authored map snapshot
