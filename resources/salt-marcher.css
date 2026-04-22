@@ -1008,6 +1008,10 @@
     -fx-spacing: 6;
     -fx-alignment: center-left;
 }
+.dungeon-control-group {
+    -fx-spacing: 0;
+    -fx-alignment: center-left;
+}
 .dungeon-control-map-row,
 .dungeon-control-projection-row {
     -fx-min-height: 30;
@@ -1087,6 +1091,32 @@
 .toolbar-action-button {
     -fx-min-height: 28;
     -fx-padding: 4 8 4 8;
+}
+.dungeon-toolbar-menu {
+    -fx-min-height: 28;
+}
+.dungeon-tool-menu-button {
+    -fx-min-height: 28;
+}
+.dungeon-stepper-group,
+.dungeon-segment-group {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 4;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 4;
+}
+.dungeon-stepper-group .label {
+    -fx-padding: 0 8 0 8;
+    -fx-min-height: 28;
+    -fx-alignment: center;
+}
+.dungeon-stepper-group .toolbar-action-button {
+    -fx-min-width: 28;
+    -fx-padding: 4 8 4 8;
+}
+.dungeon-segment-group .tool-btn {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
 }
 .tool-btn {
     -fx-background-color: -sm-bg-elevated;

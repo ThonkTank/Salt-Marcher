@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-22
 Source of Truth: Dungeon travel left-bar tab UI structure and character-owned
 runtime travel state.
 
@@ -15,7 +15,7 @@ through currently loaded traversal and transition actions.
 ## Visible Structure
 
 - Controls are compressed into two rows: map name plus refresh/reset actions,
-  then live zoom, level buttons, and full level-overlay settings.
+  then live zoom, a compact level stepper, and full level-overlay settings.
 - Main content is the shared `DungeonMapMainView` canvas surface in runtime
   mode.
 - State content shows the current party travel location, tile, heading,

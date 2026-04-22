@@ -3,12 +3,27 @@ package src.domain.dungeon.application;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonAggregate;
 import src.domain.dungeon.map.entity.DungeonPrimitive;
+import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
+import src.domain.dungeon.map.value.DungeonAreaFacts;
+import src.domain.dungeon.map.value.DungeonAreaType;
+import src.domain.dungeon.map.value.DungeonBoundaryFacts;
+import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonDerivedState;
+import src.domain.dungeon.map.value.DungeonEdgeDirection;
+import src.domain.dungeon.map.value.DungeonFeatureFacts;
+import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.map.value.DungeonRoomExitDescription;
+import src.domain.dungeon.map.value.DungeonTopologyRef;
+import src.domain.dungeon.map.value.DungeonTraversalEndpoint;
+import src.domain.dungeon.map.value.DungeonTraversalLink;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Loads the current committed dungeon snapshot.
@@ -25,10 +40,43 @@ public final class LoadDungeonSnapshotUseCase {
     public record InspectorSnapshotData(
             String title,
             String description,
-            List<String> facts
+            List<String> facts,
+            List<RoomNarrationData> roomNarrations
     ) {
+        public InspectorSnapshotData(String title, String description, List<String> facts) {
+            this(title, description, facts, List.of());
+        }
+
         public InspectorSnapshotData {
             facts = facts == null ? List.of() : List.copyOf(facts);
+            roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
+        }
+    }
+
+    public record RoomNarrationData(
+            long roomId,
+            String roomName,
+            String visualDescription,
+            List<RoomExitNarrationData> exits
+    ) {
+        public RoomNarrationData {
+            roomName = roomName == null || roomName.isBlank() ? "Raum " + roomId : roomName.trim();
+            visualDescription = visualDescription == null ? "" : visualDescription;
+            exits = exits == null ? List.of() : List.copyOf(exits);
+        }
+    }
+
+    public record RoomExitNarrationData(
+            String label,
+            DungeonCell cell,
+            DungeonEdgeDirection direction,
+            String description
+    ) {
+        public RoomExitNarrationData {
+            label = label == null || label.isBlank() ? "Ausgang" : label.trim();
+            cell = cell == null ? new DungeonCell(0, 0, 0) : cell;
+            direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+            description = description == null ? "" : description;
         }
     }
 
@@ -54,30 +102,177 @@ public final class LoadDungeonSnapshotUseCase {
                 dungeonMap.revision());
     }
 
-    public InspectorSnapshotData describeSelection(String ownerKind, long ownerId) {
-        DungeonDerivedState derived = derive.execute(loadCurrentMap());
+    public InspectorSnapshotData describeSelection(
+            DungeonMapIdentity mapId,
+            DungeonTopologyRef topologyRef,
+            long clusterId,
+            boolean clusterSelection
+    ) {
+        DungeonMap dungeonMap = loadMap(mapId);
+        DungeonDerivedState derived = derive.execute(dungeonMap);
+        DungeonTopologyRef safeRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
+        List<RoomNarrationData> narrations = roomNarrations(dungeonMap, derived, safeRef, clusterId, clusterSelection);
+        InspectorSnapshotData selectionFacts = selectionFacts(derived, safeRef);
+        if (!narrations.isEmpty() && selectionFacts.title().equals("Dungeon")) {
+            return new InspectorSnapshotData(
+                    narrations.size() == 1 ? narrations.getFirst().roomName() : "Raumgruppe",
+                    narrations.size() == 1 ? "Raumbeschreibung" : "Raumbeschreibungen im ausgewaehlten Cluster",
+                    selectionFacts.facts(),
+                    narrations);
+        }
+        return new InspectorSnapshotData(
+                selectionFacts.title(),
+                selectionFacts.description(),
+                selectionFacts.facts(),
+                narrations);
+    }
+
+    private InspectorSnapshotData selectionFacts(DungeonDerivedState derived, DungeonTopologyRef topologyRef) {
+        if (topologyRef == null || !topologyRef.present()) {
+            return new InspectorSnapshotData("Dungeon", "No selection details available.", List.of("selection: none"));
+        }
+        for (DungeonAreaFacts area : derived.map().areas()) {
+            if (topologyRef.equals(area.topologyRef())) {
+                return new InspectorSnapshotData(
+                        area.label(),
+                        "Authoriertes Dungeon-Areal.",
+                        List.of(
+                                "ref: " + topologyRef.kind() + " " + topologyRef.id(),
+                                "kind: " + area.kind(),
+                                "cells: " + area.cells().size()));
+            }
+        }
+        for (DungeonBoundaryFacts boundary : derived.map().boundaries()) {
+            if (topologyRef.equals(boundary.topologyRef())) {
+                return new InspectorSnapshotData(
+                        boundary.label(),
+                        "Authorisierte Dungeon-Grenze.",
+                        List.of(
+                                "ref: " + topologyRef.kind() + " " + topologyRef.id(),
+                                "kind: " + boundary.kind()));
+            }
+        }
+        for (DungeonFeatureFacts feature : derived.map().features()) {
+            if (topologyRef.equals(feature.topologyRef())) {
+                List<String> facts = new ArrayList<>();
+                facts.add("ref: " + topologyRef.kind() + " " + topologyRef.id());
+                facts.add("kind: " + feature.kind());
+                if (!feature.destinationLabel().isBlank()) {
+                    facts.add("target: " + feature.destinationLabel());
+                }
+                return new InspectorSnapshotData(feature.label(), feature.description(), facts);
+            }
+        }
         for (DungeonAggregate aggregate : derived.aggregates()) {
-            if (aggregate.id() == ownerId && ownerKind != null && ownerKind.equalsIgnoreCase(aggregate.kind().name())) {
+            if (aggregate.id() == topologyRef.id()
+                    && topologyRef.kind().name().equalsIgnoreCase(aggregate.kind().name())) {
                 return new InspectorSnapshotData(
                         aggregate.label(),
                         "Aggregate owner in committed dungeon truth.",
                         List.of(
                                 "id: " + aggregate.id(),
-                                "kind: " + ownerKind,
+                                "kind: " + topologyRef.kind(),
                                 "label: " + aggregate.label()
                         )
                 );
             }
         }
         for (DungeonPrimitive primitive : derived.primitives()) {
-            if (primitive.id() == ownerId) {
+            if (primitive.id() == topologyRef.id()) {
                 List<String> facts = new ArrayList<>();
                 facts.add("id: " + primitive.id());
-                facts.add("kind: " + ownerKind);
-                return new InspectorSnapshotData("Primitive " + ownerId, "Primitive boundary object.", facts);
+                facts.add("kind: " + topologyRef.kind());
+                return new InspectorSnapshotData("Primitive " + topologyRef.id(), "Primitive boundary object.", facts);
             }
         }
         return new InspectorSnapshotData("Dungeon", "No selection details available.", List.of("selection: none"));
+    }
+
+    private List<RoomNarrationData> roomNarrations(
+            DungeonMap dungeonMap,
+            DungeonDerivedState derived,
+            DungeonTopologyRef topologyRef,
+            long clusterId,
+            boolean clusterSelection
+    ) {
+        List<DungeonRoom> selectedRooms = selectedRooms(dungeonMap, topologyRef, clusterId, clusterSelection);
+        if (selectedRooms.isEmpty()) {
+            return List.of();
+        }
+        return selectedRooms.stream()
+                .sorted(Comparator
+                        .comparing(DungeonRoom::name, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparingLong(DungeonRoom::roomId))
+                .map(room -> roomNarration(derived, room))
+                .toList();
+    }
+
+    private static List<DungeonRoom> selectedRooms(
+            DungeonMap dungeonMap,
+            DungeonTopologyRef topologyRef,
+            long clusterId,
+            boolean clusterSelection
+    ) {
+        if (clusterSelection && clusterId > 0L) {
+            return dungeonMap.rooms().rooms().stream()
+                    .filter(room -> room.clusterId() == clusterId)
+                    .toList();
+        }
+        if (topologyRef == null || topologyRef.kind() != src.domain.dungeon.map.value.DungeonTopologyElementKind.ROOM) {
+            return List.of();
+        }
+        return dungeonMap.rooms().findRoom(topologyRef.id()).stream().toList();
+    }
+
+    private RoomNarrationData roomNarration(DungeonDerivedState derived, DungeonRoom room) {
+        Set<DungeonCell> roomCells = areaForRoom(derived, room.roomId())
+                .map(area -> Set.copyOf(area.cells()))
+                .orElseGet(Set::of);
+        return new RoomNarrationData(
+                room.roomId(),
+                room.name(),
+                room.narration().visualDescription(),
+                derived.traversalLinks().stream()
+                        .filter(link -> link.touches(roomCells))
+                        .flatMap(link -> exitNarration(room, link, roomCells).stream())
+                        .sorted(Comparator
+                                .comparing(RoomExitNarrationData::label, String.CASE_INSENSITIVE_ORDER)
+                                .thenComparing(exit -> exit.direction().name()))
+                        .toList());
+    }
+
+    private static Optional<RoomExitNarrationData> exitNarration(
+            DungeonRoom room,
+            DungeonTraversalLink link,
+            Set<DungeonCell> roomCells
+    ) {
+        DungeonTraversalEndpoint endpoint = link.endpointFrom(roomCells);
+        DungeonEdgeDirection direction = endpoint == null ? null : link.directionFrom(endpoint.tile());
+        if (endpoint == null || direction == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new RoomExitNarrationData(
+                link.source().label(),
+                endpoint.tile(),
+                direction,
+                room.narration().exitDescriptions().stream()
+                        .filter(exit -> exit.roomCell().equals(endpoint.tile()) && exit.direction() == direction)
+                        .map(DungeonRoomExitDescription::description)
+                        .findFirst()
+                        .orElse("")));
+    }
+
+    private static Optional<DungeonAreaFacts> areaForRoom(DungeonDerivedState derived, long roomId) {
+        return derived.map().areas().stream()
+                .filter(area -> area.kind() == DungeonAreaType.ROOM && area.id() == roomId)
+                .findFirst();
+    }
+
+    private DungeonMap loadMap(DungeonMapIdentity mapId) {
+        if (mapId != null) {
+            return repository.findById(mapId).orElseGet(this::loadCurrentMap);
+        }
+        return loadCurrentMap();
     }
 
     private DungeonMap loadCurrentMap() {

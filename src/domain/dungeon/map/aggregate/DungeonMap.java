@@ -6,9 +6,11 @@ import src.domain.dungeon.map.service.DungeonRoomTopologyEditor;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
 import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonMapTopology;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonMapMetadata;
+import src.domain.dungeon.map.value.DungeonRoomNarration;
 import src.domain.dungeon.map.value.FeatureCatalog;
 import src.domain.dungeon.map.value.RoomCatalog;
 import src.domain.dungeon.map.value.SpaceCatalog;
@@ -135,23 +137,27 @@ public final class DungeonMap {
     }
 
     public DungeonMap moveTopologyElement(DungeonTopologyRef ref, int deltaQ, int deltaR) {
-        if (ref == null || !ref.present() || (deltaQ == 0 && deltaR == 0)) {
+        return moveTopologyElement(ref, deltaQ, deltaR, 0);
+    }
+
+    public DungeonMap moveTopologyElement(DungeonTopologyRef ref, int deltaQ, int deltaR, int deltaLevel) {
+        if (ref == null || !ref.present() || (deltaQ == 0 && deltaR == 0 && deltaLevel == 0)) {
             return this;
         }
         OptionalLong clusterId = topologyIndex().clusterIdFor(ref);
-        return clusterId.isPresent() ? moveCluster(clusterId.getAsLong(), deltaQ, deltaR) : this;
+        return clusterId.isPresent() ? moveCluster(clusterId.getAsLong(), deltaQ, deltaR, deltaLevel) : this;
     }
 
     public DungeonMapTopology topologyIndex() {
         return topologyIndex;
     }
 
-    private DungeonMap moveCluster(long clusterId, int deltaQ, int deltaR) {
-        if (clusterId <= 0L || (deltaQ == 0 && deltaR == 0)) {
+    private DungeonMap moveCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
+        if (clusterId <= 0L || (deltaQ == 0 && deltaR == 0 && deltaLevel == 0)) {
             return this;
         }
-        SpatialTopology nextTopology = moveTopologyCluster(clusterId, deltaQ, deltaR);
-        RoomCatalog nextRooms = moveRoomsForCluster(clusterId, deltaQ, deltaR);
+        SpatialTopology nextTopology = moveTopologyCluster(clusterId, deltaQ, deltaR, deltaLevel);
+        RoomCatalog nextRooms = moveRoomsForCluster(clusterId, deltaQ, deltaR, deltaLevel);
         if (nextTopology.equals(topology) && nextRooms.equals(rooms)) {
             return this;
         }
@@ -166,7 +172,7 @@ public final class DungeonMap {
                 revision + 1L);
     }
 
-    private SpatialTopology moveTopologyCluster(long clusterId, int deltaQ, int deltaR) {
+    private SpatialTopology moveTopologyCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
         List<DungeonRoomCluster> movedClusters = new ArrayList<>();
         boolean changed = false;
         for (DungeonRoomCluster cluster : topology.roomClusters()) {
@@ -177,9 +183,9 @@ public final class DungeonMap {
                         new DungeonCell(
                                 cluster.center().q() + deltaQ,
                                 cluster.center().r() + deltaR,
-                                cluster.center().level()),
-                        cluster.relativeVerticesByLevel(),
-                        cluster.boundariesByLevel()));
+                                cluster.center().level() + deltaLevel),
+                        movedCellsByLevel(cluster.relativeVerticesByLevel(), deltaLevel),
+                        movedBoundariesByLevel(cluster.boundariesByLevel(), deltaLevel)));
                 changed = true;
             } else {
                 movedClusters.add(cluster);
@@ -188,12 +194,12 @@ public final class DungeonMap {
         return changed ? topology.withRoomClusters(movedClusters) : topology;
     }
 
-    private RoomCatalog moveRoomsForCluster(long clusterId, int deltaQ, int deltaR) {
+    private RoomCatalog moveRoomsForCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
         List<DungeonRoom> movedRooms = new ArrayList<>();
         boolean changed = false;
         for (DungeonRoom room : rooms.rooms()) {
             if (room.clusterId() == clusterId) {
-                movedRooms.add(movedRoom(room, deltaQ, deltaR));
+                movedRooms.add(movedRoom(room, deltaQ, deltaR, deltaLevel));
                 changed = true;
             } else {
                 movedRooms.add(room);
@@ -202,11 +208,14 @@ public final class DungeonMap {
         return changed ? new RoomCatalog(movedRooms) : rooms;
     }
 
-    private static DungeonRoom movedRoom(DungeonRoom room, int deltaQ, int deltaR) {
+    private static DungeonRoom movedRoom(DungeonRoom room, int deltaQ, int deltaR, int deltaLevel) {
         Map<Integer, DungeonCell> movedAnchors = new LinkedHashMap<>();
         for (Map.Entry<Integer, DungeonCell> entry : room.floorAnchors().entrySet()) {
             DungeonCell anchor = entry.getValue();
-            movedAnchors.put(entry.getKey(), new DungeonCell(anchor.q() + deltaQ, anchor.r() + deltaR, anchor.level()));
+            int nextLevel = entry.getKey() + deltaLevel;
+            movedAnchors.put(
+                    nextLevel,
+                    new DungeonCell(anchor.q() + deltaQ, anchor.r() + deltaR, anchor.level() + deltaLevel));
         }
         return new DungeonRoom(
                 room.roomId(),
@@ -215,6 +224,76 @@ public final class DungeonMap {
                 room.name(),
                 movedAnchors,
                 room.narration());
+    }
+
+    private static Map<Integer, List<DungeonCell>> movedCellsByLevel(
+            Map<Integer, List<DungeonCell>> cellsByLevel,
+            int deltaLevel
+    ) {
+        if (deltaLevel == 0 || cellsByLevel == null || cellsByLevel.isEmpty()) {
+            return cellsByLevel;
+        }
+        Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<DungeonCell>> entry : cellsByLevel.entrySet()) {
+            List<DungeonCell> movedCells = entry.getValue().stream()
+                    .map(cell -> new DungeonCell(cell.q(), cell.r(), cell.level() + deltaLevel))
+                    .toList();
+            result.put(entry.getKey() + deltaLevel, movedCells);
+        }
+        return Map.copyOf(result);
+    }
+
+    private static Map<Integer, List<DungeonClusterBoundary>> movedBoundariesByLevel(
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
+            int deltaLevel
+    ) {
+        if (deltaLevel == 0 || boundariesByLevel == null || boundariesByLevel.isEmpty()) {
+            return boundariesByLevel;
+        }
+        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
+            List<DungeonClusterBoundary> movedBoundaries = entry.getValue().stream()
+                    .map(boundary -> new DungeonClusterBoundary(
+                            boundary.clusterId(),
+                            boundary.level() + deltaLevel,
+                            new DungeonCell(
+                                    boundary.relativeCell().q(),
+                                    boundary.relativeCell().r(),
+                                    boundary.relativeCell().level() + deltaLevel),
+                            boundary.direction(),
+                            boundary.kind(),
+                            boundary.topologyRef()))
+                    .toList();
+            result.put(entry.getKey() + deltaLevel, movedBoundaries);
+        }
+        return Map.copyOf(result);
+    }
+
+    public DungeonMap saveRoomNarration(long roomId, DungeonRoomNarration narration) {
+        if (roomId <= 0L || narration == null) {
+            return this;
+        }
+        List<DungeonRoom> nextRooms = new ArrayList<>();
+        boolean changed = false;
+        for (DungeonRoom room : rooms.rooms()) {
+            if (room.roomId() == roomId) {
+                nextRooms.add(room.withNarration(narration));
+                changed = true;
+            } else {
+                nextRooms.add(room);
+            }
+        }
+        return changed
+                ? new DungeonMap(
+                        metadata,
+                        topology,
+                        topologyIndex,
+                        spaces,
+                        new RoomCatalog(nextRooms),
+                        connections,
+                        features,
+                        revision + 1L)
+                : this;
     }
 
     public DungeonMap resetDemoLayout() {

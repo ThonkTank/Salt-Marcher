@@ -66,6 +66,16 @@ public final class DungeonRoom {
         return narration;
     }
 
+    public DungeonRoom withNarration(DungeonRoomNarration nextNarration) {
+        return new DungeonRoom(
+                roomId,
+                mapId,
+                clusterId,
+                name,
+                floorAnchors,
+                nextNarration);
+    }
+
     private static Map<Integer, DungeonCell> copyFloorAnchors(Map<Integer, DungeonCell> source) {
         if (source == null || source.isEmpty()) {
             return Map.of();

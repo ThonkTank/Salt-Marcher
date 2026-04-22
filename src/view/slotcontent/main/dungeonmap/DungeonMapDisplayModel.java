@@ -210,6 +210,7 @@ public record DungeonMapDisplayModel(
                         areaCells.getFirst().z(),
                         area.id(),
                         area.clusterId(),
+                        topologyRef(area.topologyRef()),
                         selected));
                 graphNodes.add(new GraphNode(area.id(), area.clusterId(), area.label(), center.x(), center.y(), selected));
             }
@@ -228,12 +229,12 @@ public record DungeonMapDisplayModel(
         }
         for (DungeonFeatureSnapshot feature : map.features()) {
             List<RenderCell> featureCells = feature.cells().stream()
-                    .map(cell -> renderFeatureCell(feature, cell, selectedTool))
+                    .map(cell -> renderFeatureCell(feature, cell, selection))
                     .toList();
             renderedCells.addAll(featureCells);
             if (!featureCells.isEmpty()) {
                 CellCenter center = centerOf(featureCells);
-                boolean selected = selectedFeature(feature, selectedTool);
+                boolean selected = selectedFeature(feature, selection);
                 renderedLabels.add(new RenderLabel(
                         feature.label(),
                         center.x(),
@@ -241,6 +242,7 @@ public record DungeonMapDisplayModel(
                         featureCells.getFirst().z(),
                         feature.id(),
                         0L,
+                        topologyRef(feature.topologyRef()),
                         selected));
                 renderedMarkers.add(markerForFeature(feature, center, featureCells.getFirst().z(), selected));
             }
@@ -290,11 +292,23 @@ public record DungeonMapDisplayModel(
             int deltaQ,
             int deltaR
     ) {
+        return renderCell(area, cell, selected, preview, deltaQ, deltaR, 0);
+    }
+
+    private static RenderCell renderCell(
+            DungeonAreaSnapshot area,
+            DungeonCellRef cell,
+            boolean selected,
+            boolean preview,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
         CellKind kind = area.kind() == DungeonAreaKind.CORRIDOR ? CellKind.CORRIDOR : CellKind.ROOM;
         return new RenderCell(
                 cell.q() + deltaQ,
                 cell.r() + deltaR,
-                cell.level(),
+                cell.level() + deltaLevel,
                 area.label(),
                 kind,
                 area.id(),
@@ -306,7 +320,11 @@ public record DungeonMapDisplayModel(
                 false);
     }
 
-    private static RenderCell renderFeatureCell(DungeonFeatureSnapshot feature, DungeonCellRef cell, String selectedTool) {
+    private static RenderCell renderFeatureCell(
+            DungeonFeatureSnapshot feature,
+            DungeonCellRef cell,
+            @Nullable Selection selection
+    ) {
         CellKind kind = feature.kind() == DungeonFeatureKind.TRANSITION ? CellKind.TRANSITION : CellKind.STAIR;
         return new RenderCell(
                 cell.q(),
@@ -317,7 +335,7 @@ public record DungeonMapDisplayModel(
                 feature.id(),
                 0L,
                 topologyRef(feature.topologyRef()),
-                selectedFeature(feature, selectedTool),
+                selectedFeature(feature, selection),
                 false,
                 false,
                 false);
@@ -335,7 +353,14 @@ public record DungeonMapDisplayModel(
                 continue;
             }
             renderedCells.addAll(area.cells().stream()
-                    .map(cell -> renderCell(area, cell, true, true, dragPreview.deltaQ(), dragPreview.deltaR()))
+                    .map(cell -> renderCell(
+                            area,
+                            cell,
+                            true,
+                            true,
+                            dragPreview.deltaQ(),
+                            dragPreview.deltaR(),
+                            dragPreview.deltaLevel()))
                     .toList());
         }
     }
@@ -462,7 +487,7 @@ public record DungeonMapDisplayModel(
         }
         double centerX = startQ + width / 2.0;
         double centerY = startR + height / 2.0;
-        labels.add(new RenderLabel(label, centerX, centerY, z, id, id, selected));
+        labels.add(new RenderLabel(label, centerX, centerY, z, id, id, new TopologyRef("ROOM", id), selected));
         graphNodes.add(new GraphNode(id, id, label, centerX, centerY, selected));
     }
 
@@ -502,18 +527,17 @@ public record DungeonMapDisplayModel(
         if (area == null || selection == null) {
             return false;
         }
-        return area.kind() == DungeonAreaKind.ROOM
-                && (area.id() == selection.areaId() || area.clusterId() == selection.clusterId());
+        if (selection.clusterSelection()) {
+            return area.kind() == DungeonAreaKind.ROOM && area.clusterId() == selection.clusterId();
+        }
+        return topologyRef(area.topologyRef()).equals(selection.topologyRef()) || area.id() == selection.areaId();
     }
 
-    private static boolean selectedFeature(DungeonFeatureSnapshot feature, String selectedTool) {
-        if (feature == null || selectedTool == null) {
+    private static boolean selectedFeature(DungeonFeatureSnapshot feature, @Nullable Selection selection) {
+        if (feature == null || selection == null) {
             return false;
         }
-        if (feature.kind() == DungeonFeatureKind.TRANSITION) {
-            return selectedTool.contains("bergang");
-        }
-        return selectedTool.contains("Treppe");
+        return topologyRef(feature.topologyRef()).equals(selection.topologyRef());
     }
 
     private static CellCenter centerOf(List<RenderCell> cells) {
@@ -699,11 +723,13 @@ public record DungeonMapDisplayModel(
             int z,
             long ownerId,
             long clusterId,
+            TopologyRef topologyRef,
             boolean selected
     ) {
 
         public RenderLabel {
             label = label == null ? "" : label;
+            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
         }
     }
 
@@ -732,10 +758,20 @@ public record DungeonMapDisplayModel(
         }
     }
 
-    public record Selection(long areaId, long clusterId, String label, TopologyRef topologyRef) {
+    public record Selection(
+            long areaId,
+            long clusterId,
+            String label,
+            TopologyRef topologyRef,
+            boolean clusterSelection
+    ) {
 
         public Selection(long areaId, long clusterId, String label) {
-            this(areaId, clusterId, label, new TopologyRef("ROOM", areaId));
+            this(areaId, clusterId, label, new TopologyRef("ROOM", areaId), false);
+        }
+
+        public Selection(long areaId, long clusterId, String label, TopologyRef topologyRef) {
+            this(areaId, clusterId, label, topologyRef, false);
         }
 
         public Selection {
@@ -758,14 +794,18 @@ public record DungeonMapDisplayModel(
         }
     }
 
-    public record DragPreview(long clusterId, int deltaQ, int deltaR) {
+    public record DragPreview(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
+
+        public DragPreview(long clusterId, int deltaQ, int deltaR) {
+            this(clusterId, deltaQ, deltaR, 0);
+        }
 
         public DragPreview {
             clusterId = Math.max(0L, clusterId);
         }
 
         public boolean active() {
-            return clusterId > 0L && (deltaQ != 0 || deltaR != 0);
+            return clusterId > 0L && (deltaQ != 0 || deltaR != 0 || deltaLevel != 0);
         }
     }
 

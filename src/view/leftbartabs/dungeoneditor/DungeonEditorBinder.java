@@ -7,6 +7,8 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
+import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapMainView;
@@ -31,7 +33,12 @@ final class DungeonEditorBinder {
         main.onPrimaryPressed(event -> viewModel.primaryPressed(toPointerInput(event)));
         main.onPrimaryDragged(event -> viewModel.primaryDragged(toPointerInput(event)));
         main.onPrimaryReleased(event -> viewModel.primaryReleased(toPointerInput(event)));
+        main.onLevelScrolled(viewModel::levelScrolled);
         state.stateTextProperty().bind(viewModel.stateProperty());
+        state.setOnSaveRoomNarration(edit -> viewModel.saveRoomNarration(
+                edit.roomId(),
+                edit.visualDescription(),
+                edit.exits().stream().map(DungeonEditorBinder::toPublishedExit).toList()));
         controls.setOnMapSelected(viewModel::selectMap);
         controls.setOnCreateMap(viewModel::createMap);
         controls.setOnRenameMap(request -> viewModel.renameMap(request.key(), request.mapName()));
@@ -46,6 +53,7 @@ final class DungeonEditorBinder {
         controls.levelOverlayControls().setOnSelectedLevelsChanged(viewModel::selectOverlayLevels);
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
         viewModel.selectionProperty().addListener((ignored, before, after) -> mapViewModel.showSelection(after));
+        viewModel.inspectorProperty().addListener((ignored, before, after) -> syncStateView(viewModel, state));
         viewModel.dragPreviewProperty().addListener((ignored, before, after) -> mapViewModel.showDragPreview(after));
         viewModel.paintPreviewProperty().addListener((ignored, before, after) -> mapViewModel.showPaintPreview(after));
         viewModel.mapsProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
@@ -80,7 +88,10 @@ final class DungeonEditorBinder {
             controls.showOverlaySettings(toControlsOverlaySettings(after), viewModel.busyProperty().get());
         });
         viewModel.statusProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
+        viewModel.statusProperty().addListener((ignored, before, after) -> syncStateView(viewModel, state));
+        viewModel.busyProperty().addListener((ignored, before, after) -> syncStateView(viewModel, state));
         syncMapControls(viewModel, controls);
+        syncStateView(viewModel, state);
         controls.showViewMode(toControlsViewMode(viewModel.viewModeProperty().get()));
         controls.showTool(viewModel.selectedToolProperty().get());
         controls.showLevels(
@@ -110,6 +121,48 @@ final class DungeonEditorBinder {
                 busy,
                 hasMap);
         controls.showOverlaySettings(toControlsOverlaySettings(viewModel.overlaySettingsProperty().get()), busy);
+    }
+
+    private static void syncStateView(DungeonEditorViewModel viewModel, DungeonEditorStateView state) {
+        DungeonInspectorSnapshot inspector = viewModel.inspectorProperty().get();
+        state.showNarrationCards(
+                inspector == null
+                        ? java.util.List.of()
+                        : inspector.roomNarrations().stream().map(DungeonEditorBinder::toStateCard).toList(),
+                viewModel.busyProperty().get(),
+                viewModel.statusProperty().get());
+    }
+
+    private static DungeonEditorStateView.RoomNarrationCard toStateCard(
+            DungeonInspectorSnapshot.RoomNarrationCard card
+    ) {
+        return new DungeonEditorStateView.RoomNarrationCard(
+                card.roomId(),
+                card.roomName(),
+                card.visualDescription(),
+                card.exits().stream().map(DungeonEditorBinder::toStateExit).toList());
+    }
+
+    private static DungeonEditorStateView.RoomExitNarration toStateExit(
+            DungeonInspectorSnapshot.RoomExitNarration exit
+    ) {
+        return new DungeonEditorStateView.RoomExitNarration(
+                exit.label(),
+                exit.cell().q(),
+                exit.cell().r(),
+                exit.cell().level(),
+                exit.direction(),
+                exit.description());
+    }
+
+    private static DungeonInspectorSnapshot.RoomExitNarration toPublishedExit(
+            DungeonEditorStateView.RoomExitNarration exit
+    ) {
+        return new DungeonInspectorSnapshot.RoomExitNarration(
+                exit.label(),
+                new DungeonCellRef(exit.q(), exit.r(), exit.level()),
+                exit.direction(),
+                exit.description());
     }
 
     private static DungeonMapDisplayModel.ViewMode toDisplayViewMode(String viewMode) {
@@ -190,6 +243,7 @@ final class DungeonEditorBinder {
     private static DungeonEditorViewModel.HitKind toHitKind(DungeonMapMainView.DungeonMapHitKind hitKind) {
         return switch (hitKind) {
             case EMPTY -> DungeonEditorViewModel.HitKind.EMPTY;
+            case LABEL -> DungeonEditorViewModel.HitKind.LABEL;
             case CORRIDOR -> DungeonEditorViewModel.HitKind.CORRIDOR;
             case STAIR -> DungeonEditorViewModel.HitKind.STAIR;
             case TRANSITION -> DungeonEditorViewModel.HitKind.TRANSITION;

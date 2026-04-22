@@ -5,8 +5,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -39,6 +41,14 @@ public class DungeonControlPanelView extends VBox {
         return row;
     }
 
+    protected final HBox compactControlGroup(Node... controls) {
+        HBox group = new HBox(0, controls);
+        group.getStyleClass().add("dungeon-control-group");
+        group.setAlignment(Pos.CENTER_LEFT);
+        group.setMaxWidth(Region.USE_PREF_SIZE);
+        return group;
+    }
+
     protected final ScrollPane compactControlScroller(Node content) {
         ScrollPane scroller = new ScrollPane(content);
         scroller.getStyleClass().add("dungeon-control-scroll");
@@ -55,6 +65,16 @@ public class DungeonControlPanelView extends VBox {
                 action.run();
             }
         });
+    }
+
+    protected final void describe(Node node, String description) {
+        if (node == null || description == null || description.isBlank()) {
+            return;
+        }
+        node.setAccessibleText(description);
+        if (node instanceof Control control) {
+            control.setTooltip(new Tooltip(description));
+        }
     }
 
     protected final Popup createOverlayPopup(Consumer<String> action, String... labels) {

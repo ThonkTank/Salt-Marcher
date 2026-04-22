@@ -6,6 +6,8 @@ import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
+import src.domain.dungeon.map.value.DungeonRoomExitDescription;
+import src.domain.dungeon.map.value.DungeonRoomNarration;
 import src.domain.dungeon.map.value.DungeonTopologyRef;
 
 import java.util.List;
@@ -22,10 +24,12 @@ public final class ApplyDungeonEditorOperationUseCase {
             OperationInput.MoveRoomAnchor,
             OperationInput.PaintRoomRectangle,
             OperationInput.DeleteRoomRectangle,
+            OperationInput.SaveRoomNarration,
             OperationInput.ResetDemoLayout,
             OperationInput.NoChange {
 
-        record MoveTopologyElement(DungeonTopologyRef ref, int deltaQ, int deltaR) implements OperationInput {
+        record MoveTopologyElement(DungeonTopologyRef ref, int deltaQ, int deltaR, int deltaLevel)
+                implements OperationInput {
         }
 
         record MoveRoomAnchor(int deltaQ, int deltaR) implements OperationInput {
@@ -35,6 +39,17 @@ public final class ApplyDungeonEditorOperationUseCase {
         }
 
         record DeleteRoomRectangle(DungeonCell start, DungeonCell end) implements OperationInput {
+        }
+
+        record SaveRoomNarration(
+                long roomId,
+                String visualDescription,
+                List<DungeonRoomExitDescription> exits
+        ) implements OperationInput {
+            public SaveRoomNarration {
+                visualDescription = visualDescription == null ? "" : visualDescription;
+                exits = exits == null ? List.of() : List.copyOf(exits);
+            }
         }
 
         record ResetDemoLayout() implements OperationInput {
@@ -92,7 +107,8 @@ public final class ApplyDungeonEditorOperationUseCase {
             return current.moveTopologyElement(
                     moveTopologyElement.ref(),
                     moveTopologyElement.deltaQ(),
-                    moveTopologyElement.deltaR());
+                    moveTopologyElement.deltaR(),
+                    moveTopologyElement.deltaLevel());
         }
         if (operation instanceof OperationInput.MoveRoomAnchor moveRoomAnchor) {
             return current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());
@@ -106,6 +122,13 @@ public final class ApplyDungeonEditorOperationUseCase {
             DungeonCell start = deleteRoomRectangle.start();
             DungeonCell end = deleteRoomRectangle.end();
             return start == null || end == null ? current : current.deleteRoomRectangle(start, end);
+        }
+        if (operation instanceof OperationInput.SaveRoomNarration saveRoomNarration) {
+            return current.saveRoomNarration(
+                    saveRoomNarration.roomId(),
+                    new DungeonRoomNarration(
+                            saveRoomNarration.visualDescription(),
+                            saveRoomNarration.exits()));
         }
         if (operation instanceof OperationInput.ResetDemoLayout) {
             return current.resetDemoLayout();

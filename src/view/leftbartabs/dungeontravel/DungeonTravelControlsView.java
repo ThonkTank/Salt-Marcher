@@ -15,8 +15,8 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private final Label levelLabel = new Label("Ebene z=0");
     private final Button refreshButton = new Button("Refresh");
     private final Button resetViewButton = new Button("Reset view");
-    private final Button previousLevelButton = new Button("Ebene -");
-    private final Button nextLevelButton = new Button("Ebene +");
+    private final Button previousLevelButton = new Button("-");
+    private final Button nextLevelButton = new Button("+");
     private final DungeonLevelOverlayControlsView overlayControls =
             new DungeonLevelOverlayControlsView(this::sectionLabel);
 
@@ -73,9 +73,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private HBox levelRow() {
         HBox row = compactControlRow(
                 zoomLabel,
-                levelLabel,
-                previousLevelButton,
-                nextLevelButton,
+                levelStepper(),
                 overlayControls.trigger());
         row.getStyleClass().add("dungeon-control-projection-row");
         row.setAlignment(Pos.CENTER_LEFT);
@@ -88,10 +86,15 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         mapLabel.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(mapLabel, Priority.ALWAYS);
         zoomLabel.getStyleClass().add("text-muted");
+        levelLabel.getStyleClass().add("text-muted");
         refreshButton.getStyleClass().add("toolbar-action-button");
         resetViewButton.getStyleClass().add("toolbar-action-button");
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
+        describe(refreshButton, "Dungeon-Karte neu laden");
+        describe(resetViewButton, "Kamera auf die Dungeon-Karte zuruecksetzen");
+        describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
+        describe(nextLevelButton, "Naechste Dungeon-Ebene anzeigen");
     }
 
     private HBox dungeonRow() {
@@ -103,5 +106,11 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
 
     private HBox projectionRow() {
         return levelRow();
+    }
+
+    private HBox levelStepper() {
+        HBox stepper = compactControlGroup(levelLabel, previousLevelButton, nextLevelButton);
+        stepper.getStyleClass().add("dungeon-stepper-group");
+        return stepper;
     }
 }

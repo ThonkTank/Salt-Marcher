@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-22
 Source of Truth: Persistence path, schema ownership, and adapter boundaries
 for the `dungeon` feature.
 
@@ -91,6 +91,10 @@ upserted or replaced, and removed rows are deleted so SQLite cascade rules
 clear dependent compatibility rows. When a new map has no rooms, the gateway
 creates a seed room, cluster, and topology element so the existing map surfaces
 still have authorable spatial truth.
+Selection-tool narration saves reuse this same full synchronization path:
+visual room descriptions persist on `dungeon_rooms.visual_description`, and
+exit descriptions persist in `dungeon_room_exit_descriptions` keyed by room
+cell and edge direction.
 
 This is infrastructure for behavioural parity, not complete parity. Room
 semantics, cluster boundary geometry, and corridor read geometry are now

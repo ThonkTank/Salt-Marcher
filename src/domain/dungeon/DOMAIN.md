@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-22
 Source of Truth: Write model, ownership boundaries, and domain invariants
 for the dungeon feature.
 
@@ -69,14 +69,18 @@ Current state:
   a party-traversible link. The active character travel position is owned by
   `party` character state and is not persisted as authored dungeon truth.
 - Editor operations now tell the aggregate to mutate authored map metadata,
-  topology seeds, and selected room-cluster placement instead of rewriting a
-  document carrier in application code.
+  topology seeds, selected topology placement, and room narration instead of
+  rewriting a document carrier in application code.
 - Interactive editor mutations now include selected room-cluster movement and
-  room rectangle paint/delete. Cluster movement relocates the selected cluster
-  center and room floor anchors. Room paint/delete rewrites authored cluster
-  cell geometry, preserves stable identities for the primary surviving
-  component, allocates deterministic local IDs for new split components, and
-  rebuilds derived map state from persisted authored truth.
+  room rectangle paint/delete. Cluster movement resolves the selected
+  `DungeonTopologyRef` through the map-owned topology index, relocates the
+  selected cluster center, shifts room floor anchors, and supports level
+  movement without introducing a public `CLUSTER` topology kind. Room
+  paint/delete rewrites authored cluster cell geometry, preserves stable
+  identities for the primary surviving component, allocates deterministic
+  local IDs for new split components, and rebuilds derived map state from
+  persisted authored truth. Room narration saves update `RoomCatalog` through
+  the aggregate and stay authored room semantics.
 - The application layer coordinates load, mutate, save, search, and derive
   flows through domain-owned outbound ports.
 - Runtime composition lives in `src/data/dungeon/DungeonServiceContribution.java`;
@@ -102,8 +106,8 @@ Remaining implementation gap:
   aggregate model.
 - Full behaviour parity with the original `salt-marcher/` dungeon schema still
   requires wall and door editing, corridor editing, stair editing, transition
-  editing, narration editing, direct token-drag movement, cross-map dungeon
-  transition follow-through, and remaining non-space feature mapping.
+  editing, direct token-drag movement, cross-map dungeon transition
+  follow-through, and remaining non-space feature mapping.
 - The current derived-state rebuild hydrates rooms from map-owned topology
   interpreted through cluster polygons and internal wall or door boundaries,
   then derives corridor cells and door relations from authored corridor
@@ -225,7 +229,10 @@ It owns:
 - authored room exit descriptions
 - room-level authorial metadata that survives topology rebuilds
 
-It does not own traversal projections or render geometry.
+It does not own traversal projections or render geometry. Selection inspectors
+may edit its narration, but the editable exit list itself is derived from
+current traversal links and then saved back as authored descriptions keyed by
+room cell and edge direction.
 
 ### ConnectionCatalog
 

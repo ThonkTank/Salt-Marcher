@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-22
 Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
 the dungeon feature.
 
@@ -62,6 +62,9 @@ Expected capabilities:
 - select editing tools
 - preview edits before commit
 - commit authored spatial and semantic changes
+- select rooms, room labels, stairs, and transitions through stable topology
+  refs
+- edit room visual and exit narration from the Auswahl tool state pane
 - cancel in-progress edits
 - undo and redo committed edits
 
@@ -86,7 +89,12 @@ Expected capabilities:
 1. The user opens the editor surface on a map.
 2. The user selects a tool.
 3. The editor shows a live preview while the gesture is in progress.
-4. The user commits, cancels, or replays the change through history controls.
+4. With Auswahl active, the user selects a topology element, optionally drags
+   its cluster-backed grouping across grid cells or floors, and commits on
+   release.
+5. With a room or cluster selected, the user edits room narration and saves it
+   into authored dungeon truth.
+6. The user commits, cancels, or replays the change through history controls.
 
 ## Acceptance Criteria
 
@@ -98,6 +106,10 @@ Expected capabilities:
   ref. The domain map resolves room, cluster, corridor, door, stair, and
   transition bindings internally.
 - In-progress edits provide visible preview feedback.
+- Auswahl supports persisted q/r/z movement for cluster-backed selected
+  topology refs without making clusters a public topology kind.
+- Room visual descriptions and room-exit descriptions are authored room
+  semantics and persist through the dungeon write model.
 - Undo and redo apply to committed editor operations.
 - Runtime travel state is not treated as authored dungeon truth.
 

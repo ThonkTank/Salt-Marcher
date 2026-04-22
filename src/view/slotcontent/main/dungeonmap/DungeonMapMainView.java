@@ -44,6 +44,7 @@ public class DungeonMapMainView extends BorderPane {
     private Consumer<DungeonMapPointerEvent> primaryPressedHandler = ignored -> {};
     private Consumer<DungeonMapPointerEvent> primaryDraggedHandler = ignored -> {};
     private Consumer<DungeonMapPointerEvent> primaryReleasedHandler = ignored -> {};
+    private Consumer<Integer> levelScrolledHandler = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonMapMainView() {
@@ -79,6 +80,10 @@ public class DungeonMapMainView extends BorderPane {
 
     public final void onPrimaryReleased(Consumer<DungeonMapPointerEvent> action) {
         primaryReleasedHandler = action == null ? ignored -> {} : action;
+    }
+
+    public final void onLevelScrolled(Consumer<Integer> action) {
+        levelScrolledHandler = action == null ? ignored -> {} : action;
     }
 
     public final void resetCamera() {
@@ -163,6 +168,12 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private void handleScroll(ScrollEvent event) {
+        if (event.isControlDown() && event.getDeltaY() != 0.0) {
+            levelScrolledHandler.accept(event.getDeltaY() > 0.0 ? 1 : -1);
+            cameraChanged();
+            event.consume();
+            return;
+        }
         if (event.getDeltaY() > 0.0) {
             zoomAround(event.getX(), event.getY(), ZOOM_STEP_FACTOR);
         } else if (event.getDeltaY() < 0.0) {
@@ -183,17 +194,23 @@ public class DungeonMapMainView extends BorderPane {
                 r,
                 model.projectionLevel(),
                 event.isPrimaryButtonDown() || event.getButton() == MouseButton.PRIMARY,
-                hitTarget(model, q, r, model.projectionLevel()));
+                hitTarget(model, q, r, worldQ, worldR, model.projectionLevel()));
     }
 
     private DungeonMapHitTarget hitTarget(
             DungeonMapDisplayModel model,
             int q,
             int r,
+            double worldQ,
+            double worldR,
             int level
     ) {
         if (model.viewMode() != DungeonMapDisplayModel.ViewMode.GRID) {
             return DungeonMapHitTarget.empty();
+        }
+        DungeonMapHitTarget labelHit = labelHitTarget(model, worldQ, worldR, level);
+        if (labelHit.kind() != DungeonMapHitKind.EMPTY) {
+            return labelHit;
         }
         for (int index = model.cells().size() - 1; index >= 0; index--) {
             DungeonMapDisplayModel.RenderCell cell = model.cells().get(index);
@@ -207,6 +224,37 @@ public class DungeonMapMainView extends BorderPane {
                     cell.topologyRef().kind(),
                     cell.topologyRef().id(),
                     cell.label());
+        }
+        return DungeonMapHitTarget.empty();
+    }
+
+    private DungeonMapHitTarget labelHitTarget(
+            DungeonMapDisplayModel model,
+            double worldQ,
+            double worldR,
+            int level
+    ) {
+        for (int index = model.labels().size() - 1; index >= 0; index--) {
+            DungeonMapDisplayModel.RenderLabel label = model.labels().get(index);
+            if (label.z() != level || label.label().isBlank()) {
+                continue;
+            }
+            double labelWidth = Math.max(56.0, Math.min(180.0, label.label().length() * 7.2 + 16.0));
+            double widthInCells = labelWidth / gridSize();
+            double heightInCells = 24.0 / gridSize();
+            if (worldQ < label.q() - widthInCells / 2.0
+                    || worldQ > label.q() + widthInCells / 2.0
+                    || worldR < label.r() - heightInCells / 2.0
+                    || worldR > label.r() + heightInCells / 2.0) {
+                continue;
+            }
+            return new DungeonMapHitTarget(
+                    DungeonMapHitKind.LABEL,
+                    label.ownerId(),
+                    label.clusterId(),
+                    label.topologyRef().kind(),
+                    label.topologyRef().id(),
+                    label.label());
         }
         return DungeonMapHitTarget.empty();
     }
@@ -808,6 +856,7 @@ public class DungeonMapMainView extends BorderPane {
 
     public enum DungeonMapHitKind {
         EMPTY,
+        LABEL,
         ROOM,
         CORRIDOR,
         STAIR,
