@@ -45,6 +45,10 @@ public final class LoadDungeonTravelSurfaceUseCase {
 
     private DungeonMap loadCurrentMap() {
         return search.firstMap()
-                .orElseGet(() -> DungeonMap.empty(repository.nextMapId(), "Dungeon Bastion"));
+                .orElseGet(LoadDungeonTravelSurfaceUseCase::emptyFallbackMap);
+    }
+
+    private static DungeonMap emptyFallbackMap() {
+        return DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon Map");
     }
 }

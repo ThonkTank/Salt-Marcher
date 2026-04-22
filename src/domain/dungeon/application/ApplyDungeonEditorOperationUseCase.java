@@ -27,7 +27,6 @@ public final class ApplyDungeonEditorOperationUseCase {
             OperationInput.PaintRoomRectangle,
             OperationInput.DeleteRoomRectangle,
             OperationInput.SaveRoomNarration,
-            OperationInput.ResetDemoLayout,
             OperationInput.NoChange {
 
         record MoveTopologyElement(DungeonTopologyRef ref, int deltaQ, int deltaR, int deltaLevel)
@@ -56,9 +55,6 @@ public final class ApplyDungeonEditorOperationUseCase {
                 visualDescription = visualDescription == null ? "" : visualDescription;
                 exits = exits == null ? List.of() : List.copyOf(exits);
             }
-        }
-
-        record ResetDemoLayout() implements OperationInput {
         }
 
         record NoChange() implements OperationInput {
@@ -149,9 +145,6 @@ public final class ApplyDungeonEditorOperationUseCase {
                             saveRoomNarration.visualDescription(),
                             saveRoomNarration.exits()));
         }
-        if (operation instanceof OperationInput.ResetDemoLayout) {
-            return current.resetDemoLayout();
-        }
         return current;
     }
 
@@ -166,6 +159,10 @@ public final class ApplyDungeonEditorOperationUseCase {
     private DungeonMap currentMap(@Nullable DungeonMapIdentity mapId) {
         Optional<DungeonMap> selectedMap = mapId == null ? Optional.empty() : repository.findById(mapId);
         return selectedMap.or(() -> search.firstMap())
-                .orElseGet(() -> DungeonMap.empty(repository.nextMapId(), "Dungeon Bastion"));
+                .orElseGet(ApplyDungeonEditorOperationUseCase::emptyFallbackMap);
+    }
+
+    private static DungeonMap emptyFallbackMap() {
+        return DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon Map");
     }
 }

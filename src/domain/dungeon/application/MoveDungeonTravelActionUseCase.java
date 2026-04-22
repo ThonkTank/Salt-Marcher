@@ -140,7 +140,11 @@ public final class MoveDungeonTravelActionUseCase {
 
     private DungeonMap loadCurrentMap() {
         return search.firstMap()
-                .orElseGet(() -> DungeonMap.empty(repository.nextMapId(), "Dungeon Bastion"));
+                .orElseGet(MoveDungeonTravelActionUseCase::emptyFallbackMap);
+    }
+
+    private static DungeonMap emptyFallbackMap() {
+        return DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon Map");
     }
 
     private static @Nullable DungeonTravelActionFacts findAction(DungeonTravelSurfaceFacts surface, String actionId) {

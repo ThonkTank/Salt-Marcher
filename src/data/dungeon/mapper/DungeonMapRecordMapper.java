@@ -9,7 +9,7 @@ import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
 import src.data.dungeon.model.DungeonTopologyElementRecord;
-import src.data.dungeon.model.DungeonTopologySeedRecord;
+import src.data.dungeon.model.DungeonGridBoundsRecord;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
@@ -47,9 +47,9 @@ public final class DungeonMapRecordMapper {
 
     public static DungeonMap toDomain(DungeonMapRecord record) {
         DungeonMapRecord resolvedRecord = record == null
-                ? new DungeonMapRecord(1L, "Dungeon Bastion", 1L, DungeonTopologySeedRecord.demo())
+                ? new DungeonMapRecord(1L, "Dungeon Map", 1L, DungeonGridBoundsRecord.defaultGrid())
                 : record;
-        DungeonTopologySeedRecord seed = resolvedRecord.topologySeed();
+        DungeonGridBoundsRecord gridBounds = resolvedRecord.gridBounds();
         List<DungeonRoomCluster> clusters = toClusters(resolvedRecord.roomClusters());
         RoomCatalog rooms = new RoomCatalog(toRooms(resolvedRecord.rooms()));
         ConnectionCatalog connections = DungeonConnectionRecordMapper.toConnectionCatalog(resolvedRecord);
@@ -59,10 +59,10 @@ public final class DungeonMapRecordMapper {
                 resolvedRecord.name(),
                 new SpatialTopology(
                         DungeonTopology.SQUARE,
-                        seed.width(),
-                        seed.height(),
-                        seed.roomAnchorQ(),
-                        seed.roomAnchorR(),
+                        gridBounds.width(),
+                        gridBounds.height(),
+                        gridBounds.roomAnchorQ(),
+                        gridBounds.roomAnchorR(),
                         clusters),
                 topologyIndex,
                 rooms,
@@ -71,13 +71,13 @@ public final class DungeonMapRecordMapper {
     }
 
     public static DungeonMapRecord toRecord(DungeonMap dungeonMap) {
-        SpatialTopology topology = dungeonMap == null ? SpatialTopology.demo() : dungeonMap.topology();
+        SpatialTopology topology = dungeonMap == null ? SpatialTopology.empty() : dungeonMap.topology();
         long mapId = dungeonMap == null ? 1L : dungeonMap.metadata().mapId().value();
         return new DungeonMapRecord(
                 mapId,
-                dungeonMap == null ? "Dungeon Bastion" : dungeonMap.metadata().mapName(),
+                dungeonMap == null ? "Dungeon Map" : dungeonMap.metadata().mapName(),
                 dungeonMap == null ? 1L : dungeonMap.revision(),
-                new DungeonTopologySeedRecord(
+                new DungeonGridBoundsRecord(
                         topology.width(),
                         topology.height(),
                         topology.roomAnchorQ(),

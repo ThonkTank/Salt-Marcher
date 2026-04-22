@@ -9,8 +9,7 @@ public sealed interface DungeonEditorOperation permits
         DungeonEditorOperation.MoveRoomAnchor,
         DungeonEditorOperation.PaintRoomRectangle,
         DungeonEditorOperation.DeleteRoomRectangle,
-        DungeonEditorOperation.SaveRoomNarration,
-        DungeonEditorOperation.ResetDemoLayout {
+        DungeonEditorOperation.SaveRoomNarration {
 
     record MoveTopologyElement(
             DungeonTopologyElementRef ref,
@@ -49,8 +48,5 @@ public sealed interface DungeonEditorOperation permits
             visualDescription = visualDescription == null ? "" : visualDescription;
             exits = exits == null ? java.util.List.of() : java.util.List.copyOf(exits);
         }
-    }
-
-    record ResetDemoLayout() implements DungeonEditorOperation {
     }
 }

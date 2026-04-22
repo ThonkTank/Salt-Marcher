@@ -34,6 +34,8 @@ projection and can show runtime party-token state supplied by travel.
 
 - No loaded map shows a centered placeholder overlay.
 - Loaded maps can show a softer note overlay while still displaying the map.
+  Loaded empty maps show the grid and an empty-geometry note; the view does
+  not synthesize representative rooms or handles.
 - Editor mode shows tool/status text, selectable tool highlighting, configurable
   level overlays, grid/graph mode, selected room clusters, drag previews, and
   room paint/delete rectangle previews supplied by the active editor ViewModel.

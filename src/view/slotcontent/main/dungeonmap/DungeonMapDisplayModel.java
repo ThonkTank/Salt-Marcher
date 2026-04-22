@@ -1,9 +1,7 @@
 package src.view.slotcontent.main.dungeonmap;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
@@ -258,10 +256,6 @@ public record DungeonMapDisplayModel(
             renderedMarkers.add(markerForHandle(handle, selection));
         }
         addHandleDragPreview(renderedMarkers, dragPreview);
-        if (renderedCells.isEmpty()) {
-            addRepresentativeGeometry(renderedCells, renderedEdges, renderedLabels, graphNodes, graphLinks);
-            renderedMarkers.addAll(representativeMarkers(selectedTool));
-        }
         if (graphLinks.isEmpty() && graphNodes.size() > 1) {
             for (int index = 1; index < graphNodes.size(); index++) {
                 graphLinks.add(new GraphLink(graphNodes.get(index - 1).id(), graphNodes.get(index).id(), false));
@@ -458,45 +452,6 @@ public record DungeonMapDisplayModel(
                 false);
     }
 
-    private static void addRepresentativeGeometry(
-            List<RenderCell> cells,
-            List<RenderEdge> edges,
-            List<RenderLabel> labels,
-            List<GraphNode> graphNodes,
-            List<GraphLink> graphLinks
-    ) {
-        long roomId = 1_000L;
-        long corridorId = 2_000L;
-        addRoom(cells, labels, graphNodes, roomId, "Watch Post", 6, 4, 3, 2, 0, false);
-        addRoom(cells, labels, graphNodes, roomId + 1, "Moon Crypt", 2, 8, 4, 3, -1, false);
-        addCorridor(cells, corridorId, 4, 4, 2, false);
-        addCorridor(cells, corridorId, 5, 4, 3, false);
-        addCorridor(cells, corridorId + 1, 3, 6, 2, false);
-        cells.add(new RenderCell(
-                8, 5, 0, "Stair", CellKind.STAIR, 3_000L, 0L, new TopologyRef("STAIR", 3_000L),
-                false, false, false, false));
-        cells.add(new RenderCell(
-                1, 3, 0, "Transition", CellKind.TRANSITION, 4_000L, 0L, new TopologyRef("TRANSITION", 4_000L),
-                false, false, false, false));
-        cells.add(new RenderCell(
-                7, 5, 1, "Balcony", CellKind.ROOM, 5_000L, 5_000L, new TopologyRef("ROOM", 5_000L),
-                false, true, false, false));
-        edges.add(new RenderEdge(4, 4, 6, 4, 0, EdgeKind.DOOR, "Door", 10_000L, new TopologyRef("DOOR", 10_000L), false));
-        edges.add(new RenderEdge(5, 6, 5, 8, 0, EdgeKind.DOOR, "Door", 10_001L, new TopologyRef("DOOR", 10_001L), false));
-        edges.add(new RenderEdge(6, 4, 9, 4, 0, EdgeKind.WALL, "North wall", 10_002L, new TopologyRef("WALL", 10_002L), false));
-        edges.add(new RenderEdge(2, 8, 6, 8, -1, EdgeKind.WALL, "Lower wall", 10_003L, new TopologyRef("WALL", 10_003L), false));
-        linkNearbyNodes(graphNodes, graphLinks);
-    }
-
-    private static List<RenderMarker> representativeMarkers(String selectedTool) {
-        return List.of(
-                new RenderMarker("1", 3.0, 3.98, 0, MarkerKind.DOOR, false),
-                new RenderMarker("2", 5.0, 5.50, 0, MarkerKind.DOOR, false),
-                new RenderMarker("z", 8.5, 5.5, 0, MarkerKind.STAIR, "Treppe".equals(selectedTool)),
-                new RenderMarker("->", 1.5, 3.5, 0, MarkerKind.TRANSITION, selectedTool != null && selectedTool.contains("bergang"))
-        );
-    }
-
     private static RenderMarker markerForFeature(
             DungeonFeatureSnapshot feature,
             CellCenter center,
@@ -536,74 +491,6 @@ public record DungeonMapDisplayModel(
             case CORRIDOR_WAYPOINT -> "•";
             case CLUSTER_LABEL -> "";
         };
-    }
-
-    private static void addRoom(
-            List<RenderCell> cells,
-            List<RenderLabel> labels,
-            List<GraphNode> graphNodes,
-            long id,
-            String label,
-            int startQ,
-            int startR,
-            int width,
-            int height,
-            int z,
-            boolean selected
-    ) {
-        for (int row = 0; row < height; row++) {
-            for (int column = 0; column < width; column++) {
-                cells.add(new RenderCell(
-                        startQ + column,
-                        startR + row,
-                        z,
-                        label,
-                        CellKind.ROOM,
-                        id,
-                        id,
-                        new TopologyRef("ROOM", id),
-                        selected,
-                        z != 0,
-                        false,
-                        false));
-            }
-        }
-        double centerX = startQ + width / 2.0;
-        double centerY = startR + height / 2.0;
-        labels.add(new RenderLabel(label, centerX, centerY, z, id, id, new TopologyRef("ROOM", id), selected));
-        graphNodes.add(new GraphNode(id, id, label, centerX, centerY, selected));
-    }
-
-    private static void addCorridor(List<RenderCell> cells, long id, int q, int startR, int length, boolean selected) {
-        for (int offset = 0; offset < length; offset++) {
-            cells.add(new RenderCell(
-                    q,
-                    startR + offset,
-                    0,
-                    "Corridor",
-                    CellKind.CORRIDOR,
-                    id,
-                    0L,
-                    new TopologyRef("CORRIDOR", id),
-                    selected,
-                    false,
-                    false,
-                    false));
-        }
-    }
-
-    private static void linkNearbyNodes(List<GraphNode> nodes, List<GraphLink> links) {
-        Map<Long, GraphNode> unique = new LinkedHashMap<>();
-        for (GraphNode node : nodes) {
-            unique.putIfAbsent(node.id(), node);
-        }
-        List<GraphNode> values = new ArrayList<>(unique.values());
-        if (values.size() < 2) {
-            return;
-        }
-        for (int index = 1; index < values.size(); index++) {
-            links.add(new GraphLink(values.get(index - 1).id(), values.get(index).id(), false));
-        }
     }
 
     private static boolean selectedArea(DungeonAreaSnapshot area, @Nullable Selection selection) {

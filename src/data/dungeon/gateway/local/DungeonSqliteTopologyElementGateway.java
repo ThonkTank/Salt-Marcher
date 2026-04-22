@@ -74,18 +74,6 @@ final class DungeonSqliteTopologyElementGateway {
         }
     }
 
-    static void persistSeed(Connection connection, long mapId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT OR IGNORE INTO " + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
-                        + "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)"
-                        + " SELECT dungeon_map_id, 'ROOM', room_id, cluster_id, NULL, name, room_id"
-                        + " FROM " + DungeonPersistenceSchema.ROOMS_TABLE
-                        + " WHERE dungeon_map_id=?")) {
-            statement.setLong(1, mapId);
-            statement.executeUpdate();
-        }
-    }
-
     private static Set<Long> ids(List<Long> source) {
         Set<Long> result = new LinkedHashSet<>();
         for (Long value : source == null ? List.<Long>of() : source) {

@@ -7,10 +7,9 @@ import java.util.List;
 /**
  * Minimal authored spatial truth for the current dungeon parity foundation.
  *
- * <p>The full topology model will grow around rooms, clusters, corridors,
- * stairs, and transitions. These seed facts keep the existing surfaces
- * functional while the legacy behavior is moved behind the aggregate
- * boundary.</p>
+ * <p>The full topology model grows around rooms, clusters, corridors, stairs,
+ * and transitions. Empty maps keep only grid bounds until authored geometry is
+ * created.</p>
  */
 public record SpatialTopology(
         DungeonTopology topology,
@@ -41,10 +40,10 @@ public record SpatialTopology(
     }
 
     public static SpatialTopology empty() {
-        return demo();
+        return defaultGrid();
     }
 
-    public static SpatialTopology demo() {
+    public static SpatialTopology defaultGrid() {
         return new SpatialTopology(DungeonTopology.SQUARE, 10, 8, 2, 2);
     }
 

@@ -8,7 +8,7 @@ import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
 import src.data.dungeon.model.DungeonPersistenceSchema;
-import src.data.dungeon.model.DungeonTopologySeedRecord;
+import src.data.dungeon.model.DungeonGridBoundsRecord;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -107,14 +107,9 @@ public final class DungeonSqliteGateway {
             connection.setAutoCommit(false);
             try {
                 upsertMap(connection, record);
-                if (record.roomClusters().isEmpty() && record.rooms().isEmpty()) {
-                    ensureSeedRoom(connection, record);
-                    DungeonSqliteTopologyElementGateway.persistSeed(connection, record.mapId());
-                } else {
-                    persistAuthoredGeometry(connection, record);
-                    DungeonSqliteConnectionPersistence.persist(connection, record);
-                    DungeonSqliteTopologyElementGateway.persist(connection, record);
-                }
+                persistAuthoredGeometry(connection, record);
+                DungeonSqliteConnectionPersistence.persist(connection, record);
+                DungeonSqliteTopologyElementGateway.persist(connection, record);
                 connection.commit();
                 return findMap(record.mapId()).orElse(record);
             } catch (SQLException exception) {
@@ -176,7 +171,7 @@ public final class DungeonSqliteGateway {
                 mapId,
                 resultSet.getString("name"),
                 1L,
-                topologySeed(connection, mapId),
+                gridBounds(connection, mapId),
                 loadRoomClusters(connection, mapId),
                 loadRooms(connection, mapId),
                 DungeonSqliteTopologyElementGateway.load(connection, mapId),
@@ -185,7 +180,7 @@ public final class DungeonSqliteGateway {
                 DungeonSqliteConnectionLoader.loadTransitions(connection, mapId));
     }
 
-    private DungeonTopologySeedRecord topologySeed(Connection connection, long mapId) throws SQLException {
+    private DungeonGridBoundsRecord gridBounds(Connection connection, long mapId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT MIN(component_x) AS min_x, MIN(component_y) AS min_y,"
                         + " MAX(component_x) AS max_x, MAX(component_y) AS max_y"
@@ -193,13 +188,13 @@ public final class DungeonSqliteGateway {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next() || resultSet.getObject("min_x") == null) {
-                    return DungeonTopologySeedRecord.demo();
+                    return DungeonGridBoundsRecord.defaultGrid();
                 }
                 int minX = resultSet.getInt("min_x");
                 int minY = resultSet.getInt("min_y");
                 int maxX = resultSet.getInt("max_x");
                 int maxY = resultSet.getInt("max_y");
-                return new DungeonTopologySeedRecord(
+                return new DungeonGridBoundsRecord(
                         Math.max(10, maxX + 6),
                         Math.max(8, maxY + 6),
                         minX,
@@ -585,45 +580,4 @@ public final class DungeonSqliteGateway {
         }
     }
 
-    private static void ensureSeedRoom(Connection connection, DungeonMapRecord record) throws SQLException {
-        try (PreparedStatement count = connection.prepareStatement(
-                "SELECT COUNT(*) FROM " + DungeonPersistenceSchema.ROOMS_TABLE + " WHERE dungeon_map_id=?")) {
-            count.setLong(1, record.mapId());
-            try (ResultSet resultSet = count.executeQuery()) {
-                if (resultSet.next() && resultSet.getLong(1) > 0L) {
-                    return;
-                }
-            }
-        }
-        long clusterId;
-        DungeonTopologySeedRecord seed = record.topologySeed();
-        try (PreparedStatement insertCluster = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + "(dungeon_map_id, center_x, center_y, level_z) VALUES(?,?,?,0)",
-                Statement.RETURN_GENERATED_KEYS)) {
-            insertCluster.setLong(1, record.mapId());
-            insertCluster.setInt(2, seed.roomAnchorQ());
-            insertCluster.setInt(3, seed.roomAnchorR());
-            insertCluster.executeUpdate();
-            try (ResultSet resultSet = insertCluster.getGeneratedKeys()) {
-                if (!resultSet.next()) {
-                    throw new SQLException(
-                            "No key returned for " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + " insert");
-                }
-                clusterId = resultSet.getLong(1);
-            }
-        }
-        try (PreparedStatement insertRoom = connection.prepareStatement(
-                "INSERT INTO "
-                        + DungeonPersistenceSchema.ROOMS_TABLE
-                        + "(dungeon_map_id, cluster_id, name, component_x, component_y, level_z)"
-                        + " VALUES(?,?,?,?,?,0)")) {
-            insertRoom.setLong(1, record.mapId());
-            insertRoom.setLong(2, clusterId);
-            insertRoom.setString(3, "Entry Hall");
-            insertRoom.setInt(4, seed.roomAnchorQ());
-            insertRoom.setInt(5, seed.roomAnchorR());
-            insertRoom.executeUpdate();
-        }
-    }
 }

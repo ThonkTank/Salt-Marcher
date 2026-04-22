@@ -9,7 +9,7 @@ public record DungeonMapRecord(
         long mapId,
         String name,
         long revision,
-        DungeonTopologySeedRecord topologySeed,
+        DungeonGridBoundsRecord gridBounds,
         List<DungeonRoomClusterRecord> roomClusters,
         List<DungeonRoomRecord> rooms,
         List<DungeonTopologyElementRecord> topologyElements,
@@ -22,15 +22,15 @@ public record DungeonMapRecord(
             long mapId,
             String name,
             long revision,
-            DungeonTopologySeedRecord topologySeed
+            DungeonGridBoundsRecord gridBounds
     ) {
-        this(mapId, name, revision, topologySeed, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        this(mapId, name, revision, gridBounds, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
     public DungeonMapRecord {
         name = name == null || name.isBlank() ? "Dungeon " + mapId : name.trim();
         revision = Math.max(1L, revision);
-        topologySeed = topologySeed == null ? DungeonTopologySeedRecord.demo() : topologySeed;
+        gridBounds = gridBounds == null ? DungeonGridBoundsRecord.defaultGrid() : gridBounds;
         roomClusters = roomClusters == null ? List.of() : List.copyOf(roomClusters);
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
         topologyElements = topologyElements == null ? List.of() : List.copyOf(topologyElements);

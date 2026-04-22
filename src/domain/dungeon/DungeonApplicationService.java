@@ -288,9 +288,6 @@ public final class DungeonApplicationService {
                         saveRoomNarration.visualDescription(),
                         saveRoomNarration.exits().stream().map(MapPublication::domainExitNarration).toList());
             }
-            if (operation instanceof DungeonEditorOperation.ResetDemoLayout) {
-                return new ApplyDungeonEditorOperationUseCase.OperationInput.ResetDemoLayout();
-            }
             return new ApplyDungeonEditorOperationUseCase.OperationInput.NoChange();
         }
     }

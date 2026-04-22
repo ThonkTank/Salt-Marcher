@@ -26,7 +26,6 @@ import src.domain.dungeon.map.value.DungeonTopologyRef;
 import src.domain.dungeon.map.value.SpatialTopology;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,11 +40,11 @@ public final class BuildDungeonDerivedStateUseCase {
     private static final String DOOR_KIND = "door";
 
     public DungeonDerivedState execute(DungeonMap dungeonMap) {
-        SpatialTopology topology = dungeonMap == null ? SpatialTopology.demo() : dungeonMap.topology();
+        SpatialTopology topology = dungeonMap == null ? SpatialTopology.empty() : dungeonMap.topology();
         if (dungeonMap != null && !dungeonMap.rooms().rooms().isEmpty() && topology.hasAuthoredRooms()) {
             return authoredState(dungeonMap, topology);
         }
-        return demoState(topology);
+        return emptyState(topology);
     }
 
     private DungeonDerivedState authoredState(DungeonMap dungeonMap, SpatialTopology topology) {
@@ -237,84 +236,20 @@ public final class BuildDungeonDerivedStateUseCase {
         return Map.copyOf(result);
     }
 
-    private DungeonDerivedState demoState(SpatialTopology topology) {
-        List<DungeonCell> roomCells = buildRoomCells(topology);
-        List<DungeonCell> corridorCells = buildCorridorCells(topology);
-        DungeonAggregate room = new DungeonAggregate(1L, DungeonAreaType.ROOM, "Entry Hall", roomCells);
-        DungeonAggregate corridor = new DungeonAggregate(2L, DungeonAreaType.CORRIDOR, "South Corridor", corridorCells);
-        DungeonPrimitive door = new DungeonPrimitive(
-                DungeonBoundaryKey.from(new DungeonEdge(roomCells.get(3), corridorCells.getFirst())).stableId(),
-                DOOR_KIND,
-                "Oak Door",
-                new DungeonEdge(roomCells.get(3), corridorCells.getFirst()));
-
-        List<DungeonPrimitive> walls = List.of(
-                new DungeonPrimitive(
-                        DungeonBoundaryKey.from(new DungeonEdge(roomCells.getFirst(), roomCells.get(1))).stableId(),
-                        "wall",
-                        "North Wall",
-                        new DungeonEdge(roomCells.getFirst(), roomCells.get(1))),
-                new DungeonPrimitive(
-                        DungeonBoundaryKey.from(new DungeonEdge(roomCells.get(2), roomCells.get(3))).stableId(),
-                        "wall",
-                        "South Wall",
-                        new DungeonEdge(roomCells.get(2), roomCells.get(3)))
-        );
-
-        DungeonRelationGraph relations = new DungeonRelationGraph(
-                List.of(
-                        new DungeonRelationGraph.ContainmentRelation(room.id(), door.id(), DOOR_KIND),
-                        new DungeonRelationGraph.ContainmentRelation(corridor.id(), door.id(), DOOR_KIND)
-                ),
-                List.of(
-                        new DungeonRelationGraph.ConnectionRelation(corridor.id(), room.id(), "south")
-                )
-        );
-
+    private DungeonDerivedState emptyState(SpatialTopology topology) {
         DungeonMapFacts map = new DungeonMapFacts(
                 topology.topology(),
                 topology.width(),
                 topology.height(),
-                List.of(
-                        new DungeonAreaFacts(room.kind(), room.id(), room.label(), room.cells()),
-                        new DungeonAreaFacts(corridor.kind(), corridor.id(), corridor.label(), corridor.cells())
-                ),
-                List.of(
-                        new DungeonBoundaryFacts(door.kind(), door.id(), door.label(), door.edge()),
-                        new DungeonBoundaryFacts(walls.getFirst().kind(), walls.getFirst().id(), walls.getFirst().label(), walls.getFirst().edge()),
-                        new DungeonBoundaryFacts(walls.get(1).kind(), walls.get(1).id(), walls.get(1).label(), walls.get(1).edge())
-                )
-        );
-
-        List<DungeonPrimitive> primitives = new ArrayList<>();
-        primitives.add(door);
-        primitives.addAll(walls);
+                List.of(),
+                List.of(),
+                List.of());
         return new DungeonDerivedState(
                 map,
-                List.of(room, corridor),
-                primitives,
-                relations,
-                new DungeonTraversalLinkProjector().project(null, map));
-    }
-
-    private List<DungeonCell> buildRoomCells(SpatialTopology topology) {
-        List<DungeonCell> cells = new ArrayList<>();
-        for (int r = 0; r < 2; r++) {
-            for (int q = 0; q < 3; q++) {
-                cells.add(new DungeonCell(topology.roomAnchorQ() + q, topology.roomAnchorR() + r, 0));
-            }
-        }
-        return List.copyOf(cells);
-    }
-
-    private List<DungeonCell> buildCorridorCells(SpatialTopology topology) {
-        int startQ = topology.roomAnchorQ() + 1;
-        int startR = topology.roomAnchorR() + 2;
-        return List.of(
-                new DungeonCell(startQ, startR, 0),
-                new DungeonCell(startQ, startR + 1, 0),
-                new DungeonCell(startQ, startR + 2, 0)
-        );
+                List.of(),
+                List.of(),
+                new DungeonRelationGraph(List.of(), List.of()),
+                List.of());
     }
 
     private record DirectionStep(DungeonEdgeDirection direction) {

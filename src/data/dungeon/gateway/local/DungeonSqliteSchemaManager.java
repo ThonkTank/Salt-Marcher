@@ -33,6 +33,7 @@ final class DungeonSqliteSchemaManager {
             backfillLegacyTransitionAnchors(connection);
         }
         backfillTopologyElements(connection, topologyTableExisted);
+        removeObsoleteSeedMaps(connection);
     }
 
     private static void ensureGeneralCompatibilityColumns(Connection connection) throws SQLException {
@@ -228,6 +229,57 @@ final class DungeonSqliteSchemaManager {
                 "SELECT 1 FROM " + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE + " LIMIT 1");
              ResultSet resultSet = statement.executeQuery()) {
             return !resultSet.next();
+        }
+    }
+
+    private static void removeObsoleteSeedMaps(Connection connection) throws SQLException {
+        String maps = DungeonPersistenceSchema.MAPS_TABLE;
+        String rooms = DungeonPersistenceSchema.ROOMS_TABLE;
+        String clusters = DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE;
+        String corridors = DungeonPersistenceSchema.CORRIDORS_TABLE;
+        String stairs = DungeonPersistenceSchema.STAIRS_TABLE;
+        String transitions = DungeonPersistenceSchema.TRANSITIONS_TABLE;
+        String vertices = DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE;
+        String edges = DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE;
+        String floors = DungeonPersistenceSchema.ROOM_FLOORS_TABLE;
+        String exits = DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE;
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(
+                    "DELETE FROM " + maps
+                            + " WHERE dungeon_map_id IN ("
+                            + " SELECT m.dungeon_map_id FROM " + maps + " m"
+                            + " WHERE m.name IN ('Dungeon', 'Dungeon Bastion', 'Dungeon Map')"
+                            + " AND (SELECT COUNT(*) FROM " + rooms
+                            + " r WHERE r.dungeon_map_id=m.dungeon_map_id)=1"
+                            + " AND (SELECT COUNT(*) FROM " + clusters
+                            + " c WHERE c.dungeon_map_id=m.dungeon_map_id)=1"
+                            + " AND EXISTS (SELECT 1 FROM " + rooms
+                            + " r WHERE r.dungeon_map_id=m.dungeon_map_id"
+                            + " AND r.name='Entry Hall'"
+                            + " AND r.component_x=2 AND r.component_y=2 AND r.level_z=0"
+                            + " AND (r.visual_description IS NULL OR TRIM(r.visual_description)=''))"
+                            + " AND EXISTS (SELECT 1 FROM " + clusters
+                            + " c WHERE c.dungeon_map_id=m.dungeon_map_id"
+                            + " AND c.center_x=2 AND c.center_y=2 AND c.level_z=0)"
+                            + " AND NOT EXISTS (SELECT 1 FROM " + corridors
+                            + " c WHERE c.dungeon_map_id=m.dungeon_map_id)"
+                            + " AND NOT EXISTS (SELECT 1 FROM " + stairs
+                            + " s WHERE s.dungeon_map_id=m.dungeon_map_id)"
+                            + " AND NOT EXISTS (SELECT 1 FROM " + transitions
+                            + " t WHERE t.dungeon_map_id=m.dungeon_map_id)"
+                            + " AND NOT EXISTS (SELECT 1 FROM " + vertices
+                            + " v JOIN " + clusters + " c ON c.cluster_id=v.cluster_id"
+                            + " WHERE c.dungeon_map_id=m.dungeon_map_id)"
+                            + " AND NOT EXISTS (SELECT 1 FROM " + edges
+                            + " e JOIN " + clusters + " c ON c.cluster_id=e.cluster_id"
+                            + " WHERE c.dungeon_map_id=m.dungeon_map_id)"
+                            + " AND NOT EXISTS (SELECT 1 FROM " + floors
+                            + " f JOIN " + rooms + " r ON r.room_id=f.room_id"
+                            + " WHERE r.dungeon_map_id=m.dungeon_map_id)"
+                            + " AND NOT EXISTS (SELECT 1 FROM " + exits
+                            + " x JOIN " + rooms + " r ON r.room_id=x.room_id"
+                            + " WHERE r.dungeon_map_id=m.dungeon_map_id)"
+                            + ")");
         }
     }
 

@@ -28,8 +28,9 @@ editor handles, and room narration editing.
 ## Visible States
 
 - The dungeon selector loads the selected map. Create, rename, and delete call
-  the dungeon application service. Successful map loading is represented by
-  the selected dropdown value rather than a duplicate status message.
+  the dungeon application service. Created maps start empty until authored room
+  geometry is painted. Successful map loading is represented by the selected
+  dropdown value rather than a duplicate status message.
 - Tool selection updates highlighted controls and presentation state. The
   Auswahl tool selects map-owned topology refs for rooms, labels, stairs, and
   transitions. Selected room and cluster labels expose editable room

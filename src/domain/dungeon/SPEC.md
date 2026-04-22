@@ -27,7 +27,9 @@ Provide a dungeon workflow that lets a GM:
 ### Basic Map Surface
 
 The basic map surface shows the loaded dungeon map on an unbounded grid canvas.
-If no map is loaded, it shows a clear placeholder state.
+If no map is loaded, it shows a clear placeholder state. If a loaded map has no
+authored geometry yet, it shows an empty grid rather than generated example
+rooms.
 
 Expected capabilities:
 
@@ -59,6 +61,7 @@ The editor surface is an authoring-oriented tab for changing dungeon truth.
 Expected capabilities:
 
 - create, rename, and delete maps
+- create maps as empty authored maps without generated seed rooms
 - select editing tools
 - preview edits before commit
 - commit authored spatial and semantic changes

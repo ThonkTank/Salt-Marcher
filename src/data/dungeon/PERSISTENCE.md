@@ -68,10 +68,13 @@ This document is normative for the dungeon feature's persistence path.
   when that table is introduced or still empty. After that point, the topology
   element table is the SQLite source of truth for map-owned
   `DungeonTopologyRef(kind,id)` identity and binding rows.
+- Existing obsolete demo maps are removed only when they match the strict old
+  seed signature: generated map name, one `Entry Hall`, one cluster, and no
+  authored geometry, connections, narration, or feature rows.
 
 ## Current Mapping
 
-The current adapter persists and reloads map identity, map name, topology seed,
+The current adapter persists and reloads map identity, map name, grid bounds,
 authoritative topology elements, authored room records, room floor anchors,
 room visual and exit narration, room-cluster centers, room-cluster vertices,
 explicit cluster wall or door edges, corridor membership, corridor waypoints,
@@ -90,9 +93,9 @@ retained topology elements are rewritten, retained clusters, rooms,
 connections, stairs, transitions, vertices, boundaries, floors, exit
 descriptions, waypoints, door bindings, stair path nodes, and stair exits are
 upserted or replaced, and removed rows are deleted so SQLite cascade rules
-clear dependent compatibility rows. When a new map has no rooms, the gateway
-creates a seed room, cluster, and topology element so the existing map surfaces
-still have authorable spatial truth.
+clear dependent compatibility rows. New maps may remain empty until the editor
+creates authored room geometry; the gateway no longer creates seed rooms or
+demo topology rows.
 Selection-tool narration saves reuse this same full synchronization path:
 visual room descriptions persist on `dungeon_rooms.visual_description`, and
 exit descriptions persist in `dungeon_room_exit_descriptions` keyed by room

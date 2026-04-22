@@ -80,7 +80,7 @@ public final class DungeonMap {
     }
 
     public static DungeonMap empty(DungeonMapIdentity mapId, String mapName) {
-        return authored(mapId, mapName, SpatialTopology.demo(), 1L);
+        return authored(mapId, mapName, SpatialTopology.empty(), 1L);
     }
 
     public static DungeonMap authored(
@@ -443,10 +443,6 @@ public final class DungeonMap {
                         features,
                         revision + 1L)
                 : this;
-    }
-
-    public DungeonMap resetDemoLayout() {
-        return withTopology(SpatialTopology.demo(), revision + 1L);
     }
 
     public DungeonMap paintRoomRectangle(DungeonCell start, DungeonCell end) {
