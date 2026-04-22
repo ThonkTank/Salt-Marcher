@@ -68,9 +68,12 @@ This document is normative for the dungeon feature's persistence path.
   when that table is introduced or still empty. After that point, the topology
   element table is the SQLite source of truth for map-owned
   `DungeonTopologyRef(kind,id)` identity and binding rows.
-- Existing obsolete demo maps are removed only when they match the strict old
-  seed signature: generated map name, one `Entry Hall`, one cluster, and no
-  authored geometry, connections, narration, or feature rows.
+- Existing obsolete demo maps are removed only when they match the old seed
+  signature: generated map name, one `Entry Hall`, one cluster, the known
+  generated anchor and center, and no authored connections or narration.
+  Generated seed floors, vertices, walls, and topology rows do not protect that
+  obsolete map from deletion, while empty authored maps without the `Entry Hall`
+  signature remain valid.
 
 ## Current Mapping
 

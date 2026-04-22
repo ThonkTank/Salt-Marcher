@@ -239,9 +239,6 @@ final class DungeonSqliteSchemaManager {
         String corridors = DungeonPersistenceSchema.CORRIDORS_TABLE;
         String stairs = DungeonPersistenceSchema.STAIRS_TABLE;
         String transitions = DungeonPersistenceSchema.TRANSITIONS_TABLE;
-        String vertices = DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE;
-        String edges = DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE;
-        String floors = DungeonPersistenceSchema.ROOM_FLOORS_TABLE;
         String exits = DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE;
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
@@ -267,18 +264,10 @@ final class DungeonSqliteSchemaManager {
                             + " s WHERE s.dungeon_map_id=m.dungeon_map_id)"
                             + " AND NOT EXISTS (SELECT 1 FROM " + transitions
                             + " t WHERE t.dungeon_map_id=m.dungeon_map_id)"
-                            + " AND NOT EXISTS (SELECT 1 FROM " + vertices
-                            + " v JOIN " + clusters + " c ON c.cluster_id=v.cluster_id"
-                            + " WHERE c.dungeon_map_id=m.dungeon_map_id)"
-                            + " AND NOT EXISTS (SELECT 1 FROM " + edges
-                            + " e JOIN " + clusters + " c ON c.cluster_id=e.cluster_id"
-                            + " WHERE c.dungeon_map_id=m.dungeon_map_id)"
-                            + " AND NOT EXISTS (SELECT 1 FROM " + floors
-                            + " f JOIN " + rooms + " r ON r.room_id=f.room_id"
-                            + " WHERE r.dungeon_map_id=m.dungeon_map_id)"
                             + " AND NOT EXISTS (SELECT 1 FROM " + exits
                             + " x JOIN " + rooms + " r ON r.room_id=x.room_id"
-                            + " WHERE r.dungeon_map_id=m.dungeon_map_id)"
+                            + " WHERE r.dungeon_map_id=m.dungeon_map_id"
+                            + " AND x.description IS NOT NULL AND TRIM(x.description) <> '')"
                             + ")");
         }
     }
