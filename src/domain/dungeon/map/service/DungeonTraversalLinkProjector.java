@@ -41,29 +41,31 @@ public final class DungeonTraversalLinkProjector {
         List<DungeonTraversalLink> result = new ArrayList<>();
         for (DungeonBoundaryFacts boundary : map.boundaries()) {
             DungeonEdge edge = boundary.edge();
-            if (doorLinkUnavailable(boundary, edge, traversableCells)) {
+            List<DungeonCell> touchingCells = edge == null ? List.of() : edge.touchingCells();
+            if (doorLinkUnavailable(boundary, touchingCells, traversableCells)) {
                 continue;
             }
+            DungeonCell first = touchingCells.get(0);
+            DungeonCell second = touchingCells.get(1);
             result.add(new DungeonTraversalLink(
-                    traversalKey(DungeonTraversalSourceKind.DOOR, boundary.id(), edge.from(), edge.to()),
+                    traversalKey(DungeonTraversalSourceKind.DOOR, boundary.id(), first, second),
                     new DungeonTraversalSource(DungeonTraversalSourceKind.DOOR, boundary.id(), boundary.label()),
-                    traversalEndpoint(map, edge.from()),
-                    traversalEndpoint(map, edge.to())));
+                    traversalEndpoint(map, first),
+                    traversalEndpoint(map, second)));
         }
         return List.copyOf(result);
     }
 
     private static boolean doorLinkUnavailable(
             DungeonBoundaryFacts boundary,
-            @Nullable DungeonEdge edge,
+            List<DungeonCell> touchingCells,
             Set<DungeonCell> traversableCells
     ) {
-        return !DOOR_KIND.equalsIgnoreCase(boundary.kind())
-                || edge == null
-                || edge.from() == null
-                || edge.to() == null
-                || !traversableCells.contains(edge.from())
-                || !traversableCells.contains(edge.to());
+        return boundary == null
+                || !DOOR_KIND.equalsIgnoreCase(boundary.kind())
+                || touchingCells.size() != 2
+                || !traversableCells.contains(touchingCells.get(0))
+                || !traversableCells.contains(touchingCells.get(1));
     }
 
     private static List<DungeonTraversalLink> stairTraversalLinks(DungeonMap dungeonMap, DungeonMapFacts map) {

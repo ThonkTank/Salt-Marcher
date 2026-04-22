@@ -35,8 +35,7 @@ public record DungeonClusterBoundary(
     }
 
     public DungeonEdge absoluteEdge(DungeonCell center) {
-        DungeonCell from = absoluteCell(center);
-        return new DungeonEdge(from, direction.neighborOf(from));
+        return DungeonEdge.sideOf(absoluteCell(center), direction);
     }
 
     public DungeonTopologyRef resolvedTopologyRef(DungeonCell center) {

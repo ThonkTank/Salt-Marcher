@@ -204,12 +204,22 @@ public final class BuildDungeonDerivedStateUseCase {
 
     private static List<Long> touchingRoomIds(DungeonEdge edge, Map<Long, List<DungeonCell>> cellsByRoom) {
         List<Long> result = new ArrayList<>();
+        List<DungeonCell> touchingCells = edge == null ? List.of() : edge.touchingCells();
         for (Map.Entry<Long, List<DungeonCell>> entry : cellsByRoom.entrySet()) {
-            if (entry.getValue().contains(edge.from()) || entry.getValue().contains(edge.to())) {
+            if (containsAny(entry.getValue(), touchingCells)) {
                 result.add(entry.getKey());
             }
         }
         return List.copyOf(result);
+    }
+
+    private static boolean containsAny(List<DungeonCell> cells, List<DungeonCell> candidates) {
+        for (DungeonCell candidate : candidates) {
+            if (cells.contains(candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Map<Long, List<DungeonRoom>> roomsByCluster(List<DungeonRoom> rooms) {

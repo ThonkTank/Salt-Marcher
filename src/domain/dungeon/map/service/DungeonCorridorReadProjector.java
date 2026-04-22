@@ -96,8 +96,7 @@ public final class DungeonCorridorReadProjector {
     }
 
     private static DungeonEdge absoluteDoorEdge(DungeonCorridorDoorBinding binding, DungeonCell clusterCenter) {
-        DungeonCell roomCell = absoluteRoomCell(binding, clusterCenter);
-        return new DungeonEdge(roomCell, binding.direction().neighborOf(roomCell));
+        return DungeonEdge.sideOf(absoluteRoomCell(binding, clusterCenter), binding.direction());
     }
 
     private static @Nullable CorridorEndpoint derivedEndpoint(
@@ -125,7 +124,7 @@ public final class DungeonCorridorReadProjector {
                 return new CorridorEndpoint(
                         roomId,
                         corridorCell,
-                        new DungeonEdge(selectedRoomCell, corridorCell),
+                        DungeonEdge.sideOf(selectedRoomCell, step.direction()),
                         DungeonTopologyRef.empty());
             }
         }
@@ -133,7 +132,7 @@ public final class DungeonCorridorReadProjector {
         return new CorridorEndpoint(
                 roomId,
                 fallbackCorridorCell,
-                new DungeonEdge(selectedRoomCell, fallbackCorridorCell),
+                DungeonEdge.sideOf(selectedRoomCell, DungeonEdgeDirection.SOUTH),
                 DungeonTopologyRef.empty());
     }
 

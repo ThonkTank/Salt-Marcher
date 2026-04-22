@@ -80,6 +80,11 @@ room visual and exit narration, room-cluster centers, room-cluster vertices,
 explicit cluster wall or door edges, corridor membership, corridor waypoints,
 corridor door overrides, stair path nodes, stair exits, stair corridor
 attachments, and transition destination rows.
+Cluster wall and door rows store the source-local tile-side marker:
+`cell_x/cell_y/level_z` name the owning tile and `edge_direction` names that
+tile side. The domain derives the rendered boundary as grid-vertex endpoints
+from that marker, so the persistence schema does not store center-to-neighbor
+line coordinates.
 `dungeon_topology_elements` stores the persisted map-owned topology refs for
 `ROOM`, `CORRIDOR`, `DOOR`, `WALL`, `STAIR`, and `TRANSITION`. `CLUSTER` is not
 a topology ref kind; clusters remain organizational bindings stored as

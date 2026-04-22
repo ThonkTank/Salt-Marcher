@@ -444,8 +444,8 @@ final class DungeonSqliteSchemaManager {
 
     private static long boundaryStableId(int q, int r, int level, String direction) {
         DirectionStep step = DirectionStep.from(direction);
-        Cell first = new Cell(q, r, level);
-        Cell second = new Cell(q + step.deltaQ(), r + step.deltaR(), level);
+        Cell first = step.start(q, r, level);
+        Cell second = step.end(q, r, level);
         Cell lower = compareCells(first, second) <= 0 ? first : second;
         Cell upper = lower.equals(first) ? second : first;
         long hash = 17L;
@@ -474,15 +474,23 @@ final class DungeonSqliteSchemaManager {
     private record Cell(int q, int r, int level) {
     }
 
-    private record DirectionStep(int deltaQ, int deltaR) {
+    private record DirectionStep(int startDeltaQ, int startDeltaR, int endDeltaQ, int endDeltaR) {
 
         private static DirectionStep from(String direction) {
             return switch ((direction == null ? "NORTH" : direction.trim()).toUpperCase(Locale.ROOT)) {
-                case "EAST" -> new DirectionStep(1, 0);
-                case "SOUTH" -> new DirectionStep(0, 1);
-                case "WEST" -> new DirectionStep(-1, 0);
-                default -> new DirectionStep(0, -1);
+                case "EAST" -> new DirectionStep(1, 0, 1, 1);
+                case "SOUTH" -> new DirectionStep(0, 1, 1, 1);
+                case "WEST" -> new DirectionStep(0, 0, 0, 1);
+                default -> new DirectionStep(0, 0, 1, 0);
             };
+        }
+
+        private Cell start(int q, int r, int level) {
+            return new Cell(q + startDeltaQ, r + startDeltaR, level);
+        }
+
+        private Cell end(int q, int r, int level) {
+            return new Cell(q + endDeltaQ, r + endDeltaR, level);
         }
     }
 }

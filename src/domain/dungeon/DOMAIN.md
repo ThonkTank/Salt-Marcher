@@ -57,6 +57,9 @@ Current state:
 - `SpatialTopology` remains a legacy-shaped geometry carrier for room-cluster
   centers, polygon vertices, and explicit internal wall or door edges loaded
   from SQLite. It is not the behavioral owner of topology.
+- Cluster boundary rows identify the owning dungeon tile plus one cardinal tile
+  side. Derived wall and door edges are grid-vertex segments on that tile side,
+  not lines between tile centers.
 - `RoomCatalog` now carries authored room identity, names, floor anchors, and
   narration loaded from the legacy write model.
 - `ConnectionCatalog` carries semantic connection descriptors and bindings:
@@ -202,6 +205,8 @@ Semantically, it carries:
 - authored room-cluster polygon vertices
 - authored internal door boundaries
 - authored door geometry as map-interpreted edge data
+- wall and door edge projection from tile-side markers into grid-vertex
+  boundary segments
 
 It must not own:
 

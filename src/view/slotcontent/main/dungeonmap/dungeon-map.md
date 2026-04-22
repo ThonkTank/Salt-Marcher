@@ -19,6 +19,9 @@ projection and can show runtime party-token state supplied by travel.
 - The canvas draws grid tiers, axis lines, rooms, corridors, walls, doors,
   door markers, stairs, transitions, labels, graph mode, and the runtime party
   token from `DungeonMapDisplayModel`.
+- Wall and door render edges are domain-projected gridline segments around
+  tiles. The view draws the supplied endpoints directly and must not compensate
+  for tile-side offsets.
 - The View owns camera state, viewport transforms, canvas drawing, label
   placement, technical pan/zoom/reset events, and passive primary-pointer
   events expressed as grid hits.
