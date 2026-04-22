@@ -765,7 +765,9 @@ public final class CatalogControlsView extends VBox {
         private final Popup popup = new Popup();
         private final VBox checkboxList = new VBox(2);
         private final List<CheckBox> checkboxes = new ArrayList<>();
+        private final Set<String> selectedValues = new LinkedHashSet<>();
         private final Runnable onChange;
+        private boolean updatingSelection;
 
         SearchableFilterButton(String label, Runnable onChange) {
             this.label = label;
@@ -784,6 +786,7 @@ public final class CatalogControlsView extends VBox {
             popupContent.getStyleClass().add("filter-dropdown");
             popupContent.setPadding(new Insets(8));
             List<String> safeOptions = options == null ? List.of() : List.copyOf(options);
+            selectedValues.retainAll(new LinkedHashSet<>(safeOptions));
             if (safeOptions.size() > SEARCH_FIELD_THRESHOLD) {
                 TextField search = new TextField();
                 search.setPromptText(label + " suchen...");
@@ -793,12 +796,9 @@ public final class CatalogControlsView extends VBox {
             }
             for (String option : safeOptions) {
                 CheckBox checkbox = new CheckBox(option);
-                checkbox.setOnAction(event -> {
-                    updateTriggerText();
-                    if (onChange != null) {
-                        onChange.run();
-                    }
-                });
+                checkbox.setSelected(selectedValues.contains(option));
+                checkbox.selectedProperty().addListener((obs, wasSelected, isSelected) ->
+                        updateSelection(option, isSelected));
                 checkboxes.add(checkbox);
                 checkboxList.getChildren().add(checkbox);
             }
@@ -815,25 +815,20 @@ public final class CatalogControlsView extends VBox {
         }
 
         List<String> selectedValues() {
-            return checkboxes.stream()
-                    .filter(CheckBox::isSelected)
-                    .map(CheckBox::getText)
-                    .toList();
+            return List.copyOf(selectedValues);
         }
 
         void removeValue(String value) {
-            for (CheckBox checkbox : checkboxes) {
-                if (checkbox.getText().equals(value)) {
-                    checkbox.setSelected(false);
-                    updateTriggerText();
-                    return;
-                }
+            if (selectedValues.remove(value)) {
+                syncCheckboxSelection();
+                updateTriggerText();
             }
         }
 
         void clearSelection() {
-            for (CheckBox checkbox : checkboxes) {
-                checkbox.setSelected(false);
+            if (!selectedValues.isEmpty()) {
+                selectedValues.clear();
+                syncCheckboxSelection();
             }
             updateTriggerText();
         }
@@ -869,8 +864,34 @@ public final class CatalogControlsView extends VBox {
             }
         }
 
+        private void updateSelection(String value, boolean selected) {
+            if (updatingSelection) {
+                return;
+            }
+            if (selected) {
+                selectedValues.add(value);
+            } else {
+                selectedValues.remove(value);
+            }
+            updateTriggerText();
+            if (onChange != null) {
+                onChange.run();
+            }
+        }
+
+        private void syncCheckboxSelection() {
+            updatingSelection = true;
+            try {
+                for (CheckBox checkbox : checkboxes) {
+                    checkbox.setSelected(selectedValues.contains(checkbox.getText()));
+                }
+            } finally {
+                updatingSelection = false;
+            }
+        }
+
         private void updateTriggerText() {
-            long count = checkboxes.stream().filter(CheckBox::isSelected).count();
+            int count = selectedValues.size();
             getStyleClass().remove("filter-trigger-active");
             if (count > 0) {
                 setText(label + " (" + count + ") ▾");
