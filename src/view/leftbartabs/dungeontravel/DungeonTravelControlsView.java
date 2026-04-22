@@ -4,6 +4,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 
@@ -23,7 +24,8 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     public DungeonTravelControlsView() {
         super("");
         getStyleClass().add("dungeon-editor-toolbar");
-        getChildren().addAll(sectionLabel("Dungeon"), zoomLabel, mapLabel, levelRow(), actionRow());
+        configureControls();
+        getChildren().setAll(dungeonRow(), projectionRow());
     }
 
     public void onRefresh(Runnable action) {
@@ -69,14 +71,37 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     }
 
     private HBox levelRow() {
-        HBox row = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, spacer(), overlayControls.trigger());
+        HBox row = compactControlRow(
+                zoomLabel,
+                levelLabel,
+                previousLevelButton,
+                nextLevelButton,
+                overlayControls.trigger());
+        row.getStyleClass().add("dungeon-control-projection-row");
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
 
-    private HBox actionRow() {
-        HBox row = new HBox(8, refreshButton, resetViewButton);
+    private void configureControls() {
+        mapLabel.getStyleClass().add("text-muted");
+        mapLabel.setMinWidth(0.0);
+        mapLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(mapLabel, Priority.ALWAYS);
+        zoomLabel.getStyleClass().add("text-muted");
+        refreshButton.getStyleClass().add("toolbar-action-button");
+        resetViewButton.getStyleClass().add("toolbar-action-button");
+        previousLevelButton.getStyleClass().add("toolbar-action-button");
+        nextLevelButton.getStyleClass().add("toolbar-action-button");
+    }
+
+    private HBox dungeonRow() {
+        HBox row = compactControlRow(mapLabel, refreshButton, resetViewButton);
+        row.getStyleClass().add("dungeon-control-map-row");
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
+    }
+
+    private HBox projectionRow() {
+        return levelRow();
     }
 }

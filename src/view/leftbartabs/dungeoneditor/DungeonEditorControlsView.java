@@ -14,7 +14,6 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -78,6 +77,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private final Button deleteMapButton = new Button("Dungeon loeschen");
     private final Button saveMapButton = new Button("Speichern");
     private HBox deleteConfirmRow;
+    private HBox mapEditorActionRow;
     private final Popup toolPopup = new Popup();
     private final Button primaryToolOption = toolButton("");
     private final Button secondaryToolOption = toolButton("");
@@ -90,6 +90,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private boolean syncingMaps;
     private boolean syncingViewMode;
     private boolean createMode;
+    private boolean deleteMode;
     private String editingMapKey = "";
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
@@ -102,7 +103,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         configureToolControls();
         configureMapEditorPopup();
         configureToolPopup();
-        getChildren().addAll(mapSection(), toolSection());
+        getChildren().setAll(dungeonRow(), projectionRow(), compactControlScroller(toolRow()));
     }
 
     public void setOnMapSelected(Consumer<String> action) {
@@ -156,7 +157,11 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         mapSelector.setDisable(busy || safeMaps.isEmpty());
         createButton.setDisable(busy);
         editButton.setDisable(busy || selected == null);
-        statusLabel.setText(statusText == null ? "" : statusText);
+        deleteMapButton.setDisable(busy || selected == null);
+        String resolvedStatus = statusText == null ? "" : statusText;
+        statusLabel.setText(resolvedStatus);
+        statusLabel.setVisible(!resolvedStatus.isBlank());
+        statusLabel.setManaged(!resolvedStatus.isBlank());
         syncingMaps = false;
     }
 
@@ -209,16 +214,26 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             }
         });
         mapSelector.setMaxWidth(Double.MAX_VALUE);
+        mapSelector.setMinWidth(0.0);
         mapSelector.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> {
             editButton.setDisable(after == null);
+            deleteMapButton.setDisable(after == null);
             if (!syncingMaps && after != null) {
                 onMapSelected.accept(after.key());
             }
         });
+        createButton.getStyleClass().add("toolbar-action-button");
+        editButton.getStyleClass().add("toolbar-action-button");
+        deleteMapButton.getStyleClass().add("toolbar-action-button");
         createButton.setOnAction(event -> showCreatePopup(createButton));
         editButton.setOnAction(event -> showEditPopup(editButton));
+        deleteMapButton.setOnAction(event -> showDeletePopup(deleteMapButton));
         statusLabel.getStyleClass().add("text-muted");
-        statusLabel.setWrapText(true);
+        statusLabel.setWrapText(false);
+        statusLabel.setVisible(false);
+        statusLabel.setManaged(false);
+        statusLabel.setMinWidth(0.0);
+        statusLabel.setMaxWidth(160.0);
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
     }
@@ -275,8 +290,9 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox actionRow = new HBox(8, cancelMapEditButton, deleteMapButton, spacer, saveMapButton);
+        HBox actionRow = new HBox(8, cancelMapEditButton, spacer, saveMapButton);
         actionRow.setAlignment(Pos.CENTER_LEFT);
+        mapEditorActionRow = actionRow;
 
         VBox panel = new VBox(10, mapEditorTitle, mapNameField, mapEditorError, deleteConfirmRow, actionRow);
         panel.setPadding(new Insets(10));
@@ -290,8 +306,13 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             }
         });
         cancelMapEditButton.setOnAction(event -> mapEditorPopup.hide());
-        deleteMapButton.setOnAction(event -> showDeleteConfirmation(true));
-        cancelDeleteButton.setOnAction(event -> showDeleteConfirmation(false));
+        cancelDeleteButton.setOnAction(event -> {
+            if (deleteMode) {
+                mapEditorPopup.hide();
+            } else {
+                showDeleteConfirmation(false);
+            }
+        });
         confirmDeleteButton.setOnAction(event -> {
             onDeleteMap.accept(editingMapKey);
             mapEditorPopup.hide();
@@ -308,35 +329,46 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         toolPopup.setAutoHide(true);
     }
 
-    private VBox mapSection() {
-        HBox levelRow = new HBox(8, levelLabel, previousLevelButton, nextLevelButton, spacer(), overlayControls.trigger());
-        levelRow.setAlignment(Pos.CENTER_LEFT);
-        HBox actionRow = new HBox(8, createButton, editButton);
-        actionRow.setAlignment(Pos.CENTER_LEFT);
-        HBox viewModeRow = new HBox(8, gridButton, graphButton);
-        viewModeRow.setAlignment(Pos.CENTER_LEFT);
-        VBox group = new VBox(6, sectionLabel("Dungeon"), mapSelector, actionRow, statusLabel, levelRow, viewModeRow);
-        group.getStyleClass().add("editor-toolbar-group");
-        return group;
+    private HBox dungeonRow() {
+        HBox.setHgrow(mapSelector, Priority.ALWAYS);
+        HBox row = compactControlRow(mapSelector, createButton, editButton, deleteMapButton, statusLabel);
+        row.getStyleClass().add("dungeon-control-map-row");
+        return row;
     }
 
-    private VBox toolSection() {
-        FlowPane row = new FlowPane(6, 6, selectButton, roomButton, wallButton, doorButton,
+    private HBox projectionRow() {
+        HBox row = compactControlRow(
+                levelLabel,
+                previousLevelButton,
+                nextLevelButton,
+                overlayControls.trigger(),
+                gridButton,
+                graphButton);
+        row.getStyleClass().add("dungeon-control-projection-row");
+        return row;
+    }
+
+    private HBox toolRow() {
+        HBox row = compactControlRow(selectButton, roomButton, wallButton, doorButton,
                 corridorButton, stairButton, transitionButton);
-        row.setPrefWrapLength(220);
-        VBox group = new VBox(6, sectionLabel("Werkzeug"), row);
-        group.getStyleClass().add("editor-toolbar-group");
-        return group;
+        row.getStyleClass().add("dungeon-control-tool-row");
+        return row;
     }
 
     private void showCreatePopup(Node anchor) {
         createMode = true;
+        deleteMode = false;
         editingMapKey = "";
         mapEditorTitle.setText("Neuen Dungeon anlegen");
+        mapNameField.setVisible(true);
+        mapNameField.setManaged(true);
+        mapNameField.setDisable(false);
         mapNameField.setText("Dungeon");
+        mapEditorActionRow.setVisible(true);
+        mapEditorActionRow.setManaged(true);
+        saveMapButton.setVisible(true);
+        saveMapButton.setManaged(true);
         saveMapButton.setText("Erstellen");
-        deleteMapButton.setVisible(false);
-        deleteMapButton.setManaged(false);
         showDeleteConfirmation(false);
         showMapEditor(anchor);
     }
@@ -347,13 +379,38 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             return;
         }
         createMode = false;
+        deleteMode = false;
         editingMapKey = selected.key();
         mapEditorTitle.setText("Dungeon bearbeiten");
+        mapNameField.setVisible(true);
+        mapNameField.setManaged(true);
+        mapNameField.setDisable(false);
         mapNameField.setText(selected.mapName());
+        mapEditorActionRow.setVisible(true);
+        mapEditorActionRow.setManaged(true);
+        saveMapButton.setVisible(true);
+        saveMapButton.setManaged(true);
         saveMapButton.setText("Speichern");
-        deleteMapButton.setVisible(true);
-        deleteMapButton.setManaged(true);
         showDeleteConfirmation(false);
+        showMapEditor(anchor);
+    }
+
+    private void showDeletePopup(Node anchor) {
+        MapItem selected = mapSelector.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+        createMode = false;
+        deleteMode = true;
+        editingMapKey = selected.key();
+        mapEditorTitle.setText("Dungeon loeschen: " + selected.mapName());
+        mapNameField.setVisible(false);
+        mapNameField.setManaged(false);
+        mapEditorActionRow.setVisible(false);
+        mapEditorActionRow.setManaged(false);
+        saveMapButton.setVisible(false);
+        saveMapButton.setManaged(false);
+        showDeleteConfirmation(true);
         showMapEditor(anchor);
     }
 
@@ -364,8 +421,10 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         var bounds = anchor.localToScreen(anchor.getBoundsInLocal());
         if (bounds != null) {
             mapEditorPopup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 2.0);
-            mapNameField.requestFocus();
-            mapNameField.selectAll();
+            if (mapNameField.isVisible()) {
+                mapNameField.requestFocus();
+                mapNameField.selectAll();
+            }
         }
     }
 
@@ -389,8 +448,6 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private void showDeleteConfirmation(boolean visible) {
         deleteConfirmRow.setVisible(visible);
         deleteConfirmRow.setManaged(visible);
-        deleteMapButton.setVisible(!visible && !createMode);
-        deleteMapButton.setManaged(!visible && !createMode);
     }
 
     private void activateToolFamily(Button anchor, String primaryTool, String secondaryTool) {

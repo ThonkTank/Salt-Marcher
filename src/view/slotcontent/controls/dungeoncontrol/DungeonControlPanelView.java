@@ -2,9 +2,11 @@ package src.view.slotcontent.controls.dungeoncontrol;
 
 import java.util.function.Consumer;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -17,8 +19,8 @@ public class DungeonControlPanelView extends VBox {
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonControlPanelView(String titleText) {
-        setSpacing(10);
-        setPadding(new Insets(12));
+        setSpacing(6);
+        setPadding(new Insets(8));
         getStyleClass().add("surface-root");
         if (titleText != null && !titleText.isBlank()) {
             getChildren().add(new Label(titleText));
@@ -27,6 +29,24 @@ public class DungeonControlPanelView extends VBox {
 
     protected final void addControl(Node control) {
         getChildren().add(control);
+    }
+
+    protected final HBox compactControlRow(Node... controls) {
+        HBox row = new HBox(6, controls);
+        row.getStyleClass().add("dungeon-control-row");
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setMaxWidth(Double.MAX_VALUE);
+        return row;
+    }
+
+    protected final ScrollPane compactControlScroller(Node content) {
+        ScrollPane scroller = new ScrollPane(content);
+        scroller.getStyleClass().add("dungeon-control-scroll");
+        scroller.setFitToHeight(true);
+        scroller.setFitToWidth(false);
+        scroller.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroller.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        return scroller;
     }
 
     protected final void bindAction(Button button, Runnable action) {

@@ -14,8 +14,8 @@ through currently loaded traversal and transition actions.
 
 ## Visible Structure
 
-- Controls show live zoom, map name, level buttons, full level-overlay
-  settings, refresh, and reset-view actions.
+- Controls are compressed into two rows: map name plus refresh/reset actions,
+  then live zoom, level buttons, and full level-overlay settings.
 - Main content is the shared `DungeonMapMainView` canvas surface in runtime
   mode.
 - State content shows the current party travel location, tile, heading,

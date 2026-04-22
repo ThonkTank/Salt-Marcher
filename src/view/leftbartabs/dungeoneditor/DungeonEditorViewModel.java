@@ -348,7 +348,7 @@ public final class DungeonEditorViewModel {
             snapshot.set(nextSnapshot);
             projectionLevel.set(loaded.currentFloor());
             reachableLevels.set(levelsFrom(nextSnapshot, projectionLevel.get()));
-            status.set("Dungeon geladen: " + loaded.mapName());
+            status.set("");
         } catch (RuntimeException exception) {
             snapshot.set(null);
             reachableLevels.set(List.of(0));

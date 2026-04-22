@@ -18,9 +18,9 @@ room paint/delete.
 
 ## Visible Structure
 
-- Controls show a dungeon selector, create/edit/delete actions,
-  grid/graph toggles, level buttons, full level-overlay settings, and the
-  editor tool families.
+- Controls are compressed into three rows: dungeon selector plus
+  create/edit/delete actions, level plus overlay and grid/graph controls, and
+  the editor tool families.
 - Main content is the shared `DungeonMapMainView` canvas surface in editor
   mode.
 - State content shows the active tool, view mode, projection level, overlay
@@ -29,7 +29,8 @@ room paint/delete.
 ## Visible States
 
 - The dungeon selector loads the selected map; create, rename, and delete call
-  the dungeon application service.
+  the dungeon application service. Successful map loading is represented by
+  the selected dropdown value rather than a duplicate status message.
 - Tool selection updates highlighted controls and presentation state. The
   Auswahl tool commits movement for the selected map-owned topology ref on the
   active map. `Raum malen` and `Raum loeschen` commit active-level rectangle
