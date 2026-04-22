@@ -199,6 +199,10 @@ public record DungeonMapDisplayModel(
         List<GraphLink> graphLinks = new ArrayList<>();
 
         for (DungeonAreaSnapshot area : map.areas()) {
+            if (dragPreview != null && draggedClusterArea(area, selection, dragPreview)) {
+                addClusterDragPreview(renderedCells, renderedLabels, graphNodes, area, dragPreview);
+                continue;
+            }
             List<RenderCell> areaCells = area.cells().stream()
                     .map(cell -> renderCell(area, cell, selectedArea(area, selection), false, 0, 0))
                     .toList();
@@ -248,8 +252,12 @@ public record DungeonMapDisplayModel(
             }
         }
         for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
+            if (draggedHandle(handle.ref(), dragPreview)) {
+                continue;
+            }
             renderedMarkers.add(markerForHandle(handle, selection));
         }
+        addHandleDragPreview(renderedMarkers, dragPreview);
         if (renderedCells.isEmpty()) {
             addRepresentativeGeometry(renderedCells, renderedEdges, renderedLabels, graphNodes, graphLinks);
             renderedMarkers.addAll(representativeMarkers(selectedTool));
@@ -368,6 +376,72 @@ public record DungeonMapDisplayModel(
         }
     }
 
+    private static void addClusterDragPreview(
+            List<RenderCell> renderedCells,
+            List<RenderLabel> renderedLabels,
+            List<GraphNode> graphNodes,
+            DungeonAreaSnapshot area,
+            DragPreview dragPreview
+    ) {
+        List<RenderCell> previewCells = area.cells().stream()
+                .map(cell -> renderCell(
+                        area,
+                        cell,
+                        true,
+                        true,
+                        dragPreview.deltaQ(),
+                        dragPreview.deltaR(),
+                        dragPreview.deltaLevel()))
+                .toList();
+        renderedCells.addAll(previewCells);
+        if (previewCells.isEmpty()) {
+            return;
+        }
+        CellCenter center = centerOf(previewCells);
+        String label = dragPreview.label().isBlank() ? area.label() : dragPreview.label();
+        renderedLabels.add(new RenderLabel(
+                label,
+                center.x(),
+                center.y(),
+                previewCells.getFirst().z(),
+                area.id(),
+                area.clusterId(),
+                topologyRef(area.topologyRef()),
+                true));
+        graphNodes.add(new GraphNode(area.id(), area.clusterId(), label, center.x(), center.y(), true));
+    }
+
+    private static void addHandleDragPreview(List<RenderMarker> renderedMarkers, @Nullable DragPreview dragPreview) {
+        if (dragPreview == null || !dragPreview.active()
+                || dragPreview.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
+            return;
+        }
+        DungeonEditorHandleRef ref = dragPreview.handleRef();
+        DungeonCellRef cell = ref.cell();
+        DungeonCellRef movedCell = new DungeonCellRef(
+                cell.q() + dragPreview.deltaQ(),
+                cell.r() + dragPreview.deltaR(),
+                cell.level() + dragPreview.deltaLevel());
+        DungeonEditorHandleRef movedRef = new DungeonEditorHandleRef(
+                ref.kind(),
+                ref.topologyRef(),
+                ref.ownerId(),
+                ref.clusterId(),
+                ref.corridorId(),
+                ref.roomId(),
+                ref.index(),
+                movedCell,
+                ref.direction());
+        renderedMarkers.add(new RenderMarker(
+                handleMarkerLabel(ref.kind()),
+                movedCell.q() + 0.5,
+                movedCell.r() + 0.5,
+                movedCell.level(),
+                handleMarkerKind(ref.kind()),
+                true,
+                movedRef));
+    }
+
     private static RenderEdge renderEdge(DungeonBoundarySnapshot boundary) {
         DungeonEdgeRef edge = boundary.edge();
         boolean door = "door".equalsIgnoreCase(boundary.kind());
@@ -436,26 +510,32 @@ public record DungeonMapDisplayModel(
 
     private static RenderMarker markerForHandle(DungeonEditorHandleSnapshot handle, @Nullable Selection selection) {
         DungeonEditorHandleRef ref = handle.ref();
-        MarkerKind kind = switch (ref.kind()) {
+        return new RenderMarker(
+                handleMarkerLabel(ref.kind()),
+                handle.cell().q() + 0.5,
+                handle.cell().r() + 0.5,
+                handle.cell().level(),
+                handleMarkerKind(ref.kind()),
+                selectedHandle(ref, selection),
+                ref);
+    }
+
+    private static MarkerKind handleMarkerKind(DungeonEditorHandleKind kind) {
+        return switch (kind) {
             case DOOR -> MarkerKind.DOOR;
             case STAIR_ANCHOR -> MarkerKind.STAIR;
             case CORRIDOR_WAYPOINT -> MarkerKind.WAYPOINT;
             case CLUSTER_LABEL -> MarkerKind.CLUSTER;
         };
-        String label = switch (ref.kind()) {
+    }
+
+    private static String handleMarkerLabel(DungeonEditorHandleKind kind) {
+        return switch (kind) {
             case DOOR -> "D";
             case STAIR_ANCHOR -> "z";
             case CORRIDOR_WAYPOINT -> "•";
             case CLUSTER_LABEL -> "";
         };
-        return new RenderMarker(
-                label,
-                handle.cell().q() + 0.5,
-                handle.cell().r() + 0.5,
-                handle.cell().level(),
-                kind,
-                selectedHandle(ref, selection),
-                ref);
     }
 
     private static void addRoom(
@@ -548,13 +628,40 @@ public record DungeonMapDisplayModel(
             return false;
         }
         DungeonEditorHandleRef selected = selection.handleRef();
-        return ref.kind() == selected.kind()
-                && ref.topologyRef().equals(selected.topologyRef())
-                && ref.ownerId() == selected.ownerId()
-                && ref.clusterId() == selected.clusterId()
-                && ref.corridorId() == selected.corridorId()
-                && ref.roomId() == selected.roomId()
-                && ref.index() == selected.index();
+        return sameStableHandle(ref, selected);
+    }
+
+    private static boolean draggedClusterArea(
+            DungeonAreaSnapshot area,
+            @Nullable Selection selection,
+            DragPreview dragPreview
+    ) {
+        if (area == null || !dragPreview.active()
+                || dragPreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
+            return false;
+        }
+        long selectedClusterId = selection == null ? dragPreview.clusterId() : selection.clusterId();
+        return selectedClusterId > 0L
+                && area.kind() == DungeonAreaKind.ROOM
+                && area.clusterId() == selectedClusterId;
+    }
+
+    private static boolean draggedHandle(DungeonEditorHandleRef ref, @Nullable DragPreview dragPreview) {
+        if (ref == null || dragPreview == null || !dragPreview.active()
+                || dragPreview.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
+            return false;
+        }
+        return sameStableHandle(ref, dragPreview.handleRef());
+    }
+
+    private static boolean sameStableHandle(DungeonEditorHandleRef left, DungeonEditorHandleRef right) {
+        return left.kind() == right.kind()
+                && left.topologyRef().equals(right.topologyRef())
+                && left.ownerId() == right.ownerId()
+                && left.clusterId() == right.clusterId()
+                && left.corridorId() == right.corridorId()
+                && left.roomId() == right.roomId()
+                && left.index() == right.index();
     }
 
     private static CellCenter centerOf(List<RenderCell> cells) {

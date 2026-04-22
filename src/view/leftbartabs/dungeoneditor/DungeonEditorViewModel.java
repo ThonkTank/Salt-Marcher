@@ -303,8 +303,8 @@ public final class DungeonEditorViewModel {
             dragPreview.set(null);
             snapshot.set(dragSession.baseSnapshot());
         } else {
+            snapshot.set(dragSession.baseSnapshot());
             showDragPreview(dragSession);
-            previewDragMutation(dragSession);
         }
         refreshStateText();
     }
@@ -343,8 +343,12 @@ public final class DungeonEditorViewModel {
         int nextLevel = dragSession.currentLevel() + delta;
         dragSession = dragSession.withCurrentLevel(nextLevel);
         projectionLevel.set(nextLevel);
-        showDragPreview(dragSession);
-        previewDragMutation(dragSession);
+        snapshot.set(dragSession.baseSnapshot());
+        if (dragSession.moved()) {
+            showDragPreview(dragSession);
+        } else {
+            dragPreview.set(null);
+        }
         refreshStateText();
     }
 
@@ -452,22 +456,6 @@ public final class DungeonEditorViewModel {
             refreshInspector();
         });
         refreshStateText();
-    }
-
-    private void previewDragMutation(DragSession session) {
-        DungeonMapId mapId = selectedMapId;
-        if (mapId == null || session == null || !session.moved()) {
-            return;
-        }
-        DungeonSnapshot preview = dungeon.previewOperation(new ApplyDungeonEditorOperationCommand(
-                mapId,
-                new DungeonEditorOperation.MoveEditorHandle(
-                        session.selection().handleRef(),
-                        session.deltaQ(),
-                        session.deltaR(),
-                        session.deltaLevel())));
-        snapshot.set(preview);
-        reachableLevels.set(levelsFrom(preview, projectionLevel.get()));
     }
 
     private void showDragPreview(DragSession session) {

@@ -74,6 +74,8 @@ Current state:
 - Editor map loading uses the map-specific editor snapshot so selection
   handles, map geometry, and relation-derived preview data are projected from
   the same authored map before any drag mutation starts.
+- Editor drag feedback is presentation-local. The domain write model changes
+  only when the view commits the selected editor-handle movement on release.
 - Interactive editor mutations now include selected editor-handle movement and
   room rectangle paint/delete. Handle movement resolves cluster labels, doors,
   corridor waypoints, and stair anchors through the map-owned topology index,

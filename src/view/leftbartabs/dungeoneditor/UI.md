@@ -38,9 +38,10 @@ editor handles, and room narration editing.
   families are still pending authored operations.
 - In grid mode, clicking a room, room label, stair, transition, door handle,
   corridor waypoint, stair anchor, or cluster label selects the owning topology
-  ref. Dragging a selectable editor handle shows the domain preview snapshot,
-  Ctrl-scroll changes the drag target level, and release commits q/r/z
-  movement through the domain map. Empty grid clicks clear selection.
+  ref. Dragging a selectable editor handle keeps the authored map snapshot
+  unchanged and shows a local canvas preview for the selected cells, label, or
+  handle marker. Ctrl-scroll changes the drag target level, and release commits
+  q/r/z movement through the domain map. Empty grid clicks clear selection.
 - Saving a narration card persists room visual description and exit
   descriptions through the dungeon write model; the state pane refreshes from
   committed authored truth.
