@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-22
 Source of Truth: Reusable dungeon map presentation structure and central style
 selector roles.
 
@@ -42,6 +42,9 @@ projection and can show runtime party-token state supplied by travel.
 - Editor mode shows tool/status text, selectable tool highlighting, configurable
   level overlays, grid/graph mode, selected room clusters, drag previews, and
   room paint/delete rectangle previews supplied by the active editor ViewModel.
+  Drag previews keep the committed source geometry visible and draw a visually
+  distinct moved copy of selected cells, wall or door edges, labels, and editor
+  handles.
 - Runtime mode shows a party token from the active travel session, numbered
   door markers when supplied by the display model, and current location state.
 - Resize and layout redraw the same camera state against a top-left anchored

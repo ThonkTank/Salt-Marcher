@@ -246,7 +246,7 @@ public class DungeonMapMainView extends BorderPane {
         double radiusInCells = Math.max(0.28, 11.0 / gridSize());
         for (int index = model.markers().size() - 1; index >= 0; index--) {
             DungeonMapDisplayModel.RenderMarker marker = model.markers().get(index);
-            if (marker.z() != level || marker.handleOwnerId() <= 0L) {
+            if (marker.preview() || marker.z() != level || marker.handleOwnerId() <= 0L) {
                 continue;
             }
             double deltaQ = worldQ - marker.q();
@@ -281,7 +281,7 @@ public class DungeonMapMainView extends BorderPane {
     ) {
         for (int index = model.labels().size() - 1; index >= 0; index--) {
             DungeonMapDisplayModel.RenderLabel label = model.labels().get(index);
-            if (label.z() != level || label.label().isBlank()) {
+            if (label.preview() || label.z() != level || label.label().isBlank()) {
                 continue;
             }
             double labelWidth = Math.max(56.0, Math.min(180.0, label.label().length() * 7.2 + 16.0));
@@ -463,11 +463,18 @@ public class DungeonMapMainView extends BorderPane {
             gc.save();
             if (overlay) {
                 gc.setGlobalAlpha(overlayAlpha(edge.z(), model.projectionLevel(), model.overlaySettings().opacity()));
+            } else if (edge.preview()) {
+                gc.setGlobalAlpha(0.72);
+                gc.setLineDashes(8.0, 5.0);
             }
-            gc.setStroke(edge.kind() == DungeonMapDisplayModel.EdgeKind.DOOR
-                    ? doorStroke()
-                    : edge.selected() ? highlightStroke() : wallStroke());
-            gc.setLineWidth(edge.kind() == DungeonMapDisplayModel.EdgeKind.DOOR ? 3.6 : edge.selected() ? 2.8 : 2.0);
+            gc.setStroke(edge.preview()
+                    ? previewStroke()
+                    : edge.kind() == DungeonMapDisplayModel.EdgeKind.DOOR
+                            ? doorStroke()
+                            : edge.selected() ? highlightStroke() : wallStroke());
+            gc.setLineWidth(edge.preview()
+                    ? 2.6
+                    : edge.kind() == DungeonMapDisplayModel.EdgeKind.DOOR ? 3.6 : edge.selected() ? 2.8 : 2.0);
             gc.strokeLine(worldToScreenX(edge.startQ()), worldToScreenY(edge.startR()),
                     worldToScreenX(edge.endQ()), worldToScreenY(edge.endR()));
             gc.restore();
@@ -487,10 +494,12 @@ public class DungeonMapMainView extends BorderPane {
             gc.save();
             if (overlay) {
                 gc.setGlobalAlpha(overlayAlpha(marker.z(), model.projectionLevel(), model.overlaySettings().opacity()));
+            } else if (marker.preview()) {
+                gc.setGlobalAlpha(0.72);
             }
-            gc.setFill(markerFill(marker));
+            gc.setFill(marker.preview() ? previewFill() : markerFill(marker));
             gc.fillRoundRect(cx - radius, cy - radius, radius * 2.0, radius * 2.0, 10.0, 10.0);
-            gc.setStroke(marker.selected() ? highlightStroke() : markerStroke(marker));
+            gc.setStroke(marker.preview() ? previewStroke() : marker.selected() ? highlightStroke() : markerStroke(marker));
             gc.setLineWidth(marker.selected() ? 2.2 : 1.4);
             gc.strokeRoundRect(cx - radius, cy - radius, radius * 2.0, radius * 2.0, 10.0, 10.0);
             gc.setFill(labelText());
@@ -506,31 +515,58 @@ public class DungeonMapMainView extends BorderPane {
         }
         gc.setTextAlign(TextAlignment.CENTER);
         for (DungeonMapDisplayModel.RenderLabel label : model.labels()) {
-            boolean overlay = label.z() != model.projectionLevel();
-            if (label.label().isBlank()
-                    || (overlay && (!includeOverlay || !includeOverlayLevel(model, label.z())))) {
+            if (!visibleLabel(model, includeOverlay, label)) {
                 continue;
             }
-            double width = Math.max(56.0, Math.min(180.0, label.label().length() * 7.2 + 16.0));
-            double x = worldToScreenX(label.q()) - width / 2.0;
-            double y = worldToScreenY(label.r()) - 12.0;
-            if (x + width < 0.0 || x > width() || y + 24.0 < 0.0 || y > height()) {
-                continue;
-            }
-            gc.save();
-            if (overlay) {
-                gc.setGlobalAlpha(overlayAlpha(label.z(), model.projectionLevel(), model.overlaySettings().opacity()));
-            }
-            gc.setFill(labelFill());
-            gc.fillRoundRect(x, y, width, 24.0, 14.0, 14.0);
-            gc.setStroke(label.selected() ? highlightStroke() : labelBorder());
-            gc.setLineWidth(label.selected() ? 2.0 : 1.0);
-            gc.strokeRoundRect(x, y, width, 24.0, 14.0, 14.0);
-            gc.setFill(labelText());
-            gc.fillText(label.label(), x + width / 2.0, y + 16.5);
-            gc.restore();
+            drawLabel(gc, model, label);
         }
         gc.setTextAlign(TextAlignment.LEFT);
+    }
+
+    private boolean visibleLabel(
+            DungeonMapDisplayModel model,
+            boolean includeOverlay,
+            DungeonMapDisplayModel.RenderLabel label
+    ) {
+        boolean overlay = label.z() != model.projectionLevel();
+        return !label.label().isBlank()
+                && (!overlay || (includeOverlay && includeOverlayLevel(model, label.z())));
+    }
+
+    private void drawLabel(
+            GraphicsContext gc,
+            DungeonMapDisplayModel model,
+            DungeonMapDisplayModel.RenderLabel label
+    ) {
+        double width = Math.max(56.0, Math.min(180.0, label.label().length() * 7.2 + 16.0));
+        double x = worldToScreenX(label.q()) - width / 2.0;
+        double y = worldToScreenY(label.r()) - 12.0;
+        if (x + width < 0.0 || x > width() || y + 24.0 < 0.0 || y > height()) {
+            return;
+        }
+        gc.save();
+        applyLabelAlpha(gc, model, label);
+        gc.setFill(label.preview() ? previewFill() : labelFill());
+        gc.fillRoundRect(x, y, width, 24.0, 14.0, 14.0);
+        gc.setStroke(label.preview() ? previewStroke() : label.selected() ? highlightStroke() : labelBorder());
+        gc.setLineWidth(label.selected() ? 2.0 : 1.0);
+        gc.strokeRoundRect(x, y, width, 24.0, 14.0, 14.0);
+        gc.setFill(labelText());
+        gc.fillText(label.label(), x + width / 2.0, y + 16.5);
+        gc.restore();
+    }
+
+    private void applyLabelAlpha(
+            GraphicsContext gc,
+            DungeonMapDisplayModel model,
+            DungeonMapDisplayModel.RenderLabel label
+    ) {
+        boolean overlay = label.z() != model.projectionLevel();
+        if (overlay) {
+            gc.setGlobalAlpha(overlayAlpha(label.z(), model.projectionLevel(), model.overlaySettings().opacity()));
+        } else if (label.preview()) {
+            gc.setGlobalAlpha(0.76);
+        }
     }
 
     private void drawPartyToken(GraphicsContext gc, DungeonMapDisplayModel model) {
