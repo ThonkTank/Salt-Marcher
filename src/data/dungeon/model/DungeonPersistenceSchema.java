@@ -38,6 +38,17 @@ public final class DungeonPersistenceSchema {
                     + "level_z          INTEGER NOT NULL DEFAULT 0"
                     + ")";
 
+    public static final String DROP_LEGACY_ROOM_CLUSTERS_STRUCTURE_OBJECT_TABLE_SQL =
+            "DROP TABLE IF EXISTS dungeon_room_clusters_legacy_structure_object";
+
+    public static final String RENAME_ROOM_CLUSTERS_TO_LEGACY_STRUCTURE_OBJECT_TABLE_SQL =
+            "ALTER TABLE dungeon_room_clusters RENAME TO dungeon_room_clusters_legacy_structure_object";
+
+    public static final String COPY_LEGACY_STRUCTURE_OBJECT_CLUSTERS_TO_ROOM_CLUSTERS_SQL =
+            "INSERT INTO dungeon_room_clusters(cluster_id, dungeon_map_id, center_x, center_y, level_z)"
+                    + " SELECT cluster_id, dungeon_map_id, center_x, center_y, level_z"
+                    + " FROM dungeon_room_clusters_legacy_structure_object";
+
     public static final String CREATE_DUNGEON_ROOMS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS dungeon_rooms ("
                     + "room_id            INTEGER PRIMARY KEY AUTOINCREMENT,"

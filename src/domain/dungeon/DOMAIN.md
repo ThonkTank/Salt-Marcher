@@ -71,6 +71,9 @@ Current state:
 - Editor operations now tell the aggregate to mutate authored map metadata,
   topology seeds, selected topology placement, and room narration instead of
   rewriting a document carrier in application code.
+- Editor map loading uses the map-specific editor snapshot so selection
+  handles, map geometry, and relation-derived preview data are projected from
+  the same authored map before any drag mutation starts.
 - Interactive editor mutations now include selected editor-handle movement and
   room rectangle paint/delete. Handle movement resolves cluster labels, doors,
   corridor waypoints, and stair anchors through the map-owned topology index,

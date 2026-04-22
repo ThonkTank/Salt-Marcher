@@ -20,7 +20,6 @@ import javafx.beans.property.StringProperty;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.DungeonApplicationService;
 import src.domain.dungeon.published.ApplyDungeonEditorOperationCommand;
-import src.domain.dungeon.published.BaseMapSnapshot;
 import src.domain.dungeon.published.CreateDungeonMapCommand;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DescribeDungeonSelectionQuery;
@@ -37,7 +36,7 @@ import src.domain.dungeon.published.DungeonOperationResult;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.domain.dungeon.published.LoadMapSnapshotQuery;
+import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
 import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.SearchMapsQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
@@ -393,16 +392,9 @@ public final class DungeonEditorViewModel {
             return;
         }
         try {
-            BaseMapSnapshot loaded = dungeon.loadMapSnapshot(new LoadMapSnapshotQuery(selectedMapId, projectionLevel.get()));
-            DungeonSnapshot nextSnapshot = new DungeonSnapshot(
-                    loaded.mapName(),
-                    DungeonMapMode.EDITOR,
-                    loaded.map(),
-                    List.of(),
-                    List.of(),
-                    toRevisionInt(loaded.revision()));
+            DungeonSnapshot nextSnapshot = dungeon.loadSnapshot(new LoadDungeonSnapshotQuery(selectedMapId))
+                    .withMode(DungeonMapMode.EDITOR);
             snapshot.set(nextSnapshot);
-            projectionLevel.set(loaded.currentFloor());
             reachableLevels.set(levelsFrom(nextSnapshot, projectionLevel.get()));
             status.set("");
         } catch (RuntimeException exception) {
@@ -596,10 +588,22 @@ public final class DungeonEditorViewModel {
         try {
             action.run();
         } catch (RuntimeException exception) {
-            status.set(exception.getMessage() == null ? "Dungeon-Aktion fehlgeschlagen." : exception.getMessage());
+            status.set(rootCauseMessage(exception));
         } finally {
             busy.set(false);
         }
+    }
+
+    private static String rootCauseMessage(RuntimeException exception) {
+        Throwable root = exception;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        String message = root.getMessage();
+        if (message == null || message.isBlank()) {
+            message = exception.getMessage();
+        }
+        return message == null || message.isBlank() ? "Dungeon-Aktion fehlgeschlagen." : message;
     }
 
     private @Nullable MapSelection findMap(String mapKey) {
@@ -640,10 +644,6 @@ public final class DungeonEditorViewModel {
 
     private static String key(DungeonMapId mapId) {
         return mapId == null ? "" : Long.toString(mapId.value());
-    }
-
-    private static int toRevisionInt(long revision) {
-        return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, revision));
     }
 
     public record MapSelection(

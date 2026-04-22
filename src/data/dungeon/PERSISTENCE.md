@@ -59,9 +59,11 @@ This document is normative for the dungeon feature's persistence path.
   `topology_element_id` columns for room-cluster edges and corridor door
   overrides.
 - Existing legacy room clusters backed by `dungeon_structure_levels` are
-  backfilled into the current center columns when those columns are first
-  added. Legacy stair-anchored transitions are backfilled into the current
-  nullable transition anchor columns when those columns are first added.
+  backfilled into the current center columns and then migrated away from the
+  obsolete `structure_object_id` room-cluster column so new map creation and
+  full map saves can use the current authored cluster schema. Legacy
+  stair-anchored transitions are backfilled into the current nullable
+  transition anchor columns when those columns are first added.
 - Existing legacy dungeon rows are backfilled into `dungeon_topology_elements`
   when that table is introduced or still empty. After that point, the topology
   element table is the SQLite source of truth for map-owned

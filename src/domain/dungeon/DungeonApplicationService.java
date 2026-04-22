@@ -119,7 +119,9 @@ public final class DungeonApplicationService {
     }
 
     public DungeonSnapshot loadSnapshot(LoadDungeonSnapshotQuery query) {
-        return SnapshotPublication.snapshot(loadDungeonSnapshotUseCase.execute());
+        LoadDungeonSnapshotQuery effectiveQuery = query == null ? new LoadDungeonSnapshotQuery() : query;
+        return SnapshotPublication.snapshot(loadDungeonSnapshotUseCase.execute(
+                MapPublication.domainId(effectiveQuery.mapId())));
     }
 
     public DungeonOperationResult applyOperation(ApplyDungeonEditorOperationCommand command) {

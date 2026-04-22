@@ -112,7 +112,14 @@ public final class LoadDungeonSnapshotUseCase {
     }
 
     public DungeonSnapshotData execute() {
-        DungeonMap dungeonMap = loadCurrentMap();
+        return snapshotData(loadCurrentMap());
+    }
+
+    public DungeonSnapshotData execute(DungeonMapIdentity mapId) {
+        return snapshotData(loadMap(mapId));
+    }
+
+    private DungeonSnapshotData snapshotData(DungeonMap dungeonMap) {
         return new DungeonSnapshotData(
                 dungeonMap.metadata().mapName(),
                 derive.execute(dungeonMap),

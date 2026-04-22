@@ -218,10 +218,6 @@ public record DungeonMapDisplayModel(
                 graphNodes.add(new GraphNode(area.id(), area.clusterId(), area.label(), center.x(), center.y(), selected));
             }
         }
-        if (dragPreview != null && dragPreview.active()) {
-            addDragPreview(renderedCells, map.areas(), selection, dragPreview);
-            addHandleDragPreview(renderedMarkers, dragPreview);
-        }
         if (paintPreview != null && paintPreview.active()) {
             addPaintPreview(renderedCells, paintPreview);
         }
@@ -348,52 +344,6 @@ public record DungeonMapDisplayModel(
                 false);
     }
 
-    private static void addDragPreview(
-            List<RenderCell> renderedCells,
-            List<DungeonAreaSnapshot> areas,
-            @Nullable Selection selection,
-            DragPreview dragPreview
-    ) {
-        long selectedClusterId = selection == null ? dragPreview.clusterId() : selection.clusterId();
-        for (DungeonAreaSnapshot area : areas == null ? List.<DungeonAreaSnapshot>of() : areas) {
-            if (area.kind() != DungeonAreaKind.ROOM || area.clusterId() != selectedClusterId) {
-                continue;
-            }
-            renderedCells.addAll(area.cells().stream()
-                    .map(cell -> renderCell(
-                            area,
-                            cell,
-                            true,
-                            true,
-                            dragPreview.deltaQ(),
-                            dragPreview.deltaR(),
-                            dragPreview.deltaLevel()))
-                    .toList());
-        }
-    }
-
-    private static void addHandleDragPreview(List<RenderMarker> renderedMarkers, DragPreview dragPreview) {
-        if (dragPreview.clusterId() > 0L && dragPreview.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
-            return;
-        }
-        DungeonCellRef cell = dragPreview.handleRef().cell();
-        MarkerKind kind = switch (dragPreview.handleRef().kind()) {
-            case DOOR -> MarkerKind.DOOR;
-            case STAIR_ANCHOR -> MarkerKind.STAIR;
-            case CORRIDOR_WAYPOINT -> MarkerKind.WAYPOINT;
-            case CLUSTER_LABEL -> MarkerKind.CLUSTER;
-        };
-        String label = dragPreview.label().isBlank() ? "*" : dragPreview.label();
-        renderedMarkers.add(new RenderMarker(
-                label,
-                cell.q() + dragPreview.deltaQ() + 0.5,
-                cell.r() + dragPreview.deltaR() + 0.5,
-                cell.level() + dragPreview.deltaLevel(),
-                kind,
-                true,
-                dragPreview.handleRef()));
-    }
-
     private static void addPaintPreview(List<RenderCell> renderedCells, PaintPreview paintPreview) {
         int minQ = Math.min(paintPreview.startQ(), paintPreview.endQ());
         int maxQ = Math.max(paintPreview.startQ(), paintPreview.endQ());
@@ -504,7 +454,7 @@ public record DungeonMapDisplayModel(
                 handle.cell().r() + 0.5,
                 handle.cell().level(),
                 kind,
-                selection != null && ref.equals(selection.handleRef()),
+                selectedHandle(ref, selection),
                 ref);
     }
 
@@ -591,6 +541,20 @@ public record DungeonMapDisplayModel(
             return false;
         }
         return topologyRef(feature.topologyRef()).equals(selection.topologyRef());
+    }
+
+    private static boolean selectedHandle(DungeonEditorHandleRef ref, @Nullable Selection selection) {
+        if (ref == null || selection == null || selection.handleRef() == null) {
+            return false;
+        }
+        DungeonEditorHandleRef selected = selection.handleRef();
+        return ref.kind() == selected.kind()
+                && ref.topologyRef().equals(selected.topologyRef())
+                && ref.ownerId() == selected.ownerId()
+                && ref.clusterId() == selected.clusterId()
+                && ref.corridorId() == selected.corridorId()
+                && ref.roomId() == selected.roomId()
+                && ref.index() == selected.index();
     }
 
     private static CellCenter centerOf(List<RenderCell> cells) {

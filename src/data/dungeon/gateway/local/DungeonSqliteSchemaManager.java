@@ -25,9 +25,10 @@ final class DungeonSqliteSchemaManager {
         boolean roomClusterColumnsAdded = ensureRoomClusterCompatibilityColumns(connection);
         boolean transitionColumnsAdded = ensureTransitionCompatibilityColumns(connection);
         ensureGeneralCompatibilityColumns(connection);
-        if (roomClusterColumnsAdded) {
+        if (roomClusterColumnsAdded || hasLegacyRoomClusterStructureObjectColumn(connection)) {
             backfillLegacyRoomClusterCenters(connection);
         }
+        removeLegacyRoomClusterStructureObjectColumn(connection);
         if (transitionColumnsAdded) {
             backfillLegacyTransitionAnchors(connection);
         }
@@ -134,10 +135,7 @@ final class DungeonSqliteSchemaManager {
 
     private static void backfillLegacyRoomClusterCenters(Connection connection) throws SQLException {
         if (!SqliteSchemaColumnSupport.hasTable(connection, DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE)
-                || !SqliteSchemaColumnSupport.hasColumn(
-                        connection,
-                        DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE,
-                        "structure_object_id")) {
+                || !hasLegacyRoomClusterStructureObjectColumn(connection)) {
             return;
         }
         String roomClusters = DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE;
@@ -163,6 +161,36 @@ final class DungeonSqliteSchemaManager {
                             + " WHERE EXISTS (SELECT 1 FROM " + structureLevels
                             + " WHERE " + structureLevels + ".structure_object_id = "
                             + roomClusters + ".structure_object_id)");
+        }
+    }
+
+    private static boolean hasLegacyRoomClusterStructureObjectColumn(Connection connection) throws SQLException {
+        return SqliteSchemaColumnSupport.hasColumn(
+                connection,
+                DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE,
+                "structure_object_id");
+    }
+
+    private static void removeLegacyRoomClusterStructureObjectColumn(Connection connection) throws SQLException {
+        if (!hasLegacyRoomClusterStructureObjectColumn(connection)) {
+            return;
+        }
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("PRAGMA foreign_keys=OFF");
+            statement.execute("PRAGMA legacy_alter_table=ON");
+            statement.execute(DungeonPersistenceSchema.DROP_LEGACY_ROOM_CLUSTERS_STRUCTURE_OBJECT_TABLE_SQL);
+            statement.execute(DungeonPersistenceSchema.RENAME_ROOM_CLUSTERS_TO_LEGACY_STRUCTURE_OBJECT_TABLE_SQL);
+            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL);
+            statement.executeUpdate(DungeonPersistenceSchema.COPY_LEGACY_STRUCTURE_OBJECT_CLUSTERS_TO_ROOM_CLUSTERS_SQL);
+            statement.execute(DungeonPersistenceSchema.DROP_LEGACY_ROOM_CLUSTERS_STRUCTURE_OBJECT_TABLE_SQL);
+            statement.execute("PRAGMA legacy_alter_table=OFF");
+            statement.execute("PRAGMA foreign_keys=ON");
+        } catch (SQLException exception) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("PRAGMA legacy_alter_table=OFF");
+                statement.execute("PRAGMA foreign_keys=ON");
+            }
+            throw exception;
         }
     }
 
