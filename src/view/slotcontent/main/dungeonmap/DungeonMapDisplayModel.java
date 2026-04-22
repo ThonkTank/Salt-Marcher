@@ -250,7 +250,8 @@ public record DungeonMapDisplayModel(
             }
         }
         for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
-            if (draggedHandle(handle.ref(), dragPreview)) {
+            if (handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL
+                    || draggedHandle(handle.ref(), dragPreview)) {
                 continue;
             }
             renderedMarkers.add(markerForHandle(handle, selection));
