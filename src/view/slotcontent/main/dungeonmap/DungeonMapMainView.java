@@ -1,29 +1,21 @@
 package src.view.slotcontent.main.dungeonmap;
 
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 
@@ -38,16 +30,10 @@ public class DungeonMapMainView extends BorderPane {
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
     private final ObjectProperty<DungeonMapDisplayModel> renderModel =
             new SimpleObjectProperty<>(DungeonMapDisplayModel.empty());
-    private final Label titleLabel = new Label();
-    private final Label subtitleLabel = new Label();
-    private final Label modeBadge = new Label();
-    private final Label statusLabel = new Label();
-    private final Label summaryLabel = new Label();
     private final StackPane contentHost = new StackPane();
     private final Pane canvasLayer = new Pane();
     private final Canvas canvas = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     private final Label overlayMessage = new Label();
-    private final Label hudLabel = new Label();
     private double panX;
     private double panY;
     private double zoom = 1.0;
@@ -60,27 +46,19 @@ public class DungeonMapMainView extends BorderPane {
     private Consumer<DungeonMapPointerEvent> primaryReleasedHandler = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
-    public DungeonMapMainView(String titleText) {
+    public DungeonMapMainView() {
         getStyleClass().add("surface-root");
         setPadding(new Insets(8));
         configureLabels();
         configureContentHost();
-        titleLabel.setText(titleText);
         renderModel.addListener((ignored, before, after) -> redraw());
-        setTop(buildHeader());
         setCenter(contentHost);
-        setBottom(summaryLabel);
-        BorderPane.setMargin(summaryLabel, new Insets(8, 0, 0, 0));
         installInteractionHandlers();
         redraw();
     }
 
     public final ObjectProperty<DungeonMapDisplayModel> renderModelProperty() {
         return renderModel;
-    }
-
-    public final StringProperty statusTextProperty() {
-        return statusLabel.textProperty();
     }
 
     public final double zoom() {
@@ -116,18 +94,9 @@ public class DungeonMapMainView extends BorderPane {
     }
 
     private void configureLabels() {
-        titleLabel.getStyleClass().add("title-large");
-        subtitleLabel.getStyleClass().add("text-muted");
-        modeBadge.getStyleClass().add("map-mode-badge");
-        statusLabel.getStyleClass().add("map-status-label");
-        statusLabel.setWrapText(true);
-        summaryLabel.getStyleClass().add("text-muted");
-        summaryLabel.setWrapText(true);
         overlayMessage.getStyleClass().add("dungeon-map-overlay-placeholder");
         overlayMessage.setWrapText(true);
         overlayMessage.setMouseTransparent(true);
-        hudLabel.getStyleClass().add("dungeon-map-hud");
-        hudLabel.setMouseTransparent(true);
     }
 
     private void configureContentHost() {
@@ -142,49 +111,9 @@ public class DungeonMapMainView extends BorderPane {
         canvas.widthProperty().addListener((ignored, before, after) -> redraw());
         canvas.heightProperty().addListener((ignored, before, after) -> redraw());
         canvasLayer.getChildren().setAll(canvas);
-        contentHost.getChildren().setAll(canvasLayer, overlayMessage, hudLabel);
+        contentHost.getChildren().setAll(canvasLayer, overlayMessage);
         StackPane.setAlignment(canvasLayer, Pos.TOP_LEFT);
         StackPane.setAlignment(overlayMessage, Pos.CENTER);
-        StackPane.setAlignment(hudLabel, Pos.BOTTOM_RIGHT);
-        StackPane.setMargin(hudLabel, new Insets(0, 16, 14, 0));
-    }
-
-    private HBox buildHeader() {
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox badgeRow = new HBox(8, modeBadge, statusLabel);
-        VBox titleBox = new VBox(4, titleLabel, subtitleLabel, badgeRow);
-        HBox header = new HBox(8, titleBox, spacer, buildCameraControls());
-        header.getStyleClass().add("map-workspace-header");
-        header.setPadding(new Insets(0, 0, 8, 0));
-        return header;
-    }
-
-    private HBox buildCameraControls() {
-        HBox cameraControls = new HBox(
-                4,
-                cameraButton("W", "Pan up", () -> panByPixels(0.0, 48.0)),
-                cameraButton("A", "Pan left", () -> panByPixels(48.0, 0.0)),
-                cameraButton("S", "Pan down", () -> panByPixels(0.0, -48.0)),
-                cameraButton("D", "Pan right", () -> panByPixels(-48.0, 0.0)),
-                cameraButton("-", "Zoom out", () -> zoomAround(width() / 2.0, height() / 2.0, 1.0 / ZOOM_STEP_FACTOR)),
-                cameraButton("+", "Zoom in", () -> zoomAround(width() / 2.0, height() / 2.0, ZOOM_STEP_FACTOR)),
-                cameraButton("Reset", "Reset camera", this::resetCameraState)
-        );
-        cameraControls.getStyleClass().add("map-camera-controls");
-        return cameraControls;
-    }
-
-    private Button cameraButton(String label, String tooltip, Runnable action) {
-        Button button = new Button(label);
-        button.getStyleClass().addAll("compact", "flat");
-        button.setTooltip(new Tooltip(tooltip));
-        button.setOnAction(event -> {
-            action.run();
-            cameraChanged();
-            canvasLayer.requestFocus();
-        });
-        return button;
     }
 
     private void installInteractionHandlers() {
@@ -311,16 +240,6 @@ public class DungeonMapMainView extends BorderPane {
 
     private void redraw() {
         DungeonMapDisplayModel model = renderModel.get() == null ? DungeonMapDisplayModel.empty() : renderModel.get();
-        titleLabel.setText(model.title());
-        subtitleLabel.setText(model.subtitle() + "  Zoom " + String.format(Locale.ROOT, "%.1f", zoom) + "x");
-        modeBadge.setText(model.modeLabel());
-        statusLabel.setText(model.statusLabel());
-        summaryLabel.setText(model.summaryLabel());
-        hudLabel.setText(String.format(Locale.ROOT, "x %.0f  y %.0f  z %d  %.0f%%",
-                -panX / gridSize(),
-                -panY / gridSize(),
-                model.projectionLevel(),
-                zoom * 100.0));
         renderScene(model);
     }
 
@@ -350,7 +269,6 @@ public class DungeonMapMainView extends BorderPane {
         drawPartyToken(gc, model);
         drawLabels(gc, model, true);
         drawAxes(gc);
-        drawHudLabel(gc, gridReferenceText(), width() - hudLabelWidth(gridReferenceText()) - 12.0, height() - 36.0);
     }
 
     private void renderGraph(GraphicsContext gc, DungeonMapDisplayModel model) {
@@ -381,7 +299,7 @@ public class DungeonMapMainView extends BorderPane {
             gc.fillText(abbreviateLabel(node.label(), 14), point.x(), point.y() + 4.0);
         }
         gc.setTextAlign(TextAlignment.LEFT);
-        drawHudLabel(gc, "Graph · " + model.graphNodes().size() + " rooms", 12.0, height() - 36.0);
+        drawInfoPill(gc, "Graph · " + model.graphNodes().size() + " rooms", 12.0, height() - 36.0);
     }
 
     private void fillBackground(GraphicsContext gc) {
@@ -579,11 +497,11 @@ public class DungeonMapMainView extends BorderPane {
         }
     }
 
-    private void drawHudLabel(GraphicsContext gc, String text, double x, double y) {
+    private void drawInfoPill(GraphicsContext gc, String text, double x, double y) {
         if (text == null || text.isBlank()) {
             return;
         }
-        double labelWidth = hudLabelWidth(text);
+        double labelWidth = infoPillWidth(text);
         gc.setFill(labelFill());
         gc.fillRoundRect(x, y, labelWidth, 24.0, 14.0, 14.0);
         gc.setStroke(labelBorder());
@@ -671,11 +589,6 @@ public class DungeonMapMainView extends BorderPane {
         overlayMessage.setManaged(!model.overlayMessage().isBlank());
     }
 
-    private String gridReferenceText() {
-        int squares = gridSize() < 10.0 ? 5 : 1;
-        return squares == 1 ? "Raster: 1 Feld (5 Fuss)" : "Raster: " + squares + " Felder";
-    }
-
     private double width() {
         return canvas.getWidth() > 1.0 ? canvas.getWidth() : DEFAULT_WIDTH;
     }
@@ -745,7 +658,7 @@ public class DungeonMapMainView extends BorderPane {
         return Math.max(0.05, Math.min(0.95, configuredOpacity / Math.sqrt(distance)));
     }
 
-    private double hudLabelWidth(String text) {
+    private double infoPillWidth(String text) {
         return (text == null ? 0 : text.length()) * 7.2 + 16.0;
     }
 

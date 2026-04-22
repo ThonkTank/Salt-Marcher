@@ -15,13 +15,13 @@ projection and can show runtime party-token state supplied by travel.
 ## Visible Structure
 
 - The map scene uses central `dungeon-map-*` selectors for the workspace frame,
-  header, canvas host, HUD, and overlay messages.
+  canvas host, and overlay messages.
 - The canvas draws grid tiers, axis lines, rooms, corridors, walls, doors,
   door markers, stairs, transitions, labels, graph mode, and the runtime party
   token from `DungeonMapDisplayModel`.
 - The View owns camera state, viewport transforms, canvas drawing, label
-  placement, technical pan/zoom/reset events, toolbar-button panning, and
-  passive primary-pointer events expressed as grid hits.
+  placement, technical pan/zoom/reset events, and passive primary-pointer
+  events expressed as grid hits.
 - `DungeonMapDisplayModel` is view-owned projection state translated from
   domain snapshots and runtime travel session state. It owns reusable
   level-overlay settings for disabled, nearby range, selected levels, and
@@ -38,12 +38,11 @@ projection and can show runtime party-token state supplied by travel.
   level overlays, grid/graph mode, selected room clusters, drag previews, and
   room paint/delete rectangle previews supplied by the active editor ViewModel.
 - Runtime mode shows a party token from the active travel session, numbered
-  door markers when supplied by the display model, current location state, and
-  resettable camera controls.
+  door markers when supplied by the display model, and current location state.
 - Resize and layout redraw the same camera state against a top-left anchored
   canvas layer; startup shell layout changes do not pan or recenter the
   viewport.
-- Camera panning is available through explicit toolbar buttons and
-  middle-pointer drag. There is no timer-driven, held-key, or raw keyboard
-  camera motion. Pointer panning uses scene-stable deltas so the camera does
-  not jump when child hit targets change.
+- Camera panning is available through middle-pointer drag. There is no
+  timer-driven, held-key, raw keyboard, or duplicated in-map toolbar camera
+  motion. Pointer panning uses scene-stable deltas so the camera does not jump
+  when child hit targets change.

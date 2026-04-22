@@ -854,29 +854,13 @@
     -fx-padding: 6 8 6 8;
 }
 
-.map-workspace-header {
-    -fx-background-color: rgba(26, 32, 37, 0.94);
-    -fx-background-radius: 8 8 0 0;
-    -fx-border-color: transparent transparent -sm-border-subtle transparent;
-    -fx-padding: 12;
-}
 .map-workspace-content {
     -fx-padding: 8;
     -fx-background-color: linear-gradient(to bottom, #151b20, #0f1418);
-    -fx-background-radius: 0 0 10 10;
+    -fx-background-radius: 10;
 }
 .dungeon-map-canvas {
     -fx-background-color: #12181c;
-}
-.map-mode-badge {
-    -fx-background-color: rgba(30, 127, 212, 0.22);
-    -fx-border-color: rgba(65, 169, 242, 0.6);
-    -fx-border-radius: 999;
-    -fx-background-radius: 999;
-    -fx-padding: 2 10 2 10;
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-text-primary;
 }
 .party-token {
     -fx-background-color: rgba(47, 143, 218, 0.26);
@@ -885,15 +869,6 @@
 .tool-layer {
     -fx-background-color: rgba(255, 182, 42, 0.22);
     -fx-border-color: rgba(255, 240, 198, 0.7);
-}
-.map-status-label {
-    -fx-text-fill: #f0d89a;
-    -fx-font-size: 11px;
-}
-.map-camera-controls {
-    -fx-background-color: rgba(24, 31, 36, 0.75);
-    -fx-background-radius: 999;
-    -fx-padding: 2 4 2 4;
 }
 .dungeon-map-scene {
     -fx-background-color: #12181c;
@@ -1011,12 +986,6 @@
 .dungeon-map-label-current {
     -fx-border-color: #fff0c6;
     -fx-border-width: 1.6;
-}
-.dungeon-map-hud {
-    -fx-text-fill: #ecedee;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-alignment: center-right;
 }
 .dungeon-map-overlay-placeholder {
     -fx-text-fill: rgba(236, 237, 238, 0.92);
