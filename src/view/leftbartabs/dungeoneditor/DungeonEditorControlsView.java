@@ -14,17 +14,17 @@ import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.dialog.DialogSurfaceView;
+import src.view.slotcontent.controls.dialog.DialogSurfaceView.BodyPolicy;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 
 public final class DungeonEditorControlsView extends DungeonControlPanelView {
 
@@ -72,7 +72,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             new DungeonLevelOverlayControlsView(this::sectionLabel);
     private final ToggleGroup viewModeGroup = new ToggleGroup();
     private final ToggleGroup toolGroup = new ToggleGroup();
-    private final Popup mapEditorPopup = new Popup();
+    private final AnchoredPopupView mapEditorPopup = new AnchoredPopupView();
     private final Label mapEditorTitle = new Label();
     private final TextField mapNameField = new TextField();
     private final Label mapEditorError = new Label();
@@ -80,7 +80,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private final Button saveMapButton = new Button("Speichern");
     private HBox deleteConfirmRow;
     private HBox mapEditorActionRow;
-    private final Popup toolPopup = new Popup();
+    private final AnchoredPopupView toolPopup = new AnchoredPopupView();
     private final Button primaryToolOption = toolButton("");
     private final Button secondaryToolOption = toolButton("");
     private Consumer<String> onMapSelected = ignored -> {};
@@ -308,17 +308,14 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         actionRow.setAlignment(Pos.CENTER_LEFT);
         mapEditorActionRow = actionRow;
 
-        VBox panel = new VBox(10, mapEditorTitle, mapNameField, mapEditorError, deleteConfirmRow, actionRow);
+        VBox body = new VBox(10, mapNameField, mapEditorError, deleteConfirmRow);
+        DialogSurfaceView panel = new DialogSurfaceView();
         panel.setPadding(new Insets(10));
         panel.getStyleClass().addAll("dropdown-window", "dropdown-form");
-        mapEditorPopup.getContent().setAll(panel);
-        mapEditorPopup.setAutoHide(true);
-        mapEditorPopup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                mapEditorPopup.hide();
-                event.consume();
-            }
-        });
+        panel.setHeader(mapEditorTitle);
+        panel.setBody(body, BodyPolicy.FIXED);
+        panel.setFooter(actionRow);
+        mapEditorPopup.setContent(panel);
         cancelMapEditButton.setOnAction(event -> mapEditorPopup.hide());
         cancelDeleteButton.setOnAction(event -> {
             if (deleteMode) {
@@ -339,14 +336,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         HBox panel = new HBox(8, primaryToolOption, secondaryToolOption);
         panel.setPadding(new Insets(10));
         panel.getStyleClass().addAll("dropdown-window", "dropdown-form");
-        toolPopup.getContent().setAll(panel);
-        toolPopup.setAutoHide(true);
-        toolPopup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                toolPopup.hide();
-                event.consume();
-            }
-        });
+        toolPopup.setContent(panel);
     }
 
     private HBox dungeonRow() {
@@ -447,13 +437,10 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         mapEditorError.setText("");
         mapEditorError.setVisible(false);
         mapEditorError.setManaged(false);
-        var bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            mapEditorPopup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 2.0);
-            if (mapNameField.isVisible()) {
-                mapNameField.requestFocus();
-                mapNameField.selectAll();
-            }
+        mapEditorPopup.showBelow(anchor);
+        if (mapNameField.isVisible()) {
+            mapEditorPopup.focusAfterShown(mapNameField);
+            mapNameField.selectAll();
         }
     }
 
@@ -491,11 +478,8 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             selectTool(secondaryTool);
             toolPopup.hide();
         });
-        var bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            toolPopup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 2.0);
-            primaryToolOption.requestFocus();
-        }
+        toolPopup.showBelow(anchor);
+        toolPopup.focusAfterShown(primaryToolOption);
     }
 
     private void selectTool(String tool) {

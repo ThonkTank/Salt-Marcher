@@ -7,9 +7,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import javafx.application.Platform;
 import javafx.beans.property.StringProperty;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -28,9 +26,11 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.dialog.DialogSurfaceView;
+import src.view.slotcontent.controls.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupAction;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupSpec;
@@ -62,17 +62,17 @@ public final class EncounterStateView extends VBox {
     private final Button openEncounterButton = new Button("Oeffnen");
     private final Button clearHistoryButton = new Button("Clear");
     private final Button builderStartCombatButton = new Button("_Kampf starten");
-    private final VBox builderPane = buildBuilderPane();
+    private final DialogSurfaceView builderPane = buildBuilderPane();
 
     private final Map<String, Spinner<Integer>> initiativeSpinnerById = new LinkedHashMap<>();
     private final VBox initiativeList = new VBox(6);
-    private final VBox initiativePane = buildInitiativePane();
+    private final DialogSurfaceView initiativePane = buildInitiativePane();
 
     private final Label combatRoundLabel = new Label();
     private final Label combatStatusLabel = new Label();
     private final VBox combatCardList = new VBox(6);
     private final HBox endCombatContainer = new HBox(6);
-    private final VBox combatPane = buildCombatPane();
+    private final DialogSurfaceView combatPane = buildCombatPane();
 
     private final Label resultSubtitleLabel = new Label();
     private final Label resultXpLabel = new Label();
@@ -86,7 +86,7 @@ public final class EncounterStateView extends VBox {
     private final Label resultFractionValueLabel = new Label();
     private final VBox resultEnemyList = new VBox(4);
     private final Button resultAwardButton = new Button("XP verteilen");
-    private final VBox resultsPane = buildResultsPane();
+    private final DialogSurfaceView resultsPane = buildResultsPane();
 
     private Consumer<BuilderSettingsInput> onGenerate = settings -> { };
     private Runnable onPreviousAlternative = () -> { };
@@ -285,13 +285,10 @@ public final class EncounterStateView extends VBox {
         onReturnToBuilder = callback == null ? () -> { } : callback;
     }
 
-    private VBox buildBuilderPane() {
-        VBox content = new VBox(0);
-        content.setPadding(new Insets(8));
-
+    private DialogSurfaceView buildBuilderPane() {
+        DialogSurfaceView dialog = new DialogSurfaceView();
         Label title = new Label("Encounter");
         title.getStyleClass().add("title");
-        title.setPadding(new Insets(0, 0, 4, 0));
         saveEncounterButton.getStyleClass().addAll("compact", "neutral-action");
         saveEncounterButton.setTooltip(new Tooltip("Aktuelles Encounter-Roster speichern"));
         saveEncounterButton.setOnAction(event -> onSaveEncounter.run());
@@ -346,35 +343,28 @@ public final class EncounterStateView extends VBox {
         builderStartCombatButton.setMaxWidth(Double.MAX_VALUE);
         builderStartCombatButton.setDisable(true);
         builderStartCombatButton.setOnAction(event -> onStartInitiative.run());
-        HBox.setHgrow(generateButton, Priority.ALWAYS);
-        HBox.setHgrow(builderStartCombatButton, Priority.ALWAYS);
-        HBox actionRow = new HBox(6, previousAlternativeButton, generateButton, nextAlternativeButton, builderStartCombatButton);
-        actionRow.setAlignment(Pos.CENTER_LEFT);
-        actionRow.setPadding(new Insets(8, 0, 0, 0));
+        DialogSurfaceView.grow(generateButton);
+        DialogSurfaceView.grow(builderStartCombatButton);
 
-        content.getChildren().addAll(
-                titleRow,
+        VBox body = new VBox(0,
                 summaryRow,
                 difficultyMeter,
                 thresholdRow,
                 builderXpLabel,
                 rosterHost,
-                advisoryRegion,
-                separator(),
-                actionRow);
-        return content;
+                advisoryRegion);
+        body.setPadding(DialogSurfaceView.contentInsets());
+        dialog.setHeader(titleRow);
+        dialog.setBody(body, BodyPolicy.FIXED);
+        dialog.setFooter(previousAlternativeButton, generateButton, nextAlternativeButton, builderStartCombatButton);
+        return dialog;
     }
 
-    private VBox buildInitiativePane() {
-        VBox root = new VBox(0);
+    private DialogSurfaceView buildInitiativePane() {
+        DialogSurfaceView dialog = new DialogSurfaceView();
         Label title = new Label("Initiative");
         title.getStyleClass().add("title");
-        title.setPadding(new Insets(0, 12, 6, 12));
-        initiativeList.setPadding(new Insets(0, 12, 8, 12));
-        ScrollPane scroll = new ScrollPane(initiativeList);
-        scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        VBox.setVgrow(scroll, Priority.ALWAYS);
+        initiativeList.setPadding(DialogSurfaceView.contentInsets());
 
         Button backButton = new Button("\u2190 Zurueck");
         backButton.setOnAction(event -> onInitiativeBack.run());
@@ -384,55 +374,41 @@ public final class EncounterStateView extends VBox {
         Button startButton = new Button("Kampf starten");
         startButton.getStyleClass().add("accent");
         startButton.setOnAction(event -> onInitiativeConfirm.accept(readInitiatives()));
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox buttons = new HBox(8, backButton, rollAllButton, spacer, startButton);
-        buttons.setPadding(new Insets(8, 12, 8, 12));
-        buttons.setAlignment(Pos.CENTER_LEFT);
-
-        root.getChildren().addAll(title, scroll, separator(), buttons);
-        return root;
+        dialog.setHeader(title);
+        dialog.setBody(initiativeList, BodyPolicy.SCROLL);
+        dialog.setFooter(backButton, rollAllButton, DialogSurfaceView.spacer(), startButton);
+        return dialog;
     }
 
-    private VBox buildCombatPane() {
-        VBox root = new VBox(0);
+    private DialogSurfaceView buildCombatPane() {
+        DialogSurfaceView dialog = new DialogSurfaceView();
         combatRoundLabel.getStyleClass().add("title");
-        combatRoundLabel.setPadding(new Insets(0, 12, 2, 12));
         combatStatusLabel.getStyleClass().add("text-secondary");
-        combatStatusLabel.setPadding(new Insets(0, 12, 6, 12));
 
         EncounterCombatPartyMemberButtonView addPartyButton = new EncounterCombatPartyMemberButtonView();
         HBox actions = new HBox(addPartyButton);
         actions.setAlignment(Pos.CENTER_RIGHT);
-        actions.setPadding(new Insets(0, 12, 4, 12));
 
-        combatCardList.setPadding(new Insets(4, 12, 4, 12));
-        ScrollPane scroll = new ScrollPane(combatCardList);
-        scroll.setFitToWidth(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        VBox.setVgrow(scroll, Priority.ALWAYS);
+        combatCardList.setPadding(DialogSurfaceView.contentInsets());
 
         Button nextTurnButton = new Button("\u25B6 _Weiter");
         nextTurnButton.getStyleClass().add("accent");
         nextTurnButton.setMaxWidth(Double.MAX_VALUE);
         nextTurnButton.setOnAction(event -> onNextTurn.run());
         endCombatContainer.setAlignment(Pos.CENTER);
-        HBox.setHgrow(nextTurnButton, Priority.ALWAYS);
-        HBox.setHgrow(endCombatContainer, Priority.ALWAYS);
-        HBox buttons = new HBox(8, nextTurnButton, endCombatContainer);
-        buttons.setPadding(new Insets(6, 12, 10, 12));
-
-        root.getChildren().addAll(combatRoundLabel, combatStatusLabel, actions, scroll, buttons);
-        return root;
+        DialogSurfaceView.grow(nextTurnButton);
+        DialogSurfaceView.grow(endCombatContainer);
+        dialog.setHeader(combatRoundLabel, combatStatusLabel, actions);
+        dialog.setBody(combatCardList, BodyPolicy.SCROLL);
+        dialog.setFooter(nextTurnButton, endCombatContainer);
+        return dialog;
     }
 
-    private VBox buildResultsPane() {
-        VBox root = new VBox(0);
+    private DialogSurfaceView buildResultsPane() {
+        DialogSurfaceView dialog = new DialogSurfaceView();
         Label title = new Label("Kampfergebnis");
         title.getStyleClass().add("title");
-        title.setPadding(new Insets(0, 12, 2, 12));
         resultSubtitleLabel.getStyleClass().add("text-secondary");
-        resultSubtitleLabel.setPadding(new Insets(0, 12, 8, 12));
         resultXpLabel.getStyleClass().add("encounter-result-xp");
         resultPartyLabel.getStyleClass().add("text-secondary");
         resultGoldLabel.getStyleClass().add("encounter-result-gold");
@@ -440,24 +416,17 @@ public final class EncounterStateView extends VBox {
         resultLootLabel.setWrapText(true);
 
         VBox summary = new VBox(2, resultXpLabel, resultPartyLabel, resultGoldLabel, resultLootLabel);
-        summary.setPadding(new Insets(8, 12, 8, 12));
 
         resultThresholdSlider.valueProperty().addListener((obs, oldValue, newValue) -> updateResultCalculations());
         resultFractionSlider.valueProperty().addListener((obs, oldValue, newValue) -> updateResultCalculations());
         VBox controls = new VBox(4,
                 sliderRow("Besiegungsschwelle", resultThresholdSlider, resultThresholdValueLabel),
                 sliderRow("XP-Anteil", resultFractionSlider, resultFractionValueLabel));
-        controls.setPadding(new Insets(4, 12, 6, 12));
 
-        resultEnemyList.setPadding(new Insets(2, 12, 8, 12));
-        ScrollPane enemies = new ScrollPane(resultEnemyList);
-        enemies.setFitToWidth(true);
-        enemies.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        VBox.setVgrow(enemies, Priority.ALWAYS);
+        resultEnemyList.setPadding(new Insets(2, 0, 8, 0));
 
         resultAwardStatusLabel.getStyleClass().add("text-secondary");
         resultAwardStatusLabel.setWrapText(true);
-        resultAwardStatusLabel.setPadding(new Insets(4, 12, 0, 12));
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
         resultAwardButton.setOnAction(event -> onAwardXp.run());
         Button doneButton = new Button("Zum Planer");
@@ -465,14 +434,16 @@ public final class EncounterStateView extends VBox {
         doneButton.setAccessibleText("Zur Encounter-Planung zurueckkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
         doneButton.setOnAction(event -> onReturnToBuilder.run());
-        HBox.setHgrow(resultAwardButton, Priority.ALWAYS);
-        HBox.setHgrow(doneButton, Priority.ALWAYS);
-        HBox buttons = new HBox(8, resultAwardButton, doneButton);
-        buttons.setPadding(new Insets(8, 12, 10, 12));
+        DialogSurfaceView.grow(resultAwardButton);
+        DialogSurfaceView.grow(doneButton);
 
-        root.getChildren().addAll(title, resultSubtitleLabel, new Separator(), summary, new Separator(),
-                controls, new Separator(), enemies, new Separator(), resultAwardStatusLabel, buttons);
-        return root;
+        VBox body = new VBox(8, summary, separator(), controls, separator(), resultEnemyList,
+                separator(), resultAwardStatusLabel);
+        body.setPadding(DialogSurfaceView.contentInsets());
+        dialog.setHeader(title, resultSubtitleLabel);
+        dialog.setBody(body, BodyPolicy.SCROLL);
+        dialog.setFooter(resultAwardButton, doneButton);
+        return dialog;
     }
 
     private void rebuildRoster(BuilderStateView state) {
@@ -660,8 +631,7 @@ public final class EncounterStateView extends VBox {
     }
 
     private void showInitiativePopup(Node anchor, CombatCardView card) {
-        Popup popup = new Popup();
-        popup.setAutoHide(true);
+        AnchoredPopupView popup = new AnchoredPopupView();
         TextField field = popupNumberField(String.valueOf(card.initiative()));
         Button down = popupButton("\u25BC");
         Button up = popupButton("\u25B2");
@@ -679,10 +649,9 @@ public final class EncounterStateView extends VBox {
     }
 
     private void showSavedPlansPopup(Node anchor) {
-        Popup popup = new Popup();
-        popup.setAutoHide(true);
+        AnchoredPopupView popup = new AnchoredPopupView();
         VBox content = new VBox(4);
-        content.getStyleClass().add("edit-popup-panel");
+        content.getStyleClass().add("anchored-popup");
         List<SavedEncounterPlanView> savedPlans = lastBuilderState.savedPlans();
         if (savedPlans.isEmpty()) {
             Label empty = new Label("Keine gespeicherten Encounter.");
@@ -700,11 +669,8 @@ public final class EncounterStateView extends VBox {
                 content.getChildren().add(option);
             }
         }
-        popup.getContent().add(content);
-        Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            popup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 8);
-        }
+        popup.setContent(content);
+        popup.showBelow(anchor, 8);
     }
 
     private static String savedPlanLabel(SavedEncounterPlanView plan) {
@@ -712,18 +678,14 @@ public final class EncounterStateView extends VBox {
         return plan.name() + suffix + " (" + plan.creatureCount() + ")";
     }
 
-    private void showPopup(Node anchor, Popup popup, TextField focus, Node... nodes) {
+    private void showPopup(Node anchor, AnchoredPopupView popup, TextField focus, Node... nodes) {
         HBox content = new HBox(4);
-        content.getStyleClass().add("edit-popup-panel");
+        content.getStyleClass().add("anchored-popup");
         content.setAlignment(Pos.CENTER_LEFT);
         content.getChildren().addAll(nodes);
-        popup.getContent().add(content);
-        popup.setOnHidden(event -> anchor.requestFocus());
-        Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            popup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 8);
-        }
-        Platform.runLater(focus::requestFocus);
+        popup.setContent(content);
+        popup.showBelow(anchor, 8);
+        popup.focusAfterShown(focus);
     }
 
     private TextField popupNumberField(String initial) {

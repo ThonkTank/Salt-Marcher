@@ -15,15 +15,13 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 
 public final class DungeonLevelOverlayControlsView {
 
@@ -35,7 +33,7 @@ public final class DungeonLevelOverlayControlsView {
     private final TextField selectedLevelsField = new TextField();
     private final HBox rangeRow;
     private final HBox selectedRow;
-    private final Popup popup = new Popup();
+    private final AnchoredPopupView popup = new AnchoredPopupView();
     private Consumer<Mode> onModeChanged = ignored -> {};
     private Consumer<Integer> onRangeChanged = ignored -> {};
     private Consumer<Double> onOpacityChanged = ignored -> {};
@@ -83,15 +81,7 @@ public final class DungeonLevelOverlayControlsView {
         VBox content = new VBox(6, sectionLabelFactory.apply("Overlay"), modeRow, opacityRow, rangeRow, selectedRow);
         content.setPadding(new Insets(8));
         content.getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown");
-        popup.getContent().setAll(content);
-        popup.setAutoHide(true);
-        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                popup.hide();
-                triggerButton.requestFocus();
-                event.consume();
-            }
-        });
+        popup.setContent(content);
 
         modeSelector.getSelectionModel().selectedItemProperty().addListener((ignored, before, after) -> {
             if (syncing || after == null) {
@@ -195,11 +185,8 @@ public final class DungeonLevelOverlayControlsView {
             popup.hide();
             return;
         }
-        var bounds = triggerButton.localToScreen(triggerButton.getBoundsInLocal());
-        if (bounds != null) {
-            popup.show(triggerButton, bounds.getMinX(), bounds.getMaxY() + 2.0);
-            modeSelector.requestFocus();
-        }
+        popup.showBelow(triggerButton);
+        popup.focusAfterShown(modeSelector);
     }
 
     private static HBox row(Region... nodes) {

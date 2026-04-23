@@ -11,7 +11,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
+import src.view.slotcontent.controls.dialog.DialogSurfaceView;
+import src.view.slotcontent.controls.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 import src.view.slotcontent.topbar.adventuringday.AdventuringDayCalculatorView;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
@@ -20,7 +22,7 @@ public final class AdventuringDayTopBarView extends HBox {
     private static final double POPUP_WIDTH = 420.0;
 
     private final Button triggerButton = new Button("Rastbudget \u25be");
-    private final Popup popup = new Popup();
+    private final AnchoredPopupView popup = new AnchoredPopupView();
     private final AdventuringDayCalculatorView calculatorPane = new AdventuringDayCalculatorView();
     private Runnable onOpen = () -> {};
 
@@ -60,15 +62,13 @@ public final class AdventuringDayTopBarView extends HBox {
     }
 
     private void configurePopup() {
-        VBox panel = buildPanel();
+        DialogSurfaceView panel = buildPanel();
         panel.getStyleClass().addAll("party-panel", "adventuring-day-toolbar-popup");
-        popup.setAutoHide(true);
-        popup.setHideOnEscape(true);
-        popup.getContent().add(panel);
-        popup.setOnHidden(event -> triggerButton.requestFocus());
+        popup.setContent(panel);
     }
 
-    private VBox buildPanel() {
+    private DialogSurfaceView buildPanel() {
+        DialogSurfaceView dialog = new DialogSurfaceView();
         Label headerLabel = new Label("ADVENTURING DAY");
         headerLabel.getStyleClass().add("title-large");
         Button closeButton = new Button("\u00d7");
@@ -91,7 +91,9 @@ public final class AdventuringDayTopBarView extends HBox {
 
         VBox body = new VBox(scrollPane);
         body.setPadding(new Insets(0, 12, 12, 12));
-        return new VBox(header, body);
+        dialog.setHeader(header);
+        dialog.setBody(body, BodyPolicy.FIXED);
+        return dialog;
     }
 
     private void togglePopup() {

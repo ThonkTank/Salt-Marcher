@@ -2,8 +2,6 @@ package src.view.slotcontent.controls.progressmeter;
 
 import java.util.List;
 import java.util.function.IntConsumer;
-import javafx.application.Platform;
-import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -14,8 +12,8 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Popup;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 
 public final class ProgressMeterView extends StackPane {
 
@@ -81,8 +79,7 @@ public final class ProgressMeterView extends StackPane {
     }
 
     private static void showAmountPopup(Node anchor, PopupSpec popupSpec) {
-        Popup popup = new Popup();
-        popup.setAutoHide(true);
+        AnchoredPopupView popup = new AnchoredPopupView();
         TextField field = amountField(String.valueOf(Math.max(1, popupSpec.initialAmount())));
         Button down = spinnerButton("\u25BC");
         Button up = spinnerButton("\u25B2");
@@ -90,7 +87,7 @@ public final class ProgressMeterView extends StackPane {
         up.setOnAction(event -> field.setText(String.valueOf(parse(field.getText(), 1) + 1)));
 
         HBox content = new HBox(4);
-        content.getStyleClass().add("edit-popup-panel");
+        content.getStyleClass().add("anchored-popup");
         content.setAlignment(Pos.CENTER_LEFT);
         content.getChildren().addAll(field, down, up);
         Button defaultButton = null;
@@ -114,13 +111,9 @@ public final class ProgressMeterView extends StackPane {
             field.setOnAction(event -> enterAction.fire());
         }
 
-        popup.getContent().add(content);
-        popup.setOnHidden(event -> anchor.requestFocus());
-        Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            popup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 8);
-        }
-        Platform.runLater(field::requestFocus);
+        popup.setContent(content);
+        popup.showBelow(anchor, 8);
+        popup.focusAfterShown(field);
     }
 
     private static TextField amountField(String initial) {

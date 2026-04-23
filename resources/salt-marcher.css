@@ -330,6 +330,43 @@
 .party-editor-form .text-field {
     -fx-pref-width: 180;
 }
+.anchored-popup {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-accent;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8;
+    -fx-spacing: 6;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
+}
+.anchored-popup .button {
+    -fx-padding: 3 8 3 8;
+    -fx-font-size: 13px;
+}
+.dialog-surface {
+    -fx-background-color: transparent;
+    -fx-spacing: 0;
+}
+.dialog-header {
+    -fx-padding: 0 12 6 12;
+}
+.dialog-body {
+    -fx-background-color: transparent;
+}
+.dialog-body-scroll,
+.dialog-body-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.dialog-footer {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.dialog-action-row {
+    -fx-padding: 8 12 10 12;
+    -fx-alignment: center-left;
+}
 .party-editor-delete-section {
     -fx-background-color: derive(-sm-deadly, -70%);
     -fx-border-color: derive(-sm-deadly, 5%);

@@ -9,13 +9,11 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 
 public class DungeonControlPanelView extends VBox {
 
@@ -77,34 +75,20 @@ public class DungeonControlPanelView extends VBox {
         }
     }
 
-    protected final Popup createOverlayPopup(Consumer<String> action, String... labels) {
-        Popup popup = new Popup();
+    protected final AnchoredPopupView createOverlayPopup(Consumer<String> action, String... labels) {
+        AnchoredPopupView popup = new AnchoredPopupView();
         VBox content = new VBox(6);
         content.setPadding(new Insets(8));
         content.getStyleClass().addAll("filter-dropdown", "dungeon-overlay-dropdown");
         for (String label : labels) {
             content.getChildren().add(overlayOption(label, action, popup));
         }
-        popup.getContent().setAll(content);
-        popup.setAutoHide(true);
-        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                popup.hide();
-                event.consume();
-            }
-        });
+        popup.setContent(content);
         return popup;
     }
 
-    protected final void togglePopup(Popup popup, Node anchor) {
-        if (popup.isShowing()) {
-            popup.hide();
-            return;
-        }
-        var bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            popup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 2.0);
-        }
+    protected final void togglePopup(AnchoredPopupView popup, Node anchor) {
+        popup.toggleBelow(anchor, null);
     }
 
     protected final Label sectionLabel(String text) {
@@ -119,7 +103,7 @@ public class DungeonControlPanelView extends VBox {
         return spacer;
     }
 
-    private Button overlayOption(String label, Consumer<String> action, Popup popup) {
+    private Button overlayOption(String label, Consumer<String> action, AnchoredPopupView popup) {
         Button button = new Button(label);
         button.getStyleClass().add("tool-btn");
         button.setMaxWidth(Double.MAX_VALUE);

@@ -20,13 +20,12 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupAction;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupSpec;
@@ -37,7 +36,7 @@ public final class PartyTopBarView extends HBox {
     private static final double POPUP_WIDTH = 380.0;
 
     private final Button triggerButton = new Button("Keine _Party \u25bc");
-    private final Popup popup = new Popup();
+    private final AnchoredPopupView popup = new AnchoredPopupView();
     private final VBox memberList = new VBox();
     private final Label summaryLabel = new Label();
     private final Label restSummaryLabel = new Label();
@@ -177,18 +176,9 @@ public final class PartyTopBarView extends HBox {
     private void configurePopup() {
         VBox panel = buildPanel();
         panel.getStyleClass().add("party-panel");
-        popup.setAutoHide(true);
-        popup.setHideOnEscape(true);
-        popup.getContent().add(panel);
-        popup.setOnShowing(event -> triggerButton.setAccessibleText("Party-Panel geoeffnet, Escape zum Schliessen"));
-        popup.setOnHiding(event -> editorView.hide());
-        popup.setOnHidden(event -> triggerButton.requestFocus());
-        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                popup.hide();
-                event.consume();
-            }
-        });
+        popup.setContent(panel);
+        popup.addOnShowing(event -> triggerButton.setAccessibleText("Party-Panel geoeffnet, Escape zum Schliessen"));
+        popup.addOnHiding(event -> editorView.hide());
     }
 
     private VBox buildPanel() {

@@ -1,7 +1,6 @@
 package src.view.dropdowns.party;
 
 import java.util.function.Function;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -9,19 +8,20 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.dialog.DialogSurfaceView;
+import src.view.slotcontent.controls.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 
 public final class PartyCharacterEditorTopBarView {
 
-    private final VBox panel = new VBox(10);
+    private static final double POPUP_WIDTH = 360.0;
+
+    private final DialogSurfaceView panel = new DialogSurfaceView();
     private final Label titleLabel = new Label();
     private final Label errorLabel = new Label();
     private final TextField nameField = new TextField();
@@ -36,7 +36,7 @@ public final class PartyCharacterEditorTopBarView {
     private final Button confirmDeleteButton = new Button("Wirklich loeschen");
     private final Button cancelButton = new Button("Abbrechen");
     private final Button submitButton = new Button("Speichern");
-    private final Popup popup = new Popup();
+    private final AnchoredPopupView popup = new AnchoredPopupView();
 
     private @Nullable EditorMember editingMember;
     private boolean pending;
@@ -55,7 +55,10 @@ public final class PartyCharacterEditorTopBarView {
         configureFields();
         configureDeleteSection();
         configurePopup();
-        panel.getChildren().addAll(titleLabel, formGrid(), errorLabel, revealDeleteButton, deleteSection, actions());
+        VBox body = new VBox(10, formGrid(), errorLabel, revealDeleteButton, deleteSection);
+        panel.setHeader(titleLabel);
+        panel.setBody(body, BodyPolicy.FIXED);
+        panel.setFooter(cancelButton, DialogSurfaceView.spacer(), submitButton);
         resetTransientState();
     }
 
@@ -148,16 +151,8 @@ public final class PartyCharacterEditorTopBarView {
     }
 
     private void configurePopup() {
-        popup.setAutoHide(true);
-        popup.setHideOnEscape(true);
-        popup.getContent().setAll(panel);
-        popup.setOnHidden(event -> resetTransientState());
-        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                popup.hide();
-                event.consume();
-            }
-        });
+        popup.setContent(panel);
+        popup.addOnHidden(event -> resetTransientState());
         cancelButton.setOnAction(event -> popup.hide());
         submitButton.setOnAction(event -> submit());
     }
@@ -173,14 +168,6 @@ public final class PartyCharacterEditorTopBarView {
         addRow(formGrid, 3, "Passive Perception", passivePerceptionField);
         addRow(formGrid, 4, "AC", armorClassField);
         return formGrid;
-    }
-
-    private HBox actions() {
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox actions = new HBox(8, cancelButton, spacer, submitButton);
-        actions.setAlignment(Pos.CENTER_LEFT);
-        return actions;
     }
 
     private void submit() {
@@ -219,12 +206,9 @@ public final class PartyCharacterEditorTopBarView {
         }
         panel.applyCss();
         panel.layout();
-        Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            popup.show(anchor, bounds.getMaxX() - 360.0, bounds.getMaxY() + 2.0);
-            nameField.requestFocus();
-            nameField.selectAll();
-        }
+        popup.showTrailing(anchor, POPUP_WIDTH);
+        nameField.requestFocus();
+        nameField.selectAll();
     }
 
     private void showError(String message) {

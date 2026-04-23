@@ -2,8 +2,6 @@ package src.view.slotcontent.state.encounter;
 
 import java.util.List;
 import java.util.Objects;
-import javafx.application.Platform;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -14,15 +12,13 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 
 public final class EncounterCombatPartyMemberPopupView {
 
-    private final Popup popup = new Popup();
+    private final AnchoredPopupView popup = new AnchoredPopupView();
 
     public EncounterCombatPartyMemberPopupView() {
-        popup.setAutoHide(true);
-        popup.setHideOnEscape(true);
     }
 
     public void show(
@@ -36,10 +32,9 @@ public final class EncounterCombatPartyMemberPopupView {
             return;
         }
         popup.hide();
-        popup.getContent().clear();
 
         VBox list = new VBox(6);
-        list.getStyleClass().add("edit-popup-panel");
+        list.getStyleClass().add("anchored-popup");
         list.setPadding(new Insets(8));
 
         TextField firstField = null;
@@ -71,15 +66,10 @@ public final class EncounterCombatPartyMemberPopupView {
             }
         }
 
-        popup.getContent().add(list);
-        popup.setOnHidden(event -> anchor.requestFocus());
-        Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
-        if (bounds != null) {
-            popup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 8);
-        }
+        popup.setContent(list);
+        popup.showBelow(anchor, 8);
         if (firstField != null) {
-            TextField focus = firstField;
-            Platform.runLater(focus::requestFocus);
+            popup.focusAfterShown(firstField);
         }
     }
 

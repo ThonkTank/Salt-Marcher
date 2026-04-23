@@ -12,7 +12,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
-import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -23,17 +22,15 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.Popup;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.popup.AnchoredPopupView;
 
 public final class CatalogControlsView extends VBox {
 
@@ -52,7 +49,7 @@ public final class CatalogControlsView extends VBox {
     private final Button encounterTableButton = new Button("Tabelle ▾");
     private final Tooltip encounterTableTooltip =
             new Tooltip("Mehrere Encounter-Tabellen können kombiniert werden.");
-    private final Popup encounterTablePopup = new Popup();
+    private final AnchoredPopupView encounterTablePopup = new AnchoredPopupView();
     private final VBox encounterTablePopupContent = new VBox(2);
     private final Map<Integer, String> difficultyPreviewLabels = new LinkedHashMap<>(defaultDifficultyPreviewLabels());
     private final Map<Integer, String> balancePreviewLabels = new LinkedHashMap<>(defaultBalancePreviewLabels());
@@ -134,10 +131,9 @@ public final class CatalogControlsView extends VBox {
         encounterTableButton.getStyleClass().addAll("compact", "filter-trigger");
         encounterTableButton.setTooltip(encounterTableTooltip);
         encounterTableButton.setOnAction(event -> toggleEncounterTablePopup());
-        encounterTablePopup.setAutoHide(true);
         encounterTablePopupContent.getStyleClass().add("filter-dropdown");
         encounterTablePopupContent.setPadding(new Insets(8));
-        encounterTablePopup.getContent().add(encounterTablePopupContent);
+        encounterTablePopup.setContent(encounterTablePopupContent);
 
         filterRow.getChildren().addAll(
                 crRange,
@@ -304,10 +300,7 @@ public final class CatalogControlsView extends VBox {
             return;
         }
         renderEncounterTablePopup();
-        Bounds bounds = encounterTableButton.localToScreen(encounterTableButton.getBoundsInLocal());
-        if (bounds != null) {
-            encounterTablePopup.show(encounterTableButton, bounds.getMinX(), bounds.getMaxY() + 2);
-        }
+        encounterTablePopup.showBelow(encounterTableButton);
     }
 
     private void renderEncounterTablePopup() {
@@ -762,7 +755,7 @@ public final class CatalogControlsView extends VBox {
         private static final int SEARCH_FIELD_THRESHOLD = 6;
 
         private final String label;
-        private final Popup popup = new Popup();
+        private final AnchoredPopupView popup = new AnchoredPopupView();
         private final VBox checkboxList = new VBox(2);
         private final List<CheckBox> checkboxes = new ArrayList<>();
         private final Set<String> selectedValues = new LinkedHashSet<>();
@@ -776,7 +769,6 @@ public final class CatalogControlsView extends VBox {
             setText(label + " ▾");
             setAccessibleText(label + " geschlossen");
             setOnAction(event -> togglePopup());
-            popup.setAutoHide(true);
         }
 
         void setOptions(List<String> options) {
@@ -809,8 +801,7 @@ public final class CatalogControlsView extends VBox {
             scroll.setPrefWidth(200);
             scroll.setMinWidth(160);
             popupContent.getChildren().add(scroll);
-            popup.getContent().setAll(popupContent);
-            popup.addEventFilter(KeyEvent.KEY_PRESSED, this::handlePopupKey);
+            popup.setContent(popupContent);
             updateTriggerText();
         }
 
@@ -839,19 +830,8 @@ public final class CatalogControlsView extends VBox {
                 setAccessibleText(label + " geschlossen");
                 return;
             }
-            Bounds bounds = localToScreen(getBoundsInLocal());
-            if (bounds != null) {
-                popup.show(this, bounds.getMinX(), bounds.getMaxY() + 2);
-                setAccessibleText(label + " geöffnet - Escape zum Schließen");
-            }
-        }
-
-        private void handlePopupKey(KeyEvent event) {
-            if (event.getCode() == KeyCode.ESCAPE) {
-                popup.hide();
-                requestFocus();
-                event.consume();
-            }
+            popup.showBelow(this);
+            setAccessibleText(label + " geöffnet - Escape zum Schließen");
         }
 
         private void filterCheckboxes(@Nullable String query) {
