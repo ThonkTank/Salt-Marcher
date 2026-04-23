@@ -31,6 +31,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
 import src.view.slotcontent.state.encounter.EncounterCombatPartyMemberButtonView;
 
 public final class EncounterStateView extends VBox {
@@ -639,22 +640,13 @@ public final class EncounterStateView extends VBox {
 
     private Node hpBar(CombatCardView card) {
         double fraction = card.maxHp() > 0 ? Math.max(0.0, Math.min(1.0, (double) card.currentHp() / card.maxHp())) : 0.0;
-        StackPane bar = new StackPane();
-        bar.getStyleClass().addAll("hp-bar-track", "clickable");
-        bar.setMinWidth(92);
-        bar.setPrefWidth(92);
-        HBox fillHost = new HBox();
-        fillHost.setMouseTransparent(true);
-        Region fill = new Region();
-        fill.getStyleClass().addAll("hp-bar-fill", hpFillStyle(fraction));
-        fill.prefWidthProperty().bind(bar.widthProperty().multiply(fraction));
-        fillHost.getChildren().add(fill);
-        Label text = new Label((fraction <= 0.25 ? "! " : "") + card.currentHp() + " / " + card.maxHp());
-        text.getStyleClass().addAll("hp-bar-text", "hp-bar-text-on-track");
-        text.setMouseTransparent(true);
-        bar.getChildren().addAll(fillHost, text);
-        StackPane.setAlignment(fillHost, Pos.CENTER_LEFT);
-        StackPane.setAlignment(text, Pos.CENTER);
+        ProgressMeterView bar = new ProgressMeterView(
+                fraction,
+                (fraction <= 0.25 ? "! " : "") + card.currentHp() + " / " + card.maxHp(),
+                card.name() + " HP " + card.currentHp() + "/" + card.maxHp(),
+                hpFillStyle(fraction),
+                "progress-meter-combat");
+        bar.getStyleClass().add("clickable");
         bar.setAccessibleText(card.name() + " HP " + card.currentHp() + "/" + card.maxHp());
         bar.setOnMouseClicked(event -> showHpPopup(bar, card));
         Tooltip.install(bar, new Tooltip("HP bearbeiten"));

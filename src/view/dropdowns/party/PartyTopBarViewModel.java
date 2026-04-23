@@ -419,7 +419,7 @@ public final class PartyTopBarViewModel {
         int currentLevelXp = Math.max(0, member.currentLevelXp());
         int nextLevelXp = Math.max(currentLevelXp, member.nextLevelXp());
         if (member.level() >= 20 || nextLevelXp <= currentLevelXp) {
-            return new LevelProgressDisplay("Max", formatProgressText(currentXp, 100), 1.0);
+            return new LevelProgressDisplay("Max", formatProgressText(currentXp, currentXp, 100), 1.0);
         }
         int span = Math.max(1, nextLevelXp - currentLevelXp);
         int earnedInLevel = Math.max(0, currentXp - currentLevelXp);
@@ -431,12 +431,12 @@ public final class PartyTopBarViewModel {
         }
         return new LevelProgressDisplay(
                 "Lv " + (member.level() + 1),
-                formatProgressText(currentXp, percent),
+                formatProgressText(currentXp, nextLevelXp, percent),
                 fraction);
     }
 
-    private static String formatProgressText(int currentXp, int percent) {
-        return currentXp + " XP (" + Math.max(0, Math.min(100, percent)) + "%)";
+    private static String formatProgressText(int currentXp, int targetXp, int percent) {
+        return currentXp + "/" + Math.max(0, targetXp) + " XP (" + Math.max(0, Math.min(100, percent)) + "%)";
     }
 
     private static String restStatusText(@Nullable RestCadenceStatus status) {

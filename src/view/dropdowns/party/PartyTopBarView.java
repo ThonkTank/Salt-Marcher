@@ -16,7 +16,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
-import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -29,6 +28,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 public final class PartyTopBarView extends HBox {
@@ -327,13 +327,14 @@ public final class PartyTopBarView extends HBox {
         currentLevelLabel.getStyleClass().add("party-level-edge");
         Label nextLevelLabel = new Label(member.nextLevelLabel());
         nextLevelLabel.getStyleClass().add("party-level-edge");
-        Label progressTextLabel = clippedLabel(member.levelProgressText(), "party-level-xp");
-        progressTextLabel.setMaxWidth(86);
+        ProgressMeterView progressMeter = new ProgressMeterView(
+                member.levelProgressFraction(),
+                member.levelProgressText(),
+                "Level-Fortschritt " + member.levelProgressText(),
+                "progress-meter-fill-xp",
+                "progress-meter-level");
 
-        ProgressBar progressBar = new ProgressBar(member.levelProgressFraction());
-        progressBar.getStyleClass().add("party-level-progress-bar");
-
-        HBox row = new HBox(5, currentLevelLabel, progressBar, nextLevelLabel, progressTextLabel);
+        HBox row = new HBox(5, currentLevelLabel, progressMeter, nextLevelLabel);
         row.getStyleClass().add("party-level-progress-row");
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
