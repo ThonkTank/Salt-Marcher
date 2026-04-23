@@ -114,6 +114,9 @@
     -fx-text-fill: -sm-text-muted;
     -fx-font-size: 11px;
 }
+.text-italic {
+    -fx-font-style: italic;
+}
 .text-warning {
     -fx-text-fill: -sm-warning;
 }
@@ -122,10 +125,6 @@
 .difficulty-hard   { -fx-text-fill: -sm-hard-text; }
 .difficulty-deadly { -fx-text-fill: -sm-deadly-text; }
 .title-large {
-    -fx-font-weight: bold;
-    -fx-font-size: 16px;
-}
-.large {
     -fx-font-weight: bold;
     -fx-font-size: 16px;
 }
@@ -182,38 +181,18 @@
 .button.neutral-action:hover {
     -fx-background-color: derive(-sm-bg-card, 12%);
 }
-
-.party-day-progress {
-    -fx-pref-height: 10px;
-    -fx-max-width: Infinity;
+.button.danger-action {
+    -fx-background-color: -sm-deadly;
+    -fx-text-fill: -sm-text-primary;
 }
-.party-day-progress > .track {
-    -fx-background-color: rgba(37, 46, 53, 0.95);
-    -fx-background-radius: 999;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 999;
-    -fx-padding: 0.1em;
+.button.danger-action:hover {
+    -fx-background-color: derive(-sm-deadly, 25%);
 }
-.party-day-progress > .bar {
-    -fx-background-color: linear-gradient(to right, #2f8fda, #5ac67a);
-    -fx-background-radius: 999;
-    -fx-background-insets: 0;
-}
-.party-day-progress-label {
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-text-secondary;
-    -fx-min-width: 42;
-}
-.status-label {
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-}
-.status-label-success {
-    -fx-text-fill: #205d20;
-}
-.status-label-error {
-    -fx-text-fill: #9a1b1b;
+.button.icon-button {
+    -fx-min-width: 24;
+    -fx-pref-width: 24;
+    -fx-max-width: 24;
+    -fx-padding: 2 0 2 0;
 }
 .party-rest-chip {
     -fx-padding: 2 8 2 8;
@@ -281,38 +260,6 @@
 .party-card-top-row {
     -fx-alignment: center-left;
 }
-.party-member-name {
-    -fx-text-fill: -sm-text-primary;
-    -fx-font-size: 13px;
-    -fx-font-weight: bold;
-}
-.party-member-identity {
-    -fx-text-fill: -sm-text-primary;
-    -fx-font-size: 13px;
-    -fx-font-weight: bold;
-}
-.party-member-level {
-    -fx-background-color: -sm-bg-elevated;
-    -fx-background-radius: 999;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-width: 1;
-    -fx-border-radius: 999;
-    -fx-padding: 1 8 1 8;
-    -fx-font-size: 11px;
-    -fx-text-fill: -sm-text-secondary;
-}
-.party-member-meta {
-    -fx-text-fill: -sm-text-secondary;
-    -fx-font-size: 11px;
-}
-.party-member-progression {
-    -fx-text-fill: -sm-text-muted;
-    -fx-font-size: 11px;
-}
-.party-member-secondary {
-    -fx-text-fill: -sm-text-secondary;
-    -fx-font-size: 11px;
-}
 .party-level-progress-row {
     -fx-alignment: center-left;
 }
@@ -327,40 +274,6 @@
 }
 .party-management-actions {
     -fx-alignment: center-right;
-}
-.party-btn {
-    -fx-padding: 2 6 2 6;
-    -fx-font-size: 11px;
-}
-.party-icon-btn {
-    -fx-min-width: 24;
-    -fx-pref-width: 24;
-    -fx-max-width: 24;
-    -fx-padding: 2 0 2 0;
-}
-.party-btn.remove {
-    -fx-background-color: -sm-bg-elevated;
-    -fx-text-fill: -sm-text-secondary;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-width: 1;
-}
-.party-btn.remove:hover {
-    -fx-background-color: derive(-sm-bg-elevated, 20%);
-    -fx-text-fill: -sm-text-primary;
-}
-.party-btn.edit {
-    -fx-background-color: -sm-accent;
-    -fx-text-fill: -sm-text-primary;
-}
-.party-btn.edit:hover {
-    -fx-background-color: -sm-accent-hover;
-}
-.party-btn.delete {
-    -fx-background-color: -sm-deadly;
-    -fx-text-fill: -sm-text-primary;
-}
-.party-btn.delete:hover {
-    -fx-background-color: derive(-sm-deadly, 25%);
 }
 .party-search {
     -fx-padding: 8 8 4 8;
@@ -426,11 +339,6 @@
 .dropdown-form {
     -fx-spacing: 10;
 }
-.dropdown-title {
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-text-primary;
-}
 .dropdown-message {
     -fx-text-fill: -sm-text-secondary;
 }
@@ -467,19 +375,6 @@
     -fx-padding: 4 8 4 8;
 }
 .text-field:focused {
-    -fx-border-color: -sm-accent-hover;
-}
-.quick-search-field {
-    -fx-background-color: -sm-bg-elevated;
-    -fx-text-fill: -sm-text-primary;
-    -fx-prompt-text-fill: -sm-text-muted;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 3;
-    -fx-background-radius: 3;
-    -fx-padding: 4 8;
-    -fx-font-size: 13px;
-}
-.quick-search-field:focused {
     -fx-border-color: -sm-accent-hover;
 }
 
@@ -794,9 +689,6 @@
 .surface-root {
     -fx-background-color: -sm-bg-darkest;
 }
-.filter-pane {
-    -fx-background-color: -sm-bg-darkest;
-}
 .section-header {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
@@ -843,37 +735,8 @@
     -fx-padding: 2 8 2 8;
     -fx-background-radius: 10;
 }
-.travel-day-label {
-    -fx-text-fill: -sm-text-secondary;
-    -fx-font-size: 11px;
-}
 .travel-details-grid {
     -fx-padding: 4 0 4 0;
-}
-.travel-detail-key {
-    -fx-text-fill: -sm-text-muted;
-    -fx-font-size: 11px;
-}
-.travel-detail-value {
-    -fx-text-fill: -sm-text-primary;
-    -fx-font-size: 13px;
-}
-.travel-section-header {
-    -fx-text-fill: -sm-text-muted;
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-padding: 8 0 0 0;
-}
-.travel-placeholder {
-    -fx-text-fill: -sm-text-muted;
-    -fx-font-size: 11px;
-    -fx-font-style: italic;
-}
-.travel-action-button {
-    -fx-background-color: -sm-accent;
-    -fx-text-fill: -sm-text-primary;
-    -fx-background-radius: 6;
-    -fx-padding: 6 8 6 8;
 }
 
 .map-workspace-content {
@@ -883,131 +746,6 @@
 }
 .dungeon-map-canvas {
     -fx-background-color: #12181c;
-}
-.party-token {
-    -fx-background-color: rgba(47, 143, 218, 0.26);
-    -fx-border-color: rgba(90, 198, 122, 0.7);
-}
-.tool-layer {
-    -fx-background-color: rgba(255, 182, 42, 0.22);
-    -fx-border-color: rgba(255, 240, 198, 0.7);
-}
-.dungeon-map-scene {
-    -fx-background-color: #12181c;
-    -fx-background-radius: 12;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 12;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.36), 24, 0.18, 0, 10);
-}
-.dungeon-map-grid-minor { -fx-stroke: -sm-dungeon-grid-minor;  -fx-stroke-width: 0.9; }
-.dungeon-map-grid-medium { -fx-stroke: -sm-dungeon-grid-medium; -fx-stroke-width: 1.05; }
-.dungeon-map-grid-major { -fx-stroke: -sm-dungeon-grid-major;  -fx-stroke-width: 1.4; }
-.dungeon-map-grid-max { -fx-stroke: -sm-dungeon-grid-max;    -fx-stroke-width: 1.8; }
-.dungeon-map-grid-axis { -fx-stroke: -sm-dungeon-grid-axis;   -fx-stroke-width: 2.6; }
-.dungeon-map-wall {
-    -fx-stroke: -sm-dungeon-wall;
-    -fx-stroke-width: 3.0;
-}
-.dungeon-map-wall-noninteractive {
-    -fx-stroke-width: 2.4;
-}
-.dungeon-map-door {
-    -fx-stroke: #e5c06f;
-    -fx-stroke-width: 3.6;
-}
-.dungeon-map-door-marker {
-    -fx-background-color: #181f24;
-    -fx-border-color: #e5c06f;
-    -fx-border-width: 1.4;
-    -fx-border-radius: 999;
-    -fx-background-radius: 999;
-    -fx-min-width: 20;
-    -fx-min-height: 20;
-    -fx-pref-width: 20;
-    -fx-pref-height: 20;
-    -fx-max-width: 20;
-    -fx-max-height: 20;
-    -fx-alignment: center;
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #e5c06f;
-}
-.dungeon-map-wall-marker {
-    -fx-opacity: 0;
-    -fx-min-width: 0;
-    -fx-min-height: 0;
-}
-.dungeon-map-cell {
-    -fx-background-radius: 4;
-    -fx-border-radius: 4;
-    -fx-padding: 6;
-    -fx-cursor: hand;
-    -fx-border-width: 1.35;
-}
-.dungeon-map-cell:hover {
-    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.08), 10, 0.12, 0, 0);
-}
-.dungeon-map-cell-empty {
-    -fx-background-color: rgba(255,255,255,0.03);
-    -fx-border-color: transparent;
-}
-.dungeon-map-cell-room {
-    -fx-background-color: -sm-dungeon-room;
-    -fx-border-color: -sm-dungeon-room-border;
-}
-.dungeon-map-cell-corridor {
-    -fx-background-color: -sm-dungeon-corridor;
-    -fx-border-color: -sm-dungeon-corridor-border;
-}
-.dungeon-map-cell-blocked {
-    -fx-background-color: #2a2f33;
-    -fx-border-color: #555d64;
-}
-.dungeon-map-cell-open {
-    -fx-background-color: #303940;
-    -fx-border-color: #667782;
-}
-.dungeon-map-cell-current {
-    -fx-background-color: -sm-dungeon-active;
-    -fx-border-color: -sm-dungeon-active-border;
-    -fx-border-width: 2.2;
-}
-.dungeon-map-cell-current-inner {
-    -fx-background-color: transparent;
-    -fx-border-color: #fff0c6;
-    -fx-border-width: 1.1;
-    -fx-border-radius: 4;
-    -fx-background-radius: 4;
-}
-.dungeon-map-cell-glyph {
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #f4e7bf;
-}
-.dungeon-map-cell-caption {
-    -fx-font-size: 10px;
-    -fx-text-fill: -sm-text-primary;
-}
-.dungeon-map-cell:disabled {
-    -fx-opacity: 0.58;
-    -fx-cursor: default;
-}
-.dungeon-map-label {
-    -fx-background-color: #181f24;
-    -fx-border-color: #8a6a35;
-    -fx-border-width: 1;
-    -fx-background-radius: 14;
-    -fx-border-radius: 14;
-    -fx-text-fill: #ecedee;
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
-    -fx-alignment: center;
-    -fx-min-height: 24;
-    -fx-pref-height: 24;
-}
-.dungeon-map-label-current {
-    -fx-border-color: #fff0c6;
-    -fx-border-width: 1.6;
 }
 .dungeon-map-overlay-placeholder {
     -fx-text-fill: rgba(236, 237, 238, 0.92);

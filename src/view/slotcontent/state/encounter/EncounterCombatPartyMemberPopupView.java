@@ -85,7 +85,7 @@ public final class EncounterCombatPartyMemberPopupView {
 
     private static TextField initiativeField(String name) {
         TextField field = new TextField("10");
-        field.getStyleClass().add("quick-search-field");
+        field.getStyleClass().add("text-field");
         field.setPrefWidth(56);
         field.setAccessibleText("Initiative fuer " + name);
         field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9-]*") ? change : null));

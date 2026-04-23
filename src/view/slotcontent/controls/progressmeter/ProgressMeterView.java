@@ -125,7 +125,7 @@ public final class ProgressMeterView extends StackPane {
 
     private static TextField amountField(String initial) {
         TextField field = new TextField(initial);
-        field.getStyleClass().add("quick-search-field");
+        field.getStyleClass().add("text-field");
         field.setPrefWidth(56);
         field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9]*") ? change : null));
         return field;

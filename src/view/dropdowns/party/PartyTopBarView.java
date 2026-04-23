@@ -193,7 +193,7 @@ public final class PartyTopBarView extends HBox {
 
     private VBox buildPanel() {
         Button closeButton = new Button("x");
-        closeButton.getStyleClass().add("party-btn");
+        closeButton.getStyleClass().add("compact");
         closeButton.setAccessibleText("Party-Panel schliessen");
         closeButton.setOnAction(event -> popup.hide());
         Region headerSpacer = new Region();
@@ -267,19 +267,19 @@ public final class PartyTopBarView extends HBox {
     }
 
     private VBox memberRow(MemberView member) {
-        Label identityLabel = clippedLabel(identityText(member), "party-member-identity");
+        Label identityLabel = clippedLabel(identityText(member), "bold");
         HBox.setHgrow(identityLabel, Priority.ALWAYS);
         Node restChip = restChip(member);
 
         Button editButton = new Button("\u270e");
-        editButton.getStyleClass().addAll("party-btn", "party-icon-btn", "edit");
+        editButton.getStyleClass().addAll("compact", "icon-button", "accent");
         editButton.setAccessibleText("Charakter bearbeiten: " + member.name());
         editButton.setTooltip(new Tooltip("Charakter bearbeiten"));
         editButton.setOnAction(event -> editorView.showEdit(editButton, toEditorMember(member)));
         editButton.setDisable(actionsDisabled);
 
         Button removeButton = new Button("\u00d7");
-        removeButton.getStyleClass().addAll("party-btn", "party-icon-btn", "remove");
+        removeButton.getStyleClass().addAll("compact", "icon-button", "neutral-action");
         removeButton.setAccessibleText("Aus aktiver Party entfernen: " + member.name());
         removeButton.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
         removeButton.setOnAction(event -> onRemoveFromParty.accept(member));
@@ -297,7 +297,7 @@ public final class PartyTopBarView extends HBox {
         headerRow.setAlignment(Pos.CENTER_LEFT);
         headerRow.setMaxWidth(Double.MAX_VALUE);
 
-        Label combatLabel = clippedLabel(combatText(member), "party-member-meta");
+        Label combatLabel = clippedLabel(combatText(member), "text-secondary");
         HBox.setHgrow(combatLabel, Priority.ALWAYS);
         HBox actionRow = new HBox(8, combatLabel, restChip, spacer, managementActions);
         actionRow.getStyleClass().add("party-action-row");
@@ -425,7 +425,7 @@ public final class PartyTopBarView extends HBox {
 
     private static Label sectionLabel(String text) {
         Label label = new Label(text);
-        label.getStyleClass().add("party-section-label");
+        label.getStyleClass().addAll("section-header", "text-muted");
         return label;
     }
 

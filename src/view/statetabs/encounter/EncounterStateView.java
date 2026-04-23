@@ -115,7 +115,7 @@ public final class EncounterStateView extends VBox {
     public EncounterStateView() {
         setSpacing(0);
         setPadding(new Insets(0));
-        getStyleClass().addAll("surface-root", "encounter-runtime-root");
+        getStyleClass().add("surface-root");
         setFillWidth(true);
 
         modeLabel.setVisible(false);
@@ -460,7 +460,9 @@ public final class EncounterStateView extends VBox {
         resultAwardStatusLabel.setPadding(new Insets(4, 12, 0, 12));
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
         resultAwardButton.setOnAction(event -> onAwardXp.run());
-        Button doneButton = new Button("Abschliessen");
+        Button doneButton = new Button("Zum Planer");
+        doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurueckkehren"));
+        doneButton.setAccessibleText("Zur Encounter-Planung zurueckkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
         doneButton.setOnAction(event -> onReturnToBuilder.run());
         HBox.setHgrow(resultAwardButton, Priority.ALWAYS);
@@ -518,7 +520,7 @@ public final class EncounterStateView extends VBox {
 
     private Node buildRosterCard(RosterCardView card) {
         VBox root = new VBox(0);
-        root.getStyleClass().add("creature-card");
+        root.getStyleClass().add("entity-card");
 
         Button minus = new Button("-");
         minus.getStyleClass().add("compact");
@@ -726,7 +728,7 @@ public final class EncounterStateView extends VBox {
 
     private TextField popupNumberField(String initial) {
         TextField field = new TextField(initial);
-        field.getStyleClass().add("quick-search-field");
+        field.getStyleClass().add("text-field");
         field.setPrefWidth(56);
         field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9-]*") ? change : null));
         return field;
@@ -1098,7 +1100,7 @@ public final class EncounterStateView extends VBox {
             if (width <= 0) {
                 return;
             }
-            marker.setTranslateX((width * markerFraction) - (width / 2.0) - (markerWidth / 2.0));
+            marker.setTranslateX((width * markerFraction) - (width / 2) - (markerWidth / 2));
         }
     }
 }

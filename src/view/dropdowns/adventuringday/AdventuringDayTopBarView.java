@@ -72,7 +72,7 @@ public final class AdventuringDayTopBarView extends HBox {
         Label headerLabel = new Label("ADVENTURING DAY");
         headerLabel.getStyleClass().add("title-large");
         Button closeButton = new Button("\u00d7");
-        closeButton.getStyleClass().add("party-btn");
+        closeButton.getStyleClass().add("compact");
         closeButton.setAccessibleText("Adventuring-Day-Rechner schliessen");
         closeButton.setOnAction(event -> popup.hide());
         Region spacer = new Region();

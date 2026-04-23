@@ -46,7 +46,7 @@ public final class PartyCharacterEditorTopBarView {
     PartyCharacterEditorTopBarView() {
         panel.getStyleClass().addAll("dropdown-window", "dropdown-form", "party-editor-dropdown");
         panel.setPadding(new Insets(10));
-        titleLabel.getStyleClass().add("dropdown-title");
+        titleLabel.getStyleClass().add("panel-title");
         errorLabel.getStyleClass().add("text-warning");
         errorLabel.setWrapText(true);
         errorLabel.setVisible(false);
@@ -125,14 +125,14 @@ public final class PartyCharacterEditorTopBarView {
     }
 
     private void configureDeleteSection() {
-        revealDeleteButton.getStyleClass().addAll("party-btn", "delete");
+        revealDeleteButton.getStyleClass().addAll("compact", "danger-action");
         revealDeleteButton.setMaxWidth(Double.MAX_VALUE);
         revealDeleteButton.setOnAction(event -> setDeleteConfirmationVisible(true));
         deleteMessageLabel.getStyleClass().add("dropdown-message");
         deleteMessageLabel.setWrapText(true);
-        cancelDeleteButton.getStyleClass().addAll("party-btn", "remove");
+        cancelDeleteButton.getStyleClass().addAll("compact", "neutral-action");
         cancelDeleteButton.setOnAction(event -> setDeleteConfirmationVisible(false));
-        confirmDeleteButton.getStyleClass().addAll("party-btn", "delete");
+        confirmDeleteButton.getStyleClass().addAll("compact", "danger-action");
         confirmDeleteButton.setOnAction(event -> {
             if (pending) {
                 return;

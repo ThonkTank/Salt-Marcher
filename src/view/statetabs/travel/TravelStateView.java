@@ -32,18 +32,15 @@ public final class TravelStateView extends VBox {
         getStyleClass().add("travel-pane");
 
         iconLabel.getStyleClass().add("travel-location-icon");
-        locationLabel.getStyleClass().add("travel-placeholder");
+        locationLabel.getStyleClass().addAll("text-muted", "text-italic");
         statusBadge.getStyleClass().add("travel-status-badge");
-        contextLabel.getStyleClass().add("travel-placeholder");
-        detailKeyOne.getStyleClass().add("travel-detail-key");
-        detailValueOne.getStyleClass().add("travel-detail-value");
-        detailKeyTwo.getStyleClass().add("travel-detail-key");
-        detailValueTwo.getStyleClass().add("travel-detail-value");
-        detailKeyThree.getStyleClass().add("travel-detail-key");
-        detailValueThree.getStyleClass().add("travel-detail-value");
-        sectionHeader.getStyleClass().add("travel-section-header");
-        sectionValue.getStyleClass().add("travel-placeholder");
-        actionButton.getStyleClass().add("travel-action-button");
+        contextLabel.getStyleClass().addAll("text-muted", "text-italic");
+        detailKeyOne.getStyleClass().add("text-muted");
+        detailKeyTwo.getStyleClass().add("text-muted");
+        detailKeyThree.getStyleClass().add("text-muted");
+        sectionHeader.getStyleClass().addAll("section-header", "text-muted");
+        sectionValue.getStyleClass().addAll("text-muted", "text-italic");
+        actionButton.getStyleClass().add("accent");
         actionButton.setMaxWidth(Double.MAX_VALUE);
         actionButton.setVisible(false);
         actionButton.setManaged(false);

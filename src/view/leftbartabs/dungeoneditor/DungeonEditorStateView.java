@@ -19,13 +19,13 @@ public final class DungeonEditorStateView extends VBox {
     public DungeonEditorStateView() {
         setSpacing(12);
         setPadding(new Insets(12));
-        getStyleClass().addAll("surface-root", "dungeon-editor-sidebar");
+        getStyleClass().addAll("surface-root", "control-stack");
 
         Label title = new Label("Editor state");
-        title.getStyleClass().add("editor-panel-title");
+        title.getStyleClass().add("panel-title");
         body.setWrapText(true);
         VBox card = new VBox(6, title, body);
-        card.getStyleClass().add("editor-card");
+        card.getStyleClass().addAll("card-surface", "content-card");
         getChildren().addAll(card, narrationCards);
     }
 
@@ -46,7 +46,7 @@ public final class DungeonEditorStateView extends VBox {
 
     private VBox narrationCard(RoomNarrationCard card, boolean busy, String statusText) {
         Label title = new Label(card.roomName());
-        title.getStyleClass().add("editor-panel-title");
+        title.getStyleClass().add("panel-title");
         Label visualTitle = muted("Visueller Eindruck");
         TextArea visualArea = textArea(card.visualDescription());
         VBox content = new VBox(6, title, visualTitle, visualArea);
@@ -76,7 +76,7 @@ public final class DungeonEditorStateView extends VBox {
                                 exit.area().getText()))
                         .toList())));
         content.getChildren().addAll(status, save);
-        content.getStyleClass().add("editor-card");
+        content.getStyleClass().addAll("card-surface", "content-card");
         return content;
     }
 

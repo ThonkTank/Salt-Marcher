@@ -153,7 +153,7 @@ public final class CatalogControlsView extends VBox {
         chipsPane.setMinHeight(24);
 
         VBox filterPane = new VBox(4, searchRow, filterRow, chipsPane);
-        filterPane.getStyleClass().add("filter-pane");
+        filterPane.getStyleClass().add("surface-root");
         filterPane.setPadding(new Insets(6, 8, 6, 8));
 
         VBox filterRegion = new VBox(filterPane);
@@ -790,7 +790,7 @@ public final class CatalogControlsView extends VBox {
             if (safeOptions.size() > SEARCH_FIELD_THRESHOLD) {
                 TextField search = new TextField();
                 search.setPromptText(label + " suchen...");
-                search.getStyleClass().add("quick-search-field");
+                search.getStyleClass().add("text-field");
                 search.textProperty().addListener((obs, oldValue, newValue) -> filterCheckboxes(newValue));
                 popupContent.getChildren().add(search);
             }

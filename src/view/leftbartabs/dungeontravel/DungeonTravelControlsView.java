@@ -23,7 +23,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonTravelControlsView() {
         super("");
-        getStyleClass().add("dungeon-editor-toolbar");
+        getStyleClass().add("control-toolbar");
         configureControls();
         getChildren().setAll(dungeonRow(), projectionRow());
     }

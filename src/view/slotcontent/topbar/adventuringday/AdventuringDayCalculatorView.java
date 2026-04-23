@@ -107,8 +107,8 @@ public final class AdventuringDayCalculatorView extends VBox {
 
         emptyLabel.getStyleClass().add("text-muted");
         rowsBox.getChildren().add(emptyLabel);
-        summaryBox.getStyleClass().add("creature-card");
-        timelineBox.getStyleClass().add("creature-card");
+        summaryBox.getStyleClass().add("entity-card");
+        timelineBox.getStyleClass().add("entity-card");
         timelineTitleLabel.getStyleClass().addAll("small", "text-secondary");
         timelineEmptyLabel.getStyleClass().add("text-muted");
         levelProgressLabel.setWrapText(true);

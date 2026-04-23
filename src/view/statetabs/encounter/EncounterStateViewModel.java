@@ -565,8 +565,12 @@ public final class EncounterStateViewModel {
         pendingInitiativeRows.clear();
         round = 1;
         currentTurnIndex = 0;
+        initiativeState.set(InitiativeState.empty());
+        combatState.set(CombatProjection.empty());
+        resultState.set(ResultState.empty());
+        refreshBuilderState(lastSettings);
         mode.set(Mode.BUILDER);
-        status.set("Kampf abgeschlossen. Neuer Encounter kann erstellt werden.");
+        status.set("Kampfergebnis geschlossen. Combat Planner bereit.");
     }
 
     private void applyGeneratedEncounter(GeneratedEncounter generated) {

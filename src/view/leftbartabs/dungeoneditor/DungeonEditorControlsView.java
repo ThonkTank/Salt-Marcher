@@ -98,7 +98,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonEditorControlsView() {
         super("");
-        getStyleClass().add("dungeon-editor-toolbar");
+        getStyleClass().add("control-toolbar");
         setFillWidth(true);
         configureMapControls();
         configureViewModeControls();
@@ -286,7 +286,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     }
 
     private void configureMapEditorPopup() {
-        mapEditorTitle.getStyleClass().add("dropdown-title");
+        mapEditorTitle.getStyleClass().add("panel-title");
         mapEditorError.getStyleClass().add("text-warning");
         mapEditorError.setWrapText(true);
         mapEditorError.setManaged(false);

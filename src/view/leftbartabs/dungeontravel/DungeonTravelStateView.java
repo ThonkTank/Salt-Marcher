@@ -17,13 +17,13 @@ public final class DungeonTravelStateView extends VBox {
     public DungeonTravelStateView() {
         setSpacing(12);
         setPadding(new Insets(12));
-        getStyleClass().addAll("surface-root", "dungeon-editor-sidebar");
+        getStyleClass().addAll("surface-root", "control-stack");
 
         Label title = new Label("Travel state");
-        title.getStyleClass().add("editor-panel-title");
+        title.getStyleClass().add("panel-title");
         body.setWrapText(true);
         VBox card = new VBox(6, title, body, actions);
-        card.getStyleClass().add("editor-card");
+        card.getStyleClass().addAll("card-surface", "content-card");
         getChildren().add(card);
     }
 

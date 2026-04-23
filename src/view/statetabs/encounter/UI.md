@@ -84,7 +84,8 @@ creature details through the creature application service.
 - Initiative badges open a compact set-initiative popup.
 - `Kampf beenden` requires a second confirmation before showing results.
 - `XP verteilen` awards the current per-player XP result to the active party.
-- `Abschliessen` returns to encounter creation.
+- `Zum Planer` closes the combat result screen and returns to encounter
+  planning.
 
 ## Visible States
 
