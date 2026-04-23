@@ -8,8 +8,8 @@ import src.domain.party.roster.entity.PartyCharacter;
 
 public final class PartyRosterXpAllocationPolicy {
 
-    public Result apply(List<PartyCharacter> characters, List<Long> ids, int xpPerCharacter) {
-        Set<Long> requestedIds = sanitizeRequestedIds(ids, xpPerCharacter);
+    public Result apply(List<PartyCharacter> characters, List<Long> ids, int xpDelta) {
+        Set<Long> requestedIds = sanitizeRequestedIds(ids, xpDelta);
         if (requestedIds.isEmpty()) {
             return new Result(List.of(), false, false);
         }
@@ -17,7 +17,7 @@ public final class PartyRosterXpAllocationPolicy {
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters.size());
         for (PartyCharacter character : characters) {
             if (requestedIds.contains(character.id())) {
-                nextCharacters.add(character.awardXp(xpPerCharacter));
+                nextCharacters.add(character.adjustXp(xpDelta));
                 updatedAny = true;
             } else {
                 nextCharacters.add(character);
@@ -26,8 +26,8 @@ public final class PartyRosterXpAllocationPolicy {
         return new Result(nextCharacters, updatedAny, true);
     }
 
-    private Set<Long> sanitizeRequestedIds(List<Long> ids, int xpPerCharacter) {
-        if (ids == null || ids.isEmpty() || xpPerCharacter <= 0) {
+    private Set<Long> sanitizeRequestedIds(List<Long> ids, int xpDelta) {
+        if (ids == null || ids.isEmpty() || xpDelta == 0) {
             return Set.of();
         }
         Set<Long> requestedIds = new LinkedHashSet<>();

@@ -32,10 +32,10 @@ final class PartyTopBarBinder {
         panel.onOpen(viewModel::refresh);
         panel.onAddExisting(member -> viewModel.addExisting(member.id(), member.name()));
         panel.onRemoveFromParty(member -> viewModel.removeFromParty(member.id(), member.name()));
-        panel.onAwardXp(request -> viewModel.awardXp(
+        panel.onAdjustXp(request -> viewModel.adjustXp(
                 request.member().id(),
                 request.member().name(),
-                request.rawXp()));
+                request.xpDelta()));
         panel.onShortRest(viewModel::shortRest);
         panel.onLongRest(viewModel::longRest);
         panel.onCreateCharacter(draft -> toEditorResult(viewModel.createCharacter(toDraftModel(draft))));
@@ -93,7 +93,7 @@ final class PartyTopBarBinder {
     private static PartyTopBarView.MemberView toMemberView(PartyTopBarViewModel.MemberModel member) {
         PartyTopBarViewModel.MemberModel safeMember = member == null
                 ? new PartyTopBarViewModel.MemberModel(
-                0L, "", "", 1, 0, 0, 300, 10, 10, "Lv 1", "Lv 2", "", "", "0 XP (0%)", 0.0, "", "")
+                0L, "", "", 1, 0, 0, 300, 10, 10, "Lv 1", "Lv 2", "", "", "0/300 XP (0%)", 0.0, "", "")
                 : member;
         return new PartyTopBarView.MemberView(
                 safeMember.id(),

@@ -325,13 +325,6 @@
     -fx-padding: 0;
     -fx-alignment: center-left;
 }
-.party-xp-actions {
-    -fx-alignment: center-right;
-}
-.party-xp-field {
-    -fx-pref-width: 48;
-    -fx-max-width: 48;
-}
 .party-management-actions {
     -fx-alignment: center-right;
 }

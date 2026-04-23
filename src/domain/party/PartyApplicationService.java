@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
+import src.domain.party.application.AdjustPartyXpUseCase;
 import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CalculateAdventuringDayUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
@@ -20,6 +21,7 @@ import src.domain.party.application.UpdateCharacterUseCase;
 import src.domain.party.published.ActivePartyComposition;
 import src.domain.party.published.ActivePartyCompositionResult;
 import src.domain.party.published.ActivePartyResult;
+import src.domain.party.published.AdjustPartyXpCommand;
 import src.domain.party.published.AdventuringDayBudget;
 import src.domain.party.published.AdventuringDayCalculation;
 import src.domain.party.published.AdventuringDayCalculationResult;
@@ -88,6 +90,7 @@ public final class PartyApplicationService {
     private final UpdateCharacterUseCase updateCharacterUseCase;
     private final DeleteCharacterUseCase deleteCharacterUseCase;
     private final SetPartyMembershipUseCase setPartyMembershipUseCase;
+    private final AdjustPartyXpUseCase adjustPartyXpUseCase;
     private final AwardPartyXpUseCase awardPartyXpUseCase;
     private final PerformPartyRestUseCase performPartyRestUseCase;
     private final MovePartyCharactersUseCase movePartyCharactersUseCase;
@@ -104,6 +107,7 @@ public final class PartyApplicationService {
         this.updateCharacterUseCase = new UpdateCharacterUseCase(repository);
         this.deleteCharacterUseCase = new DeleteCharacterUseCase(repository);
         this.setPartyMembershipUseCase = new SetPartyMembershipUseCase(repository);
+        this.adjustPartyXpUseCase = new AdjustPartyXpUseCase(repository);
         this.awardPartyXpUseCase = new AwardPartyXpUseCase(repository);
         this.performPartyRestUseCase = new PerformPartyRestUseCase(repository);
         this.movePartyCharactersUseCase = new MovePartyCharactersUseCase(repository);
@@ -225,9 +229,12 @@ public final class PartyApplicationService {
 
     public MutationResult awardXp(AwardPartyXpCommand command) {
         AwardPartyXpCommand effectiveCommand = command == null ? new AwardPartyXpCommand(List.of(), 0) : command;
-        return mutationResult(() -> awardPartyXpUseCase.execute(
-                effectiveCommand.ids(),
-                effectiveCommand.xpPerCharacter()));
+        return mutationResult(() -> awardPartyXpUseCase.execute(effectiveCommand.ids(), effectiveCommand.xpPerCharacter()));
+    }
+
+    public MutationResult adjustXp(AdjustPartyXpCommand command) {
+        AdjustPartyXpCommand effectiveCommand = command == null ? new AdjustPartyXpCommand(List.of(), 0) : command;
+        return mutationResult(() -> adjustPartyXpUseCase.execute(effectiveCommand.ids(), effectiveCommand.xpDelta()));
     }
 
     public MutationResult performRest(PerformPartyRestCommand command) {

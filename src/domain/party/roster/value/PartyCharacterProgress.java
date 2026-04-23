@@ -28,11 +28,19 @@ public record PartyCharacterProgress(
 
     public PartyCharacterProgress awardXp(int xpAmount) {
         int safeXp = Math.max(0, xpAmount);
+        return adjustXp(safeXp);
+    }
+
+    public PartyCharacterProgress adjustXp(int xpDelta) {
+        int minimumXp = PartyLevelProgressionPolicy.minimumXpForLevel(level);
+        int lowerBound = xpDelta < 0 ? Math.min(currentXp, minimumXp) : 0;
+        int nextCurrentXp = Math.max(lowerBound, currentXp + xpDelta);
+        int appliedDelta = nextCurrentXp - currentXp;
         return new PartyCharacterProgress(
                 level,
-                currentXp + safeXp,
-                xpSinceLongRest + safeXp,
-                xpSinceShortRest + safeXp,
+                nextCurrentXp,
+                Math.max(0, xpSinceLongRest + appliedDelta),
+                Math.max(0, xpSinceShortRest + appliedDelta),
                 shortRestsTakenSinceLongRest);
     }
 

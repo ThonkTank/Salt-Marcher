@@ -14,9 +14,9 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.published.AdjustPartyXpCommand;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
-import src.domain.party.published.AwardPartyXpCommand;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.DeleteCharacterCommand;
@@ -143,18 +143,20 @@ public final class PartyTopBarViewModel {
                 displayName(name) + " wurde aus der aktiven Party entfernt.");
     }
 
-    public ActionResult awardXp(@Nullable Long id, String name, String rawXp) {
-        int xp = parsePositiveInt(rawXp);
-        if (xp <= 0) {
-            return rejectedMutation("XP muss groesser als 0 sein.");
+    public ActionResult adjustXp(@Nullable Long id, String name, int xpDelta) {
+        if (xpDelta == 0) {
+            return rejectedMutation("XP-Korrektur darf nicht 0 sein.");
         }
         if (id == null || id.longValue() <= 0) {
             return rejectedMutation("Charakter konnte nicht gefunden werden.");
         }
         long characterId = id.longValue();
+        int amount = Math.abs(xpDelta);
         return submitMutation(
-                () -> party.awardXp(new AwardPartyXpCommand(List.of(characterId), xp)),
-                displayName(name) + " erhielt " + xp + " XP.");
+                () -> party.adjustXp(new AdjustPartyXpCommand(List.of(characterId), xpDelta)),
+                xpDelta > 0
+                        ? displayName(name) + " erhielt " + amount + " XP."
+                        : displayName(name) + " verlor bis zu " + amount + " XP.");
     }
 
     public ActionResult shortRest() {
@@ -507,18 +509,6 @@ public final class PartyTopBarViewModel {
 
     private static PartySnapshot emptySnapshot() {
         return new PartySnapshot(List.of(), List.of(), new PartySummary(0, 0, 1));
-    }
-
-    private static int parsePositiveInt(String rawValue) {
-        String trimmed = safe(rawValue).trim();
-        if (trimmed.isEmpty()) {
-            return 0;
-        }
-        try {
-            return Math.max(0, Integer.parseInt(trimmed));
-        } catch (NumberFormatException exception) {
-            return 0;
-        }
     }
 
     private static ParsedInteger parseInteger(String rawValue, String label, int min, int max) {

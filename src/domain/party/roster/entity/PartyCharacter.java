@@ -96,10 +96,14 @@ public final class PartyCharacter {
     }
 
     public PartyCharacter awardXp(int xpAmount) {
+        return adjustXp(Math.max(0, xpAmount));
+    }
+
+    public PartyCharacter adjustXp(int xpDelta) {
         return new PartyCharacter(
                 id,
                 identity,
-                progress.awardXp(xpAmount),
+                progress.adjustXp(xpDelta),
                 combat,
                 membership,
                 travel);

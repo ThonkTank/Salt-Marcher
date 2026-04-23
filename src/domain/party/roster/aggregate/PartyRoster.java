@@ -97,14 +97,18 @@ public final class PartyRoster {
     }
 
     public MutationResult awardXp(List<Long> ids, int xpPerCharacter) {
-        PartyRosterXpAllocationPolicy.Result awardResult = xpAllocator.apply(characters, ids, xpPerCharacter);
-        if (!awardResult.validRequest()) {
+        return adjustXp(ids, Math.max(0, xpPerCharacter));
+    }
+
+    public MutationResult adjustXp(List<Long> ids, int xpDelta) {
+        PartyRosterXpAllocationPolicy.Result adjustmentResult = xpAllocator.apply(characters, ids, xpDelta);
+        if (!adjustmentResult.validRequest()) {
             return new MutationResult(PartyMutationStatus.INVALID_INPUT, this);
         }
-        if (!awardResult.updatedAny()) {
+        if (!adjustmentResult.updatedAny()) {
             return new MutationResult(PartyMutationStatus.NOT_FOUND, this);
         }
-        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, awardResult.characters()));
+        return new MutationResult(PartyMutationStatus.SUCCESS, new PartyRoster(nextCharacterId, adjustmentResult.characters()));
     }
 
     public MutationResult performRest(PartyRestType restType) {

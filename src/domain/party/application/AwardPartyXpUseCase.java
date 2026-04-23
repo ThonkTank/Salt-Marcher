@@ -1,24 +1,18 @@
 package src.domain.party.application;
 
-import src.domain.party.roster.aggregate.PartyRoster;
+import java.util.List;
 import src.domain.party.roster.port.PartyRosterRepository;
 import src.domain.party.roster.value.PartyMutationStatus;
 
-import java.util.List;
-
 public final class AwardPartyXpUseCase {
 
-    private final PartyRosterRepository repository;
+    private final AdjustPartyXpUseCase adjustPartyXpUseCase;
 
     public AwardPartyXpUseCase(PartyRosterRepository repository) {
-        this.repository = repository;
+        this.adjustPartyXpUseCase = new AdjustPartyXpUseCase(repository);
     }
 
     public PartyMutationStatus execute(List<Long> ids, int xpPerCharacter) {
-        PartyRoster.MutationResult mutation = repository.load().awardXp(ids, xpPerCharacter);
-        if (mutation.status() == PartyMutationStatus.SUCCESS) {
-            repository.save(mutation.roster());
-        }
-        return mutation.status();
+        return adjustPartyXpUseCase.execute(ids, Math.max(0, xpPerCharacter));
     }
 }

@@ -32,6 +32,8 @@ import javafx.stage.Popup;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
+import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupAction;
+import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupSpec;
 import src.view.slotcontent.state.encounter.EncounterCombatPartyMemberButtonView;
 
 public final class EncounterStateView extends VBox {
@@ -645,34 +647,14 @@ public final class EncounterStateView extends VBox {
                 (fraction <= 0.25 ? "! " : "") + card.currentHp() + " / " + card.maxHp(),
                 card.name() + " HP " + card.currentHp() + "/" + card.maxHp(),
                 hpFillStyle(fraction),
-                "progress-meter-combat");
-        bar.getStyleClass().add("clickable");
-        bar.setAccessibleText(card.name() + " HP " + card.currentHp() + "/" + card.maxHp());
-        bar.setOnMouseClicked(event -> showHpPopup(bar, card));
-        Tooltip.install(bar, new Tooltip("HP bearbeiten"));
+                "progress-meter-combat",
+                new PopupSpec(
+                        "HP bearbeiten",
+                        1,
+                        List.of(
+                                new PopupAction("-", "", true, amount -> onDamage.accept(card.id(), amount)),
+                                new PopupAction("+", "", false, amount -> onHeal.accept(card.id(), amount)))));
         return bar;
-    }
-
-    private void showHpPopup(Node anchor, CombatCardView card) {
-        Popup popup = new Popup();
-        popup.setAutoHide(true);
-        TextField field = popupNumberField("1");
-        Button down = popupButton("\u25BC");
-        Button up = popupButton("\u25B2");
-        down.setOnAction(event -> field.setText(String.valueOf(parse(field.getText(), 1) - 1)));
-        up.setOnAction(event -> field.setText(String.valueOf(parse(field.getText(), 1) + 1)));
-        Button damage = new Button("-");
-        Button heal = new Button("+");
-        damage.setDefaultButton(true);
-        damage.setOnAction(event -> {
-            popup.hide();
-            onDamage.accept(card.id(), parse(field.getText(), 1));
-        });
-        heal.setOnAction(event -> {
-            popup.hide();
-            onHeal.accept(card.id(), parse(field.getText(), 1));
-        });
-        showPopup(anchor, popup, field, down, field, up, damage, heal);
     }
 
     private void showInitiativePopup(Node anchor, CombatCardView card) {

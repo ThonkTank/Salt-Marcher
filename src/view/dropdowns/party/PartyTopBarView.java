@@ -18,7 +18,6 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextFormatter;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -29,6 +28,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import org.jspecify.annotations.Nullable;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
+import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupAction;
+import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupSpec;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 public final class PartyTopBarView extends HBox {
@@ -54,7 +55,7 @@ public final class PartyTopBarView extends HBox {
     private Runnable onOpen = () -> {};
     private Consumer<MemberView> onAddExisting = ignored -> {};
     private Consumer<MemberView> onRemoveFromParty = ignored -> {};
-    private Consumer<AwardXpRequest> onAwardXp = ignored -> {};
+    private Consumer<XpAdjustmentRequest> onAdjustXp = ignored -> {};
     private Runnable onShortRest = () -> {};
     private Runnable onLongRest = () -> {};
 
@@ -105,8 +106,8 @@ public final class PartyTopBarView extends HBox {
         onRemoveFromParty = action == null ? ignored -> {} : action;
     }
 
-    public void onAwardXp(Consumer<AwardXpRequest> action) {
-        onAwardXp = action == null ? ignored -> {} : action;
+    public void onAdjustXp(Consumer<XpAdjustmentRequest> action) {
+        onAdjustXp = action == null ? ignored -> {} : action;
     }
 
     public void onShortRest(Runnable action) {
@@ -270,19 +271,6 @@ public final class PartyTopBarView extends HBox {
         HBox.setHgrow(identityLabel, Priority.ALWAYS);
         Node restChip = restChip(member);
 
-        TextField xpField = createIntegerField();
-        xpField.setPromptText("XP");
-        xpField.getStyleClass().add("party-xp-field");
-        Button xpButton = new Button("+XP");
-        xpButton.getStyleClass().add("compact");
-        xpButton.setOnAction(event -> onAwardXp.accept(new AwardXpRequest(member, xpField.getText())));
-        xpField.setOnAction(event -> onAwardXp.accept(new AwardXpRequest(member, xpField.getText())));
-        xpField.setDisable(actionsDisabled);
-        xpButton.setDisable(actionsDisabled);
-        HBox xpActions = new HBox(6, xpField, xpButton);
-        xpActions.getStyleClass().add("party-xp-actions");
-        xpActions.setAlignment(Pos.CENTER_RIGHT);
-
         Button editButton = new Button("\u270e");
         editButton.getStyleClass().addAll("party-btn", "party-icon-btn", "edit");
         editButton.setAccessibleText("Charakter bearbeiten: " + member.name());
@@ -304,7 +292,7 @@ public final class PartyTopBarView extends HBox {
         managementActions.setAlignment(Pos.CENTER_RIGHT);
 
         HBox progressRow = levelProgressRow(member);
-        HBox headerRow = new HBox(8, identityLabel, progressRow, xpActions);
+        HBox headerRow = new HBox(8, identityLabel, progressRow);
         headerRow.getStyleClass().add("party-card-top-row");
         headerRow.setAlignment(Pos.CENTER_LEFT);
         headerRow.setMaxWidth(Double.MAX_VALUE);
@@ -322,17 +310,26 @@ public final class PartyTopBarView extends HBox {
         return row;
     }
 
-    private static HBox levelProgressRow(MemberView member) {
+    private HBox levelProgressRow(MemberView member) {
         Label currentLevelLabel = new Label(member.levelLabel());
         currentLevelLabel.getStyleClass().add("party-level-edge");
         Label nextLevelLabel = new Label(member.nextLevelLabel());
         nextLevelLabel.getStyleClass().add("party-level-edge");
+        @Nullable PopupSpec popupSpec = actionsDisabled ? null : new PopupSpec(
+                "XP korrigieren",
+                100,
+                List.of(
+                        new PopupAction("-XP", "", false, amount -> onAdjustXp.accept(
+                                new XpAdjustmentRequest(member, -amount))),
+                        new PopupAction("+XP", "accent", true, amount -> onAdjustXp.accept(
+                                new XpAdjustmentRequest(member, amount)))));
         ProgressMeterView progressMeter = new ProgressMeterView(
                 member.levelProgressFraction(),
                 member.levelProgressText(),
                 "Level-Fortschritt " + member.levelProgressText(),
                 "progress-meter-fill-xp",
-                "progress-meter-level");
+                "progress-meter-level",
+                popupSpec);
 
         HBox row = new HBox(5, currentLevelLabel, progressMeter, nextLevelLabel);
         row.getStyleClass().add("party-level-progress-row");
@@ -440,12 +437,6 @@ public final class PartyTopBarView extends HBox {
         return label;
     }
 
-    private static TextField createIntegerField() {
-        TextField field = new TextField();
-        field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9]*") ? change : null));
-        return field;
-    }
-
     private static PartyCharacterEditorTopBarView.EditorMember toEditorMember(MemberView member) {
         return new PartyCharacterEditorTopBarView.EditorMember(
                 member.id(),
@@ -522,6 +513,6 @@ public final class PartyTopBarView extends HBox {
         }
     }
 
-    public record AwardXpRequest(MemberView member, String rawXp) {
+    public record XpAdjustmentRequest(MemberView member, int xpDelta) {
     }
 }

@@ -53,7 +53,8 @@ Aggregate Root: PartyRoster
 
 `roster/aggregate/PartyRoster` is the transaction boundary for one party
 roster. It owns the character collection, next character identity, membership
-assignment, XP awards, and rest-driven progression transitions.
+assignment, XP awards and corrections, and rest-driven progression
+transitions.
 
 `roster/entity/PartyCharacter` is an identity-bearing child entity. Roster
 value objects own identity, progress, combat profile, membership, rest type,
@@ -67,7 +68,7 @@ Commands entering the aggregate are:
 - update character
 - delete character
 - set membership
-- award XP
+- award XP or correct XP with a signed delta
 - perform rest
 - move characters to a dungeon or overworld travel location
 
@@ -76,8 +77,11 @@ Core invariants:
 - character identity remains stable across roster mutations
 - active and reserve membership is owned by the party aggregate, not by view
   state
-- XP and level progression remain internally consistent after award and rest
-  operations
+- XP and level progression remain internally consistent after award, signed
+  correction, and rest operations
+- negative XP correction is capped at the current level's XP floor and reduces
+  rest-cadence XP counters by the applied correction amount without going below
+  zero
 - character-specific travel location is stored with the character, not in a
   campaign-level model, shell session, dungeon map, or view model
 - the party token is derived from attached character travel state instead of

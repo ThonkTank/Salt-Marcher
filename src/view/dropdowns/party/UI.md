@@ -28,8 +28,8 @@ summary, and mutation controls call the party application service.
   a summary footer, and compact feedback when party data cannot be loaded.
 - Active member rows are compact full-width two-line cards. The first line
   shows character and player identity, current and next level, an overlaid
-  `current XP/next-level XP (%)` level-up meter, and XP controls. The second
-  line shows combat/rest metadata plus edit and remove affordances.
+  `current XP/next-level XP (%)` level-up meter, and popup-based XP correction.
+  The second line shows combat/rest metadata plus edit and remove affordances.
 - The create/edit character editor is a secondary anchored dropdown with
   character, player, level, passive perception, AC, and edit-mode delete
   confirmation controls. It stays open on validation or storage failures and
@@ -40,9 +40,12 @@ summary, and mutation controls call the party application service.
 - Opening the dropdown refreshes the party snapshot through the active-root
   Binder and ViewModel.
 - Search filters reserve-character suggestions locally.
-- Add, create, edit, delete, XP, remove, short-rest, and long-rest controls
-  persist through the party application service and refresh the dropdown
-  snapshot after successful mutations.
+- Add, create, edit, delete, XP correction, remove, short-rest, and long-rest
+  controls persist through the party application service and refresh the
+  dropdown snapshot after successful mutations.
+- Clicking a character's level-up meter opens a compact XP popup. `+XP` awards
+  XP, while `-XP` corrects previously awarded XP without lowering the
+  character below the current level's XP floor.
 - Character editor submission validates name, level, passive perception, and AC
   before calling the party application service; failed validation does not close
   the editor or mutate the party.
