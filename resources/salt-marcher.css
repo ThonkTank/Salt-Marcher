@@ -263,15 +263,17 @@
 .party-list {
     -fx-spacing: 6;
     -fx-padding: 0 8 0 8;
+    -fx-max-width: Infinity;
 }
 .party-row {
-    -fx-padding: 8;
-    -fx-spacing: 4;
+    -fx-padding: 6 8 6 8;
+    -fx-spacing: 3;
     -fx-background-color: -sm-bg-card;
     -fx-background-radius: 6;
     -fx-border-color: -sm-border-subtle;
     -fx-border-width: 1;
     -fx-border-radius: 6;
+    -fx-max-width: Infinity;
 }
 .party-row:hover {
     -fx-background-color: derive(-sm-bg-card, 12%);
@@ -299,22 +301,33 @@
     -fx-text-fill: -sm-text-muted;
     -fx-font-size: 11px;
 }
-.party-action-row {
-    -fx-padding: 2 0 0 0;
+.party-member-secondary {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
 }
-.party-xp-actions {
+.party-action-row {
+    -fx-padding: 0;
     -fx-alignment: center-left;
 }
+.party-xp-actions {
+    -fx-alignment: center-right;
+}
 .party-xp-field {
-    -fx-pref-width: 68;
-    -fx-max-width: 68;
+    -fx-pref-width: 58;
+    -fx-max-width: 58;
 }
 .party-management-actions {
     -fx-alignment: center-right;
 }
 .party-btn {
-    -fx-padding: 2 8 2 8;
+    -fx-padding: 2 6 2 6;
     -fx-font-size: 11px;
+}
+.party-icon-btn {
+    -fx-min-width: 24;
+    -fx-pref-width: 24;
+    -fx-max-width: 24;
+    -fx-padding: 2 0 2 0;
 }
 .party-btn.remove {
     -fx-background-color: -sm-bg-elevated;

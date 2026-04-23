@@ -15,6 +15,7 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -202,6 +203,7 @@ public final class PartyTopBarView extends HBox {
         header.setAlignment(Pos.CENTER_LEFT);
 
         memberList.getStyleClass().add("party-list");
+        memberList.setMaxWidth(Double.MAX_VALUE);
         summaryLabel.getStyleClass().add("party-summary");
         summaryLabel.setMaxWidth(Double.MAX_VALUE);
         restSummaryLabel.getStyleClass().add("party-summary-rest");
@@ -263,23 +265,13 @@ public final class PartyTopBarView extends HBox {
     }
 
     private VBox memberRow(MemberView member) {
-        Label nameLabel = new Label(member.name());
-        nameLabel.getStyleClass().add("party-member-name");
-        nameLabel.setWrapText(true);
+        Label nameLabel = clippedLabel(member.name(), "party-member-name");
         HBox.setHgrow(nameLabel, Priority.ALWAYS);
 
         Label levelLabel = new Label(member.levelLabel());
         levelLabel.getStyleClass().add("party-member-level");
-        HBox headerRow = new HBox(8, nameLabel, levelLabel);
-        headerRow.setAlignment(Pos.CENTER_LEFT);
 
-        Label detailsLabel = new Label(member.detailsText());
-        detailsLabel.getStyleClass().add("party-member-meta");
-        detailsLabel.setWrapText(true);
-
-        Label progressionLabel = new Label(member.progressionText());
-        progressionLabel.getStyleClass().add("party-member-progression");
-        progressionLabel.setWrapText(true);
+        Node restChip = restChip(member);
 
         TextField xpField = createIntegerField();
         xpField.setPromptText("XP");
@@ -292,15 +284,18 @@ public final class PartyTopBarView extends HBox {
         xpButton.setDisable(actionsDisabled);
         HBox xpActions = new HBox(6, xpField, xpButton);
         xpActions.getStyleClass().add("party-xp-actions");
+        xpActions.setAlignment(Pos.CENTER_RIGHT);
 
-        Button editButton = new Button("Bearb.");
-        editButton.getStyleClass().addAll("party-btn", "edit");
+        Button editButton = new Button("\u270e");
+        editButton.getStyleClass().addAll("party-btn", "party-icon-btn", "edit");
+        editButton.setAccessibleText("Charakter bearbeiten: " + member.name());
         editButton.setTooltip(new Tooltip("Charakter bearbeiten"));
         editButton.setOnAction(event -> editorView.showEdit(editButton, toEditorMember(member)));
         editButton.setDisable(actionsDisabled);
 
-        Button removeButton = new Button("Raus");
-        removeButton.getStyleClass().addAll("party-btn", "remove");
+        Button removeButton = new Button("\u00d7");
+        removeButton.getStyleClass().addAll("party-btn", "party-icon-btn", "remove");
+        removeButton.setAccessibleText("Aus aktiver Party entfernen: " + member.name());
         removeButton.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
         removeButton.setOnAction(event -> onRemoveFromParty.accept(member));
         removeButton.setDisable(actionsDisabled);
@@ -310,12 +305,21 @@ public final class PartyTopBarView extends HBox {
         HBox managementActions = new HBox(6, editButton, removeButton);
         managementActions.getStyleClass().add("party-management-actions");
         managementActions.setAlignment(Pos.CENTER_RIGHT);
-        HBox actionRow = new HBox(8, xpActions, spacer, managementActions);
+
+        HBox headerRow = new HBox(6, nameLabel, levelLabel, restChip, spacer, managementActions);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+        headerRow.setMaxWidth(Double.MAX_VALUE);
+
+        Label secondaryLabel = clippedLabel(memberSecondaryText(member), "party-member-secondary");
+        HBox.setHgrow(secondaryLabel, Priority.ALWAYS);
+        HBox actionRow = new HBox(8, secondaryLabel, xpActions);
         actionRow.getStyleClass().add("party-action-row");
         actionRow.setAlignment(Pos.CENTER_LEFT);
+        actionRow.setMaxWidth(Double.MAX_VALUE);
 
-        VBox row = new VBox(4, headerRow, detailsLabel, progressionLabel, restChip(member), actionRow);
+        VBox row = new VBox(3, headerRow, actionRow);
         row.getStyleClass().add("party-row");
+        row.setMaxWidth(Double.MAX_VALUE);
         return row;
     }
 
@@ -328,6 +332,32 @@ public final class PartyTopBarView extends HBox {
         label.setVisible(!member.restText().isBlank());
         label.setManaged(label.isVisible());
         return label;
+    }
+
+    private static Label clippedLabel(String text, String styleClass) {
+        String safeText = safe(text);
+        Label label = new Label(safeText);
+        label.getStyleClass().add(styleClass);
+        label.setWrapText(false);
+        label.setTextOverrun(OverrunStyle.ELLIPSIS);
+        label.setMinWidth(0);
+        label.setMaxWidth(Double.MAX_VALUE);
+        if (!safeText.isBlank()) {
+            label.setTooltip(new Tooltip(safeText));
+        }
+        return label;
+    }
+
+    private static String memberSecondaryText(MemberView member) {
+        String details = safe(member.detailsText()).trim();
+        String progression = safe(member.progressionText()).trim();
+        if (details.isBlank()) {
+            return progression;
+        }
+        if (progression.isBlank()) {
+            return details;
+        }
+        return details + " | " + progression;
     }
 
     private void showActionStatus(String message, boolean error) {

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-23
 Source of Truth: Party top-bar dropdown structure, interactions, and visible
 states.
 
@@ -26,8 +26,9 @@ summary, and mutation controls call the party application service.
 - The dropdown content shows a `PARTY` header, active member rows, rest action
   controls, reserve-character search suggestions, a new-character affordance,
   a summary footer, and compact feedback when party data cannot be loaded.
-- Active member rows show name, level, player/combat metadata, progression,
-  rest cadence, XP controls, edit, and remove affordances.
+- Active member rows are compact full-width two-line cards. The first line
+  shows name, level, rest cadence, edit, and remove affordances; the second
+  line shows player/combat metadata, progression, and XP controls.
 - The create/edit character editor is a secondary anchored dropdown with
   character, player, level, passive perception, AC, and edit-mode delete
   confirmation controls. It stays open on validation or storage failures and
