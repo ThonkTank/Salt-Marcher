@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
@@ -70,7 +71,8 @@ final class CatalogBinder {
             EncounterApplicationService encounters
     ) {
         controls.setCreatureFilterData(toControlFilterData(viewModel.creatureFilterDataProperty().get()));
-        controls.setChips(toControlChips(viewModel.chips()));
+        ObservableList<CatalogViewModel.FilterChip> chips = viewModel.chips();
+        controls.setChips(toControlChips(chips));
         controls.setEncounterTables(loadEncounterTableSelections(encounterTables));
         controls.selectEncounterTables(encounterSession.encounterTableIds());
         refreshTuningPreview(controls, encounters);
@@ -96,8 +98,8 @@ final class CatalogBinder {
 
         viewModel.creatureFilterDataProperty().addListener((obs, oldValue, newValue) ->
                 controls.setCreatureFilterData(toControlFilterData(newValue)));
-        viewModel.chips().addListener((ListChangeListener<CatalogViewModel.FilterChip>) change ->
-                controls.setChips(toControlChips(viewModel.chips())));
+        chips.addListener((ListChangeListener<CatalogViewModel.FilterChip>) change ->
+                controls.setChips(toControlChips(chips)));
         encounterSession.partyRefreshTokenProperty().addListener((obs, oldValue, newValue) ->
                 refreshTuningPreview(controls, encounters));
     }
@@ -113,7 +115,8 @@ final class CatalogBinder {
         main.setSortOptions(viewModel.sortOptions().stream().map(CatalogBinder::toMainSort).toList());
         main.selectSort(viewModel.selectedSortKeyProperty().get());
         main.setColumns(viewModel.columns().stream().map(CatalogBinder::toMainColumn).toList());
-        main.setRows(viewModel.rows().stream().map(CatalogBinder::toMainRow).toList());
+        ObservableList<CatalogViewModel.CatalogRow> rows = viewModel.rows();
+        main.setRows(rows.stream().map(CatalogBinder::toMainRow).toList());
         main.setPlaceholderText(viewModel.placeholderTextProperty().get());
         main.setOnRowOpen(creatureId -> openCreatureDetails(inspector, creatures, creatureId));
         main.countTextProperty().bind(viewModel.countLabelProperty());
@@ -123,8 +126,8 @@ final class CatalogBinder {
         main.setOnSortChanged(viewModel::selectSort);
         main.setOnPreviousPage(viewModel::previousPage);
         main.setOnNextPage(viewModel::nextPage);
-        viewModel.rows().addListener((ListChangeListener<CatalogViewModel.CatalogRow>) change ->
-                main.setRows(viewModel.rows().stream().map(CatalogBinder::toMainRow).toList()));
+        rows.addListener((ListChangeListener<CatalogViewModel.CatalogRow>) change ->
+                main.setRows(rows.stream().map(CatalogBinder::toMainRow).toList()));
         viewModel.placeholderTextProperty().addListener((obs, oldValue, newValue) -> main.setPlaceholderText(newValue));
         viewModel.selectedSortKeyProperty().addListener((obs, oldValue, newValue) -> main.selectSort(newValue));
     }

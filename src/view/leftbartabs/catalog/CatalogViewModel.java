@@ -100,6 +100,16 @@ public final class CatalogViewModel {
     private final ObservableList<CatalogColumn> columns = FXCollections.observableArrayList();
     private final ObservableList<CatalogRow> rows = FXCollections.observableArrayList();
     private final ObservableList<FilterChip> chips = FXCollections.observableArrayList();
+    private final ObservableList<CatalogContent> readOnlyContents =
+            FXCollections.unmodifiableObservableList(contents);
+    private final ObservableList<SortSelection> readOnlySortOptions =
+            FXCollections.unmodifiableObservableList(sortOptions);
+    private final ObservableList<CatalogColumn> readOnlyColumns =
+            FXCollections.unmodifiableObservableList(columns);
+    private final ObservableList<CatalogRow> readOnlyRows =
+            FXCollections.unmodifiableObservableList(rows);
+    private final ObservableList<FilterChip> readOnlyChips =
+            FXCollections.unmodifiableObservableList(chips);
     private final ReadOnlyObjectWrapper<ContentKind> selectedContent = new ReadOnlyObjectWrapper<>(ContentKind.CREATURES);
     private final ReadOnlyObjectWrapper<CreatureFilterData> creatureFilterData =
             new ReadOnlyObjectWrapper<>(CreatureFilterData.empty());
@@ -130,23 +140,23 @@ public final class CatalogViewModel {
     }
 
     public ObservableList<CatalogContent> contents() {
-        return FXCollections.unmodifiableObservableList(contents);
+        return readOnlyContents;
     }
 
     public ObservableList<SortSelection> sortOptions() {
-        return FXCollections.unmodifiableObservableList(sortOptions);
+        return readOnlySortOptions;
     }
 
     public ObservableList<CatalogColumn> columns() {
-        return FXCollections.unmodifiableObservableList(columns);
+        return readOnlyColumns;
     }
 
     public ObservableList<CatalogRow> rows() {
-        return FXCollections.unmodifiableObservableList(rows);
+        return readOnlyRows;
     }
 
     public ObservableList<FilterChip> chips() {
-        return FXCollections.unmodifiableObservableList(chips);
+        return readOnlyChips;
     }
 
     public ReadOnlyObjectProperty<ContentKind> selectedContentProperty() {
