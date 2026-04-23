@@ -5,7 +5,9 @@ import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonEditorHandle;
+import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonRoomExitDescription;
 import src.domain.dungeon.map.value.DungeonRoomNarration;
@@ -26,6 +28,7 @@ public final class ApplyDungeonEditorOperationUseCase {
             OperationInput.MoveRoomAnchor,
             OperationInput.PaintRoomRectangle,
             OperationInput.DeleteRoomRectangle,
+            OperationInput.EditClusterBoundaries,
             OperationInput.SaveRoomNarration,
             OperationInput.NoChange {
 
@@ -44,6 +47,19 @@ public final class ApplyDungeonEditorOperationUseCase {
         }
 
         record DeleteRoomRectangle(DungeonCell start, DungeonCell end) implements OperationInput {
+        }
+
+        record EditClusterBoundaries(
+                long clusterId,
+                List<DungeonEdge> edges,
+                DungeonClusterBoundaryKind kind,
+                boolean deleteBoundary
+        ) implements OperationInput {
+            public EditClusterBoundaries {
+                clusterId = Math.max(0L, clusterId);
+                edges = edges == null ? List.of() : List.copyOf(edges);
+                kind = kind == null ? DungeonClusterBoundaryKind.WALL : kind;
+            }
         }
 
         record SaveRoomNarration(
@@ -137,6 +153,13 @@ public final class ApplyDungeonEditorOperationUseCase {
             DungeonCell start = deleteRoomRectangle.start();
             DungeonCell end = deleteRoomRectangle.end();
             return start == null || end == null ? current : current.deleteRoomRectangle(start, end);
+        }
+        if (operation instanceof OperationInput.EditClusterBoundaries editClusterBoundaries) {
+            return current.editClusterBoundaries(
+                    editClusterBoundaries.clusterId(),
+                    editClusterBoundaries.edges(),
+                    editClusterBoundaries.kind(),
+                    editClusterBoundaries.deleteBoundary());
         }
         if (operation instanceof OperationInput.SaveRoomNarration saveRoomNarration) {
             return current.saveRoomNarration(

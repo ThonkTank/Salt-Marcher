@@ -9,11 +9,13 @@ import src.domain.dungeon.map.entity.DungeonCorridor;
 import src.domain.dungeon.map.entity.DungeonStair;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
+import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonCorridorBindings;
 import src.domain.dungeon.map.value.DungeonCorridorDoorBinding;
 import src.domain.dungeon.map.value.DungeonCorridorWaypoint;
 import src.domain.dungeon.map.value.DungeonEditorHandle;
 import src.domain.dungeon.map.value.DungeonEditorHandleType;
+import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonMapTopology;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonMapMetadata;
@@ -451,6 +453,15 @@ public final class DungeonMap {
 
     public DungeonMap deleteRoomRectangle(DungeonCell start, DungeonCell end) {
         return new DungeonRoomTopologyEditor().deleteRectangle(this, start, end);
+    }
+
+    public DungeonMap editClusterBoundaries(
+            long clusterId,
+            List<DungeonEdge> edges,
+            DungeonClusterBoundaryKind kind,
+            boolean deleteBoundary
+    ) {
+        return new DungeonRoomTopologyEditor().editBoundaries(this, clusterId, edges, kind, deleteBoundary);
     }
 
     public DungeonMap rename(String mapName) {

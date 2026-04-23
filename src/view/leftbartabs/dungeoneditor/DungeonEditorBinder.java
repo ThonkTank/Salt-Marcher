@@ -231,7 +231,36 @@ final class DungeonEditorBinder {
                 event.r(),
                 event.level(),
                 event.primaryButtonDown(),
-                toHitTarget(event.hitTarget()));
+                event.secondaryButtonDown(),
+                toHitTarget(event.hitTarget()),
+                toVertexTarget(event.vertexTarget()),
+                toBoundaryTarget(event.boundaryTarget()));
+    }
+
+    private static DungeonEditorViewModel.VertexTarget toVertexTarget(
+            DungeonMapMainView.DungeonMapVertexTarget vertexTarget
+    ) {
+        if (vertexTarget == null || !vertexTarget.present()) {
+            return DungeonEditorViewModel.VertexTarget.empty();
+        }
+        return new DungeonEditorViewModel.VertexTarget(true, vertexTarget.q(), vertexTarget.r(), vertexTarget.level());
+    }
+
+    private static DungeonEditorViewModel.BoundaryTarget toBoundaryTarget(
+            DungeonMapMainView.DungeonMapBoundaryTarget boundaryTarget
+    ) {
+        if (boundaryTarget == null || !boundaryTarget.present()) {
+            return DungeonEditorViewModel.BoundaryTarget.empty();
+        }
+        return new DungeonEditorViewModel.BoundaryTarget(
+                true,
+                boundaryTarget.kind(),
+                boundaryTarget.ownerId(),
+                boundaryTarget.clusterId(),
+                boundaryTarget.topologyRefKind(),
+                boundaryTarget.topologyRefId(),
+                new DungeonCellRef(boundaryTarget.startQ(), boundaryTarget.startR(), boundaryTarget.level()),
+                new DungeonCellRef(boundaryTarget.endQ(), boundaryTarget.endR(), boundaryTarget.level()));
     }
 
     private static DungeonEditorViewModel.HitTarget toHitTarget(DungeonMapMainView.DungeonMapHitTarget hitTarget) {

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-22
+Last Reviewed: 2026-04-23
 Source of Truth: Dungeon editor left-bar tab UI structure and control-panel
 interaction state.
 
@@ -11,8 +11,8 @@ interaction state.
 The Dungeon Editor tab is the editor-facing cockpit root for authored dungeon
 maps. It keeps the compact current control layout while carrying the original
 Auswahl tool behavior through the map-owned topology model: presentation
-selection, drag preview, persisted grid and level movement for selected
-editor handles, and room narration editing.
+selection, drag preview, persisted grid and level movement for selected editor
+handles, room paint/delete, wall and door editing, and room narration editing.
 
 ## Visible Structure
 
@@ -40,8 +40,9 @@ editor handles, and room narration editing.
   is also the cluster drag handle; separate empty cluster-handle markers are
   not shown. Selected room labels expose editable room narration in the state
   pane. `Raum malen` and `Raum loeschen` commit active-level rectangle
-  mutations. The remaining non-room editor tool families are still pending
-  authored operations.
+  mutations. `Wand setzen`, `Wand loeschen`, `Tuer setzen`, and `Tuer loeschen`
+  commit cluster-boundary mutations through the authored map. Corridor, stair,
+  and transition editor tool families are still pending authored operations.
 - In grid mode, clicking a room, room label, stair, transition, door handle,
   corridor waypoint, stair anchor, or cluster label selects the owning topology
   ref. Dragging a selectable editor handle keeps the authored source geometry
@@ -55,6 +56,14 @@ editor handles, and room narration editing.
 - In room paint/delete mode, pressing the grid starts a rectangle at the
   pointed cell, dragging grows the preview rectangle, and release commits the
   room topology mutation for the active map and level.
+- In wall mode, clicking cluster grid vertices starts or extends a boundary
+  path. The editor resolves the active cluster from the selected cluster,
+  current boundary hit, or nearest editable cluster. A secondary click finishes
+  the active draft. Wall create paths stop at the next compatible existing
+  boundary; wall delete paths follow existing wall segments.
+- In door mode, clicking an existing non-door boundary between distinct room
+  components creates a door. Clicking an existing door with `Tuer loeschen`
+  removes that door boundary.
 - Grid/graph toggles switch the central map representation.
 - Level controls update the active map projection.
 - Overlay controls support off, nearby-level range, selected levels, and

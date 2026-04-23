@@ -1,7 +1,11 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -23,9 +27,14 @@ import src.domain.dungeon.published.ApplyDungeonEditorOperationCommand;
 import src.domain.dungeon.published.CreateDungeonMapCommand;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DescribeDungeonSelectionQuery;
+import src.domain.dungeon.published.DungeonAreaKind;
+import src.domain.dungeon.published.DungeonAreaSnapshot;
+import src.domain.dungeon.published.DungeonBoundaryKind;
+import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorOperation;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
@@ -49,6 +58,7 @@ public final class DungeonEditorViewModel {
 
     private final DungeonApplicationService dungeon;
     private final PaintInteraction paintInteraction = new PaintInteraction();
+    private final BoundaryInteraction boundaryInteraction = new BoundaryInteraction();
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<DungeonSnapshot> snapshot = new ReadOnlyObjectWrapper<>();
@@ -252,6 +262,19 @@ public final class DungeonEditorViewModel {
         if (!interactionEnabled() || input == null) {
             return false;
         }
+        if (boundaryInteraction.handles(selectedTool.get())) {
+            BoundaryInteraction.PressResult boundaryResult =
+                    boundaryInteraction.press(input, selectedTool.get(), snapshot.get(), selection.get());
+            if (boundaryResult.consumed()) {
+                dragSession = null;
+                paintInteraction.clear();
+                if (boundaryResult.commit() != null) {
+                    applyBoundaryCommit(boundaryResult.commit());
+                }
+                refreshStateText();
+                return true;
+            }
+        }
         if (paintInteraction.press(input, selectedTool.get())) {
             selection.set(null);
             dragSession = null;
@@ -429,6 +452,7 @@ public final class DungeonEditorViewModel {
                 + "\n" + selectionText
                 + "\n" + previewText
                 + "\n" + paintInteraction.stateText()
+                + "\n" + boundaryInteraction.stateText(selectedTool.get())
                 + "\nAuswahlwerkzeug: Topologieelemente koennen auf dem Raster gezogen werden."
                 + "\nRaumwerkzeug: Rechteck ziehen und beim Loslassen anwenden.");
     }
@@ -469,17 +493,31 @@ public final class DungeonEditorViewModel {
     }
 
     private void applyPaintCommit(PaintInteraction.PaintCommit commit) {
+        if (commit == null) {
+            return;
+        }
+        applyCommittedOperation(commit.operation(), commit.status());
+    }
+
+    private void applyBoundaryCommit(BoundaryInteraction.BoundaryCommit commit) {
+        if (commit == null) {
+            return;
+        }
+        applyCommittedOperation(commit.operation(), commit.status());
+    }
+
+    private void applyCommittedOperation(DungeonEditorOperation operation, String statusText) {
         DungeonMapId mapId = selectedMapId;
-        if (mapId == null || commit == null) {
+        if (mapId == null || operation == null) {
             return;
         }
         withBusy(() -> {
             DungeonOperationResult result = dungeon.applyOperation(new ApplyDungeonEditorOperationCommand(
                     mapId,
-                    commit.operation()));
+                    operation));
             snapshot.set(result.snapshot());
             reachableLevels.set(levelsFrom(result.snapshot(), projectionLevel.get()));
-            status.set(commit.status());
+            status.set(statusText);
             selection.set(null);
             inspector.set(null);
         });
@@ -508,6 +546,7 @@ public final class DungeonEditorViewModel {
     private void clearInteraction() {
         dragSession = null;
         paintInteraction.clear();
+        boundaryInteraction.clear();
         dragPreview.set(null);
         selection.set(null);
         inspector.set(null);
@@ -690,13 +729,725 @@ public final class DungeonEditorViewModel {
         }
     }
 
+    private static HitTarget emptyHitTarget() {
+        return new HitTarget(HitKind.EMPTY, 0L, 0L, "EMPTY", 0L, "", emptyHandleRef());
+    }
+
+    private static DungeonEditorHandleRef emptyHandleRef() {
+        return new DungeonEditorHandleRef(
+                DungeonEditorHandleKind.CLUSTER_LABEL,
+                new DungeonTopologyElementRef(DungeonTopologyElementKind.EMPTY, 0L),
+                0L,
+                0L,
+                0L,
+                0L,
+                0,
+                new DungeonCellRef(0, 0, 0),
+                "");
+    }
+
     public record PointerInput(
             int q,
             int r,
             int level,
             boolean primaryButtonDown,
-            HitTarget hitTarget
+            boolean secondaryButtonDown,
+            HitTarget hitTarget,
+            VertexTarget vertexTarget,
+            BoundaryTarget boundaryTarget
     ) {
+        public PointerInput {
+            hitTarget = hitTarget == null ? emptyHitTarget() : hitTarget;
+            vertexTarget = vertexTarget == null ? VertexTarget.empty() : vertexTarget;
+            boundaryTarget = boundaryTarget == null ? BoundaryTarget.empty() : boundaryTarget;
+        }
+    }
+
+    public record VertexTarget(
+            boolean present,
+            int q,
+            int r,
+            int level
+    ) {
+        public static VertexTarget empty() {
+            return new VertexTarget(false, 0, 0, 0);
+        }
+    }
+
+    public record BoundaryTarget(
+            boolean present,
+            String kind,
+            long ownerId,
+            long clusterId,
+            String topologyRefKind,
+            long topologyRefId,
+            DungeonCellRef start,
+            DungeonCellRef end
+    ) {
+        public BoundaryTarget {
+            kind = kind == null || kind.isBlank() ? "WALL" : kind;
+            ownerId = Math.max(0L, ownerId);
+            clusterId = Math.max(0L, clusterId);
+            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? "EMPTY" : topologyRefKind;
+            topologyRefId = Math.max(0L, topologyRefId);
+            start = start == null ? new DungeonCellRef(0, 0, 0) : start;
+            end = end == null ? new DungeonCellRef(0, 0, 0) : end;
+        }
+
+        public static BoundaryTarget empty() {
+            return new BoundaryTarget(false, "WALL", 0L, 0L, "EMPTY", 0L,
+                    new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0));
+        }
+    }
+
+    private static final class BoundaryInteraction {
+
+        private static final String WALL_CREATE_TOOL = "Wand setzen";
+        private static final String WALL_DELETE_TOOL = "Wand loeschen";
+        private static final String DOOR_CREATE_TOOL = "Tuer setzen";
+        private static final String DOOR_DELETE_TOOL = "Tuer loeschen";
+
+        private @Nullable BoundaryDraft draft;
+
+        boolean handles(String selectedTool) {
+            return wallToolSelected(selectedTool) || doorToolSelected(selectedTool);
+        }
+
+        PressResult press(
+                PointerInput input,
+                String selectedTool,
+                @Nullable DungeonSnapshot snapshot,
+                @Nullable Selection selection
+        ) {
+            if (input == null || !handles(selectedTool)) {
+                return PressResult.ignored();
+            }
+            if (doorToolSelected(selectedTool)) {
+                return doorPressed(input, selectedTool, snapshot);
+            }
+            if (input.secondaryButtonDown()) {
+                return finishDraft();
+            }
+            if (!input.primaryButtonDown()) {
+                return PressResult.ignored();
+            }
+            return wallPressed(input, selectedTool, snapshot, selection);
+        }
+
+        void clear() {
+            draft = null;
+        }
+
+        String stateText(String selectedTool) {
+            if (!handles(selectedTool)) {
+                return "Wandpfad: inaktiv";
+            }
+            if (draft != null) {
+                return draft.status();
+            }
+            if (WALL_CREATE_TOOL.equals(selectedTool)) {
+                return "Wandpfad: Eckpunkte anklicken, Rechtsklick schliesst ab.";
+            }
+            if (WALL_DELETE_TOOL.equals(selectedTool)) {
+                return "Wandpfad: bestehende Innenwand-Eckpunkte anklicken, Rechtsklick schliesst ab.";
+            }
+            return "Tuerwerkzeug: interne Wand anklicken.";
+        }
+
+        private PressResult doorPressed(
+                PointerInput input,
+                String selectedTool,
+                @Nullable DungeonSnapshot snapshot
+        ) {
+            BoundaryTarget boundary = input.boundaryTarget();
+            if (!input.primaryButtonDown() || boundary == null || !boundary.present() || boundary.clusterId() <= 0L) {
+                return PressResult.ignored();
+            }
+            boolean deleteMode = DOOR_DELETE_TOOL.equals(selectedTool);
+            if (deleteMode) {
+                if (!"DOOR".equals(boundary.kind())) {
+                    return PressResult.ignored();
+                }
+            } else if ("DOOR".equals(boundary.kind()) || !touchesDistinctRooms(snapshot, boundary)) {
+                return PressResult.ignored();
+            }
+            DungeonEditorOperation operation = new DungeonEditorOperation.EditClusterBoundaries(
+                    boundary.clusterId(),
+                    List.of(edgeRef(boundary.start(), boundary.end())),
+                    DungeonBoundaryKind.DOOR,
+                    deleteMode);
+            String status = deleteMode ? "Tuer geloescht." : "Tuer gesetzt.";
+            return PressResult.consumed(new BoundaryCommit(operation, status));
+        }
+
+        private PressResult wallPressed(
+                PointerInput input,
+                String selectedTool,
+                @Nullable DungeonSnapshot snapshot,
+            @Nullable Selection selection
+        ) {
+            VertexTarget vertex = input.vertexTarget();
+            if (snapshot == null || vertex == null || !vertex.present()) {
+                return ignoredWithoutDraft();
+            }
+            boolean deleteMode = WALL_DELETE_TOOL.equals(selectedTool);
+            long clusterId = resolveClusterId(input, vertex, deleteMode, snapshot, selection);
+            if (clusterId <= 0L) {
+                return ignoredWithoutDraft();
+            }
+            VertexKey nextVertex = vertexKey(vertex);
+            BoundaryDraft currentDraft = draft;
+            if (currentDraft == null || currentDraft.clusterId() != clusterId) {
+                return startWallDraft(snapshot, clusterId, vertex, nextVertex, deleteMode);
+            }
+            if (currentDraft.currentVertex().equals(nextVertex)) {
+                return PressResult.consumed(null);
+            }
+            return extendWallDraft(currentDraft, snapshot, clusterId, nextVertex, deleteMode);
+        }
+
+        private PressResult ignoredWithoutDraft() {
+            if (draft == null) {
+                clear();
+            }
+            return PressResult.ignored();
+        }
+
+        private static VertexKey vertexKey(VertexTarget vertex) {
+            return new VertexKey(vertex.q(), vertex.r(), vertex.level());
+        }
+
+        private PressResult startWallDraft(
+                DungeonSnapshot snapshot,
+                long clusterId,
+                VertexTarget vertex,
+                VertexKey startVertex,
+                boolean deleteMode
+        ) {
+            if (!isEditableVertex(snapshot, clusterId, vertex, deleteMode)) {
+                return PressResult.ignored();
+            }
+            draft = new BoundaryDraft(
+                    clusterId,
+                    deleteMode,
+                    startVertex,
+                    startVertex,
+                    Set.of(),
+                    Set.of(),
+                    startWallStatus(deleteMode));
+            return PressResult.consumed(null);
+        }
+
+        private static String startWallStatus(boolean deleteMode) {
+            return deleteMode
+                    ? "Wandpfad: Start auf Innenwand gewaehlt, naechsten Eckpunkt anklicken."
+                    : "Wandpfad: Start-Eckpunkt gewaehlt, naechsten Eckpunkt anklicken.";
+        }
+
+        private PressResult extendWallDraft(
+                BoundaryDraft currentDraft,
+                DungeonSnapshot snapshot,
+                long clusterId,
+                VertexKey nextVertex,
+                boolean deleteMode
+        ) {
+            PathResult path = deleteMode
+                    ? findDeletePath(snapshot, clusterId, currentDraft.currentVertex(), nextVertex)
+                    : findCreatePath(snapshot, clusterId, currentDraft.currentVertex(), nextVertex);
+            if (!path.hasRoute()) {
+                draft = currentDraft.withStatus(deleteMode
+                        ? "Wandpfad: Pfad kann nur entlang bestehender Innenwaende verlaufen."
+                        : "Wandpfad: Zwischen diesen Eckpunkten gibt es keinen gueltigen Pfad.");
+                return PressResult.consumed(null);
+            }
+            Set<EdgeKey> previewEdges = new LinkedHashSet<>(currentDraft.previewEdges());
+            previewEdges.addAll(path.committedEdges());
+            Set<EdgeKey> skippedDoorEdges = new LinkedHashSet<>(currentDraft.skippedDoorEdges());
+            skippedDoorEdges.addAll(path.skippedDoorEdges());
+            draft = new BoundaryDraft(
+                    clusterId,
+                    deleteMode,
+                    currentDraft.startVertex(),
+                    nextVertex,
+                    previewEdges,
+                    skippedDoorEdges,
+                    wallStatus(deleteMode, previewEdges, skippedDoorEdges));
+            if (!deleteMode && touchesExistingWall(snapshot, clusterId, nextVertex)) {
+                return finishDraft();
+            }
+            return PressResult.consumed(null);
+        }
+
+        private PressResult finishDraft() {
+            BoundaryDraft current = draft;
+            draft = null;
+            if (current == null) {
+                return PressResult.ignored();
+            }
+            if (current.previewEdges().isEmpty()) {
+                return PressResult.consumed(null);
+            }
+            DungeonEditorOperation operation = new DungeonEditorOperation.EditClusterBoundaries(
+                    current.clusterId(),
+                    current.previewEdges().stream().map(EdgeKey::toEdgeRef).toList(),
+                    DungeonBoundaryKind.WALL,
+                    current.deleteMode());
+            String status = current.deleteMode() ? "Wandpfad geloescht." : "Wandpfad gesetzt.";
+            return PressResult.consumed(new BoundaryCommit(operation, status));
+        }
+
+        private long resolveClusterId(
+                PointerInput input,
+                VertexTarget vertex,
+                boolean deleteMode,
+                DungeonSnapshot snapshot,
+                @Nullable Selection selection
+        ) {
+            if (draft != null && isEditableVertex(snapshot, draft.clusterId(), vertex, deleteMode)) {
+                return draft.clusterId();
+            }
+            if (selection != null
+                    && selection.clusterId() > 0L
+                    && isEditableVertex(snapshot, selection.clusterId(), vertex, deleteMode)) {
+                return selection.clusterId();
+            }
+            BoundaryTarget boundary = input.boundaryTarget();
+            if (boundary != null
+                    && boundary.clusterId() > 0L
+                    && isEditableVertex(snapshot, boundary.clusterId(), vertex, deleteMode)) {
+                return boundary.clusterId();
+            }
+            return nearestEditableCluster(snapshot, vertex, deleteMode);
+        }
+
+        private static long nearestEditableCluster(DungeonSnapshot snapshot, VertexTarget vertex, boolean deleteMode) {
+            return clusterCellsByCluster(snapshot, vertex.level()).entrySet().stream()
+                    .filter(entry -> isEditableVertex(snapshot, entry.getKey(), vertex, deleteMode))
+                    .min(Comparator
+                            .comparingDouble((Map.Entry<Long, Set<CellKey>> entry) -> centerDistance(entry.getValue(), vertex))
+                            .thenComparingLong(Map.Entry::getKey))
+                    .map(Map.Entry::getKey)
+                    .orElse(0L);
+        }
+
+        private static double centerDistance(Set<CellKey> cells, VertexTarget vertex) {
+            double q = 0.0;
+            double r = 0.0;
+            for (CellKey cell : cells) {
+                q += cell.q() + 0.5;
+                r += cell.r() + 0.5;
+            }
+            int count = Math.max(1, cells.size());
+            return Math.hypot(q / count - vertex.q(), r / count - vertex.r());
+        }
+
+        private static boolean isEditableVertex(
+                DungeonSnapshot snapshot,
+                long clusterId,
+                VertexTarget vertex,
+                boolean deleteMode
+        ) {
+            Set<EdgeKey> edges = deleteMode
+                    ? existingInternalBoundaryEdges(snapshot, clusterId, vertex.level(), DungeonBoundaryKind.WALL)
+                    : internalClusterEdges(snapshot, clusterId, vertex.level());
+            VertexKey key = new VertexKey(vertex.q(), vertex.r(), vertex.level());
+            return edges.stream().anyMatch(edge -> edge.touches(key));
+        }
+
+        private static PathResult findCreatePath(
+                DungeonSnapshot snapshot,
+                long clusterId,
+                VertexKey start,
+                VertexKey goal
+        ) {
+            Set<EdgeKey> traversableEdges = internalClusterEdges(snapshot, clusterId, start.level());
+            List<EdgeKey> route = shortestPath(start, goal, traversableEdges);
+            if (route.isEmpty()) {
+                return PathResult.empty();
+            }
+            Set<EdgeKey> doors = existingInternalBoundaryEdges(snapshot, clusterId, start.level(), DungeonBoundaryKind.DOOR);
+            Set<EdgeKey> committed = new LinkedHashSet<>(route);
+            committed.removeAll(doors);
+            Set<EdgeKey> skippedDoors = new LinkedHashSet<>(route);
+            skippedDoors.retainAll(doors);
+            return new PathResult(route, committed, skippedDoors);
+        }
+
+        private static PathResult findDeletePath(
+                DungeonSnapshot snapshot,
+                long clusterId,
+                VertexKey start,
+                VertexKey goal
+        ) {
+            Set<EdgeKey> walls = existingInternalBoundaryEdges(snapshot, clusterId, start.level(), DungeonBoundaryKind.WALL);
+            List<EdgeKey> route = shortestPath(start, goal, walls);
+            return route.isEmpty() ? PathResult.empty() : new PathResult(route, new LinkedHashSet<>(route), Set.of());
+        }
+
+        private static List<EdgeKey> shortestPath(VertexKey start, VertexKey goal, Set<EdgeKey> traversableEdges) {
+            if (start == null || goal == null || traversableEdges == null || traversableEdges.isEmpty()) {
+                return List.of();
+            }
+            Map<VertexKey, Set<VertexKey>> adjacency = adjacency(traversableEdges);
+            if (!adjacency.containsKey(start) || !adjacency.containsKey(goal)) {
+                return List.of();
+            }
+            java.util.ArrayDeque<VertexKey> queue = new java.util.ArrayDeque<>();
+            Map<VertexKey, VertexKey> previous = new LinkedHashMap<>();
+            queue.add(start);
+            previous.put(start, null);
+            while (!queue.isEmpty()) {
+                VertexKey current = queue.removeFirst();
+                if (current.equals(goal)) {
+                    break;
+                }
+                for (VertexKey neighbor : adjacency.getOrDefault(current, Set.of()).stream()
+                        .sorted(VertexKey.ORDER)
+                        .toList()) {
+                    if (previous.containsKey(neighbor)) {
+                        continue;
+                    }
+                    previous.put(neighbor, current);
+                    queue.addLast(neighbor);
+                }
+            }
+            if (!previous.containsKey(goal)) {
+                return List.of();
+            }
+            List<EdgeKey> path = new ArrayList<>();
+            VertexKey current = goal;
+            while (!current.equals(start)) {
+                VertexKey parent = previous.get(current);
+                if (parent == null) {
+                    return List.of();
+                }
+                path.add(EdgeKey.between(parent, current));
+                current = parent;
+            }
+            java.util.Collections.reverse(path);
+            return List.copyOf(path);
+        }
+
+        private static Map<VertexKey, Set<VertexKey>> adjacency(Set<EdgeKey> edges) {
+            Map<VertexKey, Set<VertexKey>> result = new LinkedHashMap<>();
+            for (EdgeKey edge : edges == null ? Set.<EdgeKey>of() : edges) {
+                result.computeIfAbsent(edge.start(), ignored -> new LinkedHashSet<>()).add(edge.end());
+                result.computeIfAbsent(edge.end(), ignored -> new LinkedHashSet<>()).add(edge.start());
+            }
+            return Map.copyOf(result);
+        }
+
+        private static Set<EdgeKey> internalClusterEdges(DungeonSnapshot snapshot, long clusterId, int level) {
+            Set<CellKey> cells = clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
+            Set<EdgeKey> result = new LinkedHashSet<>();
+            for (CellKey cell : cells) {
+                for (Direction direction : Direction.values()) {
+                    CellKey neighbor = cell.neighbor(direction);
+                    if (cells.contains(neighbor)) {
+                        result.add(EdgeKey.sideOf(cell, direction));
+                    }
+                }
+            }
+            return Set.copyOf(result);
+        }
+
+        private static Set<EdgeKey> existingInternalBoundaryEdges(
+                DungeonSnapshot snapshot,
+                long clusterId,
+                int level,
+                DungeonBoundaryKind kind
+        ) {
+            Set<EdgeKey> internalEdges = internalClusterEdges(snapshot, clusterId, level);
+            Set<EdgeKey> result = new LinkedHashSet<>();
+            for (DungeonBoundarySnapshot boundary : boundaries(snapshot)) {
+                if (boundary.edge() == null
+                        || boundary.edge().from() == null
+                        || boundary.edge().to() == null
+                        || boundary.edge().from().level() != level
+                        || !boundaryKindMatches(boundary, kind)) {
+                    continue;
+                }
+                EdgeKey edge = EdgeKey.from(boundary.edge());
+                if (internalEdges.contains(edge)) {
+                    result.add(edge);
+                }
+            }
+            return Set.copyOf(result);
+        }
+
+        private static boolean touchesExistingWall(DungeonSnapshot snapshot, long clusterId, VertexKey vertex) {
+            Set<EdgeKey> edges = new LinkedHashSet<>(existingInternalBoundaryEdges(
+                    snapshot,
+                    clusterId,
+                    vertex.level(),
+                    DungeonBoundaryKind.WALL));
+            edges.addAll(outerClusterEdges(snapshot, clusterId, vertex.level()));
+            return edges.stream().anyMatch(edge -> edge.touches(vertex));
+        }
+
+        private static Set<EdgeKey> outerClusterEdges(DungeonSnapshot snapshot, long clusterId, int level) {
+            Set<CellKey> cells = clusterCellsByCluster(snapshot, level).getOrDefault(clusterId, Set.of());
+            Set<EdgeKey> result = new LinkedHashSet<>();
+            for (CellKey cell : cells) {
+                for (Direction direction : Direction.values()) {
+                    if (!cells.contains(cell.neighbor(direction))) {
+                        result.add(EdgeKey.sideOf(cell, direction));
+                    }
+                }
+            }
+            return Set.copyOf(result);
+        }
+
+        private static Map<Long, Set<CellKey>> clusterCellsByCluster(DungeonSnapshot snapshot, int level) {
+            Map<Long, Set<CellKey>> result = new LinkedHashMap<>();
+            if (snapshot == null || snapshot.map() == null) {
+                return Map.of();
+            }
+            for (DungeonAreaSnapshot area : snapshot.map().areas()) {
+                if (area.kind() != DungeonAreaKind.ROOM || area.clusterId() <= 0L) {
+                    continue;
+                }
+                Set<CellKey> cells = result.computeIfAbsent(area.clusterId(), ignored -> new LinkedHashSet<>());
+                for (DungeonCellRef cell : area.cells()) {
+                    if (cell.level() == level) {
+                        cells.add(new CellKey(cell.q(), cell.r(), cell.level()));
+                    }
+                }
+            }
+            Map<Long, Set<CellKey>> immutable = new LinkedHashMap<>();
+            for (Map.Entry<Long, Set<CellKey>> entry : result.entrySet()) {
+                immutable.put(entry.getKey(), Set.copyOf(entry.getValue()));
+            }
+            return Map.copyOf(immutable);
+        }
+
+        private static List<DungeonBoundarySnapshot> boundaries(DungeonSnapshot snapshot) {
+            return snapshot == null || snapshot.map() == null ? List.of() : snapshot.map().boundaries();
+        }
+
+        private static boolean boundaryKindMatches(DungeonBoundarySnapshot boundary, DungeonBoundaryKind kind) {
+            if (kind == DungeonBoundaryKind.DOOR) {
+                return "door".equalsIgnoreCase(boundary.kind());
+            }
+            return !"door".equalsIgnoreCase(boundary.kind());
+        }
+
+        private static boolean touchesDistinctRooms(@Nullable DungeonSnapshot snapshot, BoundaryTarget boundary) {
+            if (snapshot == null || snapshot.map() == null || boundary == null) {
+                return false;
+            }
+            Set<Long> roomIds = new LinkedHashSet<>();
+            List<CellKey> touchingCells = EdgeKey.from(boundary.start(), boundary.end()).touchingCells();
+            for (DungeonAreaSnapshot area : snapshot.map().areas()) {
+                if (area.kind() != DungeonAreaKind.ROOM || area.clusterId() != boundary.clusterId()) {
+                    continue;
+                }
+                for (DungeonCellRef cell : area.cells()) {
+                    if (touchingCells.contains(new CellKey(cell.q(), cell.r(), cell.level()))) {
+                        roomIds.add(area.id());
+                    }
+                }
+            }
+            return roomIds.size() >= 2;
+        }
+
+        private static DungeonEdgeRef edgeRef(DungeonCellRef start, DungeonCellRef end) {
+            return new DungeonEdgeRef(start, end);
+        }
+
+        private static String wallStatus(
+                boolean deleteMode,
+                Set<EdgeKey> previewEdges,
+                Set<EdgeKey> skippedDoorEdges
+        ) {
+            if (deleteMode) {
+                return previewEdges.isEmpty()
+                        ? "Wandpfad: Nur Aussenwaende getroffen, nichts zu loeschen."
+                        : "Wandpfad: Innenwandpfad aktiv, Rechtsklick schliesst ab.";
+            }
+            if (!skippedDoorEdges.isEmpty()) {
+                return "Wandpfad: Pfad aktiv, Tueren bleiben erhalten, Rechtsklick schliesst ab.";
+            }
+            return "Wandpfad: aktiv, Rechtsklick oder Klick auf bestehende Wand schliesst ab.";
+        }
+
+        private static boolean wallToolSelected(String selectedTool) {
+            return WALL_CREATE_TOOL.equals(selectedTool) || WALL_DELETE_TOOL.equals(selectedTool);
+        }
+
+        private static boolean doorToolSelected(String selectedTool) {
+            return DOOR_CREATE_TOOL.equals(selectedTool) || DOOR_DELETE_TOOL.equals(selectedTool);
+        }
+
+        private record PressResult(boolean consumed, @Nullable BoundaryCommit commit) {
+            static PressResult ignored() {
+                return new PressResult(false, null);
+            }
+
+            static PressResult consumed(@Nullable BoundaryCommit commit) {
+                return new PressResult(true, commit);
+            }
+        }
+
+        private record BoundaryCommit(DungeonEditorOperation operation, String status) {
+        }
+
+        private record BoundaryDraft(
+                long clusterId,
+                boolean deleteMode,
+                VertexKey startVertex,
+                VertexKey currentVertex,
+                Set<EdgeKey> previewEdges,
+                Set<EdgeKey> skippedDoorEdges,
+                String status
+        ) {
+            private BoundaryDraft {
+                previewEdges = previewEdges == null ? Set.of() : Set.copyOf(previewEdges);
+                skippedDoorEdges = skippedDoorEdges == null ? Set.of() : Set.copyOf(skippedDoorEdges);
+                status = status == null ? "" : status;
+            }
+
+            BoundaryDraft withStatus(String nextStatus) {
+                return new BoundaryDraft(
+                        clusterId,
+                        deleteMode,
+                        startVertex,
+                        currentVertex,
+                        previewEdges,
+                        skippedDoorEdges,
+                        nextStatus);
+            }
+        }
+
+        private record PathResult(
+                List<EdgeKey> routeEdges,
+                Set<EdgeKey> committedEdges,
+                Set<EdgeKey> skippedDoorEdges
+        ) {
+            private PathResult {
+                routeEdges = routeEdges == null ? List.of() : List.copyOf(routeEdges);
+                committedEdges = committedEdges == null ? Set.of() : Set.copyOf(committedEdges);
+                skippedDoorEdges = skippedDoorEdges == null ? Set.of() : Set.copyOf(skippedDoorEdges);
+            }
+
+            static PathResult empty() {
+                return new PathResult(List.of(), Set.of(), Set.of());
+            }
+
+            boolean hasRoute() {
+                return !routeEdges.isEmpty();
+            }
+        }
+
+        private record CellKey(int q, int r, int level) {
+            CellKey neighbor(Direction direction) {
+                return new CellKey(q + direction.deltaQ(), r + direction.deltaR(), level);
+            }
+        }
+
+        private record VertexKey(int q, int r, int level) {
+            private static final Comparator<VertexKey> ORDER = Comparator
+                    .comparingInt(VertexKey::level)
+                    .thenComparingInt(VertexKey::r)
+                    .thenComparingInt(VertexKey::q);
+        }
+
+        private record EdgeKey(VertexKey start, VertexKey end) {
+            static EdgeKey from(DungeonEdgeRef edge) {
+                return between(
+                        new VertexKey(edge.from().q(), edge.from().r(), edge.from().level()),
+                        new VertexKey(edge.to().q(), edge.to().r(), edge.to().level()));
+            }
+
+            static EdgeKey from(DungeonCellRef start, DungeonCellRef end) {
+                return between(
+                        new VertexKey(start.q(), start.r(), start.level()),
+                        new VertexKey(end.q(), end.r(), end.level()));
+            }
+
+            static EdgeKey between(VertexKey first, VertexKey second) {
+                return VertexKey.ORDER.compare(first, second) <= 0
+                        ? new EdgeKey(first, second)
+                        : new EdgeKey(second, first);
+            }
+
+            static EdgeKey sideOf(CellKey cell, Direction direction) {
+                return switch (direction) {
+                    case NORTH -> between(
+                            new VertexKey(cell.q(), cell.r(), cell.level()),
+                            new VertexKey(cell.q() + 1, cell.r(), cell.level()));
+                    case EAST -> between(
+                            new VertexKey(cell.q() + 1, cell.r(), cell.level()),
+                            new VertexKey(cell.q() + 1, cell.r() + 1, cell.level()));
+                    case SOUTH -> between(
+                            new VertexKey(cell.q(), cell.r() + 1, cell.level()),
+                            new VertexKey(cell.q() + 1, cell.r() + 1, cell.level()));
+                    case WEST -> between(
+                            new VertexKey(cell.q(), cell.r(), cell.level()),
+                            new VertexKey(cell.q(), cell.r() + 1, cell.level()));
+                };
+            }
+
+            boolean touches(VertexKey vertex) {
+                return start.equals(vertex) || end.equals(vertex);
+            }
+
+            List<CellKey> touchingCells() {
+                if (start.level() != end.level()) {
+                    return List.of();
+                }
+                if (start.r() == end.r()) {
+                    int minQ = Math.min(start.q(), end.q());
+                    int maxQ = Math.max(start.q(), end.q());
+                    List<CellKey> result = new ArrayList<>();
+                    for (int q = minQ; q < maxQ; q++) {
+                        result.add(new CellKey(q, start.r() - 1, start.level()));
+                        result.add(new CellKey(q, start.r(), start.level()));
+                    }
+                    return List.copyOf(result);
+                }
+                if (start.q() == end.q()) {
+                    int minR = Math.min(start.r(), end.r());
+                    int maxR = Math.max(start.r(), end.r());
+                    List<CellKey> result = new ArrayList<>();
+                    for (int r = minR; r < maxR; r++) {
+                        result.add(new CellKey(start.q() - 1, r, start.level()));
+                        result.add(new CellKey(start.q(), r, start.level()));
+                    }
+                    return List.copyOf(result);
+                }
+                return List.of();
+            }
+
+            DungeonEdgeRef toEdgeRef() {
+                return new DungeonEdgeRef(
+                        new DungeonCellRef(start.q(), start.r(), start.level()),
+                        new DungeonCellRef(end.q(), end.r(), end.level()));
+            }
+        }
+
+        private enum Direction {
+            NORTH(0, -1),
+            EAST(1, 0),
+            SOUTH(0, 1),
+            WEST(-1, 0);
+
+            private final int deltaQ;
+            private final int deltaR;
+
+            Direction(int deltaQ, int deltaR) {
+                this.deltaQ = deltaQ;
+                this.deltaR = deltaR;
+            }
+
+            int deltaQ() {
+                return deltaQ;
+            }
+
+            int deltaR() {
+                return deltaR;
+            }
+        }
     }
 
     private static final class PaintInteraction {

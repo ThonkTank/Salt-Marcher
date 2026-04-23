@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-22
+Last Reviewed: 2026-04-23
 Source of Truth: Persistence path, schema ownership, and adapter boundaries
 for the `dungeon` feature.
 
@@ -112,16 +112,17 @@ cell and edge direction.
 This is infrastructure for behavioural parity, not complete parity. Room
 semantics, cluster boundary geometry, and corridor read geometry are now
 represented. Room paint/delete now persists through the authored room topology
-sync path. Doors, stairs, and transitions are now source-to-domain mapped as
+sync path. Wall and door editor mutations reuse the existing cluster-boundary
+rows and full map synchronization path; no additional schema is introduced for
+those tools. Doors, stairs, and transitions are now source-to-domain mapped as
 authored facts. Runtime local movement derives one domain traversal-link model
 from door boundaries and stair exits, while transition movement remains a
 separate runtime action for cross-map and overworld targets. Character-specific
 travel position persistence belongs to party persistence, so this dungeon step
 introduces no character-position tables, columns, or ports. Direct token-drag
-movement, wall/door mutation paths, corridor/stair/transition editor mutation
-paths, cross-map dungeon transition follow-through, and non-space feature
-mapping still need follow-up work before the legacy dungeon behaviour is fully
-represented.
+movement, corridor/stair/transition editor mutation paths, cross-map dungeon
+transition follow-through, and non-space feature mapping still need follow-up
+work before the legacy dungeon behaviour is fully represented.
 
 ## Stability Rules
 

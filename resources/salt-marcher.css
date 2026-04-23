@@ -251,23 +251,10 @@
 .party-row:hover {
     -fx-background-color: derive(-sm-bg-card, 12%);
 }
-.party-card-top-row {
-    -fx-alignment: center-left;
-}
-.party-level-progress-row {
-    -fx-alignment: center-left;
-}
 .party-level-edge {
     -fx-text-fill: -sm-text-muted;
     -fx-font-size: 10px;
     -fx-font-weight: bold;
-}
-.party-action-row {
-    -fx-padding: 0;
-    -fx-alignment: center-left;
-}
-.party-management-actions {
-    -fx-alignment: center-right;
 }
 .party-search {
     -fx-padding: 8 8 4 8;
@@ -336,9 +323,6 @@
 .dropdown-message {
     -fx-text-fill: -sm-text-secondary;
 }
-.dropdown-actions {
-    -fx-alignment: center-left;
-}
 .party-editor-dropdown {
     -fx-min-width: 340;
     -fx-pref-width: 360;
@@ -353,9 +337,6 @@
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-padding: 8;
-}
-.party-editor-delete-actions {
-    -fx-alignment: center-right;
 }
 
 .text-field {
@@ -791,9 +772,6 @@
 .control-toolbar {
     -fx-spacing: 6;
 }
-.control-group {
-    -fx-spacing: 6;
-}
 .control-stack {
     -fx-spacing: 12;
 }
@@ -948,7 +926,6 @@
 .clickable {
     -fx-cursor: hand;
 }
-.creature-link,
 .creature-link {
     -fx-text-fill: -sm-creature-link;
     -fx-font-weight: bold;
@@ -1062,9 +1039,6 @@
 .init-badge {
     -fx-text-fill: -sm-text-primary;
     -fx-font-size: 11px;
-}
-.remove-btn {
-    -fx-font-size: 16px;
 }
 .progress-meter {
     -fx-background-color: -sm-bg-elevated;

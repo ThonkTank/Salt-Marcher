@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-22
+Last Reviewed: 2026-04-23
 Source of Truth: Write model, ownership boundaries, and domain invariants
 for the dungeon feature.
 
@@ -81,15 +81,18 @@ Current state:
   only when the view commits the selected editor-handle movement on release.
 - Empty authored maps remain empty until the editor creates room geometry; the
   domain no longer synthesizes a seed room or demo corridor as derived state.
-- Interactive editor mutations now include selected editor-handle movement and
-  room rectangle paint/delete. Handle movement resolves cluster labels, doors,
-  corridor waypoints, and stair anchors through the map-owned topology index,
-  then mutates the owning authored structure without adding marker-only
-  ownership to topology elements or introducing a public `CLUSTER` topology
-  kind. Room paint/delete rewrites authored cluster cell geometry, preserves
-  stable identities for the primary surviving component, allocates
-  deterministic local IDs for new split components, and rebuilds derived map
-  state from persisted authored truth. Room narration saves update
+- Interactive editor mutations now include selected editor-handle movement,
+  room rectangle paint/delete, and cluster wall or door edits. Handle movement
+  resolves cluster labels, doors, corridor waypoints, and stair anchors through
+  the map-owned topology index, then mutates the owning authored structure
+  without adding marker-only ownership to topology elements or introducing a
+  public `CLUSTER` topology kind. Room paint/delete rewrites authored cluster
+  cell geometry, preserves stable identities for the primary surviving
+  component, allocates deterministic local IDs for new split components, and
+  rebuilds derived map state from persisted authored truth. Wall create/delete
+  mutates explicit cluster boundary rows; door create/delete mutates the same
+  boundary model and rebuilds room components so walls and doors remain authored
+  topology facts rather than view-owned overlays. Room narration saves update
   `RoomCatalog` through the aggregate and stay authored room semantics.
 - The application layer coordinates load, mutate, save, search, and derive
   flows through domain-owned outbound ports.
@@ -115,9 +118,9 @@ Remaining implementation gap:
 - Several core types remain thinner record-style carriers than the target
   aggregate model.
 - Full behaviour parity with the original `salt-marcher/` dungeon schema still
-  requires wall and door editing, corridor editing, stair editing, transition
-  editing, direct token-drag movement, cross-map dungeon transition
-  follow-through, and remaining non-space feature mapping.
+  requires corridor editing, stair editing, transition editing, direct
+  token-drag movement, cross-map dungeon transition follow-through, and
+  remaining non-space feature mapping.
 - The current derived-state rebuild hydrates rooms from map-owned topology
   interpreted through cluster polygons and internal wall or door boundaries,
   then derives corridor cells and door relations from authored corridor

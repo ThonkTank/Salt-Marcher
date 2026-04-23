@@ -4,8 +4,12 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
+import src.domain.dungeon.map.value.DungeonBoundaryKey;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
+import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
+import src.domain.dungeon.map.value.DungeonEdge;
+import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonRoomNarration;
 import src.domain.dungeon.map.value.RoomCatalog;
 import src.domain.dungeon.map.value.SpatialTopology;
@@ -109,6 +113,47 @@ public final class DungeonRoomTopologyEditor {
         return rebuilt(dungeonMap, nextClusters, cellProjector);
     }
 
+    public DungeonMap editBoundaries(
+            DungeonMap dungeonMap,
+            long clusterId,
+            List<DungeonEdge> edges,
+            DungeonClusterBoundaryKind kind,
+            boolean deleteBoundary
+    ) {
+        Objects.requireNonNull(dungeonMap, "dungeonMap");
+        if (clusterId <= 0L || edges == null || edges.isEmpty()) {
+            return dungeonMap;
+        }
+        DungeonRoomCellProjector cellProjector = new DungeonRoomCellProjector();
+        List<ClusterWork> clusters = workClusters(dungeonMap, cellProjector);
+        ClusterWork target = clusters.stream()
+                .filter(work -> work.cluster().clusterId() == clusterId)
+                .findFirst()
+                .orElse(null);
+        if (target == null) {
+            return dungeonMap;
+        }
+        BoundaryEditResult edit = editBoundaries(target, cellProjector, edges, kind, deleteBoundary);
+        if (!edit.changed()) {
+            return dungeonMap;
+        }
+        IdAllocator ids = new IdAllocator(dungeonMap);
+        List<DungeonRoom> rooms = roomsForBoundaryEdit(target, edit.boundariesByLevel(), ids);
+        DungeonRoomCluster cluster = new DungeonRoomCluster(
+                target.cluster().clusterId(),
+                target.cluster().mapId(),
+                target.cluster().center(),
+                target.cluster().relativeVerticesByLevel(),
+                edit.boundariesByLevel());
+        List<ClusterWork> nextClusters = new ArrayList<>();
+        for (ClusterWork work : clusters) {
+            nextClusters.add(work.cluster().clusterId() == clusterId
+                    ? new ClusterWork(cluster, rooms, target.cellsByLevel())
+                    : work);
+        }
+        return rebuiltPreservingRooms(dungeonMap, nextClusters);
+    }
+
     private static List<ClusterWork> workClusters(DungeonMap dungeonMap, DungeonRoomCellProjector cellProjector) {
         Map<Long, List<DungeonRoom>> roomsByCluster = roomsByCluster(dungeonMap.rooms().rooms());
         List<ClusterWork> result = new ArrayList<>();
@@ -157,6 +202,291 @@ public final class DungeonRoomTopologyEditor {
                 dungeonMap.connections(),
                 dungeonMap.features(),
                 dungeonMap.revision() + 1L);
+    }
+
+    private static DungeonMap rebuiltPreservingRooms(
+            DungeonMap dungeonMap,
+            List<ClusterWork> workClusters
+    ) {
+        List<DungeonRoomCluster> clusters = new ArrayList<>();
+        List<DungeonRoom> rooms = new ArrayList<>();
+        for (ClusterWork work : workClusters.stream()
+                .sorted(Comparator.comparingLong(work -> work.cluster().clusterId()))
+                .toList()) {
+            if (work.allCells().isEmpty() || work.rooms().isEmpty()) {
+                continue;
+            }
+            clusters.add(work.cluster());
+            rooms.addAll(work.rooms());
+        }
+        SpatialTopology nextTopology = dungeonMap.topology().withRoomClusters(clusters);
+        return new DungeonMap(
+                dungeonMap.metadata(),
+                nextTopology,
+                dungeonMap.spaces(),
+                new RoomCatalog(rooms),
+                dungeonMap.connections(),
+                dungeonMap.features(),
+                dungeonMap.revision() + 1L);
+    }
+
+    private static BoundaryEditResult editBoundaries(
+            ClusterWork target,
+            DungeonRoomCellProjector cellProjector,
+            List<DungeonEdge> edges,
+            DungeonClusterBoundaryKind kind,
+            boolean deleteBoundary
+    ) {
+        DungeonClusterBoundaryKind resolvedKind = kind == null ? DungeonClusterBoundaryKind.WALL : kind;
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = boundaryMap(target.cluster());
+        Map<Long, List<DungeonCell>> roomCells = cellProjector.cellsByRoom(target.cluster(), target.rooms());
+        boolean changed = false;
+        for (DungeonEdge edge : edges) {
+            DungeonClusterBoundary candidate = boundaryForEdge(target, edge, resolvedKind);
+            if (candidate == null) {
+                continue;
+            }
+            DungeonBoundaryKey key = DungeonBoundaryKey.from(candidate.absoluteEdge(target.cluster().center()));
+            DungeonClusterBoundary existing = boundaries.get(key);
+            if (deleteBoundary) {
+                if (existing != null && existing.kind() == resolvedKind) {
+                    boundaries.remove(key);
+                    changed = true;
+                }
+                continue;
+            }
+            if (resolvedKind == DungeonClusterBoundaryKind.DOOR
+                    && !editableDoorBoundary(existing, edge, roomCells)) {
+                continue;
+            }
+            if (resolvedKind == DungeonClusterBoundaryKind.WALL
+                    && existing != null
+                    && existing.kind() == DungeonClusterBoundaryKind.DOOR) {
+                continue;
+            }
+            if (existing != null && existing.kind() == resolvedKind) {
+                continue;
+            }
+            boundaries.put(key, candidate);
+            changed = true;
+        }
+        return new BoundaryEditResult(boundariesByLevel(boundaries.values()), changed);
+    }
+
+    private static Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap(DungeonRoomCluster cluster) {
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> result = new LinkedHashMap<>();
+        for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
+            for (DungeonClusterBoundary boundary : boundaries) {
+                result.put(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())), boundary);
+            }
+        }
+        return result;
+    }
+
+    private static @Nullable DungeonClusterBoundary boundaryForEdge(
+            ClusterWork target,
+            DungeonEdge edge,
+            DungeonClusterBoundaryKind kind
+    ) {
+        if (edge == null || edge.from() == null || edge.to() == null) {
+            return null;
+        }
+        List<DungeonCell> touchingCells = DungeonRoomCellProjector.sortedCells(edge.touchingCells());
+        if (touchingCells.size() != 2 || touchingCells.getFirst().level() != touchingCells.get(1).level()) {
+            return null;
+        }
+        List<DungeonCell> clusterCells = target.cellsAt(touchingCells.getFirst().level());
+        if (!clusterCells.contains(touchingCells.getFirst()) || !clusterCells.contains(touchingCells.get(1))) {
+            return null;
+        }
+        DungeonCell baseCell = touchingCells.getFirst();
+        DungeonEdgeDirection direction = directionFrom(baseCell, edge);
+        if (direction == null) {
+            return null;
+        }
+        DungeonCell center = target.cluster().center();
+        return new DungeonClusterBoundary(
+                target.cluster().clusterId(),
+                baseCell.level(),
+                new DungeonCell(baseCell.q() - center.q(), baseCell.r() - center.r(), baseCell.level()),
+                direction,
+                kind);
+    }
+
+    private static @Nullable DungeonEdgeDirection directionFrom(DungeonCell cell, DungeonEdge edge) {
+        DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
+        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
+            if (DungeonBoundaryKey.from(DungeonEdge.sideOf(cell, direction)).equals(key)) {
+                return direction;
+            }
+        }
+        return null;
+    }
+
+    private static boolean editableDoorBoundary(
+            @Nullable DungeonClusterBoundary existing,
+            DungeonEdge edge,
+            Map<Long, List<DungeonCell>> roomCells
+    ) {
+        return existing != null
+                && existing.kind() != DungeonClusterBoundaryKind.DOOR
+                && touchingRoomCount(edge, roomCells) >= 2;
+    }
+
+    private static long touchingRoomCount(DungeonEdge edge, Map<Long, List<DungeonCell>> cellsByRoom) {
+        if (edge == null || cellsByRoom.isEmpty()) {
+            return 0L;
+        }
+        Set<DungeonCell> touching = Set.copyOf(edge.touchingCells());
+        return cellsByRoom.values().stream()
+                .filter(roomCells -> roomCells.stream().anyMatch(touching::contains))
+                .limit(2L)
+                .count();
+    }
+
+    private static Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel(
+            Iterable<DungeonClusterBoundary> boundaries
+    ) {
+        Map<Integer, List<DungeonClusterBoundary>> grouped = new LinkedHashMap<>();
+        for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
+            grouped.computeIfAbsent(boundary.level(), ignored -> new ArrayList<>()).add(boundary);
+        }
+        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : grouped.entrySet()) {
+            result.put(entry.getKey(), entry.getValue().stream()
+                    .sorted(Comparator
+                            .comparingInt((DungeonClusterBoundary boundary) -> boundary.relativeCell().r())
+                            .thenComparingInt(boundary -> boundary.relativeCell().q())
+                            .thenComparing(DungeonClusterBoundary::direction))
+                    .toList());
+        }
+        return Map.copyOf(result);
+    }
+
+    private static List<DungeonRoom> roomsForBoundaryEdit(
+            ClusterWork work,
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
+            IdAllocator ids
+    ) {
+        List<RoomComponent> components = roomComponents(work, boundariesByLevel);
+        Set<Long> usedRoomIds = new LinkedHashSet<>();
+        List<DungeonRoom> rooms = new ArrayList<>();
+        for (RoomComponent component : components) {
+            DungeonRoom template = templateForComponent(work.rooms(), component, usedRoomIds);
+            long roomId = template == null ? ids.nextRoomId() : template.roomId();
+            usedRoomIds.add(roomId);
+            rooms.add(new DungeonRoom(
+                    roomId,
+                    work.cluster().mapId(),
+                    work.cluster().clusterId(),
+                    template == null ? "Raum " + roomId : template.name(),
+                    Map.of(component.level(), component.anchor()),
+                    template == null ? DungeonRoomNarration.empty() : template.narration()));
+        }
+        return List.copyOf(rooms);
+    }
+
+    private static List<RoomComponent> roomComponents(
+            ClusterWork work,
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+    ) {
+        List<RoomComponent> result = new ArrayList<>();
+        for (Map.Entry<Integer, List<DungeonCell>> entry : work.cellsByLevel().entrySet()) {
+            int level = entry.getKey();
+            List<DungeonClusterBoundary> barriers = boundariesByLevel.getOrDefault(level, List.of());
+            for (Set<DungeonCell> component : connectedComponents(entry.getValue(), barriers, work.cluster().center())) {
+                List<DungeonCell> cells = DungeonRoomCellProjector.sortedCells(component);
+                if (!cells.isEmpty()) {
+                    result.add(new RoomComponent(level, cells));
+                }
+            }
+        }
+        return result.stream()
+                .sorted(Comparator
+                        .comparingInt(RoomComponent::level)
+                        .thenComparingInt(component -> component.anchor().r())
+                        .thenComparingInt(component -> component.anchor().q()))
+                .toList();
+    }
+
+    private static List<Set<DungeonCell>> connectedComponents(
+            List<DungeonCell> cells,
+            List<DungeonClusterBoundary> barriers,
+            DungeonCell center
+    ) {
+        Set<DungeonCell> remaining = new LinkedHashSet<>(cells == null ? List.<DungeonCell>of() : cells);
+        List<Set<DungeonCell>> components = new ArrayList<>();
+        while (!remaining.isEmpty()) {
+            DungeonCell start = remaining.iterator().next();
+            Set<DungeonCell> component = new LinkedHashSet<>();
+            Set<DungeonCell> frontier = new LinkedHashSet<>(remaining);
+            java.util.ArrayDeque<DungeonCell> queue = new java.util.ArrayDeque<>();
+            queue.add(start);
+            frontier.remove(start);
+            remaining.remove(start);
+            while (!queue.isEmpty()) {
+                DungeonCell current = queue.removeFirst();
+                component.add(current);
+                for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
+                    DungeonCell neighbor = direction.neighborOf(current);
+                    if (!frontier.contains(neighbor) || isBlocked(barriers, center, current, neighbor)) {
+                        continue;
+                    }
+                    frontier.remove(neighbor);
+                    remaining.remove(neighbor);
+                    queue.addLast(neighbor);
+                }
+            }
+            components.add(Set.copyOf(component));
+        }
+        return List.copyOf(components);
+    }
+
+    private static boolean isBlocked(
+            List<DungeonClusterBoundary> barriers,
+            DungeonCell center,
+            DungeonCell current,
+            DungeonCell neighbor
+    ) {
+        DungeonEdge movementEdge = edgeBetweenAdjacentCells(current, neighbor);
+        if (movementEdge == null) {
+            return false;
+        }
+        DungeonBoundaryKey movement = DungeonBoundaryKey.from(movementEdge);
+        for (DungeonClusterBoundary barrier : barriers == null ? List.<DungeonClusterBoundary>of() : barriers) {
+            if (DungeonBoundaryKey.from(barrier.absoluteEdge(center)).equals(movement)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static @Nullable DungeonEdge edgeBetweenAdjacentCells(DungeonCell current, DungeonCell neighbor) {
+        if (current == null || neighbor == null || current.level() != neighbor.level()) {
+            return null;
+        }
+        int deltaQ = neighbor.q() - current.q();
+        int deltaR = neighbor.r() - current.r();
+        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
+            if (direction.deltaQ() == deltaQ && direction.deltaR() == deltaR) {
+                return DungeonEdge.sideOf(current, direction);
+            }
+        }
+        return null;
+    }
+
+    private static @Nullable DungeonRoom templateForComponent(
+            List<DungeonRoom> rooms,
+            RoomComponent component,
+            Set<Long> usedRoomIds
+    ) {
+        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+            DungeonCell anchor = room.floorAnchors().get(component.level());
+            if (anchor != null && component.cells().contains(anchor) && !usedRoomIds.contains(room.roomId())) {
+                return room;
+            }
+        }
+        return null;
     }
 
     private static DungeonRoomCluster clusterFor(ClusterWork work, DungeonRoomCellProjector cellProjector) {
@@ -319,6 +649,28 @@ public final class DungeonRoomTopologyEditor {
 
         ClusterWork withCellsByLevel(Map<Integer, List<DungeonCell>> nextCellsByLevel) {
             return new ClusterWork(cluster, rooms, nextCellsByLevel);
+        }
+    }
+
+    private record BoundaryEditResult(
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
+            boolean changed
+    ) {
+        private BoundaryEditResult {
+            boundariesByLevel = boundariesByLevel == null ? Map.of() : Map.copyOf(boundariesByLevel);
+        }
+    }
+
+    private record RoomComponent(
+            int level,
+            List<DungeonCell> cells
+    ) {
+        private RoomComponent {
+            cells = cells == null ? List.of() : List.copyOf(cells);
+        }
+
+        DungeonCell anchor() {
+            return cells.isEmpty() ? new DungeonCell(0, 0, level) : cells.getFirst();
         }
     }
 

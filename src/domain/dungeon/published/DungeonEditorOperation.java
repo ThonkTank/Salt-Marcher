@@ -9,6 +9,7 @@ public sealed interface DungeonEditorOperation permits
         DungeonEditorOperation.MoveRoomAnchor,
         DungeonEditorOperation.PaintRoomRectangle,
         DungeonEditorOperation.DeleteRoomRectangle,
+        DungeonEditorOperation.EditClusterBoundaries,
         DungeonEditorOperation.SaveRoomNarration {
 
     record MoveTopologyElement(
@@ -37,6 +38,19 @@ public sealed interface DungeonEditorOperation permits
     }
 
     record DeleteRoomRectangle(DungeonCellRef start, DungeonCellRef end) implements DungeonEditorOperation {
+    }
+
+    record EditClusterBoundaries(
+            long clusterId,
+            java.util.List<DungeonEdgeRef> edges,
+            DungeonBoundaryKind kind,
+            boolean deleteBoundary
+    ) implements DungeonEditorOperation {
+        public EditClusterBoundaries {
+            clusterId = Math.max(0L, clusterId);
+            edges = edges == null ? java.util.List.of() : java.util.List.copyOf(edges);
+            kind = kind == null ? DungeonBoundaryKind.WALL : kind;
+        }
     }
 
     record SaveRoomNarration(

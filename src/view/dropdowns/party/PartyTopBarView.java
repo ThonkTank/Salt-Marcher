@@ -288,19 +288,16 @@ public final class PartyTopBarView extends HBox {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox managementActions = new HBox(6, editButton, removeButton);
-        managementActions.getStyleClass().add("party-management-actions");
         managementActions.setAlignment(Pos.CENTER_RIGHT);
 
         HBox progressRow = levelProgressRow(member);
         HBox headerRow = new HBox(8, identityLabel, progressRow);
-        headerRow.getStyleClass().add("party-card-top-row");
         headerRow.setAlignment(Pos.CENTER_LEFT);
         headerRow.setMaxWidth(Double.MAX_VALUE);
 
         Label combatLabel = clippedLabel(combatText(member), "text-secondary");
         HBox.setHgrow(combatLabel, Priority.ALWAYS);
         HBox actionRow = new HBox(8, combatLabel, restChip, spacer, managementActions);
-        actionRow.getStyleClass().add("party-action-row");
         actionRow.setAlignment(Pos.CENTER_LEFT);
         actionRow.setMaxWidth(Double.MAX_VALUE);
 
@@ -332,7 +329,6 @@ public final class PartyTopBarView extends HBox {
                 popupSpec);
 
         HBox row = new HBox(5, currentLevelLabel, progressMeter, nextLevelLabel);
-        row.getStyleClass().add("party-level-progress-row");
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }

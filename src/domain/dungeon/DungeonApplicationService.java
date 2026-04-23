@@ -10,6 +10,7 @@ import src.domain.dungeon.published.DeleteDungeonMapResult;
 import src.domain.dungeon.published.DescribeDungeonSelectionQuery;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
+import src.domain.dungeon.published.DungeonBoundaryKind;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
@@ -62,6 +63,7 @@ import src.domain.dungeon.map.value.DungeonAreaFacts;
 import src.domain.dungeon.map.value.DungeonAreaType;
 import src.domain.dungeon.map.value.DungeonBoundaryFacts;
 import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonEditorHandle;
 import src.domain.dungeon.map.value.DungeonEditorHandleFacts;
 import src.domain.dungeon.map.value.DungeonEditorHandleType;
@@ -282,6 +284,13 @@ public final class DungeonApplicationService {
                         MapPublication.domainCell(deleteRoomRectangle.start()),
                         MapPublication.domainCell(deleteRoomRectangle.end()));
             }
+            if (operation instanceof DungeonEditorOperation.EditClusterBoundaries editClusterBoundaries) {
+                return new ApplyDungeonEditorOperationUseCase.OperationInput.EditClusterBoundaries(
+                        editClusterBoundaries.clusterId(),
+                        editClusterBoundaries.edges().stream().map(MapPublication::domainEdge).toList(),
+                        MapPublication.domainBoundaryKind(editClusterBoundaries.kind()),
+                        editClusterBoundaries.deleteBoundary());
+            }
             if (operation instanceof DungeonEditorOperation.SaveRoomNarration saveRoomNarration) {
                 return new ApplyDungeonEditorOperationUseCase.OperationInput.SaveRoomNarration(
                         saveRoomNarration.roomId(),
@@ -465,8 +474,22 @@ public final class DungeonApplicationService {
             return cell == null ? new DungeonCell(0, 0, 0) : new DungeonCell(cell.q(), cell.r(), cell.level());
         }
 
+        private static DungeonEdge domainEdge(DungeonEdgeRef edge) {
+            if (edge == null) {
+                DungeonCell origin = new DungeonCell(0, 0, 0);
+                return new DungeonEdge(origin, origin);
+            }
+            return new DungeonEdge(domainCell(edge.from()), domainCell(edge.to()));
+        }
+
         private static DungeonEdgeRef edge(DungeonEdge edge) {
             return new DungeonEdgeRef(cell(edge.from()), cell(edge.to()));
+        }
+
+        private static DungeonClusterBoundaryKind domainBoundaryKind(DungeonBoundaryKind kind) {
+            return kind == DungeonBoundaryKind.DOOR
+                    ? DungeonClusterBoundaryKind.DOOR
+                    : DungeonClusterBoundaryKind.WALL;
         }
 
         private static int revision(long revision) {

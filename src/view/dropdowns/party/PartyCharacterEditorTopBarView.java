@@ -3,6 +3,7 @@ package src.view.dropdowns.party;
 import java.util.function.Function;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -141,7 +142,7 @@ public final class PartyCharacterEditorTopBarView {
             handleEditorResult(result);
         });
         HBox deleteActions = new HBox(8, cancelDeleteButton, confirmDeleteButton);
-        deleteActions.getStyleClass().add("party-editor-delete-actions");
+        deleteActions.setAlignment(Pos.CENTER_RIGHT);
         deleteSection.getStyleClass().add("party-editor-delete-section");
         deleteSection.getChildren().addAll(deleteMessageLabel, deleteActions);
     }
@@ -178,7 +179,7 @@ public final class PartyCharacterEditorTopBarView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox actions = new HBox(8, cancelButton, spacer, submitButton);
-        actions.getStyleClass().add("dropdown-actions");
+        actions.setAlignment(Pos.CENTER_LEFT);
         return actions;
     }
 
