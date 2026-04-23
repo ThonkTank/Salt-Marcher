@@ -21,7 +21,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
-import src.view.slotcontent.controls.popup.AnchoredPopupView;
+import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class DungeonLevelOverlayControlsView {
 

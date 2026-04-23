@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-23
 Source of Truth: Shared top-bar dropdown helper slotcontent.
 
 # Dropdown Helper Slotcontent
@@ -12,7 +12,7 @@ that are reusable across shell dropdown roots.
 
 Current state:
 
-- `DropdownPopupView` shows or hides an already-owned JavaFX `Popup`.
+- `DropdownPopupView` delegates trailing-edge alignment to `AnchoredPopupView`.
 - The owning dropdown root still owns trigger text, content, callbacks, service
   lookup, and popup content construction.
 

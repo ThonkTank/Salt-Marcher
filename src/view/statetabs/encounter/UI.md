@@ -39,13 +39,16 @@ Current state:
 - `Combat` shows round status, combat cards, HP bars, AC and initiative badges,
   next-turn controls, and a two-step end-combat confirmation.
 - `Resolution` shows defeated-enemy selection, XP and loot summaries, reward
-  controls, and the action that returns to encounter creation.
+  controls, and the action that returns to encounter planning. Its enemy list
+  is part of the page body, not a nested list window.
 
 The state pane uses centralized encounter selector roles for difficulty labels,
 the difficulty meter, roster cards, role badges, initiative rows, combat card
 states, HP bars, AC/init badges, edit popups, and result highlights. It reads
 active-party thresholds from the encounter application service and resolves
 creature details through the creature application service.
+Encounter pages use the shared dialog-surface primitive so page actions stay in
+the fixed footer while oversized page bodies scroll.
 
 ## Interactions
 

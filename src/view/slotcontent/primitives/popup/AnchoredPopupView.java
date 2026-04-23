@@ -1,4 +1,4 @@
-package src.view.slotcontent.controls.popup;
+package src.view.slotcontent.primitives.popup;
 
 import javafx.application.Platform;
 import javafx.event.EventHandler;
@@ -9,11 +9,12 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
 import javafx.stage.WindowEvent;
+import org.jspecify.annotations.Nullable;
 
 public final class AnchoredPopupView {
 
     private final Popup popup = new Popup();
-    private Node focusReturn;
+    private @Nullable Node focusReturn;
 
     public AnchoredPopupView() {
         popup.setAutoHide(true);
@@ -43,7 +44,7 @@ public final class AnchoredPopupView {
         return popup.isShowing();
     }
 
-    public void toggleBelow(Node anchor, Runnable beforeShow) {
+    public void toggleBelow(Node anchor, @Nullable Runnable beforeShow) {
         if (isShowing()) {
             hide();
             return;
@@ -54,7 +55,7 @@ public final class AnchoredPopupView {
         showBelow(anchor);
     }
 
-    public void toggleTrailing(Node anchor, double popupWidth, Runnable beforeShow) {
+    public void toggleTrailing(Node anchor, double popupWidth, @Nullable Runnable beforeShow) {
         if (isShowing()) {
             hide();
             return;

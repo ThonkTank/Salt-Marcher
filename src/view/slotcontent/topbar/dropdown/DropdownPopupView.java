@@ -1,7 +1,7 @@
 package src.view.slotcontent.topbar.dropdown;
 
 import javafx.scene.control.Button;
-import src.view.slotcontent.controls.popup.AnchoredPopupView;
+import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class DropdownPopupView {
 

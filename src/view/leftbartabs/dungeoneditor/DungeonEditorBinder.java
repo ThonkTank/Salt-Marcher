@@ -58,8 +58,8 @@ final class DungeonEditorBinder {
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
         viewModel.selectionProperty().addListener((ignored, before, after) -> mapViewModel.showSelection(after));
         viewModel.inspectorProperty().addListener((ignored, before, after) -> syncStateView(viewModel, state));
-        viewModel.dragPreviewProperty().addListener((ignored, before, after) -> mapViewModel.showDragPreview(after));
-        viewModel.paintPreviewProperty().addListener((ignored, before, after) -> mapViewModel.showPaintPreview(after));
+        viewModel.pendingTopologyEditProperty()
+                .addListener((ignored, before, after) -> mapViewModel.showPendingTopologyEdit(after));
         viewModel.mapsProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
         viewModel.selectedMapKeyProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));
         viewModel.busyProperty().addListener((ignored, before, after) -> syncMapControls(viewModel, controls));

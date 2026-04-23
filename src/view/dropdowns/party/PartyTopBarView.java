@@ -25,7 +25,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
-import src.view.slotcontent.controls.popup.AnchoredPopupView;
+import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupAction;
 import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupSpec;

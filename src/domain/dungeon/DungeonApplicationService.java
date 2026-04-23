@@ -42,6 +42,7 @@ import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.published.LoadDungeonTravelSurfaceQuery;
 import src.domain.dungeon.published.MoveDungeonTravelActionCommand;
+import src.domain.dungeon.published.PreviewDungeonEditorOperationQuery;
 import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.RenameDungeonMapResult;
 import src.domain.dungeon.published.SearchMapsQuery;
@@ -138,11 +139,11 @@ public final class DungeonApplicationService {
                 result.reactionMessages());
     }
 
-    public DungeonSnapshot previewOperation(ApplyDungeonEditorOperationCommand command) {
-        DungeonEditorOperation operation = command == null ? null : command.operation();
+    public DungeonSnapshot previewOperation(PreviewDungeonEditorOperationQuery query) {
+        DungeonEditorOperation operation = query == null ? null : query.operation();
         ApplyDungeonEditorOperationUseCase.OperationResultData result =
                 applyDungeonEditorOperationUseCase.preview(
-                        MapPublication.domainId(command == null ? null : command.mapId()),
+                        MapPublication.domainId(query == null ? null : query.mapId()),
                         OperationPublication.operationInput(operation));
         return SnapshotPublication.snapshot(result.snapshot());
     }

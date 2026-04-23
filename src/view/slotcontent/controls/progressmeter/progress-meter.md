@@ -14,5 +14,5 @@ actions.
 
 The primitive owns only JavaFX rendering and widget-local layout. It does not
 calculate HP, XP, thresholds, labels, readiness, or business state. Popup
-actions emit signed or unsigned amounts through callbacks owned by the active
-root.
+actions use the shared anchored-popup primitive and emit signed or unsigned
+amounts through callbacks owned by the active root.

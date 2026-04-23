@@ -5,6 +5,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
+import src.domain.dungeon.published.DungeonBoundaryKind;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
@@ -36,8 +37,7 @@ public record DungeonMapDisplayModel(
         boolean editorMode,
         String selectedTool,
         @Nullable Selection selection,
-        @Nullable DragPreview dragPreview,
-        @Nullable PaintPreview paintPreview,
+        @Nullable EditorPreview editorPreview,
         List<RenderCell> cells,
         List<RenderEdge> edges,
         List<RenderLabel> labels,
@@ -91,7 +91,6 @@ public record DungeonMapDisplayModel(
                 "Auswahl",
                 null,
                 null,
-                null,
                 List.of(),
                 List.of(),
                 List.of(),
@@ -141,7 +140,6 @@ public record DungeonMapDisplayModel(
                 selectedTool,
                 null,
                 null,
-                null,
                 runtimePartyToken);
     }
 
@@ -165,7 +163,6 @@ public record DungeonMapDisplayModel(
                 selectedTool,
                 null,
                 null,
-                null,
                 runtimePartyToken);
     }
 
@@ -178,8 +175,7 @@ public record DungeonMapDisplayModel(
             int projectionLevel,
             String selectedTool,
             @Nullable Selection selection,
-            @Nullable DragPreview dragPreview,
-            @Nullable PaintPreview paintPreview,
+            @Nullable EditorPreview editorPreview,
             @Nullable PartyToken runtimePartyToken
     ) {
         if (snapshot == null) {
@@ -216,10 +212,7 @@ public record DungeonMapDisplayModel(
                 graphNodes.add(new GraphNode(area.id(), area.clusterId(), area.label(), center.x(), center.y(), selected));
             }
         }
-        addClusterDragPreview(renderedCells, renderedEdges, renderedLabels, map.areas(), map.boundaries(), selection, dragPreview);
-        if (paintPreview != null && paintPreview.active()) {
-            addPaintPreview(renderedCells, paintPreview);
-        }
+        addEditorPreview(renderedCells, renderedEdges, renderedLabels, map.areas(), map.boundaries(), selection, editorPreview);
         for (DungeonBoundarySnapshot boundary : map.boundaries()) {
             if (boundary.edge() == null || boundary.edge().from() == null || boundary.edge().to() == null) {
                 continue;
@@ -252,7 +245,7 @@ public record DungeonMapDisplayModel(
             }
             renderedMarkers.add(markerForHandle(handle, selection));
         }
-        addHandleDragPreview(renderedMarkers, dragPreview);
+        addHandleMovePreview(renderedMarkers, editorPreview);
         if (graphLinks.isEmpty() && graphNodes.size() > 1) {
             for (int index = 1; index < graphNodes.size(); index++) {
                 graphLinks.add(new GraphLink(graphNodes.get(index - 1).id(), graphNodes.get(index).id(), false));
@@ -275,8 +268,7 @@ public record DungeonMapDisplayModel(
                 editorMode,
                 selectedTool,
                 selection,
-                dragPreview,
-                paintPreview,
+                editorPreview,
                 renderedCells,
                 renderedEdges,
                 renderedLabels,
@@ -343,18 +335,39 @@ public record DungeonMapDisplayModel(
                 false);
     }
 
-    private static void addPaintPreview(List<RenderCell> renderedCells, PaintPreview paintPreview) {
-        int minQ = Math.min(paintPreview.startQ(), paintPreview.endQ());
-        int maxQ = Math.max(paintPreview.startQ(), paintPreview.endQ());
-        int minR = Math.min(paintPreview.startR(), paintPreview.endR());
-        int maxR = Math.max(paintPreview.startR(), paintPreview.endR());
+    private static void addEditorPreview(
+            List<RenderCell> renderedCells,
+            List<RenderEdge> renderedEdges,
+            List<RenderLabel> renderedLabels,
+            List<DungeonAreaSnapshot> areas,
+            List<DungeonBoundarySnapshot> boundaries,
+            @Nullable Selection selection,
+            @Nullable EditorPreview editorPreview
+    ) {
+        if (editorPreview == null || !editorPreview.active()) {
+            return;
+        }
+        if (editorPreview instanceof EditorPreview.MoveHandleOrCluster movePreview) {
+            addClusterMovePreview(renderedCells, renderedEdges, renderedLabels, areas, boundaries, selection, movePreview);
+        } else if (editorPreview instanceof EditorPreview.RoomRectangle roomRectangle) {
+            addRoomRectanglePreview(renderedCells, roomRectangle);
+        } else if (editorPreview instanceof EditorPreview.BoundaryEdges boundaryEdges) {
+            addBoundaryEdgesPreview(renderedEdges, boundaryEdges);
+        }
+    }
+
+    private static void addRoomRectanglePreview(List<RenderCell> renderedCells, EditorPreview.RoomRectangle roomRectangle) {
+        int minQ = Math.min(roomRectangle.startQ(), roomRectangle.endQ());
+        int maxQ = Math.max(roomRectangle.startQ(), roomRectangle.endQ());
+        int minR = Math.min(roomRectangle.startR(), roomRectangle.endR());
+        int maxR = Math.max(roomRectangle.startR(), roomRectangle.endR());
         for (int q = minQ; q <= maxQ; q++) {
             for (int r = minR; r <= maxR; r++) {
                 renderedCells.add(new RenderCell(
                         q,
                         r,
-                        paintPreview.level(),
-                        paintPreview.deleteMode() ? "Delete preview" : "Paint preview",
+                        roomRectangle.level(),
+                        roomRectangle.deleteMode() ? "Delete preview" : "Paint preview",
                         CellKind.ROOM,
                         0L,
                         0L,
@@ -362,27 +375,27 @@ public record DungeonMapDisplayModel(
                         false,
                         false,
                         true,
-                        paintPreview.deleteMode()));
+                        roomRectangle.deleteMode()));
             }
         }
     }
 
-    private static void addClusterDragPreview(
+    private static void addClusterMovePreview(
             List<RenderCell> renderedCells,
             List<RenderEdge> renderedEdges,
             List<RenderLabel> renderedLabels,
             List<DungeonAreaSnapshot> areas,
             List<DungeonBoundarySnapshot> boundaries,
             @Nullable Selection selection,
-            @Nullable DragPreview dragPreview
+            EditorPreview.MoveHandleOrCluster movePreview
     ) {
-        if (dragPreview == null || !dragPreview.active()
-                || dragPreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
+        if (!movePreview.active()
+                || movePreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
             return;
         }
         List<DungeonCellRef> draggedCells = new ArrayList<>();
         for (DungeonAreaSnapshot area : areas) {
-            if (!draggedClusterArea(area, selection, dragPreview)) {
+            if (!draggedClusterArea(area, selection, movePreview)) {
                 continue;
             }
             List<RenderCell> previewCells = area.cells().stream()
@@ -391,9 +404,9 @@ public record DungeonMapDisplayModel(
                             cell,
                             true,
                             true,
-                            dragPreview.deltaQ(),
-                            dragPreview.deltaR(),
-                            dragPreview.deltaLevel()))
+                            movePreview.deltaQ(),
+                            movePreview.deltaR(),
+                            movePreview.deltaLevel()))
                     .toList();
             renderedCells.addAll(previewCells);
             draggedCells.addAll(area.cells());
@@ -401,7 +414,7 @@ public record DungeonMapDisplayModel(
                 continue;
             }
             CellCenter center = centerOf(previewCells);
-            String label = dragPreview.label().isBlank() ? area.label() : dragPreview.label();
+            String label = movePreview.label().isBlank() ? area.label() : movePreview.label();
             renderedLabels.add(new RenderLabel(
                     label,
                     center.x(),
@@ -413,14 +426,14 @@ public record DungeonMapDisplayModel(
                     true,
                     true));
         }
-        addClusterBoundaryDragPreview(renderedEdges, boundaries, draggedCells, dragPreview);
+        addClusterBoundaryMovePreview(renderedEdges, boundaries, draggedCells, movePreview);
     }
 
-    private static void addClusterBoundaryDragPreview(
+    private static void addClusterBoundaryMovePreview(
             List<RenderEdge> renderedEdges,
             List<DungeonBoundarySnapshot> boundaries,
             List<DungeonCellRef> draggedCells,
-            DragPreview dragPreview
+            EditorPreview.MoveHandleOrCluster movePreview
     ) {
         if (draggedCells.isEmpty()) {
             return;
@@ -434,24 +447,25 @@ public record DungeonMapDisplayModel(
             }
             renderedEdges.add(renderEdge(
                     boundary,
-                    dragPreview.deltaQ(),
-                    dragPreview.deltaR(),
-                    dragPreview.deltaLevel(),
+                    movePreview.deltaQ(),
+                    movePreview.deltaR(),
+                    movePreview.deltaLevel(),
                     true));
         }
     }
 
-    private static void addHandleDragPreview(List<RenderMarker> renderedMarkers, @Nullable DragPreview dragPreview) {
-        if (dragPreview == null || !dragPreview.active()
-                || dragPreview.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
+    private static void addHandleMovePreview(List<RenderMarker> renderedMarkers, @Nullable EditorPreview editorPreview) {
+        if (!(editorPreview instanceof EditorPreview.MoveHandleOrCluster movePreview)
+                || !movePreview.active()
+                || movePreview.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
             return;
         }
-        DungeonEditorHandleRef ref = dragPreview.handleRef();
+        DungeonEditorHandleRef ref = movePreview.handleRef();
         DungeonCellRef cell = ref.cell();
         DungeonCellRef movedCell = new DungeonCellRef(
-                cell.q() + dragPreview.deltaQ(),
-                cell.r() + dragPreview.deltaR(),
-                cell.level() + dragPreview.deltaLevel());
+                cell.q() + movePreview.deltaQ(),
+                cell.r() + movePreview.deltaR(),
+                cell.level() + movePreview.deltaLevel());
         DungeonEditorHandleRef movedRef = new DungeonEditorHandleRef(
                 ref.kind(),
                 ref.topologyRef(),
@@ -471,6 +485,30 @@ public record DungeonMapDisplayModel(
                 true,
                 movedRef,
                 true));
+    }
+
+    private static void addBoundaryEdgesPreview(
+            List<RenderEdge> renderedEdges,
+            EditorPreview.BoundaryEdges boundaryEdges
+    ) {
+        EdgeKind kind = boundaryEdges.kind() == DungeonBoundaryKind.DOOR ? EdgeKind.DOOR : EdgeKind.WALL;
+        for (DungeonEdgeRef edge : boundaryEdges.edges()) {
+            if (edge == null || edge.from() == null || edge.to() == null) {
+                continue;
+            }
+            renderedEdges.add(new RenderEdge(
+                    edge.from().q(),
+                    edge.from().r(),
+                    edge.to().q(),
+                    edge.to().r(),
+                    edge.from().level(),
+                    kind,
+                    boundaryEdges.deleteMode() ? "Delete preview" : "Boundary preview",
+                    boundaryEdges.clusterId(),
+                    TopologyRef.empty(),
+                    false,
+                    true));
+        }
     }
 
     private static RenderEdge renderEdge(DungeonBoundarySnapshot boundary) {
@@ -569,13 +607,13 @@ public record DungeonMapDisplayModel(
     private static boolean draggedClusterArea(
             DungeonAreaSnapshot area,
             @Nullable Selection selection,
-            DragPreview dragPreview
+            EditorPreview.MoveHandleOrCluster movePreview
     ) {
-        if (area == null || !dragPreview.active()
-                || dragPreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
+        if (area == null || !movePreview.active()
+                || movePreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
             return false;
         }
-        long selectedClusterId = selection == null ? dragPreview.clusterId() : selection.clusterId();
+        long selectedClusterId = selection == null ? movePreview.clusterId() : selection.clusterId();
         return selectedClusterId > 0L
                 && area.kind() == DungeonAreaKind.ROOM
                 && area.clusterId() == selectedClusterId;
@@ -1021,39 +1059,82 @@ public record DungeonMapDisplayModel(
         }
     }
 
-    public record DragPreview(
-            long clusterId,
-            int deltaQ,
-            int deltaR,
-            int deltaLevel,
-            DungeonEditorHandleRef handleRef,
-            String label
-    ) {
+    public sealed interface EditorPreview permits
+            EditorPreview.MoveHandleOrCluster,
+            EditorPreview.RoomRectangle,
+            EditorPreview.BoundaryEdges {
 
-        public DragPreview(long clusterId, int deltaQ, int deltaR) {
-            this(clusterId, deltaQ, deltaR, 0);
+        boolean active();
+
+        boolean destructive();
+
+        record MoveHandleOrCluster(
+                long clusterId,
+                int deltaQ,
+                int deltaR,
+                int deltaLevel,
+                DungeonEditorHandleRef handleRef,
+                String label
+        ) implements EditorPreview {
+
+            public MoveHandleOrCluster(long clusterId, int deltaQ, int deltaR) {
+                this(clusterId, deltaQ, deltaR, 0);
+            }
+
+            public MoveHandleOrCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
+                this(clusterId, deltaQ, deltaR, deltaLevel, emptyHandleRef(0L, clusterId), "");
+            }
+
+            public MoveHandleOrCluster {
+                clusterId = Math.max(0L, clusterId);
+                handleRef = handleRef == null ? emptyHandleRef(0L, clusterId) : handleRef;
+                label = label == null ? "" : label;
+            }
+
+            @Override
+            public boolean active() {
+                return (clusterId > 0L || handleRef.ownerId() > 0L)
+                        && (deltaQ != 0 || deltaR != 0 || deltaLevel != 0);
+            }
+
+            @Override
+            public boolean destructive() {
+                return false;
+            }
         }
 
-        public DragPreview(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
-            this(clusterId, deltaQ, deltaR, deltaLevel, emptyHandleRef(0L, clusterId), "");
+        record RoomRectangle(int startQ, int startR, int endQ, int endR, int level, boolean deleteMode)
+                implements EditorPreview {
+
+            @Override
+            public boolean active() {
+                return true;
+            }
+
+            @Override
+            public boolean destructive() {
+                return deleteMode;
+            }
         }
 
-        public DragPreview {
-            clusterId = Math.max(0L, clusterId);
-            handleRef = handleRef == null ? emptyHandleRef(0L, clusterId) : handleRef;
-            label = label == null ? "" : label;
-        }
+        record BoundaryEdges(long clusterId, List<DungeonEdgeRef> edges, DungeonBoundaryKind kind, boolean deleteMode)
+                implements EditorPreview {
 
-        public boolean active() {
-            return (clusterId > 0L || handleRef.ownerId() > 0L)
-                    && (deltaQ != 0 || deltaR != 0 || deltaLevel != 0);
-        }
-    }
+            public BoundaryEdges {
+                clusterId = Math.max(0L, clusterId);
+                edges = edges == null ? List.of() : List.copyOf(edges);
+                kind = kind == null ? DungeonBoundaryKind.WALL : kind;
+            }
 
-    public record PaintPreview(int startQ, int startR, int endQ, int endR, int level, boolean deleteMode) {
+            @Override
+            public boolean active() {
+                return clusterId > 0L && !edges.isEmpty();
+            }
 
-        public boolean active() {
-            return true;
+            @Override
+            public boolean destructive() {
+                return deleteMode;
+            }
         }
     }
 
