@@ -1,4 +1,4 @@
-package src.view.slotcontent.primitives.dialog;
+package src.view.primitives.dialog;
 
 import java.util.Arrays;
 import java.util.List;

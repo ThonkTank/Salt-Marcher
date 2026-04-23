@@ -1,7 +1,0 @@
-interface:
-  display_name: "Agent Instruction Engineering"
-  short_description: "Govern agent-facing instruction artifacts"
-  default_prompt: "Use $agent-instruction-engineering to create, revise, or review SaltMarcher agent instructions and keep AGENTS.md, SKILL.md, and related rule docs consistent."
-
-policy:
-  allow_implicit_invocation: true

@@ -74,6 +74,10 @@ Current state:
 - Editor operations now tell the aggregate to mutate authored map metadata,
   selected topology placement, room geometry, and room narration instead of
   rewriting a document carrier in application code.
+- Editor preview and apply use the same published `DungeonEditorOperation`
+  vocabulary. Apply persists the mutated authored map through the repository;
+  preview applies the same operation language against the current map without
+  saving the result.
 - Editor map loading uses the map-specific editor snapshot so selection
   handles, map geometry, and relation-derived preview data are projected from
   the same authored map before any drag mutation starts.

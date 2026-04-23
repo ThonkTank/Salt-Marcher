@@ -1130,20 +1130,6 @@
 .hp-fill-healthy { -fx-background-color: -sm-hp-healthy; }
 .hp-fill-wounded { -fx-background-color: -sm-hp-wounded; }
 .hp-fill-critical { -fx-background-color: -sm-hp-critical; }
-.edit-popup-panel {
-    -fx-background-color: -sm-bg-elevated;
-    -fx-border-color: -sm-accent;
-    -fx-border-width: 1;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-    -fx-padding: 8;
-    -fx-spacing: 6;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
-}
-.edit-popup-panel .button {
-    -fx-padding: 3 8 3 8;
-    -fx-font-size: 13px;
-}
 .spinner-btn {
     -fx-padding: 2 8 2 8;
     -fx-font-size: 11px;

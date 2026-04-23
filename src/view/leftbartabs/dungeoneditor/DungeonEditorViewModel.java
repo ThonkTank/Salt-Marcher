@@ -49,7 +49,8 @@ import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
 import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.SearchMapsQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
-import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.DragPreview;
+import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.EditorPreview;
+import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.EditorPreview.RoomRectangle;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel.Selection;
 
 public final class DungeonEditorViewModel {
@@ -64,7 +65,7 @@ public final class DungeonEditorViewModel {
     private final ReadOnlyObjectWrapper<DungeonSnapshot> snapshot = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<Selection> selection = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<DungeonInspectorSnapshot> inspector = new ReadOnlyObjectWrapper<>();
-    private final ReadOnlyObjectWrapper<DragPreview> dragPreview = new ReadOnlyObjectWrapper<>();
+    private final ReadOnlyObjectWrapper<EditorPreview> pendingTopologyEdit = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<List<MapSelection>> maps = new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyStringWrapper selectedMapKey = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<List<Integer>> reachableLevels = new ReadOnlyObjectWrapper<>(List.of(0));
@@ -103,12 +104,8 @@ public final class DungeonEditorViewModel {
         return inspector.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<DragPreview> dragPreviewProperty() {
-        return dragPreview.getReadOnlyProperty();
-    }
-
-    public ReadOnlyObjectProperty<DungeonMapDisplayModel.PaintPreview> paintPreviewProperty() {
-        return paintInteraction.paintPreviewProperty();
+    public ReadOnlyObjectProperty<EditorPreview> pendingTopologyEditProperty() {
+        return pendingTopologyEdit.getReadOnlyProperty();
     }
 
     public ReadOnlyObjectProperty<List<MapSelection>> mapsProperty() {
@@ -269,7 +266,10 @@ public final class DungeonEditorViewModel {
                 dragSession = null;
                 paintInteraction.clear();
                 if (boundaryResult.commit() != null) {
+                    pendingTopologyEdit.set(null);
                     applyBoundaryCommit(boundaryResult.commit());
+                } else {
+                    pendingTopologyEdit.set(boundaryInteraction.preview());
                 }
                 refreshStateText();
                 return true;
@@ -278,6 +278,7 @@ public final class DungeonEditorViewModel {
         if (paintInteraction.press(input, selectedTool.get())) {
             selection.set(null);
             dragSession = null;
+            pendingTopologyEdit.set(paintInteraction.preview());
             refreshStateText();
             return true;
         }
@@ -301,7 +302,7 @@ public final class DungeonEditorViewModel {
             dragSession = draggableHit(hit)
                     ? DragSession.start(nextSelection, input.q(), input.r(), input.level(), snapshot.get())
                     : null;
-            dragPreview.set(null);
+            pendingTopologyEdit.set(null);
             refreshInspector();
             refreshStateText();
             return dragSession != null;
@@ -315,6 +316,7 @@ public final class DungeonEditorViewModel {
             return;
         }
         if (paintInteraction.drag(input, selectedTool.get())) {
+            pendingTopologyEdit.set(paintInteraction.preview());
             refreshStateText();
             return;
         }
@@ -323,11 +325,11 @@ public final class DungeonEditorViewModel {
         }
         dragSession = dragSession.withCurrentPointer(input.q(), input.r());
         if (!dragSession.moved()) {
-            dragPreview.set(null);
+            pendingTopologyEdit.set(null);
             snapshot.set(dragSession.baseSnapshot());
         } else {
             snapshot.set(dragSession.baseSnapshot());
-            showDragPreview(dragSession);
+            showPendingMovePreview(dragSession);
         }
         refreshStateText();
     }
@@ -335,18 +337,22 @@ public final class DungeonEditorViewModel {
     public void primaryReleased(@Nullable PointerInput input) {
         PaintInteraction.PaintCommit paintCommit = paintInteraction.release(input, selectedTool.get());
         if (paintCommit != null) {
+            pendingTopologyEdit.set(null);
             if (interactionEnabled()) {
                 applyPaintCommit(paintCommit);
             }
             refreshStateText();
             return;
+        } else if (pendingTopologyEdit.get() instanceof EditorPreview.RoomRectangle
+                && paintInteraction.preview() == null) {
+            pendingTopologyEdit.set(null);
         }
         if (dragSession == null || input == null) {
             return;
         }
         DragSession releasedSession = dragSession;
         dragSession = null;
-        dragPreview.set(null);
+        pendingTopologyEdit.set(null);
         snapshot.set(releasedSession.baseSnapshot());
         if (!interactionEnabled() || !selectionToolSelected() || !releasedSession.moved()) {
             refreshStateText();
@@ -368,9 +374,9 @@ public final class DungeonEditorViewModel {
         projectionLevel.set(nextLevel);
         snapshot.set(dragSession.baseSnapshot());
         if (dragSession.moved()) {
-            showDragPreview(dragSession);
+            showPendingMovePreview(dragSession);
         } else {
-            dragPreview.set(null);
+            pendingTopologyEdit.set(null);
         }
         refreshStateText();
     }
@@ -435,16 +441,12 @@ public final class DungeonEditorViewModel {
 
     private void refreshStateText() {
         Selection currentSelection = selection.get();
-        DragPreview currentPreview = dragPreview.get();
+        EditorPreview currentPreview = pendingTopologyEdit.get();
         String selectionText = currentSelection == null
                 ? "Auswahl: Keine"
                 : "Auswahl: " + currentSelection.label()
                         + " (" + currentSelection.topologyRef().kind() + " " + currentSelection.topologyRef().id() + ")";
-        String previewText = currentPreview == null || !currentPreview.active()
-                ? "Drag: inaktiv"
-                : "Drag: dq=" + currentPreview.deltaQ()
-                        + ", dr=" + currentPreview.deltaR()
-                        + ", dz=" + currentPreview.deltaLevel();
+        String previewText = previewText(currentPreview);
         state.set("Werkzeug: " + selectedTool.get()
                 + "\nAnsicht: " + viewMode.get().label()
                 + "\nEbene: z=" + projectionLevel.get()
@@ -455,6 +457,28 @@ public final class DungeonEditorViewModel {
                 + "\n" + boundaryInteraction.stateText(selectedTool.get())
                 + "\nAuswahlwerkzeug: Topologieelemente koennen auf dem Raster gezogen werden."
                 + "\nRaumwerkzeug: Rechteck ziehen und beim Loslassen anwenden.");
+    }
+
+    private static String previewText(@Nullable EditorPreview preview) {
+        if (preview == null || !preview.active()) {
+            return "Topologie-Preview: inaktiv";
+        }
+        if (preview instanceof EditorPreview.MoveHandleOrCluster movePreview) {
+            return "Topologie-Preview: verschieben dq=" + movePreview.deltaQ()
+                    + ", dr=" + movePreview.deltaR()
+                    + ", dz=" + movePreview.deltaLevel();
+        }
+        if (preview instanceof EditorPreview.RoomRectangle roomRectangle) {
+            return "Topologie-Preview: "
+                    + (roomRectangle.deleteMode() ? "Raum loeschen" : "Raum malen")
+                    + " z=" + roomRectangle.level();
+        }
+        if (preview instanceof EditorPreview.BoundaryEdges boundaryEdges) {
+            return "Topologie-Preview: "
+                    + (boundaryEdges.deleteMode() ? "Kanten loeschen" : "Kanten setzen")
+                    + " (" + boundaryEdges.edges().size() + ")";
+        }
+        return "Topologie-Preview: aktiv";
     }
 
     private void moveSelectedHandle(DragSession releasedSession) {
@@ -482,8 +506,8 @@ public final class DungeonEditorViewModel {
         refreshStateText();
     }
 
-    private void showDragPreview(DragSession session) {
-        dragPreview.set(new DragPreview(
+    private void showPendingMovePreview(DragSession session) {
+        pendingTopologyEdit.set(new EditorPreview.MoveHandleOrCluster(
                 session.selection().clusterId(),
                 session.deltaQ(),
                 session.deltaR(),
@@ -547,7 +571,7 @@ public final class DungeonEditorViewModel {
         dragSession = null;
         paintInteraction.clear();
         boundaryInteraction.clear();
-        dragPreview.set(null);
+        pendingTopologyEdit.set(null);
         selection.set(null);
         inspector.set(null);
         refreshStateText();
@@ -836,6 +860,18 @@ public final class DungeonEditorViewModel {
 
         void clear() {
             draft = null;
+        }
+
+        @Nullable EditorPreview preview() {
+            BoundaryDraft currentDraft = draft;
+            if (currentDraft == null || currentDraft.previewEdges().isEmpty()) {
+                return null;
+            }
+            return new EditorPreview.BoundaryEdges(
+                    currentDraft.clusterId(),
+                    currentDraft.previewEdges().stream().map(EdgeKey::toEdgeRef).toList(),
+                    DungeonBoundaryKind.WALL,
+                    currentDraft.deleteMode());
         }
 
         String stateText(String selectedTool) {
@@ -1455,13 +1491,7 @@ public final class DungeonEditorViewModel {
         private static final String ROOM_PAINT_TOOL = "Raum malen";
         private static final String ROOM_DELETE_TOOL = "Raum loeschen";
 
-        private final ReadOnlyObjectWrapper<DungeonMapDisplayModel.PaintPreview> paintPreview =
-                new ReadOnlyObjectWrapper<>();
         private @Nullable PaintSession paintSession;
-
-        ReadOnlyObjectProperty<DungeonMapDisplayModel.PaintPreview> paintPreviewProperty() {
-            return paintPreview.getReadOnlyProperty();
-        }
 
         boolean press(PointerInput input, String selectedTool) {
             if (input == null || !roomPaintToolSelected(selectedTool)) {
@@ -1474,7 +1504,6 @@ public final class DungeonEditorViewModel {
                     input.r(),
                     input.level(),
                     ROOM_DELETE_TOOL.equals(selectedTool));
-            paintPreview.set(toPreview(paintSession));
             return true;
         }
 
@@ -1484,7 +1513,6 @@ public final class DungeonEditorViewModel {
                 return false;
             }
             paintSession = paintSession.withEnd(input.q(), input.r());
-            paintPreview.set(toPreview(paintSession));
             return true;
         }
 
@@ -1494,7 +1522,6 @@ public final class DungeonEditorViewModel {
                 return null;
             }
             paintSession = null;
-            paintPreview.set(null);
             if (!roomPaintToolSelected(selectedTool)) {
                 return null;
             }
@@ -1510,25 +1537,28 @@ public final class DungeonEditorViewModel {
 
         void clear() {
             paintSession = null;
-            paintPreview.set(null);
         }
 
         String stateText() {
-            DungeonMapDisplayModel.PaintPreview currentPaintPreview = paintPreview.get();
-            if (currentPaintPreview == null || !currentPaintPreview.active()) {
+            RoomRectangle preview = preview();
+            if (preview == null || !preview.active()) {
                 return "Raumvorschau: inaktiv";
             }
             return "Raumvorschau: "
-                    + (currentPaintPreview.deleteMode() ? "loeschen" : "malen")
-                    + " z=" + currentPaintPreview.level();
+                    + (preview.deleteMode() ? "loeschen" : "malen")
+                    + " z=" + preview.level();
         }
 
         private boolean roomPaintToolSelected(String selectedTool) {
             return ROOM_PAINT_TOOL.equals(selectedTool) || ROOM_DELETE_TOOL.equals(selectedTool);
         }
 
-        private static DungeonMapDisplayModel.PaintPreview toPreview(PaintSession session) {
-            return new DungeonMapDisplayModel.PaintPreview(
+        @Nullable RoomRectangle preview() {
+            PaintSession session = paintSession;
+            if (session == null) {
+                return null;
+            }
+            return new RoomRectangle(
                     session.startQ(),
                     session.startR(),
                     session.endQ(),

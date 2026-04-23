@@ -30,7 +30,7 @@ import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
-import src.view.slotcontent.primitives.popup.AnchoredPopupView;
+import src.view.primitives.popup.AnchoredPopupView;
 
 public final class CatalogControlsView extends VBox {
 

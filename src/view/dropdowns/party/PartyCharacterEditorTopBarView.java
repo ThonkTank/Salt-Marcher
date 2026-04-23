@@ -13,9 +13,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
-import src.view.slotcontent.primitives.popup.AnchoredPopupView;
+import src.view.primitives.dialog.DialogSurfaceView;
+import src.view.primitives.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.primitives.popup.AnchoredPopupView;
 
 public final class PartyCharacterEditorTopBarView {
 

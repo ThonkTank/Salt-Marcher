@@ -17,7 +17,7 @@ architecture gates, metrics gates, and resource-policy wiring in one long
 procedural flow.
 
 External Gradle references were mirrored locally before this decision under
-`docs/references/build-tooling/`. They support keeping stable public
+`/home/aaron/Schreibtisch/projects/references/build-tooling/`. They support keeping stable public
 entrypoints while moving implementation detail into reusable convention and
 task logic.
 

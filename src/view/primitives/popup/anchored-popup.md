@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-23
-Source of Truth: Shared JavaFX anchored popup host.
+Source of Truth: Shared JavaFX anchored popup host under src/view/primitives.
 
 # Anchored Popup
 

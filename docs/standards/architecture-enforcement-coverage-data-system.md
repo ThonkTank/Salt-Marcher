@@ -202,7 +202,7 @@ of the current blocking harness.
   and meta-test layers, so such a gate would need a new accepted operating
   model rather than being hidden inside architecture enforcement.
 - Before adopting any new external tool, mirror and cite its documentation under
-  `docs/references/` according to the Source References Standard; public URLs
+  `/home/aaron/Schreibtisch/projects/references/` according to the Source References Standard; public URLs
   alone are not sufficient decision evidence.
 
 ## Review-Owned
@@ -241,18 +241,18 @@ would produce low-signal results.
 - [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
 - [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/source-references.md:1)
-- [Error Prone Plugin Checks](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/error-prone-plugin-checks.md:1)
-- [ArchUnit User Guide](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/archunit-user-guide.md:1)
-- [PMD Writing Java Rules](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/pmd-writing-java-rules.md:1)
-- [Gradle Custom Tasks](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/build-tooling/gradle-custom-tasks.md:1)
-- [OpenRewrite Recipes](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/openrewrite-recipes.md:1)
-- [OpenRewrite Type Attribution](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/openrewrite-type-attribution.md:1)
-- [JSQLParser Usage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/jsqlparser-usage.md:1)
-- [Semgrep Writing Rules Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/semgrep-writing-rules-overview.md:1)
-- [CodeQL Java Data Flow](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/codeql-java-data-flow.md:1)
-- [Spoon Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-enforcement-tools/spoon-overview.md:1)
-- [Hexagonal Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-patterns/cockburn-hexagonal-architecture.md:1)
-- [Fowler Repository](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/persistence-patterns/fowler-repository.md:1)
-- [Fowler Gateway](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/persistence-patterns/fowler-gateway.md:1)
-- [Fowler Data Mapper](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/persistence-patterns/fowler-data-mapper.md:1)
-- [Fowler Active Record](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/persistence-patterns/fowler-active-record.md:1)
+- [Error Prone Plugin Checks](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/error-prone-plugin-checks.md:1)
+- [ArchUnit User Guide](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/archunit-user-guide.md:1)
+- [PMD Writing Java Rules](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/pmd-writing-java-rules.md:1)
+- [Gradle Custom Tasks](/home/aaron/Schreibtisch/projects/references/build-tooling/gradle-custom-tasks.md:1)
+- [OpenRewrite Recipes](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/openrewrite-recipes.md:1)
+- [OpenRewrite Type Attribution](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/openrewrite-type-attribution.md:1)
+- [JSQLParser Usage](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/jsqlparser-usage.md:1)
+- [Semgrep Writing Rules Overview](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/semgrep-writing-rules-overview.md:1)
+- [CodeQL Java Data Flow](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/codeql-java-data-flow.md:1)
+- [Spoon Overview](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/spoon-overview.md:1)
+- [Hexagonal Architecture](/home/aaron/Schreibtisch/projects/references/architecture-patterns/cockburn-hexagonal-architecture.md:1)
+- [Fowler Repository](/home/aaron/Schreibtisch/projects/references/persistence-patterns/fowler-repository.md:1)
+- [Fowler Gateway](/home/aaron/Schreibtisch/projects/references/persistence-patterns/fowler-gateway.md:1)
+- [Fowler Data Mapper](/home/aaron/Schreibtisch/projects/references/persistence-patterns/fowler-data-mapper.md:1)
+- [Fowler Active Record](/home/aaron/Schreibtisch/projects/references/persistence-patterns/fowler-active-record.md:1)

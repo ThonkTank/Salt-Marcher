@@ -26,7 +26,8 @@ The roles are:
   slot-local projection state and do not call application services.
 - `View`: passive JavaFX content named `*View`. Active-root Views are optional
   wrappers around slotcontent counterparts. Slotcontent Views are reusable or
-  standalone content for exactly one cockpit slot.
+  standalone content for exactly one cockpit slot. Primitive Views are generic
+  widget/layout hosts with no feature state.
 - `Contribution`: discovered shell adapter named `*Contribution`. It owns
   registration metadata only and delegates runtime binding to the root binder.
 - `Binder`: one active-root lifecycle and wiring owner named `*Binder`. It owns
@@ -37,8 +38,8 @@ The roles are:
 
 ## Target Topology
 
-Active view code is organized by user-addressable UI entrypoint or by reusable
-single-slot content:
+Active view code is organized by user-addressable UI entrypoint, reusable
+single-slot content, or generic JavaFX primitives:
 
 ```text
 src/view/
@@ -81,6 +82,9 @@ src/view/
     topbar/<entry>/
       <PascalEntry>View.java
       <PascalEntry>ViewModel.java
+  primitives/
+    <entry>/
+      <PascalEntry>View.java
 resources/
   view/
     leftbartabs/<entry>/navigation-icon.svg
@@ -99,6 +103,9 @@ Rules:
 - `src/view/slotcontent/<slot>/<entry>/` defines one reusable or standalone
   content unit for exactly one cockpit slot. Detail slotcontent may also own a
   `*InspectorEntry` adapter for shell Inspector entry construction.
+- `src/view/primitives/<entry>/` defines generic JavaFX View primitives that
+  are not owned by one cockpit slot and may be composed by active-root or
+  slotcontent Views.
 - `*Contribution` is shell-discovery only. It must stay thin and delegate
   runtime composition to the co-located `*Binder`.
 - Left-bar navigation icons live under `resources/view/leftbartabs/<entry>/`.
@@ -271,6 +278,8 @@ Responsibilities:
 - provide reusable or standalone slot content under `src/view/slotcontent`
   when multiple active roots share one cockpit surface structure or when a
   feature publishes detail/dropdown content through a binder
+- provide generic primitive Views under `src/view/primitives` when the reusable
+  surface is not tied to one cockpit slot
 - keep reusable Inspector entry construction in slotcontent-owned
   `*InspectorEntry` adapters instead of duplicating detail-entry assembly in
   active-root Binders
@@ -279,7 +288,8 @@ Allowed dependencies:
 
 - JavaFX UI APIs, including scene graph, controls, canvas, animation, stage,
   CSS, FXML, beans, and collections
-- same-root passive Views or `src.view.slotcontent.*` passive Views when needed
+- same-root passive Views, `src.view.slotcontent.*` passive Views, or
+  `src.view.primitives.*` passive Views when needed
 - narrow listener, callback, or property types from the JDK or JavaFX
 
 Forbidden dependencies and behavior:
@@ -373,5 +383,5 @@ blocking gates.
 - [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
 - [Architecture Enforcement Coverage: View](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage-view.md:1)
 - [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/022-view-slotcontent-and-binders.md:1)
-- [Fowler Presentation Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/fowler-presentation-model.md:1)
-- [JavaFX Properties And Binding](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/view-patterns/oracle-javafx-properties-binding.md:1)
+- [Fowler Presentation Model](/home/aaron/Schreibtisch/projects/references/view-patterns/fowler-presentation-model.md:1)
+- [JavaFX Properties And Binding](/home/aaron/Schreibtisch/projects/references/view-patterns/oracle-javafx-properties-binding.md:1)

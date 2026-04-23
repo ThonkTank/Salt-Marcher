@@ -11,9 +11,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
-import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
-import src.view.slotcontent.primitives.popup.AnchoredPopupView;
+import src.view.primitives.dialog.DialogSurfaceView;
+import src.view.primitives.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.primitives.popup.AnchoredPopupView;
 import src.view.slotcontent.topbar.adventuringday.AdventuringDayCalculatorView;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 

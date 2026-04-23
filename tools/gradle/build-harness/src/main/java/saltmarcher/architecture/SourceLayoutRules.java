@@ -113,7 +113,7 @@ final class SourceLayoutRules implements ArchitectureRule {
             case "view" -> {
                 if (segments.size() < 3) {
                     violations.add(sourceFile.relativePath(), "view-layout",
-                            "View sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent.");
+                            "View sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, src/view/slotcontent, or src/view/primitives.");
                     return;
                 }
                 String bucket = segments.get(2);
@@ -124,9 +124,16 @@ final class SourceLayoutRules implements ArchitectureRule {
                     }
                     return;
                 }
+                if (bucket.equals("primitives")) {
+                    if (segments.size() != 5) {
+                        violations.add(sourceFile.relativePath(), "view-layout",
+                                "Primitive Java sources must be direct files under src/view/primitives/<entry>/.");
+                    }
+                    return;
+                }
                 if (!Set.of("leftbartabs", "statetabs", "dropdowns").contains(bucket)) {
                     violations.add(sourceFile.relativePath(), "view-layout",
-                            "View Java sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent.");
+                            "View Java sources must live under src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, src/view/slotcontent, or src/view/primitives.");
                     return;
                 }
                 if (segments.size() != 5) {

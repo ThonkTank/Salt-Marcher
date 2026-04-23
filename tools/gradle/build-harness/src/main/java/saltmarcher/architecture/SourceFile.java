@@ -93,6 +93,11 @@ record SourceFile(
                         yield SourceKind.VIEW_PANEL;
                     }
                 }
+                if (segments.size() == 5
+                        && segments.get(2).equals("primitives")
+                        && fileName.endsWith("View.java")) {
+                    yield SourceKind.VIEW_PANEL;
+                }
                 yield SourceKind.UNKNOWN;
             }
             case "domain" -> {
@@ -157,6 +162,9 @@ record SourceFile(
         if ("src".equals(segments.get(0)) && "view".equals(segments.get(1))) {
             if (segments.size() >= 5 && "slotcontent".equals(segments.get(2))) {
                 return segments.get(4);
+            }
+            if (segments.size() >= 4 && "primitives".equals(segments.get(2))) {
+                return segments.get(3);
             }
             return segments.size() >= 4 ? segments.get(3) : null;
         }

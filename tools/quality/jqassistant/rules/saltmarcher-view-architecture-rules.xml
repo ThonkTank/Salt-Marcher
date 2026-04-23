@@ -32,6 +32,7 @@
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'ViewModel' THEN 'MODEL'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'InspectorEntry' THEN 'INSPECTOR_ENTRY'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'View' THEN 'VIEW'
+                WHEN size(segments) >= 5 AND segments[2] = 'primitives' AND segments[4] CONTAINS 'View' THEN 'VIEW'
                 WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'Contribution' THEN 'CONTRIBUTION'
                 WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'Binder' THEN 'BINDER'
                 WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'ViewModel' THEN 'MODEL'
@@ -65,13 +66,13 @@
 
     <constraint id="saltmarcher:MvvmAllowedViewBuckets">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Cockpit MVVM topology allows active view Java only in active roots or slotcontent roots.</description>
+        <description>Cockpit MVVM topology allows active view Java only in active roots, slotcontent roots, or generic primitive roots.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
             WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
+              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, src/view/slotcontent, or src/view/primitives' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Active view Java must use the cockpit contribution topology.' AS Details
             ORDER BY Source
@@ -87,7 +88,7 @@
             WHERE type.viewBucket = 'LEGACY'
             RETURN DISTINCT
               type.relativePath AS Source,
-              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
+              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, src/view/slotcontent, or src/view/primitives' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Legacy component-local View/ViewModel/api/assembly-style topology is not active target code.' AS Details
             ORDER BY Source

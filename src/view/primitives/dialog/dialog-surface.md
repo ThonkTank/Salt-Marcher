@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-23
-Source of Truth: Shared JavaFX dialog layout primitive.
+Source of Truth: Shared JavaFX dialog layout primitive under src/view/primitives.
 
 # Dialog Surface
 

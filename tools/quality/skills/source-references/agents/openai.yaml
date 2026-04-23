@@ -1,7 +1,0 @@
-interface:
-  display_name: "Source References"
-  short_description: "Mirror and cite source evidence for SaltMarcher decisions"
-  default_prompt: "Use $source-references before researching, planning, implementing, reviewing, or documenting with external sources or local source evidence so source-backed decisions cite preserved local paths under docs/references/ or direct repo paths."
-
-policy:
-  allow_implicit_invocation: true

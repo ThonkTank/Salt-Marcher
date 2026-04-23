@@ -30,8 +30,8 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?void\\s+(set[A-Z][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern FEATURE_SPECIFIC_PACKAGE_REFERENCE_PATTERN = Pattern.compile(
             "\\bsrc\\.(?:domain|data)\\.[a-z][A-Za-z0-9_]*\\."
-                    + "|\\bsrc\\.view\\.(?:leftbartabs|statetabs|dropdowns|slotcontent)\\.[a-z][A-Za-z0-9_]*\\."
-                    + "|\\bsrc\\.view\\.(?!(?:leftbartabs|statetabs|dropdowns|slotcontent)\\b)[a-z][A-Za-z0-9_]*\\.");
+                    + "|\\bsrc\\.view\\.(?:leftbartabs|statetabs|dropdowns|slotcontent|primitives)\\.[a-z][A-Za-z0-9_]*\\."
+                    + "|\\bsrc\\.view\\.(?!(?:leftbartabs|statetabs|dropdowns|slotcontent|primitives)\\b)[a-z][A-Za-z0-9_]*\\.");
     private static final Set<String> SHELL_SLOT_API_CONSTANTS = Set.of(
             "TOP_BAR",
             "COCKPIT_CONTROLS",
@@ -138,7 +138,7 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
         if (sourceFacts.isViewSource()) {
             if (sourceFacts.isLegacyViewSource()) {
                 asCtx(data).addViolationWithMessage(node,
-                        "View code must migrate to src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or reusable src/view/slotcontent; old component-local roots are forbidden.");
+                        "View code must migrate to src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, reusable src/view/slotcontent, or generic src/view/primitives; old component-local roots are forbidden.");
             }
             for (String legacyType : VIEW_LEGACY_SHELL_TYPES) {
                 if (sourceFacts.text().contains(legacyType)) {

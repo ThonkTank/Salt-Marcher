@@ -51,8 +51,9 @@ Recommended rollout:
 ## Risks
 
 - UI specifications are broader than the currently stabilized domain policies.
-- Preview behavior and undo/redo semantics need explicit implementation
-  contracts before broad editor rollout.
+- Undo/redo semantics need an explicit implementation contract before broad
+  editor rollout. Preview/apply now share the published editor-operation
+  vocabulary, while live canvas overlays remain presentation-local.
 - Room and connection projections can drift until every editor mutation writes
   through the same map-owned topology refs and repair services that runtime
   rendering, travel, and SQLite persistence now share.

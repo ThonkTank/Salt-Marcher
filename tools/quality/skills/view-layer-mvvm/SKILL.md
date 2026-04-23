@@ -1,6 +1,6 @@
 ---
 name: view-layer-mvvm
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**`, shell-facing UI contribution registration, Binders, ViewModels, passive Views, view resources, or adjacent `UI.md`. This skill operationalizes SaltMarcher's cockpit MVVM target with active roots under `src/view/leftbartabs`, `src/view/statetabs`, optional shell-contributed `src/view/dropdowns`, reusable `src/view/slotcontent`, domain-as-Model, and passive shell slot binding.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/view/**`, shell-facing UI contribution registration, Binders, ViewModels, passive Views, view resources, or adjacent `UI.md`. This skill operationalizes SaltMarcher's cockpit MVVM target with active roots under `src/view/leftbartabs`, `src/view/statetabs`, optional shell-contributed `src/view/dropdowns`, reusable `src/view/slotcontent`, generic `src/view/primitives`, domain-as-Model, and passive shell slot binding.
 ---
 
 # View Layer MVVM
@@ -79,6 +79,9 @@ Contribution roots own shell registration:
 - `src/view/statetabs/<entry>/` for one global state tab.
 Slotcontent roots under `src/view/slotcontent/<slot>/<entry>/` are not
 shell-discovered contribution roots.
+Generic primitive roots under `src/view/primitives/<entry>/` are not
+shell-discovered contribution roots and must own only passive JavaFX View
+primitives.
 
 Contribution responsibilities:
 
@@ -133,6 +136,8 @@ Views own the MVVM View role.
   extend, wrap, or specialize slotcontent.
 - Put reusable or standalone passive Views under
   `src/view/slotcontent/<slot>/<entry>/`.
+- Put reusable passive primitives that are not slot-owned under
+  `src/view/primitives/<entry>/`.
 - Put JavaFX controls, rendering, FXML controllers or loaders, menus, dialogs,
   cells, skins, drawing code, and widget-local state there.
 - Expose bind targets, properties, setters, callbacks, or observable hooks that

@@ -29,9 +29,9 @@ final class ViewArchitectureSupport {
 
     static final Pattern VIEW_CONTRIBUTION_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
     static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$|^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$");
-    static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$");
+    static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$|^src\\.view\\.primitives\\.[^.]+$");
     static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
-    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(leftbartabs|statetabs|dropdowns|slotcontent)(\\.|$)).+");
+    static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(leftbartabs|statetabs|dropdowns|slotcontent|primitives)(\\.|$)).+");
     static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
 
     private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(
@@ -245,6 +245,9 @@ final class ViewArchitectureSupport {
             }
             return new ViewTypeInfo(segments[1], "VIEW");
         }
+        if ("primitives".equals(segments[0]) && segments.length >= 3) {
+            return new ViewTypeInfo(segments[0], "VIEW");
+        }
         if (Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[0]) && segments.length >= 3) {
             for (int index = 2; index < segments.length; index++) {
                 String simpleName = segments[index].replaceFirst("\\$.*$", "");
@@ -277,7 +280,8 @@ final class ViewArchitectureSupport {
     static boolean isReusablePassiveViewReference(String referencedType) {
         ViewTypeInfo viewType = parseViewType(referencedType);
         return viewType != null
-                && Set.of("controls", "main", "state", "details", "topbar").contains(viewType.component())
+                && (Set.of("controls", "main", "state", "details", "topbar").contains(viewType.component())
+                || "primitives".equals(viewType.component()))
                 && "VIEW".equals(viewType.bucket());
     }
 
@@ -337,6 +341,9 @@ final class ViewArchitectureSupport {
             String[] segments = topLevelType.split("\\.");
             if (segments.length >= 6 && "slotcontent".equals(segments[2])) {
                 return String.join(".", segments[0], segments[1], segments[2], segments[3], segments[4]);
+            }
+            if (segments.length >= 5 && "primitives".equals(segments[2])) {
+                return String.join(".", segments[0], segments[1], segments[2], segments[3]);
             }
             if (segments.length >= 4 && Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[2])) {
                 return String.join(".", segments[0], segments[1], segments[2], segments[3]);

@@ -1,16 +1,16 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-18
-Source of Truth: Governance for repo-owned agent instruction surfaces, the
-mandatory SaltMarcher instruction skill, and ownership boundaries between
-instruction artifacts.
+Source of Truth: Governance for agent instruction surfaces, the mandatory
+global instruction skill, and ownership boundaries between instruction
+artifacts.
 
 # Agent Instruction Standard
 
 ## Goal
 
 SaltMarcher treats agent-facing instructions as governed engineering artifacts.
-Changes to those artifacts must use the repo-owned `agent-instruction-engineering`
+Changes to those artifacts must use the global `agent-instruction-engineering`
 skill and must preserve a single canonical owner for each instruction topic.
 
 ## Covered Surfaces
@@ -31,17 +31,17 @@ docs, or ADRs unless those files are themselves defining agent behavior.
 
 ## Mandatory Skill
 
-The repo-owned skill is:
+The global skill is:
 
 - source path:
-  `tools/quality/skills/agent-instruction-engineering/`
+  `/home/aaron/.codex/skills/local/agent-instruction-engineering/`
 
 Any work on covered surfaces must use that skill first.
 
-- The repository copy is the canonical skill source.
-- If the harness does not auto-discover repo-local skills, read and apply the
-  repo-owned `SKILL.md` directly before editing covered artifacts.
-- The governing workflow lives in the repo-owned `SKILL.md`.
+- The global copy is the canonical skill source.
+- If the harness does not auto-discover global skills, read and apply the
+  global `SKILL.md` directly before editing covered artifacts.
+- The governing workflow lives in the global `SKILL.md`.
 - `agents/openai.yaml` must not become a second source of truth for workflow.
 
 ## Ownership Rules
@@ -61,7 +61,7 @@ links.
 
 When a covered artifact changes, reviewers must check:
 
-- Was the repo-owned instruction skill used?
+- Was the global instruction skill used?
 - Does the edited file still own the right topic?
 - Did a neighboring instruction source also require an update?
 - Does `agents/openai.yaml` still match the governing skill?
@@ -73,4 +73,4 @@ When a covered artifact changes, reviewers must check:
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)
-- [Agent Instruction Engineering Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/agent-instruction-engineering/SKILL.md:1)
+- [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)

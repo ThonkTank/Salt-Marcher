@@ -119,7 +119,7 @@ final class SaltMarcherSourceFacts {
 
     boolean isViewPanelSource() {
         return isViewSource()
-                && ((isSlotcontentSource() || isActiveViewRootSource())
+                && ((isSlotcontentSource() || isPrimitiveViewSource() || isActiveViewRootSource())
                 && simpleName.endsWith("View")
                 && !simpleName.endsWith("ViewModel"));
     }
@@ -145,6 +145,12 @@ final class SaltMarcherSourceFacts {
                 && segments.size() == 6
                 && segments.get(2).equals("slotcontent")
                 && Set.of("controls", "main", "state", "details", "topbar").contains(segments.get(3));
+    }
+
+    private boolean isPrimitiveViewSource() {
+        return isViewSource()
+                && segments.size() == 5
+                && segments.get(2).equals("primitives");
     }
 
     private boolean isDiscoverableViewContributionArea() {

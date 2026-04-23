@@ -15,7 +15,8 @@ The active view target is organized by SaltMarcher's cockpit slotcontent
 model: shell-discovered left-bar tabs under `src/view/leftbartabs`, state
 tabs under `src/view/statetabs`, dropdown-capable roots under
 `src/view/dropdowns`, and reusable single-slot content under
-`src/view/slotcontent`.
+`src/view/slotcontent`. Generic JavaFX primitives that are not owned by one
+cockpit slot live under `src/view/primitives`.
 
 ## Repository Layout
 
@@ -52,7 +53,7 @@ Additional constraints:
   scripts.
 - `tools/quality/skills/` owns repo-versioned Codex skills and their bundled
   references.
-- `docs/references/` owns local-only source mirrors and readable extracts for
+- `/home/aaron/Schreibtisch/projects/references/` owns local-only source mirrors and readable extracts for
   source-backed decisions. It is ignored by Git unless a specific file is
   explicitly approved for publication.
 - `docs/compat/` is reserved for deprecated compatibility stubs and must not
@@ -89,6 +90,9 @@ src/
           <PascalEntry>View.java
           <PascalEntry>ViewModel.java
           <PascalEntry>DisplayModel.java
+    primitives/
+      <entry>/
+        <PascalEntry>View.java
   domain/
     <feature>/
       <PascalFeatureName>ApplicationService.java

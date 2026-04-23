@@ -55,11 +55,11 @@ Use the documentation tree in this order:
   one place.
 - Documents above roughly 350 lines must be split by purpose.
 - Hypothetical method-level callchains do not belong in product or UI specs.
-- Work on agent-facing instruction artifacts must use the repo-owned
+- Work on agent-facing instruction artifacts must use the global
   `agent-instruction-engineering` skill and follow the canonical agent
   instruction standard.
 - Work that uses external sources or local source evidence for decisions must
-  use the repo-owned `source-references` skill and follow the canonical source
+  use the global `source-references` skill and follow the canonical source
   references standard.
 - Work under `src/domain/**` must follow the canonical domain-layer standard
   before changes are made or reviewed. The repo-owned `domain-layer` skill is
@@ -153,7 +153,8 @@ Use the documentation tree in this order:
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/agent-instructions.md:1)
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/source-references.md:1)
-- [Source References Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/source-references/SKILL.md:1)
+- [Global Source References Skill](/home/aaron/.codex/skills/local/source-references/SKILL.md:1)
+- [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
 - [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/repository-structure.md:1)

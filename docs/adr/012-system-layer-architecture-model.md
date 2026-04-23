@@ -108,8 +108,8 @@ increase blast radius and duplicate domain decisions outside the core.
 
 ## External Research Basis
 
-- [The Clean Architecture local mirror](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-patterns/clean-architecture.md:1)
-- [Hexagonal Architecture local mirror](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-patterns/cockburn-hexagonal-architecture.md:1)
-- [Onion Architecture Part 3 local mirror](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-patterns/palermo-onion-part-3.md:1)
-- [Service Layer local mirror](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/application-layer/fowler-service-layer.md:1)
-- [Common Web Application Architectures local mirror](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/references/architecture-patterns/microsoft-common-web-application-architectures.md:1)
+- [The Clean Architecture local mirror](/home/aaron/Schreibtisch/projects/references/architecture-patterns/clean-architecture.md:1)
+- [Hexagonal Architecture local mirror](/home/aaron/Schreibtisch/projects/references/architecture-patterns/cockburn-hexagonal-architecture.md:1)
+- [Onion Architecture Part 3 local mirror](/home/aaron/Schreibtisch/projects/references/architecture-patterns/palermo-onion-part-3.md:1)
+- [Service Layer local mirror](/home/aaron/Schreibtisch/projects/references/application-layer/fowler-service-layer.md:1)
+- [Common Web Application Architectures local mirror](/home/aaron/Schreibtisch/projects/references/architecture-patterns/microsoft-common-web-application-architectures.md:1)
