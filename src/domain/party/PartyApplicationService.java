@@ -277,6 +277,8 @@ public final class PartyApplicationService {
                 character.identity().playerName(),
                 character.progress().level(),
                 character.progress().currentXp(),
+                PartyLevelProgressionPolicy.minimumXpForLevel(character.progress().level()),
+                PartyLevelProgressionPolicy.nextLevelXp(character.progress().level()),
                 PartyLevelProgressionPolicy.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
                 PartyLevelProgressionPolicy.readyToLevel(character.progress().level(), character.progress().currentXp()),
                 character.combat().passivePerception(),

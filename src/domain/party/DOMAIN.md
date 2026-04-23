@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-23
 Source of Truth: Party feature ownership, write model, and domain invariants.
 
 # Party Domain Model
@@ -20,7 +20,10 @@ Context Name: Party
 
 `published/` owns public party commands, results, snapshots, status enums,
 membership states, rest carriers, adventuring-day calculation carriers, and
-party snapshots returned by `PartyApplicationService`.
+party snapshots returned by `PartyApplicationService`. Character detail
+snapshots publish current XP, current-level XP floor, next-level XP threshold,
+and rest cadence facts so downstream views can render progression without
+depending on roster internals.
 
 The `roster/` domain module must not depend on any `src.domain.*.published.*`
 carriers. The application boundary translates public carriers into roster

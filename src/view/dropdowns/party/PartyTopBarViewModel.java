@@ -372,21 +372,28 @@ public final class PartyTopBarViewModel {
 
     private static MemberModel toMemberModel(@Nullable PartyMemberDetails member, @Nullable RestCadenceStatus restStatus) {
         PartyMemberDetails safeMember = member == null
-                ? new PartyMemberDetails(0L, "", "", 1, 0, 0, false, 10, 10, 0, 0, 0, MembershipState.ACTIVE)
+                ? new PartyMemberDetails(0L, "", "", 1, 0, 0, 300, 300, false, 10, 10, 0, 0, 0,
+                MembershipState.ACTIVE)
                 : member;
         String progression = safe(progressionDetails(safeMember));
         String restText = safe(restStatusText(restStatus));
+        LevelProgressDisplay levelProgress = levelProgressDisplay(safeMember);
         return new MemberModel(
                 safeMember.id(),
                 safe(safeMember.name()),
                 safe(safeMember.playerName()),
                 safeMember.level(),
                 safeMember.currentXp(),
+                safeMember.currentLevelXp(),
+                safeMember.nextLevelXp(),
                 safeMember.passivePerception(),
                 safeMember.armorClass(),
                 "Lv " + safeMember.level(),
+                levelProgress.nextLevelLabel(),
                 memberDetails(safeMember),
                 progression,
+                levelProgress.text(),
+                levelProgress.fraction(),
                 restText,
                 restUrgencyStyleClass(restStatus));
     }
@@ -405,6 +412,31 @@ public final class PartyTopBarViewModel {
             return "Level-up bereit";
         }
         return member.xpToNextLevel() + " XP bis Level " + (member.level() + 1);
+    }
+
+    private static LevelProgressDisplay levelProgressDisplay(PartyMemberDetails member) {
+        int currentXp = Math.max(0, member.currentXp());
+        int currentLevelXp = Math.max(0, member.currentLevelXp());
+        int nextLevelXp = Math.max(currentLevelXp, member.nextLevelXp());
+        if (member.level() >= 20 || nextLevelXp <= currentLevelXp) {
+            return new LevelProgressDisplay("Max", formatProgressText(currentXp, 100), 1.0);
+        }
+        int span = Math.max(1, nextLevelXp - currentLevelXp);
+        int earnedInLevel = Math.max(0, currentXp - currentLevelXp);
+        double fraction = Math.max(0.0, Math.min(1.0, (double) earnedInLevel / span));
+        int percent = (int) Math.round(fraction * 100.0);
+        if (member.readyToLevel()) {
+            fraction = 1.0;
+            percent = 100;
+        }
+        return new LevelProgressDisplay(
+                "Lv " + (member.level() + 1),
+                formatProgressText(currentXp, percent),
+                fraction);
+    }
+
+    private static String formatProgressText(int currentXp, int percent) {
+        return currentXp + " XP (" + Math.max(0, Math.min(100, percent)) + "%)";
     }
 
     private static String restStatusText(@Nullable RestCadenceStatus status) {
@@ -589,11 +621,16 @@ public final class PartyTopBarViewModel {
             String playerName,
             int level,
             int currentXp,
+            int currentLevelXp,
+            int nextLevelXp,
             int passivePerception,
             int armorClass,
             String levelLabel,
+            String nextLevelLabel,
             String detailsText,
             String progressionText,
+            String levelProgressText,
+            double levelProgressFraction,
             String restText,
             String restStyleClass
     ) {
@@ -602,11 +639,17 @@ public final class PartyTopBarViewModel {
             name = safe(name);
             playerName = safe(playerName);
             levelLabel = safe(levelLabel);
+            nextLevelLabel = safe(nextLevelLabel);
             detailsText = safe(detailsText);
             progressionText = safe(progressionText);
+            levelProgressText = safe(levelProgressText);
+            levelProgressFraction = Math.max(0.0, Math.min(1.0, levelProgressFraction));
             restText = safe(restText);
             restStyleClass = safe(restStyleClass);
         }
+    }
+
+    private record LevelProgressDisplay(String nextLevelLabel, String text, double fraction) {
     }
 
     public record CharacterDraftModel(

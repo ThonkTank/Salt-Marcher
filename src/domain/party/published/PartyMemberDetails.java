@@ -6,6 +6,8 @@ public record PartyMemberDetails(
         String playerName,
         int level,
         int currentXp,
+        int currentLevelXp,
+        int nextLevelXp,
         int xpToNextLevel,
         boolean readyToLevel,
         int passivePerception,

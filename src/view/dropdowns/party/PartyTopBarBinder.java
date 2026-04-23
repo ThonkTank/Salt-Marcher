@@ -92,7 +92,8 @@ final class PartyTopBarBinder {
 
     private static PartyTopBarView.MemberView toMemberView(PartyTopBarViewModel.MemberModel member) {
         PartyTopBarViewModel.MemberModel safeMember = member == null
-                ? new PartyTopBarViewModel.MemberModel(0L, "", "", 1, 0, 10, 10, "Lv 1", "", "", "", "")
+                ? new PartyTopBarViewModel.MemberModel(
+                0L, "", "", 1, 0, 0, 300, 10, 10, "Lv 1", "Lv 2", "", "", "0 XP (0%)", 0.0, "", "")
                 : member;
         return new PartyTopBarView.MemberView(
                 safeMember.id(),
@@ -100,11 +101,16 @@ final class PartyTopBarBinder {
                 safeMember.playerName(),
                 safeMember.level(),
                 safeMember.currentXp(),
+                safeMember.currentLevelXp(),
+                safeMember.nextLevelXp(),
                 safeMember.passivePerception(),
                 safeMember.armorClass(),
                 safeMember.levelLabel(),
+                safeMember.nextLevelLabel(),
                 safeMember.detailsText(),
                 safeMember.progressionText(),
+                safeMember.levelProgressText(),
+                safeMember.levelProgressFraction(),
                 safeMember.restText(),
                 safeMember.restStyleClass());
     }

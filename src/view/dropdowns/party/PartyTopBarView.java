@@ -16,6 +16,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -268,9 +269,8 @@ public final class PartyTopBarView extends HBox {
         Label nameLabel = clippedLabel(member.name(), "party-member-name");
         HBox.setHgrow(nameLabel, Priority.ALWAYS);
 
-        Label levelLabel = new Label(member.levelLabel());
-        levelLabel.getStyleClass().add("party-member-level");
-
+        Label detailsLabel = clippedLabel(member.detailsText(), "party-member-meta");
+        detailsLabel.setMaxWidth(118);
         Node restChip = restChip(member);
 
         TextField xpField = createIntegerField();
@@ -306,19 +306,39 @@ public final class PartyTopBarView extends HBox {
         managementActions.getStyleClass().add("party-management-actions");
         managementActions.setAlignment(Pos.CENTER_RIGHT);
 
-        HBox headerRow = new HBox(6, nameLabel, levelLabel, restChip, spacer, managementActions);
+        HBox headerRow = new HBox(6, nameLabel, detailsLabel, restChip, spacer, managementActions);
         headerRow.setAlignment(Pos.CENTER_LEFT);
         headerRow.setMaxWidth(Double.MAX_VALUE);
 
-        Label secondaryLabel = clippedLabel(memberSecondaryText(member), "party-member-secondary");
-        HBox.setHgrow(secondaryLabel, Priority.ALWAYS);
-        HBox actionRow = new HBox(8, secondaryLabel, xpActions);
+        HBox progressRow = levelProgressRow(member);
+        HBox.setHgrow(progressRow, Priority.ALWAYS);
+        HBox actionRow = new HBox(8, progressRow, xpActions);
         actionRow.getStyleClass().add("party-action-row");
         actionRow.setAlignment(Pos.CENTER_LEFT);
         actionRow.setMaxWidth(Double.MAX_VALUE);
 
         VBox row = new VBox(3, headerRow, actionRow);
         row.getStyleClass().add("party-row");
+        row.setMaxWidth(Double.MAX_VALUE);
+        return row;
+    }
+
+    private static HBox levelProgressRow(MemberView member) {
+        Label currentLevelLabel = new Label(member.levelLabel());
+        currentLevelLabel.getStyleClass().add("party-level-edge");
+        Label nextLevelLabel = new Label(member.nextLevelLabel());
+        nextLevelLabel.getStyleClass().add("party-level-edge");
+        Label progressTextLabel = clippedLabel(member.levelProgressText(), "party-level-xp");
+        progressTextLabel.setMaxWidth(86);
+
+        ProgressBar progressBar = new ProgressBar(member.levelProgressFraction());
+        progressBar.getStyleClass().add("party-level-progress-bar");
+        progressBar.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(progressBar, Priority.ALWAYS);
+
+        HBox row = new HBox(5, currentLevelLabel, progressBar, nextLevelLabel, progressTextLabel);
+        row.getStyleClass().add("party-level-progress-row");
+        row.setAlignment(Pos.CENTER_LEFT);
         row.setMaxWidth(Double.MAX_VALUE);
         return row;
     }
@@ -346,18 +366,6 @@ public final class PartyTopBarView extends HBox {
             label.setTooltip(new Tooltip(safeText));
         }
         return label;
-    }
-
-    private static String memberSecondaryText(MemberView member) {
-        String details = safe(member.detailsText()).trim();
-        String progression = safe(member.progressionText()).trim();
-        if (details.isBlank()) {
-            return progression;
-        }
-        if (progression.isBlank()) {
-            return details;
-        }
-        return details + " | " + progression;
     }
 
     private void showActionStatus(String message, boolean error) {
@@ -473,11 +481,16 @@ public final class PartyTopBarView extends HBox {
             String playerName,
             int level,
             int currentXp,
+            int currentLevelXp,
+            int nextLevelXp,
             int passivePerception,
             int armorClass,
             String levelLabel,
+            String nextLevelLabel,
             String detailsText,
             String progressionText,
+            String levelProgressText,
+            double levelProgressFraction,
             String restText,
             String restStyleClass
     ) {
@@ -486,8 +499,11 @@ public final class PartyTopBarView extends HBox {
             name = safe(name);
             playerName = safe(playerName);
             levelLabel = safe(levelLabel);
+            nextLevelLabel = safe(nextLevelLabel);
             detailsText = safe(detailsText);
             progressionText = safe(progressionText);
+            levelProgressText = safe(levelProgressText);
+            levelProgressFraction = Math.max(0.0, Math.min(1.0, levelProgressFraction));
             restText = safe(restText);
             restStyleClass = safe(restStyleClass);
         }

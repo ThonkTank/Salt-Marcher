@@ -305,6 +305,30 @@
     -fx-text-fill: -sm-text-secondary;
     -fx-font-size: 11px;
 }
+.party-level-progress-row {
+    -fx-alignment: center-left;
+}
+.party-level-edge {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+.party-level-xp {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 10px;
+}
+.party-level-progress-bar {
+    -fx-pref-height: 7;
+}
+.party-level-progress-bar > .track {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 999;
+}
+.party-level-progress-bar > .bar {
+    -fx-background-color: -sm-accent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
+}
 .party-action-row {
     -fx-padding: 0;
     -fx-alignment: center-left;
@@ -313,8 +337,8 @@
     -fx-alignment: center-right;
 }
 .party-xp-field {
-    -fx-pref-width: 58;
-    -fx-max-width: 58;
+    -fx-pref-width: 48;
+    -fx-max-width: 48;
 }
 .party-management-actions {
     -fx-alignment: center-right;
