@@ -760,10 +760,6 @@
     -fx-alignment: center;
 }
 
-.dungeon-editor-toolbar {
-    -fx-spacing: 6;
-    -fx-background-color: -sm-bg-darkest;
-}
 .dungeon-control-row {
     -fx-spacing: 6;
     -fx-alignment: center-left;
@@ -791,26 +787,6 @@
     -fx-opacity: 0;
     -fx-max-width: 0;
 }
-.editor-toolbar-group {
-    -fx-spacing: 4;
-}
-.dungeon-editor-sidebar {
-    -fx-spacing: 12;
-    -fx-background-color: -sm-bg-darkest;
-}
-.editor-card {
-    -fx-background-color: -sm-bg-panel;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-    -fx-padding: 10;
-    -fx-spacing: 6;
-}
-.editor-panel-title {
-    -fx-font-size: 13px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-text-primary;
-}
 .dungeon-overlay-trigger {
     -fx-min-width: 124;
 }
@@ -819,7 +795,7 @@
 }
 
 .control-toolbar {
-    -fx-spacing: 8;
+    -fx-spacing: 6;
 }
 .control-group {
     -fx-spacing: 6;
@@ -838,10 +814,11 @@
     -fx-spacing: 6;
 }
 .entity-card {
-    -fx-background-color: derive(-fx-base, 8%);
-    -fx-border-color: -fx-box-border;
-    -fx-border-radius: 4;
-    -fx-background-radius: 4;
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8 12 8 12;
 }
 .panel-title {
     -fx-font-size: 13px;
@@ -907,9 +884,6 @@
 .control-toolbar .toolbar-action-button:focused {
     -fx-border-color: transparent;
     -fx-border-width: 0;
-}
-.dungeon-overlay-menu-item {
-    -fx-background-color: -sm-bg-elevated;
 }
 
 .filter-dropdown {
@@ -981,13 +955,12 @@
     -fx-cursor: hand;
 }
 .creature-link,
-.item-link {
+.creature-link {
     -fx-text-fill: -sm-creature-link;
     -fx-font-weight: bold;
     -fx-cursor: hand;
 }
-.button.creature-link,
-.button.item-link {
+.button.creature-link {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-padding: 0;
@@ -996,24 +969,9 @@
     -fx-cursor: hand;
 }
 .button.creature-link:hover,
-.button.item-link:hover,
-.creature-link:hover,
-.item-link:hover {
+.creature-link:hover {
     -fx-underline: true;
     -fx-background-color: transparent;
-}
-.encounter-runtime-root {
-    -fx-background-color: -sm-bg-darkest;
-}
-.encounter-mode-chip {
-    -fx-background-color: -sm-chip-type-bg;
-    -fx-border-color: -sm-chip-type-border;
-    -fx-background-radius: 3;
-    -fx-border-radius: 3;
-    -fx-padding: 2 6 2 6;
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-text-primary;
 }
 .difficulty-meter-marker {
     -fx-background-color: -sm-text-primary;
@@ -1024,9 +982,6 @@
     -fx-min-height: 12;
     -fx-pref-height: 12;
     -fx-max-height: 12;
-}
-.difficulty-meter-empty {
-    -fx-background-color: -sm-bg-elevated;
 }
 .difficulty-meter-easy {
     -fx-background-color: -sm-easy;
@@ -1042,23 +997,6 @@
     -fx-background-color: -sm-deadly;
     -fx-background-radius: 0 3 3 0;
 }
-.creature-card {
-    -fx-background-color: -sm-bg-card;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 3;
-    -fx-background-radius: 3;
-    -fx-padding: 8 12 8 12;
-}
-.encounter-count-pill {
-    -fx-background-color: -sm-chip-size-bg;
-    -fx-border-color: -sm-chip-size-border;
-    -fx-background-radius: 3;
-    -fx-border-radius: 3;
-    -fx-padding: 2 6 2 6;
-    -fx-font-size: 11px;
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-text-primary;
-}
 .role-badge {
     -fx-border-radius: 3;
     -fx-background-radius: 3;
@@ -1072,13 +1010,6 @@
 .role-controller { -fx-border-color: -sm-role-controller; -fx-text-fill: -sm-role-controller; }
 .role-skirmisher { -fx-border-color: -sm-role-skirmisher; -fx-text-fill: -sm-role-skirmisher; }
 .role-support    { -fx-border-color: -sm-role-support;    -fx-text-fill: -sm-role-support; }
-.initiative-row {
-    -fx-background-color: -sm-bg-card;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 3;
-    -fx-background-radius: 3;
-    -fx-padding: 8 12 8 12;
-}
 .combat-card {
     -fx-background-color: -sm-bg-card;
     -fx-border-color: transparent;
