@@ -57,6 +57,7 @@ public final class EncounterStateView extends VBox {
     private final Button nextAlternativeButton = new Button(">");
     private final Button saveEncounterButton = new Button("Speichern");
     private final Button openEncounterButton = new Button("Oeffnen");
+    private final Button clearHistoryButton = new Button("Clear");
     private final Button builderStartCombatButton = new Button("_Kampf starten");
     private final VBox builderPane = buildBuilderPane();
 
@@ -89,6 +90,7 @@ public final class EncounterStateView extends VBox {
     private Runnable onNextAlternative = () -> { };
     private Runnable onSaveEncounter = () -> { };
     private LongConsumer onOpenSavedEncounter = id -> { };
+    private Runnable onClearGenerationHistory = () -> { };
     private LongConsumer onRosterIncrement = id -> { };
     private LongConsumer onRosterDecrement = id -> { };
     private LongConsumer onRosterRemove = id -> { };
@@ -143,6 +145,7 @@ public final class EncounterStateView extends VBox {
         nextAlternativeButton.setDisable(!state.canNextAlternative());
         saveEncounterButton.setDisable(!state.canSavePlan());
         openEncounterButton.setDisable(state.savedPlans().isEmpty());
+        clearHistoryButton.setDisable(!state.canClearGenerationHistory());
         builderStartCombatButton.setDisable(!state.canStartCombat());
         lastBuilderState = state;
         rebuildRoster(state);
@@ -213,6 +216,10 @@ public final class EncounterStateView extends VBox {
 
     public void setOnOpenSavedEncounter(LongConsumer callback) {
         onOpenSavedEncounter = callback == null ? id -> { } : callback;
+    }
+
+    public void setOnClearGenerationHistory(Runnable callback) {
+        onClearGenerationHistory = callback == null ? () -> { } : callback;
     }
 
     public void setOnRosterIncrement(LongConsumer callback) {
@@ -288,9 +295,12 @@ public final class EncounterStateView extends VBox {
         openEncounterButton.getStyleClass().addAll("compact", "neutral-action");
         openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter oeffnen"));
         openEncounterButton.setOnAction(event -> showSavedPlansPopup(openEncounterButton));
+        clearHistoryButton.getStyleClass().addAll("compact", "neutral-action");
+        clearHistoryButton.setTooltip(new Tooltip("Generator-Historie leeren"));
+        clearHistoryButton.setOnAction(event -> onClearGenerationHistory.run());
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
-        HBox titleRow = new HBox(8, title, titleSpacer, openEncounterButton, saveEncounterButton);
+        HBox titleRow = new HBox(8, title, titleSpacer, clearHistoryButton, openEncounterButton, saveEncounterButton);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
         HBox summaryRow = new HBox(8, builderDifficultyLabel, builderTemplateLabel, builderPartyLabel);
@@ -493,14 +503,6 @@ public final class EncounterStateView extends VBox {
             HBox row = new HBox(8, removed, undoButton);
             row.setAlignment(Pos.CENTER_LEFT);
             advisoryRegion.getChildren().add(row);
-        }
-        if (!state.message().isBlank()) {
-            Label title = new Label("Hinweise");
-            title.getStyleClass().addAll("small", "text-secondary");
-            Label row = new Label(state.message());
-            row.getStyleClass().add("text-secondary");
-            row.setWrapText(true);
-            advisoryRegion.getChildren().addAll(title, row);
         }
         if (advisoryRegion.getChildren().isEmpty()) {
             advisoryRegion.setVisible(false);
@@ -957,8 +959,8 @@ public final class EncounterStateView extends VBox {
             boolean canPreviousAlternative,
             boolean canNextAlternative,
             boolean canSavePlan,
-            @Nullable UndoRemoveView pendingUndo,
-            String message
+            boolean canClearGenerationHistory,
+            @Nullable UndoRemoveView pendingUndo
     ) {
         static BuilderStateView empty() {
             return new BuilderStateView(
@@ -972,8 +974,8 @@ public final class EncounterStateView extends VBox {
                     false,
                     false,
                     false,
-                    null,
-                    "");
+                    false,
+                    null);
         }
 
         public BuilderStateView {

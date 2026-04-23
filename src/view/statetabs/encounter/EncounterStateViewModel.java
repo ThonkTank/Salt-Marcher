@@ -85,6 +85,7 @@ public final class EncounterStateViewModel {
     private String generatedDifficulty = "";
     private String generatedTitle = "";
     private @Nullable RemovedRosterEntry pendingUndo;
+    private boolean generationHistoryPresent;
     private long activeSavedPlanId;
     private long nextUndoToken;
     private long nextGenerationSeed;
@@ -101,7 +102,7 @@ public final class EncounterStateViewModel {
         this.savedEncounters = java.util.Objects.requireNonNull(savedEncounters, "savedEncounters");
         this.creatures = java.util.Objects.requireNonNull(creatures, "creatures");
         this.party = java.util.Objects.requireNonNull(party, "party");
-        refreshSavedPlans("");
+        refreshSavedPlans();
         refreshPartyContext();
     }
 
@@ -142,9 +143,7 @@ public final class EncounterStateViewModel {
     void refreshPartyContext() {
         loadActiveParty();
         loadBudget();
-        refreshBuilderState(
-                lastSettings,
-                activeParty.isEmpty() ? "Bitte zuerst aktive Party-Mitglieder anlegen." : "");
+        refreshBuilderState(lastSettings);
     }
 
     void generate(
@@ -167,7 +166,7 @@ public final class EncounterStateViewModel {
         refreshPartyContext();
         if (activeParty.isEmpty()) {
             status.set("Die aktive Party hat keine Mitglieder.");
-            refreshBuilderState(lastSettings, "Bitte zuerst aktive Party-Mitglieder anlegen.");
+            refreshBuilderState(lastSettings);
             return;
         }
         EncounterGenerationResult result = encounter.generate(new GenerateEncounterCommand(
@@ -184,12 +183,14 @@ public final class EncounterStateViewModel {
         if (result.status() != EncounterGenerationStatus.SUCCESS || result.encounters().isEmpty()) {
             generatedAlternatives.clear();
             selectedAlternativeIndex = 0;
+            generationHistoryPresent = false;
             status.set(result.message().isBlank() ? generationStatusText(result.status()) : result.message());
-            refreshBuilderState(lastSettings, status.get());
+            refreshBuilderState(lastSettings);
             return;
         }
         generatedAlternatives.clear();
         generatedAlternatives.addAll(result.encounters());
+        generationHistoryPresent = true;
         selectedAlternativeIndex = 0;
         applyGeneratedEncounter(generatedAlternatives.getFirst());
         status.set(generationSuccessText(result));
@@ -198,7 +199,7 @@ public final class EncounterStateViewModel {
     void saveCurrentPlan() {
         if (roster.isEmpty()) {
             status.set("Speichern braucht mindestens eine Kreatur im Encounter.");
-            refreshBuilderState(lastSettings, status.get());
+            refreshBuilderState(lastSettings);
             return;
         }
         SavedEncounterPlanResult result = savedEncounters.savePlan(new SaveEncounterPlanCommand(
@@ -210,12 +211,12 @@ public final class EncounterStateViewModel {
                         .toList()));
         if (result.status() != SavedEncounterPlanStatus.SUCCESS || result.plan() == null) {
             status.set(result.message().isBlank() ? "Encounter konnte nicht gespeichert werden." : result.message());
-            refreshSavedPlans(status.get());
+            refreshSavedPlans();
             return;
         }
         activeSavedPlanId = result.plan().id();
         status.set(result.plan().name() + " gespeichert.");
-        refreshSavedPlans(status.get());
+        refreshSavedPlans();
     }
 
     void openSavedPlan(long planId) {
@@ -223,7 +224,7 @@ public final class EncounterStateViewModel {
         SavedEncounterPlan plan = result.plan();
         if (result.status() != SavedEncounterPlanStatus.SUCCESS || plan == null) {
             status.set(result.message().isBlank() ? "Encounter konnte nicht geoeffnet werden." : result.message());
-            refreshSavedPlans(status.get());
+            refreshSavedPlans();
             return;
         }
         roster.clear();
@@ -234,6 +235,7 @@ public final class EncounterStateViewModel {
             }
         }
         generatedAlternatives.clear();
+        generationHistoryPresent = false;
         pendingInitiativeRows.clear();
         combatRuntime.clear();
         resultState.set(ResultState.empty());
@@ -249,7 +251,21 @@ public final class EncounterStateViewModel {
         currentTurnIndex = 0;
         mode.set(Mode.BUILDER);
         status.set(plan.name() + " geoeffnet.");
-        refreshSavedPlans(status.get());
+        refreshSavedPlans();
+    }
+
+    void clearGenerationHistory() {
+        if (!generationHistoryPresent && generatedAlternatives.isEmpty()) {
+            return;
+        }
+        generatedAlternatives.clear();
+        selectedAlternativeIndex = 0;
+        generatedAdjustedXp = 0;
+        generatedDifficulty = "";
+        generatedTitle = "";
+        generationHistoryPresent = false;
+        status.set("Generator-Historie geleert.");
+        refreshBuilderState(lastSettings);
     }
 
     void shiftGeneratedAlternative(int delta) {
@@ -289,6 +305,7 @@ public final class EncounterStateViewModel {
         pendingUndo = null;
         activeSavedPlanId = 0L;
         generatedAlternatives.clear();
+        generationHistoryPresent = false;
         selectedAlternativeIndex = 0;
         generatedAdjustedXp = 0;
         generatedDifficulty = "";
@@ -298,13 +315,13 @@ public final class EncounterStateViewModel {
             if (existing.creatureId() == detail.id()) {
                 roster.set(index, existing.withCount(existing.count() + 1, MAX_CREATURES_PER_SLOT));
                 status.set(detail.name() + " wurde zum Encounter hinzugefuegt.");
-                refreshBuilderState(lastSettings, "");
+                refreshBuilderState(lastSettings);
                 return;
             }
         }
         roster.add(fromDetail(detail, 1, "Manual", List.of()));
         status.set(detail.name() + " wurde zum Encounter hinzugefuegt.");
-        refreshBuilderState(lastSettings, "");
+        refreshBuilderState(lastSettings);
     }
 
     void incrementCreature(long creatureId) {
@@ -314,13 +331,14 @@ public final class EncounterStateViewModel {
                 pendingUndo = null;
                 activeSavedPlanId = 0L;
                 generatedAlternatives.clear();
+                generationHistoryPresent = false;
                 selectedAlternativeIndex = 0;
                 generatedAdjustedXp = 0;
                 generatedDifficulty = "";
                 generatedTitle = "";
                 roster.set(index, creature.withCount(creature.count() + 1, MAX_CREATURES_PER_SLOT));
                 status.set(creature.name() + " Anzahl angepasst.");
-                refreshBuilderState(lastSettings, "");
+                refreshBuilderState(lastSettings);
                 return;
             }
         }
@@ -337,13 +355,14 @@ public final class EncounterStateViewModel {
                 pendingUndo = null;
                 activeSavedPlanId = 0L;
                 generatedAlternatives.clear();
+                generationHistoryPresent = false;
                 selectedAlternativeIndex = 0;
                 generatedAdjustedXp = 0;
                 generatedDifficulty = "";
                 generatedTitle = "";
                 roster.set(index, creature.withCount(creature.count() - 1, MAX_CREATURES_PER_SLOT));
                 status.set(creature.name() + " Anzahl angepasst.");
-                refreshBuilderState(lastSettings, "");
+                refreshBuilderState(lastSettings);
                 return;
             }
         }
@@ -354,6 +373,7 @@ public final class EncounterStateViewModel {
             EncounterCreature creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
                 generatedAlternatives.clear();
+                generationHistoryPresent = false;
                 activeSavedPlanId = 0L;
                 selectedAlternativeIndex = 0;
                 generatedAdjustedXp = 0;
@@ -362,7 +382,7 @@ public final class EncounterStateViewModel {
                 roster.remove(index);
                 pendingUndo = new RemovedRosterEntry(++nextUndoToken, index, creature);
                 status.set(creature.name() + " wurde entfernt.");
-                refreshBuilderState(lastSettings, "");
+                refreshBuilderState(lastSettings);
                 return;
             }
         }
@@ -374,6 +394,7 @@ public final class EncounterStateViewModel {
             return;
         }
         generatedAlternatives.clear();
+        generationHistoryPresent = false;
         activeSavedPlanId = 0L;
         selectedAlternativeIndex = 0;
         generatedAdjustedXp = 0;
@@ -383,7 +404,7 @@ public final class EncounterStateViewModel {
         roster.add(index, removed.creature());
         pendingUndo = null;
         status.set(removed.creature().name() + " wurde wiederhergestellt.");
-        refreshBuilderState(lastSettings, "");
+        refreshBuilderState(lastSettings);
     }
 
     void openInitiative() {
@@ -559,9 +580,7 @@ public final class EncounterStateViewModel {
         generatedAdjustedXp = generated.adjustedXp();
         generatedDifficulty = difficultyLabel(generated.achievedDifficulty());
         generatedTitle = generated.title();
-        refreshBuilderState(lastSettings, generated.highlights().isEmpty()
-                ? "Encounter-Option " + (selectedAlternativeIndex + 1) + " von " + generatedAlternatives.size()
-                : String.join(" ", generated.highlights()));
+        refreshBuilderState(lastSettings);
     }
 
     void mutateHp(String combatantId, int amount, boolean healing) {
@@ -588,11 +607,11 @@ public final class EncounterStateViewModel {
         budget = result.status() == EncounterGenerationStatus.SUCCESS ? result.budget() : null;
     }
 
-    private void refreshBuilderState(BuilderSettings settings, String message) {
-        builderState.set(builderState(settings, message));
+    private void refreshBuilderState(BuilderSettings settings) {
+        builderState.set(builderState(settings));
     }
 
-    private void refreshSavedPlans(String message) {
+    private void refreshSavedPlans() {
         SavedEncounterPlanListResult result = savedEncounters.listPlans(new ListSavedEncounterPlansQuery());
         savedPlans.clear();
         if (result.status() == SavedEncounterPlanStatus.SUCCESS) {
@@ -600,10 +619,10 @@ public final class EncounterStateViewModel {
         } else if (!result.message().isBlank()) {
             status.set(result.message());
         }
-        refreshBuilderState(lastSettings, message);
+        refreshBuilderState(lastSettings);
     }
 
-    private BuilderState builderState(BuilderSettings settings, String message) {
+    private BuilderState builderState(BuilderSettings settings) {
         EncounterBudgetSummary currentBudget = budget;
         int adjustedXp = generatedAdjustedXp > 0 ? generatedAdjustedXp : roster.stream().mapToInt(EncounterCreature::totalXp).sum();
         DifficultySummary difficulty = currentBudget == null
@@ -626,8 +645,8 @@ public final class EncounterStateViewModel {
                 generatedAlternatives.size() > 1,
                 generatedAlternatives.size() > 1,
                 !roster.isEmpty(),
-                pendingUndo,
-                message == null ? "" : message);
+                generationHistoryPresent || !generatedAlternatives.isEmpty(),
+                pendingUndo);
     }
 
     private String saveName() {
@@ -886,15 +905,14 @@ public final class EncounterStateViewModel {
             boolean canPreviousAlternative,
             boolean canNextAlternative,
             boolean canSavePlan,
-            @Nullable RemovedRosterEntry pendingUndo,
-            String message
+            boolean canClearGenerationHistory,
+            @Nullable RemovedRosterEntry pendingUndo
     ) {
         public BuilderState {
             party = party == null ? List.of() : List.copyOf(party);
             roster = roster == null ? List.of() : List.copyOf(roster);
             savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
             templateLabel = templateLabel == null ? "" : templateLabel;
-            message = message == null ? "" : message;
         }
     }
 

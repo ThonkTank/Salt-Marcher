@@ -61,6 +61,9 @@ creature details through the creature application service.
 - `Oeffnen` shows saved encounter plans from the title row. Selecting one
   replaces the builder roster, returns to Creation mode, and clears generated
   alternatives, initiative, combat, and result state.
+- `Clear` in the title row clears only transient generator history and
+  generated labels. The current roster stays in Creation mode as a manual
+  encounter.
 - Catalog `+Add` actions append the selected creature to the runtime roster in
   creation mode and add the selected creature as a reinforcement in active
   combat.
@@ -89,8 +92,8 @@ creature details through the creature application service.
   can be populated through catalog `+Add` or `Generieren`.
 - Generated roster: difficulty, thresholds, adjusted XP, generator title, and
   creature cards are visible.
-- Auto-resolved generation: the status line includes the resolved target and
-  tuning summary; fallback generation adds a fallback note.
+- Auto-resolved generation: the generated roster shows the resolved difficulty
+  through the difficulty label and adjusted XP summary.
 - Saved plan available: the title-row open action is enabled and shows the
   saved plan name, generated label, and creature count.
 - Encounter-table loot conflict: the Catalog controls show `Loot-Konflikt`;

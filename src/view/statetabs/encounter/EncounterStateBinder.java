@@ -69,6 +69,7 @@ final class EncounterStateBinder {
         state.setOnNextAlternative(() -> viewModel.shiftGeneratedAlternative(1));
         state.setOnSaveEncounter(viewModel::saveCurrentPlan);
         state.setOnOpenSavedEncounter(viewModel::openSavedPlan);
+        state.setOnClearGenerationHistory(viewModel::clearGenerationHistory);
         state.setOnRosterIncrement(viewModel::incrementCreature);
         state.setOnRosterDecrement(viewModel::decrementCreature);
         state.setOnRosterRemove(viewModel::removeCreature);
@@ -179,12 +180,12 @@ final class EncounterStateBinder {
                 source.canPreviousAlternative(),
                 source.canNextAlternative(),
                 source.canSavePlan(),
+                source.canClearGenerationHistory(),
                 source.pendingUndo() == null
                         ? null
                         : new EncounterStateView.UndoRemoveView(
                                 source.pendingUndo().token(),
-                                source.pendingUndo().creature().name()),
-                source.message());
+                                source.pendingUndo().creature().name()));
     }
 
     private EncounterStateView.InitiativeStateView toInitiativeState(
