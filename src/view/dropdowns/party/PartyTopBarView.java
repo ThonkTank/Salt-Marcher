@@ -266,11 +266,8 @@ public final class PartyTopBarView extends HBox {
     }
 
     private VBox memberRow(MemberView member) {
-        Label nameLabel = clippedLabel(member.name(), "party-member-name");
-        HBox.setHgrow(nameLabel, Priority.ALWAYS);
-
-        Label detailsLabel = clippedLabel(member.detailsText(), "party-member-meta");
-        detailsLabel.setMaxWidth(118);
+        Label identityLabel = clippedLabel(identityText(member), "party-member-identity");
+        HBox.setHgrow(identityLabel, Priority.ALWAYS);
         Node restChip = restChip(member);
 
         TextField xpField = createIntegerField();
@@ -306,13 +303,15 @@ public final class PartyTopBarView extends HBox {
         managementActions.getStyleClass().add("party-management-actions");
         managementActions.setAlignment(Pos.CENTER_RIGHT);
 
-        HBox headerRow = new HBox(6, nameLabel, detailsLabel, restChip, spacer, managementActions);
+        HBox progressRow = levelProgressRow(member);
+        HBox headerRow = new HBox(8, identityLabel, progressRow, xpActions);
+        headerRow.getStyleClass().add("party-card-top-row");
         headerRow.setAlignment(Pos.CENTER_LEFT);
         headerRow.setMaxWidth(Double.MAX_VALUE);
 
-        HBox progressRow = levelProgressRow(member);
-        HBox.setHgrow(progressRow, Priority.ALWAYS);
-        HBox actionRow = new HBox(8, progressRow, xpActions);
+        Label combatLabel = clippedLabel(combatText(member), "party-member-meta");
+        HBox.setHgrow(combatLabel, Priority.ALWAYS);
+        HBox actionRow = new HBox(8, combatLabel, restChip, spacer, managementActions);
         actionRow.getStyleClass().add("party-action-row");
         actionRow.setAlignment(Pos.CENTER_LEFT);
         actionRow.setMaxWidth(Double.MAX_VALUE);
@@ -333,13 +332,10 @@ public final class PartyTopBarView extends HBox {
 
         ProgressBar progressBar = new ProgressBar(member.levelProgressFraction());
         progressBar.getStyleClass().add("party-level-progress-bar");
-        progressBar.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(progressBar, Priority.ALWAYS);
 
         HBox row = new HBox(5, currentLevelLabel, progressBar, nextLevelLabel, progressTextLabel);
         row.getStyleClass().add("party-level-progress-row");
         row.setAlignment(Pos.CENTER_LEFT);
-        row.setMaxWidth(Double.MAX_VALUE);
         return row;
     }
 
@@ -352,6 +348,22 @@ public final class PartyTopBarView extends HBox {
         label.setVisible(!member.restText().isBlank());
         label.setManaged(label.isVisible());
         return label;
+    }
+
+    private static String identityText(MemberView member) {
+        String name = safe(member.name()).trim();
+        String player = safe(member.playerName()).trim();
+        if (player.isBlank()) {
+            return name;
+        }
+        if (name.isBlank()) {
+            return player;
+        }
+        return name + " - " + player;
+    }
+
+    private static String combatText(MemberView member) {
+        return "AC " + member.armorClass() + " | PP " + member.passivePerception();
     }
 
     private static Label clippedLabel(String text, String styleClass) {

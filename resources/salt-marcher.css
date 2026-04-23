@@ -278,7 +278,15 @@
 .party-row:hover {
     -fx-background-color: derive(-sm-bg-card, 12%);
 }
+.party-card-top-row {
+    -fx-alignment: center-left;
+}
 .party-member-name {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+.party-member-identity {
     -fx-text-fill: -sm-text-primary;
     -fx-font-size: 13px;
     -fx-font-weight: bold;
@@ -318,6 +326,9 @@
     -fx-font-size: 10px;
 }
 .party-level-progress-bar {
+    -fx-min-width: 54;
+    -fx-pref-width: 54;
+    -fx-max-width: 54;
     -fx-pref-height: 7;
 }
 .party-level-progress-bar > .track {

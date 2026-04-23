@@ -27,9 +27,9 @@ summary, and mutation controls call the party application service.
   controls, reserve-character search suggestions, a new-character affordance,
   a summary footer, and compact feedback when party data cannot be loaded.
 - Active member rows are compact full-width two-line cards. The first line
-  shows name, level, rest cadence, edit, and remove affordances; the second
-  line shows a level-up progress bar with current level, next level, current
-  XP, percentage progress, and XP controls.
+  shows character and player identity, a short level-up progress bar, and XP
+  controls. The second line shows combat/rest metadata plus edit and remove
+  affordances.
 - The create/edit character editor is a secondary anchored dropdown with
   character, player, level, passive perception, AC, and edit-mode delete
   confirmation controls. It stays open on validation or storage failures and
