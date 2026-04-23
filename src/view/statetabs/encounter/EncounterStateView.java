@@ -43,7 +43,6 @@ public final class EncounterStateView extends VBox {
     private final Label builderDifficultyLabel = new Label();
     private final Label builderTemplateLabel = new Label();
     private final Label builderPartyLabel = new Label();
-    private final Label builderConstraintsLabel = new Label();
     private final Label builderXpLabel = new Label();
     private final Label easyThresholdLabel = new Label();
     private final Label mediumThresholdLabel = new Label();
@@ -56,10 +55,8 @@ public final class EncounterStateView extends VBox {
     private final VBox advisoryRegion = new VBox(4);
     private final Button previousAlternativeButton = new Button("<");
     private final Button nextAlternativeButton = new Button(">");
-    private final Button rerollButton = new Button("Reroll");
-    private final Button lockCurrentButton = new Button("Lock");
-    private final Button excludeCurrentButton = new Button("Exclude");
-    private final Button clearConstraintsButton = new Button("Clear");
+    private final Button saveEncounterButton = new Button("Speichern");
+    private final Button openEncounterButton = new Button("Oeffnen");
     private final Button builderStartCombatButton = new Button("_Kampf starten");
     private final VBox builderPane = buildBuilderPane();
 
@@ -90,10 +87,8 @@ public final class EncounterStateView extends VBox {
     private Consumer<BuilderSettingsInput> onGenerate = settings -> { };
     private Runnable onPreviousAlternative = () -> { };
     private Runnable onNextAlternative = () -> { };
-    private Runnable onReroll = () -> { };
-    private Runnable onLockCurrent = () -> { };
-    private Runnable onExcludeCurrent = () -> { };
-    private Runnable onClearConstraints = () -> { };
+    private Runnable onSaveEncounter = () -> { };
+    private LongConsumer onOpenSavedEncounter = id -> { };
     private LongConsumer onRosterIncrement = id -> { };
     private LongConsumer onRosterDecrement = id -> { };
     private LongConsumer onRosterRemove = id -> { };
@@ -110,6 +105,7 @@ public final class EncounterStateView extends VBox {
     private Runnable onAwardXp = () -> { };
     private Runnable onReturnToBuilder = () -> { };
     private ResultStateView lastResultState = ResultStateView.empty();
+    private BuilderStateView lastBuilderState = BuilderStateView.empty();
 
     public EncounterStateView() {
         setSpacing(0);
@@ -137,9 +133,6 @@ public final class EncounterStateView extends VBox {
         updateDifficultyStyle(builderDifficultyLabel, state.difficulty().difficulty());
         builderTemplateLabel.setText(state.templateLabel());
         builderPartyLabel.setText(state.partyLabel());
-        builderConstraintsLabel.setText(state.constraintsLabel());
-        builderConstraintsLabel.setVisible(!state.constraintsLabel().isBlank());
-        builderConstraintsLabel.setManaged(!state.constraintsLabel().isBlank());
         builderXpLabel.setText("Adj. XP: " + state.difficulty().adjustedXp());
         easyThresholdLabel.setText("Easy " + state.difficulty().easy());
         mediumThresholdLabel.setText("Med. " + state.difficulty().medium());
@@ -148,11 +141,10 @@ public final class EncounterStateView extends VBox {
         difficultyMeter.update(state.difficulty());
         previousAlternativeButton.setDisable(!state.canPreviousAlternative());
         nextAlternativeButton.setDisable(!state.canNextAlternative());
-        rerollButton.setDisable(!state.canReroll());
-        lockCurrentButton.setDisable(!state.canLockCurrent());
-        excludeCurrentButton.setDisable(!state.canExcludeCurrent());
-        clearConstraintsButton.setDisable(!state.canClearConstraints());
+        saveEncounterButton.setDisable(!state.canSavePlan());
+        openEncounterButton.setDisable(state.savedPlans().isEmpty());
         builderStartCombatButton.setDisable(!state.canStartCombat());
+        lastBuilderState = state;
         rebuildRoster(state);
     }
 
@@ -215,20 +207,12 @@ public final class EncounterStateView extends VBox {
         onNextAlternative = callback == null ? () -> { } : callback;
     }
 
-    public void setOnReroll(Runnable callback) {
-        onReroll = callback == null ? () -> { } : callback;
+    public void setOnSaveEncounter(Runnable callback) {
+        onSaveEncounter = callback == null ? () -> { } : callback;
     }
 
-    public void setOnLockCurrent(Runnable callback) {
-        onLockCurrent = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnExcludeCurrent(Runnable callback) {
-        onExcludeCurrent = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnClearConstraints(Runnable callback) {
-        onClearConstraints = callback == null ? () -> { } : callback;
+    public void setOnOpenSavedEncounter(LongConsumer callback) {
+        onOpenSavedEncounter = callback == null ? id -> { } : callback;
     }
 
     public void setOnRosterIncrement(LongConsumer callback) {
@@ -298,21 +282,22 @@ public final class EncounterStateView extends VBox {
         Label title = new Label("Encounter");
         title.getStyleClass().add("title");
         title.setPadding(new Insets(0, 0, 4, 0));
-        Button saveEncounterButton = new Button("Speichern");
         saveEncounterButton.getStyleClass().addAll("compact", "neutral-action");
-        saveEncounterButton.setDisable(true);
-        saveEncounterButton.setTooltip(new Tooltip("Persistenz wird spaeter angebunden."));
+        saveEncounterButton.setTooltip(new Tooltip("Aktuelles Encounter-Roster speichern"));
+        saveEncounterButton.setOnAction(event -> onSaveEncounter.run());
+        openEncounterButton.getStyleClass().addAll("compact", "neutral-action");
+        openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter oeffnen"));
+        openEncounterButton.setOnAction(event -> showSavedPlansPopup(openEncounterButton));
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
-        HBox titleRow = new HBox(8, title, titleSpacer, saveEncounterButton);
+        HBox titleRow = new HBox(8, title, titleSpacer, openEncounterButton, saveEncounterButton);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        HBox summaryRow = new HBox(8, builderDifficultyLabel, builderTemplateLabel, builderPartyLabel, builderConstraintsLabel);
+        HBox summaryRow = new HBox(8, builderDifficultyLabel, builderTemplateLabel, builderPartyLabel);
         summaryRow.setAlignment(Pos.CENTER_LEFT);
         builderDifficultyLabel.getStyleClass().add("text-secondary");
         builderTemplateLabel.getStyleClass().addAll("small", "text-secondary");
         builderPartyLabel.getStyleClass().add("text-secondary");
-        builderConstraintsLabel.getStyleClass().addAll("small", "text-secondary");
         builderXpLabel.getStyleClass().add("bold");
         HBox thresholdRow = new HBox(6, easyThresholdLabel, mediumThresholdLabel, hardThresholdLabel, deadlyThresholdLabel);
         easyThresholdLabel.getStyleClass().add("difficulty-easy");
@@ -344,35 +329,13 @@ public final class EncounterStateView extends VBox {
         nextAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
         nextAlternativeButton.setTooltip(new Tooltip("Naechste Generator-Alternative"));
         nextAlternativeButton.setOnAction(event -> onNextAlternative.run());
-        rerollButton.getStyleClass().addAll("compact", "neutral-action");
-        rerollButton.setTooltip(new Tooltip("Mit aktuellen Filtern neu wuerfeln"));
-        rerollButton.setOnAction(event -> onReroll.run());
-        lockCurrentButton.getStyleClass().addAll("compact", "neutral-action");
-        lockCurrentButton.setTooltip(new Tooltip("Aktuelles Roster fuer kommende Rerolls festhalten"));
-        lockCurrentButton.setOnAction(event -> onLockCurrent.run());
-        excludeCurrentButton.getStyleClass().addAll("compact", "neutral-action");
-        excludeCurrentButton.setTooltip(new Tooltip("Aktuelle Kreaturen ausschliessen und neu wuerfeln"));
-        excludeCurrentButton.setOnAction(event -> onExcludeCurrent.run());
-        clearConstraintsButton.getStyleClass().addAll("compact", "neutral-action");
-        clearConstraintsButton.setTooltip(new Tooltip("Locks und Exclusions loeschen"));
-        clearConstraintsButton.setOnAction(event -> onClearConstraints.run());
-        HBox generatorControls = new HBox(
-                6,
-                previousAlternativeButton,
-                nextAlternativeButton,
-                rerollButton,
-                lockCurrentButton,
-                excludeCurrentButton,
-                clearConstraintsButton);
-        generatorControls.setAlignment(Pos.CENTER_LEFT);
-        generatorControls.setPadding(new Insets(6, 0, 0, 0));
         builderStartCombatButton.getStyleClass().add("accent");
         builderStartCombatButton.setMaxWidth(Double.MAX_VALUE);
         builderStartCombatButton.setDisable(true);
         builderStartCombatButton.setOnAction(event -> onStartInitiative.run());
         HBox.setHgrow(generateButton, Priority.ALWAYS);
         HBox.setHgrow(builderStartCombatButton, Priority.ALWAYS);
-        HBox actionRow = new HBox(12, generateButton, builderStartCombatButton);
+        HBox actionRow = new HBox(6, previousAlternativeButton, generateButton, nextAlternativeButton, builderStartCombatButton);
         actionRow.setAlignment(Pos.CENTER_LEFT);
         actionRow.setPadding(new Insets(8, 0, 0, 0));
 
@@ -382,7 +345,6 @@ public final class EncounterStateView extends VBox {
                 difficultyMeter,
                 thresholdRow,
                 builderXpLabel,
-                generatorControls,
                 rosterHost,
                 advisoryRegion,
                 separator(),
@@ -738,6 +700,40 @@ public final class EncounterStateView extends VBox {
         showPopup(anchor, popup, field, down, field, up, set);
     }
 
+    private void showSavedPlansPopup(Node anchor) {
+        Popup popup = new Popup();
+        popup.setAutoHide(true);
+        VBox content = new VBox(4);
+        content.getStyleClass().add("edit-popup-panel");
+        List<SavedEncounterPlanView> savedPlans = lastBuilderState.savedPlans();
+        if (savedPlans.isEmpty()) {
+            Label empty = new Label("Keine gespeicherten Encounter.");
+            empty.getStyleClass().add("text-secondary");
+            content.getChildren().add(empty);
+        } else {
+            for (SavedEncounterPlanView plan : savedPlans) {
+                Button option = new Button(savedPlanLabel(plan));
+                option.getStyleClass().addAll("creature-link");
+                option.setMaxWidth(Double.MAX_VALUE);
+                option.setOnAction(event -> {
+                    popup.hide();
+                    onOpenSavedEncounter.accept(plan.id());
+                });
+                content.getChildren().add(option);
+            }
+        }
+        popup.getContent().add(content);
+        Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
+        if (bounds != null) {
+            popup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 8);
+        }
+    }
+
+    private static String savedPlanLabel(SavedEncounterPlanView plan) {
+        String suffix = plan.generatedLabel().isBlank() ? "" : " - " + plan.generatedLabel();
+        return plan.name() + suffix + " (" + plan.creatureCount() + ")";
+    }
+
     private void showPopup(Node anchor, Popup popup, TextField focus, Node... nodes) {
         HBox content = new HBox(4);
         content.getStyleClass().add("edit-popup-panel");
@@ -954,22 +950,43 @@ public final class EncounterStateView extends VBox {
             String partyLabel,
             String templateLabel,
             DifficultySummaryView difficulty,
+            List<SavedEncounterPlanView> savedPlans,
             BuilderSettingsInput settings,
             List<RosterCardView> roster,
             boolean canStartCombat,
             boolean canPreviousAlternative,
             boolean canNextAlternative,
-            boolean canReroll,
-            boolean canLockCurrent,
-            boolean canExcludeCurrent,
-            boolean canClearConstraints,
-            String constraintsLabel,
+            boolean canSavePlan,
             @Nullable UndoRemoveView pendingUndo,
             String message
     ) {
+        static BuilderStateView empty() {
+            return new BuilderStateView(
+                    "",
+                    "",
+                    new DifficultySummaryView(0, 0, 0, 0, 0, ""),
+                    List.of(),
+                    BuilderSettingsInput.defaultInput(),
+                    List.of(),
+                    false,
+                    false,
+                    false,
+                    false,
+                    null,
+                    "");
+        }
+
         public BuilderStateView {
+            savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
             roster = roster == null ? List.of() : List.copyOf(roster);
-            constraintsLabel = constraintsLabel == null ? "" : constraintsLabel;
+        }
+    }
+
+    public record SavedEncounterPlanView(long id, String name, String generatedLabel, int creatureCount) {
+        public SavedEncounterPlanView {
+            name = name == null ? "" : name.trim();
+            generatedLabel = generatedLabel == null ? "" : generatedLabel.trim();
+            creatureCount = Math.max(0, creatureCount);
         }
     }
 

@@ -21,10 +21,18 @@ import src.domain.encounter.published.EncounterGenerationDiagnostics;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
-import src.domain.encounter.published.EncounterLock;
 import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.published.LoadEncounterBudgetQuery;
+import src.domain.encounter.published.ListSavedEncounterPlansQuery;
+import src.domain.encounter.published.LoadSavedEncounterPlanQuery;
+import src.domain.encounter.published.SaveEncounterPlanCommand;
+import src.domain.encounter.published.SavedEncounterPlan;
+import src.domain.encounter.published.SavedEncounterPlanCreature;
+import src.domain.encounter.published.SavedEncounterPlanListResult;
+import src.domain.encounter.published.SavedEncounterPlanResult;
+import src.domain.encounter.published.SavedEncounterPlanStatus;
+import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.AwardPartyXpCommand;
@@ -50,13 +58,13 @@ public final class EncounterStateViewModel {
     }
 
     private final EncounterApplicationService encounter;
+    private final EncounterApplicationService savedEncounters;
     private final CreaturesApplicationService creatures;
     private final PartyApplicationService party;
     private final List<PartyMember> activeParty = new ArrayList<>();
     private final List<EncounterCreature> roster = new ArrayList<>();
     private final List<GeneratedEncounter> generatedAlternatives = new ArrayList<>();
-    private final List<EncounterLock> lockedCreatures = new ArrayList<>();
-    private final List<Long> excludedCreatureIds = new ArrayList<>();
+    private final List<SavedEncounterPlanSummary> savedPlans = new ArrayList<>();
     private final List<InitiativeEntry> pendingInitiativeRows = new ArrayList<>();
     private final EncounterCombatRuntimeDisplayModel combatRuntime = new EncounterCombatRuntimeDisplayModel();
     private final ReadOnlyObjectWrapper<Mode> mode = new ReadOnlyObjectWrapper<>(Mode.BUILDER);
@@ -77,6 +85,7 @@ public final class EncounterStateViewModel {
     private String generatedDifficulty = "";
     private String generatedTitle = "";
     private @Nullable RemovedRosterEntry pendingUndo;
+    private long activeSavedPlanId;
     private long nextUndoToken;
     private long nextGenerationSeed;
     private int currentTurnIndex;
@@ -84,12 +93,15 @@ public final class EncounterStateViewModel {
 
     EncounterStateViewModel(
             EncounterApplicationService encounter,
+            EncounterApplicationService savedEncounters,
             CreaturesApplicationService creatures,
             PartyApplicationService party
     ) {
         this.encounter = java.util.Objects.requireNonNull(encounter, "encounter");
+        this.savedEncounters = java.util.Objects.requireNonNull(savedEncounters, "savedEncounters");
         this.creatures = java.util.Objects.requireNonNull(creatures, "creatures");
         this.party = java.util.Objects.requireNonNull(party, "party");
+        refreshSavedPlans("");
         refreshPartyContext();
     }
 
@@ -151,6 +163,7 @@ public final class EncounterStateViewModel {
         EncounterDifficultyBand effectiveDifficulty =
                 difficulty == null ? EncounterDifficultyBand.autoBand() : difficulty;
         pendingUndo = null;
+        activeSavedPlanId = 0L;
         refreshPartyContext();
         if (activeParty.isEmpty()) {
             status.set("Die aktive Party hat keine Mitglieder.");
@@ -166,8 +179,8 @@ public final class EncounterStateViewModel {
                 tuning == null ? EncounterGenerationTuning.autoTuning() : tuning,
                 nextGenerationSeed(),
                 safeIds(encounterTableIds),
-                List.copyOf(excludedCreatureIds),
-                List.copyOf(lockedCreatures)));
+                List.of(),
+                List.of()));
         if (result.status() != EncounterGenerationStatus.SUCCESS || result.encounters().isEmpty()) {
             generatedAlternatives.clear();
             selectedAlternativeIndex = 0;
@@ -182,15 +195,61 @@ public final class EncounterStateViewModel {
         status.set(generationSuccessText(result));
     }
 
-    void reroll(
-            List<String> types,
-            List<String> subtypes,
-            List<String> biomes,
-            EncounterDifficultyBand difficulty,
-            EncounterGenerationTuning tuning,
-            List<Long> encounterTableIds
-    ) {
-        generate(lastSettings, types, subtypes, biomes, difficulty, tuning, encounterTableIds);
+    void saveCurrentPlan() {
+        if (roster.isEmpty()) {
+            status.set("Speichern braucht mindestens eine Kreatur im Encounter.");
+            refreshBuilderState(lastSettings, status.get());
+            return;
+        }
+        SavedEncounterPlanResult result = savedEncounters.savePlan(new SaveEncounterPlanCommand(
+                activeSavedPlanId <= 0L ? null : activeSavedPlanId,
+                saveName(),
+                generatedTitle,
+                roster.stream()
+                        .map(creature -> new SavedEncounterPlanCreature(creature.creatureId(), creature.count()))
+                        .toList()));
+        if (result.status() != SavedEncounterPlanStatus.SUCCESS || result.plan() == null) {
+            status.set(result.message().isBlank() ? "Encounter konnte nicht gespeichert werden." : result.message());
+            refreshSavedPlans(status.get());
+            return;
+        }
+        activeSavedPlanId = result.plan().id();
+        status.set(result.plan().name() + " gespeichert.");
+        refreshSavedPlans(status.get());
+    }
+
+    void openSavedPlan(long planId) {
+        SavedEncounterPlanResult result = savedEncounters.loadPlan(new LoadSavedEncounterPlanQuery(planId));
+        SavedEncounterPlan plan = result.plan();
+        if (result.status() != SavedEncounterPlanStatus.SUCCESS || plan == null) {
+            status.set(result.message().isBlank() ? "Encounter konnte nicht geoeffnet werden." : result.message());
+            refreshSavedPlans(status.get());
+            return;
+        }
+        roster.clear();
+        for (SavedEncounterPlanCreature creature : plan.creatures()) {
+            CreatureDetail detail = loadCreature(creature.creatureId());
+            if (detail != null) {
+                roster.add(fromDetail(detail, creature.quantity(), "Saved", List.of()));
+            }
+        }
+        generatedAlternatives.clear();
+        pendingInitiativeRows.clear();
+        combatRuntime.clear();
+        resultState.set(ResultState.empty());
+        combatState.set(CombatProjection.empty());
+        initiativeState.set(InitiativeState.empty());
+        selectedAlternativeIndex = 0;
+        generatedAdjustedXp = 0;
+        generatedDifficulty = "";
+        generatedTitle = plan.generatedLabel().isBlank() ? plan.name() : plan.generatedLabel();
+        pendingUndo = null;
+        activeSavedPlanId = plan.id();
+        round = 1;
+        currentTurnIndex = 0;
+        mode.set(Mode.BUILDER);
+        status.set(plan.name() + " geoeffnet.");
+        refreshSavedPlans(status.get());
     }
 
     void shiftGeneratedAlternative(int delta) {
@@ -228,6 +287,7 @@ public final class EncounterStateViewModel {
             return;
         }
         pendingUndo = null;
+        activeSavedPlanId = 0L;
         generatedAlternatives.clear();
         selectedAlternativeIndex = 0;
         generatedAdjustedXp = 0;
@@ -252,6 +312,7 @@ public final class EncounterStateViewModel {
             EncounterCreature creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
                 pendingUndo = null;
+                activeSavedPlanId = 0L;
                 generatedAlternatives.clear();
                 selectedAlternativeIndex = 0;
                 generatedAdjustedXp = 0;
@@ -274,6 +335,7 @@ public final class EncounterStateViewModel {
                     return;
                 }
                 pendingUndo = null;
+                activeSavedPlanId = 0L;
                 generatedAlternatives.clear();
                 selectedAlternativeIndex = 0;
                 generatedAdjustedXp = 0;
@@ -292,6 +354,7 @@ public final class EncounterStateViewModel {
             EncounterCreature creature = roster.get(index);
             if (creature.creatureId() == creatureId) {
                 generatedAlternatives.clear();
+                activeSavedPlanId = 0L;
                 selectedAlternativeIndex = 0;
                 generatedAdjustedXp = 0;
                 generatedDifficulty = "";
@@ -311,6 +374,7 @@ public final class EncounterStateViewModel {
             return;
         }
         generatedAlternatives.clear();
+        activeSavedPlanId = 0L;
         selectedAlternativeIndex = 0;
         generatedAdjustedXp = 0;
         generatedDifficulty = "";
@@ -319,57 +383,6 @@ public final class EncounterStateViewModel {
         roster.add(index, removed.creature());
         pendingUndo = null;
         status.set(removed.creature().name() + " wurde wiederhergestellt.");
-        refreshBuilderState(lastSettings, "");
-    }
-
-    void lockCurrentRoster() {
-        if (roster.isEmpty()) {
-            status.set("Lock braucht mindestens eine Kreatur im Roster.");
-            return;
-        }
-        lockedCreatures.clear();
-        for (EncounterCreature creature : roster) {
-            lockedCreatures.add(new EncounterLock(creature.creatureId(), creature.count()));
-        }
-        pendingUndo = null;
-        status.set("Aktuelle Komposition fuer kommende Rerolls gesperrt.");
-        refreshBuilderState(lastSettings, "");
-    }
-
-    void excludeCurrentRoster(
-            List<String> types,
-            List<String> subtypes,
-            List<String> biomes,
-            EncounterDifficultyBand difficulty,
-            EncounterGenerationTuning tuning,
-            List<Long> encounterTableIds
-    ) {
-        if (roster.isEmpty()) {
-            status.set("Exclude braucht mindestens eine Kreatur im Roster.");
-            return;
-        }
-        for (EncounterCreature creature : roster) {
-            if (!excludedCreatureIds.contains(creature.creatureId())) {
-                excludedCreatureIds.add(creature.creatureId());
-            }
-        }
-        lockedCreatures.clear();
-        pendingUndo = null;
-        generate(lastSettings, types, subtypes, biomes, difficulty, tuning, encounterTableIds);
-        if (!excludedCreatureIds.isEmpty()) {
-            status.set(status.get() + " Exclusions aktiv: " + excludedCreatureIds.size() + ".");
-        }
-    }
-
-    void clearConstraints() {
-        if (lockedCreatures.isEmpty() && excludedCreatureIds.isEmpty()) {
-            status.set("Keine Generator-Constraints aktiv.");
-            return;
-        }
-        lockedCreatures.clear();
-        excludedCreatureIds.clear();
-        pendingUndo = null;
-        status.set("Generator-Constraints geloescht.");
         refreshBuilderState(lastSettings, "");
     }
 
@@ -579,6 +592,17 @@ public final class EncounterStateViewModel {
         builderState.set(builderState(settings, message));
     }
 
+    private void refreshSavedPlans(String message) {
+        SavedEncounterPlanListResult result = savedEncounters.listPlans(new ListSavedEncounterPlansQuery());
+        savedPlans.clear();
+        if (result.status() == SavedEncounterPlanStatus.SUCCESS) {
+            savedPlans.addAll(result.plans());
+        } else if (!result.message().isBlank()) {
+            status.set(result.message());
+        }
+        refreshBuilderState(lastSettings, message);
+    }
+
     private BuilderState builderState(BuilderSettings settings, String message) {
         EncounterBudgetSummary currentBudget = budget;
         int adjustedXp = generatedAdjustedXp > 0 ? generatedAdjustedXp : roster.stream().mapToInt(EncounterCreature::totalXp).sum();
@@ -596,31 +620,21 @@ public final class EncounterStateViewModel {
                 List.copyOf(roster),
                 titleLabel(),
                 difficulty,
+                List.copyOf(savedPlans),
                 settings == null ? BuilderSettings.defaultSettings() : settings,
                 !roster.isEmpty() && !activeParty.isEmpty(),
                 generatedAlternatives.size() > 1,
                 generatedAlternatives.size() > 1,
-                !activeParty.isEmpty(),
                 !roster.isEmpty(),
-                !roster.isEmpty(),
-                !lockedCreatures.isEmpty() || !excludedCreatureIds.isEmpty(),
-                constraintsLabel(),
                 pendingUndo,
                 message == null ? "" : message);
     }
 
-    private String constraintsLabel() {
-        if (lockedCreatures.isEmpty() && excludedCreatureIds.isEmpty()) {
-            return "";
+    private String saveName() {
+        if (!generatedTitle.isBlank()) {
+            return generatedTitle;
         }
-        List<String> labels = new ArrayList<>();
-        if (!lockedCreatures.isEmpty()) {
-            labels.add("Locks " + lockedCreatures.size());
-        }
-        if (!excludedCreatureIds.isEmpty()) {
-            labels.add("Excluded " + excludedCreatureIds.size());
-        }
-        return String.join(" | ", labels);
+        return roster.isEmpty() ? "Encounter" : "Manuelles Encounter";
     }
 
     private String titleLabel() {
@@ -866,23 +880,20 @@ public final class EncounterStateViewModel {
             List<EncounterCreature> roster,
             String templateLabel,
             DifficultySummary difficulty,
+            List<SavedEncounterPlanSummary> savedPlans,
             BuilderSettings settings,
             boolean canStartCombat,
             boolean canPreviousAlternative,
             boolean canNextAlternative,
-            boolean canReroll,
-            boolean canLockCurrent,
-            boolean canExcludeCurrent,
-            boolean canClearConstraints,
-            String constraintsLabel,
+            boolean canSavePlan,
             @Nullable RemovedRosterEntry pendingUndo,
             String message
     ) {
         public BuilderState {
             party = party == null ? List.of() : List.copyOf(party);
             roster = roster == null ? List.of() : List.copyOf(roster);
+            savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
             templateLabel = templateLabel == null ? "" : templateLabel;
-            constraintsLabel = constraintsLabel == null ? "" : constraintsLabel;
             message = message == null ? "" : message;
         }
     }

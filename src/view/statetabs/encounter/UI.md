@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
+Last Reviewed: 2026-04-23
 Source of Truth: Encounter runtime state-pane dialog composition,
 interactions, and visible states.
 
@@ -16,6 +16,7 @@ The dialog visually mirrors the original Salt-Marcher encounter state-pane
 workflow in one local state-tab surface:
 
 - encounter creation
+- saved encounter open/save
 - initiative entry
 - combat tracking
 - combat result resolution
@@ -31,7 +32,8 @@ Current state:
 
 - `Creation` shows the original compact encounter roster dialog: title row,
   difficulty and party summary, difficulty meter, thresholds, adjusted XP,
-  generator controls, roster cards, and generate/start actions.
+  roster cards, saved-plan actions, previous/next alternative controls, and
+  generate/start actions.
 - `Initiative` shows one editable initiative row for each party member and
   encounter creature.
 - `Combat` shows round status, combat cards, HP bars, AC and initiative badges,
@@ -53,13 +55,12 @@ creature details through the creature application service.
   the generator for that request and reported in the generation status line.
   When catalog encounter tables are selected, generation uses those table IDs
   instead of the type, subtype, and biome candidate source.
-- Previous and next controls switch among the currently generated alternatives.
-- `Reroll` regenerates alternatives from the latest catalog filters and active
-  difficulty.
-- `Lock` stores the current roster as generator locks for following rerolls.
-- `Exclude` adds the current creature IDs to generator exclusions, clears active
-  locks, and rerolls immediately.
-- `Clear` removes active generator locks and exclusions.
+- Previous and next controls sit in the generator action row and switch among
+  the currently generated alternatives.
+- `Speichern` stores the current roster as a saved encounter plan.
+- `Oeffnen` shows saved encounter plans from the title row. Selecting one
+  replaces the builder roster, returns to Creation mode, and clears generated
+  alternatives, initiative, combat, and result state.
 - Catalog `+Add` actions append the selected creature to the runtime roster in
   creation mode and add the selected creature as a reinforcement in active
   combat.
@@ -90,8 +91,8 @@ creature details through the creature application service.
   creature cards are visible.
 - Auto-resolved generation: the status line includes the resolved target and
   tuning summary; fallback generation adds a fallback note.
-- Active generator constraints: a compact Locks/Excluded summary is visible in
-  the creation summary row.
+- Saved plan available: the title-row open action is enabled and shows the
+  saved plan name, generated label, and creature count.
 - Encounter-table loot conflict: the Catalog controls show `Loot-Konflikt`;
   combat start remains available because loot assignment is not part of this
   runtime surface.

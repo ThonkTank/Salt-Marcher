@@ -242,10 +242,10 @@ Current roles:
 - `creatures`: `Context Role: Reference Catalog Context`. Exports imported
   creature catalog lookup language and reference profiles. It does not own
   encounter ranking, choice, or creature lifecycle truth.
-- `encounter`: `Context Role: Generation Policy Context`. Consumes party and
-  creatures plus encounter-table reference data through their application
-  services and published language, then owns runtime encounter-generation
-  policy.
+- `encounter`: `Context Role: Roster Truth Context`. Owns saved
+  encounter-plan roster truth, while also consuming party, creatures, and
+  encounter-table reference data through their application services and
+  published language for runtime encounter-generation policy.
 - `encountertable`: `Context Role: Reference Catalog Context`. Publishes
   authored encounter-table membership as read-only generator input without
   owning creature truth, table mutation policy, or encounter-generation policy.
@@ -268,9 +268,9 @@ published language, not through private model imports.
 - `creatures`: Reference Catalog Context. Publishes imported creature catalog
   lookup facts and encounter-candidate reference profiles to downstream policy
   contexts.
-- `encounter`: Generation Policy Context. Consumes `party`, `creatures`, and
+- `encounter`: Roster Truth Context. Consumes `party`, `creatures`, and
   `encountertable` through their root application services and `published/`
-  carriers, then owns generation policy.
+  carriers for generation, and owns saved encounter-plan roster truth.
 - `encountertable`: Reference Catalog Context. Consumes creature persistence
   snapshots through its data source adapter, then publishes table summaries and
   weighted candidate rows through its root application service.

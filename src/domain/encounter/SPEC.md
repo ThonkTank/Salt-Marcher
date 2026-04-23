@@ -1,8 +1,8 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
-Source of Truth: User-facing behavior and acceptance criteria for the encounter
-feature.
+Last Reviewed: 2026-04-23
+Source of Truth: User-facing behavior and acceptance criteria for the
+encounter feature.
 
 # Encounter Feature Spec
 
@@ -14,26 +14,30 @@ Provide a runtime encounter builder that:
 - generates several encounter alternatives for one requested or automatically
   resolved difficulty band
 - explains why an alternative fits the target
-- supports iterative rerolling through lock and exclude controls
+- lets catalog creature rows build a manual encounter roster
+- saves and opens created encounter rosters as persistent encounter plans
 - can use selected encounter tables as curated generator sources
 
 ## Non-Goals
 
-- authored encounter persistence
+- saving initiative, combat HP, defeated state, XP-result state, or loot-result
+  state as part of an encounter plan
 - room-aware dungeon population
 - feature-specific bootstrap wiring
 
 ## Primary User Flow
 
-1. The user opens the encounter state tab when the active
-   left-bar tab is not claiming the state pane.
-2. The state tab reads the active party and current creature
-   filter options.
+1. The user opens the encounter state tab when the active left-bar tab is not
+   claiming the state pane.
+2. The state tab reads the active party and current creature filter options.
 3. The user selects Auto or an explicit difficulty and optional type, subtype,
    biome filters, tuning controls, or encounter tables.
-4. The user generates encounter alternatives.
-5. The user inspects a selected alternative, then rerolls, locks, or excludes
-   as needed.
+4. The user generates encounter alternatives or manually adds catalog
+   creatures.
+5. The user switches among generated alternatives with previous/next controls.
+6. The user saves the current roster as an encounter plan, or opens a saved
+   plan into the builder.
+7. The user starts initiative and combat from the current builder roster.
 
 ## Expected Capabilities
 
@@ -59,24 +63,26 @@ Provide a runtime encounter builder that:
 - expose creature composition, role hints, and generator highlights
 - allow catalog creature rows to be added directly to the current encounter
   roster as runtime derived state
-- let the user lock the current composition and reroll around it
-- let the user exclude the current composition and reroll away from it
-- let the user clear active lock and exclusion constraints without restarting
-  the shell
+- save the current roster as a persistent encounter plan
+- list saved encounter plans from the encounter title row
+- open a saved encounter plan into Creation mode and clear initiative, combat,
+  result, and generated-alternative runtime state
 
 ## Acceptance Criteria
 
-- the encounter feature depends only on public party and creature APIs
-- generated encounters remain derived runtime output, not write-model state
+- the encounter feature depends only on public party, creature, and
+  encounter-table APIs for generation
+- saved encounter plans persist only creature identity, quantity, display name,
+  and generated label; creature statblocks remain creature-owned
+- generated alternatives remain derived runtime output until explicitly saved
 - a party with no active members yields a clear empty-state message
 - generator output includes adjusted XP and a difficulty-band label
 - Auto generation exposes the resolved difficulty and tuning through result
   diagnostics without changing the generated encounter roster ownership model
 - a non-empty candidate pool that cannot produce a composition yields
   `NO_SOLUTION`; an empty candidate pool remains `NO_CREATURES`
-- lock and exclude actions change subsequent rerolls without requiring shell
-  restarts
-- excluding the current composition immediately regenerates alternatives using
-  the current filter and difficulty selections
+- previous and next actions switch generated alternatives in place
 - selecting encounter tables limits generated candidates to those tables and
   ignores type, subtype, and biome filters for that generation run
+- opening a saved plan replaces the builder roster and returns the state tab to
+  Creation mode

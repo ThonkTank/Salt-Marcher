@@ -1,18 +1,20 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
-Source of Truth: Encounter feature ownership, runtime truth model, and domain
-invariants.
+Last Reviewed: 2026-04-23
+Source of Truth: Encounter feature ownership, saved-plan write model, runtime
+generation policy, and domain invariants.
 
 # Encounter Domain Model
 
 ## Context Role
 
-Context Role: Generation Policy Context
+Context Role: Roster Truth Context
 Context Name: Encounter
 
-- `encounter` is a runtime composition feature.
-- It does not own party truth or creature truth.
+- `encounter` owns saved encounter-plan roster truth.
+- It also owns runtime encounter-generation policy for creating suggested
+  rosters from the active party, creature catalog, and encounter tables.
+- It does not own party truth, creature truth, or encounter-table membership.
 - It consumes foreign application services only:
   - `src.domain.party.PartyApplicationService`
   - `src.domain.creatures.CreaturesApplicationService`
@@ -21,42 +23,54 @@ Context Name: Encounter
 ## Published Language
 
 `published/` owns public generation and budget-load commands, difficulty
-bands, generator tuning, locks, budget summaries, generated encounter results,
-encounter creature entries, and generation status vocabulary.
+bands, generator tuning, budget summaries, generated encounter results,
+encounter creature entries, saved encounter-plan commands and queries, saved
+plan summaries, and status vocabulary.
+
 `EncounterDifficultyBand.AUTO` and Auto tuning sentinels are public request
 language only. The application boundary resolves them into concrete generation
 values before invoking draft construction.
 
-The generation model must not depend on any `src.domain.*.published.*`
-carriers as invariant inputs. The application boundary translates public
-commands and foreign published results into generation values before invoking
-policies and factories.
+Saved encounter plans publish only creature identity, quantity, display name,
+and generated label. Creature details remain owned by the creatures context and
+are reloaded when a saved plan is opened.
+
+The generation and plan models must not depend on any
+`src.domain.*.published.*` carriers as invariant inputs. The application
+boundary translates public commands and foreign published results into
+encounter application values before invoking policies, factories, or plan
+ports.
 
 ## Application Boundary
 
 `application/` coordinates foreign party, creature, and encounter-table
 application services, loads public inputs, translates foreign `published/`
-results into encounter application values, and delegates generation work. The
-root application service maps generated results into encounter `published/`
-carriers.
+results into encounter application values, and delegates generation or
+saved-plan work. The root application service maps generated results and saved
+plans into encounter `published/` carriers.
+
 `EncounterGenerationUseCase` remains orchestration and foreign-service
-coordination only.
-`LoadEncounterBudgetUseCase` exposes party-derived encounter thresholds without
-constructing a generated encounter.
+coordination only. `LoadEncounterBudgetUseCase` exposes party-derived
+encounter thresholds without constructing a generated encounter.
 `LoadEncounterTuningPreviewQuery` exposes read-only slider preview labels for
-the catalog controls. It derives party-specific difficulty XP ranges and
-static tuning label text, but does not create or mutate encounter state.
+the catalog controls.
+
+Saved-plan use cases own save, list, and load orchestration through the
+`EncounterPlanRepository` outbound port. Data adapters persist plan rows and
+creature rows; the domain model keeps the saved roster invariant independent of
+SQLite shape.
 
 ## Architecture Status
 
 Current state:
 
-- `encounter` is a policy-owning bounded context. It owns balancing,
-  candidate narrowing, locking rules, and ranking behavior for generated
-  encounters.
-- `application/` now owns orchestration and foreign-service coordination,
-  while the `generation/` domain module owns stateless balancing, targeting,
-  ranking, and role/tag heuristics for encounter generation.
+- `encounter` owns saved encounter-plan roster truth.
+- `encounter` owns balancing, candidate narrowing, and ranking behavior for
+  generated encounters.
+- `application/` owns orchestration and foreign-service coordination.
+- `generation/` owns stateless balancing, targeting, ranking, and role/tag
+  heuristics.
+- `plan/` owns the saved encounter-plan aggregate and outbound port.
 
 Target state:
 
@@ -65,12 +79,20 @@ Target state:
 - named balancing, targeting, ranking, role, and tag rules live in
   `generation/policy/`
 - deterministic draft construction lives in `generation/factory/`
+- saved encounter-plan roster truth stays in `plan/aggregate/` and
+  `plan/value/`
 
 ## Write Model And Derived State
 
-Write Model: None
+Write Model: Saved Encounter Plans
 
-The encounter feature does not persist authored write-model state in v1.
+The encounter write model persists accepted encounter rosters as saved plans.
+Each saved plan owns:
+
+- stable plan identity
+- user-visible plan name
+- optional generated encounter label
+- ordered creature identity and quantity rows
 
 It derives:
 
@@ -85,46 +107,39 @@ It derives:
 - party-derived budget summaries for the active runtime session
 - party-derived tuning preview labels for catalog encounter controls
 
-Generated encounters are ephemeral derived state. They may be locked or
-excluded inside the state tab, but those controls remain local presentation
-or session state unless a future aggregate is introduced.
+Generated alternatives remain ephemeral derived state until the user saves the
+current roster as an encounter plan.
 
 ## Aggregate Model
 
-Write Model: None
+Aggregate Root: EncounterPlan
 
-The v1 encounter context has no persisted aggregate root. Its policy boundary
-is the `generation/` module.
+`EncounterPlan` owns the saved encounter roster. It stores only encounter-plan
+identity, display labels, and creature quantities. It does not embed creature
+statblocks, party members, initiative, combat HP, loot resolution, or dungeon
+room placement.
 
-- `generation/value/` owns immutable generation facts: drafts, entries,
-  metrics, candidate profiles, composition values, difficulty intent, tuning
-  intent, and XP profiles.
-- `generation/policy/` owns stateless rule sets for difficulty math, XP
-  targets, generator tuning targets, candidate narrowing, draft
-  ranking/scoring, role classification, and tag derivation.
-- `generation/factory/` owns deterministic creation of candidate profiles and
-  encounter drafts from already translated generation facts.
+- `plan/aggregate/EncounterPlan` owns plan identity and roster membership.
+- `plan/value/EncounterPlanCreature` owns one creature-id and quantity pair.
+- `plan/value/EncounterPlanSummary` owns list-screen summary language.
+- `plan/port/EncounterPlanRepository` is the outbound persistence port.
 
-## Ephemeral Policy Rationale
-
-Encounter generation owns rule-bearing runtime decisions, but v1 does not need
-an authored encounter write model because generated encounters are suggestions
-inside the active runtime session. If locks, exclusions, encounter plans, or
-accepted encounters become persisted authored truth, this context must introduce
-a real aggregate root before those mutations are stored.
+`generation/value/`, `generation/policy/`, and `generation/factory/` remain
+stateless policy modules used to construct candidate rosters before a saved
+plan exists.
 
 ## Commands And Invariants
 
-Commands entering the policy model are:
+Commands entering the model are:
 
 - generate encounter
-- apply locked creature inputs
-- exclude runtime candidates
-- rank generated alternatives
+- save current encounter plan
+- list saved encounter plans
+- load saved encounter plan
 
 Core invariants:
 
-- the active party is the balancing baseline
+- the active party is the balancing baseline for generation
 - encounter math is computed from public party data, not duplicated persistence
 - selected encounter tables replace creature filter sourcing for that
   generation pass
@@ -134,14 +149,20 @@ Core invariants:
   empty candidate pool
 - foreign feature internals remain hidden behind their API boundaries
 - generator ranking must be deterministic for the same inputs
-- locked creatures remain mandatory inputs until cleared by the user
+- a saved plan must contain at least one creature
+- saved plans store creature identity and quantity, not creature truth
 
 ## Consistency Model
 
-Encounter generation reads party and creature context snapshots through public
-application-service boundaries. It does not save party or creature state, and it
-does not persist generated encounter state in v1. Runtime locks and exclusions
-are session-local controls over the next generation command.
+Encounter generation reads party, creature, and encounter-table snapshots
+through public application-service boundaries. It does not save party,
+creature, or encounter-table state.
+
+Saved encounter plans are persisted through the encounter-owned
+`EncounterPlanRepository` port. Opening a plan rebuilds the runtime roster from
+the saved creature identities and current creature details; initiative, combat,
+result, and generator-alternative state are cleared because they are session
+runtime state.
 
 ## Ubiquitous Language
 
@@ -149,8 +170,9 @@ are session-local controls over the next generation command.
 - `EncounterDifficultyTargets`: policy thresholds for the active party.
 - `EncounterDraft`: candidate generated encounter before export.
 - `EncounterCandidateProfile`: creature candidate enriched for generation.
-- `EncounterLock`: runtime mandatory creature input.
 - `GeneratedEncounter`: exported generated encounter suggestion.
+- `EncounterPlan`: saved encounter roster aggregate.
+- `SavedEncounterPlan`: published saved-plan snapshot.
 
 ## Domain Policies
 
@@ -169,9 +191,12 @@ are session-local controls over the next generation command.
   truth
 - the feature may enrich final suggestions with creature-detail tags without
   changing creature ownership
+- saved plans preserve roster composition only; combat state is never saved as
+  plan truth
 
 ## References
 
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/encounter/SPEC.md:1)
+- [Encounter Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/encounter/PERSISTENCE.md:1)
 - [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/statetabs/encounter/UI.md:1)

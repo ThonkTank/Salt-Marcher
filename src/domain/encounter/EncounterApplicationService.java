@@ -7,9 +7,16 @@ import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encounter.application.EncounterGenerationUseCase;
+import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
+import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
+import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.plan.aggregate.EncounterPlan;
+import src.domain.encounter.plan.port.EncounterPlanRepository;
+import src.domain.encounter.plan.value.EncounterPlanCreature;
+import src.domain.encounter.plan.value.EncounterPlanSummary;
 import src.domain.encounter.published.EncounterBudgetResult;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterCreature;
@@ -26,8 +33,17 @@ import src.domain.encounter.published.EncounterTuningPreviewLabels;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
 import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.published.GenerateEncounterCommand;
+import src.domain.encounter.published.ListSavedEncounterPlansQuery;
 import src.domain.encounter.published.LoadEncounterBudgetQuery;
 import src.domain.encounter.published.LoadEncounterTuningPreviewQuery;
+import src.domain.encounter.published.LoadSavedEncounterPlanQuery;
+import src.domain.encounter.published.SaveEncounterPlanCommand;
+import src.domain.encounter.published.SavedEncounterPlan;
+import src.domain.encounter.published.SavedEncounterPlanCreature;
+import src.domain.encounter.published.SavedEncounterPlanListResult;
+import src.domain.encounter.published.SavedEncounterPlanResult;
+import src.domain.encounter.published.SavedEncounterPlanStatus;
+import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.party.PartyApplicationService;
 
@@ -38,8 +54,9 @@ import src.domain.party.PartyApplicationService;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public final class EncounterApplicationService {
 
-    private final EncounterGenerationUseCase generator;
-    private final LoadEncounterBudgetUseCase loadBudgetUseCase;
+    private final @Nullable EncounterGenerationUseCase generator;
+    private final @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase;
+    private final @Nullable SavedPlanOperations savedPlanOperations;
 
     public EncounterApplicationService(PartyApplicationService party, CreaturesApplicationService creatures) {
         this(party, creatures, null);
@@ -56,10 +73,21 @@ public final class EncounterApplicationService {
                 Objects.requireNonNull(creatures, "creatures"),
                 encounterTables);
         this.loadBudgetUseCase = new LoadEncounterBudgetUseCase(partyService);
+        this.savedPlanOperations = null;
+    }
+
+    public EncounterApplicationService(EncounterPlanRepository encounterPlans) {
+        EncounterPlanRepository repository = Objects.requireNonNull(encounterPlans, "encounterPlans");
+        this.generator = null;
+        this.loadBudgetUseCase = null;
+        this.savedPlanOperations = new SavedPlanOperations(repository);
     }
 
     public EncounterBudgetResult loadBudget(LoadEncounterBudgetQuery query) {
         Objects.requireNonNull(query, "query");
+        if (loadBudgetUseCase == null) {
+            return new EncounterBudgetResult(EncounterGenerationStatus.STORAGE_ERROR, null, "Encounter budget service is not registered.");
+        }
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
             return new EncounterBudgetResult(
@@ -73,6 +101,12 @@ public final class EncounterApplicationService {
 
     public EncounterTuningPreviewResult loadTuningPreview(LoadEncounterTuningPreviewQuery query) {
         Objects.requireNonNull(query, "query");
+        if (loadBudgetUseCase == null) {
+            return new EncounterTuningPreviewResult(
+                    EncounterGenerationStatus.STORAGE_ERROR,
+                    tuningPreviewLabels(null),
+                    "Encounter tuning preview service is not registered.");
+        }
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
             EncounterBudgetSummary budget = toPublishedBudget(result.budget());
@@ -89,6 +123,13 @@ public final class EncounterApplicationService {
     }
 
     public EncounterGenerationResult generate(GenerateEncounterCommand request) {
+        if (generator == null) {
+            return new EncounterGenerationResult(
+                    EncounterGenerationStatus.STORAGE_ERROR,
+                    null,
+                    List.of(),
+                    "Encounter generator service is not registered.");
+        }
         try {
             EncounterGenerationUseCase.GenerateResult result = generator.execute(toGenerateRequest(request));
             return new EncounterGenerationResult(
@@ -101,6 +142,40 @@ public final class EncounterApplicationService {
         } catch (RuntimeException exception) {
             return new EncounterGenerationResult(EncounterGenerationStatus.defaultFailure(), null, List.of(), "Encounter generation failed.");
         }
+    }
+
+    public SavedEncounterPlanResult savePlan(SaveEncounterPlanCommand command) {
+        SavedPlanOperations operations = savedPlanOperations;
+        if (operations == null) {
+            return new SavedEncounterPlanResult(
+                    SavedEncounterPlanStatus.STORAGE_ERROR,
+                    null,
+                    "Encounter plan storage is not registered.");
+        }
+        return operations.save(command);
+    }
+
+    public SavedEncounterPlanResult loadPlan(LoadSavedEncounterPlanQuery query) {
+        SavedPlanOperations operations = savedPlanOperations;
+        if (operations == null) {
+            return new SavedEncounterPlanResult(
+                    SavedEncounterPlanStatus.STORAGE_ERROR,
+                    null,
+                    "Encounter plan storage is not registered.");
+        }
+        return operations.load(query);
+    }
+
+    public SavedEncounterPlanListResult listPlans(ListSavedEncounterPlansQuery query) {
+        Objects.requireNonNull(query, "query");
+        SavedPlanOperations operations = savedPlanOperations;
+        if (operations == null) {
+            return new SavedEncounterPlanListResult(
+                    SavedEncounterPlanStatus.STORAGE_ERROR,
+                    List.of(),
+                    "Encounter plan storage is not registered.");
+        }
+        return operations.list();
     }
 
     private static EncounterGenerationUseCase.GenerateRequest toGenerateRequest(GenerateEncounterCommand request) {
@@ -362,5 +437,112 @@ public final class EncounterApplicationService {
             case NO_ACTIVE_PARTY -> EncounterGenerationStatus.NO_ACTIVE_PARTY;
             case STORAGE_ERROR -> EncounterGenerationStatus.STORAGE_ERROR;
         };
+    }
+
+    private static final class SavedPlanOperations {
+
+        private final SaveEncounterPlanUseCase saveUseCase;
+        private final LoadSavedEncounterPlanUseCase loadUseCase;
+        private final ListSavedEncounterPlansUseCase listUseCase;
+
+        private SavedPlanOperations(EncounterPlanRepository repository) {
+            this.saveUseCase = new SaveEncounterPlanUseCase(repository);
+            this.loadUseCase = new LoadSavedEncounterPlanUseCase(repository);
+            this.listUseCase = new ListSavedEncounterPlansUseCase(repository);
+        }
+
+        private SavedEncounterPlanResult save(SaveEncounterPlanCommand command) {
+            SaveEncounterPlanCommand effective = command == null
+                    ? new SaveEncounterPlanCommand(null, "", "", List.of())
+                    : command;
+            if (effective.creatures().isEmpty()) {
+                return new SavedEncounterPlanResult(
+                        SavedEncounterPlanStatus.INVALID_REQUEST,
+                        null,
+                        "Encounter plan needs at least one creature.");
+            }
+            try {
+                EncounterPlan saved = saveUseCase.execute(
+                        Math.max(0L, effective.planId() == null ? 0L : effective.planId()),
+                        effective.name(),
+                        effective.generatedLabel(),
+                        effective.creatures().stream()
+                                .filter(Objects::nonNull)
+                                .map(SavedPlanOperations::toPlanCreature)
+                                .toList());
+                return new SavedEncounterPlanResult(
+                        SavedEncounterPlanStatus.SUCCESS,
+                        toPublishedPlan(saved),
+                        "Encounter saved.");
+            } catch (IllegalArgumentException exception) {
+                return new SavedEncounterPlanResult(
+                        SavedEncounterPlanStatus.INVALID_REQUEST,
+                        null,
+                        "Encounter plan is invalid.");
+            } catch (RuntimeException exception) {
+                return new SavedEncounterPlanResult(
+                        SavedEncounterPlanStatus.STORAGE_ERROR,
+                        null,
+                        "Encounter plan could not be saved.");
+            }
+        }
+
+        private SavedEncounterPlanResult load(LoadSavedEncounterPlanQuery query) {
+            long planId = query == null ? 0L : query.planId();
+            try {
+                return loadUseCase.execute(planId)
+                        .map(plan -> new SavedEncounterPlanResult(
+                                SavedEncounterPlanStatus.SUCCESS,
+                                toPublishedPlan(plan),
+                                "Encounter loaded."))
+                        .orElseGet(() -> new SavedEncounterPlanResult(
+                                SavedEncounterPlanStatus.NOT_FOUND,
+                                null,
+                                "Encounter plan not found."));
+            } catch (RuntimeException exception) {
+                return new SavedEncounterPlanResult(
+                        SavedEncounterPlanStatus.STORAGE_ERROR,
+                        null,
+                        "Encounter plan could not be loaded.");
+            }
+        }
+
+        private SavedEncounterPlanListResult list() {
+            try {
+                return new SavedEncounterPlanListResult(
+                        SavedEncounterPlanStatus.SUCCESS,
+                        listUseCase.execute().stream().map(SavedPlanOperations::toPublishedSummary).toList(),
+                        "");
+            } catch (RuntimeException exception) {
+                return new SavedEncounterPlanListResult(
+                        SavedEncounterPlanStatus.STORAGE_ERROR,
+                        List.of(),
+                        "Encounter plans could not be loaded.");
+            }
+        }
+
+        private static EncounterPlanCreature toPlanCreature(SavedEncounterPlanCreature creature) {
+            return new EncounterPlanCreature(creature.creatureId(), creature.quantity());
+        }
+
+        private static SavedEncounterPlan toPublishedPlan(EncounterPlan plan) {
+            return new SavedEncounterPlan(
+                    plan.id(),
+                    plan.name(),
+                    plan.generatedLabel(),
+                    plan.creatures().stream()
+                            .map(creature -> new SavedEncounterPlanCreature(
+                                    creature.creatureId(),
+                                    creature.quantity()))
+                            .toList());
+        }
+
+        private static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
+            return new SavedEncounterPlanSummary(
+                    summary.id(),
+                    summary.name(),
+                    summary.generatedLabel(),
+                    summary.creatureCount());
+        }
     }
 }

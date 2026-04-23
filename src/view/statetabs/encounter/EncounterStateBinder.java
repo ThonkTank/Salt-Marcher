@@ -32,11 +32,12 @@ final class EncounterStateBinder {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterTableApplicationService encounterTables =
                 runtimeContext.services().require(EncounterTableApplicationService.class);
+        EncounterApplicationService savedEncounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterApplicationService encounters = new EncounterApplicationService(party, creatures, encounterTables);
         EncounterRuntimeViewModel encounterSession = runtimeContext.session(
                 EncounterRuntimeViewModel.class,
                 EncounterRuntimeViewModel::new);
-        EncounterStateViewModel viewModel = new EncounterStateViewModel(encounters, creatures, party);
+        EncounterStateViewModel viewModel = new EncounterStateViewModel(encounters, savedEncounters, creatures, party);
         EncounterStateView state = new EncounterStateView();
         state.statusTextProperty().bind(viewModel.statusProperty());
         wireActions(runtimeContext.inspector(), creatures, state, viewModel, encounterSession);
@@ -66,28 +67,8 @@ final class EncounterStateBinder {
         });
         state.setOnPreviousAlternative(() -> viewModel.shiftGeneratedAlternative(-1));
         state.setOnNextAlternative(() -> viewModel.shiftGeneratedAlternative(1));
-        state.setOnReroll(() -> {
-            EncounterRuntimeViewModel.EncounterFilters filters = encounterSession.filters();
-            viewModel.reroll(
-                    filters.types(),
-                    filters.subtypes(),
-                    filters.biomes(),
-                    encounterSession.difficulty(),
-                    encounterSession.tuning(),
-                    encounterSession.encounterTableIds());
-        });
-        state.setOnLockCurrent(viewModel::lockCurrentRoster);
-        state.setOnExcludeCurrent(() -> {
-            EncounterRuntimeViewModel.EncounterFilters filters = encounterSession.filters();
-            viewModel.excludeCurrentRoster(
-                    filters.types(),
-                    filters.subtypes(),
-                    filters.biomes(),
-                    encounterSession.difficulty(),
-                    encounterSession.tuning(),
-                    encounterSession.encounterTableIds());
-        });
-        state.setOnClearConstraints(viewModel::clearConstraints);
+        state.setOnSaveEncounter(viewModel::saveCurrentPlan);
+        state.setOnOpenSavedEncounter(viewModel::openSavedPlan);
         state.setOnRosterIncrement(viewModel::incrementCreature);
         state.setOnRosterDecrement(viewModel::decrementCreature);
         state.setOnRosterRemove(viewModel::removeCreature);
@@ -171,6 +152,13 @@ final class EncounterStateBinder {
                         difficulty.deadly(),
                         difficulty.adjustedXp(),
                         difficulty.difficulty()),
+                source.savedPlans().stream()
+                        .map(plan -> new EncounterStateView.SavedEncounterPlanView(
+                                plan.id(),
+                                plan.name(),
+                                plan.generatedLabel(),
+                                plan.creatureCount()))
+                        .toList(),
                 new EncounterStateView.BuilderSettingsInput(
                         settings.difficultyLabel(),
                         settings.balanceLevel(),
@@ -190,11 +178,7 @@ final class EncounterStateBinder {
                 source.canStartCombat(),
                 source.canPreviousAlternative(),
                 source.canNextAlternative(),
-                source.canReroll(),
-                source.canLockCurrent(),
-                source.canExcludeCurrent(),
-                source.canClearConstraints(),
-                source.constraintsLabel(),
+                source.canSavePlan(),
                 source.pendingUndo() == null
                         ? null
                         : new EncounterStateView.UndoRemoveView(

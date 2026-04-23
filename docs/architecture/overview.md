@@ -71,10 +71,10 @@ documents live next to the feature code they describe.
 - `creatures`: Reference Catalog Context. Exports imported creature catalog
   lookup language, detail records, filters, and encounter-candidate reference
   profiles. It does not own encounter balancing or creature lifecycle truth.
-- `encounter`: Generation Policy Context. Consumes `party` and `creatures`
-  plus encounter-table reference data through their application services and
-  published language, then owns runtime encounter generation, candidate
-  narrowing, ranking, locks, and composition policy.
+- `encounter`: Roster Truth Context. Consumes `party` and `creatures` plus
+  encounter-table reference data through their application services and
+  published language for runtime encounter generation, and owns saved
+  encounter-plan roster truth.
 - `encountertable`: Reference Catalog Context. Publishes read-only
   encounter-table summaries and weighted candidate rows for generator input
   without owning creature truth or encounter-generation policy.
