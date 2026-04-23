@@ -144,6 +144,7 @@
               NOT type.name CONTAINS '$'
               AND NOT (
                 (type.fqn =~ 'src\\.view\\.slotcontent\\..*' AND type.name ENDS WITH 'View')
+                OR (type.fqn =~ 'src\\.view\\.primitives\\..*' AND type.name ENDS WITH 'View')
                 OR (type.fqn =~ 'src\\.view\\.leftbartabs\\.[^.]+\\..*'
                   AND (type.name ENDS WITH 'ControlsView'
                     OR type.name ENDS WITH 'MainView'
@@ -155,7 +156,7 @@
               )
             RETURN DISTINCT
               type.relativePath AS Source,
-              'area-specific passive view suffix: leftbartabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, statetabs use *StateView, slotcontent uses *View' AS ExpectedDirection,
+              'area-specific passive view suffix: leftbartabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, statetabs use *StateView, slotcontent and primitives use *View' AS ExpectedDirection,
               type.fqn AS ActualDirection,
               'Passive view names must identify the shell surface they render.' AS Details
             ORDER BY Source

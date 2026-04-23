@@ -46,6 +46,7 @@ public class DungeonMapMainView extends BorderPane {
     private Function<DungeonMapPointerEvent, Boolean> primaryPressedHandler = ignored -> false;
     private Consumer<DungeonMapPointerEvent> primaryDraggedHandler = ignored -> {};
     private Consumer<DungeonMapPointerEvent> primaryReleasedHandler = ignored -> {};
+    private Consumer<DungeonMapPointerEvent> pointerMovedHandler = ignored -> {};
     private Consumer<Integer> levelScrolledHandler = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
@@ -82,6 +83,10 @@ public class DungeonMapMainView extends BorderPane {
 
     public final void onPrimaryReleased(Consumer<DungeonMapPointerEvent> action) {
         primaryReleasedHandler = action == null ? ignored -> {} : action;
+    }
+
+    public final void onPointerMoved(Consumer<DungeonMapPointerEvent> action) {
+        pointerMovedHandler = action == null ? ignored -> {} : action;
     }
 
     public final void onLevelScrolled(Consumer<Integer> action) {
@@ -126,6 +131,7 @@ public class DungeonMapMainView extends BorderPane {
     private void installInteractionHandlers() {
         canvasLayer.addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleMousePressed);
         canvasLayer.addEventFilter(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragged);
+        canvasLayer.addEventFilter(MouseEvent.MOUSE_MOVED, this::handleMouseMoved);
         canvasLayer.addEventFilter(MouseEvent.MOUSE_RELEASED, this::handleMouseReleased);
         canvasLayer.addEventFilter(ScrollEvent.SCROLL, this::handleScroll);
     }
@@ -161,6 +167,12 @@ public class DungeonMapMainView extends BorderPane {
         lastDragSceneY = event.getSceneY();
         cameraChanged();
         event.consume();
+    }
+
+    private void handleMouseMoved(MouseEvent event) {
+        if (!middleDragActive && !primaryInteractionActive) {
+            pointerMovedHandler.accept(pointerEvent(event, false, false));
+        }
     }
 
     private void handleMouseReleased(MouseEvent event) {

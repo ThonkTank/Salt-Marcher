@@ -37,6 +37,7 @@ final class DungeonEditorBinder {
         main.onPrimaryPressed(event -> viewModel.primaryPressed(toPointerInput(event)));
         main.onPrimaryDragged(event -> viewModel.primaryDragged(toPointerInput(event)));
         main.onPrimaryReleased(event -> viewModel.primaryReleased(toPointerInput(event)));
+        main.onPointerMoved(event -> viewModel.pointerMoved(toPointerInput(event)));
         main.onLevelScrolled(viewModel::levelScrolled);
         state.stateTextProperty().bind(viewModel.stateProperty());
         state.setOnSaveRoomNarration(edit -> viewModel.saveRoomNarration(

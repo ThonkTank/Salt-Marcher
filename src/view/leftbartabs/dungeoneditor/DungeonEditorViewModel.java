@@ -315,6 +315,9 @@ public final class DungeonEditorViewModel {
         if (!interactionEnabled() || input == null || !input.primaryButtonDown()) {
             return;
         }
+        if (updateBoundaryPreview(input)) {
+            return;
+        }
         if (paintInteraction.drag(input, selectedTool.get())) {
             pendingTopologyEdit.set(paintInteraction.preview());
             refreshStateText();
@@ -332,6 +335,13 @@ public final class DungeonEditorViewModel {
             showPendingMovePreview(dragSession);
         }
         refreshStateText();
+    }
+
+    public void pointerMoved(@Nullable PointerInput input) {
+        if (!interactionEnabled() || input == null) {
+            return;
+        }
+        updateBoundaryPreview(input);
     }
 
     public void primaryReleased(@Nullable PointerInput input) {
@@ -479,6 +489,15 @@ public final class DungeonEditorViewModel {
                     + " (" + boundaryEdges.edges().size() + ")";
         }
         return "Topologie-Preview: aktiv";
+    }
+
+    private boolean updateBoundaryPreview(PointerInput input) {
+        if (!boundaryInteraction.handles(selectedTool.get()) || !boundaryInteraction.hasDraft()) {
+            return false;
+        }
+        pendingTopologyEdit.set(boundaryInteraction.preview(input, selectedTool.get(), snapshot.get()));
+        refreshStateText();
+        return true;
     }
 
     private void moveSelectedHandle(DragSession releasedSession) {
@@ -837,6 +856,10 @@ public final class DungeonEditorViewModel {
             return wallToolSelected(selectedTool) || doorToolSelected(selectedTool);
         }
 
+        boolean hasDraft() {
+            return draft != null;
+        }
+
         PressResult press(
                 PointerInput input,
                 String selectedTool,
@@ -864,12 +887,34 @@ public final class DungeonEditorViewModel {
 
         @Nullable EditorPreview preview() {
             BoundaryDraft currentDraft = draft;
-            if (currentDraft == null || currentDraft.previewEdges().isEmpty()) {
+            if (currentDraft == null) {
+                return null;
+            }
+            return preview(currentDraft, currentDraft.previewEdges());
+        }
+
+        @Nullable EditorPreview preview(
+                PointerInput input,
+                String selectedTool,
+                @Nullable DungeonSnapshot snapshot
+        ) {
+            BoundaryDraft currentDraft = draft;
+            if (currentDraft == null) {
+                return null;
+            }
+            Set<EdgeKey> previewEdges = new LinkedHashSet<>(currentDraft.previewEdges());
+            PathResult candidate = previewCandidate(input, selectedTool, snapshot, currentDraft);
+            previewEdges.addAll(candidate.committedEdges());
+            return preview(currentDraft, previewEdges);
+        }
+
+        private static @Nullable EditorPreview preview(BoundaryDraft currentDraft, Set<EdgeKey> previewEdges) {
+            if (currentDraft == null || previewEdges.isEmpty()) {
                 return null;
             }
             return new EditorPreview.BoundaryEdges(
                     currentDraft.clusterId(),
-                    currentDraft.previewEdges().stream().map(EdgeKey::toEdgeRef).toList(),
+                    previewEdges.stream().map(EdgeKey::toEdgeRef).toList(),
                     DungeonBoundaryKind.WALL,
                     currentDraft.deleteMode());
         }
@@ -888,6 +933,31 @@ public final class DungeonEditorViewModel {
                 return "Wandpfad: bestehende Innenwand-Eckpunkte anklicken, Rechtsklick schliesst ab.";
             }
             return "Tuerwerkzeug: interne Wand anklicken.";
+        }
+
+        private static PathResult previewCandidate(
+                PointerInput input,
+                String selectedTool,
+                @Nullable DungeonSnapshot snapshot,
+                BoundaryDraft currentDraft
+        ) {
+            if (snapshot == null || input == null || !wallToolSelected(selectedTool)) {
+                return PathResult.empty();
+            }
+            VertexTarget vertex = input.vertexTarget();
+            if (vertex == null || !vertex.present()) {
+                return PathResult.empty();
+            }
+            if (!isEditableVertex(snapshot, currentDraft.clusterId(), vertex, currentDraft.deleteMode())) {
+                return PathResult.empty();
+            }
+            VertexKey nextVertex = vertexKey(vertex);
+            if (currentDraft.currentVertex().equals(nextVertex)) {
+                return PathResult.empty();
+            }
+            return currentDraft.deleteMode()
+                    ? findDeletePath(snapshot, currentDraft.clusterId(), currentDraft.currentVertex(), nextVertex)
+                    : findCreatePath(snapshot, currentDraft.clusterId(), currentDraft.currentVertex(), nextVertex);
         }
 
         private PressResult doorPressed(

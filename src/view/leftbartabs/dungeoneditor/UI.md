@@ -59,12 +59,12 @@ narration editing.
   pointed cell, dragging grows the pending topology-edit rectangle preview, and
   release commits the room topology mutation for the active map and level.
 - In wall mode, clicking cluster grid vertices starts or extends a boundary
-  path. The editor resolves the active cluster from the selected cluster,
-  current boundary hit, or nearest editable cluster. A secondary click finishes
-  the active draft. Wall create paths stop at the next compatible existing
-  boundary; wall delete paths follow existing wall segments. Active boundary
-  drafts publish their preview edges through the shared pending topology-edit
-  preview contract.
+  path. After the first vertex, pointer movement shows the candidate route as a
+  pending topology-edit preview before the next click commits it into the draft.
+  The editor resolves the active cluster from the selected cluster, current
+  boundary hit, or nearest editable cluster. A secondary click finishes the
+  active draft. Wall create paths stop at the next compatible existing boundary;
+  wall delete paths follow existing wall segments.
 - In door mode, clicking an existing non-door boundary between distinct room
   components creates a door. Clicking an existing door with `Tuer loeschen`
   removes that door boundary.

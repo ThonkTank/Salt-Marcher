@@ -4,6 +4,10 @@ This file defines the project-wide documentation and architecture governance for
 SaltMarcher. It is intentionally short. It does not hold feature-specific
 specifications, long-form target designs, or implementation plans.
 
+Global workspace rules live in
+`/home/aaron/Schreibtisch/projects/AGENTS.md` and apply to SaltMarcher unless
+this file adds a stricter SaltMarcher-specific rule.
+
 ## Purpose
 
 SaltMarcher keeps documentation by document type, not by convenience. Each
@@ -36,65 +40,23 @@ Use the documentation tree in this order:
 - `Derived State`: any state rebuilt deterministically from the write model.
 - `Source of Truth`: the single document that is authoritative for a topic.
 
-## Hard Rules
+## SaltMarcher Rules
 
-- `AGENTS.md` contains project-wide rules only.
-- System-wide architecture decisions are recorded as ADRs under `docs/adr/`.
-- Feature requirements and design documents live next to the owning feature
-  code by default.
 - Behavior-coupled automated tests are not part of the project strategy; use
   the quality-platform gates plus manual testing instead.
 - Verification harnesses must not carry fixture-based selftest suites or
   meta-test layers; enforce repository policy directly in the owning gate.
 - New compile/build/check gates require explicit user request. Detailed
   verification policy lives in `docs/standards/quality-platforms.md`.
-- Every non-ADR document outside `AGENTS.md` must declare `Status`, `Owner`,
-  `Last Reviewed`, and `Source of Truth`.
-- Documents must clearly distinguish current state from target state.
-- A topic may be summarized in multiple places, but it may be defined in only
-  one place.
-- Documents above roughly 350 lines must be split by purpose.
-- Hypothetical method-level callchains do not belong in product or UI specs.
-- Work on agent-facing instruction artifacts must use the global
-  `agent-instruction-engineering` skill and follow the canonical agent
-  instruction standard.
-- Work that uses external sources or local source evidence for decisions must
-  use the global `source-references` skill and follow the canonical source
-  references standard.
 - Work under `src/domain/**` must follow the canonical domain-layer standard
   before changes are made or reviewed. The repo-owned `domain-layer` skill is
   supporting guidance only and must not override the canonical standard.
 - Work under `src/view/**` must use the repo-owned `view-layer-mvvm` skill and
   follow the canonical cockpit MVVM view-layer standard before changes are made
   or reviewed.
-- A change that introduces or alters behavior, architecture, or ownership must
-  update the corresponding documentation in the same change.
-- The agent workflow below is a mandatory delivery protocol for implementation
-  work, not guidance. If a required step cannot run, stop and report the
-  blocker explicitly instead of silently continuing.
 
-## Agent Workflow
+## SaltMarcher Verification
 
-- Local implementation work happens on `wip/*` branches. `main` is stable
-  integration history and must not receive `WIP`, `checkpoint`, or
-  dirty-worktree preservation commits.
-- Before touching files for an implementation request, run an explicit
-  worktree-inspection command and treat it as required preflight, not optional
-  context gathering.
-- If the worktree has pre-existing local modifications at the start of an
-  implementation request, commit the complete current state before making new
-  edits. This start-of-task WIP commit is mandatory because it turns prior work
-  into the visible baseline and keeps the new implementation isolated in the
-  subsequent diff.
-- Start-of-task WIP commits must stay on `wip/*` branches and use an explicit
-  preservation message such as `wip(<scope>): preserve current state before
-  <task>`. If the current branch is `main`, create or switch to a `wip/*`
-  branch before making the preservation commit.
-- Push WIP branches only when the user requests remote preservation or when the
-  current request explicitly requires sharing the WIP state.
-- If the start-of-task WIP commit cannot complete exactly as required, report
-  the concrete blocker together with the preserved local state instead of
-  silently continuing.
 - After each completed implementation pass, rerun
   `./gradlew build --console=plain` from the repository root before handoff.
   If you are working inside `src/` or another subdirectory, set the command
@@ -108,17 +70,6 @@ Use the documentation tree in this order:
   `./gradlew installDesktopApp` after the successful build before handoff
   unless the user explicitly waives reinstall or the task is purely non-code
   planning or review work.
-- Stable handoff or release commits must be separate from WIP preservation
-  commits. A stable commit may be created only after the required build and any
-  applicable install step have completed successfully, and it must not use a
-  `wip`, `WIP`, or `checkpoint` message.
-- Every implementation handoff must state the literal status of the preflight
-  worktree inspection, start-of-task WIP commit, WIP push handling,
-  `./gradlew build`, stable commit handling, and `./gradlew installDesktopApp`
-  when applicable. If any step did not run, say that directly and give the
-  concrete reason.
-- Verification claims must be literal. Do not claim that commit, push, build,
-  or install steps happened unless they actually ran.
 
 ## Document Types
 
@@ -149,6 +100,7 @@ Use the documentation tree in this order:
 
 ## References
 
+- [Global Workspace Rules](/home/aaron/Schreibtisch/projects/AGENTS.md:1)
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/agent-instructions.md:1)

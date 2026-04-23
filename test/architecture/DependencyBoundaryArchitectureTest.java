@@ -381,7 +381,7 @@ public final class DependencyBoundaryArchitectureTest {
                 String message = item.getName()
                         + " lives in old view topology package "
                         + packageName
-                        + "; move shell-facing code to src.view.leftbartabs/statetabs/dropdowns and reusable panels to src.view.slotcontent";
+                        + "; move shell-facing code to src.view.leftbartabs/statetabs/dropdowns, reusable panels to src.view.slotcontent, or generic elements to src.view.primitives";
                 events.add(SimpleConditionEvent.violated(item, message));
             }
         };
@@ -405,7 +405,7 @@ public final class DependencyBoundaryArchitectureTest {
         if (packageName.matches("src\\.view\\.slotcontent\\.(controls|state|details|main|topbar)\\.[^.]+")) {
             return true;
         }
-        return packageName.matches("src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+");
+        return packageName.matches("src\\.view\\.(leftbartabs|statetabs|dropdowns|primitives)\\.[^.]+");
     }
 
     private static ArchCondition<JavaClass> onlyDependOnDomainPublicBoundaries() {
