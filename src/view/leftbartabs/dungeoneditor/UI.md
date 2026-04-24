@@ -46,12 +46,16 @@ narration editing.
   and transition editor tool families are still pending authored operations.
 - In grid mode, clicking a room, room label, stair, transition, door handle,
   corridor waypoint, stair anchor, or cluster label selects the owning topology
-  ref. Dragging a selectable editor handle keeps the authored source geometry
+  ref. Clicking a wall edge of a selected cluster resolves the maximal straight
+  wall stretch on that line and arms a parallel drag for that stretch. Dragging
+  a selectable editor handle or wall stretch keeps the authored source geometry
   visible and emits the same pending topology-edit preview contract used by
   room and boundary tools. The canvas shows a visually distinct local preview
   copy for the selected cells, wall or door edges, label, or handle marker.
-  Ctrl-scroll changes the drag target level, and release commits q/r/z
-  movement through the domain map. Empty grid clicks clear selection.
+  Handle drags support q/r/z movement; wall-stretch drags clamp to the wall
+  normal on the active level and ignore tangential motion. Ctrl-scroll changes
+  the active level only when no drag is in progress. Empty grid clicks clear
+  selection.
 - Saving a narration card persists room visual description and exit
   descriptions through the dungeon write model; the state pane refreshes from
   committed authored truth.
@@ -65,9 +69,14 @@ narration editing.
   boundary hit, or nearest editable cluster. A secondary click finishes the
   active draft. Wall create paths stop at the next compatible existing boundary;
   wall delete paths follow existing wall segments.
-- In door mode, clicking an existing non-door boundary between distinct room
-  components creates a door. Clicking an existing door with `Tuer loeschen`
-  removes that door boundary.
+- In door mode, hovering a valid internal boundary emits the same pending
+  topology-edit preview contract used by the other topology tools. Clicking an
+  existing non-door boundary between distinct room components creates a door.
+  Clicking an existing door with `Tuer loeschen` removes that door boundary.
+- Stretch-moving an authored wall grows or shrinks only the directly attached
+  end segments. Door segments on the moved internal stretch travel with it.
+  Moves that would cross unsupported corridor door bindings or middle
+  branchpoints are rejected instead of committing partial geometry.
 - Grid/graph toggles switch the central map representation.
 - Level controls update the active map projection.
 - Overlay controls support off, nearby-level range, selected levels, and

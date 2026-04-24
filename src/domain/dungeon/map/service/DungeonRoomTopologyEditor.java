@@ -2,15 +2,18 @@ package src.domain.dungeon.map.service;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
+import src.domain.dungeon.map.entity.DungeonCorridor;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
 import src.domain.dungeon.map.value.DungeonBoundaryKey;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
+import src.domain.dungeon.map.value.DungeonCorridorDoorBinding;
 import src.domain.dungeon.map.value.DungeonEdge;
 import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonRoomNarration;
+import src.domain.dungeon.map.value.DungeonTopologyRef;
 import src.domain.dungeon.map.value.RoomCatalog;
 import src.domain.dungeon.map.value.SpatialTopology;
 
@@ -149,6 +152,268 @@ public final class DungeonRoomTopologyEditor {
         for (ClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == clusterId
                     ? new ClusterWork(cluster, rooms, target.cellsByLevel())
+                    : work);
+        }
+        return rebuiltPreservingRooms(dungeonMap, nextClusters);
+    }
+
+    public DungeonMap moveBoundaryStretch(
+            DungeonMap dungeonMap,
+            long clusterId,
+            List<DungeonEdge> sourceEdges,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        Objects.requireNonNull(dungeonMap, "dungeonMap");
+        if (clusterId <= 0L || sourceEdges == null || sourceEdges.isEmpty()) {
+            return dungeonMap;
+        }
+        DungeonRoomCellProjector cellProjector = new DungeonRoomCellProjector();
+        List<ClusterWork> clusters = workClusters(dungeonMap, cellProjector);
+        ClusterWork target = clusters.stream()
+                .filter(work -> work.cluster().clusterId() == clusterId)
+                .findFirst()
+                .orElse(null);
+        if (target == null) {
+            return dungeonMap;
+        }
+        StretchSelection stretch = resolveStretch(target, sourceEdges, deltaQ, deltaR, deltaLevel);
+        if (stretch == null || stretch.movement() == 0) {
+            return dungeonMap;
+        }
+        return stretch.outer()
+                ? moveOuterStretch(dungeonMap, clusters, target, stretch, cellProjector)
+                : moveInnerStretch(dungeonMap, clusters, target, stretch);
+    }
+
+    private static @Nullable StretchSelection resolveStretch(
+            ClusterWork target,
+            List<DungeonEdge> sourceEdges,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        if (deltaLevel != 0) {
+            return null;
+        }
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = boundaryMap(target.cluster());
+        Integer level = null;
+        Orientation orientation = null;
+        Integer fixedCoordinate = null;
+        Boolean outer = null;
+        BoundarySide side = null;
+        List<StretchEdge> stretchEdges = new ArrayList<>();
+        Set<DungeonCell> clusterCells = new LinkedHashSet<>();
+        for (DungeonEdge edge : sourceEdges) {
+            if (edge == null || edge.from() == null || edge.to() == null) {
+                return null;
+            }
+            Orientation edgeOrientation = Orientation.from(edge);
+            if (edgeOrientation == null) {
+                return null;
+            }
+            if (level == null) {
+                level = edge.from().level();
+                clusterCells.addAll(target.cellsAt(level));
+            } else if (level != edge.from().level()) {
+                return null;
+            }
+            int edgeFixed = fixedCoordinate(edgeOrientation, edge);
+            BoundaryTouch touch = touch(edge, clusterCells);
+            if (!touch.valid()) {
+                return null;
+            }
+            BoundarySide edgeSide = BoundarySide.resolve(edgeOrientation, touch, edgeFixed);
+            if (orientation == null) {
+                orientation = edgeOrientation;
+                fixedCoordinate = edgeFixed;
+                outer = touch.insideCount() == 1;
+                side = edgeSide;
+            } else if (orientation != edgeOrientation
+                    || !Objects.equals(fixedCoordinate, edgeFixed)
+                    || !Objects.equals(outer, touch.insideCount() == 1)
+                    || side != edgeSide) {
+                return null;
+            }
+            DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
+            DungeonClusterBoundary existing = boundaries.get(key);
+            if (Boolean.FALSE.equals(outer) && existing == null) {
+                return null;
+            }
+            if (Boolean.TRUE.equals(outer) && existing != null) {
+                return null;
+            }
+            stretchEdges.add(new StretchEdge(edge, key, existing));
+        }
+        if (level == null || orientation == null || fixedCoordinate == null || outer == null || side == null) {
+            return null;
+        }
+        Orientation resolvedOrientation = orientation;
+        List<StretchEdge> sortedEdges = stretchEdges.stream()
+                .sorted(Comparator.comparingInt(edge -> variableCoordinate(resolvedOrientation, edge.edge())))
+                .toList();
+        int startVariable = variableCoordinate(resolvedOrientation, sortedEdges.getFirst().edge());
+        for (int index = 0; index < sortedEdges.size(); index++) {
+            if (variableCoordinate(resolvedOrientation, sortedEdges.get(index).edge()) != startVariable + index) {
+                return null;
+            }
+        }
+        int movement = movementAlongNormal(resolvedOrientation, deltaQ, deltaR);
+        if (movement == 0) {
+            return null;
+        }
+        return new StretchSelection(
+                target.cluster().clusterId(),
+                level,
+                resolvedOrientation,
+                outer,
+                fixedCoordinate,
+                startVariable,
+                startVariable + sortedEdges.size(),
+                movement,
+                side,
+                sortedEdges,
+                sortedEdges.stream().map(StretchEdge::key).collect(java.util.stream.Collectors.toSet()));
+    }
+
+    private static DungeonMap moveInnerStretch(
+            DungeonMap dungeonMap,
+            List<ClusterWork> clusters,
+            ClusterWork target,
+            StretchSelection stretch
+    ) {
+        Set<DungeonCell> levelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
+        if (!sourceStaysInternal(stretch, levelCells)) {
+            return dungeonMap;
+        }
+        if (touchesCorridorBinding(
+                dungeonMap,
+                target.cluster().center(),
+                target.cluster().clusterId(),
+                stretch.level(),
+                stretch.sourceKeys())) {
+            return dungeonMap;
+        }
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap(target.cluster()));
+        List<BoundaryVertex> vertices = stretch.vertices();
+        for (int index = 1; index < vertices.size() - 1; index++) {
+            if (hasPerpendicularBoundary(boundaries, stretch.sourceKeys(), vertices.get(index), stretch.orientation())) {
+                return dungeonMap;
+            }
+        }
+        for (BoundaryVertex endpoint : List.of(vertices.getFirst(), vertices.getLast())) {
+            boolean touchesOuter = touchesOuterBoundary(levelCells, endpoint);
+            boolean hasAttachment = hasPerpendicularBoundary(boundaries, stretch.sourceKeys(), endpoint, stretch.orientation());
+            if (!touchesOuter && !hasAttachment) {
+                continue;
+            }
+            List<DungeonEdge> connectorPath = stretch.connectorPath(endpoint);
+            if (touchesCorridorBinding(
+                    dungeonMap,
+                    target.cluster().center(),
+                    target.cluster().clusterId(),
+                    stretch.level(),
+                    connectorPath)) {
+                return dungeonMap;
+            }
+            ConnectorAction connectorAction = connectorAction(boundaries, stretch.sourceKeys(), connectorPath);
+            if (connectorAction == null) {
+                return dungeonMap;
+            }
+            applyConnectorAction(boundaries, connectorAction, target.cluster().center(), levelCells, target.cluster().clusterId());
+        }
+        for (StretchEdge edge : stretch.edges()) {
+            boundaries.remove(edge.key());
+        }
+        for (StretchEdge edge : stretch.edges()) {
+            DungeonEdge movedEdge = moveEdge(edge.edge(), stretch.orientation(), stretch.movement());
+            DungeonBoundaryKey movedKey = DungeonBoundaryKey.from(movedEdge);
+            if (boundaries.containsKey(movedKey)) {
+                return dungeonMap;
+            }
+            DungeonClusterBoundary moved = boundaryForEdge(
+                    levelCells,
+                    target.cluster().center(),
+                    target.cluster().clusterId(),
+                    movedEdge,
+                    edge.kind(),
+                    preserveTopologyRef(edge, target.cluster().center()));
+            if (moved == null) {
+                return dungeonMap;
+            }
+            boundaries.put(movedKey, moved);
+        }
+        Map<Integer, List<DungeonClusterBoundary>> nextBoundaries = boundariesByLevel(boundaries.values());
+        IdAllocator ids = new IdAllocator(dungeonMap);
+        List<DungeonRoom> rooms = roomsForBoundaryEdit(target, nextBoundaries, ids);
+        DungeonRoomCluster cluster = new DungeonRoomCluster(
+                target.cluster().clusterId(),
+                target.cluster().mapId(),
+                target.cluster().center(),
+                target.cluster().relativeVerticesByLevel(),
+                nextBoundaries);
+        List<ClusterWork> nextClusters = new ArrayList<>();
+        for (ClusterWork work : clusters) {
+            nextClusters.add(work.cluster().clusterId() == target.cluster().clusterId()
+                    ? new ClusterWork(cluster, rooms, target.cellsByLevel())
+                    : work);
+        }
+        return rebuiltPreservingRooms(dungeonMap, nextClusters);
+    }
+
+    private static DungeonMap moveOuterStretch(
+            DungeonMap dungeonMap,
+            List<ClusterWork> clusters,
+            ClusterWork target,
+            StretchSelection stretch,
+            DungeonRoomCellProjector cellProjector
+    ) {
+        Map<Integer, List<DungeonCell>> nextCellsByLevel = new LinkedHashMap<>(target.cellsByLevel());
+        Set<DungeonCell> currentLevelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
+        Set<DungeonCell> stripCells = stripCells(stretch);
+        if (stripCells.isEmpty()) {
+            return dungeonMap;
+        }
+        if (stretch.movesOutward()) {
+            currentLevelCells.addAll(stripCells);
+        } else {
+            currentLevelCells.removeAll(stripCells);
+        }
+        if (currentLevelCells.isEmpty()) {
+            return dungeonMap;
+        }
+        nextCellsByLevel.put(stretch.level(), DungeonRoomCellProjector.sortedCells(currentLevelCells));
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap(target.cluster()));
+        for (BoundaryVertex vertex : stretch.vertices()) {
+            if (!hasPerpendicularBoundary(boundaries, stretch.sourceKeys(), vertex, stretch.orientation())) {
+                continue;
+            }
+            List<DungeonEdge> connectorPath = stretch.connectorPath(vertex);
+            if (touchesCorridorBinding(
+                    dungeonMap,
+                    target.cluster().center(),
+                    target.cluster().clusterId(),
+                    stretch.level(),
+                    connectorPath)) {
+                return dungeonMap;
+            }
+            ConnectorAction connectorAction = connectorAction(boundaries, stretch.sourceKeys(), connectorPath);
+            if (connectorAction == null) {
+                return dungeonMap;
+            }
+            applyConnectorAction(boundaries, connectorAction, target.cluster().center(), currentLevelCells, target.cluster().clusterId());
+        }
+        Map<Integer, List<DungeonClusterBoundary>> nextBoundaries =
+                filterBoundaries(boundaries.values(), nextCellsByLevel, target.cluster().center());
+        IdAllocator ids = new IdAllocator(dungeonMap);
+        ClusterWork nextWork = new ClusterWork(target.cluster(), target.rooms(), nextCellsByLevel);
+        List<DungeonRoom> rooms = roomsForBoundaryEdit(nextWork, nextBoundaries, ids);
+        DungeonRoomCluster cluster = clusterForStretch(nextWork, cellProjector, nextBoundaries);
+        List<ClusterWork> nextClusters = new ArrayList<>();
+        for (ClusterWork work : clusters) {
+            nextClusters.add(work.cluster().clusterId() == target.cluster().clusterId()
+                    ? new ClusterWork(cluster, rooms, nextCellsByLevel)
                     : work);
         }
         return rebuiltPreservingRooms(dungeonMap, nextClusters);
@@ -622,6 +887,471 @@ public final class DungeonRoomTopologyEditor {
             result.put(entry.getKey(), DungeonRoomCellProjector.sortedCells(entry.getValue()));
         }
         return Map.copyOf(result);
+    }
+
+    private static @Nullable ConnectorAction connectorAction(
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Set<DungeonBoundaryKey> sourceKeys,
+            List<DungeonEdge> path
+    ) {
+        if (path.isEmpty()) {
+            return null;
+        }
+        List<DungeonBoundaryKey> keys = path.stream().map(DungeonBoundaryKey::from).toList();
+        long presentCount = keys.stream()
+                .filter(key -> !sourceKeys.contains(key) && boundaries.containsKey(key))
+                .count();
+        if (presentCount == 0L) {
+            return new ConnectorAction(ConnectorMode.ADD, path);
+        }
+        if (presentCount == keys.size()) {
+            for (DungeonBoundaryKey key : keys) {
+                DungeonClusterBoundary boundary = boundaries.get(key);
+                if (boundary == null || sourceKeys.contains(key) || boundary.kind() == DungeonClusterBoundaryKind.DOOR) {
+                    return null;
+                }
+            }
+            return new ConnectorAction(ConnectorMode.REMOVE, path);
+        }
+        return null;
+    }
+
+    private static void applyConnectorAction(
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            ConnectorAction action,
+            DungeonCell center,
+            Set<DungeonCell> clusterCells,
+            long clusterId
+    ) {
+        if (action.mode() == ConnectorMode.REMOVE) {
+            for (DungeonEdge edge : action.path()) {
+                boundaries.remove(DungeonBoundaryKey.from(edge));
+            }
+            return;
+        }
+        for (DungeonEdge edge : action.path()) {
+            DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
+            if (boundaries.containsKey(key)) {
+                continue;
+            }
+            DungeonClusterBoundary connector = boundaryForEdge(
+                    clusterCells,
+                    center,
+                    clusterId,
+                    edge,
+                    DungeonClusterBoundaryKind.WALL,
+                    null);
+            if (connector != null) {
+                boundaries.put(key, connector);
+            }
+        }
+    }
+
+    private static boolean sourceStaysInternal(StretchSelection stretch, Set<DungeonCell> clusterCells) {
+        for (StretchEdge edge : stretch.edges()) {
+            BoundaryTouch movedTouch = touch(moveEdge(edge.edge(), stretch.orientation(), stretch.movement()), clusterCells);
+            if (!movedTouch.valid() || movedTouch.insideCount() != 2) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean hasPerpendicularBoundary(
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Set<DungeonBoundaryKey> sourceKeys,
+            BoundaryVertex vertex,
+            Orientation sourceOrientation
+    ) {
+        for (Map.Entry<DungeonBoundaryKey, DungeonClusterBoundary> entry : boundaries.entrySet()) {
+            if (sourceKeys.contains(entry.getKey())) {
+                continue;
+            }
+            if (sourceOrientation.perpendicularTo(Orientation.from(entry.getKey()))
+                    && touches(entry.getKey(), vertex)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean touches(DungeonBoundaryKey key, BoundaryVertex vertex) {
+        return sameVertex(key.lower(), vertex) || sameVertex(key.upper(), vertex);
+    }
+
+    private static boolean sameVertex(DungeonCell cell, BoundaryVertex vertex) {
+        return cell != null
+                && vertex != null
+                && cell.q() == vertex.q()
+                && cell.r() == vertex.r()
+                && cell.level() == vertex.level();
+    }
+
+    private static boolean touchesOuterBoundary(Set<DungeonCell> clusterCells, BoundaryVertex vertex) {
+        for (DungeonCell cell : clusterCells) {
+            for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
+                DungeonCell neighbor = direction.neighborOf(cell);
+                if (clusterCells.contains(neighbor)) {
+                    continue;
+                }
+                if (touches(DungeonBoundaryKey.from(DungeonEdge.sideOf(cell, direction)), vertex)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Set<DungeonCell> stripCells(StretchSelection stretch) {
+        Set<DungeonCell> result = new LinkedHashSet<>();
+        if (stretch.orientation() == Orientation.VERTICAL) {
+            int minQ = Math.min(stretch.fixedCoordinate(), stretch.fixedCoordinate() + stretch.movement());
+            int maxQ = Math.max(stretch.fixedCoordinate(), stretch.fixedCoordinate() + stretch.movement());
+            for (int q = minQ; q < maxQ; q++) {
+                for (int r = stretch.startVariable(); r < stretch.endVariable(); r++) {
+                    result.add(new DungeonCell(q, r, stretch.level()));
+                }
+            }
+        } else {
+            int minR = Math.min(stretch.fixedCoordinate(), stretch.fixedCoordinate() + stretch.movement());
+            int maxR = Math.max(stretch.fixedCoordinate(), stretch.fixedCoordinate() + stretch.movement());
+            for (int r = minR; r < maxR; r++) {
+                for (int q = stretch.startVariable(); q < stretch.endVariable(); q++) {
+                    result.add(new DungeonCell(q, r, stretch.level()));
+                }
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static Map<Integer, List<DungeonClusterBoundary>> filterBoundaries(
+            Iterable<DungeonClusterBoundary> boundaries,
+            Map<Integer, List<DungeonCell>> cellsByLevel,
+            DungeonCell center
+    ) {
+        List<DungeonClusterBoundary> filtered = new ArrayList<>();
+        for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
+            Set<DungeonCell> cells = new LinkedHashSet<>(cellsByLevel.getOrDefault(boundary.level(), List.of()));
+            DungeonCell from = boundary.absoluteCell(center);
+            DungeonCell to = boundary.direction().neighborOf(from);
+            if (cells.contains(from) && cells.contains(to)) {
+                filtered.add(boundary);
+            }
+        }
+        return boundariesByLevel(filtered);
+    }
+
+    private static DungeonRoomCluster clusterForStretch(
+            ClusterWork work,
+            DungeonRoomCellProjector cellProjector,
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+    ) {
+        Map<Integer, List<DungeonCell>> verticesByLevel = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<DungeonCell>> entry : work.cellsByLevel().entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                verticesByLevel.put(
+                        entry.getKey(),
+                        cellProjector.relativeCellLoops(work.cluster().center(), entry.getValue()));
+            }
+        }
+        return new DungeonRoomCluster(
+                work.cluster().clusterId(),
+                work.cluster().mapId(),
+                work.cluster().center(),
+                verticesByLevel,
+                boundariesByLevel);
+    }
+
+    private static @Nullable DungeonClusterBoundary boundaryForEdge(
+            Set<DungeonCell> clusterCells,
+            DungeonCell center,
+            long clusterId,
+            DungeonEdge edge,
+            DungeonClusterBoundaryKind kind,
+            @Nullable DungeonTopologyRef topologyRef
+    ) {
+        if (edge == null || edge.from() == null || edge.to() == null) {
+            return null;
+        }
+        List<DungeonCell> touchingCells = DungeonRoomCellProjector.sortedCells(edge.touchingCells());
+        if (touchingCells.size() != 2 || touchingCells.getFirst().level() != touchingCells.get(1).level()) {
+            return null;
+        }
+        if (!clusterCells.contains(touchingCells.getFirst()) || !clusterCells.contains(touchingCells.get(1))) {
+            return null;
+        }
+        DungeonCell baseCell = touchingCells.getFirst();
+        DungeonEdgeDirection direction = directionFrom(baseCell, edge);
+        if (direction == null) {
+            return null;
+        }
+        return new DungeonClusterBoundary(
+                clusterId,
+                baseCell.level(),
+                new DungeonCell(baseCell.q() - center.q(), baseCell.r() - center.r(), baseCell.level()),
+                direction,
+                kind,
+                topologyRef == null ? DungeonTopologyRef.empty() : topologyRef);
+    }
+
+    private static BoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {
+        List<DungeonCell> insideCells = edge.touchingCells().stream()
+                .filter(clusterCells::contains)
+                .toList();
+        return new BoundaryTouch(insideCells);
+    }
+
+    private static boolean touchesCorridorBinding(
+            DungeonMap dungeonMap,
+            DungeonCell clusterCenter,
+            long clusterId,
+            int level,
+            Set<DungeonBoundaryKey> keys
+    ) {
+        if (keys == null || keys.isEmpty()) {
+            return false;
+        }
+        Set<DungeonBoundaryKey> bindingKeys = corridorBindingKeys(dungeonMap, clusterCenter, clusterId, level);
+        return keys.stream().anyMatch(bindingKeys::contains);
+    }
+
+    private static boolean touchesCorridorBinding(
+            DungeonMap dungeonMap,
+            DungeonCell clusterCenter,
+            long clusterId,
+            int level,
+            List<DungeonEdge> path
+    ) {
+        if (path == null || path.isEmpty()) {
+            return false;
+        }
+        Set<DungeonBoundaryKey> bindingKeys = corridorBindingKeys(dungeonMap, clusterCenter, clusterId, level);
+        return path.stream()
+                .map(DungeonBoundaryKey::from)
+                .anyMatch(bindingKeys::contains);
+    }
+
+    private static Set<DungeonBoundaryKey> corridorBindingKeys(
+            DungeonMap dungeonMap,
+            DungeonCell clusterCenter,
+            long clusterId,
+            int level
+    ) {
+        Set<DungeonBoundaryKey> result = new LinkedHashSet<>();
+        if (dungeonMap == null || clusterCenter == null || clusterId <= 0L) {
+            return result;
+        }
+        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+            for (DungeonCorridorDoorBinding binding : corridor.bindings().doorBindings()) {
+                if (binding.clusterId() != clusterId || binding.relativeCell().level() != level) {
+                    continue;
+                }
+                result.add(DungeonBoundaryKey.from(absoluteDoorEdge(binding, clusterCenter)));
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static DungeonEdge absoluteDoorEdge(DungeonCorridorDoorBinding binding, DungeonCell clusterCenter) {
+        return DungeonEdge.sideOf(absoluteRoomCell(binding, clusterCenter), binding.direction());
+    }
+
+    private static DungeonCell absoluteRoomCell(DungeonCorridorDoorBinding binding, DungeonCell clusterCenter) {
+        DungeonCell relativeCell = binding.relativeCell();
+        return new DungeonCell(
+                clusterCenter.q() + relativeCell.q(),
+                clusterCenter.r() + relativeCell.r(),
+                relativeCell.level());
+    }
+
+    private static int fixedCoordinate(Orientation orientation, DungeonEdge edge) {
+        return orientation == Orientation.VERTICAL ? edge.from().q() : edge.from().r();
+    }
+
+    private static int variableCoordinate(Orientation orientation, DungeonEdge edge) {
+        return orientation == Orientation.VERTICAL
+                ? Math.min(edge.from().r(), edge.to().r())
+                : Math.min(edge.from().q(), edge.to().q());
+    }
+
+    private static int movementAlongNormal(Orientation orientation, int deltaQ, int deltaR) {
+        return switch (orientation) {
+            case VERTICAL -> deltaR == 0 ? deltaQ : 0;
+            case HORIZONTAL -> deltaQ == 0 ? deltaR : 0;
+        };
+    }
+
+    private static DungeonEdge moveEdge(DungeonEdge edge, Orientation orientation, int movement) {
+        return switch (orientation) {
+            case VERTICAL -> new DungeonEdge(
+                    new DungeonCell(edge.from().q() + movement, edge.from().r(), edge.from().level()),
+                    new DungeonCell(edge.to().q() + movement, edge.to().r(), edge.to().level()));
+            case HORIZONTAL -> new DungeonEdge(
+                    new DungeonCell(edge.from().q(), edge.from().r() + movement, edge.from().level()),
+                    new DungeonCell(edge.to().q(), edge.to().r() + movement, edge.to().level()));
+        };
+    }
+
+    private static @Nullable DungeonTopologyRef preserveTopologyRef(
+            StretchEdge edge,
+            DungeonCell center
+    ) {
+        if (edge.existing() == null) {
+            return null;
+        }
+        return edge.existing().topologyRef().present()
+                ? edge.existing().topologyRef()
+                : edge.existing().resolvedTopologyRef(center);
+    }
+
+    private enum Orientation {
+        HORIZONTAL,
+        VERTICAL;
+
+        private static @Nullable Orientation from(DungeonEdge edge) {
+            if (edge == null || edge.from() == null || edge.to() == null) {
+                return null;
+            }
+            if (edge.from().q() == edge.to().q()) {
+                return VERTICAL;
+            }
+            if (edge.from().r() == edge.to().r()) {
+                return HORIZONTAL;
+            }
+            return null;
+        }
+
+        private static @Nullable Orientation from(DungeonBoundaryKey key) {
+            if (key == null) {
+                return null;
+            }
+            return key.lower().q() == key.upper().q() ? VERTICAL : HORIZONTAL;
+        }
+
+        private boolean perpendicularTo(@Nullable Orientation other) {
+            return other != null && this != other;
+        }
+    }
+
+    private enum BoundarySide {
+        NORTH,
+        SOUTH,
+        EAST,
+        WEST;
+
+        private static BoundarySide resolve(Orientation orientation, BoundaryTouch touch, int fixedCoordinate) {
+            if (orientation == Orientation.VERTICAL) {
+                return touch.insideCells().stream().anyMatch(cell -> cell.q() == fixedCoordinate - 1)
+                        ? WEST
+                        : EAST;
+            }
+            return touch.insideCells().stream().anyMatch(cell -> cell.r() == fixedCoordinate - 1)
+                    ? NORTH
+                    : SOUTH;
+        }
+    }
+
+    private enum ConnectorMode {
+        ADD,
+        REMOVE
+    }
+
+    private record ConnectorAction(ConnectorMode mode, List<DungeonEdge> path) {
+    }
+
+    private record BoundaryTouch(List<DungeonCell> insideCells) {
+        private BoundaryTouch {
+            insideCells = insideCells == null ? List.of() : List.copyOf(insideCells);
+        }
+
+        private boolean valid() {
+            return insideCount() == 1 || insideCount() == 2;
+        }
+
+        private int insideCount() {
+            return insideCells.size();
+        }
+    }
+
+    private record StretchEdge(
+            DungeonEdge edge,
+            DungeonBoundaryKey key,
+            @Nullable DungeonClusterBoundary existing
+    ) {
+        private DungeonClusterBoundaryKind kind() {
+            return existing == null ? DungeonClusterBoundaryKind.WALL : existing.kind();
+        }
+    }
+
+    private record BoundaryVertex(int q, int r, int level) {
+    }
+
+    private record StretchSelection(
+            long clusterId,
+            int level,
+            Orientation orientation,
+            boolean outer,
+            int fixedCoordinate,
+            int startVariable,
+            int endVariable,
+            int movement,
+            BoundarySide side,
+            List<StretchEdge> edges,
+            Set<DungeonBoundaryKey> sourceKeys
+    ) {
+        private StretchSelection {
+            edges = edges == null ? List.of() : List.copyOf(edges);
+            sourceKeys = sourceKeys == null ? Set.of() : Set.copyOf(sourceKeys);
+        }
+
+        private boolean movesOutward() {
+            return switch (side) {
+                case WEST -> movement > 0;
+                case EAST -> movement < 0;
+                case NORTH -> movement > 0;
+                case SOUTH -> movement < 0;
+            };
+        }
+
+        private List<BoundaryVertex> vertices() {
+            List<BoundaryVertex> result = new ArrayList<>();
+            if (orientation == Orientation.VERTICAL) {
+                for (int r = startVariable; r <= endVariable; r++) {
+                    result.add(new BoundaryVertex(fixedCoordinate, r, level));
+                }
+            } else {
+                for (int q = startVariable; q <= endVariable; q++) {
+                    result.add(new BoundaryVertex(q, fixedCoordinate, level));
+                }
+            }
+            return List.copyOf(result);
+        }
+
+        private List<DungeonEdge> connectorPath(BoundaryVertex vertex) {
+            BoundaryVertex moved = orientation == Orientation.VERTICAL
+                    ? new BoundaryVertex(vertex.q() + movement, vertex.r(), vertex.level())
+                    : new BoundaryVertex(vertex.q(), vertex.r() + movement, vertex.level());
+            if (vertex.equals(moved)) {
+                return List.of();
+            }
+            List<DungeonEdge> result = new ArrayList<>();
+            if (vertex.q() == moved.q()) {
+                int step = Integer.compare(moved.r(), vertex.r());
+                for (int r = vertex.r(); r != moved.r(); r += step) {
+                    result.add(new DungeonEdge(
+                            new DungeonCell(vertex.q(), r, vertex.level()),
+                            new DungeonCell(vertex.q(), r + step, vertex.level())));
+                }
+            } else {
+                int step = Integer.compare(moved.q(), vertex.q());
+                for (int q = vertex.q(); q != moved.q(); q += step) {
+                    result.add(new DungeonEdge(
+                            new DungeonCell(q, vertex.r(), vertex.level()),
+                            new DungeonCell(q + step, vertex.r(), vertex.level())));
+                }
+            }
+            return List.copyOf(result);
+        }
     }
 
     private record ClusterWork(

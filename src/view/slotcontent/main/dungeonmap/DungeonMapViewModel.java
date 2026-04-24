@@ -14,6 +14,7 @@ public final class DungeonMapViewModel {
     private final boolean editorMode;
     private final ReadOnlyObjectWrapper<DungeonMapDisplayModel> displayModel;
     private @Nullable DungeonSnapshot snapshot;
+    private @Nullable DungeonSnapshot previewSnapshot;
     private DungeonMapDisplayModel.ViewMode viewMode = DungeonMapDisplayModel.ViewMode.GRID;
     private DungeonMapDisplayModel.LevelOverlaySettings overlaySettings =
             DungeonMapDisplayModel.LevelOverlaySettings.defaults();
@@ -37,6 +38,11 @@ public final class DungeonMapViewModel {
 
     public void showSnapshot(DungeonSnapshot nextSnapshot) {
         snapshot = nextSnapshot;
+        rebuildDisplayModel();
+    }
+
+    public void showPreviewSnapshot(@Nullable DungeonSnapshot nextPreviewSnapshot) {
+        previewSnapshot = nextPreviewSnapshot;
         rebuildDisplayModel();
     }
 
@@ -89,6 +95,7 @@ public final class DungeonMapViewModel {
     private void rebuildDisplayModel() {
         displayModel.set(DungeonMapDisplayModel.fromDungeonSnapshot(
                 snapshot,
+                previewSnapshot,
                 placeholderTitle,
                 editorMode,
                 viewMode,

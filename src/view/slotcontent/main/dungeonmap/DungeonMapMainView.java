@@ -19,6 +19,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
+import org.jspecify.annotations.Nullable;
 
 public class DungeonMapMainView extends BorderPane {
 
@@ -31,6 +32,7 @@ public class DungeonMapMainView extends BorderPane {
     private static final int[] GRID_STEPS = {1, 5, 10, 25};
     private final ObjectProperty<DungeonMapDisplayModel> renderModel =
             new SimpleObjectProperty<>(DungeonMapDisplayModel.empty());
+    private final BoundaryHitTester boundaryHitTester = new BoundaryHitTester();
     private final StackPane contentHost = new StackPane();
     private final Pane canvasLayer = new Pane();
     private final Canvas canvas = new Canvas(DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -244,6 +246,16 @@ public class DungeonMapMainView extends BorderPane {
         if (labelHit.kind() != DungeonMapHitKind.EMPTY) {
             return labelHit;
         }
+        DungeonMapBoundaryTarget boundaryHit = boundaryTarget(model, worldQ, worldR, level);
+        if (boundaryHit.present()) {
+            return new DungeonMapHitTarget(
+                    DungeonMapHitKind.BOUNDARY,
+                    boundaryHit.ownerId(),
+                    boundaryHit.clusterId(),
+                    boundaryHit.topologyRefKind(),
+                    boundaryHit.topologyRefId(),
+                    "DOOR".equals(boundaryHit.kind()) ? "Door" : "Wall");
+        }
         for (int index = model.cells().size() - 1; index >= 0; index--) {
             DungeonMapDisplayModel.RenderCell cell = model.cells().get(index);
             if (cell.preview() || cell.q() != q || cell.r() != r || cell.z() != level) {
@@ -343,106 +355,7 @@ public class DungeonMapMainView extends BorderPane {
             double worldR,
             int level
     ) {
-        double maxDistance = Math.max(7.0 / gridSize(), 0.22);
-        DungeonMapBoundaryTarget bestTarget = DungeonMapBoundaryTarget.empty();
-        double bestDistance = maxDistance;
-        for (int index = model.edges().size() - 1; index >= 0; index--) {
-            DungeonMapDisplayModel.RenderEdge edge = model.edges().get(index);
-            if (edge.preview() || edge.z() != level) {
-                continue;
-            }
-            double distance = distanceToSegment(worldQ, worldR, edge.startQ(), edge.startR(), edge.endQ(), edge.endR());
-            if (distance > bestDistance) {
-                continue;
-            }
-            bestDistance = distance;
-            bestTarget = new DungeonMapBoundaryTarget(
-                    true,
-                    edge.kind().name(),
-                    edge.ownerId(),
-                    edgeClusterId(model, edge),
-                    edge.topologyRef().kind(),
-                    edge.topologyRef().id(),
-                    (int) Math.round(edge.startQ()),
-                    (int) Math.round(edge.startR()),
-                    (int) Math.round(edge.endQ()),
-                    (int) Math.round(edge.endR()),
-                    edge.z());
-        }
-        return bestTarget;
-    }
-
-    private static double distanceToSegment(
-            double pointQ,
-            double pointR,
-            double startQ,
-            double startR,
-            double endQ,
-            double endR
-    ) {
-        double deltaQ = endQ - startQ;
-        double deltaR = endR - startR;
-        double lengthSquared = deltaQ * deltaQ + deltaR * deltaR;
-        if (lengthSquared <= 0.0) {
-            return Math.hypot(pointQ - startQ, pointR - startR);
-        }
-        double projection = ((pointQ - startQ) * deltaQ + (pointR - startR) * deltaR) / lengthSquared;
-        double clamped = Math.max(0.0, Math.min(1.0, projection));
-        double nearestQ = startQ + clamped * deltaQ;
-        double nearestR = startR + clamped * deltaR;
-        return Math.hypot(pointQ - nearestQ, pointR - nearestR);
-    }
-
-    private static long edgeClusterId(DungeonMapDisplayModel model, DungeonMapDisplayModel.RenderEdge edge) {
-        SimpleCell start = new SimpleCell((int) Math.round(edge.startQ()), (int) Math.round(edge.startR()), edge.z());
-        SimpleCell end = new SimpleCell((int) Math.round(edge.endQ()), (int) Math.round(edge.endR()), edge.z());
-        for (SimpleCell touchingCell : touchingCells(start, end)) {
-            for (DungeonMapDisplayModel.RenderCell cell : model.cells()) {
-                if (!cell.preview()
-                        && cell.z() == edge.z()
-                        && cell.clusterId() > 0L
-                        && cell.q() == touchingCell.q()
-                        && cell.r() == touchingCell.r()) {
-                    return cell.clusterId();
-                }
-            }
-        }
-        return 0L;
-    }
-
-    private static java.util.List<SimpleCell> touchingCells(SimpleCell start, SimpleCell end) {
-        if (start == null || end == null || start.z() != end.z()) {
-            return java.util.List.of();
-        }
-        if (start.r() == end.r()) {
-            return horizontalTouchingCells(start, end);
-        }
-        if (start.q() == end.q()) {
-            return verticalTouchingCells(start, end);
-        }
-        return java.util.List.of();
-    }
-
-    private static java.util.List<SimpleCell> horizontalTouchingCells(SimpleCell start, SimpleCell end) {
-        int minQ = Math.min(start.q(), end.q());
-        int maxQ = Math.max(start.q(), end.q());
-        java.util.List<SimpleCell> result = new java.util.ArrayList<>();
-        for (int q = minQ; q < maxQ; q++) {
-            result.add(new SimpleCell(q, start.r() - 1, start.z()));
-            result.add(new SimpleCell(q, start.r(), start.z()));
-        }
-        return java.util.List.copyOf(result);
-    }
-
-    private static java.util.List<SimpleCell> verticalTouchingCells(SimpleCell start, SimpleCell end) {
-        int minR = Math.min(start.r(), end.r());
-        int maxR = Math.max(start.r(), end.r());
-        java.util.List<SimpleCell> result = new java.util.ArrayList<>();
-        for (int r = minR; r < maxR; r++) {
-            result.add(new SimpleCell(start.q() - 1, r, start.z()));
-            result.add(new SimpleCell(start.q(), r, start.z()));
-        }
-        return java.util.List.copyOf(result);
+        return boundaryHitTester.boundaryTarget(model, worldQ, worldR, level, Math.max(7.0 / gridSize(), 0.22));
     }
 
     private static DungeonMapHitKind hitKind(DungeonMapDisplayModel.CellKind kind) {
@@ -807,13 +720,13 @@ public class DungeonMapMainView extends BorderPane {
             return cell.destructivePreview() ? color(0xff, 0xc1, 0x87, 1.0) : previewStroke();
         }
         if (cell.z() != projectionLevel) {
-            return blend(roomStroke(), cell.z() > projectionLevel ? aboveTint() : belowTint(), 0.62);
+            return blend(roomCellStroke(), cell.z() > projectionLevel ? aboveTint() : belowTint(), 0.62);
         }
         if (cell.selected()) {
             return selectedStroke();
         }
         return switch (cell.kind()) {
-            case ROOM -> roomStroke();
+            case ROOM -> roomCellStroke();
             case CORRIDOR, STAIR -> corridorStroke();
             case TRANSITION -> transitionStroke();
         };
@@ -975,6 +888,10 @@ public class DungeonMapMainView extends BorderPane {
         return color(0x8a, 0x6a, 0x35, 1.0);
     }
 
+    private Color roomCellStroke() {
+        return color(0x6d, 0x78, 0x81, 0.72);
+    }
+
     private Color wallStroke() {
         return color(0x8a, 0x6a, 0x35, 1.0);
     }
@@ -1080,13 +997,167 @@ public class DungeonMapMainView extends BorderPane {
     private record GraphPoint(double x, double y) {
     }
 
-    private record SimpleCell(int q, int r, int z) {
+    private static final class BoundaryHitTester {
+
+        private DungeonMapBoundaryTarget boundaryTarget(
+                DungeonMapDisplayModel model,
+                double worldQ,
+                double worldR,
+                int level,
+                double maxDistance
+        ) {
+            if (model == null) {
+                return DungeonMapBoundaryTarget.empty();
+            }
+            java.util.Map<CellKey, DungeonMapDisplayModel.RenderCell> roomCellsByPosition =
+                    roomCellsByPosition(model, level);
+            DungeonMapBoundaryTarget bestTarget = DungeonMapBoundaryTarget.empty();
+            double bestDistance = maxDistance;
+            for (int index = model.edges().size() - 1; index >= 0; index--) {
+                DungeonMapDisplayModel.RenderEdge edge = model.edges().get(index);
+                if (edge.preview() || edge.z() != level) {
+                    continue;
+                }
+                BoundaryCells touchingRooms = boundaryCells(edge, roomCellsByPosition);
+                if (touchingRooms == null) {
+                    continue;
+                }
+                double distance = distanceToSegment(worldQ, worldR, edge.startQ(), edge.startR(), edge.endQ(), edge.endR());
+                if (distance > bestDistance) {
+                    continue;
+                }
+                bestDistance = distance;
+                bestTarget = new DungeonMapBoundaryTarget(
+                        true,
+                        edge.kind().name(),
+                        edge.ownerId(),
+                        touchingRooms.clusterId(),
+                        edge.topologyRef().kind(),
+                        edge.topologyRef().id(),
+                        (int) Math.round(edge.startQ()),
+                        (int) Math.round(edge.startR()),
+                        (int) Math.round(edge.endQ()),
+                        (int) Math.round(edge.endR()),
+                        edge.z());
+            }
+            return bestTarget;
+        }
+
+        private static java.util.Map<CellKey, DungeonMapDisplayModel.RenderCell> roomCellsByPosition(
+                DungeonMapDisplayModel model,
+                int level
+        ) {
+            java.util.Map<CellKey, DungeonMapDisplayModel.RenderCell> result = new LinkedHashMap<>();
+            for (DungeonMapDisplayModel.RenderCell cell : model.cells()) {
+                if (cell.preview()
+                        || cell.kind() != DungeonMapDisplayModel.CellKind.ROOM
+                        || cell.clusterId() <= 0L
+                        || cell.z() != level) {
+                    continue;
+                }
+                result.putIfAbsent(new CellKey(cell.q(), cell.r(), cell.z()), cell);
+            }
+            return java.util.Map.copyOf(result);
+        }
+
+        private static @Nullable BoundaryCells boundaryCells(
+                DungeonMapDisplayModel.RenderEdge edge,
+                java.util.Map<CellKey, DungeonMapDisplayModel.RenderCell> roomCellsByPosition
+        ) {
+            if (edge == null || roomCellsByPosition.isEmpty()) {
+                return null;
+            }
+            CellKey start = new CellKey((int) Math.round(edge.startQ()), (int) Math.round(edge.startR()), edge.z());
+            CellKey end = new CellKey((int) Math.round(edge.endQ()), (int) Math.round(edge.endR()), edge.z());
+            java.util.List<CellKey> touchingCells = touchingCells(start, end);
+            if (touchingCells.isEmpty() || touchingCells.size() > 2) {
+                return null;
+            }
+            java.util.List<DungeonMapDisplayModel.RenderCell> touchingRooms = touchingCells.stream()
+                    .map(roomCellsByPosition::get)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+            if (touchingRooms.isEmpty()) {
+                return null;
+            }
+            long clusterId = touchingRooms.getFirst().clusterId();
+            if (clusterId <= 0L || touchingRooms.stream().anyMatch(cell -> cell.clusterId() != clusterId)) {
+                return null;
+            }
+            if (touchingRooms.size() == 1) {
+                return edge.kind() == DungeonMapDisplayModel.EdgeKind.WALL ? new BoundaryCells(clusterId) : null;
+            }
+            return new BoundaryCells(clusterId);
+        }
+
+        private static java.util.List<CellKey> touchingCells(CellKey start, CellKey end) {
+            if (start == null || end == null || start.z() != end.z()) {
+                return java.util.List.of();
+            }
+            if (start.r() == end.r()) {
+                return horizontalTouchingCells(start, end);
+            }
+            if (start.q() == end.q()) {
+                return verticalTouchingCells(start, end);
+            }
+            return java.util.List.of();
+        }
+
+        private static java.util.List<CellKey> horizontalTouchingCells(CellKey start, CellKey end) {
+            int minQ = Math.min(start.q(), end.q());
+            int maxQ = Math.max(start.q(), end.q());
+            java.util.List<CellKey> result = new java.util.ArrayList<>();
+            for (int q = minQ; q < maxQ; q++) {
+                result.add(new CellKey(q, start.r() - 1, start.z()));
+                result.add(new CellKey(q, start.r(), start.z()));
+            }
+            return java.util.List.copyOf(result);
+        }
+
+        private static java.util.List<CellKey> verticalTouchingCells(CellKey start, CellKey end) {
+            int minR = Math.min(start.r(), end.r());
+            int maxR = Math.max(start.r(), end.r());
+            java.util.List<CellKey> result = new java.util.ArrayList<>();
+            for (int r = minR; r < maxR; r++) {
+                result.add(new CellKey(start.q() - 1, r, start.z()));
+                result.add(new CellKey(start.q(), r, start.z()));
+            }
+            return java.util.List.copyOf(result);
+        }
+
+        private static double distanceToSegment(
+                double pointQ,
+                double pointR,
+                double startQ,
+                double startR,
+                double endQ,
+                double endR
+        ) {
+            double deltaQ = endQ - startQ;
+            double deltaR = endR - startR;
+            double lengthSquared = deltaQ * deltaQ + deltaR * deltaR;
+            if (lengthSquared <= 0.0) {
+                return Math.hypot(pointQ - startQ, pointR - startR);
+            }
+            double projection = ((pointQ - startQ) * deltaQ + (pointR - startR) * deltaR) / lengthSquared;
+            double clamped = Math.max(0.0, Math.min(1.0, projection));
+            double nearestQ = startQ + clamped * deltaQ;
+            double nearestR = startR + clamped * deltaR;
+            return Math.hypot(pointQ - nearestQ, pointR - nearestR);
+        }
+
+        private record CellKey(int q, int r, int z) {
+        }
+
+        private record BoundaryCells(long clusterId) {
+        }
     }
 
     public enum DungeonMapHitKind {
         EMPTY,
         HANDLE,
         LABEL,
+        BOUNDARY,
         ROOM,
         CORRIDOR,
         STAIR,

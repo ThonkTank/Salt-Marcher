@@ -1,4 +1,4 @@
-package src.view.slotcontent.controls.progressmeter;
+package src.view.primitives.progressmeter;
 
 import java.util.List;
 import java.util.function.IntConsumer;

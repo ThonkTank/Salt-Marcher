@@ -57,6 +57,7 @@ final class DungeonEditorBinder {
         controls.levelOverlayControls().setOnOpacityChanged(viewModel::selectOverlayOpacity);
         controls.levelOverlayControls().setOnSelectedLevelsChanged(viewModel::selectOverlayLevels);
         viewModel.snapshotProperty().addListener((ignored, before, after) -> mapViewModel.showSnapshot(after));
+        viewModel.previewSnapshotProperty().addListener((ignored, before, after) -> mapViewModel.showPreviewSnapshot(after));
         viewModel.selectionProperty().addListener((ignored, before, after) -> mapViewModel.showSelection(after));
         viewModel.inspectorProperty().addListener((ignored, before, after) -> syncStateView(viewModel, state));
         viewModel.pendingTopologyEditProperty()
@@ -291,6 +292,7 @@ final class DungeonEditorBinder {
             case EMPTY -> DungeonEditorViewModel.HitKind.EMPTY;
             case HANDLE -> DungeonEditorViewModel.HitKind.HANDLE;
             case LABEL -> DungeonEditorViewModel.HitKind.LABEL;
+            case BOUNDARY -> DungeonEditorViewModel.HitKind.BOUNDARY;
             case CORRIDOR -> DungeonEditorViewModel.HitKind.CORRIDOR;
             case STAIR -> DungeonEditorViewModel.HitKind.STAIR;
             case TRANSITION -> DungeonEditorViewModel.HitKind.TRANSITION;

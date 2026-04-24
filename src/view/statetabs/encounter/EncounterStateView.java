@@ -31,9 +31,9 @@ import org.jspecify.annotations.Nullable;
 import src.view.primitives.dialog.DialogSurfaceView;
 import src.view.primitives.dialog.DialogSurfaceView.BodyPolicy;
 import src.view.primitives.popup.AnchoredPopupView;
-import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
-import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupAction;
-import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupSpec;
+import src.view.primitives.progressmeter.ProgressMeterView;
+import src.view.primitives.progressmeter.ProgressMeterView.PopupAction;
+import src.view.primitives.progressmeter.ProgressMeterView.PopupSpec;
 import src.view.slotcontent.state.encounter.EncounterCombatPartyMemberButtonView;
 
 public final class EncounterStateView extends VBox {

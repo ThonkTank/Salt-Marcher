@@ -180,6 +180,16 @@ public final class DungeonMap {
         return this;
     }
 
+    public DungeonMap moveBoundaryStretch(
+            long clusterId,
+            List<DungeonEdge> sourceEdges,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return new DungeonRoomTopologyEditor().moveBoundaryStretch(this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
+    }
+
     public DungeonMapTopology topologyIndex() {
         return topologyIndex;
     }

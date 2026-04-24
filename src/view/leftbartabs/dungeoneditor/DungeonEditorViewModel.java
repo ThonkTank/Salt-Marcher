@@ -46,6 +46,7 @@ import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
+import src.domain.dungeon.published.PreviewDungeonEditorOperationQuery;
 import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.SearchMapsQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel;
@@ -63,6 +64,7 @@ public final class DungeonEditorViewModel {
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<DungeonSnapshot> snapshot = new ReadOnlyObjectWrapper<>();
+    private final ReadOnlyObjectWrapper<DungeonSnapshot> previewSnapshot = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<Selection> selection = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<DungeonInspectorSnapshot> inspector = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<EditorPreview> pendingTopologyEdit = new ReadOnlyObjectWrapper<>();
@@ -78,6 +80,7 @@ public final class DungeonEditorViewModel {
     private final StringProperty selectedTool = new SimpleStringProperty(DEFAULT_TOOL);
     private @Nullable DungeonMapId selectedMapId;
     private @Nullable DragSession dragSession;
+    private @Nullable BoundaryStretchSession boundaryStretchSession;
 
     public DungeonEditorViewModel(DungeonApplicationService dungeon) {
         this.dungeon = Objects.requireNonNull(dungeon, "dungeon");
@@ -94,6 +97,10 @@ public final class DungeonEditorViewModel {
 
     public ReadOnlyObjectProperty<DungeonSnapshot> snapshotProperty() {
         return snapshot.getReadOnlyProperty();
+    }
+
+    public ReadOnlyObjectProperty<DungeonSnapshot> previewSnapshotProperty() {
+        return previewSnapshot.getReadOnlyProperty();
     }
 
     public ReadOnlyObjectProperty<Selection> selectionProperty() {
@@ -287,6 +294,17 @@ public final class DungeonEditorViewModel {
             return false;
         }
         HitTarget hit = input.hitTarget();
+        BoundaryStretchSession nextBoundaryStretchSession = boundaryStretchSession(input);
+        if (nextBoundaryStretchSession != null) {
+            selection.set(nextBoundaryStretchSession.selection());
+            dragSession = null;
+            boundaryStretchSession = nextBoundaryStretchSession;
+            previewSnapshot.set(null);
+            pendingTopologyEdit.set(null);
+            refreshInspector();
+            refreshStateText();
+            return true;
+        }
         if (selectableHit(hit)) {
             DungeonMapDisplayModel.TopologyRef topologyRef =
                     new DungeonMapDisplayModel.TopologyRef(hit.topologyRefKind(), hit.topologyRefId());
@@ -313,6 +331,12 @@ public final class DungeonEditorViewModel {
 
     public void primaryDragged(@Nullable PointerInput input) {
         if (!interactionEnabled() || input == null || !input.primaryButtonDown()) {
+            return;
+        }
+        if (boundaryStretchSession != null) {
+            boundaryStretchSession = boundaryStretchSession.withCurrentPointer(input.q(), input.r());
+            showBoundaryStretchPreview(boundaryStretchSession);
+            refreshStateText();
             return;
         }
         if (updateBoundaryPreview(input)) {
@@ -357,6 +381,26 @@ public final class DungeonEditorViewModel {
                 && paintInteraction.preview() == null) {
             pendingTopologyEdit.set(null);
         }
+        if (boundaryStretchSession != null) {
+            BoundaryStretchSession releasedSession = input == null
+                    ? boundaryStretchSession
+                    : boundaryStretchSession.withCurrentPointer(input.q(), input.r());
+            boundaryStretchSession = null;
+            previewSnapshot.set(null);
+            pendingTopologyEdit.set(null);
+            if (!interactionEnabled() || !selectionToolSelected()) {
+                refreshStateText();
+                return;
+            }
+            if (!releasedSession.moved()) {
+                selection.set(releasedSession.selection());
+                refreshInspector();
+                refreshStateText();
+                return;
+            }
+            applyBoundaryStretch(releasedSession);
+            return;
+        }
         if (dragSession == null || input == null) {
             return;
         }
@@ -373,6 +417,10 @@ public final class DungeonEditorViewModel {
 
     public void levelScrolled(int delta) {
         if (delta == 0) {
+            return;
+        }
+        if (boundaryStretchSession != null) {
+            refreshStateText();
             return;
         }
         if (dragSession == null) {
@@ -427,6 +475,8 @@ public final class DungeonEditorViewModel {
     }
 
     private void loadSelectedMap() {
+        boundaryStretchSession = null;
+        previewSnapshot.set(null);
         if (selectedMapId == null) {
             snapshot.set(null);
             reachableLevels.set(List.of(0));
@@ -488,11 +538,19 @@ public final class DungeonEditorViewModel {
                     + (boundaryEdges.deleteMode() ? "Kanten loeschen" : "Kanten setzen")
                     + " (" + boundaryEdges.edges().size() + ")";
         }
+        if (preview instanceof EditorPreview.BoundaryStretchMove boundaryStretchMove) {
+            return "Topologie-Preview: Wandstrecke verschieben dq=" + boundaryStretchMove.deltaQ()
+                    + ", dr=" + boundaryStretchMove.deltaR()
+                    + ", dz=" + boundaryStretchMove.deltaLevel()
+                    + " (" + boundaryStretchMove.sourceEdges().size() + ")";
+        }
         return "Topologie-Preview: aktiv";
     }
 
     private boolean updateBoundaryPreview(PointerInput input) {
-        if (!boundaryInteraction.handles(selectedTool.get()) || !boundaryInteraction.hasDraft()) {
+        if (!boundaryInteraction.handles(selectedTool.get())
+                || (!boundaryInteraction.hasDraft()
+                && !boundaryInteraction.previewsWithoutDraft(selectedTool.get()))) {
             return false;
         }
         pendingTopologyEdit.set(boundaryInteraction.preview(input, selectedTool.get(), snapshot.get()));
@@ -515,6 +573,7 @@ public final class DungeonEditorViewModel {
                             releasedSession.deltaR(),
                             releasedSession.deltaLevel())));
             snapshot.set(result.snapshot());
+            previewSnapshot.set(null);
             reachableLevels.set(levelsFrom(result.snapshot(), projectionLevel.get()));
             status.set("Topologieelement verschoben: dq=" + releasedSession.deltaQ()
                     + ", dr=" + releasedSession.deltaR()
@@ -533,6 +592,80 @@ public final class DungeonEditorViewModel {
                 session.deltaLevel(),
                 session.selection().handleRef(),
                 session.selection().label()));
+    }
+
+    private @Nullable BoundaryStretchSession boundaryStretchSession(PointerInput input) {
+        if (input == null
+                || !selectionToolSelected()
+                || !input.primaryButtonDown()
+                || input.boundaryTarget() == null
+                || !input.boundaryTarget().present()) {
+            return null;
+        }
+        BoundaryTarget boundaryTarget = input.boundaryTarget();
+        BoundaryStretchOrientation orientation = BoundaryStretchOrientation.from(boundaryTarget);
+        if (orientation == null || boundaryTarget.clusterId() <= 0L) {
+            return null;
+        }
+        List<DungeonEdgeRef> sourceEdges = resolveBoundaryStretchEdges(snapshot.get(), boundaryTarget, orientation);
+        if (sourceEdges.isEmpty()) {
+            return null;
+        }
+        Selection nextSelection = selectionForBoundaryStretch(snapshot.get(), selection.get(), boundaryTarget);
+        return new BoundaryStretchSession(
+                nextSelection,
+                boundaryTarget.clusterId(),
+                sourceEdges,
+                orientation,
+                input.q(),
+                input.r(),
+                input.level(),
+                input.q(),
+                input.r());
+    }
+
+    private void showBoundaryStretchPreview(BoundaryStretchSession session) {
+        if (session == null || !session.moved()) {
+            previewSnapshot.set(null);
+            pendingTopologyEdit.set(null);
+            return;
+        }
+        pendingTopologyEdit.set(session.preview());
+        DungeonMapId mapId = selectedMapId;
+        DungeonSnapshot baseSnapshot = snapshot.get();
+        if (mapId == null || baseSnapshot == null) {
+            previewSnapshot.set(null);
+            return;
+        }
+        DungeonSnapshot nextPreviewSnapshot = dungeon.previewOperation(new PreviewDungeonEditorOperationQuery(
+                mapId,
+                session.operation()));
+        previewSnapshot.set(Objects.equals(nextPreviewSnapshot.map(), baseSnapshot.map()) ? null : nextPreviewSnapshot);
+    }
+
+    private void applyBoundaryStretch(BoundaryStretchSession session) {
+        DungeonMapId mapId = selectedMapId;
+        DungeonSnapshot baseSnapshot = snapshot.get();
+        if (mapId == null || baseSnapshot == null) {
+            return;
+        }
+        withBusy(() -> {
+            DungeonOperationResult result = dungeon.applyOperation(new ApplyDungeonEditorOperationCommand(
+                    mapId,
+                    session.operation()));
+            snapshot.set(result.snapshot());
+            previewSnapshot.set(null);
+            reachableLevels.set(levelsFrom(result.snapshot(), projectionLevel.get()));
+            boolean changed = !Objects.equals(result.snapshot().map(), baseSnapshot.map());
+            status.set(changed
+                    ? "Wandstrecke verschoben: dq=" + session.deltaQ()
+                            + ", dr=" + session.deltaR()
+                            + ", dz=" + session.deltaLevel()
+                    : "Wandstrecke konnte nicht verschoben werden.");
+            selection.set(session.selection());
+            refreshInspector();
+        });
+        refreshStateText();
     }
 
     private void applyPaintCommit(PaintInteraction.PaintCommit commit) {
@@ -559,6 +692,7 @@ public final class DungeonEditorViewModel {
                     mapId,
                     operation));
             snapshot.set(result.snapshot());
+            previewSnapshot.set(null);
             reachableLevels.set(levelsFrom(result.snapshot(), projectionLevel.get()));
             status.set(statusText);
             selection.set(null);
@@ -588,8 +722,10 @@ public final class DungeonEditorViewModel {
 
     private void clearInteraction() {
         dragSession = null;
+        boundaryStretchSession = null;
         paintInteraction.clear();
         boundaryInteraction.clear();
+        previewSnapshot.set(null);
         pendingTopologyEdit.set(null);
         selection.set(null);
         inspector.set(null);
@@ -683,6 +819,187 @@ public final class DungeonEditorViewModel {
                 .orElse(null);
     }
 
+    private static Selection selectionForBoundaryStretch(
+            @Nullable DungeonSnapshot snapshot,
+            @Nullable Selection currentSelection,
+            BoundaryTarget boundaryTarget
+    ) {
+        if (currentSelection != null
+                && currentSelection.clusterSelection()
+                && currentSelection.clusterId() == boundaryTarget.clusterId()) {
+            return currentSelection;
+        }
+        DungeonAreaSnapshot clusterArea = firstClusterArea(snapshot, boundaryTarget.clusterId());
+        if (clusterArea != null) {
+            return new Selection(
+                    clusterArea.id(),
+                    clusterArea.clusterId(),
+                    clusterArea.label(),
+                    new DungeonMapDisplayModel.TopologyRef(
+                            clusterArea.topologyRef().kind().name(),
+                            clusterArea.topologyRef().id()),
+                    true);
+        }
+        return new Selection(
+                boundaryTarget.ownerId(),
+                boundaryTarget.clusterId(),
+                "Cluster " + boundaryTarget.clusterId(),
+                new DungeonMapDisplayModel.TopologyRef(boundaryTarget.topologyRefKind(), boundaryTarget.topologyRefId()),
+                true);
+    }
+
+    private static @Nullable DungeonAreaSnapshot firstClusterArea(@Nullable DungeonSnapshot snapshot, long clusterId) {
+        if (snapshot == null || snapshot.map() == null || clusterId <= 0L) {
+            return null;
+        }
+        return snapshot.map().areas().stream()
+                .filter(area -> area.kind() == DungeonAreaKind.ROOM && area.clusterId() == clusterId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static List<DungeonEdgeRef> resolveBoundaryStretchEdges(
+            @Nullable DungeonSnapshot snapshot,
+            BoundaryTarget boundaryTarget,
+            BoundaryStretchOrientation orientation
+    ) {
+        if (snapshot == null || snapshot.map() == null || !boundaryTarget.present()) {
+            return List.of();
+        }
+        int level = boundaryTarget.start().level();
+        Set<DungeonCellRef> clusterCells = clusterCells(snapshot, boundaryTarget.clusterId(), level);
+        if (clusterCells.isEmpty()) {
+            return List.of();
+        }
+        DungeonEdgeRef clickedEdge = new DungeonEdgeRef(boundaryTarget.start(), boundaryTarget.end());
+        int clickedTouchCount = touchingClusterCount(clickedEdge, clusterCells);
+        if (clickedTouchCount < 1) {
+            return List.of();
+        }
+        boolean outer = clickedTouchCount == 1;
+        int fixedCoordinate = fixedCoordinate(orientation, clickedEdge);
+        Map<Integer, DungeonEdgeRef> edgesByVariable = new LinkedHashMap<>();
+        for (DungeonBoundarySnapshot boundary : snapshot.map().boundaries()) {
+            DungeonEdgeRef edge = boundary.edge();
+            if (edge == null
+                    || edge.from() == null
+                    || edge.to() == null
+                    || edge.from().level() != level
+                    || edge.to().level() != level
+                    || !sameOrientation(orientation, edge)
+                    || fixedCoordinate(orientation, edge) != fixedCoordinate) {
+                continue;
+            }
+            int touchCount = touchingClusterCount(edge, clusterCells);
+            if (touchCount < 1 || (touchCount == 1) != outer) {
+                continue;
+            }
+            edgesByVariable.put(variableCoordinate(orientation, edge), edge);
+        }
+        int start = variableCoordinate(orientation, clickedEdge);
+        int min = start;
+        int max = start;
+        while (edgesByVariable.containsKey(min - 1)) {
+            min--;
+        }
+        while (edgesByVariable.containsKey(max + 1)) {
+            max++;
+        }
+        List<DungeonEdgeRef> result = new ArrayList<>();
+        for (int variable = min; variable <= max; variable++) {
+            DungeonEdgeRef edge = edgesByVariable.get(variable);
+            if (edge != null) {
+                result.add(edge);
+            }
+        }
+        if (result.isEmpty() && boundaryTarget.start() != null && boundaryTarget.end() != null) {
+            return List.of(clickedEdge);
+        }
+        return List.copyOf(result);
+    }
+
+    private static Set<DungeonCellRef> clusterCells(@Nullable DungeonSnapshot snapshot, long clusterId, int level) {
+        if (snapshot == null || snapshot.map() == null || clusterId <= 0L) {
+            return Set.of();
+        }
+        Set<DungeonCellRef> result = new LinkedHashSet<>();
+        for (DungeonAreaSnapshot area : snapshot.map().areas()) {
+            if (area.kind() != DungeonAreaKind.ROOM || area.clusterId() != clusterId) {
+                continue;
+            }
+            for (DungeonCellRef cell : area.cells()) {
+                if (cell.level() == level) {
+                    result.add(cell);
+                }
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static int touchingClusterCount(DungeonEdgeRef edge, Set<DungeonCellRef> clusterCells) {
+        int count = 0;
+        for (DungeonCellRef touchingCell : touchingCells(edge)) {
+            if (clusterCells.contains(touchingCell)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static List<DungeonCellRef> touchingCells(DungeonEdgeRef edge) {
+        DungeonCellRef from = edge == null ? null : edge.from();
+        DungeonCellRef to = edge == null ? null : edge.to();
+        if (from == null || to == null || from.level() != to.level()) {
+            return List.of();
+        }
+        if (from.r() == to.r()) {
+            return horizontalTouchingCells(from, to);
+        }
+        if (from.q() == to.q()) {
+            return verticalTouchingCells(from, to);
+        }
+        return List.of();
+    }
+
+    private static List<DungeonCellRef> horizontalTouchingCells(DungeonCellRef from, DungeonCellRef to) {
+        int minQ = Math.min(from.q(), to.q());
+        int maxQ = Math.max(from.q(), to.q());
+        List<DungeonCellRef> result = new ArrayList<>();
+        for (int q = minQ; q < maxQ; q++) {
+            result.add(new DungeonCellRef(q, from.r() - 1, from.level()));
+            result.add(new DungeonCellRef(q, from.r(), from.level()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonCellRef> verticalTouchingCells(DungeonCellRef from, DungeonCellRef to) {
+        int minR = Math.min(from.r(), to.r());
+        int maxR = Math.max(from.r(), to.r());
+        List<DungeonCellRef> result = new ArrayList<>();
+        for (int r = minR; r < maxR; r++) {
+            result.add(new DungeonCellRef(from.q() - 1, r, from.level()));
+            result.add(new DungeonCellRef(from.q(), r, from.level()));
+        }
+        return List.copyOf(result);
+    }
+
+    private static boolean sameOrientation(BoundaryStretchOrientation orientation, DungeonEdgeRef edge) {
+        return switch (orientation) {
+            case HORIZONTAL -> edge.from().r() == edge.to().r();
+            case VERTICAL -> edge.from().q() == edge.to().q();
+        };
+    }
+
+    private static int fixedCoordinate(BoundaryStretchOrientation orientation, DungeonEdgeRef edge) {
+        return orientation == BoundaryStretchOrientation.VERTICAL ? edge.from().q() : edge.from().r();
+    }
+
+    private static int variableCoordinate(BoundaryStretchOrientation orientation, DungeonEdgeRef edge) {
+        return orientation == BoundaryStretchOrientation.VERTICAL
+                ? Math.min(edge.from().r(), edge.to().r())
+                : Math.min(edge.from().q(), edge.to().q());
+    }
+
     private static MapSelection toMapSelection(DungeonMapSummary summary) {
         return new MapSelection(
                 key(summary.mapId()),
@@ -733,6 +1050,7 @@ public final class DungeonEditorViewModel {
         EMPTY,
         HANDLE,
         LABEL,
+        BOUNDARY,
         ROOM,
         CORRIDOR,
         STAIR,
@@ -860,6 +1178,10 @@ public final class DungeonEditorViewModel {
             return draft != null;
         }
 
+        boolean previewsWithoutDraft(String selectedTool) {
+            return doorToolSelected(selectedTool);
+        }
+
         PressResult press(
                 PointerInput input,
                 String selectedTool,
@@ -898,6 +1220,9 @@ public final class DungeonEditorViewModel {
                 String selectedTool,
                 @Nullable DungeonSnapshot snapshot
         ) {
+            if (doorToolSelected(selectedTool)) {
+                return doorPreview(input, selectedTool, snapshot);
+            }
             BoundaryDraft currentDraft = draft;
             if (currentDraft == null) {
                 return null;
@@ -960,21 +1285,35 @@ public final class DungeonEditorViewModel {
                     : findCreatePath(snapshot, currentDraft.clusterId(), currentDraft.currentVertex(), nextVertex);
         }
 
+        private static @Nullable EditorPreview doorPreview(
+                PointerInput input,
+                String selectedTool,
+                @Nullable DungeonSnapshot snapshot
+        ) {
+            BoundaryTarget boundary = input == null ? null : input.boundaryTarget();
+            boolean deleteMode = DOOR_DELETE_TOOL.equals(selectedTool);
+            if (!editableDoorBoundary(snapshot, boundary, deleteMode)) {
+                return null;
+            }
+            BoundaryTarget safeBoundary = Objects.requireNonNull(boundary);
+            return new EditorPreview.BoundaryEdges(
+                    safeBoundary.clusterId(),
+                    List.of(edgeRef(safeBoundary.start(), safeBoundary.end())),
+                    DungeonBoundaryKind.DOOR,
+                    deleteMode);
+        }
+
         private PressResult doorPressed(
                 PointerInput input,
                 String selectedTool,
                 @Nullable DungeonSnapshot snapshot
         ) {
             BoundaryTarget boundary = input.boundaryTarget();
-            if (!input.primaryButtonDown() || boundary == null || !boundary.present() || boundary.clusterId() <= 0L) {
+            if (!input.primaryButtonDown()) {
                 return PressResult.ignored();
             }
             boolean deleteMode = DOOR_DELETE_TOOL.equals(selectedTool);
-            if (deleteMode) {
-                if (!"DOOR".equals(boundary.kind())) {
-                    return PressResult.ignored();
-                }
-            } else if ("DOOR".equals(boundary.kind()) || !touchesDistinctRooms(snapshot, boundary)) {
+            if (!editableDoorBoundary(snapshot, boundary, deleteMode)) {
                 return PressResult.ignored();
             }
             DungeonEditorOperation operation = new DungeonEditorOperation.EditClusterBoundaries(
@@ -1338,6 +1677,20 @@ public final class DungeonEditorViewModel {
             return !"door".equalsIgnoreCase(boundary.kind());
         }
 
+        private static boolean editableDoorBoundary(
+                @Nullable DungeonSnapshot snapshot,
+                @Nullable BoundaryTarget boundary,
+                boolean deleteMode
+        ) {
+            if (boundary == null || !boundary.present() || boundary.clusterId() <= 0L) {
+                return false;
+            }
+            if (deleteMode) {
+                return "DOOR".equals(boundary.kind());
+            }
+            return !"DOOR".equals(boundary.kind()) && touchesDistinctRooms(snapshot, boundary);
+        }
+
         private static boolean touchesDistinctRooms(@Nullable DungeonSnapshot snapshot, BoundaryTarget boundary) {
             if (snapshot == null || snapshot.map() == null || boundary == null) {
                 return false;
@@ -1697,6 +2050,94 @@ public final class DungeonEditorViewModel {
 
         DragSession withCurrentLevel(int nextLevel) {
             return new DragSession(selection, pressQ, pressR, currentQ, currentR, pressLevel, nextLevel, baseSnapshot);
+        }
+    }
+
+    private enum BoundaryStretchOrientation {
+        HORIZONTAL,
+        VERTICAL;
+
+        private static @Nullable BoundaryStretchOrientation from(BoundaryTarget boundaryTarget) {
+            if (boundaryTarget == null || !boundaryTarget.present()) {
+                return null;
+            }
+            DungeonCellRef start = boundaryTarget.start();
+            DungeonCellRef end = boundaryTarget.end();
+            if (start == null || end == null) {
+                return null;
+            }
+            if (start.q() == end.q()) {
+                return VERTICAL;
+            }
+            if (start.r() == end.r()) {
+                return HORIZONTAL;
+            }
+            return null;
+        }
+    }
+
+    private record BoundaryStretchSession(
+            Selection selection,
+            long clusterId,
+            List<DungeonEdgeRef> sourceEdges,
+            BoundaryStretchOrientation orientation,
+            int pressQ,
+            int pressR,
+            int pressLevel,
+            int currentQ,
+            int currentR
+    ) {
+        private BoundaryStretchSession {
+            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
+            orientation = orientation == null ? BoundaryStretchOrientation.VERTICAL : orientation;
+        }
+
+        BoundaryStretchSession withCurrentPointer(int nextQ, int nextR) {
+            return new BoundaryStretchSession(
+                    selection,
+                    clusterId,
+                    sourceEdges,
+                    orientation,
+                    pressQ,
+                    pressR,
+                    pressLevel,
+                    nextQ,
+                    nextR);
+        }
+
+        int deltaQ() {
+            return orientation == BoundaryStretchOrientation.VERTICAL ? currentQ - pressQ : 0;
+        }
+
+        int deltaR() {
+            return orientation == BoundaryStretchOrientation.HORIZONTAL ? currentR - pressR : 0;
+        }
+
+        int deltaLevel() {
+            return 0;
+        }
+
+        boolean moved() {
+            return deltaQ() != 0 || deltaR() != 0;
+        }
+
+        EditorPreview.BoundaryStretchMove preview() {
+            return new EditorPreview.BoundaryStretchMove(
+                    clusterId,
+                    sourceEdges,
+                    deltaQ(),
+                    deltaR(),
+                    deltaLevel(),
+                    selection == null ? "" : selection.label());
+        }
+
+        DungeonEditorOperation operation() {
+            return new DungeonEditorOperation.MoveBoundaryStretch(
+                    clusterId,
+                    sourceEdges,
+                    deltaQ(),
+                    deltaR(),
+                    deltaLevel());
         }
     }
 

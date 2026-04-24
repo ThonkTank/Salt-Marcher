@@ -25,6 +25,7 @@ public final class ApplyDungeonEditorOperationUseCase {
     public sealed interface OperationInput permits
             OperationInput.MoveTopologyElement,
             OperationInput.MoveEditorHandle,
+            OperationInput.MoveBoundaryStretch,
             OperationInput.MoveRoomAnchor,
             OperationInput.PaintRoomRectangle,
             OperationInput.DeleteRoomRectangle,
@@ -38,6 +39,19 @@ public final class ApplyDungeonEditorOperationUseCase {
 
         record MoveEditorHandle(DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel)
                 implements OperationInput {
+        }
+
+        record MoveBoundaryStretch(
+                long clusterId,
+                List<DungeonEdge> sourceEdges,
+                int deltaQ,
+                int deltaR,
+                int deltaLevel
+        ) implements OperationInput {
+            public MoveBoundaryStretch {
+                clusterId = Math.max(0L, clusterId);
+                sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
+            }
         }
 
         record MoveRoomAnchor(int deltaQ, int deltaR) implements OperationInput {
@@ -140,6 +154,14 @@ public final class ApplyDungeonEditorOperationUseCase {
                     moveEditorHandle.deltaQ(),
                     moveEditorHandle.deltaR(),
                     moveEditorHandle.deltaLevel());
+        }
+        if (operation instanceof OperationInput.MoveBoundaryStretch moveBoundaryStretch) {
+            return current.moveBoundaryStretch(
+                    moveBoundaryStretch.clusterId(),
+                    moveBoundaryStretch.sourceEdges(),
+                    moveBoundaryStretch.deltaQ(),
+                    moveBoundaryStretch.deltaR(),
+                    moveBoundaryStretch.deltaLevel());
         }
         if (operation instanceof OperationInput.MoveRoomAnchor moveRoomAnchor) {
             return current.moveRoomAnchor(moveRoomAnchor.deltaQ(), moveRoomAnchor.deltaR());

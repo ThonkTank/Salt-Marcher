@@ -1,8 +1,8 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-23
-Source of Truth: Reusable passive JavaFX progress-meter primitive for
-`src/view/**` surfaces that need an overlaid progress track.
+Source of Truth: Reusable passive JavaFX progress-meter primitive under
+`src/view/primitives`.
 
 # Progress Meter
 

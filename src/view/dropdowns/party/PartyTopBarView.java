@@ -26,9 +26,9 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import src.view.primitives.popup.AnchoredPopupView;
-import src.view.slotcontent.controls.progressmeter.ProgressMeterView;
-import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupAction;
-import src.view.slotcontent.controls.progressmeter.ProgressMeterView.PopupSpec;
+import src.view.primitives.progressmeter.ProgressMeterView;
+import src.view.primitives.progressmeter.ProgressMeterView.PopupAction;
+import src.view.primitives.progressmeter.ProgressMeterView.PopupSpec;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 public final class PartyTopBarView extends HBox {

@@ -270,6 +270,14 @@ public final class DungeonApplicationService {
                         moveEditorHandle.deltaR(),
                         moveEditorHandle.deltaLevel());
             }
+            if (operation instanceof DungeonEditorOperation.MoveBoundaryStretch moveBoundaryStretch) {
+                return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveBoundaryStretch(
+                        moveBoundaryStretch.clusterId(),
+                        moveBoundaryStretch.sourceEdges().stream().map(MapPublication::domainEdge).toList(),
+                        moveBoundaryStretch.deltaQ(),
+                        moveBoundaryStretch.deltaR(),
+                        moveBoundaryStretch.deltaLevel());
+            }
             if (operation instanceof DungeonEditorOperation.MoveRoomAnchor moveRoomAnchor) {
                 return new ApplyDungeonEditorOperationUseCase.OperationInput.MoveRoomAnchor(
                         moveRoomAnchor.deltaQ(),
