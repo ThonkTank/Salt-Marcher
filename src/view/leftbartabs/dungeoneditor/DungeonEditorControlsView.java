@@ -20,11 +20,11 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
-import src.view.primitives.dialog.DialogSurfaceView;
-import src.view.primitives.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
-import src.view.primitives.popup.AnchoredPopupView;
+import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class DungeonEditorControlsView extends DungeonControlPanelView {
 

@@ -28,9 +28,7 @@ import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.EncounterTableSummary;
 import src.domain.encountertable.published.LoadEncounterTableSummariesQuery;
-import src.view.slotcontent.controls.catalog.CatalogControlsView;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
-import src.view.slotcontent.main.catalog.CatalogMainView;
 
 final class CatalogBinder {
 

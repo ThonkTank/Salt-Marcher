@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 import javafx.scene.paint.Color;
 import org.jspecify.annotations.Nullable;
-import src.view.slotcontent.main.mapcanvas.MapCanvasView;
-import src.view.slotcontent.main.mapcanvas.MapRenderScene;
+import src.view.slotcontent.primitives.mapcanvas.MapCanvasView;
+import src.view.slotcontent.primitives.mapcanvas.MapRenderScene;
 
 public class DungeonMapView extends MapCanvasView {
 

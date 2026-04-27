@@ -10,7 +10,6 @@ import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.CalculateAdventuringDayQuery;
 import src.domain.party.published.LoadAdventuringDaySummaryQuery;
-import src.view.slotcontent.topbar.adventuringday.AdventuringDayCalculatorView;
 
 final class AdventuringDayTopBarBinder {
 

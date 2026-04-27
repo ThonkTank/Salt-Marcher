@@ -17,7 +17,6 @@ import src.domain.encounter.published.LoadEncounterSessionQuery;
 import src.domain.encounter.published.EncounterSessionModel;
 import src.domain.encounter.published.EncounterSessionSnapshot;
 import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
-import src.view.slotcontent.state.encounter.EncounterCombatPartyMemberButtonView;
 
 final class EncounterStateBinder {
 

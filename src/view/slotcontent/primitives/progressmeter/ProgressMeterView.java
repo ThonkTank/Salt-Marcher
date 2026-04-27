@@ -1,4 +1,4 @@
-package src.view.primitives.progressmeter;
+package src.view.slotcontent.primitives.progressmeter;
 
 import java.util.List;
 import java.util.function.IntConsumer;
@@ -13,7 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.jspecify.annotations.Nullable;
-import src.view.primitives.popup.AnchoredPopupView;
+import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class ProgressMeterView extends StackPane {
 

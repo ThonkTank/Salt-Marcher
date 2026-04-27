@@ -1,4 +1,4 @@
-package src.view.slotcontent.topbar.adventuringday;
+package src.view.dropdowns.adventuringday;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;

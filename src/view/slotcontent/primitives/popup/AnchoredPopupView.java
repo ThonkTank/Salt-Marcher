@@ -1,4 +1,4 @@
-package src.view.primitives.popup;
+package src.view.slotcontent.primitives.popup;
 
 import javafx.application.Platform;
 import javafx.event.EventHandler;

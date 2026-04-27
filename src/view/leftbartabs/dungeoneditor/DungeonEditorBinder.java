@@ -31,7 +31,7 @@ import src.domain.dungeon.published.SearchMapsQuery;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapPresentationModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
-import src.view.slotcontent.main.mapcanvas.CanvasPointerEvent;
+import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent;
 
 final class DungeonEditorBinder {
 

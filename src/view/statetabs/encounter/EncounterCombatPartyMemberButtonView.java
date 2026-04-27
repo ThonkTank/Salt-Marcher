@@ -1,4 +1,4 @@
-package src.view.slotcontent.state.encounter;
+package src.view.statetabs.encounter;
 
 import java.util.List;
 import javafx.scene.control.Button;

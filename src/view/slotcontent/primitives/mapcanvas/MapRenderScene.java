@@ -1,4 +1,4 @@
-package src.view.slotcontent.main.mapcanvas;
+package src.view.slotcontent.primitives.mapcanvas;
 
 import java.util.List;
 import javafx.scene.paint.Color;

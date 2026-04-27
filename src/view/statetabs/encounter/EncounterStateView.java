@@ -28,13 +28,12 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
-import src.view.primitives.dialog.DialogSurfaceView;
-import src.view.primitives.dialog.DialogSurfaceView.BodyPolicy;
-import src.view.primitives.popup.AnchoredPopupView;
-import src.view.primitives.progressmeter.ProgressMeterView;
-import src.view.primitives.progressmeter.ProgressMeterView.PopupAction;
-import src.view.primitives.progressmeter.ProgressMeterView.PopupSpec;
-import src.view.slotcontent.state.encounter.EncounterCombatPartyMemberButtonView;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
+import src.view.slotcontent.primitives.popup.AnchoredPopupView;
+import src.view.slotcontent.primitives.progressmeter.ProgressMeterView;
+import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupAction;
+import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupSpec;
 
 public final class EncounterStateView extends VBox {
 

@@ -1,4 +1,4 @@
-package src.view.slotcontent.state.encounter;
+package src.view.statetabs.encounter;
 
 import java.util.List;
 import java.util.Objects;
@@ -12,7 +12,7 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import src.view.primitives.popup.AnchoredPopupView;
+import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class EncounterCombatPartyMemberPopupView {
 
