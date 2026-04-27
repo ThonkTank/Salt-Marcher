@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Typed lookup registry for runtime services assembled during bootstrap.
@@ -34,6 +35,7 @@ public final class ServiceRegistry {
     public static final class Builder {
 
         private final Map<Class<?>, Object> services = new LinkedHashMap<>();
+        private final Map<Class<?>, Function<ServiceRegistry, ?>> factories = new LinkedHashMap<>();
 
         public <T> Builder register(Class<T> serviceType, T service) {
             Objects.requireNonNull(serviceType, "serviceType");
@@ -45,8 +47,30 @@ public final class ServiceRegistry {
             return this;
         }
 
+        public <T> Builder registerFactory(Class<T> serviceType, Function<ServiceRegistry, T> factory) {
+            Objects.requireNonNull(serviceType, "serviceType");
+            Objects.requireNonNull(factory, "factory");
+            if (services.containsKey(serviceType) || factories.containsKey(serviceType)) {
+                throw new IllegalStateException("Runtime service already registered: " + serviceType.getName());
+            }
+            factories.put(serviceType, factory);
+            return this;
+        }
+
         public ServiceRegistry build() {
-            return new ServiceRegistry(services);
+            Map<Class<?>, Object> resolved = new LinkedHashMap<>(services);
+            ServiceRegistry visibleRegistry = new ServiceRegistry(resolved);
+            for (Map.Entry<Class<?>, Function<ServiceRegistry, ?>> entry : factories.entrySet()) {
+                Object service = Objects.requireNonNull(
+                        entry.getValue().apply(visibleRegistry),
+                        () -> "Runtime service factory returned null: " + entry.getKey().getName());
+                Object previous = resolved.putIfAbsent(entry.getKey(), service);
+                if (previous != null) {
+                    throw new IllegalStateException("Runtime service already registered: " + entry.getKey().getName());
+                }
+                visibleRegistry = new ServiceRegistry(resolved);
+            }
+            return visibleRegistry;
         }
     }
 }

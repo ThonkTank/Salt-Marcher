@@ -1,11 +1,11 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
-Source of Truth: Legacy entry point retained for compatibility; canonical party
-persistence documentation now lives in co-located files under `src/`.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/party/contract/contract-party-persistence.md`.
 
-# Party Persistence Documentation
+# Party Persistence Stub
 
-This legacy path is retained as a pointer only.
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-Use [Party Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/PERSISTENCE.md:1).
+- [contract-party-persistence.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/contract/contract-party-persistence.md:1)

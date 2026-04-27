@@ -1,45 +1,11 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
-Source of Truth: Persistence path and schema ownership rules for the
-`encountertable` feature.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/encountertable/contract/contract-encountertable-persistence.md`.
 
-# Encounter Table Persistence
+# Persistence Stub
 
-This document is normative for the `encountertable` feature's persistence path.
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-## Root Contract
-
-- `src/data/encountertable/EncounterTableServiceContribution.java` is the only
-  root service entrypoint for the feature.
-- Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers `EncounterTableApplicationService.class` through
-  the shell-owned service registry.
-- Domain ports are implementation collaborators and must not be exported as
-  runtime services.
-
-## Mandatory Schema
-
-- `src/data/encountertable/model/EncounterTablePersistenceSchema.java` is the
-  canonical in-code schema declaration for this feature.
-- The schema owns:
-  - `encounter_tables`
-  - `encounter_table_entries`
-  - `encounter_table_loot_links`
-
-## Read Path Responsibilities
-
-- `SqliteEncounterTableLocalGateway` owns connection lifecycle and schema
-  readiness.
-- `EncounterTableSqliteStore` owns SQL for table summaries and weighted
-  generation candidate lookup.
-- `SqliteEncounterTableCatalogAdapter` maps persistence records to the
-  domain-owned `EncounterTableCatalog` port.
-
-## Stability Rules
-
-- The data slice is read-only for this parity step.
-- Encounter-table candidate lookup may join creature rows for snapshots, but it
-  must not mutate creature data.
-- Optional loot links are warning context only and do not block encounter
-  generation.
+- [contract-encountertable-persistence.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/contract/contract-encountertable-persistence.md:1)

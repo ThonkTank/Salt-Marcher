@@ -1,18 +1,11 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
-Source of Truth: Entry point and document map for the party feature.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/party/README.md`.
 
-# Party Feature README
+# Readme Stub
 
-## Purpose
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-The party feature owns party composition, party persistence behavior, and the
-public backend boundary formed by
-`src/domain/party/PartyApplicationService.java` plus
-`src/domain/party/published/**`.
-
-## Documentation Set
-
-- [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/party/DOMAIN.md:1)
-- [Party Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/party/PERSISTENCE.md:1)
+- [README.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/README.md:1)

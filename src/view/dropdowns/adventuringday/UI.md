@@ -1,43 +1,11 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
-Source of Truth: Adventuring-day top-bar trigger and dropdown calculator.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/party/requirements/requirements-adventuring-day-dropdown.md`.
 
-# Adventuring Day Top-Bar UI
+# Ui Stub
 
-## Component Purpose
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-The Adventuring Day top-bar dropdown restores the original separate rest-budget
-trigger next to the Party trigger. It reads the active party's adventuring-day
-summary for the trigger and hosts the original-style adventuring-day calculator
-as a top-bar control panel.
-
-Current state:
-
-- The trigger reads the active party's rest-budget summary from the party
-  application service.
-- The dropdown renders the calculator surface with active-party and custom
-  party input modes.
-- Calculation decisions are requested through the party application service;
-  the JavaFX view owns controls and rendering only.
-
-## Visible Surfaces
-
-- `TOP_BAR` hosts the rest-budget trigger before the Party trigger.
-- The trigger shows `Rastbudget`, `Kein Rastbudget`, `Rastbudget nicht
-  verfügbar`, or `SR <xp> · LR <xp>` depending on read state.
-- The dropdown shows an `ADVENTURING DAY` header and a scrollable calculator
-  panel.
-- The calculator includes source controls (`Aktive Party`, `Zeile`, `Leeren`),
-  mode controls (`Budget`, `XP -> Tage`), a `Gesamt-XP` input in progress mode,
-  level/count rows, a summary card, and an `Etappen` timeline card.
-
-## Interactions
-
-- Opening the dropdown refreshes the active party's adventuring-day summary.
-- `Aktive Party` repopulates calculator rows from the active party levels.
-- Editing rows switches the calculator to custom party mode without mutating the
-  party roster.
-- `Budget` shows the daily budget and rest milestones for the current rows.
-- `XP -> Tage` shows adventuring-day progress, rest counts, level-up summary,
-  and timeline events for the entered group XP.
+- [requirements-adventuring-day-dropdown.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/requirements/requirements-adventuring-day-dropdown.md:1)

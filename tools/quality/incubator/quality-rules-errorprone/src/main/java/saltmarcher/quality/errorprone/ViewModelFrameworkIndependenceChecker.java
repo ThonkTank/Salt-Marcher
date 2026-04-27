@@ -9,8 +9,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @BugPattern(
-        name = "ViewModelFrameworkIndependence",
-        summary = "ViewModels stay independent from shell and view classes; binders own shell/view wiring.",
+        name = "ViewRoleDependencyBoundaries",
+        summary = "View roles stay within the PresentationModel, IntentHandler, Binder, and View dependency contract.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -21,8 +21,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         boolean contribution = ViewArchitectureSupport.isContributionSource(tree);
         boolean binder = ViewArchitectureSupport.isBinderSource(tree);
         boolean viewModel = ViewArchitectureSupport.isViewModelSource(tree);
+        boolean intentHandler = ViewArchitectureSupport.isIntentHandlerSource(tree);
         boolean inspectorEntry = ViewArchitectureSupport.isInspectorEntrySource(tree);
-        if (!contribution && !binder && !viewModel && !inspectorEntry) {
+        if (!contribution && !binder && !viewModel && !intentHandler && !inspectorEntry) {
             return Description.NO_MATCH;
         }
 
@@ -33,6 +34,7 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
                     referencedType,
                     contribution,
                     binder,
+                    intentHandler,
                     inspectorEntry,
                     packageName,
                     sourceText,
@@ -44,7 +46,7 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         }
         return buildDescription(tree)
                 .setMessage("Package '" + packageName
-                        + "' violates MVVM ViewModel independence via references: "
+                        + "' violates view-role dependency boundaries via references: "
                         + String.join(", ", forbiddenReferences))
                 .build();
     }
@@ -53,6 +55,7 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             String qualifiedName,
             boolean contribution,
             boolean binder,
+            boolean intentHandler,
             boolean inspectorEntry,
             String sourcePackageName,
             String sourceText,
@@ -60,7 +63,14 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
         if (qualifiedName == null || qualifiedName.isBlank()) {
             return;
         }
-        if (isForbidden(qualifiedName, contribution, binder, inspectorEntry, sourcePackageName, sourceText)) {
+        if (isForbidden(
+                qualifiedName,
+                contribution,
+                binder,
+                intentHandler,
+                inspectorEntry,
+                sourcePackageName,
+                sourceText)) {
             forbiddenReferences.add(qualifiedName);
         }
     }
@@ -69,6 +79,7 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             String referencedType,
             boolean contribution,
             boolean binder,
+            boolean intentHandler,
             boolean inspectorEntry,
             String sourcePackageName,
             String sourceText) {
@@ -87,6 +98,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             if (inspectorEntry) {
                 return !referencedType.equals("javafx.scene.Node");
             }
+            if (intentHandler) {
+                return true;
+            }
             return binder
                     ? !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType)
                     : !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
@@ -101,6 +115,9 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             if (inspectorEntry) {
                 return !ViewArchitectureSupport.isAllowedInspectorEntryShellType(referencedType);
             }
+            if (intentHandler) {
+                return true;
+            }
             return true;
         }
         if (referencedType.startsWith("src.data.")) {
@@ -110,10 +127,16 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             if (contribution) {
                 return true;
             }
-            if (sourcePackageName.startsWith("src.view.slotcontent.")) {
-                return !referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+");
+            if (binder) {
+                return !ViewArchitectureSupport.isAllowedViewModelDomainBoundary(referencedType);
             }
-            return !ViewArchitectureSupport.isAllowedViewModelDomainBoundary(referencedType);
+            if (intentHandler) {
+                return true;
+            }
+            if (inspectorEntry || sourcePackageName.startsWith("src.view.slotcontent.")) {
+                return !ViewArchitectureSupport.isAllowedPresentationModelDomainBoundary(referencedType);
+            }
+            return !ViewArchitectureSupport.isAllowedPresentationModelDomainBoundary(referencedType);
         }
         ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
         if (viewType == null) {
@@ -134,12 +157,13 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
             if (ViewArchitectureSupport.isSlotcontentModelReference(referencedType)) {
                 return false;
             }
-            if (ViewArchitectureSupport.isReusableDisplayModelReference(referencedType)) {
+            if (ViewArchitectureSupport.isPrimitiveModelReference(referencedType)) {
                 return false;
             }
             if ("CONTRIBUTION".equals(viewType.bucket())
                     || "BINDER".equals(viewType.bucket())
-                    || "MODEL".equals(viewType.bucket())) {
+                    || "MODEL".equals(viewType.bucket())
+                    || "HANDLER".equals(viewType.bucket())) {
                 return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
             }
             if ("VIEW".equals(viewType.bucket())) {
@@ -154,9 +178,18 @@ public final class ViewModelFrameworkIndependenceChecker extends BugChecker
                     || "INSPECTOR_ENTRY".equals(viewType.bucket()))
                     || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
         }
+        if (intentHandler) {
+            if ("HANDLER".equals(viewType.bucket())) {
+                return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+            }
+            return !"MODEL".equals(viewType.bucket())
+                    || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+        }
         return !"MODEL".equals(viewType.bucket())
                 || (!ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)
-                && !ViewArchitectureSupport.isReusableDisplayModelReference(referencedType));
+                && !(!sourcePackageName.startsWith("src.view.slotcontent.")
+                && ViewArchitectureSupport.isSlotcontentModelReference(referencedType))
+                && !ViewArchitectureSupport.isPrimitiveModelReference(referencedType));
     }
 
     private static String sourceText(CompilationUnitTree tree, VisitorState state) {

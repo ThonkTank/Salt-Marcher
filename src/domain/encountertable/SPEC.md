@@ -1,46 +1,11 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
-Source of Truth: User-facing behavior and acceptance criteria for encounter
-table catalog use.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/encountertable/requirements/requirements-encountertable.md`.
 
-# Encounter Table Feature Spec
+# Spec Stub
 
-## Goal
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-Expose authored encounter tables as a read-only candidate source for runtime
-encounter generation.
-
-## Non-Goals
-
-- editing encounter tables
-- creating encounter-table entries
-- assigning loot tables
-- resolving or rolling loot
-
-## Expected Capabilities
-
-- load all encounter table summaries for Catalog controls
-- expose each table's optional linked loot-table ID
-- load generation candidates for selected table IDs with an XP ceiling
-- carry each candidate's table weight into encounter ranking
-- return an empty candidate list for empty table selections
-
-## User-Visible Behavior
-
-- selecting no encounter tables means the generator uses the normal monster
-  catalog source and current creature filters
-- selecting one or more encounter tables means generation uses only creatures
-  present in those selected tables
-- type, subtype, and biome filters do not additionally constrain selected
-  encounter-table generation
-- multiple selected tables with different linked loot-table IDs show a
-  non-blocking `Loot-Konflikt` warning
-
-## Acceptance Criteria
-
-- encounter-table data is exposed only through
-  `EncounterTableApplicationService`
-- encounter-table generation lookup remains read-only
-- table selection does not create or persist encounter state
-- missing or broken encounter-table storage produces a storage-error result
+- [requirements-encountertable.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/requirements/requirements-encountertable.md:1)

@@ -12,7 +12,7 @@
         <includeConstraint refId="saltmarcher:MvvmViewRootEntrypointCount"/>
         <includeConstraint refId="saltmarcher:MvvmBinderUsesOwnModelAndSlotSurface"/>
         <includeConstraint refId="saltmarcher:MvvmModelDependencies"/>
-        <includeConstraint refId="saltmarcher:MvvmViewModelDependencies"/>
+        <includeConstraint refId="saltmarcher:PresentationModelDependencies"/>
         <includeConstraint refId="saltmarcher:MvvmInspectorEntryDependencies"/>
         <includeConstraint refId="saltmarcher:MvvmNoPrivateForeignComponentDependencies"/>
     </group>
@@ -28,14 +28,16 @@
             SET
               type:SaltMarcher:MvvmViewType,
               type.viewBucket = CASE
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'DisplayModel' THEN 'MODEL'
-                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'ViewModel' THEN 'MODEL'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[3] = 'main' AND segments[4] = 'mapcanvas' AND (segments[5] CONTAINS 'MapRenderScene' OR segments[5] CONTAINS 'CanvasPointerEvent') THEN 'CARRIER'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND (segments[5] CONTAINS 'ViewModel' OR segments[5] CONTAINS 'PresentationModel') THEN 'MODEL'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'IntentHandler' THEN 'HANDLER'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'InspectorEntry' THEN 'INSPECTOR_ENTRY'
                 WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[5] CONTAINS 'View' THEN 'VIEW'
                 WHEN size(segments) >= 5 AND segments[2] = 'primitives' AND segments[4] CONTAINS 'View' THEN 'VIEW'
                 WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'Contribution' THEN 'CONTRIBUTION'
                 WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'Binder' THEN 'BINDER'
-                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'ViewModel' THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND (segments[4] CONTAINS 'ViewModel' OR segments[4] CONTAINS 'PresentationModel') THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'IntentHandler' THEN 'HANDLER'
                 WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND segments[4] CONTAINS 'View' THEN 'VIEW'
                 ELSE 'LEGACY'
               END,
@@ -117,7 +119,7 @@
 
     <constraint id="saltmarcher:MvvmOneModelPerFile">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Each contribution, binder, or ViewModel source file owns exactly one top-level type.</description>
+        <description>Each contribution, binder, PresentationModel, or InspectorEntry source file owns exactly one top-level type.</description>
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:MvvmViewType)
             WHERE type.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'INSPECTOR_ENTRY']
@@ -126,10 +128,10 @@
             WHERE size(typeNames) <> 1
             RETURN
               source AS Source,
-              'exactly one top-level contribution, binder, or ViewModel type' AS ExpectedDirection,
+              'exactly one top-level contribution, binder, PresentationModel, or InspectorEntry type' AS ExpectedDirection,
               reduce(actual = '', typeName IN typeNames |
                 CASE WHEN actual = '' THEN typeName ELSE actual + ', ' + typeName END) AS ActualDirection,
-              'A contribution, binder, or ViewModel file must define exactly one top-level type.' AS Details
+              'A contribution, binder, PresentationModel, or InspectorEntry file must define exactly one top-level type.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -201,7 +203,7 @@
 
     <constraint id="saltmarcher:MvvmBinderUsesOwnModelAndSlotSurface">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Every binder structurally wires its co-located ViewModel and at least one passive slot surface.</description>
+        <description>Every binder structurally wires its co-located PresentationModel and at least one passive slot surface.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'BINDER'})
             WHERE NOT source.name CONTAINS '$'
@@ -236,13 +238,13 @@
             WHERE ownModelCount = 0 OR slotSurfaceCount = 0
             RETURN DISTINCT
               source.relativePath AS Source,
-              'direct dependency on the co-located ViewModel and at least one active-root or slotcontent passive View' AS ExpectedDirection,
+              'direct dependency on the co-located PresentationModel and at least one active-root or slotcontent passive View' AS ExpectedDirection,
               CASE
-                WHEN ownModelCount = 0 AND slotSurfaceCount = 0 THEN 'missing co-located ViewModel and passive slot-surface dependency'
-                WHEN ownModelCount = 0 THEN 'missing co-located ViewModel dependency'
+                WHEN ownModelCount = 0 AND slotSurfaceCount = 0 THEN 'missing co-located PresentationModel and passive slot-surface dependency'
+                WHEN ownModelCount = 0 THEN 'missing co-located PresentationModel dependency'
                 ELSE 'missing passive slot-surface dependency'
               END AS ActualDirection,
-              'Binders must instantiate and bind their model and slot surfaces.' AS Details
+              'Binders must instantiate and bind their PresentationModel and slot surfaces.' AS Details
             ORDER BY Source
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
@@ -250,7 +252,7 @@
 
     <constraint id="saltmarcher:MvvmNoPrivateForeignComponentDependencies">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>Passive panel views depend only on same-root or reusable passive views.</description>
+        <description>Passive panel views depend only on their allowed co-located PresentationModel surface and passive views.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:MvvmViewType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:MvvmViewType)
             WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
@@ -258,14 +260,44 @@
               AND (
                 target.viewBucket <> 'VIEW'
                 AND NOT (
-                  source.fqn =~ 'src\\.view\\.slotcontent\\..*'
-                  AND target.viewBucket = 'MODEL'
-                  AND target.fqn =~ 'src\\.view\\.slotcontent\\..*'
-                  AND size(sourceSegments) >= 5
-                  AND size(targetSegments) >= 5
-                  AND sourceSegments[2] = targetSegments[2]
-                  AND sourceSegments[3] = targetSegments[3]
-                  AND sourceSegments[4] = targetSegments[4]
+                  target.viewBucket = 'MODEL'
+                  AND (
+                    (
+                      source.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\..*'
+                      AND target.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\..*'
+                      AND size(sourceSegments) >= 4
+                      AND size(targetSegments) >= 4
+                      AND sourceSegments[2] = targetSegments[2]
+                      AND sourceSegments[3] = targetSegments[3]
+                    )
+                    OR (
+                      source.fqn =~ 'src\\.view\\.slotcontent\\..*'
+                      AND target.fqn =~ 'src\\.view\\.slotcontent\\..*'
+                      AND size(sourceSegments) >= 5
+                      AND size(targetSegments) >= 5
+                      AND sourceSegments[2] = targetSegments[2]
+                      AND sourceSegments[3] = targetSegments[3]
+                      AND sourceSegments[4] = targetSegments[4]
+                    )
+                  )
+                )
+                AND NOT (
+                  target.viewBucket = 'CARRIER'
+                  AND (
+                    (
+                      source.fqn =~ 'src\\.view\\.slotcontent\\..*'
+                      AND target.fqn =~ 'src\\.view\\.slotcontent\\..*'
+                      AND size(sourceSegments) >= 5
+                      AND size(targetSegments) >= 5
+                      AND sourceSegments[2] = targetSegments[2]
+                      AND sourceSegments[3] = targetSegments[3]
+                      AND sourceSegments[4] = targetSegments[4]
+                    )
+                    OR (
+                      source.fqn =~ 'src\\.view\\.slotcontent\\.main\\.dungeonmap\\..*'
+                      AND target.fqn =~ 'src\\.view\\.slotcontent\\.main\\.mapcanvas\\..*'
+                    )
+                  )
                 )
                 OR (
                   target.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\..*'
@@ -276,24 +308,13 @@
                     AND sourceSegments[3] = targetSegments[3]
                   )
                 )
-                OR (
-                  source.fqn =~ 'src\\.view\\.slotcontent\\..*'
-                  AND target.fqn =~ 'src\\.view\\.slotcontent\\..*'
-                  AND NOT (
-                    size(sourceSegments) >= 5
-                    AND size(targetSegments) >= 5
-                    AND sourceSegments[2] = targetSegments[2]
-                    AND sourceSegments[3] = targetSegments[3]
-                    AND sourceSegments[4] = targetSegments[4]
-                  )
-                )
               )
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'passive views may depend only on same-root passive views or slotcontent passive views' AS ExpectedDirection,
+              'passive views may depend only on their allowed co-located PresentationModel surface and passive views' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
-              'Passive views must remain shell-free, domain-free, ViewModel-free, and foreign-view-root-free.' AS Details
+              'Passive views must remain shell-free, domain-free, PresentationModel-scoped, and foreign-view-root-free.' AS Details
             ORDER BY Source, Target
         ]]></cypher>
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
@@ -325,7 +346,7 @@
               OR (
                 target.fqn =~ 'src\\.view\\..*'
                 AND (
-                  NOT (target.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'VIEW', 'INSPECTOR_ENTRY'])
+                  NOT (target.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'HANDLER', 'VIEW', 'INSPECTOR_ENTRY', 'CARRIER'])
                   OR (
                     source.viewBucket = 'CONTRIBUTION'
                     AND NOT (
@@ -344,12 +365,12 @@
                         AND size(targetSegments) >= 4
                         AND sourceSegments[2] = targetSegments[2]
                         AND sourceSegments[3] = targetSegments[3]
-                        AND target.viewBucket IN ['BINDER', 'MODEL', 'VIEW']
+                        AND target.viewBucket IN ['BINDER', 'MODEL', 'HANDLER', 'VIEW']
                       )
                       OR (
                         size(targetSegments) >= 6
                         AND targetSegments[2] = 'slotcontent'
-                        AND target.viewBucket IN ['MODEL', 'VIEW', 'INSPECTOR_ENTRY']
+                        AND target.viewBucket IN ['MODEL', 'VIEW', 'INSPECTOR_ENTRY', 'CARRIER']
                       )
                     )
                   )
@@ -366,9 +387,9 @@
         <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
     </constraint>
 
-    <constraint id="saltmarcher:MvvmViewModelDependencies">
+    <constraint id="saltmarcher:PresentationModelDependencies">
         <requiresConcept refId="saltmarcher:MvvmViewType"/>
-        <description>ViewModels stay independent from shell APIs and concrete views.</description>
+        <description>PresentationModels stay independent from shell APIs, concrete views, and write-side domain carriers.</description>
         <cypher><![CDATA[
             MATCH (source:Java:Type:SaltMarcher:MvvmViewType {viewBucket: 'MODEL'})-[:DEPENDS_ON]->(target:Java:Type)
             WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
@@ -379,6 +400,8 @@
               OR (
                 target.fqn =~ 'src\\.domain\\..*'
                 AND (
+                  target.fqn =~ 'src\\.domain\\.[^.]+\\.published\\..*(Command|Query|Operation|Edit)(\\$.*)?'
+                  OR
                   (
                     size(sourceSegments) >= 3
                     AND sourceSegments[2] = 'slotcontent'
@@ -389,7 +412,6 @@
                       size(sourceSegments) < 3
                       OR sourceSegments[2] <> 'slotcontent'
                     )
-                    AND NOT target.fqn =~ 'src\\.domain\\.[^.]+\\.[^.]+ApplicationService(\\$.*)?'
                     AND NOT target.fqn =~ 'src\\.domain\\.[^.]+\\.published\\..+'
                   )
                 )
@@ -414,9 +436,11 @@
                       )
                     )
                     OR (
-                      size(targetSegments) >= 6
+                      size(sourceSegments) >= 3
+                      AND sourceSegments[2] <> 'slotcontent'
+                      AND size(targetSegments) >= 6
                       AND targetSegments[2] = 'slotcontent'
-                      AND targetSegments[5] CONTAINS 'DisplayModel'
+                      AND (targetSegments[5] CONTAINS 'ViewModel' OR targetSegments[5] CONTAINS 'PresentationModel')
                     )
                   )
                 )
@@ -424,7 +448,7 @@
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'JavaFX bindable state, same-root ViewModels, active-root domain services, and domain published carriers only' AS ExpectedDirection,
+              'JavaFX bindable state, same-root or reusable child PresentationModels, and read-side domain published carriers only' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
               'ViewModels must not depend on shell APIs, concrete views, data, bootstrap, or domain internals.' AS Details
             ORDER BY Source, Target
@@ -459,7 +483,7 @@
             RETURN DISTINCT
               source.relativePath AS Source,
               coalesce(target.relativePath, target.fqn) AS Target,
-              'InspectorEntry adapters may use InspectorEntrySpec, own slotcontent View/ViewModel/DisplayModel, and domain published carriers only' AS ExpectedDirection,
+              'InspectorEntry adapters may use InspectorEntrySpec, own slotcontent View/ViewModel, and domain published carriers only' AS ExpectedDirection,
               source.fqn + ' -> ' + target.fqn AS ActualDirection,
               'Slotcontent InspectorEntry adapters must not become shell, service, or cross-feature composition roots.' AS Details
             ORDER BY Source, Target

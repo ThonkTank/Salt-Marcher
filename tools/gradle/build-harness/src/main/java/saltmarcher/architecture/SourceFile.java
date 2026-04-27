@@ -76,7 +76,7 @@ record SourceFile(
                     if (fileName.endsWith("Binder.java")) {
                         yield SourceKind.VIEW_BINDER;
                     }
-                    if (fileName.endsWith("ViewModel.java")) {
+                    if (fileName.endsWith("ViewModel.java") || fileName.endsWith("PresentationModel.java")) {
                         yield SourceKind.VIEW_MODEL;
                     }
                     if (fileName.endsWith("View.java")) {
@@ -86,7 +86,7 @@ record SourceFile(
                 if (segments.size() == 6
                         && segments.get(2).equals("slotcontent")
                         && Set.of("controls", "main", "state", "details", "topbar").contains(segments.get(3))) {
-                    if (fileName.endsWith("ViewModel.java")) {
+                    if (fileName.endsWith("ViewModel.java") || fileName.endsWith("PresentationModel.java")) {
                         yield SourceKind.VIEW_MODEL;
                     }
                     if (fileName.endsWith("View.java")) {

@@ -1,13 +1,27 @@
 package src.view.dropdowns.party;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.party.PartyApplicationService;
-import src.view.slotcontent.state.encounter.EncounterRuntimeViewModel;
+import src.domain.party.published.AdjustPartyXpCommand;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.DeleteCharacterCommand;
+import src.domain.party.published.LoadAdventuringDaySummaryQuery;
+import src.domain.party.published.LoadPartySnapshotQuery;
+import src.domain.party.published.MutationResult;
+import src.domain.party.published.MutationStatus;
+import src.domain.party.published.PerformPartyRestCommand;
+import src.domain.party.published.RestType;
+import src.domain.party.published.SetPartyMembershipCommand;
+import src.domain.party.published.UpdateCharacterCommand;
 
 final class PartyTopBarBinder {
 
@@ -19,35 +33,108 @@ final class PartyTopBarBinder {
 
     ShellBinding bind() {
         PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
-        EncounterRuntimeViewModel encounterSession = runtimeContext.session(
-                EncounterRuntimeViewModel.class,
-                EncounterRuntimeViewModel::new);
-        PartyTopBarViewModel viewModel = new PartyTopBarViewModel(party);
+        EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
+        PartyTopBarPresentationModel presentationModel = new PartyTopBarPresentationModel();
+        PartyTopBarIntentHandler intentHandler = new PartyTopBarIntentHandler(presentationModel);
         PartyTopBarView panel = new PartyTopBarView();
-        panel.setTriggerText(viewModel.triggerTextProperty().get());
-        panel.showPanel(toPanelContent(viewModel.panelProperty().get()));
-        viewModel.triggerTextProperty().addListener((ignored, before, after) -> panel.setTriggerText(after));
-        viewModel.panelProperty().addListener((ignored, before, after) -> panel.showPanel(toPanelContent(after)));
-        viewModel.mutationTokenProperty().addListener((ignored, before, after) -> encounterSession.partyChanged());
-        panel.onOpen(viewModel::refresh);
-        panel.onAddExisting(member -> viewModel.addExisting(member.id(), member.name()));
-        panel.onRemoveFromParty(member -> viewModel.removeFromParty(member.id(), member.name()));
-        panel.onAdjustXp(request -> viewModel.adjustXp(
+        bindPartyRequests(party, presentationModel, intentHandler);
+        panel.setTriggerText(presentationModel.triggerTextProperty().get());
+        panel.showPanel(toPanelContent(presentationModel.panelProperty().get()));
+        presentationModel.triggerTextProperty().addListener((ignored, before, after) -> panel.setTriggerText(after));
+        presentationModel.panelProperty().addListener((ignored, before, after) -> panel.showPanel(toPanelContent(after)));
+        presentationModel.mutationTokenProperty().addListener((ignored, before, after) -> encounters.applySession(
+                new ApplyEncounterSessionCommand(
+                        ApplyEncounterSessionCommand.Action.REFRESH,
+                        null,
+                        src.domain.encounter.published.EncounterSessionSnapshot.BuilderInputs.empty(),
+                        0L,
+                        0L,
+                        0,
+                        0L,
+                        java.util.List.of(),
+                        "",
+                        0,
+                        0L,
+                        0,
+                        false)));
+        panel.onOpen(intentHandler::refresh);
+        panel.onAddExisting(member -> intentHandler.addExisting(member.id(), member.name()));
+        panel.onRemoveFromParty(member -> intentHandler.removeFromParty(member.id(), member.name()));
+        panel.onAdjustXp(request -> intentHandler.adjustXp(
                 request.member().id(),
                 request.member().name(),
                 request.xpDelta()));
-        panel.onShortRest(viewModel::shortRest);
-        panel.onLongRest(viewModel::longRest);
-        panel.onCreateCharacter(draft -> toEditorResult(viewModel.createCharacter(toDraftModel(draft))));
-        panel.onUpdateCharacter(draft -> toEditorResult(viewModel.updateCharacter(toDraftModel(draft))));
-        panel.onDeleteCharacter(member -> toEditorResult(viewModel.deleteCharacter(member.id(), member.name())));
-        viewModel.refresh();
+        panel.onShortRest(intentHandler::shortRest);
+        panel.onLongRest(intentHandler::longRest);
+        panel.onCreateCharacter(draft -> toEditorResult(intentHandler.createCharacter(toDraftModel(draft))));
+        panel.onUpdateCharacter(draft -> toEditorResult(intentHandler.updateCharacter(toDraftModel(draft))));
+        panel.onDeleteCharacter(member -> toEditorResult(intentHandler.deleteCharacter(member.id(), member.name())));
+        intentHandler.refresh();
         return new Binding(panel);
     }
 
-    private static PartyCharacterEditorTopBarView.EditorResult toEditorResult(PartyTopBarViewModel.ActionResult result) {
-        PartyTopBarViewModel.ActionResult safeResult = result == null
-                ? PartyTopBarViewModel.ActionResult.failure("Party-Aktion konnte nicht gespeichert werden.")
+    private static void bindPartyRequests(
+            PartyApplicationService party,
+            PartyTopBarPresentationModel presentationModel,
+            PartyTopBarIntentHandler intentHandler
+    ) {
+        intentHandler.onRefreshRequested(() -> {
+            try {
+                presentationModel.applyLoadResult(loadPanelData(party));
+            } catch (RuntimeException exception) {
+                presentationModel.applyStorageError();
+            }
+        });
+        intentHandler.onActionRequested(intent -> {
+            try {
+                presentationModel.applyMutationResult(new PartyTopBarPresentationModel.MutationAndLoadResult(
+                        runMutation(party, intent),
+                        loadPanelData(party),
+                        intent.successMessage()));
+            } catch (RuntimeException exception) {
+                presentationModel.applyMutationFailure();
+            }
+        });
+    }
+
+    private static PartyTopBarPresentationModel.PanelData loadPanelData(PartyApplicationService party) {
+        src.domain.party.published.PartySnapshotResult snapshotResult =
+                party.loadSnapshot(new LoadPartySnapshotQuery());
+        src.domain.party.published.AdventuringDayResult dayResult =
+                snapshotResult == null || snapshotResult.status() != src.domain.party.published.ReadStatus.SUCCESS
+                        ? null
+                        : party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery());
+        return new PartyTopBarPresentationModel.PanelData(snapshotResult, dayResult);
+    }
+
+    private static MutationResult runMutation(
+            PartyApplicationService party,
+            PartyTopBarPresentationModel.ActionIntent intent
+    ) {
+        return switch (intent.kind()) {
+            case SET_MEMBERSHIP -> party.setMembership(new SetPartyMembershipCommand(intent.characterId(), intent.membershipState()));
+            case CREATE_CHARACTER -> party.createCharacter(new CreateCharacterCommand(
+                    Objects.requireNonNull(intent.draft()),
+                    intent.membershipState()));
+            case UPDATE_CHARACTER -> party.updateCharacter(new UpdateCharacterCommand(
+                    intent.characterId(),
+                    Objects.requireNonNull(intent.draft())));
+            case DELETE_CHARACTER -> party.deleteCharacter(new DeleteCharacterCommand(intent.characterId()));
+            case ADJUST_XP -> party.adjustXp(new AdjustPartyXpCommand(List.of(intent.characterId()), intent.xpDelta()));
+            case PERFORM_REST -> party.performRest(new PerformPartyRestCommand(toRestType(intent.restAction())));
+        };
+    }
+
+    private static RestType toRestType(PartyTopBarPresentationModel.RestAction restAction) {
+        return switch (restAction == null ? PartyTopBarPresentationModel.RestAction.NONE : restAction) {
+            case NONE, SHORT_REST -> RestType.SHORT_REST;
+            case LONG_REST -> RestType.LONG_REST;
+        };
+    }
+
+    private static PartyCharacterEditorTopBarView.EditorResult toEditorResult(PartyTopBarPresentationModel.ActionResult result) {
+        PartyTopBarPresentationModel.ActionResult safeResult = result == null
+                ? PartyTopBarPresentationModel.ActionResult.failure("Party-Aktion konnte nicht gespeichert werden.")
                 : result;
         if (safeResult.pending()) {
             return PartyCharacterEditorTopBarView.EditorResult.pending(safeResult.message());
@@ -57,13 +144,13 @@ final class PartyTopBarBinder {
                 : PartyCharacterEditorTopBarView.EditorResult.failure(safeResult.message());
     }
 
-    private static PartyTopBarViewModel.CharacterDraftModel toDraftModel(
+    private static PartyTopBarPresentationModel.CharacterDraftModel toDraftModel(
             PartyCharacterEditorTopBarView.EditorDraft draft
     ) {
         PartyCharacterEditorTopBarView.EditorDraft safeDraft = draft == null
                 ? new PartyCharacterEditorTopBarView.EditorDraft(null, "", "", "1", "10", "10")
                 : draft;
-        return new PartyTopBarViewModel.CharacterDraftModel(
+        return new PartyTopBarPresentationModel.CharacterDraftModel(
                 safeDraft.id(),
                 safeDraft.name(),
                 safeDraft.playerName(),
@@ -72,9 +159,9 @@ final class PartyTopBarBinder {
                 safeDraft.rawArmorClass());
     }
 
-    private static PartyTopBarView.PanelContent toPanelContent(PartyTopBarViewModel.PanelModel model) {
-        PartyTopBarViewModel.PanelModel safeModel = model == null
-                ? PartyTopBarViewModel.PanelModel.loadingModel()
+    private static PartyTopBarView.PanelContent toPanelContent(PartyTopBarPresentationModel.PanelModel model) {
+        PartyTopBarPresentationModel.PanelModel safeModel = model == null
+                ? PartyTopBarPresentationModel.PanelModel.loadingModel()
                 : model;
         return new PartyTopBarView.PanelContent(
                 safeModel.loading(),
@@ -90,9 +177,9 @@ final class PartyTopBarBinder {
                 safeModel.actionsDisabled());
     }
 
-    private static PartyTopBarView.MemberView toMemberView(PartyTopBarViewModel.MemberModel member) {
-        PartyTopBarViewModel.MemberModel safeMember = member == null
-                ? new PartyTopBarViewModel.MemberModel(
+    private static PartyTopBarView.MemberView toMemberView(PartyTopBarPresentationModel.MemberModel member) {
+        PartyTopBarPresentationModel.MemberModel safeMember = member == null
+                ? new PartyTopBarPresentationModel.MemberModel(
                 0L, "", "", 1, 0, 0, 300, 10, 10, "Lv 1", "Lv 2", "", "", "0/300 XP (0%)", 0.0, "", "")
                 : member;
         return new PartyTopBarView.MemberView(

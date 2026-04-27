@@ -1,11 +1,11 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
-Source of Truth: Compatibility stub; canonical dungeon domain documentation now
-lives in co-located files under `src/`.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/dungeon/domain/domain-dungeon.md`.
 
-# Dungeon Map Domain Model
+# Domain Stub
 
-This path is retained only as a compatibility stub.
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-Use [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/DOMAIN.md:1).
+- [domain-dungeon.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)

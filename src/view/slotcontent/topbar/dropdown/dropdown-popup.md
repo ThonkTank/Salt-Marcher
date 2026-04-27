@@ -1,29 +1,11 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-23
-Source of Truth: Shared top-bar dropdown helper slotcontent.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/project/requirements/requirements-dropdown-popup.md`.
 
-# Dropdown Helper Slotcontent
+# Dropdown Popup Stub
 
-## Component Purpose
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-The dropdown helper slotcontent centralizes repeated top-bar popup mechanics
-that are reusable across shell dropdown roots.
-
-Current state:
-
-- `DropdownPopupView` delegates trailing-edge alignment to `AnchoredPopupView`.
-- The owning dropdown root still owns trigger text, content, callbacks, service
-  lookup, and popup content construction.
-
-## Visible Surfaces
-
-- No standalone shell surface is registered by this slotcontent unit.
-- Top-bar dropdown Views use the popup helper to align popups to the trailing
-  edge of their trigger button.
-
-## Interactions
-
-- If the popup is open, invoking the helper hides it.
-- If the popup is closed, invoking the helper runs the owner's open callback,
-  lays out the trigger button, and shows the popup below the trigger.
+- [requirements-dropdown-popup.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/requirements/requirements-dropdown-popup.md:1)

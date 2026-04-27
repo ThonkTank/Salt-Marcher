@@ -44,7 +44,7 @@ public final class DependencyBoundaryArchitectureTest {
                     .should(notBeViewContributionImplementation());
 
     @ArchTest
-    static final ArchRule viewActiveRootsAndViewModelsMustNotReachBootstrapDataOrShellHost =
+    static final ArchRule viewRolesMustNotReachBootstrapDataOrShellHost =
             noClasses()
                     .that()
                     .resideInAPackage("src.view..")
@@ -53,7 +53,7 @@ public final class DependencyBoundaryArchitectureTest {
                     .resideInAnyPackage("bootstrap..", "src.data..", "shell.host..");
 
     @ArchTest
-    static final ArchRule viewActiveRootsAndViewModelsMustOnlyUseAllowedDomainBoundaries =
+    static final ArchRule viewRolesMustOnlyUseAllowedDomainBoundaries =
             classes()
                     .that()
                     .resideInAPackage("src.view..")
@@ -69,6 +69,19 @@ public final class DependencyBoundaryArchitectureTest {
                     .should()
                     .dependOnClassesThat()
                     .resideInAnyPackage("bootstrap..", "shell..", "src.domain..", "src.data..");
+
+    @ArchTest
+    static final ArchRule primitiveViewsMustNotReachFeatureOrSlotcontentViews =
+            noClasses()
+                    .that()
+                    .resideInAPackage("src.view.primitives..")
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAnyPackage(
+                            "src.view.leftbartabs..",
+                            "src.view.statetabs..",
+                            "src.view.dropdowns..",
+                            "src.view.slotcontent..");
 
     @ArchTest
     static final ArchRule viewComponentsMustStayCycleFree =
@@ -413,7 +426,11 @@ public final class DependencyBoundaryArchitectureTest {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
                 boolean contribution = item.getSimpleName().endsWith("Contribution");
-                boolean slotcontent = item.getPackageName().startsWith("src.view.slotcontent.");
+                boolean binder = item.getSimpleName().endsWith("Binder");
+                boolean presentationModel = item.getSimpleName().endsWith("PresentationModel");
+                boolean intentHandler = item.getSimpleName().endsWith("IntentHandler");
+                boolean passiveView = item.getSimpleName().endsWith("View")
+                        && !item.getSimpleName().endsWith("PresentationModel");
                 for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
                     JavaClass target = dependency.getTargetClass();
                     String targetPackage = target.getPackageName();
@@ -430,12 +447,28 @@ public final class DependencyBoundaryArchitectureTest {
                         events.add(SimpleConditionEvent.violated(item, message));
                         continue;
                     }
-                    if (slotcontent) {
-                        if (isFeaturePublishedBoundary(targetPackage, targetFeature)) {
+                    if (binder) {
+                        if (isFeatureRootApplicationService(target)
+                                || isFeaturePublishedBoundary(targetPackage, targetFeature)) {
+                            continue;
+                        }
+                        String message = item.getName() + " depends on domain internal " + target.getName()
+                                + "; binders may use only root application services and published carriers";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                        continue;
+                    }
+                    if (presentationModel) {
+                        if (isFeaturePublishedReadBoundary(targetPackage, targetFeature, target)) {
                             continue;
                         }
                         String message = item.getName() + " depends on domain type " + target.getName()
-                                + "; slotcontent may use only domain published carriers";
+                                + "; PresentationModels may use only read-side domain published carriers";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                        continue;
+                    }
+                    if (intentHandler || passiveView) {
+                        String message = item.getName() + " depends on domain type " + target.getName()
+                                + "; IntentHandlers and passive Views must stay domain-blind";
                         events.add(SimpleConditionEvent.violated(item, message));
                         continue;
                     }
@@ -457,6 +490,11 @@ public final class DependencyBoundaryArchitectureTest {
         String remainder = packageName.substring("src.domain.".length());
         int separatorIndex = remainder.indexOf('.');
         return separatorIndex >= 0 ? remainder.substring(0, separatorIndex) : remainder;
+    }
+
+    private static boolean isFeaturePublishedReadBoundary(String packageName, String featureName, JavaClass target) {
+        return isFeaturePublishedBoundary(packageName, featureName)
+                && !target.getSimpleName().matches(".*(Command|Query|Operation|Edit)$");
     }
 
     private static String featureName(String packageName) {

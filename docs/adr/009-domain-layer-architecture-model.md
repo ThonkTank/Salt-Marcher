@@ -1,25 +1,11 @@
-# ADR 009: Domain-Layer Architecture Model
+Status: Deprecated
+Owner: SaltMarcher Team
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/project/architecture/adr-009-domain-layer-architecture-model.md`.
 
-- Status: Superseded by ADR 013
-- Date: 2026-04-18
-- Superseded On: 2026-04-18
+# 009 Domain Layer Architecture Model Stub
 
-## Superseded By
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-- [ADR 013: DDD-Primary Domain-Layer Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/adr/013-domain-layer-ddd-primary-model.md:1)
-
-## Note
-
-ADR 009 established a stricter domain-layer vocabulary than the legacy
-`*API.java` and `usecase/` model, but it still froze the physical structure of
-`src/domain/**` into technical role buckets such as `entity/`, `service/`, and
-`query/`.
-
-That topology is no longer the canonical target. SaltMarcher now treats each
-`src/domain/<feature>/` slice primarily as one DDD bounded context with a thin
-application layer and named domain modules that follow the ubiquitous
-language.
-
-ADR 009 remains part of the repository history only to explain that migration
-step. All new domain-architecture decisions must follow ADR 013 and the
-current domain-layer standard.
+- [adr-009-domain-layer-architecture-model.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-009-domain-layer-architecture-model.md:1)

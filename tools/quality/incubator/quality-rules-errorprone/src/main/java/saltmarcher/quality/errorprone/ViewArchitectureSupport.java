@@ -28,7 +28,7 @@ import javax.lang.model.util.SimpleTypeVisitor14;
 final class ViewArchitectureSupport {
 
     static final Pattern VIEW_CONTRIBUTION_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
-    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$|^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$");
+    static final Pattern VIEW_MODEL_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$|^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$|^src\\.view\\.primitives\\.[^.]+$");
     static final Pattern VIEW_PANEL_PACKAGE = Pattern.compile("^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+$|^src\\.view\\.primitives\\.[^.]+$");
     static final Pattern VIEW_SLOT_PACKAGE = Pattern.compile("^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$");
     static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(leftbartabs|statetabs|dropdowns|slotcontent|primitives)(\\.|$)).+");
@@ -97,7 +97,13 @@ final class ViewArchitectureSupport {
 
     static boolean isViewModelSource(CompilationUnitTree tree) {
         return VIEW_MODEL_PACKAGE.matcher(packageName(tree)).matches()
-                && sourceFileName(tree).endsWith("ViewModel.java");
+                && (sourceFileName(tree).endsWith("ViewModel.java")
+                || sourceFileName(tree).endsWith("PresentationModel.java"));
+    }
+
+    static boolean isIntentHandlerSource(CompilationUnitTree tree) {
+        return VIEW_MODEL_PACKAGE.matcher(packageName(tree)).matches()
+                && sourceFileName(tree).endsWith("IntentHandler.java");
     }
 
     static boolean isInspectorEntrySource(CompilationUnitTree tree) {
@@ -183,6 +189,12 @@ final class ViewArchitectureSupport {
                 || referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+");
     }
 
+    static boolean isAllowedPresentationModelDomainBoundary(String referencedType) {
+        return referencedType != null
+                && referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+")
+                && !isDomainWriteCarrier(referencedType);
+    }
+
     private static boolean isDomainApplicationServiceRoot(String referencedType) {
         return referencedType.matches("^src\\.domain\\.[^.]+\\.[^.]+ApplicationService((\\$|\\.).*)?$");
     }
@@ -190,6 +202,20 @@ final class ViewArchitectureSupport {
     static boolean isAllowedViewModelJavafxType(String referencedType) {
         return referencedType.startsWith("javafx.beans.")
                 || referencedType.startsWith("javafx.collections.");
+    }
+
+    static boolean isPrimitiveViewPackage(String packageName) {
+        return packageName != null && packageName.matches("^src\\.view\\.primitives\\.[^.]+$");
+    }
+
+    static boolean isPrimitiveViewReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null && "primitives".equals(viewType.component()) && "VIEW".equals(viewType.bucket());
+    }
+
+    static boolean isPrimitiveModelReference(String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null && "primitives".equals(viewType.component()) && "MODEL".equals(viewType.bucket());
     }
 
     static boolean isAllowedModelJavafxType(String referencedType) {
@@ -234,11 +260,12 @@ final class ViewArchitectureSupport {
         }
         if ("slotcontent".equals(segments[0]) && segments.length >= 4) {
             String topLevelSimpleName = segments[3].replaceFirst("\\$.*$", "");
-            if (topLevelSimpleName.endsWith("DisplayModel")) {
+            if (topLevelSimpleName.endsWith("ViewModel")
+                    || topLevelSimpleName.endsWith("PresentationModel")) {
                 return new ViewTypeInfo(segments[1], "MODEL");
             }
-            if (topLevelSimpleName.endsWith("ViewModel")) {
-                return new ViewTypeInfo(segments[1], "MODEL");
+            if (topLevelSimpleName.endsWith("IntentHandler")) {
+                return new ViewTypeInfo(segments[1], "HANDLER");
             }
             if (topLevelSimpleName.endsWith("InspectorEntry")) {
                 return new ViewTypeInfo(segments[1], "INSPECTOR_ENTRY");
@@ -246,6 +273,11 @@ final class ViewArchitectureSupport {
             return new ViewTypeInfo(segments[1], "VIEW");
         }
         if ("primitives".equals(segments[0]) && segments.length >= 3) {
+            String topLevelSimpleName = segments[2].replaceFirst("\\$.*$", "");
+            if (topLevelSimpleName.endsWith("ViewModel")
+                    || topLevelSimpleName.endsWith("PresentationModel")) {
+                return new ViewTypeInfo(segments[0], "MODEL");
+            }
             return new ViewTypeInfo(segments[0], "VIEW");
         }
         if (Set.of("leftbartabs", "statetabs", "dropdowns").contains(segments[0]) && segments.length >= 3) {
@@ -257,8 +289,12 @@ final class ViewArchitectureSupport {
                 if (simpleName.endsWith("Binder")) {
                     return new ViewTypeInfo(segments[0], "BINDER");
                 }
-                if (simpleName.endsWith("ViewModel")) {
+                if (simpleName.endsWith("ViewModel")
+                        || simpleName.endsWith("PresentationModel")) {
                     return new ViewTypeInfo(segments[0], "MODEL");
+                }
+                if (simpleName.endsWith("IntentHandler")) {
+                    return new ViewTypeInfo(segments[0], "HANDLER");
                 }
                 if (simpleName.endsWith("View")) {
                     return new ViewTypeInfo(segments[0], "VIEW");
@@ -283,14 +319,6 @@ final class ViewArchitectureSupport {
                 && (Set.of("controls", "main", "state", "details", "topbar").contains(viewType.component())
                 || "primitives".equals(viewType.component()))
                 && "VIEW".equals(viewType.bucket());
-    }
-
-    static boolean isReusableDisplayModelReference(String referencedType) {
-        if (referencedType != null
-                && referencedType.matches("^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar)\\.[^.]+\\.[A-Z][A-Za-z0-9_]*DisplayModel(?:[.$].*)?$")) {
-            return true;
-        }
-        return false;
     }
 
     static boolean isSlotcontentInspectorEntryReference(String referencedType) {
@@ -332,6 +360,24 @@ final class ViewArchitectureSupport {
                 || isReusablePassiveViewReference(referencedType);
     }
 
+    static boolean isPrimitiveViewReferenceAllowedFromPrimitiveView(String sourcePackageName, String referencedType) {
+        return isPrimitiveViewPackage(sourcePackageName)
+                && isPrimitiveViewReference(referencedType);
+    }
+
+    static boolean isPrimitiveModelReferenceAllowedFromPrimitiveView(String sourcePackageName, String referencedType) {
+        return isPrimitiveViewPackage(sourcePackageName)
+                && isPrimitiveModelReference(referencedType)
+                && isSameViewRootReference(sourcePackageName, referencedType);
+    }
+
+    static boolean isSameViewRootModelReference(String sourcePackageName, String referencedType) {
+        ViewTypeInfo viewType = parseViewType(referencedType);
+        return viewType != null
+                && "MODEL".equals(viewType.bucket())
+                && isSameViewRootReference(sourcePackageName, referencedType);
+    }
+
     private static String packageNameOf(String referencedType) {
         if (referencedType == null || referencedType.isBlank()) {
             return "";
@@ -367,6 +413,10 @@ final class ViewArchitectureSupport {
 
     static boolean isAllowedInspectorEntryShellType(String referencedType) {
         return isAllowedShellType(referencedType, INSPECTOR_ENTRY_ALLOWED_SHELL_TYPES);
+    }
+
+    private static boolean isDomainWriteCarrier(String referencedType) {
+        return referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..*(Command|Query|Operation|Edit)(\\$.*)?$");
     }
 
     private static boolean isAllowedShellType(String referencedType, Set<String> allowedTypes) {

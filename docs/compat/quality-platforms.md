@@ -1,11 +1,11 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
-Source of Truth: Legacy entry point retained for compatibility; canonical
-quality-platform documentation now lives under `docs/standards/`.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/project/verification/quality-platforms.md`.
 
-# Quality Platforms Documentation
+# Quality Platforms Stub
 
-This legacy path is retained as a pointer only.
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-Use [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/quality-platforms.md:1).
+- [quality-platforms.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)

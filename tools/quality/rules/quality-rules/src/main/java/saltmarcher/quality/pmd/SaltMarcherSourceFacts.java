@@ -106,7 +106,11 @@ final class SaltMarcherSourceFacts {
     }
 
     boolean isViewSupportModelSource() {
-        return isSlotcontentSource() && simpleName.endsWith("DisplayModel");
+        return isSharedMapCanvasCarrierSource();
+    }
+
+    boolean isViewIntentHandlerSource() {
+        return (isActiveViewRootSource() || isSlotcontentSource()) && simpleName.endsWith("IntentHandler");
     }
 
     boolean isViewInspectorEntrySource() {
@@ -114,14 +118,16 @@ final class SaltMarcherSourceFacts {
     }
 
     boolean isViewModelSource() {
-        return (isActiveViewRootSource() || isSlotcontentSource()) && simpleName.endsWith("ViewModel");
+        return (isActiveViewRootSource() || isSlotcontentSource())
+                && (simpleName.endsWith("ViewModel") || simpleName.endsWith("PresentationModel"));
     }
 
     boolean isViewPanelSource() {
         return isViewSource()
                 && ((isSlotcontentSource() || isPrimitiveViewSource() || isActiveViewRootSource())
                 && simpleName.endsWith("View")
-                && !simpleName.endsWith("ViewModel"));
+                && !simpleName.endsWith("ViewModel")
+                && !simpleName.endsWith("PresentationModel"));
     }
 
     boolean isLegacyViewSource() {
@@ -129,6 +135,7 @@ final class SaltMarcherSourceFacts {
                 && !isViewContributionSource()
                 && !isViewBinderSource()
                 && !isViewModelSource()
+                && !isViewIntentHandlerSource()
                 && !isViewSupportModelSource()
                 && !isViewInspectorEntrySource()
                 && !isViewPanelSource();
@@ -151,6 +158,15 @@ final class SaltMarcherSourceFacts {
         return isViewSource()
                 && segments.size() == 5
                 && segments.get(2).equals("primitives");
+    }
+
+    private boolean isSharedMapCanvasCarrierSource() {
+        return isViewSource()
+                && segments.size() == 6
+                && "slotcontent".equals(segments.get(2))
+                && "main".equals(segments.get(3))
+                && "mapcanvas".equals(segments.get(4))
+                && Set.of("MapRenderScene.java", "CanvasPointerEvent.java").contains(fileName);
     }
 
     private boolean isDiscoverableViewContributionArea() {

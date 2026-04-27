@@ -9,8 +9,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @BugPattern(
-        name = "ViewRestrictedDependencies",
-        summary = "Passive panel views may depend only on JavaFX UI APIs, passive views, and JDK types.",
+        name = "PassiveViewDependencyBoundaries",
+        summary = "Passive Views may depend only on their allowed PresentationModel and passive view surfaces.",
         severity = BugPattern.SeverityLevel.ERROR)
 public final class ViewRestrictedDependencyChecker extends BugChecker
         implements BugChecker.CompilationUnitTreeMatcher {
@@ -34,7 +34,7 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         }
         return buildDescription(tree)
                 .setMessage("View package '" + packageName
-                        + "' violates MVVM dependency rules via references: "
+                        + "' violates passive-view dependency boundaries via references: "
                         + String.join(", ", forbiddenReferences))
                 .build();
     }
@@ -52,8 +52,20 @@ public final class ViewRestrictedDependencyChecker extends BugChecker
         if (viewType == null) {
             return false;
         }
-        if (ViewArchitectureSupport.isReusableDisplayModelReference(referencedType)) {
+        if (ViewArchitectureSupport.isPrimitiveViewPackage(sourcePackageName)) {
+            if ("MODEL".equals(viewType.bucket())) {
+                return !ViewArchitectureSupport.isPrimitiveModelReferenceAllowedFromPrimitiveView(
+                        sourcePackageName, referencedType);
+            }
+            return !"VIEW".equals(viewType.bucket())
+                    || !ViewArchitectureSupport.isPrimitiveViewReferenceAllowedFromPrimitiveView(
+                    sourcePackageName, referencedType);
+        }
+        if ("MODEL".equals(viewType.bucket()) && ViewArchitectureSupport.isPrimitiveModelReference(referencedType)) {
             return false;
+        }
+        if ("MODEL".equals(viewType.bucket())) {
+            return !ViewArchitectureSupport.isSameViewRootModelReference(sourcePackageName, referencedType);
         }
         return !"VIEW".equals(viewType.bucket())
                 || !ViewArchitectureSupport.isSameViewRootOrReusablePassiveViewReference(

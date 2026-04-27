@@ -1,11 +1,11 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
-Source of Truth: Compatibility stub; canonical party feature documentation now
-lives in co-located files under `src/`.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/party/README.md`.
 
-# Party Feature Overview
+# Overview Stub
 
-This path is retained only as a compatibility stub.
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-Use [Party Feature README](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/party/README.md:1).
+- [README.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/README.md:1)

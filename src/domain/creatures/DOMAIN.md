@@ -1,10 +1,14 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
-Source of Truth: Creatures reference catalog ownership, published lookup
-language, and domain rationale.
+Last Reviewed: 2026-04-26
+Source of Truth: Compatibility mirror for canonical documentation at `docs/creatures/domain/domain-creatures.md`.
 
-# Creatures Domain Model
+# Creatures Domain Model Compatibility Mirror
+
+This legacy path remains build-visible during the documentation-taxonomy
+migration. Canonical feature-owned documentation lives at:
+
+- [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/domain/domain-creatures.md:1)
 
 ## Context Role
 
@@ -20,12 +24,13 @@ Context Name: Creatures
 
 ## Published Language
 
-`published/` owns public catalog queries, result pages, lookup statuses, filter
-options, creature details, action details, catalog rows, and encounter-candidate
-reference profiles.
+`published/` owns public catalog queries, result pages, lookup statuses,
+filter options, creature details, action details, catalog rows, and
+encounter-candidate reference profiles.
 
-Published catalog carriers describe imported creature facts and lookup results.
-They do not encode encounter ranking, choice, balancing, or composition policy.
+Published catalog carriers describe imported creature facts and lookup
+results. They do not encode encounter ranking, choice, balancing, or
+composition policy.
 
 ## Application Boundary
 
@@ -35,23 +40,6 @@ application service maps imported catalog truth into `published/` carriers.
 
 It does not own encounter ranking, candidate scoring, or creature lifecycle
 policy.
-
-## Catalog Model
-
-`catalog/` owns the domain role packages for imported creature reference
-catalog access. Read-only catalog lookup ports belong under `catalog/port/`.
-They express domain-facing lookup needs, not data adapter placement or storage
-shape.
-
-## Promotion Triggers
-
-Reclassify `creatures` before adding any of:
-
-- authored creature creation or editing policy
-- creature validation beyond query/default normalization
-- encounter balancing, ranking, or candidate-choice policy
-- persisted creature lifecycle or ownership rules
-- mutable catalog truth owned by this feature rather than imported lookup data
 
 ## Ubiquitous Language
 
@@ -63,7 +51,4 @@ Reclassify `creatures` before adding any of:
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
-- [Creatures Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/src/data/creatures/PERSISTENCE.md:1)
-- [Catalog Tab UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/leftbartabs/catalog/UI.md:1)
-- [Creature Details UI](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/slotcontent/details/creature/UI.md:1)
+- [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/domain/domain-creatures.md:1)

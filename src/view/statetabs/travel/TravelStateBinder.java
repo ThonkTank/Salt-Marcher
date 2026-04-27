@@ -14,20 +14,20 @@ final class TravelStateBinder {
     }
 
     ShellBinding bind() {
-        TravelStateViewModel viewModel = new TravelStateViewModel();
+        TravelStatePresentationModel presentationModel = new TravelStatePresentationModel();
         TravelStateView state = new TravelStateView();
-        state.iconTextProperty().bind(viewModel.iconTextProperty());
-        state.locationTextProperty().bind(viewModel.locationTextProperty());
-        state.statusTextProperty().bind(viewModel.statusTextProperty());
-        state.contextTextProperty().bind(viewModel.contextTextProperty());
-        state.detailKeyOneTextProperty().bind(viewModel.detailKeyOneTextProperty());
-        state.detailValueOneTextProperty().bind(viewModel.detailValueOneTextProperty());
-        state.detailKeyTwoTextProperty().bind(viewModel.detailKeyTwoTextProperty());
-        state.detailValueTwoTextProperty().bind(viewModel.detailValueTwoTextProperty());
-        state.detailKeyThreeTextProperty().bind(viewModel.detailKeyThreeTextProperty());
-        state.detailValueThreeTextProperty().bind(viewModel.detailValueThreeTextProperty());
-        state.sectionHeaderTextProperty().bind(viewModel.sectionHeaderTextProperty());
-        state.sectionValueTextProperty().bind(viewModel.sectionValueTextProperty());
+        state.iconTextProperty().bind(presentationModel.iconTextProperty());
+        state.locationTextProperty().bind(presentationModel.locationTextProperty());
+        state.statusTextProperty().bind(presentationModel.statusTextProperty());
+        state.contextTextProperty().bind(presentationModel.contextTextProperty());
+        state.detailKeyOneTextProperty().bind(presentationModel.detailKeyOneTextProperty());
+        state.detailValueOneTextProperty().bind(presentationModel.detailValueOneTextProperty());
+        state.detailKeyTwoTextProperty().bind(presentationModel.detailKeyTwoTextProperty());
+        state.detailValueTwoTextProperty().bind(presentationModel.detailValueTwoTextProperty());
+        state.detailKeyThreeTextProperty().bind(presentationModel.detailKeyThreeTextProperty());
+        state.detailValueThreeTextProperty().bind(presentationModel.detailValueThreeTextProperty());
+        state.sectionHeaderTextProperty().bind(presentationModel.sectionHeaderTextProperty());
+        state.sectionValueTextProperty().bind(presentationModel.sectionValueTextProperty());
         return new Binding(state);
     }
 

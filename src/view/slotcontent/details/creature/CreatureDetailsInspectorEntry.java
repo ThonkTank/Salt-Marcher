@@ -5,7 +5,6 @@ import java.util.function.Function;
 import javafx.scene.Node;
 import shell.api.InspectorEntrySpec;
 import src.domain.creatures.published.CreatureDetailResult;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
 
 public final class CreatureDetailsInspectorEntry {
 
@@ -14,9 +13,9 @@ public final class CreatureDetailsInspectorEntry {
 
     public static InspectorEntrySpec create(
             long creatureId,
-            Function<LoadCreatureDetailQuery, CreatureDetailResult> detailLoader
+            Function<Long, CreatureDetailResult> detailLoader
     ) {
-        Function<LoadCreatureDetailQuery, CreatureDetailResult> loader =
+        Function<Long, CreatureDetailResult> loader =
                 Objects.requireNonNull(detailLoader, "detailLoader");
         return new InspectorEntrySpec(
                 "Creature",
@@ -27,12 +26,12 @@ public final class CreatureDetailsInspectorEntry {
 
     private static Node content(
             long creatureId,
-            Function<LoadCreatureDetailQuery, CreatureDetailResult> detailLoader
+            Function<Long, CreatureDetailResult> detailLoader
     ) {
         CreatureDetailsView detailView = new CreatureDetailsView();
-        CreatureDetailsViewModel viewModel =
-                new CreatureDetailsViewModel(detailLoader.apply(new LoadCreatureDetailQuery(creatureId)));
-        viewModel.connect(detailView::setLoadingText, detailView::setErrorText, detailView::showDetail);
+        CreatureDetailsPresentationModel presentationModel =
+                new CreatureDetailsPresentationModel(detailLoader.apply(creatureId));
+        detailView.bind(presentationModel);
         return detailView;
     }
 }

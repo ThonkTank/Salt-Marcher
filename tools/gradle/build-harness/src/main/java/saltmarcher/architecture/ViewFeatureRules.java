@@ -42,19 +42,26 @@ final class ViewFeatureRules implements ArchitectureRule {
                     "Slotcontent roots are reusable passive content and must not define *Contribution.java or *Binder.java files.");
             return;
         }
+        if (isLegacyViewModelFile(sourceFile) || isProjectorFile(sourceFile)) {
+            violations.add(sourceFile.relativePath(), "view-slotcontent-role-migration-debt",
+                    "Slotcontent must not use legacy *ViewModel.java or *Projector.java role files in active architecture.");
+            return;
+        }
         if (!isPassiveViewFile(sourceFile)
-                && !isViewModelFile(sourceFile)
-                && !isReusableDisplayModelFile(sourceFile)
-                && !isInspectorEntryFile(sourceFile)) {
+                && !isPresentationModelFile(sourceFile)
+                && !isIntentHandlerFile(sourceFile)
+                && !isInspectorEntryFile(sourceFile)
+                && !isSharedMapCanvasCarrierFile(sourceFile)) {
             violations.add(sourceFile.relativePath(), "view-slotcontent-root-shape",
-                    "Slotcontent sources must be passive *View.java files, optional *ViewModel.java files, reusable *DisplayModel.java files, or *InspectorEntry.java adapters.");
+                    "Slotcontent sources must be passive *View.java files, optional *PresentationModel.java files, optional *IntentHandler.java files, *InspectorEntry.java adapters, or the shared map canvas carrier files.");
         }
     }
 
     private static void validateRoot(ViewRoot root, List<SourceFile> files, ViolationSink violations) {
         long contributionCount = files.stream().filter(ViewFeatureRules::isContributionFile).count();
         long binderCount = files.stream().filter(ViewFeatureRules::isBinderFile).count();
-        long viewModelCount = files.stream().filter(ViewFeatureRules::isViewModelFile).count();
+        long presentationModelCount = files.stream().filter(ViewFeatureRules::isPresentationModelFile).count();
+        long intentHandlerCount = files.stream().filter(ViewFeatureRules::isIntentHandlerFile).count();
 
         for (SourceFile sourceFile : files) {
             validateAllowedRoleFile(root, sourceFile, violations);
@@ -75,34 +82,50 @@ final class ViewFeatureRules implements ArchitectureRule {
                     "Each active view root must contain exactly one *Binder.java lifecycle and wiring owner.");
         }
 
-        if (viewModelCount != 1) {
+        if (presentationModelCount != 1) {
             violations.add(root.source(), "view-root-composition",
-                    "Each active view root must contain exactly one aggregate *ViewModel.java file.");
+                    "Each active view root must contain exactly one aggregate *PresentationModel.java file.");
+        }
+
+        if (intentHandlerCount > 1) {
+            violations.add(root.source(), "view-root-intenthandler-count",
+                    "Each active view root may contain at most one *IntentHandler.java file.");
         }
     }
 
     private static void validateAllowedRoleFile(ViewRoot root, SourceFile sourceFile, ViolationSink violations) {
-        if (isReusableDisplayModelFile(sourceFile)) {
-            violations.add(sourceFile.relativePath(), "view-active-root-no-display-model",
-                    "Active view roots own aggregate *ViewModel.java files; reusable *DisplayModel.java files belong under src/view/slotcontent/<slot>/<entry>/.");
+        if (isLegacyViewModelFile(sourceFile) || isProjectorFile(sourceFile)) {
+            violations.add(sourceFile.relativePath(), "view-root-role-migration-debt",
+                    "Active view roots must not use legacy *ViewModel.java or *Projector.java role files.");
             return;
         }
-        if (isViewModelFile(sourceFile) || isPassiveViewFile(sourceFile) || isBinderFile(sourceFile)) {
+        if (isPresentationModelFile(sourceFile)
+                || isIntentHandlerFile(sourceFile)
+                || isPassiveViewFile(sourceFile)
+                || isBinderFile(sourceFile)) {
             return;
         }
         if (isContributionFile(sourceFile)) {
             return;
         }
         violations.add(sourceFile.relativePath(), "view-root-file-role",
-                "Active view roots may contain only an optional or required *Contribution.java entrypoint, one *Binder.java, one *ViewModel.java, and passive *View.java files.");
+                "Active view roots may contain only an optional or required *Contribution.java entrypoint, one *Binder.java, one *PresentationModel.java, an optional *IntentHandler.java, and passive *View.java files.");
     }
 
     private static boolean isContributionFile(SourceFile sourceFile) {
         return sourceFile.fileName().endsWith("Contribution.java");
     }
 
-    private static boolean isViewModelFile(SourceFile sourceFile) {
+    private static boolean isLegacyViewModelFile(SourceFile sourceFile) {
         return sourceFile.fileName().endsWith("ViewModel.java");
+    }
+
+    private static boolean isPresentationModelFile(SourceFile sourceFile) {
+        return sourceFile.fileName().endsWith("PresentationModel.java");
+    }
+
+    private static boolean isIntentHandlerFile(SourceFile sourceFile) {
+        return sourceFile.fileName().endsWith("IntentHandler.java");
     }
 
     private static boolean isBinderFile(SourceFile sourceFile) {
@@ -111,15 +134,28 @@ final class ViewFeatureRules implements ArchitectureRule {
 
     private static boolean isPassiveViewFile(SourceFile sourceFile) {
         return sourceFile.fileName().endsWith("View.java")
-                && !sourceFile.fileName().endsWith("ViewModel.java");
-    }
-
-    private static boolean isReusableDisplayModelFile(SourceFile sourceFile) {
-        return sourceFile.fileName().endsWith("DisplayModel.java");
+                && !sourceFile.fileName().endsWith("ViewModel.java")
+                && !sourceFile.fileName().endsWith("PresentationModel.java");
     }
 
     private static boolean isInspectorEntryFile(SourceFile sourceFile) {
         return sourceFile.fileName().endsWith("InspectorEntry.java");
+    }
+
+    private static boolean isSharedMapCanvasCarrierFile(SourceFile sourceFile) {
+        List<String> segments = sourceFile.relativeSegments();
+        return segments.size() >= 6
+                && "src".equals(segments.get(0))
+                && "view".equals(segments.get(1))
+                && "slotcontent".equals(segments.get(2))
+                && "main".equals(segments.get(3))
+                && "mapcanvas".equals(segments.get(4))
+                && ("MapRenderScene.java".equals(sourceFile.fileName())
+                || "CanvasPointerEvent.java".equals(sourceFile.fileName()));
+    }
+
+    private static boolean isProjectorFile(SourceFile sourceFile) {
+        return sourceFile.fileName().endsWith("Projector.java");
     }
 
     private record ViewRoot(String area, String entry) implements Comparable<ViewRoot> {

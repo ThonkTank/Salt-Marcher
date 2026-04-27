@@ -82,13 +82,10 @@ public final class SaltMarcherEntrypointRule extends AbstractJavaRule {
     }
 
     private void checkViewPanel(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {
-        if (sourceFacts.relativePath().startsWith("src/view/slotcontent/")
-                && sourceFacts.simpleName().endsWith("DisplayModel")) {
-            return;
-        }
         boolean reusableGenericView = sourceFacts.relativePath().startsWith("src/view/slotcontent/")
                 && sourceFacts.simpleName().endsWith("View")
-                && !sourceFacts.simpleName().endsWith("ViewModel");
+                && !sourceFacts.simpleName().endsWith("ViewModel")
+                && !sourceFacts.simpleName().endsWith("PresentationModel");
         Set<String> allowedSuffixes = allowedViewPanelSuffixes(sourceFacts);
         if (!reusableGenericView && allowedSuffixes.stream().noneMatch(sourceFacts.simpleName()::endsWith)) {
             asCtx(data).addViolationWithMessage(node,

@@ -3,8 +3,11 @@ package src.data.encounter;
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
+import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
+import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.party.PartyApplicationService;
 
 public final class EncounterServiceContribution implements ServiceContribution {
 
@@ -16,8 +19,12 @@ public final class EncounterServiceContribution implements ServiceContribution {
     @Override
     public void register(ServiceRegistry.Builder builder) {
         EncounterPlanRepository repository = new SqliteEncounterPlanRepository();
-        builder.register(
+        builder.registerFactory(
                 EncounterApplicationService.class,
-                new EncounterApplicationService(repository));
+                services -> new EncounterApplicationService(
+                        services.require(PartyApplicationService.class),
+                        services.require(CreaturesApplicationService.class),
+                        services.require(EncounterTableApplicationService.class),
+                        repository));
     }
 }

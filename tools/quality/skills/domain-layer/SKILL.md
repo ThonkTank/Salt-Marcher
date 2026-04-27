@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**`, including root `*ApplicationService.java`, carrier-only `published/`, direct `application/*UseCase.java` files, domain-concept modules, `port/` outbound interfaces, tactical role subpackages, and adjacent `README.md`, `SPEC.md`, `DOMAIN.md`, or `DELIVERY.md`. This skill is supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**` or adjacent context docs (`README.md`, `SPEC.md`, `DOMAIN.md`, `DELIVERY.md`). Supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
 ---
 
 # Domain Layer

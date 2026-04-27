@@ -1,11 +1,11 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
-Source of Truth: Compatibility stub; canonical dungeon delivery notes now live
-in co-located files under `src/`.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/dungeon/delivery/delivery-dungeon.md`.
 
-# Dungeon Map Delivery Notes
+# Delivery Stub
 
-This path is retained only as a compatibility stub.
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following location:
 
-Use [Dungeon Delivery Notes](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/DELIVERY.md:1).
+- [delivery-dungeon.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/delivery/delivery-dungeon.md:1)

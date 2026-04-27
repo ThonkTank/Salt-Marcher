@@ -1,20 +1,20 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
-Source of Truth: Mechanical and review-owned enforcement coverage for the
-canonical Domain Layer Standard.
+Last Reviewed: 2026-04-26
+Source of Truth: Compatibility mirror for canonical documentation at `docs/project/architecture/architecture-enforcement-coverage-domain.md`.
 
-# Domain Enforcement Coverage
+# Domain Enforcement Coverage Compatibility Mirror
+
+This legacy path remains build-visible during the documentation-taxonomy
+migration. Canonical project-owned documentation lives at:
+
+- [Domain Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/architecture-enforcement-coverage-domain.md:1)
 
 ## Goal
 
-This document maps the rules in
-[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
-to local quality gates that actually block violations. It also names the
-remaining review-owned rules so the enforcement set does not overclaim.
-
-The umbrella coverage document is an enforcement routing index. This document
-is the canonical domain-specific coverage inventory.
+This document mirrors the canonical domain enforcement coverage so legacy
+checks that still read `docs/standards/**` see the same rule inventory,
+owner mapping, and review-owned boundaries during the migration.
 
 ## Enforced Rule Matrix
 
@@ -40,8 +40,8 @@ is the canonical domain-specific coverage inventory.
 | `domain-role-package-name` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Tactical role packages use the allowed role-name set. |
 | `domain-forbidden-top-level-bucket` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Configured legacy technical and tactical-role buckets are forbidden at context root. |
 | `domain-mapcore-removed` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `src/domain/mapcore/**` is absent. |
-| `domain-context-roles-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context role and no stale context. |
-| `domain-context-relationships-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/standards/domain-layer.md` lists every active context relationship and no stale context. |
+| `domain-context-roles-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/project/architecture/domain-layer.md` lists every active context role and no stale context. |
+| `domain-context-relationships-complete` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | `docs/project/architecture/domain-layer.md` lists every active context relationship and no stale context. |
 | `domain-context-document-presence` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Every active domain context has a `DOMAIN.md`. |
 | `domain-context-shape-declared` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Every `DOMAIN.md` has exactly one allowed `Context Role:` marker. |
 | `domain-context-required-sections` | build-harness `DomainFeatureRules` | `./gradlew checkArchitecture` | Every `DOMAIN.md` includes non-empty base context sections. |
@@ -61,7 +61,7 @@ is the canonical domain-specific coverage inventory.
 | `domain-port-boundary` | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound ports are domain-owned interfaces with infrastructure-free signatures and no domain implementations. |
 | `domain-public-boundary-signature-purity` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root and published signatures do not leak outer-layer or private domain types. |
 | `domain-published-no-foreign-signatures` | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root and published signatures do not expose foreign published carriers. |
-| `domain-viewmodel-domain-boundary-shape` | View enforcement coverage with Error Prone `ViewModelFrameworkIndependence`, ArchUnit `viewActiveRootsAndViewModelsMustOnlyUseAllowedDomainBoundaries`, and jQAssistant `saltmarcher:MvvmViewModelDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | Active-root ViewModels reach domain through root application services or published carriers; slotcontent ViewModels reach domain through published carriers only. |
+| `domain-presentationmodel-domain-boundary-shape` | View enforcement coverage with Error Prone `ViewRoleDependencyBoundaries`, ArchUnit `viewRolesMustOnlyUseAllowedDomainBoundaries`, and jQAssistant `saltmarcher:PresentationModelDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | Binders reach domain through root application services or published carriers. `PresentationModel`s reach domain only through read-side `published/**` carriers. |
 | `domain-role-shape` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Tactical role packages use their declared type shapes. |
 | `domain-field-purity` | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public domain module fields do not expose mutable state. |
 | `domain-public-concrete-type-shape` | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public concrete domain types satisfy the project shape constraints. |
@@ -84,10 +84,10 @@ semantic coverage from prose.
 
 Every normative rule group in the Domain Layer Standard must be represented
 below. `Enforced` points to a domain matrix row in this document.
-`Source-Pattern Enforced` points to a PMD row that blocks a narrow smell without
-claiming semantic proof. `Candidate` is intended for a future blocker but is not
-enforced today. `Review-Owned` records binding guidance that the current tools
-cannot prove without low-signal inference.
+`Source-Pattern Enforced` points to a PMD row that blocks a narrow smell
+without claiming semantic proof. `Candidate` is intended for a future blocker
+but is not enforced today. `Review-Owned` records binding guidance that the
+current tools cannot prove without low-signal inference.
 
 | Domain Rule Group | Status | Coverage |
 | --- | --- | --- |
@@ -120,8 +120,8 @@ cannot prove without low-signal inference.
 | `domain-foreign-service-documentation` | Review-Owned | Constructor type compatibility is covered by `domain-root-constructor-composition`; whether the foreign service is semantically documented by relationship prose remains review-owned. |
 | `domain-outer-layer-independence-group` | Enforced | Covered by `domain-outer-layer-independence`, `domain-forbidden-infrastructure-dependency`, and the PMD infrastructure source-pattern row. |
 | `domain-foreign-context-private-isolation` | Enforced | Covered by `domain-foreign-feature-public-boundary`, `domain-named-module-private-context`, and `domain-feature-cycles`. |
-| `domain-viewmodel-domain-consumption` | Enforced | Covered by `domain-viewmodel-domain-boundary-shape`; the dependency shape is owned by view enforcement because the source files live under `src/view/**`. |
-| `domain-viewmodel-presentation-translation` | Review-Owned | The dependency gates prove which domain contracts a ViewModel may call, but cannot prove that presentation state is translated before and after the call. |
+| `domain-presentationmodel-domain-consumption` | Enforced | Covered by `domain-presentationmodel-domain-boundary-shape`; the dependency shape is owned by view enforcement because the source files live under `src/view/**`. |
+| `domain-presentationmodel-presentation-translation` | Review-Owned | The dependency gates prove which domain contracts a `PresentationModel` may consume, but cannot prove that presentation state is translated before and after that consumption. |
 | `domain-business-policy-not-in-view-data` | Review-Owned | Stable dependency and signature evidence is enforced where present; business-rule ownership without such evidence requires design review. |
 | `domain-application-no-published-to-model` | Enforced | Covered by `domain-application-no-same-context-published`, `domain-named-module-no-published-carriers`, and `domain-named-module-no-same-context-application`. |
 | `domain-service-infrastructure-and-carrier-boundary` | Enforced | Covered by `domain-forbidden-infrastructure-dependency`, `domain-outer-layer-independence`, `domain-model-roles-no-outbound-ports`, and `domain-named-module-no-published-carriers`. |
@@ -134,9 +134,9 @@ PMD architecture is useful for narrow, stable source-pattern blockers. For
 domain code it reinforces obvious JavaFX, SQL/JDBC, filesystem, network, and
 JSON framework package-token references, and blocks simple smell patterns such
 as root service infrastructure construction, non-public
-`application/*UseCase` helper methods beginning with `score`, `rank`, `choose`,
-`balance`, or `enforce`, and public/protected JavaBean-style `void set*`
-mutation methods in named modules.
+`application/*UseCase` helper methods beginning with `score`, `rank`,
+`choose`, `balance`, or `enforce`, and public or protected JavaBean-style
+`void set*` mutation methods in named modules.
 
 These checks are intentionally classified as source-pattern blockers. They are
 not semantic proof that policy is in the right tactical role, that ports are
@@ -152,71 +152,6 @@ policy is modelled in named modules.
 | `domain-application-no-policy-helper-prefix-source-pattern` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Non-public `application/*UseCase` helpers do not use the configured policy-heavy prefixes `score`, `rank`, `choose`, `balance`, or `enforce`. |
 | `domain-named-module-no-setter-mutation-source-pattern` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Named modules do not expose public or protected JavaBean-style `void set*` mutation methods by source shape. |
 
-## Non-Blocking Or Rejected Heuristics
-
-The current tool suite can enforce domain architecture when the evidence is
-structural, type-resolved, or dependency-visible:
-
-- `build-harness` is useful for file-tree topology, package-path alignment,
-  required root files, and machine-readable `DOMAIN.md` markers.
-- `Error Prone` is useful for javac-resolved public signatures, referenced
-  types, top-level type shape, field shape, and constructor collaborator shape.
-- `ArchUnit` is useful for bytecode-visible layer direction, foreign-context
-  access, and cycles.
-- `PMD architecture` is useful for narrow AST/source-pattern smells and is not
-  semantic proof.
-
-### Signal Quality
-
-Rows owned by `ArchUnit` are valid only when `architectureTest` imports the
-production classes under the architecture roots it claims to check:
-`bootstrap`, `shell`, `src.domain`, `src.view`, and `src.data`. The
-`ArchitectureImportSmokeTest` is the guard for that contract. If it fails, the
-ArchUnit-owned rows in the matrix are not providing usable enforcement signal,
-even if the rule definitions themselves are still correct.
-
-Rows owned by `Error Prone` must fail through `compileJava`, where javac-resolved
-types and signatures are available. Rows owned by `build-harness` must be backed
-by concrete file-tree, marker, or coverage-document evidence. Rows owned by
-`PMD architecture` remain source-pattern checks only; they are allowed to block
-narrow stable smells, but they are not evidence that a use case is semantically
-thin or that a domain service models real cross-concept behavior.
-
-Do not add blockers that scan broad words such as `row`, `record`, `selection`,
-`cell`, `summary`, `style`, `display`, or `model` across all domain source.
-Those terms can be legitimate domain language in some contexts and would turn
-the harness into a low-signal vocabulary classifier. Exact top-level technical
-package names such as `schema/` and `record/` are stable enough for
-`build-harness`; type-name or prose judgment for such terms remains
-review-owned unless a future standard narrows a specific stable suffix,
-package, or public signature shape.
-
-The configured top-level domain buckets that are stable enough for
-`build-harness` enforcement are `adapter`, `adapters`, `aggregate`,
-`aggregates`, `applications`, `controller`, `controllers`, `datasource`,
-`datasources`, `entity`, `entities`, `event`, `events`, `factory`,
-`factories`, `gateway`, `gateways`, `interactor`, `interactors`, `mapper`,
-`mappers`, `model`, `models`, `query`, `queries`, `port`, `ports`, `record`,
-`records`, `repository`, `repositories`, `schema`, `schemas`, `service`,
-`services`, `specification`, `specifications`, `usecase`, `usecases`,
-`valueobject`, `valueobjects`, `view`, and `viewmodel`.
-
-### Tool Fit Decisions
-
-| Candidate | Current Fit | Decision |
-| --- | --- | --- |
-| Existing build-harness | Exact file topology, package layout, required documents, marker presence, and coverage-document consistency. | Use for additional domain coverage bookkeeping and path-shaped rules. |
-| Existing Error Prone checks | Compiler-resolved Java types, signatures, constructors, fields, and domain boundary leaks. | Keep as primary owner for type-aware blockers. |
-| Existing ArchUnit checks | Bytecode-visible dependency direction, foreign-context access, and cycles. | Keep as primary owner for dependency topology. |
-| Existing PMD architecture rule | Narrow AST/source-pattern smells. | Keep only for stable source patterns; do not treat as semantic proof. |
-| jQAssistant | Graph-shaped topology where existing source and bytecode checks are insufficient. | Already useful for view topology; add for domain only after a concrete graph-shaped domain rule exists. |
-| OpenRewrite | Type-attributed rewrites and migration recipes. | Useful for future auto-remediation, not a new blocker for current domain enforcement. |
-| CodeQL | Data-flow analysis across Java. | Reserve for future dataflow/security-style rules; too heavy and indirect for current local architecture blockers. |
-| Semgrep or Spoon | Additional source-pattern or Java AST analysis. | Do not add; they overlap PMD/Error Prone for the current domain gaps. |
-
-A future engine must first identify a domain rule that these owners cannot
-express cleanly and that is not actually a semantic modelling judgment.
-
 ## Review-Owned
 
 - whether business rules have been implemented in `view` or `data` when no
@@ -224,15 +159,15 @@ express cleanly and that is not actually a semantic modelling judgment.
 - whether a use case is thin orchestration rather than hidden business policy
 - whether a root application service is thin boundary coordination rather than
   hidden business policy
-- whether `application/` has become a generic operations or policy dump despite
-  passing file-name and helper-prefix checks
+- whether `application/` has become a generic operations or policy dump
+  despite passing file-name and helper-prefix checks
 - whether root application services actually translate public carriers before
   entering use cases or named modules
 - whether active-root ViewModels actually translate presentation state before
   and after calls to root application services
 - whether a foreign root application service injected into a root constructor
-  is semantically documented by the context relationship prose rather than only
-  type-compatible
+  is semantically documented by the context relationship prose rather than
+  only type-compatible
 - whether application use cases pass `published/`, view, data, shell, or
   framework carriers into named modules through shapes not visible to current
   dependency and signature checks
@@ -242,11 +177,12 @@ express cleanly and that is not actually a semantic modelling judgment.
   read-only query hidden behind a permitted suffix
 - whether a chosen tactical role package is warranted by real model behaviour
   rather than ceremonial taxonomy
-- whether a named domain-module directory name is a useful ubiquitous-language
-  concept after the build proves only its package-token shape
-- whether the context role and relationship prose in the Domain Layer Standard
-  accurately describes ownership and collaboration after the build proves only
-  marker presence and stale-context coverage
+- whether a named domain-module directory name is a useful
+  ubiquitous-language concept after the build proves only its package-token
+  shape
+- whether the context role and relationship prose in the Domain Layer
+  Standard accurately describes ownership and collaboration after the build
+  proves only marker presence and stale-context coverage
 - whether a domain service is real cross-concept domain behavior rather than a
   procedural coordinator
 - whether additional callable client boundaries are semantically being exposed
@@ -256,34 +192,17 @@ express cleanly and that is not actually a semantic modelling judgment.
 - whether `published/` language is stable and intentionally versioned enough
   for view models and foreign contexts
 - whether `published/` carriers are passive boundary language rather than
-  invariant-owning objects hidden behind allowed record, enum, or sealed shapes
-- whether `published/` names such as row, selection, cell, or summary describe
-  domain facts rather than presentation or storage concepts
+  invariant-owning objects hidden behind allowed record, enum, or sealed
+  shapes
+- whether `published/` names such as row, selection, cell, or summary
+  describe domain facts rather than presentation or storage concepts
 - whether commands, invariants, consistency notes, and ubiquitous language in
   `DOMAIN.md` accurately describe real behavior
 - whether feature-local domain documents redefine system-wide topology in
   prose without changing the machine-readable context markers
 
-These remain review-owned because the available local tools would either need
-runtime fixtures, brittle semantic inference, or broad text heuristics that
-would produce low-signal results.
-
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/domain-layer.md:1)
-- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-harness.md:1)
-- [Architecture Enforcement Coverage Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/architecture-enforcement-coverage.md:1)
-- [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/standards/source-references.md:1)
-- [Hexagonal Architecture](/home/aaron/Schreibtisch/projects/references/architecture-patterns/cockburn-hexagonal-architecture.md:1)
-- [Fowler Domain Model](/home/aaron/Schreibtisch/projects/references/domain-driven-design/fowler-domain-model.md:1)
-- [Fowler Anemic Domain Model](/home/aaron/Schreibtisch/projects/references/domain-driven-design/fowler-anemic-domain-model.md:1)
-- [Fowler Bounded Context](/home/aaron/Schreibtisch/projects/references/domain-driven-design/fowler-bounded-context.md:1)
-- [ArchUnit User Guide](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/archunit-user-guide.md:1)
-- [Error Prone Plugin Checks](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/error-prone-plugin-checks.md:1)
-- [PMD Writing Java Rules](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/pmd-writing-java-rules.md:1)
-- [jQAssistant User Manual](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/jqassistant-user-manual.md:1)
-- [OpenRewrite Recipes](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/openrewrite-recipes.md:1)
-- [OpenRewrite Type Attribution](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/openrewrite-type-attribution.md:1)
-- [Semgrep Writing Rules Overview](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/semgrep-writing-rules-overview.md:1)
-- [CodeQL Java Data Flow](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/codeql-java-data-flow.md:1)
-- [Spoon Overview](/home/aaron/Schreibtisch/projects/references/architecture-enforcement-tools/spoon-overview.md:1)
+- [Domain Enforcement Coverage](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/architecture-enforcement-coverage-domain.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/domain-layer.md:1)
+- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/architecture-enforcement-harness.md:1)

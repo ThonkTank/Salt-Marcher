@@ -1,10 +1,14 @@
-Status: Active
+Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-21
-Source of Truth: Encounter table feature ownership, read model, and domain
-boundary rules.
+Last Reviewed: 2026-04-26
+Source of Truth: Compatibility mirror for canonical documentation at `docs/encountertable/domain/domain-encountertable.md`.
 
-# Encounter Table Domain Model
+# Encounter Table Domain Model Compatibility Mirror
+
+This legacy path remains build-visible during the documentation-taxonomy
+migration. Canonical feature-owned documentation lives at:
+
+- [Encounter Table Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/domain/domain-encountertable.md:1)
 
 ## Context Role
 
@@ -29,13 +33,8 @@ mutation commands.
 ## Application Boundary
 
 `EncounterTableApplicationService` is the only public backend boundary. It
-offers:
-
-- `loadSummaries(LoadEncounterTableSummariesQuery)`
-- `loadGenerationCandidates(LoadEncounterTableCandidatesQuery)`
-
-The application service converts storage failures into `STORAGE_ERROR` results
-and does not leak adapter exceptions.
+offers summary and generation-candidate lookup over authored encounter-table
+membership without leaking adapter exceptions.
 
 ## Ubiquitous Language
 
@@ -44,29 +43,6 @@ and does not leak adapter exceptions.
 - Table Summary: user-facing table identity and linked-loot context.
 - Candidate Row: read-only creature snapshot plus encounter-table weight.
 
-## Write Model And Derived State
+## References
 
-Write Model: External authored table rows in SQLite
-
-The local application currently consumes existing authored rows. It does not
-own runtime mutation flows for those rows.
-
-Derived state:
-
-- ordered table summaries for UI controls
-- weighted creature candidate snapshots for the encounter generator
-- linked loot-table conflict context for selected table combinations
-
-## Invariants
-
-- empty table selections produce no table candidates
-- weights are normalized to the supported `1..10` range
-- generation candidates respect the supplied XP ceiling
-- selected table lookup must not additionally apply creature type, subtype, or
-  biome filters
-
-## Foreign Boundaries
-
-The data adapter may join `creatures` for read-only candidate snapshots and may
-read optional `encounter_table_loot_links` values. Domain code must not reach
-into creature or loot persistence directly.
+- [Encounter Table Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/domain/domain-encountertable.md:1)

@@ -1,6 +1,7 @@
 package src.domain.dungeon;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.published.ApplyDungeonSurfaceEditCommand;
 import src.domain.dungeon.published.ApplyDungeonEditorOperationCommand;
 import src.domain.dungeon.published.BaseMapSnapshot;
 import src.domain.dungeon.published.CreateDungeonMapCommand;
@@ -26,6 +27,11 @@ import src.domain.dungeon.published.DungeonMapMode;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOperationResult;
+import src.domain.dungeon.published.DungeonSurfaceEdit;
+import src.domain.dungeon.published.DungeonSurfaceKind;
+import src.domain.dungeon.published.DungeonSurfaceMessages;
+import src.domain.dungeon.published.DungeonSurfacePayload;
+import src.domain.dungeon.published.DungeonSurfaceTravel;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
@@ -39,9 +45,12 @@ import src.domain.dungeon.published.DungeonTravelMoveStatus;
 import src.domain.dungeon.published.DungeonTravelPosition;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.dungeon.published.LoadDungeonSnapshotQuery;
+import src.domain.dungeon.published.LoadDungeonSurfaceQuery;
 import src.domain.dungeon.published.LoadMapSnapshotQuery;
 import src.domain.dungeon.published.LoadDungeonTravelSurfaceQuery;
+import src.domain.dungeon.published.MoveDungeonSurfaceActionCommand;
 import src.domain.dungeon.published.MoveDungeonTravelActionCommand;
+import src.domain.dungeon.published.PreviewDungeonSurfaceEditQuery;
 import src.domain.dungeon.published.PreviewDungeonEditorOperationQuery;
 import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.RenameDungeonMapResult;
@@ -127,6 +136,30 @@ public final class DungeonApplicationService {
                 MapPublication.domainId(effectiveQuery.mapId())));
     }
 
+    public DungeonSurfacePayload loadSurface(LoadDungeonSurfaceQuery query) {
+        LoadDungeonSurfaceQuery effectiveQuery = query == null
+                ? new LoadDungeonSurfaceQuery(null, DungeonSurfaceKind.EDITOR)
+                : query;
+        if (effectiveQuery.surfaceKind() == DungeonSurfaceKind.TRAVEL) {
+            DungeonTravelSurfaceFacts travelSurface = loadDungeonTravelSurfaceUseCase.execute(
+                    new LoadDungeonTravelSurfaceUseCase.Input(
+                            TravelPublication.position(effectiveQuery.travelPosition())));
+            return SurfacePublication.travel(
+                    travelSurface,
+                    null,
+                    null);
+        }
+        LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot = loadDungeonSnapshotUseCase.execute(
+                MapPublication.domainId(effectiveQuery.mapId()));
+        DungeonInspectorSnapshot inspector = InspectorPublication.inspectorOrNull(effectiveQuery, loadDungeonSnapshotUseCase);
+        return SurfacePublication.editor(
+                snapshot,
+                effectiveQuery.surfaceKind(),
+                null,
+                inspector,
+                DungeonSurfaceMessages.empty());
+    }
+
     public DungeonOperationResult applyOperation(ApplyDungeonEditorOperationCommand command) {
         DungeonEditorOperation operation = command == null ? null : command.operation();
         ApplyDungeonEditorOperationUseCase.OperationResultData result =
@@ -163,6 +196,40 @@ public final class DungeonApplicationService {
                 snapshot.description(),
                 snapshot.facts(),
                 snapshot.roomNarrations().stream().map(MapPublication::roomNarration).toList());
+    }
+
+    public DungeonSurfacePayload applySurfaceEdit(ApplyDungeonSurfaceEditCommand command) {
+        DungeonSurfaceEdit edit = command == null ? null : command.edit();
+        ApplyDungeonEditorOperationUseCase.OperationResultData result =
+                applyDungeonEditorOperationUseCase.execute(
+                        MapPublication.domainId(command == null ? null : command.mapId()),
+                        OperationPublication.operationInput(edit == null ? null : edit.operation()));
+        return SurfacePublication.editor(
+                result.snapshot(),
+                DungeonSurfaceKind.EDITOR,
+                null,
+                null,
+                new DungeonSurfaceMessages(result.validationMessages(), result.reactionMessages()));
+    }
+
+    public DungeonSurfacePayload previewSurfaceEdit(PreviewDungeonSurfaceEditQuery query) {
+        DungeonSurfaceEdit edit = query == null ? null : query.edit();
+        DungeonMapIdentity mapId = MapPublication.domainId(query == null ? null : query.mapId());
+        LoadDungeonSnapshotUseCase.DungeonSnapshotData baseSnapshot = loadDungeonSnapshotUseCase.execute(mapId);
+        ApplyDungeonEditorOperationUseCase.OperationResultData preview =
+                applyDungeonEditorOperationUseCase.preview(
+                        mapId,
+                        OperationPublication.operationInput(edit == null ? null : edit.operation()));
+        DungeonMapSnapshot previewMap = MapPublication.snapshot(preview.snapshot().derived().map(), preview.snapshot().editorHandles());
+        DungeonMapSnapshot safePreviewMap = previewMap.equals(MapPublication.snapshot(baseSnapshot.derived().map(), baseSnapshot.editorHandles()))
+                ? null
+                : previewMap;
+        return SurfacePublication.editor(
+                baseSnapshot,
+                DungeonSurfaceKind.PREVIEW,
+                safePreviewMap,
+                null,
+                new DungeonSurfaceMessages(preview.validationMessages(), preview.reactionMessages()));
     }
 
     public SearchMapsResult searchMaps(SearchMapsQuery query) {
@@ -218,6 +285,19 @@ public final class DungeonApplicationService {
                 new LoadDungeonTravelSurfaceUseCase.Input(TravelPublication.position(effectiveQuery.position()))));
     }
 
+    public DungeonSurfacePayload moveSurfaceAction(MoveDungeonSurfaceActionCommand command) {
+        MoveDungeonSurfaceActionCommand effectiveCommand = command == null
+                ? new MoveDungeonSurfaceActionCommand(null, "")
+                : command;
+        DungeonTravelMoveFacts result = moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
+                TravelPublication.position(effectiveCommand.position()),
+                effectiveCommand.actionId()));
+        return SurfacePublication.travel(
+                result.surface(),
+                DungeonTravelMoveStatus.valueOf(result.status().name()),
+                TravelPublication.externalTarget(result.externalTarget()));
+    }
+
     public DungeonTravelMoveResult moveTravelAction(MoveDungeonTravelActionCommand command) {
         MoveDungeonTravelActionCommand effectiveCommand = command == null
                 ? new MoveDungeonTravelActionCommand(null, "")
@@ -245,6 +325,94 @@ public final class DungeonApplicationService {
 
         private static String aggregateSummary(DungeonAggregate aggregate) {
             return aggregate.label() + " #" + aggregate.id();
+        }
+    }
+
+    private static final class InspectorPublication {
+
+        private InspectorPublication() {
+        }
+
+        private static @Nullable DungeonInspectorSnapshot inspectorOrNull(
+                LoadDungeonSurfaceQuery query,
+                LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase
+        ) {
+            if (query == null) {
+                return null;
+            }
+            boolean hasSelection = query.clusterId() > 0L || query.topologyRef().id() > 0L;
+            if (!hasSelection) {
+                return null;
+            }
+            LoadDungeonSnapshotUseCase.InspectorSnapshotData snapshot =
+                    loadDungeonSnapshotUseCase.describeSelection(
+                            MapPublication.domainId(query.mapId()),
+                            MapPublication.domainTopologyRef(query.topologyRef()),
+                            query.clusterId(),
+                            query.clusterSelection());
+            return new DungeonInspectorSnapshot(
+                    snapshot.title(),
+                    snapshot.description(),
+                    snapshot.facts(),
+                    snapshot.roomNarrations().stream().map(MapPublication::roomNarration).toList());
+        }
+    }
+
+    private static final class SurfacePublication {
+
+        private SurfacePublication() {
+        }
+
+        private static DungeonSurfacePayload editor(
+                LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot,
+                DungeonSurfaceKind surfaceKind,
+                @Nullable DungeonMapSnapshot previewMap,
+                @Nullable DungeonInspectorSnapshot inspector,
+                DungeonSurfaceMessages messages
+        ) {
+            DungeonSnapshot committed = SnapshotPublication.snapshot(snapshot);
+            return new DungeonSurfacePayload(
+                    committed.mapName(),
+                    surfaceKind,
+                    committed.mode(),
+                    committed.revision(),
+                    committed.map(),
+                    previewMap,
+                    committed.aggregateSummaries(),
+                    committed.relationSummaries(),
+                    inspector,
+                    null,
+                    messages);
+        }
+
+        private static DungeonSurfacePayload travel(
+                DungeonTravelSurfaceFacts surface,
+                @Nullable DungeonTravelMoveStatus moveStatus,
+                @Nullable DungeonTravelExternalTarget externalTarget
+        ) {
+            DungeonTravelSurfaceSnapshot publishedSurface = TravelPublication.surface(surface);
+            return new DungeonSurfacePayload(
+                    publishedSurface.mapName(),
+                    DungeonSurfaceKind.TRAVEL,
+                    DungeonMapMode.TRAVEL,
+                    publishedSurface.revision(),
+                    publishedSurface.map(),
+                    null,
+                    List.of(),
+                    List.of(),
+                    null,
+                    new DungeonSurfaceTravel(
+                            publishedSurface.position(),
+                            publishedSurface.surfaceTitle(),
+                            publishedSurface.areaLabel(),
+                            publishedSurface.tileLabel(),
+                            publishedSurface.headingLabel(),
+                            publishedSurface.statusLabel(),
+                            publishedSurface.visualDescription(),
+                            publishedSurface.actions(),
+                            moveStatus,
+                            externalTarget),
+                    DungeonSurfaceMessages.empty());
         }
     }
 

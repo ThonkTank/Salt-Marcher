@@ -1,11 +1,12 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-17
-Source of Truth: Compatibility stub; canonical dungeon feature documentation now
-lives in co-located files under `src/`.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/dungeon/README.md`, `docs/maps/README.md`.
 
-# Dungeon Map Overview
+# Overview Stub
 
-This path is retained only as a compatibility stub.
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following locations:
 
-Use [Dungeon Feature README](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/README.md:1).
+- [README.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
+- [README.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/README.md:1)

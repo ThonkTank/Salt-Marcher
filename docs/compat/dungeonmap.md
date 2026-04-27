@@ -1,17 +1,17 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
-Source of Truth: Legacy entry point retained for compatibility; canonical
-dungeon-map documentation now lives in co-located files under `src/`.
+Last Reviewed: 2026-04-25
+Source of Truth: Compatibility redirect to canonical documentation at `docs/maps/README.md`, `docs/maps/requirements/requirements-maps-canvas.md`, `docs/maps/architecture/architecture-maps-dungeon-adoption.md`, `docs/dungeon/README.md`, `docs/dungeon/requirements/requirements-dungeon.md`, `docs/dungeon/domain/domain-dungeon.md`, `docs/dungeon/delivery/delivery-dungeon.md`.
 
-# Dungeon Map Documentation
+# Dungeonmap Stub
 
-This legacy path is retained as a pointer only.
+This path is retained only for discoverability during the documentation-taxonomy migration.
+Canonical documentation now lives in the following locations:
 
-Use these documents instead:
-
-- [Dungeon Feature README](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/README.md:1)
-- [Dungeon Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/SPEC.md:1)
-- [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/DOMAIN.md:1)
-- [Dungeon Delivery Notes](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/DELIVERY.md:1)
-- [Dungeon Map Slotcontent](/home/aaron/Schreibtisch/projects/SaltMarcher/src/view/slotcontent/main/dungeonmap/dungeon-map.md:1)
+- [README.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/README.md:1)
+- [requirements-maps-canvas.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)
+- [architecture-maps-dungeon-adoption.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
+- [README.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
+- [requirements-dungeon.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/requirements/requirements-dungeon.md:1)
+- [domain-dungeon.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)
+- [delivery-dungeon.md](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/delivery/delivery-dungeon.md:1)
