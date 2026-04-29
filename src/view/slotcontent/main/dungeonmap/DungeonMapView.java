@@ -17,7 +17,7 @@ public class DungeonMapView extends MapCanvasView {
         super();
     }
 
-    public void bind(DungeonMapPresentationModel presentationModel) {
+    public void bind(DungeonMapContentModel presentationModel) {
         if (presentationModel == null) {
             return;
         }
@@ -34,7 +34,7 @@ public class DungeonMapView extends MapCanvasView {
         private static final double MARKER_HALF_SIZE_SCENE = 0.34;
         private static final double PARTY_OUTER_RADIUS_SCENE = 0.26;
 
-        private MapRenderScene toScene(DungeonMapPresentationModel.RenderState displayModel) {
+        private MapRenderScene toScene(DungeonMapContentModel.RenderState displayModel) {
             if (displayModel == null) {
                 return MapRenderScene.empty("Dungeon Map");
             }
@@ -46,7 +46,7 @@ public class DungeonMapView extends MapCanvasView {
             List<MapRenderScene.RelationPrimitive> relations = new ArrayList<>();
             List<MapRenderScene.ActorPrimitive> actors = new ArrayList<>();
 
-            if (displayModel.viewMode() == DungeonMapPresentationModel.RenderState.ViewMode.GRAPH) {
+            if (displayModel.viewMode() == DungeonMapContentModel.RenderState.ViewMode.GRAPH) {
                 buildGraphScene(displayModel, surfaces, texts, relations);
             } else {
                 buildGridScene(displayModel, surfaces, boundaries, glyphs, texts, actors);
@@ -60,7 +60,7 @@ public class DungeonMapView extends MapCanvasView {
                     displayModel.summaryLabel(),
                     displayModel.mapLoaded(),
                     displayModel.overlayMessage(),
-                    displayModel.viewMode() == DungeonMapPresentationModel.RenderState.ViewMode.GRAPH
+                    displayModel.viewMode() == DungeonMapContentModel.RenderState.ViewMode.GRAPH
                             ? MapRenderScene.ViewMode.GRAPH
                             : MapRenderScene.ViewMode.GRID,
                     surfaces,
@@ -73,7 +73,7 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static void buildGridScene(
-                DungeonMapPresentationModel.RenderState displayModel,
+                DungeonMapContentModel.RenderState displayModel,
                 List<MapRenderScene.SurfacePrimitive> surfaces,
                 List<MapRenderScene.BoundaryPrimitive> boundaries,
                 List<MapRenderScene.GlyphPrimitive> glyphs,
@@ -81,7 +81,7 @@ public class DungeonMapView extends MapCanvasView {
                 List<MapRenderScene.ActorPrimitive> actors
         ) {
             for (int index = 0; index < displayModel.cells().size(); index++) {
-                DungeonMapPresentationModel.RenderState.RenderCell cell = displayModel.cells().get(index);
+                DungeonMapContentModel.RenderState.RenderCell cell = displayModel.cells().get(index);
                 if (!includeLevel(displayModel, cell.z())) {
                     continue;
                 }
@@ -93,7 +93,7 @@ public class DungeonMapView extends MapCanvasView {
                         surfaceStyle(cell, displayModel)));
             }
             for (int index = 0; index < displayModel.edges().size(); index++) {
-                DungeonMapPresentationModel.RenderState.RenderEdge edge = displayModel.edges().get(index);
+                DungeonMapContentModel.RenderState.RenderEdge edge = displayModel.edges().get(index);
                 if (!includeLevel(displayModel, edge.z())) {
                     continue;
                 }
@@ -107,23 +107,23 @@ public class DungeonMapView extends MapCanvasView {
                         edgeStyle(edge, displayModel)));
             }
             for (int index = 0; index < displayModel.markers().size(); index++) {
-                DungeonMapPresentationModel.RenderState.RenderMarker marker = displayModel.markers().get(index);
+                DungeonMapContentModel.RenderState.RenderMarker marker = displayModel.markers().get(index);
                 if (!includeLevel(displayModel, marker.z())) {
                     continue;
                 }
                 glyphs.add(new MapRenderScene.GlyphPrimitive(
                         "marker:" + index,
-                        selectionRef(new DungeonMapPresentationModel.RenderState.TopologyRef(
+                        selectionRef(new DungeonMapContentModel.RenderState.TopologyRef(
                                 marker.handleTopologyRefKind(),
                                 marker.handleTopologyRefId())),
                         marker.z(),
                         markerShape(marker),
                         markerStyle(marker, displayModel),
-                        abbreviateLabel(marker.label(), marker.kind() == DungeonMapPresentationModel.RenderState.MarkerKind.DOOR ? 1 : 3),
+                        abbreviateLabel(marker.label(), marker.kind() == DungeonMapContentModel.RenderState.MarkerKind.DOOR ? 1 : 3),
                         labelText()));
             }
             for (int index = 0; index < displayModel.labels().size(); index++) {
-                DungeonMapPresentationModel.RenderState.RenderLabel label = displayModel.labels().get(index);
+                DungeonMapContentModel.RenderState.RenderLabel label = displayModel.labels().get(index);
                 if (!includeLevel(displayModel, label.z())) {
                     continue;
                 }
@@ -139,7 +139,7 @@ public class DungeonMapView extends MapCanvasView {
                         labelStyle(label, displayModel),
                         labelText()));
             }
-            DungeonMapPresentationModel.RenderState.PartyToken token = displayModel.partyToken();
+            DungeonMapContentModel.RenderState.PartyToken token = displayModel.partyToken();
             if (token != null && token.visible() && includeLevel(displayModel, token.z())) {
                 actors.add(new MapRenderScene.ActorPrimitive(
                         "",
@@ -156,18 +156,18 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static void buildGraphScene(
-                DungeonMapPresentationModel.RenderState displayModel,
+                DungeonMapContentModel.RenderState displayModel,
                 List<MapRenderScene.SurfacePrimitive> surfaces,
                 List<MapRenderScene.TextPrimitive> texts,
                 List<MapRenderScene.RelationPrimitive> relations
         ) {
-            Map<Long, DungeonMapPresentationModel.RenderState.GraphNode> nodesById = new LinkedHashMap<>();
-            for (DungeonMapPresentationModel.RenderState.GraphNode node : displayModel.graphNodes()) {
+            Map<Long, DungeonMapContentModel.RenderState.GraphNode> nodesById = new LinkedHashMap<>();
+            for (DungeonMapContentModel.RenderState.GraphNode node : displayModel.graphNodes()) {
                 nodesById.put(node.id(), node);
             }
-            for (DungeonMapPresentationModel.RenderState.GraphLink link : displayModel.graphLinks()) {
-                DungeonMapPresentationModel.RenderState.GraphNode from = nodesById.get(link.fromId());
-                DungeonMapPresentationModel.RenderState.GraphNode to = nodesById.get(link.toId());
+            for (DungeonMapContentModel.RenderState.GraphLink link : displayModel.graphLinks()) {
+                DungeonMapContentModel.RenderState.GraphNode from = nodesById.get(link.fromId());
+                DungeonMapContentModel.RenderState.GraphNode to = nodesById.get(link.toId());
                 if (from == null || to == null) {
                     continue;
                 }
@@ -185,7 +185,7 @@ public class DungeonMapView extends MapCanvasView {
                                 false)));
             }
             for (int index = 0; index < displayModel.graphNodes().size(); index++) {
-                DungeonMapPresentationModel.RenderState.GraphNode node = displayModel.graphNodes().get(index);
+                DungeonMapContentModel.RenderState.GraphNode node = displayModel.graphNodes().get(index);
                 surfaces.add(new MapRenderScene.SurfacePrimitive(
                         "graph-node:" + index,
                         "ROOM:" + node.id(),
@@ -211,18 +211,18 @@ public class DungeonMapView extends MapCanvasView {
             }
         }
 
-        private static @Nullable String selectionRef(DungeonMapPresentationModel.RenderState.TopologyRef topologyRef) {
+        private static @Nullable String selectionRef(DungeonMapContentModel.RenderState.TopologyRef topologyRef) {
             if (topologyRef == null || topologyRef.id() <= 0L || "EMPTY".equals(topologyRef.kind())) {
                 return null;
             }
             return topologyRef.kind() + ":" + topologyRef.id();
         }
 
-        private static boolean includeLevel(DungeonMapPresentationModel.RenderState displayModel, int level) {
+        private static boolean includeLevel(DungeonMapContentModel.RenderState displayModel, int level) {
             if (level == displayModel.projectionLevel()) {
                 return true;
             }
-            DungeonMapPresentationModel.RenderState.LevelOverlaySettings settings = displayModel.overlaySettings();
+            DungeonMapContentModel.RenderState.LevelOverlaySettings settings = displayModel.overlaySettings();
             return switch (settings.mode()) {
                 case OFF -> false;
                 case NEARBY -> Math.abs(level - displayModel.projectionLevel()) <= settings.levelRange();
@@ -231,8 +231,8 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static MapRenderScene.PaintStyle surfaceStyle(
-                DungeonMapPresentationModel.RenderState.RenderCell cell,
-                DungeonMapPresentationModel.RenderState displayModel
+                DungeonMapContentModel.RenderState.RenderCell cell,
+                DungeonMapContentModel.RenderState displayModel
         ) {
             if (cell.preview()) {
                 return previewSurfaceStyle(cell);
@@ -251,7 +251,7 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static MapRenderScene.PaintStyle previewSurfaceStyle(
-                DungeonMapPresentationModel.RenderState.RenderCell cell
+                DungeonMapContentModel.RenderState.RenderCell cell
         ) {
             return new MapRenderScene.PaintStyle(
                     cell.destructivePreview() ? color(0x99, 0x43, 0x3d, 1.0) : previewFill(),
@@ -262,8 +262,8 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static MapRenderScene.PaintStyle overlaySurfaceStyle(
-                DungeonMapPresentationModel.RenderState.RenderCell cell,
-                DungeonMapPresentationModel.RenderState displayModel
+                DungeonMapContentModel.RenderState.RenderCell cell,
+                DungeonMapContentModel.RenderState displayModel
         ) {
             boolean above = cell.z() > displayModel.projectionLevel();
             Color tint = above ? aboveTint() : belowTint();
@@ -276,7 +276,7 @@ public class DungeonMapView extends MapCanvasView {
                     false);
         }
 
-        private static Color baseSurfaceFill(DungeonMapPresentationModel.RenderState.RenderCell cell) {
+        private static Color baseSurfaceFill(DungeonMapContentModel.RenderState.RenderCell cell) {
             return switch (cell.kind()) {
                 case ROOM -> roomFill();
                 case CORRIDOR -> corridorFill();
@@ -285,7 +285,7 @@ public class DungeonMapView extends MapCanvasView {
             };
         }
 
-        private static Color baseSurfaceStroke(DungeonMapPresentationModel.RenderState.RenderCell cell) {
+        private static Color baseSurfaceStroke(DungeonMapContentModel.RenderState.RenderCell cell) {
             return switch (cell.kind()) {
                 case ROOM -> roomCellStroke();
                 case CORRIDOR, STAIR -> corridorStroke();
@@ -294,8 +294,8 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static MapRenderScene.PaintStyle edgeStyle(
-                DungeonMapPresentationModel.RenderState.RenderEdge edge,
-                DungeonMapPresentationModel.RenderState displayModel
+                DungeonMapContentModel.RenderState.RenderEdge edge,
+                DungeonMapContentModel.RenderState displayModel
         ) {
             Color stroke;
             double alpha = 1.0;
@@ -307,14 +307,14 @@ public class DungeonMapView extends MapCanvasView {
                 dashed = true;
                 strokeWidth = 2.6 / 32.0;
             } else if (edge.z() != displayModel.projectionLevel()) {
-                stroke = edge.kind() == DungeonMapPresentationModel.RenderState.EdgeKind.DOOR ? doorStroke() : wallStroke();
+                stroke = edge.kind() == DungeonMapContentModel.RenderState.EdgeKind.DOOR ? doorStroke() : wallStroke();
                 alpha = overlayAlpha(edge.z(), displayModel.projectionLevel(), displayModel.overlaySettings().opacity());
-                strokeWidth = edge.kind() == DungeonMapPresentationModel.RenderState.EdgeKind.DOOR ? 3.6 / 32.0 : 2.0 / 32.0;
+                strokeWidth = edge.kind() == DungeonMapContentModel.RenderState.EdgeKind.DOOR ? 3.6 / 32.0 : 2.0 / 32.0;
             } else {
-                stroke = edge.kind() == DungeonMapPresentationModel.RenderState.EdgeKind.DOOR
+                stroke = edge.kind() == DungeonMapContentModel.RenderState.EdgeKind.DOOR
                         ? doorStroke()
                         : edge.selected() ? highlightStroke() : wallStroke();
-                strokeWidth = edge.kind() == DungeonMapPresentationModel.RenderState.EdgeKind.DOOR
+                strokeWidth = edge.kind() == DungeonMapContentModel.RenderState.EdgeKind.DOOR
                         ? 3.6 / 32.0
                         : edge.selected() ? 2.8 / 32.0 : 2.0 / 32.0;
             }
@@ -322,8 +322,8 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static MapRenderScene.PaintStyle markerStyle(
-                DungeonMapPresentationModel.RenderState.RenderMarker marker,
-                DungeonMapPresentationModel.RenderState displayModel
+                DungeonMapContentModel.RenderState.RenderMarker marker,
+                DungeonMapContentModel.RenderState displayModel
         ) {
             Color fill;
             Color stroke;
@@ -364,8 +364,8 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static MapRenderScene.PaintStyle labelStyle(
-                DungeonMapPresentationModel.RenderState.RenderLabel label,
-                DungeonMapPresentationModel.RenderState displayModel
+                DungeonMapContentModel.RenderState.RenderLabel label,
+                DungeonMapContentModel.RenderState displayModel
         ) {
             double alpha = 1.0;
             if (label.z() != displayModel.projectionLevel()) {
@@ -405,14 +405,14 @@ public class DungeonMapView extends MapCanvasView {
         }
 
         private static List<MapRenderScene.ScenePoint> markerShape(
-                DungeonMapPresentationModel.RenderState.RenderMarker marker
+                DungeonMapContentModel.RenderState.RenderMarker marker
         ) {
-            double half = marker.kind() == DungeonMapPresentationModel.RenderState.MarkerKind.DOOR ? 0.28 : MARKER_HALF_SIZE_SCENE;
+            double half = marker.kind() == DungeonMapContentModel.RenderState.MarkerKind.DOOR ? 0.28 : MARKER_HALF_SIZE_SCENE;
             return square(marker.q() - half, marker.r() - half, half * 2.0);
         }
 
         private static List<MapRenderScene.ScenePoint> partyTokenShape(
-                DungeonMapPresentationModel.RenderState.PartyToken token
+                DungeonMapContentModel.RenderState.PartyToken token
         ) {
             double forwardX = token.heading().dx();
             double forwardY = token.heading().dy();

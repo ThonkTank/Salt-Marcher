@@ -1,0 +1,6 @@
+saltmarcher.quality.errorprone.view.view.PassiveViewModelReadApisChecker
+saltmarcher.quality.errorprone.view.view.PassiveViewModelMutationBoundaryChecker
+saltmarcher.quality.errorprone.view.view.ViewPresentationDecisionLeakChecker
+saltmarcher.quality.errorprone.view.view.ViewRestrictedDependencyChecker
+saltmarcher.quality.errorprone.view.view.ViewInputEventApiChecker
+saltmarcher.quality.errorprone.view.view.PassiveViewCallbackSeamBoundaryChecker

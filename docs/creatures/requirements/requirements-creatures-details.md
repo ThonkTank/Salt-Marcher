@@ -55,4 +55,4 @@ Binders do not duplicate detail-entry assembly.
 
 - [Catalog Tab UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/requirements/requirements-creatures-catalog.md:1)
 - [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/domain/domain-creatures.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/view-layer.md:1)
+- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)

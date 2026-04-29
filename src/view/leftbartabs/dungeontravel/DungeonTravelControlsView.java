@@ -1,5 +1,6 @@
 package src.view.leftbartabs.dungeontravel;
 
+import java.util.function.Consumer;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -19,6 +20,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private final Button nextLevelButton = new Button("+");
     private final DungeonLevelOverlayControlsView overlayControls =
             new DungeonLevelOverlayControlsView(this::sectionLabel);
+    private Consumer<DungeonTravelControlsViewInputEvent> viewInputEventHandler = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonTravelControlsView() {
@@ -28,20 +30,8 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         getChildren().setAll(dungeonRow(), projectionRow());
     }
 
-    public void onRefresh(Runnable action) {
-        bindAction(refreshButton, action);
-    }
-
-    public void onResetView(Runnable action) {
-        bindAction(resetViewButton, action);
-    }
-
-    public void onPreviousLevel(Runnable action) {
-        bindAction(previousLevelButton, action);
-    }
-
-    public void onNextLevel(Runnable action) {
-        bindAction(nextLevelButton, action);
+    public void onViewInputEvent(Consumer<DungeonTravelControlsViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
     public DungeonLevelOverlayControlsView levelOverlayControls() {
@@ -91,10 +81,26 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         resetViewButton.getStyleClass().add("toolbar-action-button");
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
+        refreshButton.setOnAction(event -> publish(DungeonTravelControlsViewInputEvent.refresh()));
+        resetViewButton.setOnAction(event -> publish(DungeonTravelControlsViewInputEvent.resetView()));
+        previousLevelButton.setOnAction(event -> publish(DungeonTravelControlsViewInputEvent.previousLevel()));
+        nextLevelButton.setOnAction(event -> publish(DungeonTravelControlsViewInputEvent.nextLevel()));
+        overlayControls.setOnModeChanged(mode ->
+                publish(DungeonTravelControlsViewInputEvent.overlayModeChanged(mode == null ? "OFF" : mode.name())));
+        overlayControls.setOnRangeChanged(levelRange ->
+                publish(DungeonTravelControlsViewInputEvent.overlayRangeChanged(levelRange)));
+        overlayControls.setOnOpacityChanged(opacity ->
+                publish(DungeonTravelControlsViewInputEvent.overlayOpacityChanged(opacity)));
+        overlayControls.setOnSelectedLevelsChanged(levels ->
+                publish(DungeonTravelControlsViewInputEvent.overlayLevelsChanged(levels)));
         describe(refreshButton, "Dungeon-Karte neu laden");
         describe(resetViewButton, "Kamera auf die Dungeon-Karte zuruecksetzen");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         describe(nextLevelButton, "Naechste Dungeon-Ebene anzeigen");
+    }
+
+    private void publish(DungeonTravelControlsViewInputEvent event) {
+        viewInputEventHandler.accept(event);
     }
 
     private HBox dungeonRow() {

@@ -5,6 +5,7 @@ import shell.api.ServiceRegistry;
 import src.data.dungeon.query.SqliteDungeonMapSearch;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.DungeonApplicationService;
+import src.domain.party.PartyApplicationService;
 
 public final class DungeonServiceContribution implements ServiceContribution {
 
@@ -16,9 +17,10 @@ public final class DungeonServiceContribution implements ServiceContribution {
     public void register(ServiceRegistry.Builder services) {
         SqliteDungeonMapRepository repository = new SqliteDungeonMapRepository();
         SqliteDungeonMapSearch search = new SqliteDungeonMapSearch();
-        services.register(
+        services.registerFactory(
                 DungeonApplicationService.class,
-                new DungeonApplicationService(
+                registry -> new DungeonApplicationService(
+                        registry.require(PartyApplicationService.class),
                         repository,
                         search));
     }

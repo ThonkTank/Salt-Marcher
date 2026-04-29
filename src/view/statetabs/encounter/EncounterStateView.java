@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -87,27 +85,7 @@ public final class EncounterStateView extends VBox {
     private final Button resultAwardButton = new Button("XP verteilen");
     private final DialogSurfaceView resultsPane = buildResultsPane();
 
-    private Consumer<BuilderSettingsInput> onGenerate = settings -> { };
-    private Runnable onPreviousAlternative = () -> { };
-    private Runnable onNextAlternative = () -> { };
-    private Runnable onSaveEncounter = () -> { };
-    private LongConsumer onOpenSavedEncounter = id -> { };
-    private Runnable onClearGenerationHistory = () -> { };
-    private LongConsumer onRosterIncrement = id -> { };
-    private LongConsumer onRosterDecrement = id -> { };
-    private LongConsumer onRosterRemove = id -> { };
-    private LongConsumer onUndoRemove = token -> { };
-    private LongConsumer onOpenCreature = id -> { };
-    private Runnable onStartInitiative = () -> { };
-    private Runnable onInitiativeBack = () -> { };
-    private Consumer<List<InitiativeInputView>> onInitiativeConfirm = entries -> { };
-    private Runnable onNextTurn = () -> { };
-    private BiConsumer<String, Integer> onDamage = (id, amount) -> { };
-    private BiConsumer<String, Integer> onHeal = (id, amount) -> { };
-    private BiConsumer<String, Integer> onSetInitiative = (id, initiative) -> { };
-    private Runnable onEndCombat = () -> { };
-    private Runnable onAwardXp = () -> { };
-    private Runnable onReturnToBuilder = () -> { };
+    private Consumer<EncounterStateViewInputEvent> viewInputEventHandler = ignored -> { };
     private ResultStateView lastResultState = ResultStateView.empty();
     private BuilderStateView lastBuilderState = BuilderStateView.empty();
 
@@ -128,6 +106,10 @@ public final class EncounterStateView extends VBox {
 
     public StringProperty statusTextProperty() {
         return status.textProperty();
+    }
+
+    public void onViewInputEvent(Consumer<EncounterStateViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
     public void showBuilder(BuilderStateView state) {
@@ -170,15 +152,16 @@ public final class EncounterStateView extends VBox {
         }
     }
 
-    public void showCombat(CombatStateView state, EncounterCombatPartyMemberButtonView.AddHandler onAddPartyMember) {
+    public void showCombat(CombatStateView state) {
         modeLabel.setText("Combat");
         setContent(combatPane);
         combatRoundLabel.setText("Runde " + state.round());
         combatStatusLabel.setText(state.status());
         Node addPartyNode = combatPane.lookup("#encounter-add-party-button");
-        if (addPartyNode instanceof EncounterCombatPartyMemberButtonView addPartyButton) {
+        if (addPartyNode instanceof EncounterCombatPartyMemberButtonStateView addPartyButton) {
             addPartyButton.updateCandidates(state.missingPartyMembers());
-            addPartyButton.updateAddHandler(onAddPartyMember);
+            addPartyButton.onViewInputEvent(event -> publish(
+                    EncounterStateViewInputEvent.addPartyMemberToCombat(event.memberId(), event.initiative())));
         }
         combatCardList.getChildren().clear();
         for (CombatCardView card : state.cards()) {
@@ -200,88 +183,8 @@ public final class EncounterStateView extends VBox {
         updateResultCalculations();
     }
 
-    public void setOnGenerate(Consumer<BuilderSettingsInput> callback) {
-        onGenerate = callback == null ? settings -> { } : callback;
-    }
-
-    public void setOnPreviousAlternative(Runnable callback) {
-        onPreviousAlternative = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnNextAlternative(Runnable callback) {
-        onNextAlternative = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnSaveEncounter(Runnable callback) {
-        onSaveEncounter = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnOpenSavedEncounter(LongConsumer callback) {
-        onOpenSavedEncounter = callback == null ? id -> { } : callback;
-    }
-
-    public void setOnClearGenerationHistory(Runnable callback) {
-        onClearGenerationHistory = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnRosterIncrement(LongConsumer callback) {
-        onRosterIncrement = callback == null ? id -> { } : callback;
-    }
-
-    public void setOnRosterDecrement(LongConsumer callback) {
-        onRosterDecrement = callback == null ? id -> { } : callback;
-    }
-
-    public void setOnRosterRemove(LongConsumer callback) {
-        onRosterRemove = callback == null ? id -> { } : callback;
-    }
-
-    public void setOnUndoRemove(LongConsumer callback) {
-        onUndoRemove = callback == null ? token -> { } : callback;
-    }
-
-    public void setOnOpenCreature(LongConsumer callback) {
-        onOpenCreature = callback == null ? id -> { } : callback;
-    }
-
-    public void setOnStartInitiative(Runnable callback) {
-        onStartInitiative = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnInitiativeBack(Runnable callback) {
-        onInitiativeBack = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnInitiativeConfirm(Consumer<List<InitiativeInputView>> callback) {
-        onInitiativeConfirm = callback == null ? entries -> { } : callback;
-    }
-
-    public void setOnNextTurn(Runnable callback) {
-        onNextTurn = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnDamage(BiConsumer<String, Integer> callback) {
-        onDamage = callback == null ? (id, amount) -> { } : callback;
-    }
-
-    public void setOnHeal(BiConsumer<String, Integer> callback) {
-        onHeal = callback == null ? (id, amount) -> { } : callback;
-    }
-
-    public void setOnSetInitiative(BiConsumer<String, Integer> callback) {
-        onSetInitiative = callback == null ? (id, initiative) -> { } : callback;
-    }
-
-    public void setOnEndCombat(Runnable callback) {
-        onEndCombat = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnAwardXp(Runnable callback) {
-        onAwardXp = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnReturnToBuilder(Runnable callback) {
-        onReturnToBuilder = callback == null ? () -> { } : callback;
+    private void publish(EncounterStateViewInputEvent event) {
+        viewInputEventHandler.accept(event);
     }
 
     private DialogSurfaceView buildBuilderPane() {
@@ -290,13 +193,13 @@ public final class EncounterStateView extends VBox {
         title.getStyleClass().add("title");
         saveEncounterButton.getStyleClass().addAll("compact", "neutral-action");
         saveEncounterButton.setTooltip(new Tooltip("Aktuelles Encounter-Roster speichern"));
-        saveEncounterButton.setOnAction(event -> onSaveEncounter.run());
+        saveEncounterButton.setOnAction(event -> publish(EncounterStateViewInputEvent.saveEncounter()));
         openEncounterButton.getStyleClass().addAll("compact", "neutral-action");
         openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter oeffnen"));
         openEncounterButton.setOnAction(event -> showSavedPlansPopup(openEncounterButton));
         clearHistoryButton.getStyleClass().addAll("compact", "neutral-action");
         clearHistoryButton.setTooltip(new Tooltip("Generator-Historie leeren"));
-        clearHistoryButton.setOnAction(event -> onClearGenerationHistory.run());
+        clearHistoryButton.setOnAction(event -> publish(EncounterStateViewInputEvent.clearGenerationHistory()));
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
         HBox titleRow = new HBox(8, title, titleSpacer, clearHistoryButton, openEncounterButton, saveEncounterButton);
@@ -331,17 +234,17 @@ public final class EncounterStateView extends VBox {
         generateButton.getStyleClass().add("neutral-action");
         generateButton.setMaxWidth(Double.MAX_VALUE);
         generateButton.setTooltip(new Tooltip("Encounter aus Catalog-Filtern generieren (Alt+G)"));
-        generateButton.setOnAction(event -> onGenerate.accept(BuilderSettingsInput.defaultInput()));
+        generateButton.setOnAction(event -> publish(EncounterStateViewInputEvent.generate()));
         previousAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
         previousAlternativeButton.setTooltip(new Tooltip("Vorherige Generator-Alternative"));
-        previousAlternativeButton.setOnAction(event -> onPreviousAlternative.run());
+        previousAlternativeButton.setOnAction(event -> publish(EncounterStateViewInputEvent.previousAlternative()));
         nextAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
         nextAlternativeButton.setTooltip(new Tooltip("Naechste Generator-Alternative"));
-        nextAlternativeButton.setOnAction(event -> onNextAlternative.run());
+        nextAlternativeButton.setOnAction(event -> publish(EncounterStateViewInputEvent.nextAlternative()));
         builderStartCombatButton.getStyleClass().add("accent");
         builderStartCombatButton.setMaxWidth(Double.MAX_VALUE);
         builderStartCombatButton.setDisable(true);
-        builderStartCombatButton.setOnAction(event -> onStartInitiative.run());
+        builderStartCombatButton.setOnAction(event -> publish(EncounterStateViewInputEvent.startInitiative()));
         DialogSurfaceView.grow(generateButton);
         DialogSurfaceView.grow(builderStartCombatButton);
 
@@ -366,13 +269,13 @@ public final class EncounterStateView extends VBox {
         initiativeList.setPadding(DialogSurfaceView.contentInsets());
 
         Button backButton = new Button("\u2190 Zurueck");
-        backButton.setOnAction(event -> onInitiativeBack.run());
+        backButton.setOnAction(event -> publish(EncounterStateViewInputEvent.initiativeBack()));
         Button rollAllButton = new Button("Alle wuerfeln");
         rollAllButton.getStyleClass().add("neutral-action");
         rollAllButton.setOnAction(event -> rollAllInitiatives());
         Button startButton = new Button("Kampf starten");
         startButton.getStyleClass().add("accent");
-        startButton.setOnAction(event -> onInitiativeConfirm.accept(readInitiatives()));
+        startButton.setOnAction(event -> publish(EncounterStateViewInputEvent.initiativeConfirm(readInitiatives())));
         dialog.setHeader(title);
         dialog.setBody(initiativeList, BodyPolicy.SCROLL);
         dialog.setFooter(backButton, rollAllButton, DialogSurfaceView.spacer(), startButton);
@@ -384,7 +287,7 @@ public final class EncounterStateView extends VBox {
         combatRoundLabel.getStyleClass().add("title");
         combatStatusLabel.getStyleClass().add("text-secondary");
 
-        EncounterCombatPartyMemberButtonView addPartyButton = new EncounterCombatPartyMemberButtonView();
+        EncounterCombatPartyMemberButtonStateView addPartyButton = new EncounterCombatPartyMemberButtonStateView();
         HBox actions = new HBox(addPartyButton);
         actions.setAlignment(Pos.CENTER_RIGHT);
 
@@ -393,7 +296,7 @@ public final class EncounterStateView extends VBox {
         Button nextTurnButton = new Button("\u25B6 _Weiter");
         nextTurnButton.getStyleClass().add("accent");
         nextTurnButton.setMaxWidth(Double.MAX_VALUE);
-        nextTurnButton.setOnAction(event -> onNextTurn.run());
+        nextTurnButton.setOnAction(event -> publish(EncounterStateViewInputEvent.nextTurn()));
         endCombatContainer.setAlignment(Pos.CENTER);
         DialogSurfaceView.grow(nextTurnButton);
         DialogSurfaceView.grow(endCombatContainer);
@@ -427,12 +330,12 @@ public final class EncounterStateView extends VBox {
         resultAwardStatusLabel.getStyleClass().add("text-secondary");
         resultAwardStatusLabel.setWrapText(true);
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
-        resultAwardButton.setOnAction(event -> onAwardXp.run());
+        resultAwardButton.setOnAction(event -> publish(EncounterStateViewInputEvent.awardXp()));
         Button doneButton = new Button("Zum Planer");
         doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurueckkehren"));
         doneButton.setAccessibleText("Zur Encounter-Planung zurueckkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
-        doneButton.setOnAction(event -> onReturnToBuilder.run());
+        doneButton.setOnAction(event -> publish(EncounterStateViewInputEvent.returnToBuilder()));
         DialogSurfaceView.grow(resultAwardButton);
         DialogSurfaceView.grow(doneButton);
 
@@ -474,7 +377,7 @@ public final class EncounterStateView extends VBox {
             removed.getStyleClass().add("text-secondary");
             Button undoButton = new Button("Rueckgaengig");
             undoButton.getStyleClass().addAll("compact", "neutral-action");
-            undoButton.setOnAction(event -> onUndoRemove.accept(undo.token()));
+            undoButton.setOnAction(event -> publish(EncounterStateViewInputEvent.undoRemove(undo.token())));
             HBox row = new HBox(8, removed, undoButton);
             row.setAlignment(Pos.CENTER_LEFT);
             advisoryRegion.getChildren().add(row);
@@ -495,21 +398,21 @@ public final class EncounterStateView extends VBox {
         Button minus = new Button("-");
         minus.getStyleClass().add("compact");
         minus.setDisable(card.count() <= 1);
-        minus.setOnAction(event -> onRosterDecrement.accept(card.creatureId()));
+        minus.setOnAction(event -> publish(EncounterStateViewInputEvent.rosterDecrement(card.creatureId())));
         Label count = new Label(String.valueOf(card.count()));
         count.getStyleClass().add("bold");
         count.setMinWidth(24);
         count.setAlignment(Pos.CENTER);
         Button plus = new Button("+");
         plus.getStyleClass().add("compact");
-        plus.setOnAction(event -> onRosterIncrement.accept(card.creatureId()));
+        plus.setOnAction(event -> publish(EncounterStateViewInputEvent.rosterIncrement(card.creatureId())));
         HBox quantity = new HBox(2, minus, count, plus);
         quantity.setAlignment(Pos.CENTER);
 
         Button name = new Button(card.name());
         name.getStyleClass().add("creature-link");
         name.setTooltip(new Tooltip("Creature details oeffnen"));
-        name.setOnAction(event -> onOpenCreature.accept(card.creatureId()));
+        name.setOnAction(event -> publish(EncounterStateViewInputEvent.openCreature(card.creatureId())));
 
         HBox detail = new HBox(4);
         detail.setAlignment(Pos.CENTER_LEFT);
@@ -526,7 +429,7 @@ public final class EncounterStateView extends VBox {
         expand.getStyleClass().addAll("text-muted", "clickable");
         Button remove = new Button("\u00d7");
         remove.getStyleClass().addAll("compact", "remove-btn");
-        remove.setOnAction(event -> onRosterRemove.accept(card.creatureId()));
+        remove.setOnAction(event -> publish(EncounterStateViewInputEvent.rosterRemove(card.creatureId())));
         VBox right = new VBox(4, expand, remove);
         right.setAlignment(Pos.CENTER_RIGHT);
 
@@ -624,8 +527,10 @@ public final class EncounterStateView extends VBox {
                         "HP bearbeiten",
                         1,
                         List.of(
-                                new PopupAction("-", "", true, amount -> onDamage.accept(card.id(), amount)),
-                                new PopupAction("+", "", false, amount -> onHeal.accept(card.id(), amount)))));
+                                new PopupAction("-", "", true, amount -> publish(
+                                        EncounterStateViewInputEvent.damage(card.id(), amount))),
+                                new PopupAction("+", "", false, amount -> publish(
+                                        EncounterStateViewInputEvent.heal(card.id(), amount))))));
         return bar;
     }
 
@@ -641,7 +546,7 @@ public final class EncounterStateView extends VBox {
         set.setDefaultButton(true);
         set.setOnAction(event -> {
             popup.hide();
-            onSetInitiative.accept(card.id(), parse(field.getText(), card.initiative()));
+            publish(EncounterStateViewInputEvent.setInitiative(card.id(), parse(field.getText(), card.initiative())));
         });
         field.setOnAction(event -> set.fire());
         showPopup(anchor, popup, field, down, field, up, set);
@@ -663,7 +568,7 @@ public final class EncounterStateView extends VBox {
                 option.setMaxWidth(Double.MAX_VALUE);
                 option.setOnAction(event -> {
                     popup.hide();
-                    onOpenSavedEncounter.accept(plan.id());
+                    publish(EncounterStateViewInputEvent.openSavedEncounter(plan.id()));
                 });
                 content.getChildren().add(option);
             }
@@ -724,7 +629,7 @@ public final class EncounterStateView extends VBox {
         HBox.setHgrow(cancel, Priority.ALWAYS);
         HBox.setHgrow(confirm, Priority.ALWAYS);
         cancel.setOnAction(event -> showNormalEndButton(false));
-        confirm.setOnAction(event -> onEndCombat.run());
+        confirm.setOnAction(event -> publish(EncounterStateViewInputEvent.endCombat()));
         endCombatContainer.getChildren().addAll(cancel, confirm);
     }
 
@@ -736,12 +641,12 @@ public final class EncounterStateView extends VBox {
         }
     }
 
-    private List<InitiativeInputView> readInitiatives() {
-        List<InitiativeInputView> inputs = new ArrayList<>();
+    private List<EncounterStateViewInputEvent.InitiativeEntry> readInitiatives() {
+        List<EncounterStateViewInputEvent.InitiativeEntry> inputs = new ArrayList<>();
         for (Map.Entry<String, Spinner<Integer>> entry : initiativeSpinnerById.entrySet()) {
             Spinner<Integer> spinner = entry.getValue();
             spinner.commitValue();
-            inputs.add(new InitiativeInputView(entry.getKey(), spinner.getValue()));
+            inputs.add(new EncounterStateViewInputEvent.InitiativeEntry(entry.getKey(), spinner.getValue()));
         }
         return inputs;
     }
@@ -979,7 +884,7 @@ public final class EncounterStateView extends VBox {
             String status,
             List<CombatCardView> cards,
             boolean allEnemiesDefeated,
-            List<EncounterCombatPartyMemberButtonView.Candidate> missingPartyMembers
+            List<EncounterCombatPartyMemberButtonStateView.Candidate> missingPartyMembers
     ) {
         public CombatStateView {
             cards = cards == null ? List.of() : List.copyOf(cards);

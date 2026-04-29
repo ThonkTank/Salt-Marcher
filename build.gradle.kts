@@ -87,6 +87,17 @@ sourceSets {
     }
 }
 
+apply(from = "tools/quality/viewinputevent-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/view-binder-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/view-contribution-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/view-view-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/view-layer-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/view-inspector-entry-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/publishedevent-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/viewintenthandler-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/view-contributionmodel-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/view-content-model-enforcement/root-host.gradle.kts")
+
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.46.1.3")
@@ -103,13 +114,13 @@ dependencies {
 pmd {
     toolVersion = "7.23.0"
     isConsoleOutput = true
-    isIgnoreFailures = true
+    isIgnoreFailures = false
     ruleSets = listOf()
     ruleSetFiles = files(layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"))
 }
 
 spotbugs {
-    ignoreFailures = true
+    ignoreFailures = false
     effort = Effort.MAX
     reportLevel = Confidence.MEDIUM
 }
@@ -167,6 +178,10 @@ val architectureTest by tasks.registering(Test::class) {
     classpath = sourceSets["test"].runtimeClasspath
     useJUnitPlatform()
     include("architecture/**")
+    exclude("architecture/view/binder/**")
+    exclude("architecture/view/contribution/**")
+    exclude("architecture/view/contributionmodel/**")
+    exclude("architecture/view/viewlayer/**")
     doFirst {
         systemProperty("saltmarcher.mainClassesDir", mainJavaClassesDir.get().asFile.absolutePath)
     }

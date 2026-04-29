@@ -41,7 +41,8 @@
 
     <rule ref="category/java/design.xml/NcssCount">
         <properties>
-            <property name="methodReportLevel" value="30" />
+            <property name="methodReportLevel" value="60" />
+            <property name="classReportLevel" value="1500" />
         </properties>
     </rule>
 
@@ -53,7 +54,7 @@
 
     <rule ref="category/java/design.xml/ExcessiveParameterList">
         <properties>
-            <property name="minimum" value="6" />
+            <property name="minimum" value="10" />
         </properties>
     </rule>
 

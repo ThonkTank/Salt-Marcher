@@ -1,0 +1,105 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <group id="saltmarcher:view-inspector-entry-enforcement" severity="blocker">
+        <includeConstraint refId="saltmarcher:ViewInspectorEntryOneTopLevelTypePerFile"/>
+        <includeConstraint refId="saltmarcher:ViewInspectorEntryDependencies"/>
+    </group>
+
+    <concept id="saltmarcher:ViewLayerType">
+        <description>Annotates compiled SaltMarcher view-layer types for InspectorEntry enforcement.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE type.fqn =~ 'src\\.view\\..*'
+            WITH
+              type,
+              coalesce(type.sourceFileName, '') AS sourceFileName,
+              split(type.fqn, '.') AS segments
+            SET
+              type:SaltMarcher:ViewLayerType,
+              type.viewBucket = CASE
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[3] = 'primitives' AND segments[4] = 'mapcanvas' AND (sourceFileName ENDS WITH 'MapRenderScene.java' OR sourceFileName ENDS WITH 'CanvasPointerEvent.java') THEN 'SUPPORT_VALUE'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContentModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java') THEN 'MODEL'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'InspectorEntry.java' THEN 'INSPECTOR_ENTRY'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Binder.java' THEN 'BINDER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java' OR sourceFileName ENDS WITH 'ContentModel.java') THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Contribution.java' THEN 'CONTRIBUTION'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                ELSE 'LEGACY'
+              END,
+              type.relativePath = CASE
+                WHEN type.sourceFileName IS NULL OR type.sourceFileName = ''
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                WHEN type.name IS NULL
+                  OR type.name = ''
+                  OR NOT type.fqn ENDS WITH '.' + type.name
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + type.sourceFileName
+              END
+            RETURN
+              type AS ViewLayerType
+        ]]></cypher>
+    </concept>
+
+    <constraint id="saltmarcher:ViewInspectorEntryOneTopLevelTypePerFile">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Each InspectorEntry source file owns exactly one top-level InspectorEntry type.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType {viewBucket: 'INSPECTOR_ENTRY'})
+            WHERE NOT type.fqn CONTAINS '$'
+            WITH type.relativePath AS source, collect(DISTINCT type.name) AS typeNames
+            WHERE size(typeNames) <> 1
+            RETURN
+              source AS Source,
+              'exactly one top-level InspectorEntry type' AS ExpectedDirection,
+              reduce(actual = '', typeName IN typeNames |
+                CASE WHEN actual = '' THEN typeName ELSE actual + ', ' + typeName END) AS ActualDirection,
+              'An InspectorEntry file must define exactly one top-level adapter type.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewInspectorEntryDependencies">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Slotcontent InspectorEntry adapters compose only their own detail slotcontent and shell InspectorEntrySpec.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewLayerType {viewBucket: 'INSPECTOR_ENTRY'})-[:DEPENDS_ON]->(target:Java:Type)
+            WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
+            WHERE
+              target.fqn =~ 'bootstrap\\..*'
+              OR target.fqn =~ 'src\\.data\\..*'
+              OR target.fqn =~ 'shell\\.host\\..*'
+              OR (target.fqn =~ 'shell\\..*' AND NOT target.fqn =~ 'shell\\.api\\.InspectorEntrySpec(\\$.*)?')
+              OR (target.fqn =~ 'src\\.domain\\..*' AND NOT target.fqn =~ 'src\\.domain\\.[^.]+\\.published\\..+')
+              OR (
+                target.fqn =~ 'src\\.view\\..*'
+                AND NOT (
+                  target.viewBucket IN ['MODEL', 'VIEW', 'INSPECTOR_ENTRY']
+                  AND size(sourceSegments) >= 5
+                  AND size(targetSegments) >= 5
+                  AND sourceSegments[2] = 'slotcontent'
+                  AND targetSegments[2] = 'slotcontent'
+                  AND sourceSegments[3] = targetSegments[3]
+                  AND sourceSegments[4] = targetSegments[4]
+                )
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'InspectorEntry adapters may use InspectorEntrySpec, own slotcontent View/ContentModel, and domain published carriers only' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'Slotcontent InspectorEntry adapters must not become shell, service, or cross-feature composition roots.' AS Details
+            ORDER BY Source, Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
+    </constraint>
+</jqassistant-rules>

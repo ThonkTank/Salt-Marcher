@@ -1,0 +1,2 @@
+saltmarcher.quality.errorprone.view.projectionmodel.ViewContentModelDependencyBoundaryChecker
+saltmarcher.quality.errorprone.view.projectionmodel.ViewContentModelFlatSurfaceChecker

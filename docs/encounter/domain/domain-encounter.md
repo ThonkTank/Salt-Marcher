@@ -24,9 +24,9 @@ Context Name: Encounter
 
 `published/` owns public generation and budget-load commands, difficulty
 bands, generator tuning, budget summaries, generated encounter results,
-encounter creature entries, saved encounter-plan commands and queries, saved
-plan summaries, status vocabulary, and the read-only encounter-session
-surface used by the state tab.
+encounter creature entries, saved encounter-plan commands and queries,
+saved-plan summaries, saved-plan budget summaries, status vocabulary, and the
+read-only encounter-session surface used by the state tab.
 
 `EncounterDifficultyBand.AUTO` and Auto tuning sentinels are public request
 language only. The application boundary resolves them into concrete generation
@@ -54,6 +54,8 @@ session surface for view observation.
 `EncounterGenerationUseCase` remains orchestration and foreign-service
 coordination only. `LoadEncounterBudgetUseCase` exposes party-derived
 encounter thresholds without constructing a generated encounter.
+`LoadEncounterPlanBudgetUseCase` exposes one saved encounter plan as a
+party-specific budget summary for downstream planning surfaces.
 `LoadEncounterTuningPreviewQuery` exposes read-only slider preview labels for
 the catalog controls.
 
@@ -107,6 +109,7 @@ It derives:
   search quality, stop category, candidate-pool size, and attempt/evaluation
   counts
 - party-derived budget summaries for the active runtime session
+- party-derived saved-plan budget summaries for downstream planner surfaces
 - party-derived tuning preview labels for catalog encounter controls
 
 Generated alternatives remain ephemeral derived state until the user saves the
@@ -179,6 +182,7 @@ runtime state.
 - `GeneratedEncounter`: exported generated encounter suggestion.
 - `EncounterPlan`: saved encounter roster aggregate.
 - `SavedEncounterPlan`: published saved-plan snapshot.
+- `EncounterPlanBudgetSummary`: published saved-plan budget readout.
 
 ## Domain Policies
 
@@ -202,7 +206,7 @@ runtime state.
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/domain-layer.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
 - [Encounter Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-persistence.md:1)
 - [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)

@@ -95,7 +95,7 @@ Reclassify `creatures` before adding any of:
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/domain-layer.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
 - [Creatures Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/contract/contract-creatures-persistence.md:1)
 - [Catalog Tab UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/requirements/requirements-creatures-catalog.md:1)
 - [Creature Details UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/requirements/requirements-creatures-details.md:1)

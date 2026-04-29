@@ -85,4 +85,4 @@ truth only; it does not persist character positions.
 
 - [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/domain/domain-party.md:1)
 - [Party Dropdown UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/requirements/requirements-party-dropdown.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/data-layer.md:1)
+- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)

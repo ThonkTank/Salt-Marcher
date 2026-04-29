@@ -89,4 +89,4 @@ summary, and mutation controls call the party application service.
 - [Adventuring Day Top-Bar UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/requirements/requirements-adventuring-day-dropdown.md:1)
 - [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/domain/domain-party.md:1)
 - [Party Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/contract/contract-party-persistence.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/view-layer.md:1)
+- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)

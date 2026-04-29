@@ -32,19 +32,30 @@ checks currently promoted to errors are:
 - `StringCaseLocaleUsage`
 - `StringSplitter`
 
-`compileJava` does not run the jQAssistant view-topology blocker. Graph-shaped
-view analysis enters local quality through `checkViewArchitecture`, which is
-wired directly into the central `check` aggregate. This keeps focused
-compilation verification independent from graph analysis while ensuring
-`build` still runs the full architecture harness through `check`.
+`compileJava` does not run the dedicated jQAssistant bundles. Passive `View`
+graph and FXML analysis enter local quality through `checkViewEnforcement`,
+focused `Contribution` entrypoint-shape and ArchUnit analysis enters through
+`checkViewContributionEnforcement`,
+focused Binder graph analysis enters through
+`checkViewBinderEnforcement`,
+focused `ContributionModel` graph analysis enters through
+`checkViewContributionModelEnforcement`, focused `ContentModel` graph and
+topology analysis enters through `checkViewContentModelEnforcement`, focused
+`InspectorEntry` graph and topology analysis enters through
+`checkViewInspectorEntryEnforcement`, and broader remaining view-topology
+analysis enters through `checkViewArchitecture`.
+These paths are wired into the central `check` aggregate through the named
+architecture aggregates. This keeps focused compilation verification
+independent from graph analysis while ensuring `build` still runs the full
+architecture harness through `check`.
 
 ### Complexity, Duplication, And Metrics
 
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
-| PMD non-architecture smells | `Informational Report` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` as source-only reports on production Java sources. |
-| SpotBugs plus FindSecBugs | `Informational Report` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
-| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 80`, stricter than PMD's documented `100` token Java example; writes `build/reports/cpd/main.txt`. |
+| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. |
+| SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
+| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value; writes `build/reports/cpd/main.txt`. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; writes `build/reports/lizard/main.txt`. |
 | CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, and warns on baseline hotspot regressions without blocking local build or install handoff. |
 
@@ -58,8 +69,9 @@ records a stricter project value:
 - NPath complexity: `200`
 - Coupling between objects: `20`
 - Deep nested `if` depth: `3`
-- Method NCSS count: `30`
-- Excessive parameter list minimum: `6`, stricter than PMD's default `10`
+- Method NCSS count: `60`
+- Class NCSS count: `1500`
+- Excessive parameter list minimum: `10`
 
 The same PMD ruleset enables PMD's default thresholds and rule defaults for the
 explicitly listed Java quickstart rules plus stricter source-smell rules for
@@ -67,23 +79,23 @@ exception handling, resource handling, unnecessary suppressions, magic
 literals, low-branch switches, mutable static state, public members on
 non-public types, null sentinels, and local naming/style hygiene. The rule file
 must list individual rules explicitly rather than importing whole PMD
-categories.
+categories. PMD default thresholds also remain active for explicitly enabled
+rules such as `TooManyFields` (`15`) and `TooManyMethods` (`10`).
 
-`pmdMain` and `pmdStrictMain` produce local reports without blocking the
-central handoff build. The current codebase has an existing smell baseline that
-is larger than the active MVVM refactor scope, so PMD non-architecture
-findings remain review-owned until a dedicated cleanup request promotes a
-focused subset back to a blocking gate. `pmdTest` is disabled; PMD
+`pmdMain` is wired into the central `check` aggregate and fails the local
+handoff build on violations. `pmdStrictMain` uses the same ruleset and also
+fails when run directly, but it remains a focused direct entrypoint instead of
+an additional aggregate dependency. `pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.
 
 SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
 effort `MAX`, and confidence `MEDIUM`. `MAX` is the strongest analysis effort;
 `MEDIUM` keeps the normal medium-confidence report level instead of weakening
-the report to high-confidence-only findings. Findings are reported but do not
-block the local build until a curated baseline is established. `spotbugsTest`
-is disabled because behavior-coupled automated tests are not part of the
-project strategy.
+the report to high-confidence-only findings. `spotbugsMain` is active in the
+central `check` aggregate and blocks the local build on reported findings.
+`spotbugsTest` is disabled because behavior-coupled automated tests are not
+part of the project strategy.
 
 CKJM measures object-oriented class metrics but does not publish official
 blocking defaults. SaltMarcher therefore treats CKJM as a hotspot and
@@ -145,7 +157,9 @@ language-level architecture rules.
 | `./gradlew checkViewFxmlResources` | `Blocking Local Gate` | View FXML files must live under the MVVM view-resource tree, avoid inline scripts, and use passive View controllers matching the owning view area. |
 
 The styling rules behind the stylesheet and selector gates are defined in the
-[Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/styling.md:1).
+[Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
+and the matching
+[Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-enforcement.md:1).
 
 ## Aggregates And Entry Points
 
@@ -156,8 +170,14 @@ It includes:
 
 - Java compiler hygiene through `compileJava`
 - architecture-harness checks through `architectureTest`,
+  `checkViewContributionEnforcement`, `checkViewEnforcement`,
+  `checkViewBinderEnforcement`,
+  `checkViewContributionModelEnforcement`,
+  `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
   `pmdArchitectureMain`, `:build-harness:check`, and `checkViewArchitecture`
 - repository and resource policy checks
+- PMD source-smell detection through `pmdMain`
+- SpotBugs plus FindSecBugs through `spotbugsMain`
 - duplicate-code detection through `cpdMain`
 - cyclomatic-complexity detection through `lizardMain`
 - OO-metric regression reporting through `ckjmMain`
@@ -174,20 +194,63 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `lizardMain`, `ckjmMain`, `checkCentralizedStylesheets`,
 `checkDefinedStyleClassSelectors`, `checkNoCompiledArtifactsInSource`,
 `checkDesktopPackagingInputs`, `checkDesktopAppImageLayout`,
-`checkViewFxmlResources`, and `jqassistantEffectiveRules`, each run through
-`./gradlew <task> --console=plain`.
+`checkViewFxmlResources`, `checkViewEnforcement`,
+`checkViewContributionEnforcement`, `pmdViewContributionEnforcement`,
+`checkViewBinderEnforcement`,
+`checkViewContributionModelEnforcement`,
+`checkViewContentModelEnforcement`,
+`checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
+`checkViewInputEventEnforcement`, and `jqassistantEffectiveRules`, each run
+through `./gradlew <task> --console=plain`.
 
-`pmdMain`, `pmdStrictMain`, and `spotbugsMain` remain focused report
-entrypoints. They are active only when explicitly requested and are not
-described as gates until they have project-specific blocking thresholds.
+`pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
+focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
+entrypoint for the same blocking ruleset.
 
 Architecture-focused entrypoints:
 
 - `./gradlew checkArchitecture --console=plain`
-  Aggregates `architectureTest`, `pmdArchitectureMain`, and
-  `:build-harness:check`.
+  Aggregates `architectureTest`, `checkViewContributionEnforcement`,
+  `checkViewBinderEnforcement`,
+  `checkViewContributionModelEnforcement`,
+  `checkViewContentModelEnforcement`,
+  `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
+  `pmdArchitectureMain`, and `:build-harness:check`.
+- `./gradlew checkViewBinderEnforcement --console=plain`
+  Aggregates the current `Binder` bundle through `compileJava`,
+  `viewBinderArchitectureTest`, and the dedicated Binder jQAssistant analysis.
+- `./gradlew checkViewEnforcement --console=plain`
+  Aggregates the current passive `View` bundle through `compileJava`,
+  `viewSurfaceArchitectureTest`, `checkViewFxmlResources`, and the dedicated
+  passive-`View` jQAssistant analysis.
+- `./gradlew checkViewContributionEnforcement --console=plain`
+  Aggregates the current `Contribution` bundle through `compileJava`,
+  `viewContributionArchitectureTest`, and
+  `pmdViewContributionEnforcement`.
+- `./gradlew checkViewContributionModelEnforcement --console=plain`
+  Aggregates the current `ContributionModel` bundle through `compileJava`,
+  `viewContributionModelArchitectureTest`, the dedicated
+  `ContributionModel` jQAssistant analysis, and
+  `:build-harness:viewContributionModelTopologyCheck`.
+- `./gradlew checkViewContentModelEnforcement --console=plain`
+  Aggregates the current `ContentModel` bundle through `compileJava`,
+  `viewContentModelArchitectureTest`, the dedicated `ContentModel`
+  jQAssistant analysis, and `:build-harness:viewContentModelTopologyCheck`.
+- `./gradlew checkViewInspectorEntryEnforcement --console=plain`
+  Aggregates the current `InspectorEntry` bundle through `compileJava`,
+  the dedicated InspectorEntry jQAssistant analysis, and
+  `:build-harness:viewInspectorEntryTopologyCheck`.
 - `./gradlew checkViewArchitecture --console=plain`
-  Runs the explicit jQAssistant view-topology analysis.
+  Runs the explicit jQAssistant view-topology analysis for the remaining
+  non-passive `View`, non-Binder, and non-InspectorEntry cockpit structure
+  and also executes the focused `ContributionModel` and `ContentModel`
+  jQAssistant bundles.
+- `./gradlew checkViewLayerEnforcement --console=plain`
+  Aggregates the current `View Layer` bundle through
+  `viewLayerArchitectureTest` and `:build-harness:viewLayerTopologyCheck`.
+- `./gradlew checkViewInputEventEnforcement --console=plain`
+  Aggregates the current `ViewInputEvent` bundle through `compileJava`,
+  `viewInputEventArchitectureTest`, and `:build-harness:viewInputEventTopologyCheck`.
 
 The Gradle convention implementation must keep these public entrypoints stable
 while organizing internal wiring by policy area: invocation behavior, compiler
@@ -221,22 +284,21 @@ checks that are not blocked by failed dependencies must continue and report
 their failures together.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
-`ckjmMain`, and `checkViewArchitecture` still require current compiled classes;
+`ckjmMain`, `checkViewEnforcement`, and `checkViewArchitecture` still require current compiled classes;
 if `compileJava` fails, those entrypoints may be skipped because their
 prerequisite failed rather than because another independent check failed.
 
 Local blocking Gradle gates must produce diagnostics from the current
 invocation. `compileJava`, PMD architecture, ArchUnit-backed test entrypoints,
-jQAssistant, CPD, Lizard, CKJM, build-harness architecture checks, and
-Gradle-owned resource policy checks must not report success by being skipped as
-`UP-TO-DATE` or restored from the build cache. Report-only PMD and SpotBugs
-entrypoints should also produce fresh diagnostics when invoked, but they are
-not central blocking gates. Tool installation, dependency resolution,
-packaging, and generated-resource preparation tasks may remain incremental
-because they are not the gate result itself.
+jQAssistant, PMD non-architecture, SpotBugs, CPD, Lizard, CKJM,
+build-harness architecture checks, and Gradle-owned resource policy checks
+must not report success by being skipped as `UP-TO-DATE` or restored from the
+build cache. Tool installation, dependency resolution, packaging, and
+generated-resource preparation tasks may remain incremental because they are
+not the gate result itself.
 
 ## References
 
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
-- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/architecture-enforcement-harness.md:1)
-- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/styling.md:1)
+- [Layering Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
+- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)

@@ -23,7 +23,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import org.jspecify.annotations.Nullable;
 
 public final class CatalogMainView extends BorderPane {
 
@@ -35,13 +34,10 @@ public final class CatalogMainView extends BorderPane {
     private final Button previousButton = new Button("◀ Zurück");
     private final Button nextButton = new Button("Weiter ▶");
     private final ComboBox<SortSelection> sortCombo = new ComboBox<>();
-    private @Nullable LongConsumer rowOpenHandler;
-    private @Nullable LongConsumer rowActionHandler;
-    private @Nullable Consumer<String> sortChangedHandler;
-    private @Nullable Runnable previousPageHandler;
-    private @Nullable Runnable nextPageHandler;
+    private Consumer<CatalogMainViewInputEvent> viewInputEventHandler = ignored -> { };
     private String rowActionLabel = "";
     private String rowActionTooltip = "";
+    private boolean rowActionEnabled;
     private boolean suppressSortEvents;
 
     public CatalogMainView() {
@@ -59,8 +55,8 @@ public final class CatalogMainView extends BorderPane {
         sortLabel.getStyleClass().add("text-muted");
         sortCombo.setOnAction(event -> {
             SortSelection selection = sortCombo.getValue();
-            if (!suppressSortEvents && selection != null && sortChangedHandler != null) {
-                sortChangedHandler.accept(selection.key());
+            if (!suppressSortEvents && selection != null) {
+                viewInputEventHandler.accept(CatalogMainViewInputEvent.sortChanged(selection.key()));
             }
         });
         topBar.getChildren().addAll(countLabel, spacer, sortLabel, sortCombo);
@@ -78,24 +74,16 @@ public final class CatalogMainView extends BorderPane {
                 fireOpen(row.id());
                 event.consume();
             } else if (event.getCode() == KeyCode.ENTER && event.isShiftDown()) {
-                if (rowActionHandler != null) {
-                    rowActionHandler.accept(row.id());
+                if (rowActionEnabled) {
+                    viewInputEventHandler.accept(CatalogMainViewInputEvent.rowActionTriggered(row.id()));
                 }
                 event.consume();
             }
         });
         setCenter(table);
 
-        previousButton.setOnAction(event -> {
-            if (previousPageHandler != null) {
-                previousPageHandler.run();
-            }
-        });
-        nextButton.setOnAction(event -> {
-            if (nextPageHandler != null) {
-                nextPageHandler.run();
-            }
-        });
+        previousButton.setOnAction(event -> viewInputEventHandler.accept(CatalogMainViewInputEvent.previousPage()));
+        nextButton.setOnAction(event -> viewInputEventHandler.accept(CatalogMainViewInputEvent.nextPage()));
         HBox pagination = new HBox(8, previousButton, pageLabel, nextButton);
         pagination.setAlignment(Pos.CENTER);
         pagination.setPadding(new Insets(6, 0, 0, 0));
@@ -115,7 +103,7 @@ public final class CatalogMainView extends BorderPane {
             configureColumn(tableColumn, column, index);
             table.getColumns().add(tableColumn);
         }
-        if (rowActionHandler != null) {
+        if (rowActionEnabled) {
             table.getColumns().add(actionColumn());
         }
     }
@@ -160,26 +148,14 @@ public final class CatalogMainView extends BorderPane {
         return nextButton.disableProperty();
     }
 
-    public void setOnSortChanged(Consumer<String> handler) {
-        sortChangedHandler = handler;
+    public void onViewInputEvent(Consumer<CatalogMainViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void setOnPreviousPage(Runnable handler) {
-        previousPageHandler = handler;
-    }
-
-    public void setOnNextPage(Runnable handler) {
-        nextPageHandler = handler;
-    }
-
-    public void setOnRowOpen(LongConsumer handler) {
-        rowOpenHandler = handler;
-    }
-
-    public void setRowAction(String label, String tooltip, LongConsumer handler) {
+    public void setRowAction(String label, String tooltip, boolean enabled) {
         rowActionLabel = label == null ? "" : label;
         rowActionTooltip = tooltip == null ? "" : tooltip;
-        rowActionHandler = handler;
+        rowActionEnabled = enabled;
         List<ColumnItem> existingColumns = table.getColumns().stream()
                 .map(TableColumn::getUserData)
                 .filter(ColumnItem.class::isInstance)
@@ -218,9 +194,7 @@ public final class CatalogMainView extends BorderPane {
     }
 
     private void fireOpen(long id) {
-        if (rowOpenHandler != null) {
-            rowOpenHandler.accept(id);
-        }
+        viewInputEventHandler.accept(CatalogMainViewInputEvent.rowOpened(id));
     }
 
     private TableColumn<RowItem, Void> actionColumn() {
@@ -239,8 +213,8 @@ public final class CatalogMainView extends BorderPane {
                 button.setTooltip(tooltip);
                 button.setOnAction(event -> {
                     RowItem row = getTableRow() == null ? null : getTableRow().getItem();
-                    if (row != null && rowActionHandler != null) {
-                        rowActionHandler.accept(row.id());
+                    if (row != null && rowActionEnabled) {
+                        viewInputEventHandler.accept(CatalogMainViewInputEvent.rowActionTriggered(row.id()));
                     }
                 });
             }

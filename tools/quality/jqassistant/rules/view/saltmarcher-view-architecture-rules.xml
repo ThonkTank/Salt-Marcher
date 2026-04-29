@@ -1,0 +1,191 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <group id="saltmarcher:view-architecture" severity="blocker">
+        <includeConstraint refId="saltmarcher:ViewLayerAllowedBuckets"/>
+        <includeConstraint refId="saltmarcher:ViewLayerNoLegacyBuckets"/>
+        <includeConstraint refId="saltmarcher:ViewLayerRootOnlyContribution"/>
+        <includeConstraint refId="saltmarcher:ViewLayerOneModelPerFile"/>
+        <includeConstraint refId="saltmarcher:ViewLayerRootEntrypointCount"/>
+        <includeConstraint refId="saltmarcher:ViewContributionDependencies"/>
+    </group>
+
+    <concept id="saltmarcher:ViewLayerType">
+        <description>Annotates compiled SaltMarcher view-layer types for the canonical passive-view topology harness.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE type.fqn =~ 'src\\.view\\..*'
+            WITH
+              type,
+              coalesce(type.sourceFileName, '') AS sourceFileName,
+              split(type.fqn, '.') AS segments
+            SET
+              type:SaltMarcher:ViewLayerType,
+              type.viewBucket = CASE
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[3] = 'primitives' AND segments[4] = 'mapcanvas' AND (sourceFileName ENDS WITH 'MapRenderScene.java' OR sourceFileName ENDS WITH 'CanvasPointerEvent.java') THEN 'SUPPORT_VALUE'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContentModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java') THEN 'MODEL'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'InspectorEntry.java' THEN 'INSPECTOR_ENTRY'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Binder.java' THEN 'BINDER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java' OR sourceFileName ENDS WITH 'ContentModel.java') THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Contribution.java' THEN 'CONTRIBUTION'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                ELSE 'LEGACY'
+              END,
+              type.relativePath = CASE
+                WHEN type.sourceFileName IS NULL OR type.sourceFileName = ''
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                WHEN type.name IS NULL
+                  OR type.name = ''
+                  OR NOT type.fqn ENDS WITH '.' + type.name
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + type.sourceFileName
+              END
+            RETURN
+              type AS ViewLayerType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:ViewLayerRootEntrypoint">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Labels shell contribution entrypoints.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType)
+            WHERE type.viewBucket = 'CONTRIBUTION'
+            SET type:SaltMarcher:ViewLayerRootEntrypoint
+            RETURN type AS ViewLayerRootEntrypoint
+        ]]></cypher>
+    </concept>
+
+    <constraint id="saltmarcher:ViewLayerAllowedBuckets">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Cockpit topology allows active view Java only in active roots or reusable slotcontent roots.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType)
+            WHERE type.viewBucket = 'LEGACY'
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Active view Java must use the cockpit contribution topology.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewLayerNoLegacyBuckets">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Component-local view buckets are migration debt and forbidden for active Java.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType)
+            WHERE type.viewBucket = 'LEGACY'
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              'src/view/leftbartabs, src/view/statetabs, src/view/dropdowns, or src/view/slotcontent' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Legacy component-local View/ViewModel/api/assembly-style topology is not active target code.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewLayerRootOnlyContribution">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>View contributions are the only shell-facing view-layer entrypoints.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType)
+            WHERE
+              type.viewBucket = 'CONTRIBUTION'
+              AND NOT type.fqn CONTAINS '$'
+              AND NOT type.name ENDS WITH 'Contribution'
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              '*Contribution' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Each shell-facing view-layer entrypoint must be one contribution.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewLayerOneModelPerFile">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Each contribution, binder, or projection-model source file owns exactly one top-level type.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType)
+            WHERE type.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL']
+              AND NOT type.fqn CONTAINS '$'
+            WITH type.relativePath AS source, collect(DISTINCT type.name) AS typeNames
+            WHERE size(typeNames) <> 1
+            RETURN
+              source AS Source,
+              'exactly one top-level contribution, binder, or ContributionModel/ContentModel type' AS ExpectedDirection,
+              reduce(actual = '', typeName IN typeNames |
+                CASE WHEN actual = '' THEN typeName ELSE actual + ', ' + typeName END) AS ActualDirection,
+              'A contribution, binder, or ContributionModel/ContentModel file must define exactly one top-level type.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewLayerRootEntrypointCount">
+        <requiresConcept refId="saltmarcher:ViewLayerRootEntrypoint"/>
+        <description>At least one shell contribution must exist.</description>
+        <cypher><![CDATA[
+            MATCH (root:Java:Type:SaltMarcher:ViewLayerRootEntrypoint)
+            WITH count(root) AS rootCount
+            WHERE rootCount = 0
+            RETURN
+              'src/view/leftbartabs, src/view/statetabs, or shell-discovered src/view/dropdowns' AS Source,
+              'at least one shell contribution' AS ExpectedDirection,
+              'none' AS ActualDirection,
+              'The shell needs discoverable contributions.' AS Details
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:ViewContributionDependencies">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Contributions stay thin shell adapters and do not reach forbidden dependencies.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewLayerType)-[:DEPENDS_ON]->(target:Java:Type)
+            WHERE source.viewBucket = 'CONTRIBUTION'
+            WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
+            WHERE
+              target.fqn =~ 'bootstrap\\..*'
+              OR target.fqn =~ 'src\\.data\\..*'
+              OR target.fqn =~ 'shell\\.host\\..*'
+              OR (target.fqn =~ 'shell\\..*' AND NOT target.fqn =~ 'shell\\.api\\..*')
+              OR target.fqn =~ 'src\\.domain\\..*'
+              OR (
+                target.fqn =~ 'src\\.view\\..*'
+                AND (
+                  NOT (target.viewBucket IN ['CONTRIBUTION', 'BINDER', 'MODEL', 'HANDLER', 'VIEW', 'VIEW_INPUT_EVENT', 'PUBLISHED_EVENT', 'INSPECTOR_ENTRY', 'SUPPORT_VALUE'])
+                  OR NOT (
+                    size(sourceSegments) >= 4
+                    AND size(targetSegments) >= 4
+                    AND sourceSegments[2] = targetSegments[2]
+                    AND sourceSegments[3] = targetSegments[3]
+                    AND target.viewBucket IN ['CONTRIBUTION', 'BINDER']
+                  )
+                )
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              coalesce(target.relativePath, target.fqn) AS Target,
+              'contributions may depend only on shell.api and their Binder' AS ExpectedDirection,
+              source.fqn + ' -> ' + target.fqn AS ActualDirection,
+              'View contributions must not depend on domain, data, bootstrap, shell internals, or the wrong view-layer role.' AS Details
+            ORDER BY Source, Target
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Target, ActualDirection"/>
+    </constraint>
+
+</jqassistant-rules>

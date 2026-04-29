@@ -15,6 +15,8 @@ java {
     }
 }
 
+apply(from = "../../view-contribution-enforcement/pmd-host.gradle.kts")
+
 dependencies {
     implementation("net.sourceforge.pmd:pmd-java:7.23.0")
 }

@@ -12,7 +12,7 @@ public final class DungeonTravelStateView extends VBox {
 
     private final Label body = new Label();
     private final VBox actions = new VBox(6);
-    private Consumer<String> actionHandler = ignored -> {};
+    private Consumer<DungeonTravelStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonTravelStateView() {
         setSpacing(12);
@@ -31,8 +31,8 @@ public final class DungeonTravelStateView extends VBox {
         return body.textProperty();
     }
 
-    public void onActionSelected(Consumer<String> handler) {
-        actionHandler = handler == null ? ignored -> {} : handler;
+    public void onViewInputEvent(Consumer<DungeonTravelStateViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
     public void showActions(List<ActionItem> items) {
@@ -52,7 +52,7 @@ public final class DungeonTravelStateView extends VBox {
             Button button = new Button(item.label());
             button.getStyleClass().addAll("toolbar-action-button", "neutral-action");
             button.setMaxWidth(Double.MAX_VALUE);
-            button.setOnAction(event -> actionHandler.accept(item.actionId()));
+            button.setOnAction(event -> viewInputEventHandler.accept(new DungeonTravelStateViewInputEvent(item.actionId())));
             actions.getChildren().add(button);
             if (!item.description().isBlank()) {
                 Label description = new Label(item.description());

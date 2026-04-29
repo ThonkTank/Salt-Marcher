@@ -68,4 +68,4 @@ This document is normative for the `encountertable` feature's persistence path.
 
 - [Encounter Table Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/domain/domain-encountertable.md:1)
 - [Encounter Table Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/requirements/requirements-encountertable.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/data-layer.md:1)
+- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)

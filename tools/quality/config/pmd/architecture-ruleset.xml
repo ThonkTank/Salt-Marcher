@@ -7,24 +7,24 @@
         Source-level architecture and entrypoint rules for SaltMarcher production Java sources.
     </description>
 
-    <rule name="SaltMarcherEntrypointRule"
-          language="java"
-          message="SaltMarcher root entrypoint or slot rule violation"
-          class="saltmarcher.quality.pmd.SaltMarcherEntrypointRule">
-        <priority>1</priority>
-    </rule>
-
     <rule name="SaltMarcherSourcePolicyRule"
           language="java"
           message="SaltMarcher source policy violation"
-          class="saltmarcher.quality.pmd.SaltMarcherSourcePolicyRule">
+          class="saltmarcher.quality.pmd.system.SaltMarcherSourcePolicyRule">
         <priority>1</priority>
     </rule>
 
     <rule name="SaltMarcherDataLayerRoleRule"
           language="java"
           message="SaltMarcher data-layer role violation"
-          class="saltmarcher.quality.pmd.SaltMarcherDataLayerRoleRule">
+          class="saltmarcher.quality.pmd.data.SaltMarcherDataLayerRoleRule">
+        <priority>1</priority>
+    </rule>
+
+    <rule name="DataEntrypointRule"
+          language="java"
+          message="SaltMarcher data entrypoint violation"
+          class="saltmarcher.quality.pmd.data.DataEntrypointRule">
         <priority>1</priority>
     </rule>
 </ruleset>

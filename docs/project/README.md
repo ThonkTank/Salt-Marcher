@@ -21,13 +21,13 @@ This directory owns cross-feature canonical SaltMarcher documentation. Project-w
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
+- [Layer Patterns](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
+- [Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)
-- [ADR 026: Closed Documentation Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-026-closed-documentation-taxonomy.md:1)
 
 ## Migration Status
 
-Legacy roots `docs/architecture/`, `docs/standards/`, `docs/adr/`,
-`docs/features/`, and code-local markdown under `src/**` remain only as
-Deprecated compatibility or discoverability stubs during the current migration
-wave.
+Legacy roots, compatibility directories, and redirect-only code-local markdown
+are not canonical and should be removed instead of retained once the owning
+document exists.

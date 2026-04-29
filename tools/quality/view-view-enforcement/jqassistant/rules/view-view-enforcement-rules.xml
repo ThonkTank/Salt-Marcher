@@ -1,0 +1,228 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <group id="saltmarcher:view-view-enforcement" severity="blocker">
+        <includeConstraint refId="saltmarcher:PassiveViewOneTopLevelTypePerFile"/>
+        <includeConstraint refId="saltmarcher:PassiveViewName"/>
+        <includeConstraint refId="saltmarcher:PassiveViewAllowedDependencies"/>
+    </group>
+
+    <concept id="saltmarcher:ViewLayerType">
+        <description>Annotates compiled SaltMarcher view-layer types for passive View enforcement.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE type.fqn =~ 'src\\.view\\..*'
+            WITH
+              type,
+              coalesce(type.sourceFileName, '') AS sourceFileName,
+              split(type.fqn, '.') AS segments
+            SET
+              type:SaltMarcher:ViewLayerType,
+              type.viewBucket = CASE
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND segments[3] = 'primitives' AND segments[4] = 'mapcanvas' AND (sourceFileName ENDS WITH 'MapRenderScene.java' OR sourceFileName ENDS WITH 'CanvasPointerEvent.java') THEN 'SUPPORT_VALUE'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContentModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java') THEN 'MODEL'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'InspectorEntry.java' THEN 'INSPECTOR_ENTRY'
+                WHEN size(segments) >= 6 AND segments[2] = 'slotcontent' AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Binder.java' THEN 'BINDER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND (sourceFileName ENDS WITH 'ViewModel.java' OR sourceFileName ENDS WITH 'PresentationModel.java' OR sourceFileName ENDS WITH 'ContributionModel.java' OR sourceFileName ENDS WITH 'ContentModel.java') THEN 'MODEL'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'Contribution.java' THEN 'CONTRIBUTION'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'IntentHandler.java' THEN 'HANDLER'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'ViewInputEvent.java' THEN 'VIEW_INPUT_EVENT'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'PublishedEvent.java' THEN 'PUBLISHED_EVENT'
+                WHEN size(segments) >= 5 AND segments[2] IN ['leftbartabs', 'statetabs', 'dropdowns'] AND sourceFileName ENDS WITH 'View.java' THEN 'VIEW'
+                ELSE 'LEGACY'
+              END,
+              type.relativePath = CASE
+                WHEN type.sourceFileName IS NULL OR type.sourceFileName = ''
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                WHEN type.name IS NULL
+                  OR type.name = ''
+                  OR NOT type.fqn ENDS WITH '.' + type.name
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + type.sourceFileName
+              END
+            RETURN
+              type AS ViewLayerType
+        ]]></cypher>
+    </concept>
+
+    <constraint id="saltmarcher:PassiveViewName">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Passive panel views name their fixed shell surface.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType {viewBucket: 'VIEW'})
+            WHERE
+              NOT type.fqn CONTAINS '$'
+              AND NOT (
+                (type.fqn =~ 'src\\.view\\.slotcontent\\..*' AND type.name ENDS WITH 'View')
+                OR (type.fqn =~ 'src\\.view\\.leftbartabs\\.[^.]+\\..*'
+                  AND (type.name ENDS WITH 'ControlsView'
+                    OR type.name ENDS WITH 'MainView'
+                    OR type.name ENDS WITH 'StateView'))
+                OR (type.fqn =~ 'src\\.view\\.dropdowns\\.[^.]+\\..*'
+                  AND type.name ENDS WITH 'TopBarView')
+                OR (type.fqn =~ 'src\\.view\\.statetabs\\.[^.]+\\..*'
+                  AND type.name ENDS WITH 'StateView')
+              )
+            RETURN DISTINCT
+              type.relativePath AS Source,
+              'area-specific passive view suffix: leftbartabs use *ControlsView/*MainView/*StateView, dropdowns use *TopBarView, statetabs use *StateView, slotcontent including slotcontent/primitives uses *View' AS ExpectedDirection,
+              type.fqn AS ActualDirection,
+              'Passive view names must identify the shell surface they render.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:PassiveViewOneTopLevelTypePerFile">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Each passive view source file owns exactly one top-level panel fragment.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ViewLayerType {viewBucket: 'VIEW'})
+            WHERE NOT type.fqn CONTAINS '$'
+            WITH type.relativePath AS source, collect(DISTINCT type.name) AS typeNames
+            WHERE size(typeNames) <> 1
+            RETURN
+              source AS Source,
+              'exactly one top-level passive panel view type' AS ExpectedDirection,
+              reduce(actual = '', typeName IN typeNames |
+                CASE WHEN actual = '' THEN typeName ELSE actual + ', ' + typeName END) AS ActualDirection,
+              'A passive view file must define exactly one panel fragment.' AS Details
+            ORDER BY Source
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+
+    <constraint id="saltmarcher:PassiveViewAllowedDependencies">
+        <requiresConcept refId="saltmarcher:ViewLayerType"/>
+        <description>Passive panel views depend only on their allowed co-located model surface and passive views.</description>
+        <cypher><![CDATA[
+            MATCH (source:Java:Type:SaltMarcher:ViewLayerType)-[:DEPENDS_ON]->(target:Java:Type:SaltMarcher:ViewLayerType)
+            WITH source, target, split(source.fqn, '.') AS sourceSegments, split(target.fqn, '.') AS targetSegments
+            WHERE source.viewBucket = 'VIEW'
+              AND NOT (
+                (
+                  target.viewBucket = 'MODEL'
+                  AND (
+                    (
+                      size(sourceSegments) >= 4
+                      AND size(targetSegments) >= 4
+                      AND sourceSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                      AND targetSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                      AND sourceSegments[2] = targetSegments[2]
+                      AND sourceSegments[3] = targetSegments[3]
+                    )
+                    OR (
+                      size(sourceSegments) >= 5
+                      AND size(targetSegments) >= 5
+                      AND sourceSegments[2] = 'slotcontent'
+                      AND targetSegments[2] = 'slotcontent'
+                      AND sourceSegments[3] = targetSegments[3]
+                      AND sourceSegments[4] = targetSegments[4]
+                    )
+                  )
+                )
+                OR (
+                  target.viewBucket = 'VIEW_INPUT_EVENT'
+                  AND (
+                    (
+                      size(sourceSegments) >= 4
+                      AND size(targetSegments) >= 4
+                      AND sourceSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                      AND targetSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                      AND sourceSegments[2] = targetSegments[2]
+                      AND sourceSegments[3] = targetSegments[3]
+                    )
+                    OR (
+                      size(sourceSegments) >= 5
+                      AND size(targetSegments) >= 5
+                      AND sourceSegments[2] = 'slotcontent'
+                      AND targetSegments[2] = 'slotcontent'
+                      AND sourceSegments[3] = targetSegments[3]
+                      AND sourceSegments[4] = targetSegments[4]
+                    )
+                  )
+                )
+                OR (
+                  target.viewBucket = 'SUPPORT_VALUE'
+                  AND (
+                    (
+                      size(sourceSegments) >= 4
+                      AND sourceSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                      AND size(targetSegments) >= 5
+                      AND targetSegments[2] = 'slotcontent'
+                      AND targetSegments[3] = 'primitives'
+                    )
+                    OR (
+                      size(sourceSegments) >= 5
+                      AND size(targetSegments) >= 5
+                      AND sourceSegments[2] = 'slotcontent'
+                      AND targetSegments[2] = 'slotcontent'
+                      AND sourceSegments[3] = targetSegments[3]
+                      AND sourceSegments[4] = targetSegments[4]
+                    )
+                    OR (
+                      size(sourceSegments) >= 5
+                      AND size(targetSegments) >= 5
+                      AND sourceSegments[2] = 'slotcontent'
+                      AND sourceSegments[3] <> 'primitives'
+                      AND targetSegments[2] = 'slotcontent'
+                      AND targetSegments[3] = 'primitives'
+                    )
+                    OR (
+                      size(sourceSegments) >= 5
+                      AND size(targetSegments) >= 5
+                      AND sourceSegments[2] = 'slotcontent'
+                      AND sourceSegments[3] = 'primitives'
+                      AND targetSegments[2] = 'slotcontent'
+                      AND targetSegments[3] = 'primitives'
+                    )
+                  )
+                )
+                OR (
+                  target.viewBucket = 'VIEW'
+                  AND (
+                    (
+                      size(sourceSegments) >= 4
+                      AND size(targetSegments) >= 4
+                      AND sourceSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                      AND targetSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                      AND sourceSegments[2] = targetSegments[2]
+                      AND sourceSegments[3] = targetSegments[3]
+                    )
+                    OR (
+                      size(sourceSegments) >= 4
+                      AND sourceSegments[2] IN ['leftbartabs', 'statetabs', 'dropdowns']
+                      AND size(targetSegments) >= 5
+                      AND targetSegments[2] = 'slotcontent'
+                    )
+                    OR (
+                      size(sourceSegments) >= 5
+                      AND size(targetSegments) >= 5
+                      AND sourceSegments[2] = 'slotcontent'
+                      AND targetSegments[2] = 'slotcontent'
+                      AND (
+                        (
+                          sourceSegments[3] = targetSegments[3]
+                          AND sourceSegments[4] = targetSegments[4]
+                        )
+                        OR targetSegments[3] = 'primitives'
+                      )
+                    )
+                  )
+                )
+              )
+            RETURN DISTINCT
+              source.relativePath AS Source,
+              'same-root model/view/input-event surfaces, passive reusable slotcontent, or allowed primitive support values only' AS ExpectedDirection,
+              target.fqn AS ActualDirection,
+              'Passive views may depend only on co-located passive-view surfaces and documented reusable support seams.' AS Details
+            ORDER BY Source, ActualDirection
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, ActualDirection"/>
+    </constraint>
+</jqassistant-rules>

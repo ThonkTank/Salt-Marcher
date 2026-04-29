@@ -19,15 +19,11 @@ Use the documentation tree in this order:
 1. `AGENTS.md` for project-wide norms and documentation governance.
 2. `docs/project/` for project-wide canonical documentation grouped by type.
 3. `docs/<feature>/` for canonical feature documentation grouped by type.
-4. local pointer stubs under `src/domain/<feature>/`,
-   `src/view/leftbartabs/<tab>/`, `src/view/statetabs/<state>/`,
-   `src/view/dropdowns/<dropdown>/`,
-   `src/view/slotcontent/<slot>/<entry>/`, and `src/data/<feature>/`.
 
 Legacy roots `docs/architecture/`, `docs/standards/`, `docs/adr/`,
-`docs/features/`, and code-local markdown under `src/**` may remain only as
-Deprecated compatibility or discoverability stubs during the current
-migration wave.
+`docs/features/`, `docs/compat/`, and redirect-only markdown under `src/**`
+are not canonical and must be removed instead of preserved once the owning
+document exists.
 
 ## Core Terms
 
@@ -85,8 +81,6 @@ migration wave.
 - some feature folders may intentionally omit `domain`, `contract`,
   `delivery`, or `verification` files when they own no write model,
   persistence truth, rollout notes, or separate proof surface.
-- `src/**`
-  Local discoverability stubs that link to the canonical feature documents.
 
 ## References
 
@@ -99,11 +93,9 @@ migration wave.
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
-- [Repository Structure Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/repository-structure.md:1)
-- [Shell And Discovery Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/shell-and-discovery.md:1)
-- [ADR 001: Documentation Governance](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-001-documentation-governance.md:1)
-- [ADR 002: Passive Shell And Discovery](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-002-passive-shell-and-discovery.md:1)
-- [ADR 019: Shell Cockpit MVVM Contribution View Layer](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-019-shell-cockpit-tab-model-view-layer.md:1)
-- [ADR 022: View Slotcontent And Binders](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-022-view-slotcontent-and-binders.md:1)
-- [ADR 023: Hexagonal Domain Core](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-023-hexagonal-domain-core.md:1)
-- [ADR 026: Closed Documentation Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-026-closed-documentation-taxonomy.md:1)
+- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
+- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
+- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
+- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
+- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)

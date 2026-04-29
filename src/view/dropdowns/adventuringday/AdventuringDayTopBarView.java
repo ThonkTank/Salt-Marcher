@@ -1,5 +1,6 @@
 package src.view.dropdowns.adventuringday;
 
+import java.util.function.Consumer;
 import javafx.beans.property.StringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -22,8 +23,8 @@ public final class AdventuringDayTopBarView extends HBox {
 
     private final Button triggerButton = new Button("Rastbudget \u25be");
     private final AnchoredPopupView popup = new AnchoredPopupView();
-    private final AdventuringDayCalculatorView calculatorPane = new AdventuringDayCalculatorView();
-    private Runnable onOpen = () -> {};
+    private final AdventuringDayCalculatorTopBarView calculatorPane = new AdventuringDayCalculatorTopBarView();
+    private Consumer<AdventuringDayTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
     AdventuringDayTopBarView() {
         setSpacing(8);
@@ -46,12 +47,12 @@ public final class AdventuringDayTopBarView extends HBox {
         calculatorPane.setActivePartySnapshot(safeContent.activePartyLevels());
     }
 
-    void setCalculationProvider(AdventuringDayCalculatorView.CalculationProvider provider) {
-        calculatorPane.setCalculationProvider(provider);
+    void showCalculation(AdventuringDayCalculatorTopBarView.Calculation calculation) {
+        calculatorPane.showCalculation(calculation);
     }
 
-    void onOpen(Runnable action) {
-        onOpen = action == null ? () -> {} : action;
+    void onViewInputEvent(Consumer<AdventuringDayTopBarViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
     private void configureTrigger() {
@@ -64,6 +65,9 @@ public final class AdventuringDayTopBarView extends HBox {
         DialogSurfaceView panel = buildPanel();
         panel.getStyleClass().addAll("party-panel", "adventuring-day-toolbar-popup");
         popup.setContent(panel);
+        calculatorPane.onViewInputEvent(event -> publish(AdventuringDayTopBarViewInputEvent.calculate(
+                event.levels(),
+                event.totalGroupXp())));
     }
 
     private DialogSurfaceView buildPanel() {
@@ -96,7 +100,15 @@ public final class AdventuringDayTopBarView extends HBox {
     }
 
     private void togglePopup() {
-        DropdownPopupView.toggleTrailing(popup, triggerButton, POPUP_WIDTH, onOpen);
+        DropdownPopupView.toggleTrailing(
+                popup,
+                triggerButton,
+                POPUP_WIDTH,
+                () -> publish(AdventuringDayTopBarViewInputEvent.opened()));
+    }
+
+    private void publish(AdventuringDayTopBarViewInputEvent event) {
+        viewInputEventHandler.accept(event);
     }
 
     record PanelContent(

@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.EnumMap;
 import javafx.scene.Node;
-import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
@@ -20,7 +19,7 @@ import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
 final class EncounterStateBinder {
 
-    private static final Map<EncounterStatePresentationModel.Action, ApplyEncounterSessionCommand.Action> ACTIONS =
+    private static final Map<EncounterStatePublishedEvent.Action, ApplyEncounterSessionCommand.Action> ACTIONS =
             buildActions();
 
     private final ShellRuntimeContext runtimeContext;
@@ -33,16 +32,20 @@ final class EncounterStateBinder {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterSessionModel sessionModel = encounters.loadSession(new LoadEncounterSessionQuery());
-        EncounterStatePresentationModel presentationModel = new EncounterStatePresentationModel();
+        EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
         EncounterStateIntentHandler intentHandler = new EncounterStateIntentHandler(presentationModel);
         EncounterStateView state = new EncounterStateView();
         sessionModel.subscribe(presentationModel::apply);
         presentationModel.apply(sessionModel.current());
         bindSessionActions(encounters, intentHandler);
         state.statusTextProperty().bind(presentationModel.statusProperty());
-        wireActions(runtimeContext.inspector(), creatures, state, intentHandler);
-        wireRendering(state, presentationModel, intentHandler);
-        render(state, presentationModel, intentHandler);
+        state.onViewInputEvent(intentHandler::consume);
+        presentationModel.openCreatureRequestTokenProperty().addListener((obs, oldValue, newValue) ->
+                runtimeContext.inspector().push(CreatureDetailsInspectorEntry.create(
+                        presentationModel.requestedCreatureId(),
+                        id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id)))));
+        wireRendering(state, presentationModel);
+        render(state, presentationModel);
         return new Binding(state);
     }
 
@@ -50,24 +53,27 @@ final class EncounterStateBinder {
             EncounterApplicationService encounters,
             EncounterStateIntentHandler intentHandler
     ) {
-        intentHandler.onActionRequested(intent -> encounters.applySession(toCommand(intent)));
+        intentHandler.onPublishedEventRequested(intent -> encounters.applySession(toCommand(intent)));
     }
 
-    private static ApplyEncounterSessionCommand toCommand(EncounterStatePresentationModel.ActionIntent intent) {
-        EncounterStatePresentationModel.ActionIntent safeIntent = intent == null
-                ? new EncounterStatePresentationModel.ActionIntent(
-                        EncounterStatePresentationModel.Action.REFRESH,
-                        0L,
-                        0L,
-                        0,
-                        0L,
-                        List.of(),
-                        "",
-                        0,
-                        0L,
-                        0,
-                        false)
-                : intent;
+    private static ApplyEncounterSessionCommand toCommand(EncounterStatePublishedEvent intent) {
+        if (intent == null) {
+            return new ApplyEncounterSessionCommand(
+                    ApplyEncounterSessionCommand.Action.REFRESH,
+                    null,
+                    EncounterSessionSnapshot.BuilderInputs.empty(),
+                    0L,
+                    0L,
+                    0,
+                    0L,
+                    List.of(),
+                    "",
+                    0,
+                    0,
+                    0,
+                    false);
+        }
+        EncounterStatePublishedEvent safeIntent = intent;
         return new ApplyEncounterSessionCommand(
                 toAction(safeIntent.action()),
                 null,
@@ -76,7 +82,9 @@ final class EncounterStateBinder {
                 safeIntent.savedPlanId(),
                 safeIntent.delta(),
                 safeIntent.undoToken(),
-                safeIntent.initiatives(),
+                safeIntent.initiatives().stream()
+                        .map(entry -> new EncounterSessionSnapshot.InitiativeInput(entry.id(), entry.initiative()))
+                        .toList(),
                 safeIntent.combatantId(),
                 safeIntent.initiative(),
                 safeIntent.partyMemberId(),
@@ -84,94 +92,58 @@ final class EncounterStateBinder {
                 safeIntent.healing());
     }
 
-    private static ApplyEncounterSessionCommand.Action toAction(EncounterStatePresentationModel.Action action) {
+    private static ApplyEncounterSessionCommand.Action toAction(EncounterStatePublishedEvent.Action action) {
         return ACTIONS.getOrDefault(
-                action == null ? EncounterStatePresentationModel.Action.REFRESH : action,
+                action == null ? EncounterStatePublishedEvent.Action.REFRESH : action,
                 ApplyEncounterSessionCommand.Action.REFRESH);
     }
 
-    private static Map<EncounterStatePresentationModel.Action, ApplyEncounterSessionCommand.Action> buildActions() {
-        Map<EncounterStatePresentationModel.Action, ApplyEncounterSessionCommand.Action> actions =
-                new EnumMap<>(EncounterStatePresentationModel.Action.class);
-        actions.put(EncounterStatePresentationModel.Action.REFRESH, ApplyEncounterSessionCommand.Action.REFRESH);
-        actions.put(EncounterStatePresentationModel.Action.GENERATE, ApplyEncounterSessionCommand.Action.GENERATE);
-        actions.put(EncounterStatePresentationModel.Action.SAVE_CURRENT_PLAN, ApplyEncounterSessionCommand.Action.SAVE_CURRENT_PLAN);
-        actions.put(EncounterStatePresentationModel.Action.OPEN_SAVED_PLAN, ApplyEncounterSessionCommand.Action.OPEN_SAVED_PLAN);
-        actions.put(EncounterStatePresentationModel.Action.CLEAR_GENERATION_HISTORY, ApplyEncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY);
-        actions.put(EncounterStatePresentationModel.Action.SHIFT_ALTERNATIVE, ApplyEncounterSessionCommand.Action.SHIFT_ALTERNATIVE);
-        actions.put(EncounterStatePresentationModel.Action.ADD_CREATURE, ApplyEncounterSessionCommand.Action.ADD_CREATURE);
-        actions.put(EncounterStatePresentationModel.Action.INCREMENT_CREATURE, ApplyEncounterSessionCommand.Action.INCREMENT_CREATURE);
-        actions.put(EncounterStatePresentationModel.Action.DECREMENT_CREATURE, ApplyEncounterSessionCommand.Action.DECREMENT_CREATURE);
-        actions.put(EncounterStatePresentationModel.Action.REMOVE_CREATURE, ApplyEncounterSessionCommand.Action.REMOVE_CREATURE);
-        actions.put(EncounterStatePresentationModel.Action.UNDO_REMOVE, ApplyEncounterSessionCommand.Action.UNDO_REMOVE);
-        actions.put(EncounterStatePresentationModel.Action.OPEN_INITIATIVE, ApplyEncounterSessionCommand.Action.OPEN_INITIATIVE);
-        actions.put(EncounterStatePresentationModel.Action.BACK_TO_BUILDER, ApplyEncounterSessionCommand.Action.BACK_TO_BUILDER);
-        actions.put(EncounterStatePresentationModel.Action.CONFIRM_INITIATIVE, ApplyEncounterSessionCommand.Action.CONFIRM_INITIATIVE);
-        actions.put(EncounterStatePresentationModel.Action.ADVANCE_TURN, ApplyEncounterSessionCommand.Action.ADVANCE_TURN);
-        actions.put(EncounterStatePresentationModel.Action.SET_INITIATIVE, ApplyEncounterSessionCommand.Action.SET_INITIATIVE);
-        actions.put(EncounterStatePresentationModel.Action.ADD_PARTY_MEMBER_TO_COMBAT, ApplyEncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT);
-        actions.put(EncounterStatePresentationModel.Action.END_COMBAT, ApplyEncounterSessionCommand.Action.END_COMBAT);
-        actions.put(EncounterStatePresentationModel.Action.AWARD_XP, ApplyEncounterSessionCommand.Action.AWARD_XP);
-        actions.put(EncounterStatePresentationModel.Action.RETURN_TO_BUILDER_AFTER_RESULTS,
+    private static Map<EncounterStatePublishedEvent.Action, ApplyEncounterSessionCommand.Action> buildActions() {
+        Map<EncounterStatePublishedEvent.Action, ApplyEncounterSessionCommand.Action> actions =
+                new EnumMap<>(EncounterStatePublishedEvent.Action.class);
+        actions.put(EncounterStatePublishedEvent.Action.REFRESH, ApplyEncounterSessionCommand.Action.REFRESH);
+        actions.put(EncounterStatePublishedEvent.Action.GENERATE, ApplyEncounterSessionCommand.Action.GENERATE);
+        actions.put(EncounterStatePublishedEvent.Action.SAVE_CURRENT_PLAN, ApplyEncounterSessionCommand.Action.SAVE_CURRENT_PLAN);
+        actions.put(EncounterStatePublishedEvent.Action.OPEN_SAVED_PLAN, ApplyEncounterSessionCommand.Action.OPEN_SAVED_PLAN);
+        actions.put(EncounterStatePublishedEvent.Action.CLEAR_GENERATION_HISTORY, ApplyEncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY);
+        actions.put(EncounterStatePublishedEvent.Action.SHIFT_ALTERNATIVE, ApplyEncounterSessionCommand.Action.SHIFT_ALTERNATIVE);
+        actions.put(EncounterStatePublishedEvent.Action.ADD_CREATURE, ApplyEncounterSessionCommand.Action.ADD_CREATURE);
+        actions.put(EncounterStatePublishedEvent.Action.INCREMENT_CREATURE, ApplyEncounterSessionCommand.Action.INCREMENT_CREATURE);
+        actions.put(EncounterStatePublishedEvent.Action.DECREMENT_CREATURE, ApplyEncounterSessionCommand.Action.DECREMENT_CREATURE);
+        actions.put(EncounterStatePublishedEvent.Action.REMOVE_CREATURE, ApplyEncounterSessionCommand.Action.REMOVE_CREATURE);
+        actions.put(EncounterStatePublishedEvent.Action.UNDO_REMOVE, ApplyEncounterSessionCommand.Action.UNDO_REMOVE);
+        actions.put(EncounterStatePublishedEvent.Action.OPEN_INITIATIVE, ApplyEncounterSessionCommand.Action.OPEN_INITIATIVE);
+        actions.put(EncounterStatePublishedEvent.Action.BACK_TO_BUILDER, ApplyEncounterSessionCommand.Action.BACK_TO_BUILDER);
+        actions.put(EncounterStatePublishedEvent.Action.CONFIRM_INITIATIVE, ApplyEncounterSessionCommand.Action.CONFIRM_INITIATIVE);
+        actions.put(EncounterStatePublishedEvent.Action.ADVANCE_TURN, ApplyEncounterSessionCommand.Action.ADVANCE_TURN);
+        actions.put(EncounterStatePublishedEvent.Action.SET_INITIATIVE, ApplyEncounterSessionCommand.Action.SET_INITIATIVE);
+        actions.put(EncounterStatePublishedEvent.Action.ADD_PARTY_MEMBER_TO_COMBAT, ApplyEncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT);
+        actions.put(EncounterStatePublishedEvent.Action.END_COMBAT, ApplyEncounterSessionCommand.Action.END_COMBAT);
+        actions.put(EncounterStatePublishedEvent.Action.AWARD_XP, ApplyEncounterSessionCommand.Action.AWARD_XP);
+        actions.put(EncounterStatePublishedEvent.Action.RETURN_TO_BUILDER_AFTER_RESULTS,
                 ApplyEncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS);
-        actions.put(EncounterStatePresentationModel.Action.MUTATE_HP, ApplyEncounterSessionCommand.Action.MUTATE_HP);
+        actions.put(EncounterStatePublishedEvent.Action.MUTATE_HP, ApplyEncounterSessionCommand.Action.MUTATE_HP);
         return Map.copyOf(actions);
-    }
-
-    private void wireActions(
-            InspectorSink inspector,
-            CreaturesApplicationService creatures,
-            EncounterStateView state,
-            EncounterStateIntentHandler intentHandler
-    ) {
-        state.setOnGenerate(input -> intentHandler.generate());
-        state.setOnPreviousAlternative(() -> intentHandler.shiftGeneratedAlternative(-1));
-        state.setOnNextAlternative(() -> intentHandler.shiftGeneratedAlternative(1));
-        state.setOnSaveEncounter(intentHandler::saveCurrentPlan);
-        state.setOnOpenSavedEncounter(intentHandler::openSavedPlan);
-        state.setOnClearGenerationHistory(intentHandler::clearGenerationHistory);
-        state.setOnRosterIncrement(intentHandler::incrementCreature);
-        state.setOnRosterDecrement(intentHandler::decrementCreature);
-        state.setOnRosterRemove(intentHandler::removeCreature);
-        state.setOnUndoRemove(intentHandler::undoRemove);
-        state.setOnOpenCreature(creatureId ->
-                inspector.push(CreatureDetailsInspectorEntry.create(
-                        creatureId,
-                        id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id)))));
-        state.setOnStartInitiative(intentHandler::openInitiative);
-        state.setOnInitiativeBack(intentHandler::backToBuilder);
-        state.setOnInitiativeConfirm(inputs -> intentHandler.confirmInitiative(inputs.stream()
-                .map(input -> new EncounterStatePresentationModel.InitiativeEntry(input.id(), input.initiative()))
-                .toList()));
-        state.setOnNextTurn(intentHandler::nextTurn);
-        state.setOnDamage((id, amount) -> intentHandler.mutateHp(id, amount, false));
-        state.setOnHeal((id, amount) -> intentHandler.mutateHp(id, amount, true));
-        state.setOnSetInitiative(intentHandler::setInitiative);
-        state.setOnEndCombat(intentHandler::endCombat);
-        state.setOnAwardXp(intentHandler::awardXp);
-        state.setOnReturnToBuilder(intentHandler::returnToBuilderAfterResults);
     }
 
     private void wireRendering(
             EncounterStateView state,
-            EncounterStatePresentationModel presentationModel,
-            EncounterStateIntentHandler intentHandler
+            EncounterStateContributionModel presentationModel
     ) {
-        presentationModel.modeProperty().addListener((obs, oldMode, newMode) -> render(state, presentationModel, intentHandler));
+        presentationModel.modeProperty().addListener((obs, oldMode, newMode) -> render(state, presentationModel));
         presentationModel.builderStateProperty()
-                .addListener((obs, oldState, newState) -> render(state, presentationModel, intentHandler));
+                .addListener((obs, oldState, newState) -> render(state, presentationModel));
         presentationModel.initiativeStateProperty()
-                .addListener((obs, oldState, newState) -> render(state, presentationModel, intentHandler));
+                .addListener((obs, oldState, newState) -> render(state, presentationModel));
         presentationModel.combatStateProperty()
-                .addListener((obs, oldState, newState) -> render(state, presentationModel, intentHandler));
+                .addListener((obs, oldState, newState) -> render(state, presentationModel));
         presentationModel.resultStateProperty()
-                .addListener((obs, oldState, newState) -> render(state, presentationModel, intentHandler));
+                .addListener((obs, oldState, newState) -> render(state, presentationModel));
     }
 
     private void render(
             EncounterStateView state,
-            EncounterStatePresentationModel presentationModel,
-            EncounterStateIntentHandler intentHandler
+            EncounterStateContributionModel presentationModel
     ) {
         switch (presentationModel.modeProperty().get()) {
             case BUILDER -> state.showBuilder(toBuilderState(presentationModel.builderStateProperty().get()));
@@ -179,17 +151,16 @@ final class EncounterStateBinder {
             case COMBAT -> state.showCombat(
                     toCombatState(
                             presentationModel.combatStateProperty().get(),
-                            presentationModel.missingCombatPartyMembers()),
-                    intentHandler::addPartyMemberToCombat);
+                            presentationModel.missingCombatPartyMembers()));
             case RESULTS -> state.showResults(toResultState(presentationModel.resultStateProperty().get()));
         }
     }
 
     private EncounterStateView.BuilderStateView toBuilderState(
-            EncounterStatePresentationModel.BuilderState source
+            EncounterStateContributionModel.BuilderState source
     ) {
         EncounterSessionSnapshot.DifficultySummary difficulty = source.difficulty();
-        EncounterStatePresentationModel.BuilderSettings settings = source.settings();
+        EncounterStateContributionModel.BuilderSettings settings = source.settings();
         String partyLabel = "Party: " + source.party().size() + ", Lv "
                 + Math.round(source.party().stream().mapToInt(EncounterSessionSnapshot.PartyMember::level)
                 .average().orElse(1.0));
@@ -273,7 +244,7 @@ final class EncounterStateBinder {
                         .toList(),
                 source.allEnemiesDefeated(),
                 missingPartyMembers.stream()
-                        .map(member -> new EncounterCombatPartyMemberButtonView.Candidate(
+                        .map(member -> new EncounterCombatPartyMemberButtonStateView.Candidate(
                                 member.numericId(),
                                 member.name(),
                                 member.level()))

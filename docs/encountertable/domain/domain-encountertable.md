@@ -76,4 +76,4 @@ into creature or loot persistence directly.
 - [Encounter Table Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/contract/contract-encountertable-persistence.md:1)
 - [Encounter Table Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/requirements/requirements-encountertable.md:1)
 - [Encounter Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/domain-layer.md:1)
+- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)

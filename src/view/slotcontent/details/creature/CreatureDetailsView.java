@@ -38,13 +38,13 @@ public final class CreatureDetailsView extends VBox {
         }
     }
 
-    public void bind(CreatureDetailsPresentationModel presentationModel) {
+    public void bind(CreatureDetailsContentModel presentationModel) {
         if (presentationModel == null) {
             return;
         }
         setLoadingText(presentationModel.loadingTextProperty().get());
         setErrorText(presentationModel.errorTextProperty().get());
-        CreatureDetailsPresentationModel.DetailState current = presentationModel.detailProperty().get();
+        CreatureDetailsContentModel.DetailState current = presentationModel.detailProperty().get();
         if (current != null) {
             showDetail(current);
         }
@@ -55,10 +55,9 @@ public final class CreatureDetailsView extends VBox {
                 showDetail(newValue);
             }
         });
-        presentationModel.load();
     }
 
-    public void showDetail(CreatureDetailsPresentationModel.DetailState detail) {
+    public void showDetail(CreatureDetailsContentModel.DetailState detail) {
         if (detail == null) {
             return;
         }
@@ -73,7 +72,7 @@ public final class CreatureDetailsView extends VBox {
         buildSections(detail.sections());
     }
 
-    private void buildHeader(CreatureDetailsPresentationModel.DetailState detail) {
+    private void buildHeader(CreatureDetailsContentModel.DetailState detail) {
         Label name = new Label(detail.name());
         name.getStyleClass().add("stat-block-name");
         name.setWrapText(true);
@@ -83,9 +82,9 @@ public final class CreatureDetailsView extends VBox {
         getChildren().addAll(name, meta, separator());
     }
 
-    private void addProperties(List<CreatureDetailsPresentationModel.PropertyLine> properties) {
-        for (CreatureDetailsPresentationModel.PropertyLine property
-                : properties == null ? List.<CreatureDetailsPresentationModel.PropertyLine>of() : properties) {
+    private void addProperties(List<CreatureDetailsContentModel.PropertyLine> properties) {
+        for (CreatureDetailsContentModel.PropertyLine property
+                : properties == null ? List.<CreatureDetailsContentModel.PropertyLine>of() : properties) {
             TextFlow flow = new TextFlow();
             Text label = new Text(property.label() + "  ");
             label.getStyleClass().add("stat-block-prop-label");
@@ -97,19 +96,19 @@ public final class CreatureDetailsView extends VBox {
         }
     }
 
-    private void buildAbilityGrid(List<CreatureDetailsPresentationModel.AbilityScore> scores) {
+    private void buildAbilityGrid(List<CreatureDetailsContentModel.AbilityScore> scores) {
         GridPane abilities = new GridPane();
         abilities.getStyleClass().add("stat-block-abilities");
         abilities.setAlignment(Pos.CENTER);
         abilities.setHgap(0);
         abilities.setPadding(new Insets(4, 0, 4, 0));
-        List<CreatureDetailsPresentationModel.AbilityScore> safeScores = scores == null ? List.of() : scores;
+        List<CreatureDetailsContentModel.AbilityScore> safeScores = scores == null ? List.of() : scores;
         for (int index = 0; index < safeScores.size(); index++) {
             ColumnConstraints constraints = new ColumnConstraints();
             constraints.setPercentWidth(100.0 / safeScores.size());
             constraints.setHalignment(HPos.CENTER);
             abilities.getColumnConstraints().add(constraints);
-            CreatureDetailsPresentationModel.AbilityScore score = safeScores.get(index);
+            CreatureDetailsContentModel.AbilityScore score = safeScores.get(index);
             Label header = new Label(score.label());
             header.getStyleClass().add("stat-block-ability-header");
             Label value = new Label(score.value());
@@ -120,9 +119,9 @@ public final class CreatureDetailsView extends VBox {
         getChildren().add(abilities);
     }
 
-    private void buildSections(List<CreatureDetailsPresentationModel.ActionGroup> sections) {
-        for (CreatureDetailsPresentationModel.ActionGroup section
-                : sections == null ? List.<CreatureDetailsPresentationModel.ActionGroup>of() : sections) {
+    private void buildSections(List<CreatureDetailsContentModel.ActionGroup> sections) {
+        for (CreatureDetailsContentModel.ActionGroup section
+                : sections == null ? List.<CreatureDetailsContentModel.ActionGroup>of() : sections) {
             if (section.title() != null && !section.title().isBlank()) {
                 Label title = new Label(section.title());
                 title.getStyleClass().add("stat-block-section-header");
@@ -135,7 +134,7 @@ public final class CreatureDetailsView extends VBox {
                 description.setWrapText(true);
                 getChildren().add(description);
             }
-            for (CreatureDetailsPresentationModel.ActionLine action : section.actions()) {
+            for (CreatureDetailsContentModel.ActionLine action : section.actions()) {
                 TextFlow flow = new TextFlow();
                 flow.setPadding(new Insets(2, 0, 2, 0));
                 if (action.name() != null && !action.name().isBlank()) {

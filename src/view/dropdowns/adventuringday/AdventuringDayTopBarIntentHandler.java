@@ -1,36 +1,22 @@
 package src.view.dropdowns.adventuringday;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 
 final class AdventuringDayTopBarIntentHandler {
 
-    private final AdventuringDayTopBarPresentationModel presentationModel;
-    private Runnable refreshListener = () -> {};
-    private BiConsumer<List<Integer>, Integer> calculationListener = (ignoredLevels, ignoredXp) -> {};
+    private final AdventuringDayTopBarContributionModel presentationModel;
 
-    AdventuringDayTopBarIntentHandler(AdventuringDayTopBarPresentationModel presentationModel) {
+    AdventuringDayTopBarIntentHandler(AdventuringDayTopBarContributionModel presentationModel) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
     }
 
-    void onRefreshRequested(Runnable listener) {
-        refreshListener = listener == null ? () -> {} : listener;
-    }
-
-    void onCalculationRequested(BiConsumer<List<Integer>, Integer> listener) {
-        calculationListener = listener == null ? (ignoredLevels, ignoredXp) -> {} : listener;
-    }
-
-    void onOpen() {
-        presentationModel.requestRefresh();
-        refreshListener.run();
-    }
-
-    AdventuringDayTopBarPresentationModel.CalculationModel calculate(List<Integer> levels, int totalGroupXp) {
-        AdventuringDayTopBarPresentationModel.CalculationModel pendingCalculation =
-                presentationModel.beginCalculation(totalGroupXp);
-        calculationListener.accept(levels == null ? List.of() : List.copyOf(levels), totalGroupXp);
-        return pendingCalculation;
+    void consume(AdventuringDayTopBarViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        switch (event.kind()) {
+            case OPENED -> presentationModel.requestRefresh();
+            case CALCULATE -> presentationModel.requestCalculation(event.levels(), event.totalGroupXp());
+        }
     }
 }

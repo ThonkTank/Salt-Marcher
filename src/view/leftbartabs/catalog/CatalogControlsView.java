@@ -101,10 +101,7 @@ public final class CatalogControlsView extends VBox {
             this::fireEncounterTuningChanged);
     private final PauseTransition debounce = new PauseTransition(Duration.millis(300));
 
-    private @Nullable Consumer<CreatureFilterState> filterChangedHandler;
-    private @Nullable Consumer<String> encounterDifficultyChangedHandler;
-    private @Nullable Consumer<EncounterTuningSelection> encounterTuningChangedHandler;
-    private @Nullable Consumer<List<Long>> encounterTablesChangedHandler;
+    private Consumer<CatalogControlsViewInputEvent> viewInputEventHandler = ignored -> { };
     private List<FilterChipView> activeFilterChips = List.of();
     private List<EncounterTableSelection> encounterTables = List.of();
     private List<Long> selectedEncounterTableIds = List.of();
@@ -211,20 +208,8 @@ public final class CatalogControlsView extends VBox {
         renderChips();
     }
 
-    public void setOnEncounterTablesChanged(Consumer<List<Long>> handler) {
-        encounterTablesChangedHandler = handler;
-    }
-
-    public void setOnCreatureFiltersChanged(Consumer<CreatureFilterState> handler) {
-        filterChangedHandler = handler;
-    }
-
-    public void setOnEncounterDifficultyChanged(Consumer<String> handler) {
-        encounterDifficultyChangedHandler = handler;
-    }
-
-    public void setOnEncounterTuningChanged(Consumer<EncounterTuningSelection> handler) {
-        encounterTuningChangedHandler = handler;
+    public void onViewInputEvent(Consumer<CatalogControlsViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
     public void setEncounterTuningPreview(EncounterTuningPreview preview) {
@@ -403,9 +388,8 @@ public final class CatalogControlsView extends VBox {
         if (suppressFilterEvents) {
             return;
         }
-        if (encounterTablesChangedHandler != null) {
-            encounterTablesChangedHandler.accept(List.copyOf(selectedEncounterTableIds));
-        }
+        viewInputEventHandler.accept(CatalogControlsViewInputEvent.encounterTablesChanged(
+                List.copyOf(selectedEncounterTableIds)));
     }
 
     private void updateEncounterTableControls() {
@@ -470,34 +454,48 @@ public final class CatalogControlsView extends VBox {
     }
 
     private void fireFilterChanged() {
-        if (suppressFilterEvents || filterChangedHandler == null) {
+        if (suppressFilterEvents) {
             return;
         }
-        filterChangedHandler.accept(buildFilterState());
+        viewInputEventHandler.accept(CatalogControlsViewInputEvent.filtersChanged(toPublishedFilterState(buildFilterState())));
     }
 
     private void fireEncounterDifficultyChanged() {
         if (suppressFilterEvents) {
             return;
         }
-        if (encounterDifficultyChangedHandler != null) {
-            encounterDifficultyChangedHandler.accept(difficultyControl.isAuto()
-                    ? "auto"
-                    : difficultyKey((int) Math.round(difficultyControl.rawValue())));
-        }
+        viewInputEventHandler.accept(CatalogControlsViewInputEvent.encounterDifficultyChanged(
+                difficultyControl.isAuto() ? "auto" : difficultyKey((int) Math.round(difficultyControl.rawValue()))));
     }
 
     private void fireEncounterTuningChanged() {
         if (suppressFilterEvents) {
             return;
         }
-        if (encounterTuningChangedHandler == null) {
-            return;
-        }
-        encounterTuningChangedHandler.accept(new EncounterTuningSelection(
-                balanceControl.isAuto() ? AUTO_LEVEL : (int) Math.round(balanceControl.rawValue()),
-                amountControl.isAuto() ? AUTO_AMOUNT : amountControl.rawValue(),
-                diversityControl.isAuto() ? AUTO_LEVEL : (int) Math.round(diversityControl.rawValue())));
+        viewInputEventHandler.accept(CatalogControlsViewInputEvent.encounterTuningChanged(
+                new CatalogControlsViewInputEvent.EncounterTuning(
+                        balanceControl.isAuto() ? AUTO_LEVEL : (int) Math.round(balanceControl.rawValue()),
+                        amountControl.isAuto() ? AUTO_AMOUNT : amountControl.rawValue(),
+                        diversityControl.isAuto() ? AUTO_LEVEL : (int) Math.round(diversityControl.rawValue()))));
+    }
+
+    private static CatalogControlsViewInputEvent.FilterPayload toPublishedFilterState(CreatureFilterState filterState) {
+        CreatureFilterState safeState = filterState == null
+                ? new CreatureFilterState("", null, null, List.of(), List.of(), List.of(), List.of(), List.of())
+                : filterState;
+        return new CatalogControlsViewInputEvent.FilterPayload(
+                safe(safeState.nameQuery()),
+                safe(safeState.challengeRatingMin()),
+                safe(safeState.challengeRatingMax()),
+                safeState.sizes(),
+                safeState.types(),
+                safeState.subtypes(),
+                safeState.biomes(),
+                safeState.alignments());
+    }
+
+    private static String safe(@Nullable String value) {
+        return value == null ? "" : value;
     }
 
     private CreatureFilterState buildFilterState() {

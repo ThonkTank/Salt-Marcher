@@ -3,6 +3,7 @@ package src.domain.dungeon.published;
 import java.util.List;
 
 public record DungeonTravelSurfaceSnapshot(
+        DungeonTravelContextKind contextKind,
         String mapName,
         int revision,
         DungeonMapSnapshot map,
@@ -17,6 +18,7 @@ public record DungeonTravelSurfaceSnapshot(
 ) {
 
     public DungeonTravelSurfaceSnapshot {
+        contextKind = contextKind == null ? DungeonTravelContextKind.DUNGEON : contextKind;
         mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName.trim();
         revision = Math.max(0, revision);
         map = map == null ? DungeonMapSnapshot.empty() : map;

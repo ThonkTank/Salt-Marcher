@@ -17,6 +17,7 @@ only the user-accepted roster when the user saves a plan.
 - [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
 - [Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
 - [Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-persistence.md:1)
+- [Plan Budget Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-plan-budget.md:1)
 - [Encounter Table Feature README](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/README.md:1)
 - [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)
 
@@ -25,6 +26,8 @@ only the user-accepted roster when the user saves a plan.
 In scope:
 
 - deriving encounter budgets from the active party
+- reading saved encounter plans as party-specific budget summaries for planner
+  surfaces
 - filtering the creature catalog into encounter-ready candidates
 - generating and ranking multiple encounter alternatives
 - adding catalog creature rows into a manual runtime roster

@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-record SourceFile(
+public record SourceFile(
         String relativePath,
         List<String> relativeSegments,
         String fileName,
@@ -34,14 +34,14 @@ record SourceFile(
         return new SourceFile(relativePath, relativeSegments, fileName, content, packageName, kind, featureName);
     }
 
-    boolean isUnderDataFeatureRoot() {
+    public boolean isUnderDataFeatureRoot() {
         return relativeSegments.size() >= 3
                 && "src".equals(relativeSegments.get(0))
                 && "data".equals(relativeSegments.get(1))
                 && !"persistencecore".equals(relativeSegments.get(2));
     }
 
-    boolean isUnderDomainFeatureRoot() {
+    public boolean isUnderDomainFeatureRoot() {
         return relativeSegments.size() >= 3
                 && "src".equals(relativeSegments.get(0))
                 && "domain".equals(relativeSegments.get(1));
@@ -76,8 +76,20 @@ record SourceFile(
                     if (fileName.endsWith("Binder.java")) {
                         yield SourceKind.VIEW_BINDER;
                     }
-                    if (fileName.endsWith("ViewModel.java") || fileName.endsWith("PresentationModel.java")) {
-                        yield SourceKind.VIEW_MODEL;
+                    if (fileName.endsWith("ViewModel.java")
+                            || fileName.endsWith("PresentationModel.java")
+                            || fileName.endsWith("ContributionModel.java")
+                            || fileName.endsWith("ContentModel.java")) {
+                        yield SourceKind.VIEW_PROJECTION_MODEL;
+                    }
+                    if (fileName.endsWith("IntentHandler.java")) {
+                        yield SourceKind.VIEW_INTENT_HANDLER;
+                    }
+                    if (fileName.endsWith("ViewInputEvent.java")) {
+                        yield SourceKind.VIEW_INPUT_EVENT;
+                    }
+                    if (fileName.endsWith("PublishedEvent.java")) {
+                        yield SourceKind.VIEW_PUBLISHED_EVENT;
                     }
                     if (fileName.endsWith("View.java")) {
                         yield SourceKind.VIEW_PANEL;
@@ -85,18 +97,34 @@ record SourceFile(
                 }
                 if (segments.size() == 6
                         && segments.get(2).equals("slotcontent")
-                        && Set.of("controls", "main", "state", "details", "topbar").contains(segments.get(3))) {
-                    if (fileName.endsWith("ViewModel.java") || fileName.endsWith("PresentationModel.java")) {
-                        yield SourceKind.VIEW_MODEL;
+                        && Set.of("controls", "main", "state", "details", "topbar", "primitives").contains(segments.get(3))) {
+                    if (fileName.endsWith("ViewModel.java")
+                            || fileName.endsWith("PresentationModel.java")
+                            || fileName.endsWith("ContributionModel.java")
+                            || fileName.endsWith("ContentModel.java")) {
+                        yield SourceKind.VIEW_PROJECTION_MODEL;
+                    }
+                    if (fileName.endsWith("IntentHandler.java")) {
+                        yield SourceKind.VIEW_INTENT_HANDLER;
+                    }
+                    if (fileName.endsWith("ViewInputEvent.java")) {
+                        yield SourceKind.VIEW_INPUT_EVENT;
+                    }
+                    if (fileName.endsWith("PublishedEvent.java")) {
+                        yield SourceKind.VIEW_PUBLISHED_EVENT;
+                    }
+                    if (fileName.endsWith("InspectorEntry.java")) {
+                        yield SourceKind.VIEW_INSPECTOR_ENTRY;
                     }
                     if (fileName.endsWith("View.java")) {
                         yield SourceKind.VIEW_PANEL;
                     }
                 }
-                if (segments.size() == 5
-                        && segments.get(2).equals("primitives")
-                        && fileName.endsWith("View.java")) {
-                    yield SourceKind.VIEW_PANEL;
+                if (segments.size() == 6
+                        && segments.get(2).equals("slotcontent")
+                        && "primitives".equals(segments.get(3))
+                        && Set.of("CanvasPointerEvent.java", "MapRenderScene.java").contains(fileName)) {
+                    yield SourceKind.VIEW_SUPPORT_VALUE;
                 }
                 yield SourceKind.UNKNOWN;
             }
@@ -162,9 +190,6 @@ record SourceFile(
         if ("src".equals(segments.get(0)) && "view".equals(segments.get(1))) {
             if (segments.size() >= 5 && "slotcontent".equals(segments.get(2))) {
                 return segments.get(4);
-            }
-            if (segments.size() >= 4 && "primitives".equals(segments.get(2))) {
-                return segments.get(3);
             }
             return segments.size() >= 4 ? segments.get(3) : null;
         }

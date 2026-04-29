@@ -1,6 +1,6 @@
 ---
 name: domain-layer
-description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**` or adjacent context docs (`README.md`, `SPEC.md`, `DOMAIN.md`, `DELIVERY.md`). Supporting guidance only; the canonical source of truth is `docs/standards/domain-layer.md`.
+description: Use before planning, implementing, refactoring, or reviewing anything under `src/domain/**` or adjacent context docs (`README.md`, `SPEC.md`, `DOMAIN.md`, `DELIVERY.md`). Supporting guidance only; the canonical source of truth is `docs/project/architecture/patterns/domain-layer.md`.
 ---
 
 # Domain Layer
@@ -11,7 +11,7 @@ Use this skill to keep domain-layer work aligned with the canonical
 domain-layer standard.
 
 This skill is not the source of truth. If it conflicts with
-`docs/standards/domain-layer.md`, follow the standard.
+`docs/project/architecture/patterns/domain-layer.md`, follow the standard.
 
 ## Use This Skill For
 
@@ -121,6 +121,6 @@ When reviewing domain-layer work, look for:
 
 ## References
 
-- [Domain Layer Standard](../../../../docs/standards/domain-layer.md)
+- [Domain Layer Standard](../../../../docs/project/architecture/patterns/domain-layer.md)
 - [Agent Instruction Standard](../../../../docs/standards/agent-instructions.md)
 - [AGENTS.md](../../../../AGENTS.md)

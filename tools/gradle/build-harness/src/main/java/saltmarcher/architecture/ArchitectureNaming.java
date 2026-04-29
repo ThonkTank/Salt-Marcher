@@ -2,32 +2,32 @@ package saltmarcher.architecture;
 
 import java.util.Locale;
 
-final class ArchitectureNaming {
+public final class ArchitectureNaming {
 
     private ArchitectureNaming() {
     }
 
-    static String expectedDomainRootFileName(String feature) {
+    public static String expectedDomainRootFileName(String feature) {
         return expectedDomainRootFileName(feature, null);
     }
 
-    static String expectedDomainRootFileName(String feature, String contextName) {
+    public static String expectedDomainRootFileName(String feature, String contextName) {
         return expectedFeatureFileName(feature, contextName, "ApplicationService");
     }
 
-    static String expectedDataRootFileName(String feature) {
+    public static String expectedDataRootFileName(String feature) {
         return expectedFeatureFileName(feature, null, "ServiceContribution");
     }
 
-    static String expectedDataRootFileName(String feature, String contextName) {
+    public static String expectedDataRootFileName(String feature, String contextName) {
         return expectedFeatureFileName(feature, contextName, "ServiceContribution");
     }
 
-    static String expectedDataSchemaFileName(String feature) {
+    public static String expectedDataSchemaFileName(String feature) {
         return expectedFeatureFileName(feature, null, "PersistenceSchema");
     }
 
-    static String expectedDataSchemaFileName(String feature, String contextName) {
+    public static String expectedDataSchemaFileName(String feature, String contextName) {
         return expectedFeatureFileName(feature, contextName, "PersistenceSchema");
     }
 
@@ -41,11 +41,11 @@ final class ArchitectureNaming {
         return feature.substring(0, 1).toUpperCase(Locale.ROOT) + feature.substring(1) + suffix + ".java";
     }
 
-    static boolean isFeatureFileName(String feature, String fileName, String suffix) {
+    public static boolean isFeatureFileName(String feature, String fileName, String suffix) {
         return isFeatureFileName(feature, null, fileName, suffix);
     }
 
-    static boolean isFeatureFileName(String feature, String contextName, String fileName, String suffix) {
+    public static boolean isFeatureFileName(String feature, String contextName, String fileName, String suffix) {
         String fullSuffix = suffix + ".java";
         if (feature == null
                 || fileName == null

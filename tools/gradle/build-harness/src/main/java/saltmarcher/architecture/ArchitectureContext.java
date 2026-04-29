@@ -14,8 +14,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import saltmarcher.architecture.system.SourceLayoutRules;
 
-final class ArchitectureContext {
+public final class ArchitectureContext {
 
     private static final Set<String> IGNORED_REPOSITORY_SCAN_SEGMENTS =
             Set.of(".codex", ".git", ".gradle", "build");
@@ -25,22 +26,22 @@ final class ArchitectureContext {
     private final Path repoRoot;
     private List<SourceFile> sourceFiles;
 
-    ArchitectureContext(Path repoRoot) {
+    public ArchitectureContext(Path repoRoot) {
         this.repoRoot = repoRoot;
     }
 
-    Path repoRoot() {
+    public Path repoRoot() {
         return repoRoot;
     }
 
-    List<SourceFile> sourceFiles(ViolationSink violations) {
+    public List<SourceFile> sourceFiles(ViolationSink violations) {
         if (sourceFiles == null) {
             sourceFiles = loadSourceFiles(violations);
         }
         return sourceFiles;
     }
 
-    Set<String> domainFeatures(ViolationSink violations) {
+    public Set<String> domainFeatures(ViolationSink violations) {
         TreeSet<String> features = sourceFiles(violations).stream()
                 .filter(SourceFile::isUnderDomainFeatureRoot)
                 .map(SourceFile::featureName)
@@ -60,7 +61,7 @@ final class ArchitectureContext {
         return features;
     }
 
-    Set<String> dataFeatures(ViolationSink violations) {
+    public Set<String> dataFeatures(ViolationSink violations) {
         return sourceFiles(violations).stream()
                 .filter(SourceFile::isUnderDataFeatureRoot)
                 .map(SourceFile::featureName)
@@ -69,7 +70,7 @@ final class ArchitectureContext {
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    boolean domainNamedModuleTypeExists(String featureName, String simpleTypeName) {
+    public boolean domainNamedModuleTypeExists(String featureName, String simpleTypeName) {
         Path featureRoot = repoRoot.resolve("src/domain").resolve(featureName);
         if (!Files.isDirectory(featureRoot)) {
             return false;
@@ -91,7 +92,7 @@ final class ArchitectureContext {
         }
     }
 
-    String domainContextName(String featureName) {
+    public String domainContextName(String featureName) {
         Path document = repoRoot.resolve("src/domain").resolve(featureName).resolve("DOMAIN.md");
         if (!Files.isRegularFile(document)) {
             return null;
@@ -105,11 +106,11 @@ final class ArchitectureContext {
         }
     }
 
-    boolean isIgnoredRepositoryScanPath(Path path) {
+    public boolean isIgnoredRepositoryScanPath(Path path) {
         return relativeSegments(path).stream().anyMatch(IGNORED_REPOSITORY_SCAN_SEGMENTS::contains);
     }
 
-    boolean hasRepositoryContent(Path path) {
+    public boolean hasRepositoryContent(Path path) {
         if (isIgnoredRepositoryScanPath(path)) {
             return false;
         }
@@ -129,11 +130,11 @@ final class ArchitectureContext {
         }
     }
 
-    String relativize(Path path) {
+    public String relativize(Path path) {
         return repoRoot.relativize(path.toAbsolutePath().normalize()).toString().replace('\\', '/');
     }
 
-    List<String> relativeSegments(Path path) {
+    public List<String> relativeSegments(Path path) {
         String relativePath = relativize(path);
         if (relativePath.isBlank()) {
             return List.of();

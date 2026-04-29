@@ -44,35 +44,33 @@ final class CatalogBinder {
                 runtimeContext.services().require(EncounterTableApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterSessionModel sessionModel = encounters.loadSession(new LoadEncounterSessionQuery());
-        CatalogPresentationModel presentationModel = new CatalogPresentationModel();
+        CatalogContributionModel presentationModel = new CatalogContributionModel();
         CatalogIntentHandler intentHandler = new CatalogIntentHandler(presentationModel);
         CatalogControlsView controls = new CatalogControlsView();
         CatalogMainView main = new CatalogMainView();
-        bindCatalogRequests(creatures, intentHandler, presentationModel);
+        bindCatalogRequests(runtimeContext.inspector(), creatures, presentationModel);
         bindControls(presentationModel, intentHandler, controls, sessionModel, encounterTables, encounters);
-        bindMain(runtimeContext.inspector(), creatures, encounters, presentationModel, intentHandler, main);
-        intentHandler.loadInitial();
-        applySessionCreatureFilters(intentHandler, currentBuilderInputs(sessionModel));
+        bindMain(main, presentationModel, intentHandler);
+        if (presentationModel.markInitialLoad()) {
+            presentationModel.requestFilterOptions();
+            presentationModel.beginSearch();
+            presentationModel.requestSearch();
+        }
+        applySessionCreatureFilters(presentationModel, currentBuilderInputs(sessionModel));
         return new Binding(controls, main);
     }
 
     private static void bindCatalogRequests(
+            InspectorSink inspector,
             CreaturesApplicationService creatures,
-            CatalogIntentHandler intentHandler,
-            CatalogPresentationModel presentationModel
+            CatalogContributionModel presentationModel
     ) {
-        intentHandler.onLoadFilterOptions(() -> presentationModel.applyCreatureFilterOptions(
-                creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery())));
-        intentHandler.onSearchRequested(searchInput -> {
-            CatalogPresentationModel.SearchInput safeInput = searchInput == null
-                    ? new CatalogPresentationModel.SearchInput(
-                            CatalogPresentationModel.CreatureFilters.empty(),
-                            CatalogPresentationModel.SortOption.NAME_ASC,
-                            50,
-                            0)
-                    : searchInput;
-            CatalogPresentationModel.CreatureFilters filters = safeInput.filters();
-            CatalogPresentationModel.SortOption sortOption = safeInput.sortOption();
+        presentationModel.filterOptionsRequestTokenProperty().addListener((obs, oldValue, newValue) ->
+                presentationModel.applyCreatureFilterOptions(
+                        creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery())));
+        presentationModel.searchRequestTokenProperty().addListener((obs, oldValue, newValue) -> {
+            CatalogContributionModel.CreatureFilters filters = presentationModel.currentFilters();
+            CatalogContributionModel.SortOption sortOption = presentationModel.currentSortOption();
             presentationModel.applySearchResult(creatures.searchCatalog(new CreatureCatalogQuery(
                     filters.nameQuery(),
                     filters.challengeRatingMin(),
@@ -84,13 +82,15 @@ final class CatalogBinder {
                     filters.alignments(),
                     sortOption.field(),
                     sortOption.direction(),
-                    safeInput.pageSize(),
-                    safeInput.pageOffset())));
+                    presentationModel.currentPageSize(),
+                    presentationModel.currentPageOffset())));
         });
+        presentationModel.openCreatureRequestTokenProperty().addListener((obs, oldValue, newValue) ->
+                openCreatureDetails(inspector, creatures, presentationModel.requestedCreatureId()));
     }
 
     private static void bindControls(
-            CatalogPresentationModel presentationModel,
+            CatalogContributionModel presentationModel,
             CatalogIntentHandler intentHandler,
             CatalogControlsView controls,
             EncounterSessionModel sessionModel,
@@ -98,69 +98,19 @@ final class CatalogBinder {
             EncounterApplicationService encounters
     ) {
         controls.setCreatureFilterData(toControlFilterData(presentationModel.creatureFilterDataProperty().get()));
-        ObservableList<CatalogPresentationModel.FilterChip> chips = presentationModel.chips();
+        ObservableList<CatalogContributionModel.FilterChip> chips = presentationModel.chips();
         controls.setChips(toControlChips(chips));
         controls.setEncounterTables(loadEncounterTableSelections(encounterTables));
         applyEncounterBuilderInputs(controls, currentBuilderInputs(sessionModel));
         refreshTuningPreview(controls, encounters);
-
-        controls.setOnCreatureFiltersChanged(filter -> {
-            updateBuilderInputs(encounters, sessionModel, current -> new EncounterSessionSnapshot.BuilderInputs(
-                    filter.types(),
-                    filter.subtypes(),
-                    filter.biomes(),
-                    current.targetDifficulty(),
-                    current.tuning(),
-                    current.encounterTableIds()));
-            intentHandler.applyCreatureFilters(new CatalogPresentationModel.CreatureFilters(
-                        filter.nameQuery(),
-                        filter.challengeRatingMin(),
-                        filter.challengeRatingMax(),
-                        filter.sizes(),
-                        filter.types(),
-                        filter.subtypes(),
-                        filter.biomes(),
-                        filter.alignments()));
-        });
-        controls.setOnEncounterDifficultyChanged(key -> updateBuilderInputs(
-                encounters,
-                sessionModel,
-                current -> new EncounterSessionSnapshot.BuilderInputs(
-                        current.creatureTypes(),
-                        current.creatureSubtypes(),
-                        current.biomes(),
-                        toDifficultyBand(key),
-                        current.tuning(),
-                        current.encounterTableIds())));
-        controls.setOnEncounterTuningChanged(selection -> updateBuilderInputs(
-                encounters,
-                sessionModel,
-                current -> new EncounterSessionSnapshot.BuilderInputs(
-                        current.creatureTypes(),
-                        current.creatureSubtypes(),
-                        current.biomes(),
-                        current.targetDifficulty(),
-                        new src.domain.encounter.published.EncounterGenerationTuning(
-                                selection.balanceLevel(),
-                                selection.amountValue(),
-                                selection.diversityLevel()),
-                        current.encounterTableIds())));
-        controls.setOnEncounterTablesChanged(tableIds -> updateBuilderInputs(
-                encounters,
-                sessionModel,
-                current -> new EncounterSessionSnapshot.BuilderInputs(
-                        current.creatureTypes(),
-                        current.creatureSubtypes(),
-                        current.biomes(),
-                        current.targetDifficulty(),
-                        current.tuning(),
-                        tableIds)));
+        controls.onViewInputEvent(intentHandler::consume);
+        intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(encounters, sessionModel, event));
 
         presentationModel.creatureFilterDataProperty().addListener((obs, oldValue, newValue) -> {
             controls.setCreatureFilterData(toControlFilterData(newValue));
             applyEncounterBuilderInputs(controls, currentBuilderInputs(sessionModel));
         });
-        chips.addListener((ListChangeListener<CatalogPresentationModel.FilterChip>) change ->
+        chips.addListener((ListChangeListener<CatalogContributionModel.FilterChip>) change ->
                 controls.setChips(toControlChips(chips)));
         sessionModel.subscribe(snapshot -> {
             applyEncounterBuilderInputs(controls, builderInputs(snapshot));
@@ -169,43 +119,23 @@ final class CatalogBinder {
     }
 
     private static void bindMain(
-            InspectorSink inspector,
-            CreaturesApplicationService creatures,
-            EncounterApplicationService encounters,
-            CatalogPresentationModel presentationModel,
-            CatalogIntentHandler intentHandler,
-            CatalogMainView main
+            CatalogMainView main,
+            CatalogContributionModel presentationModel,
+            CatalogIntentHandler intentHandler
     ) {
-        main.setRowAction("+Add", "Zum Encounter hinzufuegen", creatureId -> encounters.applySession(
-                new ApplyEncounterSessionCommand(
-                        ApplyEncounterSessionCommand.Action.ADD_CREATURE,
-                        null,
-                        EncounterSessionSnapshot.BuilderInputs.empty(),
-                        creatureId,
-                        0L,
-                        0,
-                        0L,
-                        List.of(),
-                        "",
-                        0,
-                        0L,
-                        0,
-                        false)));
+        main.setRowAction("+Add", "Zum Encounter hinzufuegen", true);
         main.setSortOptions(presentationModel.sortOptions().stream().map(CatalogBinder::toMainSort).toList());
         main.selectSort(presentationModel.selectedSortKeyProperty().get());
         main.setColumns(presentationModel.columns().stream().map(CatalogBinder::toMainColumn).toList());
-        ObservableList<CatalogPresentationModel.CatalogRow> rows = presentationModel.rows();
+        ObservableList<CatalogContributionModel.CatalogRow> rows = presentationModel.rows();
         main.setRows(rows.stream().map(CatalogBinder::toMainRow).toList());
         main.setPlaceholderText(presentationModel.placeholderTextProperty().get());
-        main.setOnRowOpen(creatureId -> openCreatureDetails(inspector, creatures, creatureId));
+        main.onViewInputEvent(intentHandler::consume);
         main.countTextProperty().bind(presentationModel.countLabelProperty());
         main.pageTextProperty().bind(presentationModel.pageLabelProperty());
         main.previousDisableProperty().bind(presentationModel.previousPageAvailableProperty().not());
         main.nextDisableProperty().bind(presentationModel.nextPageAvailableProperty().not());
-        main.setOnSortChanged(intentHandler::selectSort);
-        main.setOnPreviousPage(intentHandler::previousPage);
-        main.setOnNextPage(intentHandler::nextPage);
-        rows.addListener((ListChangeListener<CatalogPresentationModel.CatalogRow>) change ->
+        rows.addListener((ListChangeListener<CatalogContributionModel.CatalogRow>) change ->
                 main.setRows(rows.stream().map(CatalogBinder::toMainRow).toList()));
         presentationModel.placeholderTextProperty().addListener((obs, oldValue, newValue) -> main.setPlaceholderText(newValue));
         presentationModel.selectedSortKeyProperty().addListener((obs, oldValue, newValue) -> main.selectSort(newValue));
@@ -222,10 +152,10 @@ final class CatalogBinder {
     }
 
     private static CatalogControlsView.CreatureFilterData toControlFilterData(
-            CatalogPresentationModel.CreatureFilterData options
+            CatalogContributionModel.CreatureFilterData options
     ) {
-        CatalogPresentationModel.CreatureFilterData safeOptions = options == null
-                ? CatalogPresentationModel.CreatureFilterData.empty()
+        CatalogContributionModel.CreatureFilterData safeOptions = options == null
+                ? CatalogContributionModel.CreatureFilterData.empty()
                 : options;
         return new CatalogControlsView.CreatureFilterData(
                 safeOptions.sizes(),
@@ -258,7 +188,7 @@ final class CatalogBinder {
     }
 
     private static List<CatalogControlsView.FilterChipView> toControlChips(
-            List<CatalogPresentationModel.FilterChip> chips
+            List<CatalogContributionModel.FilterChip> chips
     ) {
         return chips.stream()
                 .map(chip -> new CatalogControlsView.FilterChipView(chip.key(), chip.label(), chip.styleClass()))
@@ -293,21 +223,23 @@ final class CatalogBinder {
     }
 
     private static void applySessionCreatureFilters(
-            CatalogIntentHandler intentHandler,
+            CatalogContributionModel presentationModel,
             EncounterSessionSnapshot.BuilderInputs builderInputs
     ) {
         EncounterSessionSnapshot.BuilderInputs safeInputs = builderInputs == null
                 ? EncounterSessionSnapshot.BuilderInputs.empty()
                 : builderInputs;
-        intentHandler.applyCreatureFilters(new CatalogPresentationModel.CreatureFilters(
-                null,
-                null,
-                null,
+        presentationModel.applyCreatureFilters(new CatalogContributionModel.CreatureFilters(
+                "",
+                "",
+                "",
                 List.of(),
                 safeInputs.creatureTypes(),
                 safeInputs.creatureSubtypes(),
                 safeInputs.biomes(),
                 List.of()));
+        presentationModel.beginSearch();
+        presentationModel.requestSearch();
     }
 
     private static EncounterSessionSnapshot.BuilderInputs currentBuilderInputs(
@@ -349,6 +281,75 @@ final class CatalogBinder {
                 false));
     }
 
+    private static void applyPublishedEvent(
+            EncounterApplicationService encounters,
+            EncounterSessionModel sessionModel,
+            CatalogPublishedEvent event
+    ) {
+        if (event == null) {
+            return;
+        }
+        switch (event.kind()) {
+            case UPDATE_CREATURE_FILTERS -> {
+                updateBuilderInputs(encounters, sessionModel, current -> new EncounterSessionSnapshot.BuilderInputs(
+                        event.creatureTypes(),
+                        event.creatureSubtypes(),
+                        event.biomes(),
+                        current.targetDifficulty(),
+                        current.tuning(),
+                        current.encounterTableIds()));
+            }
+            case UPDATE_ENCOUNTER_DIFFICULTY -> updateBuilderInputs(
+                    encounters,
+                    sessionModel,
+                    current -> new EncounterSessionSnapshot.BuilderInputs(
+                            current.creatureTypes(),
+                            current.creatureSubtypes(),
+                            current.biomes(),
+                            toDifficultyBand(event.difficultyKey()),
+                            current.tuning(),
+                            current.encounterTableIds()));
+            case UPDATE_ENCOUNTER_TUNING -> updateBuilderInputs(
+                    encounters,
+                    sessionModel,
+                    current -> new EncounterSessionSnapshot.BuilderInputs(
+                            current.creatureTypes(),
+                            current.creatureSubtypes(),
+                            current.biomes(),
+                            current.targetDifficulty(),
+                            new src.domain.encounter.published.EncounterGenerationTuning(
+                                    event.tuning().balanceLevel(),
+                                    event.tuning().amountValue(),
+                                    event.tuning().diversityLevel()),
+                            current.encounterTableIds()));
+            case UPDATE_ENCOUNTER_TABLES -> updateBuilderInputs(
+                    encounters,
+                    sessionModel,
+                    current -> new EncounterSessionSnapshot.BuilderInputs(
+                            current.creatureTypes(),
+                            current.creatureSubtypes(),
+                            current.biomes(),
+                            current.targetDifficulty(),
+                            current.tuning(),
+                            event.encounterTableIds()));
+            case ADD_CREATURE -> encounters.applySession(
+                    new ApplyEncounterSessionCommand(
+                            ApplyEncounterSessionCommand.Action.ADD_CREATURE,
+                            null,
+                            EncounterSessionSnapshot.BuilderInputs.empty(),
+                            event.creatureId(),
+                            0L,
+                            0,
+                            0L,
+                            List.of(),
+                            "",
+                            0,
+                            0L,
+                            0,
+                            false));
+        }
+    }
+
     private static CatalogControlsView.EncounterTuningPreview toControlTuningPreview(
             EncounterTuningPreviewLabels labels
     ) {
@@ -370,15 +371,15 @@ final class CatalogBinder {
                 .toList();
     }
 
-    private static CatalogMainView.ColumnItem toMainColumn(CatalogPresentationModel.CatalogColumn column) {
+    private static CatalogMainView.ColumnItem toMainColumn(CatalogContributionModel.CatalogColumn column) {
         return new CatalogMainView.ColumnItem(column.key(), column.label());
     }
 
-    private static CatalogMainView.SortSelection toMainSort(CatalogPresentationModel.SortSelection selection) {
+    private static CatalogMainView.SortSelection toMainSort(CatalogContributionModel.SortSelection selection) {
         return new CatalogMainView.SortSelection(selection.key(), selection.label());
     }
 
-    private static CatalogMainView.RowItem toMainRow(CatalogPresentationModel.CatalogRow row) {
+    private static CatalogMainView.RowItem toMainRow(CatalogContributionModel.CatalogRow row) {
         return new CatalogMainView.RowItem(row.id(), row.cells());
     }
 

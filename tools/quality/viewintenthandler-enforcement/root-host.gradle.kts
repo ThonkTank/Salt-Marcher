@@ -1,0 +1,52 @@
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.testing.Test
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.registering
+import org.gradle.kotlin.dsl.the
+import org.gradle.kotlin.dsl.withGroovyBuilder
+
+val sourceSets = the<SourceSetContainer>()
+sourceSets.named("test") {
+    java.srcDir("tools/quality/viewintenthandler-enforcement/archunit/src/test/java")
+}
+
+val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
+
+tasks.named<JavaCompile>("compileJava") {
+    val errorproneOptions = (options as ExtensionAware).extensions.getByName("errorprone")
+    errorproneOptions.withGroovyBuilder {
+        listOf(
+            "ViewIntentHandlerDependencyBoundary",
+            "ViewIntentHandlerApplicationSinkBoundary",
+            "ViewIntentHandlerViewInputEvent"
+        ).forEach { checkName ->
+            "error"(checkName)
+        }
+    }
+}
+
+val viewIntentHandlerArchitectureTest by tasks.registering(Test::class) {
+    group = "verification"
+    description = "Run only the ViewIntentHandler-focused architecture test suite."
+    dependsOn(tasks.named("classes"))
+    inputs.dir(mainJavaClassesDir)
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching("architecture.view.intenthandler.ViewIntentHandlerArchitectureTest")
+    }
+    doFirst {
+        systemProperty("saltmarcher.mainClassesDir", mainJavaClassesDir.get().asFile.absolutePath)
+    }
+}
+
+tasks.register("checkViewIntentHandlerEnforcement") {
+    group = "verification"
+    description = "Run all currently active ViewIntentHandler enforcement checks through one root entrypoint."
+    dependsOn("compileJava")
+    dependsOn(viewIntentHandlerArchitectureTest)
+    dependsOn(gradle.includedBuild("build-harness").task(":viewIntentHandlerTopologyCheck"))
+}

@@ -1145,6 +1145,63 @@
     -fx-font-weight: bold;
     -fx-text-fill: #e5c06f;
 }
+.session-planner-controls-scroll,
+.session-planner-main-scroll,
+.session-planner-controls-scroll > .viewport,
+.session-planner-main-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.session-planner-controls,
+.session-planner-main {
+    -fx-background-color: transparent;
+}
+.session-planner-status {
+    -fx-padding: 0 0 4 0;
+}
+.session-planner-card,
+.session-planner-encounter-card,
+.session-planner-gap-card,
+.session-planner-loot-card,
+.session-planner-plan-card {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+    -fx-background-radius: 8;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+}
+.session-planner-card-title,
+.session-planner-encounter-title,
+.session-planner-gap-title,
+.session-planner-plan-name {
+    -fx-font-weight: bold;
+}
+.session-planner-budget-summary,
+.session-planner-encounter-budget {
+    -fx-text-fill: -sm-text-primary;
+}
+.session-planner-budget-bar {
+    -fx-pref-height: 8;
+}
+.session-planner-budget-bar > .bar {
+    -fx-background-insets: 0;
+    -fx-background-radius: 999;
+}
+.session-planner-budget-bar > .track {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-background-radius: 999;
+}
+.session-planner-budget-ok > .bar {
+    -fx-background-color: -sm-accent;
+}
+.session-planner-budget-over > .bar {
+    -fx-background-color: #d86b4f;
+}
+.session-planner-gap-active {
+    -fx-text-fill: -sm-accent-hover;
+    -fx-font-weight: bold;
+}
+.session-planner-empty {
+    -fx-padding: 4 0 0 0;
+}
 
 .scroll-bar {
     -fx-background-color: -sm-bg-panel;

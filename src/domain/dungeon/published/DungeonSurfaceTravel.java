@@ -4,6 +4,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 public record DungeonSurfaceTravel(
+        DungeonTravelContextKind contextKind,
         DungeonTravelPosition position,
         String surfaceTitle,
         String areaLabel,
@@ -17,6 +18,7 @@ public record DungeonSurfaceTravel(
 ) {
 
     public DungeonSurfaceTravel {
+        contextKind = contextKind == null ? DungeonTravelContextKind.DUNGEON : contextKind;
         position = position == null
                 ? new DungeonTravelPosition(
                         new DungeonMapId(1L),

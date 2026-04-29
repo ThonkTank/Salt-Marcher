@@ -3,7 +3,6 @@ package src.view.dropdowns.party;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -18,13 +17,17 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
+import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 import src.view.slotcontent.primitives.progressmeter.ProgressMeterView;
 import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupAction;
@@ -48,15 +51,10 @@ public final class PartyTopBarView extends HBox {
     private final ListView<MemberView> suggestionList = new ListView<>();
     private final ObservableList<MemberView> availableMembers = FXCollections.observableArrayList();
     private final FilteredList<MemberView> filteredMembers = new FilteredList<>(availableMembers);
-    private final PartyCharacterEditorTopBarView editorView = new PartyCharacterEditorTopBarView();
+    private final PartyCharacterEditorTopBarPanel editorPanel = new PartyCharacterEditorTopBarPanel();
     private boolean actionsDisabled;
 
-    private Runnable onOpen = () -> {};
-    private Consumer<MemberView> onAddExisting = ignored -> {};
-    private Consumer<MemberView> onRemoveFromParty = ignored -> {};
-    private Consumer<XpAdjustmentRequest> onAdjustXp = ignored -> {};
-    private Runnable onShortRest = () -> {};
-    private Runnable onLongRest = () -> {};
+    private Consumer<PartyTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public PartyTopBarView() {
@@ -93,46 +91,8 @@ public final class PartyTopBarView extends HBox {
         showActionStatus(safeContent.actionStatus(), safeContent.actionStatusError());
     }
 
-    public void onOpen(Runnable action) {
-        onOpen = action == null ? () -> {} : action;
-    }
-
-    public void onAddExisting(Consumer<MemberView> action) {
-        onAddExisting = action == null ? ignored -> {} : action;
-    }
-
-    public void onRemoveFromParty(Consumer<MemberView> action) {
-        onRemoveFromParty = action == null ? ignored -> {} : action;
-    }
-
-    public void onAdjustXp(Consumer<XpAdjustmentRequest> action) {
-        onAdjustXp = action == null ? ignored -> {} : action;
-    }
-
-    public void onShortRest(Runnable action) {
-        onShortRest = action == null ? () -> {} : action;
-    }
-
-    public void onLongRest(Runnable action) {
-        onLongRest = action == null ? () -> {} : action;
-    }
-
-    public void onCreateCharacter(
-            Function<PartyCharacterEditorTopBarView.EditorDraft, PartyCharacterEditorTopBarView.EditorResult> action
-    ) {
-        editorView.onCreate(action);
-    }
-
-    public void onUpdateCharacter(
-            Function<PartyCharacterEditorTopBarView.EditorDraft, PartyCharacterEditorTopBarView.EditorResult> action
-    ) {
-        editorView.onUpdate(action);
-    }
-
-    public void onDeleteCharacter(
-            Function<PartyCharacterEditorTopBarView.EditorMember, PartyCharacterEditorTopBarView.EditorResult> action
-    ) {
-        editorView.onDelete(action);
+    public void onViewInputEvent(Consumer<PartyTopBarViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
     private void configureTrigger() {
@@ -178,7 +138,14 @@ public final class PartyTopBarView extends HBox {
         panel.getStyleClass().add("party-panel");
         popup.setContent(panel);
         popup.addOnShowing(event -> triggerButton.setAccessibleText("Party-Panel geoeffnet, Escape zum Schliessen"));
-        popup.addOnHiding(event -> editorView.hide());
+        popup.addOnHiding(event -> editorPanel.hide());
+        editorPanel.onCreate(draft -> publish(PartyTopBarViewInputEvent.createCharacter(
+                toPublishedDraft(draft))));
+        editorPanel.onUpdate(draft -> publish(PartyTopBarViewInputEvent.updateCharacter(
+                toPublishedDraft(draft))));
+        editorPanel.onDelete(member -> publish(PartyTopBarViewInputEvent.deleteCharacter(
+                member == null ? 0L : member.id(),
+                member == null ? "" : member.name())));
     }
 
     private VBox buildPanel() {
@@ -205,15 +172,15 @@ public final class PartyTopBarView extends HBox {
 
         shortRestButton.getStyleClass().add("compact");
         longRestButton.getStyleClass().add("compact");
-        shortRestButton.setOnAction(event -> onShortRest.run());
-        longRestButton.setOnAction(event -> onLongRest.run());
+        shortRestButton.setOnAction(event -> publish(PartyTopBarViewInputEvent.shortRest()));
+        longRestButton.setOnAction(event -> publish(PartyTopBarViewInputEvent.longRest()));
         HBox restActions = new HBox(6, shortRestButton, longRestButton);
         restActions.getStyleClass().add("party-rest-actions");
 
         VBox searchBox = new VBox(4, searchField, suggestionList);
         searchBox.getStyleClass().add("party-search");
         newCharacterButton.setMaxWidth(Double.MAX_VALUE);
-        newCharacterButton.setOnAction(event -> editorView.showCreate(newCharacterButton));
+        newCharacterButton.setOnAction(event -> editorPanel.showCreate(newCharacterButton));
         VBox newCharacterBox = new VBox(newCharacterButton);
         newCharacterBox.getStyleClass().add("party-search");
 
@@ -234,7 +201,11 @@ public final class PartyTopBarView extends HBox {
     }
 
     private void togglePopup() {
-        DropdownPopupView.toggleTrailing(popup, triggerButton, POPUP_WIDTH, onOpen);
+        DropdownPopupView.toggleTrailing(
+                popup,
+                triggerButton,
+                POPUP_WIDTH,
+                () -> publish(PartyTopBarViewInputEvent.opened()));
     }
 
     private void renderMembers(PanelContent content) {
@@ -265,14 +236,16 @@ public final class PartyTopBarView extends HBox {
         editButton.getStyleClass().addAll("compact", "icon-button", "accent");
         editButton.setAccessibleText("Charakter bearbeiten: " + member.name());
         editButton.setTooltip(new Tooltip("Charakter bearbeiten"));
-        editButton.setOnAction(event -> editorView.showEdit(editButton, toEditorMember(member)));
+        editButton.setOnAction(event -> editorPanel.showEdit(editButton, toEditorMember(member)));
         editButton.setDisable(actionsDisabled);
 
         Button removeButton = new Button("\u00d7");
         removeButton.getStyleClass().addAll("compact", "icon-button", "neutral-action");
         removeButton.setAccessibleText("Aus aktiver Party entfernen: " + member.name());
         removeButton.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
-        removeButton.setOnAction(event -> onRemoveFromParty.accept(member));
+        removeButton.setOnAction(event -> publish(PartyTopBarViewInputEvent.removeFromParty(
+                member.id() == null ? 0L : member.id(),
+                member.name())));
         removeButton.setDisable(actionsDisabled);
 
         Region spacer = new Region();
@@ -306,10 +279,14 @@ public final class PartyTopBarView extends HBox {
                 "XP korrigieren",
                 100,
                 List.of(
-                        new PopupAction("-XP", "", false, amount -> onAdjustXp.accept(
-                                new XpAdjustmentRequest(member, -amount))),
-                        new PopupAction("+XP", "accent", true, amount -> onAdjustXp.accept(
-                                new XpAdjustmentRequest(member, amount)))));
+                        new PopupAction("-XP", "", false, amount -> publish(PartyTopBarViewInputEvent.adjustXp(
+                                member.id() == null ? 0L : member.id(),
+                                member.name(),
+                                -amount))),
+                        new PopupAction("+XP", "accent", true, amount -> publish(PartyTopBarViewInputEvent.adjustXp(
+                                member.id() == null ? 0L : member.id(),
+                                member.name(),
+                                amount)))));
         ProgressMeterView progressMeter = new ProgressMeterView(
                 member.levelProgressFraction(),
                 member.levelProgressText(),
@@ -392,7 +369,9 @@ public final class PartyTopBarView extends HBox {
         }
         MemberView selected = suggestionList.getSelectionModel().getSelectedItem();
         if (selected != null) {
-            onAddExisting.accept(selected);
+            publish(PartyTopBarViewInputEvent.addExisting(
+                    selected.id() == null ? 0L : selected.id(),
+                    selected.name()));
             suggestionList.setVisible(false);
             suggestionList.setManaged(false);
         }
@@ -403,7 +382,10 @@ public final class PartyTopBarView extends HBox {
             return;
         }
         if (!filteredMembers.isEmpty()) {
-            onAddExisting.accept(filteredMembers.get(0));
+            MemberView firstMatch = filteredMembers.get(0);
+            publish(PartyTopBarViewInputEvent.addExisting(
+                    firstMatch.id() == null ? 0L : firstMatch.id(),
+                    firstMatch.name()));
             suggestionList.setVisible(false);
             suggestionList.setManaged(false);
         }
@@ -423,8 +405,8 @@ public final class PartyTopBarView extends HBox {
         return label;
     }
 
-    private static PartyCharacterEditorTopBarView.EditorMember toEditorMember(MemberView member) {
-        return new PartyCharacterEditorTopBarView.EditorMember(
+    private static PartyCharacterEditorTopBarPanel.EditorMember toEditorMember(MemberView member) {
+        return new PartyCharacterEditorTopBarPanel.EditorMember(
                 member.id(),
                 member.name(),
                 member.playerName(),
@@ -433,8 +415,327 @@ public final class PartyTopBarView extends HBox {
                 member.armorClass());
     }
 
+    private static PartyTopBarViewInputEvent.EditorDraft toPublishedDraft(PartyCharacterEditorTopBarPanel.EditorDraft draft) {
+        PartyCharacterEditorTopBarPanel.EditorDraft safeDraft = draft == null
+                ? new PartyCharacterEditorTopBarPanel.EditorDraft(null, "", "", "", "", "")
+                : draft;
+        return new PartyTopBarViewInputEvent.EditorDraft(
+                safeDraft.id() == null ? 0L : safeDraft.id(),
+                safeDraft.name(),
+                safeDraft.playerName(),
+                safeDraft.rawLevel(),
+                safeDraft.rawPassivePerception(),
+                safeDraft.rawArmorClass());
+    }
+
+    private void publish(PartyTopBarViewInputEvent event) {
+        viewInputEventHandler.accept(event);
+    }
+
     private static String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private static final class PartyCharacterEditorTopBarPanel {
+
+        private static final double POPUP_WIDTH = 360.0;
+
+        private final DialogSurfaceView panel = new DialogSurfaceView();
+        private final Label titleLabel = new Label();
+        private final Label errorLabel = new Label();
+        private final TextField nameField = new TextField();
+        private final TextField playerNameField = new TextField();
+        private final TextField levelField = createIntegerField();
+        private final TextField passivePerceptionField = createIntegerField();
+        private final TextField armorClassField = createIntegerField();
+        private final VBox deleteSection = new VBox(8);
+        private final Label deleteMessageLabel = new Label();
+        private final Button revealDeleteButton = new Button("Loeschen");
+        private final Button cancelDeleteButton = new Button("Abbrechen");
+        private final Button confirmDeleteButton = new Button("Wirklich loeschen");
+        private final Button cancelButton = new Button("Abbrechen");
+        private final Button submitButton = new Button("Speichern");
+        private final AnchoredPopupView popup = new AnchoredPopupView();
+
+        private @Nullable EditorMember editingMember;
+        private boolean pending;
+        private Consumer<EditorDraft> onCreate = ignored -> { };
+        private Consumer<EditorDraft> onUpdate = ignored -> { };
+        private Consumer<EditorMember> onDelete = ignored -> { };
+
+        private PartyCharacterEditorTopBarPanel() {
+            panel.getStyleClass().addAll("dropdown-window", "dropdown-form", "party-editor-dropdown");
+            panel.setPadding(new Insets(10));
+            titleLabel.getStyleClass().add("panel-title");
+            errorLabel.getStyleClass().add("text-warning");
+            errorLabel.setWrapText(true);
+            errorLabel.setVisible(false);
+            errorLabel.setManaged(false);
+            configureFields();
+            configureDeleteSection();
+            configurePopup();
+            VBox body = new VBox(10, formGrid(), errorLabel, revealDeleteButton, deleteSection);
+            panel.setHeader(titleLabel);
+            panel.setBody(body, BodyPolicy.FIXED);
+            panel.setFooter(cancelButton, DialogSurfaceView.spacer(), submitButton);
+            resetTransientState();
+        }
+
+        private void onCreate(Consumer<EditorDraft> action) {
+            onCreate = action == null ? ignored -> { } : action;
+        }
+
+        private void onUpdate(Consumer<EditorDraft> action) {
+            onUpdate = action == null ? ignored -> { } : action;
+        }
+
+        private void onDelete(Consumer<EditorMember> action) {
+            onDelete = action == null ? ignored -> { } : action;
+        }
+
+        private void showCreate(Node anchor) {
+            editingMember = null;
+            titleLabel.setText("Neuer Charakter");
+            submitButton.setText("Erstellen");
+            revealDeleteButton.setVisible(false);
+            revealDeleteButton.setManaged(false);
+            populateFields("", "", 1, 10, 10);
+            setDeleteConfirmationVisible(false);
+            resetError();
+            show(anchor);
+        }
+
+        private void showEdit(Node anchor, @Nullable EditorMember member) {
+            editingMember = member;
+            EditorMember safeMember = member == null ? EditorMember.empty() : member;
+            titleLabel.setText("Charakter bearbeiten");
+            submitButton.setText("Speichern");
+            revealDeleteButton.setVisible(true);
+            revealDeleteButton.setManaged(true);
+            populateFields(
+                    safeMember.name(),
+                    safeMember.playerName(),
+                    safeMember.level(),
+                    safeMember.passivePerception(),
+                    safeMember.armorClass());
+            deleteMessageLabel.setText("\"" + safeMember.name() + "\" wirklich dauerhaft loeschen?");
+            setDeleteConfirmationVisible(false);
+            resetError();
+            show(anchor);
+        }
+
+        private void hide() {
+            popup.hide();
+        }
+
+        private void configureFields() {
+            configureField(nameField, "Charaktername");
+            configureField(playerNameField, "Spielername");
+            configureField(levelField, "Level");
+            configureField(passivePerceptionField, "Passive Perception");
+            configureField(armorClassField, "AC");
+            nameField.setOnAction(event -> submit());
+            playerNameField.setOnAction(event -> submit());
+            levelField.setOnAction(event -> submit());
+            passivePerceptionField.setOnAction(event -> submit());
+            armorClassField.setOnAction(event -> submit());
+            nameField.textProperty().addListener((ignored, before, after) -> updateSubmitDisabled());
+            updateSubmitDisabled();
+        }
+
+        private void configureDeleteSection() {
+            revealDeleteButton.getStyleClass().addAll("compact", "danger-action");
+            revealDeleteButton.setMaxWidth(Double.MAX_VALUE);
+            revealDeleteButton.setOnAction(event -> setDeleteConfirmationVisible(true));
+            deleteMessageLabel.getStyleClass().add("dropdown-message");
+            deleteMessageLabel.setWrapText(true);
+            cancelDeleteButton.getStyleClass().addAll("compact", "neutral-action");
+            cancelDeleteButton.setOnAction(event -> setDeleteConfirmationVisible(false));
+            confirmDeleteButton.getStyleClass().addAll("compact", "danger-action");
+            confirmDeleteButton.setOnAction(event -> {
+                if (pending) {
+                    return;
+                }
+                onDelete.accept(editingMember == null ? EditorMember.empty() : editingMember);
+                hide();
+            });
+            HBox deleteActions = new HBox(8, cancelDeleteButton, confirmDeleteButton);
+            deleteActions.setAlignment(Pos.CENTER_RIGHT);
+            deleteSection.getStyleClass().add("party-editor-delete-section");
+            deleteSection.getChildren().addAll(deleteMessageLabel, deleteActions);
+        }
+
+        private void configurePopup() {
+            popup.setContent(panel);
+            popup.addOnHidden(event -> resetTransientState());
+            cancelButton.setOnAction(event -> popup.hide());
+            submitButton.setOnAction(event -> submit());
+        }
+
+        private GridPane formGrid() {
+            GridPane formGrid = new GridPane();
+            formGrid.getStyleClass().add("party-editor-form");
+            formGrid.setHgap(10);
+            formGrid.setVgap(8);
+            addRow(formGrid, 0, "Charakter", nameField);
+            addRow(formGrid, 1, "Spieler", playerNameField);
+            addRow(formGrid, 2, "Level", levelField);
+            addRow(formGrid, 3, "Passive Perception", passivePerceptionField);
+            addRow(formGrid, 4, "AC", armorClassField);
+            return formGrid;
+        }
+
+        private void submit() {
+            if (pending) {
+                return;
+            }
+            EditorDraft draft = new EditorDraft(
+                    editingMember == null ? null : editingMember.id(),
+                    safe(nameField.getText()).trim(),
+                    safe(playerNameField.getText()).trim(),
+                    safe(levelField.getText()).trim(),
+                    safe(passivePerceptionField.getText()).trim(),
+                    safe(armorClassField.getText()).trim());
+            if (editingMember == null) {
+                onCreate.accept(draft);
+            } else {
+                onUpdate.accept(draft);
+            }
+            hide();
+        }
+
+        private void show(Node anchor) {
+            if (anchor == null || anchor.getScene() == null) {
+                return;
+            }
+            panel.applyCss();
+            panel.layout();
+            popup.showTrailing(anchor, POPUP_WIDTH);
+            nameField.requestFocus();
+            nameField.selectAll();
+        }
+
+        private void showError(String message) {
+            errorLabel.setText(safe(message));
+            errorLabel.setVisible(true);
+            errorLabel.setManaged(true);
+            nameField.requestFocus();
+        }
+
+        private void showInfo(String message) {
+            errorLabel.setText(safe(message));
+            errorLabel.setVisible(true);
+            errorLabel.setManaged(true);
+        }
+
+        private void resetError() {
+            errorLabel.setText("");
+            errorLabel.setVisible(false);
+            errorLabel.setManaged(false);
+        }
+
+        private void resetTransientState() {
+            setPending(false);
+            resetError();
+            setDeleteConfirmationVisible(false);
+        }
+
+        private void setDeleteConfirmationVisible(boolean visible) {
+            deleteSection.setVisible(visible);
+            deleteSection.setManaged(visible);
+            if (visible) {
+                cancelDeleteButton.requestFocus();
+            }
+        }
+
+        private void updateSubmitDisabled() {
+            submitButton.setDisable(pending || safe(nameField.getText()).isBlank());
+        }
+
+        private void setPending(boolean active) {
+            pending = active;
+            nameField.setDisable(active);
+            playerNameField.setDisable(active);
+            levelField.setDisable(active);
+            passivePerceptionField.setDisable(active);
+            armorClassField.setDisable(active);
+            revealDeleteButton.setDisable(active);
+            cancelDeleteButton.setDisable(active);
+            confirmDeleteButton.setDisable(active);
+            cancelButton.setDisable(active);
+            updateSubmitDisabled();
+        }
+
+        private void populateFields(
+                String name,
+                String playerName,
+                int level,
+                int passivePerception,
+                int armorClass
+        ) {
+            nameField.setText(safe(name));
+            playerNameField.setText(safe(playerName));
+            levelField.setText(Integer.toString(level));
+            passivePerceptionField.setText(Integer.toString(passivePerception));
+            armorClassField.setText(Integer.toString(armorClass));
+        }
+
+        private static void addRow(GridPane grid, int row, String labelText, TextField field) {
+            Label label = new Label(labelText);
+            label.getStyleClass().add("text-muted");
+            label.setLabelFor(field);
+            grid.add(label, 0, row);
+            grid.add(field, 1, row);
+            GridPane.setHgrow(field, Priority.ALWAYS);
+        }
+
+        private static void configureField(TextField field, String promptText) {
+            field.setPromptText(promptText);
+        }
+
+        private static TextField createIntegerField() {
+            TextField field = new TextField();
+            field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9]*") ? change : null));
+            return field;
+        }
+
+        private record EditorMember(
+                @Nullable Long id,
+                String name,
+                String playerName,
+                int level,
+                int passivePerception,
+                int armorClass
+        ) {
+
+            private EditorMember {
+                name = safe(name);
+                playerName = safe(playerName);
+            }
+
+            private static EditorMember empty() {
+                return new EditorMember(null, "", "", 1, 10, 10);
+            }
+        }
+
+        private record EditorDraft(
+                @Nullable Long id,
+                String name,
+                String playerName,
+                String rawLevel,
+                String rawPassivePerception,
+                String rawArmorClass
+        ) {
+
+            private EditorDraft {
+                name = safe(name);
+                playerName = safe(playerName);
+                rawLevel = safe(rawLevel);
+                rawPassivePerception = safe(rawPassivePerception);
+                rawArmorClass = safe(rawArmorClass);
+            }
+        }
+
     }
 
     public record PanelContent(
@@ -499,6 +800,4 @@ public final class PartyTopBarView extends HBox {
         }
     }
 
-    public record XpAdjustmentRequest(MemberView member, int xpDelta) {
-    }
 }

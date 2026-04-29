@@ -37,6 +37,7 @@ import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.DungeonTravelActionKind;
 import src.domain.dungeon.published.DungeonTravelActionSnapshot;
+import src.domain.dungeon.published.DungeonTravelContextKind;
 import src.domain.dungeon.published.DungeonTravelExternalTarget;
 import src.domain.dungeon.published.DungeonTravelHeading;
 import src.domain.dungeon.published.DungeonTravelLocationKind;
@@ -90,6 +91,22 @@ import src.domain.dungeon.map.value.DungeonTravelExternalTargetFacts;
 import src.domain.dungeon.map.value.DungeonTravelMoveFacts;
 import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
 import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.ActivePartyResult;
+import src.domain.party.published.LoadActivePartyQuery;
+import src.domain.party.published.LoadPartyTravelPositionsQuery;
+import src.domain.party.published.MovePartyCharactersCommand;
+import src.domain.party.published.MutationStatus;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
+import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
+import src.domain.party.published.PartyMemberSummary;
+import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelHeading;
+import src.domain.party.published.PartyTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelPositionSnapshot;
+import src.domain.party.published.PartyTravelPositionsResult;
+import src.domain.party.published.PartyTravelTile;
+import src.domain.party.published.ReadStatus;
 
 import java.util.List;
 import java.util.Objects;
@@ -108,11 +125,14 @@ public final class DungeonApplicationService {
     private final LoadMapSnapshotUseCase loadMapSnapshotUseCase;
     private final LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase;
     private final MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase;
+    private final PartyApplicationService partyApplicationService;
 
     public DungeonApplicationService(
+            PartyApplicationService partyApplicationService,
             DungeonMapRepository mapRepository,
             DungeonMapSearch mapSearch
     ) {
+        this.partyApplicationService = Objects.requireNonNull(partyApplicationService, "partyApplicationService");
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
         DungeonMapSearch search = Objects.requireNonNull(mapSearch, "mapSearch");
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
@@ -141,13 +161,7 @@ public final class DungeonApplicationService {
                 ? new LoadDungeonSurfaceQuery(null, DungeonSurfaceKind.EDITOR)
                 : query;
         if (effectiveQuery.surfaceKind() == DungeonSurfaceKind.TRAVEL) {
-            DungeonTravelSurfaceFacts travelSurface = loadDungeonTravelSurfaceUseCase.execute(
-                    new LoadDungeonTravelSurfaceUseCase.Input(
-                            TravelPublication.position(effectiveQuery.travelPosition())));
-            return SurfacePublication.travel(
-                    travelSurface,
-                    null,
-                    null);
+            return loadPartyAwareTravelSurface(effectiveQuery.travelPosition());
         }
         LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot = loadDungeonSnapshotUseCase.execute(
                 MapPublication.domainId(effectiveQuery.mapId()));
@@ -281,21 +295,14 @@ public final class DungeonApplicationService {
         LoadDungeonTravelSurfaceQuery effectiveQuery = query == null
                 ? new LoadDungeonTravelSurfaceQuery(null)
                 : query;
-        return TravelPublication.surface(loadDungeonTravelSurfaceUseCase.execute(
-                new LoadDungeonTravelSurfaceUseCase.Input(TravelPublication.position(effectiveQuery.position()))));
+        return TravelPublication.surface(loadRawTravelSurface(effectiveQuery.position()), DungeonTravelContextKind.DUNGEON);
     }
 
     public DungeonSurfacePayload moveSurfaceAction(MoveDungeonSurfaceActionCommand command) {
         MoveDungeonSurfaceActionCommand effectiveCommand = command == null
                 ? new MoveDungeonSurfaceActionCommand(null, "")
                 : command;
-        DungeonTravelMoveFacts result = moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
-                TravelPublication.position(effectiveCommand.position()),
-                effectiveCommand.actionId()));
-        return SurfacePublication.travel(
-                result.surface(),
-                DungeonTravelMoveStatus.valueOf(result.status().name()),
-                TravelPublication.externalTarget(result.externalTarget()));
+        return movePartyAwareTravelSurface(effectiveCommand);
     }
 
     public DungeonTravelMoveResult moveTravelAction(MoveDungeonTravelActionCommand command) {
@@ -306,6 +313,118 @@ public final class DungeonApplicationService {
                 TravelPublication.position(effectiveCommand.position()),
                 effectiveCommand.actionId()));
         return TravelPublication.moveResult(result);
+    }
+
+    private DungeonSurfacePayload loadPartyAwareTravelSurface(@Nullable DungeonTravelPosition requestedPosition) {
+        ActiveTravelSnapshot activeTravel = loadActiveTravelState();
+        if (activeTravel.partyLocation() instanceof PartyOverworldTravelLocationSnapshot overworld) {
+            return SurfacePublication.travelOutsideDungeon(overworld.tileId());
+        }
+        DungeonTravelPosition effectivePosition = requestedPosition != null
+                ? requestedPosition
+                : TravelPartyBridge.toDungeonPosition(activeTravel.partyLocation());
+        DungeonTravelSurfaceFacts surface = loadRawTravelSurface(effectivePosition);
+        if (requestedPosition == null
+                && activeTravel.partyLocation() == null
+                && !activeTravel.travelCharacterIds().isEmpty()) {
+            saveDungeonPosition(surface.position(), activeTravel.travelCharacterIds());
+        }
+        return SurfacePublication.travel(surface, null, null, DungeonTravelContextKind.DUNGEON);
+    }
+
+    private DungeonSurfacePayload movePartyAwareTravelSurface(MoveDungeonSurfaceActionCommand command) {
+        ActiveTravelSnapshot activeTravel = loadActiveTravelState();
+        DungeonTravelPosition effectivePosition = command.position() != null
+                ? command.position()
+                : TravelPartyBridge.toDungeonPosition(activeTravel.partyLocation());
+        DungeonTravelMoveFacts result = moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
+                TravelPublication.position(effectivePosition),
+                command.actionId()));
+        if (result.status() == src.domain.dungeon.map.value.DungeonTravelMoveStatus.EXTERNAL_TARGET
+                && result.externalTarget() instanceof DungeonTravelExternalTargetFacts.OverworldTile overworld) {
+            boolean saved = saveOverworldPosition(overworld, activeTravel.travelCharacterIds());
+            return saved
+                    ? SurfacePublication.travelOutsideDungeon(overworld.tileId())
+                    : SurfacePublication.travel(
+                    result.surface(),
+                    DungeonTravelMoveStatus.valueOf(result.status().name()),
+                    TravelPublication.externalTarget(result.externalTarget()),
+                    DungeonTravelContextKind.DUNGEON);
+        }
+        if (result.status() == src.domain.dungeon.map.value.DungeonTravelMoveStatus.SUCCESS) {
+            saveDungeonPosition(result.surface().position(), activeTravel.travelCharacterIds());
+        }
+        return SurfacePublication.travel(
+                result.surface(),
+                DungeonTravelMoveStatus.valueOf(result.status().name()),
+                TravelPublication.externalTarget(result.externalTarget()),
+                DungeonTravelContextKind.DUNGEON);
+    }
+
+    private DungeonTravelSurfaceFacts loadRawTravelSurface(@Nullable DungeonTravelPosition position) {
+        return loadDungeonTravelSurfaceUseCase.execute(
+                new LoadDungeonTravelSurfaceUseCase.Input(TravelPublication.position(position)));
+    }
+
+    private ActiveTravelSnapshot loadActiveTravelState() {
+        ActivePartyResult activeParty = partyApplicationService.loadActiveParty(new LoadActivePartyQuery());
+        List<Long> activeCharacterIds = activeParty.status() == ReadStatus.SUCCESS
+                ? activeParty.members().stream()
+                .map(PartyMemberSummary::id)
+                .filter(id -> id != null && id > 0L)
+                .toList()
+                : List.of();
+        PartyTravelPositionsResult travelPositions = partyApplicationService.loadTravelPositions(
+                new LoadPartyTravelPositionsQuery(activeCharacterIds));
+        List<Long> travelCharacterIds = travelPositions.status() == ReadStatus.SUCCESS
+                ? attachedCharacterIds(travelPositions.positions(), activeCharacterIds)
+                : activeCharacterIds;
+        return new ActiveTravelSnapshot(activeCharacterIds, travelCharacterIds, travelPositions.partyTokenLocation());
+    }
+
+    private static List<Long> attachedCharacterIds(
+            List<PartyTravelPositionSnapshot> positions,
+            List<Long> fallbackIds
+    ) {
+        List<Long> attachedIds = (positions == null ? List.<PartyTravelPositionSnapshot>of() : positions).stream()
+                .filter(PartyTravelPositionSnapshot::attachedToPartyToken)
+                .map(PartyTravelPositionSnapshot::characterId)
+                .toList();
+        return attachedIds.isEmpty() ? fallbackIds : attachedIds;
+    }
+
+    private void saveDungeonPosition(
+            DungeonTravelPositionFacts position,
+            List<Long> characterIds
+    ) {
+        if (position == null || characterIds == null || characterIds.isEmpty()) {
+            return;
+        }
+        partyApplicationService.moveCharacters(new MovePartyCharactersCommand(
+                characterIds,
+                new PartyDungeonTravelLocationSnapshot(
+                        position.mapId().value(),
+                        TravelPartyBridge.toPartyDungeonLocationKind(position),
+                        position.ownerId(),
+                        new PartyTravelTile(
+                                position.tile().q(),
+                                position.tile().r(),
+                                position.tile().level()),
+                        PartyTravelHeading.valueOf(position.heading().name())),
+                true));
+    }
+
+    private boolean saveOverworldPosition(
+            DungeonTravelExternalTargetFacts.OverworldTile target,
+            List<Long> characterIds
+    ) {
+        if (target == null || characterIds == null || characterIds.isEmpty()) {
+            return false;
+        }
+        return partyApplicationService.moveCharacters(new MovePartyCharactersCommand(
+                characterIds,
+                new PartyOverworldTravelLocationSnapshot(target.mapId(), target.tileId()),
+                true)).status() == MutationStatus.SUCCESS;
     }
 
     private static final class SnapshotPublication {
@@ -388,9 +507,10 @@ public final class DungeonApplicationService {
         private static DungeonSurfacePayload travel(
                 DungeonTravelSurfaceFacts surface,
                 @Nullable DungeonTravelMoveStatus moveStatus,
-                @Nullable DungeonTravelExternalTarget externalTarget
+                @Nullable DungeonTravelExternalTarget externalTarget,
+                DungeonTravelContextKind contextKind
         ) {
-            DungeonTravelSurfaceSnapshot publishedSurface = TravelPublication.surface(surface);
+            DungeonTravelSurfaceSnapshot publishedSurface = TravelPublication.surface(surface, contextKind);
             return new DungeonSurfacePayload(
                     publishedSurface.mapName(),
                     DungeonSurfaceKind.TRAVEL,
@@ -402,6 +522,7 @@ public final class DungeonApplicationService {
                     List.of(),
                     null,
                     new DungeonSurfaceTravel(
+                            publishedSurface.contextKind(),
                             publishedSurface.position(),
                             publishedSurface.surfaceTitle(),
                             publishedSurface.areaLabel(),
@@ -412,6 +533,37 @@ public final class DungeonApplicationService {
                             publishedSurface.actions(),
                             moveStatus,
                             externalTarget),
+                    DungeonSurfaceMessages.empty());
+        }
+
+        private static DungeonSurfacePayload travelOutsideDungeon(long tileId) {
+            return new DungeonSurfacePayload(
+                    "Overworld",
+                    DungeonSurfaceKind.TRAVEL,
+                    DungeonMapMode.TRAVEL,
+                    0,
+                    DungeonMapSnapshot.empty(),
+                    null,
+                    List.of(),
+                    List.of(),
+                    null,
+                    new DungeonSurfaceTravel(
+                            DungeonTravelContextKind.OVERWORLD,
+                            new DungeonTravelPosition(
+                                    new DungeonMapId(1L),
+                                    DungeonTravelLocationKind.TILE,
+                                    0L,
+                                    new DungeonCellRef(0, 0, 0),
+                                    DungeonTravelHeading.defaultHeading()),
+                            "Overworld",
+                            "Overworld-Feld " + tileId,
+                            "-",
+                            "-",
+                            "Gruppe befindet sich ausserhalb des Dungeons",
+                            "",
+                            List.of(),
+                            null,
+                            null),
                     DungeonSurfaceMessages.empty());
         }
     }
@@ -686,7 +838,7 @@ public final class DungeonApplicationService {
             return new DungeonTravelMoveResult(
                     DungeonTravelMoveStatus.valueOf(result.status().name()),
                     result.message(),
-                    surface(result.surface()),
+                    surface(result.surface(), DungeonTravelContextKind.DUNGEON),
                     externalTarget(result.externalTarget()));
         }
 
@@ -699,8 +851,12 @@ public final class DungeonApplicationService {
             return null;
         }
 
-        private static DungeonTravelSurfaceSnapshot surface(DungeonTravelSurfaceFacts surface) {
+        private static DungeonTravelSurfaceSnapshot surface(
+                DungeonTravelSurfaceFacts surface,
+                DungeonTravelContextKind contextKind
+        ) {
             return new DungeonTravelSurfaceSnapshot(
+                    contextKind,
                     surface.mapName(),
                     MapPublication.revision(surface.revision()),
                     MapPublication.snapshot(surface.map()),
@@ -742,6 +898,47 @@ public final class DungeonApplicationService {
                     position.ownerId(),
                     MapPublication.domainCell(position.tile()),
                     src.domain.dungeon.map.value.DungeonTravelHeading.valueOf(position.heading().name()));
+        }
+    }
+
+    private record ActiveTravelSnapshot(
+            List<Long> activeCharacterIds,
+            List<Long> travelCharacterIds,
+            @Nullable PartyTravelLocationSnapshot partyLocation
+    ) {
+        private ActiveTravelSnapshot {
+            activeCharacterIds = activeCharacterIds == null ? List.of() : List.copyOf(activeCharacterIds);
+            travelCharacterIds = travelCharacterIds == null ? List.of() : List.copyOf(travelCharacterIds);
+        }
+    }
+
+    private static final class TravelPartyBridge {
+
+        private TravelPartyBridge() {
+        }
+
+        private static @Nullable DungeonTravelPosition toDungeonPosition(@Nullable PartyTravelLocationSnapshot location) {
+            if (!(location instanceof PartyDungeonTravelLocationSnapshot dungeonLocation)) {
+                return null;
+            }
+            return new DungeonTravelPosition(
+                    new DungeonMapId(dungeonLocation.mapId()),
+                    DungeonTravelLocationKind.valueOf(dungeonLocation.locationKind().name()),
+                    dungeonLocation.ownerId(),
+                    new DungeonCellRef(
+                            dungeonLocation.tile().q(),
+                            dungeonLocation.tile().r(),
+                            dungeonLocation.tile().level()),
+                    DungeonTravelHeading.valueOf(dungeonLocation.heading().name()));
+        }
+
+        private static PartyDungeonTravelLocationKind toPartyDungeonLocationKind(DungeonTravelPositionFacts position) {
+            if (position == null || position.locationKind() == null) {
+                return PartyDungeonTravelLocationKind.TILE;
+            }
+            return position.locationKind() == src.domain.dungeon.map.value.DungeonTravelLocationKind.TRANSITION
+                    ? PartyDungeonTravelLocationKind.TRANSITION
+                    : PartyDungeonTravelLocationKind.TILE;
         }
     }
 }

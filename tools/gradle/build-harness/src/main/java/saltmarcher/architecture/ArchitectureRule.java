@@ -1,5 +1,5 @@
 package saltmarcher.architecture;
 
-interface ArchitectureRule {
+public interface ArchitectureRule {
     void check(ArchitectureContext context, ViolationSink violations);
 }

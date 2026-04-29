@@ -1,5 +1,15 @@
 package saltmarcher.architecture;
 
+import saltmarcher.architecture.data.DataEnforcementCoverageRules;
+import saltmarcher.architecture.data.DataPersistenceRules;
+import saltmarcher.architecture.domain.DomainEnforcementCoverageRules;
+import saltmarcher.architecture.domain.DomainFeatureRules;
+import saltmarcher.architecture.shell.ShellSurfaceRules;
+import saltmarcher.architecture.system.BuildHarnessPolicyRules;
+import saltmarcher.architecture.system.RepositoryTopologyRules;
+import saltmarcher.architecture.system.SourceLayoutRules;
+import saltmarcher.architecture.view.intenthandler.ViewIntentHandlerTopologyRules;
+import saltmarcher.architecture.view.viewinputevent.ViewInputEventTopologyRules;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
@@ -19,8 +29,10 @@ public final class ArchitectureChecker {
                 new BuildHarnessPolicyRules(),
                 new RepositoryTopologyRules(),
                 new SourceLayoutRules(),
-                new ViewFeatureRules(),
+                new ViewIntentHandlerTopologyRules(),
+                new ViewInputEventTopologyRules(),
                 new DomainFeatureRules(),
+                new DomainEnforcementCoverageRules(),
                 new ShellSurfaceRules(),
                 new DataPersistenceRules(),
                 new DataEnforcementCoverageRules());

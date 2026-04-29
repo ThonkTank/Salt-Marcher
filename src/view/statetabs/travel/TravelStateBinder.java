@@ -14,7 +14,7 @@ final class TravelStateBinder {
     }
 
     ShellBinding bind() {
-        TravelStatePresentationModel presentationModel = new TravelStatePresentationModel();
+        TravelStateContributionModel presentationModel = new TravelStateContributionModel();
         TravelStateView state = new TravelStateView();
         state.iconTextProperty().bind(presentationModel.iconTextProperty());
         state.locationTextProperty().bind(presentationModel.locationTextProperty());

@@ -5,33 +5,34 @@ import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
 import org.jspecify.annotations.Nullable;
-import org.jspecify.annotations.Nullable;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonApplicationService;
 import src.domain.dungeon.published.ApplyDungeonSurfaceEditCommand;
 import src.domain.dungeon.published.CreateDungeonMapCommand;
+import src.domain.dungeon.published.DungeonBoundaryKind;
+import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
-import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorOperation;
+import src.domain.dungeon.published.DungeonEditorSnapshot;
+import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapId;
+import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonSurfaceEdit;
 import src.domain.dungeon.published.DungeonSurfaceKind;
 import src.domain.dungeon.published.DungeonSurfacePayload;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.LoadDungeonSurfaceQuery;
 import src.domain.dungeon.published.PreviewDungeonSurfaceEditQuery;
 import src.domain.dungeon.published.RenameDungeonMapCommand;
 import src.domain.dungeon.published.SearchMapsQuery;
+import src.domain.dungeon.published.SearchMapsResult;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
-import src.view.slotcontent.main.dungeonmap.DungeonMapPresentationModel;
-import src.view.slotcontent.main.dungeonmap.DungeonMapView;
-import src.view.slotcontent.primitives.mapcanvas.CanvasPointerEvent;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 
 final class DungeonEditorBinder {
 
@@ -43,703 +44,396 @@ final class DungeonEditorBinder {
 
     ShellBinding bind() {
         DungeonApplicationService dungeon = runtimeContext.services().require(DungeonApplicationService.class);
-        DungeonEditorPresentationModel presentationModel = new DungeonEditorPresentationModel();
-        DungeonEditorIntentHandler intentHandler = new DungeonEditorIntentHandler(presentationModel);
+        DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel();
+        DungeonMapContentModel mapPresentationModel = new DungeonMapContentModel("Dungeon workspace", true);
+        DungeonEditorIntentHandler intentHandler = new DungeonEditorIntentHandler(contributionModel);
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
-        DungeonMapView main = new DungeonMapView();
+        DungeonEditorMainView main = new DungeonEditorMainView();
         DungeonEditorStateView state = new DungeonEditorStateView();
-        main.bind(presentationModel.mapPresentationModel());
-        main.onPrimaryPressed(event -> intentHandler.primaryPressed(
-                toPointerInput(event, presentationModel.mapPresentationModel().renderStateProperty().get())));
-        main.onPrimaryDragged(event -> intentHandler.primaryDragged(
-                toPointerInput(event, presentationModel.mapPresentationModel().renderStateProperty().get())));
-        main.onPrimaryReleased(event -> intentHandler.primaryReleased(
-                toPointerInput(event, presentationModel.mapPresentationModel().renderStateProperty().get())));
-        main.onPointerMoved(event -> intentHandler.pointerMoved(
-                toPointerInput(event, presentationModel.mapPresentationModel().renderStateProperty().get())));
-        main.onLevelScrolled(intentHandler::levelScrolled);
-        state.stateTextProperty().bind(presentationModel.stateProperty());
-        state.setOnSaveRoomNarration(edit -> intentHandler.saveRoomNarration(
-                edit.roomId(),
-                edit.visualDescription(),
-                edit.exits().stream().map(DungeonEditorBinder::toRoomExitNarrationInput).toList()));
-        controls.setOnMapSelected(intentHandler::selectMap);
-        controls.setOnCreateMap(intentHandler::createMap);
-        controls.setOnRenameMap(request -> intentHandler.renameMap(request.key(), request.mapName()));
-        controls.setOnDeleteMap(intentHandler::deleteMap);
-        controls.onViewModeChanged(mode -> intentHandler.selectViewMode(toViewModeKey(mode)));
-        controls.onToolChanged(intentHandler::selectTool);
-        controls.onPreviousLevel(intentHandler::previousLevel);
-        controls.onNextLevel(intentHandler::nextLevel);
-        controls.levelOverlayControls()
-                .setOnModeChanged(mode -> intentHandler.selectOverlayMode(toOverlayModeKey(mode)));
-        controls.levelOverlayControls().setOnRangeChanged(intentHandler::selectOverlayRange);
-        controls.levelOverlayControls().setOnOpacityChanged(intentHandler::selectOverlayOpacity);
-        controls.levelOverlayControls().setOnSelectedLevelsChanged(intentHandler::selectOverlayLevels);
-        intentHandler.onActionRequested(action -> handleActionIntent(action, presentationModel, dungeon));
-        presentationModel.inspectorProperty().addListener((ignored, before, after) -> syncStateView(presentationModel, state));
-        presentationModel.mapsProperty().addListener((ignored, before, after) -> syncMapControls(presentationModel, controls));
-        presentationModel.selectedMapKeyProperty().addListener((ignored, before, after) -> syncMapControls(presentationModel, controls));
-        presentationModel.busyProperty().addListener((ignored, before, after) -> syncMapControls(presentationModel, controls));
-        presentationModel.viewModeProperty().addListener((ignored, before, after) -> {
-            controls.showViewMode(toControlsViewMode(after));
-        });
-        presentationModel.selectedToolProperty().addListener((ignored, before, after) -> {
-            controls.showTool(after);
-        });
-        presentationModel.projectionLevelProperty().addListener((ignored, before, after) -> {
-            controls.showLevels(
-                    presentationModel.reachableLevelsProperty().get(),
-                    after.intValue(),
-                    presentationModel.busyProperty().get(),
-                    presentationModel.selectedMapKeyProperty().get() != null
-                            && !presentationModel.selectedMapKeyProperty().get().isBlank());
-        });
-        presentationModel.reachableLevelsProperty().addListener((ignored, before, after) ->
-                controls.showLevels(
-                        after,
-                        presentationModel.projectionLevelProperty().get(),
-                        presentationModel.busyProperty().get(),
-                        presentationModel.selectedMapKeyProperty().get() != null
-                                && !presentationModel.selectedMapKeyProperty().get().isBlank()));
-        presentationModel.overlaySettingsProperty().addListener((ignored, before, after) -> {
-            controls.showOverlaySettings(toControlsOverlaySettings(after), presentationModel.busyProperty().get());
-        });
-        presentationModel.statusProperty().addListener((ignored, before, after) -> syncMapControls(presentationModel, controls));
-        presentationModel.statusProperty().addListener((ignored, before, after) -> syncStateView(presentationModel, state));
-        presentationModel.busyProperty().addListener((ignored, before, after) -> syncStateView(presentationModel, state));
-        syncMapControls(presentationModel, controls);
-        syncStateView(presentationModel, state);
-        controls.showViewMode(toControlsViewMode(presentationModel.viewModeProperty().get()));
-        controls.showTool(presentationModel.selectedToolProperty().get());
+
+        main.bind(mapPresentationModel);
+        bindMapPresentation(contributionModel, mapPresentationModel);
+        bindViewEvents(intentHandler, controls, main, state);
+        bindIntentHandler(intentHandler, contributionModel, dungeon);
+        bindPublishedEditorState(contributionModel, controls, state);
+        syncMapControls(contributionModel, controls);
+        syncStateView(contributionModel, state);
+        controls.showViewMode(toControlsViewMode(contributionModel.viewModeProperty().get()));
+        controls.showTool(contributionModel.selectedToolProperty().get());
         controls.showLevels(
-                presentationModel.reachableLevelsProperty().get(),
-                presentationModel.projectionLevelProperty().get(),
-                presentationModel.busyProperty().get(),
+                contributionModel.reachableLevelsProperty().get(),
+                contributionModel.projectionLevelProperty().get(),
+                contributionModel.busyProperty().get(),
                 false);
         controls.showOverlaySettings(
-                toControlsOverlaySettings(presentationModel.overlaySettingsProperty().get()),
-                presentationModel.busyProperty().get());
-        intentHandler.refresh();
+                toControlsOverlaySettings(contributionModel.overlaySettingsProperty().get()),
+                contributionModel.busyProperty().get());
+        refreshEditorSnapshot(dungeon, contributionModel, null, null, "");
         return new Binding(controls, main, state);
     }
 
-    private static DungeonEditorPresentationModel.PointerInput toPointerInput(
-            CanvasPointerEvent event,
-            DungeonMapPresentationModel.RenderState renderState
+    private static void bindMapPresentation(
+            DungeonEditorContributionModel contributionModel,
+            DungeonMapContentModel mapPresentationModel
     ) {
-        int level = renderState == null ? 0 : renderState.projectionLevel();
-        if (event == null) {
-            return new DungeonEditorPresentationModel.PointerInput(
-                    0,
-                    0,
-                    level,
-                    false,
-                    false,
-                    emptyHitTarget(),
-                    DungeonEditorPresentationModel.VertexTarget.empty(),
-                    DungeonEditorPresentationModel.BoundaryTarget.empty());
-        }
-        int q = (int) Math.floor(event.canvasPoint().x());
-        int r = (int) Math.floor(event.canvasPoint().y());
-        return new DungeonEditorPresentationModel.PointerInput(
-                q,
-                r,
-                level,
-                event.buttons().primaryButtonDown(),
-                event.buttons().secondaryButtonDown(),
-                toHitTarget(event.hit(), renderState),
-                toVertexTarget(event.canvasPoint(), level),
-                toBoundaryTarget(event.canvasPoint(), renderState, level));
+        contributionModel.snapshotProperty().addListener((ignored, before, after) -> mapPresentationModel.showSnapshot(after));
+        contributionModel.previewSnapshotProperty().addListener((ignored, before, after) -> mapPresentationModel.showPreviewSnapshot(after));
+        contributionModel.selectionProperty().addListener((ignored, before, after) -> mapPresentationModel.showSelection(after));
+        contributionModel.pendingTopologyEditProperty().addListener((ignored, before, after) ->
+                mapPresentationModel.showPendingTopologyEdit(after));
+        contributionModel.viewModeProperty().addListener((ignored, before, after) -> mapPresentationModel.selectViewMode(after));
+        contributionModel.overlaySettingsProperty().addListener((ignored, before, after) -> mapPresentationModel.showOverlaySettings(after));
+        contributionModel.projectionLevelProperty().addListener((ignored, before, after) ->
+                mapPresentationModel.showProjectionLevel(after.intValue()));
+        contributionModel.selectedToolProperty().addListener((ignored, before, after) -> mapPresentationModel.showSelectedTool(after));
+        mapPresentationModel.renderStateProperty().addListener((ignored, before, after) ->
+                contributionModel.showInteractionRenderState(after));
+        mapPresentationModel.selectViewMode(contributionModel.viewModeProperty().get());
+        mapPresentationModel.showOverlaySettings(contributionModel.overlaySettingsProperty().get());
+        mapPresentationModel.showProjectionLevel(contributionModel.projectionLevelProperty().get());
+        mapPresentationModel.showSelectedTool(contributionModel.selectedToolProperty().get());
+        contributionModel.showInteractionRenderState(mapPresentationModel.renderStateProperty().get());
     }
 
-    private static DungeonEditorPresentationModel.HitTarget toHitTarget(
-            CanvasPointerEvent.@Nullable CanvasHit hit,
-            DungeonMapPresentationModel.RenderState renderState
+    private static void bindViewEvents(
+            DungeonEditorIntentHandler intentHandler,
+            DungeonEditorControlsView controls,
+            DungeonEditorMainView main,
+            DungeonEditorStateView state
     ) {
-        if (hit == null || hit.hitRef().isBlank() || renderState == null) {
-            return emptyHitTarget();
-        }
-        String hitRef = hit.hitRef();
-        if (hitRef.startsWith("cell:")) {
-            return toCellHit(renderState, parseIndex(hitRef));
-        }
-        if (hitRef.startsWith("edge:")) {
-            return toEdgeHit(renderState, parseIndex(hitRef));
-        }
-        if (hitRef.startsWith("label:")) {
-            return toLabelHit(renderState, parseIndex(hitRef));
-        }
-        if (hitRef.startsWith("marker:")) {
-            return toMarkerHit(renderState, parseIndex(hitRef));
-        }
-        if (hitRef.startsWith("graph-node:")) {
-            return toGraphNodeHit(renderState, parseIndex(hitRef));
-        }
-        return emptyHitTarget();
+        main.onViewInputEvent(intentHandler::consume);
+        controls.onViewInputEvent(intentHandler::consume);
+        state.onViewInputEvent(intentHandler::consume);
     }
 
-    private static DungeonEditorPresentationModel.HitTarget toCellHit(
-            DungeonMapPresentationModel.RenderState renderState,
-            int index
-    ) {
-        if (index < 0 || index >= renderState.cells().size()) {
-            return emptyHitTarget();
-        }
-        DungeonMapPresentationModel.RenderState.RenderCell cell = renderState.cells().get(index);
-        DungeonEditorPresentationModel.HitKind kind = switch (cell.kind()) {
-            case ROOM -> DungeonEditorPresentationModel.HitKind.ROOM;
-            case CORRIDOR -> DungeonEditorPresentationModel.HitKind.CORRIDOR;
-            case STAIR -> DungeonEditorPresentationModel.HitKind.STAIR;
-            case TRANSITION -> DungeonEditorPresentationModel.HitKind.TRANSITION;
-        };
-        return new DungeonEditorPresentationModel.HitTarget(
-                kind,
-                cell.ownerId(),
-                cell.clusterId(),
-                cell.topologyRef().kind(),
-                cell.topologyRef().id(),
-                cell.label(),
-                emptyHandleRef(cell.ownerId(), cell.clusterId()));
-    }
-
-    private static DungeonEditorPresentationModel.HitTarget toEdgeHit(
-            DungeonMapPresentationModel.RenderState renderState,
-            int index
-    ) {
-        if (index < 0 || index >= renderState.edges().size()) {
-            return emptyHitTarget();
-        }
-        DungeonMapPresentationModel.RenderState.RenderEdge edge = renderState.edges().get(index);
-        return new DungeonEditorPresentationModel.HitTarget(
-                DungeonEditorPresentationModel.HitKind.BOUNDARY,
-                edge.ownerId(),
-                0L,
-                edge.topologyRef().kind(),
-                edge.topologyRef().id(),
-                edge.label(),
-                emptyHandleRef(edge.ownerId(), 0L));
-    }
-
-    private static DungeonEditorPresentationModel.HitTarget toLabelHit(
-            DungeonMapPresentationModel.RenderState renderState,
-            int index
-    ) {
-        if (index < 0 || index >= renderState.labels().size()) {
-            return emptyHitTarget();
-        }
-        DungeonMapPresentationModel.RenderState.RenderLabel label = renderState.labels().get(index);
-        return new DungeonEditorPresentationModel.HitTarget(
-                DungeonEditorPresentationModel.HitKind.LABEL,
-                label.ownerId(),
-                label.clusterId(),
-                label.topologyRef().kind(),
-                label.topologyRef().id(),
-                label.label(),
-                emptyHandleRef(label.ownerId(), label.clusterId()));
-    }
-
-    private static DungeonEditorPresentationModel.HitTarget toMarkerHit(
-            DungeonMapPresentationModel.RenderState renderState,
-            int index
-    ) {
-        if (index < 0 || index >= renderState.markers().size()) {
-            return emptyHitTarget();
-        }
-        DungeonMapPresentationModel.RenderState.RenderMarker marker = renderState.markers().get(index);
-        return new DungeonEditorPresentationModel.HitTarget(
-                DungeonEditorPresentationModel.HitKind.HANDLE,
-                marker.handleOwnerId(),
-                marker.handleClusterId(),
-                marker.handleTopologyRefKind(),
-                marker.handleTopologyRefId(),
-                marker.label(),
-                new DungeonEditorPresentationModel.HandleTarget(
-                        marker.handleKind(),
-                        marker.handleTopologyRefKind(),
-                        marker.handleTopologyRefId(),
-                        marker.handleOwnerId(),
-                        marker.handleClusterId(),
-                        marker.handleRoomId(),
-                        marker.handleOwnerId(),
-                        marker.handleIndex(),
-                        new DungeonEditorPresentationModel.CellTarget(
-                                marker.handleQ(),
-                                marker.handleR(),
-                                marker.handleLevel()),
-                        marker.label()));
-    }
-
-    private static DungeonEditorPresentationModel.HitTarget toGraphNodeHit(
-            DungeonMapPresentationModel.RenderState renderState,
-            int index
-    ) {
-        if (index < 0 || index >= renderState.graphNodes().size()) {
-            return emptyHitTarget();
-        }
-        DungeonMapPresentationModel.RenderState.GraphNode node = renderState.graphNodes().get(index);
-        return new DungeonEditorPresentationModel.HitTarget(
-                DungeonEditorPresentationModel.HitKind.LABEL,
-                node.id(),
-                node.clusterId(),
-                "ROOM",
-                node.id(),
-                node.label(),
-                emptyHandleRef(node.id(), node.clusterId()));
-    }
-
-    private static DungeonEditorPresentationModel.VertexTarget toVertexTarget(
-            CanvasPointerEvent.CanvasPoint point,
-            int level
-    ) {
-        int vertexQ = (int) Math.round(point.x());
-        int vertexR = (int) Math.round(point.y());
-        double distance = Math.hypot(point.x() - vertexQ, point.y() - vertexR);
-        return distance <= 0.22
-                ? new DungeonEditorPresentationModel.VertexTarget(true, vertexQ, vertexR, level)
-                : DungeonEditorPresentationModel.VertexTarget.empty();
-    }
-
-    private static DungeonEditorPresentationModel.BoundaryTarget toBoundaryTarget(
-            CanvasPointerEvent.CanvasPoint point,
-            DungeonMapPresentationModel.RenderState renderState,
-            int level
-    ) {
-        if (renderState == null) {
-            return DungeonEditorPresentationModel.BoundaryTarget.empty();
-        }
-        java.util.Map<CellKey, DungeonMapPresentationModel.RenderState.RenderCell> roomCellsByPosition =
-                roomCellsByPosition(renderState, level);
-        DungeonEditorPresentationModel.BoundaryTarget bestTarget =
-                DungeonEditorPresentationModel.BoundaryTarget.empty();
-        double bestDistance = 0.22;
-        for (int index = renderState.edges().size() - 1; index >= 0; index--) {
-            DungeonMapPresentationModel.RenderState.RenderEdge edge = renderState.edges().get(index);
-            if (edge.preview() || edge.z() != level) {
-                continue;
-            }
-            BoundaryCells touchingRooms = boundaryCells(edge, roomCellsByPosition);
-            if (touchingRooms == null) {
-                continue;
-            }
-            double distance = distanceToSegment(
-                    point.x(),
-                    point.y(),
-                    edge.startQ(),
-                    edge.startR(),
-                    edge.endQ(),
-                    edge.endR());
-            if (distance > bestDistance) {
-                continue;
-            }
-            bestDistance = distance;
-            bestTarget = new DungeonEditorPresentationModel.BoundaryTarget(
-                    true,
-                    edge.kind().name(),
-                    touchingRooms.ownerId(),
-                    touchingRooms.clusterId(),
-                    edge.topologyRef().kind(),
-                    edge.topologyRef().id(),
-                    touchingRooms.start(),
-                    touchingRooms.end());
-        }
-        return bestTarget;
-    }
-
-    private static java.util.Map<CellKey, DungeonMapPresentationModel.RenderState.RenderCell> roomCellsByPosition(
-            DungeonMapPresentationModel.RenderState renderState,
-            int level
-    ) {
-        java.util.Map<CellKey, DungeonMapPresentationModel.RenderState.RenderCell> result = new java.util.LinkedHashMap<>();
-        for (DungeonMapPresentationModel.RenderState.RenderCell cell : renderState.cells()) {
-            if (cell.preview()
-                    || cell.z() != level
-                    || cell.kind() != DungeonMapPresentationModel.RenderState.CellKind.ROOM
-                    || cell.clusterId() <= 0L) {
-                continue;
-            }
-            result.put(new CellKey(cell.q(), cell.r()), cell);
-        }
-        return result;
-    }
-
-    private static @Nullable BoundaryCells boundaryCells(
-            DungeonMapPresentationModel.RenderState.RenderEdge edge,
-            java.util.Map<CellKey, DungeonMapPresentationModel.RenderState.RenderCell> roomCellsByPosition
-    ) {
-        if (edge == null || roomCellsByPosition.isEmpty()) {
-            return null;
-        }
-        int startQ = (int) Math.round(edge.startQ());
-        int startR = (int) Math.round(edge.startR());
-        int endQ = (int) Math.round(edge.endQ());
-        int endR = (int) Math.round(edge.endR());
-        java.util.List<DungeonMapPresentationModel.RenderState.RenderCell> touchingRooms = new java.util.ArrayList<>();
-        if (startQ == endQ) {
-            addIfPresent(touchingRooms, roomCellsByPosition.get(new CellKey(startQ - 1, Math.min(startR, endR))));
-            addIfPresent(touchingRooms, roomCellsByPosition.get(new CellKey(startQ, Math.min(startR, endR))));
-        } else if (startR == endR) {
-            addIfPresent(touchingRooms, roomCellsByPosition.get(new CellKey(Math.min(startQ, endQ), startR - 1)));
-            addIfPresent(touchingRooms, roomCellsByPosition.get(new CellKey(Math.min(startQ, endQ), startR)));
-        }
-        if (touchingRooms.isEmpty()) {
-            return null;
-        }
-        DungeonMapPresentationModel.RenderState.RenderCell clusterCell = touchingRooms.stream()
-                .filter(cell -> cell.clusterId() > 0L)
-                .findFirst()
-                .orElse(null);
-        if (clusterCell == null) {
-            return null;
-        }
-        return new BoundaryCells(
-                clusterCell.ownerId(),
-                clusterCell.clusterId(),
-                new DungeonEditorPresentationModel.CellTarget(startQ, startR, edge.z()),
-                new DungeonEditorPresentationModel.CellTarget(endQ, endR, edge.z()));
-    }
-
-    private static void addIfPresent(
-            java.util.List<DungeonMapPresentationModel.RenderState.RenderCell> target,
-            DungeonMapPresentationModel.RenderState.@Nullable RenderCell cell
-    ) {
-        if (cell != null) {
-            target.add(cell);
-        }
-    }
-
-    private static int parseIndex(String hitRef) {
-        int separator = hitRef.indexOf(':');
-        if (separator < 0 || separator + 1 >= hitRef.length()) {
-            return -1;
-        }
-        try {
-            return Integer.parseInt(hitRef.substring(separator + 1));
-        } catch (NumberFormatException ignored) {
-            return -1;
-        }
-    }
-
-    private static DungeonEditorPresentationModel.HitTarget emptyHitTarget() {
-        return new DungeonEditorPresentationModel.HitTarget(
-                DungeonEditorPresentationModel.HitKind.EMPTY,
-                0L,
-                0L,
-                "EMPTY",
-                0L,
-                "",
-                DungeonEditorPresentationModel.HandleTarget.empty());
-    }
-
-    private static DungeonEditorPresentationModel.HandleTarget emptyHandleRef(long ownerId, long clusterId) {
-        return DungeonEditorPresentationModel.HandleTarget.clusterLabel("EMPTY", 0L, ownerId, clusterId);
-    }
-
-    private static double distanceToSegment(
-            double pointX,
-            double pointY,
-            double startX,
-            double startY,
-            double endX,
-            double endY
-    ) {
-        double deltaX = endX - startX;
-        double deltaY = endY - startY;
-        double lengthSquared = deltaX * deltaX + deltaY * deltaY;
-        if (lengthSquared <= 0.0) {
-            return Math.hypot(pointX - startX, pointY - startY);
-        }
-        double factor = ((pointX - startX) * deltaX + (pointY - startY) * deltaY) / lengthSquared;
-        double clampedFactor = Math.max(0.0, Math.min(1.0, factor));
-        double nearestX = startX + clampedFactor * deltaX;
-        double nearestY = startY + clampedFactor * deltaY;
-        return Math.hypot(pointX - nearestX, pointY - nearestY);
-    }
-
-    private record CellKey(int q, int r) {
-    }
-
-    private record BoundaryCells(
-            long ownerId,
-            long clusterId,
-            DungeonEditorPresentationModel.CellTarget start,
-            DungeonEditorPresentationModel.CellTarget end
-    ) {
-    }
-
-    private static void handleActionIntent(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
+    private static void bindIntentHandler(
+            DungeonEditorIntentHandler intentHandler,
+            DungeonEditorContributionModel contributionModel,
             DungeonApplicationService dungeon
     ) {
-        if (request == null) {
-            return;
-        }
-        try {
-            switch (request.kind()) {
-                case REFRESH -> handleRefreshRequest(presentationModel, dungeon);
-                case LOAD_SELECTED_MAP -> loadSelectedMap(presentationModel, dungeon, request.mapId());
-                case CREATE_MAP -> handleCreateMapRequest(request, presentationModel, dungeon);
-                case RENAME_MAP -> handleRenameMapRequest(request, presentationModel, dungeon);
-                case DELETE_MAP -> handleDeleteMapRequest(request, presentationModel, dungeon);
-                case SAVE_ROOM_NARRATION -> handleSaveRoomNarrationRequest(request, presentationModel, dungeon);
-                case MOVE_SELECTED_HANDLE -> handleMoveSelectedHandleRequest(request, presentationModel, dungeon);
-                case PREVIEW_SURFACE_EDIT -> handlePreviewSurfaceEditRequest(request, presentationModel, dungeon);
-                case APPLY_BOUNDARY_STRETCH -> handleBoundaryStretchRequest(request, presentationModel, dungeon);
-                case APPLY_OPERATION -> handleApplyOperationRequest(request, presentationModel, dungeon);
-                case REFRESH_INSPECTOR -> handleRefreshInspectorRequest(request, presentationModel, dungeon);
+        intentHandler.onPublishedEventRequested(event -> runAction(contributionModel, () -> {
+            if (event == null) {
+                return;
             }
+            switch (event.kind()) {
+                case LOAD_EDITOR -> refreshEditorSnapshot(
+                        dungeon,
+                        contributionModel,
+                        toMapId(event.mapId()),
+                        null,
+                        "");
+                case CREATE_MAP -> {
+                    DungeonMapId createdMapId = dungeon.createMap(new CreateDungeonMapCommand(event.mapName())).mapId();
+                    refreshEditorSnapshot(dungeon, contributionModel, createdMapId, null, "Dungeon-Map erstellt.");
+                }
+                case RENAME_MAP -> {
+                    DungeonMapId renamedMapId = dungeon.renameMap(new RenameDungeonMapCommand(
+                            requireMapId(event.mapId()),
+                            event.mapName())).mapId();
+                    refreshEditorSnapshot(dungeon, contributionModel, renamedMapId, null, "Dungeon-Map umbenannt.");
+                }
+                case DELETE_MAP -> {
+                    DungeonMapId deletedMapId = dungeon.deleteMap(new src.domain.dungeon.published.DeleteDungeonMapCommand(
+                            requireMapId(event.mapId()))).mapId();
+                    DungeonMapId currentMapId = contributionModel.currentSelectedMapId();
+                    DungeonMapId nextMapId = deletedMapId != null && deletedMapId.equals(currentMapId) ? null : currentMapId;
+                    refreshEditorSnapshot(dungeon, contributionModel, nextMapId, null, "Dungeon-Map geloescht.");
+                }
+                case PREVIEW_SURFACE_EDIT -> refreshEditorSnapshot(
+                        dungeon,
+                        contributionModel,
+                        toMapId(event.mapId()),
+                        dungeon.previewSurfaceEdit(toPreviewSurfaceEditQuery(event)),
+                        "");
+                case APPLY_SURFACE_EDIT -> {
+                    ApplyDungeonSurfaceEditCommand command = toApplySurfaceEditCommand(event);
+                    dungeon.applySurfaceEdit(command);
+                    refreshEditorSnapshot(
+                            dungeon,
+                            contributionModel,
+                            command.mapId(),
+                            null,
+                            statusForEditorEdit(command.edit()));
+                }
+                case LOAD_SURFACE -> refreshEditorSnapshot(
+                        dungeon,
+                        contributionModel,
+                        toMapId(event.mapId()),
+                        dungeon.loadSurface(toLoadSurfaceQuery(event)),
+                        contributionModel.statusProperty().get());
+            }
+        }));
+    }
+
+    private static void bindPublishedEditorState(
+            DungeonEditorContributionModel contributionModel,
+            DungeonEditorControlsView controls,
+            DungeonEditorStateView state
+    ) {
+        state.stateTextProperty().bind(contributionModel.stateProperty());
+        contributionModel.inspectorProperty().addListener((ignored, before, after) -> syncStateView(contributionModel, state));
+        contributionModel.mapsProperty().addListener((ignored, before, after) -> syncMapControls(contributionModel, controls));
+        contributionModel.selectedMapKeyProperty().addListener((ignored, before, after) -> syncMapControls(contributionModel, controls));
+        contributionModel.busyProperty().addListener((ignored, before, after) -> syncMapControls(contributionModel, controls));
+        contributionModel.viewModeProperty().addListener((ignored, before, after) ->
+                controls.showViewMode(toControlsViewMode(after)));
+        contributionModel.selectedToolProperty().addListener((ignored, before, after) -> controls.showTool(after));
+        contributionModel.projectionLevelProperty().addListener((ignored, before, after) ->
+                controls.showLevels(
+                        contributionModel.reachableLevelsProperty().get(),
+                        after.intValue(),
+                        contributionModel.busyProperty().get(),
+                        contributionModel.selectedMapKeyProperty().get() != null
+                                && !contributionModel.selectedMapKeyProperty().get().isBlank()));
+        contributionModel.reachableLevelsProperty().addListener((ignored, before, after) ->
+                controls.showLevels(
+                        after,
+                        contributionModel.projectionLevelProperty().get(),
+                        contributionModel.busyProperty().get(),
+                        contributionModel.selectedMapKeyProperty().get() != null
+                                && !contributionModel.selectedMapKeyProperty().get().isBlank()));
+        contributionModel.overlaySettingsProperty().addListener((ignored, before, after) ->
+                controls.showOverlaySettings(toControlsOverlaySettings(after), contributionModel.busyProperty().get()));
+        contributionModel.statusProperty().addListener((ignored, before, after) -> syncMapControls(contributionModel, controls));
+        contributionModel.statusProperty().addListener((ignored, before, after) -> syncStateView(contributionModel, state));
+        contributionModel.busyProperty().addListener((ignored, before, after) -> syncStateView(contributionModel, state));
+    }
+
+    private static void runAction(
+            DungeonEditorContributionModel contributionModel,
+            Runnable action
+    ) {
+        try {
+            action.run();
         } catch (RuntimeException exception) {
-            presentationModel.applyActionFailure(DungeonEditorPresentationModel.rootCauseMessage(exception));
-            presentationModel.finishBusy();
+            contributionModel.applyActionFailure(DungeonEditorContributionModel.rootCauseMessage(exception));
+            contributionModel.finishBusy();
         }
     }
 
-    private static void handleRefreshRequest(
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
+    private static void refreshEditorSnapshot(
+            DungeonApplicationService dungeon,
+            DungeonEditorContributionModel contributionModel,
+            @Nullable DungeonMapId preferredMapId,
+            @Nullable DungeonSurfacePayload surfaceOverride,
+            String statusText
     ) {
-        presentationModel.applyMapSelections(loadMapSelections(dungeon));
-        loadSelectedMap(presentationModel, dungeon, presentationModel.selectedMapId());
-        presentationModel.finishBusy();
+        SearchMapsResult mapsResult = dungeon.searchMaps(new SearchMapsQuery(""));
+        List<DungeonMapSummary> maps = mapsResult == null ? List.of() : mapsResult.maps();
+        DungeonMapId requestedMapId = preferredMapId == null ? contributionModel.currentSelectedMapId() : preferredMapId;
+        DungeonMapId selectedMapId = resolveSelectedMapId(requestedMapId, maps);
+        DungeonSurfacePayload surface = surfaceOverride == null && selectedMapId != null
+                ? dungeon.loadSurface(new LoadDungeonSurfaceQuery(selectedMapId, DungeonSurfaceKind.EDITOR))
+                : surfaceOverride;
+        contributionModel.applyEditorSnapshot(new DungeonEditorSnapshot(maps, selectedMapId, surface, statusText));
     }
 
-    private static void handleCreateMapRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonMapId createdMapId = dungeon.createMap(new CreateDungeonMapCommand(request.mapName())).mapId();
-        presentationModel.selectMapId(createdMapId);
-        presentationModel.applyMapSelections(loadMapSelections(dungeon));
-        loadSelectedMap(presentationModel, dungeon, presentationModel.selectedMapId());
-        presentationModel.finishBusy();
+    private static PreviewDungeonSurfaceEditQuery toPreviewSurfaceEditQuery(DungeonEditorPublishedEvent event) {
+        return new PreviewDungeonSurfaceEditQuery(
+                toMapId(event.mapId()),
+                toSurfaceEdit(event.mutation()));
     }
 
-    private static void handleRenameMapRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonMapId renamedMapId = dungeon.renameMap(new RenameDungeonMapCommand(
-                Objects.requireNonNull(request.mapId(), "request.mapId"),
-                request.mapName())).mapId();
-        presentationModel.selectMapId(renamedMapId);
-        presentationModel.applyMapSelections(loadMapSelections(dungeon));
-        loadSelectedMap(presentationModel, dungeon, presentationModel.selectedMapId());
-        presentationModel.finishBusy();
+    private static ApplyDungeonSurfaceEditCommand toApplySurfaceEditCommand(DungeonEditorPublishedEvent event) {
+        return new ApplyDungeonSurfaceEditCommand(
+                toMapId(event.mapId()),
+                toSurfaceEdit(event.mutation()));
     }
 
-    private static void handleDeleteMapRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonMapId deletedMapId = Objects.requireNonNull(request.mapId(), "request.mapId");
-        dungeon.deleteMap(new DeleteDungeonMapCommand(deletedMapId));
-        presentationModel.clearSelectionForDeletedMap(deletedMapId);
-        presentationModel.applyMapSelections(loadMapSelections(dungeon));
-        loadSelectedMap(presentationModel, dungeon, presentationModel.selectedMapId());
-        presentationModel.finishBusy();
+    private static LoadDungeonSurfaceQuery toLoadSurfaceQuery(DungeonEditorPublishedEvent event) {
+        DungeonEditorPublishedEvent.InspectorSelection selection = event.inspectorSelection();
+        return new LoadDungeonSurfaceQuery(
+                toMapId(event.mapId()),
+                selection == null
+                        ? DungeonSurfaceKind.EDITOR
+                        : DungeonSurfaceKind.valueOf(selection.surfaceKind()),
+                selection == null
+                        ? DungeonTopologyElementRef.empty()
+                        : new DungeonTopologyElementRef(
+                        DungeonTopologyElementKind.valueOf(selection.topologyRefKind()),
+                        selection.topologyRefId()),
+                selection == null ? 0L : selection.clusterId(),
+                selection != null && selection.clusterSelection(),
+                null);
     }
 
-    private static void handleSaveRoomNarrationRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonSurfacePayload result = dungeon.applySurfaceEdit(new ApplyDungeonSurfaceEditCommand(
-                Objects.requireNonNull(request.mapId(), "request.mapId"),
-                toSurfaceEdit(Objects.requireNonNull(request.surfaceMutation(), "request.surfaceMutation"))));
-        presentationModel.applyRoomNarrationSaved(result);
-        refreshInspectorIfAvailable(presentationModel, dungeon);
-        presentationModel.finishBusy();
+    private static @Nullable DungeonMapId toMapId(long mapId) {
+        return mapId <= 0L ? null : new DungeonMapId(mapId);
     }
 
-    private static void handleMoveSelectedHandleRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonEditorPresentationModel.DragSession dragSession =
-                Objects.requireNonNull(request.dragSession(), "request.dragSession");
-        DungeonSurfacePayload result = dungeon.applySurfaceEdit(new ApplyDungeonSurfaceEditCommand(
-                Objects.requireNonNull(request.mapId(), "request.mapId"),
-                toSurfaceEdit(Objects.requireNonNull(request.surfaceMutation(), "request.surfaceMutation"))));
-        presentationModel.applyMoveSelectedHandleResult(result, dragSession);
-        refreshInspectorIfAvailable(presentationModel, dungeon);
-        presentationModel.finishBusy();
+    private static DungeonMapId requireMapId(long mapId) {
+        DungeonMapId resolvedMapId = toMapId(mapId);
+        if (resolvedMapId == null) {
+            throw new IllegalArgumentException("Dungeon-Map-ID fehlt.");
+        }
+        return resolvedMapId;
     }
 
-    private static void handlePreviewSurfaceEditRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonSurfacePayload previewSurface = dungeon.previewSurfaceEdit(new PreviewDungeonSurfaceEditQuery(
-                Objects.requireNonNull(request.mapId(), "request.mapId"),
-                toSurfaceEdit(Objects.requireNonNull(request.surfaceMutation(), "request.surfaceMutation"))));
-        presentationModel.applyPreviewSurface(previewSurface);
-    }
-
-    private static void handleBoundaryStretchRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonEditorPresentationModel.BoundaryStretchSession boundaryStretchSession =
-                Objects.requireNonNull(request.boundaryStretchSession(), "request.boundaryStretchSession");
-        DungeonSurfacePayload result = dungeon.applySurfaceEdit(new ApplyDungeonSurfaceEditCommand(
-                Objects.requireNonNull(request.mapId(), "request.mapId"),
-                toSurfaceEdit(Objects.requireNonNull(request.surfaceMutation(), "request.surfaceMutation"))));
-        presentationModel.applyBoundaryStretchResult(result, boundaryStretchSession);
-        refreshInspectorIfAvailable(presentationModel, dungeon);
-        presentationModel.finishBusy();
-    }
-
-    private static void handleApplyOperationRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonSurfacePayload result = dungeon.applySurfaceEdit(new ApplyDungeonSurfaceEditCommand(
-                Objects.requireNonNull(request.mapId(), "request.mapId"),
-                toSurfaceEdit(Objects.requireNonNull(request.surfaceMutation(), "request.surfaceMutation"))));
-        presentationModel.applyCommittedOperationResult(result, request.statusText());
-        presentationModel.finishBusy();
-    }
-
-    private static void handleRefreshInspectorRequest(
-            DungeonEditorPresentationModel.ActionIntent request,
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
-    ) {
-        DungeonSurfacePayload inspectorSurface = dungeon.loadSurface(new LoadDungeonSurfaceQuery(
-                Objects.requireNonNull(request.mapId(), "request.mapId"),
-                request.surfaceKind() == null ? DungeonSurfaceKind.EDITOR : request.surfaceKind(),
-                Objects.requireNonNull(request.topologyRef(), "request.topologyRef"),
-                request.clusterId(),
-                request.clusterSelection(),
-                null));
-        presentationModel.applyInspectorSurface(
-                inspectorSurface,
-                request.surfaceKind() == null ? DungeonSurfaceKind.EDITOR : request.surfaceKind());
-    }
-
-    private static DungeonSurfaceEdit toSurfaceEdit(DungeonEditorPresentationModel.SurfaceMutation mutation) {
+    private static @Nullable DungeonSurfaceEdit toSurfaceEdit(DungeonEditorPublishedEvent.Mutation mutation) {
+        if (mutation == null || mutation instanceof DungeonEditorPublishedEvent.NoneMutation) {
+            return null;
+        }
         return new DungeonSurfaceEdit(toOperation(mutation));
     }
 
-    private static DungeonEditorOperation toOperation(DungeonEditorPresentationModel.SurfaceMutation mutation) {
-        Objects.requireNonNull(mutation, "mutation");
+    private static String statusForEditorEdit(@Nullable DungeonSurfaceEdit edit) {
+        DungeonEditorOperation operation = edit == null ? null : edit.operation();
+        if (operation instanceof DungeonEditorOperation.SaveRoomNarration) {
+            return "Raumbeschreibung gespeichert.";
+        }
+        if (operation instanceof DungeonEditorOperation.MoveEditorHandle moveHandle) {
+            return "Topologieelement verschoben: dq=" + moveHandle.deltaQ()
+                    + ", dr=" + moveHandle.deltaR()
+                    + ", dz=" + moveHandle.deltaLevel();
+        }
+        if (operation instanceof DungeonEditorOperation.MoveBoundaryStretch stretch) {
+            return "Wandstrecke verschoben: dq=" + stretch.deltaQ()
+                    + ", dr=" + stretch.deltaR()
+                    + ", dz=" + stretch.deltaLevel();
+        }
+        if (operation instanceof DungeonEditorOperation.PaintRoomRectangle) {
+            return "Raum hinzugefuegt.";
+        }
+        if (operation instanceof DungeonEditorOperation.DeleteRoomRectangle) {
+            return "Raum entfernt.";
+        }
+        if (operation instanceof DungeonEditorOperation.EditClusterBoundaries boundaries) {
+            return boundaries.deleteBoundary() ? "Kanten geloescht." : "Kanten gesetzt.";
+        }
+        return "";
+    }
+
+    private static @Nullable DungeonMapId resolveSelectedMapId(
+            @Nullable DungeonMapId requestedMapId,
+            List<DungeonMapSummary> maps
+    ) {
+        if (requestedMapId != null && maps.stream().anyMatch(summary -> requestedMapId.equals(summary.mapId()))) {
+            return requestedMapId;
+        }
+        return maps.isEmpty() ? null : maps.getFirst().mapId();
+    }
+
+    private static DungeonEditorOperation toOperation(DungeonEditorPublishedEvent.Mutation mutation) {
         return switch (mutation) {
-            case DungeonEditorPresentationModel.RoomRectangleMutation room ->
+            case DungeonEditorPublishedEvent.RoomRectangleMutation room ->
                     room.deleteMode()
-                            ? new DungeonEditorOperation.DeleteRoomRectangle(room.start(), room.end())
-                            : new DungeonEditorOperation.PaintRoomRectangle(room.start(), room.end());
-            case DungeonEditorPresentationModel.ClusterBoundariesMutation boundaries ->
+                            ? new DungeonEditorOperation.DeleteRoomRectangle(
+                            toCellRef(room.start()),
+                            toCellRef(room.end()))
+                            : new DungeonEditorOperation.PaintRoomRectangle(
+                            toCellRef(room.start()),
+                            toCellRef(room.end()));
+            case DungeonEditorPublishedEvent.ClusterBoundariesMutation boundaries ->
                     new DungeonEditorOperation.EditClusterBoundaries(
                             boundaries.clusterId(),
-                            boundaries.edges(),
-                            boundaries.boundaryKind(),
+                            boundaries.edges().stream().map(DungeonEditorBinder::toEdgeRef).toList(),
+                            DungeonBoundaryKind.valueOf(boundaries.boundaryKind()),
                             boundaries.deleteMode());
-            case DungeonEditorPresentationModel.SaveRoomNarrationMutation narration ->
+            case DungeonEditorPublishedEvent.SaveRoomNarrationMutation narration ->
                     new DungeonEditorOperation.SaveRoomNarration(
                             narration.roomId(),
                             narration.visualDescription(),
                             narration.exits().stream().map(DungeonEditorBinder::toPublishedExit).toList());
-            case DungeonEditorPresentationModel.MoveHandleMutation moveHandle ->
+            case DungeonEditorPublishedEvent.MoveHandleMutation moveHandle ->
                     new DungeonEditorOperation.MoveEditorHandle(
-                            moveHandle.handleRef(),
+                            toHandleRef(moveHandle.handleRef()),
                             moveHandle.deltaQ(),
                             moveHandle.deltaR(),
                             moveHandle.deltaLevel());
-            case DungeonEditorPresentationModel.MoveBoundaryStretchMutation stretch ->
+            case DungeonEditorPublishedEvent.MoveBoundaryStretchMutation stretch ->
                     new DungeonEditorOperation.MoveBoundaryStretch(
                             stretch.clusterId(),
-                            stretch.sourceEdges(),
+                            stretch.sourceEdges().stream().map(DungeonEditorBinder::toEdgeRef).toList(),
                             stretch.deltaQ(),
                             stretch.deltaR(),
                             stretch.deltaLevel());
+            case DungeonEditorPublishedEvent.NoneMutation ignored ->
+                    throw new IllegalArgumentException("Cannot translate empty dungeon editor mutation.");
         };
     }
 
-    private static List<DungeonEditorPresentationModel.MapSelection> loadMapSelections(
-            DungeonApplicationService dungeon
-    ) {
-        return dungeon.searchMaps(new SearchMapsQuery("")).maps().stream()
-                .map(DungeonEditorBinder::toMapSelection)
-                .toList();
+    private static DungeonCellRef toCellRef(DungeonEditorPublishedEvent.CellRef cell) {
+        DungeonEditorPublishedEvent.CellRef safeCell = cell == null
+                ? DungeonEditorPublishedEvent.CellRef.empty()
+                : cell;
+        return new DungeonCellRef(safeCell.q(), safeCell.r(), safeCell.level());
     }
 
-    private static void loadSelectedMap(
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon,
-            @Nullable DungeonMapId mapId
-    ) {
-        if (mapId == null) {
-            presentationModel.applyNoSelectedMapAvailable();
-            return;
-        }
-        try {
-            presentationModel.applyLoadedSelectedMap(dungeon.loadSurface(new LoadDungeonSurfaceQuery(
-                    mapId,
-                    DungeonSurfaceKind.EDITOR)));
-            refreshInspectorIfAvailable(presentationModel, dungeon);
-        } catch (RuntimeException exception) {
-            presentationModel.applySelectedMapLoadFailure(DungeonEditorPresentationModel.rootCauseMessage(exception));
-        }
+    private static DungeonEdgeRef toEdgeRef(DungeonEditorPublishedEvent.EdgeRef edge) {
+        DungeonEditorPublishedEvent.EdgeRef safeEdge = edge == null
+                ? new DungeonEditorPublishedEvent.EdgeRef(
+                DungeonEditorPublishedEvent.CellRef.empty(),
+                DungeonEditorPublishedEvent.CellRef.empty())
+                : edge;
+        return new DungeonEdgeRef(toCellRef(safeEdge.from()), toCellRef(safeEdge.to()));
     }
 
-    private static void refreshInspectorIfAvailable(
-            DungeonEditorPresentationModel presentationModel,
-            DungeonApplicationService dungeon
+    private static DungeonEditorHandleRef toHandleRef(DungeonEditorPublishedEvent.HandleRef handleRef) {
+        DungeonEditorPublishedEvent.HandleRef safeHandle = handleRef == null
+                ? DungeonEditorPublishedEvent.HandleRef.empty()
+                : handleRef;
+        return new DungeonEditorHandleRef(
+                DungeonEditorHandleKind.valueOf(safeHandle.kind()),
+                new DungeonTopologyElementRef(
+                        DungeonTopologyElementKind.valueOf(safeHandle.topologyRefKind()),
+                        safeHandle.topologyRefId()),
+                safeHandle.ownerId(),
+                safeHandle.clusterId(),
+                safeHandle.corridorId(),
+                safeHandle.roomId(),
+                safeHandle.index(),
+                toCellRef(safeHandle.cell()),
+                safeHandle.direction());
+    }
+
+    private static DungeonInspectorSnapshot.RoomExitNarration toPublishedExit(
+            DungeonEditorPublishedEvent.RoomExitNarration exit
     ) {
-        DungeonEditorPresentationModel.InspectorRequest inspectorRequest = presentationModel.currentInspectorRequest();
-        if (inspectorRequest == null) {
-            return;
-        }
-        DungeonSurfacePayload inspectorSurface = dungeon.loadSurface(new LoadDungeonSurfaceQuery(
-                inspectorRequest.mapId(),
-                inspectorRequest.surfaceKind(),
-                inspectorRequest.topologyRef(),
-                inspectorRequest.clusterId(),
-                inspectorRequest.clusterSelection(),
-                null));
-        presentationModel.applyInspectorSurface(inspectorSurface, inspectorRequest.surfaceKind());
+        DungeonEditorPublishedEvent.RoomExitNarration safeExit = exit == null
+                ? new DungeonEditorPublishedEvent.RoomExitNarration(
+                "",
+                DungeonEditorPublishedEvent.CellRef.empty(),
+                "",
+                "")
+                : exit;
+        return new DungeonInspectorSnapshot.RoomExitNarration(
+                safeExit.label(),
+                toCellRef(safeExit.cell()),
+                safeExit.direction(),
+                safeExit.description());
     }
 
     private static void syncMapControls(
-            DungeonEditorPresentationModel presentationModel,
+            DungeonEditorContributionModel contributionModel,
             DungeonEditorControlsView controls
     ) {
-        boolean hasMap = presentationModel.selectedMapKeyProperty().get() != null
-                && !presentationModel.selectedMapKeyProperty().get().isBlank();
-        boolean busy = presentationModel.busyProperty().get();
+        boolean hasMap = contributionModel.selectedMapKeyProperty().get() != null
+                && !contributionModel.selectedMapKeyProperty().get().isBlank();
+        boolean busy = contributionModel.busyProperty().get();
         controls.showMaps(
-                presentationModel.mapsProperty().get().stream().map(DungeonEditorBinder::toControlMapItem).toList(),
-                presentationModel.selectedMapKeyProperty().get(),
+                contributionModel.mapsProperty().get().stream().map(DungeonEditorBinder::toControlMapItem).toList(),
+                contributionModel.selectedMapKeyProperty().get(),
                 busy,
-                presentationModel.statusProperty().get());
+                contributionModel.statusProperty().get());
         controls.showLevels(
-                presentationModel.reachableLevelsProperty().get(),
-                presentationModel.projectionLevelProperty().get(),
+                contributionModel.reachableLevelsProperty().get(),
+                contributionModel.projectionLevelProperty().get(),
                 busy,
                 hasMap);
-        controls.showOverlaySettings(toControlsOverlaySettings(presentationModel.overlaySettingsProperty().get()), busy);
+        controls.showOverlaySettings(toControlsOverlaySettings(contributionModel.overlaySettingsProperty().get()), busy);
     }
 
     private static void syncStateView(
-            DungeonEditorPresentationModel presentationModel,
+            DungeonEditorContributionModel contributionModel,
             DungeonEditorStateView state
     ) {
-        DungeonInspectorSnapshot inspector = presentationModel.inspectorProperty().get();
+        DungeonInspectorSnapshot inspector = contributionModel.inspectorProperty().get();
         state.showNarrationCards(
                 inspector == null
-                        ? java.util.List.of()
+                        ? List.of()
                         : inspector.roomNarrations().stream().map(DungeonEditorBinder::toStateCard).toList(),
-                presentationModel.busyProperty().get(),
-                presentationModel.statusProperty().get());
+                contributionModel.busyProperty().get(),
+                contributionModel.statusProperty().get());
     }
 
     private static DungeonEditorStateView.RoomNarrationCard toStateCard(
@@ -764,98 +458,49 @@ final class DungeonEditorBinder {
                 exit.description());
     }
 
-    private static DungeonInspectorSnapshot.RoomExitNarration toPublishedExit(
-            DungeonEditorPresentationModel.RoomExitNarrationInput exit
-    ) {
-        return new DungeonInspectorSnapshot.RoomExitNarration(
-                exit.label(),
-                new DungeonCellRef(exit.q(), exit.r(), exit.level()),
-                exit.direction(),
-                exit.description());
-    }
-
-    private static DungeonEditorPresentationModel.RoomExitNarrationInput toRoomExitNarrationInput(
-            DungeonEditorStateView.RoomExitNarration exit
-    ) {
-        return new DungeonEditorPresentationModel.RoomExitNarrationInput(
-                exit.label(),
-                exit.q(),
-                exit.r(),
-                exit.level(),
-                exit.direction(),
-                exit.description());
-    }
-
-    private static String toViewModeKey(String viewMode) {
-        return DungeonEditorControlsView.VIEW_GRAPH.equals(viewMode) ? "GRAPH" : "GRID";
-    }
-
-    private static String toControlsViewMode(DungeonMapPresentationModel.RenderState.ViewMode viewMode) {
-        return viewMode == DungeonMapPresentationModel.RenderState.ViewMode.GRAPH
+    private static String toControlsViewMode(DungeonMapContentModel.RenderState.ViewMode viewMode) {
+        return viewMode == DungeonMapContentModel.RenderState.ViewMode.GRAPH
                 ? DungeonEditorControlsView.VIEW_GRAPH
                 : DungeonEditorControlsView.VIEW_GRID;
     }
 
-    private static String toOverlayModeKey(
-            DungeonLevelOverlayControlsView.Mode overlayMode
-    ) {
-        if (overlayMode == DungeonLevelOverlayControlsView.Mode.NEARBY) {
-            return "NEARBY";
-        }
-        if (overlayMode == DungeonLevelOverlayControlsView.Mode.SELECTED) {
-            return "SELECTED";
-        }
-        return "OFF";
-    }
-
     private static DungeonLevelOverlayControlsView.Settings toControlsOverlaySettings(
-            DungeonMapPresentationModel.RenderState.LevelOverlaySettings settings
+            DungeonMapContentModel.RenderState.LevelOverlaySettings settings
     ) {
         if (settings == null) {
             return new DungeonLevelOverlayControlsView.Settings(
                     DungeonLevelOverlayControlsView.Mode.OFF,
                     2,
                     0.35,
-                    java.util.List.of());
+                    List.of());
         }
-        DungeonLevelOverlayControlsView.Mode mode = toControlsOverlayMode(settings.mode());
         return new DungeonLevelOverlayControlsView.Settings(
-                mode,
+                toControlsOverlayMode(settings.mode()),
                 settings.levelRange(),
                 settings.opacity(),
                 settings.selectedLevels());
     }
 
     private static DungeonLevelOverlayControlsView.Mode toControlsOverlayMode(
-            DungeonMapPresentationModel.RenderState.OverlayMode overlayMode
+            DungeonMapContentModel.RenderState.OverlayMode overlayMode
     ) {
-        if (overlayMode == DungeonMapPresentationModel.RenderState.OverlayMode.NEARBY) {
+        if (overlayMode == DungeonMapContentModel.RenderState.OverlayMode.NEARBY) {
             return DungeonLevelOverlayControlsView.Mode.NEARBY;
         }
-        if (overlayMode == DungeonMapPresentationModel.RenderState.OverlayMode.SELECTED) {
+        if (overlayMode == DungeonMapContentModel.RenderState.OverlayMode.SELECTED) {
             return DungeonLevelOverlayControlsView.Mode.SELECTED;
         }
         return DungeonLevelOverlayControlsView.Mode.OFF;
     }
 
     private static DungeonEditorControlsView.MapItem toControlMapItem(
-            DungeonEditorPresentationModel.MapSelection selection
+            DungeonEditorContributionModel.MapSelection selection
     ) {
         return new DungeonEditorControlsView.MapItem(
                 selection.key(),
                 selection.mapId() == null ? 0L : selection.mapId().value(),
                 selection.mapName(),
                 selection.revision());
-    }
-
-    private static DungeonEditorPresentationModel.MapSelection toMapSelection(
-            src.domain.dungeon.published.DungeonMapSummary summary
-    ) {
-        return new DungeonEditorPresentationModel.MapSelection(
-                summary.mapId() == null ? "" : Long.toString(summary.mapId().value()),
-                summary.mapId(),
-                summary.mapName(),
-                summary.revision());
     }
 
     private record Binding(

@@ -29,9 +29,10 @@ public final class CreatureDetailsInspectorEntry {
             Function<Long, CreatureDetailResult> detailLoader
     ) {
         CreatureDetailsView detailView = new CreatureDetailsView();
-        CreatureDetailsPresentationModel presentationModel =
-                new CreatureDetailsPresentationModel(detailLoader.apply(creatureId));
+        CreatureDetailsContentModel presentationModel =
+                new CreatureDetailsContentModel(detailLoader.apply(creatureId));
         detailView.bind(presentationModel);
+        presentationModel.load();
         return detailView;
     }
 }

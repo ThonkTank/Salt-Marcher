@@ -11,6 +11,7 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.ArrayList;
 import java.util.List;
+import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ServiceRegistryRegistrationPlacement",

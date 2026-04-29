@@ -1,8 +1,8 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-26
-Source of Truth: Documentation taxonomy, required metadata, and review rules for
-all project documentation outside `AGENTS.md`.
+Source of Truth: Documentation taxonomy, required metadata, and review rules
+for all project documentation outside `AGENTS.md`.
 
 # Documentation Standard
 
@@ -13,7 +13,7 @@ document has one purpose, one audience, and one ownership boundary.
 
 ## Required Metadata
 
-Every non-ADR document outside `AGENTS.md` must start with:
+Every active document outside `AGENTS.md` must start with:
 
 - `Status`
 - `Owner`
@@ -42,15 +42,14 @@ Canonical project documentation lives under `docs/`.
   matching `docs/project/<type>/` family
 - a feature folder may omit document families it does not need, for example a
   generic reusable surface with no write model or persistence truth
-- legacy project-wide roots such as `docs/architecture/`, `docs/adr/`, and
-  `docs/standards/` may remain only as compatibility paths or redirecting
-  stubs during migration
-- legacy feature-bundle roots such as `docs/features/` may remain only as
-  compatibility paths or redirecting stubs during migration
+- legacy project-wide roots such as `docs/architecture/`, `docs/adr/`,
+  `docs/standards/`, and `docs/compat/` are non-canonical and should be
+  removed once the owning document exists
+- legacy feature-bundle roots such as `docs/features/` are non-canonical and
+  should be removed once the owning document exists
 
 If a topic spans several roots, the canonical copy still lives once inside the
-owning `docs/<feature>/<type>/` or `docs/project/<type>/` location. Code-local
-docs must link to it instead of restating it.
+owning `docs/<feature>/<type>/` or `docs/project/<type>/` location.
 
 ## Canonical Document Types
 
@@ -63,6 +62,11 @@ docs must link to it instead of restating it.
 - `docs/project/architecture/*.md`
   Project-wide architecture overviews, ADRs, standards, and architecture
   quality requirements.
+- `docs/project/architecture/patterns/*.md`
+  Canonical cross-feature layer and layering owner documents.
+- `docs/project/architecture/enforcement/*.md`
+  Canonical mechanical architecture enforcement documents for the matching
+  layer or role owner.
 - `docs/project/requirements/*.md`
   Project-wide behavioral obligations when the repository owns them centrally.
 - `docs/project/contract/*.md`
@@ -76,12 +80,6 @@ docs must link to it instead of restating it.
 - `/home/aaron/Schreibtisch/projects/references/**`
   Local-only source mirrors and readable extracts governed by the
   Source References Standard, not canonical SaltMarcher policy by themselves.
-- `docs/compat/**`
-  Deprecated compatibility stubs that point to canonical documents elsewhere.
-- `docs/architecture/**`, `docs/adr/**`, and `docs/standards/**`
-  Legacy project-wide compatibility roots during migration only; they must not
-  remain the long-term canonical owner after the new `docs/project/<type>/`
-  file exists.
 
 ### Feature-specific
 
@@ -101,19 +99,6 @@ docs must link to it instead of restating it.
   Feature qualification, traceability, and proof routes.
 - not every feature folder must use every family above; use only the canonical
   document types the feature actually owns
-- `docs/features/**`
-  Legacy feature-bundle compatibility roots during migration only; they must
-  not remain the canonical owner after the new `docs/<feature>/...` file
-  exists.
-
-### Code-Adjacent Stubs
-
-- `src/domain/<feature>/README.md`
-  Local routing entrypoint into the canonical feature docs folder.
-- `src/domain/<feature>/SPEC.md`, `DOMAIN.md`, `DELIVERY.md`
-  Deprecated or non-canonical pointer stubs when needed for discoverability.
-- `src/view/**/<topic>.md` and `src/data/<feature>/PERSISTENCE.md`
-  Deprecated or non-canonical pointer stubs when a code-local link is helpful.
 
 ## Scope Rules
 
@@ -122,11 +107,9 @@ docs must link to it instead of restating it.
 - Project-wide docs under `docs/project/**` must not become a dumping ground
   for feature truth.
 - Feature documents must not define project-wide rules.
-- ADRs must record one decision only.
+- ADRs, when used, must record one decision only.
 - Delivery documents are temporary and must not become canonical architecture
   sources.
-- Central `docs/compat/...` content may exist only as compatibility stubs and
-  must not remain canonical.
 - `/home/aaron/Schreibtisch/projects/references/...` content supports decisions with source evidence; it
   must not define SaltMarcher policy unless a standard, ADR, or feature
   document adopts that interpretation.
@@ -149,9 +132,6 @@ docs must link to it instead of restating it.
 - Summaries must link to the canonical document.
 - If two documents disagree, the one marked as `Source of Truth` for that topic
   wins and the other must be corrected.
-- Compatibility stubs and code-local pointer stubs must declare `Deprecated`
-  when they replace a formerly canonical document and must point at the
-  canonical `docs/<feature>/` or `docs/project/` document.
 
 ## Enforcement Notes
 
@@ -257,4 +237,3 @@ Use:
 
 - [Project Documentation Entry Point](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/README.md:1)
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [ADR 026: Closed Documentation Taxonomy](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-026-closed-documentation-taxonomy.md:1)

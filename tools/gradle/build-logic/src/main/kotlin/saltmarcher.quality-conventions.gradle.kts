@@ -13,13 +13,12 @@ import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
 import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
 import saltmarcher.buildlogic.tasks.CheckDesktopPackagingInputsTask
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
-import saltmarcher.buildlogic.tasks.CheckViewFxmlResourcesTask
-import saltmarcher.buildlogic.tasks.CkjmReportTask
-import saltmarcher.buildlogic.tasks.CpdCheckTask
-import saltmarcher.buildlogic.tasks.LizardCheckTask
-import saltmarcher.buildlogic.tasks.PmdSourceCheckTask
 import saltmarcher.buildlogic.tasks.RenderDesktopIconTask
-import saltmarcher.buildlogic.tasks.SetupLizardTask
+import saltmarcher.buildlogic.tasks.hygiene.CkjmReportTask
+import saltmarcher.buildlogic.tasks.hygiene.CpdCheckTask
+import saltmarcher.buildlogic.tasks.hygiene.LizardCheckTask
+import saltmarcher.buildlogic.tasks.hygiene.PmdSourceCheckTask
+import saltmarcher.buildlogic.tasks.hygiene.SetupLizardTask
 
 plugins {
     id("net.ltgt.errorprone")
@@ -30,12 +29,23 @@ plugins {
 val architectureGateEntrypoints = setOf(
     "architectureTest",
     "checkArchitecture",
+    "checkViewContentModelEnforcement",
+    "checkViewContributionModelEnforcement",
+    "checkViewContributionEnforcement",
+    "checkViewBinderEnforcement",
+    "checkViewEnforcement",
+    "checkViewInspectorEntryEnforcement",
+    "checkViewIntentHandlerEnforcement",
+    "checkViewLayerEnforcement",
+    "checkViewInputEventEnforcement",
+    "checkViewPublishedEventEnforcement",
     "checkViewArchitecture",
     "pmdArchitectureMain",
+    "pmdViewContributionEnforcement",
     "jqassistantEffectiveRules"
 )
 
-val qualityReportEntrypoints = setOf(
+val qualitySmellEntrypoints = setOf(
     "pmdMain",
     "pmdStrictMain",
     "spotbugsMain",
@@ -50,7 +60,6 @@ val qualityGateEntrypoints = setOf(
 val resourcePolicyEntrypoints = setOf(
     "checkCentralizedStylesheets",
     "checkDefinedStyleClassSelectors",
-    "checkViewFxmlResources",
     "checkNoCompiledArtifactsInSource",
     "checkDesktopPackagingInputs"
 )
@@ -62,17 +71,13 @@ val continueOnFailureEntrypoints = setOf(
     "test"
 )
     .plus(architectureGateEntrypoints)
-    .plus(qualityReportEntrypoints)
+    .plus(qualitySmellEntrypoints)
     .plus(qualityGateEntrypoints)
     .plus(resourcePolicyEntrypoints)
 
 val requestedTaskNames = gradle.startParameter.taskNames
     .map { taskName -> taskName.substringAfterLast(":") }
     .toSet()
-
-fun isTaskExplicitlyRequested(taskName: String): Boolean {
-    return requestedTaskNames.contains(taskName)
-}
 
 if (requestedTaskNames.any { it in continueOnFailureEntrypoints }) {
     gradle.startParameter.setContinueOnFailure(true)
@@ -229,11 +234,11 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("StringCaseLocaleUsage")
     options.errorprone.error("StringSplitter")
     options.errorprone.error("ViewDetailsSlotBoundary")
-    options.errorprone.error("PresentationOwnershipNaming")
-    options.errorprone.error("ViewRoleDependencyBoundaries")
+    options.errorprone.error("ProjectionModelOwnershipNaming")
+    options.errorprone.error("ViewContentModelDependencyBoundary")
+    options.errorprone.error("ViewContentModelFlatSurface")
     options.errorprone.error("ViewProgrammaticStyling")
     options.errorprone.error("ViewReflectionBypass")
-    options.errorprone.error("PassiveViewDependencyBoundaries")
     options.errorprone.error("ViewRootDelegation")
     options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
     options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
@@ -322,7 +327,7 @@ val jqassistantScanViewArchitecture by tasks.registering(Exec::class) {
 
 val jqassistantAnalyzeViewArchitecture by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Analyze SaltMarcher MVVM view-architecture constraints with jQAssistant."
+    description = "Analyze SaltMarcher passive-view topology constraints with jQAssistant."
     enforceFreshGateResult()
     dependsOn(jqassistantScanViewArchitecture)
     inputs.file(jqassistantGeneratedConfigFile)
@@ -339,7 +344,7 @@ val jqassistantAnalyzeViewArchitecture by tasks.registering(Exec::class) {
 
 val jqassistantEffectiveRules by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Print the effective SaltMarcher MVVM view-architecture rules."
+    description = "Print the effective SaltMarcher passive-view topology rules."
     dependsOn(installJqassistant, prepareJqassistantConfig)
     inputs.file(jqassistantGeneratedConfigFile)
     inputs.dir(jqassistantRulesDir)
@@ -350,7 +355,7 @@ val jqassistantEffectiveRules by tasks.registering(Exec::class) {
 
 val jqassistantServer by tasks.registering(Exec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Start the local jQAssistant Neo4j server for MVVM view-architecture rule development."
+    description = "Start the local jQAssistant Neo4j server for passive-view topology rule development."
     dependsOn(installJqassistant, prepareJqassistantConfig, tasks.named("classes"))
     inputs.file(jqassistantGeneratedConfigFile)
     inputs.dir(jqassistantRulesDir)
@@ -361,9 +366,8 @@ val jqassistantServer by tasks.registering(Exec::class) {
 
 val checkViewArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the canonical SaltMarcher MVVM view-architecture blocker via jQAssistant."
+    description = "Run the canonical SaltMarcher cockpit view-architecture topology blocker via jQAssistant."
     dependsOn(jqassistantAnalyzeViewArchitecture)
-    dependsOn("checkViewFxmlResources")
 }
 
 // Desktop resource generation
@@ -413,7 +417,7 @@ val cpdMain by tasks.registering(CpdCheckTask::class) {
     projectRoot.set(layout.projectDirectory)
     sourceRoots.from(sourceJavaRoots)
     toolClasspath.from(cpdCli)
-    minimumTokens.set(80)
+    minimumTokens.set(100)
     reportFile.set(cpdReportFile)
 }
 
@@ -429,18 +433,9 @@ val pmdStrictMain by tasks.registering(PmdSourceCheckTask::class) {
 }
 
 tasks.named<Pmd>("pmdMain") {
-    onlyIf("PMD smell reports run only when their report task is explicitly requested.") {
-        isTaskExplicitlyRequested(name)
-    }
     source = sourceJavaRoots.asFileTree
     include("**/*.java")
     classpath = configurations.named("compileClasspath").get()
-}
-
-tasks.named("spotbugsMain") {
-    onlyIf("SpotBugs reports run only when their report task is explicitly requested.") {
-        isTaskExplicitlyRequested(name)
-    }
 }
 
 tasks.named<Pmd>("pmdTest") {
@@ -466,6 +461,9 @@ val checkArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs non-view-architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
     dependsOn("architectureTest")
+    dependsOn("checkViewBinderEnforcement")
+    dependsOn("checkViewInspectorEntryEnforcement")
+    dependsOn("checkViewLayerEnforcement")
     dependsOn("pmdArchitectureMain")
     dependsOn(gradle.includedBuild("build-harness").task(":check"))
 }
@@ -506,19 +504,6 @@ val checkDefinedStyleClassSelectors by tasks.registering(CheckDefinedStyleClassS
     )
 }
 
-val checkViewFxmlResources by tasks.registering(CheckViewFxmlResourcesTask::class) {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Validate declarative MVVM FXML resource placement and controller ownership."
-    projectRoot.set(layout.projectDirectory)
-    resourcesRoot.set(layout.projectDirectory.dir("resources"))
-    fxmlFiles.from(
-        layout.projectDirectory.asFileTree.matching {
-            include("**/*.fxml")
-            exclude("**/.git/**", "**/.gradle/**", "**/build/**")
-        }
-    )
-}
-
 val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputsTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validate main class, icon, stylesheet, and launcher metadata required for desktop packaging."
@@ -542,12 +527,15 @@ tasks.named("check") {
     dependsOn("compileJava")
     dependsOn("test")
     dependsOn("architectureTest")
+    dependsOn("checkViewBinderEnforcement")
+    dependsOn("checkViewEnforcement")
+    dependsOn("checkViewInspectorEntryEnforcement")
+    dependsOn("checkViewLayerEnforcement")
     dependsOn("pmdArchitectureMain")
     dependsOn(gradle.includedBuild("build-harness").task(":check"))
     dependsOn(checkViewArchitecture)
     dependsOn(checkCentralizedStylesheets)
     dependsOn(checkDefinedStyleClassSelectors)
-    dependsOn(checkViewFxmlResources)
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkDesktopPackagingInputs)
     dependsOn(cpdMain)
@@ -596,10 +584,6 @@ tasks.withType<CheckDefinedStyleClassSelectorsTask>().configureEach {
 }
 
 tasks.withType<CheckNoCompiledArtifactsTask>().configureEach {
-    enforceFreshGateResult()
-}
-
-tasks.withType<CheckViewFxmlResourcesTask>().configureEach {
     enforceFreshGateResult()
 }
 

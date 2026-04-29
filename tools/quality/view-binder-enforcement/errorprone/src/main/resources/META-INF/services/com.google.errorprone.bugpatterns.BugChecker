@@ -1,0 +1,3 @@
+saltmarcher.quality.errorprone.view.binder.ViewBinderDependencyBoundaryChecker
+saltmarcher.quality.errorprone.view.binder.ViewBinderViewInputEventWiringChecker
+saltmarcher.quality.errorprone.view.binder.ViewBinderApplicationSinkWiringChecker

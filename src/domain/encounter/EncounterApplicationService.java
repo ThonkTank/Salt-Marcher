@@ -14,6 +14,7 @@ import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
+import src.domain.encounter.application.LoadEncounterPlanBudgetUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
@@ -35,6 +36,9 @@ import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterGenerationStopCategory;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterLock;
+import src.domain.encounter.published.EncounterPlanBudgetSummary;
+import src.domain.encounter.published.EncounterPlanBudgetResult;
+import src.domain.encounter.published.EncounterPlanBudgetStatus;
 import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.encounter.published.EncounterSessionModel;
 import src.domain.encounter.published.EncounterSessionSnapshot;
@@ -44,6 +48,7 @@ import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.published.GeneratedEncounter;
 import src.domain.encounter.published.ListSavedEncounterPlansQuery;
 import src.domain.encounter.published.LoadEncounterBudgetQuery;
+import src.domain.encounter.published.LoadEncounterPlanBudgetQuery;
 import src.domain.encounter.published.LoadEncounterSessionQuery;
 import src.domain.encounter.published.LoadEncounterTuningPreviewQuery;
 import src.domain.encounter.published.LoadSavedEncounterPlanQuery;
@@ -75,6 +80,7 @@ public final class EncounterApplicationService {
 
     private final @Nullable EncounterGenerationUseCase generator;
     private final @Nullable LoadEncounterBudgetUseCase loadBudgetUseCase;
+    private final @Nullable LoadEncounterPlanBudgetUseCase loadPlanBudgetUseCase;
     private final @Nullable SavedPlanOperations savedPlanOperations;
     private final @Nullable PartyApplicationService party;
     private final @Nullable CreaturesApplicationService creatures;
@@ -114,6 +120,11 @@ public final class EncounterApplicationService {
         } else {
             this.generator = null;
             this.loadBudgetUseCase = null;
+        }
+        if (party != null && creatures != null && encounterPlans != null) {
+            this.loadPlanBudgetUseCase = new LoadEncounterPlanBudgetUseCase(encounterPlans, party, creatures);
+        } else {
+            this.loadPlanBudgetUseCase = null;
         }
         this.savedPlanOperations = encounterPlans == null ? null : new SavedPlanOperations(encounterPlans);
         this.session = party != null && creatures != null ? new EncounterSession() : null;
@@ -155,6 +166,28 @@ public final class EncounterApplicationService {
                     EncounterGenerationStatus.STORAGE_ERROR,
                     tuningPreviewLabels(null),
                     "Encounter tuning preview could not be loaded.");
+        }
+    }
+
+    public EncounterPlanBudgetResult loadPlanBudget(LoadEncounterPlanBudgetQuery query) {
+        Objects.requireNonNull(query, "query");
+        if (loadPlanBudgetUseCase == null) {
+            return new EncounterPlanBudgetResult(
+                    EncounterPlanBudgetStatus.STORAGE_ERROR,
+                    null,
+                    "Encounter plan budget service is not registered.");
+        }
+        try {
+            LoadEncounterPlanBudgetUseCase.Result result = loadPlanBudgetUseCase.execute(query.planId());
+            return new EncounterPlanBudgetResult(
+                    toPublishedPlanBudgetStatus(result.status()),
+                    toPublishedPlanBudget(result.summary()),
+                    result.message());
+        } catch (RuntimeException exception) {
+            return new EncounterPlanBudgetResult(
+                    EncounterPlanBudgetStatus.STORAGE_ERROR,
+                    null,
+                    "Encounter plan budget could not be loaded.");
         }
     }
 
@@ -433,6 +466,41 @@ public final class EncounterApplicationService {
                 budget.dailyBudgetXp(),
                 budget.consumedDailyXp(),
                 budget.remainingDailyXp());
+    }
+
+    private static @Nullable EncounterPlanBudgetSummary toPublishedPlanBudget(
+            LoadEncounterPlanBudgetUseCase.@Nullable Summary summary
+    ) {
+        if (summary == null) {
+            return null;
+        }
+        return new EncounterPlanBudgetSummary(
+                summary.planId(),
+                summary.name(),
+                summary.generatedLabel(),
+                summary.partyLevels(),
+                summary.averageLevel(),
+                summary.easyXp(),
+                summary.mediumXp(),
+                summary.hardXp(),
+                summary.deadlyXp(),
+                summary.creatureCount(),
+                summary.totalBaseXp(),
+                summary.adjustedXp(),
+                summary.xpMultiplier(),
+                summary.difficultyLabel());
+    }
+
+    private static EncounterPlanBudgetStatus toPublishedPlanBudgetStatus(
+            LoadEncounterPlanBudgetUseCase.Status status
+    ) {
+        return switch (status == null ? LoadEncounterPlanBudgetUseCase.Status.STORAGE_ERROR : status) {
+            case SUCCESS -> EncounterPlanBudgetStatus.SUCCESS;
+            case NOT_FOUND -> EncounterPlanBudgetStatus.NOT_FOUND;
+            case NO_ACTIVE_PARTY -> EncounterPlanBudgetStatus.NO_ACTIVE_PARTY;
+            case INVALID_REQUEST -> EncounterPlanBudgetStatus.INVALID_REQUEST;
+            case STORAGE_ERROR -> EncounterPlanBudgetStatus.STORAGE_ERROR;
+        };
     }
 
     private static GeneratedEncounter toPublishedEncounter(EncounterGenerationUseCase.GeneratedEncounterData encounter) {

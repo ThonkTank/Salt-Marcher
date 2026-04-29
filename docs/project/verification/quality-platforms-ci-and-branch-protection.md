@@ -22,7 +22,7 @@ and defines four jobs.
 | Job | Status | Current policy |
 | --- | --- | --- |
 | `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the CI mirror of the local full blocker. |
-| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM threshold regressions warn in the job log and summary report. |
+| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
 

@@ -14,7 +14,7 @@ public final class DungeonEditorStateView extends VBox {
 
     private final Label body = new Label();
     private final VBox narrationCards = new VBox(8);
-    private Consumer<RoomNarrationEdit> saveRoomNarrationHandler = ignored -> {};
+    private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonEditorStateView() {
         setSpacing(12);
@@ -33,8 +33,8 @@ public final class DungeonEditorStateView extends VBox {
         return body.textProperty();
     }
 
-    public void setOnSaveRoomNarration(Consumer<RoomNarrationEdit> action) {
-        saveRoomNarrationHandler = action == null ? ignored -> {} : action;
+    public void onViewInputEvent(Consumer<DungeonEditorStateViewInputEvent> handler) {
+        viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
     public void showNarrationCards(List<RoomNarrationCard> cards, boolean busy, String statusText) {
@@ -63,11 +63,11 @@ public final class DungeonEditorStateView extends VBox {
         Button save = new Button("Speichern");
         save.getStyleClass().add("toolbar-action-button");
         save.setDisable(busy);
-        save.setOnAction(event -> saveRoomNarrationHandler.accept(new RoomNarrationEdit(
+        save.setOnAction(event -> viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
                 card.roomId(),
                 visualArea.getText(),
                 exitAreas.stream()
-                        .map(exit -> new RoomExitNarration(
+                        .map(exit -> new DungeonEditorStateViewInputEvent.RoomExitNarrationSnapshot(
                                 exit.exit().label(),
                                 exit.exit().q(),
                                 exit.exit().r(),
@@ -119,17 +119,6 @@ public final class DungeonEditorStateView extends VBox {
             label = label == null || label.isBlank() ? "Ausgang" : label.trim();
             direction = direction == null || direction.isBlank() ? "NORTH" : direction.trim();
             description = description == null ? "" : description;
-        }
-    }
-
-    public record RoomNarrationEdit(
-            long roomId,
-            String visualDescription,
-            List<RoomExitNarration> exits
-    ) {
-        public RoomNarrationEdit {
-            visualDescription = visualDescription == null ? "" : visualDescription;
-            exits = exits == null ? List.of() : List.copyOf(exits);
         }
     }
 

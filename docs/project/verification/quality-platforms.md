@@ -17,9 +17,9 @@ non-architecture quality concerns, current thresholds and service policies, and
 quality concerns that remain review-owned.
 
 It does not replace the architecture standards as the source of architectural
-intent, and it does not replace `architecture-enforcement-harness.md` as the
-source of truth for architecture rule ownership, rule status, or rule-shape
-classification.
+intent, and it does not replace the matching owner documents under
+`docs/project/architecture/enforcement/` as the source of truth for
+architecture rule ownership, rule status, or rule-shape classification.
 
 ## Scope
 
@@ -29,9 +29,9 @@ duplicate-code detection, cyclomatic-complexity analysis, OO metrics,
 repository-wide resource/artifact/packaging validation, GitHub Actions,
 branch-protection expectations, SonarCloud, and CodeScene.
 
-The architecture harness enters local quality through the same Gradle
-aggregates, but its owner model lives in the
-[Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/architecture-enforcement-harness.md:1).
+Architecture enforcement enters local quality through the same Gradle
+aggregates, but the owner model now lives in the matching layer and role
+documents under `docs/project/architecture/enforcement/`.
 
 ## Gate Status Vocabulary
 
@@ -40,7 +40,9 @@ Every quality platform named here belongs to exactly one operating status:
 the overall invocation on violations, `Blocking Distribution Gate` for Gradle
 tasks that fail packaging or installation flows but are not part of the central
 `check` aggregate, `Required CI Gate` for GitHub Actions jobs intended for
-branch protection, `Informational Report` for artifacts without
+branch protection, `Required CI Report` for GitHub Actions jobs that must run
+to publish maintained reporting artifacts without becoming branch-protection
+blockers by default, `Informational Report` for artifacts without
 project-specific blocking thresholds, or `Review-Owned` for binding guidance
 that needs human judgment.
 
@@ -73,47 +75,93 @@ manual testing for behavior verification.
   the owning gate instead
 - do not expand the compile/build/check pipeline with new automated gates
   unless the user explicitly requests that expansion
-- treat only the CKJM hotspot regression policy named in the local-gates
-  subordinate standard as the mechanical CKJM blocker
+- keep CKJM hotspot regression reporting non-blocking unless an explicit future
+  decision promotes it with stronger evidence than generic hotspot metrics
 - use manual testing for workflow behavior, desktop interaction, UI judgment,
   and product acceptance
 - `./gradlew test` is not a general-purpose home for behavior-regression suites
 
 ## Architecture Harness Relationship
 
-This standard describes how quality platforms are operated. The harness
-standard defines which engine owns which class of architecture rule.
+This standard describes how quality platforms are operated. The architecture
+enforcement documents define which engine owns which class of architecture
+rule.
 
 Operationally, architecture checks enter local quality through:
 
 - `compileJava`
-  runs Error Prone architecture checks, including compiler-precise MVVM
-  dependency rules for active roots, Binders, ViewModels, passive views, shell
-  API use, passive panel restrictions, and legacy view-package bans
+  runs Error Prone architecture checks, including compiler-precise
+  `ContributionModel`/`ContentModel`, `IntentHandler`, `PublishedEvent`,
+  Binder, and passive-View dependency rules, shell API use, passive panel
+  restrictions, and legacy view-package bans
 - `architectureTest`
   runs ArchUnit dependency and cycle checks, including target view package,
   dependency, and cycle freedom rules
+- `checkViewEnforcement`
+  runs the focused passive `View` enforcement bundle by aggregating the
+  current compiler-integrated passive-`View` checks, the dedicated passive
+  `View` ArchUnit suite, the dedicated passive-`View` jQAssistant bundle, and
+  the dedicated FXML resource boundary check through one direct root entrypoint
+- `checkViewContributionEnforcement`
+  runs the focused `Contribution` enforcement bundle by aggregating the
+  dedicated compiler-integrated dependency check, the dedicated ArchUnit
+  suite, and the dedicated PMD entrypoint-shape rule through one direct root
+  entrypoint
+- `checkViewContributionModelEnforcement`
+  runs the focused `ContributionModel` enforcement bundle by aggregating the
+  dedicated compiler-integrated checks, the dedicated ArchUnit suite, the
+  dedicated jQAssistant bundle, and the dedicated build-harness topology check
+  through one direct root entrypoint
+- `checkViewContentModelEnforcement`
+  runs the focused `ContentModel` enforcement bundle by aggregating the
+  dedicated compiler-integrated checks, the dedicated ArchUnit suite, the
+  dedicated jQAssistant bundle, and the dedicated build-harness topology check
+  through one direct root entrypoint
+- `checkViewBinderEnforcement`
+  runs the focused `Binder` enforcement bundle by aggregating the dedicated
+  compiler-integrated checks, the dedicated ArchUnit suite, and the dedicated
+  Binder jQAssistant bundle through one direct root entrypoint
+- `checkViewInspectorEntryEnforcement`
+  runs the focused `InspectorEntry` enforcement bundle by aggregating the
+  current compiler-integrated InspectorEntry checks, the dedicated
+  InspectorEntry jQAssistant bundle, and the dedicated build-harness topology
+  check through one direct root entrypoint
 - `checkViewArchitecture`
-  runs explicit jQAssistant view-topology analysis for active roots, Binders,
-  co-located ViewModels, passive views, and reusable slotcontent, plus the
-  view FXML resource boundary check
+  runs explicit jQAssistant view-topology analysis for active roots,
+  contribution-side structure, and the remaining reusable slotcontent
+  topology outside the dedicated `Binder`, `ContentModel`, and
+  `InspectorEntry` bundles
+- `checkViewLayerEnforcement`
+  runs the focused `View Layer` enforcement bundle by aggregating the
+  dedicated slotcontent `ContentModel` ArchUnit proof and the dedicated
+  build-harness topology check through one direct root entrypoint
+- `checkViewInputEventEnforcement`
+  runs the focused `ViewInputEvent` enforcement bundle by aggregating the
+  current compiler-integrated checks, the dedicated ArchUnit suite, and the
+  dedicated build-harness topology check through one direct root entrypoint
 - `checkArchitecture`
-  aggregates ArchUnit, PMD architecture rules, and the build-harness
+  aggregates the focused `Contribution`, `Binder`, `ContributionModel`, and
+  `ContentModel` bundles, ArchUnit, PMD architecture rules, and the
+  build-harness
 - `check`
   runs the architecture harness plus adjacent non-architecture quality gates.
-  Its jQAssistant coverage comes from the explicit `checkViewArchitecture`
-  dependency
+  Its view-specific focused coverage comes from the explicit
+  `checkViewEnforcement`, `checkViewContributionEnforcement`,
+  `checkViewContributionModelEnforcement`,
+  `checkViewContentModelEnforcement`,
+  `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`, and
+  `checkViewArchitecture` dependencies
 
 Architecture rule status must not be reclassified here. If a layer standard and
-the harness standard disagree about whether a rule is mechanically enforced,
-the harness standard is the canonical classification.
+its matching enforcement document disagree about whether a rule is mechanically
+enforced, the enforcement document is the canonical classification.
 
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Architecture Enforcement Harness Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/architecture-enforcement-harness.md:1)
+- [Layering Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
-- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/styling.md:1)
+- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
 - [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
 - [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
 - [PMD Java Design Rules Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/pmd-java-design-rules.md:1)
@@ -122,4 +170,3 @@ the harness standard is the canonical classification.
 - [SpotBugs Gradle Plugin Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/spotbugs-gradle-plugin.md:1)
 - [CKJM Metrics Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/ckjm-metrics.md:1)
 - [CK Metric Reference Values](/home/aaron/Schreibtisch/projects/references/quality-platforms/ck-metric-reference-values.md:1)
-- [ADR 016: Architecture Enforcement Operating Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/adr-016-architecture-enforcement-operating-model.md:1)

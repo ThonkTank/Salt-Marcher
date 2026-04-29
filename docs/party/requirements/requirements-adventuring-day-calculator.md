@@ -59,4 +59,4 @@ Current state:
 
 - [Adventuring Day Top-Bar UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/requirements/requirements-adventuring-day-dropdown.md:1)
 - [Party Dropdown UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/requirements/requirements-party-dropdown.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/view-layer.md:1)
+- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
