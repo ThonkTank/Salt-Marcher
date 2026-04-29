@@ -18,9 +18,10 @@ It answers three questions for every active-root `*Contribution` surface:
 - which direct communication boundaries the role itself MAY cross
 
 This document does not own active-root topology, role-count rules,
-`slotcontent/**` placement or absence rules, shell startup rules, or generic
-shell registration placement outside the `*Contribution` role itself. Those
-stay in the view-layer and shell-layer enforcement documents.
+`slotcontent/**` placement or absence rules, bootstrap startup rules, or
+generic shell registration placement outside the `*Contribution` role itself.
+Those stay in the view-layer, bootstrap, and focused shell layer/role
+enforcement documents.
 
 Unified focused bundle entrypoint:
 
@@ -71,3 +72,6 @@ Unified focused bundle entrypoint:
 - [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
 - [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
 - [Shell Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-layer-enforcement.md:1)
+- [Shell AppShell Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-app-shell-enforcement.md:1)
+- [Shell RuntimeContext Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-runtime-context-enforcement.md:1)
+- [Bootstrap Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/bootstrap-enforcement.md:1)

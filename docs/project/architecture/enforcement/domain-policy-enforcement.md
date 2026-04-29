@@ -11,6 +11,17 @@ Source of Truth: Complete architecture-enforcement catalog for tactical
 This document owns the complete architecture-enforcement catalog for the
 tactical `policy/` role itself.
 
+It answers three questions for every domain policy role:
+
+- what the role MUST contain
+- what the role MUST NOT contain
+- which direct communication seams the role itself MAY cross
+
+This document does not own generic named-module shape rules, generic
+named-module forbidden-content rules, or generic named-module communication
+boundaries that also constrain `policy/`. Those live in
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
+
 ## Invariant Catalog
 
 ### Must Contain
@@ -18,23 +29,20 @@ tactical `policy/` role itself.
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-policy-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/policy/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Policy role types are final classes. |
-| `domain-policy-public-concrete-type-shape` | Enforced | every public concrete policy type | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public policy types satisfy the project shape constraints for concrete domain types. |
-| `domain-policy-field-purity` | Enforced | every public policy type | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public policy types do not expose mutable field state. |
-| `domain-policy-statelessness` | Enforced | every top-level type under `policy/` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Policy role types do not declare instance fields and stay stateless. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-policy-no-published-carriers` | Enforced | every compilation unit under `policy/` | Error Prone `DomainModuleNoPublishedCarrierDependency` | `./gradlew compileJava` | Policy code does not depend on same-context or foreign `published/**` carriers. |
+| `domain-policy-statelessness` | Enforced | every top-level type under `policy/` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Policy role types do not declare instance fields and therefore cannot hide role-local state behind policy objects. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-policy-no-same-context-application-boundary` | Enforced | every dependency from `policy/` to its own context root or `application/` | ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary` | `./gradlew checkArchitecture` | Policy code does not depend on its own root `ApplicationService` or `application/` orchestration boundary. |
-| `domain-policy-no-foreign-context-dependencies` | Enforced | every dependency from `policy/` to a foreign domain context | ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts` | `./gradlew checkArchitecture` | Policy code does not reach foreign domain contexts directly. |
-| `domain-policy-no-outbound-port-dependencies` | Enforced | every dependency from `policy/` to a `port/` role | ArchUnit `domainModelRolesMustNotDependOnOutboundPorts` | `./gradlew checkArchitecture` | Policy code does not depend directly on outbound ports. |
+No mechanically enforced communication invariant is owned by this document
+alone today. Policy code is still constrained by the generic named-module and
+model-role communication boundaries owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not duplicate those shared rows here.
 
 ## Review-Owned
 

@@ -107,7 +107,7 @@ tasks.named<JavaCompile>("compileJava") {
 val viewSurfaceArchitectureTest by tasks.registering(Test::class) {
     group = "verification"
     description = "Run only the passive View-focused architecture test suite."
-    dependsOn(tasks.named("classes"))
+    dependsOn(tasks.named("compileJava"))
     inputs.dir(mainJavaClassesDir)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
@@ -161,7 +161,7 @@ val jqassistantScanViewEnforcement by tasks.registering(Exec::class) {
     description = "Scan SaltMarcher passive View topology for the dedicated passive View enforcement bundle."
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
-    dependsOn("installJqassistant", prepareViewViewJqassistantConfig, tasks.named("classes"))
+    dependsOn("installJqassistant", prepareViewViewJqassistantConfig, tasks.named("compileJava"))
     inputs.file(viewViewJqassistantGeneratedConfigFile)
     inputs.dir(viewViewJqassistantRulesDir)
     inputs.dir(mainJavaClassesDir)

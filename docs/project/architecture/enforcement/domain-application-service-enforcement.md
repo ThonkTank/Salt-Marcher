@@ -18,8 +18,9 @@ It answers three questions for every root application boundary:
 - which direct communication seams the role itself MAY cross
 
 This document does not own `application/*UseCase` internals, `published/`
-carrier shape, outbound `port/` role semantics, or `DOMAIN.md` context
-documentation. Those live in the neighboring owner docs.
+carrier shape, outbound `port/` role semantics, `DOMAIN.md` context
+documentation, data-root `ServiceRegistry` export shape, or layer-wide domain
+dependency bans. Those live in the neighboring owner docs.
 
 ## Invariant Catalog
 
@@ -27,36 +28,37 @@ documentation. Those live in the neighboring owner docs.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-root-presence` | Enforced | every active domain context under `src/domain/**` | build-harness `DomainFeatureRules` and `SourceLayoutRules` | `./gradlew checkArchitecture` | Each active domain context exposes exactly one direct root boundary file named `<PascalContext>ApplicationService.java`. |
-| `domain-applicationservice-class-shape` | Enforced | every direct root `*ApplicationService.java` under `src/domain/**` | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root application services are public final top-level classes. |
-| `domain-applicationservice-public-api-carriers` | Enforced | every public root `ApplicationService` method | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Public root methods accept exactly one same-context published command or query carrier and return a same-context published result/value carrier. |
+| `domain-applicationservice-root-presence` | Enforced | every active domain context under `src/domain/**` | build-harness `SourceLayoutRules` and `documentation-enforcement` bundle `DomainDocumentationRules` | `./gradlew checkArchitecture` and `./gradlew checkDocumentationEnforcement` | Each active domain context exposes exactly one direct root boundary file named `<PascalContext>ApplicationService.java`. |
+| `domain-applicationservice-class-shape` | Enforced | every top-level root `*ApplicationService` type under `src/domain/**` | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root application services are public final top-level classes. |
+| `domain-applicationservice-public-input-carriers` | Enforced | every public or protected non-constructor root `ApplicationService` method | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root boundary methods accept exactly one same-context `published/**` carrier whose simple name ends with `Command` or `Query`. |
+| `domain-applicationservice-public-return-carriers` | Enforced | every public or protected non-constructor root `ApplicationService` method | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root boundary methods return one non-`void` same-context `published/**` carrier directly. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-applicationservice-no-nested-contracts` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root application services do not expose nested public or protected contract types. |
-| `domain-applicationservice-no-direct-infrastructure-construction-source-pattern` | Source-Pattern Enforced | every root `*ApplicationService.java` under `src/domain/**` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Root application service source text does not directly construct or cache obvious infrastructure-style collaborators. |
+| `domain-applicationservice-no-direct-infrastructure-construction-source-pattern` | Source-Pattern Enforced | every root `*ApplicationService.java` under `src/domain/**` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Root application service source text does not directly instantiate or cache data port-adapter or source-adapter infrastructure. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-applicationservice-constructor-composition-boundary` | Enforced | every public root `ApplicationService` constructor | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Root constructors expose only same-feature outbound ports or foreign root application services. |
-| `domain-applicationservice-service-registry-export-shape` | Enforced | every data-root registration of a domain backend service | Error Prone `DomainServiceRegistryExportShape` | `./gradlew compileJava` | Data `*ServiceContribution` roots export only the same-feature root application service key instead of nested factories or internal domain types. |
-| `domain-applicationservice-public-boundary-signature-purity` | Enforced | every public or protected root `ApplicationService` signature | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Public root signatures do not leak outer-layer, private domain, or foreign published types. |
-| `domain-applicationservice-no-outer-layer-or-infrastructure-signatures` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | Error Prone `DomainPublicBoundarySignaturePurity` and ArchUnit `domainMustStayIndependentFromOuterLayers` | `./gradlew compileJava` and `./gradlew checkArchitecture` | Root application services stay inside the application core instead of depending on view, data, shell, bootstrap, or infrastructure surfaces. |
+| `domain-applicationservice-public-boundary-signature-purity` | Enforced | every public or protected root `ApplicationService` boundary surface | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Root public boundary surfaces do not leak outer-layer types, private same-context domain types, or foreign `published/**` carriers through signatures, public fields, thrown types, supertypes, or type bounds. |
 
 ## Review-Owned
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-thin-boundary-coordination` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still stays thin coordination rather than hiding business policy or long-lived workflow state. |
-| `domain-applicationservice-public-carrier-translation-quality` | Review-Owned | every root boundary translation between published carriers and model-facing collaborators | none | none | Public carrier translation really happens at the intended boundary and remains semantically minimal, not merely dependency-clean. |
+| `domain-applicationservice-public-carrier-translation-boundary` | Review-Owned | every handoff from a root `ApplicationService` into same-context `application/*UseCase` code or named domain modules | none | none | Same-context `published/**` carriers are translated at the root boundary before control enters application orchestration or named domain modules. |
+| `domain-applicationservice-no-runtime-composition-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still does not own shell registration or runtime service lookup. |
+| `domain-applicationservice-no-business-policy-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still delegates business policy to use cases and named domain modules rather than embedding rule-bearing domain logic at the root. |
 
 ## References
 
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
+- [Data ServiceContribution Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
 - [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
 - [Domain UseCase Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
 - [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)

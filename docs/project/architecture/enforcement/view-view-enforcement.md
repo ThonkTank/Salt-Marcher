@@ -2,8 +2,9 @@ Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-28
 Source of Truth: Complete invariant catalog for passive `*View` surfaces in
-`src/view/**`, limited to constraints proven directly on `*View.java` files or
-to review-owned passive-`View` semantics.
+`src/view/**`, limited to constraints proven directly on `*View.java` files,
+passive-`View`-owned FXML resources, or review-owned passive-`View`
+semantics.
 
 # View Enforcement
 
@@ -37,9 +38,9 @@ routing. Those stay in the neighboring role documents.
 
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
-| `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewDependencyBoundaries`, ArchUnit `passiveViewsMustNotReachShellDomainDataOrBootstrap`, and jQAssistant `saltmarcher:PassiveViewAllowedDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewEnforcement` | A passive `View` stays inside its direct dependency boundary: JavaFX UI APIs, its co-located observable `ContributionModel` or `ContentModel`, its own same-root `*ViewInputEvent` type when interactive, same-surface support values, and the documented passive reusable view seam. It does not reference `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, root `*ApplicationService` boundaries, `*PublishedEvent`, foreign roots, or foreign non-`View` role families. |
+| `view-view-dependency-boundary` | every passive `*View.java` under `src/view/**` | Error Prone `PassiveViewDependencyBoundaries`, ArchUnit `passiveViewsMustNotReachShellDomainDataOrBootstrap`, and jQAssistant `saltmarcher:PassiveViewAllowedDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewEnforcement` | A passive `View` references only JavaFX UI APIs, its co-located observable `ContributionModel` or `ContentModel`, same-root `*ViewInputEvent` types, same-surface support values, and the documented passive reusable view seam. It does not reference `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, `*PublishedEvent`, foreign roots, or foreign non-`View` role families. |
 | `view-view-model-read-api` | every passive `*View.java` that invokes methods on a co-located model | Error Prone `PassiveViewModelReadApis` | `./gradlew compileJava` | Passive `View` code reads its co-located `ContributionModel` or `ContentModel` only through JavaFX observable or binding surfaces instead of imperative non-observable read APIs. |
-| `view-view-no-model-mutation` | every passive `*View.java` that reaches its co-located model through JavaFX writable surfaces | Error Prone `PassiveViewModelMutationBoundary` and Error Prone `PassiveViewModelReadApis` | `./gradlew compileJava` | Passive `View` code does not mutate its co-located `ContributionModel` or `ContentModel`, including through writable properties, writable values, or observable collections, maps, or sets returned by model accessors. |
+| `view-view-no-model-mutation` | every passive `*View.java` that reaches its co-located model through JavaFX writable surfaces | Error Prone `PassiveViewModelMutationBoundary` | `./gradlew compileJava` | Passive `View` code does not mutate its co-located `ContributionModel` or `ContentModel` through writable properties, writable values, or observable collections, maps, or sets returned by model accessors. |
 | `view-view-presentation-decision-leak` | every passive `*View.java` under `src/view/**` | Error Prone `ViewPresentationDecisionLeak` | `./gradlew compileJava` | Passive `View` code does not branch on same-root model-derived state while directly mutating shared widget presentation such as visibility, managed state, enablement, or shared labels. |
 
 ### Communication Contract
@@ -47,16 +48,12 @@ routing. Those stay in the neighboring role documents.
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
 | `view-view-input-api` | every passive `View` that participates in the same-stem `*ViewInputEvent` protocol | Error Prone `ViewInputEventApi` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | An interactive passive `View` exposes exactly one outward input seam, `onViewInputEvent(Consumer<SameStemViewInputEvent>)`, and does not misshape that seam. |
-| `view-view-callback-seam-boundary` | every passive `*View.java` outside the explicit technical-base allowlist for reusable low-level base controls | Error Prone `PassiveViewCallbackSeamBoundary` and ArchUnit `passiveViewsWithoutLocalIntentHandlersOrViewInputEventsMustNotExposeCallbackSeams` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewEnforcement` | Passive `View` code does not expose alternate callback, async-result, acknowledgement, or other result-bearing outward seams. Interactive unit-facing `View`s use only `onViewInputEvent(Consumer<SameStemViewInputEvent>)`; non-interactive passive `View`s stay callback-flat. |
+| `view-view-callback-seam-boundary` | every passive `*View.java` outside the explicit technical-base allowlist for reusable low-level base controls | Error Prone `PassiveViewCallbackSeamBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | Outside the explicit technical-base allowlist, a passive `View` does not expose alternate callback, async-result, acknowledgement, or other result-bearing outward seams. If the `View` exposes an outward technical input seam at all, that seam is the documented `onViewInputEvent(Consumer<SameStemViewInputEvent>)` route. |
 
 ## Review-Owned
 
 - whether a mechanically legal passive `View` is still too broad and should be
   split into clearer surfaces
-- whether state currently exposed by the shared model really belongs in shared
-  projection state or should stay widget-local to the passive `View`
-- whether a reusable `slotcontent/**` passive `View` is genuinely reusable
-  rather than a feature-specific one-off hidden behind a generic path
 - `view-view-no-handler-business-meaning-expansion`
   a passive `View` without a local `IntentHandler` still stays passive; it must
   not infer business meaning inside otherwise legal local presentation code.

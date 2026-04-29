@@ -1,16 +1,14 @@
 package saltmarcher.architecture;
 
-import saltmarcher.architecture.data.DataEnforcementCoverageRules;
 import saltmarcher.architecture.data.DataPersistenceRules;
-import saltmarcher.architecture.domain.DomainEnforcementCoverageRules;
 import saltmarcher.architecture.domain.DomainFeatureRules;
 import saltmarcher.architecture.shell.ShellSurfaceRules;
 import saltmarcher.architecture.system.BuildHarnessPolicyRules;
 import saltmarcher.architecture.system.RepositoryTopologyRules;
 import saltmarcher.architecture.system.SourceLayoutRules;
-import saltmarcher.architecture.view.intenthandler.ViewIntentHandlerTopologyRules;
-import saltmarcher.architecture.view.viewinputevent.ViewInputEventTopologyRules;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,17 +23,15 @@ public final class ArchitectureChecker {
 
     public Result check() {
         ViolationSink sink = new ViolationSink();
-        List<ArchitectureRule> rules = List.of(
+        List<ArchitectureRule> rules = new ArrayList<>(List.of(
                 new BuildHarnessPolicyRules(),
                 new RepositoryTopologyRules(),
                 new SourceLayoutRules(),
-                new ViewIntentHandlerTopologyRules(),
-                new ViewInputEventTopologyRules(),
                 new DomainFeatureRules(),
-                new DomainEnforcementCoverageRules(),
                 new ShellSurfaceRules(),
-                new DataPersistenceRules(),
-                new DataEnforcementCoverageRules());
+                new DataPersistenceRules()));
+        addOptionalRule(rules, "saltmarcher.architecture.view.intenthandler.ViewIntentHandlerTopologyRules");
+        addOptionalRule(rules, "saltmarcher.architecture.view.viewinputevent.ViewInputEventTopologyRules");
 
         for (ArchitectureRule rule : rules) {
             rule.check(context, sink);
@@ -47,6 +43,22 @@ public final class ArchitectureChecker {
                         .thenComparing(Violation::details))
                 .toList();
         return new Result(ordered);
+    }
+
+    private static void addOptionalRule(List<ArchitectureRule> rules, String className) {
+        try {
+            Class<?> ruleClass = Class.forName(className);
+            Object candidate = ruleClass.getDeclaredConstructor().newInstance();
+            if (candidate instanceof ArchitectureRule architectureRule) {
+                rules.add(architectureRule);
+                return;
+            }
+            throw new IllegalStateException(className + " does not implement ArchitectureRule.");
+        } catch (ClassNotFoundException ignored) {
+            // Focused enforcement runs intentionally omit inactive bundle sources.
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException exception) {
+            throw new IllegalStateException("Failed to instantiate architecture rule " + className + ".", exception);
+        }
     }
 
     public record Result(List<Violation> violations) {

@@ -29,7 +29,7 @@ tasks.named<JavaCompile>("compileJava") {
 val viewContributionArchitectureTest by tasks.registering(Test::class) {
     group = "verification"
     description = "Run only the ViewContribution-focused architecture test suite."
-    dependsOn(tasks.named("classes"))
+    dependsOn(tasks.named("compileJava"))
     inputs.dir(mainJavaClassesDir)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath

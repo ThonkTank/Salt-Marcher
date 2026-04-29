@@ -11,6 +11,17 @@ Source of Truth: Complete architecture-enforcement catalog for tactical
 This document owns the complete architecture-enforcement catalog for the
 tactical `specification/` role itself.
 
+It answers three questions for every domain specification role:
+
+- what the role MUST contain
+- what the role MUST NOT contain
+- which direct communication seams the role itself MAY cross
+
+This document does not own generic named-module shape rules, generic
+named-module forbidden-content rules, or generic named-module communication
+boundaries that also constrain `specification/`. Those live in
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
+
 ## Invariant Catalog
 
 ### Must Contain
@@ -18,28 +29,28 @@ tactical `specification/` role itself.
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-specification-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/specification/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Specification role types are interfaces or final classes whose names end with `Specification`. |
-| `domain-specification-public-concrete-type-shape` | Enforced | every public concrete specification type | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public specification types satisfy the project shape constraints for concrete domain types. |
-| `domain-specification-field-purity` | Enforced | every public specification type | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public specification types do not expose mutable field state. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-specification-no-published-carriers` | Enforced | every compilation unit under `specification/` | Error Prone `DomainModuleNoPublishedCarrierDependency` | `./gradlew compileJava` | Specification code does not depend on same-context or foreign `published/**` carriers. |
+No mechanically enforced forbidden-content invariant is owned by this document
+alone today. Specification code is still constrained by the generic named-module
+forbidden-content rules owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not mirror those rows as role-local invariants.
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-specification-no-same-context-application-boundary` | Enforced | every dependency from `specification/` to its own context root or `application/` | ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary` | `./gradlew checkArchitecture` | Specification code does not depend on its own root `ApplicationService` or `application/` orchestration boundary. |
-| `domain-specification-no-foreign-context-dependencies` | Enforced | every dependency from `specification/` to a foreign domain context | ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts` | `./gradlew checkArchitecture` | Specification code does not reach foreign domain contexts directly. |
-| `domain-specification-no-outbound-port-dependencies` | Enforced | every dependency from `specification/` to a `port/` role | ArchUnit `domainModelRolesMustNotDependOnOutboundPorts` | `./gradlew checkArchitecture` | Specification code does not depend directly on outbound ports. |
+No mechanically enforced communication invariant is owned by this document
+alone today. Specification code is still constrained by the generic named-module
+communication boundaries owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not duplicate those named-module or model-role rows here.
 
 ## Review-Owned
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-specification-real-domain-predicate-semantics` | Review-Owned | every specification role used in a named domain module | none | none | A legal specification role still expresses a meaningful domain predicate instead of merely wrapping a utility boolean helper. |
+| `domain-specification-non-ceremonial-role-use` | Review-Owned | every specification role used in a named domain module | none | none | A legal specification role is used only when it clarifies real domain behavior or contracts rather than serving as ceremonial tactical partitioning. |
 
 ## References
 

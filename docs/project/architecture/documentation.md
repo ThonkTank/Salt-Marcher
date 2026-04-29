@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-04-29
 Source of Truth: Documentation taxonomy, required metadata, and review rules
 for all project documentation outside `AGENTS.md`.
 
@@ -137,7 +137,15 @@ owning `docs/<feature>/<type>/` or `docs/project/<type>/` location.
 
 Documentation governance is broader than compile-time enforcement.
 
+- The dedicated documentation gate is
+  `./gradlew checkDocumentationEnforcement --console=plain`.
+- That gate owns focused structural enforcement for governed documentation
+  surfaces such as `docs/**`, `src/domain/**/DOMAIN.md`, repo-local
+  `AGENTS.md`, and Markdown documentation under `tools/quality/**`.
 - Mechanical checks may lint structure when a dedicated docs gate exists.
+- Mixed implementation changes that also touch non-documentation code, Gradle,
+  or build sources still follow the broader verification path owned by
+  `AGENTS.md` and the quality-platform standards.
 - Canonical ownership disputes, conflicting truth, and same-change update
   expectations remain review responsibilities unless a specific check is named
   elsewhere.

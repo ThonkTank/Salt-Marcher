@@ -11,6 +11,18 @@ Source of Truth: Complete architecture-enforcement catalog for tactical
 This document owns the complete architecture-enforcement catalog for the
 tactical `entity/` role itself.
 
+It answers three questions for every domain entity role:
+
+- what the role MUST contain
+- what the role MUST NOT contain
+- which direct communication seams the role itself MAY cross
+
+This document does not own generic named-module topology, generic public type
+shape constraints, generic named-module forbidden-content rules, or generic
+named-module communication boundaries that also constrain `entity/`. Those
+live in
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
+
 ## Invariant Catalog
 
 ### Must Contain
@@ -18,22 +30,22 @@ tactical `entity/` role itself.
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-entity-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/entity/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Entity role types are records, sealed abstractions, or final classes. |
-| `domain-entity-public-concrete-type-shape` | Enforced | every public concrete entity type | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public entity types satisfy the project shape constraints for concrete domain types. |
-| `domain-entity-field-purity` | Enforced | every public entity type | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public entity types do not expose mutable field state. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-entity-no-published-carriers` | Enforced | every compilation unit under `entity/` | Error Prone `DomainModuleNoPublishedCarrierDependency` | `./gradlew compileJava` | Entity code does not depend on same-context or foreign `published/**` carriers. |
+No mechanically enforced forbidden-content invariant is owned by this document
+alone today. Entity code is still constrained by the generic named-module
+forbidden-content rules owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not duplicate those shared rows here.
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-entity-no-same-context-application-boundary` | Enforced | every dependency from `entity/` to its own context root or `application/` | ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary` | `./gradlew checkArchitecture` | Entity code does not depend on its own root `ApplicationService` or `application/` orchestration boundary. |
-| `domain-entity-no-foreign-context-dependencies` | Enforced | every dependency from `entity/` to a foreign domain context | ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts` | `./gradlew checkArchitecture` | Entity code does not reach foreign domain contexts directly. |
-| `domain-entity-no-outbound-port-dependencies` | Enforced | every dependency from `entity/` to a `port/` role | ArchUnit `domainModelRolesMustNotDependOnOutboundPorts` | `./gradlew checkArchitecture` | Entity code does not depend directly on outbound ports. |
+No mechanically enforced communication invariant is owned by this document
+alone today. Entity code is still constrained by the generic named-module and
+model-role communication boundaries owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not duplicate those shared rows here.
 
 ## Review-Owned
 

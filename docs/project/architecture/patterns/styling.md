@@ -1,8 +1,8 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-19
-Source of Truth: Centralized JavaFX styling rules and blocking checks for active
-application code.
+Last Reviewed: 2026-04-29
+Source of Truth: Centralized JavaFX styling rules and their matching layer-wide
+and passive-`View`-specific enforcement ownership.
 
 # Styling Standard
 
@@ -29,21 +29,24 @@ its own inline presentation rules.
 
 ## Verification Notes
 
-The matching mechanical owner document is
-[Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-enforcement.md:1).
+The matching mechanical owner documents are
+[Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
+and
+[View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
 
-It defines the current blocking owners for:
+The layer document owns stylesheet placement, selector-definition, and generic
+Java-to-CSS communication rules. The view-specific document owns the remaining
+direct-render styling invariants for passive `View` surfaces.
 
-- `styling-inline-setstyle-ban`
-- `styling-centralized-stylesheet-placement`
-- `styling-central-selector-definition`
-- `styling-no-programmatic-visual-styling`
-
-Review-only selector-vocabulary and direct-rendering semantic judgment stay in
-that enforcement document as review-owned rules.
+The current blocking proof surfaces are `checkCentralizedStylesheets`,
+`checkDefinedStyleClassSelectors`, `checkDesktopPackagingInputs`,
+`pmdArchitectureMain`, and `compileJava`. `ViewProgrammaticStyling` remains a
+broader active-code proof surface rather than a dedicated passive-`View`
+styling bundle.
 
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-enforcement.md:1)
+- [Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
+- [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)

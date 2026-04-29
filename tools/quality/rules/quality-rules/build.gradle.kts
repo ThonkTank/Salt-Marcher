@@ -15,7 +15,18 @@ java {
     }
 }
 
-apply(from = "../../view-contribution-enforcement/pmd-host.gradle.kts")
+apply(from = "../../enforcement-bundles.gradle.kts")
+
+@Suppress("UNCHECKED_CAST")
+val activeEnforcementBundleIds = extra["saltmarcherActiveEnforcementBundleIds"] as List<String>
+@Suppress("UNCHECKED_CAST")
+val pmdHostScriptsByBundleId = extra["saltmarcherPmdHostScriptsByBundleId"] as Map<String, String>
+
+activeEnforcementBundleIds
+    .mapNotNull(pmdHostScriptsByBundleId::get)
+    .forEach { scriptPath ->
+        apply(from = scriptPath)
+    }
 
 dependencies {
     implementation("net.sourceforge.pmd:pmd-java:7.23.0")

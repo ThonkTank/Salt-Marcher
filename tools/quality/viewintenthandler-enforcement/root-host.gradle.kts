@@ -30,7 +30,7 @@ tasks.named<JavaCompile>("compileJava") {
 val viewIntentHandlerArchitectureTest by tasks.registering(Test::class) {
     group = "verification"
     description = "Run only the ViewIntentHandler-focused architecture test suite."
-    dependsOn(tasks.named("classes"))
+    dependsOn(tasks.named("compileJava"))
     inputs.dir(mainJavaClassesDir)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath

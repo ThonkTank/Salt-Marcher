@@ -17,9 +17,14 @@ It answers three questions for every domain outbound port:
 - what the role MUST NOT contain
 - which signature and abstraction boundaries the role itself MAY expose
 
-This document does not own data-layer adapter implementation placement or
-domain service/application orchestration semantics. Those live in the data and
-neighboring domain owner docs.
+This document does not own generic named-module communication rules such as
+same-context application-boundary dependencies, foreign-context dependencies,
+or published-carrier dependencies. Those live in the layer-wide domain
+enforcement catalog and neighboring role docs.
+
+This document also does not own positive data-layer adapter placement
+semantics. It owns only the negative domain-side prohibition that outbound
+port implementations must not live inside `src/domain/**`.
 
 ## Invariant Catalog
 
@@ -27,19 +32,20 @@ neighboring domain owner docs.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-role-shape` | Enforced | every type under `src/domain/<context>/<named-module>/port/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Domain ports are interfaces whose names end with `Repository`, `Lookup`, `Catalog`, or `Search`. |
+| `domain-port-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/port/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Domain ports are interfaces whose names end with `Repository`, `Lookup`, `Catalog`, or `Search`. |
+| `domain-port-repository-placement` | Enforced | every type under `src/domain/**` whose simple name ends with `Repository` | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Domain `*Repository` types are outbound port interfaces under `src/domain/<context>/<named-module>/port/`. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-no-implementations-inside-domain` | Enforced | every type under `src/domain/**` that implements a domain outbound port | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound port implementations do not live inside `src/domain/**`. Implementations belong to outer adapters. |
+| `domain-port-no-implementations-inside-domain` | Enforced | every type under `src/domain/**` that implements a domain outbound port | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound port implementations do not live inside `src/domain/**`. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-ownership-and-signature-boundary` | Enforced | every public or protected signature on a domain outbound port | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound ports remain abstract and infrastructure-free in their public signatures instead of leaking SQL, filesystem, network, transaction, persistence, or adapter lifecycle types. |
+| `domain-port-ownership-and-signature-boundary` | Enforced | every public or protected boundary surface on a domain outbound port | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound ports stay interface-shaped and do not leak outer-layer or infrastructure types through `extends` clauses, public/protected fields, method signatures, thrown types, or type bounds. |
 
 ## Review-Owned
 

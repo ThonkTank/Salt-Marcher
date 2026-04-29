@@ -156,10 +156,13 @@ language-level architecture rules.
 | `./gradlew checkDesktopAppImageLayout` | `Blocking Distribution Gate` | Installed desktop app images must keep JavaFX jars on the dedicated JavaFX module path and keep launcher configuration aligned with the packaged layout. |
 | `./gradlew checkViewFxmlResources` | `Blocking Local Gate` | View FXML files must live under the MVVM view-resource tree, avoid inline scripts, and use passive View controllers matching the owning view area. |
 
-The styling rules behind the stylesheet and selector gates are defined in the
-[Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
-and the matching
-[Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-enforcement.md:1).
+The styling rules behind the stylesheet and selector gates, plus the remaining
+direct-render styling invariants for passive `View` surfaces, are defined in
+the
+[Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1),
+[Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1),
+and
+[View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
 
 ## Aggregates And Entry Points
 
@@ -174,7 +177,8 @@ It includes:
   `checkViewBinderEnforcement`,
   `checkViewContributionModelEnforcement`,
   `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-  `pmdArchitectureMain`, `:build-harness:check`, and `checkViewArchitecture`
+  `pmdArchitectureMain`, `:build-harness:architectureCheck`, and
+  `checkViewArchitecture`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
 - SpotBugs plus FindSecBugs through `spotbugsMain`
@@ -182,12 +186,32 @@ It includes:
 - cyclomatic-complexity detection through `lizardMain`
 - OO-metric regression reporting through `ckjmMain`
 
-`./gradlew build --console=plain` remains the implementation-handoff build
-required by `AGENTS.md`. It reaches the same full check set through Gradle's
+`./gradlew build --console=plain` remains the default implementation-handoff
+build required by `AGENTS.md` for production-code changes and shared
+build-logic changes. It reaches the same full check set through Gradle's
 standard `build -> check` lifecycle; SaltMarcher-specific checks must be wired
-to `check`, not duplicated on `build`. A completed implementation pass is
-incomplete until that build has been rerun or a concrete blocker has been
-reported.
+to `check`, not duplicated on `build`.
+
+For implementation work limited to one or more concrete enforcement bundles
+under `tools/quality/*-enforcement/**`, the required handoff proof is the
+matching focused bundle task or tasks instead of the full build. When the pass
+touches shared enforcement wiring such as `build.gradle.kts`,
+`settings.gradle.kts`, `tools/gradle/build-harness/**`,
+`tools/quality/incubator/quality-rules-errorprone/**`,
+`tools/quality/rules/quality-rules/**`, or
+`tools/quality/enforcement-bundles.gradle.kts` but still stays limited to
+enforcement-only behavior, the required handoff proof is all focused
+role/layer bundle entrypoints run serially instead of the full-build path.
+
+`./gradlew checkDocumentationEnforcement --console=plain` is a focused
+`Blocking Local Gate` for Markdown-backed architecture and enforcement
+documentation checks. It is intentionally outside `check` and `build` so
+documentation-only changes can use a narrower proof route without pulling the
+full application build and install path.
+
+A completed implementation pass is incomplete until the required full-build,
+focused-enforcement, or documentation-enforcement rerun has completed, or a
+concrete blocker has been reported.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `spotbugsMain`, `pmdArchitectureMain`, `cpdMain`,
@@ -200,8 +224,9 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkViewContributionModelEnforcement`,
 `checkViewContentModelEnforcement`,
 `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-`checkViewInputEventEnforcement`, and `jqassistantEffectiveRules`, each run
-through `./gradlew <task> --console=plain`.
+`checkViewInputEventEnforcement`, `checkViewPublishedEventEnforcement`,
+`checkViewIntentHandlerEnforcement`, `checkDocumentationEnforcement`, and
+`jqassistantEffectiveRules`, each run through `./gradlew <task> --console=plain`.
 
 `pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
 focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
@@ -215,7 +240,10 @@ Architecture-focused entrypoints:
   `checkViewContributionModelEnforcement`,
   `checkViewContentModelEnforcement`,
   `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-  `pmdArchitectureMain`, and `:build-harness:check`.
+  `pmdArchitectureMain`, and `:build-harness:architectureCheck`.
+- `./gradlew checkDocumentationEnforcement --console=plain`
+  Aggregates the focused Markdown-backed architecture and enforcement-document
+  bundle through `:build-harness:documentationEnforcementCheck`.
 - `./gradlew checkViewBinderEnforcement --console=plain`
   Aggregates the current `Binder` bundle through `compileJava`,
   `viewBinderArchitectureTest`, and the dedicated Binder jQAssistant analysis.
@@ -251,6 +279,13 @@ Architecture-focused entrypoints:
 - `./gradlew checkViewInputEventEnforcement --console=plain`
   Aggregates the current `ViewInputEvent` bundle through `compileJava`,
   `viewInputEventArchitectureTest`, and `:build-harness:viewInputEventTopologyCheck`.
+- `./gradlew checkViewPublishedEventEnforcement --console=plain`
+  Aggregates the current `PublishedEvent` bundle through `compileJava` and
+  `viewPublishedEventArchitectureTest`.
+- `./gradlew checkViewIntentHandlerEnforcement --console=plain`
+  Aggregates the current `IntentHandler` bundle through `compileJava`,
+  `viewIntentHandlerArchitectureTest`, and
+  `:build-harness:viewIntentHandlerTopologyCheck`.
 
 The Gradle convention implementation must keep these public entrypoints stable
 while organizing internal wiring by policy area: invocation behavior, compiler
@@ -291,11 +326,11 @@ prerequisite failed rather than because another independent check failed.
 Local blocking Gradle gates must produce diagnostics from the current
 invocation. `compileJava`, PMD architecture, ArchUnit-backed test entrypoints,
 jQAssistant, PMD non-architecture, SpotBugs, CPD, Lizard, CKJM,
-build-harness architecture checks, and Gradle-owned resource policy checks
-must not report success by being skipped as `UP-TO-DATE` or restored from the
-build cache. Tool installation, dependency resolution, packaging, and
-generated-resource preparation tasks may remain incremental because they are
-not the gate result itself.
+build-harness architecture checks, documentation-enforcement checks, and
+Gradle-owned resource policy checks must not report success by being skipped as
+`UP-TO-DATE` or restored from the build cache. Tool installation, dependency
+resolution, packaging, and generated-resource preparation tasks may remain
+incremental because they are not the gate result itself.
 
 ## References
 

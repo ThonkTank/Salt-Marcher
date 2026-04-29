@@ -140,14 +140,14 @@ public final class SourceLayoutRules implements ArchitectureRule {
                             "Active view Java sources must be direct files under src/view/<area>/<entry>/.");
                 }
             }
-            case "domain" -> validateDomainLayout(context, sourceFile, violations);
-            case "data" -> validateDataLayout(context, sourceFile, violations);
+            case "domain" -> validateDomainLayout(sourceFile, violations);
+            case "data" -> validateDataLayout(sourceFile, violations);
             default -> violations.add(sourceFile.relativePath(), "src-layout",
                     "Sources under src/ must live in src/view, src/domain or src/data.");
         }
     }
 
-    private void validateDomainLayout(ArchitectureContext context, SourceFile sourceFile, ViolationSink violations) {
+    private void validateDomainLayout(SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
         if (segments.size() < 4) {
             violations.add(sourceFile.relativePath(), "domain-layout",
@@ -157,8 +157,7 @@ public final class SourceLayoutRules implements ArchitectureRule {
 
         if (segments.size() == 4) {
             String feature = segments.get(2);
-            String contextName = context.domainContextName(feature);
-            if (!isFeatureFileName(feature, contextName, sourceFile.fileName(), "ApplicationService")) {
+            if (!isFeatureFileName(feature, sourceFile.fileName(), "ApplicationService")) {
                 violations.add(sourceFile.relativePath(), "domain-root-presence",
                         "Only <PascalFeatureName>ApplicationService.java may live directly under src/domain/<feature>/.");
             }
@@ -231,12 +230,11 @@ public final class SourceLayoutRules implements ArchitectureRule {
         }
     }
 
-    private void validateDataLayout(ArchitectureContext context, SourceFile sourceFile, ViolationSink violations) {
+    private void validateDataLayout(SourceFile sourceFile, ViolationSink violations) {
         List<String> segments = sourceFile.relativeSegments();
         if (segments.size() == 4) {
             String feature = segments.get(2);
-            String contextName = context.domainContextName(feature);
-            if (!isFeatureFileName(feature, contextName, sourceFile.fileName(), "ServiceContribution")) {
+            if (!isFeatureFileName(feature, sourceFile.fileName(), "ServiceContribution")) {
                 violations.add(sourceFile.relativePath(), "data-root-service-contribution-only",
                         "Only <PascalFeatureName>ServiceContribution.java may live directly under src/data/<feature>/.");
             }

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-25
+Last Reviewed: 2026-04-29
 Source of Truth: Governance for agent instruction surfaces, the mandatory
 global instruction skill, and ownership boundaries between instruction
 artifacts.
@@ -44,6 +44,16 @@ Any work on covered surfaces must use that skill first.
 - The governing workflow lives in the global `SKILL.md`.
 - `agents/openai.yaml` must not become a second source of truth for workflow.
 
+## Verification Path
+
+- Covered Markdown-only instruction changes that stay inside the documentation
+  gate scope use `./gradlew checkDocumentationEnforcement --console=plain`.
+- Covered changes that also touch non-Markdown code, Gradle, build logic, or
+  non-covered surfaces still follow the broader verification path owned by
+  `AGENTS.md` and the quality-platform standards.
+- `agents/openai.yaml` is governed by this standard but is not itself part of
+  the Markdown-focused documentation gate scope.
+
 ## Ownership Rules
 
 - `AGENTS.md` owns project-wide norms only.
@@ -67,6 +77,7 @@ When a covered artifact changes, reviewers must check:
 - Does `agents/openai.yaml` still match the governing skill?
 - Did the change introduce duplicate or conflicting truth across covered
   surfaces?
+- Does the chosen verification path match the actual changed surfaces?
 
 ## References
 

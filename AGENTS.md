@@ -57,19 +57,37 @@ document exists.
 
 ## SaltMarcher Verification
 
-- After each completed implementation pass, rerun
-  `./gradlew build --console=plain` from the repository root before handoff.
-  If you are working inside `src/` or another subdirectory, set the command
-  working directory to the repository root instead of using `../gradlew`. A pass
-  without that rerun is incomplete and must remain WIP.
+- After each completed implementation pass that changes production code or
+  shared build infrastructure, rerun `./gradlew build --console=plain` from the
+  repository root before handoff. If you are working inside `src/` or another
+  subdirectory, set the command working directory to the repository root instead
+  of using `../gradlew`.
+- After each completed implementation pass limited to one or more concrete
+  enforcement bundles under `tools/quality/*-enforcement/**`, rerun only the
+  matching focused bundle task or tasks from the repository root before handoff
+  instead of the full build. If the pass changes shared enforcement wiring
+  under `build.gradle.kts`, `settings.gradle.kts`,
+  `tools/gradle/build-harness/**`,
+  `tools/quality/incubator/quality-rules-errorprone/**`,
+  `tools/quality/rules/quality-rules/**`, or
+  `tools/quality/enforcement-bundles.gradle.kts` but still stays limited to
+  enforcement-only behavior, rerun all role/layer-specific focused bundle
+  tasks serially and do not fall back to `./gradlew build`.
+- After each completed documentation-only pass limited to `AGENTS.md`,
+  `docs/**`, `src/domain/**/DOMAIN.md`, or Markdown files under
+  `tools/quality/**`, rerun
+  `./gradlew checkDocumentationEnforcement --console=plain` from the repository
+  root before handoff instead of the full build.
+- A pass without the required full-build, focused-enforcement, or
+  documentation-enforcement rerun is incomplete and must remain WIP.
 - Codex-managed Gradle invocations automatically use per-agent build and
   project-cache directories when `CODEX_THREAD_ID` is present. Non-Codex agents
   that run local Gradle gates concurrently must set a unique
   `SALTMARCHER_GRADLE_ISOLATION_ID`; do not reuse another agent's isolation id.
 - When the desktop app is the manual test surface, run
   `./gradlew installDesktopApp` after the successful build before handoff
-  unless the user explicitly waives reinstall or the task is purely non-code
-  planning or review work.
+  unless the user explicitly waives reinstall, the task is documentation-only,
+  or the task is purely non-code planning or review work.
 
 ## Document Types
 

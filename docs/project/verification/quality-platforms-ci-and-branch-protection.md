@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-04-29
 Source of Truth: Detailed CI job policy, external service setup, branch
 protection expectations, and review governance for SaltMarcher quality
 platforms.
@@ -21,10 +21,15 @@ and defines four jobs.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the CI mirror of the local full blocker. |
+| `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the CI mirror of the implementation-facing local full blocker. The documentation-only `checkDocumentationEnforcement` path stays outside this required CI job. |
 | `quality-platforms / ckjm-report` | `Required CI Report` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
+
+The focused local gate
+`./gradlew checkDocumentationEnforcement --console=plain` remains intentionally
+outside the required GitHub Actions job set. It validates documentation-only
+governance changes locally without reclassifying them as CI full-build work.
 
 ### SonarCloud
 
@@ -98,6 +103,10 @@ The quality platforms do not replace human review.
 
 - documentation ownership, source-of-truth conflicts, and same-change
   documentation updates remain review responsibilities
+- whether a change qualifies for the focused local
+  `checkDocumentationEnforcement` path, a focused enforcement-bundle rerun, or
+  the broader implementation blocker remains a review and authoring
+  responsibility unless `AGENTS.md` already makes that scope mechanical
 - GitHub branch protection, required checks, secrets, variables, and service
   project bindings remain repository configuration, not Gradle behavior
 - whether a PMD, CPD, Lizard, SonarCloud, or CodeScene finding is a symptom of

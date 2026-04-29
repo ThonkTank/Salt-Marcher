@@ -106,7 +106,7 @@ val jqassistantScanViewInspectorEntryEnforcement by tasks.registering(Exec::clas
     description = "Scan SaltMarcher InspectorEntry topology for the dedicated InspectorEntry enforcement bundle."
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
-    dependsOn("installJqassistant", prepareViewInspectorEntryJqassistantConfig, tasks.named("classes"))
+    dependsOn("installJqassistant", prepareViewInspectorEntryJqassistantConfig, tasks.named("compileJava"))
     inputs.file(inspectorEntryJqassistantGeneratedConfigFile)
     inputs.dir(inspectorEntryJqassistantRulesDir)
     inputs.dir(mainJavaClassesDir)

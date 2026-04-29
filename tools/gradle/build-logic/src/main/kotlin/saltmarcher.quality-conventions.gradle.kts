@@ -79,6 +79,69 @@ val requestedTaskNames = gradle.startParameter.taskNames
     .map { taskName -> taskName.substringAfterLast(":") }
     .toSet()
 
+val enforcementBundleTaskNames = setOf(
+    "checkViewEnforcement",
+    "viewSurfaceArchitectureTest",
+    "checkViewFxmlResources",
+    "jqassistantScanViewEnforcement",
+    "jqassistantAnalyzeViewEnforcement",
+    "checkViewContributionEnforcement",
+    "viewContributionArchitectureTest",
+    "pmdViewContributionEnforcement",
+    "checkViewBinderEnforcement",
+    "viewBinderArchitectureTest",
+    "jqassistantScanViewBinderEnforcement",
+    "jqassistantAnalyzeViewBinderEnforcement",
+    "checkViewLayerEnforcement",
+    "viewLayerArchitectureTest",
+    "viewLayerTopologyCheck",
+    "checkViewInspectorEntryEnforcement",
+    "jqassistantScanViewInspectorEntryEnforcement",
+    "jqassistantAnalyzeViewInspectorEntryEnforcement",
+    "viewInspectorEntryTopologyCheck",
+    "checkViewInputEventEnforcement",
+    "viewInputEventArchitectureTest",
+    "viewInputEventTopologyCheck",
+    "checkViewPublishedEventEnforcement",
+    "viewPublishedEventArchitectureTest",
+    "checkViewIntentHandlerEnforcement",
+    "viewIntentHandlerArchitectureTest",
+    "viewIntentHandlerTopologyCheck",
+    "checkViewContributionModelEnforcement",
+    "viewContributionModelArchitectureTest",
+    "jqassistantScanViewContributionModelEnforcement",
+    "jqassistantAnalyzeViewContributionModelEnforcement",
+    "viewContributionModelTopologyCheck",
+    "checkViewContentModelEnforcement",
+    "viewContentModelArchitectureTest",
+    "jqassistantScanViewContentModelEnforcement",
+    "jqassistantAnalyzeViewContentModelEnforcement",
+    "viewContentModelTopologyCheck"
+)
+
+val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty()
+    && requestedTaskNames.any { taskName -> taskName in enforcementBundleTaskNames }
+    && requestedTaskNames.none { taskName ->
+        taskName in setOf(
+            "build",
+            "check",
+            "assemble",
+            "classes",
+            "compileJava",
+            "jar",
+            "test",
+            "installDesktopApp",
+            "installDist",
+            "run",
+            "checkArchitecture",
+            "checkViewArchitecture",
+            "architectureTest",
+            "pmdArchitectureMain",
+            "jqassistantEffectiveRules"
+        )
+    }
+    && requestedTaskNames.all { taskName -> taskName in enforcementBundleTaskNames }
+
 if (requestedTaskNames.any { it in continueOnFailureEntrypoints }) {
     gradle.startParameter.setContinueOnFailure(true)
 }
@@ -207,39 +270,39 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.disable("StringConcatToTextBlock")
     options.errorprone.disable("ThreadJoinLoop")
     options.errorprone.error("EqualsNull")
-    options.errorprone.error("DataAdapterGatewayCollaboratorBoundary")
-    options.errorprone.error("DataAdapterPublicSignatureLeak")
-    options.errorprone.error("DataAdapterRoleContract")
-    options.errorprone.error("DataGatewayReturnTypeBoundary")
-    options.errorprone.error("DataModelSourceShape")
-    options.errorprone.error("DataQueryGatewayMutationBoundary")
-    options.errorprone.error("DataServiceContributionConstructionPurity")
-    options.errorprone.error("DomainApplicationNoSameContextPublishedDependency")
-    options.errorprone.error("DomainApplicationServiceApiShape")
-    options.errorprone.error("DomainForbiddenInfrastructureDependency")
-    options.errorprone.error("DomainPublishedCarrierShape")
-    options.errorprone.error("DomainModuleFieldPurity")
-    options.errorprone.error("DomainModuleNoPublishedCarrierDependency")
-    options.errorprone.error("DomainPortBoundary")
-    options.errorprone.error("DomainPublicBoundarySignaturePurity")
-    options.errorprone.error("DomainPublicConcreteTypeShape")
-    options.errorprone.error("DomainRoleShape")
-    options.errorprone.error("DomainServiceRegistryExportShape")
-    options.errorprone.error("DomainServiceFactoryStatelessness")
-    options.errorprone.error("FeatureShellApiAllowlist")
     options.errorprone.error("NullAway")
     options.errorprone.error("ReferenceEquality")
-    options.errorprone.error("ServiceRegistryRegistrationPlacement")
-    options.errorprone.error("ShellLifecycleHookOwnership")
     options.errorprone.error("StringCaseLocaleUsage")
     options.errorprone.error("StringSplitter")
-    options.errorprone.error("ViewDetailsSlotBoundary")
-    options.errorprone.error("ProjectionModelOwnershipNaming")
-    options.errorprone.error("ViewContentModelDependencyBoundary")
-    options.errorprone.error("ViewContentModelFlatSurface")
-    options.errorprone.error("ViewProgrammaticStyling")
-    options.errorprone.error("ViewReflectionBypass")
-    options.errorprone.error("ViewRootDelegation")
+    if (!focusedEnforcementBundleMode) {
+        options.errorprone.error("DataAdapterGatewayCollaboratorBoundary")
+        options.errorprone.error("DataAdapterPublicSignatureLeak")
+        options.errorprone.error("DataAdapterRoleContract")
+        options.errorprone.error("DataGatewayReturnTypeBoundary")
+        options.errorprone.error("DataModelSourceShape")
+        options.errorprone.error("DataQueryGatewayMutationBoundary")
+        options.errorprone.error("DataServiceContributionConstructionPurity")
+        options.errorprone.error("DomainApplicationNoSameContextPublishedDependency")
+        options.errorprone.error("DomainApplicationServiceApiShape")
+        options.errorprone.error("DomainForbiddenInfrastructureDependency")
+        options.errorprone.error("DomainPublishedCarrierShape")
+        options.errorprone.error("DomainModuleFieldPurity")
+        options.errorprone.error("DomainModuleNoPublishedCarrierDependency")
+        options.errorprone.error("DomainPortBoundary")
+        options.errorprone.error("DomainPublicBoundarySignaturePurity")
+        options.errorprone.error("DomainPublicConcreteTypeShape")
+        options.errorprone.error("DomainRoleShape")
+        options.errorprone.error("DomainServiceRegistryExportShape")
+        options.errorprone.error("DomainServiceFactoryStatelessness")
+        options.errorprone.error("FeatureShellApiAllowlist")
+        options.errorprone.error("ServiceRegistryRegistrationPlacement")
+        options.errorprone.error("ShellLifecycleHookOwnership")
+        options.errorprone.error("ViewDetailsSlotBoundary")
+        options.errorprone.error("ProjectionModelOwnershipNaming")
+        options.errorprone.error("ViewProgrammaticStyling")
+        options.errorprone.error("ViewReflectionBypass")
+        options.errorprone.error("ViewRootDelegation")
+    }
     options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
     options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
 }
@@ -383,8 +446,10 @@ val renderDesktopIconPng by tasks.registering(RenderDesktopIconTask::class) {
 }
 
 tasks.named<ProcessResources>("processResources") {
-    dependsOn(renderDesktopIconPng)
-    from(renderDesktopIconPng.flatMap { it.outputDirectory })
+    if (!focusedEnforcementBundleMode) {
+        dependsOn(renderDesktopIconPng)
+        from(renderDesktopIconPng.flatMap { it.outputDirectory })
+    }
 }
 
 // Complexity, duplication, and metrics gates
@@ -459,13 +524,13 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
 
 val checkArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs non-view-architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
+    description = "Runs non-documentation architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
     dependsOn("architectureTest")
     dependsOn("checkViewBinderEnforcement")
     dependsOn("checkViewInspectorEntryEnforcement")
     dependsOn("checkViewLayerEnforcement")
     dependsOn("pmdArchitectureMain")
-    dependsOn(gradle.includedBuild("build-harness").task(":check"))
+    dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
 }
 
 val checkNoCompiledArtifactsInSource by tasks.registering(CheckNoCompiledArtifactsTask::class) {
@@ -532,7 +597,7 @@ tasks.named("check") {
     dependsOn("checkViewInspectorEntryEnforcement")
     dependsOn("checkViewLayerEnforcement")
     dependsOn("pmdArchitectureMain")
-    dependsOn(gradle.includedBuild("build-harness").task(":check"))
+    dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
     dependsOn(checkViewArchitecture)
     dependsOn(checkCentralizedStylesheets)
     dependsOn(checkDefinedStyleClassSelectors)

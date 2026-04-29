@@ -139,10 +139,22 @@ Operationally, architecture checks enter local quality through:
   runs the focused `ViewInputEvent` enforcement bundle by aggregating the
   current compiler-integrated checks, the dedicated ArchUnit suite, and the
   dedicated build-harness topology check through one direct root entrypoint
+- `checkViewPublishedEventEnforcement`
+  runs the focused `PublishedEvent` enforcement bundle by aggregating the
+  current compiler-integrated checks and the dedicated ArchUnit suite through
+  one direct root entrypoint
+- `checkViewIntentHandlerEnforcement`
+  runs the focused `IntentHandler` enforcement bundle by aggregating the
+  current compiler-integrated checks, the dedicated ArchUnit suite, and the
+  dedicated build-harness topology check through one direct root entrypoint
+- `checkDocumentationEnforcement`
+  runs the focused Markdown-backed architecture and enforcement-documentation
+  bundle through the dedicated documentation-enforcement build-harness path and
+  stays intentionally outside `checkArchitecture`, `check`, and `build`
 - `checkArchitecture`
   aggregates the focused `Contribution`, `Binder`, `ContributionModel`, and
   `ContentModel` bundles, ArchUnit, PMD architecture rules, and the
-  build-harness
+  non-documentation build-harness path
 - `check`
   runs the architecture harness plus adjacent non-architecture quality gates.
   Its view-specific focused coverage comes from the explicit
@@ -150,7 +162,8 @@ Operationally, architecture checks enter local quality through:
   `checkViewContributionModelEnforcement`,
   `checkViewContentModelEnforcement`,
   `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`, and
-  `checkViewArchitecture` dependencies
+  `checkViewArchitecture` dependencies. The dedicated
+  `checkDocumentationEnforcement` path is intentionally excluded.
 
 Architecture rule status must not be reclassified here. If a layer standard and
 its matching enforcement document disagree about whether a rule is mechanically

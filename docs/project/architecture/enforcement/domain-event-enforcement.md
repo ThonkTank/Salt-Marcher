@@ -11,35 +11,48 @@ Source of Truth: Complete architecture-enforcement catalog for tactical
 This document owns the complete architecture-enforcement catalog for the
 tactical `event/` role itself.
 
+It answers four questions for every domain event role:
+
+- when the role MAY exist and contain event carriers at all
+- what the role MUST contain
+- what the role MUST NOT contain
+- which direct communication seams the role itself MAY cross
+
+This document does not own generic named-module topology, generic public-type
+shape or field-purity rules, generic named-module forbidden-content rules, or
+generic named-module and model-role communication boundaries that also
+constrain `event/`. Those live in
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
+
 ## Invariant Catalog
+
+### May Contain
+
+| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- | --- | --- |
+| `domain-event-domain-meaningfulness` | Review-Owned | every event role used in a named domain module | none | none | A named domain module may contain an `event/` role only when it expresses meaningful domain events. The role must not be used for internal processing steps, technical callbacks, or ceremonial tactical partitioning. |
 
 ### Must Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-event-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/event/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Event role types are records whose simple names end with `Event`. |
-| `domain-event-public-concrete-type-shape` | Enforced | every public concrete event type | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public event types satisfy the project shape constraints for concrete domain types. |
-| `domain-event-field-purity` | Enforced | every public event type | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public event types do not expose mutable field state. |
 
 ### Must Not Contain
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-event-no-published-carriers` | Enforced | every compilation unit under `event/` | Error Prone `DomainModuleNoPublishedCarrierDependency` | `./gradlew compileJava` | Event code does not depend on same-context or foreign `published/**` carriers. |
+No mechanically enforced forbidden-content invariant is owned by this document
+alone today. Event code is still constrained by the generic named-module
+forbidden-content rules owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not mirror those shared rows as role-local invariants.
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-event-no-same-context-application-boundary` | Enforced | every dependency from `event/` to its own context root or `application/` | ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary` | `./gradlew checkArchitecture` | Event code does not depend on its own root `ApplicationService` or `application/` orchestration boundary. |
-| `domain-event-no-foreign-context-dependencies` | Enforced | every dependency from `event/` to a foreign domain context | ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts` | `./gradlew checkArchitecture` | Event code does not reach foreign domain contexts directly. |
-| `domain-event-no-outbound-port-dependencies` | Enforced | every dependency from `event/` to a `port/` role | ArchUnit `domainModelRolesMustNotDependOnOutboundPorts` | `./gradlew checkArchitecture` | Event code does not depend directly on outbound ports. |
-
-## Review-Owned
-
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-event-domain-meaningfulness` | Review-Owned | every event role used in a named domain module | none | none | A legal event role still names a meaningful domain event rather than an internal processing step or technical callback. |
+No mechanically enforced communication invariant is owned by this document
+alone today. Event code is still constrained by the generic named-module and
+model-role communication boundaries owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not duplicate those shared rows here.
 
 ## References
 

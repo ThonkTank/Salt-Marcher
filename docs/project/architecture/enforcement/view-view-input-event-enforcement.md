@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
+Last Reviewed: 2026-04-29
 Source of Truth: Mechanically enforced and review-owned invariants for
 `*ViewInputEvent` carriers in `src/view/**`.
 
@@ -9,37 +9,45 @@ Source of Truth: Mechanically enforced and review-owned invariants for
 ## Goal
 
 This document owns the complete architecture-enforcement catalog for the
-`*ViewInputEvent` role itself and for the event-specific cross-role
-communication contract whose subject is that carrier.
+`*ViewInputEvent` role itself.
 
 It answers four questions for every `*ViewInputEvent` surface:
 
 - when the carrier MAY and MUST exist
 - what the carrier MAY contain
 - what the carrier MUST NOT contain
-- which local communication boundary the carrier itself is allowed to cross
+- which remaining carrier-local semantics are still review-owned
 
-This document does not own general `View`, `Binder`, or `IntentHandler`
-dependency rules, naming rules, or non-`*ViewInputEvent` mutation semantics.
-Those stay in the neighboring role documents.
+This document does not own passive `View` outward seam shape,
+Binder-installed forwarding, `IntentHandler.consume(...)` entrypoint shape, or
+alternate callback-route bans. Those stay in the neighboring role documents.
+
+Unified focused bundle entrypoint:
+
+- `./gradlew checkViewInputEventEnforcement --rerun-tasks --console=plain`
+  runs the currently active ViewInputEvent-focused Error Prone, ArchUnit, and
+  build-harness checks through one root task. Canonical blocking behavior
+  remains at `./gradlew compileJava` and `./gradlew checkArchitecture` as
+  listed below.
 
 ## Invariant Catalog
 
-### Must Exist
+### May Exist
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-viewinputevent-local-intenthandler-required` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | build-harness `ViewInputEventTopologyRules`, ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews`, and ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers` | `./gradlew checkArchitecture` | A `*ViewInputEvent` may exist only inside a local interactive view unit that also defines a passive same-stem `*View` surface and a local `*IntentHandler`. |
-| `view-viewinputevent-same-stem-local-belonging` | Enforced | every passive `*View.java` that participates in the `*ViewInputEvent` role and every `*ViewInputEvent.java` under `src/view/**` | ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers` and ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews` | `./gradlew checkArchitecture` | Each interactive passive `View` surface owns exactly one same-stem co-located `*ViewInputEvent.java`, and each carrier belongs only to its own same-stem local interactive `View` surface. |
+| `view-viewinputevent-same-stem-local-belonging` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers` and ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews` | `./gradlew checkArchitecture` | Each carrier belongs only to its own same-stem local interactive `View` surface. |
 
 ### Must Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-viewinputevent-top-level-record-shape` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` | `*ViewInputEvent` carriers are top-level immutable `record` types rather than mutable classes or helper-shaped containers. |
-| `view-viewinputevent-technical-payload-allowlist` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` | `*ViewInputEvent` payloads stay within JDK value/container types, the allowed JavaFX technical input/value families (`javafx.event.*`, `javafx.geometry.*`, `javafx.scene.input.*`), and the carrier's own top-level or nested type boundary. |
+| `view-viewinputevent-allowed-technical-javafx-families-only` | Enforced | every `*ViewInputEvent.java` under `src/view/**` that references JavaFX types | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` | If a `*ViewInputEvent` payload references JavaFX types, those references stay inside the allowed technical input/value families `javafx.event.*`, `javafx.geometry.*`, and `javafx.scene.input.*`. |
 | `view-viewinputevent-full-snapshot-semantic-adequacy` | Review-Owned | every `*ViewInputEvent.java` under `src/view/**` | none | none | A mechanically legal carrier still represents the one full technical snapshot its local `IntentHandler` needs, rather than a partial bag that silently relies on hidden reads or follow-up callbacks. |
 | `view-viewinputevent-technically-necessary-facts-only` | Review-Owned | every `*ViewInputEvent.java` under `src/view/**` | none | none | The carrier contains only the technical facts needed for local intent interpretation, rather than speculative or convenience payload. |
+| `view-viewinputevent-same-surface-local-support-only` | Review-Owned | every `*ViewInputEvent.java` under `src/view/**` | none | none | Non-JavaFX support typing stays local to the carrier surface itself instead of pulling in broad helper or infrastructure types that the current gates do not yet reject explicitly. |
 
 ### Must Not Contain
 
@@ -49,18 +57,19 @@ Those stay in the neighboring role documents.
 | `view-viewinputevent-no-outer-layer-dependencies` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` and ArchUnit `viewInputEventsMustStayShellDomainDataAndServiceFree` | `./gradlew compileJava` and `./gradlew checkArchitecture` | A `*ViewInputEvent` does not depend on `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
 | `view-viewinputevent-no-dead-snapshot-components` | Enforced | every record-shaped `*ViewInputEvent.java` with a co-located `IntentHandler.consume(...)` overload | ArchUnit `viewInputEventsMustNotDeclareDeadSnapshotComponents` | `./gradlew checkArchitecture` | Every top-level `*ViewInputEvent` record component is read somewhere by the co-located `IntentHandler.consume(...)` entrypoint instead of remaining dead carrier baggage. |
 
-### Communication Contract
+### Review-Owned Carrier Semantics
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-viewinputevent-view-origin-and-intenthandler-target-only` | Enforced Elsewhere | every interactive same-stem `ViewInputEvent` seam inside `src/view/**` | Error Prone `ViewInputEventApi`, Error Prone `ViewBinderViewInputEventWiring`, and Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava`, `./gradlew checkViewEnforcement`, `./gradlew checkViewBinderEnforcement`, and `./gradlew checkViewIntentHandlerEnforcement` | A `*ViewInputEvent` leaves its own same-stem passive `View` only through `onViewInputEvent(Consumer<SameStemViewInputEvent>)`, the owning `Binder` forwards that exact carrier, and the only local target is the co-located `IntentHandler.consume(...)` entrypoint. |
-| `view-viewinputevent-no-alternate-outbound-route` | Enforced Elsewhere | every passive `*View.java` that participates in the `*ViewInputEvent` protocol | Error Prone `PassiveViewCallbackSeamBoundary`, Error Prone `ViewInputEventApi`, and ArchUnit `passiveViewsWithoutLocalIntentHandlersOrViewInputEventsMustNotExposeCallbackSeams` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewEnforcement` | The `*ViewInputEvent` protocol does not branch into alternate callback, async-result, or acknowledgement seams; outward communication stays on the one documented input-event route. |
-| `view-viewinputevent-fire-and-forget-full-snapshot-semantics` | Review-Owned | every interactive same-stem `ViewInputEvent` seam inside `src/view/**` | none | none | The legal route above is still used as one fire-and-forget full snapshot, not as presenter-style commands, ad-hoc partial event bags, or a protocol that expects synchronous technical acknowledgements. |
+| `view-viewinputevent-fire-and-forget-full-snapshot-semantics` | Review-Owned | every `*ViewInputEvent.java` under `src/view/**` | none | none | The carrier is authored as one fire-and-forget full snapshot for its own surface, not as a presenter-style command, ad-hoc partial delta bag, or acknowledgement protocol. |
 
 ## Candidate
 
+- mechanizing `view-viewinputevent-same-surface-local-support-only` by
+  explicitly rejecting foreign non-view support contracts and view-irrelevant
+  infrastructure types instead of leaving that boundary to review
 - classifying same-surface helper ownership more explicitly than the current
-  own-type-boundary proof, if future legal helper shapes become necessary
+  own-type-boundary proof if future legal helper shapes become necessary
 
 ## References
 

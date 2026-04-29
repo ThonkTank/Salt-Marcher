@@ -87,16 +87,22 @@ sourceSets {
     }
 }
 
-apply(from = "tools/quality/viewinputevent-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/view-binder-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/view-contribution-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/view-view-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/view-layer-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/view-inspector-entry-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/publishedevent-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/viewintenthandler-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/view-contributionmodel-enforcement/root-host.gradle.kts")
-apply(from = "tools/quality/view-content-model-enforcement/root-host.gradle.kts")
+apply(from = "tools/quality/enforcement-bundles.gradle.kts")
+
+val focusedEnforcementBundleMode = extra["saltmarcherFocusedEnforcementBundleMode"] as Boolean
+@Suppress("UNCHECKED_CAST")
+val activeEnforcementBundleIds = extra["saltmarcherActiveEnforcementBundleIds"] as List<String>
+@Suppress("UNCHECKED_CAST")
+val rootHostScriptsByBundleId = extra["saltmarcherRootHostScriptsByBundleId"] as Map<String, String>
+
+activeEnforcementBundleIds
+    .map(rootHostScriptsByBundleId::getValue)
+    .forEach { scriptPath ->
+        apply(from = scriptPath)
+    }
+if (!focusedEnforcementBundleMode) {
+    apply(from = "tools/quality/documentation-enforcement/root-host.gradle.kts")
+}
 
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")

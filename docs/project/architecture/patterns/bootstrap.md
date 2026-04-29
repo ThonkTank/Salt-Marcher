@@ -1,19 +1,40 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
-Source of Truth: Bootstrap responsibilities, discovery contracts,
-instantiation rules, registration order, and startup resolution for passive
-shell contributions.
+Last Reviewed: 2026-04-29
+Source of Truth: Bootstrap-layer responsibilities, desktop launch framing,
+discovery contracts, instantiation rules, registration order, and startup
+resolution for passive shell contributions.
 
 # Bootstrap Standard
 
 ## Goal
 
 Bootstrap discovers and registers shell-facing UI contributions and backend
-service contributions generically without becoming a feature registry.
+service contributions generically and owns desktop launch framing around shell
+startup without becoming a feature registry or a second UI layer.
 
-Bootstrap owns startup composition only. It does not own shell behavior,
-feature behavior, business rules, or view-layer presentation logic.
+Bootstrap owns desktop startup framing, startup composition, and generic
+discovery only. It does not own shell behavior, feature behavior, business
+rules, or view-layer presentation logic.
+
+## Layer Scope
+
+The bootstrap layer is the outer composition and launch boundary under
+`bootstrap/**`.
+
+It may contain:
+
+- desktop application launch framing around `AppShell`
+- packaged startup-preloader framing
+- generic discovery helpers for documented view and data registration roots
+- startup resolution and deterministic registration sequencing
+
+It must not become:
+
+- a feature registry with handwritten per-feature wiring
+- a shell-host extension surface
+- a feature-logic or presentation-state home
+- a second generic JavaFX feature layer beside `src/view/**`
 
 ## Bootstrap Responsibilities
 
@@ -29,6 +50,21 @@ feature behavior, business rules, or view-layer presentation logic.
 
 Routine feature addition must not require manual bootstrap registries,
 feature-specific bootstrap imports, or handwritten per-feature shell wiring.
+
+## Desktop Launch Framing
+
+Bootstrap also owns the desktop launch surface around shell startup.
+
+When the desktop app launch surface exists, bootstrap:
+
+- creates the JavaFX stage and scene around the composed `AppShell`
+- applies global startup resources such as the centralized stylesheet and
+  desktop window icon
+- coordinates packaged preloader handoff around shell startup
+
+This launch framing stays outer and technical. It must not absorb feature
+views, feature workflow, or shell-host behavior beyond creating and showing the
+shell.
 
 ## Discovery Contracts
 
@@ -55,6 +91,11 @@ Bootstrap:
 - expects that class to implement `shell.api.ServiceContribution`
 - expects a public no-arg constructor
 - registers exported capabilities into the shared shell service registry
+
+Bootstrap must not discover or register feature-internal view or data roles
+such as `*Binder`, `*View`, `*ContributionModel`, `*ContentModel`,
+`*IntentHandler`, `repository/`, `query/`, `gateway/`, `model/`, or `mapper/`
+as bootstrap entrypoints.
 
 ## Instantiation Rules
 
@@ -98,3 +139,4 @@ navigation-order contract.
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
 - [Bootstrap Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/bootstrap-enforcement.md:1)
+- [Bootstrap AppBootstrap Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/bootstrap-app-bootstrap-enforcement.md:1)

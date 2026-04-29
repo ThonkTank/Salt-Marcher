@@ -21,46 +21,34 @@ java {
     }
 }
 
-apply(from = "../../view-view-enforcement/errorprone-host.gradle.kts")
-apply(from = "../../view-binder-enforcement/errorprone-host.gradle.kts")
-apply(from = "../../viewinputevent-enforcement/errorprone-host.gradle.kts")
-apply(from = "../../view-contribution-enforcement/errorprone-host.gradle.kts")
-apply(from = "../../publishedevent-enforcement/errorprone-host.gradle.kts")
-apply(from = "../../view-inspector-entry-enforcement/errorprone-host.gradle.kts")
-apply(from = "../../viewintenthandler-enforcement/errorprone-host.gradle.kts")
-apply(from = "../../view-contributionmodel-enforcement/errorprone-host.gradle.kts")
-apply(from = "../../view-content-model-enforcement/errorprone-host.gradle.kts")
+apply(from = "../../enforcement-bundles.gradle.kts")
+
+@Suppress("UNCHECKED_CAST")
+val activeEnforcementBundleIds = extra["saltmarcherActiveEnforcementBundleIds"] as List<String>
+@Suppress("UNCHECKED_CAST")
+val errorProneHostScriptsByBundleId = extra["saltmarcherErrorProneHostScriptsByBundleId"] as Map<String, String>
+@Suppress("UNCHECKED_CAST")
+val errorProneSourceDirsByBundleId = extra["saltmarcherErrorProneSourceDirsByBundleId"] as Map<String, String>
+@Suppress("UNCHECKED_CAST")
+val errorProneServiceFilesByBundleId = extra["saltmarcherErrorProneServiceFilesByBundleId"] as Map<String, String>
+
+activeEnforcementBundleIds
+    .mapNotNull(errorProneHostScriptsByBundleId::get)
+    .forEach { scriptPath ->
+        apply(from = scriptPath)
+    }
 
 val sourceSets = the<SourceSetContainer>()
 sourceSets.named("main") {
-    java.setSrcDirs(listOf(
-        "src/main/java",
-        "../../view-view-enforcement/errorprone/src/main/java",
-        "../../viewinputevent-enforcement/errorprone/src/main/java",
-        "../../view-contribution-enforcement/errorprone/src/main/java",
-        "../../view-binder-enforcement/errorprone/src/main/java",
-        "../../publishedevent-enforcement/errorprone/src/main/java",
-        "../../view-inspector-entry-enforcement/errorprone/src/main/java",
-        "../../viewintenthandler-enforcement/errorprone/src/main/java",
-        "../../view-contributionmodel-enforcement/errorprone/src/main/java",
-        "../../view-content-model-enforcement/errorprone/src/main/java"
-    ))
+    java.setSrcDirs(listOf("src/main/java") + activeEnforcementBundleIds.mapNotNull(errorProneSourceDirsByBundleId::get))
     resources.setSrcDirs(emptyList<String>())
 }
 
 val bugCheckerServicePath = "META-INF/services/com.google.errorprone.bugpatterns.BugChecker"
 val hostBugCheckerService = layout.projectDirectory.file("src/main/resources/$bugCheckerServicePath")
-val bundleBugCheckerServices = listOf(
-    layout.projectDirectory.file("../../view-view-enforcement/errorprone/src/main/resources/$bugCheckerServicePath"),
-    layout.projectDirectory.file("../../view-binder-enforcement/errorprone/src/main/resources/$bugCheckerServicePath"),
-    layout.projectDirectory.file("../../viewinputevent-enforcement/errorprone/src/main/resources/$bugCheckerServicePath"),
-    layout.projectDirectory.file("../../view-contribution-enforcement/errorprone/src/main/resources/$bugCheckerServicePath"),
-    layout.projectDirectory.file("../../publishedevent-enforcement/errorprone/src/main/resources/$bugCheckerServicePath"),
-    layout.projectDirectory.file("../../view-inspector-entry-enforcement/errorprone/src/main/resources/$bugCheckerServicePath"),
-    layout.projectDirectory.file("../../viewintenthandler-enforcement/errorprone/src/main/resources/$bugCheckerServicePath"),
-    layout.projectDirectory.file("../../view-contributionmodel-enforcement/errorprone/src/main/resources/$bugCheckerServicePath"),
-    layout.projectDirectory.file("../../view-content-model-enforcement/errorprone/src/main/resources/$bugCheckerServicePath")
-)
+val bundleBugCheckerServices = activeEnforcementBundleIds
+    .mapNotNull(errorProneServiceFilesByBundleId::get)
+    .map(layout.projectDirectory::file)
 val generatedResourcesDir = layout.buildDirectory.dir("generated/quality-rules-errorprone/resources")
 val generatedBugCheckerService = generatedResourcesDir.map { dir -> dir.file(bugCheckerServicePath) }
 

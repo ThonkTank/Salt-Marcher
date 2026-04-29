@@ -87,7 +87,7 @@ tasks.named<JavaCompile>("compileJava") {
 val viewContributionModelArchitectureTest by tasks.registering(Test::class) {
     group = "verification"
     description = "Run only the ViewContributionModel-focused architecture test suite."
-    dependsOn(tasks.named("classes"))
+    dependsOn(tasks.named("compileJava"))
     inputs.dir(mainJavaClassesDir)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
@@ -131,7 +131,7 @@ val jqassistantScanViewContributionModelEnforcement by tasks.registering(Exec::c
     description = "Scan SaltMarcher ContributionModel topology for the dedicated ContributionModel enforcement bundle."
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
-    dependsOn("installJqassistant", prepareViewContributionModelJqassistantConfig, tasks.named("classes"))
+    dependsOn("installJqassistant", prepareViewContributionModelJqassistantConfig, tasks.named("compileJava"))
     inputs.file(contributionModelJqassistantGeneratedConfigFile)
     inputs.dir(contributionModelJqassistantRulesDir)
     inputs.dir(mainJavaClassesDir)

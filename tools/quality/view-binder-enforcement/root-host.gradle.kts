@@ -88,7 +88,7 @@ tasks.named<JavaCompile>("compileJava") {
 val viewBinderArchitectureTest by tasks.registering(Test::class) {
     group = "verification"
     description = "Run only the Binder-focused architecture test suite."
-    dependsOn(tasks.named("classes"))
+    dependsOn(tasks.named("compileJava"))
     inputs.dir(mainJavaClassesDir)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
@@ -132,7 +132,7 @@ val jqassistantScanViewBinderEnforcement by tasks.registering(Exec::class) {
     description = "Scan SaltMarcher Binder topology for the dedicated Binder enforcement bundle."
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
-    dependsOn("installJqassistant", prepareViewBinderJqassistantConfig, tasks.named("classes"))
+    dependsOn("installJqassistant", prepareViewBinderJqassistantConfig, tasks.named("compileJava"))
     inputs.file(viewBinderJqassistantGeneratedConfigFile)
     inputs.dir(viewBinderJqassistantRulesDir)
     inputs.dir(mainJavaClassesDir)

@@ -8,12 +8,22 @@ java {
     }
 }
 
-apply(from = "../../quality/viewinputevent-enforcement/build-harness-host.gradle.kts")
-apply(from = "../../quality/view-layer-enforcement/build-harness-host.gradle.kts")
-apply(from = "../../quality/view-inspector-entry-enforcement/build-harness-host.gradle.kts")
-apply(from = "../../quality/viewintenthandler-enforcement/build-harness-host.gradle.kts")
-apply(from = "../../quality/view-contributionmodel-enforcement/build-harness-host.gradle.kts")
-apply(from = "../../quality/view-content-model-enforcement/build-harness-host.gradle.kts")
+apply(from = "../../quality/enforcement-bundles.gradle.kts")
+
+val focusedEnforcementBundleMode = extra["saltmarcherFocusedEnforcementBundleMode"] as Boolean
+@Suppress("UNCHECKED_CAST")
+val activeEnforcementBundleIds = extra["saltmarcherActiveEnforcementBundleIds"] as List<String>
+@Suppress("UNCHECKED_CAST")
+val buildHarnessHostScriptsByBundleId = extra["saltmarcherBuildHarnessHostScriptsByBundleId"] as Map<String, String>
+
+activeEnforcementBundleIds
+    .mapNotNull(buildHarnessHostScriptsByBundleId::get)
+    .forEach { scriptPath ->
+        apply(from = scriptPath)
+    }
+if (!focusedEnforcementBundleMode) {
+    apply(from = "../../quality/documentation-enforcement/build-harness-host.gradle.kts")
+}
 
 tasks.register<JavaExec>("architectureCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP

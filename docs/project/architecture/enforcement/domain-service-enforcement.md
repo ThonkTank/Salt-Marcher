@@ -11,6 +11,17 @@ Source of Truth: Complete architecture-enforcement catalog for tactical
 This document owns the complete architecture-enforcement catalog for the
 tactical `service/` role itself.
 
+It answers three questions for every domain service role:
+
+- what the role MUST contain
+- what the role MUST NOT contain
+- which direct communication seams the role itself MAY cross
+
+This document does not own generic named-module shape rules, generic
+named-module forbidden-content rules, or generic named-module communication
+boundaries that also constrain `service/`. Those live in
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
+
 ## Invariant Catalog
 
 ### Must Contain
@@ -18,29 +29,26 @@ tactical `service/` role itself.
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-service-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/service/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Service role types are final classes. |
-| `domain-service-public-concrete-type-shape` | Enforced | every public concrete service type | Error Prone `DomainPublicConcreteTypeShape` | `./gradlew compileJava` | Public service types satisfy the project shape constraints for concrete domain types. |
-| `domain-service-field-purity` | Enforced | every public service type | Error Prone `DomainModuleFieldPurity` | `./gradlew compileJava` | Public service types do not expose mutable field state. |
-| `domain-service-statelessness` | Enforced | every top-level type under `service/` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Service role types do not declare instance fields and stay stateless. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-service-no-published-carriers` | Enforced | every compilation unit under `service/` | Error Prone `DomainModuleNoPublishedCarrierDependency` | `./gradlew compileJava` | Service code does not depend on same-context or foreign `published/**` carriers. |
+| `domain-service-statelessness` | Enforced | every top-level type under `service/` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Service role types do not declare instance fields and stay stateless. |
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-service-no-same-context-application-boundary` | Enforced | every dependency from `service/` to its own context root or `application/` | ArchUnit `domainNamedModulesMustNotReachSameContextApplicationBoundary` | `./gradlew checkArchitecture` | Service code does not depend on its own root `ApplicationService` or `application/` orchestration boundary. |
-| `domain-service-no-foreign-context-dependencies` | Enforced | every dependency from `service/` to a foreign domain context | ArchUnit `domainNamedModulesMustNotReachForeignDomainContexts` | `./gradlew checkArchitecture` | Service code does not reach foreign domain contexts directly. |
-| `domain-service-no-outbound-port-dependencies` | Enforced | every dependency from `service/` to a `port/` role | ArchUnit `domainModelRolesMustNotDependOnOutboundPorts` | `./gradlew checkArchitecture` | Service code does not depend directly on outbound ports. |
+No mechanically enforced communication invariant is owned by this document
+alone today. Service code is still constrained by the generic named-module
+communication boundaries owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not duplicate those named-module or model-role rows here.
 
 ## Review-Owned
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-service-real-cross-concept-behavior` | Review-Owned | every service role used in a named domain module | none | none | A legal domain service still represents real cross-concept business behavior rather than procedural coordination that belongs elsewhere. |
+| `domain-service-non-ceremonial-role-use` | Review-Owned | every service role used in a named domain module | none | none | A legal domain service is used only when it clarifies real domain behavior rather than serving as ceremonial tactical partitioning or a renamed procedural coordinator. |
 
 ## References
 

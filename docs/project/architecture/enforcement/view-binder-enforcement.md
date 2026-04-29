@@ -60,6 +60,8 @@ Unified focused bundle entrypoint:
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
 | `view-binder-readback-intake-minimality` | every Binder-owned readback seam from domain `published/**` facts into a co-located `ContributionModel` | none | none | A mechanically legal Binder still keeps readback wiring at the minimum listener-facing model intake seams for one root instead of growing broad imperative update APIs. |
+| `view-binder-single-root-applicationservice-call-per-publication` | every Binder-owned sink that translates one published event into domain work | none | none | One publication of one same-root `*PublishedEvent` becomes one root `*ApplicationService` entrypoint call rather than a hidden fan-out workflow. |
+| `view-binder-one-carrier-family-per-root-entrypoint` | every same-root Binder/ApplicationService write seam fed by `*PublishedEvent` carriers | none | none | One root `*ApplicationService` entrypoint is fed by at most one same-root `*PublishedEvent` type. Needing several carriers for one entrypoint is a Binder-owned modelling error. |
 
 ## Candidate
 
