@@ -11,8 +11,9 @@ Source of Truth: Complete architecture-enforcement catalog for tactical
 This document owns the complete architecture-enforcement catalog for the
 tactical `policy/` role itself.
 
-It answers three questions for every domain policy role:
+It answers four questions for every domain policy role:
 
+- when the role MAY exist and contain policy types at all
 - what the role MUST contain
 - what the role MUST NOT contain
 - which direct communication seams the role itself MAY cross
@@ -23,6 +24,12 @@ boundaries that also constrain `policy/`. Those live in
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
 ## Invariant Catalog
+
+### May Contain
+
+| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- | --- | --- |
+| `domain-policy-real-policy-behavior` | Review-Owned | every policy role used in a named domain module | none | none | A named domain module may contain a `policy/` role only when it carries real reusable domain policy. The role must not be used as a renamed procedural helper or generic helper bucket. |
 
 ### Must Contain
 
@@ -42,13 +49,9 @@ No mechanically enforced communication invariant is owned by this document
 alone today. Policy code is still constrained by the generic named-module and
 model-role communication boundaries owned by
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
-this document does not duplicate those shared rows here.
-
-## Review-Owned
-
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-policy-real-policy-behavior` | Review-Owned | every policy role used in a named domain module | none | none | A legal policy role still represents real reusable domain policy rather than a renamed procedural helper. |
+this document does not duplicate shared rows such as same-context
+application-boundary bans, foreign-context bans, outbound-port bans,
+`published/**`-carrier bans, or domain-layer outer-layer independence here.
 
 ## References
 

@@ -19,8 +19,8 @@ It answers four questions for every published boundary carrier:
 - which signatures and communication surfaces the role itself MAY expose
 
 This document does not own root `ApplicationService` method shape, use case
-internals, or named tactical model-role semantics. Those live in the
-neighboring owner docs.
+internals, named tactical model-role semantics, or layer-wide domain
+communication boundaries. Those live in the neighboring owner docs.
 
 ## Invariant Catalog
 
@@ -28,7 +28,8 @@ neighboring owner docs.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-published-observable-state-handle-necessity` | Review-Owned | every `published/**` carrier family that exposes current-state handles, models, or snapshots | none | none | `published/**` may expose commands, queries, results, snapshots, ids, statuses, enums, sealed carrier abstractions, and simple public boundary records. Read-only current-state handles or model-shaped carriers are allowed only when a context must expose observable current state without leaking private model internals. |
+| `domain-published-carrier-family-allowlist` | Review-Owned | every `published/**` carrier family | none | none | `published/**` may contain commands, queries, results, snapshots, ids, statuses, enums, sealed carrier abstractions, and simple public boundary records. |
+| `domain-published-observable-state-handle-necessity` | Review-Owned | every `published/**` carrier family that exposes read-only boundary handles | none | none | Read-only boundary handles are allowed only when a context must expose observable current state without leaking private model internals. |
 
 ### Must Contain
 
@@ -45,13 +46,12 @@ neighboring owner docs.
 | `domain-published-no-callable-contracts` | Enforced | every Java type under `src/domain/<context>/published/` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | `published/` does not contain callable services, facades, repositories, ports, gateways, factories, locators, or policy contracts. |
 | `domain-published-domain-facts-only` | Review-Owned | every `published/**` carrier family | none | none | Published carriers describe domain facts and boundary language only. They do not encode render-layer terms, widget state, canvas cells, storage DTOs, or other outer-format convenience shapes. |
 | `domain-published-passive-boundary-language` | Review-Owned | every `published/**` carrier family | none | none | Published carriers remain passive boundary language rather than invariant-owning objects hidden behind otherwise legal record, enum, or sealed shapes. |
-| `domain-published-no-foreign-published-signatures` | Enforced | every public or protected published boundary signature | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Published carriers do not expose foreign published carriers in public signatures. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-published-public-boundary-signature-purity` | Enforced | every public or protected published boundary signature | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Published carriers do not leak outer-layer, private domain, or infrastructure types through their public boundary signatures. |
+| `domain-published-public-boundary-signature-purity` | Enforced | every public or protected published boundary signature | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Published carriers do not communicate outer-layer, private same-context domain, infrastructure, or foreign `published/**` types through public boundary signatures. |
 
 ## Review-Owned
 

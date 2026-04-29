@@ -154,7 +154,7 @@ language-level architecture rules.
 | `./gradlew checkNoCompiledArtifactsInSource` | `Blocking Local Gate` | `.class` files must not exist under active source roots. |
 | `./gradlew checkDesktopPackagingInputs` | `Blocking Local Gate` | Desktop main/preloader class sources, icon paths, stylesheet path, launcher name, and `StartupWMClass` must be present and valid. |
 | `./gradlew checkDesktopAppImageLayout` | `Blocking Distribution Gate` | Installed desktop app images must keep JavaFX jars on the dedicated JavaFX module path and keep launcher configuration aligned with the packaged layout. |
-| `./gradlew checkViewFxmlResources` | `Blocking Local Gate` | View FXML files must live under the MVVM view-resource tree, avoid inline scripts, and use passive View controllers matching the owning view area. |
+| `./gradlew checkViewFxmlResources` | `Blocking Local Gate` | View FXML files must live under the MVVM view-resource tree, avoid inline scripts, and use passive View controllers matching the owning view area. For the complete passive-`View` bundle proof route, use `./gradlew checkViewEnforcement`. |
 
 The styling rules behind the stylesheet and selector gates, plus the remaining
 direct-render styling invariants for passive `View` surfaces, are defined in
@@ -248,9 +248,10 @@ Architecture-focused entrypoints:
   Aggregates the current `Binder` bundle through `compileJava`,
   `viewBinderArchitectureTest`, and the dedicated Binder jQAssistant analysis.
 - `./gradlew checkViewEnforcement --console=plain`
-  Aggregates the current passive `View` bundle through `compileJava`,
-  `viewSurfaceArchitectureTest`, `checkViewFxmlResources`, and the dedicated
-  passive-`View` jQAssistant analysis.
+  Aggregates the current passive `View` bundle through `compileJava`, the
+  bundle-owned `viewSurfaceArchitectureTest`, `checkViewFxmlResources`, and
+  the dedicated passive-`View` jQAssistant analysis. This is the canonical
+  public entrypoint for passive-`View` enforcement.
 - `./gradlew checkViewContributionEnforcement --console=plain`
   Aggregates the current `Contribution` bundle through `compileJava`,
   `viewContributionArchitectureTest`, and

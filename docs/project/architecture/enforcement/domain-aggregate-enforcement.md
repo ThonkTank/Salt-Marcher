@@ -11,8 +11,9 @@ Source of Truth: Complete architecture-enforcement catalog for tactical
 This document owns the complete architecture-enforcement catalog for the
 tactical `aggregate/` role itself.
 
-It answers three questions for every domain aggregate role:
+It answers four questions for every domain aggregate role:
 
+- when the role MAY exist and contain aggregate types at all
 - what the role MUST contain
 - what the role MUST NOT contain
 - which direct communication seams the role itself MAY cross
@@ -23,6 +24,12 @@ boundaries that also constrain `aggregate/`. Those live in
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
 ## Invariant Catalog
+
+### May Contain
+
+| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- | --- | --- |
+| `domain-aggregate-rich-consistency-boundary` | Review-Owned | every aggregate role used in a named domain module | none | none | A named domain module may contain an `aggregate/` role only when it clarifies real domain behavior and still represents a meaningful consistency boundary rather than ceremonial DDD labeling. |
 
 ### Must Contain
 
@@ -36,7 +43,8 @@ No mechanically enforced forbidden-content invariant is owned by this document
 alone today. Aggregate code is still constrained by the generic named-module
 forbidden-content rules owned by
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
-this document does not duplicate those shared rows here.
+this document does not duplicate those shared rows as aggregate-local
+invariants.
 
 ### Communication Contract
 
@@ -44,13 +52,8 @@ No mechanically enforced communication invariant is owned by this document
 alone today. Aggregate code is still constrained by the generic named-module
 and model-role communication boundaries owned by
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
-this document does not duplicate those named-module or model-role rows here.
-
-## Review-Owned
-
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-aggregate-rich-consistency-boundary` | Review-Owned | every aggregate role used in a named domain module | none | none | A legal aggregate role is used only when it clarifies real domain behavior and still represents a meaningful consistency boundary rather than ceremonial DDD labeling. |
+this document does not duplicate those named-module or model-role rows as
+aggregate-local invariants.
 
 ## References
 

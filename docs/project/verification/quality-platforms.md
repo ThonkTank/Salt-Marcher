@@ -95,13 +95,16 @@ Operationally, architecture checks enter local quality through:
   Binder, and passive-View dependency rules, shell API use, passive panel
   restrictions, and legacy view-package bans
 - `architectureTest`
-  runs ArchUnit dependency and cycle checks, including target view package,
-  dependency, and cycle freedom rules
+  runs the remaining generic ArchUnit dependency and cycle checks outside the
+  focused passive-`View`, `Contribution`, `Binder`, `ContributionModel`,
+  `ContentModel`, `PublishedEvent`, `IntentHandler`, and `View Layer` bundle
+  suites
 - `checkViewEnforcement`
   runs the focused passive `View` enforcement bundle by aggregating the
   current compiler-integrated passive-`View` checks, the dedicated passive
-  `View` ArchUnit suite, the dedicated passive-`View` jQAssistant bundle, and
-  the dedicated FXML resource boundary check through one direct root entrypoint
+  `View` ArchUnit suite from the bundle-owned ArchUnit source set, the
+  dedicated passive-`View` jQAssistant bundle, and the dedicated FXML resource
+  boundary check through one direct root entrypoint
 - `checkViewContributionEnforcement`
   runs the focused `Contribution` enforcement bundle by aggregating the
   dedicated compiler-integrated dependency check, the dedicated ArchUnit

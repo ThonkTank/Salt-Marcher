@@ -1,10 +1,49 @@
+import java.io.File
+import java.util.Properties
+
 pluginManagement {
     includeBuild("tools/gradle/build-logic")
 }
 
 apply(from = "tools/gradle/build-isolation.settings.gradle.kts")
 
-val enforcementBundleIdsInOrder = listOf(
+data class EnforcementBundleDescriptor(
+    val bundleId: String,
+    val order: Int,
+    val taskNames: List<String>
+)
+
+fun Properties.requiredTrimmed(name: String): String = getProperty(name)
+    ?.trim()
+    ?.takeIf(String::isNotEmpty)
+    ?: error("Missing required enforcement bundle property '$name'.")
+
+fun Properties.list(name: String): List<String> = getProperty(name)
+    ?.split(',')
+    ?.map(String::trim)
+    ?.filter(String::isNotEmpty)
+    ?: emptyList()
+
+fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, EnforcementBundleDescriptor> {
+    val qualityDir = File(repoRootDir, "tools/quality")
+    if (!qualityDir.isDirectory) {
+        return emptyMap()
+    }
+    return qualityDir.walkTopDown()
+        .filter { file -> file.isFile && file.name == "bundle.properties" }
+        .map { descriptorFile ->
+            val properties = Properties()
+            descriptorFile.inputStream().use(properties::load)
+            EnforcementBundleDescriptor(
+                bundleId = properties.requiredTrimmed("bundleId"),
+                order = properties.requiredTrimmed("order").toInt(),
+                taskNames = properties.list("taskNames")
+            )
+        }
+        .associateBy(EnforcementBundleDescriptor::bundleId)
+}
+
+val legacyEnforcementBundleIdsInOrder = listOf(
     "view",
     "viewContribution",
     "viewBinder",
@@ -12,12 +51,20 @@ val enforcementBundleIdsInOrder = listOf(
     "viewInspectorEntry",
     "viewInputEvent",
     "viewPublishedEvent",
-    "viewIntentHandler",
     "viewContributionModel",
     "viewContentModel"
 )
 
-val enforcementBundleTaskToId = mapOf(
+val enforcementBundleDescriptorsById = loadEnforcementBundleDescriptors(rootDir)
+
+val enforcementBundleIdsInOrder = (
+    legacyEnforcementBundleIdsInOrder.mapIndexed { index, bundleId -> bundleId to index } +
+        enforcementBundleDescriptorsById.values.map { descriptor -> descriptor.bundleId to descriptor.order }
+    )
+    .sortedBy { (_, order) -> order }
+    .map { (bundleId, _) -> bundleId }
+
+val legacyEnforcementBundleTaskToId = mapOf(
     "checkViewEnforcement" to "view",
     "viewSurfaceArchitectureTest" to "view",
     "checkViewFxmlResources" to "view",
@@ -42,9 +89,6 @@ val enforcementBundleTaskToId = mapOf(
     "viewInputEventTopologyCheck" to "viewInputEvent",
     "checkViewPublishedEventEnforcement" to "viewPublishedEvent",
     "viewPublishedEventArchitectureTest" to "viewPublishedEvent",
-    "checkViewIntentHandlerEnforcement" to "viewIntentHandler",
-    "viewIntentHandlerArchitectureTest" to "viewIntentHandler",
-    "viewIntentHandlerTopologyCheck" to "viewIntentHandler",
     "checkViewContributionModelEnforcement" to "viewContributionModel",
     "viewContributionModelArchitectureTest" to "viewContributionModel",
     "jqassistantScanViewContributionModelEnforcement" to "viewContributionModel",
@@ -56,6 +100,12 @@ val enforcementBundleTaskToId = mapOf(
     "jqassistantAnalyzeViewContentModelEnforcement" to "viewContentModel",
     "viewContentModelTopologyCheck" to "viewContentModel"
 )
+
+val descriptorEnforcementBundleTaskToId = enforcementBundleDescriptorsById.values
+    .flatMap { descriptor -> descriptor.taskNames.map { taskName -> taskName to descriptor.bundleId } }
+    .toMap()
+
+val enforcementBundleTaskToId = legacyEnforcementBundleTaskToId + descriptorEnforcementBundleTaskToId
 
 val enforcementBundleAwareTasks = enforcementBundleTaskToId.keys
 val fullBuildTaskNames = setOf(
@@ -97,6 +147,7 @@ val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
 
 System.setProperty("saltmarcher.focusedEnforcementBundleMode", focusedEnforcementBundleMode.toString())
 System.setProperty("saltmarcher.activeEnforcementBundleIds", activeEnforcementBundleIds.joinToString(","))
+System.setProperty("saltmarcher.repoRootDir", rootDir.absolutePath)
 
 rootProject.name = "SaltMarcher"
 

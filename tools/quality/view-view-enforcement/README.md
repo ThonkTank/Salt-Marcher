@@ -11,14 +11,14 @@ the canonical home for passive `*View` host wiring:
   `PassiveViewModelMutationBoundary`, `ViewPresentationDecisionLeak`,
   `ViewInputEventApi`, `PassiveViewCallbackSeamBoundary`
 - `archunit/`
-  `architecture.view.view.ViewSurfaceArchitectureTest`
+  bundle-local `architecture.view.view.ViewSurfaceArchitectureTest`
 - `jqassistant/`
   `saltmarcher:view-view-enforcement`
 - `support/`
   passive-`View` FXML resource validation runner
 - `root-host.gradle.kts`
-  root-project compiler, support-source, ArchUnit, jQAssistant, and aggregate
-  task wiring
+  root-project compiler, support-source, bundle-local ArchUnit source set,
+  jQAssistant, and aggregate task wiring
 - `errorprone-host.gradle.kts`
   included-build wiring for the `quality-rules-errorprone` host
 

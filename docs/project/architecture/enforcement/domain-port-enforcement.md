@@ -11,22 +11,32 @@ Source of Truth: Complete architecture-enforcement catalog for outbound
 This document owns the complete architecture-enforcement catalog for the
 outbound `port/` role itself.
 
-It answers three questions for every domain outbound port:
+It answers four questions for every domain outbound port:
 
+- when the role MAY contain one outbound port family rather than another
 - what the role MUST contain
 - what the role MUST NOT contain
 - which signature and abstraction boundaries the role itself MAY expose
 
-This document does not own generic named-module communication rules such as
-same-context application-boundary dependencies, foreign-context dependencies,
-or published-carrier dependencies. Those live in the layer-wide domain
-enforcement catalog and neighboring role docs.
+This document does not own generic named-module topology, generic optional
+role-package necessity, published-carrier bans, or generic named-module
+communication rules such as same-context application-boundary dependencies and
+foreign-context dependencies. Those live in the layer-wide domain enforcement
+catalog and neighboring role docs.
 
 This document also does not own positive data-layer adapter placement
 semantics. It owns only the negative domain-side prohibition that outbound
 port implementations must not live inside `src/domain/**`.
 
 ## Invariant Catalog
+
+### May Contain
+
+| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- | --- | --- |
+| `domain-port-repository-write-orientation` | Review-Owned | every outbound port whose name ends with `Repository` | none | none | A named domain module may contain a `*Repository` port only when that port is genuinely a write-oriented persistence boundary rather than a read-only query hidden behind a permitted suffix. |
+| `domain-port-read-port-placement` | Review-Owned | every domain outbound port whose name ends with `Lookup`, `Catalog`, or `Search` | none | none | A named domain module may contain `*Lookup`, `*Catalog`, and `*Search` types only as outbound port interfaces under `src/domain/<context>/<named-module>/port/`; these suffixes do not justify a second domain package role or non-port contract family. |
+| `domain-port-read-port-read-only-orientation` | Review-Owned | every outbound port whose name ends with `Lookup`, `Catalog`, or `Search` | none | none | A named domain module may contain a `*Lookup`, `*Catalog`, or `*Search` port only when that port stays read-only lookup, catalog, search, paging, or projection language rather than becoming a mutation seam, policy helper, or generic convenience contract. |
 
 ### Must Contain
 
@@ -45,14 +55,13 @@ port implementations must not live inside `src/domain/**`.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-ownership-and-signature-boundary` | Enforced | every public or protected boundary surface on a domain outbound port | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound ports stay interface-shaped and do not leak outer-layer or infrastructure types through `extends` clauses, public/protected fields, method signatures, thrown types, or type bounds. |
+| `domain-port-ownership-and-signature-boundary` | Enforced | every public or protected boundary surface on a domain outbound port | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound ports communicate only through domain-owned abstraction seams: they do not leak outer-layer or infrastructure types through `extends` clauses, public/protected fields, method signatures, thrown types, or type bounds. |
 
 ## Review-Owned
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-domain-language` | Review-Owned | every port name and method vocabulary under `port/` | none | none | A legal outbound port still speaks in domain language rather than storage or vendor vocabulary. |
-| `domain-port-repository-write-orientation` | Review-Owned | every outbound port whose name ends with `Repository` | none | none | A legal `Repository` port is genuinely write-oriented rather than a read-only query hidden behind a permitted suffix. |
+| `domain-port-domain-language` | Review-Owned | every port name and method vocabulary under `port/` | none | none | A legal outbound port still speaks in domain language and domain-owned carrier or value vocabulary rather than storage, vendor, or source-local terminology. |
 
 ## References
 

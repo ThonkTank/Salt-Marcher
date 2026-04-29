@@ -18,8 +18,9 @@ It answers three questions for every use case surface:
 - which direct communication boundaries the role itself MAY cross
 
 This document does not own root `ApplicationService` public-boundary shape,
-`published/` carrier shape, outbound port role shape, or tactical model-role
-semantics. Those live in the neighboring owner docs.
+`published/` carrier shape, outbound port role shape, generic domain-layer
+forbidden-content rules, generic domain-layer communication boundaries, or
+tactical model-role semantics. Those live in the neighboring owner docs.
 
 ## Invariant Catalog
 
@@ -40,10 +41,11 @@ semantics. Those live in the neighboring owner docs.
 
 ### Communication Contract
 
-| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- | --- |
-| `domain-usecase-foreign-context-access-only-through-public-boundaries` | Enforced | every dependency from `application/*UseCase.java` into a foreign domain context | ArchUnit `domainFeaturesMustOnlyUseForeignFeatureApis` | `./gradlew checkArchitecture` | Cross-context use-case orchestration reaches foreign domains only through foreign root `*ApplicationService` boundaries and foreign `published/**` public carriers. |
-| `domain-usecase-no-outer-layer-or-infrastructure-dependencies` | Enforced | every `application/*UseCase.java` under `src/domain/**` | Error Prone `DomainForbiddenInfrastructureDependency` and ArchUnit `domainMustStayIndependentFromOuterLayers` | `./gradlew compileJava` and `./gradlew checkArchitecture` | Use cases do not depend on view, data, shell, bootstrap, or infrastructure packages while coordinating domain work. |
+No mechanically enforced communication invariant is owned by this document
+alone today. Use-case orchestration is still constrained by the generic
+domain-layer communication and outer-dependency boundaries owned by
+[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1);
+this document does not duplicate those shared rows here.
 
 ## Review-Owned
 

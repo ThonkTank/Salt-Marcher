@@ -11,12 +11,13 @@ active view roots under `src/view/**`.
 This document owns the complete architecture-enforcement catalog for the
 `*Binder` role itself.
 
-It answers four questions for every active-root `*Binder` surface:
+It answers five questions for every active-root `*Binder` surface:
 
 - what the role MUST contain
+- which direct dependency/content surface the role MAY contain
 - what the role MUST NOT contain
 - which direct communication boundaries the role itself MAY cross
-- which remaining Binder semantics are still review-owned or candidate-only
+- which remaining Binder semantics are still review-owned
 
 This document does not own active-root or `slotcontent/**` file-role topology
 such as `view-binder-count` or `view-slotcontent-no-binder`, passive `View`
@@ -40,34 +41,48 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-binder-own-model-and-slot-surface-dependencies` | Enforced | every active-root `*Binder.java` under `src/view/**` | jQAssistant `saltmarcher:ViewBinderUsesOwnModelAndSlotSurface` | `./gradlew checkViewBinderEnforcement` | A Binder has a direct dependency on its co-located `*ContributionModel` and on at least one passive same-root or reusable `slotcontent/**` `*View` surface, so the role really acts as the runtime composition and binding owner of one active root. |
+| `view-binder-own-contributionmodel-dependency` | Enforced | every active-root `*Binder.java` under `src/view/**` | jQAssistant `saltmarcher:ViewBinderUsesOwnModelAndSlotSurface` | `./gradlew checkViewBinderEnforcement` | A Binder has a direct dependency on its co-located aggregate `*ContributionModel`. The active-root runtime composition role does not hide its model ownership behind only foreign helpers or indirect assembly seams. |
+| `view-binder-own-passive-surface-dependency` | Enforced | every active-root `*Binder.java` under `src/view/**` | jQAssistant `saltmarcher:ViewBinderUsesOwnModelAndSlotSurface` | `./gradlew checkViewBinderEnforcement` | A Binder has a direct dependency on at least one passive same-root `*View` or reusable passive `slotcontent/**` `*View` surface, so the role really owns visible runtime binding for one active root. |
+
+### May Contain
+
+| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- | --- | --- |
+| `view-binder-shell-public-contract-surface` | Enforced | every active-root `*Binder.java` under `src/view/**` | Error Prone `ViewBinderDependencyBoundary` and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava` and `./gradlew checkViewBinderEnforcement` | A Binder may directly depend on the documented shell public contract subset only: `ShellRuntimeContext`, `ShellBinding`, `ShellSlot`, `ServiceRegistry`, and the documented shell contribution/navigation/inspector value types. |
+| `view-binder-same-root-runtime-role-surface` | Enforced | every active-root `*Binder.java` under `src/view/**` | Error Prone `ViewBinderDependencyBoundary` and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava` and `./gradlew checkViewBinderEnforcement` | A Binder may directly depend on its own same-root `*ContributionModel`, optional same-root `*IntentHandler`, same-root passive `*View`, same-root `*ViewInputEvent`, and optional same-root `*PublishedEvent` types. |
+| `view-binder-reusable-slotcontent-surface` | Enforced | every active-root `*Binder.java` under `src/view/**` that reuses `slotcontent/**` | Error Prone `ViewBinderDependencyBoundary` and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava` and `./gradlew checkViewBinderEnforcement` | A Binder may directly depend on the currently allowed reusable slotcontent surfaces only: passive reusable `*View`, reusable `*ContentModel`, reusable `*InspectorEntry`, primitive reusable models, and documented support-value types such as mapcanvas support carriers. |
+| `view-binder-domain-public-boundary-surface` | Enforced | every active-root `*Binder.java` under `src/view/**` that crosses the backend boundary | Error Prone `ViewBinderDependencyBoundary`, ArchUnit `bindersMustNotReachDataOrShellHost`, and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewBinderEnforcement` | A Binder may directly depend on root domain `*ApplicationService` boundaries and on domain `published/**` carrier types only. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-binder-dependency-boundary` | Enforced | every active-root `*Binder.java` under `src/view/**` | Error Prone `ViewBinderDependencyBoundary`, ArchUnit `bindersMustNotReachDataOrShellHost`, and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewBinderEnforcement` | A Binder depends only on documented shell public contracts, its own same-root `*ContributionModel`, optional same-root `*IntentHandler`, same-root `*View`, same-root `*ViewInputEvent`, optional same-root `*PublishedEvent`, reusable `slotcontent/**` roles, root `*ApplicationService` boundaries, and domain `published/**` carriers. It does not depend on `bootstrap/**`, `src/data/**`, `shell.host/**` or other shell internals, foreign view units, or non-public domain internals. |
+| `view-binder-no-bootstrap-or-data-dependencies` | Enforced | every active-root `*Binder.java` under `src/view/**` | Error Prone `ViewBinderDependencyBoundary`, ArchUnit `bindersMustNotReachDataOrShellHost`, and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewBinderEnforcement` | A Binder does not depend on `bootstrap/**` or `src/data/**`. Startup wiring and outbound adapter implementation stay outside the role. |
+| `view-binder-no-shell-host-or-nonapi-shell-dependencies` | Enforced | every active-root `*Binder.java` under `src/view/**` | Error Prone `ViewBinderDependencyBoundary`, ArchUnit `bindersMustNotReachDataOrShellHost`, and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewBinderEnforcement` | A Binder does not depend on `shell.host/**` or other non-`shell.api/**` shell internals. Shell communication stays on the documented public shell contract only. |
+| `view-binder-no-nonpublic-domain-dependencies` | Enforced | every active-root `*Binder.java` under `src/view/**` | Error Prone `ViewBinderDependencyBoundary`, ArchUnit `bindersMustNotReachDataOrShellHost`, and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewBinderEnforcement` | A Binder does not depend on domain internals outside root `*ApplicationService` boundaries and domain `published/**` carriers. |
+| `view-binder-no-foreign-active-root-role-dependencies` | Enforced | every active-root `*Binder.java` under `src/view/**` | Error Prone `ViewBinderDependencyBoundary` and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava` and `./gradlew checkViewBinderEnforcement` | A Binder does not depend on foreign active-root `*ContributionModel`, `*IntentHandler`, `*View`, `*ViewInputEvent`, or `*PublishedEvent` types from another view root. |
+| `view-binder-no-illegal-reusable-view-role-dependencies` | Enforced | every active-root `*Binder.java` under `src/view/**` | Error Prone `ViewBinderDependencyBoundary` and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava` and `./gradlew checkViewBinderEnforcement` | A Binder does not depend directly on reusable `slotcontent/**` `*IntentHandler`, `*ViewInputEvent`, or `*PublishedEvent` role families, and it does not depend on legacy or non-role-bearing view-layer files. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
+| `view-binder-shell-public-contract-communication-only` | Enforced | every Binder-owned shell-facing seam in an active root | Error Prone `ViewBinderDependencyBoundary`, ArchUnit `bindersMustNotReachDataOrShellHost`, and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewBinderEnforcement` | A Binder communicates with the shell only through documented `shell.api/**` contracts and binding surfaces. It does not communicate with concrete shell host internals. |
 | `view-binder-viewinputevent-forwarding-only-through-onviewinputevent-consume` | Enforced | every Binder-owned same-root passive-`View` to local-`IntentHandler` input seam | Error Prone `ViewBinderViewInputEventWiring` | `./gradlew compileJava` | A Binder wires a passive same-root `View` to its local `IntentHandler` only through `view.onViewInputEvent(intentHandler::consume)`. It does not attach alternate direct handler callbacks to that `View`. |
 | `view-binder-publishedevent-sink-injection-only` | Enforced | every Binder-owned write seam from a local `IntentHandler` toward domain work | Error Prone `ViewBinderApplicationSinkWiring` | `./gradlew compileJava` | A Binder injects domain-write seams into a same-root `IntentHandler` only as `Consumer<SameRootPublishedEvent>`. It does not install other callback or result protocols as hidden write paths into the handler. |
+| `view-binder-domain-boundary-communication-only` | Enforced | every Binder-owned direct domain seam in an active root | Error Prone `ViewBinderDependencyBoundary`, ArchUnit `bindersMustNotReachDataOrShellHost`, and jQAssistant `saltmarcher:ViewBinderDependencies` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewBinderEnforcement` | A Binder communicates directly with the backend only through root `*ApplicationService` boundaries and domain `published/**` carrier types. It does not communicate directly with `src/data/**` or non-public domain internals. |
 
 ## Review-Owned
 
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
+| `view-binder-shell-lookup-and-lifecycle-ownership` | every active-root `*Binder.java` under `src/view/**` | none | none | Shell runtime lookup, shell-facing slot binding, lifecycle-owned activation wiring, and role instantiation stay in the Binder instead of leaking into `*Contribution`, passive `*View`, or domain-facing helpers. |
+| `view-binder-no-local-contribution-or-second-binder-dependency` | every active-root `*Binder.java` under `src/view/**` | none | none | The view-layer standard says a Binder may know only its same-root model, optional handler, passive views, same-root carriers, and intentional reusable slotcontent seams directly. Same-root `*Contribution` or second-`*Binder` knowledge remains review-rejected until a narrower blocker exists. |
+| `view-binder-slotcontent-reuse-intentionality` | every Binder-owned direct dependency on reusable `slotcontent/**` surfaces | none | none | A mechanically legal reusable-slotcontent dependency exists only when the reused surface is genuinely intentional reusable UI and not just hidden feature-specific assembly split across packages. |
 | `view-binder-readback-intake-minimality` | every Binder-owned readback seam from domain `published/**` facts into a co-located `ContributionModel` | none | none | A mechanically legal Binder still keeps readback wiring at the minimum listener-facing model intake seams for one root instead of growing broad imperative update APIs. |
 | `view-binder-single-root-applicationservice-call-per-publication` | every Binder-owned sink that translates one published event into domain work | none | none | One publication of one same-root `*PublishedEvent` becomes one root `*ApplicationService` entrypoint call rather than a hidden fan-out workflow. |
 | `view-binder-one-carrier-family-per-root-entrypoint` | every same-root Binder/ApplicationService write seam fed by `*PublishedEvent` carriers | none | none | One root `*ApplicationService` entrypoint is fed by at most one same-root `*PublishedEvent` type. Needing several carriers for one entrypoint is a Binder-owned modelling error. |
-
-## Candidate
-
-| Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
-| --- | --- | --- | --- | --- |
-| `view-binder-thin-runtime-composition-semantics` | every active-root `*Binder.java` under `src/view/**` | none | none | A Binder stays a thin runtime composition adapter and does not turn legal listener, sink, and readback seams into long-lived workflow orchestration. |
+| `view-binder-thin-runtime-composition-semantics` | every active-root `*Binder.java` under `src/view/**` | none | none | A Binder stays a thin runtime composition adapter and does not turn legal listener, sink, shell, and readback seams into long-lived workflow orchestration. |
 
 ## References
 

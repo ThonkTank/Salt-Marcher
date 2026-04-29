@@ -19,9 +19,10 @@ It answers three questions for the shared infrastructure surface under
 - which direct communication seams the role MAY use
 
 This document does not own physical `sqlite/` or `model/` placement,
-feature-root topology, non-root shell independence, feature-local adapter
-contracts, or feature `*PersistenceSchema` ownership. Those stay in the
-neighboring data enforcement documents.
+feature-root topology, non-root shell independence, layer-wide cycle freedom,
+foreign-feature boundaries, feature-local adapter contracts, or feature
+`*PersistenceSchema` ownership. Those stay in the neighboring data
+enforcement documents.
 
 ## Invariant Catalog
 
@@ -29,8 +30,8 @@ neighboring data enforcement documents.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-persistencecore-model-generic-schema-helper-semantics` | Review-Owned | every helper under `src/data/persistencecore/model/**` | none | none | `persistencecore/model` contains only generic source-schema helper shapes such as reusable table or column declarations, rather than feature-local schema meaning or a second source-model home. |
-| `data-persistencecore-sqlite-generic-infrastructure-semantics` | Review-Owned | every helper under `src/data/persistencecore/sqlite/**` | none | none | `persistencecore/sqlite` contains only generic SQLite infrastructure such as reusable connection lifecycle or schema inspection support, rather than feature-local gateway workflows or schema ownership. |
+| `data-persistencecore-model-generic-schema-helper-semantics` | Review-Owned | every helper under `src/data/persistencecore/model/**` | none | none | `persistencecore/model` contains only generic source-schema helper shapes such as reusable table or column declarations for feature-owned `model/<Feature>PersistenceSchema.java` declarations, rather than feature-local schema declarations or a second source-model home. |
+| `data-persistencecore-sqlite-generic-infrastructure-semantics` | Review-Owned | every helper under `src/data/persistencecore/sqlite/**` | none | none | `persistencecore/sqlite` contains only generic SQLite infrastructure such as reusable connection lifecycle or schema inspection support for feature-local `gateway/local/**` adapters, rather than feature-local source adapters, schema ownership, or runtime composition. |
 
 ### Must Not Contain
 
@@ -43,8 +44,8 @@ neighboring data enforcement documents.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-persistencecore-model-data-internal-consumer-boundary` | Review-Owned | every public helper under `src/data/persistencecore/model/**` | none | none | Generic schema helpers under `persistencecore/model` communicate only as internal data-layer support for source-schema declarations; they do not become a feature contract, domain carrier, or runtime registration seam. |
-| `data-persistencecore-sqlite-data-internal-consumer-boundary` | Review-Owned | every public helper under `src/data/persistencecore/sqlite/**` | none | none | Generic SQLite helpers under `persistencecore/sqlite` communicate only as internal data-layer support for concrete source adapters; they do not become a public backend boundary, a domain port adapter, or a shell/runtime integration surface. |
+| `data-persistencecore-model-data-internal-consumer-boundary` | Review-Owned | every public helper under `src/data/persistencecore/model/**` | none | none | Generic schema helpers under `persistencecore/model` communicate only with feature-owned `model/<Feature>PersistenceSchema.java` declarations as shared source-schema support; they do not become a feature-local schema declaration surface or an exported feature contract. |
+| `data-persistencecore-sqlite-data-internal-consumer-boundary` | Review-Owned | every public helper under `src/data/persistencecore/sqlite/**` | none | none | Generic SQLite helpers under `persistencecore/sqlite` communicate only with feature-local `gateway/local/**` source adapters as shared SQLite support; they do not become feature-owned gateway facades, schema declarations, or runtime-composition seams. |
 
 ## References
 

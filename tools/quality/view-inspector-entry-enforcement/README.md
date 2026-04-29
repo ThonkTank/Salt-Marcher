@@ -5,7 +5,7 @@ This bundle co-locates all currently active SaltMarcher checks that back
 
 It keeps the existing checker identity `ViewInspectorEntryDependencyBoundary`
 while making this directory the canonical home for all InspectorEntry-specific
-rule definitions and host wiring:
+rule definitions, InspectorEntry-specific Error Prone policy, and host wiring:
 
 - `errorprone/`
   `ViewInspectorEntryDependencyBoundary`,

@@ -187,6 +187,7 @@ val architectureTest by tasks.registering(Test::class) {
     exclude("architecture/view/binder/**")
     exclude("architecture/view/contribution/**")
     exclude("architecture/view/contributionmodel/**")
+    exclude("architecture/view/viewinputevent/**")
     exclude("architecture/view/viewlayer/**")
     doFirst {
         systemProperty("saltmarcher.mainClassesDir", mainJavaClassesDir.get().asFile.absolutePath)

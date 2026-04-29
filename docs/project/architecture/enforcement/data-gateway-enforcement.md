@@ -30,20 +30,21 @@ documents.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-gateway-source-adapter-mechanics-ownership` | Review-Owned | every gateway facade or helper under `src/data/**/gateway/local/**` or `src/data/**/gateway/remote/**` | none | none | `gateway/` code owns concrete source-facing mechanics such as connection or transport lifecycle, schema readiness, source queries or writes, and source-specific helper collaboration rather than generic shared infrastructure, business policy, or runtime composition. |
+| `data-gateway-source-adapter-mechanics-ownership` | Review-Owned | every gateway facade or helper under `src/data/**/gateway/local/**` or `src/data/**/gateway/remote/**` | none | none | `gateway/` code owns concrete source-facing mechanics such as connection or transport lifecycle, schema readiness, source queries or writes, and source-specific helper collaboration. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
+| `data-gateway-no-generic-infrastructure-business-policy-or-runtime-composition` | Review-Owned | every gateway facade or helper under `src/data/**/gateway/local/**` or `src/data/**/gateway/remote/**` | none | none | `gateway/` code does not become generic shared infrastructure, business policy, or runtime composition code; those responsibilities stay in `persistencecore/`, the domain layer, or the data-root `*ServiceContribution`. |
 | `data-gateway-domain-independence` | Enforced | every dependency from `src/data/**/gateway/**` into domain packages | ArchUnit `dataGatewaysMustStayIndependentFromDomainTypes` | `./gradlew checkArchitecture` | Source adapters under `gateway/` do not depend on `src/domain/**` types. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-gateway-public-signature-boundary` | Enforced | every public/protected gateway API | Error Prone `DataGatewayReturnTypeBoundary` | `./gradlew compileJava` | Public/protected gateway APIs expose only own-feature source-model records or `java.lang`/`java.util` value and container types. |
-| `data-gateway-internal-data-collaborator-boundary` | Review-Owned | every direct gateway facade seam or gateway-local helper seam under `src/data/**/gateway/local/**` or `src/data/**/gateway/remote/**` | none | none | Gateway seams communicate only as same-feature internal data collaboration points for repository/query adapters or gateway-local helpers; they do not define domain port contracts, shell/runtime seams, or a public backend boundary of their own. |
+| `data-gateway-public-signature-boundary` | Enforced | every public/protected gateway type or member signature | Error Prone `DataGatewayReturnTypeBoundary` | `./gradlew compileJava` | Public/protected gateway classes and members expose only same-feature source-model types or `java.lang`/`java.util` value and container types across `extends`/`implements`, type bounds, record components, public/protected fields, constructors, methods, and throws clauses. |
+| `data-gateway-internal-data-collaborator-boundary` | Review-Owned | every direct gateway facade seam or gateway-local helper seam under `src/data/**/gateway/local/**` or `src/data/**/gateway/remote/**` | none | none | Gateway seams communicate only as same-feature internal data collaboration points for repository/query adapters or gateway-local helpers; they do not define domain port contracts, shell/runtime seams, or an independent public backend boundary. |
 
 ## References
 

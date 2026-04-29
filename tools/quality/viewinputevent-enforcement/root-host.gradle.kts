@@ -48,3 +48,11 @@ tasks.register("checkViewInputEventEnforcement") {
     dependsOn(viewInputEventArchitectureTest)
     dependsOn(gradle.includedBuild("build-harness").task(":viewInputEventTopologyCheck"))
 }
+
+tasks.matching { it.name == "checkArchitecture" }.configureEach {
+    dependsOn("checkViewInputEventEnforcement")
+}
+
+tasks.named("check") {
+    dependsOn("checkViewInputEventEnforcement")
+}

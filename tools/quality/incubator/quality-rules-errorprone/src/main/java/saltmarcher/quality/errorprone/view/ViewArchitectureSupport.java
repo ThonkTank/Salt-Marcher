@@ -66,8 +66,6 @@ public final class ViewArchitectureSupport {
             "shell.api.ShellLeftBarTabMode",
             "shell.api.ShellLeftBarTabSpec",
             "shell.api.ShellTopBarSpec");
-    private static final Set<String> INSPECTOR_ENTRY_ALLOWED_SHELL_TYPES = Set.of(
-            "shell.api.InspectorEntrySpec");
     private static final Set<String> DATA_ROOT_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ServiceContribution",
             "shell.api.ServiceRegistry");
@@ -108,11 +106,6 @@ public final class ViewArchitectureSupport {
     public static boolean isIntentHandlerSource(CompilationUnitTree tree) {
         return VIEW_MODEL_PACKAGE.matcher(packageName(tree)).matches()
                 && sourceFileName(tree).endsWith("IntentHandler.java");
-    }
-
-    public static boolean isInspectorEntrySource(CompilationUnitTree tree) {
-        return VIEW_MODEL_PACKAGE.matcher(packageName(tree)).matches()
-                && sourceFileName(tree).endsWith("InspectorEntry.java");
     }
 
     public static boolean isViewInputEventSource(CompilationUnitTree tree) {
@@ -717,10 +710,6 @@ public final class ViewArchitectureSupport {
 
     public static boolean isAllowedDataRootShellType(String referencedType) {
         return isAllowedShellType(referencedType, DATA_ROOT_ALLOWED_SHELL_TYPES);
-    }
-
-    public static boolean isAllowedInspectorEntryShellType(String referencedType) {
-        return isAllowedShellType(referencedType, INSPECTOR_ENTRY_ALLOWED_SHELL_TYPES);
     }
 
     private static boolean isDomainWriteCarrier(String referencedType) {

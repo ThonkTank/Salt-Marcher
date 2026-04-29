@@ -7,7 +7,6 @@ import com.google.errorprone.matchers.Description;
 import com.sun.source.tree.CompilationUnitTree;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-import saltmarcher.quality.errorprone.view.ViewRoleDependencySupport;
 
 @BugPattern(
         name = "ViewInspectorEntryDependencyBoundary",
@@ -18,15 +17,12 @@ public final class ViewInspectorEntryDependencyBoundaryChecker extends BugChecke
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isInspectorEntrySource(tree)) {
+        if (!ViewInspectorEntrySupport.isInspectorEntrySource(tree)) {
             return Description.NO_MATCH;
         }
 
         String packageName = ViewArchitectureSupport.packageName(tree);
-        Set<String> forbiddenReferences = ViewRoleDependencySupport.collectForbiddenReferences(
-                tree,
-                state,
-                ViewRoleDependencySupport.SourceRole.INSPECTOR_ENTRY);
+        Set<String> forbiddenReferences = ViewInspectorEntrySupport.collectForbiddenReferences(tree, state);
         if (forbiddenReferences.isEmpty()) {
             return Description.NO_MATCH;
         }

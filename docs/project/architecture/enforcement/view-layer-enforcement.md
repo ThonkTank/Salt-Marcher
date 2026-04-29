@@ -103,9 +103,6 @@ Focused bundle entrypoint:
   remains effectively stateless
 - whether a mechanically legal local `IntentHandler` still stays a thin
   interpretation role instead of becoming hidden workflow orchestration
-- whether an `InspectorEntry` that is legal by `slotcontent/**` placement is
-  genuinely part of inspector/details publication rather than an unrelated
-  adapter
 
 ## References
 

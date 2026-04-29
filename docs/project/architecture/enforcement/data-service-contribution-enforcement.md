@@ -17,9 +17,10 @@ It answers three questions for every data-root `*ServiceContribution.java`:
 - what the role MUST NOT contain
 - which direct communication seams the role MAY own
 
-This document does not own feature-root placement, bootstrap discovery order,
-broad data-layer-to-domain dependency policy, or repository/query/gateway/
-model/mapper/persistencecore contracts. Those stay in
+This document does not own feature-root placement, layer-wide service-
+registration placement, bootstrap discovery order, broad data-layer-to-domain
+dependency policy, or repository/query/gateway/model/mapper/persistencecore
+contracts. Those stay in
 `data-layer-enforcement.md` and the neighboring bootstrap, layering, shell,
 and data-role enforcement documents.
 
@@ -44,9 +45,10 @@ and data-role enforcement documents.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-service-registry-root-only` | Enforced | every direct runtime service registration from `src/data/**` into `shell.api.ServiceRegistry.Builder` | Error Prone `ServiceRegistryRegistrationPlacement`, build-harness `SourceLayoutRules`, and PMD `DataEntrypointRule` | `./gradlew compileJava` and `./gradlew checkArchitecture` | Direct runtime service registration belongs only in `src/data/<feature>/<Feature>ServiceContribution.java`; non-root data buckets do not register services or create alternate shell runtime seams. |
 | `data-service-contribution-shell-runtime-seam-subset` | Enforced | every direct shell dependency from a data-root `*ServiceContribution.java` under `src/data/**` | Error Prone `FeatureShellApiAllowlist` | `./gradlew compileJava` | A data service contribution communicates directly only through the documented shell runtime seam subset for the role: `shell.api.ServiceContribution` and `shell.api.ServiceRegistry`. It does not depend on `ShellRuntimeContext`, other shell API families, or shell host internals. |
-| `data-service-contribution-same-feature-root-export` | Review-Owned | every runtime capability exported from a data-root `*ServiceContribution.java` under `src/data/**` | none | none | A data service contribution exports only same-feature root `*ApplicationService` capabilities and does not publish repositories, queries, gateways, mappers, model/schema types, or foreign-feature services as runtime capabilities. Current compile-side checks constrain parts of this for `register(...)`, but the full export invariant remains review-owned while `registerFactory(...)` exports are not covered end-to-end. |
+| `data-service-contribution-register-export-shape` | Enforced | every direct `shell.api.ServiceRegistry.Builder.register(...)` export from a data-root `*ServiceContribution.java` under `src/data/**` | Error Prone `DomainServiceRegistryExportShape` and PMD `DataEntrypointRule` | `./gradlew compileJava` and `./gradlew checkArchitecture` | A data service contribution exports direct `register(...)` capabilities only as same-feature root domain `*ApplicationService` types. It does not export repositories, queries, gateways, mappers, model/schema types, or foreign-feature services through that direct registration path. |
+| `data-service-contribution-factory-export-shape` | Review-Owned | every runtime capability exported through `shell.api.ServiceRegistry.Builder.registerFactory(...)` from a data-root `*ServiceContribution.java` under `src/data/**` | none | none | A data service contribution keeps the same root-boundary export rule for `registerFactory(...)`: exported capability keys stay same-feature root `*ApplicationService` types and do not become repository, query, gateway, mapper, model/schema, or foreign-feature runtime surfaces. This remains review-owned until factory-key coverage is enforced end-to-end. |
+| `data-service-contribution-composition-collaborator-assembly-only` | Review-Owned | every same-feature collaborator that a data-root `*ServiceContribution.java` constructs or wires directly | none | none | A data service contribution may assemble same-feature concrete adapters, ports, and helper collaborators only as composition input for root application-service registration. It does not turn those collaborators into a second direct runtime boundary or a reusable public service surface of the role itself. |
 
 ## References
 

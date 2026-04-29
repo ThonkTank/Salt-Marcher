@@ -15,13 +15,8 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
-import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -30,9 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
-import javafx.scene.Node;
 
 @AnalyzeMainClasses
 public final class ViewInputEventArchitectureTest {
@@ -64,12 +57,6 @@ public final class ViewInputEventArchitectureTest {
             classes()
                     .that(ViewRolePredicates.areViewInputEvents())
                     .should(belongToInteractiveSameStemView());
-
-    @ArchTest
-    static final ArchRule passiveViewsWithoutLocalIntentHandlersOrViewInputEventsMustNotExposeCallbackSeams =
-            classes()
-                    .that(ViewRolePredicates.arePassiveViews())
-                    .should(notExposeCallbackSeamsWithoutLocalIntentHandlerOrViewInputEvent());
 
     @ArchTest
     static final ArchRule viewInputEventsMustNotDeclareDeadSnapshotComponents =
@@ -126,33 +113,6 @@ public final class ViewInputEventArchitectureTest {
                             item,
                             item.getName() + " exists without a local *IntentHandler"));
                 }
-            }
-        };
-    }
-
-    private static ArchCondition<JavaClass> notExposeCallbackSeamsWithoutLocalIntentHandlerOrViewInputEvent() {
-        return new ArchCondition<>("avoid outward callback seams when no local IntentHandler or ViewInputEvent exists") {
-            @Override
-            public void check(JavaClass item, ConditionEvents events) {
-                if (!isCallbackEligiblePassiveView(item) || declaresInteractiveViewInputSeam(item)) {
-                    return;
-                }
-                String packageName = item.getPackageName();
-                Set<String> packageClassNames = topLevelClassNamesInPackage(packageName);
-                if (countClassesEndingWith(packageClassNames, "IntentHandler") != 0) {
-                    return;
-                }
-                if (packageClassNames.contains(expectedViewInputEventSimpleName(item.getSimpleName()))) {
-                    return;
-                }
-                Set<String> callbackSeams = outwardCallbackSeams(item.getName());
-                if (callbackSeams.isEmpty()) {
-                    return;
-                }
-                events.add(SimpleConditionEvent.violated(
-                        item,
-                        item.getName() + " defines outward callback seams despite having no local *IntentHandler or same-stem *ViewInputEvent: "
-                                + String.join(", ", callbackSeams)));
             }
         };
     }
@@ -227,85 +187,6 @@ public final class ViewInputEventArchitectureTest {
             }
         }
         return false;
-    }
-
-    private static boolean isCallbackEligiblePassiveView(JavaClass javaClass) {
-        if (isExcludedReusableCallbackSurface(javaClass.getPackageName())) {
-            return false;
-        }
-        return Node.class.isAssignableFrom(loadClass(javaClass.getName()));
-    }
-
-    private static boolean isExcludedReusableCallbackSurface(String packageName) {
-        return packageName.startsWith("src.view.slotcontent.primitives.")
-                || packageName.startsWith("src.view.slotcontent.controls.");
-    }
-
-    private static Set<String> outwardCallbackSeams(String className) {
-        Class<?> reflectedClass = loadClass(className);
-        Set<String> seams = new LinkedHashSet<>();
-        for (Constructor<?> constructor : reflectedClass.getDeclaredConstructors()) {
-            if (Modifier.isPrivate(constructor.getModifiers()) || !containsCallbackSurface(constructor.getGenericParameterTypes())) {
-                continue;
-            }
-            seams.add(reflectedClass.getSimpleName() + "(" + constructor.getParameterCount() + ")");
-        }
-        for (Method method : reflectedClass.getDeclaredMethods()) {
-            if (Modifier.isPrivate(method.getModifiers())) {
-                continue;
-            }
-            if ("onViewInputEvent".equals(method.getName())) {
-                seams.add(method.getName() + "(" + method.getParameterCount() + ")");
-                continue;
-            }
-            if (containsCallbackSurface(method.getGenericParameterTypes())
-                    || isCallbackSurface(method.getGenericReturnType())) {
-                seams.add(method.getName() + "(" + method.getParameterCount() + ")");
-            }
-        }
-        for (Field field : reflectedClass.getDeclaredFields()) {
-            if (Modifier.isPrivate(field.getModifiers()) || !isCallbackSurface(field.getGenericType())) {
-                continue;
-            }
-            seams.add(field.getName() + " field");
-        }
-        return Set.copyOf(seams);
-    }
-
-    private static boolean containsCallbackSurface(Type[] parameterTypes) {
-        for (Type parameterType : parameterTypes) {
-            if (isCallbackSurface(parameterType)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean isCallbackSurface(Type type) {
-        if (type instanceof ParameterizedType parameterizedType) {
-            return isCallbackSurface(parameterizedType.getRawType());
-        }
-        if (!(type instanceof Class<?> callbackType)) {
-            return false;
-        }
-        return isFunctionalInterface(callbackType)
-                || callbackType.getName().startsWith("javafx.event.")
-                || callbackType.getName().equals("javafx.beans.InvalidationListener")
-                || callbackType.getName().equals("javafx.beans.value.ChangeListener")
-                || callbackType.getName().equals("javafx.collections.ListChangeListener")
-                || callbackType.getName().equals("javafx.collections.MapChangeListener")
-                || callbackType.getName().equals("javafx.collections.SetChangeListener");
-    }
-
-    private static boolean isFunctionalInterface(Class<?> type) {
-        if (type == null || !type.isInterface()) {
-            return false;
-        }
-        long abstractMethodCount = Arrays.stream(type.getMethods())
-                .filter(method -> Modifier.isAbstract(method.getModifiers()))
-                .filter(method -> method.getDeclaringClass() != Object.class)
-                .count();
-        return abstractMethodCount == 1;
     }
 
     private static Optional<JavaClass> localIntentHandlerFor(JavaClass eventClass, Class<?> reflectedEventClass) {

@@ -11,9 +11,10 @@ role in data features under `src/data/**`.
 This document owns the complete architecture-enforcement catalog for the
 `query/` role itself.
 
-It answers three questions for every concrete query adapter under
+It answers four questions for every concrete query adapter under
 `src/data/**/query/`:
 
+- when the role MAY exist
 - what the role MUST contain
 - what the role MUST NOT contain
 - which direct communication seams the role MAY use
@@ -24,6 +25,12 @@ gateway-owned source-adapter boundaries, or source-model ownership. Those stay
 in the neighboring data enforcement documents.
 
 ## Invariant Catalog
+
+### May Contain
+
+| Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
+| --- | --- | --- | --- | --- | --- |
+| `data-query-separate-read-adapter-necessity` | Review-Owned | every current `src/data/**/query/` package and every query adapter under it | none | none | A data feature uses `query/` only when it owns a separate read-only lookup, search, paging, or projection adapter need; `query/` is not a generic convenience bucket, a second `repository/`, or a write boundary. |
 
 ### Must Contain
 
@@ -36,7 +43,7 @@ in the neighboring data enforcement documents.
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `data-query-no-source-mechanics` | Source-Pattern Enforced | every Java type under `src/data/**/query/` | PMD `SaltMarcherDataLayerRoleRule` | `./gradlew checkArchitecture` | Query adapters do not reference narrow concrete source APIs directly. |
-| `data-query-no-public-non-adapter-boundary-types` | Enforced | every public type under `src/data/**/query/` that is not a public concrete adapter | Error Prone `DataAdapterRoleContract` | `./gradlew compileJava` | `query/` does not declare public contracts or carriers of its own; public boundary types there are concrete port adapters, while contracts and carriers stay in the owning domain port or published boundary. |
+| `data-query-no-public-non-adapter-boundary-types` | Enforced | every public type under `src/data/**/query/` that is not a public concrete adapter | Error Prone `DataAdapterRoleContract` | `./gradlew compileJava` | `query/` exposes no public boundary types except public concrete adapter classes. |
 | `data-query-read-only-source-shape` | Enforced | every public/protected method declaration or own-feature gateway call under `src/data/**/query/` | PMD `SaltMarcherDataLayerRoleRule` and Error Prone `DataQueryGatewayMutationBoundary` | `./gradlew checkArchitecture` and `./gradlew compileJava` | Query adapters stay mechanically read-only: they do not expose mutation-shaped public/protected methods and do not call mutation-shaped operations on own-feature gateway types. |
 | `data-query-read-only-role-semantics` | Review-Owned | every query adapter under `src/data/**/query/` | none | none | A mechanically legal query adapter still remains a read-only lookup, search, paging, or projection adapter rather than a write boundary, policy helper, or generic data convenience wrapper. |
 

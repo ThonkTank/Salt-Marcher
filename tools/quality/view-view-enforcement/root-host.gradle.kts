@@ -75,11 +75,14 @@ private fun configureViewViewJqassistantInvocation(
 }
 
 val sourceSets = the<SourceSetContainer>()
-sourceSets.named("test") {
-    java.srcDir("tools/quality/view-view-enforcement/archunit/src/test/java")
-}
 val viewViewEnforcementSupport by sourceSets.creating {
     java.srcDir("tools/quality/view-view-enforcement/support/src/main/java")
+}
+val testSourceSet = sourceSets["test"]
+val viewViewEnforcementArchunit by sourceSets.creating {
+    java.srcDir("tools/quality/view-view-enforcement/archunit/src/test/java")
+    compileClasspath += testSourceSet.compileClasspath
+    runtimeClasspath += output + compileClasspath + testSourceSet.runtimeClasspath
 }
 
 val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
@@ -109,8 +112,8 @@ val viewSurfaceArchitectureTest by tasks.registering(Test::class) {
     description = "Run only the passive View-focused architecture test suite."
     dependsOn(tasks.named("compileJava"))
     inputs.dir(mainJavaClassesDir)
-    testClassesDirs = sourceSets["test"].output.classesDirs
-    classpath = sourceSets["test"].runtimeClasspath
+    testClassesDirs = viewViewEnforcementArchunit.output.classesDirs
+    classpath = viewViewEnforcementArchunit.runtimeClasspath
     useJUnitPlatform()
     filter {
         includeTestsMatching("architecture.view.view.ViewSurfaceArchitectureTest")

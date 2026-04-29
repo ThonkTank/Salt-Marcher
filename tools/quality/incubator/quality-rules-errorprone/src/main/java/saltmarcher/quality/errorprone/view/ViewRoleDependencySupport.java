@@ -15,8 +15,7 @@ public final class ViewRoleDependencySupport {
         BINDER,
         CONTRIBUTION_MODEL,
         CONTENT_MODEL,
-        INTENT_HANDLER,
-        INSPECTOR_ENTRY
+        INTENT_HANDLER
     }
 
     public static Set<String> collectForbiddenReferences(
@@ -58,7 +57,6 @@ public final class ViewRoleDependencySupport {
                 case BINDER -> !ViewArchitectureSupport.isAllowedModelJavafxType(referencedType);
                 case CONTRIBUTION_MODEL, CONTENT_MODEL -> !ViewArchitectureSupport.isAllowedViewModelJavafxType(referencedType);
                 case INTENT_HANDLER -> true;
-                case INSPECTOR_ENTRY -> !referencedType.equals("javafx.scene.Node");
             };
         }
         if (referencedType.startsWith("shell.")) {
@@ -66,7 +64,6 @@ public final class ViewRoleDependencySupport {
                 case CONTRIBUTION -> !ViewArchitectureSupport.isAllowedContributionShellType(referencedType);
                 case BINDER -> !ViewArchitectureSupport.isAllowedBinderShellType(referencedType);
                 case CONTRIBUTION_MODEL, CONTENT_MODEL, INTENT_HANDLER -> true;
-                case INSPECTOR_ENTRY -> !ViewArchitectureSupport.isAllowedInspectorEntryShellType(referencedType);
             };
         }
         if (referencedType.startsWith("src.data.")) {
@@ -79,8 +76,6 @@ public final class ViewRoleDependencySupport {
                 case CONTRIBUTION_MODEL, CONTENT_MODEL ->
                         !ViewArchitectureSupport.isAllowedPresentationModelDomainBoundary(referencedType);
                 case INTENT_HANDLER -> true;
-                case INSPECTOR_ENTRY ->
-                        !referencedType.matches("^src\\.domain\\.[^.]+\\.published\\..+");
             };
         }
 
@@ -95,7 +90,6 @@ public final class ViewRoleDependencySupport {
             case CONTRIBUTION_MODEL, CONTENT_MODEL ->
                     isForbiddenForProjectionModel(sourcePackageName, referencedType, viewType);
             case INTENT_HANDLER -> isForbiddenForIntentHandler(sourcePackageName, referencedType, viewType);
-            case INSPECTOR_ENTRY -> isForbiddenForInspectorEntry(sourcePackageName, referencedType, viewType);
         };
     }
 
@@ -164,15 +158,6 @@ public final class ViewRoleDependencySupport {
             return !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
         }
         return !"MODEL".equals(viewType.bucket())
-                || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
-    }
-
-    private static boolean isForbiddenForInspectorEntry(
-            String sourcePackageName,
-            String referencedType,
-            ViewArchitectureSupport.ViewTypeInfo viewType
-    ) {
-        return !Set.of("MODEL", "VIEW", "INSPECTOR_ENTRY").contains(viewType.bucket())
                 || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
     }
 

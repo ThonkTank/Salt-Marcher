@@ -5,7 +5,6 @@ import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
 import com.sun.source.tree.CompilationUnitTree;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
@@ -18,22 +17,12 @@ public final class ViewInspectorEntryShellApiAllowlistChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isInspectorEntrySource(tree)) {
+        if (!ViewInspectorEntrySupport.isInspectorEntrySource(tree)) {
             return Description.NO_MATCH;
         }
 
         String packageName = ViewArchitectureSupport.packageName(tree);
-        Set<String> forbiddenReferences = new LinkedHashSet<>();
-        for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
-            if (referencedType.startsWith("shell.host.")) {
-                forbiddenReferences.add(referencedType);
-                continue;
-            }
-            if (referencedType.startsWith("shell.")
-                    && !ViewArchitectureSupport.isAllowedInspectorEntryShellType(referencedType)) {
-                forbiddenReferences.add(referencedType);
-            }
-        }
+        Set<String> forbiddenReferences = ViewInspectorEntrySupport.collectForbiddenShellReferences(tree);
         if (forbiddenReferences.isEmpty()) {
             return Description.NO_MATCH;
         }
