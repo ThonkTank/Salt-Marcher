@@ -23,12 +23,14 @@ or `IntentHandler` / `*ViewInputEvent` / `*PublishedEvent` protocol rules.
 Those stay in the neighboring role-enforcement documents and in the
 view-layer and layering standards.
 
-Unified focused bundle entrypoint:
+Only supported focused bundle entrypoint:
 
 - `./gradlew checkViewContentModelEnforcement --rerun-tasks --console=plain`
   runs the currently active ContentModel-focused Error Prone, ArchUnit,
-  jQAssistant, and build-harness checks through one root task. Canonical
-  blocking behavior remains at `./gradlew compileJava`,
+  jQAssistant, and build-harness checks through one root task. Direct helper
+  tasks for those engines are bundle-internal and are not a supported focused
+  invocation surface. Canonical blocking behavior remains at
+  `./gradlew compileJava`,
   `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` as
   listed below.
 

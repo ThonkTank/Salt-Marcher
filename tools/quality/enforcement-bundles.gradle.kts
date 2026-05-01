@@ -28,6 +28,11 @@ fun Properties.list(name: String): List<String> = getProperty(name)
     ?.filter(String::isNotEmpty)
     ?: emptyList()
 
+fun Properties.boolean(name: String): Boolean = getProperty(name)
+    ?.trim()
+    ?.equals("true", ignoreCase = true)
+    ?: false
+
 fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, EnforcementBundleDescriptor> {
     val qualityDir = File(repoRootDir, "tools/quality")
     if (!qualityDir.isDirectory) {
@@ -38,18 +43,23 @@ fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enforcement
         .map { descriptorFile ->
             val properties = Properties()
             descriptorFile.inputStream().use(properties::load)
-            EnforcementBundleDescriptor(
-                bundleId = properties.requiredTrimmed("bundleId"),
-                order = properties.requiredTrimmed("order").toInt(),
-                taskNames = properties.list("taskNames"),
-                rootHostScript = properties.optionalTrimmed("rootHostScript"),
-                buildHarnessHostScript = properties.optionalTrimmed("buildHarnessHostScript"),
-                errorProneHostScript = properties.optionalTrimmed("errorProneHostScript"),
-                errorProneSourceDir = properties.optionalTrimmed("errorProneSourceDir"),
-                errorProneServiceFile = properties.optionalTrimmed("errorProneServiceFile"),
-                pmdHostScript = properties.optionalTrimmed("pmdHostScript")
-            )
+            if (!properties.boolean("descriptorOwned")) {
+                null
+            } else {
+                EnforcementBundleDescriptor(
+                    bundleId = properties.requiredTrimmed("bundleId"),
+                    order = properties.requiredTrimmed("order").toInt(),
+                    taskNames = properties.list("taskNames"),
+                    rootHostScript = properties.optionalTrimmed("rootHostScript"),
+                    buildHarnessHostScript = properties.optionalTrimmed("buildHarnessHostScript"),
+                    errorProneHostScript = properties.optionalTrimmed("errorProneHostScript"),
+                    errorProneSourceDir = properties.optionalTrimmed("errorProneSourceDir"),
+                    errorProneServiceFile = properties.optionalTrimmed("errorProneServiceFile"),
+                    pmdHostScript = properties.optionalTrimmed("pmdHostScript")
+                )
+            }
         }
+        .filterNotNull()
         .associateBy(EnforcementBundleDescriptor::bundleId)
 }
 
@@ -61,11 +71,8 @@ val enforcementBundleDescriptorsById = loadEnforcementBundleDescriptors(repoRoot
 
 val legacyEnforcementBundleIdsInOrder = listOf(
     "view",
-    "viewContribution",
-    "viewBinder",
     "viewLayer",
     "viewInspectorEntry",
-    "viewInputEvent",
     "viewPublishedEvent",
     "viewContributionModel",
     "viewContentModel"
@@ -77,6 +84,7 @@ val enforcementBundleIdsInOrder = (
     )
     .sortedBy { (_, order) -> order }
     .map { (bundleId, _) -> bundleId }
+    .distinct()
 
 val legacyEnforcementBundleTaskToId = mapOf(
     "checkViewEnforcement" to "view",
@@ -84,13 +92,6 @@ val legacyEnforcementBundleTaskToId = mapOf(
     "checkViewFxmlResources" to "view",
     "jqassistantScanViewEnforcement" to "view",
     "jqassistantAnalyzeViewEnforcement" to "view",
-    "checkViewContributionEnforcement" to "viewContribution",
-    "viewContributionArchitectureTest" to "viewContribution",
-    "pmdViewContributionEnforcement" to "viewContribution",
-    "checkViewBinderEnforcement" to "viewBinder",
-    "viewBinderArchitectureTest" to "viewBinder",
-    "jqassistantScanViewBinderEnforcement" to "viewBinder",
-    "jqassistantAnalyzeViewBinderEnforcement" to "viewBinder",
     "checkViewLayerEnforcement" to "viewLayer",
     "viewLayerArchitectureTest" to "viewLayer",
     "viewLayerTopologyCheck" to "viewLayer",
@@ -98,9 +99,6 @@ val legacyEnforcementBundleTaskToId = mapOf(
     "jqassistantScanViewInspectorEntryEnforcement" to "viewInspectorEntry",
     "jqassistantAnalyzeViewInspectorEntryEnforcement" to "viewInspectorEntry",
     "viewInspectorEntryTopologyCheck" to "viewInspectorEntry",
-    "checkViewInputEventEnforcement" to "viewInputEvent",
-    "viewInputEventArchitectureTest" to "viewInputEvent",
-    "viewInputEventTopologyCheck" to "viewInputEvent",
     "checkViewPublishedEventEnforcement" to "viewPublishedEvent",
     "viewPublishedEventArchitectureTest" to "viewPublishedEvent",
     "checkViewContributionModelEnforcement" to "viewContributionModel",
@@ -108,11 +106,7 @@ val legacyEnforcementBundleTaskToId = mapOf(
     "jqassistantScanViewContributionModelEnforcement" to "viewContributionModel",
     "jqassistantAnalyzeViewContributionModelEnforcement" to "viewContributionModel",
     "viewContributionModelTopologyCheck" to "viewContributionModel",
-    "checkViewContentModelEnforcement" to "viewContentModel",
-    "viewContentModelArchitectureTest" to "viewContentModel",
-    "jqassistantScanViewContentModelEnforcement" to "viewContentModel",
-    "jqassistantAnalyzeViewContentModelEnforcement" to "viewContentModel",
-    "viewContentModelTopologyCheck" to "viewContentModel"
+    "checkViewContentModelEnforcement" to "viewContentModel"
 )
 
 val descriptorEnforcementBundleTaskToId = enforcementBundleDescriptorsById.values
@@ -143,11 +137,8 @@ val fullBuildTaskNames = setOf(
 
 val legacyRootHostScriptsByBundleId = mapOf(
     "view" to "tools/quality/view-view-enforcement/root-host.gradle.kts",
-    "viewContribution" to "tools/quality/view-contribution-enforcement/root-host.gradle.kts",
-    "viewBinder" to "tools/quality/view-binder-enforcement/root-host.gradle.kts",
     "viewLayer" to "tools/quality/view-layer-enforcement/root-host.gradle.kts",
     "viewInspectorEntry" to "tools/quality/view-inspector-entry-enforcement/root-host.gradle.kts",
-    "viewInputEvent" to "tools/quality/viewinputevent-enforcement/root-host.gradle.kts",
     "viewPublishedEvent" to "tools/quality/publishedevent-enforcement/root-host.gradle.kts",
     "viewContributionModel" to "tools/quality/view-contributionmodel-enforcement/root-host.gradle.kts",
     "viewContentModel" to "tools/quality/view-content-model-enforcement/root-host.gradle.kts"
@@ -162,7 +153,6 @@ val rootHostScriptsByBundleId = legacyRootHostScriptsByBundleId + descriptorRoot
 val legacyBuildHarnessHostScriptsByBundleId = mapOf(
     "viewLayer" to "../../quality/view-layer-enforcement/build-harness-host.gradle.kts",
     "viewInspectorEntry" to "../../quality/view-inspector-entry-enforcement/build-harness-host.gradle.kts",
-    "viewInputEvent" to "../../quality/viewinputevent-enforcement/build-harness-host.gradle.kts",
     "viewContributionModel" to "../../quality/view-contributionmodel-enforcement/build-harness-host.gradle.kts",
     "viewContentModel" to "../../quality/view-content-model-enforcement/build-harness-host.gradle.kts"
 )
@@ -175,10 +165,7 @@ val buildHarnessHostScriptsByBundleId = legacyBuildHarnessHostScriptsByBundleId 
 
 val legacyErrorProneHostScriptsByBundleId = mapOf(
     "view" to "../../view-view-enforcement/errorprone-host.gradle.kts",
-    "viewContribution" to "../../view-contribution-enforcement/errorprone-host.gradle.kts",
-    "viewBinder" to "../../view-binder-enforcement/errorprone-host.gradle.kts",
     "viewInspectorEntry" to "../../view-inspector-entry-enforcement/errorprone-host.gradle.kts",
-    "viewInputEvent" to "../../viewinputevent-enforcement/errorprone-host.gradle.kts",
     "viewPublishedEvent" to "../../publishedevent-enforcement/errorprone-host.gradle.kts",
     "viewContributionModel" to "../../view-contributionmodel-enforcement/errorprone-host.gradle.kts",
     "viewContentModel" to "../../view-content-model-enforcement/errorprone-host.gradle.kts"
@@ -192,10 +179,7 @@ val errorProneHostScriptsByBundleId = legacyErrorProneHostScriptsByBundleId + de
 
 val legacyErrorProneSourceDirsByBundleId = mapOf(
     "view" to "../../view-view-enforcement/errorprone/src/main/java",
-    "viewContribution" to "../../view-contribution-enforcement/errorprone/src/main/java",
-    "viewBinder" to "../../view-binder-enforcement/errorprone/src/main/java",
     "viewInspectorEntry" to "../../view-inspector-entry-enforcement/errorprone/src/main/java",
-    "viewInputEvent" to "../../viewinputevent-enforcement/errorprone/src/main/java",
     "viewPublishedEvent" to "../../publishedevent-enforcement/errorprone/src/main/java",
     "viewContributionModel" to "../../view-contributionmodel-enforcement/errorprone/src/main/java",
     "viewContentModel" to "../../view-content-model-enforcement/errorprone/src/main/java"
@@ -209,10 +193,7 @@ val errorProneSourceDirsByBundleId = legacyErrorProneSourceDirsByBundleId + desc
 
 val legacyErrorProneServiceFilesByBundleId = mapOf(
     "view" to "../../view-view-enforcement/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker",
-    "viewContribution" to "../../view-contribution-enforcement/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker",
-    "viewBinder" to "../../view-binder-enforcement/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker",
     "viewInspectorEntry" to "../../view-inspector-entry-enforcement/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker",
-    "viewInputEvent" to "../../viewinputevent-enforcement/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker",
     "viewPublishedEvent" to "../../publishedevent-enforcement/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker",
     "viewContributionModel" to "../../view-contributionmodel-enforcement/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker",
     "viewContentModel" to "../../view-content-model-enforcement/errorprone/src/main/resources/META-INF/services/com.google.errorprone.bugpatterns.BugChecker"
@@ -224,9 +205,7 @@ val descriptorErrorProneServiceFilesByBundleId = enforcementBundleDescriptorsByI
 
 val errorProneServiceFilesByBundleId = legacyErrorProneServiceFilesByBundleId + descriptorErrorProneServiceFilesByBundleId
 
-val legacyPmdHostScriptsByBundleId = mapOf(
-    "viewContribution" to "../../view-contribution-enforcement/pmd-host.gradle.kts"
-)
+val legacyPmdHostScriptsByBundleId = emptyMap<String, String>()
 
 val descriptorPmdHostScriptsByBundleId = enforcementBundleDescriptorsById.values
     .mapNotNull { descriptor -> descriptor.pmdHostScript?.let { scriptPath -> descriptor.bundleId to scriptPath } }

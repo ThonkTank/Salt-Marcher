@@ -1,0 +1,2 @@
+saltmarcher.quality.errorprone.DomainPublishedCarrierShapeChecker
+saltmarcher.quality.errorprone.DomainPublishedBoundarySignaturePurityChecker

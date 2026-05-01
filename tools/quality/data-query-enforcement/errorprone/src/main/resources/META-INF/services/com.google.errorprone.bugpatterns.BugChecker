@@ -1,0 +1,4 @@
+saltmarcher.quality.errorprone.DataQueryGatewayCollaboratorBoundaryChecker
+saltmarcher.quality.errorprone.DataQueryGatewayMutationBoundaryChecker
+saltmarcher.quality.errorprone.DataQueryPublicSignatureBoundaryChecker
+saltmarcher.quality.errorprone.DataQueryRoleContractChecker

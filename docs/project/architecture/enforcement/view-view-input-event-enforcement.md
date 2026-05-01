@@ -27,8 +27,9 @@ Unified focused bundle entrypoint:
 - `./gradlew checkViewInputEventEnforcement --rerun-tasks --console=plain`
   runs the currently active ViewInputEvent-focused Error Prone, ArchUnit, and
   build-harness checks through one root task. Canonical blocking behavior
-  remains at `./gradlew compileJava` and `./gradlew checkArchitecture` as
-  listed below.
+  remains at `./gradlew compileJava` and
+  `./gradlew checkViewInputEventEnforcement` as listed below; the broader
+  `./gradlew checkArchitecture` path consumes this focused bundle unchanged.
 
 ## Invariant Catalog
 
@@ -36,8 +37,8 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-viewinputevent-local-intenthandler-required` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | build-harness `ViewInputEventTopologyRules`, ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews`, and ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers` | `./gradlew checkArchitecture` | A `*ViewInputEvent` may exist only inside a local interactive view unit that also defines a passive same-stem `*View` surface and a local `*IntentHandler`. |
-| `view-viewinputevent-same-stem-local-belonging` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers` and ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews` | `./gradlew checkArchitecture` | Each carrier belongs only to its own same-stem local interactive `View` surface. |
+| `view-viewinputevent-local-intenthandler-required` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | build-harness `ViewInputEventTopologyRules`, ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews`, and ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers` | `./gradlew checkViewInputEventEnforcement` | A `*ViewInputEvent` may exist only inside a local interactive view unit that also defines a passive same-stem `*View` surface and a local `*IntentHandler`. |
+| `view-viewinputevent-same-stem-local-belonging` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | ArchUnit `interactiveViewsMustOwnSameStemViewInputEventsAndIntentHandlers` and ArchUnit `viewInputEventsMustBelongToInteractiveSameStemViews` | `./gradlew checkViewInputEventEnforcement` | Each carrier belongs only to its own same-stem local interactive `View` surface. |
 
 ### Must Contain
 
@@ -54,8 +55,8 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-viewinputevent-no-foreign-view-role-references` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` | `./gradlew compileJava` | A `*ViewInputEvent` does not reference foreign `src/view/**` role families such as `*View`, `*Binder`, `*ContributionModel`, `*ContentModel`, `*IntentHandler`, `*PublishedEvent`, legacy view-role buckets, or support files outside the carrier's own type boundary. |
-| `view-viewinputevent-no-outer-layer-dependencies` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` and ArchUnit `viewInputEventsMustStayShellDomainDataAndServiceFree` | `./gradlew compileJava` and `./gradlew checkArchitecture` | A `*ViewInputEvent` does not depend on `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
-| `view-viewinputevent-no-dead-snapshot-components` | Enforced | every record-shaped `*ViewInputEvent.java` with a co-located `IntentHandler.consume(...)` overload | ArchUnit `viewInputEventsMustNotDeclareDeadSnapshotComponents` | `./gradlew checkArchitecture` | Every top-level `*ViewInputEvent` record component is read somewhere by the co-located `IntentHandler.consume(...)` entrypoint instead of remaining dead carrier baggage. |
+| `view-viewinputevent-no-outer-layer-dependencies` | Enforced | every `*ViewInputEvent.java` under `src/view/**` | Error Prone `ViewInputEventBoundary` and ArchUnit `viewInputEventsMustStayShellDomainDataAndServiceFree` | `./gradlew compileJava` and `./gradlew checkViewInputEventEnforcement` | A `*ViewInputEvent` does not depend on `shell/**`, `bootstrap/**`, `src/domain/**`, `src/data/**`, or root `*ApplicationService` boundaries. |
+| `view-viewinputevent-no-dead-snapshot-components` | Enforced | every record-shaped `*ViewInputEvent.java` with a co-located `IntentHandler.consume(...)` overload | ArchUnit `viewInputEventsMustNotDeclareDeadSnapshotComponents` | `./gradlew checkViewInputEventEnforcement` | Every top-level `*ViewInputEvent` record component is read somewhere by the co-located `IntentHandler.consume(...)` entrypoint instead of remaining dead carrier baggage. |
 
 ### Review-Owned Carrier Semantics
 

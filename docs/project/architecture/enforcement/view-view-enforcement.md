@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
+Last Reviewed: 2026-04-29
 Source of Truth: Complete invariant catalog for passive `*View` surfaces in
 `src/view/**`, limited to constraints proven directly on `*View.java` files,
 passive-`View`-owned FXML resources, or review-owned passive-`View`
@@ -48,7 +48,7 @@ routing. Those stay in the neighboring role documents.
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
 | `view-view-input-api` | every passive `View` that participates in the same-stem `*ViewInputEvent` protocol | Error Prone `ViewInputEventApi` | `./gradlew checkViewEnforcement` | An interactive passive `View` exposes exactly one outward input seam, `onViewInputEvent(Consumer<SameStemViewInputEvent>)`, and does not misshape that seam. |
-| `view-view-callback-seam-boundary` | every passive `*View.java` outside the explicit technical-base allowlist for reusable low-level base controls | Error Prone `PassiveViewCallbackSeamBoundary` | `./gradlew checkViewEnforcement` | Outside the explicit technical-base allowlist, a passive `View` does not expose alternate callback, async-result, acknowledgement, or other result-bearing outward seams. If the `View` exposes an outward technical input seam at all, that seam is the documented `onViewInputEvent(Consumer<SameStemViewInputEvent>)` route. |
+| `view-view-callback-seam-boundary` | every passive `*View.java` outside the explicit technical-base allowlist for reusable low-level base controls | Error Prone `PassiveViewCallbackSeamBoundary` and ArchUnit `passiveViewsWithoutLocalIntentHandlersOrViewInputEventsMustNotExposeCallbackSeams` | `./gradlew checkViewEnforcement` | Outside the explicit technical-base allowlist, a passive `View` does not expose alternate callback, async-result, acknowledgement, or other result-bearing outward seams. If the `View` exposes an outward technical input seam at all, that seam is the documented `onViewInputEvent(Consumer<SameStemViewInputEvent>)` route. |
 
 ## Review-Owned
 

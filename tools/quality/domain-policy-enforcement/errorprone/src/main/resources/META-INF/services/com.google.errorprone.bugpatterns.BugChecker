@@ -1,0 +1,2 @@
+saltmarcher.quality.errorprone.DomainPolicyRoleShapeChecker
+saltmarcher.quality.errorprone.DomainPolicyStatelessnessChecker

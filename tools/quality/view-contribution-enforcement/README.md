@@ -3,15 +3,18 @@
 This bundle co-locates all currently active SaltMarcher checks that back
 `docs/project/architecture/enforcement/view-contribution-enforcement.md`.
 
-It keeps the existing engines and checker identities unchanged while making
-this directory the canonical home for contribution-owned host wiring:
+It makes this directory the canonical home for contribution-owned checkers,
+host wiring, and bundle metadata:
 
 - `errorprone/`
-  `ViewContributionDependencyBoundary`
+  `ViewContributionDependencyBoundary`,
+  `ViewContributionShellApiAllowlist`
 - `archunit/`
   `architecture.view.contribution.ViewContributionArchitectureTest`
 - `pmd/`
   `ViewContributionEntrypointRule` and the dedicated single-rule PMD ruleset
+- `bundle.properties`
+  descriptor-based registration into the focused-enforcement Gradle path
 - `root-host.gradle.kts`
   root-project compiler, ArchUnit, PMD, and aggregate-task wiring
 - `errorprone-host.gradle.kts`

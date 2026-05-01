@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-04-30
 Source of Truth: Detailed local gate inventory, aggregate entrypoints, and
 concurrent local invocation policy for SaltMarcher quality platforms.
 
@@ -34,6 +34,58 @@ checks currently promoted to errors are:
 
 `compileJava` does not run the dedicated jQAssistant bundles. Passive `View`
 graph and FXML analysis enter local quality through `checkViewEnforcement`,
+focused Domain Layer topology, dependency, and documentation proof enters
+through `checkDomainLayerEnforcement`,
+focused Domain ApplicationService API-shape, topology, signature-purity,
+source-pattern policy, and documentation proof enters through
+`checkDomainApplicationServiceEnforcement`,
+focused Data ServiceContribution construction-purity, shell-seam,
+`register(...)` export-shape, source-pattern, and documentation proof enters
+through `checkDataServiceContributionEnforcement`,
+focused Domain Published carrier-shape, signature-purity, topology, and
+documentation proof enters through `checkDomainPublishedEnforcement`,
+focused Domain Port role-shape, boundary, and documentation proof enters
+through `checkDomainPortEnforcement`,
+focused Domain Factory role and documentation proof enters through
+`checkDomainFactoryEnforcement`,
+focused Domain Value role and documentation proof enters through
+`checkDomainValueEnforcement`,
+focused Domain Service role and documentation proof enters through
+`checkDomainServiceEnforcement`,
+focused Domain Policy role and documentation proof enters through
+`checkDomainPolicyEnforcement`,
+focused Domain Event role-shape and documentation proof enters through
+`checkDomainEventEnforcement`,
+focused Domain Specification role-shape proof enters through
+`checkDomainSpecificationEnforcement`,
+focused styling-layer proof enters through `checkStylingLayerEnforcement`,
+focused passive-`View` direct-render styling placement enters through
+`checkStylingViewEnforcement`,
+focused `AppShell` lifecycle-hook ownership enters through
+`checkShellAppShellEnforcement`,
+focused `AppBootstrap` host-composition boundary proof enters through
+`checkBootstrapAppBootstrapEnforcement`,
+focused shell-layer topology and boundary analysis enters through
+`checkShellLayerEnforcement`,
+focused Domain UseCase topology, same-context `published/**` dependency,
+source-pattern policy, and bundle-local enforcement-documentation coverage
+enters through `checkDomainUseCaseEnforcement`,
+focused Data Model source-shape, schema-DDL-placement, model-domain
+independence, topology, and documentation proof enters through
+`checkDataModelEnforcement`,
+focused Data Gateway public-signature-boundary, domain-independence, and
+documentation proof enters through `checkDataGatewayEnforcement`,
+focused Data Repository write-port contract, public-signature-boundary,
+gateway-collaborator, source-mechanics, and documentation proof enters
+through `checkDataRepositoryEnforcement`,
+focused Data Query read-port contract, public-signature-boundary,
+gateway-collaborator, mutation-boundary, source-mechanics, read-only-source
+shape, and documentation proof enters through
+`checkDataQueryEnforcement`,
+focused Data Mapper source-pattern and documentation proof enters through
+`checkDataMapperEnforcement`,
+focused Data Persistencecore dependency and documentation proof enters through
+`checkDataPersistencecoreEnforcement`,
 focused `Contribution` entrypoint-shape and ArchUnit analysis enters through
 `checkViewContributionEnforcement`,
 focused Binder graph analysis enters through
@@ -44,10 +96,11 @@ topology analysis enters through `checkViewContentModelEnforcement`, focused
 `InspectorEntry` graph and topology analysis enters through
 `checkViewInspectorEntryEnforcement`, and broader remaining view-topology
 analysis enters through `checkViewArchitecture`.
-These paths are wired into the central `check` aggregate through the named
-architecture aggregates. This keeps focused compilation verification
-independent from graph analysis while ensuring `build` still runs the full
-architecture harness through `check`.
+The graph/FXML/topology paths are wired into the central `check` aggregate
+through the named architecture aggregates, while passive-`View` direct-render
+styling placement reaches the full build through `compileJava` itself. This
+keeps focused compilation verification independent from graph analysis while
+ensuring `build` still runs the full architecture harness through `check`.
 
 ### Complexity, Duplication, And Metrics
 
@@ -55,9 +108,9 @@ architecture harness through `check`.
 | --- | --- | --- | --- |
 | PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
-| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value; writes `build/reports/cpd/main.txt`. |
-| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; writes `build/reports/lizard/main.txt`. |
-| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `build/reports/ckjm/main.txt` and `build/reports/ckjm/summary.md`, and warns on baseline hotspot regressions without blocking local build or install handoff. |
+| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value; wrapper-based invocations write `main.txt` under `build/isolated-gradle/<isolation-id>/.../reports/cpd/`. |
+| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; wrapper-based invocations write `main.txt` under `build/isolated-gradle/<isolation-id>/.../reports/lizard/`. |
+| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `main.txt` and `summary.md` under `build/isolated-gradle/<isolation-id>/.../reports/ckjm/` for wrapper-based invocations, and warns on baseline hotspot regressions without blocking local build or install handoff. |
 
 PMD non-architecture reports use explicit metric thresholds. These thresholds
 must stay at or below PMD's documented defaults unless the standard explicitly
@@ -143,9 +196,9 @@ architecture harness and runs source-level architecture policy rules.
 
 ### Repository And Resource Policy
 
-Typed Gradle verification tasks in `tools/gradle/build-logic/` own
-repository-wide resource, artifact, and packaging policies that are not
-language-level architecture rules.
+Typed Gradle verification tasks in `tools/gradle/build-logic/` and in the
+owning enforcement bundles own repository-wide resource, artifact, and
+packaging policies that are not language-level architecture rules.
 
 | Entrypoint | Status | Current policy |
 | --- | --- | --- |
@@ -163,6 +216,14 @@ the
 [Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1),
 and
 [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
+The canonical styling-layer bundle proof route is
+`./gradlew checkStylingLayerEnforcement`; it aggregates the stylesheet,
+selector, packaging-backed stylesheet-owner, PMD inline-style, and compile-side
+programmatic-styling checks for the layer itself.
+The dedicated passive-`View` direct-render placement proof route is
+`./gradlew checkStylingViewEnforcement`; centralized stylesheet ownership and
+selector vocabulary remain available through the separate layer-wide direct
+tasks listed above.
 
 ## Aggregates And Entry Points
 
@@ -173,12 +234,26 @@ It includes:
 
 - Java compiler hygiene through `compileJava`
 - architecture-harness checks through `architectureTest`,
+  `checkDomainApplicationServiceEnforcement`,
+  `checkDataServiceContributionEnforcement`,
+  `checkDomainFactoryEnforcement`,
+  `checkStylingLayerEnforcement`,
+  `checkBootstrapAppBootstrapEnforcement`,
+  `checkShellLayerEnforcement`,
+  `checkDomainUseCaseEnforcement`,
+  `checkDataModelEnforcement`,
+  `checkDataGatewayEnforcement`,
+  `checkDataRepositoryEnforcement`,
+  `checkDataQueryEnforcement`,
+  `checkDataMapperEnforcement`,
+  `checkDataPersistencecoreEnforcement`,
   `checkViewContributionEnforcement`, `checkViewEnforcement`,
   `checkViewBinderEnforcement`,
   `checkViewContributionModelEnforcement`,
   `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-  `pmdArchitectureMain`, `:build-harness:architectureCheck`, and
-  `checkViewArchitecture`
+  `checkViewInputEventEnforcement`,
+  `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`,
+  `:build-harness:architectureCheck`, and `checkViewArchitecture`
 - repository and resource policy checks
 - PMD source-smell detection through `pmdMain`
 - SpotBugs plus FindSecBugs through `spotbugsMain`
@@ -187,46 +262,78 @@ It includes:
 - OO-metric regression reporting through `ckjmMain`
 
 `./gradlew build --console=plain` remains the default implementation-handoff
-build required by `AGENTS.md` for production-code changes and shared
-build-logic changes. It reaches the same full check set through Gradle's
-standard `build -> check` lifecycle; SaltMarcher-specific checks must be wired
-to `check`, not duplicated on `build`.
+build required by `AGENTS.md` for production-code changes. It reaches the same
+full check set through Gradle's standard `build -> check` lifecycle;
+SaltMarcher-specific checks must be wired to `check`, not duplicated on
+`build`.
 
-For implementation work limited to one or more concrete enforcement bundles
-under `tools/quality/*-enforcement/**`, the required handoff proof is the
-matching focused bundle task or tasks instead of the full build. When the pass
-touches shared enforcement wiring such as `build.gradle.kts`,
+For check-only implementation work limited to one or more concrete enforcement
+bundles or shared verification packages under `tools/quality/**`,
+`tools/gradle/build-harness/**`,
+`tools/quality/rules/quality-rules/**`,
+`tools/quality/incubator/quality-rules-errorprone/**`, or verification-only
+wiring such as `build.gradle.kts`,
 `settings.gradle.kts`, `tools/gradle/build-harness/**`,
 `tools/quality/incubator/quality-rules-errorprone/**`,
 `tools/quality/rules/quality-rules/**`, or
-`tools/quality/enforcement-bundles.gradle.kts` but still stays limited to
-enforcement-only behavior, the required handoff proof is all focused
-role/layer bundle entrypoints run serially instead of the full-build path.
+`tools/quality/enforcement-bundles.gradle.kts`, the required handoff proof is
+the corresponding focused package or bundle task or tasks instead of the full
+build. When the pass touches shared verification wiring but still stays
+check-only, rerun the focused entrypoints for the actually affected packages;
+broader package waves are explicit and do not automatically become the
+full-build path.
 
 `./gradlew checkDocumentationEnforcement --console=plain` is a focused
 `Blocking Local Gate` for Markdown-backed architecture and enforcement
 documentation checks. It is intentionally outside `check` and `build` so
-documentation-only changes can use a narrower proof route without pulling the
-full application build and install path.
+documentation-only changes use a narrower proof route by default without
+pulling the full application build and install path.
 
-A completed implementation pass is incomplete until the required full-build,
-focused-enforcement, or documentation-enforcement rerun has completed, or a
-concrete blocker has been reported.
+A completed implementation pass is incomplete until the required
+production-code full build, check-only package/bundle rerun, or
+documentation-enforcement rerun has completed, or a concrete blocker has been
+reported.
 
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `spotbugsMain`, `pmdArchitectureMain`, `cpdMain`,
 `lizardMain`, `ckjmMain`, `checkCentralizedStylesheets`,
 `checkDefinedStyleClassSelectors`, `checkNoCompiledArtifactsInSource`,
 `checkDesktopPackagingInputs`, `checkDesktopAppImageLayout`,
-`checkViewFxmlResources`, `checkViewEnforcement`,
-`checkViewContributionEnforcement`, `pmdViewContributionEnforcement`,
-`checkViewBinderEnforcement`,
+`checkDomainLayerEnforcement`,
+`checkDomainApplicationServiceEnforcement`,
+`checkDataServiceContributionEnforcement`,
+`pmdDataServiceContributionEnforcement`,
+`checkDomainContextEnforcement`,
+`checkDomainPublishedEnforcement`,
+`checkDomainPortEnforcement`,
+`checkDomainFactoryEnforcement`,
+`checkDomainValueEnforcement`, `checkStylingLayerEnforcement`,
+`checkDomainServiceEnforcement`,
+`checkDomainPolicyEnforcement`,
+  `checkDomainEventEnforcement`,
+  `checkDomainSpecificationEnforcement`,
+  `checkStylingViewEnforcement`,
+  `checkShellAppShellEnforcement`,
+  `checkBootstrapAppBootstrapEnforcement`,
+  `checkShellLayerEnforcement`,
+  `checkShellRuntimeContextEnforcement`,
+  `checkViewFxmlResources`, `checkViewEnforcement`,
+  `checkViewContributionEnforcement`, `pmdViewContributionEnforcement`,
+  `checkDomainUseCaseEnforcement`,
+  `checkDataModelEnforcement`,
+  `checkDataGatewayEnforcement`,
+  `checkDataRepositoryEnforcement`,
+  `checkDataQueryEnforcement`,
+  `checkDataMapperEnforcement`,
+  `checkDataPersistencecoreEnforcement`,
+  `checkViewBinderEnforcement`,
 `checkViewContributionModelEnforcement`,
 `checkViewContentModelEnforcement`,
 `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
 `checkViewInputEventEnforcement`, `checkViewPublishedEventEnforcement`,
-`checkViewIntentHandlerEnforcement`, `checkDocumentationEnforcement`, and
-`jqassistantEffectiveRules`, each run through `./gradlew <task> --console=plain`.
+`checkViewIntentHandlerEnforcement`, `checkLayeringArchitectureEnforcement`,
+`checkDocumentationEnforcement`, and `jqassistantEffectiveRules`, each run
+through `./gradlew <task> --console=plain`.
 
 `pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
 focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
@@ -235,15 +342,127 @@ entrypoint for the same blocking ruleset.
 Architecture-focused entrypoints:
 
 - `./gradlew checkArchitecture --console=plain`
-  Aggregates `architectureTest`, `checkViewContributionEnforcement`,
+  Aggregates `architectureTest`, `checkDomainLayerEnforcement`,
+  `checkDomainApplicationServiceEnforcement`,
+  `checkDataServiceContributionEnforcement`,
+  `checkDomainPortEnforcement`,
+  `checkDomainFactoryEnforcement`,
+  `checkDomainServiceEnforcement`,
+  `checkDomainEventEnforcement`,
+  `checkDataModelEnforcement`,
+  `checkDataGatewayEnforcement`,
+  `checkDataRepositoryEnforcement`,
+  `checkDataQueryEnforcement`,
+  `checkDataMapperEnforcement`,
+  `checkDataPersistencecoreEnforcement`,
+  `checkStylingLayerEnforcement`,
+  `checkShellLayerEnforcement`,
+  `checkDomainUseCaseEnforcement`,
+  `checkLayeringArchitectureEnforcement`,
+  `checkViewContributionEnforcement`,
   `checkViewBinderEnforcement`,
   `checkViewContributionModelEnforcement`,
   `checkViewContentModelEnforcement`,
   `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
+  `checkViewInputEventEnforcement`, `checkShellRuntimeContextEnforcement`,
   `pmdArchitectureMain`, and `:build-harness:architectureCheck`.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates the focused Markdown-backed architecture and enforcement-document
-  bundle through `:build-harness:documentationEnforcementCheck`.
+  bundle through `:build-harness:documentationEnforcementCheck`, including
+  active bundle-local Markdown rules such as `Domain Context`.
+- `./gradlew checkDomainContextEnforcement --console=plain`
+  Aggregates the focused Domain Context bundle through
+  `:build-harness:domainContextEnforcementDocumentationCheck`.
+- `./gradlew checkDomainApplicationServiceEnforcement --console=plain`
+  Aggregates the focused Domain ApplicationService bundle through
+  `compileJava`, `pmdDomainApplicationServiceEnforcement`,
+  `:build-harness:domainApplicationServiceTopologyCheck`, and
+  `:build-harness:domainApplicationServiceDocumentationEnforcementCheck`.
+- `./gradlew checkDataServiceContributionEnforcement --console=plain`
+  Aggregates the focused Data ServiceContribution bundle through
+  `compileJava`, `pmdDataServiceContributionEnforcement`, and
+  `:build-harness:dataServiceContributionDocumentationEnforcementCheck`.
+- `./gradlew checkDomainLayerEnforcement --console=plain`
+  Aggregates the focused Domain Layer bundle through `compileJava`,
+  `domainLayerArchitectureTest`,
+  `:build-harness:domainLayerTopologyCheck`, and
+  `:build-harness:domainLayerDocumentationEnforcementCheck`.
+- `./gradlew checkDomainPublishedEnforcement --console=plain`
+  Aggregates the focused Domain Published bundle through `compileJava`,
+  `:build-harness:domainPublishedTopologyCheck`, and
+  `:build-harness:domainPublishedDocumentationEnforcementCheck`.
+- `./gradlew checkDomainPortEnforcement --console=plain`
+  Aggregates the focused Domain Port bundle through `compileJava` and
+  `:build-harness:domainPortEnforcementDocumentationCheck`.
+- `./gradlew checkDomainValueEnforcement --console=plain`
+  Aggregates the focused `Domain Value` bundle through `compileJava` and
+  `:build-harness:domainValueEnforcementDocumentationCheck`.
+- `./gradlew checkDomainFactoryEnforcement --console=plain`
+  Aggregates the focused `Domain Factory` bundle through `compileJava` and
+  `:build-harness:domainFactoryEnforcementDocumentationCheck`.
+- `./gradlew checkDomainServiceEnforcement --console=plain`
+  Aggregates the focused `Domain Service` bundle through `compileJava` and
+  `:build-harness:domainServiceEnforcementDocumentationCheck`.
+- `./gradlew checkDomainPolicyEnforcement --console=plain`
+  Aggregates the focused `Domain Policy` bundle through `compileJava` and
+  `:build-harness:domainPolicyEnforcementDocumentationCheck`.
+- `./gradlew checkDomainEventEnforcement --console=plain`
+  Aggregates the focused Domain Event bundle through `compileJava` and
+  `:build-harness:domainEventEnforcementDocumentationCheck`.
+- `./gradlew checkDomainSpecificationEnforcement --console=plain`
+  Aggregates the focused Domain Specification bundle through `compileJava`
+  with the dedicated `DomainSpecificationRoleShape` compiler check.
+- `./gradlew checkDomainUseCaseEnforcement --console=plain`
+  Aggregates the focused Domain UseCase bundle through `compileJava`,
+  `pmdDomainUseCaseEnforcement`,
+  `:build-harness:domainUseCaseTopologyCheck`, and
+  `:build-harness:domainUseCaseDocumentationEnforcementCheck`.
+- `./gradlew checkDataModelEnforcement --console=plain`
+  Aggregates the focused Data Model bundle through `compileJava`,
+  `pmdDataModelEnforcement`,
+  `dataModelArchitectureTest`,
+  `:build-harness:dataModelTopologyCheck`, and
+  `:build-harness:dataModelDocumentationEnforcementCheck`.
+- `./gradlew checkDataGatewayEnforcement --console=plain`
+  Aggregates the focused Data Gateway bundle through `compileJava`,
+  `dataGatewayArchitectureTest`, and
+  `:build-harness:dataGatewayEnforcementDocumentationCheck`.
+- `./gradlew checkDataRepositoryEnforcement --console=plain`
+  Aggregates the focused Data Repository bundle through `compileJava`,
+  `pmdDataRepositoryEnforcement`, and
+  `:build-harness:dataRepositoryEnforcementDocumentationCheck`.
+- `./gradlew checkDataQueryEnforcement --console=plain`
+  Aggregates the focused Data Query bundle through `compileJava`,
+  `pmdDataQueryEnforcement`, and
+  `:build-harness:dataQueryEnforcementDocumentationCheck`.
+- `./gradlew checkDataPersistencecoreEnforcement --console=plain`
+  Aggregates the focused Data Persistencecore bundle through
+  `dataPersistencecoreArchitectureTest` and
+  `:build-harness:dataPersistencecoreDocumentationEnforcementCheck`.
+- `./gradlew checkLayeringArchitectureEnforcement --console=plain`
+  Aggregates the dedicated `Layering Architecture` bundle through
+  `:build-harness:layeringArchitectureTopologyCheck`.
+- `./gradlew checkStylingLayerEnforcement --console=plain`
+  Aggregates the styling-layer bundle through `compileJava`,
+  `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
+  `checkDesktopPackagingInputs`, and the dedicated
+  `pmdStylingLayerEnforcement` rule path.
+- `./gradlew checkBootstrapAppBootstrapEnforcement --console=plain`
+  Aggregates the focused `AppBootstrap` bundle through the dedicated
+  `bootstrapAppBootstrapArchitectureTest` ArchUnit suite.
+- `./gradlew checkShellRuntimeContextEnforcement --console=plain`
+  Aggregates the dedicated `ShellRuntimeContext` PMD gateway-shape rule
+  through one focused root entrypoint.
+- `./gradlew checkShellLayerEnforcement --console=plain`
+  Aggregates the dedicated `Shell Layer` bundle through
+  `shellLayerArchitectureTest` and `:build-harness:shellLayerTopologyCheck`.
+- `./gradlew checkStylingViewEnforcement --console=plain`
+  Aggregates the passive-`View` direct-render styling bundle through
+  `compileJava` with the dedicated `ViewDirectRenderStylingPlacement`
+  compiler check.
+- `./gradlew checkShellAppShellEnforcement --console=plain`
+  Aggregates the focused `AppShell` bundle through `compileJava` with the
+  dedicated `ShellLifecycleHookOwnership` compiler check.
 - `./gradlew checkViewBinderEnforcement --console=plain`
   Aggregates the current `Binder` bundle through `compileJava`,
   `viewBinderArchitectureTest`, and the dedicated Binder jQAssistant analysis.
@@ -296,22 +515,47 @@ logic easier to extend.
 
 ### Parallel Local Invocation Isolation
 
-Local Gradle gates support concurrent agent runs by isolating mutable
-project-local Gradle output when an isolation id is available.
+Local Gradle gates support concurrent runs by isolating mutable project-local
+Gradle state for every wrapper-based invocation.
 
-`CODEX_THREAD_ID` is the default isolation id for Codex-managed invocations.
-Other local agents that run Gradle gates concurrently must set a unique
-`SALTMARCHER_GRADLE_ISOLATION_ID`.
+`CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels for
+local runs, but wrapper isolation no longer depends on either value being set.
 
 Isolated invocations keep the normal entrypoints, including
-`./gradlew build --console=plain`, but write build outputs under
-`build/isolated-gradle/<isolation-id>/` and project-cache state under
-`.gradle/isolated-gradle/<isolation-id>/`. The shared Gradle user home remains
-unchanged so dependency caches stay reusable.
+`./gradlew build --console=plain`, but move mutable Gradle runtime state into
+repo-local per-invocation paths. They write build outputs under
+`build/isolated-gradle/<isolation-id>/`, project-cache state under
+`.gradle/isolated-gradle/<isolation-id>/`, and wrapper plus writable dependency
+cache state under `.gradle/isolated-user-home/<isolation-id>/`.
 
-CI is not isolated by default because CI jobs do not provide these local agent
-isolation environment variables. Required GitHub Actions report paths therefore
-remain the conventional `build/` paths.
+The wrapper boot path seeds the isolated user home from the shared Gradle home
+only for matching wrapper content, then exports the isolated
+`GRADLE_USER_HOME` before Gradle starts. Dependency reuse comes from a separate
+repo-local read-only snapshot exposed through `GRADLE_RO_DEP_CACHE`, so
+parallel invocations share immutable dependency content without sharing
+writable Gradle user-home state.
+
+The shared included builds `tools/gradle/build-logic`,
+`tools/gradle/build-harness`, `tools/quality/rules/quality-rules`, and
+`tools/quality/incubator/quality-rules-errorprone` also run from a
+composite mirror under `.gradle/isolated-gradle/<isolation-id>/composite-root/`
+so concurrent invocations do not contend on the same included-build source
+root.
+
+After a local wrapper-based run finishes, the wrapper removes the
+per-invocation roots under `build/isolated-gradle/<isolation-id>/`,
+`.gradle/isolated-gradle/<isolation-id>/`, and
+`.gradle/isolated-user-home/<isolation-id>/`. Successful runs that produced
+public build artifacts overwrite the stable export surface at
+`build/latest-output/`. Failed or interrupted runs retain only selected reports
+and test results under `build/retained-gradle-failures/<isolation-id>/`, and
+the wrapper prunes retained failure bundles plus observable-run logs after
+seven days.
+
+Direct `gradle` invocations that bypass the wrapper do not receive the wrapper
+managed `GRADLE_USER_HOME`, read-only dependency cache, or included-build
+mirror path. The parallel-safe local contract therefore applies to
+wrapper-based entrypoints.
 
 For invocations that request any local quality or architecture gate named in
 this section, the convention plugin enables Gradle continue-on-failure behavior

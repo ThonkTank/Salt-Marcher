@@ -45,10 +45,6 @@ public final class PackageCycleArchitectureTest {
             slices().assignedFrom(VIEW_COMPONENT_SLICE_ASSIGNMENT).should().beFreeOfCycles();
 
     @ArchTest
-    static final ArchRule dataFeaturesMustBeCycleFree =
-            slices().matching("src.data.(*)..").should().beFreeOfCycles();
-
-    @ArchTest
     static final ArchRule shellPackagesMustBeCycleFree =
             slices().matching("shell.(*)..").should().beFreeOfCycles();
 

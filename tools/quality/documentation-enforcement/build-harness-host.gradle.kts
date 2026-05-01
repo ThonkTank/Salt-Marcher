@@ -9,6 +9,9 @@ sourceSets.named("main") {
     java.srcDir("../../quality/documentation-enforcement/build-harness/src/main/java")
 }
 
+val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
+    ?: projectDir.parentFile.parentFile.parentFile.absolutePath
+
 tasks.register<JavaExec>("documentationEnforcementCheck") {
     group = "verification"
     description = "Run only the focused Markdown-backed architecture and enforcement documentation checks."
@@ -16,5 +19,5 @@ tasks.register<JavaExec>("documentationEnforcementCheck") {
     outputs.doNotCacheIf("Documentation enforcement diagnostics must be produced by the current invocation.") { true }
     classpath = sourceSets["main"].runtimeClasspath
     mainClass = "saltmarcher.architecture.documentation.DocumentationEnforcementCheckMain"
-    args = listOf(projectDir.parentFile.parentFile.parentFile.absolutePath)
+    args = listOf(repoRootDir)
 }

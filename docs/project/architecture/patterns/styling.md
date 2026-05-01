@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Centralized JavaFX styling rules and their matching layer-wide
 and passive-`View`-specific ownership.
 
@@ -45,13 +45,20 @@ bootstrap stylesheet-loading seam, and generic active-code communication rules
 for ordinary node styling. The view-specific document owns the passive-`View`
 direct-render exception and its remaining non-CSS semantics.
 
-The current blocking proof surfaces are `checkCentralizedStylesheets`,
-`checkDefinedStyleClassSelectors`, `checkDesktopPackagingInputs`,
-`pmdArchitectureMain`, and `compileJava`. These are layer-wide proof surfaces.
-The passive-`View` direct-render semantics remain review-owned until the
-repository adopts a dedicated role-specific proof surface. `ViewProgrammaticStyling`
-remains a broader active-code proof surface rather than a dedicated passive-`View`
-styling bundle.
+The current blocking proof surfaces are `checkStylingLayerEnforcement`,
+`checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
+`checkDesktopPackagingInputs`, `pmdStylingLayerEnforcement`, `compileJava`,
+and `checkStylingViewEnforcement`.
+`checkStylingLayerEnforcement` is the canonical layer-wide bundle entrypoint.
+It aggregates the stylesheet-file, selector-resolution, packaging-proof, PMD
+inline-style, and broad `ViewProgrammaticStyling` compile surfaces for the
+styling layer itself. `checkStylingViewEnforcement` and the bundle-local
+`ViewDirectRenderStylingPlacement` part of `compileJava` prove only that local
+JavaFX styling values appear in passive `View` code solely inside the
+documented direct-render exception. The remaining passive-`View`
+direct-render-value derivation and "no local visual system" semantics remain
+review-owned until the repository adopts a dedicated central-token or
+equivalent non-CSS proof surface.
 
 ## References
 

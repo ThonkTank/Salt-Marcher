@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Complete invariant catalog for the `AppShell` host role
 itself: passive cockpit hosting, host-owned activation control, layout
 persistence, and the role-local registration and runtime seams that support
@@ -27,6 +27,13 @@ This document does not own shell-wide package topology, fixed `shell/api`
 surface membership, fixed shell slot vocabulary, shell-host privacy across
 the whole layer, or the `ShellRuntimeContext` runtime-gateway role. Those stay
 in the shell-layer and ShellRuntimeContext enforcement documents.
+
+Unified focused bundle entrypoint:
+
+- `./gradlew checkShellAppShellEnforcement --rerun-tasks --console=plain`
+  runs the currently active `AppShell`-focused Error Prone check through one
+  root task. Canonical blocking behavior remains at `./gradlew compileJava`
+  and `./gradlew build` as listed below.
 
 ## Invariant Catalog
 
@@ -62,7 +69,7 @@ in the shell-layer and ShellRuntimeContext enforcement documents.
 | --- | --- | --- | --- | --- | --- |
 | `shell-appshell-registration-surface-only` | Review-Owned | every registration seam from bootstrap into `AppShell` | none | none | `AppShell` communicates with bootstrap and bound shell roots only through the area-specific host registration surface: `registerLeftBarTab(...)`, `registerTopBar(...)`, and `registerStateTab(...)` with the matching `Shell*Spec` plus `ShellBinding` contract. It does not invent feature-specific registration protocols. |
 | `shell-appshell-runtime-context-exposure-only` | Review-Owned | every outward runtime seam from `AppShell` | none | none | `AppShell` exposes shell-scoped runtime access outward only as `runtimeContext()` returning `ShellRuntimeContext`. It does not expose concrete host panes or other host internals as public runtime APIs. |
-| `shell-lifecycle-hook-ownership` | Enforced | every invocation of `ShellBinding.onActivate()` or `ShellBinding.onDeactivate()` | Error Prone `ShellLifecycleHookOwnership` | `./gradlew compileJava` | Shell binding lifecycle hooks are invoked only by `shell.host.AppShell`; feature and bootstrap code do not take over shell-owned activation control. |
+| `shell-lifecycle-hook-ownership` | Enforced | every invocation of `ShellBinding.onActivate()` or `ShellBinding.onDeactivate()` | Error Prone `ShellLifecycleHookOwnership` | `./gradlew checkShellAppShellEnforcement` and `./gradlew compileJava` | Shell binding lifecycle hooks are invoked only by `shell.host.AppShell`; feature and bootstrap code do not take over shell-owned activation control. |
 
 ## References
 

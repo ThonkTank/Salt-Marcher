@@ -1,0 +1,2 @@
+saltmarcher.quality.errorprone.DomainForbiddenInfrastructureDependencyChecker
+saltmarcher.quality.errorprone.DomainModulePublishedCarrierDependencyChecker

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="SaltMarcher Data ServiceContribution Enforcement Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+    <description>
+        Data ServiceContribution source-level architecture rules for SaltMarcher production Java sources.
+    </description>
+
+    <rule name="DataServiceContributionEntrypointRule"
+          language="java"
+          message="Data ServiceContribution entrypoint violation"
+          class="saltmarcher.quality.pmd.data.servicecontribution.DataServiceContributionEntrypointRule">
+        <priority>1</priority>
+    </rule>
+
+    <rule name="DataServiceContributionSourceMechanicsRule"
+          language="java"
+          message="Data ServiceContribution source-mechanics violation"
+          class="saltmarcher.quality.pmd.data.servicecontribution.DataServiceContributionSourceMechanicsRule">
+        <priority>1</priority>
+    </rule>
+</ruleset>

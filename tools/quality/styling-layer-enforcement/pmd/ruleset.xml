@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="SaltMarcher Styling Layer Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+    <description>
+        Styling-layer-specific PMD rules for SaltMarcher production Java sources.
+    </description>
+
+    <rule name="StylingInlineSetStyleBackchannelRule"
+          language="java"
+          message="SaltMarcher styling-layer violation"
+          class="saltmarcher.quality.pmd.styling.StylingInlineSetStyleBackchannelRule">
+        <priority>1</priority>
+    </rule>
+</ruleset>

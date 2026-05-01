@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     java
 }
@@ -8,7 +10,13 @@ java {
     }
 }
 
-apply(from = "../../quality/enforcement-bundles.gradle.kts")
+val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
+    ?.let(::File)
+    ?: projectDir.parentFile.parentFile.parentFile
+
+fun repoQualityFile(relativeQualityPath: String): File = repoRootDir.resolve("tools/quality/$relativeQualityPath")
+
+apply(from = repoRootDir.resolve("tools/quality/enforcement-bundles.gradle.kts"))
 
 val focusedEnforcementBundleMode = extra["saltmarcherFocusedEnforcementBundleMode"] as Boolean
 @Suppress("UNCHECKED_CAST")
@@ -18,11 +26,12 @@ val buildHarnessHostScriptsByBundleId = extra["saltmarcherBuildHarnessHostScript
 
 activeEnforcementBundleIds
     .mapNotNull(buildHarnessHostScriptsByBundleId::get)
+    .distinct()
     .forEach { scriptPath ->
-        apply(from = scriptPath)
+        apply(from = repoQualityFile(scriptPath.removePrefix("../../quality/")))
     }
 if (!focusedEnforcementBundleMode) {
-    apply(from = "../../quality/documentation-enforcement/build-harness-host.gradle.kts")
+    apply(from = repoQualityFile("documentation-enforcement/build-harness-host.gradle.kts"))
 }
 
 tasks.register<JavaExec>("architectureCheck") {

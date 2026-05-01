@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
     `java-library`
 }
@@ -15,7 +17,11 @@ java {
     }
 }
 
-apply(from = "../../enforcement-bundles.gradle.kts")
+val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
+    ?.let(::File)
+    ?: projectDir.parentFile.parentFile.parentFile.parentFile
+
+apply(from = repoRootDir.resolve("tools/quality/enforcement-bundles.gradle.kts"))
 
 @Suppress("UNCHECKED_CAST")
 val activeEnforcementBundleIds = extra["saltmarcherActiveEnforcementBundleIds"] as List<String>
@@ -24,6 +30,7 @@ val pmdHostScriptsByBundleId = extra["saltmarcherPmdHostScriptsByBundleId"] as M
 
 activeEnforcementBundleIds
     .mapNotNull(pmdHostScriptsByBundleId::get)
+    .distinct()
     .forEach { scriptPath ->
         apply(from = scriptPath)
     }

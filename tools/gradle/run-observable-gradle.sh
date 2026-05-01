@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+readonly HEARTBEAT_SECONDS=30
+
+usage() {
+    cat <<'EOF'
+Usage:
+  tools/gradle/run-observable-gradle.sh <gradle-task> [<gradle-task> ...] [-- <extra-gradle-args>]
+
+Examples:
+  tools/gradle/run-observable-gradle.sh checkDataRepositoryEnforcement
+  tools/gradle/run-observable-gradle.sh checkDataRepositoryEnforcement checkDataQueryEnforcement -- --rerun-tasks
+EOF
+}
+
+sanitize_segment() {
+    printf '%s' "$1" |
+        LC_ALL=C tr -cs 'A-Za-z0-9._-' '-' |
+        sed 's/^-*//; s/-*$//' |
+        cut -c1-80
+}
+
+join_for_log_name() {
+    local joined=""
+    local item
+    for item in "$@"; do
+        if [[ -n "$joined" ]]; then
+            joined="${joined}__"
+        fi
+        joined="${joined}$(sanitize_segment "$item")"
+    done
+    printf '%s' "${joined:-gradle-run}"
+}
+
+format_duration() {
+    local total_seconds="$1"
+    local hours=$((total_seconds / 3600))
+    local minutes=$(((total_seconds % 3600) / 60))
+    local seconds=$((total_seconds % 60))
+    printf '%02dh:%02dm:%02ds' "$hours" "$minutes" "$seconds"
+}
+
+print_known_issue_hint() {
+    local log_path="$1"
+
+    if grep -q "Could not determine a usable wildcard IP for this machine" "$log_path"; then
+        echo "[observable-gradle] Detected Gradle startup environment failure: wildcard IP resolution." >&2
+        echo "[observable-gradle] This is an environment issue, not a checker failure." >&2
+        return
+    fi
+
+    if grep -Eq "Timeout waiting to lock|Waiting to acquire .*build logic queue|buildLogic.lock" "$log_path"; then
+        echo "[observable-gradle] Detected Gradle lock contention around build logic or cache state." >&2
+        echo "[observable-gradle] Retry after parallel builds stop or use a single combined invocation." >&2
+        return
+    fi
+
+    if grep -Eq "Broken pipe|client disconnection detected|EOFException|MessageIOException" "$log_path"; then
+        echo "[observable-gradle] Detected client or daemon disconnect during a long Gradle run." >&2
+        echo "[observable-gradle] The underlying task may have kept running longer than the caller expected." >&2
+    fi
+}
+
+if [[ $# -lt 1 ]]; then
+    usage >&2
+    exit 64
+fi
+
+declare -a tasks=()
+declare -a extra_args=()
+while [[ $# -gt 0 ]]; do
+    if [[ "$1" == "--" ]]; then
+        shift
+        extra_args=("$@")
+        break
+    fi
+    tasks+=("$1")
+    shift
+done
+
+if [[ ${#tasks[@]} -eq 0 ]]; then
+    usage >&2
+    exit 64
+fi
+
+cd "$REPO_ROOT"
+
+readonly task_display="${tasks[*]}"
+readonly timestamp="$(date +%Y%m%dT%H%M%S)"
+readonly log_dir="$REPO_ROOT/build/gradle-run-logs"
+readonly log_name="$(join_for_log_name "${tasks[@]}")"
+readonly log_file="$log_dir/${timestamp}-${log_name}.log"
+
+mkdir -p "$log_dir"
+
+declare -a gradle_cmd=(./gradlew)
+gradle_cmd+=("${tasks[@]}")
+gradle_cmd+=(--console=plain --no-daemon)
+if [[ ${#extra_args[@]} -gt 0 ]]; then
+    gradle_cmd+=("${extra_args[@]}")
+fi
+
+echo "[observable-gradle] Repo root: $REPO_ROOT"
+echo "[observable-gradle] Tasks: $task_display"
+if [[ ${#extra_args[@]} -gt 0 ]]; then
+    echo "[observable-gradle] Extra args: ${extra_args[*]}"
+fi
+echo "[observable-gradle] Log file: $log_file"
+echo "[observable-gradle] Command: ${gradle_cmd[*]}"
+echo
+
+start_epoch="$(date +%s)"
+{
+    echo "[observable-gradle] Repo root: $REPO_ROOT"
+    echo "[observable-gradle] Tasks: $task_display"
+    if [[ ${#extra_args[@]} -gt 0 ]]; then
+        echo "[observable-gradle] Extra args: ${extra_args[*]}"
+    fi
+    echo "[observable-gradle] Log file: $log_file"
+    echo "[observable-gradle] Command: ${gradle_cmd[*]}"
+    printf '[observable-gradle] Started at %(%Y-%m-%d %H:%M:%S %Z)T\n' -1
+    echo
+} >> "$log_file"
+
+heartbeat_pid=""
+gradle_pid=""
+signal_forwarded=""
+
+forward_signal() {
+    local signal_name="$1"
+    signal_forwarded="$signal_name"
+    if [[ -n "$gradle_pid" ]] && kill -0 "$gradle_pid" 2>/dev/null; then
+        echo "[observable-gradle] Forwarding $signal_name to Gradle pid $gradle_pid" | tee -a "$log_file" >&2
+        kill "-$signal_name" "$gradle_pid" 2>/dev/null || true
+    fi
+}
+
+trap 'forward_signal TERM' TERM
+trap 'forward_signal INT' INT
+
+heartbeat() {
+    local child_pid="$1"
+    while kill -0 "$child_pid" 2>/dev/null; do
+        sleep "$HEARTBEAT_SECONDS"
+        if ! kill -0 "$child_pid" 2>/dev/null; then
+            break
+        fi
+        local now elapsed
+        now="$(date +%s)"
+        elapsed=$((now - start_epoch))
+        echo "[observable-gradle] Still running after $(format_duration "$elapsed"): $task_display" | tee -a "$log_file"
+    done
+}
+
+set +e
+"${gradle_cmd[@]}" \
+    > >(tee -a "$log_file") \
+    2> >(tee -a "$log_file" >&2) &
+gradle_pid=$!
+heartbeat "$gradle_pid" &
+heartbeat_pid=$!
+
+wait "$gradle_pid"
+gradle_status=$?
+
+if [[ -n "$heartbeat_pid" ]]; then
+    kill "$heartbeat_pid" 2>/dev/null || true
+    wait "$heartbeat_pid" 2>/dev/null || true
+fi
+set -e
+
+end_epoch="$(date +%s)"
+elapsed_seconds=$((end_epoch - start_epoch))
+
+if [[ $gradle_status -eq 0 ]]; then
+    echo
+    echo "[observable-gradle] Gradle finished successfully after $(format_duration "$elapsed_seconds")."
+    echo "[observable-gradle] Log file: $log_file"
+    exit 0
+fi
+
+echo
+echo "[observable-gradle] Gradle failed with exit code $gradle_status after $(format_duration "$elapsed_seconds")." >&2
+if [[ -n "$signal_forwarded" ]]; then
+    echo "[observable-gradle] The run was interrupted by signal $signal_forwarded." >&2
+fi
+echo "[observable-gradle] Log file: $log_file" >&2
+print_known_issue_hint "$log_file"
+exit "$gradle_status"

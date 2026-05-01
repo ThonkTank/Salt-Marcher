@@ -31,7 +31,7 @@ document.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `styling-view-direct-render-javafx-rendering-apis-only-for-non-css-surfaces` | Review-Owned | a passive `*View` must style a direct-rendered JavaFX surface such as `Canvas`, `GraphicsContext`, or shape drawing that a stylesheet selector cannot express directly | none | none | A passive `View` may contain JavaFX paint, font, or stroke styling code only for the documented direct-render exception. Ordinary node styling still belongs to centralized stylesheet selectors. |
+| `styling-view-direct-render-javafx-rendering-apis-only-for-non-css-surfaces` | Enforced | a passive `*View` must style a direct-rendered JavaFX surface such as `Canvas`, `GraphicsContext`, or shape drawing that a stylesheet selector cannot express directly | Error Prone `ViewDirectRenderStylingPlacement` | `./gradlew checkStylingViewEnforcement` and `./gradlew compileJava` | A passive `View` may contain JavaFX paint, font, or stroke styling code only for the documented direct-render exception. Ordinary node styling still belongs to centralized stylesheet selectors. |
 
 ### Must Not Contain
 
@@ -50,6 +50,9 @@ document.
 - proving direct-rendered value derivation mechanically if the repository
   adopts a stable central token API or other explicit non-CSS bridge for
   canvas-only styling surfaces
+- widening the direct-render allowlist beyond the currently documented
+  `MapCanvasView` and `DungeonMapView` exception without falling back to a
+  broad package-level carve-out
 
 ## References
 

@@ -1,4 +1,5 @@
 import java.io.File
+import java.util.Properties
 import java.util.UUID
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.Task
@@ -9,8 +10,6 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.process.ExecSpec
-import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
-import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
 import saltmarcher.buildlogic.tasks.CheckDesktopPackagingInputsTask
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
 import saltmarcher.buildlogic.tasks.RenderDesktopIconTask
@@ -24,15 +23,36 @@ plugins {
     id("net.ltgt.errorprone")
 }
 
+fun Properties.list(name: String): List<String> = getProperty(name)
+    ?.split(',')
+    ?.map(String::trim)
+    ?.filter(String::isNotEmpty)
+    ?: emptyList()
+
+fun loadDescriptorEnforcementTaskNames(projectDir: File): Set<String> {
+    val qualityDir = File(projectDir, "tools/quality")
+    if (!qualityDir.isDirectory) {
+        return emptySet()
+    }
+    return qualityDir.walkTopDown()
+        .filter { file -> file.isFile && file.name == "bundle.properties" }
+        .flatMap { descriptorFile ->
+            val properties = Properties()
+            descriptorFile.inputStream().use(properties::load)
+            properties.list("taskNames").asSequence()
+        }
+        .toSet()
+}
+
 // Invocation policy
+
+val descriptorEnforcementTaskNames = loadDescriptorEnforcementTaskNames(project.projectDir)
 
 val architectureGateEntrypoints = setOf(
     "architectureTest",
     "checkArchitecture",
     "checkViewContentModelEnforcement",
     "checkViewContributionModelEnforcement",
-    "checkViewContributionEnforcement",
-    "checkViewBinderEnforcement",
     "checkViewEnforcement",
     "checkViewInspectorEntryEnforcement",
     "checkViewIntentHandlerEnforcement",
@@ -41,9 +61,8 @@ val architectureGateEntrypoints = setOf(
     "checkViewPublishedEventEnforcement",
     "checkViewArchitecture",
     "pmdArchitectureMain",
-    "pmdViewContributionEnforcement",
     "jqassistantEffectiveRules"
-)
+).plus(descriptorEnforcementTaskNames)
 
 val qualitySmellEntrypoints = setOf(
     "pmdMain",
@@ -85,13 +104,6 @@ val enforcementBundleTaskNames = setOf(
     "checkViewFxmlResources",
     "jqassistantScanViewEnforcement",
     "jqassistantAnalyzeViewEnforcement",
-    "checkViewContributionEnforcement",
-    "viewContributionArchitectureTest",
-    "pmdViewContributionEnforcement",
-    "checkViewBinderEnforcement",
-    "viewBinderArchitectureTest",
-    "jqassistantScanViewBinderEnforcement",
-    "jqassistantAnalyzeViewBinderEnforcement",
     "checkViewLayerEnforcement",
     "viewLayerArchitectureTest",
     "viewLayerTopologyCheck",
@@ -112,12 +124,8 @@ val enforcementBundleTaskNames = setOf(
     "jqassistantScanViewContributionModelEnforcement",
     "jqassistantAnalyzeViewContributionModelEnforcement",
     "viewContributionModelTopologyCheck",
-    "checkViewContentModelEnforcement",
-    "viewContentModelArchitectureTest",
-    "jqassistantScanViewContentModelEnforcement",
-    "jqassistantAnalyzeViewContentModelEnforcement",
-    "viewContentModelTopologyCheck"
-)
+    "checkViewContentModelEnforcement"
+).plus(descriptorEnforcementTaskNames)
 
 val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty()
     && requestedTaskNames.any { taskName -> taskName in enforcementBundleTaskNames }
@@ -275,31 +283,17 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.error("StringCaseLocaleUsage")
     options.errorprone.error("StringSplitter")
     if (!focusedEnforcementBundleMode) {
-        options.errorprone.error("DataAdapterGatewayCollaboratorBoundary")
-        options.errorprone.error("DataAdapterPublicSignatureLeak")
-        options.errorprone.error("DataAdapterRoleContract")
-        options.errorprone.error("DataGatewayReturnTypeBoundary")
-        options.errorprone.error("DataModelSourceShape")
-        options.errorprone.error("DataQueryGatewayMutationBoundary")
-        options.errorprone.error("DataServiceContributionConstructionPurity")
-        options.errorprone.error("DomainApplicationNoSameContextPublishedDependency")
         options.errorprone.error("DomainApplicationServiceApiShape")
-        options.errorprone.error("DomainForbiddenInfrastructureDependency")
-        options.errorprone.error("DomainPublishedCarrierShape")
         options.errorprone.error("DomainModuleFieldPurity")
-        options.errorprone.error("DomainModuleNoPublishedCarrierDependency")
         options.errorprone.error("DomainPortBoundary")
+        options.errorprone.error("DomainPortRoleShape")
         options.errorprone.error("DomainPublicBoundarySignaturePurity")
         options.errorprone.error("DomainPublicConcreteTypeShape")
         options.errorprone.error("DomainRoleShape")
-        options.errorprone.error("DomainServiceRegistryExportShape")
-        options.errorprone.error("DomainServiceFactoryStatelessness")
-        options.errorprone.error("FeatureShellApiAllowlist")
         options.errorprone.error("ServiceRegistryRegistrationPlacement")
-        options.errorprone.error("ShellLifecycleHookOwnership")
+        options.errorprone.error("ViewContributionShellApiAllowlist")
         options.errorprone.error("ViewDetailsSlotBoundary")
         options.errorprone.error("ProjectionModelOwnershipNaming")
-        options.errorprone.error("ViewProgrammaticStyling")
         options.errorprone.error("ViewReflectionBypass")
         options.errorprone.error("ViewRootDelegation")
     }
@@ -526,6 +520,7 @@ val checkArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs non-documentation architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
     dependsOn("architectureTest")
+    dependsOn("checkLayeringArchitectureEnforcement")
     dependsOn("checkViewBinderEnforcement")
     dependsOn("checkViewInspectorEntryEnforcement")
     dependsOn("checkViewLayerEnforcement")
@@ -538,35 +533,6 @@ val checkNoCompiledArtifactsInSource by tasks.registering(CheckNoCompiledArtifac
     description = "Fail if compiled .class artifacts are present in bootstrap/, shell/ or src/."
     projectRoot.set(layout.projectDirectory)
     sourceRoots.from(sourceJavaRoots)
-}
-
-val checkCentralizedStylesheets by tasks.registering(CheckCentralizedStylesheetsTask::class) {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Fail if stylesheet files exist outside the central resources/salt-marcher.css file."
-    projectRoot.set(layout.projectDirectory)
-    stylesheetFiles.from(
-        layout.projectDirectory.asFileTree.matching {
-            stylesheetExtensions.forEach { extension -> include("**/*.$extension") }
-            exclude("**/.git/**", "**/.gradle/**", "**/build/**")
-        }
-    )
-    resourcesRoot.set(layout.projectDirectory.dir("resources"))
-    styleExtensions.set(stylesheetExtensions)
-    allowedStylesheetRelativePath.set(stylesheetRelativePathProvider.map { "resources/$it" })
-}
-
-val checkDefinedStyleClassSelectors by tasks.registering(CheckDefinedStyleClassSelectorsTask::class) {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Fail if Java-authored style classes are missing from resources/salt-marcher.css selectors."
-    javaSourceFiles.from(sourceRoots.asFileTree.matching {
-        include("**/*.java")
-        exclude("**/build/**")
-    })
-    stylesheetFiles.from(
-        layout.projectDirectory.dir("resources").asFileTree.matching {
-            stylesheetExtensions.forEach { extension -> include("**/*.$extension") }
-        }
-    )
 }
 
 val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputsTask::class) {
@@ -592,6 +558,7 @@ tasks.named("check") {
     dependsOn("compileJava")
     dependsOn("test")
     dependsOn("architectureTest")
+    dependsOn("checkLayeringArchitectureEnforcement")
     dependsOn("checkViewBinderEnforcement")
     dependsOn("checkViewEnforcement")
     dependsOn("checkViewInspectorEntryEnforcement")
@@ -599,10 +566,7 @@ tasks.named("check") {
     dependsOn("pmdArchitectureMain")
     dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
     dependsOn(checkViewArchitecture)
-    dependsOn(checkCentralizedStylesheets)
-    dependsOn(checkDefinedStyleClassSelectors)
     dependsOn(checkNoCompiledArtifactsInSource)
-    dependsOn(checkDesktopPackagingInputs)
     dependsOn(cpdMain)
     dependsOn(lizardMain)
     dependsOn(ckjmMain)
@@ -637,14 +601,6 @@ tasks.withType<LizardCheckTask>().configureEach {
 }
 
 tasks.withType<CkjmReportTask>().configureEach {
-    enforceFreshGateResult()
-}
-
-tasks.withType<CheckCentralizedStylesheetsTask>().configureEach {
-    enforceFreshGateResult()
-}
-
-tasks.withType<CheckDefinedStyleClassSelectorsTask>().configureEach {
     enforceFreshGateResult()
 }
 

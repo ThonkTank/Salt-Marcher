@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Complete architecture-enforcement catalog for tactical
 `entity/` role types in named domain modules.
 
@@ -36,7 +36,7 @@ live in
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-entity-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/entity/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Entity role types are records, sealed abstractions, or final classes. |
+| `domain-entity-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/entity/` | domain-entity bundle Error Prone `DomainEntityRoleShape` | `./gradlew compileJava` and `./gradlew checkDomainEntityEnforcement` | Entity role types are records, sealed abstractions, or final classes. |
 
 ### Must Not Contain
 

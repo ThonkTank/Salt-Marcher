@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-05-01
 Source of Truth: Complete architecture-enforcement catalog for the
 `bootstrap/AppBootstrap.java` role itself, limited to invariants decidable
 from that file.
@@ -28,6 +28,13 @@ privacy across the whole repository, bootstrap-layer-wide dependency policy,
 desktop-launch role APIs, or bootstrap-layer discovery root sets. Those stay
 in the neighboring bootstrap-layer, shell-role, view-role, data-role, and
 layering enforcement documents.
+
+Unified focused bundle entrypoint:
+
+- `./gradlew checkBootstrapAppBootstrapEnforcement --rerun-tasks --console=plain`
+  runs the dedicated `AppBootstrap` ArchUnit proof route through one root
+  task. Canonical aggregate blocking behavior remains at
+  `./gradlew checkArchitecture` and `./gradlew check`.
 
 ## Invariant Catalog
 
@@ -68,7 +75,7 @@ layering enforcement documents.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `bootstrap-appbootstrap-shell-host-appshell-composition-surface-only` | Enforced Elsewhere | every direct dependency from `AppBootstrap` into `shell.host/**` and every direct `AppShell` call site in `bootstrap/AppBootstrap.java` | shell `shell-host-private-boundary` via ArchUnit `bootstrapMustOnlyUseAppShellFromShellHost` | `./gradlew checkArchitecture` | `AppBootstrap` communicates with shell host only through the documented `AppShell` composition surface it actually needs: construction from `ServiceRegistry`, `runtimeContext()`, `registerLeftBarTab(...)`, `registerTopBar(...)`, `registerStateTab(...)`, and `navigateTo(...)`. It does not reach host panes, layout internals, or shell lifecycle hooks directly. |
+| `bootstrap-appbootstrap-shell-host-appshell-composition-surface-only` | Enforced | every direct dependency from `AppBootstrap` into `shell.host/**` and every direct `AppShell` call site in `bootstrap/AppBootstrap.java` | bootstrap-app-bootstrap bundle ArchUnit `AppBootstrapArchitectureTest` (`bootstrapMustOnlyUseAppShellFromShellHost`) | `./gradlew checkBootstrapAppBootstrapEnforcement` and `./gradlew checkArchitecture` | `AppBootstrap` communicates with shell host only through the documented `AppShell` composition surface it actually needs: construction from `ServiceRegistry`, `runtimeContext()`, `registerLeftBarTab(...)`, `registerTopBar(...)`, `registerStateTab(...)`, and `navigateTo(...)`. It does not reach host panes, layout internals, or shell lifecycle hooks directly. |
 | `bootstrap-appbootstrap-shell-public-registration-vocabulary-only` | Review-Owned | every direct dependency from `AppBootstrap` into `shell.api/**` | none | none | `AppBootstrap` communicates with shell public contracts only through the documented startup-composition and registration vocabulary for the role: `ServiceContribution`, `ServiceRegistry`, `ShellContribution`, `ShellRuntimeContext`, `ShellBinding`, `ShellContributionSpec`, and the supported shell spec families. |
 | `bootstrap-appbootstrap-data-runtime-registration-seam-only` | Review-Owned | every direct runtime-composition seam from `AppBootstrap` into discovered data roots | none | none | `AppBootstrap` communicates with data feature exports only through `ServiceContribution` discovery and `ServiceRegistry.Builder` registration. It does not call feature-local repositories, gateways, queries, mappers, or application services directly. |
 | `bootstrap-appbootstrap-view-runtime-registration-seam-only` | Review-Owned | every direct runtime-composition seam from `AppBootstrap` into discovered view roots | none | none | `AppBootstrap` communicates with discovered view roots only through `ShellContribution`, `ShellRuntimeContext`, `registrationSpec()`, `ShellBinding`, `ShellContributionSpec`, and the matching `AppShell.register*` surface. It does not invent a second view-registration or startup-control protocol. |
@@ -76,8 +83,6 @@ layering enforcement documents.
 
 ## Candidate
 
-- proving the documented `AppShell` composition surface directly instead of
-  inferring the allowed host calls from broader shell-host privacy
 - proving contribution-key sorting, supported-spec dispatch, and startup
   fallback as dedicated blockers instead of keeping those `AppBootstrap`-local
   invariants review-owned

@@ -15,6 +15,9 @@ directory the canonical home for the ContributionModel host wiring:
   `ViewContributionModelTopologyRules`
 - `jqassistant/`
   `saltmarcher:view-contributionmodel-enforcement`
+- `bundle.properties`
+  canonical registration source for this bundle's public task names and host
+  script/source-set wiring
 - `root-host.gradle.kts`
   root-project compiler, ArchUnit, jQAssistant, build-path, and aggregate-task
   wiring

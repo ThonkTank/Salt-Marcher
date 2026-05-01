@@ -25,14 +25,26 @@ fun findRepositoryRoot(startDirectory: File): File {
         ?: startDirectory.canonicalFile
 }
 
-val rawIsolationId = System.getenv("SALTMARCHER_GRADLE_ISOLATION_ID")?.nonBlankOrNull()
+val rawIsolationId = System.getenv("SALTMARCHER_GRADLE_INVOCATION_ID")?.nonBlankOrNull()
+    ?: System.getenv("SALTMARCHER_GRADLE_ISOLATION_ID")?.nonBlankOrNull()
     ?: System.getenv("CODEX_THREAD_ID")?.nonBlankOrNull()
+val explicitIsolationSegment = System.getenv("SALTMARCHER_GRADLE_ISOLATION_SEGMENT")?.nonBlankOrNull()
 
 if (rawIsolationId != null) {
     val repositoryRoot = findRepositoryRoot(settingsDir)
-    val isolationId = stablePathSegment(rawIsolationId)
-    val buildPath = settingsDir.canonicalFile
-        .relativeToOrSelf(repositoryRoot)
+    val includedBuildRoot = System.getenv("SALTMARCHER_INCLUDED_BUILD_ROOT")
+        ?.nonBlankOrNull()
+        ?.let(::File)
+        ?.canonicalFile
+    val settingsRoot = settingsDir.canonicalFile
+    val buildPathBase = if (includedBuildRoot != null && settingsRoot.toPath().startsWith(includedBuildRoot.toPath())) {
+        includedBuildRoot
+    } else {
+        repositoryRoot
+    }
+    val isolationId = explicitIsolationSegment ?: stablePathSegment(rawIsolationId)
+    val buildPath = settingsRoot
+        .relativeToOrSelf(buildPathBase)
         .path
         .replace(File.separatorChar, '-')
         .let { relativePath -> if (relativePath.isBlank() || relativePath == ".") "root" else stablePathSegment(relativePath) }

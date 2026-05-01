@@ -2,7 +2,13 @@ import java.io.File
 import java.util.Properties
 
 pluginManagement {
-    includeBuild("tools/gradle/build-logic")
+    val includedBuildRoot = System.getenv("SALTMARCHER_INCLUDED_BUILD_ROOT")
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+    includeBuild(
+        includedBuildRoot?.let { File(it, "tools/gradle/build-logic").absolutePath }
+            ?: "tools/gradle/build-logic"
+    )
 }
 
 apply(from = "tools/gradle/build-isolation.settings.gradle.kts")
@@ -24,6 +30,18 @@ fun Properties.list(name: String): List<String> = getProperty(name)
     ?.filter(String::isNotEmpty)
     ?: emptyList()
 
+fun Properties.boolean(name: String): Boolean = getProperty(name)
+    ?.trim()
+    ?.equals("true", ignoreCase = true)
+    ?: false
+
+fun includedBuildPath(relativePath: String): String {
+    val includedBuildRoot = System.getenv("SALTMARCHER_INCLUDED_BUILD_ROOT")
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+    return includedBuildRoot?.let { root -> File(root, relativePath).absolutePath } ?: relativePath
+}
+
 fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, EnforcementBundleDescriptor> {
     val qualityDir = File(repoRootDir, "tools/quality")
     if (!qualityDir.isDirectory) {
@@ -34,22 +52,24 @@ fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enforcement
         .map { descriptorFile ->
             val properties = Properties()
             descriptorFile.inputStream().use(properties::load)
-            EnforcementBundleDescriptor(
-                bundleId = properties.requiredTrimmed("bundleId"),
-                order = properties.requiredTrimmed("order").toInt(),
-                taskNames = properties.list("taskNames")
-            )
+            if (!properties.boolean("descriptorOwned")) {
+                null
+            } else {
+                EnforcementBundleDescriptor(
+                    bundleId = properties.requiredTrimmed("bundleId"),
+                    order = properties.requiredTrimmed("order").toInt(),
+                    taskNames = properties.list("taskNames")
+                )
+            }
         }
+        .filterNotNull()
         .associateBy(EnforcementBundleDescriptor::bundleId)
 }
 
 val legacyEnforcementBundleIdsInOrder = listOf(
     "view",
-    "viewContribution",
-    "viewBinder",
     "viewLayer",
     "viewInspectorEntry",
-    "viewInputEvent",
     "viewPublishedEvent",
     "viewContributionModel",
     "viewContentModel"
@@ -63,6 +83,7 @@ val enforcementBundleIdsInOrder = (
     )
     .sortedBy { (_, order) -> order }
     .map { (bundleId, _) -> bundleId }
+    .distinct()
 
 val legacyEnforcementBundleTaskToId = mapOf(
     "checkViewEnforcement" to "view",
@@ -70,13 +91,6 @@ val legacyEnforcementBundleTaskToId = mapOf(
     "checkViewFxmlResources" to "view",
     "jqassistantScanViewEnforcement" to "view",
     "jqassistantAnalyzeViewEnforcement" to "view",
-    "checkViewContributionEnforcement" to "viewContribution",
-    "viewContributionArchitectureTest" to "viewContribution",
-    "pmdViewContributionEnforcement" to "viewContribution",
-    "checkViewBinderEnforcement" to "viewBinder",
-    "viewBinderArchitectureTest" to "viewBinder",
-    "jqassistantScanViewBinderEnforcement" to "viewBinder",
-    "jqassistantAnalyzeViewBinderEnforcement" to "viewBinder",
     "checkViewLayerEnforcement" to "viewLayer",
     "viewLayerArchitectureTest" to "viewLayer",
     "viewLayerTopologyCheck" to "viewLayer",
@@ -84,9 +98,6 @@ val legacyEnforcementBundleTaskToId = mapOf(
     "jqassistantScanViewInspectorEntryEnforcement" to "viewInspectorEntry",
     "jqassistantAnalyzeViewInspectorEntryEnforcement" to "viewInspectorEntry",
     "viewInspectorEntryTopologyCheck" to "viewInspectorEntry",
-    "checkViewInputEventEnforcement" to "viewInputEvent",
-    "viewInputEventArchitectureTest" to "viewInputEvent",
-    "viewInputEventTopologyCheck" to "viewInputEvent",
     "checkViewPublishedEventEnforcement" to "viewPublishedEvent",
     "viewPublishedEventArchitectureTest" to "viewPublishedEvent",
     "checkViewContributionModelEnforcement" to "viewContributionModel",
@@ -94,11 +105,7 @@ val legacyEnforcementBundleTaskToId = mapOf(
     "jqassistantScanViewContributionModelEnforcement" to "viewContributionModel",
     "jqassistantAnalyzeViewContributionModelEnforcement" to "viewContributionModel",
     "viewContributionModelTopologyCheck" to "viewContributionModel",
-    "checkViewContentModelEnforcement" to "viewContentModel",
-    "viewContentModelArchitectureTest" to "viewContentModel",
-    "jqassistantScanViewContentModelEnforcement" to "viewContentModel",
-    "jqassistantAnalyzeViewContentModelEnforcement" to "viewContentModel",
-    "viewContentModelTopologyCheck" to "viewContentModel"
+    "checkViewContentModelEnforcement" to "viewContentModel"
 )
 
 val descriptorEnforcementBundleTaskToId = enforcementBundleDescriptorsById.values
@@ -151,6 +158,6 @@ System.setProperty("saltmarcher.repoRootDir", rootDir.absolutePath)
 
 rootProject.name = "SaltMarcher"
 
-includeBuild("tools/gradle/build-harness")
-includeBuild("tools/quality/rules/quality-rules")
-includeBuild("tools/quality/incubator/quality-rules-errorprone")
+includeBuild(includedBuildPath("tools/gradle/build-harness"))
+includeBuild(includedBuildPath("tools/quality/rules/quality-rules"))
+includeBuild(includedBuildPath("tools/quality/incubator/quality-rules-errorprone"))

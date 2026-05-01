@@ -22,7 +22,7 @@ import javax.lang.model.util.ElementFilter;
 public final class DomainRoleShapeChecker extends BugChecker implements BugChecker.ClassTreeMatcher {
 
     private static final Pattern DOMAIN_ROLE_PACKAGE = Pattern.compile(
-            "^src\\.domain\\.[^.]+\\.[^.]+\\.(aggregate|entity|value|policy|port|factory|service|event|specification)$");
+            "^src\\.domain\\.[^.]+\\.[^.]+\\.(entity|value|policy|port|factory|service|event|specification)$");
 
     @Override
     public Description matchClass(ClassTree tree, VisitorState state) {
@@ -39,7 +39,6 @@ public final class DomainRoleShapeChecker extends BugChecker implements BugCheck
 
         String role = matcher.group(1);
         String violation = switch (role) {
-            case "aggregate" -> aggregateViolation(typeElement);
             case "entity" -> entityViolation(typeElement);
             case "value" -> valueViolation(typeElement);
             case "port" -> portViolation(typeElement);
@@ -58,17 +57,6 @@ public final class DomainRoleShapeChecker extends BugChecker implements BugCheck
                 .setMessage("Domain role type '" + typeElement.getQualifiedName()
                         + "' violates " + role + "/ shape: " + violation)
                 .build();
-    }
-
-    private static String aggregateViolation(TypeElement typeElement) {
-        ElementKind kind = typeElement.getKind();
-        if (kind != ElementKind.CLASS && kind != ElementKind.RECORD) {
-            return "aggregate roots must be classes or records.";
-        }
-        if (kind == ElementKind.CLASS && !typeElement.getModifiers().contains(Modifier.FINAL)) {
-            return "aggregate root classes must be final.";
-        }
-        return null;
     }
 
     private static String entityViolation(TypeElement typeElement) {

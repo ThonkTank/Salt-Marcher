@@ -97,6 +97,7 @@ val rootHostScriptsByBundleId = extra["saltmarcherRootHostScriptsByBundleId"] as
 
 activeEnforcementBundleIds
     .map(rootHostScriptsByBundleId::getValue)
+    .distinct()
     .forEach { scriptPath ->
         apply(from = scriptPath)
     }
@@ -184,9 +185,12 @@ val architectureTest by tasks.registering(Test::class) {
     classpath = sourceSets["test"].runtimeClasspath
     useJUnitPlatform()
     include("architecture/**")
+    exclude("architecture/data/persistencecore/**")
+    exclude("architecture/domain/layer/**")
     exclude("architecture/view/binder/**")
     exclude("architecture/view/contribution/**")
     exclude("architecture/view/contributionmodel/**")
+    exclude("architecture/shell/layer/**")
     exclude("architecture/view/viewinputevent/**")
     exclude("architecture/view/viewlayer/**")
     doFirst {

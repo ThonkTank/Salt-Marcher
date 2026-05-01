@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Detailed CI job policy, external service setup, branch
 protection expectations, and review governance for SaltMarcher quality
 platforms.
@@ -21,15 +21,26 @@ and defines four jobs.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the CI mirror of the implementation-facing local full blocker. The documentation-only `checkDocumentationEnforcement` path stays outside this required CI job. |
-| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `./gradlew ckjmMain --console=plain` and uploads `build/reports/ckjm/`; CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
+| `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the required CI aggregate for repository-owned blocking Gradle checks. Local documentation-only and check-only default proof routes stay narrower than this CI job. |
+| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `./gradlew ckjmMain --console=plain`, uploads the wrapper-isolated CKJM report path `build/isolated-gradle/**/reports/ckjm/` plus the conventional fallback `build/reports/ckjm/`, then removes the per-invocation isolation roots in a final cleanup step. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
 
 The focused local gate
 `./gradlew checkDocumentationEnforcement --console=plain` remains intentionally
-outside the required GitHub Actions job set. It validates documentation-only
-governance changes locally without reclassifying them as CI full-build work.
+outside the required GitHub Actions job set. It is the local default proof
+route for documentation-only governance changes without reclassifying them as
+CI full-build work.
+
+Wrapper-based CI Gradle jobs use the same invocation-isolated runtime as local
+wrapper runs. Any uploaded Gradle-produced artifacts must therefore read from
+the wrapper-isolated `build/isolated-gradle/**/reports/...` path, or list that
+path before a conventional `build/reports/...` fallback when the workflow
+needs compatibility with non-wrapper or pre-isolation producers.
+
+CI cleanup must run only after the job's last Gradle artifact consumer. The
+workflow therefore performs wrapper-isolation cleanup in final `if: always()`
+steps after uploads and other Gradle-result consumers complete.
 
 ### SonarCloud
 
@@ -103,10 +114,10 @@ The quality platforms do not replace human review.
 
 - documentation ownership, source-of-truth conflicts, and same-change
   documentation updates remain review responsibilities
-- whether a change qualifies for the focused local
-  `checkDocumentationEnforcement` path, a focused enforcement-bundle rerun, or
-  the broader implementation blocker remains a review and authoring
-  responsibility unless `AGENTS.md` already makes that scope mechanical
+- `AGENTS.md` defines the default local verification scope mechanically by
+  change type; review and authoring still own mixed or ambiguous cases near
+  the boundary between production-code, check-only, and documentation-only
+  work
 - GitHub branch protection, required checks, secrets, variables, and service
   project bindings remain repository configuration, not Gradle behavior
 - whether a PMD, CPD, Lizard, SonarCloud, or CodeScene finding is a symptom of

@@ -89,6 +89,11 @@ APP_BASE_NAME=${0##*/}
 APP_HOME=$( cd -P "${APP_HOME:-./}" > /dev/null && printf '%s
 ' "$PWD" ) || exit
 
+if [ -f "$APP_HOME/tools/gradle/prepare-isolated-gradle-env.sh" ] ; then
+    # shellcheck disable=SC1091
+    . "$APP_HOME/tools/gradle/prepare-isolated-gradle-env.sh" || exit $?
+fi
+
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 
@@ -249,4 +254,33 @@ eval "set -- $(
         tr '\n' ' '
     )" '"$@"'
 
-exec "$JAVACMD" "$@"
+gradle_pid=
+signal_forwarded=
+
+forward_signal() {
+    signal_name=$1
+    signal_forwarded=$signal_name
+    if [ -n "$gradle_pid" ] && kill -0 "$gradle_pid" 2>/dev/null; then
+        kill "-$signal_name" "$gradle_pid" 2>/dev/null || true
+    fi
+}
+
+trap 'forward_signal TERM' TERM
+trap 'forward_signal INT' INT
+
+"$JAVACMD" "$@" &
+gradle_pid=$!
+wait "$gradle_pid"
+gradle_status=$?
+
+if [ -f "$APP_HOME/tools/gradle/finalize-isolated-gradle-run.sh" ] ; then
+    sh "$APP_HOME/tools/gradle/finalize-isolated-gradle-run.sh" \
+        "$gradle_status" \
+        "${signal_forwarded:-}"
+    finalize_status=$?
+    if [ "$gradle_status" -eq 0 ] && [ "$finalize_status" -ne 0 ] ; then
+        exit "$finalize_status"
+    fi
+fi
+
+exit "$gradle_status"

@@ -81,8 +81,8 @@ val viewViewEnforcementSupport by sourceSets.creating {
 val testSourceSet = sourceSets["test"]
 val viewViewEnforcementArchunit by sourceSets.creating {
     java.srcDir("tools/quality/view-view-enforcement/archunit/src/test/java")
-    compileClasspath += testSourceSet.compileClasspath
-    runtimeClasspath += output + compileClasspath + testSourceSet.runtimeClasspath
+    compileClasspath += testSourceSet.output + testSourceSet.compileClasspath
+    runtimeClasspath += output + compileClasspath + testSourceSet.output + testSourceSet.runtimeClasspath
 }
 
 val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }

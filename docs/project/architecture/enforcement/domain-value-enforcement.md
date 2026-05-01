@@ -24,19 +24,28 @@ not add a value-specific constraint, or domain-layer-wide outer-layer
 independence. Those live in
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainValueEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain Value-focused Error Prone and
+  documentation-coverage checks through one root task. Canonical compile-side
+  blocking behavior remains at `./gradlew compileJava`; the focused bundle
+  proof route adds the role-owned documentation coverage check without pulling
+  the broader architecture aggregates.
+
 ## Invariant Catalog
 
 ### Must Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-value-top-level-type-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/value/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Value role types are records, enums, sealed abstractions, or final classes. |
+| `domain-value-top-level-type-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/value/` | Error Prone `DomainValueShape` | `./gradlew compileJava` and `./gradlew checkDomainValueEnforcement` | Value role types are records, enums, sealed abstractions, or final classes. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-value-no-non-private-or-non-final-instance-state` | Enforced | every final class-shaped value type under `value/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Final value classes do not declare non-private or non-final instance fields. Class-shaped values keep instance state private and final. |
+| `domain-value-no-non-private-or-non-final-instance-state` | Enforced | every final class-shaped value type under `value/` | Error Prone `DomainValueShape` | `./gradlew compileJava` and `./gradlew checkDomainValueEnforcement` | Final value classes do not declare non-private or non-final instance fields. Class-shaped values keep instance state private and final. |
 
 ### Communication Contract
 

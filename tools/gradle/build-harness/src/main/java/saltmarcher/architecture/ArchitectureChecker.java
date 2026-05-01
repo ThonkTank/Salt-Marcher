@@ -2,9 +2,7 @@ package saltmarcher.architecture;
 
 import saltmarcher.architecture.data.DataPersistenceRules;
 import saltmarcher.architecture.domain.DomainFeatureRules;
-import saltmarcher.architecture.shell.ShellSurfaceRules;
 import saltmarcher.architecture.system.BuildHarnessPolicyRules;
-import saltmarcher.architecture.system.RepositoryTopologyRules;
 import saltmarcher.architecture.system.SourceLayoutRules;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
@@ -25,11 +23,15 @@ public final class ArchitectureChecker {
         ViolationSink sink = new ViolationSink();
         List<ArchitectureRule> rules = new ArrayList<>(List.of(
                 new BuildHarnessPolicyRules(),
-                new RepositoryTopologyRules(),
                 new SourceLayoutRules(),
                 new DomainFeatureRules(),
-                new ShellSurfaceRules(),
                 new DataPersistenceRules()));
+        addOptionalRule(rules, "saltmarcher.architecture.bootstrap.layer.BootstrapLayerTopologyRules");
+        addOptionalRule(rules, "saltmarcher.architecture.data.layer.DataLayerTopologyRules");
+        addOptionalRule(rules, "saltmarcher.architecture.domain.layer.DomainLayerTopologyRules");
+        addOptionalRule(rules, "saltmarcher.architecture.domain.applicationservice.DomainApplicationServiceTopologyRules");
+        addOptionalRule(rules, "saltmarcher.architecture.domain.published.DomainPublishedTopologyRules");
+        addOptionalRule(rules, "saltmarcher.architecture.data.model.DataModelTopologyRules");
         addOptionalRule(rules, "saltmarcher.architecture.view.intenthandler.ViewIntentHandlerTopologyRules");
         addOptionalRule(rules, "saltmarcher.architecture.view.viewinputevent.ViewInputEventTopologyRules");
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Complete architecture-enforcement catalog for tactical
 `policy/` role types in named domain modules.
 
@@ -23,6 +23,15 @@ named-module forbidden-content rules, or generic named-module communication
 boundaries that also constrain `policy/`. Those live in
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainPolicyEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain Policy-focused Error Prone and
+  documentation-coverage checks through one root task. Canonical compile-side
+  blocking behavior remains at `./gradlew compileJava`; the focused bundle
+  proof route adds the role-owned documentation coverage check without pulling
+  the broader architecture aggregates.
+
 ## Invariant Catalog
 
 ### May Contain
@@ -35,13 +44,13 @@ boundaries that also constrain `policy/`. Those live in
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-policy-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/policy/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Policy role types are final classes. |
+| `domain-policy-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/policy/` | domain-policy bundle Error Prone `DomainPolicyRoleShape` | `./gradlew compileJava` and `./gradlew checkDomainPolicyEnforcement` | Policy role types are final classes. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-policy-statelessness` | Enforced | every top-level type under `policy/` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Policy role types do not declare instance fields and therefore cannot hide role-local state behind policy objects. |
+| `domain-policy-statelessness` | Enforced | every top-level type under `policy/` | domain-policy bundle Error Prone `DomainPolicyStatelessness` | `./gradlew compileJava` and `./gradlew checkDomainPolicyEnforcement` | Policy role types do not declare instance fields and therefore cannot hide role-local state behind policy objects. |
 
 ### Communication Contract
 

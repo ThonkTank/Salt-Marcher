@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Complete architecture-enforcement catalog for exported
 `published/**` boundary carriers in `src/domain/**`.
 
@@ -22,6 +22,16 @@ This document does not own root `ApplicationService` method shape, use case
 internals, named tactical model-role semantics, or layer-wide domain
 communication boundaries. Those live in the neighboring owner docs.
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainPublishedEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain Published-focused build-harness, Error
+  Prone, and enforcement-documentation coverage checks through one root task.
+  Canonical compile-side blocking behavior remains at `./gradlew compileJava`;
+  the focused bundle proof route adds the role-owned topology and
+  documentation coverage checks without pulling the broader architecture
+  aggregates.
+
 ## Invariant Catalog
 
 ### May Contain
@@ -35,15 +45,15 @@ communication boundaries. Those live in the neighboring owner docs.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-published-direct-file-placement` | Enforced | every Java type under `src/domain/<context>/published/` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Published boundary carriers are direct files under `published/` rather than nested helper packages. |
-| `domain-published-top-level-public-surface` | Enforced | every top-level type under `src/domain/<context>/published/` | Error Prone `DomainPublishedCarrierShape` | `./gradlew compileJava` | Top-level published carriers are explicitly `public` so `published/**` remains an exported boundary surface rather than a package-private helper bucket. |
-| `domain-published-carrier-shape` | Enforced | every public type under `src/domain/<context>/published/` | Error Prone `DomainPublishedCarrierShape` | `./gradlew compileJava` | Public published carriers are records, enums, or sealed abstractions rather than mutable helper-shaped containers. |
+| `domain-published-direct-file-placement` | Enforced | every Java type under `src/domain/<context>/published/` | domain-published bundle build-harness `DomainPublishedTopologyRules` | `./gradlew checkArchitecture` and `./gradlew checkDomainPublishedEnforcement` | Published boundary carriers are direct files under `published/` rather than nested helper packages. |
+| `domain-published-top-level-public-surface` | Enforced | every top-level type under `src/domain/<context>/published/` | domain-published bundle Error Prone `DomainPublishedCarrierShape` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Top-level published carriers are explicitly `public` so `published/**` remains an exported boundary surface rather than a package-private helper bucket. |
+| `domain-published-carrier-shape` | Enforced | every public type under `src/domain/<context>/published/` | domain-published bundle Error Prone `DomainPublishedCarrierShape` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Public published carriers are records, enums, or sealed abstractions rather than mutable helper-shaped containers. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-published-no-callable-contracts` | Enforced | every Java type under `src/domain/<context>/published/` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | `published/` does not contain callable services, facades, repositories, ports, gateways, factories, locators, or policy contracts. |
+| `domain-published-no-callable-contracts` | Enforced | every Java type under `src/domain/<context>/published/` | domain-published bundle build-harness `DomainPublishedTopologyRules` | `./gradlew checkArchitecture` and `./gradlew checkDomainPublishedEnforcement` | `published/` does not contain callable services, facades, repositories, ports, gateways, factories, locators, or policy contracts. |
 | `domain-published-domain-facts-only` | Review-Owned | every `published/**` carrier family | none | none | Published carriers describe domain facts and boundary language only. They do not encode render-layer terms, widget state, canvas cells, storage DTOs, or other outer-format convenience shapes. |
 | `domain-published-passive-boundary-language` | Review-Owned | every `published/**` carrier family | none | none | Published carriers remain passive boundary language rather than invariant-owning objects hidden behind otherwise legal record, enum, or sealed shapes. |
 
@@ -51,7 +61,7 @@ communication boundaries. Those live in the neighboring owner docs.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-published-public-boundary-signature-purity` | Enforced | every public or protected published boundary signature | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Published carriers do not communicate outer-layer, private same-context domain, infrastructure, or foreign `published/**` types through public boundary signatures. |
+| `domain-published-public-boundary-signature-purity` | Enforced | every public or protected published boundary signature | domain-published bundle Error Prone `DomainPublishedBoundarySignaturePurity` | `./gradlew compileJava` and `./gradlew checkDomainPublishedEnforcement` | Published carriers do not communicate outer-layer, private same-context domain, infrastructure, or foreign `published/**` types through public boundary signatures. |
 
 ## Review-Owned
 

@@ -10,7 +10,6 @@ sourceSets.named("main") {
 }
 
 tasks.register<JavaExec>("viewContentModelTopologyCheck") {
-    group = "verification"
     description = "Run only the ViewContentModel build-harness topology rules."
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }

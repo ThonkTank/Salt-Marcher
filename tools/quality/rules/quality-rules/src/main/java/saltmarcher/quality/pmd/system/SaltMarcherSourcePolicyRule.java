@@ -12,10 +12,6 @@ import saltmarcher.quality.pmd.support.SaltMarcherSourceFacts;
 
 public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
 
-    private static final Pattern ROOT_APPLICATION_SERVICE_COMPOSITION_PATTERN = Pattern.compile(
-            "\\bnew\\s+[A-Z][A-Za-z0-9_]*(?:Repository|QueryAdapter|Lookup|Catalog|Search|Gateway|Store|ConnectionFactory|Migrator|TableManager)\\s*\\(");
-    private static final Pattern ROOT_APPLICATION_SERVICE_STATIC_BACKEND_PATTERN = Pattern.compile(
-            "(?m)^\\s*private\\s+static\\s+final\\s+.*(?:Repository|Lookup|Catalog|Search|QueryAdapter|Gateway|Store|Factory|ConnectionFactory)\\b");
     private static final Pattern ENUM_BODY_PATTERN = Pattern.compile("(?s)enum\\s+%s\\s*\\{(.*?)\\}");
     private static final Pattern ENUM_CONSTANT_PATTERN = Pattern.compile("(?m)^\\s*([A-Z][A-Z0-9_]*)\\b");
     private static final Pattern PERMITS_CLAUSE_PATTERN = Pattern.compile(
@@ -24,9 +20,6 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "(?m)^\\s*(?:default\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern PUBLIC_METHOD_PATTERN = Pattern.compile(
             "(?m)^\\s*public\\s+(?:synchronized\\s+)?(?:<[^>]+>\\s+)?[A-Za-z0-9_<>, ?.@]+\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\(");
-    private static final Pattern DOMAIN_APPLICATION_POLICY_HELPER_PATTERN = Pattern.compile(
-            "(?m)^\\s*(?!(?:public\\b))(?:(?:private|protected)\\s+)?(?:static\\s+)?(?:<[^>]+>\\s+)?[A-Za-z0-9_<>, ?.@\\[\\]]+\\s+"
-                    + "((?:score|rank|choose|balance|enforce)[A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern DOMAIN_SETTER_STYLE_MUTATION_PATTERN = Pattern.compile(
             "(?m)^\\s*(?:public|protected)\\s+(?:final\\s+)?void\\s+(set[A-Z][A-Za-z0-9_]*)\\s*\\(");
     private static final Pattern FEATURE_SPECIFIC_PACKAGE_REFERENCE_PATTERN = Pattern.compile(
@@ -49,10 +42,6 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             "slotContent",
             "onActivate",
             "onDeactivate");
-    private static final List<String> SHELL_RUNTIME_CONTEXT_ALLOWED_METHODS = List.of(
-            "inspector",
-            "services",
-            "session");
     private static final List<String> SHELL_LEFT_BAR_TAB_SPEC_COMPONENTS = List.of(
             "key",
             "navigationGroup",
@@ -124,11 +113,6 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             return data;
         }
 
-        if (sourceFacts.text().contains("setStyle(")) {
-            asCtx(data).addViolationWithMessage(node,
-                    "Inline JavaFX styling via setStyle(...) is forbidden. Define styling in a stylesheet under resources/ instead.");
-        }
-
         if (isBootstrapOrShellSource(sourceFacts)
                 && FEATURE_SPECIFIC_PACKAGE_REFERENCE_PATTERN.matcher(sourceFacts.text()).find()) {
             asCtx(data).addViolationWithMessage(node,
@@ -172,15 +156,6 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
             validateShellContributionSpecApiShape(node, data, sourceFacts);
         }
 
-        if (sourceFacts.relativePath().equals("shell/api/ShellRuntimeContext.java")) {
-            List<String> methods = publicMethods(sourceFacts.text());
-            if (!methods.equals(SHELL_RUNTIME_CONTEXT_ALLOWED_METHODS)) {
-                asCtx(data).addViolationWithMessage(node,
-                        "ShellRuntimeContext must expose only the fixed runtime gateway methods: "
-                                + String.join(", ", SHELL_RUNTIME_CONTEXT_ALLOWED_METHODS) + ".");
-            }
-        }
-
         if (sourceFacts.relativePath().equals("shell/api/ShellBinding.java")) {
             Set<String> methods = shellBindingMethods(sourceFacts.text());
             if (!methods.equals(SHELL_BINDING_ALLOWED_METHODS)) {
@@ -198,23 +173,6 @@ public final class SaltMarcherSourcePolicyRule extends AbstractJavaRule {
                 }
             }
 
-            if (sourceFacts.isDomainRoot()) {
-                if (ROOT_APPLICATION_SERVICE_COMPOSITION_PATTERN.matcher(sourceFacts.text()).find()
-                        || sourceFacts.text().contains(".shared(")
-                        || sourceFacts.text().contains(".getInstance(")
-                        || ROOT_APPLICATION_SERVICE_STATIC_BACKEND_PATTERN.matcher(sourceFacts.text()).find()) {
-                    asCtx(data).addViolationWithMessage(node,
-                            "Root application services must stay thin and must not instantiate or cache data port-adapter or source-adapter infrastructure directly.");
-                }
-            }
-            if (sourceFacts.isDomainApplicationSource()) {
-                Matcher matcher = DOMAIN_APPLICATION_POLICY_HELPER_PATTERN.matcher(sourceFacts.text());
-                if (matcher.find()) {
-                    asCtx(data).addViolationWithMessage(node,
-                            "Domain application code must not hide policy helper method '" + matcher.group(1)
-                                    + "'. Move rule-bearing behavior into the owning domain module and keep application code as orchestration.");
-                }
-            }
             if (sourceFacts.isNamedDomainModuleSource()) {
                 Matcher matcher = DOMAIN_SETTER_STYLE_MUTATION_PATTERN.matcher(sourceFacts.text());
                 if (matcher.find()) {

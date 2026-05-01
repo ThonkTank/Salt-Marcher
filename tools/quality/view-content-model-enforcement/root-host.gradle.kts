@@ -85,7 +85,6 @@ tasks.named<JavaCompile>("compileJava") {
 }
 
 val viewContentModelArchitectureTest by tasks.registering(Test::class) {
-    group = "verification"
     description = "Run only the ViewContentModel-focused architecture test suite."
     dependsOn(tasks.named("compileJava"))
     inputs.dir(mainJavaClassesDir)
@@ -101,7 +100,6 @@ val viewContentModelArchitectureTest by tasks.registering(Test::class) {
 }
 
 val prepareViewContentModelJqassistantConfig by tasks.registering {
-    group = "verification"
     description = "Materialize ContentModel jQAssistant configuration with invocation-local build output paths."
     inputs.file(contentModelJqassistantSourceConfigFile)
     outputs.file(contentModelJqassistantGeneratedConfigFile)
@@ -127,7 +125,6 @@ val prepareViewContentModelJqassistantConfig by tasks.registering {
 }
 
 val jqassistantScanViewContentModelEnforcement by tasks.registering(Exec::class) {
-    group = "verification"
     description = "Scan SaltMarcher ContentModel topology for the dedicated ContentModel enforcement bundle."
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
@@ -148,7 +145,6 @@ val jqassistantScanViewContentModelEnforcement by tasks.registering(Exec::class)
 }
 
 val jqassistantAnalyzeViewContentModelEnforcement by tasks.registering(Exec::class) {
-    group = "verification"
     description = "Analyze SaltMarcher ContentModel constraints through the dedicated ContentModel bundle."
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
@@ -171,7 +167,7 @@ val jqassistantAnalyzeViewContentModelEnforcement by tasks.registering(Exec::cla
 
 tasks.register("checkViewContentModelEnforcement") {
     group = "verification"
-    description = "Run all currently active ViewContentModel enforcement checks through one root entrypoint."
+    description = "Run the only supported focused ViewContentModel enforcement entrypoint."
     dependsOn("compileJava")
     dependsOn(viewContentModelArchitectureTest)
     dependsOn(jqassistantAnalyzeViewContentModelEnforcement)

@@ -23,30 +23,39 @@ documentation, data-root `ServiceRegistry` export shape, generic foreign-
 context access policy, or layer-wide domain dependency bans. Those live in the
 neighboring owner docs.
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainApplicationServiceEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain ApplicationService-focused build-harness,
+  Error Prone, PMD, and documentation-coverage checks through one root task.
+  Canonical compile-side blocking behavior remains at `./gradlew compileJava`;
+  the focused bundle proof route adds the role-owned topology, source-pattern,
+  and documentation checks without pulling unrelated architecture bundles.
+
 ## Invariant Catalog
 
 ### Must Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-root-presence` | Enforced | every active domain context under `src/domain/**` | build-harness `SourceLayoutRules` and `documentation-enforcement` bundle `DomainDocumentationRules` | `./gradlew checkArchitecture` and `./gradlew checkDocumentationEnforcement` | Each active domain context contains exactly one direct root boundary file named `<PascalContext>ApplicationService.java`. |
-| `domain-applicationservice-class-shape` | Enforced | every top-level root `*ApplicationService` type under `src/domain/**` | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root application services are public final top-level classes. |
-| `domain-applicationservice-public-input-carriers` | Enforced | every public or protected non-constructor root `ApplicationService` method | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root boundary methods accept exactly one same-context `published/**` carrier whose simple name ends with `Command` or `Query`. |
-| `domain-applicationservice-public-return-carriers` | Enforced | every public or protected non-constructor root `ApplicationService` method | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root boundary methods return exactly one non-`void` same-context `published/**` carrier directly. |
+| `domain-applicationservice-root-presence` | Enforced | every active domain context under `src/domain/**` | domain-application-service bundle build-harness `DomainApplicationServiceTopologyRules` and `DomainApplicationServiceDocumentationRules` | `./gradlew checkArchitecture`, `./gradlew checkDocumentationEnforcement`, and `./gradlew checkDomainApplicationServiceEnforcement` | Each active domain context contains exactly one direct root boundary file named `<PascalContext>ApplicationService.java`. |
+| `domain-applicationservice-class-shape` | Enforced | every top-level root `*ApplicationService` type under `src/domain/**` | domain-application-service bundle Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root application services are public final top-level classes. |
+| `domain-applicationservice-public-input-carriers` | Enforced | every public or protected non-constructor root `ApplicationService` method | domain-application-service bundle Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root boundary methods accept exactly one same-context `published/**` carrier whose simple name ends with `Command` or `Query`. |
+| `domain-applicationservice-public-return-carriers` | Enforced | every public or protected non-constructor root `ApplicationService` method | domain-application-service bundle Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root boundary methods return exactly one non-`void` same-context `published/**` carrier directly. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-no-nested-contracts` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` | Root application services do not expose nested public or protected contract types. |
-| `domain-applicationservice-no-direct-infrastructure-construction-source-pattern` | Source-Pattern Enforced | every root `*ApplicationService.java` under `src/domain/**` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Root application service source text does not directly instantiate or cache data-adapter or source-adapter infrastructure at the root boundary. |
+| `domain-applicationservice-no-nested-contracts` | Enforced | every root `*ApplicationService.java` under `src/domain/**` | domain-application-service bundle Error Prone `DomainApplicationServiceApiShape` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root application services do not expose nested public or protected contract types. |
+| `domain-applicationservice-no-direct-infrastructure-construction-source-pattern` | Source-Pattern Enforced | every root `*ApplicationService.java` under `src/domain/**` | domain-application-service bundle PMD `DomainApplicationServiceSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkDomainApplicationServiceEnforcement` | Root application service source text does not directly instantiate or cache data-adapter or source-adapter infrastructure at the root boundary. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-constructor-composition-boundary` | Enforced | every public or protected root `ApplicationService` constructor | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Root constructors communicate directly only with same-context outbound `port/` interfaces or foreign root `*ApplicationService` types. |
-| `domain-applicationservice-public-boundary-signature-purity` | Enforced | every public or protected root `ApplicationService` boundary surface | Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` | Root public boundary surfaces do not communicate outer-layer types, same-context named-module types, same-context outbound ports on the callable surface, foreign domain internals, or foreign `published/**` carriers through signatures, public fields, thrown types, supertypes, or type bounds. |
+| `domain-applicationservice-constructor-composition-boundary` | Enforced | every public or protected root `ApplicationService` constructor | domain-application-service bundle Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root constructors communicate directly only with same-context outbound `port/` interfaces or foreign root `*ApplicationService` types. |
+| `domain-applicationservice-public-boundary-signature-purity` | Enforced | every public or protected root `ApplicationService` boundary surface | domain-application-service bundle Error Prone `DomainPublicBoundarySignaturePurity` | `./gradlew compileJava` and `./gradlew checkDomainApplicationServiceEnforcement` | Root public boundary surfaces do not communicate outer-layer types, same-context named-module types, same-context outbound ports on the callable surface, foreign domain internals, or foreign `published/**` carriers through signatures, public fields, thrown types, supertypes, or type bounds. |
 
 ## Review-Owned
 

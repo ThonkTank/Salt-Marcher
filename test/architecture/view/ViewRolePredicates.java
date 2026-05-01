@@ -32,13 +32,6 @@ public final class ViewRolePredicates {
         };
     }
 
-    public static DescribedPredicate<JavaClass> areContributionModels() {
-        return rolePredicate(
-                "view contribution model role classes",
-                "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$",
-                "ContributionModel");
-    }
-
     public static DescribedPredicate<JavaClass> areContentModels() {
         return rolePredicate(
                 "view content model role classes",

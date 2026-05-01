@@ -57,33 +57,53 @@ document exists.
 
 ## SaltMarcher Verification
 
-- After each completed implementation pass that changes production code or
-  shared build infrastructure, rerun `./gradlew build --console=plain` from the
-  repository root before handoff. If you are working inside `src/` or another
-  subdirectory, set the command working directory to the repository root instead
-  of using `../gradlew`.
+- After each completed implementation pass that changes production code, rerun
+  `./gradlew build --console=plain` from the repository root before handoff.
+  If you are working inside `src/` or another subdirectory, set the command
+  working directory to the repository root instead of using `../gradlew`.
 - After each completed implementation pass limited to one or more concrete
-  enforcement bundles under `tools/quality/*-enforcement/**`, rerun only the
-  matching focused bundle task or tasks from the repository root before handoff
-  instead of the full build. If the pass changes shared enforcement wiring
-  under `build.gradle.kts`, `settings.gradle.kts`,
+  check or enforcement packages under `tools/quality/**`,
   `tools/gradle/build-harness/**`,
+  `tools/quality/rules/quality-rules/**`,
   `tools/quality/incubator/quality-rules-errorprone/**`,
-  `tools/quality/rules/quality-rules/**`, or
-  `tools/quality/enforcement-bundles.gradle.kts` but still stays limited to
-  enforcement-only behavior, rerun all role/layer-specific focused bundle
-  tasks serially and do not fall back to `./gradlew build`.
+  `tools/quality/enforcement-bundles.gradle.kts`, or verification-only wiring
+  in `build.gradle.kts` / `settings.gradle.kts`, rerun only the corresponding
+  focused package or bundle task or tasks from the repository root before
+  handoff instead of the full build. If such a pass touches shared check
+  wiring, rerun the focused entrypoints for the actually affected packages; a
+  broader package wave must be explicit and does not automatically become a
+  full build.
 - After each completed documentation-only pass limited to `AGENTS.md`,
   `docs/**`, `src/domain/**/DOMAIN.md`, or Markdown files under
   `tools/quality/**`, rerun
   `./gradlew checkDocumentationEnforcement --console=plain` from the repository
   root before handoff instead of the full build.
-- A pass without the required full-build, focused-enforcement, or
-  documentation-enforcement rerun is incomplete and must remain WIP.
-- Codex-managed Gradle invocations automatically use per-agent build and
-  project-cache directories when `CODEX_THREAD_ID` is present. Non-Codex agents
-  that run local Gradle gates concurrently must set a unique
-  `SALTMARCHER_GRADLE_ISOLATION_ID`; do not reuse another agent's isolation id.
+- A pass without the required production-code full build, check-only
+  package/bundle rerun, or documentation-enforcement rerun is incomplete and
+  must remain WIP.
+- Wrapper-based Gradle invocations automatically use per-invocation build and
+  project-cache directories. They also isolate `GRADLE_USER_HOME`, seed wrapper
+  content into that repo-local invocation home, expose a shared read-only
+  dependency cache snapshot through `GRADLE_RO_DEP_CACHE`, and run the shared
+  included builds through a per-invocation composite mirror so parallel builds
+  do not contend on wrapper, cache, or included-build state.
+- For long verification runs where silent execution makes agent-side
+  observation unreliable, prefer `tools/gradle/run-observable-gradle.sh`
+  instead of shell loops over many separate `./gradlew` invocations. Use
+  `tools/gradle/run-observable-gradle.sh build` for production-code handoff
+  and pass the corresponding focused task list explicitly for check-only or
+  documentation-only reruns. The canonical public proof tasks themselves
+  remain the existing `./gradlew build`,
+  `./gradlew checkDocumentationEnforcement`, and
+  `./gradlew check*Enforcement` entrypoints.
+- `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
+  for local Gradle invocations, but they no longer decide whether wrapper-based
+  isolation happens.
+- Wrapper-based local Gradle runs now delete their per-invocation isolation
+  roots after the run finishes. Successful artifact-producing runs overwrite the
+  stable export surface at `build/latest-output/`; failed or interrupted runs
+  keep only selected diagnostics under `build/retained-gradle-failures/` for up
+  to seven days.
 - When the desktop app is the manual test surface, run
   `./gradlew installDesktopApp` after the successful build before handoff
   unless the user explicitly waives reinstall, the task is documentation-only,

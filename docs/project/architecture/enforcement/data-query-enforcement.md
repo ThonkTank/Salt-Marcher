@@ -24,6 +24,16 @@ layer-wide shell/view/bootstrap isolation, foreign-feature data boundaries,
 gateway-owned source-adapter boundaries, or source-model ownership. Those stay
 in the neighboring data enforcement documents.
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDataQueryEnforcement --rerun-tasks --console=plain`
+  runs the currently active Data Query-focused Error Prone, PMD, and
+  documentation-coverage checks through one root task. Canonical compile-side
+  and architecture-aggregate blocking behavior remains at
+  `./gradlew compileJava` and `./gradlew checkArchitecture`; the focused
+  bundle proof route keeps the query-role checks colocated without pulling the
+  broader architecture bundles.
+
 ## Invariant Catalog
 
 ### May Contain
@@ -36,24 +46,24 @@ in the neighboring data enforcement documents.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-query-role-contract` | Enforced | every public concrete adapter under `src/data/**/query/` | Error Prone `DataAdapterRoleContract` | `./gradlew compileJava` | Public concrete query adapters implement matching own-feature read-only domain ports whose names end in `Lookup`, `Catalog`, or `Search`. |
+| `data-query-role-contract` | Enforced | every public concrete adapter under `src/data/**/query/` | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Public concrete query adapters implement matching own-feature read-only domain ports whose names end in `Lookup`, `Catalog`, or `Search`. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-query-no-source-mechanics` | Source-Pattern Enforced | every Java type under `src/data/**/query/` | PMD `SaltMarcherDataLayerRoleRule` | `./gradlew checkArchitecture` | Query adapters do not reference narrow concrete source APIs directly. |
-| `data-query-no-public-non-adapter-boundary-types` | Enforced | every public type under `src/data/**/query/` that is not a public concrete adapter | Error Prone `DataAdapterRoleContract` | `./gradlew compileJava` | `query/` exposes no public boundary types except public concrete adapter classes. |
-| `data-query-read-only-source-shape` | Enforced | every public/protected method declaration or own-feature gateway call under `src/data/**/query/` | PMD `SaltMarcherDataLayerRoleRule` and Error Prone `DataQueryGatewayMutationBoundary` | `./gradlew checkArchitecture` and `./gradlew compileJava` | Query adapters stay mechanically read-only: they do not expose mutation-shaped public/protected methods and do not call mutation-shaped operations on own-feature gateway types. |
+| `data-query-no-source-mechanics` | Source-Pattern Enforced | every Java type under `src/data/**/query/` | data-query bundle PMD `DataQueryNoSourceMechanicsRule` | `./gradlew checkArchitecture` and `./gradlew checkDataQueryEnforcement` | Query adapters do not reference narrow concrete source APIs directly. |
+| `data-query-no-public-non-adapter-boundary-types` | Enforced | every public type under `src/data/**/query/` that is not a public concrete adapter | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | `query/` exposes no public boundary types except public concrete adapter classes. |
+| `data-query-read-only-source-shape` | Enforced | every public/protected method declaration or own-feature gateway call under `src/data/**/query/` | data-query bundle PMD `DataQueryReadOnlySourceShapeRule` and data-query bundle Error Prone `DataQueryGatewayMutationBoundary` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkDataQueryEnforcement` | Query adapters stay mechanically read-only: they do not expose mutation-shaped public/protected methods and do not call mutation-shaped operations on own-feature gateway types. |
 | `data-query-read-only-role-semantics` | Review-Owned | every query adapter under `src/data/**/query/` | none | none | A mechanically legal query adapter still remains a read-only lookup, search, paging, or projection adapter rather than a write boundary, policy helper, or generic data convenience wrapper. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `data-query-public-port-surface-only` | Enforced | every public concrete query adapter under `src/data/**/query/` | Error Prone `DataAdapterRoleContract` | `./gradlew compileJava` | Public/protected query adapter methods, including inherited public/protected superclass methods, are limited to the matching own-feature read-only domain port contracts. |
-| `data-query-public-signature-boundary` | Enforced | every public/protected query adapter API | Error Prone `DataAdapterPublicSignatureLeak` | `./gradlew compileJava` | Public/protected query adapter signatures, including inherited public/protected superclass methods, do not leak source-local `model/`, `gateway/`, or `persistencecore` types. |
-| `data-query-gateway-collaborator-boundary` | Enforced | every query adapter dependency into its own feature gateway code | Error Prone `DataAdapterGatewayCollaboratorBoundary` | `./gradlew compileJava` | Query adapters depend on own-feature source-adapter facade types ending in `Gateway`, not internal source-mechanics collaborators under `gateway/`. |
+| `data-query-public-port-surface-only` | Enforced | every public concrete query adapter under `src/data/**/query/` | data-query bundle Error Prone `DataQueryRoleContract` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Public/protected query adapter methods, including inherited public/protected superclass methods, are limited to the matching own-feature read-only domain port contracts. |
+| `data-query-public-signature-boundary` | Enforced | every public/protected query adapter API | data-query bundle Error Prone `DataQueryPublicSignatureBoundary` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Public/protected query adapter signatures, including inherited public/protected superclass methods, do not leak source-local `model/`, `gateway/`, or `persistencecore` types. |
+| `data-query-gateway-collaborator-boundary` | Enforced | every query adapter dependency into its own feature gateway code | data-query bundle Error Prone `DataQueryGatewayCollaboratorBoundary` | `./gradlew compileJava` and `./gradlew checkDataQueryEnforcement` | Query adapters depend on own-feature source-adapter facade types ending in `Gateway`, not internal source-mechanics collaborators under `gateway/`. |
 
 ## References
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Complete architecture-enforcement catalog for tactical
 `event/` role types in named domain modules.
 
@@ -24,6 +24,15 @@ generic named-module and model-role communication boundaries that also
 constrain `event/`. Those live in
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainEventEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain Event-focused Error Prone and
+  documentation-coverage checks through one root task. Canonical compile-side
+  blocking behavior remains at `./gradlew compileJava`; the focused bundle
+  proof route adds the role-owned documentation coverage check without pulling
+  the broader architecture aggregates.
+
 ## Invariant Catalog
 
 ### May Contain
@@ -36,7 +45,7 @@ constrain `event/`. Those live in
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-event-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/event/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Event role types are records whose simple names end with `Event`. |
+| `domain-event-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/event/` | domain-event bundle Error Prone `DomainEventRoleShape` | `./gradlew compileJava` and `./gradlew checkDomainEventEnforcement` | Event role types are records whose simple names end with `Event`. |
 
 ### Must Not Contain
 

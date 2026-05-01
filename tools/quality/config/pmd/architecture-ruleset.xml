@@ -21,10 +21,4 @@
         <priority>1</priority>
     </rule>
 
-    <rule name="DataEntrypointRule"
-          language="java"
-          message="SaltMarcher data entrypoint violation"
-          class="saltmarcher.quality.pmd.data.DataEntrypointRule">
-        <priority>1</priority>
-    </rule>
 </ruleset>

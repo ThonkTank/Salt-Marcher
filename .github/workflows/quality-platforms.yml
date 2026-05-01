@@ -23,6 +23,8 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew check --console=plain
+      - if: always()
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --cleanup-ci-completed
 
   ckjm-report:
     runs-on: ubuntu-latest
@@ -40,7 +42,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ckjm-report
-          path: build/reports/ckjm
+          path: |
+            build/isolated-gradle/**/reports/ckjm
+            build/reports/ckjm
+      - if: always()
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --cleanup-ci-completed
 
   sonarcloud:
     runs-on: ubuntu-latest
@@ -61,6 +67,8 @@ jobs:
           -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
           -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
           -Dsonar.qualitygate.wait=true
+      - if: always()
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --cleanup-ci-completed
 
   codescene:
     runs-on: ubuntu-latest

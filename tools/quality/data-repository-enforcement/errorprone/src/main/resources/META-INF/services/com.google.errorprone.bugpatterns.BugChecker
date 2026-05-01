@@ -1,0 +1,3 @@
+saltmarcher.quality.errorprone.DataRepositoryRoleContractChecker
+saltmarcher.quality.errorprone.DataRepositoryPublicSignatureBoundaryChecker
+saltmarcher.quality.errorprone.DataRepositoryGatewayCollaboratorBoundaryChecker

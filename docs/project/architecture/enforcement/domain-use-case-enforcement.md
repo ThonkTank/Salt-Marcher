@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Complete architecture-enforcement catalog for direct
 `application/*UseCase.java` orchestration surfaces in `src/domain/**`.
 
@@ -22,22 +22,28 @@ This document does not own root `ApplicationService` public-boundary shape,
 forbidden-content rules, generic domain-layer communication boundaries, or
 tactical model-role semantics. Those live in the neighboring owner docs.
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainUseCaseEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain UseCase-focused build-harness, Error Prone,
+  PMD, and enforcement-documentation coverage checks through one root task.
+
 ## Invariant Catalog
 
 ### Must Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-usecase-direct-file-placement` | Enforced | every Java type under `src/domain/<context>/application/` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Domain application orchestration lives as direct `*UseCase.java` files under `application/`. |
+| `domain-usecase-direct-file-placement` | Enforced | every Java type under `src/domain/<context>/application/` | domain-usecase bundle build-harness `DomainUseCaseTopologyRules` | `./gradlew checkDomainUseCaseEnforcement` | Domain application orchestration lives as direct `*UseCase.java` files under `application/`. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-usecase-no-generic-bucket-names` | Enforced | every `application/*UseCase.java` under `src/domain/**` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Use case filenames do not collapse into generic `Operations`, `Helper`, `Adapter`, `Repository`, `Mapper`, or `Policy` buckets. |
-| `domain-usecase-no-backend-port-contract-files` | Enforced | every Java type under `src/domain/<context>/application/` | build-harness `SourceLayoutRules` | `./gradlew checkArchitecture` | Backend port contracts such as `*Repository`, `*Lookup`, `*Catalog`, or `*Search` do not live in `application/`. |
-| `domain-usecase-no-same-context-published-dependencies` | Enforced | every compilation unit under `src/domain/<context>/application/` | Error Prone `DomainApplicationNoSameContextPublishedDependency` | `./gradlew compileJava` | Use cases do not depend on their own same-context `published/**` carriers. Same-context carrier translation stays at the root `ApplicationService` boundary. |
-| `domain-usecase-no-policy-helper-prefix-source-pattern` | Source-Pattern Enforced | every non-public helper method in `application/*UseCase.java` | PMD architecture `SaltMarcherSourcePolicyRule` | `./gradlew pmdArchitectureMain` and `./gradlew checkArchitecture` | Non-public helper methods do not use the configured policy-heavy prefixes `score`, `rank`, `choose`, `balance`, or `enforce`. |
+| `domain-usecase-no-generic-bucket-names` | Enforced | every `application/*UseCase.java` under `src/domain/**` | domain-usecase bundle build-harness `DomainUseCaseTopologyRules` | `./gradlew checkDomainUseCaseEnforcement` | Use case filenames do not collapse into generic `Operations`, `Helper`, `Adapter`, `Repository`, `Mapper`, or `Policy` buckets. |
+| `domain-usecase-no-backend-port-contract-files` | Enforced | every Java type under `src/domain/<context>/application/` | domain-usecase bundle build-harness `DomainUseCaseTopologyRules` | `./gradlew checkDomainUseCaseEnforcement` | Backend port contracts such as `*Repository`, `*Lookup`, `*Catalog`, or `*Search` do not live in `application/`. |
+| `domain-usecase-no-same-context-published-dependencies` | Enforced | every compilation unit under `src/domain/<context>/application/` | domain-usecase bundle Error Prone `DomainApplicationNoSameContextPublishedDependency` | `./gradlew checkDomainUseCaseEnforcement` | Use cases do not depend on their own same-context `published/**` carriers. Same-context carrier translation stays at the root `ApplicationService` boundary. |
+| `domain-usecase-no-policy-helper-prefix-source-pattern` | Source-Pattern Enforced | every non-public helper method in `application/*UseCase.java` | domain-usecase bundle PMD `DomainUseCasePolicyRule` | `./gradlew checkDomainUseCaseEnforcement` | Non-public helper methods do not use the configured policy-heavy prefixes `score`, `rank`, `choose`, `balance`, or `enforce`. |
 
 ### Communication Contract
 

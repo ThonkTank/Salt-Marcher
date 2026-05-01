@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Complete architecture-enforcement catalog for outbound
 `port/` interfaces in named domain modules.
 
@@ -28,6 +28,15 @@ This document also does not own positive data-layer adapter placement
 semantics. It owns only the negative domain-side prohibition that outbound
 port implementations must not live inside `src/domain/**`.
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainPortEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain Port-focused Error Prone and
+  documentation-coverage checks through one root task. Canonical compile-side
+  blocking behavior remains at `./gradlew compileJava`; the focused bundle
+  proof route adds the role-owned documentation coverage check without
+  pulling the broader architecture aggregates.
+
 ## Invariant Catalog
 
 ### May Contain
@@ -42,20 +51,20 @@ port implementations must not live inside `src/domain/**`.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/port/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Domain ports are interfaces whose names end with `Repository`, `Lookup`, `Catalog`, or `Search`. |
-| `domain-port-repository-placement` | Enforced | every type under `src/domain/**` whose simple name ends with `Repository` | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Domain `*Repository` types are outbound port interfaces under `src/domain/<context>/<named-module>/port/`. |
+| `domain-port-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/port/` | domain-port bundle Error Prone `DomainPortRoleShape` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | Domain ports are interfaces whose names end with `Repository`, `Lookup`, `Catalog`, or `Search`. |
+| `domain-port-repository-placement` | Enforced | every type under `src/domain/**` whose simple name ends with `Repository` | domain-port bundle Error Prone `DomainPortBoundary` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | Domain `*Repository` types are outbound port interfaces under `src/domain/<context>/<named-module>/port/`. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-no-implementations-inside-domain` | Enforced | every type under `src/domain/**` that implements a domain outbound port | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound port implementations do not live inside `src/domain/**`. |
+| `domain-port-no-implementations-inside-domain` | Enforced | every type under `src/domain/**` that implements a domain outbound port | domain-port bundle Error Prone `DomainPortBoundary` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | Outbound port implementations do not live inside `src/domain/**`. |
 
 ### Communication Contract
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-port-ownership-and-signature-boundary` | Enforced | every public or protected boundary surface on a domain outbound port | Error Prone `DomainPortBoundary` | `./gradlew compileJava` | Outbound ports communicate only through domain-owned abstraction seams: they do not leak outer-layer or infrastructure types through `extends` clauses, public/protected fields, method signatures, thrown types, or type bounds. |
+| `domain-port-ownership-and-signature-boundary` | Enforced | every public or protected boundary surface on a domain outbound port | domain-port bundle Error Prone `DomainPortBoundary` | `./gradlew compileJava` and `./gradlew checkDomainPortEnforcement` | Outbound ports communicate only through domain-owned abstraction seams: they do not leak outer-layer or infrastructure types through `extends` clauses, public/protected fields, method signatures, thrown types, or type bounds. |
 
 ## Review-Owned
 

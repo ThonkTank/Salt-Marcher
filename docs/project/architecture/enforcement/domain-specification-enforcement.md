@@ -24,6 +24,14 @@ generic named-module and model-role communication boundaries that also
 constrain `specification/`. Those live in
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainSpecificationEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain Specification-focused Error Prone check
+  through one root task. Canonical blocking behavior remains at
+  `./gradlew compileJava` and
+  `./gradlew checkDomainSpecificationEnforcement` as listed below.
+
 ## Invariant Catalog
 
 ### May Contain
@@ -36,7 +44,7 @@ constrain `specification/`. Those live in
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-specification-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/specification/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Specification role types are interfaces or final classes, and every such type name ends with `Specification`. |
+| `domain-specification-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/specification/` | Error Prone `DomainSpecificationRoleShape` | `./gradlew compileJava` and `./gradlew checkDomainSpecificationEnforcement` | Specification role types are interfaces or final classes, and every such type name ends with `Specification`. |
 
 ### Must Not Contain
 

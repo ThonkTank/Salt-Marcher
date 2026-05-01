@@ -22,7 +22,12 @@ val viewContributionRulesetFile = layout.projectDirectory.file(
 tasks.named<JavaCompile>("compileJava") {
     val errorproneOptions = (options as ExtensionAware).extensions.getByName("errorprone")
     errorproneOptions.withGroovyBuilder {
-        "error"("ViewContributionDependencyBoundary")
+        listOf(
+            "ViewContributionDependencyBoundary",
+            "ViewContributionShellApiAllowlist"
+        ).forEach { checkName ->
+            "error"(checkName)
+        }
     }
 }
 

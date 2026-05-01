@@ -9,8 +9,8 @@ keeping the rest of the architecture harness unchanged.
 Current scope:
 
 - `build-harness/`
-  domain context documentation checks, domain-layer standard context-map
-  coverage checks, and enforcement-coverage matrix checks for domain and data
+  broad domain/data enforcement-coverage checks plus the umbrella loader for
+  bundle-local Markdown enforcement rules when those focused bundles are active
 - `root-host.gradle.kts`
   root-project entrypoint wiring for the focused documentation gate
 - `build-harness-host.gradle.kts`

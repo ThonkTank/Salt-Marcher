@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-04-30
 Source of Truth: Complete architecture-enforcement catalog for tactical
 `factory/` role types in named domain modules.
 
@@ -22,19 +22,28 @@ named-module forbidden-content rules, or generic named-module communication
 boundaries that also constrain `factory/`. Those live in
 [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
+Unified focused bundle entrypoint:
+
+- `./gradlew checkDomainFactoryEnforcement --rerun-tasks --console=plain`
+  runs the currently active Domain Factory-focused Error Prone and
+  documentation-coverage checks through one root task. Canonical compile-side
+  blocking behavior remains at `./gradlew compileJava`; the focused bundle
+  proof route adds the role-owned documentation coverage check without pulling
+  the broader architecture aggregates.
+
 ## Invariant Catalog
 
 ### Must Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-factory-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/factory/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Factory role types are final classes. |
+| `domain-factory-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/factory/` | domain-factory bundle Error Prone `DomainFactoryRoleShape` | `./gradlew compileJava` and `./gradlew checkDomainFactoryEnforcement` | Factory role types are final classes. |
 
 ### Must Not Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-factory-statelessness` | Enforced | every top-level type under `factory/` | Error Prone `DomainServiceFactoryStatelessness` | `./gradlew compileJava` | Factory role types do not declare instance fields and stay stateless. |
+| `domain-factory-statelessness` | Enforced | every top-level type under `factory/` | domain-factory bundle Error Prone `DomainFactoryStatelessness` | `./gradlew compileJava` and `./gradlew checkDomainFactoryEnforcement` | Factory role types do not declare instance fields and stay stateless. |
 
 ### Communication Contract
 

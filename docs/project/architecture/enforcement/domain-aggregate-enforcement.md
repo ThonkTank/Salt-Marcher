@@ -35,7 +35,7 @@ boundaries that also constrain `aggregate/`. Those live in
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-aggregate-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/aggregate/` | Error Prone `DomainRoleShape` | `./gradlew compileJava` | Aggregate role types are classes or records, and class-shaped aggregate roots are final. |
+| `domain-aggregate-role-shape` | Enforced | every top-level type under `src/domain/<context>/<named-module>/aggregate/` | domain-aggregate bundle Error Prone `DomainAggregateRoleShape` | `./gradlew compileJava`, `./gradlew checkDomainAggregateEnforcement` | Aggregate role types are classes or records, and class-shaped aggregate roots are final. |
 
 ### Must Not Contain
 

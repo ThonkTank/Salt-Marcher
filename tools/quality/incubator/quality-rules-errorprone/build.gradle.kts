@@ -1,3 +1,4 @@
+import java.io.File
 import java.util.LinkedHashSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.language.jvm.tasks.ProcessResources
@@ -21,7 +22,11 @@ java {
     }
 }
 
-apply(from = "../../enforcement-bundles.gradle.kts")
+val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
+    ?.let(::File)
+    ?: projectDir.parentFile.parentFile.parentFile.parentFile
+
+apply(from = repoRootDir.resolve("tools/quality/enforcement-bundles.gradle.kts"))
 
 @Suppress("UNCHECKED_CAST")
 val activeEnforcementBundleIds = extra["saltmarcherActiveEnforcementBundleIds"] as List<String>
@@ -34,6 +39,7 @@ val errorProneServiceFilesByBundleId = extra["saltmarcherErrorProneServiceFilesB
 
 activeEnforcementBundleIds
     .mapNotNull(errorProneHostScriptsByBundleId::get)
+    .distinct()
     .forEach { scriptPath ->
         apply(from = scriptPath)
     }
