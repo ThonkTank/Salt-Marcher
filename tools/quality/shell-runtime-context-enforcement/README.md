@@ -10,10 +10,6 @@ It keeps the proof surface strict and owner-local:
   ruleset
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project PMD task wiring and aggregate-task integration
-- `pmd-host.gradle.kts`
-  included-build wiring for the `quality-rules` host
 
 This bundle proves only the fixed `ShellRuntimeContext` public gateway shape.
 The remaining direct communication semantics for `inspector()`, `services()`,

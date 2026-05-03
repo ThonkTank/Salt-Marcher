@@ -62,12 +62,14 @@ map source of truth.
 
 ## Supported Terrain Palette
 
-- Grasland
-- Wald
-- Gebirge
-- Wasser
-- Wüste
-- Sumpf
+The runtime terrain palette exposes these visible labels:
+
+- `Grasland`
+- `Wald`
+- `Gebirge`
+- `Wasser`
+- `Wüste`
+- `Sumpf`
 
 ## Acceptance Criteria
 

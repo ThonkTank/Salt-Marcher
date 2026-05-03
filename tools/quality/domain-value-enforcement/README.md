@@ -12,12 +12,6 @@ value-owned documentation coverage rule, and the focused bundle metadata:
   `DomainValueEnforcementDocumentationRules`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler and aggregate-task wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 Unified root entrypoint:
 

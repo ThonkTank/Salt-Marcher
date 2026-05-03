@@ -14,9 +14,8 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.source()) {
-            case REFRESH_BUTTON -> publishedEventListener.accept(SessionPlannerPublishedEvent.refresh());
-            case IMPORT_BUTTON -> publishedEventListener.accept(SessionPlannerPublishedEvent.importPlan(event.selectedPlanId()));
+        if (event.importRequested()) {
+            publishedEventListener.accept(SessionPlannerPublishedEvent.importPlan(event.selectedPlanId()));
         }
     }
 
@@ -24,23 +23,34 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.source()) {
-            case REMOVE_ENCOUNTER_BUTTON -> publishedEventListener.accept(
-                    SessionPlannerPublishedEvent.removeEncounter(event.encounterToken()));
-            case MOVE_ENCOUNTER_UP_BUTTON -> publishedEventListener.accept(
-                    SessionPlannerPublishedEvent.moveEncounterUp(event.encounterToken()));
-            case MOVE_ENCOUNTER_DOWN_BUTTON -> publishedEventListener.accept(
-                    SessionPlannerPublishedEvent.moveEncounterDown(event.encounterToken()));
-            case SHORT_REST_BUTTON -> publishedEventListener.accept(
+        if (event.removeEncounterRequested()) {
+            publishedEventListener.accept(SessionPlannerPublishedEvent.removeEncounter(event.encounterToken()));
+            return;
+        }
+        if (event.encounterMoveDelta() < 0) {
+            publishedEventListener.accept(SessionPlannerPublishedEvent.moveEncounterUp(event.encounterToken()));
+            return;
+        }
+        if (event.encounterMoveDelta() > 0) {
+            publishedEventListener.accept(SessionPlannerPublishedEvent.moveEncounterDown(event.encounterToken()));
+            return;
+        }
+        if (event.shortRestRequested()) {
+            publishedEventListener.accept(
                     SessionPlannerPublishedEvent.setRestGap(
                             event.gapIndex(),
                             SessionPlannerPublishedEvent.RestSelection.SHORT_REST));
-            case LONG_REST_BUTTON -> publishedEventListener.accept(
+            return;
+        }
+        if (event.longRestRequested()) {
+            publishedEventListener.accept(
                     SessionPlannerPublishedEvent.setRestGap(
                             event.gapIndex(),
                             SessionPlannerPublishedEvent.RestSelection.LONG_REST));
-            case CLEAR_REST_BUTTON -> publishedEventListener.accept(
-                    SessionPlannerPublishedEvent.clearRestGap(event.gapIndex()));
+            return;
+        }
+        if (event.clearRestRequested()) {
+            publishedEventListener.accept(SessionPlannerPublishedEvent.clearRestGap(event.gapIndex()));
         }
     }
 
@@ -48,11 +58,12 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.source()) {
-            case ADD_LOOT_BUTTON -> publishedEventListener.accept(
-                    SessionPlannerPublishedEvent.addLootPlaceholder());
-            case REMOVE_LOOT_BUTTON -> publishedEventListener.accept(
-                    SessionPlannerPublishedEvent.removeLootPlaceholder(event.lootToken()));
+        if (event.removedLootToken() > 0L) {
+            publishedEventListener.accept(
+                    SessionPlannerPublishedEvent.removeLootPlaceholder(event.removedLootToken()));
+            return;
         }
+        publishedEventListener.accept(
+                SessionPlannerPublishedEvent.addLootPlaceholder());
     }
 }

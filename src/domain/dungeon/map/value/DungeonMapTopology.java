@@ -60,6 +60,15 @@ public record DungeonMapTopology(
                             "Door " + doorBinding.topologyRef().id()));
                 }
             }
+            for (DungeonCorridorAnchorBinding anchorBinding : corridor.bindings().anchorBindings()) {
+                if (anchorBinding.topologyRef().present()) {
+                    result.add(new DungeonTopologyBinding(
+                            anchorBinding.topologyRef(),
+                            0L,
+                            corridor.corridorId(),
+                            "Corridor Anchor " + anchorBinding.topologyRef().id()));
+                }
+            }
         }
         for (DungeonStair stair : connections == null ? List.<DungeonStair>of() : connections.stairs()) {
             result.add(new DungeonTopologyBinding(
@@ -140,6 +149,7 @@ public record DungeonMapTopology(
             case WALL -> "Wall";
             case ROOM -> "Room";
             case CORRIDOR -> "Corridor";
+            case CORRIDOR_ANCHOR -> "Corridor Anchor";
             case STAIR -> "Stair";
             case TRANSITION -> "Transition";
             case EMPTY -> "";

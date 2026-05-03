@@ -12,7 +12,8 @@ Provide one hex-map workflow that lets a GM:
 
 - load and inspect an overworld-style hex map
 - track and move party travel on that map
-- monitor compact hex travel state through the global `Reise` surface
+- monitor compact hex travel state through the global travel-state surface
+  shown in the runtime `Reise` tab
 - edit map metadata and hex terrain without duplicating map truth
 
 ## Non-Goals
@@ -33,7 +34,7 @@ Provide one hex-map workflow that lets a GM:
 ## Primary Surfaces
 
 - hex map travel surface
-- hex `Reise` state surface
+- hex travel-state surface shown in the runtime `Reise` tab
 - hex editor surface
 
 ## Primary User Flows
@@ -53,7 +54,8 @@ Provide one hex-map workflow that lets a GM:
 
 ### Read Compact Hex Travel State
 
-1. The user opens the global `Reise` state surface.
+1. The user opens the global travel-state surface shown in the runtime
+   `Reise` tab.
 2. The surface shows compact overworld travel context such as location, status,
    weather, time of day, and pace.
 
@@ -75,12 +77,12 @@ Provide one hex-map workflow that lets a GM:
 
 ## Acceptance Criteria
 
-- Travel, `Reise`, and editor refer to one visible hex-map feature concept
-  rather than disconnected special cases.
+- Travel, the runtime `Reise` travel-state surface, and the editor refer to
+  one visible hex-map feature concept rather than disconnected special cases.
 - The current party tile is understandable to the user on the map surface.
 - Tile inspection is visible and understandable when a tile is selected.
 - Hex travel context can be read both from the interactive surface and the
-  compact `Reise` surface.
+  compact travel-state surface shown in the runtime `Reise` tab.
 - Editing terrain or map metadata never requires the user to infer hidden map
   state from implementation details.
 
@@ -88,13 +90,13 @@ Provide one hex-map workflow that lets a GM:
 
 - Which tile details must always be shown versus only on demand?
 - How much overworld travel context belongs directly on the interactive travel
-  surface versus only in `Reise`?
+  surface versus only in the runtime `Reise` tab?
 - Which non-terrain editor capabilities, if any, belong in the first
   SaltMarcher hex milestone?
 
 ## References
 
 - [Hex Travel Requirements](./requirements-hex-travel.md)
-- [Hex Reise Requirements](./requirements-hex-reise.md)
+- [Hex Travel State Requirements](./requirements-hex-travel-state.md)
 - [Hex Editor Requirements](./requirements-hex-editor.md)
 - [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)

@@ -11,10 +11,6 @@ Current scope:
 - `build-harness/`
   broad domain/data enforcement-coverage checks plus the umbrella loader for
   bundle-local Markdown enforcement rules when those focused bundles are active
-- `root-host.gradle.kts`
-  root-project entrypoint wiring for the focused documentation gate
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 Unified root entrypoint:
 

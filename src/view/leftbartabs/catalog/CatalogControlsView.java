@@ -389,7 +389,10 @@ public final class CatalogControlsView extends VBox {
             return;
         }
         viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
-                CatalogControlsViewInputEvent.Source.ENCOUNTER_TABLES_CHANGED,
+                false,
+                false,
+                false,
+                true,
                 CatalogControlsViewInputEvent.FilterPayload.empty(),
                 "",
                 CatalogControlsViewInputEvent.EncounterTuning.empty(),
@@ -462,7 +465,10 @@ public final class CatalogControlsView extends VBox {
             return;
         }
         viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
-                CatalogControlsViewInputEvent.Source.FILTERS_CHANGED,
+                true,
+                false,
+                false,
+                false,
                 toPublishedFilterState(buildFilterState()),
                 "",
                 CatalogControlsViewInputEvent.EncounterTuning.empty(),
@@ -474,7 +480,10 @@ public final class CatalogControlsView extends VBox {
             return;
         }
         viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
-                CatalogControlsViewInputEvent.Source.ENCOUNTER_DIFFICULTY_CHANGED,
+                false,
+                true,
+                false,
+                false,
                 CatalogControlsViewInputEvent.FilterPayload.empty(),
                 difficultyControl.isAuto() ? "auto" : difficultyKey((int) Math.round(difficultyControl.rawValue())),
                 CatalogControlsViewInputEvent.EncounterTuning.empty(),
@@ -486,7 +495,10 @@ public final class CatalogControlsView extends VBox {
             return;
         }
         viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
-                CatalogControlsViewInputEvent.Source.ENCOUNTER_TUNING_CHANGED,
+                false,
+                false,
+                true,
+                false,
                 CatalogControlsViewInputEvent.FilterPayload.empty(),
                 "",
                 new CatalogControlsViewInputEvent.EncounterTuning(

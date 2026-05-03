@@ -15,10 +15,6 @@ It owns:
   `ViewLayerTopologyRules` and `ViewLayerTopologyCheckMain`
 - `archunit/`
   `architecture.view.viewlayer.ViewLayerArchitectureTest`
-- `root-host.gradle.kts`
-  root-project test-source and aggregate-task wiring
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 Unified root entrypoint:
 

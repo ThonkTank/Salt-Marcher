@@ -8,14 +8,11 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.creatures.CreaturesApplicationService;
-import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.encounter.published.LoadEncounterSessionQuery;
 import src.domain.encounter.published.EncounterSessionModel;
 import src.domain.encounter.published.EncounterSessionSnapshot;
-import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
 final class EncounterStateBinder {
 
@@ -29,23 +26,24 @@ final class EncounterStateBinder {
     }
 
     ShellBinding bind() {
-        CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterSessionModel sessionModel = encounters.loadSession(new LoadEncounterSessionQuery());
         EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
         EncounterStateIntentHandler intentHandler = new EncounterStateIntentHandler(presentationModel);
+        EncounterBuilderStateView builderView = new EncounterBuilderStateView();
+        EncounterInitiativeStateView initiativeView = new EncounterInitiativeStateView();
+        EncounterCombatStateView combatView = new EncounterCombatStateView();
+        EncounterResultsStateView resultsView = new EncounterResultsStateView();
         EncounterStateView state = new EncounterStateView();
         sessionModel.subscribe(presentationModel::apply);
         presentationModel.apply(sessionModel.current());
         bindSessionActions(encounters, intentHandler);
-        state.statusTextProperty().bind(presentationModel.statusProperty());
-        state.onViewInputEvent(intentHandler::consume);
-        presentationModel.openCreatureRequestTokenProperty().addListener((obs, oldValue, newValue) ->
-                runtimeContext.inspector().push(CreatureDetailsInspectorEntry.create(
-                        presentationModel.requestedCreatureId(),
-                        id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id)))));
-        wireRendering(state, presentationModel);
-        render(state, presentationModel);
+        builderView.onViewInputEvent(intentHandler::consume);
+        initiativeView.onViewInputEvent(intentHandler::consume);
+        combatView.onViewInputEvent(intentHandler::consume);
+        resultsView.onViewInputEvent(intentHandler::consume);
+        wireRendering(state, builderView, initiativeView, combatView, resultsView, presentationModel);
+        render(state, builderView, initiativeView, combatView, resultsView, presentationModel);
         return new Binding(state);
     }
 
@@ -53,7 +51,12 @@ final class EncounterStateBinder {
             EncounterApplicationService encounters,
             EncounterStateIntentHandler intentHandler
     ) {
-        intentHandler.onPublishedEventRequested(intent -> encounters.applySession(toCommand(intent)));
+        intentHandler.onPublishedEventRequested(intent -> {
+            if (intent == null) {
+                return;
+            }
+            encounters.applySession(toCommand(intent));
+        });
     }
 
     private static ApplyEncounterSessionCommand toCommand(EncounterStatePublishedEvent intent) {
@@ -93,18 +96,16 @@ final class EncounterStateBinder {
     }
 
     private static ApplyEncounterSessionCommand.Action toAction(EncounterStatePublishedEvent.Action action) {
-        return ACTIONS.getOrDefault(
-                action == null ? EncounterStatePublishedEvent.Action.REFRESH : action,
-                ApplyEncounterSessionCommand.Action.REFRESH);
+        ApplyEncounterSessionCommand.Action mappedAction = ACTIONS.get(action);
+        return mappedAction == null ? ApplyEncounterSessionCommand.Action.REFRESH : mappedAction;
     }
 
     private static Map<EncounterStatePublishedEvent.Action, ApplyEncounterSessionCommand.Action> buildActions() {
         Map<EncounterStatePublishedEvent.Action, ApplyEncounterSessionCommand.Action> actions =
                 new EnumMap<>(EncounterStatePublishedEvent.Action.class);
-        actions.put(EncounterStatePublishedEvent.Action.REFRESH, ApplyEncounterSessionCommand.Action.REFRESH);
         actions.put(EncounterStatePublishedEvent.Action.GENERATE, ApplyEncounterSessionCommand.Action.GENERATE);
         actions.put(EncounterStatePublishedEvent.Action.SAVE_CURRENT_PLAN, ApplyEncounterSessionCommand.Action.SAVE_CURRENT_PLAN);
-        actions.put(EncounterStatePublishedEvent.Action.OPEN_SAVED_PLAN, ApplyEncounterSessionCommand.Action.OPEN_SAVED_PLAN);
+        actions.put(EncounterStatePublishedEvent.Action.APPLY_SAVED_PLAN, ApplyEncounterSessionCommand.Action.OPEN_SAVED_PLAN);
         actions.put(EncounterStatePublishedEvent.Action.CLEAR_GENERATION_HISTORY, ApplyEncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY);
         actions.put(EncounterStatePublishedEvent.Action.SHIFT_ALTERNATIVE, ApplyEncounterSessionCommand.Action.SHIFT_ALTERNATIVE);
         actions.put(EncounterStatePublishedEvent.Action.ADD_CREATURE, ApplyEncounterSessionCommand.Action.ADD_CREATURE);
@@ -112,7 +113,7 @@ final class EncounterStateBinder {
         actions.put(EncounterStatePublishedEvent.Action.DECREMENT_CREATURE, ApplyEncounterSessionCommand.Action.DECREMENT_CREATURE);
         actions.put(EncounterStatePublishedEvent.Action.REMOVE_CREATURE, ApplyEncounterSessionCommand.Action.REMOVE_CREATURE);
         actions.put(EncounterStatePublishedEvent.Action.UNDO_REMOVE, ApplyEncounterSessionCommand.Action.UNDO_REMOVE);
-        actions.put(EncounterStatePublishedEvent.Action.OPEN_INITIATIVE, ApplyEncounterSessionCommand.Action.OPEN_INITIATIVE);
+        actions.put(EncounterStatePublishedEvent.Action.START_INITIATIVE, ApplyEncounterSessionCommand.Action.OPEN_INITIATIVE);
         actions.put(EncounterStatePublishedEvent.Action.BACK_TO_BUILDER, ApplyEncounterSessionCommand.Action.BACK_TO_BUILDER);
         actions.put(EncounterStatePublishedEvent.Action.CONFIRM_INITIATIVE, ApplyEncounterSessionCommand.Action.CONFIRM_INITIATIVE);
         actions.put(EncounterStatePublishedEvent.Action.ADVANCE_TURN, ApplyEncounterSessionCommand.Action.ADVANCE_TURN);
@@ -128,31 +129,56 @@ final class EncounterStateBinder {
 
     private void wireRendering(
             EncounterStateView state,
+            EncounterBuilderStateView builderView,
+            EncounterInitiativeStateView initiativeView,
+            EncounterCombatStateView combatView,
+            EncounterResultsStateView resultsView,
             EncounterStateContributionModel presentationModel
     ) {
-        presentationModel.modeProperty().addListener((obs, oldMode, newMode) -> render(state, presentationModel));
+        presentationModel.modeProperty().addListener((obs, oldMode, newMode) ->
+                render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
         presentationModel.builderStateProperty()
-                .addListener((obs, oldState, newState) -> render(state, presentationModel));
+                .addListener((obs, oldState, newState) ->
+                        render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
         presentationModel.initiativeStateProperty()
-                .addListener((obs, oldState, newState) -> render(state, presentationModel));
+                .addListener((obs, oldState, newState) ->
+                        render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
         presentationModel.combatStateProperty()
-                .addListener((obs, oldState, newState) -> render(state, presentationModel));
+                .addListener((obs, oldState, newState) ->
+                        render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
         presentationModel.resultStateProperty()
-                .addListener((obs, oldState, newState) -> render(state, presentationModel));
+                .addListener((obs, oldState, newState) ->
+                        render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
     }
 
     private void render(
             EncounterStateView state,
+            EncounterBuilderStateView builderView,
+            EncounterInitiativeStateView initiativeView,
+            EncounterCombatStateView combatView,
+            EncounterResultsStateView resultsView,
             EncounterStateContributionModel presentationModel
     ) {
         switch (presentationModel.modeProperty().get()) {
-            case BUILDER -> state.showBuilder(toBuilderState(presentationModel.builderStateProperty().get()));
-            case INITIATIVE -> state.showInitiative(toInitiativeState(presentationModel.initiativeStateProperty().get()));
-            case COMBAT -> state.showCombat(
-                    toCombatState(
-                            presentationModel.combatStateProperty().get(),
-                            presentationModel.missingCombatPartyMembers()));
-            case RESULTS -> state.showResults(toResultState(presentationModel.resultStateProperty().get()));
+            case BUILDER -> {
+                builderView.showBuilder(toBuilderState(presentationModel.builderStateProperty().get()));
+                state.showContent(builderView);
+            }
+            case INITIATIVE -> {
+                initiativeView.showInitiative(toInitiativeState(presentationModel.initiativeStateProperty().get()));
+                state.showContent(initiativeView);
+            }
+            case COMBAT -> {
+                combatView.showCombat(
+                        toCombatState(
+                                presentationModel.combatStateProperty().get(),
+                                presentationModel.missingCombatPartyMembers()));
+                state.showContent(combatView);
+            }
+            case RESULTS -> {
+                resultsView.showResults(toResultState(presentationModel.resultStateProperty().get()));
+                state.showContent(resultsView);
+            }
         }
     }
 

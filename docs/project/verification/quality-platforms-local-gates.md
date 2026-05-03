@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-30
+Last Reviewed: 2026-05-03
 Source of Truth: Detailed local gate inventory, aggregate entrypoints, and
 concurrent local invocation policy for SaltMarcher quality platforms.
 
@@ -233,6 +233,12 @@ tasks listed above.
 `./gradlew check --console=plain` is the local full build-health blocker and
 the single central aggregate for repository-owned blocking Gradle checks.
 
+For wrapper-based local runs, failure aggregation across independent gates is a
+runtime-wrapper concern. `tools/gradle/run-observable-gradle.sh` may add
+Gradle `--continue` for diagnostic entrypoints so the build reports the full
+current failure set without moving that policy into the convention-plugin
+layer.
+
 It includes:
 
 - Java compiler hygiene through `compileJava`
@@ -270,6 +276,21 @@ changes. The wrapper is runtime-only: it forwards the canonical surface name to
 one same-named Gradle lifecycle task, and the verification core expands
 `production-handoff` to the production-build, quality-hygiene, architecture,
 and view-topology dependencies inside Gradle.
+By default, `production-handoff` stays fail-fast at the staged-handoff level so
+gross blockers such as compile or root-topology failures stop the handoff
+before the broader hygiene wave adds avoidable noise. When a broader diagnostic
+failure inventory is explicitly needed, callers may request it with
+`tools/gradle/run-staged-verification.sh production-handoff -- --continue`.
+Additional Gradle investigation flags may be passed after `--`, but the
+runtime wrapper keeps ownership of its own invocation defaults such as
+`--console=plain`, `--no-daemon`, isolated `GRADLE_USER_HOME`, and injected
+`--project-cache-dir`. If callers pass those wrapper-owned runtime flags again
+through the extra-args channel, the runtime wrapper ignores them and logs the
+filtered arguments instead of forwarding duplicate built-in Gradle options.
+Before Gradle starts, the wrapper also performs a local-socket runtime
+preflight so environments without the required IPv4 bind support fail early
+with an explicit runtime diagnostic instead of surfacing a late internal
+Gradle startup error.
 
 For check-only implementation work limited to one or more concrete enforcement
 bundles or shared verification packages under `tools/quality/**`,
@@ -280,7 +301,8 @@ wiring such as `build.gradle.kts`,
 `settings.gradle.kts`, `tools/gradle/build-harness/**`,
 `tools/quality/incubator/quality-rules-errorprone/**`,
 `tools/quality/rules/quality-rules/**`, or
-`tools/quality/enforcement-bundles.gradle.kts`, the required handoff proof is
+`tools/gradle/build-logic/**`, or
+`tools/gradle/build-logic-settings/**`, the required handoff proof is
 the corresponding focused package or bundle task or tasks instead of the full
 build. When the pass touches shared verification wiring but still stays
 check-only, rerun the focused entrypoints for the actually affected packages;
@@ -370,8 +392,10 @@ Architecture-focused entrypoints:
   `checkViewContributionModelEnforcement`,
   `checkViewContentModelEnforcement`,
   `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
-  `checkViewInputEventEnforcement`, `checkShellRuntimeContextEnforcement`,
-  `pmdArchitectureMain`, and `:build-harness:architectureCheck`.
+  `checkViewInputEventEnforcement`, `checkViewPublishedEventEnforcement`,
+  `checkViewIntentHandlerEnforcement`,
+  `checkShellRuntimeContextEnforcement`, `pmdArchitectureMain`, and
+  `:build-harness:architectureCheck`.
 - `./gradlew checkDocumentationEnforcement --console=plain`
   Aggregates the focused Markdown-backed architecture and enforcement-document
   bundle through `:build-harness:documentationEnforcementCheck`, including
@@ -544,18 +568,53 @@ snapshot exposed through `GRADLE_RO_DEP_CACHE`, so
 parallel invocations share immutable dependency content without sharing
 writable Gradle user-home state.
 
-The shared included builds `tools/gradle/build-logic`,
-`tools/gradle/build-harness`, `tools/quality/rules/quality-rules`, and
-`tools/quality/incubator/quality-rules-errorprone` now run from an
-invocation-local composite mirror under
-`.gradle/isolated-runs/<run-id>/composite-root/`, so concurrent invocations do
-not contend on the same included-build source root while mutable per-run state
+The shared included builds `tools/gradle/build-logic-settings`,
+`tools/gradle/build-logic`, `tools/gradle/build-harness`,
+`tools/quality/rules/quality-rules`, and
+`tools/quality/incubator/quality-rules-errorprone` now run from a shared
+immutable composite snapshot under
+`.gradle/composite-snapshots/<tooling-key>/`, so concurrent invocations do not
+contend on the same included-build source root while mutable per-run state
 stays inside one run root.
+Bundle-owned enforcement source trees under `tools/quality/*-enforcement` and
+`tools/quality/documentation-enforcement` are not copied into that snapshot.
+Runtime isolation links those bundle trees back to the repo-root source of
+truth and relies on `saltmarcher.repoRootDir` for path resolution where bundle
+build-harness wiring needs the owning source tree.
+The included builds now register their bundle-local support sources and
+build-harness task entrypoints directly from descriptor metadata in
+`bundle.properties` plus the generated bundle catalog. That catalog now lives
+as its own immutable snapshot under
+`.gradle/enforcement-bundle-catalog-snapshots/<descriptor-key>/` and carries
+already normalized repo-owned input paths, so wrapper-based runs do not
+re-resolve the same descriptor paths inside Gradle. The root build now
+registers standard `check*Enforcement` tasks from that same descriptor model,
+while the early cache/build-dir isolation and generated-catalog propagation
+come from the repo-local wrapper init script
+`tools/gradle/saltmarcher-isolation.init.gradle.kts`. Root focused-bundle
+selection still comes from the dedicated `saltmarcher.settings` plugin in
+`tools/gradle/build-logic-settings`. `SALTMARCHER_ENFORCEMENT_BUNDLE_CATALOG`
+now points at that descriptor snapshot instead of a file inside the composite
+mirror.
+The harness no longer depends on parallel families of
+`build-harness-host.gradle.kts`, `errorprone-host.gradle.kts`,
+`pmd-host.gradle.kts`, standard `root-host.gradle.kts`, or shared
+`apply(from = ...)` descriptor scripts to restate the same paths, main classes,
+and task shapes. Exception bundles now use dedicated verification-core plugins
+referenced through `rootPluginId` metadata instead of local `root-host.gradle.kts`
+scripts.
 
 Wrapper-based `./gradlew` invocations now default to `--no-daemon` unless the
 caller explicitly passes `--daemon` or `--no-daemon`, so the isolated
 `GRADLE_USER_HOME` does not keep a detached daemon registry alive after the
 client exits.
+The wrapper no longer appends `--no-configuration-cache` by default. Cache
+compatibility is now the responsibility of the underlying build logic and
+individual tasks instead of a blanket runtime opt-out.
+When callers explicitly request configuration-cache reuse, the wrapper keys the
+shared state roots by staged surface plus requested work signature, so two
+different focused bundle invocations do not reuse the same writable
+configuration/build state just because they both ran under `stage=default`.
 
 After a local wrapper-based run finishes, the wrapper removes the
 per-invocation root under `.gradle/isolated-runs/<run-id>/`. Successful runs
@@ -573,11 +632,21 @@ managed `GRADLE_USER_HOME`, read-only dependency cache, or included-build
 mirror path. The parallel-safe local contract therefore applies to
 wrapper-based entrypoints.
 
-For invocations that request any local quality or architecture gate named in
-this section, the convention plugin enables Gradle continue-on-failure behavior
-automatically. A run still fails when any blocking check fails, but independent
-checks that are not blocked by failed dependencies must continue and report
-their failures together.
+The runtime wrappers also own the corresponding Gradle built-in CLI flags for
+that invocation model. Callers may still pass investigation-oriented extra args
+such as `--rerun-tasks`, `--stacktrace`, `--info`, or `--scan`, but
+wrapper-owned flags such as `--console`, `--daemon`, `--no-daemon`,
+`--project-cache-dir`, `--gradle-user-home`, and `--project-dir` are ignored
+when repeated through `tools/gradle/run-observable-gradle.sh` or
+`tools/gradle/run-staged-verification.sh`.
+
+When a wrapper-based invocation requests a diagnostic surface such as
+`quality-hygiene`, `architecture`, `view-topology`, `docs`, `metrics-report`,
+or the focused `check*Enforcement` family, the runtime wrapper may append
+Gradle `--continue` so independent failing diagnostics report together. Broad
+handoff and build-health surfaces such as `production-handoff`, `build`, and
+`check` keep their default fail-fast semantics unless the caller explicitly
+passes `--continue`.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
 `ckjmMain`, `checkViewEnforcement`, and `checkViewArchitecture` still require current compiled classes;

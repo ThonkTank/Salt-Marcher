@@ -11,10 +11,6 @@ It keeps the full context-contract proof route in one package:
   `DomainContextEnforcementDocumentationCheckMain`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project aggregate-task wiring
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the canonical domain-context contracts in
 `src/domain/**/DOMAIN.md`, the `## Context Roles` and `## Context

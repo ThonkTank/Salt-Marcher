@@ -1,7 +1,9 @@
 package src.domain.party;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import src.domain.party.application.AdjustPartyXpUseCase;
@@ -24,12 +26,14 @@ import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.AdjustPartyXpCommand;
 import src.domain.party.published.AdventuringDayBudget;
 import src.domain.party.published.AdventuringDayCalculation;
+import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.party.published.AdventuringDayCalculationResult;
 import src.domain.party.published.AdventuringDayLevelProgress;
 import src.domain.party.published.AdventuringDayProgress;
 import src.domain.party.published.AdventuringDayProgressEvent;
 import src.domain.party.published.AdventuringDayProgressEventType;
 import src.domain.party.published.AdventuringDayResult;
+import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.AdventuringDaySummary;
 import src.domain.party.published.AwardPartyXpCommand;
 import src.domain.party.published.CalculateAdventuringDayQuery;
@@ -39,7 +43,9 @@ import src.domain.party.published.DeleteCharacterCommand;
 import src.domain.party.published.LoadActivePartyCompositionQuery;
 import src.domain.party.published.LoadActivePartyQuery;
 import src.domain.party.published.LoadAdventuringDaySummaryQuery;
+import src.domain.party.published.LoadAdventuringDayCalculationModelQuery;
 import src.domain.party.published.LoadPartySnapshotQuery;
+import src.domain.party.published.LoadPartyMutationQuery;
 import src.domain.party.published.LoadPartyTravelPositionsQuery;
 import src.domain.party.published.MembershipState;
 import src.domain.party.published.MovePartyCharactersCommand;
@@ -49,7 +55,9 @@ import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.PartyDungeonTravelLocationKind;
 import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
 import src.domain.party.published.PartyMemberDetails;
+import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartyMemberSummary;
+import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.domain.party.published.PartySnapshot;
 import src.domain.party.published.PartySnapshotResult;
@@ -94,6 +102,33 @@ public final class PartyApplicationService {
     private final AwardPartyXpUseCase awardPartyXpUseCase;
     private final PerformPartyRestUseCase performPartyRestUseCase;
     private final MovePartyCharactersUseCase movePartyCharactersUseCase;
+    private final List<Consumer<PartySnapshotResult>> partySnapshotListeners = new ArrayList<>();
+    private final List<Consumer<AdventuringDayResult>> adventuringDaySummaryListeners = new ArrayList<>();
+    private final List<Consumer<MutationResult>> partyMutationListeners = new ArrayList<>();
+    private final List<Consumer<AdventuringDayCalculationResult>> adventuringDayCalculationListeners = new ArrayList<>();
+    private final PartySnapshotModel partySnapshotModel = new PartySnapshotModel(
+            this::currentPartySnapshot,
+            this::subscribePartySnapshotListener);
+    private final AdventuringDaySummaryModel adventuringDaySummaryModel = new AdventuringDaySummaryModel(
+            this::currentAdventuringDaySummary,
+            this::subscribeAdventuringDaySummaryListener);
+    private final PartyMutationModel partyMutationModel = new PartyMutationModel(
+            this::currentPartyMutation,
+            this::subscribePartyMutationListener);
+    private final AdventuringDayCalculationModel adventuringDayCalculationModel = new AdventuringDayCalculationModel(
+            this::currentAdventuringDayCalculation,
+            this::subscribeAdventuringDayCalculationListener);
+    private PartySnapshotResult currentPartySnapshot = new PartySnapshotResult(ReadStatus.STORAGE_ERROR, emptySnapshot());
+    private AdventuringDayResult currentAdventuringDaySummary = new AdventuringDayResult(
+            ReadStatus.STORAGE_ERROR,
+            new AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of()));
+    private MutationResult currentPartyMutation = new MutationResult(MutationStatus.SUCCESS);
+    private AdventuringDayCalculationResult currentAdventuringDayCalculation =
+            new AdventuringDayCalculationResult(
+                    ReadStatus.STORAGE_ERROR,
+                    new AdventuringDayCalculation(
+                            new AdventuringDayBudget(0, 0, 0, 0, 0),
+                            new AdventuringDayProgress(0, 0, 0, 0, 0.0, 0, 0, List.of(), List.of())));
 
     public PartyApplicationService(PartyRosterRepository rosterRepository) {
         PartyRosterRepository repository = Objects.requireNonNull(rosterRepository, "rosterRepository");
@@ -111,14 +146,13 @@ public final class PartyApplicationService {
         this.awardPartyXpUseCase = new AwardPartyXpUseCase(repository);
         this.performPartyRestUseCase = new PerformPartyRestUseCase(repository);
         this.movePartyCharactersUseCase = new MovePartyCharactersUseCase(repository);
+        refreshPartySurface();
     }
 
     public PartySnapshotResult loadSnapshot(LoadPartySnapshotQuery query) {
-        try {
-            return new PartySnapshotResult(ReadStatus.SUCCESS, mapSnapshot(loadPartySnapshotUseCase.execute()));
-        } catch (IllegalStateException exception) {
-            return new PartySnapshotResult(ReadStatus.STORAGE_ERROR, emptySnapshot());
-        }
+        currentPartySnapshot = readSnapshotResult();
+        notifyPartySnapshotListeners(currentPartySnapshot);
+        return currentPartySnapshot;
     }
 
     public ActivePartyResult loadActiveParty(LoadActivePartyQuery query) {
@@ -145,43 +179,15 @@ public final class PartyApplicationService {
     }
 
     public AdventuringDayResult loadAdventuringDaySummary(LoadAdventuringDaySummaryQuery query) {
-        try {
-            LoadAdventuringDaySummaryUseCase.AdventuringDayStatus dayStatus =
-                    loadAdventuringDaySummaryUseCase.execute();
-            return new AdventuringDayResult(
-                    ReadStatus.SUCCESS,
-                    new AdventuringDaySummary(
-                            dayStatus.activeLevels(),
-                            dayStatus.remainingToShortRest(),
-                            dayStatus.remainingToLongRest(),
-                            dayStatus.consumedXp(),
-                            dayStatus.totalBudgetXp(),
-                            dayStatus.consumedPercent(),
-                            dayStatus.restCadenceStatuses().stream()
-                                    .map(PartyApplicationService::mapRestCadenceStatus)
-                                    .toList()));
-        } catch (IllegalStateException exception) {
-            return new AdventuringDayResult(
-                    ReadStatus.STORAGE_ERROR,
-                    new AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of()));
-        }
+        currentAdventuringDaySummary = readAdventuringDaySummaryResult();
+        notifyAdventuringDaySummaryListeners(currentAdventuringDaySummary);
+        return currentAdventuringDaySummary;
     }
 
     public AdventuringDayCalculationResult calculateAdventuringDay(CalculateAdventuringDayQuery query) {
-        try {
-            CalculateAdventuringDayQuery effectiveQuery = query == null
-                    ? new CalculateAdventuringDayQuery(List.of(), 0)
-                    : query;
-            return new AdventuringDayCalculationResult(
-                    ReadStatus.SUCCESS,
-                    mapAdventuringDayCalculation(calculateAdventuringDayUseCase.execute(
-                            effectiveQuery.levels(),
-                            effectiveQuery.totalGroupXp())));
-        } catch (IllegalStateException exception) {
-            return new AdventuringDayCalculationResult(
-                    ReadStatus.STORAGE_ERROR,
-                    mapAdventuringDayCalculation(calculateAdventuringDayUseCase.execute(List.of(), 0)));
-        }
+        currentAdventuringDayCalculation = readAdventuringDayCalculationResult(query);
+        notifyAdventuringDayCalculationListeners(currentAdventuringDayCalculation);
+        return currentAdventuringDayCalculation;
     }
 
     public PartyTravelPositionsResult loadTravelPositions(LoadPartyTravelPositionsQuery query) {
@@ -205,51 +211,73 @@ public final class PartyApplicationService {
     public MutationResult createCharacter(CreateCharacterCommand command) {
         CharacterDraft draft = command == null ? null : command.draft();
         MembershipState membership = command == null ? null : command.membership();
-        return mutationResult(() -> createCharacterUseCase.execute(
+        return runMutation(() -> createCharacterUseCase.execute(
                 toDomainDraft(draft),
                 toPartyMembership(membership)));
     }
 
     public MutationResult updateCharacter(UpdateCharacterCommand command) {
-        return mutationResult(() -> updateCharacterUseCase.execute(
+        return runMutation(() -> updateCharacterUseCase.execute(
                 command == null ? 0L : command.id(),
                 toDomainDraft(command == null ? null : command.draft())));
     }
 
     public MutationResult deleteCharacter(DeleteCharacterCommand command) {
         long id = command == null ? 0L : command.id();
-        return mutationResult(() -> deleteCharacterUseCase.execute(id));
+        return runMutation(() -> deleteCharacterUseCase.execute(id));
     }
 
     public MutationResult setMembership(SetPartyMembershipCommand command) {
         long id = command == null ? 0L : command.id();
         MembershipState membership = command == null ? null : command.membership();
-        return mutationResult(() -> setPartyMembershipUseCase.execute(id, toPartyMembership(membership)));
+        return runMutation(() -> setPartyMembershipUseCase.execute(id, toPartyMembership(membership)));
     }
 
     public MutationResult awardXp(AwardPartyXpCommand command) {
         AwardPartyXpCommand effectiveCommand = command == null ? new AwardPartyXpCommand(List.of(), 0) : command;
-        return mutationResult(() -> awardPartyXpUseCase.execute(effectiveCommand.ids(), effectiveCommand.xpPerCharacter()));
+        return runMutation(() -> awardPartyXpUseCase.execute(effectiveCommand.ids(), effectiveCommand.xpPerCharacter()));
     }
 
     public MutationResult adjustXp(AdjustPartyXpCommand command) {
         AdjustPartyXpCommand effectiveCommand = command == null ? new AdjustPartyXpCommand(List.of(), 0) : command;
-        return mutationResult(() -> adjustPartyXpUseCase.execute(effectiveCommand.ids(), effectiveCommand.xpDelta()));
+        return runMutation(() -> adjustPartyXpUseCase.execute(effectiveCommand.ids(), effectiveCommand.xpDelta()));
     }
 
     public MutationResult performRest(PerformPartyRestCommand command) {
         RestType restType = command == null ? null : command.restType();
-        return mutationResult(() -> performPartyRestUseCase.execute(toPartyRestType(restType)));
+        return runMutation(() -> performPartyRestUseCase.execute(toPartyRestType(restType)));
     }
 
     public MutationResult moveCharacters(MovePartyCharactersCommand command) {
         MovePartyCharactersCommand effectiveCommand = command == null
                 ? new MovePartyCharactersCommand(List.of(), null, true)
                 : command;
-        return mutationResult(() -> movePartyCharactersUseCase.execute(
+        return runMutation(() -> movePartyCharactersUseCase.execute(
                 effectiveCommand.characterIds(),
                 toDomainTravelLocation(effectiveCommand.target()),
                 effectiveCommand.attachToPartyToken()));
+    }
+
+    public PartySnapshotModel loadSnapshotModel(LoadPartySnapshotQuery query) {
+        Objects.requireNonNull(query, "query");
+        return partySnapshotModel;
+    }
+
+    public AdventuringDaySummaryModel loadAdventuringDaySummaryModel(LoadAdventuringDaySummaryQuery query) {
+        Objects.requireNonNull(query, "query");
+        return adventuringDaySummaryModel;
+    }
+
+    public PartyMutationModel loadPartyMutationModel(LoadPartyMutationQuery query) {
+        Objects.requireNonNull(query, "query");
+        return partyMutationModel;
+    }
+
+    public AdventuringDayCalculationModel loadAdventuringDayCalculationModel(
+            LoadAdventuringDayCalculationModelQuery query
+    ) {
+        Objects.requireNonNull(query, "query");
+        return adventuringDayCalculationModel;
     }
 
     private static MutationResult mutationResult(Supplier<PartyMutationStatus> operation) {
@@ -257,6 +285,134 @@ public final class PartyApplicationService {
             return new MutationResult(mapMutationStatus(operation.get()));
         } catch (IllegalStateException exception) {
             return new MutationResult(MutationStatus.STORAGE_ERROR);
+        }
+    }
+
+    private MutationResult runMutation(Supplier<PartyMutationStatus> operation) {
+        MutationResult result = mutationResult(operation);
+        refreshPartySurface();
+        currentPartyMutation = result;
+        notifyPartyMutationListeners(result);
+        return result;
+    }
+
+    private void refreshPartySurface() {
+        currentPartySnapshot = readSnapshotResult();
+        currentAdventuringDaySummary = readAdventuringDaySummaryResult();
+        notifyPartySnapshotListeners(currentPartySnapshot);
+        notifyAdventuringDaySummaryListeners(currentAdventuringDaySummary);
+    }
+
+    private PartySnapshotResult readSnapshotResult() {
+        try {
+            return new PartySnapshotResult(ReadStatus.SUCCESS, mapSnapshot(loadPartySnapshotUseCase.execute()));
+        } catch (IllegalStateException exception) {
+            return new PartySnapshotResult(ReadStatus.STORAGE_ERROR, emptySnapshot());
+        }
+    }
+
+    private AdventuringDayResult readAdventuringDaySummaryResult() {
+        try {
+            LoadAdventuringDaySummaryUseCase.AdventuringDayStatus dayStatus =
+                    loadAdventuringDaySummaryUseCase.execute();
+            return new AdventuringDayResult(
+                    ReadStatus.SUCCESS,
+                    new AdventuringDaySummary(
+                            dayStatus.activeLevels(),
+                            dayStatus.remainingToShortRest(),
+                            dayStatus.remainingToLongRest(),
+                            dayStatus.consumedXp(),
+                            dayStatus.totalBudgetXp(),
+                            dayStatus.consumedPercent(),
+                            dayStatus.restCadenceStatuses().stream()
+                                    .map(PartyApplicationService::mapRestCadenceStatus)
+                                    .toList()));
+        } catch (IllegalStateException exception) {
+            return new AdventuringDayResult(
+                    ReadStatus.STORAGE_ERROR,
+                    new AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of()));
+        }
+    }
+
+    private AdventuringDayCalculationResult readAdventuringDayCalculationResult(CalculateAdventuringDayQuery query) {
+        try {
+            CalculateAdventuringDayQuery effectiveQuery = query == null
+                    ? new CalculateAdventuringDayQuery(List.of(), 0)
+                    : query;
+            return new AdventuringDayCalculationResult(
+                    ReadStatus.SUCCESS,
+                    mapAdventuringDayCalculation(calculateAdventuringDayUseCase.execute(
+                            effectiveQuery.levels(),
+                            effectiveQuery.totalGroupXp())));
+        } catch (IllegalStateException exception) {
+            return new AdventuringDayCalculationResult(
+                    ReadStatus.STORAGE_ERROR,
+                    mapAdventuringDayCalculation(calculateAdventuringDayUseCase.execute(List.of(), 0)));
+        }
+    }
+
+    private PartySnapshotResult currentPartySnapshot() {
+        return currentPartySnapshot;
+    }
+
+    private AdventuringDayResult currentAdventuringDaySummary() {
+        return currentAdventuringDaySummary;
+    }
+
+    private MutationResult currentPartyMutation() {
+        return currentPartyMutation;
+    }
+
+    private AdventuringDayCalculationResult currentAdventuringDayCalculation() {
+        return currentAdventuringDayCalculation;
+    }
+
+    private Runnable subscribePartySnapshotListener(Consumer<PartySnapshotResult> listener) {
+        Consumer<PartySnapshotResult> safeListener = Objects.requireNonNull(listener, "listener");
+        partySnapshotListeners.add(safeListener);
+        return () -> partySnapshotListeners.remove(safeListener);
+    }
+
+    private Runnable subscribeAdventuringDaySummaryListener(Consumer<AdventuringDayResult> listener) {
+        Consumer<AdventuringDayResult> safeListener = Objects.requireNonNull(listener, "listener");
+        adventuringDaySummaryListeners.add(safeListener);
+        return () -> adventuringDaySummaryListeners.remove(safeListener);
+    }
+
+    private Runnable subscribePartyMutationListener(Consumer<MutationResult> listener) {
+        Consumer<MutationResult> safeListener = Objects.requireNonNull(listener, "listener");
+        partyMutationListeners.add(safeListener);
+        return () -> partyMutationListeners.remove(safeListener);
+    }
+
+    private Runnable subscribeAdventuringDayCalculationListener(Consumer<AdventuringDayCalculationResult> listener) {
+        Consumer<AdventuringDayCalculationResult> safeListener =
+                Objects.requireNonNull(listener, "listener");
+        adventuringDayCalculationListeners.add(safeListener);
+        return () -> adventuringDayCalculationListeners.remove(safeListener);
+    }
+
+    private void notifyPartySnapshotListeners(PartySnapshotResult snapshot) {
+        for (Consumer<PartySnapshotResult> listener : List.copyOf(partySnapshotListeners)) {
+            listener.accept(snapshot);
+        }
+    }
+
+    private void notifyAdventuringDaySummaryListeners(AdventuringDayResult summary) {
+        for (Consumer<AdventuringDayResult> listener : List.copyOf(adventuringDaySummaryListeners)) {
+            listener.accept(summary);
+        }
+    }
+
+    private void notifyPartyMutationListeners(MutationResult result) {
+        for (Consumer<MutationResult> listener : List.copyOf(partyMutationListeners)) {
+            listener.accept(result);
+        }
+    }
+
+    private void notifyAdventuringDayCalculationListeners(AdventuringDayCalculationResult result) {
+        for (Consumer<AdventuringDayCalculationResult> listener : List.copyOf(adventuringDayCalculationListeners)) {
+            listener.accept(result);
         }
     }
 

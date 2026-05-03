@@ -136,7 +136,7 @@ public final class DungeonRoomTopologyEditor {
         if (target == null) {
             return dungeonMap;
         }
-        BoundaryEditResult edit = editBoundaries(target, cellProjector, edges, kind, deleteBoundary);
+        BoundaryEditResult edit = editBoundaries(dungeonMap, target, cellProjector, edges, kind, deleteBoundary);
         if (!edit.changed()) {
             return dungeonMap;
         }
@@ -382,6 +382,7 @@ public final class DungeonRoomTopologyEditor {
     }
 
     private static BoundaryEditResult editBoundaries(
+            DungeonMap dungeonMap,
             ClusterWork target,
             DungeonRoomCellProjector cellProjector,
             List<DungeonEdge> edges,
@@ -401,6 +402,15 @@ public final class DungeonRoomTopologyEditor {
             DungeonClusterBoundary existing = boundaries.get(key);
             if (deleteBoundary) {
                 if (existing != null && existing.kind() == resolvedKind) {
+                    if (resolvedKind == DungeonClusterBoundaryKind.DOOR
+                            && touchesCorridorBinding(
+                            dungeonMap,
+                            target.cluster().center(),
+                            target.cluster().clusterId(),
+                            existing.level(),
+                            Set.of(key))) {
+                        continue;
+                    }
                     boundaries.remove(key);
                     changed = true;
                 }
@@ -447,10 +457,15 @@ public final class DungeonRoomTopologyEditor {
             return null;
         }
         List<DungeonCell> clusterCells = target.cellsAt(touchingCells.getFirst().level());
-        if (!clusterCells.contains(touchingCells.getFirst()) || !clusterCells.contains(touchingCells.get(1))) {
+        List<DungeonCell> insideCells = touchingCells.stream()
+                .filter(clusterCells::contains)
+                .toList();
+        if (insideCells.isEmpty()
+                || (kind != DungeonClusterBoundaryKind.DOOR && insideCells.size() != 2)
+                || (kind == DungeonClusterBoundaryKind.DOOR && insideCells.size() > 2)) {
             return null;
         }
-        DungeonCell baseCell = touchingCells.getFirst();
+        DungeonCell baseCell = insideCells.getFirst();
         DungeonEdgeDirection direction = directionFrom(baseCell, edge);
         if (direction == null) {
             return null;
@@ -479,9 +494,11 @@ public final class DungeonRoomTopologyEditor {
             DungeonEdge edge,
             Map<Long, List<DungeonCell>> roomCells
     ) {
-        return existing != null
-                && existing.kind() != DungeonClusterBoundaryKind.DOOR
-                && touchingRoomCount(edge, roomCells) >= 2;
+        long touchingRoomCount = touchingRoomCount(edge, roomCells);
+        if (touchingRoomCount >= 2) {
+            return existing != null && existing.kind() != DungeonClusterBoundaryKind.DOOR;
+        }
+        return touchingRoomCount == 1 && (existing == null || existing.kind() != DungeonClusterBoundaryKind.DOOR);
     }
 
     private static long touchingRoomCount(DungeonEdge edge, Map<Long, List<DungeonCell>> cellsByRoom) {
@@ -1119,9 +1136,9 @@ public final class DungeonRoomTopologyEditor {
         List<DungeonClusterBoundary> filtered = new ArrayList<>();
         for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
             Set<DungeonCell> cells = new LinkedHashSet<>(cellsByLevel.getOrDefault(boundary.level(), List.of()));
-            DungeonCell from = boundary.absoluteCell(center);
-            DungeonCell to = boundary.direction().neighborOf(from);
-            if (cells.contains(from) && cells.contains(to)) {
+            int insideCount = touch(boundary.absoluteEdge(center), cells).insideCells().size();
+            if (insideCount >= 1
+                    && (boundary.kind() == DungeonClusterBoundaryKind.DOOR || insideCount == 2)) {
                 filtered.add(boundary);
             }
         }
@@ -1171,10 +1188,15 @@ public final class DungeonRoomTopologyEditor {
         if (touchingCells.size() != 2 || touchingCells.getFirst().level() != touchingCells.get(1).level()) {
             return null;
         }
-        if (!clusterCells.contains(touchingCells.getFirst()) || !clusterCells.contains(touchingCells.get(1))) {
+        List<DungeonCell> insideCells = touchingCells.stream()
+                .filter(clusterCells::contains)
+                .toList();
+        if (insideCells.isEmpty()
+                || (kind != DungeonClusterBoundaryKind.DOOR && insideCells.size() != 2)
+                || (kind == DungeonClusterBoundaryKind.DOOR && insideCells.size() > 2)) {
             return null;
         }
-        DungeonCell baseCell = touchingCells.getFirst();
+        DungeonCell baseCell = insideCells.getFirst();
         DungeonEdgeDirection direction = directionFrom(baseCell, edge);
         if (direction == null) {
             return null;

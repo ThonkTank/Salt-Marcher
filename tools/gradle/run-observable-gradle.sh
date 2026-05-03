@@ -4,6 +4,10 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 readonly HEARTBEAT_SECONDS=30
+readonly VERIFICATION_SURFACE_CATALOG_FILE="$REPO_ROOT/tools/gradle/verification-surface-catalog.properties"
+
+declare -a DIAGNOSTIC_CONTINUE_TASK_NAMES=()
+declare -a DIAGNOSTIC_CONTINUE_TASK_PATTERNS=()
 
 usage() {
     cat <<'EOF'
@@ -13,6 +17,9 @@ Usage:
 Examples:
   tools/gradle/run-observable-gradle.sh checkDataRepositoryEnforcement
   tools/gradle/run-observable-gradle.sh checkDataRepositoryEnforcement checkDataQueryEnforcement -- --rerun-tasks
+
+Reserved wrapper-owned args are ignored when passed through <extra-gradle-args>:
+  --console, --daemon, --no-daemon, --project-cache-dir, --gradle-user-home, --project-dir
 EOF
 }
 
@@ -41,6 +48,103 @@ format_duration() {
     local minutes=$(((total_seconds % 3600) / 60))
     local seconds=$((total_seconds % 60))
     printf '%02dh:%02dm:%02ds' "$hours" "$minutes" "$seconds"
+}
+
+is_wrapper_owned_gradle_arg() {
+    case "$1" in
+      --console|--daemon|--no-daemon|--project-cache-dir|--gradle-user-home|--project-dir|-g|-p)
+        return 0
+        ;;
+      --console=*|--project-cache-dir=*|--gradle-user-home=*|--project-dir=*)
+        return 0
+        ;;
+      *)
+        return 1
+        ;;
+    esac
+}
+
+wrapper_owned_arg_takes_separate_value() {
+    case "$1" in
+      --console|--project-cache-dir|--gradle-user-home|--project-dir|-g|-p)
+        return 0
+        ;;
+      *)
+        return 1
+        ;;
+    esac
+}
+
+contains_continue_flag() {
+    local arg
+    for arg in "$@"; do
+        if [[ "$arg" == "--continue" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+load_diagnostic_continue_catalog() {
+    local names patterns
+    names="$(sed -n 's/^diagnosticContinueTaskNames=//p' "$VERIFICATION_SURFACE_CATALOG_FILE" | head -n 1)"
+    patterns="$(sed -n 's/^diagnosticContinueTaskPatterns=//p' "$VERIFICATION_SURFACE_CATALOG_FILE" | head -n 1)"
+
+    if [[ -n "$names" ]]; then
+        IFS=',' read -r -a DIAGNOSTIC_CONTINUE_TASK_NAMES <<< "$names"
+    fi
+    if [[ -n "$patterns" ]]; then
+        IFS=',' read -r -a DIAGNOSTIC_CONTINUE_TASK_PATTERNS <<< "$patterns"
+    fi
+}
+
+is_diagnostic_continue_task() {
+    local task_name="$1"
+    local candidate pattern
+
+    for candidate in "${DIAGNOSTIC_CONTINUE_TASK_NAMES[@]}"; do
+        [[ "$task_name" == "$candidate" ]] && return 0
+    done
+    for pattern in "${DIAGNOSTIC_CONTINUE_TASK_PATTERNS[@]}"; do
+        [[ "$task_name" == $pattern ]] && return 0
+    done
+    return 1
+}
+
+should_enable_continue() {
+    local task_name
+    for task_name in "$@"; do
+        if is_diagnostic_continue_task "$task_name"; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+sanitize_extra_args() {
+    SANITIZED_EXTRA_ARGS=()
+    FILTERED_WRAPPER_OWNED_ARGS=()
+
+    local args=("$@")
+    local current_arg=""
+    local next_arg=""
+    local index=0
+    while [[ $index -lt ${#args[@]} ]]; do
+        current_arg="${args[$index]}"
+        index=$((index + 1))
+
+        if ! is_wrapper_owned_gradle_arg "$current_arg"; then
+            SANITIZED_EXTRA_ARGS+=("$current_arg")
+            continue
+        fi
+
+        FILTERED_WRAPPER_OWNED_ARGS+=("$current_arg")
+        if wrapper_owned_arg_takes_separate_value "$current_arg" && [[ $index -lt ${#args[@]} ]]; then
+            next_arg="${args[$index]}"
+            FILTERED_WRAPPER_OWNED_ARGS+=("$next_arg")
+            index=$((index + 1))
+        fi
+    done
 }
 
 print_known_issue_hint() {
@@ -86,6 +190,16 @@ if [[ ${#tasks[@]} -eq 0 ]]; then
     exit 64
 fi
 
+load_diagnostic_continue_catalog
+
+if [[ ${#extra_args[@]} -gt 0 ]]; then
+    sanitize_extra_args "${extra_args[@]}"
+    extra_args=("${SANITIZED_EXTRA_ARGS[@]}")
+else
+    SANITIZED_EXTRA_ARGS=()
+    FILTERED_WRAPPER_OWNED_ARGS=()
+fi
+
 cd "$REPO_ROOT"
 
 readonly task_display="${tasks[*]}"
@@ -99,6 +213,9 @@ mkdir -p "$log_dir"
 declare -a gradle_cmd=(./gradlew)
 gradle_cmd+=("${tasks[@]}")
 gradle_cmd+=(--console=plain --no-daemon)
+if should_enable_continue "${tasks[@]}" && ! contains_continue_flag "${extra_args[@]}"; then
+    gradle_cmd+=(--continue)
+fi
 if [[ ${#extra_args[@]} -gt 0 ]]; then
     gradle_cmd+=("${extra_args[@]}")
 fi
@@ -107,6 +224,9 @@ echo "[observable-gradle] Repo root: $REPO_ROOT"
 echo "[observable-gradle] Tasks: $task_display"
 if [[ ${#extra_args[@]} -gt 0 ]]; then
     echo "[observable-gradle] Extra args: ${extra_args[*]}"
+fi
+if [[ ${#FILTERED_WRAPPER_OWNED_ARGS[@]} -gt 0 ]]; then
+    echo "[observable-gradle] Ignored wrapper-owned args: ${FILTERED_WRAPPER_OWNED_ARGS[*]}"
 fi
 echo "[observable-gradle] Log file: $log_file"
 echo "[observable-gradle] Command: ${gradle_cmd[*]}"
@@ -118,6 +238,9 @@ start_epoch="$(date +%s)"
     echo "[observable-gradle] Tasks: $task_display"
     if [[ ${#extra_args[@]} -gt 0 ]]; then
         echo "[observable-gradle] Extra args: ${extra_args[*]}"
+    fi
+    if [[ ${#FILTERED_WRAPPER_OWNED_ARGS[@]} -gt 0 ]]; then
+        echo "[observable-gradle] Ignored wrapper-owned args: ${FILTERED_WRAPPER_OWNED_ARGS[*]}"
     fi
     echo "[observable-gradle] Log file: $log_file"
     echo "[observable-gradle] Command: ${gradle_cmd[*]}"

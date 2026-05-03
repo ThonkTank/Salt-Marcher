@@ -255,18 +255,40 @@ eval "set -- $(
     )" '"$@"'
 
 saltmarcher_has_daemon_flag=false
-saltmarcher_has_configuration_cache_flag=false
 saltmarcher_has_project_cache_dir_flag=false
+saltmarcher_has_isolation_init_script=false
+saltmarcher_init_script_awaits_value=false
+saltmarcher_init_script_path=$APP_HOME/tools/gradle/saltmarcher-isolation.init.gradle.kts
 for arg do
+    if [ "$saltmarcher_init_script_awaits_value" = true ]; then
+        if [ "$arg" = "$saltmarcher_init_script_path" ]; then
+            saltmarcher_has_isolation_init_script=true
+        fi
+        saltmarcher_init_script_awaits_value=false
+        continue
+    fi
+
     case $arg in
       --daemon|--no-daemon)
         saltmarcher_has_daemon_flag=true
         ;;
-      --configuration-cache|--no-configuration-cache)
-        saltmarcher_has_configuration_cache_flag=true
-        ;;
       --project-cache-dir|--project-cache-dir=*)
         saltmarcher_has_project_cache_dir_flag=true
+        ;;
+      -I|--init-script)
+        saltmarcher_init_script_awaits_value=true
+        ;;
+      -I?*)
+        saltmarcher_init_script_value=${arg#-I}
+        if [ "$saltmarcher_init_script_value" = "$saltmarcher_init_script_path" ]; then
+            saltmarcher_has_isolation_init_script=true
+        fi
+        ;;
+      --init-script=*)
+        saltmarcher_init_script_value=${arg#--init-script=}
+        if [ "$saltmarcher_init_script_value" = "$saltmarcher_init_script_path" ]; then
+            saltmarcher_has_isolation_init_script=true
+        fi
         ;;
     esac
 done
@@ -275,14 +297,15 @@ if [ "$saltmarcher_has_daemon_flag" = false ]; then
     set -- "$@" --no-daemon
 fi
 
-if [ "$saltmarcher_has_configuration_cache_flag" = false ]; then
-    set -- "$@" --no-configuration-cache
-fi
-
 if [ "$saltmarcher_has_project_cache_dir_flag" = false ] \
     && [ -n "${SALTMARCHER_GRADLE_ROOT_PROJECT_CACHE_DIR:-}" ]; then
     # Root project cache isolation must exist before settings/pluginManagement runs.
     set -- "$@" --project-cache-dir "$SALTMARCHER_GRADLE_ROOT_PROJECT_CACHE_DIR"
+fi
+
+if [ "$saltmarcher_has_isolation_init_script" = false ] \
+    && [ -f "$saltmarcher_init_script_path" ]; then
+    set -- "$@" -I "$saltmarcher_init_script_path"
 fi
 
 gradle_pid=

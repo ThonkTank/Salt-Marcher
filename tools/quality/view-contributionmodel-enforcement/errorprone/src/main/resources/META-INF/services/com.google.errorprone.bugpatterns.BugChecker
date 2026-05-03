@@ -1,2 +1,3 @@
 saltmarcher.quality.errorprone.view.projectionmodel.ViewContributionModelDependencyBoundaryChecker
 saltmarcher.quality.errorprone.view.projectionmodel.ViewContributionModelFlatSurfaceChecker
+saltmarcher.quality.errorprone.view.projectionmodel.ViewContributionModelRequestProtocolChecker

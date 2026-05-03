@@ -86,8 +86,7 @@ public final class ViewSurfaceArchitectureTest {
     }
 
     private static boolean isExcludedReusableCallbackSurface(String packageName) {
-        return packageName.startsWith("src.view.slotcontent.primitives.")
-                || packageName.startsWith("src.view.slotcontent.controls.");
+        return packageName.startsWith("src.view.slotcontent.primitives.");
     }
 
     private static boolean declaresInteractiveViewInputSeam(String className) {

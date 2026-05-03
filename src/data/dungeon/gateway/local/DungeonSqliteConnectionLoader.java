@@ -1,5 +1,7 @@
 package src.data.dungeon.gateway.local;
 
+import src.data.dungeon.model.DungeonCorridorAnchorBindingRecord;
+import src.data.dungeon.model.DungeonCorridorAnchorRefRecord;
 import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
 import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonCorridorWaypointRecord;
@@ -28,6 +30,10 @@ final class DungeonSqliteConnectionLoader {
         Map<Long, List<DungeonCorridorWaypointRecord>> waypointsByCorridor = loadCorridorWaypoints(connection, mapId);
         Map<Long, List<DungeonCorridorDoorBindingRecord>> doorBindingsByCorridor =
                 loadCorridorDoorBindings(connection, mapId);
+        Map<Long, List<DungeonCorridorAnchorBindingRecord>> anchorBindingsByCorridor =
+                loadCorridorAnchorBindings(connection, mapId);
+        Map<Long, List<DungeonCorridorAnchorRefRecord>> anchorRefsByCorridor =
+                loadCorridorAnchorRefs(connection, mapId);
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT corridor_id, dungeon_map_id, level_z"
                         + " FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE
@@ -43,7 +49,9 @@ final class DungeonSqliteConnectionLoader {
                             resultSet.getInt("level_z"),
                             roomIdsByCorridor.getOrDefault(corridorId, List.of()),
                             waypointsByCorridor.getOrDefault(corridorId, List.of()),
-                            doorBindingsByCorridor.getOrDefault(corridorId, List.of())));
+                            doorBindingsByCorridor.getOrDefault(corridorId, List.of()),
+                            anchorBindingsByCorridor.getOrDefault(corridorId, List.of()),
+                            anchorRefsByCorridor.getOrDefault(corridorId, List.of())));
                 }
                 return List.copyOf(records);
             }
@@ -187,6 +195,64 @@ final class DungeonSqliteConnectionLoader {
                                     resultSet.getInt("relative_cell_x"),
                                     resultSet.getInt("relative_cell_y"),
                                     resultSet.getString("edge_direction"),
+                                    DungeonSqliteStatementSupport.nullableLong(resultSet, "topology_element_id")));
+                }
+                return DungeonSqliteStatementSupport.copyGrouped(records);
+            }
+        }
+    }
+
+    private static Map<Long, List<DungeonCorridorAnchorBindingRecord>> loadCorridorAnchorBindings(
+            Connection connection,
+            long mapId
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT corridor_id, anchor_id, host_corridor_id, cell_x, cell_y, cell_z, topology_element_id"
+                        + " FROM " + DungeonPersistenceSchema.CORRIDOR_ANCHORS_TABLE
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM "
+                        + DungeonPersistenceSchema.CORRIDORS_TABLE
+                        + " WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, sort_order, anchor_id")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<DungeonCorridorAnchorBindingRecord>> records = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    long corridorId = resultSet.getLong("corridor_id");
+                    records.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
+                            .add(new DungeonCorridorAnchorBindingRecord(
+                                    corridorId,
+                                    resultSet.getLong("anchor_id"),
+                                    resultSet.getLong("host_corridor_id"),
+                                    resultSet.getInt("cell_x"),
+                                    resultSet.getInt("cell_y"),
+                                    resultSet.getInt("cell_z"),
+                                    DungeonSqliteStatementSupport.nullableLong(resultSet, "topology_element_id")));
+                }
+                return DungeonSqliteStatementSupport.copyGrouped(records);
+            }
+        }
+    }
+
+    private static Map<Long, List<DungeonCorridorAnchorRefRecord>> loadCorridorAnchorRefs(
+            Connection connection,
+            long mapId
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT corridor_id, host_corridor_id, topology_element_id"
+                        + " FROM " + DungeonPersistenceSchema.CORRIDOR_ANCHOR_REFS_TABLE
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM "
+                        + DungeonPersistenceSchema.CORRIDORS_TABLE
+                        + " WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, sort_order, topology_element_id")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<DungeonCorridorAnchorRefRecord>> records = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    long corridorId = resultSet.getLong("corridor_id");
+                    records.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
+                            .add(new DungeonCorridorAnchorRefRecord(
+                                    corridorId,
+                                    resultSet.getLong("host_corridor_id"),
                                     DungeonSqliteStatementSupport.nullableLong(resultSet, "topology_element_id")));
                 }
                 return DungeonSqliteStatementSupport.copyGrouped(records);

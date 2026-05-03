@@ -1,3 +1,6 @@
 saltmarcher.quality.errorprone.view.binder.ViewBinderDependencyBoundaryChecker
 saltmarcher.quality.errorprone.view.binder.ViewBinderViewInputEventWiringChecker
 saltmarcher.quality.errorprone.view.binder.ViewBinderApplicationSinkWiringChecker
+saltmarcher.quality.errorprone.view.binder.ViewBinderApplicationServiceReadbackChecker
+saltmarcher.quality.errorprone.view.binder.ViewBinderProjectionModelRequestProtocolChecker
+saltmarcher.quality.errorprone.view.binder.ViewBinderPublishedEventSinkEffectChecker

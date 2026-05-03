@@ -7,9 +7,12 @@ import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.ExpressionTree;
+import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreeScanner;
+import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -32,17 +35,29 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
         }
 
         String sourcePackageName = ViewIntentHandlerArchitectureSupport.packageName(tree);
+        Set<String> violations = new LinkedHashSet<>();
+        boolean hasAllowedConsumeMethod = false;
         for (var member : topLevelClass.getMembers()) {
             if (!(member instanceof MethodTree methodTree)) {
                 continue;
             }
             if (isAllowedConsumeMethod(methodTree, sourcePackageName)) {
-                return Description.NO_MATCH;
+                hasAllowedConsumeMethod = true;
+                collectDiscriminatorDispatchViolations(methodTree, sourcePackageName, violations);
             }
         }
 
+        if (!hasAllowedConsumeMethod) {
+            return buildDescription(tree)
+                    .setMessage("IntentHandlers must expose a fire-and-forget consume(SameRootViewInputEvent) entrypoint for their interactive View surface.")
+                    .build();
+        }
+        if (violations.isEmpty()) {
+            return Description.NO_MATCH;
+        }
         return buildDescription(tree)
-                .setMessage("IntentHandlers must expose a fire-and-forget consume(SameRootViewInputEvent) entrypoint for their interactive View surface.")
+                .setMessage("IntentHandlers must derive meaning from concrete ViewInputEvent snapshot fields instead of dispatching via source/action discriminators. Violations: "
+                        + String.join(", ", violations))
                 .build();
     }
 
@@ -75,6 +90,40 @@ public final class ViewIntentHandlerViewInputEventChecker extends BugChecker
                 .anyMatch(referencedType ->
                         ViewIntentHandlerArchitectureSupport.isTargetViewInputEventReference(referencedType)
                                 && ViewIntentHandlerArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType));
+    }
+
+    private static void collectDiscriminatorDispatchViolations(
+            MethodTree methodTree,
+            String sourcePackageName,
+            Set<String> violations
+    ) {
+        VariableTree parameter = methodTree.getParameters().get(0);
+        Symbol parameterSymbol = ASTHelpers.getSymbol(parameter);
+        if (parameterSymbol == null || methodTree.getBody() == null) {
+            return;
+        }
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitMethodInvocation(MethodInvocationTree methodInvocationTree, Void unused) {
+                Symbol.MethodSymbol methodSymbol = ASTHelpers.getSymbol(methodInvocationTree);
+                if (methodSymbol == null) {
+                    return super.visitMethodInvocation(methodInvocationTree, unused);
+                }
+                String methodName = methodSymbol.getSimpleName().toString();
+                if (!"source".equals(methodName) && !"action".equals(methodName)) {
+                    return super.visitMethodInvocation(methodInvocationTree, unused);
+                }
+                ExpressionTree receiver = ASTHelpers.getReceiver(methodInvocationTree);
+                Symbol receiverSymbol = receiver == null ? null : ASTHelpers.getSymbol(receiver);
+                if (receiverSymbol == null || !receiverSymbol.equals(parameterSymbol)) {
+                    return super.visitMethodInvocation(methodInvocationTree, unused);
+                }
+                if (referencesSameRootViewInputEvent(parameter, sourcePackageName)) {
+                    violations.add(methodTree.getName() + "(" + parameter.getType() + ")." + methodName + "()");
+                }
+                return super.visitMethodInvocation(methodInvocationTree, unused);
+            }
+        }.scan(methodTree.getBody(), null);
     }
 
     private static ClassTree topLevelClass(CompilationUnitTree tree) {

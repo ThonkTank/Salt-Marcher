@@ -11,10 +11,6 @@ It keeps the proof surface strict and owner-local:
   `architecture.shell.layer.ShellLayerArchitectureTest`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project ArchUnit and aggregate-task wiring
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle proves only shell-layer topology, shell API surface membership,
 and shell-layer dependency/privacy boundaries for shell-owned code and

@@ -12,7 +12,8 @@ Provide one dungeon workflow that lets a GM:
 
 - load and inspect dungeon maps
 - travel through the current traversable dungeon space
-- monitor compact dungeon travel state through the global `Reise` surface
+- monitor compact dungeon travel state through the global travel-state surface
+  shown in the runtime `Reise` tab
 - edit authored dungeon topology and semantics
 - inspect rooms, connections, and features without duplicating domain truth
 
@@ -26,8 +27,8 @@ Provide one dungeon workflow that lets a GM:
 
 - SaltMarcher already ships a dungeon map surface, a dungeon travel surface,
   and a dungeon editor surface over shared authored dungeon truth.
-- The current global `Reise` tab is still a generic placeholder and not yet a
-  dungeon-specialized read-only summary surface.
+- The current global runtime tab labeled `Reise` is still a generic
+  placeholder and not yet a dungeon-specialized read-only summary surface.
 - The sibling `salt-marcher` repo shows the richer visible target-state
   behavior for dungeon runtime travel and advanced editor tool families such as
   corridor, stair, and transition editing.
@@ -36,7 +37,7 @@ Provide one dungeon workflow that lets a GM:
 
 - basic dungeon map surface
 - dungeon travel surface
-- dungeon `Reise` state surface
+- dungeon travel-state surface shown in the runtime `Reise` tab
 - dungeon editor surface
 
 ## Primary User Flows
@@ -58,8 +59,8 @@ Provide one dungeon workflow that lets a GM:
 
 ### Read Compact Dungeon Travel State
 
-1. The user opens the global `Reise` state surface while the party is in a
-   dungeon.
+1. The user opens the global travel-state surface shown in the runtime
+   `Reise` tab while the party is in a dungeon.
 2. The surface shows compact dungeon context such as map, area, tile, heading,
    and movement status.
 3. The user can understand current travel context without opening the full
@@ -80,20 +81,23 @@ Provide one dungeon workflow that lets a GM:
 - room narration editing with saved visual and exit descriptions
 - runtime movement by explicit travel actions and target-state direct token drag
 - dungeon-to-dungeon and dungeon-to-overworld transition outcomes
-- a compact `Reise` summary surface distinct from the interactive travel view
+- a compact travel-state summary surface shown in the runtime `Reise` tab,
+  distinct from the interactive travel view
 - editor tool families for selection, rooms, walls, doors, corridors, stairs,
   and transitions
 
 ## Acceptance Criteria
 
-- Travel, `Reise`, and editor operate on the same canonical dungeon truth plus
-  party-owned runtime position where applicable.
+- Travel, the runtime `Reise` travel-state surface, and the editor operate on
+  the same canonical dungeon truth plus party-owned runtime position where
+  applicable.
 - Travel and editor keep independent local camera state.
 - Empty authored maps stay empty until the editor paints geometry.
 - Selections and inspections are visible and understandable to the user.
 - In-progress edits provide visible preview feedback.
-- The compact `Reise` surface never has to own the interactive dungeon
-  workspace to communicate current travel context.
+- The compact travel-state surface shown in the runtime `Reise` tab never has
+  to own the interactive dungeon workspace to communicate current travel
+  context.
 - Runtime travel state is not treated as authored dungeon truth.
 
 ## Open Product Questions
@@ -106,7 +110,7 @@ Provide one dungeon workflow that lets a GM:
 ## References
 
 - [Dungeon Editor Requirements](./requirements-dungeon-editor.md)
-- [Dungeon Reise Requirements](./requirements-dungeon-reise.md)
+- [Dungeon Travel State Requirements](./requirements-dungeon-travel-state.md)
 - [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
 - [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)
 - [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)

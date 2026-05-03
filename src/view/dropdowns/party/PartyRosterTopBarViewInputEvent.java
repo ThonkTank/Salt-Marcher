@@ -1,27 +1,21 @@
 package src.view.dropdowns.party;
 
 public record PartyRosterTopBarViewInputEvent(
-        Source source,
+        boolean createEditorRequested,
+        boolean editEditorRequested,
+        boolean addExistingRequested,
         long memberId,
         String memberName,
         int xpDelta,
+        boolean removeRequested,
+        boolean shortRestRequested,
+        boolean longRestRequested,
         EditorSeed editorSeed
 ) {
 
     public PartyRosterTopBarViewInputEvent {
-        source = source == null ? Source.OPEN_CREATE_EDITOR : source;
         memberName = memberName == null ? "" : memberName;
         editorSeed = editorSeed == null ? EditorSeed.empty() : editorSeed;
-    }
-
-    enum Source {
-        OPEN_CREATE_EDITOR,
-        OPEN_EDIT_EDITOR,
-        ADD_EXISTING_MEMBER,
-        REMOVE_ACTIVE_MEMBER_BUTTON,
-        ADJUST_XP_POPUP,
-        SHORT_REST_BUTTON,
-        LONG_REST_BUTTON
     }
 
     public record EditorSeed(

@@ -6,8 +6,13 @@ import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
+import src.domain.dungeon.map.value.DungeonCorridorAnchorEndpoint;
+import src.domain.dungeon.map.value.DungeonCorridorDoorEndpoint;
+import src.domain.dungeon.map.value.DungeonCorridorEndpoint;
+import src.domain.dungeon.map.value.DungeonCorridorRoomEndpoint;
 import src.domain.dungeon.map.value.DungeonEditorHandle;
 import src.domain.dungeon.map.value.DungeonEdge;
+import src.domain.dungeon.map.value.DungeonEdgeDirection;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonRoomExitDescription;
 import src.domain.dungeon.map.value.DungeonRoomNarration;
@@ -30,6 +35,10 @@ public final class ApplyDungeonEditorOperationUseCase {
             OperationInput.PaintRoomRectangle,
             OperationInput.DeleteRoomRectangle,
             OperationInput.EditClusterBoundaries,
+            OperationInput.CreateCorridor,
+            OperationInput.ExtendCorridor,
+            OperationInput.MergeCorridors,
+            OperationInput.DeleteCorridor,
             OperationInput.SaveRoomNarration,
             OperationInput.NoChange {
 
@@ -73,6 +82,112 @@ public final class ApplyDungeonEditorOperationUseCase {
                 clusterId = Math.max(0L, clusterId);
                 edges = edges == null ? List.of() : List.copyOf(edges);
                 kind = kind == null ? DungeonClusterBoundaryKind.WALL : kind;
+            }
+        }
+
+        record CorridorRoomEndpoint(
+                long roomId,
+                long clusterId,
+                boolean fixedDoor,
+                DungeonCell roomCell,
+                DungeonEdgeDirection direction,
+                DungeonTopologyRef topologyRef
+        ) {
+            public CorridorRoomEndpoint {
+                roomId = Math.max(0L, roomId);
+                clusterId = Math.max(0L, clusterId);
+                roomCell = roomCell == null ? new DungeonCell(0, 0, 0) : roomCell;
+                direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+                topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
+            }
+        }
+
+        sealed interface CorridorEndpoint permits CorridorDoorEndpoint, CorridorAnchorEndpoint {
+        }
+
+        record CorridorDoorEndpoint(
+                long roomId,
+                long clusterId,
+                DungeonCell roomCell,
+                DungeonEdgeDirection direction,
+                DungeonTopologyRef topologyRef
+        ) implements CorridorEndpoint {
+            public CorridorDoorEndpoint {
+                roomId = Math.max(0L, roomId);
+                clusterId = Math.max(0L, clusterId);
+                roomCell = roomCell == null ? new DungeonCell(0, 0, 0) : roomCell;
+                direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+                topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
+            }
+        }
+
+        record CorridorAnchorEndpoint(
+                long hostCorridorId,
+                DungeonCell anchorCell,
+                DungeonTopologyRef topologyRef
+        ) implements CorridorEndpoint {
+            public CorridorAnchorEndpoint {
+                hostCorridorId = Math.max(0L, hostCorridorId);
+                anchorCell = anchorCell == null ? new DungeonCell(0, 0, 0) : anchorCell;
+                topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
+            }
+        }
+
+        record CreateCorridor(
+                CorridorEndpoint start,
+                CorridorEndpoint end
+        ) implements OperationInput {
+            public CreateCorridor {
+                start = start == null
+                        ? new CorridorDoorEndpoint(
+                        0L,
+                        0L,
+                        new DungeonCell(0, 0, 0),
+                        DungeonEdgeDirection.NORTH,
+                        DungeonTopologyRef.empty())
+                        : start;
+                end = end == null
+                        ? new CorridorDoorEndpoint(
+                        0L,
+                        0L,
+                        new DungeonCell(0, 0, 0),
+                        DungeonEdgeDirection.NORTH,
+                        DungeonTopologyRef.empty())
+                        : end;
+            }
+        }
+
+        record ExtendCorridor(
+                long corridorId,
+                CorridorRoomEndpoint endpoint
+        ) implements OperationInput {
+            public ExtendCorridor {
+                corridorId = Math.max(0L, corridorId);
+                endpoint = endpoint == null
+                        ? new CorridorRoomEndpoint(
+                        0L,
+                        0L,
+                        false,
+                        new DungeonCell(0, 0, 0),
+                        DungeonEdgeDirection.NORTH,
+                        DungeonTopologyRef.empty())
+                        : endpoint;
+            }
+        }
+
+        record MergeCorridors(
+                long corridorId,
+                long mergedCorridorId
+        ) implements OperationInput {
+            public MergeCorridors {
+                corridorId = Math.max(0L, corridorId);
+                mergedCorridorId = Math.max(0L, mergedCorridorId);
+            }
+        }
+
+        record DeleteCorridor(long corridorId) implements OperationInput {
+            public DeleteCorridor {
+                corridorId = Math.max(0L, corridorId);
             }
         }
 
@@ -134,8 +249,9 @@ public final class ApplyDungeonEditorOperationUseCase {
     public OperationResultData preview(@Nullable DungeonMapIdentity mapId, OperationInput operation) {
         DungeonMap current = currentMap(mapId);
         DungeonMap mutated = apply(current, operation);
+        DungeonDerivedState derived = derive.execute(mutated);
         return new OperationResultData(
-                snapshot(mutated, derive.execute(mutated)),
+                snapshot(mutated, derived),
                 mutated.validationMessages(),
                 current.reactionMessages(mutated));
     }
@@ -183,6 +299,20 @@ public final class ApplyDungeonEditorOperationUseCase {
                     editClusterBoundaries.kind(),
                     editClusterBoundaries.deleteBoundary());
         }
+        if (operation instanceof OperationInput.CreateCorridor createCorridor) {
+            return current.createCorridor(
+                    toDomainEndpoint(createCorridor.start()),
+                    toDomainEndpoint(createCorridor.end()));
+        }
+        if (operation instanceof OperationInput.ExtendCorridor extendCorridor) {
+            return current.extendCorridor(extendCorridor.corridorId(), toDomainEndpoint(extendCorridor.endpoint()));
+        }
+        if (operation instanceof OperationInput.MergeCorridors mergeCorridors) {
+            return current.mergeCorridors(mergeCorridors.corridorId(), mergeCorridors.mergedCorridorId());
+        }
+        if (operation instanceof OperationInput.DeleteCorridor deleteCorridor) {
+            return current.deleteCorridor(deleteCorridor.corridorId());
+        }
         if (operation instanceof OperationInput.SaveRoomNarration saveRoomNarration) {
             return current.saveRoomNarration(
                     saveRoomNarration.roomId(),
@@ -191,6 +321,48 @@ public final class ApplyDungeonEditorOperationUseCase {
                             saveRoomNarration.exits()));
         }
         return current;
+    }
+
+    private static DungeonCorridorRoomEndpoint toDomainEndpoint(OperationInput.CorridorRoomEndpoint endpoint) {
+        if (endpoint == null) {
+            return new DungeonCorridorRoomEndpoint(
+                    0L,
+                    0L,
+                    false,
+                    new DungeonCell(0, 0, 0),
+                    DungeonEdgeDirection.NORTH,
+                    DungeonTopologyRef.empty());
+        }
+        return new DungeonCorridorRoomEndpoint(
+                endpoint.roomId(),
+                endpoint.clusterId(),
+                endpoint.fixedDoor(),
+                endpoint.roomCell(),
+                endpoint.direction(),
+                endpoint.topologyRef());
+    }
+
+    private static DungeonCorridorEndpoint toDomainEndpoint(OperationInput.CorridorEndpoint endpoint) {
+        if (endpoint instanceof OperationInput.CorridorDoorEndpoint doorEndpoint) {
+            return new DungeonCorridorDoorEndpoint(
+                    doorEndpoint.roomId(),
+                    doorEndpoint.clusterId(),
+                    doorEndpoint.roomCell(),
+                    doorEndpoint.direction(),
+                    doorEndpoint.topologyRef());
+        }
+        if (endpoint instanceof OperationInput.CorridorAnchorEndpoint anchorEndpoint) {
+            return new DungeonCorridorAnchorEndpoint(
+                    anchorEndpoint.hostCorridorId(),
+                    anchorEndpoint.anchorCell(),
+                    anchorEndpoint.topologyRef());
+        }
+        return new DungeonCorridorDoorEndpoint(
+                0L,
+                0L,
+                new DungeonCell(0, 0, 0),
+                DungeonEdgeDirection.NORTH,
+                DungeonTopologyRef.empty());
     }
 
     private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot(DungeonMap dungeonMap, DungeonDerivedState derived) {

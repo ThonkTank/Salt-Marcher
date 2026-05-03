@@ -9,8 +9,6 @@ It keeps the proof surface strict and role-local:
   `architecture.bootstrap.appbootstrap.AppBootstrapArchitectureTest`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project ArchUnit and aggregate-task wiring
 
 This bundle proves only the `AppBootstrap`-local shell-host composition
 boundary. Generic bootstrap discovery-root and startup-metadata proofs stay in

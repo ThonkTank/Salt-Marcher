@@ -2,12 +2,12 @@ package src.view.dropdowns.party;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
 
 final class PartyTopBarIntentHandler {
 
     private final PartyTopBarContributionModel presentationModel;
     private Consumer<PartyTopBarPublishedEvent> publishedEventListener = ignored -> {};
+    private String pendingSuccessMessage = "";
 
     PartyTopBarIntentHandler(PartyTopBarContributionModel presentationModel) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
@@ -17,20 +17,85 @@ final class PartyTopBarIntentHandler {
         publishedEventListener = listener == null ? ignored -> {} : listener;
     }
 
+    void storePendingSuccessMessage(String successMessage) {
+        pendingSuccessMessage = successMessage == null ? "" : successMessage;
+    }
+
+    String drainPendingSuccessMessage() {
+        String message = pendingSuccessMessage;
+        pendingSuccessMessage = "";
+        return message;
+    }
+
     void consume(PartyTopBarViewInputEvent event) {
         if (event == null) {
             return;
         }
-        switch (event.source()) {
-            case POPUP_OPENED -> presentationModel.refresh();
-            case ADD_EXISTING_MEMBER -> addExisting(event.memberId(), event.memberName());
-            case REMOVE_ACTIVE_MEMBER_BUTTON -> removeFromParty(event.memberId(), event.memberName());
-            case ADJUST_XP_POPUP -> adjustXp(event.memberId(), event.memberName(), event.xpDelta());
-            case SHORT_REST_BUTTON -> performRest(PartyTopBarPublishedEvent.RestAction.SHORT_REST, "Short Rest wurde fuer die aktive Party ausgefuehrt.");
-            case LONG_REST_BUTTON -> performRest(PartyTopBarPublishedEvent.RestAction.LONG_REST, "Long Rest wurde fuer die aktive Party ausgefuehrt.");
-            case CREATE_CHARACTER_SUBMIT -> createCharacter(event.draft());
-            case UPDATE_CHARACTER_SUBMIT -> updateCharacter(event.draft());
-            case DELETE_CHARACTER_CONFIRM -> deleteCharacter(event.memberId(), event.memberName());
+    }
+
+    void consume(PartyRosterTopBarViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        if (event.createEditorRequested()) {
+            presentationModel.openCreateEditor();
+            return;
+        }
+        if (event.editEditorRequested()) {
+            presentationModel.openEditEditor(toEditorSeedModel(event.editorSeed()));
+            return;
+        }
+        if (event.addExistingRequested()) {
+            addExisting(event.memberId(), event.memberName());
+            return;
+        }
+        if (event.removeRequested()) {
+            removeFromParty(event.memberId(), event.memberName());
+            return;
+        }
+        if (event.xpDelta() != 0) {
+            adjustXp(event.memberId(), event.memberName(), event.xpDelta());
+            return;
+        }
+        if (event.shortRestRequested()) {
+            performRest(
+                    PartyTopBarPublishedEvent.RestAction.SHORT_REST,
+                    "Short Rest wurde fuer die aktive Party ausgefuehrt.");
+            return;
+        }
+        if (event.longRestRequested()) {
+            performRest(
+                    PartyTopBarPublishedEvent.RestAction.LONG_REST,
+                    "Long Rest wurde fuer die aktive Party ausgefuehrt.");
+        }
+    }
+
+    void consume(PartyEditorTopBarViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        if (event.cancelRequested()) {
+            presentationModel.cancelEditor();
+            return;
+        }
+        if (event.submitRequested()) {
+            if (event.editingExisting()) {
+                updateCharacter(event.draft());
+            } else {
+                createCharacter(event.draft());
+            }
+            return;
+        }
+        if (event.deleteConfirmationRequested()) {
+            presentationModel.requestDeleteConfirmation();
+            return;
+        }
+        if (event.deleteConfirmationCancelled()) {
+            presentationModel.cancelDeleteConfirmation();
+            return;
+        }
+        if (event.deleteConfirmed()) {
+            deleteCharacter(event.memberId(), event.memberName());
         }
     }
 
@@ -151,7 +216,7 @@ final class PartyTopBarIntentHandler {
                 successMessage));
     }
 
-    private void createCharacter(PartyTopBarViewInputEvent.EditorDraft draft) {
+    private void createCharacter(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
         ParsedDraft parsedDraft = parseDraft(draft);
         if (!parsedDraft.valid()) {
             presentationModel.rejectMutation(parsedDraft.message());
@@ -176,7 +241,7 @@ final class PartyTopBarIntentHandler {
                 successMessage));
     }
 
-    private void updateCharacter(PartyTopBarViewInputEvent.EditorDraft draft) {
+    private void updateCharacter(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
         if (draft == null || !validId(draft.id())) {
             presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
             return;
@@ -205,9 +270,9 @@ final class PartyTopBarIntentHandler {
                 successMessage));
     }
 
-    private static ParsedDraft parseDraft(PartyTopBarViewInputEvent.EditorDraft draft) {
-        PartyTopBarViewInputEvent.EditorDraft safeDraft = draft == null
-                ? PartyTopBarViewInputEvent.EditorDraft.empty()
+    private static ParsedDraft parseDraft(PartyEditorTopBarViewInputEvent.EditorDraft draft) {
+        PartyEditorTopBarViewInputEvent.EditorDraft safeDraft = draft == null
+                ? PartyEditorTopBarViewInputEvent.EditorDraft.empty()
                 : draft;
         String name = safe(safeDraft.name()).trim();
         if (name.isEmpty()) {
@@ -231,6 +296,21 @@ final class PartyTopBarIntentHandler {
                 level.value(),
                 passivePerception.value(),
                 armorClass.value());
+    }
+
+    private static PartyTopBarContributionModel.EditorSeedModel toEditorSeedModel(
+            PartyRosterTopBarViewInputEvent.EditorSeed seed
+    ) {
+        PartyRosterTopBarViewInputEvent.EditorSeed safeSeed = seed == null
+                ? PartyRosterTopBarViewInputEvent.EditorSeed.empty()
+                : seed;
+        return new PartyTopBarContributionModel.EditorSeedModel(
+                safeSeed.memberId(),
+                safeSeed.memberName(),
+                safeSeed.playerName(),
+                safeSeed.rawLevel(),
+                safeSeed.rawPassivePerception(),
+                safeSeed.rawArmorClass());
     }
 
     private static ParsedInteger parseInteger(String rawValue, String label, int min, int max) {

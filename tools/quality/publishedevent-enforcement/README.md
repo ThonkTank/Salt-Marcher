@@ -15,10 +15,6 @@ bundle-local registration metadata:
 - `bundle.properties`
   canonical registration source for this bundle's public task names and host
   script/source-set wiring
-- `root-host.gradle.kts`
-  root-project test-source, compiler, and aggregate-task wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
 
 The matching Binder-installed same-root write sink rule now lives in the
 neighboring `view-binder-enforcement` bundle, because it is owned by the

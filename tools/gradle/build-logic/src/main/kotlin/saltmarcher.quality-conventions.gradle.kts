@@ -1,14 +1,16 @@
 import java.io.File
-import java.util.Properties
 import net.ltgt.gradle.errorprone.errorprone
-import org.gradle.api.Task
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
+import org.gradle.kotlin.dsl.the
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.process.ExecSpec
+import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.tasks.CheckDesktopPackagingInputsTask
 import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
 import saltmarcher.buildlogic.tasks.RenderDesktopIconTask
@@ -21,122 +23,14 @@ import saltmarcher.buildlogic.tasks.hygiene.PmdSourceCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.SetupLizardTask
 
 plugins {
+    id("saltmarcher.enforcement-bundles")
     id("net.ltgt.errorprone")
-}
-
-fun Properties.list(name: String): List<String> = getProperty(name)
-    ?.split(',')
-    ?.map(String::trim)
-    ?.filter(String::isNotEmpty)
-    ?: emptyList()
-
-fun loadDescriptorEnforcementTaskNames(projectDir: File): Set<String> {
-    val qualityDir = File(projectDir, "tools/quality")
-    if (!qualityDir.isDirectory) {
-        return emptySet()
-    }
-    return qualityDir.walkTopDown()
-        .filter { file -> file.isFile && file.name == "bundle.properties" }
-        .flatMap { descriptorFile ->
-            val properties = Properties()
-            descriptorFile.inputStream().use(properties::load)
-            properties.list("taskNames").asSequence()
-        }
-        .toSet()
 }
 
 // Invocation policy
 
-val descriptorEnforcementTaskNames = loadDescriptorEnforcementTaskNames(project.projectDir)
-
-val architectureGateEntrypoints = setOf(
-    "architectureTest",
-    "checkArchitecture",
-    "checkViewLayerEnforcement",
-    "checkViewInputEventEnforcement",
-    "checkViewArchitecture",
-    "pmdArchitectureMain",
-    "jqassistantEffectiveRules"
-).plus(descriptorEnforcementTaskNames)
-
-val qualitySmellEntrypoints = setOf(
-    "pmdMain",
-    "pmdStrictMain",
-    "spotbugsMain",
-    "ckjmMain"
-)
-
-val qualityGateEntrypoints = setOf(
-    "cpdMain",
-    "lizardMain"
-)
-
-val resourcePolicyEntrypoints = setOf(
-    "checkCentralizedStylesheets",
-    "checkDefinedStyleClassSelectors",
-    "checkNoCompiledArtifactsInSource",
-    "checkDesktopPackagingInputs"
-)
-
-val continueOnFailureEntrypoints = setOf(
-    "build",
-    "check",
-    "productionBuild",
-    "checkQualityHygiene",
-    "compileJava",
-    "test",
-    "production-build",
-    "quality-hygiene",
-    "architecture",
-    "view-topology",
-    "docs",
-    "metrics-report",
-    "desktop-install",
-    "production-handoff"
-)
-    .plus(architectureGateEntrypoints)
-    .plus(qualitySmellEntrypoints)
-    .plus(qualityGateEntrypoints)
-    .plus(resourcePolicyEntrypoints)
-
-val requestedTaskNames = gradle.startParameter.taskNames
-    .map { taskName -> taskName.substringAfterLast(":") }
-    .toSet()
-
-val enforcementBundleTaskNames = setOf(
-    "checkViewInputEventEnforcement",
-    "viewInputEventArchitectureTest",
-    "viewInputEventTopologyCheck"
-).plus(descriptorEnforcementTaskNames)
-
-val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty()
-    && requestedTaskNames.any { taskName -> taskName in enforcementBundleTaskNames }
-    && requestedTaskNames.none { taskName ->
-        taskName in setOf(
-            "build",
-            "check",
-            "productionBuild",
-            "checkQualityHygiene",
-            "assemble",
-            "classes",
-            "compileJava",
-            "jar",
-            "test",
-            "installDesktopApp",
-            "installDist",
-            "run",
-            "checkArchitecture",
-            "checkViewArchitecture",
-            "architectureTest",
-            "pmdArchitectureMain",
-            "jqassistantEffectiveRules"
-        )
-    }
-    && requestedTaskNames.all { taskName -> taskName in enforcementBundleTaskNames }
-
-if (requestedTaskNames.any { it in continueOnFailureEntrypoints }) {
-    gradle.startParameter.setContinueOnFailure(true)
-}
+val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
+val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
 
 // Shared project inputs and tool locations
 
@@ -160,6 +54,8 @@ val stylesheetExtensions = listOf("css", "scss", "sass", "less", "styl")
 
 val sourceRoots = files("bootstrap", "shell", "src")
 val sourceJavaRoots = sourceRoots.filter { it.exists() }
+val sourceSets = the<SourceSetContainer>()
+val mainSourceSet = sourceSets["main"]
 val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
 val generatedWindowIconDir = layout.buildDirectory.dir("generated/window-icon")
 val lizardRequirementsFile = layout.projectDirectory.file("tools/quality/config/lizard/requirements.txt")
@@ -194,6 +90,195 @@ fun File.absoluteInvariantPath(): String {
 fun mainJavaClassesDirectoryForTooling(): File {
     return mainJavaClassesDir.get().asFile
 }
+
+fun JavaCompile.configureCommonErrorProneOptions() {
+    dependsOn(gradle.includedBuild("quality-rules-errorprone").task(":jar"))
+    options.errorprone.enabled.set(true)
+    options.errorprone.disableWarningsInGeneratedCode.set(true)
+    options.errorprone.disable("DuplicateBranches")
+    options.errorprone.disable("StringConcatToTextBlock")
+    options.errorprone.disable("ThreadJoinLoop")
+    options.errorprone.error("EqualsNull")
+    options.errorprone.error("NullAway")
+    options.errorprone.error("ReferenceEquality")
+    options.errorprone.error("StringCaseLocaleUsage")
+    options.errorprone.error("StringSplitter")
+    options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
+    options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
+}
+
+val commonFocusedArchunitSupportIncludes = listOf(
+    "architecture/AnalyzeMainClasses.java",
+    "architecture/MainSourceLocationProvider.java",
+    "architecture/view/ViewRolePredicates.java"
+)
+
+val registerFocusedVerificationCompileTask = fun(
+    bundleId: String,
+    checkerNames: List<String>,
+    taskDescription: String
+): TaskProvider<JavaCompile> {
+    val descriptor = enforcementBundles.descriptor(bundleId)
+    val roots = descriptor.verificationSourceRoots.ifEmpty {
+        error("Missing verificationSourceRoots metadata for enforcement bundle '$bundleId'.")
+    }
+    val includes = descriptor.verificationSourceIncludes.ifEmpty {
+        error("Missing verificationSourceIncludes metadata for enforcement bundle '$bundleId'.")
+    }
+    val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}Verification"
+    val verificationSourceSet = sourceSets.findByName(sourceSetName) ?: sourceSets.create(sourceSetName) {
+        java.setSrcDirs(roots)
+        includes.forEach(java::include)
+        resources.setSrcDirs(emptyList<String>())
+        compileClasspath += mainSourceSet.compileClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+    return tasks.named<JavaCompile>(verificationSourceSet.compileJavaTaskName) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = taskDescription
+        options.sourcepath = sourceJavaRoots
+        destinationDirectory.set(layout.buildDirectory.dir("classes/java/verification/$bundleId"))
+        configureCommonErrorProneOptions()
+        checkerNames.forEach(options.errorprone::error)
+    }
+}
+
+extra["saltmarcherRegisterFocusedVerificationCompileTask"] = registerFocusedVerificationCompileTask
+
+val registerFocusedArchunitTestTask = fun(
+    bundleId: String,
+    taskName: String,
+    taskDescription: String,
+    selectedCompileJava: TaskProvider<JavaCompile>,
+    archunitSourceDirs: List<String>,
+    archunitIncludes: List<String>,
+    includePatterns: List<String>,
+    useSharedTestSupport: Boolean
+): TaskProvider<Test> {
+    val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}EnforcementArchunit"
+    val mainClassesDirectory = selectedCompileJava.flatMap { task -> task.destinationDirectory }
+    val archunitSourceSet = sourceSets.findByName(sourceSetName) ?: sourceSets.create(sourceSetName) {
+        val sourceDirectories = buildList {
+            addAll(archunitSourceDirs)
+            if (useSharedTestSupport) {
+                add("test")
+            }
+        }
+        java.setSrcDirs(sourceDirectories)
+        if (useSharedTestSupport) {
+            commonFocusedArchunitSupportIncludes.forEach(java::include)
+        }
+        archunitIncludes.forEach(java::include)
+        resources.setSrcDirs(emptyList<String>())
+        compileClasspath += files(configurations.named("testCompileClasspath"))
+        runtimeClasspath += output + compileClasspath + files(configurations.named("testRuntimeClasspath"), mainClassesDirectory)
+    }
+    return tasks.register<Test>(taskName) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = taskDescription
+        dependsOn(selectedCompileJava)
+        inputs.dir(mainClassesDirectory)
+        testClassesDirs = archunitSourceSet.output.classesDirs
+        classpath = archunitSourceSet.runtimeClasspath
+        useJUnitPlatform()
+        includePatterns.forEach(::include)
+        doFirst {
+            systemProperty("saltmarcher.mainClassesDir", mainClassesDirectory.get().asFile.absolutePath)
+        }
+    }
+}
+
+extra["saltmarcherRegisterFocusedArchunitTestTask"] = registerFocusedArchunitTestTask
+
+val registerFocusedPmdTask = fun(
+    bundleId: String,
+    taskName: String,
+    taskDescription: String,
+    rulesetPath: String,
+    sourceRoots: List<String>,
+    sourceIncludes: List<String>
+): TaskProvider<Pmd> {
+    val roots = sourceRoots.ifEmpty {
+        enforcementBundles.descriptor(bundleId).verificationSourceRoots.ifEmpty {
+            error("Missing verificationSourceRoots metadata for enforcement bundle '$bundleId'.")
+        }
+    }
+    val rulesetFile = project.file(rulesetPath)
+    return tasks.register<Pmd>(taskName) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = taskDescription
+        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
+
+        ignoreFailures = false
+        ruleSets = listOf()
+        ruleSetFiles = files(rulesetFile)
+        source = files(roots).asFileTree.matching {
+            sourceIncludes.forEach(::include)
+        }
+        classpath = files()
+
+        outputs.upToDateWhen { false }
+        outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
+        reports {
+            html.required.set(true)
+            xml.required.set(true)
+        }
+    }
+}
+
+extra["saltmarcherRegisterFocusedPmdTask"] = registerFocusedPmdTask
+
+val registerFocusedJqassistantTaskPair = fun(
+    bundleId: String,
+    scanTaskName: String,
+    analyzeTaskName: String,
+    scanDescription: String,
+    analyzeDescription: String,
+    sourceConfigPath: String,
+    rulesDirPath: String,
+    reportsDirectoryPath: String,
+    selectedCompileJava: TaskProvider<JavaCompile>
+): Pair<TaskProvider<JqassistantScanTask>, TaskProvider<JqassistantAnalyzeTask>> {
+    val selectedMainClassesDirectory = selectedCompileJava.flatMap { task -> task.destinationDirectory }
+    val jqassistantSourceConfigFile = project.file(sourceConfigPath)
+    val jqassistantRulesDirectory = project.file(rulesDirPath)
+    val jqassistantStoreDirectory = layout.buildDirectory.dir("tools/$bundleId/jqassistant/store")
+    val jqassistantReportsDirectory = layout.buildDirectory.dir(reportsDirectoryPath)
+    val scanTask = tasks.register<JqassistantScanTask>(scanTaskName) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = scanDescription
+        dependsOn(installJqassistant, selectedCompileJava)
+        cliFile.set(jqassistantCliFile)
+        sourceConfigFile.set(jqassistantSourceConfigFile)
+        rulesDirectory.set(jqassistantRulesDirectory)
+        mainClassesDirectory.set(selectedMainClassesDirectory)
+        sourceRoots.from("bootstrap", "shell", "src")
+        jvmOpens.set(jqassistantJvmOpens)
+        projectRoot.set(layout.projectDirectory)
+        storeDirectory.set(jqassistantStoreDirectory)
+        outputs.upToDateWhen { false }
+        outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
+    }
+    val analyzeTask = tasks.register<JqassistantAnalyzeTask>(analyzeTaskName) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = analyzeDescription
+        dependsOn(scanTask)
+        cliFile.set(jqassistantCliFile)
+        sourceConfigFile.set(jqassistantSourceConfigFile)
+        rulesDirectory.set(jqassistantRulesDirectory)
+        mainClassesDirectory.set(selectedMainClassesDirectory)
+        sourceRoots.from("bootstrap", "shell", "src")
+        jvmOpens.set(jqassistantJvmOpens)
+        projectRoot.set(layout.projectDirectory)
+        storeDirectory.set(jqassistantStoreDirectory)
+        reportsDirectory.set(jqassistantReportsDirectory)
+        outputs.upToDateWhen { false }
+        outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
+    }
+    return Pair(scanTask, analyzeTask)
+}
+
+extra["saltmarcherRegisterFocusedJqassistantTaskPair"] = registerFocusedJqassistantTaskPair
 
 // Tool configurations
 
@@ -241,17 +326,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.named<JavaCompile>("compileJava") {
-    dependsOn(gradle.includedBuild("quality-rules-errorprone").task(":jar"))
-    options.errorprone.enabled.set(true)
-    options.errorprone.disableWarningsInGeneratedCode.set(true)
-    options.errorprone.disable("DuplicateBranches")
-    options.errorprone.disable("StringConcatToTextBlock")
-    options.errorprone.disable("ThreadJoinLoop")
-    options.errorprone.error("EqualsNull")
-    options.errorprone.error("NullAway")
-    options.errorprone.error("ReferenceEquality")
-    options.errorprone.error("StringCaseLocaleUsage")
-    options.errorprone.error("StringSplitter")
+    configureCommonErrorProneOptions()
     if (!focusedEnforcementBundleMode) {
         options.errorprone.error("DomainApplicationServiceApiShape")
         options.errorprone.error("DomainModuleFieldPurity")
@@ -267,8 +342,6 @@ tasks.named<JavaCompile>("compileJava") {
         options.errorprone.error("ViewReflectionBypass")
         options.errorprone.error("ViewRootDelegation")
     }
-    options.errorprone.option("NullAway:AnnotatedPackages", "bootstrap,shell,src")
-    options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
 }
 
 // jQAssistant graph-shaped view architecture gate
@@ -504,10 +577,6 @@ val checkArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs non-documentation architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
     dependsOn("architectureTest")
-    dependsOn("checkViewIntentHandlerEnforcement")
-    dependsOn("checkLayeringArchitectureEnforcement")
-    dependsOn("checkViewBinderEnforcement")
-    dependsOn("checkViewLayerEnforcement")
     dependsOn("pmdArchitectureMain")
     dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
 }

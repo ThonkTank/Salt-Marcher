@@ -13,12 +13,6 @@ It keeps the outbound `port/` proof surface strict and owner-pure:
   `DomainPortEnforcementDocumentationCheckMain`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, aggregate-task, and full-build hook wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the outbound `port/` role itself. Generic domain-layer
 topology, named-module communication boundaries, and neighboring tactical

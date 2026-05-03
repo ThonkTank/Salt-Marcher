@@ -19,14 +19,6 @@ owner-pure and bundle-local:
   `DataServiceContributionDocumentationEnforcementCheckMain`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, PMD, aggregate-task, and focused-entry wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `pmd-host.gradle.kts`
-  included-build wiring for the `quality-rules` PMD host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the data `*ServiceContribution` role itself: discovery
 entrypoint shape, stateless public surface, source-mechanics bans,

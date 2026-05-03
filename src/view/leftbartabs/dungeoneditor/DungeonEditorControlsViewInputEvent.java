@@ -1,45 +1,30 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.List;
-
 public record DungeonEditorControlsViewInputEvent(
-        Source source,
-        String mapKey,
+        boolean mapSelectionChanged,
+        boolean createMapRequested,
+        boolean renameMapRequested,
+        boolean deleteMapRequested,
+        long mapIdValue,
         String mapName,
+        boolean viewModeChanged,
         String viewModeKey,
+        boolean toolChanged,
         String tool,
+        int projectionLevelShift,
+        boolean overlayChanged,
         String overlayModeKey,
         int overlayRange,
         double overlayOpacity,
-        List<Integer> overlayLevels
+        String overlayLevelsText
 ) {
 
-    private static final String DEFAULT_VIEW_MODE_KEY = "Grid";
-    private static final String DEFAULT_TOOL = "Auswahl";
-    private static final String DEFAULT_OVERLAY_MODE_KEY = "OFF";
-
     public DungeonEditorControlsViewInputEvent {
-        source = source == null ? Source.MAP_SELECTION : source;
-        mapKey = mapKey == null ? "" : mapKey;
-        mapName = mapName == null ? "" : mapName;
-        viewModeKey = viewModeKey == null ? DEFAULT_VIEW_MODE_KEY : viewModeKey;
-        tool = tool == null ? DEFAULT_TOOL : tool;
-        overlayModeKey = overlayModeKey == null ? DEFAULT_OVERLAY_MODE_KEY : overlayModeKey;
-        overlayLevels = overlayLevels == null ? List.of() : List.copyOf(overlayLevels);
-    }
-
-    enum Source {
-        MAP_SELECTION,
-        CREATE_MAP_SUBMIT,
-        RENAME_MAP_SUBMIT,
-        DELETE_MAP_CONFIRM,
-        VIEW_MODE_TOGGLE,
-        TOOL_SELECTION,
-        PREVIOUS_LEVEL_BUTTON,
-        NEXT_LEVEL_BUTTON,
-        OVERLAY_MODE_CONTROL,
-        OVERLAY_RANGE_CONTROL,
-        OVERLAY_OPACITY_CONTROL,
-        OVERLAY_LEVEL_SELECTION
+        mapIdValue = Math.max(0L, mapIdValue);
+        mapName = mapName == null ? "" : mapName.strip();
+        viewModeKey = viewModeKey == null ? "" : viewModeKey;
+        tool = tool == null ? "" : tool;
+        overlayModeKey = overlayModeKey == null ? "" : overlayModeKey;
+        overlayLevelsText = overlayLevelsText == null ? "" : overlayLevelsText.strip();
     }
 }

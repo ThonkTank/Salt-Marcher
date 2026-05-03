@@ -12,12 +12,6 @@ It keeps the `event/` proof route strict and role-local:
   `DomainEventEnforcementDocumentationCheckMain`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, aggregate-task, and full-build hook wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the tactical `event/` role itself. Generic named-module
 topology, forbidden-content rules, and broader domain-layer communication

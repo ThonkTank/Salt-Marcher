@@ -14,7 +14,7 @@ truth plus party-owned runtime state.
 ## Non-Goals
 
 - shared canvas contract design
-- compact `Reise` state-tab behavior
+- compact travel-state behavior shown in the runtime `Reise` tab
 - editor lifecycle behavior
 - authored dungeon invariants
 - SQLite schema detail
@@ -88,7 +88,7 @@ truth plus party-owned runtime state.
 ## References
 
 - [Dungeon Feature Requirements](./requirements-dungeon.md)
-- [Dungeon Reise Requirements](./requirements-dungeon-reise.md)
+- [Dungeon Travel State Requirements](./requirements-dungeon-travel-state.md)
 - [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)
 - [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
 - [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)

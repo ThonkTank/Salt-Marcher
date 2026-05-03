@@ -13,10 +13,6 @@ bundle-local:
   `DataPersistencecoreDocumentationEnforcementCheckMain`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project ArchUnit, aggregate-task, and focused-entry wiring
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the mechanical invariants of the shared
 `persistencecore/` surface itself: persistencecore-to-feature data

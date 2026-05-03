@@ -7,8 +7,7 @@ public record LoadDungeonSurfaceQuery(
         DungeonSurfaceKind surfaceKind,
         DungeonTopologyElementRef topologyRef,
         long clusterId,
-        boolean clusterSelection,
-        @Nullable DungeonTravelPosition travelPosition
+        boolean clusterSelection
 ) {
 
     public LoadDungeonSurfaceQuery {
@@ -18,6 +17,6 @@ public record LoadDungeonSurfaceQuery(
     }
 
     public LoadDungeonSurfaceQuery(@Nullable DungeonMapId mapId, DungeonSurfaceKind surfaceKind) {
-        this(mapId, surfaceKind, DungeonTopologyElementRef.empty(), 0L, false, null);
+        this(mapId, surfaceKind, DungeonTopologyElementRef.empty(), 0L, false);
     }
 }

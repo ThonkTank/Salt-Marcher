@@ -19,11 +19,7 @@ the canonical home for passive `*View` host wiring:
   script/source-set wiring
 - `support/`
   passive-`View` FXML resource validation runner
-- `root-host.gradle.kts`
-  root-project compiler, support-source, bundle-local ArchUnit source set,
   jQAssistant, and aggregate task wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
 
 Unified root entrypoint:
 

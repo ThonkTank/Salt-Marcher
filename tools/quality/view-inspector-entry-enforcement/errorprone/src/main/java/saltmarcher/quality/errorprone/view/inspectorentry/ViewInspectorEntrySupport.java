@@ -22,12 +22,20 @@ final class ViewInspectorEntrySupport {
         String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         String sourceText = sourceText(tree, state);
         Set<String> forbiddenReferences = new LinkedHashSet<>();
+        if (!isDetailsInspectorEntryPackage(sourcePackageName)) {
+            forbiddenReferences.add(sourcePackageName + " (expected src.view.slotcontent.details.<entry>)");
+        }
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
             if (isForbidden(referencedType, sourcePackageName, sourceText)) {
                 forbiddenReferences.add(referencedType);
             }
         }
         return forbiddenReferences;
+    }
+
+    static boolean isDetailsInspectorEntryPackage(String packageName) {
+        return packageName != null
+                && packageName.matches("^src\\.view\\.slotcontent\\.details\\.[^.]+$");
     }
 
     static Set<String> collectForbiddenShellReferences(CompilationUnitTree tree) {
@@ -74,8 +82,29 @@ final class ViewInspectorEntrySupport {
             return false;
         }
 
-        return !Set.of("MODEL", "VIEW", "INSPECTOR_ENTRY").contains(viewType.bucket())
-                || !ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType);
+        return !isAllowedSameUnitViewReference(sourcePackageName, referencedType, viewType);
+    }
+
+    private static boolean isAllowedSameUnitViewReference(
+            String sourcePackageName,
+            String referencedType,
+            ViewArchitectureSupport.ViewTypeInfo viewType
+    ) {
+        if (!ViewArchitectureSupport.isSameViewRootReference(sourcePackageName, referencedType)) {
+            return false;
+        }
+        if (!"details".equals(viewType.component())) {
+            return false;
+        }
+        String topLevelQualifiedTypeName = ViewArchitectureSupport.topLevelQualifiedTypeNameOf(referencedType);
+        if ("VIEW".equals(viewType.bucket())) {
+            return topLevelQualifiedTypeName.endsWith("View");
+        }
+        if ("INSPECTOR_ENTRY".equals(viewType.bucket())) {
+            return true;
+        }
+        return "MODEL".equals(viewType.bucket())
+                && topLevelQualifiedTypeName.endsWith("ContentModel");
     }
 
     private static boolean isAllowedShellType(String referencedType) {

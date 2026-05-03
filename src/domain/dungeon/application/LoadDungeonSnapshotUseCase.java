@@ -134,6 +134,7 @@ public final class LoadDungeonSnapshotUseCase {
         List<DungeonEditorHandleFacts> result = new ArrayList<>();
         appendClusterLabelHandles(result, dungeonMap);
         appendDoorHandles(result, dungeonMap);
+        appendAnchorHandles(result, dungeonMap);
         appendWaypointHandles(result, dungeonMap);
         appendStairHandles(result, dungeonMap);
         return List.copyOf(result);
@@ -213,6 +214,26 @@ public final class LoadDungeonSnapshotUseCase {
                                 absolute,
                                 DungeonEdgeDirection.NORTH),
                         "Wegpunkt " + (index + 1)));
+            }
+        }
+    }
+
+    private static void appendAnchorHandles(List<DungeonEditorHandleFacts> result, DungeonMap dungeonMap) {
+        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+            for (int index = 0; index < corridor.bindings().anchorBindings().size(); index++) {
+                var anchor = corridor.bindings().anchorBindings().get(index);
+                result.add(new DungeonEditorHandleFacts(
+                        new DungeonEditorHandle(
+                                DungeonEditorHandleType.CORRIDOR_ANCHOR,
+                                anchor.topologyRef(),
+                                anchor.anchorId(),
+                                0L,
+                                corridor.corridorId(),
+                                0L,
+                                index,
+                                anchor.absoluteCell(),
+                                DungeonEdgeDirection.NORTH),
+                        "Korridoranker " + (index + 1)));
             }
         }
     }

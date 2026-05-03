@@ -18,14 +18,6 @@ It keeps the `src/data/**/model/` proof route owner-pure and bundle-local:
   `DataModelSchemaDdlPlacementRule`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, PMD, ArchUnit, aggregate-task, and focused-entry wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
-- `pmd-host.gradle.kts`
-  included-build wiring for the `quality-rules` PMD host
 
 This bundle owns only the data `model/` role itself: source-model shape,
 public-signature boundaries, schema ownership, schema DDL placement, and

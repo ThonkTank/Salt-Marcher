@@ -16,14 +16,6 @@ It keeps the `src/data/**/repository/` proof route owner-pure and bundle-local:
   `DataRepositorySourceMechanicsRule`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, PMD, aggregate-task, and focused-entry wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
-- `pmd-host.gradle.kts`
-  included-build wiring for the `quality-rules` PMD host
 
 This bundle owns only the write-side `repository/` role itself: own-feature
 write-port contract shape, public adapter surface, gateway collaborator

@@ -18,14 +18,6 @@ It keeps the full root `*ApplicationService.java` proof route in one package:
   `DomainApplicationServiceSourcePolicyRule` and the bundle-local ruleset
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, PMD, aggregate-task, and full-build hook wiring
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `pmd-host.gradle.kts`
-  included-build wiring for the `quality-rules` host
 
 This bundle owns only the root `ApplicationService` role itself. Generic
 named-module boundaries, same-context `application/*UseCase` topology,

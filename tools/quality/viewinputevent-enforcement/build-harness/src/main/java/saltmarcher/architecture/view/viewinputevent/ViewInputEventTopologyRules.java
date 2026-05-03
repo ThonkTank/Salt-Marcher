@@ -20,6 +20,8 @@ public final class ViewInputEventTopologyRules implements ArchitectureRule {
             long viewCount = files.stream().filter(ViewRoleSupport::isPassiveViewFile).count();
             long intentHandlerCount = files.stream().filter(ViewRoleSupport::isIntentHandlerFile).count();
             long viewInputEventCount = files.stream().filter(ViewRoleSupport::isViewInputEventFile).count();
+            java.util.Set<String> passiveViewStems = ViewRoleSupport.passiveViewStems(files);
+            java.util.Set<String> viewInputEventStems = ViewRoleSupport.viewInputEventStems(files);
             if (intentHandlerCount == 0) {
                 if (viewInputEventCount > 0) {
                     violations.add(unit.source(), "view-viewinputevent-no-intenthandler",
@@ -30,6 +32,12 @@ public final class ViewInputEventTopologyRules implements ArchitectureRule {
             if (viewCount == 0) {
                 violations.add(unit.source(), "view-viewinputevent-view-required",
                         "Interactive view units with an *IntentHandler must also define at least one passive *View.java surface.");
+            }
+            for (String eventStem : viewInputEventStems) {
+                if (!passiveViewStems.contains(eventStem)) {
+                    violations.add(unit.source(), "view-viewinputevent-same-stem",
+                            "*ViewInputEvent files must belong to a same-stem passive *View.java surface in the same view unit.");
+                }
             }
         }
     }

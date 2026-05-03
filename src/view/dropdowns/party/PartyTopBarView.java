@@ -79,8 +79,7 @@ public final class PartyTopBarView extends HBox {
                 popup,
                 triggerButton,
                 POPUP_WIDTH,
-                () -> viewInputEventHandler.accept(new PartyTopBarViewInputEvent(
-                        PartyTopBarViewInputEvent.Source.POPUP_OPENED)));
+                () -> viewInputEventHandler.accept(new PartyTopBarViewInputEvent()));
     }
 
     private static String safe(String value) {

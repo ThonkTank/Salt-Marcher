@@ -11,11 +11,7 @@ It keeps the current proof surface intentionally narrow and honest:
 - `bundle.properties`
   canonical registration source for this bundle's public task name and host
   script/source-set wiring
-- `root-host.gradle.kts`
-  root-project compiler wiring, focused entrypoint registration, and explicit
   root-`check` aggregation
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
 
 This bundle currently proves only the placement rule for the documented
 direct-render exception. The remaining "no local visual system" and

@@ -37,11 +37,47 @@ public final class DungeonEditorStateView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
+    public void bind(DungeonEditorContributionModel contributionModel) {
+        if (contributionModel == null) {
+            return;
+        }
+        stateTextProperty().bind(contributionModel.stateProperty());
+        contributionModel.narrationCardsProperty().addListener((ignored, before, after) -> refreshNarrationCards(contributionModel));
+        contributionModel.busyProperty().addListener((ignored, before, after) -> refreshNarrationCards(contributionModel));
+        contributionModel.statusProperty().addListener((ignored, before, after) -> refreshNarrationCards(contributionModel));
+        refreshNarrationCards(contributionModel);
+    }
+
     public void showNarrationCards(List<RoomNarrationCard> cards, boolean busy, String statusText) {
         narrationCards.getChildren().clear();
         for (RoomNarrationCard card : cards == null ? List.<RoomNarrationCard>of() : cards) {
             narrationCards.getChildren().add(narrationCard(card, busy, statusText));
         }
+    }
+
+    private void refreshNarrationCards(DungeonEditorContributionModel contributionModel) {
+        showNarrationCards(
+                contributionModel.narrationCardsProperty().get().stream().map(DungeonEditorStateView::toCard).toList(),
+                contributionModel.busyProperty().get(),
+                contributionModel.statusProperty().get());
+    }
+
+    private static RoomNarrationCard toCard(DungeonEditorContributionModel.RoomNarrationCardProjection card) {
+        return new RoomNarrationCard(
+                card.roomId(),
+                card.roomName(),
+                card.visualDescription(),
+                card.exits().stream().map(DungeonEditorStateView::toExit).toList());
+    }
+
+    private static RoomExitNarration toExit(DungeonEditorContributionModel.RoomExitNarrationProjection exit) {
+        return new RoomExitNarration(
+                exit.label(),
+                exit.q(),
+                exit.r(),
+                exit.level(),
+                exit.direction(),
+                exit.description());
     }
 
     private VBox narrationCard(RoomNarrationCard card, boolean busy, String statusText) {

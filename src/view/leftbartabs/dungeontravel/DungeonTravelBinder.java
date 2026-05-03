@@ -6,14 +6,14 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.dungeon.DungeonApplicationService;
-import src.domain.dungeon.published.DungeonSurfaceKind;
-import src.domain.dungeon.published.LoadDungeonSurfaceQuery;
-import src.domain.dungeon.published.MoveDungeonSurfaceActionCommand;
+import src.domain.travel.TravelApplicationService;
+import src.domain.travel.published.ApplyTravelDungeonSessionCommand;
+import src.domain.travel.published.LoadTravelDungeonQuery;
+import src.domain.travel.published.TravelDungeonModel;
+import src.domain.travel.published.TravelDungeonSnapshot;
+import src.domain.travel.published.TravelOverlaySettings;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 
 final class DungeonTravelBinder {
 
@@ -24,104 +24,81 @@ final class DungeonTravelBinder {
     }
 
     ShellBinding bind() {
-        DungeonApplicationService dungeon = runtimeContext.services().require(DungeonApplicationService.class);
-        DungeonTravelContributionModel presentationModel = new DungeonTravelContributionModel();
-        DungeonMapContentModel mapPresentationModel = new DungeonMapContentModel("Travel workspace", false);
-        DungeonTravelIntentHandler intentHandler = new DungeonTravelIntentHandler(presentationModel);
+        TravelApplicationService travel = runtimeContext.services().require(TravelApplicationService.class);
+        TravelDungeonModel travelModel = travel.loadDungeonTravel(new LoadTravelDungeonQuery(null));
+        DungeonTravelContributionModel contributionModel = new DungeonTravelContributionModel();
+        DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Travel workspace", false);
+        DungeonTravelIntentHandler intentHandler = new DungeonTravelIntentHandler(contributionModel);
         DungeonTravelControlsView controls = new DungeonTravelControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonTravelStateView state = new DungeonTravelStateView();
-        bindTravelRequests(dungeon, presentationModel, mapPresentationModel, intentHandler);
-        main.bind(mapPresentationModel);
-        state.stateTextProperty().bind(presentationModel.stateProperty());
+        bindTravelRequests(travel, intentHandler);
+        main.bind(mapContentModel);
+        controls.bind(contributionModel);
+        state.bind(contributionModel);
         controls.onViewInputEvent(intentHandler::consume);
-        presentationModel.resetViewRequestTokenProperty().addListener((ignored, before, after) -> main.resetCamera());
         main.onViewportChanged(() -> controls.showZoom(main.zoom()));
         state.onViewInputEvent(intentHandler::consume);
-        presentationModel.actionsProperty().addListener((ignored, before, after) -> state.showActions(toActionItems(after)));
-        presentationModel.overlaySettingsProperty().addListener((ignored, before, after) -> {
-            mapPresentationModel.showOverlaySettings(after);
-            controls.showOverlaySettings(toControlsOverlaySettings(after), false);
-        });
-        presentationModel.projectionLevelProperty().addListener((ignored, before, after) -> {
-            mapPresentationModel.showProjectionLevel(after.intValue());
-            controls.showLevels(after.intValue(), false, true);
-        });
-        presentationModel.mapNameProperty().addListener((ignored, before, after) -> controls.showMapName(after));
-        mapPresentationModel.showOverlaySettings(presentationModel.overlaySettingsProperty().get());
-        mapPresentationModel.showProjectionLevel(presentationModel.projectionLevelProperty().get());
-        controls.showOverlaySettings(toControlsOverlaySettings(presentationModel.overlaySettingsProperty().get()), false);
-        controls.showLevels(presentationModel.projectionLevelProperty().get(), false, true);
-        controls.showMapName(presentationModel.mapNameProperty().get());
+        contributionModel.cameraResetSignalProperty().addListener((ignored, before, after) -> main.resetCamera());
+        contributionModel.refreshSignalProperty().addListener((ignored, before, after) ->
+                travel.applyDungeonTravelSession(refreshCommand()));
+        travelModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
+        applySnapshot(travelModel.current(), contributionModel, mapContentModel);
         controls.showZoom(main.zoom());
-        state.showActions(toActionItems(presentationModel.actionsProperty().get()));
-        presentationModel.requestRefresh();
         return new Binding(controls, main, state);
     }
 
     private static void bindTravelRequests(
-            DungeonApplicationService dungeon,
-            DungeonTravelContributionModel presentationModel,
-            DungeonMapContentModel mapPresentationModel,
+            TravelApplicationService travel,
             DungeonTravelIntentHandler intentHandler
     ) {
-        presentationModel.refreshRequestTokenProperty().addListener((ignored, before, after) -> {
-            src.domain.dungeon.published.DungeonSurfacePayload surface = dungeon.loadSurface(new LoadDungeonSurfaceQuery(
-                    null,
-                    DungeonSurfaceKind.TRAVEL,
-                    DungeonTopologyElementRef.empty(),
-                    0L,
-                    false,
-                    presentationModel.currentPosition()));
-            presentationModel.applySurfaceState(surface);
-            mapPresentationModel.showSurface(presentationModel.rendersDungeonMap() ? surface : null);
-            mapPresentationModel.showPartyToken(presentationModel.currentPartyToken());
-            mapPresentationModel.showProjectionLevel(presentationModel.projectionLevelProperty().get());
-        });
         intentHandler.onPublishedEventRequested(actionEvent -> {
-            src.domain.dungeon.published.DungeonTravelPosition currentPosition = presentationModel.currentPosition();
-            src.domain.dungeon.published.DungeonSurfacePayload result = dungeon.moveSurfaceAction(
-                    new MoveDungeonSurfaceActionCommand(currentPosition, actionEvent.actionId()));
-            presentationModel.applySurfaceState(result);
-            mapPresentationModel.showSurface(presentationModel.rendersDungeonMap() ? result : null);
-            mapPresentationModel.showPartyToken(presentationModel.currentPartyToken());
-            mapPresentationModel.showProjectionLevel(presentationModel.projectionLevelProperty().get());
+            travel.applyDungeonTravelSession(toCommand(actionEvent));
         });
     }
 
-    private static java.util.List<DungeonTravelStateView.ActionItem> toActionItems(
-            java.util.List<src.domain.dungeon.published.DungeonTravelActionSnapshot> actions
+    private static void applySnapshot(
+            TravelDungeonSnapshot snapshot,
+            DungeonTravelContributionModel contributionModel,
+            DungeonMapContentModel mapContentModel
     ) {
-        return (actions == null ? java.util.List.<src.domain.dungeon.published.DungeonTravelActionSnapshot>of() : actions)
-                .stream()
-                .map(action -> new DungeonTravelStateView.ActionItem(
-                        action.actionId(),
-                        action.displayLabel(),
-                        action.description()))
-                .toList();
+        contributionModel.apply(snapshot);
+        mapContentModel.applyTravelSnapshot(snapshot);
     }
 
-    private static DungeonLevelOverlayControlsView.Settings toControlsOverlaySettings(
-            DungeonMapContentModel.RenderState.LevelOverlaySettings settings
-    ) {
-        DungeonMapContentModel.RenderState.LevelOverlaySettings resolved = settings == null
-                ? DungeonMapContentModel.RenderState.LevelOverlaySettings.off()
-                : settings;
-        return new DungeonLevelOverlayControlsView.Settings(
-                toControlsOverlayMode(resolved.mode()),
-                resolved.levelRange(),
-                resolved.opacity(),
-                resolved.selectedLevels());
-    }
-
-    private static DungeonLevelOverlayControlsView.Mode toControlsOverlayMode(
-            DungeonMapContentModel.RenderState.OverlayMode overlayMode
-    ) {
-        return switch (overlayMode == null ? DungeonMapContentModel.RenderState.OverlayMode.OFF : overlayMode) {
-            case OFF -> DungeonLevelOverlayControlsView.Mode.OFF;
-            case NEARBY -> DungeonLevelOverlayControlsView.Mode.NEARBY;
-            case SELECTED -> DungeonLevelOverlayControlsView.Mode.SELECTED;
+    private static ApplyTravelDungeonSessionCommand toCommand(DungeonTravelStatePublishedEvent event) {
+        if (event == null) {
+            return refreshCommand();
+        }
+        return switch (event.kind()) {
+            case ACTION -> new ApplyTravelDungeonSessionCommand(
+                    ApplyTravelDungeonSessionCommand.Action.ACTION,
+                    event.actionId(),
+                    0,
+                    TravelOverlaySettings.defaults());
+            case SET_PROJECTION_LEVEL -> new ApplyTravelDungeonSessionCommand(
+                    ApplyTravelDungeonSessionCommand.Action.SET_PROJECTION_LEVEL,
+                    "",
+                    event.projectionLevel(),
+                    TravelOverlaySettings.defaults());
+            case SET_OVERLAY -> new ApplyTravelDungeonSessionCommand(
+                    ApplyTravelDungeonSessionCommand.Action.SET_OVERLAY,
+                    "",
+                    0,
+                    new TravelOverlaySettings(
+                            event.overlayModeKey(),
+                            event.overlayRange(),
+                            event.overlayOpacity(),
+                            event.overlayLevels()));
         };
+    }
+
+    private static ApplyTravelDungeonSessionCommand refreshCommand() {
+        return new ApplyTravelDungeonSessionCommand(
+                ApplyTravelDungeonSessionCommand.Action.REFRESH,
+                "",
+                0,
+                TravelOverlaySettings.defaults());
     }
 
     private record Binding(

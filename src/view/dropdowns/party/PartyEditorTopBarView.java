@@ -1,5 +1,6 @@
 package src.view.dropdowns.party;
 
+import java.util.function.Consumer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -85,16 +86,13 @@ public final class PartyEditorTopBarView extends VBox {
     private void configureDeleteSection() {
         revealDeleteButton.getStyleClass().addAll("compact", "danger-action");
         revealDeleteButton.setMaxWidth(Double.MAX_VALUE);
-        revealDeleteButton.setOnAction(event -> publish(
-                PartyEditorTopBarViewInputEvent.Source.REQUEST_DELETE_CONFIRM));
+        revealDeleteButton.setOnAction(event -> publish(false, false, true, false, false));
         deleteMessageLabel.getStyleClass().add("dropdown-message");
         deleteMessageLabel.setWrapText(true);
         cancelDeleteButton.getStyleClass().addAll("compact", "neutral-action");
-        cancelDeleteButton.setOnAction(event -> publish(
-                PartyEditorTopBarViewInputEvent.Source.CANCEL_DELETE_CONFIRM));
+        cancelDeleteButton.setOnAction(event -> publish(false, false, false, true, false));
         confirmDeleteButton.getStyleClass().addAll("compact", "danger-action");
-        confirmDeleteButton.setOnAction(event -> publish(
-                PartyEditorTopBarViewInputEvent.Source.CONFIRM_DELETE));
+        confirmDeleteButton.setOnAction(event -> publish(false, false, false, false, true));
         HBox deleteActions = new HBox(8, cancelDeleteButton, confirmDeleteButton);
         deleteActions.setAlignment(Pos.CENTER_RIGHT);
         deleteSection.getStyleClass().add("party-editor-delete-section");
@@ -102,7 +100,7 @@ public final class PartyEditorTopBarView extends VBox {
     }
 
     private void configureActions() {
-        cancelButton.setOnAction(event -> publish(PartyEditorTopBarViewInputEvent.Source.CANCEL_EDITOR));
+        cancelButton.setOnAction(event -> publish(true, false, false, false, false));
         submitButton.setOnAction(event -> submit());
     }
 
@@ -126,15 +124,23 @@ public final class PartyEditorTopBarView extends VBox {
     }
 
     private void submit() {
-        PartyEditorTopBarViewInputEvent.Source source = content.editingExisting()
-                ? PartyEditorTopBarViewInputEvent.Source.UPDATE_SUBMIT
-                : PartyEditorTopBarViewInputEvent.Source.CREATE_SUBMIT;
-        publish(source);
+        publish(false, true, false, false, false);
     }
 
-    private void publish(PartyEditorTopBarViewInputEvent.Source source) {
+    private void publish(
+            boolean cancelRequested,
+            boolean submitRequested,
+            boolean deleteConfirmationRequested,
+            boolean deleteConfirmationCancelled,
+            boolean deleteConfirmed
+    ) {
         viewInputEventHandler.accept(new PartyEditorTopBarViewInputEvent(
-                source,
+                cancelRequested,
+                submitRequested,
+                deleteConfirmationRequested,
+                deleteConfirmationCancelled,
+                deleteConfirmed,
+                content.editingExisting(),
                 content.memberId(),
                 content.memberName(),
                 new PartyEditorTopBarViewInputEvent.EditorDraft(

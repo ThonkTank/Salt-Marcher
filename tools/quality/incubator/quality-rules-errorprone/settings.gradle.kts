@@ -1,3 +1,5 @@
-apply(from = "../../../gradle/build-isolation.settings.gradle.kts")
+pluginManagement {
+    includeBuild("../../../gradle/build-logic")
+}
 
 rootProject.name = "quality-rules-errorprone"

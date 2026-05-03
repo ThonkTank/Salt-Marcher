@@ -9,6 +9,7 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.CalculateAdventuringDayQuery;
+import src.domain.party.published.LoadAdventuringDayCalculationModelQuery;
 import src.domain.party.published.LoadAdventuringDaySummaryQuery;
 
 final class AdventuringDayTopBarBinder {
@@ -21,10 +22,12 @@ final class AdventuringDayTopBarBinder {
 
     ShellBinding bind() {
         PartyApplicationService party = runtimeContext.services().require(PartyApplicationService.class);
+        var summaryModel = party.loadAdventuringDaySummaryModel(new LoadAdventuringDaySummaryQuery());
+        var calculationModel = party.loadAdventuringDayCalculationModel(new LoadAdventuringDayCalculationModelQuery());
         AdventuringDayTopBarContributionModel presentationModel = new AdventuringDayTopBarContributionModel();
         AdventuringDayTopBarIntentHandler intentHandler = new AdventuringDayTopBarIntentHandler(presentationModel);
         AdventuringDayTopBarView view = new AdventuringDayTopBarView();
-        bindRequests(party, presentationModel);
+        bindRequests(party, intentHandler);
         view.triggerTextProperty().bind(presentationModel.triggerTextProperty());
         view.onViewInputEvent(intentHandler::consume);
         view.showPanel(toPanelContent(presentationModel.panelProperty().get()));
@@ -32,22 +35,26 @@ final class AdventuringDayTopBarBinder {
         view.showCalculation(toCalculation(presentationModel.calculationProperty().get()));
         presentationModel.calculationProperty()
                 .addListener((ignored, before, after) -> view.showCalculation(toCalculation(after)));
-        presentationModel.requestRefresh();
+        summaryModel.subscribe(presentationModel::applySummaryResult);
+        calculationModel.subscribe(result ->
+                presentationModel.applyCalculationResult(intentHandler.drainPendingTotalGroupXp(), result));
+        presentationModel.applySummaryResult(summaryModel.current());
+        presentationModel.applyCalculationResult(0, calculationModel.current());
         return new Binding(view);
     }
 
     private static void bindRequests(
             PartyApplicationService party,
-            AdventuringDayTopBarContributionModel presentationModel
+            AdventuringDayTopBarIntentHandler intentHandler
     ) {
-        presentationModel.refreshRequestTokenProperty().addListener((ignored, before, after) ->
-                presentationModel.applySummaryResult(party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery())));
-        presentationModel.calculationRequestTokenProperty().addListener((ignored, before, after) -> {
-            presentationModel.applyCalculationResult(
-                    presentationModel.requestedTotalGroupXp(),
-                    party.calculateAdventuringDay(new CalculateAdventuringDayQuery(
-                            List.copyOf(presentationModel.requestedLevelsProperty()),
-                            presentationModel.requestedTotalGroupXp())));
+        intentHandler.onPublishedEventRequested(event -> {
+            if (event == null) {
+                return;
+            }
+            intentHandler.storePendingTotalGroupXp(event.totalGroupXp());
+            party.calculateAdventuringDay(new CalculateAdventuringDayQuery(
+                    List.copyOf(event.levels()),
+                    event.totalGroupXp()));
         });
     }
 

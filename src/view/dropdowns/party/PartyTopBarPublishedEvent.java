@@ -15,6 +15,7 @@ public record PartyTopBarPublishedEvent(
 ) {
 
     public PartyTopBarPublishedEvent {
+        java.util.Objects.requireNonNull(kind, "kind");
         membershipTarget = membershipTarget == null ? MembershipTarget.ACTIVE : membershipTarget;
         name = name == null ? "" : name;
         playerName = playerName == null ? "" : playerName;

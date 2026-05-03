@@ -10,10 +10,6 @@ It keeps the proof surface owner-pure:
   `LayeringArchitectureTopologyCheckMain`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project aggregate-task wiring
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle proves only the repository-wide layer-topology invariants that are
 mechanically owned by the layering document itself. Neighboring `Enforced

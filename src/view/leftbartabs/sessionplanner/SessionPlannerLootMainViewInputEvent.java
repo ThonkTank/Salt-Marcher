@@ -1,17 +1,10 @@
 package src.view.leftbartabs.sessionplanner;
 
 public record SessionPlannerLootMainViewInputEvent(
-        Source source,
-        long lootToken
+        long removedLootToken
 ) {
 
     public SessionPlannerLootMainViewInputEvent {
-        source = source == null ? Source.ADD_LOOT_BUTTON : source;
-        lootToken = Math.max(0L, lootToken);
-    }
-
-    enum Source {
-        ADD_LOOT_BUTTON,
-        REMOVE_LOOT_BUTTON
+        removedLootToken = Math.max(0L, removedLootToken);
     }
 }

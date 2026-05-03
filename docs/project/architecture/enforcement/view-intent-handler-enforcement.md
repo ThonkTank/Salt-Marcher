@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-02
+Last Reviewed: 2026-05-03
 Source of Truth: Complete invariant catalog for the optional
 `*IntentHandler` role itself in `src/view/**`.
 
@@ -51,7 +51,7 @@ Unified focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-colocated-model-dependency-only` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` | `./gradlew compileJava` | An `IntentHandler` may depend on a model role only through its own same-package `*ContributionModel` or `*ContentModel`. |
 | `view-intenthandler-colocated-viewinputevent-dependency-only` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerDependencyBoundary` and Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | An `IntentHandler` may depend on input carriers only through its own same-package `*ViewInputEvent` family and the required `consume(...)` seam that consumes such a carrier. |
-| `view-intenthandler-optional-local-publishedevent-write-seam` | Enforced | every `*IntentHandler.java` that opens a write-side publication seam | Error Prone `ViewIntentHandlerDependencyBoundary` and ArchUnit `intentHandlersWithPublishedEventSinkMustOwnMatchingPublishedEvents` | `./gradlew compileJava` and `./gradlew checkArchitecture` | When domain-write publication is needed, an `IntentHandler` may depend on and expose only a matching same-package `*PublishedEvent` family through `onPublishedEventRequested(Consumer<...>)`. |
+| `view-intenthandler-optional-local-publishedevent-write-seam` | Enforced | every `*IntentHandler.java` that opens a Binder-mediated outward-work seam | Error Prone `ViewIntentHandlerDependencyBoundary` and ArchUnit `intentHandlersWithPublishedEventSinkMustOwnMatchingPublishedEvents` | `./gradlew compileJava` and `./gradlew checkArchitecture` | When a local input interpretation must trigger a domain write, an `IntentHandler` may depend on a matching same-package `*PublishedEvent` family and expose that seam only through the exact `onPublishedEventRequested(Consumer<MatchingLocalPublishedEvent>)` contract. |
 | `view-intenthandler-same-surface-local-support-only` | Review-Owned | every `*IntentHandler.java` under `src/view/**` | none | none | Beyond the allowed model and carrier families above, helper state and helper types stay local to the same handler surface instead of becoming hidden foreign-role or cross-unit coordination channels. |
 
 ### Must Contain
@@ -72,16 +72,17 @@ communication seam obligations documented below.
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-viewinputevent-consume-entrypoint` | Enforced | every `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | An `IntentHandler` exposes a fire-and-forget `void consume(SameRootViewInputEvent)` input seam. |
-| `view-intenthandler-publishedevent-consumer-sink-contract` | Enforced | every `*IntentHandler.java` that exposes a write-side publication seam | ArchUnit `intentHandlersWithPublishedEventSinkMustOwnMatchingPublishedEvents` | `./gradlew checkArchitecture` | If an `IntentHandler` exposes a write-side publication seam, that seam is `onPublishedEventRequested(Consumer<MatchingLocalPublishedEvent>)` for a matching same-package `*PublishedEvent` family. |
+| `view-intenthandler-no-viewinputevent-discriminator-dispatch` | Enforced | every `consume(SameRootViewInputEvent)` overload in `*IntentHandler.java` under `src/view/**` | Error Prone `ViewIntentHandlerViewInputEvent` | `./gradlew compileJava` | `IntentHandler.consume(...)` derives meaning from concrete `*ViewInputEvent` snapshot fields instead of dispatching through `event.source()` or `event.action()` command discriminators. |
+| `view-intenthandler-publishedevent-consumer-sink-contract` | Enforced | every `*IntentHandler.java` that exposes a Binder-mediated outward-work seam | ArchUnit `intentHandlersWithPublishedEventSinkMustOwnMatchingPublishedEvents` | `./gradlew checkArchitecture` | If an `IntentHandler` exposes a Binder-mediated outward-work seam, that seam is `onPublishedEventRequested(Consumer<MatchingLocalPublishedEvent>)` for a matching same-package `*PublishedEvent` family; alternate non-private PublishedEvent sink or proxy methods are forbidden. |
 
 ## Review-Owned
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-intenthandler-thin-local-interpretation-semantics` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | A legal `IntentHandler` still stays a thin local input-interpretation role rather than becoming a hidden workflow coordinator. |
+| `view-intenthandler-thin-local-interpretation-semantics` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | A legal `IntentHandler` still stays a thin local input-interpretation role rather than becoming a hidden workflow coordinator. Purely local UI-only state such as selection, tool mode, open/closed flags, or comparable presentation facts may be written directly into the co-located model without growing a domain seam, while authoritative session or domain transitions still leave through one emitted `*PublishedEvent` instead of projection-model-driven command reconstruction. |
 | `view-intenthandler-consume-surface-minimality` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | The legal `consume(...)` entrypoint set is still the minimum local interpretation surface instead of an accumulation of extra technically legal entrypoints and helper protocols. |
-| `view-intenthandler-no-viewinputevent-fallback-synthesis` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | A legal `IntentHandler` derives meaning from the received snapshot instead of synthesizing fallback `*ViewInputEvent` instances or rebuilding the carrier protocol internally. |
-| `view-intenthandler-write-seam-necessity` | Review-Owned | every mechanically legal `*IntentHandler.java` that exposes `onPublishedEventRequested(...)` | none | none | A legal local published-event seam is used only when the interaction really needs Binder-mediated domain work rather than remaining presentation-local. |
+| `view-intenthandler-no-viewinputevent-fallback-synthesis` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | A legal `IntentHandler` does not synthesize fallback `*ViewInputEvent` instances or rebuild the carrier protocol internally beyond the now-mechanically-blocked `source/action` discriminator dispatch anti-pattern. |
+| `view-intenthandler-write-seam-necessity` | Review-Owned | every mechanically legal `*IntentHandler.java` that exposes `onPublishedEventRequested(...)` | none | none | A legal local published-event seam is used only when the interaction really needs Binder-mediated domain-write work rather than remaining presentation-local. Query/load/search/preview/reset/detail-open or shell/view-effect protocols do not justify a write seam. |
 
 ## References
 

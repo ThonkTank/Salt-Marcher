@@ -104,22 +104,17 @@ final class SessionPlannerBinder {
         if (event == null) {
             return refreshCommand();
         }
-        SessionPlannerPublishedEvent safeEvent = event;
-        if (safeEvent.kind() == SessionPlannerPublishedEvent.Kind.REFRESH) {
-            return refreshCommand();
-        }
         return new ApplySessionPlannerCommand(
-                toAction(safeEvent.kind()),
-                safeEvent.planId(),
-                safeEvent.encounterToken(),
-                safeEvent.gapIndex(),
-                toRestKind(safeEvent.restSelection()),
-                safeEvent.lootToken());
+                toAction(event.kind()),
+                event.planId(),
+                event.encounterToken(),
+                event.gapIndex(),
+                toRestKind(event.restSelection()),
+                event.lootToken());
     }
 
     private static ApplySessionPlannerCommand.Action toAction(SessionPlannerPublishedEvent.Kind kind) {
-        return switch (kind == null ? SessionPlannerPublishedEvent.Kind.REFRESH : kind) {
-            case REFRESH -> ApplySessionPlannerCommand.Action.REFRESH;
+        return switch (kind) {
             case IMPORT_PLAN -> ApplySessionPlannerCommand.Action.IMPORT_ENCOUNTER_PLAN;
             case REMOVE_ENCOUNTER -> ApplySessionPlannerCommand.Action.REMOVE_ENCOUNTER;
             case MOVE_ENCOUNTER_UP -> ApplySessionPlannerCommand.Action.MOVE_ENCOUNTER_UP;

@@ -49,30 +49,35 @@ public final class MoveDungeonTravelActionUseCase {
         DungeonTravelPositionFacts position = input == null ? null : input.position();
         String actionId = input == null ? "" : input.actionId();
         DungeonMap currentMap = loadMap(position);
-        DungeonDerivedState derived = derive.execute(currentMap);
-        DungeonTravelSurfaceFacts currentSurface = projector.project(currentMap, derived, position, "");
+        DungeonDerivedState currentDerived = derive.execute(currentMap);
+        DungeonTravelSurfaceFacts currentSurface = project(currentMap, currentDerived, position, "");
         DungeonTravelActionFacts action = findAction(currentSurface, actionId);
         if (action == null) {
             return moveResult(DungeonTravelMoveStatus.INVALID_ACTION, "Aktion ist nicht verfuegbar.", currentSurface);
         }
         if (action.kind() == DungeonTravelActionKind.TRAVERSAL) {
-            return moveThroughTraversal(currentMap, action);
+            return moveThroughTraversal(currentMap, currentDerived, action);
         }
-        return moveThroughTransition(currentMap, currentSurface.position(), action);
+        return moveThroughTransition(currentMap, currentDerived, currentSurface.position(), action);
     }
 
-    private DungeonTravelMoveFacts moveThroughTraversal(DungeonMap currentMap, DungeonTravelActionFacts action) {
+    private DungeonTravelMoveFacts moveThroughTraversal(
+            DungeonMap currentMap,
+            DungeonDerivedState currentDerived,
+            DungeonTravelActionFacts action
+    ) {
         DungeonTravelPositionFacts target = action.targetPosition();
         if (target == null) {
-            DungeonTravelSurfaceFacts surface = project(currentMap, null, "Reiseziel ist nicht verfuegbar.");
+            DungeonTravelSurfaceFacts surface = project(currentMap, currentDerived, null, "Reiseziel ist nicht verfuegbar.");
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
         }
-        DungeonTravelSurfaceFacts surface = project(currentMap, target, "Reiseaktion ausgefuehrt.");
+        DungeonTravelSurfaceFacts surface = project(currentMap, currentDerived, target, "Reiseaktion ausgefuehrt.");
         return moveResult(DungeonTravelMoveStatus.SUCCESS, "Reiseaktion ausgefuehrt.", surface);
     }
 
     private DungeonTravelMoveFacts moveThroughTransition(
             DungeonMap currentMap,
+            DungeonDerivedState currentDerived,
             DungeonTravelPositionFacts currentPosition,
             DungeonTravelActionFacts action
     ) {
@@ -80,6 +85,7 @@ public final class MoveDungeonTravelActionUseCase {
         if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
             DungeonTravelSurfaceFacts surface = project(
                     currentMap,
+                    currentDerived,
                     currentPosition,
                     "Uebergang fuehrt zum Overworld-Feld " + overworld.tileId() + ".");
             return moveResult(
@@ -101,7 +107,12 @@ public final class MoveDungeonTravelActionUseCase {
     ) {
         if (destination.transitionId() == null) {
             DungeonMap currentMap = loadMap(currentPosition);
-            DungeonTravelSurfaceFacts surface = project(currentMap, currentPosition, "Ziel-Uebergang ist noch nicht platziert.");
+            DungeonDerivedState currentDerived = derive.execute(currentMap);
+            DungeonTravelSurfaceFacts surface = project(
+                    currentMap,
+                    currentDerived,
+                    currentPosition,
+                    "Ziel-Uebergang ist noch nicht platziert.");
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
         }
         DungeonMapIdentity targetMapId = new DungeonMapIdentity(destination.mapId());
@@ -110,7 +121,12 @@ public final class MoveDungeonTravelActionUseCase {
         DungeonCell anchor = targetTransition == null ? null : targetTransition.anchor();
         if (targetMap == null || targetTransition == null || anchor == null) {
             DungeonMap currentMap = loadMap(currentPosition);
-            DungeonTravelSurfaceFacts surface = project(currentMap, currentPosition, "Ziel-Uebergang ist nicht verfuegbar.");
+            DungeonDerivedState currentDerived = derive.execute(currentMap);
+            DungeonTravelSurfaceFacts surface = project(
+                    currentMap,
+                    currentDerived,
+                    currentPosition,
+                    "Ziel-Uebergang ist nicht verfuegbar.");
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
         }
         DungeonTravelPositionFacts targetPosition = new DungeonTravelPositionFacts(
@@ -119,8 +135,18 @@ public final class MoveDungeonTravelActionUseCase {
                 targetTransition.transitionId(),
                 anchor,
                 currentPosition.heading());
-        DungeonTravelSurfaceFacts surface = project(targetMap, targetPosition, "Uebergang benutzt.");
+        DungeonDerivedState targetDerived = derive.execute(targetMap);
+        DungeonTravelSurfaceFacts surface = project(targetMap, targetDerived, targetPosition, "Uebergang benutzt.");
         return moveResult(DungeonTravelMoveStatus.SUCCESS, "Uebergang benutzt.", surface);
+    }
+
+    private DungeonTravelSurfaceFacts project(
+            DungeonMap dungeonMap,
+            DungeonDerivedState derived,
+            @Nullable DungeonTravelPositionFacts position,
+            String statusLabel
+    ) {
+        return projector.project(dungeonMap, derived, position, statusLabel);
     }
 
     private DungeonTravelSurfaceFacts project(
@@ -128,7 +154,7 @@ public final class MoveDungeonTravelActionUseCase {
             @Nullable DungeonTravelPositionFacts position,
             String statusLabel
     ) {
-        return projector.project(dungeonMap, derive.execute(dungeonMap), position, statusLabel);
+        return project(dungeonMap, derive.execute(dungeonMap), position, statusLabel);
     }
 
     private DungeonMap loadMap(@Nullable DungeonTravelPositionFacts position) {

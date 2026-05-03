@@ -13,12 +13,6 @@ It keeps the tactical `policy/` proof route owner-pure and bundle-local:
   `DomainPolicyEnforcementDocumentationCheckMain`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler wiring and aggregate-task entrypoint
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the tactical `policy/` role itself. Generic
 named-module topology, generic named-module communication boundaries, and the

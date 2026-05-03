@@ -238,6 +238,9 @@
     -fx-padding: 0 8 0 8;
     -fx-max-width: Infinity;
 }
+.party-roster-panel {
+    -fx-spacing: 0;
+}
 .party-row {
     -fx-padding: 6 8 6 8;
     -fx-spacing: 3;
@@ -324,6 +327,10 @@
     -fx-text-fill: -sm-text-secondary;
 }
 .party-editor-dropdown {
+    -fx-min-width: 340;
+    -fx-pref-width: 360;
+}
+.party-editor-inline {
     -fx-min-width: 340;
     -fx-pref-width: 360;
 }

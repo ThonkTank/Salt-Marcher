@@ -11,10 +11,6 @@ It keeps the bootstrap-layer proof surface bundle-local:
   `architecture.bootstrap.layer.BootstrapLayerArchitectureTest`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project ArchUnit, aggregate-task, and focused-entry wiring
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle proves only bootstrap-layer discovery-root scope, bootstrap-consumed
 generic registration contracts, startup default-landing checks, and bootstrap's

@@ -23,7 +23,6 @@ import org.jspecify.annotations.Nullable;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
-import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 import src.view.slotcontent.primitives.popup.AnchoredPopupView;
 
 public final class DungeonEditorControlsView extends DungeonControlPanelView {
@@ -68,8 +67,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private final Button corridorButton = toolButton(CORRIDOR_FAMILY);
     private final Button stairButton = toolButton(STAIR_FAMILY);
     private final Button transitionButton = toolButton(TRANSITION_FAMILY);
-    private final DungeonLevelOverlayControlsView overlayControls =
-            new DungeonLevelOverlayControlsView(this::sectionLabel);
+    private final OverlayControlsPanel overlayControls = new OverlayControlsPanel(this::sectionLabel);
     private final ToggleGroup viewModeGroup = new ToggleGroup();
     private final ToggleGroup toolGroup = new ToggleGroup();
     private final AnchoredPopupView mapEditorPopup = new AnchoredPopupView();
@@ -88,7 +86,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private boolean syncingViewMode;
     private boolean createMode;
     private boolean deleteMode;
-    private String editingMapKey = "";
+    private long editingMapIdValue;
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
     public DungeonEditorControlsView() {
@@ -107,8 +105,23 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
-    public DungeonLevelOverlayControlsView levelOverlayControls() {
-        return overlayControls;
+    public void bind(DungeonEditorContributionModel contributionModel) {
+        if (contributionModel == null) {
+            return;
+        }
+        contributionModel.mapEntriesProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
+        contributionModel.selectedMapKeyProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
+        contributionModel.busyProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
+        contributionModel.statusProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
+        contributionModel.reachableLevelsProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
+        contributionModel.projectionLevelProperty().addListener((ignored, before, after) -> refreshProjection(contributionModel));
+        contributionModel.overlayProjectionProperty().addListener((ignored, before, after) ->
+                showOverlaySettings(toOverlaySettings(after), contributionModel.busyProperty().get()));
+        contributionModel.viewModeLabelProperty().addListener((ignored, before, after) -> showViewMode(after));
+        contributionModel.selectedToolProperty().addListener((ignored, before, after) -> showTool(after));
+        refreshProjection(contributionModel);
+        showViewMode(contributionModel.viewModeLabelProperty().get());
+        showTool(contributionModel.selectedToolProperty().get());
     }
 
     public void showMaps(List<MapItem> maps, String selectedKey, boolean busy, String statusText) {
@@ -144,7 +157,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         nextLevelButton.setDisable(busy || !navigationEnabled);
     }
 
-    public void showOverlaySettings(DungeonLevelOverlayControlsView.Settings settings, boolean disabled) {
+    public void showOverlaySettings(OverlayControlsPanel.Settings settings, boolean disabled) {
         overlayControls.showSettings(settings, disabled);
     }
 
@@ -158,6 +171,12 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     public void showTool(String tool) {
         String selectedTool = normalizeTool(tool);
         selectButton.setSelected(SELECT_TOOL.equals(selectedTool));
+        roomButton.setUserData(isRoomTool(selectedTool) ? selectedTool : ROOM_PAINT_TOOL);
+        wallButton.setUserData(isWallTool(selectedTool) ? selectedTool : WALL_CREATE_TOOL);
+        doorButton.setUserData(isDoorTool(selectedTool) ? selectedTool : DOOR_CREATE_TOOL);
+        corridorButton.setUserData(isCorridorTool(selectedTool) ? selectedTool : CORRIDOR_CREATE_TOOL);
+        stairButton.setUserData(isStairTool(selectedTool) ? selectedTool : STAIR_CREATE_TOOL);
+        transitionButton.setUserData(isTransitionTool(selectedTool) ? selectedTool : TRANSITION_CREATE_TOOL);
         markSelected(roomButton, isRoomTool(selectedTool));
         markSelected(wallButton, isWallTool(selectedTool));
         markSelected(doorButton, isDoorTool(selectedTool));
@@ -188,16 +207,10 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             editMapItem.setDisable(after == null);
             deleteMapItem.setDisable(after == null);
             if (!syncingMaps && after != null) {
-                publish(new DungeonEditorControlsViewInputEvent(
-                        DungeonEditorControlsViewInputEvent.Source.MAP_SELECTION,
-                        after.key(),
-                        "",
-                        "Grid",
-                        "Auswahl",
-                        "OFF",
-                        0,
-                        0.0,
-                        List.of()));
+                publishSnapshot(true, false, false, false, after.mapId(), currentMapName(),
+                        false, currentViewModeKey(), false, currentTool(), 0, false,
+                        overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                        overlayControls.overlayOpacity(), overlayControls.overlayLevelsText());
             }
         });
         mapActionButton.setText("Neu");
@@ -216,26 +229,14 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         statusLabel.setMaxWidth(160.0);
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
-        previousLevelButton.setOnAction(event -> publish(new DungeonEditorControlsViewInputEvent(
-                DungeonEditorControlsViewInputEvent.Source.PREVIOUS_LEVEL_BUTTON,
-                "",
-                "",
-                "Grid",
-                "Auswahl",
-                "OFF",
-                0,
-                0.0,
-                List.of())));
-        nextLevelButton.setOnAction(event -> publish(new DungeonEditorControlsViewInputEvent(
-                DungeonEditorControlsViewInputEvent.Source.NEXT_LEVEL_BUTTON,
-                "",
-                "",
-                "Grid",
-                "Auswahl",
-                "OFF",
-                0,
-                0.0,
-                List.of())));
+        previousLevelButton.setOnAction(event -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
+                false, currentViewModeKey(), false, currentTool(), -1, false,
+                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
+        nextLevelButton.setOnAction(event -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
+                false, currentViewModeKey(), false, currentTool(), 1, false,
+                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
         levelLabel.getStyleClass().add("text-muted");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         describe(nextLevelButton, "Naechste Dungeon-Ebene anzeigen");
@@ -255,16 +256,23 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
                 }
                 return;
             }
-            publish(new DungeonEditorControlsViewInputEvent(
-                    DungeonEditorControlsViewInputEvent.Source.VIEW_MODE_TOGGLE,
-                    "",
-                    "",
+            publishSnapshot(
+                    false,
+                    false,
+                    false,
+                    false,
+                    currentMapIdValue(),
+                    currentMapName(),
+                    true,
                     newToggle == graphButton ? VIEW_GRAPH : VIEW_GRID,
-                    "Auswahl",
-                    "OFF",
+                    false,
+                    currentTool(),
                     0,
-                    0.0,
-                    List.of()));
+                    false,
+                    overlayControls.overlayModeKey(),
+                    overlayControls.overlayRange(),
+                    overlayControls.overlayOpacity(),
+                    overlayControls.overlayLevelsText());
         });
     }
 
@@ -330,63 +338,30 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             }
         });
         confirmDeleteButton.setOnAction(event -> {
-            publish(new DungeonEditorControlsViewInputEvent(
-                    DungeonEditorControlsViewInputEvent.Source.DELETE_MAP_CONFIRM,
-                    editingMapKey,
-                    "",
-                    "Grid",
-                    "Auswahl",
-                    "OFF",
-                    0,
-                    0.0,
-                    List.of()));
+            publishSnapshot(false, false, false, true, editingMapIdValue, currentMapName(),
+                    false, currentViewModeKey(), false, currentTool(), 0, false,
+                    overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                    overlayControls.overlayOpacity(), overlayControls.overlayLevelsText());
             mapEditorPopup.hide();
         });
         saveMapButton.setOnAction(event -> submitMapEditor());
         mapNameField.setOnAction(event -> submitMapEditor());
-        overlayControls.setOnModeChanged(mode -> publish(new DungeonEditorControlsViewInputEvent(
-                DungeonEditorControlsViewInputEvent.Source.OVERLAY_MODE_CONTROL,
-                "",
-                "",
-                "Grid",
-                "Auswahl",
-                mode == null ? "OFF" : mode.name(),
-                0,
-                0.0,
-                List.of())));
-        overlayControls.setOnRangeChanged(levelRange ->
-                publish(new DungeonEditorControlsViewInputEvent(
-                        DungeonEditorControlsViewInputEvent.Source.OVERLAY_RANGE_CONTROL,
-                        "",
-                        "",
-                        "Grid",
-                        "Auswahl",
-                        "OFF",
-                        levelRange,
-                        0.0,
-                        List.of())));
-        overlayControls.setOnOpacityChanged(opacity ->
-                publish(new DungeonEditorControlsViewInputEvent(
-                        DungeonEditorControlsViewInputEvent.Source.OVERLAY_OPACITY_CONTROL,
-                        "",
-                        "",
-                        "Grid",
-                        "Auswahl",
-                        "OFF",
-                        0,
-                        opacity,
-                        List.of())));
-        overlayControls.setOnSelectedLevelsChanged(levels ->
-                publish(new DungeonEditorControlsViewInputEvent(
-                        DungeonEditorControlsViewInputEvent.Source.OVERLAY_LEVEL_SELECTION,
-                        "",
-                        "",
-                        "Grid",
-                        "Auswahl",
-                        "OFF",
-                        0,
-                        0.0,
-                        levels)));
+        overlayControls.setOnModeChanged(mode -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
+                false, currentViewModeKey(), false, currentTool(), 0, true,
+                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
+        overlayControls.setOnRangeChanged(levelRange -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
+                false, currentViewModeKey(), false, currentTool(), 0, true,
+                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
+        overlayControls.setOnOpacityChanged(opacity -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
+                false, currentViewModeKey(), false, currentTool(), 0, true,
+                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
+        overlayControls.setOnSelectedLevelsChanged(() -> publishSnapshot(false, false, false, false, currentMapIdValue(), currentMapName(),
+                false, currentViewModeKey(), false, currentTool(), 0, true,
+                overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
     }
 
     private void configureToolPopup() {
@@ -434,7 +409,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private void showCreatePopup(Node anchor) {
         createMode = true;
         deleteMode = false;
-        editingMapKey = "";
+        editingMapIdValue = 0L;
         mapEditorTitle.setText("Neuen Dungeon anlegen");
         mapNameField.setVisible(true);
         mapNameField.setManaged(true);
@@ -456,7 +431,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         }
         createMode = false;
         deleteMode = false;
-        editingMapKey = selected.key();
+        editingMapIdValue = selected.mapId();
         mapEditorTitle.setText("Dungeon bearbeiten");
         mapNameField.setVisible(true);
         mapNameField.setManaged(true);
@@ -478,7 +453,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         }
         createMode = false;
         deleteMode = true;
-        editingMapKey = selected.key();
+        editingMapIdValue = selected.mapId();
         mapEditorTitle.setText("Dungeon loeschen: " + selected.mapName());
         mapNameField.setVisible(false);
         mapNameField.setManaged(false);
@@ -511,27 +486,15 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
             return;
         }
         if (createMode) {
-            publish(new DungeonEditorControlsViewInputEvent(
-                    DungeonEditorControlsViewInputEvent.Source.CREATE_MAP_SUBMIT,
-                    "",
-                    mapName,
-                    "Grid",
-                    "Auswahl",
-                    "OFF",
-                    0,
-                    0.0,
-                    List.of()));
+            publishSnapshot(false, true, false, false, 0L, mapName,
+                    false, currentViewModeKey(), false, currentTool(), 0, false,
+                    overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                    overlayControls.overlayOpacity(), overlayControls.overlayLevelsText());
         } else {
-            publish(new DungeonEditorControlsViewInputEvent(
-                    DungeonEditorControlsViewInputEvent.Source.RENAME_MAP_SUBMIT,
-                    editingMapKey,
-                    mapName,
-                    "Grid",
-                    "Auswahl",
-                    "OFF",
-                    0,
-                    0.0,
-                    List.of()));
+            publishSnapshot(false, false, true, false, editingMapIdValue, mapName,
+                    false, currentViewModeKey(), false, currentTool(), 0, false,
+                    overlayControls.overlayModeKey(), overlayControls.overlayRange(),
+                    overlayControls.overlayOpacity(), overlayControls.overlayLevelsText());
         }
         mapEditorPopup.hide();
     }
@@ -546,10 +509,12 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         primaryToolOption.setText(primaryTool);
         secondaryToolOption.setText(secondaryTool);
         primaryToolOption.setOnAction(event -> {
+            anchor.setUserData(primaryTool);
             selectTool(primaryTool);
             toolPopup.hide();
         });
         secondaryToolOption.setOnAction(event -> {
+            anchor.setUserData(secondaryTool);
             selectTool(secondaryTool);
             toolPopup.hide();
         });
@@ -560,20 +525,111 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private void selectTool(String tool) {
         String selectedTool = normalizeTool(tool);
         showTool(selectedTool);
-        publish(new DungeonEditorControlsViewInputEvent(
-                DungeonEditorControlsViewInputEvent.Source.TOOL_SELECTION,
-                "",
-                "",
-                "Grid",
+        publishSnapshot(
+                false,
+                false,
+                false,
+                false,
+                currentMapIdValue(),
+                currentMapName(),
+                false,
+                currentViewModeKey(),
+                true,
                 selectedTool,
-                "OFF",
                 0,
-                0.0,
-                List.of()));
+                false,
+                overlayControls.overlayModeKey(),
+                overlayControls.overlayRange(),
+                overlayControls.overlayOpacity(),
+                overlayControls.overlayLevelsText());
     }
 
     private void publish(DungeonEditorControlsViewInputEvent event) {
         viewInputEventHandler.accept(event);
+    }
+
+    private void publishSnapshot(
+            boolean mapSelectionChanged,
+            boolean createMapRequested,
+            boolean renameMapRequested,
+            boolean deleteMapRequested,
+            long mapIdValue,
+            String mapName,
+            boolean viewModeChanged,
+            String viewModeKey,
+            boolean toolChanged,
+            String tool,
+            int projectionLevelShift,
+            boolean overlayChanged,
+            String overlayModeKey,
+            int overlayRange,
+            double overlayOpacity,
+            String overlayLevelsText
+    ) {
+        publish(new DungeonEditorControlsViewInputEvent(
+                mapSelectionChanged,
+                createMapRequested,
+                renameMapRequested,
+                deleteMapRequested,
+                mapIdValue,
+                mapName,
+                viewModeChanged,
+                viewModeKey,
+                toolChanged,
+                tool,
+                projectionLevelShift,
+                overlayChanged,
+                overlayModeKey,
+                overlayRange,
+                overlayOpacity,
+                overlayLevelsText));
+    }
+
+    private long currentMapIdValue() {
+        MapItem selected = mapSelector.getSelectionModel().getSelectedItem();
+        return selected == null ? 0L : selected.mapId();
+    }
+
+    private String currentMapName() {
+        if (mapNameField.isVisible()) {
+            return mapNameField.getText() == null ? "" : mapNameField.getText().strip();
+        }
+        MapItem selected = mapSelector.getSelectionModel().getSelectedItem();
+        return selected == null ? "" : selected.mapName();
+    }
+
+    private String currentViewModeKey() {
+        return graphButton.isSelected() ? VIEW_GRAPH : VIEW_GRID;
+    }
+
+    private String currentTool() {
+        if (selectButton.isSelected()) {
+            return SELECT_TOOL;
+        }
+        if (roomButton.getStyleClass().contains("selected")) {
+            return currentButtonTool(roomButton, ROOM_PAINT_TOOL);
+        }
+        if (wallButton.getStyleClass().contains("selected")) {
+            return currentButtonTool(wallButton, WALL_CREATE_TOOL);
+        }
+        if (doorButton.getStyleClass().contains("selected")) {
+            return currentButtonTool(doorButton, DOOR_CREATE_TOOL);
+        }
+        if (corridorButton.getStyleClass().contains("selected")) {
+            return currentButtonTool(corridorButton, CORRIDOR_CREATE_TOOL);
+        }
+        if (stairButton.getStyleClass().contains("selected")) {
+            return currentButtonTool(stairButton, STAIR_CREATE_TOOL);
+        }
+        if (transitionButton.getStyleClass().contains("selected")) {
+            return currentButtonTool(transitionButton, TRANSITION_CREATE_TOOL);
+        }
+        return SELECT_TOOL;
+    }
+
+    private static String currentButtonTool(Button button, String fallbackTool) {
+        Object userData = button.getUserData();
+        return userData instanceof String tool ? normalizeTool(tool) : fallbackTool;
     }
 
     private static ToggleButton toolToggle(String text) {
@@ -587,12 +643,60 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         Button button = new Button(text);
         button.getStyleClass().add("tool-btn");
         button.setMinWidth(Region.USE_PREF_SIZE);
+        button.setUserData(text);
         return button;
     }
 
     private static String normalizeTool(String tool) {
         String selectedTool = tool == null || tool.isBlank() ? SELECT_TOOL : tool;
         return isKnownTool(selectedTool) ? selectedTool : SELECT_TOOL;
+    }
+
+    private void refreshProjection(DungeonEditorContributionModel contributionModel) {
+        boolean hasMap = contributionModel.selectedMapKeyProperty().get() != null
+                && !contributionModel.selectedMapKeyProperty().get().isBlank();
+        boolean busy = contributionModel.busyProperty().get();
+        showMaps(
+                contributionModel.mapEntriesProperty().get().stream()
+                        .map(DungeonEditorControlsView::toMapItem)
+                        .toList(),
+                contributionModel.selectedMapKeyProperty().get(),
+                busy,
+                contributionModel.statusProperty().get());
+        showLevels(
+                contributionModel.reachableLevelsProperty().get(),
+                contributionModel.projectionLevelProperty().get(),
+                busy,
+                hasMap);
+        showOverlaySettings(toOverlaySettings(contributionModel.overlayProjectionProperty().get()), busy);
+    }
+
+    private static MapItem toMapItem(DungeonEditorContributionModel.MapListEntry selection) {
+        return new MapItem(
+                selection.key(),
+                selection.mapIdValue(),
+                selection.mapName(),
+                selection.revision());
+    }
+
+    private static OverlayControlsPanel.Settings toOverlaySettings(
+            DungeonEditorContributionModel.OverlayProjection settings
+    ) {
+        return new OverlayControlsPanel.Settings(
+                toOverlayMode(settings.modeKey()),
+                settings.levelRange(),
+                settings.opacity(),
+                settings.selectedLevels());
+    }
+
+    private static OverlayControlsPanel.Mode toOverlayMode(String overlayMode) {
+        if ("NEARBY".equalsIgnoreCase(overlayMode)) {
+            return OverlayControlsPanel.Mode.NEARBY;
+        }
+        if ("SELECTED".equalsIgnoreCase(overlayMode)) {
+            return OverlayControlsPanel.Mode.SELECTED;
+        }
+        return OverlayControlsPanel.Mode.OFF;
     }
 
     private static boolean isKnownTool(String tool) {

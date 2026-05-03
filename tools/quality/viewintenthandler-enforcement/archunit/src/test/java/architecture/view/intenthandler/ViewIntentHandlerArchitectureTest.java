@@ -12,10 +12,13 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
@@ -50,52 +53,131 @@ public final class ViewIntentHandlerArchitectureTest {
         return new ArchCondition<>("own a same-package PublishedEvent when exposing onPublishedEventRequested(Consumer<PublishedEvent>)") {
             @Override
             public void check(JavaClass item, ConditionEvents events) {
-                String publishedEventSimpleName = publishedEventSimpleNameConsumedByHandler(item.getName());
-                if (publishedEventSimpleName == null) {
+                PublishedEventSinkInspection sinkInspection = inspectPublishedEventSinks(item.getName());
+                String packageName = item.getPackageName();
+                for (String violation : sinkInspection.violations()) {
+                    events.add(SimpleConditionEvent.violated(item, item.getName() + " " + violation));
+                }
+                if (sinkInspection.publishedEventSimpleNames().isEmpty()) {
                     return;
                 }
-                String packageName = item.getPackageName();
                 Set<String> packageClassNames = topLevelClassNamesInPackage(packageName);
-                if (!packageClassNames.contains(publishedEventSimpleName)) {
-                    events.add(SimpleConditionEvent.violated(
-                            item,
-                            item.getName() + " exposes onPublishedEventRequested(...) for "
-                                    + packageName + "." + publishedEventSimpleName
-                                    + " but the package defines no matching local PublishedEvent"));
+                for (String publishedEventSimpleName : sinkInspection.publishedEventSimpleNames()) {
+                    if (!packageClassNames.contains(publishedEventSimpleName)) {
+                        events.add(SimpleConditionEvent.violated(
+                                item,
+                                item.getName() + " exposes onPublishedEventRequested(...) for "
+                                        + packageName + "." + publishedEventSimpleName
+                                        + " but the package defines no matching local PublishedEvent"));
+                    }
                 }
             }
         };
     }
 
-    private static String publishedEventSimpleNameConsumedByHandler(String className) {
+    private static PublishedEventSinkInspection inspectPublishedEventSinks(String className) {
         Class<?> reflectedClass = loadClass(className);
+        Set<String> publishedEventSimpleNames = new LinkedHashSet<>();
+        Set<String> violations = new LinkedHashSet<>();
         for (Method method : reflectedClass.getDeclaredMethods()) {
-            if (!"onPublishedEventRequested".equals(method.getName())) {
+            if (Modifier.isPrivate(method.getModifiers())) {
                 continue;
             }
-            int modifiers = method.getModifiers();
-            if (Modifier.isPrivate(modifiers)) {
+            Set<String> referencedPublishedEvents = samePackagePublishedEventsInParameters(
+                    method,
+                    reflectedClass.getPackageName());
+            if (isExactPublishedEventSinkMethod(method, reflectedClass.getPackageName())) {
+                publishedEventSimpleNames.addAll(referencedPublishedEvents);
                 continue;
             }
-            if (method.getParameterCount() != 1
-                    || method.getReturnType() != void.class
-                    || method.getParameterTypes()[0] != Consumer.class) {
+            if ("onPublishedEventRequested".equals(method.getName())) {
+                violations.add("declares non-exact PublishedEvent sink method '" + renderSignature(method)
+                        + "'; the only legal write-side seam is onPublishedEventRequested(Consumer<SamePackagePublishedEvent>)");
                 continue;
             }
-            Type genericParameter = method.getGenericParameterTypes()[0];
-            if (!(genericParameter instanceof ParameterizedType parameterizedType)
-                    || parameterizedType.getRawType() != Consumer.class
-                    || parameterizedType.getActualTypeArguments().length != 1) {
-                continue;
-            }
-            Type eventType = parameterizedType.getActualTypeArguments()[0];
-            if (eventType instanceof Class<?> eventClass
-                    && eventClass.getPackageName().equals(reflectedClass.getPackageName())
-                    && eventClass.getSimpleName().endsWith("PublishedEvent")) {
-                return eventClass.getSimpleName();
+            if (!referencedPublishedEvents.isEmpty()) {
+                violations.add("exposes alternate non-private PublishedEvent seam '" + renderSignature(method)
+                        + "' for " + String.join(", ", referencedPublishedEvents));
             }
         }
-        return null;
+        return new PublishedEventSinkInspection(Set.copyOf(publishedEventSimpleNames), Set.copyOf(violations));
+    }
+
+    private static boolean isExactPublishedEventSinkMethod(Method method, String expectedPackageName) {
+        if (!"onPublishedEventRequested".equals(method.getName())
+                || method.getParameterCount() != 1
+                || method.getReturnType() != void.class
+                || method.getParameterTypes()[0] != Consumer.class) {
+            return false;
+        }
+        Set<String> referencedPublishedEvents = samePackagePublishedEvents(method.getGenericParameterTypes()[0], expectedPackageName);
+        return referencedPublishedEvents.size() == 1;
+    }
+
+    private static Set<String> samePackagePublishedEventsInParameters(Method method, String expectedPackageName) {
+        Set<String> referencedPublishedEvents = new LinkedHashSet<>();
+        for (Type parameterType : method.getGenericParameterTypes()) {
+            referencedPublishedEvents.addAll(samePackagePublishedEvents(parameterType, expectedPackageName));
+        }
+        return referencedPublishedEvents;
+    }
+
+    private static Set<String> samePackagePublishedEvents(Type type, String expectedPackageName) {
+        Set<String> referencedPublishedEvents = new LinkedHashSet<>();
+        collectSamePackagePublishedEvents(type, expectedPackageName, referencedPublishedEvents);
+        return referencedPublishedEvents;
+    }
+
+    private static void collectSamePackagePublishedEvents(
+            Type type,
+            String expectedPackageName,
+            Set<String> referencedPublishedEvents
+    ) {
+        if (type instanceof Class<?> eventClass) {
+            if (eventClass.getPackageName().equals(expectedPackageName)
+                    && eventClass.getSimpleName().endsWith("PublishedEvent")) {
+                referencedPublishedEvents.add(eventClass.getSimpleName());
+            }
+            return;
+        }
+        if (type instanceof ParameterizedType parameterizedType) {
+            collectSamePackagePublishedEvents(parameterizedType.getRawType(), expectedPackageName, referencedPublishedEvents);
+            for (Type actualTypeArgument : parameterizedType.getActualTypeArguments()) {
+                collectSamePackagePublishedEvents(actualTypeArgument, expectedPackageName, referencedPublishedEvents);
+            }
+            return;
+        }
+        if (type instanceof GenericArrayType genericArrayType) {
+            collectSamePackagePublishedEvents(genericArrayType.getGenericComponentType(), expectedPackageName, referencedPublishedEvents);
+            return;
+        }
+        if (type instanceof WildcardType wildcardType) {
+            for (Type upperBound : wildcardType.getUpperBounds()) {
+                collectSamePackagePublishedEvents(upperBound, expectedPackageName, referencedPublishedEvents);
+            }
+            for (Type lowerBound : wildcardType.getLowerBounds()) {
+                collectSamePackagePublishedEvents(lowerBound, expectedPackageName, referencedPublishedEvents);
+            }
+            return;
+        }
+        if (type instanceof TypeVariable<?> typeVariable) {
+            for (Type bound : typeVariable.getBounds()) {
+                collectSamePackagePublishedEvents(bound, expectedPackageName, referencedPublishedEvents);
+            }
+        }
+    }
+
+    private static String renderSignature(Method method) {
+        StringBuilder builder = new StringBuilder(method.getName()).append('(');
+        Type[] parameterTypes = method.getGenericParameterTypes();
+        for (int index = 0; index < parameterTypes.length; index++) {
+            if (index > 0) {
+                builder.append(", ");
+            }
+            builder.append(parameterTypes[index].getTypeName());
+        }
+        builder.append(')');
+        return builder.toString();
     }
 
     private static Class<?> loadClass(String className) {
@@ -134,5 +216,11 @@ public final class ViewIntentHandlerArchitectureTest {
             throw new IllegalStateException("saltmarcher.mainClassesDir is not set");
         }
         return Path.of(mainClassesDir);
+    }
+
+    private record PublishedEventSinkInspection(
+            Set<String> publishedEventSimpleNames,
+            Set<String> violations
+    ) {
     }
 }

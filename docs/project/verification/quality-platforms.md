@@ -302,8 +302,9 @@ Operationally, architecture checks enter local quality through:
   Data Model, Data Repository, Data Query, Data Mapper, Data Persistencecore,
   `Domain Port`, `Domain Factory`, `Domain Service`, Domain Event,
   `Contribution`, `Binder`, `ContributionModel`, `ContentModel`,
-  `ViewInputEvent`, and `ShellRuntimeContext` bundles, ArchUnit, PMD
-  architecture rules, and the non-documentation build-harness path
+  `ViewInputEvent`, `PublishedEvent`, `IntentHandler`, and
+  `ShellRuntimeContext` bundles, ArchUnit, PMD architecture rules, and the
+  non-documentation build-harness path
 - `check`
   runs the architecture harness plus adjacent non-architecture quality gates.
   Its architecture-focused coverage comes from the explicit

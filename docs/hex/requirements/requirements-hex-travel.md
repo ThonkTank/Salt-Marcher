@@ -13,7 +13,7 @@ party-owned runtime position.
 
 ## Non-Goals
 
-- compact `Reise` state-surface behavior
+- compact travel-state surface behavior shown in the runtime `Reise` tab
 - hex editor behavior
 - shared map-canvas contract design
 - persistence schema detail
@@ -69,5 +69,5 @@ party-owned runtime position.
 ## References
 
 - [Hex Feature Requirements](./requirements-hex.md)
-- [Hex Reise Requirements](./requirements-hex-reise.md)
+- [Hex Travel State Requirements](./requirements-hex-travel-state.md)
 - [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)

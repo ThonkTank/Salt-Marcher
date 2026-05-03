@@ -43,6 +43,7 @@ import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.encounter.published.EncounterSessionModel;
 import src.domain.encounter.published.EncounterSessionSnapshot;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
+import src.domain.encounter.published.EncounterTuningPreviewModel;
 import src.domain.encounter.published.EncounterTuningPreviewResult;
 import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.published.GeneratedEncounter;
@@ -86,9 +87,17 @@ public final class EncounterApplicationService {
     private final @Nullable CreaturesApplicationService creatures;
     private final @Nullable EncounterSession session;
     private final List<Consumer<EncounterSessionSnapshot>> sessionListeners = new ArrayList<>();
+    private final List<Consumer<EncounterTuningPreviewResult>> tuningPreviewListeners = new ArrayList<>();
     private final EncounterSessionModel sessionModel = new EncounterSessionModel(
             this::currentSessionSnapshot,
             this::subscribeSessionListener);
+    private final EncounterTuningPreviewModel tuningPreviewModel = new EncounterTuningPreviewModel(
+            this::currentTuningPreview,
+            this::subscribeTuningPreviewListener);
+    private EncounterTuningPreviewResult currentTuningPreview = new EncounterTuningPreviewResult(
+            EncounterGenerationStatus.STORAGE_ERROR,
+            new EncounterTuningPreviewLabels(List.of(), List.of(), List.of(), List.of()),
+            "");
 
     public EncounterApplicationService(PartyApplicationService party, CreaturesApplicationService creatures) {
         this(party, creatures, null, null);
@@ -149,24 +158,28 @@ public final class EncounterApplicationService {
     public EncounterTuningPreviewResult loadTuningPreview(LoadEncounterTuningPreviewQuery query) {
         Objects.requireNonNull(query, "query");
         if (loadBudgetUseCase == null) {
-            return new EncounterTuningPreviewResult(
+            currentTuningPreview = new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
                     tuningPreviewLabels(null),
                     "Encounter tuning preview service is not registered.");
+            notifyTuningPreviewListeners(currentTuningPreview);
+            return currentTuningPreview;
         }
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
             EncounterBudgetSummary budget = toPublishedBudget(result.budget());
-            return new EncounterTuningPreviewResult(
+            currentTuningPreview = new EncounterTuningPreviewResult(
                     mapBudgetStatus(result.status()),
                     tuningPreviewLabels(budget),
                     result.message());
         } catch (RuntimeException exception) {
-            return new EncounterTuningPreviewResult(
+            currentTuningPreview = new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
                     tuningPreviewLabels(null),
                     "Encounter tuning preview could not be loaded.");
         }
+        notifyTuningPreviewListeners(currentTuningPreview);
+        return currentTuningPreview;
     }
 
     public EncounterPlanBudgetResult loadPlanBudget(LoadEncounterPlanBudgetQuery query) {
@@ -250,6 +263,11 @@ public final class EncounterApplicationService {
     public EncounterSessionModel loadSession(LoadEncounterSessionQuery query) {
         Objects.requireNonNull(query, "query");
         return sessionModel;
+    }
+
+    public EncounterTuningPreviewModel loadTuningPreviewModel(LoadEncounterTuningPreviewQuery query) {
+        Objects.requireNonNull(query, "query");
+        return tuningPreviewModel;
     }
 
     public EncounterSessionSnapshot applySession(ApplyEncounterSessionCommand command) {
@@ -375,10 +393,26 @@ public final class EncounterApplicationService {
         return () -> sessionListeners.remove(safeListener);
     }
 
+    private EncounterTuningPreviewResult currentTuningPreview() {
+        return currentTuningPreview;
+    }
+
+    private Runnable subscribeTuningPreviewListener(Consumer<EncounterTuningPreviewResult> listener) {
+        Consumer<EncounterTuningPreviewResult> safeListener = Objects.requireNonNull(listener, "listener");
+        tuningPreviewListeners.add(safeListener);
+        return () -> tuningPreviewListeners.remove(safeListener);
+    }
+
     private void notifySessionListeners(EncounterSessionSnapshot snapshot) {
         List<Consumer<EncounterSessionSnapshot>> listeners = List.copyOf(sessionListeners);
         for (Consumer<EncounterSessionSnapshot> listener : listeners) {
             listener.accept(snapshot);
+        }
+    }
+
+    private void notifyTuningPreviewListeners(EncounterTuningPreviewResult result) {
+        for (Consumer<EncounterTuningPreviewResult> listener : List.copyOf(tuningPreviewListeners)) {
+            listener.accept(result);
         }
     }
 

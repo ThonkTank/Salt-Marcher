@@ -6,30 +6,36 @@ public record DungeonEditorPublishedEvent(
         Kind kind,
         long mapId,
         String mapName,
-        int projectionLevel,
         String viewModeKey,
-        Mutation mutation,
-        InspectorSelection inspectorSelection
+        String selectedTool,
+        int projectionLevelDelta,
+        OverlaySettings overlaySettings,
+        MainViewInput mainViewInput,
+        RoomNarrationInput roomNarration
 ) {
 
     public DungeonEditorPublishedEvent {
-        kind = kind == null ? Kind.LOAD_EDITOR : kind;
+        kind = kind == null ? Kind.INTERPRET_MAIN_VIEW : kind;
         mapId = Math.max(0L, mapId);
         mapName = mapName == null ? "" : mapName;
-        viewModeKey = viewModeKey == null ? "GRID" : viewModeKey;
-        mutation = mutation == null ? Mutation.none() : mutation;
-        inspectorSelection = inspectorSelection == null ? InspectorSelection.empty() : inspectorSelection;
+        viewModeKey = viewModeKey == null || viewModeKey.isBlank() ? "GRID" : viewModeKey;
+        selectedTool = selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
+        overlaySettings = overlaySettings == null ? OverlaySettings.defaults() : overlaySettings;
+        mainViewInput = mainViewInput == null ? MainViewInput.empty() : mainViewInput;
+        roomNarration = roomNarration == null ? RoomNarrationInput.empty() : roomNarration;
     }
 
-    static DungeonEditorPublishedEvent loadEditor(long mapId, int projectionLevel, String viewModeKey) {
+    static DungeonEditorPublishedEvent selectMap(long mapId) {
         return new DungeonEditorPublishedEvent(
-                Kind.LOAD_EDITOR,
+                Kind.SELECT_MAP,
                 mapId,
                 "",
-                projectionLevel,
-                viewModeKey,
-                Mutation.none(),
-                InspectorSelection.empty());
+                "GRID",
+                "Auswahl",
+                0,
+                OverlaySettings.defaults(),
+                MainViewInput.empty(),
+                RoomNarrationInput.empty());
     }
 
     static DungeonEditorPublishedEvent createMap(String mapName) {
@@ -37,10 +43,12 @@ public record DungeonEditorPublishedEvent(
                 Kind.CREATE_MAP,
                 0L,
                 mapName,
-                0,
                 "GRID",
-                Mutation.none(),
-                InspectorSelection.empty());
+                "Auswahl",
+                0,
+                OverlaySettings.defaults(),
+                MainViewInput.empty(),
+                RoomNarrationInput.empty());
     }
 
     static DungeonEditorPublishedEvent renameMap(long mapId, String mapName) {
@@ -48,10 +56,12 @@ public record DungeonEditorPublishedEvent(
                 Kind.RENAME_MAP,
                 mapId,
                 mapName,
-                0,
                 "GRID",
-                Mutation.none(),
-                InspectorSelection.empty());
+                "Auswahl",
+                0,
+                OverlaySettings.defaults(),
+                MainViewInput.empty(),
+                RoomNarrationInput.empty());
     }
 
     static DungeonEditorPublishedEvent deleteMap(long mapId) {
@@ -59,186 +69,163 @@ public record DungeonEditorPublishedEvent(
                 Kind.DELETE_MAP,
                 mapId,
                 "",
-                0,
                 "GRID",
-                Mutation.none(),
-                InspectorSelection.empty());
+                "Auswahl",
+                0,
+                OverlaySettings.defaults(),
+                MainViewInput.empty(),
+                RoomNarrationInput.empty());
     }
 
-    static DungeonEditorPublishedEvent previewSurfaceEdit(long mapId, Mutation mutation) {
+    static DungeonEditorPublishedEvent setViewMode(String viewModeKey) {
         return new DungeonEditorPublishedEvent(
-                Kind.PREVIEW_SURFACE_EDIT,
-                mapId,
+                Kind.SET_VIEW_MODE,
+                0L,
                 "",
+                viewModeKey,
+                "Auswahl",
                 0,
-                "GRID",
-                mutation,
-                InspectorSelection.empty());
+                OverlaySettings.defaults(),
+                MainViewInput.empty(),
+                RoomNarrationInput.empty());
     }
 
-    static DungeonEditorPublishedEvent applySurfaceEdit(long mapId, Mutation mutation) {
+    static DungeonEditorPublishedEvent setTool(String selectedTool) {
         return new DungeonEditorPublishedEvent(
-                Kind.APPLY_SURFACE_EDIT,
-                mapId,
+                Kind.SET_TOOL,
+                0L,
                 "",
-                0,
                 "GRID",
-                mutation,
-                InspectorSelection.empty());
+                selectedTool,
+                0,
+                OverlaySettings.defaults(),
+                MainViewInput.empty(),
+                RoomNarrationInput.empty());
     }
 
-    static DungeonEditorPublishedEvent loadSurface(long mapId, InspectorSelection inspectorSelection) {
+    static DungeonEditorPublishedEvent shiftProjectionLevel(int delta) {
         return new DungeonEditorPublishedEvent(
-                Kind.LOAD_SURFACE,
-                mapId,
+                Kind.SHIFT_PROJECTION_LEVEL,
+                0L,
                 "",
-                0,
                 "GRID",
-                Mutation.none(),
-                inspectorSelection);
+                "Auswahl",
+                delta,
+                OverlaySettings.defaults(),
+                MainViewInput.empty(),
+                RoomNarrationInput.empty());
+    }
+
+    static DungeonEditorPublishedEvent setOverlay(OverlaySettings overlaySettings) {
+        return new DungeonEditorPublishedEvent(
+                Kind.SET_OVERLAY,
+                0L,
+                "",
+                "GRID",
+                "Auswahl",
+                0,
+                overlaySettings,
+                MainViewInput.empty(),
+                RoomNarrationInput.empty());
+    }
+
+    static DungeonEditorPublishedEvent interpretMainView(MainViewInput mainViewInput) {
+        return new DungeonEditorPublishedEvent(
+                Kind.INTERPRET_MAIN_VIEW,
+                0L,
+                "",
+                "GRID",
+                "Auswahl",
+                0,
+                OverlaySettings.defaults(),
+                mainViewInput,
+                RoomNarrationInput.empty());
+    }
+
+    static DungeonEditorPublishedEvent saveRoomNarration(RoomNarrationInput roomNarration) {
+        return new DungeonEditorPublishedEvent(
+                Kind.SAVE_ROOM_NARRATION,
+                0L,
+                "",
+                "GRID",
+                "Auswahl",
+                0,
+                OverlaySettings.defaults(),
+                MainViewInput.empty(),
+                roomNarration);
     }
 
     enum Kind {
-        LOAD_EDITOR,
+        SELECT_MAP,
         CREATE_MAP,
         RENAME_MAP,
         DELETE_MAP,
-        PREVIEW_SURFACE_EDIT,
-        APPLY_SURFACE_EDIT,
-        LOAD_SURFACE
+        SET_VIEW_MODE,
+        SET_TOOL,
+        SHIFT_PROJECTION_LEVEL,
+        SET_OVERLAY,
+        INTERPRET_MAIN_VIEW,
+        SAVE_ROOM_NARRATION
     }
 
-    public sealed interface Mutation permits NoneMutation,
-            RoomRectangleMutation,
-            ClusterBoundariesMutation,
-            SaveRoomNarrationMutation,
-            MoveHandleMutation,
-            MoveBoundaryStretchMutation {
+    public record OverlaySettings(
+            String modeKey,
+            int levelRange,
+            double opacity,
+            List<Integer> selectedLevels
+    ) {
+        public OverlaySettings {
+            modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
+            levelRange = Math.max(0, levelRange);
+            opacity = Math.max(0.0, Math.min(1.0, opacity));
+            selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
+        }
 
-        static Mutation none() {
-            return NoneMutation.INSTANCE;
+        static OverlaySettings defaults() {
+            return new OverlaySettings("OFF", 2, 0.35, List.of());
         }
     }
 
-    enum NoneMutation implements Mutation {
-        INSTANCE
-    }
+    public record MainViewInput(
+            Source source,
+            double canvasX,
+            double canvasY,
+            boolean primaryButtonDown,
+            boolean secondaryButtonDown,
+            String hitRef,
+            int levelDelta
+    ) {
+        public MainViewInput {
+            source = source == null ? Source.POINTER_MOVED : source;
+            hitRef = hitRef == null ? "" : hitRef;
+        }
 
-    public record RoomRectangleMutation(CellRef start, CellRef end, boolean deleteMode) implements Mutation {
-        public RoomRectangleMutation {
-            start = start == null ? CellRef.empty() : start;
-            end = end == null ? CellRef.empty() : end;
+        static MainViewInput empty() {
+            return new MainViewInput(Source.POINTER_MOVED, 0.0, 0.0, false, false, "", 0);
+        }
+
+        enum Source {
+            POINTER_PRESSED,
+            POINTER_DRAGGED,
+            POINTER_RELEASED,
+            POINTER_MOVED,
+            LEVEL_SCROLLED
         }
     }
 
-    public record ClusterBoundariesMutation(
-            long clusterId,
-            List<EdgeRef> edges,
-            String boundaryKind,
-            boolean deleteMode
-    ) implements Mutation {
-        public ClusterBoundariesMutation {
-            clusterId = Math.max(0L, clusterId);
-            edges = edges == null ? List.of() : List.copyOf(edges);
-            boundaryKind = boundaryKind == null ? "WALL" : boundaryKind;
-        }
-    }
-
-    public record SaveRoomNarrationMutation(
+    public record RoomNarrationInput(
             long roomId,
             String visualDescription,
             List<RoomExitNarration> exits
-    ) implements Mutation {
-        public SaveRoomNarrationMutation {
+    ) {
+        public RoomNarrationInput {
             roomId = Math.max(0L, roomId);
             visualDescription = visualDescription == null ? "" : visualDescription;
             exits = exits == null ? List.of() : List.copyOf(exits);
         }
-    }
 
-    public record MoveHandleMutation(
-            HandleRef handleRef,
-            int deltaQ,
-            int deltaR,
-            int deltaLevel
-    ) implements Mutation {
-        public MoveHandleMutation {
-            handleRef = handleRef == null ? HandleRef.empty() : handleRef;
-        }
-    }
-
-    public record MoveBoundaryStretchMutation(
-            long clusterId,
-            List<EdgeRef> sourceEdges,
-            int deltaQ,
-            int deltaR,
-            int deltaLevel
-    ) implements Mutation {
-        public MoveBoundaryStretchMutation {
-            clusterId = Math.max(0L, clusterId);
-            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-        }
-    }
-
-    public record InspectorSelection(
-            String topologyRefKind,
-            long topologyRefId,
-            long clusterId,
-            boolean clusterSelection,
-            String surfaceKind
-    ) {
-        public InspectorSelection {
-            topologyRefKind = topologyRefKind == null ? "EMPTY" : topologyRefKind;
-            topologyRefId = Math.max(0L, topologyRefId);
-            clusterId = Math.max(0L, clusterId);
-            surfaceKind = surfaceKind == null ? "EDITOR" : surfaceKind;
-        }
-
-        static InspectorSelection empty() {
-            return new InspectorSelection("EMPTY", 0L, 0L, false, "EDITOR");
-        }
-    }
-
-    public record CellRef(int q, int r, int level) {
-        static CellRef empty() {
-            return new CellRef(0, 0, 0);
-        }
-    }
-
-    public record EdgeRef(CellRef from, CellRef to) {
-        public EdgeRef {
-            from = from == null ? CellRef.empty() : from;
-            to = to == null ? CellRef.empty() : to;
-        }
-    }
-
-    public record HandleRef(
-            String kind,
-            String topologyRefKind,
-            long topologyRefId,
-            long ownerId,
-            long clusterId,
-            long corridorId,
-            long roomId,
-            int index,
-            CellRef cell,
-            String direction
-    ) {
-        public HandleRef {
-            kind = kind == null ? "CLUSTER_LABEL" : kind;
-            topologyRefKind = topologyRefKind == null ? "EMPTY" : topologyRefKind;
-            topologyRefId = Math.max(0L, topologyRefId);
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
-            index = Math.max(0, index);
-            cell = cell == null ? CellRef.empty() : cell;
-            direction = direction == null ? "" : direction;
-        }
-
-        static HandleRef empty() {
-            return new HandleRef("CLUSTER_LABEL", "EMPTY", 0L, 0L, 0L, 0L, 0L, 0, CellRef.empty(), "");
+        static RoomNarrationInput empty() {
+            return new RoomNarrationInput(0L, "", List.of());
         }
     }
 
@@ -253,6 +240,12 @@ public record DungeonEditorPublishedEvent(
             cell = cell == null ? CellRef.empty() : cell;
             direction = direction == null ? "" : direction;
             description = description == null ? "" : description;
+        }
+    }
+
+    public record CellRef(int q, int r, int level) {
+        static CellRef empty() {
+            return new CellRef(0, 0, 0);
         }
     }
 }

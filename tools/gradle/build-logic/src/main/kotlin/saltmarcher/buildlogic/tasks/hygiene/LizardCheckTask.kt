@@ -1,7 +1,6 @@
 package saltmarcher.buildlogic.tasks.hygiene
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -14,6 +13,7 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.VerificationException
 import org.gradle.process.ExecOperations
 import org.gradle.api.tasks.CacheableTask
 import java.io.ByteArrayOutputStream
@@ -76,7 +76,7 @@ abstract class LizardCheckTask : DefaultTask() {
         }
 
         if (execResult.exitValue != 0) {
-            throw GradleException(
+            throw VerificationException(
                 "Lizard complexity violations were found. See the report at: file://${reportPath.toAbsolutePath()}"
             )
         }

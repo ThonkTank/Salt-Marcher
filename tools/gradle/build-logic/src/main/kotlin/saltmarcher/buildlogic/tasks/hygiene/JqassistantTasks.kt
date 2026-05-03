@@ -3,8 +3,8 @@ package saltmarcher.buildlogic.tasks.hygiene
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
+import java.util.Comparator
 import org.gradle.api.DefaultTask
-import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -20,6 +20,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.VerificationException
 import org.gradle.process.ExecOperations
 import javax.inject.Inject
 
@@ -93,7 +94,7 @@ abstract class AbstractJqassistantTask : DefaultTask() {
         if (execResult.exitValue != 0) {
             val outputText = outputBuffer.toString(Charsets.UTF_8).trim()
             val suffix = if (outputText.isBlank()) "" else "\n$outputText"
-            throw GradleException("jQAssistant failed with exit code ${execResult.exitValue}.$suffix")
+            throw VerificationException("jQAssistant failed with exit code ${execResult.exitValue}.$suffix")
         }
     }
 }
@@ -131,7 +132,11 @@ abstract class JqassistantAnalyzeTask : AbstractJqassistantTask() {
     @TaskAction
     fun analyze() {
         val reportsDir = reportsDirectory.get().asFile
-        project.delete(reportsDir)
+        if (reportsDir.exists()) {
+            Files.walk(reportsDir.toPath())
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
         Files.createDirectories(reportsDir.toPath())
         Files.createDirectories(reportsDir.toPath().resolve("junit"))
         val generatedConfigFile = materializeConfig(reportsDir)

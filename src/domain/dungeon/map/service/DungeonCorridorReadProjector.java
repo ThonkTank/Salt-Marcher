@@ -11,6 +11,8 @@ import src.domain.dungeon.map.value.DungeonAreaType;
 import src.domain.dungeon.map.value.DungeonBoundaryKey;
 import src.domain.dungeon.map.value.DungeonBoundaryFacts;
 import src.domain.dungeon.map.value.DungeonCell;
+import src.domain.dungeon.map.value.DungeonCorridorAnchorBinding;
+import src.domain.dungeon.map.value.DungeonCorridorAnchorRef;
 import src.domain.dungeon.map.value.DungeonCorridorDoorBinding;
 import src.domain.dungeon.map.value.DungeonCorridorWaypoint;
 import src.domain.dungeon.map.value.DungeonEdge;
@@ -25,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public final class DungeonCorridorReadProjector {
@@ -36,15 +39,23 @@ public final class DungeonCorridorReadProjector {
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<DungeonCell>> roomCellsByRoom,
-            long primitiveId
+            long primitiveId,
+            Map<DungeonBoundaryKey, Long> existingDoorIdsByKey
     ) {
-        ResultBuilder result = new ResultBuilder(primitiveId);
+        ResultBuilder result = new ResultBuilder(primitiveId, existingDoorIdsByKey);
         Set<DungeonCell> allRoomCells = allRoomCells(roomCellsByRoom);
+        Map<src.domain.dungeon.map.value.DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef =
+                anchorBindingsByRef(corridors);
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
             if (corridor == null || !corridor.isReadable()) {
                 continue;
             }
-            List<CorridorEndpoint> endpoints = corridorEndpoints(corridor, clustersById, roomsById, roomCellsByRoom);
+            List<CorridorEndpoint> endpoints = corridorEndpoints(
+                    corridor,
+                    clustersById,
+                    roomsById,
+                    roomCellsByRoom,
+                    anchorsByRef);
             result.addCorridor(corridor, endpoints, corridorCells(corridor, clustersById, endpoints, allRoomCells));
         }
         return result.toResult();
@@ -54,7 +65,8 @@ public final class DungeonCorridorReadProjector {
             DungeonCorridor corridor,
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
-            Map<Long, List<DungeonCell>> roomCellsByRoom
+            Map<Long, List<DungeonCell>> roomCellsByRoom,
+            Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef
     ) {
         Map<Long, DungeonCorridorDoorBinding> bindingsByRoom = new LinkedHashMap<>();
         for (DungeonCorridorDoorBinding binding : corridor.bindings().doorBindings()) {
@@ -67,7 +79,9 @@ public final class DungeonCorridorReadProjector {
                 DungeonRoomCluster cluster = clustersById.get(binding.clusterId());
                 if (cluster != null) {
                     endpoints.add(new CorridorEndpoint(
+                            CorridorEndpointKind.DOOR,
                             roomId,
+                            null,
                             absoluteCorridorCell(binding, cluster.center()),
                             absoluteDoorEdge(binding, cluster.center()),
                             binding.topologyRef()));
@@ -78,6 +92,22 @@ public final class DungeonCorridorReadProjector {
             if (derived != null) {
                 endpoints.add(derived);
             }
+        }
+        for (DungeonCorridorAnchorRef anchorRef : corridor.bindings().anchorRefs()) {
+            if (anchorRef == null || !anchorRef.present()) {
+                continue;
+            }
+            DungeonCorridorAnchorBinding anchorBinding = anchorsByRef.get(anchorRef.topologyRef());
+            if (anchorBinding == null) {
+                continue;
+            }
+            endpoints.add(new CorridorEndpoint(
+                    CorridorEndpointKind.ANCHOR,
+                    null,
+                    anchorBinding.hostCorridorId(),
+                    anchorBinding.absoluteCell(),
+                    null,
+                    anchorBinding.topologyRef()));
         }
         return List.copyOf(endpoints);
     }
@@ -122,7 +152,9 @@ public final class DungeonCorridorReadProjector {
             DungeonCell corridorCell = step.neighbor(selectedRoomCell);
             if (!roomCellSet.contains(corridorCell)) {
                 return new CorridorEndpoint(
+                        CorridorEndpointKind.DOOR,
                         roomId,
+                        null,
                         corridorCell,
                         DungeonEdge.sideOf(selectedRoomCell, step.direction()),
                         DungeonTopologyRef.empty());
@@ -130,7 +162,9 @@ public final class DungeonCorridorReadProjector {
         }
         DungeonCell fallbackCorridorCell = new DungeonCell(selectedRoomCell.q(), selectedRoomCell.r() + 1, corridor.level());
         return new CorridorEndpoint(
+                CorridorEndpointKind.DOOR,
                 roomId,
+                null,
                 fallbackCorridorCell,
                 DungeonEdge.sideOf(selectedRoomCell, DungeonEdgeDirection.SOUTH),
                 DungeonTopologyRef.empty());
@@ -276,11 +310,15 @@ public final class DungeonCorridorReadProjector {
         private final List<DungeonBoundaryFacts> boundaries = new ArrayList<>();
         private final List<DungeonRelationGraph.ContainmentRelation> containment = new ArrayList<>();
         private final List<DungeonRelationGraph.ConnectionRelation> connections = new ArrayList<>();
-        private final Set<DungeonBoundaryKey> seenBoundaries = new LinkedHashSet<>();
+        private final Map<DungeonBoundaryKey, Long> boundaryIdsByKey;
+        private final Set<String> seenContainment = new LinkedHashSet<>();
+        private final Set<String> seenConnections = new LinkedHashSet<>();
         private long primitiveId;
 
-        private ResultBuilder(long primitiveId) {
+        private ResultBuilder(long primitiveId, Map<DungeonBoundaryKey, Long> existingDoorIdsByKey) {
             this.primitiveId = primitiveId;
+            this.boundaryIdsByKey = new LinkedHashMap<>(
+                    existingDoorIdsByKey == null ? Map.of() : existingDoorIdsByKey);
         }
 
         private void addCorridor(DungeonCorridor corridor, List<CorridorEndpoint> endpoints, List<DungeonCell> cells) {
@@ -290,18 +328,25 @@ public final class DungeonCorridorReadProjector {
                     "Corridor " + corridor.corridorId(),
                     cells);
             aggregates.add(aggregate);
-            areas.add(new DungeonAreaFacts(aggregate.kind(), aggregate.id(), aggregate.label(), aggregate.cells()));
+                areas.add(new DungeonAreaFacts(aggregate.kind(), aggregate.id(), aggregate.label(), aggregate.cells()));
             for (CorridorEndpoint endpoint : endpoints) {
-                addEndpoint(corridor, endpoint);
+                if (endpoint.kind() == CorridorEndpointKind.DOOR) {
+                    addDoorEndpoint(corridor, endpoint);
+                }
             }
         }
 
-        private void addEndpoint(DungeonCorridor corridor, CorridorEndpoint endpoint) {
-            DungeonBoundaryKey key = DungeonBoundaryKey.from(endpoint.edge());
-            if (seenBoundaries.add(key)) {
+        private void addDoorEndpoint(DungeonCorridor corridor, CorridorEndpoint endpoint) {
+            DungeonEdge edge = Objects.requireNonNull(endpoint.edge());
+            Long roomId = Objects.requireNonNull(endpoint.roomId());
+            DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
+            boolean preexisting = boundaryIdsByKey.containsKey(key);
+            long doorId = boundaryIdsByKey.getOrDefault(
+                    key,
+                    endpoint.topologyRef().present() ? endpoint.topologyRef().id() : key.stableId());
+            if (!preexisting) {
                 DungeonTopologyRef topologyRef = endpoint.topologyRef();
-                long doorId = topologyRef.present() ? topologyRef.id() : key.stableId();
-                DungeonPrimitive door = new DungeonPrimitive(doorId, DOOR_KIND, "Corridor Door", endpoint.edge());
+                DungeonPrimitive door = new DungeonPrimitive(doorId, DOOR_KIND, "Corridor Door", edge);
                 primitiveId = Math.max(primitiveId, doorId + 1L);
                 primitives.add(door);
                 boundaries.add(new DungeonBoundaryFacts(
@@ -312,10 +357,27 @@ public final class DungeonCorridorReadProjector {
                         topologyRef.present()
                                 ? topologyRef
                                 : new DungeonTopologyRef(DungeonTopologyElementKind.DOOR, door.id())));
-                containment.add(new DungeonRelationGraph.ContainmentRelation(corridor.corridorId(), door.id(), DOOR_KIND));
-                containment.add(new DungeonRelationGraph.ContainmentRelation(endpoint.roomId(), door.id(), DOOR_KIND));
+                boundaryIdsByKey.put(key, doorId);
+                addContainment(corridor.corridorId(), door.id(), DOOR_KIND);
+                addContainment(roomId, door.id(), DOOR_KIND);
+            } else {
+                addContainment(corridor.corridorId(), doorId, DOOR_KIND);
             }
-            connections.add(new DungeonRelationGraph.ConnectionRelation(corridor.corridorId(), endpoint.roomId(), DOOR_KIND));
+            addConnection(corridor.corridorId(), roomId, DOOR_KIND);
+        }
+
+        private void addContainment(long containerId, long containedId, String kind) {
+            String key = containerId + ":" + containedId + ":" + kind;
+            if (seenContainment.add(key)) {
+                containment.add(new DungeonRelationGraph.ContainmentRelation(containerId, containedId, kind));
+            }
+        }
+
+        private void addConnection(long fromId, long toId, String kind) {
+            String key = fromId + ":" + toId + ":" + kind;
+            if (seenConnections.add(key)) {
+                connections.add(new DungeonRelationGraph.ConnectionRelation(fromId, toId, kind));
+            }
         }
 
         private Result toResult() {
@@ -324,14 +386,33 @@ public final class DungeonCorridorReadProjector {
     }
 
     private record CorridorEndpoint(
-            Long roomId,
+            CorridorEndpointKind kind,
+            @Nullable Long roomId,
+            @Nullable Long hostCorridorId,
             DungeonCell corridorCell,
-            DungeonEdge edge,
+            @Nullable DungeonEdge edge,
             DungeonTopologyRef topologyRef
     ) {
         private CorridorEndpoint {
             topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         }
+    }
+
+    private enum CorridorEndpointKind {
+        DOOR,
+        ANCHOR
+    }
+
+    private static Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorBindingsByRef(List<DungeonCorridor> corridors) {
+        Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> result = new LinkedHashMap<>();
+        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+                if (binding != null && binding.topologyRef().present()) {
+                    result.put(binding.topologyRef(), binding);
+                }
+            }
+        }
+        return Map.copyOf(result);
     }
 
     private record DirectionStep(DungeonEdgeDirection direction) {

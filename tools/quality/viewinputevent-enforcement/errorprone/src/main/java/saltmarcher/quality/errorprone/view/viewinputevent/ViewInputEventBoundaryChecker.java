@@ -11,6 +11,7 @@ import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
@@ -94,6 +95,12 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
         if (hasExplicitTopLevelNonConstructorMethod(tree)) {
             forbiddenReferences.add("top-level ViewInputEvent helper method");
         }
+        if (hasForbiddenDiscriminatorRecordComponent(tree)) {
+            forbiddenReferences.add("top-level ViewInputEvent discriminator component");
+        }
+        if (hasForbiddenNestedDiscriminatorEnum(tree)) {
+            forbiddenReferences.add("nested ViewInputEvent discriminator enum");
+        }
         violations.addAll(forbiddenReferences);
     }
 
@@ -156,6 +163,40 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
         }
         for (Tree member : topLevelClass.getMembers()) {
             if (member instanceof MethodTree methodTree && methodTree.getReturnType() != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasForbiddenDiscriminatorRecordComponent(CompilationUnitTree tree) {
+        ClassTree topLevelClass = topLevelClass(tree);
+        if (topLevelClass == null) {
+            return false;
+        }
+        for (Tree member : topLevelClass.getMembers()) {
+            if (!(member instanceof VariableTree variableTree)) {
+                continue;
+            }
+            String componentName = variableTree.getName().toString();
+            if ("source".equals(componentName) || "action".equals(componentName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasForbiddenNestedDiscriminatorEnum(CompilationUnitTree tree) {
+        ClassTree topLevelClass = topLevelClass(tree);
+        if (topLevelClass == null) {
+            return false;
+        }
+        for (Tree member : topLevelClass.getMembers()) {
+            if (!(member instanceof ClassTree nestedType) || nestedType.getKind() != Tree.Kind.ENUM) {
+                continue;
+            }
+            String nestedName = nestedType.getSimpleName().toString();
+            if ("Source".equals(nestedName) || "Action".equals(nestedName)) {
                 return true;
             }
         }

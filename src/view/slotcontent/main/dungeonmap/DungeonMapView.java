@@ -86,7 +86,7 @@ public class DungeonMapView extends MapCanvasView {
                     continue;
                 }
                 surfaces.add(new MapRenderScene.SurfacePrimitive(
-                        "cell:" + index,
+                        cellHitRef(cell),
                         selectionRef(cell.topologyRef()),
                         cell.z(),
                         square(cell.q(), cell.r(), 1.0),
@@ -98,7 +98,7 @@ public class DungeonMapView extends MapCanvasView {
                     continue;
                 }
                 boundaries.add(new MapRenderScene.BoundaryPrimitive(
-                        "edge:" + index,
+                        edgeHitRef(edge),
                         selectionRef(edge.topologyRef()),
                         edge.z(),
                         List.of(
@@ -112,7 +112,7 @@ public class DungeonMapView extends MapCanvasView {
                     continue;
                 }
                 glyphs.add(new MapRenderScene.GlyphPrimitive(
-                        "marker:" + index,
+                        markerHitRef(marker),
                         selectionRef(new DungeonMapContentModel.RenderState.TopologyRef(
                                 marker.handleTopologyRefKind(),
                                 marker.handleTopologyRefId())),
@@ -128,7 +128,7 @@ public class DungeonMapView extends MapCanvasView {
                     continue;
                 }
                 texts.add(new MapRenderScene.TextPrimitive(
-                        "label:" + index,
+                        labelHitRef(label),
                         selectionRef(label.topologyRef()),
                         label.z(),
                         label.label(),
@@ -187,7 +187,7 @@ public class DungeonMapView extends MapCanvasView {
             for (int index = 0; index < displayModel.graphNodes().size(); index++) {
                 DungeonMapContentModel.RenderState.GraphNode node = displayModel.graphNodes().get(index);
                 surfaces.add(new MapRenderScene.SurfacePrimitive(
-                        "graph-node:" + index,
+                        graphNodeHitRef(node),
                         "ROOM:" + node.id(),
                         displayModel.projectionLevel(),
                         roundedRect(node.q(), node.r(), 1.8, 1.1),
@@ -198,7 +198,7 @@ public class DungeonMapView extends MapCanvasView {
                                 1.0,
                                 false)));
                 texts.add(new MapRenderScene.TextPrimitive(
-                        "graph-node:" + index,
+                        graphNodeHitRef(node),
                         "ROOM:" + node.id(),
                         displayModel.projectionLevel(),
                         node.label(),
@@ -216,6 +216,56 @@ public class DungeonMapView extends MapCanvasView {
                 return null;
             }
             return topologyRef.kind() + ":" + topologyRef.id();
+        }
+
+        private static String cellHitRef(DungeonMapContentModel.RenderState.RenderCell cell) {
+            return "cell:" + cell.kind().name()
+                    + ":" + cell.ownerId()
+                    + ":" + cell.clusterId()
+                    + ":" + cell.topologyRef().kind()
+                    + ":" + cell.topologyRef().id();
+        }
+
+        private static String edgeHitRef(DungeonMapContentModel.RenderState.RenderEdge edge) {
+            return "edge:" + edge.kind().name()
+                    + ":" + edge.ownerId()
+                    + ":" + edge.topologyRef().kind()
+                    + ":" + edge.topologyRef().id()
+                    + ":" + edge.z()
+                    + ":" + sceneCoordinate(edge.startQ())
+                    + ":" + sceneCoordinate(edge.startR())
+                    + ":" + sceneCoordinate(edge.endQ())
+                    + ":" + sceneCoordinate(edge.endR());
+        }
+
+        private static String labelHitRef(DungeonMapContentModel.RenderState.RenderLabel label) {
+            return "label:" + label.ownerId()
+                    + ":" + label.clusterId()
+                    + ":" + label.topologyRef().kind()
+                    + ":" + label.topologyRef().id();
+        }
+
+        private static String markerHitRef(DungeonMapContentModel.RenderState.RenderMarker marker) {
+            return "marker:" + marker.handleKind()
+                    + ":" + marker.handleTopologyRefKind()
+                    + ":" + marker.handleTopologyRefId()
+                    + ":" + marker.handleOwnerId()
+                    + ":" + marker.handleClusterId()
+                    + ":" + marker.handleCorridorId()
+                    + ":" + marker.handleRoomId()
+                    + ":" + marker.handleIndex()
+                    + ":" + marker.handleQ()
+                    + ":" + marker.handleR()
+                    + ":" + marker.handleLevel()
+                    + ":" + marker.handleDirection();
+        }
+
+        private static String graphNodeHitRef(DungeonMapContentModel.RenderState.GraphNode node) {
+            return "graph-node:ROOM:" + node.id() + ":" + node.clusterId();
+        }
+
+        private static int sceneCoordinate(double coordinate) {
+            return (int) Math.round(coordinate);
         }
 
         private static boolean includeLevel(DungeonMapContentModel.RenderState displayModel, int level) {

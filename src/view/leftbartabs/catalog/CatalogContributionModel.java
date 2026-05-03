@@ -126,15 +126,12 @@ public final class CatalogContributionModel {
     private final ReadOnlyBooleanWrapper previousPageAvailable = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper nextPageAvailable = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper loading = new ReadOnlyBooleanWrapper(false);
-    private final ReadOnlyLongWrapper filterOptionsRequestToken = new ReadOnlyLongWrapper();
-    private final ReadOnlyLongWrapper searchRequestToken = new ReadOnlyLongWrapper();
-    private final ReadOnlyLongWrapper openCreatureRequestToken = new ReadOnlyLongWrapper();
+    private final ReadOnlyLongWrapper searchCycle = new ReadOnlyLongWrapper(0L);
+    private final ReadOnlyLongWrapper creatureDetailSelection = new ReadOnlyLongWrapper(0L);
     private CreatureFilters filters = CreatureFilters.empty();
     private SortOption selectedSort = SortOption.NAME_ASC;
     private int pageOffset;
     private int totalCount;
-    private boolean loaded;
-    private long requestedCreatureId;
 
     public CatalogContributionModel() {
         for (ContentKind kind : ContentKind.values()) {
@@ -206,24 +203,12 @@ public final class CatalogContributionModel {
         return loading.getReadOnlyProperty();
     }
 
-    public ReadOnlyLongProperty filterOptionsRequestTokenProperty() {
-        return filterOptionsRequestToken.getReadOnlyProperty();
+    public ReadOnlyLongProperty searchCycleProperty() {
+        return searchCycle.getReadOnlyProperty();
     }
 
-    public ReadOnlyLongProperty searchRequestTokenProperty() {
-        return searchRequestToken.getReadOnlyProperty();
-    }
-
-    public ReadOnlyLongProperty openCreatureRequestTokenProperty() {
-        return openCreatureRequestToken.getReadOnlyProperty();
-    }
-
-    public boolean markInitialLoad() {
-        if (loaded) {
-            return false;
-        }
-        loaded = true;
-        return true;
+    public ReadOnlyLongProperty creatureDetailSelectionProperty() {
+        return creatureDetailSelection.getReadOnlyProperty();
     }
 
     public void selectContent(String key) {
@@ -278,17 +263,16 @@ public final class CatalogContributionModel {
         placeholderText.set("Lade Monster...");
     }
 
-    void requestFilterOptions() {
-        filterOptionsRequestToken.set(filterOptionsRequestToken.get() + 1L);
+    void advanceSearchCycle() {
+        searchCycle.set(searchCycle.get() + 1L);
     }
 
-    void requestSearch() {
-        searchRequestToken.set(searchRequestToken.get() + 1L);
+    void selectCreatureDetail(long creatureId) {
+        creatureDetailSelection.set(Math.max(0L, creatureId));
     }
 
-    void requestOpenCreatureDetails(long creatureId) {
-        requestedCreatureId = Math.max(0L, creatureId);
-        openCreatureRequestToken.set(openCreatureRequestToken.get() + 1L);
+    void clearCreatureDetailSelection() {
+        creatureDetailSelection.set(0L);
     }
 
     CreatureFilters currentFilters() {
@@ -305,10 +289,6 @@ public final class CatalogContributionModel {
 
     int currentPageOffset() {
         return pageOffset;
-    }
-
-    long requestedCreatureId() {
-        return requestedCreatureId;
     }
 
     private void applySearchResultInternal(CreatureCatalogPageResult result) {

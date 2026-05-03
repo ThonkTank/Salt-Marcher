@@ -2,8 +2,7 @@ package src.domain.dungeon.published;
 
 public enum DungeonSurfaceKind {
     EDITOR,
-    PREVIEW,
-    TRAVEL;
+    PREVIEW;
 
     public static DungeonSurfaceKind defaultKind() {
         return EDITOR;

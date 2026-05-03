@@ -707,7 +707,7 @@ public final class ViewArchitectureSupport {
         return false;
     }
 
-    private static void collectTypeReferences(TypeMirror typeMirror, Set<String> referencedTypes) {
+    public static void collectTypeReferences(TypeMirror typeMirror, Set<String> referencedTypes) {
         if (typeMirror == null) {
             return;
         }

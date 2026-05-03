@@ -115,6 +115,20 @@ public final class DungeonStair {
         return !occupiedCells().isEmpty();
     }
 
+    public DungeonStair withCorridorId(@Nullable Long nextCorridorId) {
+        return new DungeonStair(
+                stairId,
+                mapId,
+                name,
+                shape,
+                direction,
+                dimension1,
+                dimension2,
+                path,
+                exits,
+                nextCorridorId);
+    }
+
     private static List<DungeonCell> normalizeCells(List<DungeonCell> cells) {
         return (cells == null ? List.<DungeonCell>of() : cells).stream()
                 .filter(cell -> cell != null)

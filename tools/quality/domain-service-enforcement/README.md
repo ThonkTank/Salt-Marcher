@@ -12,12 +12,6 @@ It keeps the full service-role proof route in one package:
   `DomainServiceEnforcementDocumentationRules`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, aggregate-task, and full-build hook wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the tactical `service/` role itself. Generic
 named-module topology, model-role communication boundaries, and broader

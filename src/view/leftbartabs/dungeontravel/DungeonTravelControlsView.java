@@ -7,7 +7,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
-import src.view.slotcontent.controls.dungeoncontrol.DungeonLevelOverlayControlsView;
 
 public final class DungeonTravelControlsView extends DungeonControlPanelView {
 
@@ -18,8 +17,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private final Button resetViewButton = new Button("Reset view");
     private final Button previousLevelButton = new Button("-");
     private final Button nextLevelButton = new Button("+");
-    private final DungeonLevelOverlayControlsView overlayControls =
-            new DungeonLevelOverlayControlsView(this::sectionLabel);
+    private final OverlayControlsPanel overlayControls = new OverlayControlsPanel(this::sectionLabel);
     private Consumer<DungeonTravelControlsViewInputEvent> viewInputEventHandler = ignored -> {};
 
     @SuppressWarnings("PMD.ConstructorCallsOverridableMethod")
@@ -32,10 +30,6 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
 
     public void onViewInputEvent(Consumer<DungeonTravelControlsViewInputEvent> handler) {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
-    }
-
-    public DungeonLevelOverlayControlsView levelOverlayControls() {
-        return overlayControls;
     }
 
     public void showMapName(String mapName) {
@@ -56,8 +50,22 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         nextLevelButton.setDisable(busy || !navigationEnabled);
     }
 
-    public void showOverlaySettings(DungeonLevelOverlayControlsView.Settings settings, boolean disabled) {
+    public void showOverlaySettings(OverlayControlsPanel.Settings settings, boolean disabled) {
         overlayControls.showSettings(settings, disabled);
+    }
+
+    public void bind(DungeonTravelContributionModel contributionModel) {
+        if (contributionModel == null) {
+            return;
+        }
+        contributionModel.mapNameProperty().addListener((ignored, before, after) -> showMapName(after));
+        contributionModel.overlaySettingsProperty().addListener((ignored, before, after) ->
+                showOverlaySettings(toOverlaySettings(after), false));
+        contributionModel.projectionLevelProperty().addListener((ignored, before, after) ->
+                showLevels(after.intValue(), false, true));
+        showMapName(contributionModel.mapNameProperty().get());
+        showOverlaySettings(toOverlaySettings(contributionModel.overlaySettingsProperty().get()), false);
+        showLevels(contributionModel.projectionLevelProperty().get(), false, true);
     }
 
     private HBox levelRow() {
@@ -81,66 +89,29 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         resetViewButton.getStyleClass().add("toolbar-action-button");
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
-        refreshButton.setOnAction(event -> publish(new DungeonTravelControlsViewInputEvent(
-                DungeonTravelControlsViewInputEvent.Source.REFRESH_BUTTON,
-                "OFF",
-                0,
-                0.0,
-                java.util.List.of())));
-        resetViewButton.setOnAction(event -> publish(new DungeonTravelControlsViewInputEvent(
-                DungeonTravelControlsViewInputEvent.Source.RESET_VIEW_BUTTON,
-                "OFF",
-                0,
-                0.0,
-                java.util.List.of())));
-        previousLevelButton.setOnAction(event -> publish(new DungeonTravelControlsViewInputEvent(
-                DungeonTravelControlsViewInputEvent.Source.PREVIOUS_LEVEL_BUTTON,
-                "OFF",
-                0,
-                0.0,
-                java.util.List.of())));
-        nextLevelButton.setOnAction(event -> publish(new DungeonTravelControlsViewInputEvent(
-                DungeonTravelControlsViewInputEvent.Source.NEXT_LEVEL_BUTTON,
-                "OFF",
-                0,
-                0.0,
-                java.util.List.of())));
-        overlayControls.setOnModeChanged(mode ->
-                publish(new DungeonTravelControlsViewInputEvent(
-                        DungeonTravelControlsViewInputEvent.Source.OVERLAY_MODE_CONTROL,
-                        mode == null ? "OFF" : mode.name(),
-                        0,
-                        0.0,
-                        java.util.List.of())));
-        overlayControls.setOnRangeChanged(levelRange ->
-                publish(new DungeonTravelControlsViewInputEvent(
-                        DungeonTravelControlsViewInputEvent.Source.OVERLAY_RANGE_CONTROL,
-                        "OFF",
-                        levelRange,
-                        0.0,
-                        java.util.List.of())));
-        overlayControls.setOnOpacityChanged(opacity ->
-                publish(new DungeonTravelControlsViewInputEvent(
-                        DungeonTravelControlsViewInputEvent.Source.OVERLAY_OPACITY_CONTROL,
-                        "OFF",
-                        0,
-                        opacity,
-                        java.util.List.of())));
-        overlayControls.setOnSelectedLevelsChanged(levels ->
-                publish(new DungeonTravelControlsViewInputEvent(
-                        DungeonTravelControlsViewInputEvent.Source.OVERLAY_LEVEL_SELECTION,
-                        "OFF",
-                        0,
-                        0.0,
-                        levels)));
+        refreshButton.setOnAction(event -> publishSnapshot(true, false, 0));
+        resetViewButton.setOnAction(event -> publishSnapshot(false, true, 0));
+        previousLevelButton.setOnAction(event -> publishSnapshot(false, false, -1));
+        nextLevelButton.setOnAction(event -> publishSnapshot(false, false, 1));
+        overlayControls.setOnModeChanged(mode -> publishSnapshot(false, false, 0));
+        overlayControls.setOnRangeChanged(levelRange -> publishSnapshot(false, false, 0));
+        overlayControls.setOnOpacityChanged(opacity -> publishSnapshot(false, false, 0));
+        overlayControls.setOnSelectedLevelsChanged(() -> publishSnapshot(false, false, 0));
         describe(refreshButton, "Dungeon-Karte neu laden");
         describe(resetViewButton, "Kamera auf die Dungeon-Karte zuruecksetzen");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         describe(nextLevelButton, "Naechste Dungeon-Ebene anzeigen");
     }
 
-    private void publish(DungeonTravelControlsViewInputEvent event) {
-        viewInputEventHandler.accept(event);
+    private void publishSnapshot(boolean refreshRequested, boolean resetViewRequested, int projectionLevelShift) {
+        viewInputEventHandler.accept(new DungeonTravelControlsViewInputEvent(
+                refreshRequested,
+                resetViewRequested,
+                projectionLevelShift,
+                overlayControls.overlayModeKey(),
+                overlayControls.overlayRange(),
+                overlayControls.overlayOpacity(),
+                overlayControls.overlayLevelsText()));
     }
 
     private HBox dungeonRow() {
@@ -152,6 +123,28 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
 
     private HBox projectionRow() {
         return levelRow();
+    }
+
+    private static OverlayControlsPanel.Settings toOverlaySettings(
+            DungeonTravelContributionModel.OverlayProjection settings
+    ) {
+        DungeonTravelContributionModel.OverlayProjection resolved = settings == null
+                ? DungeonTravelContributionModel.OverlayProjection.defaults()
+                : settings;
+        return new OverlayControlsPanel.Settings(
+                toOverlayMode(resolved.modeKey()),
+                resolved.levelRange(),
+                resolved.opacity(),
+                resolved.selectedLevels());
+    }
+
+    private static OverlayControlsPanel.Mode toOverlayMode(String overlayModeKey) {
+        return switch (overlayModeKey == null ? "OFF" : overlayModeKey) {
+            case "OFF" -> OverlayControlsPanel.Mode.OFF;
+            case "NEARBY" -> OverlayControlsPanel.Mode.NEARBY;
+            case "SELECTED" -> OverlayControlsPanel.Mode.SELECTED;
+            default -> OverlayControlsPanel.Mode.OFF;
+        };
     }
 
     private HBox levelStepper() {

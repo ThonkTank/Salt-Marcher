@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-05-03
 Source of Truth: Dungeon write model, ownership boundaries, and domain
 invariants.
 
@@ -35,9 +35,16 @@ Current state:
 
 - `DungeonMap` is the aggregate root and mutation boundary for one authored map
 - stable topology refs are map-owned and reused by rooms, corridors, doors,
-  stairs, and transitions
+  corridor anchors, stairs, and transitions
 - authored room narration persists through the dungeon write model
 - editor preview and apply share the same operation vocabulary
+- the editor session may own authoritative non-persisted preview, selection,
+  active-tool, and projection facts at the application boundary
+- corridor bindings own explicit endpoint truth:
+  doors pin room-side endpoints by stable topology ref and corridor anchors pin
+  corridor-side endpoints by stable topology ref
+- generic corridor-tool clicks are resolved into authored doors or authored
+  corridor anchors before the aggregate commits a corridor mutation
 - runtime travel derives from committed authored truth plus party-owned runtime
   state
 - search and write-model persistence are separate outbound contracts
@@ -46,8 +53,11 @@ Target state:
 
 - topology repair, split or merge behavior, identity preservation, and derived
   rebuild rules remain in the dungeon domain
-- editor and travel share authored map truth but keep presentation state
-  outside the domain model
+- editor and travel share authored map truth while keeping authored persistence
+  in `DungeonMap` only
+- `DungeonEditorModel` may expose an application-owned editor session
+  projection with authoritative non-persisted interaction state, but it is not
+  a second authored write model
 - map-owned topology remains the behavioral owner instead of leaking into view
   or data layers
 
@@ -60,9 +70,13 @@ Derived state must not become a second source of truth. This includes:
 - inspector text
 - adjacency lists
 - travel exits
-- preview state
 - render overlays
 - runtime party position
+
+Application-owned session state may exist outside the authored write model when
+it is not persisted as dungeon truth. This includes editor selection, preview,
+active tool, projection settings, and in-progress corridor start drafts exposed
+through `DungeonEditorModel`.
 
 ## Aggregate Model
 
@@ -99,6 +113,9 @@ ports. Runtime composition belongs to outer layers.
 - runtime travel state never becomes authored dungeon persistence
 - data rows and view models may transport dungeon facts, but they are not the
   owner of dungeon meaning
+- authored corridor anchors belong to one host corridor and may be referenced
+  by other corridor segments
+- a corridor owning still-referenced anchors cannot be deleted
 
 ## References
 

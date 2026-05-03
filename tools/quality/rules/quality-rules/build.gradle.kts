@@ -1,7 +1,12 @@
 import java.io.File
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.the
+import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 
 plugins {
     `java-library`
+    id("saltmarcher.enforcement-bundles")
 }
 
 group = "saltmarcher.quality"
@@ -21,19 +26,16 @@ val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
     ?.let(::File)
     ?: projectDir.parentFile.parentFile.parentFile.parentFile
 
-apply(from = repoRootDir.resolve("tools/quality/enforcement-bundles.gradle.kts"))
+val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
+val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
 
-@Suppress("UNCHECKED_CAST")
-val activeEnforcementBundleIds = extra["saltmarcherActiveEnforcementBundleIds"] as List<String>
-@Suppress("UNCHECKED_CAST")
-val pmdHostScriptsByBundleId = extra["saltmarcherPmdHostScriptsByBundleId"] as Map<String, String>
-
-activeEnforcementBundleIds
-    .mapNotNull(pmdHostScriptsByBundleId::get)
-    .distinct()
-    .forEach { scriptPath ->
-        apply(from = File(scriptPath))
-    }
+val sourceSets = the<SourceSetContainer>()
+sourceSets.named("main") {
+    java.setSrcDirs(
+        listOf(layout.projectDirectory.dir("src/main/java").asFile.absolutePath) +
+            activeEnforcementBundleIds.mapNotNull { bundleId -> enforcementBundles.descriptor(bundleId).pmdSourceDir }
+    )
+}
 
 dependencies {
     implementation("net.sourceforge.pmd:pmd-java:7.23.0")

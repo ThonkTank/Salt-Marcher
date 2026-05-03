@@ -1,6 +1,7 @@
 package src.view.statetabs.encounter;
 
 import java.util.List;
+import java.util.Objects;
 
 public record EncounterStatePublishedEvent(
         Action action,
@@ -17,16 +18,15 @@ public record EncounterStatePublishedEvent(
 ) {
 
     public EncounterStatePublishedEvent {
-        action = action == null ? Action.REFRESH : action;
+        Objects.requireNonNull(action, "action");
         initiatives = initiatives == null ? List.of() : List.copyOf(initiatives);
         combatantId = combatantId == null ? "" : combatantId;
     }
 
     enum Action {
-        REFRESH,
         GENERATE,
         SAVE_CURRENT_PLAN,
-        OPEN_SAVED_PLAN,
+        APPLY_SAVED_PLAN,
         CLEAR_GENERATION_HISTORY,
         SHIFT_ALTERNATIVE,
         ADD_CREATURE,
@@ -34,7 +34,7 @@ public record EncounterStatePublishedEvent(
         DECREMENT_CREATURE,
         REMOVE_CREATURE,
         UNDO_REMOVE,
-        OPEN_INITIATIVE,
+        START_INITIATIVE,
         BACK_TO_BUILDER,
         CONFIRM_INITIATIVE,
         ADVANCE_TURN,

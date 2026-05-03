@@ -44,9 +44,7 @@ public final class SessionPlannerLootMainView extends VBox {
         Button addButton = new Button("Loot-Platzhalter");
         addButton.getStyleClass().addAll("compact", "accent");
         addButton.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerLootMainViewInputEvent(
-                        SessionPlannerLootMainViewInputEvent.Source.ADD_LOOT_BUTTON,
-                        0L)));
+                new SessionPlannerLootMainViewInputEvent(0L)));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox row = new HBox(8, header, spacer, addButton);
@@ -61,9 +59,7 @@ public final class SessionPlannerLootMainView extends VBox {
         Button remove = new Button("Entfernen");
         remove.getStyleClass().addAll("compact", "flat");
         remove.setOnAction(event -> viewInputEventHandler.accept(
-                new SessionPlannerLootMainViewInputEvent(
-                        SessionPlannerLootMainViewInputEvent.Source.REMOVE_LOOT_BUTTON,
-                        loot.token())));
+                new SessionPlannerLootMainViewInputEvent(loot.token())));
         HBox row = new HBox(8, label, spacer, remove);
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add("session-planner-loot-card");

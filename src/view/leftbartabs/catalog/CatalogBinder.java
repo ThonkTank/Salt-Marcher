@@ -44,49 +44,44 @@ final class CatalogBinder {
                 runtimeContext.services().require(EncounterTableApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterSessionModel sessionModel = encounters.loadSession(new LoadEncounterSessionQuery());
+        var filterOptionsModel = creatures.loadFilterOptionsModel(new LoadCreatureFilterOptionsQuery());
+        var catalogModel = creatures.loadCatalogModel(CreatureCatalogQuery.defaults());
+        var encounterTableModel = encounterTables.loadCatalogModel(new LoadEncounterTableSummariesQuery());
+        var tuningPreviewModel = encounters.loadTuningPreviewModel(new LoadEncounterTuningPreviewQuery());
         CatalogContributionModel presentationModel = new CatalogContributionModel();
         CatalogIntentHandler intentHandler = new CatalogIntentHandler(presentationModel);
         CatalogControlsView controls = new CatalogControlsView();
         CatalogMainView main = new CatalogMainView();
-        bindCatalogRequests(runtimeContext.inspector(), creatures, presentationModel);
-        bindControls(presentationModel, intentHandler, controls, sessionModel, encounterTables, encounters);
+        bindControls(
+                presentationModel,
+                intentHandler,
+                controls,
+                sessionModel,
+                encounters);
         bindMain(main, presentationModel, intentHandler);
-        if (presentationModel.markInitialLoad()) {
-            presentationModel.requestFilterOptions();
-            presentationModel.beginSearch();
-            presentationModel.requestSearch();
-        }
-        applySessionCreatureFilters(presentationModel, currentBuilderInputs(sessionModel));
-        return new Binding(controls, main);
-    }
-
-    private static void bindCatalogRequests(
-            InspectorSink inspector,
-            CreaturesApplicationService creatures,
-            CatalogContributionModel presentationModel
-    ) {
-        presentationModel.filterOptionsRequestTokenProperty().addListener((obs, oldValue, newValue) ->
-                presentationModel.applyCreatureFilterOptions(
-                        creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery())));
-        presentationModel.searchRequestTokenProperty().addListener((obs, oldValue, newValue) -> {
-            CatalogContributionModel.CreatureFilters filters = presentationModel.currentFilters();
-            CatalogContributionModel.SortOption sortOption = presentationModel.currentSortOption();
-            presentationModel.applySearchResult(creatures.searchCatalog(new CreatureCatalogQuery(
-                    filters.nameQuery(),
-                    filters.challengeRatingMin(),
-                    filters.challengeRatingMax(),
-                    filters.sizes(),
-                    filters.types(),
-                    filters.subtypes(),
-                    filters.biomes(),
-                    filters.alignments(),
-                    sortOption.field(),
-                    sortOption.direction(),
-                    presentationModel.currentPageSize(),
-                    presentationModel.currentPageOffset())));
+        presentationModel.searchCycleProperty().addListener((obs, before, after) -> runSearch(creatures, presentationModel));
+        presentationModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
+            if (after == null || after.longValue() <= 0L) {
+                return;
+            }
+            openCreatureDetails(runtimeContext.inspector(), creatures, after.longValue());
+            presentationModel.clearCreatureDetailSelection();
         });
-        presentationModel.openCreatureRequestTokenProperty().addListener((obs, oldValue, newValue) ->
-                openCreatureDetails(inspector, creatures, presentationModel.requestedCreatureId()));
+        filterOptionsModel.subscribe(presentationModel::applyCreatureFilterOptions);
+        catalogModel.subscribe(presentationModel::applySearchResult);
+        encounterTableModel.subscribe(result -> controls.setEncounterTables(toEncounterTableSelections(result)));
+        tuningPreviewModel.subscribe(result ->
+                controls.setEncounterTuningPreview(toControlTuningPreview(result.labels())));
+        applySessionCreatureFilters(presentationModel, currentBuilderInputs(sessionModel));
+        presentationModel.applyCreatureFilterOptions(filterOptionsModel.current());
+        controls.setEncounterTables(toEncounterTableSelections(encounterTableModel.current()));
+        controls.setEncounterTuningPreview(toControlTuningPreview(tuningPreviewModel.current().labels()));
+        creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery());
+        encounterTables.loadSummaries(new LoadEncounterTableSummariesQuery());
+        encounters.loadTuningPreview(new LoadEncounterTuningPreviewQuery());
+        presentationModel.beginSearch();
+        presentationModel.advanceSearchCycle();
+        return new Binding(controls, main);
     }
 
     private static void bindControls(
@@ -94,15 +89,12 @@ final class CatalogBinder {
             CatalogIntentHandler intentHandler,
             CatalogControlsView controls,
             EncounterSessionModel sessionModel,
-            EncounterTableApplicationService encounterTables,
             EncounterApplicationService encounters
     ) {
         controls.setCreatureFilterData(toControlFilterData(presentationModel.creatureFilterDataProperty().get()));
         ObservableList<CatalogContributionModel.FilterChip> chips = presentationModel.chips();
         controls.setChips(toControlChips(chips));
-        controls.setEncounterTables(loadEncounterTableSelections(encounterTables));
         applyEncounterBuilderInputs(controls, currentBuilderInputs(sessionModel));
-        refreshTuningPreview(controls, encounters);
         controls.onViewInputEvent(intentHandler::consume);
         intentHandler.onPublishedEventRequested(event -> applyPublishedEvent(encounters, sessionModel, event));
 
@@ -114,7 +106,7 @@ final class CatalogBinder {
                 controls.setChips(toControlChips(chips)));
         sessionModel.subscribe(snapshot -> {
             applyEncounterBuilderInputs(controls, builderInputs(snapshot));
-            refreshTuningPreview(controls, encounters);
+            requestTuningPreview(encounters);
         });
     }
 
@@ -166,10 +158,9 @@ final class CatalogBinder {
                 safeOptions.challengeRatings());
     }
 
-    private static List<CatalogControlsView.EncounterTableSelection> loadEncounterTableSelections(
-            EncounterTableApplicationService encounterTables
+    private static List<CatalogControlsView.EncounterTableSelection> toEncounterTableSelections(
+            EncounterTableCatalogResult result
     ) {
-        EncounterTableCatalogResult result = encounterTables.loadSummaries(new LoadEncounterTableSummariesQuery());
         if (result.status() != EncounterTableReadStatus.SUCCESS) {
             return List.of();
         }
@@ -195,12 +186,10 @@ final class CatalogBinder {
                 .toList();
     }
 
-    private static void refreshTuningPreview(
-            CatalogControlsView controls,
+    private static void requestTuningPreview(
             EncounterApplicationService encounters
     ) {
-        controls.setEncounterTuningPreview(toControlTuningPreview(
-                encounters.loadTuningPreview(new LoadEncounterTuningPreviewQuery()).labels()));
+        encounters.loadTuningPreview(new LoadEncounterTuningPreviewQuery());
     }
 
     private static void applyEncounterBuilderInputs(
@@ -238,8 +227,27 @@ final class CatalogBinder {
                 safeInputs.creatureSubtypes(),
                 safeInputs.biomes(),
                 List.of()));
-        presentationModel.beginSearch();
-        presentationModel.requestSearch();
+    }
+
+    private static void runSearch(
+            CreaturesApplicationService creatures,
+            CatalogContributionModel presentationModel
+    ) {
+        CatalogContributionModel.CreatureFilters filters = presentationModel.currentFilters();
+        CatalogContributionModel.SortOption sortOption = presentationModel.currentSortOption();
+        creatures.searchCatalog(new CreatureCatalogQuery(
+                filters.nameQuery(),
+                filters.challengeRatingMin(),
+                filters.challengeRatingMax(),
+                filters.sizes(),
+                filters.types(),
+                filters.subtypes(),
+                filters.biomes(),
+                filters.alignments(),
+                sortOption.field(),
+                sortOption.direction(),
+                presentationModel.currentPageSize(),
+                presentationModel.currentPageOffset()));
     }
 
     private static EncounterSessionSnapshot.BuilderInputs currentBuilderInputs(

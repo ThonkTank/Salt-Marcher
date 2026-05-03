@@ -15,12 +15,6 @@ It keeps the `published/**` proof route owner-pure and bundle-local:
   `DomainPublishedDocumentationEnforcementCheckMain`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, aggregate-task, and focused-entry wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the exported `published/**` boundary-carrier role.
 Root `ApplicationService` public-boundary constraints, `application/*UseCase`

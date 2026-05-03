@@ -15,12 +15,6 @@ rule definitions, InspectorEntry-specific Error Prone policy, and host wiring:
   `ViewInspectorEntryTopologyCheckMain`
 - `jqassistant/`
   `saltmarcher:view-inspector-entry-enforcement`
-- `root-host.gradle.kts`
-  root-project compiler, jQAssistant, and aggregate task wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 Unified root entrypoint:
 

@@ -9,10 +9,6 @@ It keeps the proof surface strict and owner-local:
   `ShellLifecycleHookOwnership`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler wiring and aggregate-task entrypoint
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
 
 This bundle currently proves only shell-owned lifecycle-hook invocation.
 The remaining `AppShell` hosting, registration, and layout semantics stay

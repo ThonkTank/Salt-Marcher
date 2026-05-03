@@ -1,17 +1,14 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 
 final class DungeonEditorIntentHandler {
 
-    private final DungeonEditorContributionModel contributionModel;
     private Consumer<DungeonEditorPublishedEvent> publishedEventListener = ignored -> {};
 
-    DungeonEditorIntentHandler(DungeonEditorContributionModel contributionModel) {
-        this.contributionModel = Objects.requireNonNull(contributionModel, "contributionModel");
+    DungeonEditorIntentHandler() {
     }
 
     void onPublishedEventRequested(Consumer<DungeonEditorPublishedEvent> listener) {
@@ -22,64 +19,52 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.source()) {
-            case POINTER_PRESSED -> {
-                DungeonEditorContributionModel.InteractionResult result =
-                        contributionModel.primaryPressed(contributionModel.resolvePointerState(
-                                event.canvasX(),
-                                event.canvasY(),
-                                event.primaryButtonDown(),
-                                event.secondaryButtonDown(),
-                                event.hitRef()));
-                dispatchNullable(result.action());
-            }
-            case POINTER_DRAGGED -> {
-                dispatchNullable(contributionModel.primaryDragged(contributionModel.resolvePointerState(
-                        event.canvasX(),
-                        event.canvasY(),
-                        event.primaryButtonDown(),
-                        event.secondaryButtonDown(),
-                        event.hitRef())));
-            }
-            case POINTER_RELEASED -> {
-                dispatchNullable(contributionModel.primaryReleased(contributionModel.resolvePointerState(
-                        event.canvasX(),
-                        event.canvasY(),
-                        event.primaryButtonDown(),
-                        event.secondaryButtonDown(),
-                        event.hitRef())));
-            }
-            case POINTER_MOVED -> {
-                contributionModel.pointerMoved(contributionModel.resolvePointerState(
-                        event.canvasX(),
-                        event.canvasY(),
-                        event.primaryButtonDown(),
-                        event.secondaryButtonDown(),
-                        event.hitRef()));
-            }
-            case LEVEL_SCROLLED -> {
-                dispatchNullable(contributionModel.levelScrolled(event.levelDelta()));
-            }
-        }
+        publish(DungeonEditorPublishedEvent.interpretMainView(new DungeonEditorPublishedEvent.MainViewInput(
+                toMainViewSource(event.pointerPhaseKey(), event.levelDelta()),
+                event.canvasX(),
+                event.canvasY(),
+                event.primaryButtonDown(),
+                event.secondaryButtonDown(),
+                event.hitRef(),
+                event.levelDelta())));
     }
 
     void consume(DungeonEditorControlsViewInputEvent event) {
         if (event == null) {
             return;
         }
-        switch (event.source()) {
-            case MAP_SELECTION -> dispatchNullable(contributionModel.selectMap(event.mapKey()));
-            case CREATE_MAP_SUBMIT -> dispatch(contributionModel.createMap(event.mapName()));
-            case RENAME_MAP_SUBMIT -> dispatchNullable(contributionModel.renameMap(event.mapKey(), event.mapName()));
-            case DELETE_MAP_CONFIRM -> dispatchNullable(contributionModel.deleteMap(event.mapKey()));
-            case VIEW_MODE_TOGGLE -> contributionModel.selectViewMode(event.viewModeKey());
-            case TOOL_SELECTION -> contributionModel.selectTool(event.tool());
-            case PREVIOUS_LEVEL_BUTTON -> dispatchNullable(contributionModel.previousLevel());
-            case NEXT_LEVEL_BUTTON -> dispatchNullable(contributionModel.nextLevel());
-            case OVERLAY_MODE_CONTROL -> contributionModel.selectOverlayMode(event.overlayModeKey());
-            case OVERLAY_RANGE_CONTROL -> contributionModel.selectOverlayRange(event.overlayRange());
-            case OVERLAY_OPACITY_CONTROL -> contributionModel.selectOverlayOpacity(event.overlayOpacity());
-            case OVERLAY_LEVEL_SELECTION -> contributionModel.selectOverlayLevels(event.overlayLevels());
+        if (event.mapSelectionChanged()) {
+            publishIfMapSelected(event.mapIdValue(), DungeonEditorPublishedEvent::selectMap);
+            return;
+        }
+        if (event.createMapRequested()) {
+            publish(DungeonEditorPublishedEvent.createMap(event.mapName()));
+            return;
+        }
+        if (event.renameMapRequested()) {
+            publishIfMapSelected(
+                    event.mapIdValue(),
+                    mapId -> DungeonEditorPublishedEvent.renameMap(mapId, event.mapName()));
+            return;
+        }
+        if (event.deleteMapRequested()) {
+            publishIfMapSelected(event.mapIdValue(), DungeonEditorPublishedEvent::deleteMap);
+            return;
+        }
+        if (event.viewModeChanged()) {
+            publish(DungeonEditorPublishedEvent.setViewMode(event.viewModeKey()));
+            return;
+        }
+        if (event.toolChanged()) {
+            publish(DungeonEditorPublishedEvent.setTool(event.tool()));
+            return;
+        }
+        if (event.projectionLevelShift() != 0) {
+            publish(DungeonEditorPublishedEvent.shiftProjectionLevel(event.projectionLevelShift()));
+            return;
+        }
+        if (event.overlayChanged()) {
+            publish(DungeonEditorPublishedEvent.setOverlay(toOverlaySettings(event)));
         }
     }
 
@@ -87,170 +72,77 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
-        saveRoomNarration(
+        publish(DungeonEditorPublishedEvent.saveRoomNarration(new DungeonEditorPublishedEvent.RoomNarrationInput(
                 event.roomId(),
                 event.visualDescription(),
-                event.exits().stream()
-                        .map(exit -> new DungeonEditorContributionModel.RoomExitNarrationData(
-                                exit.label(),
-                                exit.q(),
-                                exit.r(),
-                                exit.level(),
-                                exit.direction(),
-                                exit.description()))
-                        .toList());
+                event.exits().stream().map(DungeonEditorIntentHandler::toPublishedExit).toList())));
     }
 
-    private void saveRoomNarration(
-            long roomId,
-            String visualDescription,
-            List<DungeonEditorContributionModel.RoomExitNarrationData> exits
-    ) {
-        dispatchNullable(contributionModel.saveRoomNarration(roomId, visualDescription, exits));
+    private void publishIfMapSelected(long mapId, java.util.function.LongFunction<DungeonEditorPublishedEvent> factory) {
+        if (mapId > 0L) {
+            publish(factory.apply(mapId));
+        }
     }
 
-    private void dispatchNullable(@Nullable Object actionCandidate) {
-        if (!(actionCandidate instanceof DungeonEditorContributionModel.ActionPlan action)) {
+    private void publish(DungeonEditorPublishedEvent event) {
+        if (event == null) {
             return;
         }
-        dispatch(action);
-    }
-
-    private void dispatch(DungeonEditorContributionModel.ActionPlan action) {
-        DungeonEditorContributionModel.ActionDispatch dispatch = contributionModel.toDispatch(action);
-        if (dispatch == null) {
-            return;
-        }
-        publishedEventListener.accept(toPublishedEvent(dispatch));
-    }
-
-    private static DungeonEditorPublishedEvent toPublishedEvent(
-            DungeonEditorContributionModel.ActionDispatch dispatch
-    ) {
-        DungeonEditorContributionModel.ActionDispatch safeDispatch = dispatch == null
-                ? DungeonEditorContributionModel.ActionDispatch.loadEditor(0L, 0, "GRID")
-                : dispatch;
-        return switch (safeDispatch.kind()) {
-            case LOAD_EDITOR -> DungeonEditorPublishedEvent.loadEditor(
-                    safeDispatch.mapId(),
-                    safeDispatch.projectionLevel(),
-                    safeDispatch.viewModeKey());
-            case CREATE_MAP -> DungeonEditorPublishedEvent.createMap(safeDispatch.mapName());
-            case RENAME_MAP -> DungeonEditorPublishedEvent.renameMap(safeDispatch.mapId(), safeDispatch.mapName());
-            case DELETE_MAP -> DungeonEditorPublishedEvent.deleteMap(safeDispatch.mapId());
-            case PREVIEW_SURFACE_EDIT -> DungeonEditorPublishedEvent.previewSurfaceEdit(
-                    safeDispatch.mapId(),
-                    toPublishedMutation(safeDispatch.mutation()));
-            case APPLY_SURFACE_EDIT -> DungeonEditorPublishedEvent.applySurfaceEdit(
-                    safeDispatch.mapId(),
-                    toPublishedMutation(safeDispatch.mutation()));
-            case LOAD_SURFACE -> DungeonEditorPublishedEvent.loadSurface(
-                    safeDispatch.mapId(),
-                    new DungeonEditorPublishedEvent.InspectorSelection(
-                            safeDispatch.inspectorSelection().topologyRefKind(),
-                            safeDispatch.inspectorSelection().topologyRefId(),
-                            safeDispatch.inspectorSelection().clusterId(),
-                            safeDispatch.inspectorSelection().clusterSelection(),
-                            safeDispatch.inspectorSelection().surfaceKind()));
-        };
-    }
-
-    private static DungeonEditorPublishedEvent.Mutation toPublishedMutation(
-            DungeonEditorContributionModel.ActionDispatch.Mutation mutation
-    ) {
-        DungeonEditorContributionModel.ActionDispatch.Mutation safeMutation = mutation == null
-                ? DungeonEditorContributionModel.ActionDispatch.Mutation.none()
-                : mutation;
-        return switch (safeMutation) {
-            case DungeonEditorContributionModel.ActionDispatch.NoneMutation ignored ->
-                    DungeonEditorPublishedEvent.Mutation.none();
-            case DungeonEditorContributionModel.ActionDispatch.RoomRectangleMutation room ->
-                    new DungeonEditorPublishedEvent.RoomRectangleMutation(
-                            toPublishedCell(room.start()),
-                            toPublishedCell(room.end()),
-                            room.deleteMode());
-            case DungeonEditorContributionModel.ActionDispatch.ClusterBoundariesMutation boundaries ->
-                    new DungeonEditorPublishedEvent.ClusterBoundariesMutation(
-                            boundaries.clusterId(),
-                            boundaries.edges().stream().map(DungeonEditorIntentHandler::toPublishedEdge).toList(),
-                            boundaries.boundaryKind(),
-                            boundaries.deleteMode());
-            case DungeonEditorContributionModel.ActionDispatch.SaveRoomNarrationMutation narration ->
-                    new DungeonEditorPublishedEvent.SaveRoomNarrationMutation(
-                            narration.roomId(),
-                            narration.visualDescription(),
-                            narration.exits().stream().map(DungeonEditorIntentHandler::toPublishedExit).toList());
-            case DungeonEditorContributionModel.ActionDispatch.MoveHandleMutation moveHandle ->
-                    new DungeonEditorPublishedEvent.MoveHandleMutation(
-                            toPublishedHandle(moveHandle.handleRef()),
-                            moveHandle.deltaQ(),
-                            moveHandle.deltaR(),
-                            moveHandle.deltaLevel());
-            case DungeonEditorContributionModel.ActionDispatch.MoveBoundaryStretchMutation stretch ->
-                    new DungeonEditorPublishedEvent.MoveBoundaryStretchMutation(
-                            stretch.clusterId(),
-                            stretch.sourceEdges().stream().map(DungeonEditorIntentHandler::toPublishedEdge).toList(),
-                            stretch.deltaQ(),
-                            stretch.deltaR(),
-                            stretch.deltaLevel());
-        };
-    }
-
-    private static DungeonEditorPublishedEvent.CellRef toPublishedCell(
-            DungeonEditorContributionModel.ActionDispatch.CellRef cell
-    ) {
-        DungeonEditorContributionModel.ActionDispatch.CellRef safeCell = cell == null
-                ? DungeonEditorContributionModel.ActionDispatch.CellRef.empty()
-                : cell;
-        return new DungeonEditorPublishedEvent.CellRef(safeCell.q(), safeCell.r(), safeCell.level());
-    }
-
-    private static DungeonEditorPublishedEvent.EdgeRef toPublishedEdge(
-            DungeonEditorContributionModel.ActionDispatch.EdgeRef edge
-    ) {
-        DungeonEditorContributionModel.ActionDispatch.EdgeRef safeEdge = edge == null
-                ? new DungeonEditorContributionModel.ActionDispatch.EdgeRef(
-                DungeonEditorContributionModel.ActionDispatch.CellRef.empty(),
-                DungeonEditorContributionModel.ActionDispatch.CellRef.empty())
-                : edge;
-        return new DungeonEditorPublishedEvent.EdgeRef(
-                toPublishedCell(safeEdge.from()),
-                toPublishedCell(safeEdge.to()));
-    }
-
-    private static DungeonEditorPublishedEvent.HandleRef toPublishedHandle(
-            DungeonEditorContributionModel.ActionDispatch.HandleRef handleRef
-    ) {
-        DungeonEditorContributionModel.ActionDispatch.HandleRef safeHandle = handleRef == null
-                ? DungeonEditorContributionModel.ActionDispatch.HandleRef.empty()
-                : handleRef;
-        return new DungeonEditorPublishedEvent.HandleRef(
-                safeHandle.kind(),
-                safeHandle.topologyRefKind(),
-                safeHandle.topologyRefId(),
-                safeHandle.ownerId(),
-                safeHandle.clusterId(),
-                safeHandle.corridorId(),
-                safeHandle.roomId(),
-                safeHandle.index(),
-                toPublishedCell(safeHandle.cell()),
-                safeHandle.direction());
+        publishedEventListener.accept(event);
     }
 
     private static DungeonEditorPublishedEvent.RoomExitNarration toPublishedExit(
-            DungeonEditorContributionModel.ActionDispatch.RoomExitNarration exit
+            DungeonEditorStateViewInputEvent.RoomExitNarrationSnapshot exit
     ) {
-        DungeonEditorContributionModel.ActionDispatch.RoomExitNarration safeExit = exit == null
-                ? new DungeonEditorContributionModel.ActionDispatch.RoomExitNarration(
-                "",
-                DungeonEditorContributionModel.ActionDispatch.CellRef.empty(),
-                "",
-                "")
+        DungeonEditorStateViewInputEvent.RoomExitNarrationSnapshot safeExit = exit == null
+                ? new DungeonEditorStateViewInputEvent.RoomExitNarrationSnapshot("", 0, 0, 0, "", "")
                 : exit;
         return new DungeonEditorPublishedEvent.RoomExitNarration(
                 safeExit.label(),
-                toPublishedCell(safeExit.cell()),
+                new DungeonEditorPublishedEvent.CellRef(safeExit.q(), safeExit.r(), safeExit.level()),
                 safeExit.direction(),
                 safeExit.description());
+    }
+
+    private static DungeonEditorPublishedEvent.OverlaySettings toOverlaySettings(
+            DungeonEditorControlsViewInputEvent event
+    ) {
+        return new DungeonEditorPublishedEvent.OverlaySettings(
+                event.overlayModeKey(),
+                event.overlayRange(),
+                event.overlayOpacity(),
+                parseLevels(event.overlayLevelsText()));
+    }
+
+    private static DungeonEditorPublishedEvent.MainViewInput.Source toMainViewSource(
+            String pointerPhaseKey,
+            int levelDelta
+    ) {
+        if (levelDelta != 0) {
+            return DungeonEditorPublishedEvent.MainViewInput.Source.LEVEL_SCROLLED;
+        }
+        return switch (pointerPhaseKey == null ? "MOVE" : pointerPhaseKey) {
+            case "PRESS" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_PRESSED;
+            case "DRAG" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_DRAGGED;
+            case "RELEASE" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_RELEASED;
+            default -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_MOVED;
+        };
+    }
+
+    private static List<Integer> parseLevels(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        try {
+            return java.util.Arrays.stream(raw.split(","))
+                    .map(String::trim)
+                    .filter(part -> !part.isBlank())
+                    .map(Integer::parseInt)
+                    .sorted()
+                    .distinct()
+                    .toList();
+        } catch (NumberFormatException exception) {
+            return List.of();
+        }
     }
 }

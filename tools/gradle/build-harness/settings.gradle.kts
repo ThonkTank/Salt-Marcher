@@ -1,3 +1,5 @@
-apply(from = "../build-isolation.settings.gradle.kts")
+pluginManagement {
+    includeBuild("../build-logic")
+}
 
 rootProject.name = "build-harness"

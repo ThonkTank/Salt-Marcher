@@ -50,10 +50,7 @@ public final class ViewPublishedEventBoundaryChecker extends BugChecker
                     referencedType)) {
                 continue;
             }
-            ViewArchitectureSupport.ViewTypeInfo viewType = ViewArchitectureSupport.parseViewType(referencedType);
-            if (viewType == null || !"PUBLISHED_EVENT".equals(viewType.bucket())) {
-                forbiddenReferences.add(referencedType);
-            }
+            forbiddenReferences.add(referencedType);
         }
 
         if (!isTopLevelRecord(tree)) {

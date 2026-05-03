@@ -55,12 +55,15 @@
         <cypher><![CDATA[
             MATCH (type:Java:Type:SaltMarcher:ViewLayerType {viewBucket: 'INSPECTOR_ENTRY'})
             WHERE NOT type.fqn CONTAINS '$'
-            WITH type.relativePath AS source, collect(DISTINCT type.name) AS typeNames
-            WHERE size(typeNames) <> 1
+            WITH
+              type.relativePath AS source,
+              coalesce(type.sourceFileName, '') AS sourceFileName,
+              collect(DISTINCT type.name) AS typeNames
+            WHERE size(typeNames) <> 1 OR sourceFileName <> head(typeNames) + '.java'
             RETURN
               source AS Source,
               'exactly one top-level InspectorEntry type' AS ExpectedDirection,
-              reduce(actual = '', typeName IN typeNames |
+              sourceFileName + ' -> ' + reduce(actual = '', typeName IN typeNames |
                 CASE WHEN actual = '' THEN typeName ELSE actual + ', ' + typeName END) AS ActualDirection,
               'An InspectorEntry file must define exactly one top-level adapter type.' AS Details
             ORDER BY Source
@@ -83,11 +86,16 @@
               OR (
                 target.fqn =~ 'src\\.view\\..*'
                 AND NOT (
-                  target.viewBucket IN ['MODEL', 'VIEW', 'INSPECTOR_ENTRY']
+                  (
+                    target.viewBucket IN ['VIEW', 'INSPECTOR_ENTRY']
+                    OR (target.viewBucket = 'MODEL' AND target.sourceFileName ENDS WITH 'ContentModel.java')
+                  )
                   AND size(sourceSegments) >= 5
                   AND size(targetSegments) >= 5
                   AND sourceSegments[2] = 'slotcontent'
                   AND targetSegments[2] = 'slotcontent'
+                  AND sourceSegments[3] = 'details'
+                  AND targetSegments[3] = 'details'
                   AND sourceSegments[3] = targetSegments[3]
                   AND sourceSegments[4] = targetSegments[4]
                 )

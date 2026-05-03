@@ -18,7 +18,8 @@ public final class DataServiceContributionShellApiAllowlistChecker extends BugCh
 
     private static final Set<String> ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ServiceContribution",
-            "shell.api.ServiceRegistry");
+            "shell.api.ServiceRegistry",
+            "shell.api.ServiceRegistry.Builder");
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
@@ -55,7 +56,8 @@ public final class DataServiceContributionShellApiAllowlistChecker extends BugCh
             return true;
         }
         for (String allowedType : ALLOWED_SHELL_TYPES) {
-            if (referencedType.startsWith(allowedType + "$")) {
+            if (referencedType.startsWith(allowedType + "$")
+                    || referencedType.startsWith(allowedType + ".")) {
                 return true;
             }
         }

@@ -76,26 +76,38 @@ public final class SessionPlannerTimelineMainView extends VBox {
         up.setDisable(!encounter.canMoveUp());
         up.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Source.MOVE_ENCOUNTER_UP_BUTTON,
                         encounter.token(),
-                        -1)));
+                        -1,
+                        -1,
+                        false,
+                        false,
+                        false,
+                        false)));
 
         Button down = new Button("Runter");
         down.getStyleClass().addAll("compact", "flat");
         down.setDisable(!encounter.canMoveDown());
         down.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Source.MOVE_ENCOUNTER_DOWN_BUTTON,
                         encounter.token(),
-                        -1)));
+                        1,
+                        -1,
+                        false,
+                        false,
+                        false,
+                        false)));
 
         Button remove = new Button("Entfernen");
         remove.getStyleClass().addAll("compact", "flat");
         remove.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Source.REMOVE_ENCOUNTER_BUTTON,
                         encounter.token(),
-                        -1)));
+                        0,
+                        -1,
+                        true,
+                        false,
+                        false,
+                        false)));
 
         HBox actions = new HBox(6, up, down, remove);
         VBox card = new VBox(6, title, meta, budget, multiplier, actions);
@@ -116,26 +128,38 @@ public final class SessionPlannerTimelineMainView extends VBox {
         shortRest.getStyleClass().addAll("compact", "flat");
         shortRest.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Source.SHORT_REST_BUTTON,
                         0L,
-                        gap.gapIndex())));
+                        0,
+                        gap.gapIndex(),
+                        false,
+                        true,
+                        false,
+                        false)));
 
         Button longRest = new Button("Lange Rast");
         longRest.getStyleClass().addAll("compact", "flat");
         longRest.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Source.LONG_REST_BUTTON,
                         0L,
-                        gap.gapIndex())));
+                        0,
+                        gap.gapIndex(),
+                        false,
+                        false,
+                        true,
+                        false)));
 
         Button clear = new Button("Leeren");
         clear.getStyleClass().addAll("compact", "flat");
         clear.setDisable(!gap.hasAssignedRest());
         clear.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerTimelineMainViewInputEvent(
-                        SessionPlannerTimelineMainViewInputEvent.Source.CLEAR_REST_BUTTON,
                         0L,
-                        gap.gapIndex())));
+                        0,
+                        gap.gapIndex(),
+                        false,
+                        false,
+                        false,
+                        true)));
 
         HBox actions = new HBox(6, shortRest, longRest, clear);
         VBox card = new VBox(6, title, current, actions);

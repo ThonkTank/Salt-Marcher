@@ -1,8 +1,8 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-05-03
 Source of Truth: Complete invariant catalog for the reusable
-`*InspectorEntry` role itself in `src/view/slotcontent/**`.
+`*InspectorEntry` role itself in `src/view/slotcontent/details/**`.
 
 # View InspectorEntry Enforcement
 
@@ -40,13 +40,13 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `view-inspectorentry-slotcontent-only` | Enforced | every `*InspectorEntry.java` under `src/view/**` | `view-inspector-entry-enforcement` bundle build-harness `ViewInspectorEntryTopologyRules` | `./gradlew checkViewInspectorEntryEnforcement` | `*InspectorEntry.java` files may exist only inside reusable `slotcontent/**` units. Active roots and non-slotcontent view paths do not admit the role. |
-| `view-inspectorentry-details-only` | Review-Owned | every `*InspectorEntry.java` under `src/view/**` | none | none | `view-layer.md` narrows the role further to `slotcontent/details/**` publication. The live InspectorEntry bundle does not yet prove that stricter details-only placement mechanically. |
+| `view-inspectorentry-details-only` | Enforced | every `*InspectorEntry.java` under `src/view/**` | Error Prone `ViewInspectorEntryDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewInspectorEntryEnforcement` | `*InspectorEntry.java` files may exist only inside reusable `slotcontent/details/**` units. Other reusable `slotcontent` families do not admit the role. |
 
 ### Must Contain
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `view-inspectorentry-one-top-level-type-per-file` | Enforced | every `*InspectorEntry.java` under `src/view/**` | `view-inspector-entry-enforcement` bundle jQAssistant `saltmarcher:ViewInspectorEntryOneTopLevelTypePerFile` | `./gradlew checkViewInspectorEntryEnforcement` | Each `*InspectorEntry` source file defines exactly one top-level `InspectorEntry` type rather than several peer adapter types in one source file. |
+| `view-inspectorentry-one-top-level-type-per-file` | Enforced | every `*InspectorEntry.java` under `src/view/**` | `view-inspector-entry-enforcement` bundle jQAssistant `saltmarcher:ViewInspectorEntryOneTopLevelTypePerFile` | `./gradlew checkViewInspectorEntryEnforcement` | Each `*InspectorEntry` source file defines exactly one top-level adapter type, and that type itself is the file's `*InspectorEntry` role owner. |
 
 ### Must Not Contain
 
@@ -56,7 +56,7 @@ Unified focused bundle entrypoint:
 | `view-inspectorentry-no-shell-runtime-or-host-dependencies` | Enforced | every `*InspectorEntry.java` under `src/view/**` | Error Prone `ViewInspectorEntryShellApiAllowlist` and `view-inspector-entry-enforcement` bundle jQAssistant `saltmarcher:ViewInspectorEntryDependencies` | `./gradlew compileJava` and `./gradlew checkViewInspectorEntryEnforcement` | An `InspectorEntry` does not depend on `ShellRuntimeContext`, `InspectorSink`, `ShellSlot`, other shell API families, or `shell.host/**`. |
 | `view-inspectorentry-javafx-node-only` | Enforced | every `*InspectorEntry.java` under `src/view/**` that references JavaFX types | Error Prone `ViewInspectorEntryDependencyBoundary` | `./gradlew compileJava` | An `InspectorEntry` does not become a general JavaFX assembly root. From JavaFX it may use only `javafx.scene.Node` as the shell content boundary type. |
 | `view-inspectorentry-domain-published-only` | Enforced | every `*InspectorEntry.java` under `src/view/**` that references `src.domain/**` | Error Prone `ViewInspectorEntryDependencyBoundary` and `view-inspector-entry-enforcement` bundle jQAssistant `saltmarcher:ViewInspectorEntryDependencies` | `./gradlew compileJava` and `./gradlew checkViewInspectorEntryEnforcement` | An `InspectorEntry` depends only on read-side domain `published/**` carriers and does not import domain internals, write/query carriers outside that published boundary, or root `*ApplicationService` types. |
-| `view-inspectorentry-same-unit-view-surface-only` | Enforced | every `*InspectorEntry.java` under `src/view/**` that references `src.view/**` | Error Prone `ViewInspectorEntryDependencyBoundary` and `view-inspector-entry-enforcement` bundle jQAssistant `saltmarcher:ViewInspectorEntryDependencies` | `./gradlew compileJava` and `./gradlew checkViewInspectorEntryEnforcement` | An `InspectorEntry` may reference only its own reusable unit's `*View`, `*ContentModel`, and same-unit `*InspectorEntry` support. It does not import `*Contribution`, `*Binder`, `*ContributionModel`, `*IntentHandler`, `*ViewInputEvent`, `*PublishedEvent`, or foreign view units. |
+| `view-inspectorentry-same-unit-view-surface-only` | Enforced | every `*InspectorEntry.java` under `src/view/**` that references `src.view/**` | Error Prone `ViewInspectorEntryDependencyBoundary` and `view-inspector-entry-enforcement` bundle jQAssistant `saltmarcher:ViewInspectorEntryDependencies` | `./gradlew compileJava` and `./gradlew checkViewInspectorEntryEnforcement` | An `InspectorEntry` may reference only its own reusable details unit's `*View`, `*ContentModel`, and same-unit nested/private `*InspectorEntry` support inside that role file. It does not import `*Contribution`, `*Binder`, `*ContributionModel`, legacy `*ViewModel` or `*PresentationModel`, `*IntentHandler`, `*ViewInputEvent`, `*PublishedEvent`, foreign view units, or separate same-unit helper top-levels such as `*Support`, `*Helper`, or `*Assembler`. |
 
 ### Communication Contract
 

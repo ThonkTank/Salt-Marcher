@@ -14,14 +14,29 @@ import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
+import src.domain.dungeon.published.DungeonEditorPreview;
+import src.domain.dungeon.published.DungeonEditorSnapshot;
 import src.domain.dungeon.published.DungeonFeatureKind;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
+import src.domain.dungeon.published.DungeonMapMode;
 import src.domain.dungeon.published.DungeonMapSnapshot;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonSnapshot;
 import src.domain.dungeon.published.DungeonSurfacePayload;
+import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.DungeonTopologyKind;
+import src.domain.dungeon.published.DungeonTravelHeading;
+import src.domain.travel.published.TravelDungeonArea;
+import src.domain.travel.published.TravelDungeonBoundary;
+import src.domain.travel.published.TravelDungeonCell;
+import src.domain.travel.published.TravelDungeonFeature;
+import src.domain.travel.published.TravelDungeonMapSnapshot;
+import src.domain.travel.published.TravelDungeonPosition;
+import src.domain.travel.published.TravelDungeonSnapshot;
+import src.domain.travel.published.TravelDungeonSurface;
+import src.domain.travel.published.TravelOverlaySettings;
 
 public final class DungeonMapContentModel {
 
@@ -133,6 +148,45 @@ public final class DungeonMapContentModel {
         rebuildRenderState();
     }
 
+    public void applyEditorSnapshot(DungeonEditorSnapshot editorSnapshot) {
+        DungeonEditorSnapshot safeSnapshot = editorSnapshot == null
+                ? DungeonEditorSnapshot.empty("")
+                : editorSnapshot;
+        DungeonSurfacePayload surfacePayload = safeSnapshot.surface();
+        snapshot = toCommittedSnapshot(surfacePayload);
+        previewSnapshot = toPreviewSnapshot(surfacePayload);
+        viewMode = toViewMode(safeSnapshot.viewModeKey());
+        overlaySettings = toOverlaySettings(safeSnapshot.overlaySettings());
+        projectionLevel = safeSnapshot.projectionLevel();
+        selectedTool = normalizeTool(safeSnapshot.selectedTool());
+        RenderState.Selection nextSelection = toSelection(
+                safeSnapshot.selection(),
+                surfacePayload == null ? null : surfacePayload.inspector());
+        selection = nextSelection;
+        editorPreview = toEditorPreview(safeSnapshot.preview(), nextSelection);
+        partyToken = null;
+        rebuildRenderState();
+    }
+
+    public void applyTravelSnapshot(TravelDungeonSnapshot travelSnapshot) {
+        TravelDungeonSnapshot safeSnapshot = travelSnapshot == null
+                ? TravelDungeonSnapshot.empty()
+                : travelSnapshot;
+        TravelDungeonSurface surface = safeSnapshot.surface();
+        snapshot = surface != null && surface.contextKind() == TravelDungeonSurface.ContextKind.DUNGEON
+                ? toCommittedTravelSnapshot(surface)
+                : null;
+        previewSnapshot = null;
+        viewMode = RenderState.ViewMode.GRID;
+        overlaySettings = toOverlaySettings(safeSnapshot.overlaySettings());
+        projectionLevel = safeSnapshot.projectionLevel();
+        selectedTool = "Auswahl";
+        selection = null;
+        editorPreview = null;
+        partyToken = toPartyToken(surface == null ? null : surface.position(), surface);
+        rebuildRenderState();
+    }
+
     private void rebuildRenderState() {
         renderState.set(RenderState.fromDungeonSnapshot(
                 snapshot,
@@ -146,6 +200,253 @@ public final class DungeonMapContentModel {
                 selection,
                 editorPreview,
                 partyToken));
+    }
+
+    private static @Nullable DungeonSnapshot toCommittedSnapshot(@Nullable DungeonSurfacePayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        return new DungeonSnapshot(
+                payload.mapName(),
+                payload.mode(),
+                payload.map(),
+                payload.aggregateSummaries(),
+                payload.relationSummaries(),
+                payload.revision());
+    }
+
+    private static @Nullable DungeonSnapshot toPreviewSnapshot(@Nullable DungeonSurfacePayload payload) {
+        if (payload == null || payload.previewMap() == null) {
+            return null;
+        }
+        return new DungeonSnapshot(
+                payload.mapName(),
+                payload.mode(),
+                payload.previewMap(),
+                payload.aggregateSummaries(),
+                payload.relationSummaries(),
+                payload.revision());
+    }
+
+    private static @Nullable DungeonSnapshot toCommittedTravelSnapshot(@Nullable TravelDungeonSurface surface) {
+        if (surface == null || surface.contextKind() != TravelDungeonSurface.ContextKind.DUNGEON) {
+            return null;
+        }
+        return new DungeonSnapshot(
+                surface.mapName(),
+                DungeonMapMode.TRAVEL,
+                toDungeonMapSnapshot(surface.map()),
+                List.of(),
+                List.of(),
+                surface.revision());
+    }
+
+    private static RenderState.ViewMode toViewMode(String viewModeKey) {
+        return "GRAPH".equalsIgnoreCase(viewModeKey)
+                ? RenderState.ViewMode.GRAPH
+                : RenderState.ViewMode.GRID;
+    }
+
+    private static String normalizeTool(String selectedTool) {
+        return selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
+    }
+
+    private static RenderState.LevelOverlaySettings toOverlaySettings(
+            DungeonOverlaySettings overlaySettings
+    ) {
+        DungeonOverlaySettings safeOverlay =
+                overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
+        return new RenderState.LevelOverlaySettings(
+                toOverlayMode(safeOverlay.modeKey()),
+                safeOverlay.levelRange(),
+                safeOverlay.opacity(),
+                safeOverlay.selectedLevels());
+    }
+
+    private static RenderState.LevelOverlaySettings toOverlaySettings(
+            TravelOverlaySettings overlaySettings
+    ) {
+        TravelOverlaySettings safeOverlay =
+                overlaySettings == null ? TravelOverlaySettings.defaults() : overlaySettings;
+        return new RenderState.LevelOverlaySettings(
+                toOverlayMode(safeOverlay.modeKey()),
+                safeOverlay.levelRange(),
+                safeOverlay.opacity(),
+                safeOverlay.selectedLevels());
+    }
+
+    private static RenderState.OverlayMode toOverlayMode(String modeKey) {
+        if ("NEARBY".equalsIgnoreCase(modeKey)) {
+            return RenderState.OverlayMode.NEARBY;
+        }
+        if ("SELECTED".equalsIgnoreCase(modeKey)) {
+            return RenderState.OverlayMode.SELECTED;
+        }
+        return RenderState.OverlayMode.OFF;
+    }
+
+    private static RenderState.@Nullable Selection toSelection(
+            DungeonEditorSnapshot.Selection selection,
+            @Nullable DungeonInspectorSnapshot inspector
+    ) {
+        if (selection == null || selection.topologyRef().kind() == DungeonTopologyElementKind.EMPTY) {
+            return null;
+        }
+        String label = inspector == null ? selection.topologyRef().kind().name() : inspector.title();
+        long ownerId = selection.handleRef() != null && selection.handleRef().ownerId() > 0L
+                ? selection.handleRef().ownerId()
+                : selection.topologyRef().id();
+        return new RenderState.Selection(
+                ownerId,
+                selection.clusterId(),
+                label,
+                new RenderState.TopologyRef(selection.topologyRef().kind().name(), selection.topologyRef().id()),
+                selection.clusterSelection(),
+                selection.handleRef() == null ? emptyHandleRef(ownerId, selection.clusterId()) : selection.handleRef());
+    }
+
+    private static RenderState.@Nullable EditorPreview toEditorPreview(
+            DungeonEditorPreview preview,
+            RenderState.@Nullable Selection selection
+    ) {
+        if (preview == null || preview instanceof DungeonEditorPreview.NonePreview) {
+            return null;
+        }
+        return switch (preview) {
+            case DungeonEditorPreview.RoomRectanglePreview room ->
+                    new RenderState.EditorPreview.RoomRectangle(
+                            room.start().q(),
+                            room.start().r(),
+                            room.end().q(),
+                            room.end().r(),
+                            room.start().level(),
+                            room.deleteMode());
+            case DungeonEditorPreview.ClusterBoundariesPreview boundaries ->
+                    new RenderState.EditorPreview.BoundaryEdges(
+                            boundaries.clusterId(),
+                            boundaries.edges(),
+                            boundaries.boundaryKind(),
+                            boundaries.deleteMode());
+            case DungeonEditorPreview.MoveHandlePreview moveHandle ->
+                    new RenderState.EditorPreview.MoveHandleOrCluster(
+                            moveHandle.handleRef().clusterId(),
+                            moveHandle.deltaQ(),
+                            moveHandle.deltaR(),
+                            moveHandle.deltaLevel(),
+                            moveHandle.handleRef(),
+                            selection == null ? "" : selection.label());
+            case DungeonEditorPreview.MoveBoundaryStretchPreview stretch ->
+                    new RenderState.EditorPreview.BoundaryStretchMove(
+                            stretch.clusterId(),
+                            stretch.sourceEdges(),
+                            stretch.deltaQ(),
+                            stretch.deltaR(),
+                            stretch.deltaLevel(),
+                            selection == null ? "" : selection.label());
+            case DungeonEditorPreview.NonePreview ignored -> null;
+        };
+    }
+
+    private static RenderState.@Nullable PartyToken toPartyToken(
+            @Nullable TravelDungeonPosition position,
+            @Nullable TravelDungeonSurface travel
+    ) {
+        if (position == null || travel == null || travel.contextKind() != TravelDungeonSurface.ContextKind.DUNGEON) {
+            return null;
+        }
+        return new RenderState.PartyToken(
+                position.tile().q() + 0.5,
+                position.tile().r() + 0.5,
+                position.tile().level(),
+                toHeading(position.heading()),
+                true);
+    }
+
+    private static RenderState.Heading toHeading(DungeonTravelHeading heading) {
+        return switch (heading == null ? DungeonTravelHeading.defaultHeading() : heading) {
+            case NORTH -> RenderState.Heading.NORTH;
+            case EAST -> RenderState.Heading.EAST;
+            case SOUTH -> RenderState.Heading.SOUTH;
+            case WEST -> RenderState.Heading.WEST;
+        };
+    }
+
+    private static RenderState.Heading toHeading(TravelDungeonPosition.Heading heading) {
+        return switch (heading == null ? TravelDungeonPosition.Heading.SOUTH : heading) {
+            case NORTH -> RenderState.Heading.NORTH;
+            case EAST -> RenderState.Heading.EAST;
+            case SOUTH -> RenderState.Heading.SOUTH;
+            case WEST -> RenderState.Heading.WEST;
+        };
+    }
+
+    private static DungeonMapSnapshot toDungeonMapSnapshot(TravelDungeonMapSnapshot map) {
+        TravelDungeonMapSnapshot safeMap = map == null ? TravelDungeonMapSnapshot.empty() : map;
+        return new DungeonMapSnapshot(
+                DungeonTopologyKind.valueOf(safeMap.topology().name()),
+                safeMap.width(),
+                safeMap.height(),
+                safeMap.areas().stream().map(DungeonMapContentModel::toDungeonAreaSnapshot).toList(),
+                safeMap.boundaries().stream().map(DungeonMapContentModel::toDungeonBoundarySnapshot).toList(),
+                safeMap.features().stream().map(DungeonMapContentModel::toDungeonFeatureSnapshot).toList(),
+                List.of());
+    }
+
+    private static DungeonAreaSnapshot toDungeonAreaSnapshot(TravelDungeonArea area) {
+        TravelDungeonArea safeArea = area == null
+                ? new TravelDungeonArea(TravelDungeonArea.Kind.ROOM, 1L, "ROOM", List.of())
+                : area;
+        return new DungeonAreaSnapshot(
+                DungeonAreaKind.valueOf(safeArea.kind().name()),
+                safeArea.id(),
+                safeArea.label(),
+                safeArea.cells().stream().map(DungeonMapContentModel::toDungeonCellRef).toList());
+    }
+
+    private static DungeonBoundarySnapshot toDungeonBoundarySnapshot(TravelDungeonBoundary boundary) {
+        TravelDungeonBoundary safeBoundary = boundary == null
+                ? new TravelDungeonBoundary("wall", 1L, "wall", new src.domain.travel.published.TravelDungeonEdge(
+                        new TravelDungeonCell(0, 0, 0),
+                        new TravelDungeonCell(0, 0, 0)))
+                : boundary;
+        return new DungeonBoundarySnapshot(
+                safeBoundary.kind(),
+                safeBoundary.id(),
+                safeBoundary.label(),
+                new DungeonEdgeRef(
+                        toDungeonCellRef(safeBoundary.edge().from()),
+                        toDungeonCellRef(safeBoundary.edge().to())));
+    }
+
+    private static DungeonFeatureSnapshot toDungeonFeatureSnapshot(TravelDungeonFeature feature) {
+        TravelDungeonFeature safeFeature = feature == null
+                ? new TravelDungeonFeature(TravelDungeonFeature.Kind.STAIR, 1L, "STAIR", List.of(), "", "")
+                : feature;
+        return new DungeonFeatureSnapshot(
+                DungeonFeatureKind.valueOf(safeFeature.kind().name()),
+                safeFeature.id(),
+                safeFeature.label(),
+                safeFeature.cells().stream().map(DungeonMapContentModel::toDungeonCellRef).toList(),
+                safeFeature.description(),
+                safeFeature.destinationLabel());
+    }
+
+    private static DungeonCellRef toDungeonCellRef(TravelDungeonCell cell) {
+        TravelDungeonCell safeCell = cell == null ? new TravelDungeonCell(0, 0, 0) : cell;
+        return new DungeonCellRef(safeCell.q(), safeCell.r(), safeCell.level());
+    }
+
+    private static DungeonEditorHandleRef emptyHandleRef(long ownerId, long clusterId) {
+        return new DungeonEditorHandleRef(
+                DungeonEditorHandleKind.CLUSTER_LABEL,
+                new DungeonTopologyElementRef(DungeonTopologyElementKind.EMPTY, 0L),
+                ownerId,
+                clusterId,
+                0L,
+                0L,
+                0,
+                new DungeonCellRef(0, 0, 0),
+                "");
     }
 
     public static record RenderState(
@@ -841,6 +1142,7 @@ public final class DungeonMapContentModel {
             return switch (kind) {
                 case DOOR -> MarkerKind.DOOR;
                 case STAIR_ANCHOR -> MarkerKind.STAIR;
+                case CORRIDOR_ANCHOR -> MarkerKind.WAYPOINT;
                 case CORRIDOR_WAYPOINT -> MarkerKind.WAYPOINT;
                 case CLUSTER_LABEL -> MarkerKind.CLUSTER;
             };
@@ -850,6 +1152,7 @@ public final class DungeonMapContentModel {
             return switch (kind) {
                 case DOOR -> "D";
                 case STAIR_ANCHOR -> "z";
+                case CORRIDOR_ANCHOR -> "o";
                 case CORRIDOR_WAYPOINT -> "•";
                 case CLUSTER_LABEL -> "";
             };
@@ -1291,7 +1594,7 @@ public final class DungeonMapContentModel {
         ) {
 
             public Selection(long areaId, long clusterId, String label) {
-                this(areaId, clusterId, label, new TopologyRef("ROOM", areaId), false);
+                this(areaId, clusterId, label, new TopologyRef(DungeonTopologyElementKind.ROOM.name(), areaId), false);
             }
 
             public Selection(long areaId, long clusterId, String label, TopologyRef topologyRef) {

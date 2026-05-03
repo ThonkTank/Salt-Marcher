@@ -1,25 +1,20 @@
 package src.view.dropdowns.party;
 
 public record PartyEditorTopBarViewInputEvent(
-        Source source,
+        boolean cancelRequested,
+        boolean submitRequested,
+        boolean deleteConfirmationRequested,
+        boolean deleteConfirmationCancelled,
+        boolean deleteConfirmed,
+        boolean editingExisting,
         long memberId,
         String memberName,
         EditorDraft draft
 ) {
 
     public PartyEditorTopBarViewInputEvent {
-        source = source == null ? Source.CANCEL_EDITOR : source;
         memberName = memberName == null ? "" : memberName;
         draft = draft == null ? EditorDraft.empty() : draft;
-    }
-
-    enum Source {
-        CANCEL_EDITOR,
-        CREATE_SUBMIT,
-        UPDATE_SUBMIT,
-        REQUEST_DELETE_CONFIRM,
-        CANCEL_DELETE_CONFIRM,
-        CONFIRM_DELETE
     }
 
     public record EditorDraft(

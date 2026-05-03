@@ -45,7 +45,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         refreshButton.getStyleClass().addAll("compact", "flat");
         refreshButton.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
-                        SessionPlannerControlsViewInputEvent.Source.REFRESH_BUTTON,
+                        false,
                         0L)));
 
         Label titleLabel = new Label("SESSION PLANNER");
@@ -195,7 +195,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         importButton.setDisable(!plan.importEnabled());
         importButton.setOnAction(event -> viewInputEventHandler.accept(
                 new SessionPlannerControlsViewInputEvent(
-                        SessionPlannerControlsViewInputEvent.Source.IMPORT_BUTTON,
+                        true,
                         plan.planId())));
         VBox card = new VBox(4, nameLabel, metaLabel, status, importButton);
         card.getStyleClass().add("session-planner-plan-card");

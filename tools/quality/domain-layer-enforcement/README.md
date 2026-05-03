@@ -17,12 +17,6 @@ It keeps the generic domain-layer proof owner-local and bundle-local:
   `DomainModuleNoPublishedCarrierDependency`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, ArchUnit, aggregate-task, and focused-entry wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only generic domain-layer topology and dependency boundaries.
 Root `ApplicationService`, `application/*UseCase`, `published/**`, `port/`,

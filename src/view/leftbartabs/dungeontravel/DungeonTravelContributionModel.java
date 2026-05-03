@@ -3,8 +3,8 @@ package src.view.leftbartabs.dungeontravel;
 import java.util.List;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.ReadOnlyLongProperty;
-import javafx.beans.property.ReadOnlyLongWrapper;
+import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -12,32 +12,27 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonTravelContextKind;
-import src.domain.dungeon.published.DungeonTravelActionSnapshot;
-import src.domain.dungeon.published.DungeonTravelHeading;
-import src.domain.dungeon.published.DungeonTravelPosition;
-import src.domain.dungeon.published.DungeonSurfacePayload;
-import src.domain.dungeon.published.DungeonSurfaceTravel;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
+import src.domain.travel.published.TravelDungeonSnapshot;
+import src.domain.travel.published.TravelDungeonSurface;
+import src.domain.travel.published.TravelOverlaySettings;
 
 public final class DungeonTravelContributionModel {
 
-    private final ReadOnlyObjectWrapper<List<DungeonTravelActionSnapshot>> actions =
+    private final ReadOnlyObjectWrapper<List<ActionProjection>> actions =
             new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper mapName = new ReadOnlyStringWrapper("Dungeon");
-    private final ReadOnlyLongWrapper refreshRequestToken = new ReadOnlyLongWrapper();
-    private final ReadOnlyLongWrapper resetViewRequestToken = new ReadOnlyLongWrapper();
-    private final ObjectProperty<DungeonMapContentModel.RenderState.LevelOverlaySettings> overlaySettings =
-            new SimpleObjectProperty<>(DungeonMapContentModel.RenderState.LevelOverlaySettings.defaults());
+    private final ObjectProperty<OverlayProjection> overlaySettings =
+            new SimpleObjectProperty<>(OverlayProjection.defaults());
     private final IntegerProperty projectionLevel = new SimpleIntegerProperty(0);
-    private @Nullable DungeonSurfacePayload currentSurface;
+    private final ReadOnlyIntegerWrapper cameraResetSignal = new ReadOnlyIntegerWrapper(0);
+    private final ReadOnlyIntegerWrapper refreshSignal = new ReadOnlyIntegerWrapper(0);
 
     public DungeonTravelContributionModel() {
         refreshStateText();
     }
 
-    public ReadOnlyObjectProperty<List<DungeonTravelActionSnapshot>> actionsProperty() {
+    public ReadOnlyObjectProperty<List<ActionProjection>> actionsProperty() {
         return actions.getReadOnlyProperty();
     }
 
@@ -49,15 +44,7 @@ public final class DungeonTravelContributionModel {
         return mapName.getReadOnlyProperty();
     }
 
-    public ReadOnlyLongProperty refreshRequestTokenProperty() {
-        return refreshRequestToken.getReadOnlyProperty();
-    }
-
-    public ReadOnlyLongProperty resetViewRequestTokenProperty() {
-        return resetViewRequestToken.getReadOnlyProperty();
-    }
-
-    public ObjectProperty<DungeonMapContentModel.RenderState.LevelOverlaySettings> overlaySettingsProperty() {
+    public ObjectProperty<OverlayProjection> overlaySettingsProperty() {
         return overlaySettings;
     }
 
@@ -65,120 +52,51 @@ public final class DungeonTravelContributionModel {
         return projectionLevel;
     }
 
-    public void selectOverlayMode(DungeonMapContentModel.RenderState.OverlayMode nextOverlayMode) {
-        DungeonMapContentModel.RenderState.LevelOverlaySettings current = overlaySettings.get();
-        updateOverlay(new DungeonMapContentModel.RenderState.LevelOverlaySettings(
-                nextOverlayMode,
-                current.levelRange(),
-                current.opacity(),
-                current.selectedLevels()));
+    public ReadOnlyIntegerProperty cameraResetSignalProperty() {
+        return cameraResetSignal.getReadOnlyProperty();
     }
 
-    public void selectOverlayMode(String modeKey) {
-        DungeonMapContentModel.RenderState.OverlayMode nextOverlayMode;
-        try {
-            nextOverlayMode = DungeonMapContentModel.RenderState.OverlayMode.valueOf(
-                    modeKey == null ? "OFF" : modeKey);
-        } catch (IllegalArgumentException ignored) {
-            nextOverlayMode = DungeonMapContentModel.RenderState.OverlayMode.OFF;
-        }
-        selectOverlayMode(nextOverlayMode);
+    public ReadOnlyIntegerProperty refreshSignalProperty() {
+        return refreshSignal.getReadOnlyProperty();
     }
 
-    public void selectOverlayRange(int levelRange) {
-        DungeonMapContentModel.RenderState.LevelOverlaySettings current = overlaySettings.get();
-        updateOverlay(new DungeonMapContentModel.RenderState.LevelOverlaySettings(
-                current.mode(),
-                levelRange,
-                current.opacity(),
-                current.selectedLevels()));
-    }
-
-    public void selectOverlayOpacity(double opacity) {
-        DungeonMapContentModel.RenderState.LevelOverlaySettings current = overlaySettings.get();
-        updateOverlay(new DungeonMapContentModel.RenderState.LevelOverlaySettings(
-                current.mode(),
-                current.levelRange(),
-                opacity,
-                current.selectedLevels()));
-    }
-
-    public void selectOverlayLevels(List<Integer> levels) {
-        DungeonMapContentModel.RenderState.LevelOverlaySettings current = overlaySettings.get();
-        updateOverlay(new DungeonMapContentModel.RenderState.LevelOverlaySettings(
-                current.mode(),
-                current.levelRange(),
-                current.opacity(),
-                levels));
-    }
-
-    public void previousLevel() {
-        moveProjectionLevel(-1);
-    }
-
-    public void nextLevel() {
-        moveProjectionLevel(1);
+    public void requestCameraReset() {
+        cameraResetSignal.set(cameraResetSignal.get() + 1);
     }
 
     public void requestRefresh() {
-        refreshRequestToken.set(refreshRequestToken.get() + 1L);
+        refreshSignal.set(refreshSignal.get() + 1);
     }
 
-    public void requestResetView() {
-        resetViewRequestToken.set(resetViewRequestToken.get() + 1L);
-    }
-
-    @Nullable DungeonTravelPosition currentPosition() {
-        DungeonSurfaceTravel currentTravel = currentSurface == null ? null : currentSurface.travel();
-        return currentTravel == null || currentTravel.contextKind() != DungeonTravelContextKind.DUNGEON
-                ? null
-                : currentTravel.position();
-    }
-
-    private void updateOverlay(DungeonMapContentModel.RenderState.LevelOverlaySettings nextOverlaySettings) {
-        overlaySettings.set(nextOverlaySettings == null
-                ? DungeonMapContentModel.RenderState.LevelOverlaySettings.off()
-                : nextOverlaySettings);
-        if (currentSurface == null) {
-            refreshStateText();
-        } else {
-            refreshStateText(currentSurface);
-        }
-    }
-
-    private void moveProjectionLevel(int delta) {
-        projectionLevel.set(projectionLevel.get() + delta);
-        refreshStateText();
-    }
-
-    void applySurfaceState(DungeonSurfacePayload surface) {
+    void apply(TravelDungeonSnapshot snapshot) {
+        TravelDungeonSnapshot safeSnapshot = snapshot == null
+                ? TravelDungeonSnapshot.empty()
+                : snapshot;
+        TravelDungeonSurface surface = safeSnapshot.surface();
+        overlaySettings.set(toOverlaySettings(safeSnapshot.overlaySettings()));
+        projectionLevel.set(safeSnapshot.projectionLevel());
         if (surface == null) {
-            currentSurface = null;
             actions.set(List.of());
+            mapName.set("Dungeon");
             refreshStateText();
             return;
         }
-        currentSurface = surface;
-        DungeonSurfaceTravel travel = surface.travel();
         mapName.set(surface.mapName());
-        projectionLevel.set(travel == null || travel.contextKind() != DungeonTravelContextKind.DUNGEON
-                ? 0
-                : travel.position().tile().level());
-        actions.set(travel == null ? List.of() : travel.actions());
+        actions.set(surface.actions().stream()
+                        .map(action -> new ActionProjection(
+                                action.actionId(),
+                                action.label(),
+                                action.description()))
+                        .toList());
         refreshStateText(surface);
     }
 
-    DungeonMapContentModel.RenderState.@Nullable PartyToken currentPartyToken() {
-        DungeonSurfaceTravel travel = currentSurface == null ? null : currentSurface.travel();
-        if (travel == null || travel.contextKind() != DungeonTravelContextKind.DUNGEON) {
-            return null;
-        }
-        return toPartyToken(travel.position());
+    int currentProjectionLevel() {
+        return projectionLevel.get();
     }
 
-    boolean rendersDungeonMap() {
-        DungeonSurfaceTravel travel = currentSurface == null ? null : currentSurface.travel();
-        return travel != null && travel.contextKind() == DungeonTravelContextKind.DUNGEON;
+    OverlayProjection currentOverlaySettings() {
+        return overlaySettings.get();
     }
 
     private void refreshStateText() {
@@ -186,42 +104,84 @@ public final class DungeonTravelContributionModel {
                 + "Tile: z=" + projectionLevel.get() + "\n"
                 + "Heading: Sueden\n"
                 + "Status: Token auf der Karte ziehen\n"
-                + overlaySettings.get().mode().label());
+                + overlaySettings.get().overlayLabel());
     }
 
-    private void refreshStateText(DungeonSurfacePayload surface) {
-        DungeonSurfaceTravel travel = surface == null ? null : surface.travel();
-        if (travel == null) {
+    private void refreshStateText(TravelDungeonSurface surface) {
+        if (surface == null) {
             refreshStateText();
             return;
         }
-        state.set("Position: " + travel.areaLabel() + "\n"
-                + "Tile: " + travel.tileLabel() + "\n"
-                + "Heading: " + travel.headingLabel() + "\n"
-                + "Status: " + (travel.statusLabel().isBlank()
-                ? (travel.contextKind() == DungeonTravelContextKind.OVERWORLD
+        state.set("Position: " + surface.areaLabel() + "\n"
+                + "Tile: " + surface.tileLabel() + "\n"
+                + "Heading: " + surface.headingLabel() + "\n"
+                + "Status: " + (surface.statusLabel().isBlank()
+                ? (surface.contextKind() == TravelDungeonSurface.ContextKind.OVERWORLD
                         ? "Gruppe befindet sich ausserhalb des Dungeons"
                         : "Token auf der Karte ziehen")
-                : travel.statusLabel()) + "\n"
-                + overlaySettings.get().mode().label());
+                : surface.statusLabel()) + "\n"
+                + overlaySettings.get().overlayLabel());
     }
 
-    private static DungeonMapContentModel.RenderState.PartyToken toPartyToken(DungeonTravelPosition position) {
-        return new DungeonMapContentModel.RenderState.PartyToken(
-                position.tile().q() + 0.5,
-                position.tile().r() + 0.5,
-                position.tile().level(),
-                toDisplayHeading(position.heading()),
-                true);
+    private static OverlayProjection toOverlaySettings(
+            TravelOverlaySettings overlaySettings
+    ) {
+        TravelOverlaySettings safeOverlay =
+                overlaySettings == null ? TravelOverlaySettings.defaults() : overlaySettings;
+        return new OverlayProjection(
+                normalizeOverlayMode(safeOverlay.modeKey()),
+                safeOverlay.levelRange(),
+                safeOverlay.opacity(),
+                safeOverlay.selectedLevels());
     }
 
-    private static DungeonMapContentModel.RenderState.Heading toDisplayHeading(DungeonTravelHeading heading) {
-        return switch (heading == null ? DungeonTravelHeading.defaultHeading() : heading) {
-            case NORTH -> DungeonMapContentModel.RenderState.Heading.NORTH;
-            case EAST -> DungeonMapContentModel.RenderState.Heading.EAST;
-            case SOUTH -> DungeonMapContentModel.RenderState.Heading.SOUTH;
-            case WEST -> DungeonMapContentModel.RenderState.Heading.WEST;
-        };
+    private static String normalizeOverlayMode(String modeKey) {
+        if ("NEARBY".equalsIgnoreCase(modeKey)) {
+            return "NEARBY";
+        }
+        if ("SELECTED".equalsIgnoreCase(modeKey)) {
+            return "SELECTED";
+        }
+        return "OFF";
     }
 
+    public record ActionProjection(
+            String actionId,
+            String label,
+            String description
+    ) {
+
+        public ActionProjection {
+            actionId = actionId == null ? "" : actionId.trim();
+            label = label == null || label.isBlank() ? "Aktion" : label.trim();
+            description = description == null ? "" : description.trim();
+        }
+    }
+
+    public record OverlayProjection(
+            String modeKey,
+            int levelRange,
+            double opacity,
+            List<Integer> selectedLevels
+    ) {
+
+        public OverlayProjection {
+            modeKey = normalizeOverlayMode(modeKey);
+            levelRange = Math.max(0, levelRange);
+            opacity = Math.max(0.0, Math.min(1.0, opacity));
+            selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
+        }
+
+        static OverlayProjection defaults() {
+            return new OverlayProjection("OFF", 2, 0.35, List.of());
+        }
+
+        String overlayLabel() {
+            return switch (modeKey) {
+                case "NEARBY" -> "Nahe Ebenen";
+                case "SELECTED" -> "Ausgewaehlte Ebenen";
+                default -> "Overlays aus";
+            };
+        }
+    }
 }

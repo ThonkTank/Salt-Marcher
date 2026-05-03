@@ -9,7 +9,8 @@ documentation bundle.
 ## Purpose
 
 The `hex` feature owns hex-map-specific user-facing behavior such as overworld
-travel, compact `Reise` state, tile inspection, and hex editor behavior.
+travel, the compact travel-state surface shown in the runtime `Reise` tab,
+tile inspection, and hex editor behavior.
 
 Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
@@ -19,7 +20,7 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 - [Hex Feature Requirements](./requirements/requirements-hex.md)
 - [Hex Travel Requirements](./requirements/requirements-hex-travel.md)
-- [Hex Reise Requirements](./requirements/requirements-hex-reise.md)
+- [Hex Travel State Requirements](./requirements/requirements-hex-travel-state.md)
 - [Hex Editor Requirements](./requirements/requirements-hex-editor.md)
 
 ### Related Maps Docs

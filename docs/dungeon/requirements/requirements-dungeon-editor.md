@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-05-03
 Source of Truth: Editor-facing dungeon behavior, visible states, and acceptance
 criteria.
 
@@ -65,11 +65,16 @@ commit supported mutations without inventing a second authored state source.
 
 - room paint and delete on the active level
 - wall create and delete through boundary paths
-- door create and delete through boundary selection
+- door create and delete through boundary selection, including cluster
+  perimeter doors on outer walls
 - room narration editing from the state pane
 - handle movement for selectable editor handles
 - straight wall-stretch movement for selected cluster walls
-- corridor create, extend, merge, and delete flows
+- corridor create and delete flows
+- corridor targeting resolves to explicit authored endpoints only: room-side
+  doors and corridor-side anchors
+- generic room hits and generic corridor hits remain allowed input, but the
+  committed corridor MUST bind to a concrete authored door or corridor anchor
 - stair create and delete flows with visible shape and exit configuration
 - transition create and delete flows with description, destination, and
   bidirectional-link options
@@ -93,6 +98,23 @@ evidenced in the sibling repo.
 - Empty-grid clicks clear selection.
 - Saving room narration persists room visual and exit descriptions through the
   dungeon write model.
+- The door tool accepts cluster outer walls that touch exactly one room cell so
+  explicit outer doors can be authored.
+- Corridor creation accepts room-to-room, room-to-corridor, and
+  corridor-to-corridor flows, but the committed result is always a new
+  corridor segment between two explicit authored endpoints.
+- If the user clicks a room without selecting a door, the editor MUST reuse an
+  exact existing door on the chosen edge or author a new door on that edge
+  before committing the corridor.
+- If the user clicks a corridor without selecting an anchor, the editor MUST
+  reuse an exact existing corridor anchor on the chosen host corridor cell or
+  author a new anchor there before committing the corridor.
+- Explicit outer-door clicks and explicit corridor-anchor clicks MUST reuse the
+  chosen authored endpoint rather than creating a duplicate.
+- Deleting a door that is already bound as an explicit corridor endpoint is
+  rejected without partially mutating authored truth.
+- Deleting a corridor that still owns corridor anchors referenced by other
+  corridors is rejected without partially mutating authored truth.
 - Advanced tool families stay directly visible even when specific authored
   mutations are still delivered incrementally.
 

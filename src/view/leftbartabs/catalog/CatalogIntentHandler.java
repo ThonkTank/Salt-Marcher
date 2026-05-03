@@ -20,7 +20,7 @@ final class CatalogIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.source() == CatalogControlsViewInputEvent.Source.FILTERS_CHANGED) {
+        if (event.creatureFiltersChanged()) {
             CatalogControlsViewInputEvent.FilterPayload filterState = event.filterState();
             CatalogContributionModel.CreatureFilters nextFilters = new CatalogContributionModel.CreatureFilters(
                     filterState.nameQuery(),
@@ -32,19 +32,19 @@ final class CatalogIntentHandler {
                     filterState.biomes(),
                     filterState.alignments());
             presentationModel.applyCreatureFilters(nextFilters);
+            presentationModel.beginSearch();
+            presentationModel.advanceSearchCycle();
             publishedEventListener.accept(CatalogPublishedEvent.updateCreatureFilters(
                     nextFilters.types(),
                     nextFilters.subtypes(),
                     nextFilters.biomes()));
-            presentationModel.beginSearch();
-            presentationModel.requestSearch();
             return;
         }
-        if (event.source() == CatalogControlsViewInputEvent.Source.ENCOUNTER_DIFFICULTY_CHANGED) {
+        if (event.encounterDifficultyChanged()) {
             publishedEventListener.accept(CatalogPublishedEvent.updateEncounterDifficulty(event.difficultyKey()));
             return;
         }
-        if (event.source() == CatalogControlsViewInputEvent.Source.ENCOUNTER_TUNING_CHANGED) {
+        if (event.encounterTuningChanged()) {
             CatalogControlsViewInputEvent.EncounterTuning tuning = event.tuning();
             CatalogControlsViewInputEvent.EncounterTuning safeTuning =
                     tuning == null ? CatalogControlsViewInputEvent.EncounterTuning.empty() : tuning;
@@ -54,7 +54,7 @@ final class CatalogIntentHandler {
                     safeTuning.diversityLevel()));
             return;
         }
-        if (event.source() == CatalogControlsViewInputEvent.Source.ENCOUNTER_TABLES_CHANGED) {
+        if (event.encounterTablesChanged()) {
             publishedEventListener.accept(CatalogPublishedEvent.updateEncounterTables(event.encounterTableIds()));
         }
     }
@@ -63,24 +63,30 @@ final class CatalogIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.source()) {
-            case SORT_SELECTION -> {
-                presentationModel.selectSort(event.sortKey());
-                presentationModel.beginSearch();
-                presentationModel.requestSearch();
-            }
-            case PREVIOUS_PAGE_BUTTON -> {
-                presentationModel.previousPage();
-                presentationModel.beginSearch();
-                presentationModel.requestSearch();
-            }
-            case NEXT_PAGE_BUTTON -> {
-                presentationModel.nextPage();
-                presentationModel.beginSearch();
-                presentationModel.requestSearch();
-            }
-            case ROW_OPEN_REQUEST -> presentationModel.requestOpenCreatureDetails(event.creatureId());
-            case ROW_ACTION_BUTTON -> publishedEventListener.accept(CatalogPublishedEvent.addCreature(event.creatureId()));
+        if (!event.sortKey().isBlank()) {
+            presentationModel.selectSort(event.sortKey());
+            presentationModel.beginSearch();
+            presentationModel.advanceSearchCycle();
+            return;
+        }
+        if (event.pageShift() < 0) {
+            presentationModel.previousPage();
+            presentationModel.beginSearch();
+            presentationModel.advanceSearchCycle();
+            return;
+        }
+        if (event.pageShift() > 0) {
+            presentationModel.nextPage();
+            presentationModel.beginSearch();
+            presentationModel.advanceSearchCycle();
+            return;
+        }
+        if (event.openedCreatureId() > 0L) {
+            presentationModel.selectCreatureDetail(event.openedCreatureId());
+            return;
+        }
+        if (event.actionCreatureId() > 0L) {
+            publishedEventListener.accept(CatalogPublishedEvent.addCreature(event.actionCreatureId()));
         }
     }
 }

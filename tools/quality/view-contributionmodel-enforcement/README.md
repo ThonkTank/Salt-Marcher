@@ -18,13 +18,7 @@ directory the canonical home for the ContributionModel host wiring:
 - `bundle.properties`
   canonical registration source for this bundle's public task names and host
   script/source-set wiring
-- `root-host.gradle.kts`
-  root-project compiler, ArchUnit, jQAssistant, build-path, and aggregate-task
   wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 Unified root entrypoint:
 

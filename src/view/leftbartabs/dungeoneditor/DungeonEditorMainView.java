@@ -18,7 +18,7 @@ final class DungeonEditorMainView extends DungeonMapView {
         onPointerMoved(event -> viewInputEventHandler.accept(pointerMoved(event)));
         onLevelScrolled(levelDelta -> viewInputEventHandler.accept(
                 new DungeonEditorMainViewInputEvent(
-                        DungeonEditorMainViewInputEvent.Source.LEVEL_SCROLLED,
+                        "",
                         0.0,
                         0.0,
                         false,
@@ -32,23 +32,23 @@ final class DungeonEditorMainView extends DungeonMapView {
     }
 
     private static DungeonEditorMainViewInputEvent pointerPressed(CanvasPointerEvent event) {
-        return newPointerEvent(DungeonEditorMainViewInputEvent.Source.POINTER_PRESSED, event);
+        return newPointerEvent("PRESS", event);
     }
 
     private static DungeonEditorMainViewInputEvent pointerDragged(CanvasPointerEvent event) {
-        return newPointerEvent(DungeonEditorMainViewInputEvent.Source.POINTER_DRAGGED, event);
+        return newPointerEvent("DRAG", event);
     }
 
     private static DungeonEditorMainViewInputEvent pointerReleased(CanvasPointerEvent event) {
-        return newPointerEvent(DungeonEditorMainViewInputEvent.Source.POINTER_RELEASED, event);
+        return newPointerEvent("RELEASE", event);
     }
 
     private static DungeonEditorMainViewInputEvent pointerMoved(CanvasPointerEvent event) {
-        return newPointerEvent(DungeonEditorMainViewInputEvent.Source.POINTER_MOVED, event);
+        return newPointerEvent("MOVE", event);
     }
 
     private static DungeonEditorMainViewInputEvent newPointerEvent(
-            DungeonEditorMainViewInputEvent.Source source,
+            String pointerPhaseKey,
             CanvasPointerEvent event
     ) {
         CanvasPointerEvent safeEvent = event == null
@@ -62,7 +62,7 @@ final class DungeonEditorMainView extends DungeonMapView {
         CanvasPointerEvent.CanvasHit hit = safeEvent.hit();
         String hitRef = hit == null || hit.hitRef() == null ? "" : hit.hitRef();
         return new DungeonEditorMainViewInputEvent(
-                source,
+                pointerPhaseKey,
                 safeEvent.canvasPoint().x(),
                 safeEvent.canvasPoint().y(),
                 safeEvent.buttons().primaryButtonDown(),

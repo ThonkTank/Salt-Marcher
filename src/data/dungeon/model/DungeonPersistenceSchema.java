@@ -15,6 +15,8 @@ public final class DungeonPersistenceSchema {
     public static final String ROOM_FLOORS_TABLE = "dungeon_room_floors";
     public static final String TOPOLOGY_ELEMENTS_TABLE = "dungeon_topology_elements";
     public static final String CORRIDOR_DOOR_OVERRIDES_TABLE = "dungeon_corridor_door_overrides";
+    public static final String CORRIDOR_ANCHORS_TABLE = "dungeon_corridor_anchors";
+    public static final String CORRIDOR_ANCHOR_REFS_TABLE = "dungeon_corridor_anchor_refs";
     public static final String CORRIDOR_WAYPOINTS_TABLE = "dungeon_corridor_waypoints";
     public static final String ROOM_EXIT_DESCRIPTIONS_TABLE = "dungeon_room_exit_descriptions";
     public static final String STAIRS_TABLE = "dungeon_stairs";
@@ -118,6 +120,28 @@ public final class DungeonPersistenceSchema {
                     + "topology_element_id INTEGER,"
                     + "sort_order      INTEGER NOT NULL DEFAULT 0,"
                     + "PRIMARY KEY (corridor_id, room_id)"
+                    + ")";
+
+    public static final String CREATE_DUNGEON_CORRIDOR_ANCHORS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_corridor_anchors ("
+                    + "corridor_id     INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                    + "anchor_id       INTEGER NOT NULL,"
+                    + "host_corridor_id INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                    + "cell_x          INTEGER NOT NULL,"
+                    + "cell_y          INTEGER NOT NULL,"
+                    + "cell_z          INTEGER NOT NULL DEFAULT 0,"
+                    + "topology_element_id INTEGER,"
+                    + "sort_order      INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY (corridor_id, anchor_id)"
+                    + ")";
+
+    public static final String CREATE_DUNGEON_CORRIDOR_ANCHOR_REFS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_corridor_anchor_refs ("
+                    + "corridor_id      INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                    + "host_corridor_id INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                    + "topology_element_id INTEGER NOT NULL,"
+                    + "sort_order       INTEGER NOT NULL DEFAULT 0,"
+                    + "PRIMARY KEY (corridor_id, topology_element_id)"
                     + ")";
 
     public static final String CREATE_DUNGEON_TOPOLOGY_ELEMENTS_TABLE_SQL =
@@ -258,6 +282,8 @@ public final class DungeonPersistenceSchema {
             CREATE_DUNGEON_ROOM_FLOORS_TABLE_SQL,
             CREATE_DUNGEON_TOPOLOGY_ELEMENTS_TABLE_SQL,
             CREATE_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TABLE_SQL,
+            CREATE_DUNGEON_CORRIDOR_ANCHORS_TABLE_SQL,
+            CREATE_DUNGEON_CORRIDOR_ANCHOR_REFS_TABLE_SQL,
             CREATE_DUNGEON_CORRIDOR_WAYPOINTS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_EXIT_DESCRIPTIONS_TABLE_SQL,
             CREATE_DUNGEON_STAIRS_TABLE_SQL,

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-03
 Source of Truth: Binding Hexagonal Architecture model, domain-core concepts,
 published language, application-service boundary, outbound port ownership, and
 domain-layer topology for `src/domain/**`.
@@ -59,7 +59,10 @@ inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
   boundary: `<PascalContext>ApplicationService.java`
 - `published/` is exported published language: commands, queries, results,
   ids, statuses, snapshots, and read-only boundary handles when a context must
-  expose observable current state without leaking private model internals
+  expose observable current state without leaking private model internals;
+  such boundary handles may appear as same-context `published/*Model` types
+  that outer layers observe only through read-side methods like `current()`
+  and `subscribe(...)`
 - `application/` contains direct `*UseCase.java` files only
 - named domain modules use role subpackages only as needed. The only outbound
   role package is `port/`
@@ -96,7 +99,8 @@ one domain context.
 `published/` owns exported boundary carriers only.
 
 - allowed: commands, queries, results, snapshots, ids, statuses, enums,
-  sealed carrier abstractions, and simple public boundary records
+  sealed carrier abstractions, simple public boundary records, and read-only
+  same-context `*Model` handles for observable current domain state
 - forbidden: callable services, facades, repositories, ports, gateways,
   factories, locators, policy helpers, or invariant-owning objects
 - public carriers describe domain facts, not render layers, widget state,

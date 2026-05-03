@@ -19,10 +19,6 @@ bundle-local registration metadata:
 - `bundle.properties`
   canonical registration source for this bundle's public task names and host
   script/source-set wiring
-- `root-host.gradle.kts`
-  root-project compiler, ArchUnit, jQAssistant, and aggregate-task wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
 
 Unified root entrypoint:
 

@@ -113,7 +113,7 @@ public final class AdventuringDayTopBarView extends HBox {
                 triggerButton,
                 POPUP_WIDTH,
                 () -> publish(new AdventuringDayTopBarViewInputEvent(
-                        AdventuringDayTopBarViewInputEvent.Source.POPUP_OPENED,
+                        true,
                         java.util.List.of(),
                         0)));
     }
@@ -124,7 +124,7 @@ public final class AdventuringDayTopBarView extends HBox {
 
     private void publishCalculationSubmit(List<Integer> levels, int totalGroupXp) {
         publish(new AdventuringDayTopBarViewInputEvent(
-                AdventuringDayTopBarViewInputEvent.Source.CALCULATOR_SUBMIT,
+                false,
                 levels,
                 totalGroupXp));
     }

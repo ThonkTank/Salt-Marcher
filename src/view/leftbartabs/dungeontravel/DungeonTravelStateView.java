@@ -63,6 +63,22 @@ public final class DungeonTravelStateView extends VBox {
         }
     }
 
+    public void bind(DungeonTravelContributionModel contributionModel) {
+        if (contributionModel == null) {
+            return;
+        }
+        stateTextProperty().bind(contributionModel.stateProperty());
+        contributionModel.actionsProperty().addListener((ignored, before, after) -> showActions(toActionItems(after)));
+        showActions(toActionItems(contributionModel.actionsProperty().get()));
+    }
+
+    private static List<ActionItem> toActionItems(List<DungeonTravelContributionModel.ActionProjection> actions) {
+        return (actions == null ? List.<DungeonTravelContributionModel.ActionProjection>of() : actions)
+                .stream()
+                .map(action -> new ActionItem(action.actionId(), action.label(), action.description()))
+                .toList();
+    }
+
     public record ActionItem(
             String actionId,
             String label,

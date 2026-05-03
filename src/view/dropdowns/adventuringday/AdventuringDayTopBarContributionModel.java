@@ -3,15 +3,10 @@ package src.view.dropdowns.adventuringday;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
-import javafx.beans.property.ReadOnlyListProperty;
-import javafx.beans.property.ReadOnlyListWrapper;
-import javafx.beans.property.ReadOnlyLongProperty;
-import javafx.beans.property.ReadOnlyLongWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.collections.FXCollections;
 import org.jspecify.annotations.Nullable;
 import src.domain.party.published.AdventuringDayCalculation;
 import src.domain.party.published.AdventuringDayCalculationResult;
@@ -29,11 +24,6 @@ final class AdventuringDayTopBarContributionModel {
             new ReadOnlyObjectWrapper<>(PanelModel.loadingModel());
     private final ReadOnlyObjectWrapper<CalculationModel> calculation =
             new ReadOnlyObjectWrapper<>(CalculationModel.empty(0));
-    private final ReadOnlyLongWrapper refreshRequestToken = new ReadOnlyLongWrapper();
-    private final ReadOnlyListWrapper<Integer> requestedLevels =
-            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
-    private int requestedTotalGroupXp;
-    private final ReadOnlyLongWrapper calculationRequestToken = new ReadOnlyLongWrapper();
 
     ReadOnlyStringProperty triggerTextProperty() {
         return triggerText.getReadOnlyProperty();
@@ -47,21 +37,8 @@ final class AdventuringDayTopBarContributionModel {
         return calculation.getReadOnlyProperty();
     }
 
-    ReadOnlyLongProperty refreshRequestTokenProperty() {
-        return refreshRequestToken.getReadOnlyProperty();
-    }
-
-    ReadOnlyListProperty<Integer> requestedLevelsProperty() {
-        return requestedLevels.getReadOnlyProperty();
-    }
-
-    ReadOnlyLongProperty calculationRequestTokenProperty() {
-        return calculationRequestToken.getReadOnlyProperty();
-    }
-
-    void requestRefresh() {
+    void beginRefresh() {
         panel.set(PanelModel.loadingModel());
-        refreshRequestToken.set(refreshRequestToken.get() + 1L);
     }
 
     void applySummaryResult(@Nullable AdventuringDayResult result) {
@@ -73,15 +50,8 @@ final class AdventuringDayTopBarContributionModel {
         applySummary(result.summary());
     }
 
-    void requestCalculation(List<Integer> levels, int totalGroupXp) {
+    void beginCalculation(int totalGroupXp) {
         calculation.set(CalculationModel.empty(totalGroupXp));
-        requestedLevels.setAll(levels == null ? List.of() : List.copyOf(levels));
-        requestedTotalGroupXp = totalGroupXp;
-        calculationRequestToken.set(calculationRequestToken.get() + 1L);
-    }
-
-    int requestedTotalGroupXp() {
-        return requestedTotalGroupXp;
     }
 
     void applyCalculationResult(int totalGroupXp, @Nullable AdventuringDayCalculationResult result) {

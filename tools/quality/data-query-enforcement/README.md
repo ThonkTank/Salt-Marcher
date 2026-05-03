@@ -18,14 +18,6 @@ It keeps the full query-role proof route in one package:
   `DataQueryEnforcementDocumentationRules`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, PMD, aggregate-task, and full-build hook wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `pmd-host.gradle.kts`
-  included-build wiring for the `quality-rules` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the tactical `query/` read-port adapter role itself.
 Feature-root topology, repository write semantics, gateway source-adapter

@@ -17,6 +17,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -125,17 +126,9 @@ public final class PartyRosterTopBarView extends VBox {
     private Node restActions() {
         shortRestButton.getStyleClass().add("compact");
         longRestButton.getStyleClass().add("compact");
-        shortRestButton.setOnAction(event -> publish(
-                PartyRosterTopBarViewInputEvent.Source.SHORT_REST_BUTTON,
-                0L,
-                "",
-                0,
+        shortRestButton.setOnAction(event -> publish(false, false, false, 0L, "", 0, false, true, false,
                 PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
-        longRestButton.setOnAction(event -> publish(
-                PartyRosterTopBarViewInputEvent.Source.LONG_REST_BUTTON,
-                0L,
-                "",
-                0,
+        longRestButton.setOnAction(event -> publish(false, false, false, 0L, "", 0, false, false, true,
                 PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
         HBox restActions = new HBox(6, shortRestButton, longRestButton);
         restActions.getStyleClass().add("party-rest-actions");
@@ -150,11 +143,7 @@ public final class PartyRosterTopBarView extends VBox {
 
     private Node newCharacterBox() {
         newCharacterButton.setMaxWidth(Double.MAX_VALUE);
-        newCharacterButton.setOnAction(event -> publish(
-                PartyRosterTopBarViewInputEvent.Source.OPEN_CREATE_EDITOR,
-                0L,
-                "",
-                0,
+        newCharacterButton.setOnAction(event -> publish(true, false, false, 0L, "", 0, false, false, false,
                 PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
         VBox newCharacterBox = new VBox(newCharacterButton);
         newCharacterBox.getStyleClass().add("party-search");
@@ -190,10 +179,15 @@ public final class PartyRosterTopBarView extends VBox {
         editButton.setAccessibleText("Charakter bearbeiten: " + member.name());
         editButton.setTooltip(new Tooltip("Charakter bearbeiten"));
         editButton.setOnAction(event -> publish(
-                PartyRosterTopBarViewInputEvent.Source.OPEN_EDIT_EDITOR,
+                false,
+                true,
+                false,
                 member.id() == null ? 0L : member.id(),
                 member.name(),
                 0,
+                false,
+                false,
+                false,
                 toEditorSeed(member)));
         editButton.setDisable(actionsDisabled);
 
@@ -202,10 +196,15 @@ public final class PartyRosterTopBarView extends VBox {
         removeButton.setAccessibleText("Aus aktiver Party entfernen: " + member.name());
         removeButton.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
         removeButton.setOnAction(event -> publish(
-                PartyRosterTopBarViewInputEvent.Source.REMOVE_ACTIVE_MEMBER_BUTTON,
+                false,
+                false,
+                false,
                 member.id() == null ? 0L : member.id(),
                 member.name(),
                 0,
+                true,
+                false,
+                false,
                 PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
         removeButton.setDisable(actionsDisabled);
 
@@ -241,16 +240,26 @@ public final class PartyRosterTopBarView extends VBox {
                 100,
                 List.of(
                         new PopupAction("-XP", "", false, amount -> publish(
-                                PartyRosterTopBarViewInputEvent.Source.ADJUST_XP_POPUP,
+                                false,
+                                false,
+                                false,
                                 member.id() == null ? 0L : member.id(),
                                 member.name(),
                                 -amount,
+                                false,
+                                false,
+                                false,
                                 PartyRosterTopBarViewInputEvent.EditorSeed.empty())),
                         new PopupAction("+XP", "accent", true, amount -> publish(
-                                PartyRosterTopBarViewInputEvent.Source.ADJUST_XP_POPUP,
+                                false,
+                                false,
+                                false,
                                 member.id() == null ? 0L : member.id(),
                                 member.name(),
                                 amount,
+                                false,
+                                false,
+                                false,
                                 PartyRosterTopBarViewInputEvent.EditorSeed.empty()))));
         ProgressMeterView progressMeter = new ProgressMeterView(
                 member.levelProgressFraction(),
@@ -305,10 +314,15 @@ public final class PartyRosterTopBarView extends VBox {
         MemberView selected = suggestionList.getSelectionModel().getSelectedItem();
         if (selected != null) {
             publish(
-                    PartyRosterTopBarViewInputEvent.Source.ADD_EXISTING_MEMBER,
+                    false,
+                    false,
+                    true,
                     selected.id() == null ? 0L : selected.id(),
                     selected.name(),
                     0,
+                    false,
+                    false,
+                    false,
                     PartyRosterTopBarViewInputEvent.EditorSeed.empty());
             suggestionList.setVisible(false);
             suggestionList.setManaged(false);
@@ -322,10 +336,15 @@ public final class PartyRosterTopBarView extends VBox {
         if (!filteredMembers.isEmpty()) {
             MemberView firstMatch = filteredMembers.get(0);
             publish(
-                    PartyRosterTopBarViewInputEvent.Source.ADD_EXISTING_MEMBER,
+                    false,
+                    false,
+                    true,
                     firstMatch.id() == null ? 0L : firstMatch.id(),
                     firstMatch.name(),
                     0,
+                    false,
+                    false,
+                    false,
                     PartyRosterTopBarViewInputEvent.EditorSeed.empty());
             suggestionList.setVisible(false);
             suggestionList.setManaged(false);
@@ -333,17 +352,27 @@ public final class PartyRosterTopBarView extends VBox {
     }
 
     private void publish(
-            PartyRosterTopBarViewInputEvent.Source source,
+            boolean createEditorRequested,
+            boolean editEditorRequested,
+            boolean addExistingRequested,
             long memberId,
             String memberName,
             int xpDelta,
+            boolean removeRequested,
+            boolean shortRestRequested,
+            boolean longRestRequested,
             PartyRosterTopBarViewInputEvent.EditorSeed editorSeed
     ) {
         viewInputEventHandler.accept(new PartyRosterTopBarViewInputEvent(
-                source,
+                createEditorRequested,
+                editEditorRequested,
+                addExistingRequested,
                 memberId,
                 memberName,
                 xpDelta,
+                removeRequested,
+                shortRestRequested,
+                longRestRequested,
                 editorSeed));
     }
 

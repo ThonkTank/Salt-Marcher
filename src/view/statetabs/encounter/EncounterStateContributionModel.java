@@ -2,8 +2,6 @@ package src.view.statetabs.encounter;
 
 import java.util.ArrayList;
 import java.util.List;
-import javafx.beans.property.ReadOnlyLongProperty;
-import javafx.beans.property.ReadOnlyLongWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -36,8 +34,6 @@ public final class EncounterStateContributionModel {
     private final ReadOnlyObjectWrapper<ResultState> resultState =
             new ReadOnlyObjectWrapper<>(ResultState.empty());
     private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("Encounter bereit.");
-    private final ReadOnlyLongWrapper openCreatureRequestToken = new ReadOnlyLongWrapper();
-    private long requestedCreatureId;
 
     EncounterStateContributionModel() {
     }
@@ -66,21 +62,8 @@ public final class EncounterStateContributionModel {
         return status.getReadOnlyProperty();
     }
 
-    ReadOnlyLongProperty openCreatureRequestTokenProperty() {
-        return openCreatureRequestToken.getReadOnlyProperty();
-    }
-
     List<PartyMember> missingCombatPartyMembers() {
         return List.copyOf(missingCombatPartyMembers);
-    }
-
-    void requestOpenCreature(long creatureId) {
-        requestedCreatureId = Math.max(0L, creatureId);
-        openCreatureRequestToken.set(openCreatureRequestToken.get() + 1L);
-    }
-
-    long requestedCreatureId() {
-        return requestedCreatureId;
     }
 
     void apply(EncounterSessionSnapshot snapshot) {

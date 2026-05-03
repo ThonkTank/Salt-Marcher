@@ -14,12 +14,6 @@ It keeps the `src/data/**/gateway/**` proof route owner-pure and bundle-local:
   `DataGatewayReturnTypeBoundaryChecker`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, ArchUnit, aggregate-task, and focused-entry wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the internal `gateway/` source-adapter role itself:
 public/protected signature boundaries, domain independence, and the gateway

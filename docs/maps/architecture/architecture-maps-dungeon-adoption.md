@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-05-03
 Source of Truth: Dungeon-specific adoption of the generic maps canvas.
 
 # Dungeon Map Adoption Architecture
@@ -24,43 +24,41 @@ invariants.
   wrappers over `MapCanvasView`
 - `DungeonMapMainView` remains the shared map slotcontent View wrapper that
   renders only the `MapRenderScene` exposed by the dungeon map slotcontent
-  `PresentationModel`
-- the dungeon map slotcontent `PresentationModel` is the only allowed
+  `ContentModel`
+- the dungeon map slotcontent `DungeonMapContentModel` is the only allowed
   dungeon-side owner of map render state and the only allowed
   domain-to-canvas projection owner
-- `DungeonEditorBinder` and `DungeonTravelBinder` bind dungeon published
-  surface payloads into the dungeon map slotcontent `PresentationModel`;
+- `DungeonEditorBinder` and `DungeonTravelBinder` load same-context read-side
+  dungeon `published/*Model` handles, subscribe to emitted snapshots, and
+  deliver those snapshots into the dungeon map slotcontent `ContentModel`;
   `DungeonEditorBinder` also owns reverse pointer-event translation from
   `CanvasPointerEvent` into dungeon-editor input wiring
-- the active-root dungeon `PresentationModel` owns aggregate controls,
+- the active-root dungeon `ContributionModel` owns aggregate controls,
   inspector, status, and other non-canvas projection state, but must not
-  mirror dungeon map surface payloads as a second render path
+  mirror dungeon map render projection as a second render path
 - the optional active-root dungeon `IntentHandler` owns input interpretation
 - `DungeonApplicationService` is the only callable dungeon backend boundary
-- dungeon `published/**` owns dungeon-native map surface carriers
+- dungeon `published/**` owns dungeon-native read-side model handles and
+  snapshot carriers
 - `PartyApplicationService` owns party runtime position outside authored
   dungeon persistence
-
-Current code may still use class names such as `DungeonEditorViewModel`,
-`DungeonTravelViewModel`, or `DungeonMapViewModel`. Those names are migration
-debt relative to the canonical `PresentationModel` role language.
 
 ## Capability Paths
 
 ### Surface Read
 
-`Dungeon*Binder -> DungeonApplicationService -> DungeonSurfacePayload -> dungeon map slotcontent PresentationModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*Binder -> DungeonApplicationService -> dungeon published/*Model -> Dungeon*Snapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 ### Preview And Apply
 
-`Dungeon*MainView -> CanvasPointerEvent -> DungeonEditorBinder wiring -> optional Dungeon*IntentHandler -> active-root PresentationModel request/state -> DungeonEditorBinder -> DungeonApplicationService -> DungeonSurfacePayload -> dungeon map slotcontent PresentationModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView -> CanvasPointerEvent -> DungeonEditorBinder wiring -> optional Dungeon*IntentHandler -> DungeonEditorPublishedEvent -> DungeonEditorBinder -> DungeonApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 Preview and apply reuse the same dungeon edit body and differ only in the
 boundary wrapper.
 
 ### Travel Action
 
-`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> optional DungeonTravelIntentHandler -> active-root PresentationModel request/state -> DungeonTravelBinder -> DungeonApplicationService -> DungeonSurfacePayload -> dungeon map slotcontent PresentationModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> optional DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> DungeonApplicationService -> DungeonTravelModel -> DungeonTravelSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 Direct token drag is adapter-side travel action resolution, not a second
 backend movement path.
@@ -76,8 +74,8 @@ Catalog behavior remains separate from the shared canvas scene path.
 - Dungeon keeps one adapter seam into the generic canvas.
 - Dungeon-grid coordinates stay inside the dungeon adopter boundary.
 - The dungeon map slotcontent surface follows the same canonical Binder plus
-  `PresentationModel` split as the rest of the view layer, but it is also the
-  only legal render-state owner toward canvas.
+  `ContentModel` split as the rest of the view layer, but it is also the only
+  legal render-state owner toward canvas.
 - Public surface-family unification in `DungeonApplicationService` is still
   open compatibility debt outside the canvas-seam implementation.
 

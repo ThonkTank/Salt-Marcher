@@ -3,7 +3,10 @@ package src.view.leftbartabs.catalog;
 import java.util.List;
 
 public record CatalogControlsViewInputEvent(
-        Source source,
+        boolean creatureFiltersChanged,
+        boolean encounterDifficultyChanged,
+        boolean encounterTuningChanged,
+        boolean encounterTablesChanged,
         FilterPayload filterState,
         String difficultyKey,
         EncounterTuning tuning,
@@ -11,18 +14,10 @@ public record CatalogControlsViewInputEvent(
 ) {
 
     public CatalogControlsViewInputEvent {
-        source = source == null ? Source.FILTERS_CHANGED : source;
         filterState = filterState == null ? FilterPayload.empty() : filterState;
         difficultyKey = difficultyKey == null ? "" : difficultyKey;
         tuning = tuning == null ? EncounterTuning.empty() : tuning;
         encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
-    }
-
-    enum Source {
-        FILTERS_CHANGED,
-        ENCOUNTER_DIFFICULTY_CHANGED,
-        ENCOUNTER_TUNING_CHANGED,
-        ENCOUNTER_TABLES_CHANGED
     }
 
     public record FilterPayload(

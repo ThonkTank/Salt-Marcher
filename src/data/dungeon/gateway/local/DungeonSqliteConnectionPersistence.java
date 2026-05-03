@@ -1,5 +1,7 @@
 package src.data.dungeon.gateway.local;
 
+import src.data.dungeon.model.DungeonCorridorAnchorBindingRecord;
+import src.data.dungeon.model.DungeonCorridorAnchorRefRecord;
 import src.data.dungeon.model.DungeonCorridorDoorBindingRecord;
 import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonCorridorWaypointRecord;
@@ -35,6 +37,8 @@ final class DungeonSqliteConnectionPersistence {
             replaceCorridorMembers(connection, corridor);
             replaceCorridorWaypoints(connection, corridor);
             replaceCorridorDoorBindings(connection, corridor);
+            replaceCorridorAnchorBindings(connection, corridor);
+            replaceCorridorAnchorRefs(connection, corridor);
         }
         DungeonSqliteStatementSupport.deleteRowsNotIn(
                 connection,
@@ -134,6 +138,57 @@ final class DungeonSqliteConnectionPersistence {
                 insert.setString(6, binding.edgeDirection());
                 DungeonSqliteStatementSupport.setNullableLong(insert, 7, binding.topologyElementId());
                 insert.setInt(8, sortOrder++);
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private static void replaceCorridorAnchorBindings(Connection connection, DungeonCorridorRecord corridor)
+            throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                "DELETE FROM " + DungeonPersistenceSchema.CORRIDOR_ANCHORS_TABLE + " WHERE corridor_id=?")) {
+            delete.setLong(1, corridor.corridorId());
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.CORRIDOR_ANCHORS_TABLE
+                        + "(corridor_id, anchor_id, host_corridor_id, cell_x, cell_y, cell_z,"
+                        + " topology_element_id, sort_order)"
+                        + " VALUES(?,?,?,?,?,?,?,?)")) {
+            int sortOrder = 0;
+            for (DungeonCorridorAnchorBindingRecord binding : corridor.anchorBindings()) {
+                insert.setLong(1, corridor.corridorId());
+                insert.setLong(2, binding.anchorId());
+                insert.setLong(3, binding.hostCorridorId());
+                insert.setInt(4, binding.cellX());
+                insert.setInt(5, binding.cellY());
+                insert.setInt(6, binding.cellZ());
+                DungeonSqliteStatementSupport.setNullableLong(insert, 7, binding.topologyElementId());
+                insert.setInt(8, sortOrder++);
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private static void replaceCorridorAnchorRefs(Connection connection, DungeonCorridorRecord corridor)
+            throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                "DELETE FROM " + DungeonPersistenceSchema.CORRIDOR_ANCHOR_REFS_TABLE + " WHERE corridor_id=?")) {
+            delete.setLong(1, corridor.corridorId());
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO " + DungeonPersistenceSchema.CORRIDOR_ANCHOR_REFS_TABLE
+                        + "(corridor_id, host_corridor_id, topology_element_id, sort_order)"
+                        + " VALUES(?,?,?,?)")) {
+            int sortOrder = 0;
+            for (DungeonCorridorAnchorRefRecord ref : corridor.anchorRefs()) {
+                insert.setLong(1, corridor.corridorId());
+                insert.setLong(2, ref.hostCorridorId());
+                DungeonSqliteStatementSupport.setNullableLong(insert, 3, ref.topologyElementId());
+                insert.setInt(4, sortOrder++);
                 insert.addBatch();
             }
             insert.executeBatch();

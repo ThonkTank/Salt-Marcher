@@ -10,14 +10,15 @@ import shell.api.ShellSlot;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.published.LoadAdventuringDaySummaryQuery;
+import src.domain.party.published.LoadPartyMutationQuery;
+import src.domain.party.published.LoadPartySnapshotQuery;
+import src.domain.party.published.LoadAdventuringDayCalculationModelQuery;
 import src.domain.party.published.AdjustPartyXpCommand;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.DeleteCharacterCommand;
-import src.domain.party.published.LoadAdventuringDaySummaryQuery;
-import src.domain.party.published.LoadPartySnapshotQuery;
 import src.domain.party.published.MutationResult;
-import src.domain.party.published.MutationStatus;
 import src.domain.party.published.PerformPartyRestCommand;
 import src.domain.party.published.RestType;
 import src.domain.party.published.SetPartyMembershipCommand;
@@ -36,76 +37,89 @@ final class PartyTopBarBinder {
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         PartyTopBarContributionModel presentationModel = new PartyTopBarContributionModel();
         PartyTopBarIntentHandler intentHandler = new PartyTopBarIntentHandler(presentationModel);
-        PartyTopBarView panel = new PartyTopBarView();
-        bindPartyRequests(party, presentationModel, intentHandler);
-        panel.setTriggerText(presentationModel.triggerTextProperty().get());
-        panel.showPanel(toPanelContent(presentationModel.panelProperty().get()));
-        presentationModel.triggerTextProperty().addListener((ignored, before, after) -> panel.setTriggerText(after));
-        presentationModel.panelProperty().addListener((ignored, before, after) -> panel.showPanel(toPanelContent(after)));
-        presentationModel.refreshTokenProperty().addListener((ignored, before, after) -> loadPanel(party, presentationModel));
-        presentationModel.mutationTokenProperty().addListener((ignored, before, after) -> encounters.applySession(
-                new ApplyEncounterSessionCommand(
-                        ApplyEncounterSessionCommand.Action.REFRESH,
-                        null,
-                        src.domain.encounter.published.EncounterSessionSnapshot.BuilderInputs.empty(),
-                        0L,
-                        0L,
-                        0,
-                        0L,
-                        java.util.List.of(),
-                        "",
-                        0,
-                        0L,
-                        0,
-                        false)));
-        panel.onViewInputEvent(intentHandler::consume);
-        loadPanel(party, presentationModel);
-        return new Binding(panel);
+        PartyRosterTopBarView rosterView = new PartyRosterTopBarView();
+        PartyEditorTopBarView editorView = new PartyEditorTopBarView();
+        PartyTopBarView topBarView = new PartyTopBarView(rosterView, editorView);
+        var snapshotModel = party.loadSnapshotModel(new LoadPartySnapshotQuery());
+        var summaryModel = party.loadAdventuringDaySummaryModel(new LoadAdventuringDaySummaryQuery());
+        var mutationModel = party.loadPartyMutationModel(new LoadPartyMutationQuery());
+        bindPartyRequests(party, encounters, intentHandler);
+        topBarView.setTriggerText(presentationModel.triggerTextProperty().get());
+        PartyTopBarContributionModel.PanelModel initialModel = presentationModel.panelProperty().get();
+        PartyTopBarContributionModel.EditorPanelModel initialEditorModel = initialModel == null
+                ? PartyTopBarContributionModel.EditorPanelModel.hidden()
+                : initialModel.editorPanel();
+        rosterView.showPanel(toRosterContent(initialModel));
+        editorView.showEditor(toEditorContent(initialEditorModel));
+        presentationModel.triggerTextProperty().addListener((ignored, before, after) -> topBarView.setTriggerText(after));
+        presentationModel.panelProperty().addListener((ignored, before, after) -> {
+            PartyTopBarContributionModel.EditorPanelModel editorModel = after == null
+                    ? PartyTopBarContributionModel.EditorPanelModel.hidden()
+                    : after.editorPanel();
+            rosterView.showPanel(toRosterContent(after));
+            editorView.showEditor(toEditorContent(editorModel));
+        });
+        topBarView.onViewInputEvent(intentHandler::consume);
+        rosterView.onViewInputEvent(intentHandler::consume);
+        editorView.onViewInputEvent(intentHandler::consume);
+        snapshotModel.subscribe(snapshot ->
+                presentationModel.applyLoadResult(new PartyTopBarContributionModel.PanelData(
+                        snapshot,
+                        summaryModel.current())));
+        summaryModel.subscribe(summary ->
+                presentationModel.applyLoadResult(new PartyTopBarContributionModel.PanelData(
+                        snapshotModel.current(),
+                        summary)));
+        mutationModel.subscribe(result ->
+                presentationModel.applyMutationResult(new PartyTopBarContributionModel.MutationAndLoadResult(
+                        result,
+                        new PartyTopBarContributionModel.PanelData(
+                                snapshotModel.current(),
+                                summaryModel.current()),
+                        pendingSuccessMessage(intentHandler))));
+        presentationModel.applyLoadResult(new PartyTopBarContributionModel.PanelData(
+                snapshotModel.current(),
+                summaryModel.current()));
+        return new Binding(topBarView);
     }
 
     private static void bindPartyRequests(
             PartyApplicationService party,
-            PartyTopBarContributionModel presentationModel,
+            EncounterApplicationService encounters,
             PartyTopBarIntentHandler intentHandler
     ) {
         intentHandler.onPublishedEventRequested(event -> {
-            try {
-                presentationModel.applyMutationResult(new PartyTopBarContributionModel.MutationAndLoadResult(
-                        runMutation(party, event),
-                        loadPanelData(party),
-                        event.successMessage()));
-            } catch (RuntimeException exception) {
-                presentationModel.applyMutationFailure();
+            if (event == null) {
+                return;
             }
+            intentHandler.storePendingSuccessMessage(event.successMessage());
+            runMutation(party, event);
+            refreshEncounterSession(encounters);
         });
     }
 
-    private static void loadPanel(
-            PartyApplicationService party,
-            PartyTopBarContributionModel presentationModel
-    ) {
-        try {
-            presentationModel.applyLoadResult(loadPanelData(party));
-        } catch (RuntimeException exception) {
-            presentationModel.applyStorageError();
-        }
+    private static void refreshEncounterSession(EncounterApplicationService encounters) {
+        encounters.applySession(new ApplyEncounterSessionCommand(
+                ApplyEncounterSessionCommand.Action.REFRESH,
+                null,
+                src.domain.encounter.published.EncounterSessionSnapshot.BuilderInputs.empty(),
+                0L,
+                0L,
+                0,
+                0L,
+                java.util.List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false));
     }
 
-    private static PartyTopBarContributionModel.PanelData loadPanelData(PartyApplicationService party) {
-        src.domain.party.published.PartySnapshotResult snapshotResult =
-                party.loadSnapshot(new LoadPartySnapshotQuery());
-        src.domain.party.published.AdventuringDayResult dayResult =
-                snapshotResult == null || snapshotResult.status() != src.domain.party.published.ReadStatus.SUCCESS
-                        ? null
-                        : party.loadAdventuringDaySummary(new LoadAdventuringDaySummaryQuery());
-        return new PartyTopBarContributionModel.PanelData(snapshotResult, dayResult);
-    }
-
-    private static MutationResult runMutation(
+    private static void runMutation(
         PartyApplicationService party,
         PartyTopBarPublishedEvent intent
     ) {
-        return switch (intent.kind()) {
+        switch (intent.kind()) {
             case SET_MEMBERSHIP -> party.setMembership(new SetPartyMembershipCommand(
                     intent.characterId(),
                     toMembershipState(intent.membershipTarget())));
@@ -128,7 +142,11 @@ final class PartyTopBarBinder {
             case DELETE_CHARACTER -> party.deleteCharacter(new DeleteCharacterCommand(intent.characterId()));
             case ADJUST_XP -> party.adjustXp(new AdjustPartyXpCommand(List.of(intent.characterId()), intent.xpDelta()));
             case PERFORM_REST -> party.performRest(new PerformPartyRestCommand(toRestType(intent.restAction())));
-        };
+        }
+    }
+
+    private static String pendingSuccessMessage(PartyTopBarIntentHandler intentHandler) {
+        return intentHandler.drainPendingSuccessMessage();
     }
 
     private static src.domain.party.published.MembershipState toMembershipState(
@@ -147,11 +165,11 @@ final class PartyTopBarBinder {
         };
     }
 
-    private static PartyTopBarView.PanelContent toPanelContent(PartyTopBarContributionModel.PanelModel model) {
+    private static PartyRosterTopBarView.PanelContent toRosterContent(PartyTopBarContributionModel.PanelModel model) {
         PartyTopBarContributionModel.PanelModel safeModel = model == null
                 ? PartyTopBarContributionModel.PanelModel.loadingModel()
                 : model;
-        return new PartyTopBarView.PanelContent(
+        return new PartyRosterTopBarView.PanelContent(
                 safeModel.loading(),
                 safeModel.storageError(),
                 safeModel.storageMessage(),
@@ -165,13 +183,31 @@ final class PartyTopBarBinder {
                 safeModel.actionsDisabled());
     }
 
-    private static PartyTopBarView.MemberView toMemberView(PartyTopBarContributionModel.MemberModel member) {
+    private static PartyEditorTopBarView.EditorContent toEditorContent(
+            PartyTopBarContributionModel.EditorPanelModel model
+    ) {
+        PartyTopBarContributionModel.EditorPanelModel safeModel = model == null
+                ? PartyTopBarContributionModel.EditorPanelModel.hidden()
+                : model;
+        return new PartyEditorTopBarView.EditorContent(
+                safeModel.visible(),
+                safeModel.editingExisting(),
+                safeModel.memberId(),
+                safeModel.memberName(),
+                safeModel.playerName(),
+                safeModel.rawLevel(),
+                safeModel.rawPassivePerception(),
+                safeModel.rawArmorClass(),
+                safeModel.deleteConfirmationVisible());
+    }
+
+    private static PartyRosterTopBarView.MemberView toMemberView(PartyTopBarContributionModel.MemberModel member) {
         PartyTopBarContributionModel.MemberModel safeMember = member == null
                 ? new PartyTopBarContributionModel.MemberModel(
                 0L, "", "", 1, 0, 0, 300, 10, 10, "Lv 1", "Lv 2", "", "", "0/300 XP (0%)", 0.0, "", "")
                 : member;
-        return new PartyTopBarView.MemberView(
-                safeMember.id(),
+        return new PartyRosterTopBarView.MemberView(
+                safeMember.id() == null ? 0L : safeMember.id(),
                 safeMember.name(),
                 safeMember.playerName(),
                 safeMember.level(),

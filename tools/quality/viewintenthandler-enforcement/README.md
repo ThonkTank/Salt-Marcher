@@ -18,12 +18,6 @@ bundle-local registration metadata, and role-specific helper logic:
 - `bundle.properties`
   canonical registration source for this bundle's public task names and host
   script/source-set wiring
-- `root-host.gradle.kts`
-  root-project test-source, compiler, and aggregate-task wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 Unified root entrypoint:
 

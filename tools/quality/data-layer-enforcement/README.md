@@ -16,12 +16,6 @@ It keeps the generic `src/data/**` layer proof owner-pure and bundle-local:
   `ServiceRegistryRegistrationPlacementChecker`
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, ArchUnit, aggregate-task, and focused-entry wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `build-harness-host.gradle.kts`
-  included-build wiring for the `build-harness` host
 
 This bundle owns only the generic data-layer topology and cross-feature
 dependency boundaries in `src/data/**`. ServiceContribution export shape,

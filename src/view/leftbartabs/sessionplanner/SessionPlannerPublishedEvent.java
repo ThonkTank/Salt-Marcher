@@ -1,5 +1,7 @@
 package src.view.leftbartabs.sessionplanner;
 
+import java.util.Objects;
+
 public record SessionPlannerPublishedEvent(
         Kind kind,
         long planId,
@@ -10,16 +12,12 @@ public record SessionPlannerPublishedEvent(
 ) {
 
     public SessionPlannerPublishedEvent {
-        kind = kind == null ? Kind.REFRESH : kind;
+        Objects.requireNonNull(kind, "kind");
         planId = Math.max(0L, planId);
         encounterToken = Math.max(0L, encounterToken);
         gapIndex = Math.max(-1, gapIndex);
         restSelection = restSelection == null ? RestSelection.NONE : restSelection;
         lootToken = Math.max(0L, lootToken);
-    }
-
-    static SessionPlannerPublishedEvent refresh() {
-        return new SessionPlannerPublishedEvent(Kind.REFRESH, 0L, 0L, -1, RestSelection.NONE, 0L);
     }
 
     static SessionPlannerPublishedEvent importPlan(long planId) {
@@ -55,7 +53,6 @@ public record SessionPlannerPublishedEvent(
     }
 
     enum Kind {
-        REFRESH,
         IMPORT_PLAN,
         REMOVE_ENCOUNTER,
         MOVE_ENCOUNTER_UP,

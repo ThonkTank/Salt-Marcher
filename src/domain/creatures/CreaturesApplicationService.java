@@ -1,14 +1,17 @@
 package src.domain.creatures;
 
+import java.util.ArrayList;
 import java.util.List;
 import src.domain.creatures.published.CreatureCatalogPageResult;
 import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.creatures.published.CreatureCatalogQuery;
 import src.domain.creatures.published.CreatureCatalogRow;
 import src.domain.creatures.published.CreatureDetail;
 import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureActionDetail;
 import src.domain.creatures.published.CreatureFilterOptions;
+import src.domain.creatures.published.CreatureFilterOptionsModel;
 import src.domain.creatures.published.CreatureFilterOptionsResult;
 import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.creatures.published.CreatureQueryStatus;
@@ -25,6 +28,7 @@ import src.domain.creatures.application.SearchCreatureCatalogUseCase;
 import src.domain.creatures.catalog.port.CreatureCatalogLookup;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Public read-only backend facade for creature catalog access.
@@ -35,6 +39,18 @@ public final class CreaturesApplicationService {
     private final SearchCreatureCatalogUseCase searchCreatureCatalogUseCase;
     private final LoadCreatureDetailUseCase loadCreatureDetailUseCase;
     private final LoadEncounterCandidatesUseCase loadEncounterCandidatesUseCase;
+    private final List<Consumer<CreatureFilterOptionsResult>> filterOptionsListeners = new ArrayList<>();
+    private final List<Consumer<CreatureCatalogPageResult>> catalogListeners = new ArrayList<>();
+    private final CreatureFilterOptionsModel filterOptionsModel = new CreatureFilterOptionsModel(
+            this::currentFilterOptions,
+            this::subscribeFilterOptionsListener);
+    private final CreatureCatalogModel catalogModel = new CreatureCatalogModel(
+            this::currentCatalogPage,
+            this::subscribeCatalogListener);
+    private CreatureFilterOptionsResult currentFilterOptions =
+            new CreatureFilterOptionsResult(CreatureReadStatus.STORAGE_ERROR, CreatureFilterOptions.empty());
+    private CreatureCatalogPageResult currentCatalogPage =
+            new CreatureCatalogPageResult(CreatureQueryStatus.STORAGE_ERROR, CreatureCatalogPage.empty(50, 0));
 
     public CreaturesApplicationService(CreatureCatalogLookup creatureCatalogLookup) {
         CreatureCatalogLookup lookup = Objects.requireNonNull(creatureCatalogLookup, "creatureCatalogLookup");
@@ -46,33 +62,39 @@ public final class CreaturesApplicationService {
 
     public CreatureFilterOptionsResult loadFilterOptions(LoadCreatureFilterOptionsQuery query) {
         try {
-            return new CreatureFilterOptionsResult(
+            currentFilterOptions = new CreatureFilterOptionsResult(
                     CreatureReadStatus.SUCCESS,
                     toPublishedFilterOptions(loadCreatureFilterOptionsUseCase.execute()));
         } catch (RuntimeException exception) {
-            return new CreatureFilterOptionsResult(
+            currentFilterOptions = new CreatureFilterOptionsResult(
                     CreatureReadStatus.STORAGE_ERROR,
                     CreatureFilterOptions.empty());
         }
+        notifyFilterOptionsListeners(currentFilterOptions);
+        return currentFilterOptions;
     }
 
     public CreatureCatalogPageResult searchCatalog(CreatureCatalogQuery query) {
         try {
             SearchCreatureCatalogUseCase.SearchResult result = searchCreatureCatalogUseCase.execute(toCatalogQueryInput(query));
             if (result.invalidQuery()) {
-                return new CreatureCatalogPageResult(
+                currentCatalogPage = new CreatureCatalogPageResult(
                         CreatureQueryStatus.INVALID_QUERY,
                         CreatureCatalogPage.empty(result.pageSize(), result.pageOffset()));
+                notifyCatalogListeners(currentCatalogPage);
+                return currentCatalogPage;
             }
-            return new CreatureCatalogPageResult(
+            currentCatalogPage = new CreatureCatalogPageResult(
                     CreatureQueryStatus.SUCCESS,
                     toPublishedCatalogPage(result.page()));
         } catch (RuntimeException exception) {
             CreatureCatalogQuery effectiveQuery = query == null ? CreatureCatalogQuery.defaults() : query;
-            return new CreatureCatalogPageResult(
+            currentCatalogPage = new CreatureCatalogPageResult(
                     CreatureQueryStatus.STORAGE_ERROR,
                     CreatureCatalogPage.empty(effectiveQuery.pageSize(), effectiveQuery.pageOffset()));
         }
+        notifyCatalogListeners(currentCatalogPage);
+        return currentCatalogPage;
     }
 
     public CreatureDetailResult loadCreatureDetail(LoadCreatureDetailQuery query) {
@@ -100,6 +122,48 @@ public final class CreaturesApplicationService {
                     result.candidates().stream().map(CreaturesApplicationService::toPublishedEncounterCandidate).toList());
         } catch (RuntimeException exception) {
             return new EncounterCandidatesResult(CreatureQueryStatus.STORAGE_ERROR, List.of());
+        }
+    }
+
+    public CreatureFilterOptionsModel loadFilterOptionsModel(LoadCreatureFilterOptionsQuery query) {
+        Objects.requireNonNull(query, "query");
+        return filterOptionsModel;
+    }
+
+    public CreatureCatalogModel loadCatalogModel(CreatureCatalogQuery query) {
+        Objects.requireNonNull(query, "query");
+        return catalogModel;
+    }
+
+    private CreatureFilterOptionsResult currentFilterOptions() {
+        return currentFilterOptions;
+    }
+
+    private CreatureCatalogPageResult currentCatalogPage() {
+        return currentCatalogPage;
+    }
+
+    private Runnable subscribeFilterOptionsListener(Consumer<CreatureFilterOptionsResult> listener) {
+        Consumer<CreatureFilterOptionsResult> safeListener = Objects.requireNonNull(listener, "listener");
+        filterOptionsListeners.add(safeListener);
+        return () -> filterOptionsListeners.remove(safeListener);
+    }
+
+    private Runnable subscribeCatalogListener(Consumer<CreatureCatalogPageResult> listener) {
+        Consumer<CreatureCatalogPageResult> safeListener = Objects.requireNonNull(listener, "listener");
+        catalogListeners.add(safeListener);
+        return () -> catalogListeners.remove(safeListener);
+    }
+
+    private void notifyFilterOptionsListeners(CreatureFilterOptionsResult result) {
+        for (Consumer<CreatureFilterOptionsResult> listener : List.copyOf(filterOptionsListeners)) {
+            listener.accept(result);
+        }
+    }
+
+    private void notifyCatalogListeners(CreatureCatalogPageResult result) {
+        for (Consumer<CreatureCatalogPageResult> listener : List.copyOf(catalogListeners)) {
+            listener.accept(result);
         }
     }
 

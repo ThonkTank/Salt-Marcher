@@ -19,12 +19,6 @@ role-local support, host wiring, and bundle metadata:
   `ViewContributionEntrypointRule` and the dedicated single-rule PMD ruleset
 - `bundle.properties`
   descriptor-based registration into the focused-enforcement Gradle path
-- `root-host.gradle.kts`
-  root-project compiler, ArchUnit, PMD, and aggregate-task wiring
-- `errorprone-host.gradle.kts`
-  included-build wiring for the `quality-rules-errorprone` host
-- `pmd-host.gradle.kts`
-  included-build wiring for the `quality-rules` host
 
 Shared descriptor loading and shared engine host projects remain central
 Gradle/tool infrastructure. Contribution-specific source detection, shell
