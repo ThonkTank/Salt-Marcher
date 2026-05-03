@@ -7,8 +7,6 @@ import com.google.errorprone.matchers.Description;
 import com.sun.source.tree.CompilationUnitTree;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-
 @BugPattern(
         name = "PassiveViewDependencyBoundaries",
         summary = "Passive Views may depend only on their allowed model and passive view surfaces.",

@@ -22,11 +22,11 @@ public final class ViewContributionShellApiAllowlistChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isContributionSource(tree)) {
+        if (!ViewContributionArchitectureSupport.isContributionSource(tree)) {
             return Description.NO_MATCH;
         }
 
-        String packageName = ViewArchitectureSupport.packageName(tree);
+        String packageName = ViewContributionArchitectureSupport.packageName(tree);
         Set<String> forbiddenReferences = new LinkedHashSet<>();
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
             if (referencedType.startsWith("shell.host.")) {
@@ -34,7 +34,7 @@ public final class ViewContributionShellApiAllowlistChecker extends BugChecker
                 continue;
             }
             if (referencedType.startsWith("shell.api.")
-                    && !ViewArchitectureSupport.isAllowedContributionShellType(referencedType)) {
+                    && !ViewContributionArchitectureSupport.isAllowedContributionShellType(referencedType)) {
                 forbiddenReferences.add(referencedType);
             }
         }

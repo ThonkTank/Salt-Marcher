@@ -13,17 +13,17 @@ It keeps the full styling-layer proof route in one package:
   canonical registration source for the bundle's public task name and host
   script/source-set wiring
 - `root-host.gradle.kts`
-  root-project compiler, stylesheet/selector verification, PMD, and
+  root-project canonical stylesheet-owner, stylesheet/selector verification,
+  PMD, and
   aggregate-task wiring
 - `errorprone-host.gradle.kts`
   included-build wiring for the `quality-rules-errorprone` host
 - `pmd-host.gradle.kts`
   included-build wiring for the `quality-rules` host
 
-The bundle aggregates `checkDesktopPackagingInputs` as the current
-`Enforced Elsewhere` proof for the canonical stylesheet ownership seam, but
-desktop packaging remains the owner of the broader launcher/icon metadata
-policy outside styling.
+The bundle keeps the canonical stylesheet owner proof local through
+`checkStylingCentralStylesheetOwner`. Desktop packaging remains the owner of
+the broader launcher/icon metadata policy outside styling.
 
 Unified root entrypoint:
 

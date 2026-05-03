@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
+Last Reviewed: 2026-05-02
 Source of Truth: SaltMarcher cockpit view-layer target model, topology, fixed
 shell surfaces, allowed domain/view seams for `src/view/**`, and the two only
 allowed presentation-state mutation paths.
@@ -63,16 +63,19 @@ belong in that role.
   active root or reusable `slotcontent` unit, interprets that snapshot,
   mutates only its co-located model, and publishes only through
   Binder-installed `Consumer<*PublishedEvent>` sink seams when domain work is
-  required
+  required; it does not synthesize fallback `*ViewInputEvent` carriers for its
+  own surface
 - `View`
   passive JavaFX content named `*View`; renders observable model state,
-  captures user input, and emits only fire-and-forget `*ViewInputEvent`
-  snapshots
+  captures user input, constructs its own same-stem `*ViewInputEvent`
+  snapshots directly from current widget/raw-event state, and emits only those
+  fire-and-forget snapshots
 - `ViewInputEvent`
   immutable, co-located technical full-snapshot carrier named
   `*ViewInputEvent`; each interactive passive `*View` owns exactly one
   same-stem such carrier and each carrier belongs only to its local
-  interactive view surface
+  interactive view surface; the top-level carrier stays a plain snapshot
+  record rather than a command API or top-level static factory surface
 - `PublishedEvent`
   optional same-root write-side carrier named `*PublishedEvent`; it is built
   by the `IntentHandler`, consumed only through a Binder-installed sink seam,
@@ -178,6 +181,13 @@ Additional rules:
 - the Binder may know only its same-root `ContributionModel`, `IntentHandler`,
   feature-specific `View`, same-root `ViewInputEvent` types, and optional
   same-root write-side `PublishedEvent` types directly
+- the Binder may wire forwarding of same-stem `ViewInputEvent` snapshots but
+  must not synthesize, cache, or emit `*ViewInputEvent` carriers itself
+- one top-level passive `View` must not subscribe to another top-level passive
+  `View`'s `onViewInputEvent(...)` seam
+- if a child widget needs internal callbacks inside one top-level surface, that
+  child stays same-surface support code rather than becoming a second top-level
+  `*View` plus `*ViewInputEvent` route in the same active root
 - the Binder may additionally know reusable `slotcontent` roles when reuse is
   intentional
 - feature-specific `View` classes may extend reusable generic counterparts from
@@ -210,6 +220,8 @@ Local presentation cycle:
 
 1. an interactive passive `*View` emits exactly one immutable same-stem
    `*ViewInputEvent` full snapshot for its own surface
+   that snapshot is constructed in the `View` itself from the current
+   technical UI state rather than by a Binder or `IntentHandler`
 2. that `*View` exposes exactly one outward input seam:
    `onViewInputEvent(Consumer<SameStemViewInputEvent>)`
 3. the Binder-installed listener forwards that carrier into the optional

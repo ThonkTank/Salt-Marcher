@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-05-02
 Source of Truth: Complete invariant catalog for the optional
 `*IntentHandler` role itself in `src/view/**`.
 
@@ -24,7 +24,8 @@ carrier existence, same-stem belonging, or payload shape, `*PublishedEvent`
 carrier shape or producer ownership, Binder-installed forwarding or sink
 injection, or Binder-to-`*ApplicationService` translation. Those stay in the
 neighboring role-enforcement documents and in the view-layer and layering
-standards.
+standards. This role therefore consumes documented same-stem carriers but does
+not own or synthesize them.
 
 Unified focused bundle entrypoint:
 
@@ -79,6 +80,7 @@ communication seam obligations documented below.
 | --- | --- | --- | --- | --- | --- |
 | `view-intenthandler-thin-local-interpretation-semantics` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | A legal `IntentHandler` still stays a thin local input-interpretation role rather than becoming a hidden workflow coordinator. |
 | `view-intenthandler-consume-surface-minimality` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | The legal `consume(...)` entrypoint set is still the minimum local interpretation surface instead of an accumulation of extra technically legal entrypoints and helper protocols. |
+| `view-intenthandler-no-viewinputevent-fallback-synthesis` | Review-Owned | every mechanically legal `*IntentHandler.java` under `src/view/**` | none | none | A legal `IntentHandler` derives meaning from the received snapshot instead of synthesizing fallback `*ViewInputEvent` instances or rebuilding the carrier protocol internally. |
 | `view-intenthandler-write-seam-necessity` | Review-Owned | every mechanically legal `*IntentHandler.java` that exposes `onPublishedEventRequested(...)` | none | none | A legal local published-event seam is used only when the interaction really needs Binder-mediated domain work rather than remaining presentation-local. |
 
 ## References

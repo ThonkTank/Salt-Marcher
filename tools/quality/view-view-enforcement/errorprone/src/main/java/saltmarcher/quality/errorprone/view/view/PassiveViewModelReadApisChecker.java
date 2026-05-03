@@ -12,8 +12,6 @@ import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
-import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-
 @BugPattern(
         name = "PassiveViewModelReadApis",
         summary = "Passive Views may call their models only through observable read-surface APIs.",

@@ -37,20 +37,6 @@ public final class ViewArchitectureSupport {
     public static final Pattern LEGACY_VIEW_PACKAGE = Pattern.compile("^src\\.view\\.(?!(leftbartabs|statetabs|dropdowns|slotcontent)(\\.|$)).+");
     public static final Pattern DATA_ROOT_PACKAGE = Pattern.compile("^src\\.data\\.([^.]+)$");
 
-    private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(
-            "shell.api.ContributionKey",
-            "shell.api.InspectorEntrySpec",
-            "shell.api.InspectorSink",
-            "shell.api.NavigationGraphicResource",
-            "shell.api.NavigationGroupSpec",
-            "shell.api.ShellBinding",
-            "shell.api.ShellContribution",
-            "shell.api.ShellContributionSpec",
-            "shell.api.ShellRuntimeContext",
-            "shell.api.ShellStateTabSpec",
-            "shell.api.ShellLeftBarTabMode",
-            "shell.api.ShellLeftBarTabSpec",
-            "shell.api.ShellTopBarSpec");
     private static final Set<String> BINDER_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ContributionKey",
             "shell.api.InspectorEntrySpec",
@@ -83,11 +69,6 @@ public final class ViewArchitectureSupport {
 
     public static String packageName(CompilationUnitTree tree) {
         return tree.getPackageName() == null ? "" : tree.getPackageName().toString();
-    }
-
-    public static boolean isContributionSource(CompilationUnitTree tree) {
-        return VIEW_CONTRIBUTION_PACKAGE.matcher(packageName(tree)).matches()
-                && sourceFileName(tree).endsWith("Contribution.java");
     }
 
     public static boolean isBinderSource(CompilationUnitTree tree) {
@@ -698,10 +679,6 @@ public final class ViewArchitectureSupport {
         }
         int separator = topLevelType.lastIndexOf('.');
         return separator < 0 ? "" : topLevelType.substring(0, separator);
-    }
-
-    public static boolean isAllowedContributionShellType(String referencedType) {
-        return isAllowedShellType(referencedType, CONTRIBUTION_ALLOWED_SHELL_TYPES);
     }
 
     public static boolean isAllowedBinderShellType(String referencedType) {

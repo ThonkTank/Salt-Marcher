@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-05-02
 Source of Truth: Passive-`View`-specific direct-render styling invariants for
 surfaces that must style JavaFX rendering primitives without inventing a local
 visual system.
@@ -31,7 +31,7 @@ document.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `styling-view-direct-render-javafx-rendering-apis-only-for-non-css-surfaces` | Enforced | a passive `*View` must style a direct-rendered JavaFX surface such as `Canvas`, `GraphicsContext`, or shape drawing that a stylesheet selector cannot express directly | Error Prone `ViewDirectRenderStylingPlacement` | `./gradlew checkStylingViewEnforcement` and `./gradlew compileJava` | A passive `View` may contain JavaFX paint, font, or stroke styling code only for the documented direct-render exception. Ordinary node styling still belongs to centralized stylesheet selectors. |
+| `styling-view-direct-render-javafx-rendering-apis-only-for-non-css-surfaces` | Enforced | a passive `*View` must style a direct-rendered JavaFX surface such as `Canvas`, `GraphicsContext`, or shape drawing that a stylesheet selector cannot express directly | Error Prone `ViewDirectRenderStylingPlacement` | `./gradlew checkStylingViewEnforcement`, `./gradlew compileJava`, and `./gradlew check` | A passive `View` may contain JavaFX paint, font, or stroke styling code only for the documented direct-render exception. Ordinary node styling still belongs to centralized stylesheet selectors. |
 
 ### Must Not Contain
 

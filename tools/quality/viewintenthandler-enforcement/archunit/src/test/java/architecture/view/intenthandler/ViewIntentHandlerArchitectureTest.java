@@ -4,7 +4,6 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import architecture.AnalyzeMainClasses;
-import architecture.view.ViewRolePredicates;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -36,7 +35,7 @@ public final class ViewIntentHandlerArchitectureTest {
     @ArchTest
     static final ArchRule intentHandlersMustStayShellDomainAndDataFree =
             noClasses()
-                    .that(ViewRolePredicates.areIntentHandlers())
+                    .that(ViewIntentHandlerRolePredicates.areIntentHandlers())
                     .should()
                     .dependOnClassesThat()
                     .resideInAnyPackage("shell..", "src.domain..", "src.data..", "bootstrap..");
@@ -44,7 +43,7 @@ public final class ViewIntentHandlerArchitectureTest {
     @ArchTest
     static final ArchRule intentHandlersWithPublishedEventSinkMustOwnMatchingPublishedEvents =
             classes()
-                    .that(ViewRolePredicates.areIntentHandlers())
+                    .that(ViewIntentHandlerRolePredicates.areIntentHandlers())
                     .should(ownMatchingPublishedEventForPublishedEventSink());
 
     private static ArchCondition<JavaClass> ownMatchingPublishedEventForPublishedEventSink() {

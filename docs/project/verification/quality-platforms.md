@@ -56,6 +56,7 @@ complete report, but a violating gate must not produce a successful `check` or
 ## Detailed Operating Subdocuments
 
 - [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
+- [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
   owns the detailed local gate inventory, aggregate entrypoints, and parallel
   local invocation isolation policy
 - [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
@@ -170,8 +171,8 @@ Operationally, architecture checks enter local quality through:
   root entrypoint
 - `checkStylingLayerEnforcement`
   runs the focused styling-layer bundle by aggregating centralized stylesheet
-  placement, style-class selector resolution, the current packaging-backed
-  stylesheet-owner proof, the dedicated `setStyle(...)` PMD rule, and the
+  ownership, centralized stylesheet placement, style-class selector
+  resolution, the dedicated `setStyle(...)` PMD rule, and the
   compiler-integrated `ViewProgrammaticStyling` check through one direct root
   entrypoint
 - `checkStylingViewEnforcement`
@@ -336,17 +337,25 @@ Operationally, architecture checks enter local quality through:
 
 Default local proof routing by change type lives in
 `docs/project/verification/quality-platforms-local-gates.md` and `AGENTS.md`:
-production-code changes use `./gradlew build --console=plain`,
+production-code changes use
+`tools/gradle/run-staged-verification.sh production-handoff`,
 documentation-only changes use
 `./gradlew checkDocumentationEnforcement --console=plain`, and check-only
 changes use the corresponding focused package or bundle entrypoints. The
 existence of a broader aggregate does not make it the default proof route for
 documentation-only or check-only work.
 
+Public verification-surface ownership is architecture-owned by
+[Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1):
+runtime wrappers forward canonical surface names, the verification core owns the
+public Gradle lifecycle tasks, focused bundles own `check*Enforcement`, and
+private rule engines remain behind those surfaces.
+
 Wrapper-based local entrypoints keep their public names but execute inside the
 isolated runtime described in
 `docs/project/verification/quality-platforms-local-gates.md`: isolated
-build/project-cache paths, isolated `GRADLE_USER_HOME`, a shared read-only
+build/project-cache paths, wrapper-injected root `--project-cache-dir` before
+settings evaluation, isolated `GRADLE_USER_HOME`, a shared read-only
 dependency cache snapshot exposed through `GRADLE_RO_DEP_CACHE`, and
 per-invocation mirrors for the shared included builds.
 
@@ -361,6 +370,7 @@ enforced, the enforcement document is the canonical classification.
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
 - [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
+- [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
 - [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
 - [PMD Java Design Rules Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/pmd-java-design-rules.md:1)
 - [PMD CPD Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/pmd-cpd.md:1)

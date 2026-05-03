@@ -4,12 +4,19 @@ import com.google.errorprone.BugPattern;
 import com.google.errorprone.VisitorState;
 import com.google.errorprone.bugpatterns.BugChecker;
 import com.google.errorprone.matchers.Description;
+import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.TreeScanner;
+import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import javax.lang.model.element.Modifier;
 import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
@@ -21,13 +28,35 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewArchitectureSupport.isViewInputEventSource(tree)) {
+        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
+        if (!sourcePackageName.startsWith("src.view.")) {
             return Description.NO_MATCH;
         }
-        String sourcePackageName = ViewArchitectureSupport.packageName(tree);
         String topLevelSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
 
+        Set<String> violations = new LinkedHashSet<>();
+        if (ViewArchitectureSupport.isViewInputEventSource(tree)) {
+            collectCarrierBoundaryViolations(tree, sourcePackageName, topLevelSimpleName, violations);
+        }
+        collectCarrierProducerViolations(tree, sourcePackageName, topLevelSimpleName, violations);
+
+        if (violations.isEmpty()) {
+            return Description.NO_MATCH;
+        }
+        return buildDescription(tree)
+                .setMessage("ViewInputEvent carriers must stay immutable, co-located snapshot records emitted only by their same-stem passive View. Violations: "
+                        + String.join(", ", violations))
+                .build();
+    }
+
+    private static void collectCarrierBoundaryViolations(
+            CompilationUnitTree tree,
+            String sourcePackageName,
+            String topLevelSimpleName,
+            Set<String> violations
+    ) {
         Set<String> forbiddenReferences = new LinkedHashSet<>();
+
         for (String referencedType : ViewArchitectureSupport.collectReferencedTypes(tree)) {
             if (referencedType == null || referencedType.isBlank()) {
                 continue;
@@ -62,14 +91,43 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
         if (!isTopLevelRecord(tree)) {
             forbiddenReferences.add("non-record ViewInputEvent shape");
         }
-
-        if (forbiddenReferences.isEmpty()) {
-            return Description.NO_MATCH;
+        if (hasExplicitTopLevelNonConstructorMethod(tree)) {
+            forbiddenReferences.add("top-level ViewInputEvent helper method");
         }
-        return buildDescription(tree)
-                .setMessage("ViewInputEvent carriers must stay immutable, co-located, and local to their own carrier type boundary. Violations: "
-                        + String.join(", ", forbiddenReferences))
-                .build();
+        violations.addAll(forbiddenReferences);
+    }
+
+    private static void collectCarrierProducerViolations(
+            CompilationUnitTree tree,
+            String sourcePackageName,
+            String topLevelSimpleName,
+            Set<String> violations
+    ) {
+        new TreePathScanner<Void, Void>() {
+            @Override
+            public Void visitNewClass(NewClassTree newClassTree, Void unused) {
+                String constructedType = qualifiedTypeNameOf(newClassTree);
+                if (isTopLevelViewInputEventType(constructedType)
+                        && !isAllowedTopLevelCarrierProducer(tree, sourcePackageName, topLevelSimpleName, constructedType)) {
+                    violations.add("constructs " + topLevelViewInputEventTypeName(constructedType)
+                            + " outside same-stem View");
+                }
+                return super.visitNewClass(newClassTree, unused);
+            }
+
+            @Override
+            public Void visitMethodInvocation(MethodInvocationTree methodInvocationTree, Void unused) {
+                Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodInvocationTree);
+                if (symbol == null || !symbol.getModifiers().contains(Modifier.STATIC)) {
+                    return super.visitMethodInvocation(methodInvocationTree, unused);
+                }
+                String ownerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
+                if (isTopLevelViewInputEventType(ownerType)) {
+                    violations.add("invokes static ViewInputEvent API " + ownerType + "." + symbol.getSimpleName());
+                }
+                return super.visitMethodInvocation(methodInvocationTree, unused);
+            }
+        }.scan(tree, null);
     }
 
     private static boolean isTopLevelRecord(CompilationUnitTree tree) {
@@ -89,5 +147,68 @@ public final class ViewInputEventBoundaryChecker extends BugChecker
             }
         }.scan(tree, null);
         return result[0];
+    }
+
+    private static boolean hasExplicitTopLevelNonConstructorMethod(CompilationUnitTree tree) {
+        ClassTree topLevelClass = topLevelClass(tree);
+        if (topLevelClass == null) {
+            return false;
+        }
+        for (Tree member : topLevelClass.getMembers()) {
+            if (member instanceof MethodTree methodTree && methodTree.getReturnType() != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isAllowedTopLevelCarrierProducer(
+            CompilationUnitTree tree,
+            String sourcePackageName,
+            String topLevelSimpleName,
+            String referencedType
+    ) {
+        if (ViewArchitectureSupport.isViewInputEventSource(tree)
+                && ViewArchitectureSupport.isOwnTopLevelOrNestedTypeReference(
+                sourcePackageName,
+                topLevelSimpleName,
+                referencedType)) {
+            return true;
+        }
+        return ViewArchitectureSupport.isPanelViewSource(tree)
+                && ViewArchitectureSupport.isSameStemViewInputEventReference(
+                sourcePackageName,
+                topLevelSimpleName,
+                referencedType);
+    }
+
+    private static String qualifiedTypeNameOf(NewClassTree newClassTree) {
+        Symbol symbol = ASTHelpers.getSymbol(newClassTree);
+        if (symbol == null) {
+            return "";
+        }
+        String qualifiedTypeName = ViewArchitectureSupport.getQualifiedTypeName(symbol);
+        if (qualifiedTypeName != null && !qualifiedTypeName.isBlank()) {
+            return qualifiedTypeName;
+        }
+        return ASTHelpers.getType(newClassTree) == null ? "" : ASTHelpers.getType(newClassTree).toString();
+    }
+
+    private static boolean isTopLevelViewInputEventType(String referencedType) {
+        if (!ViewArchitectureSupport.isTargetViewInputEventReference(referencedType)) {
+            return false;
+        }
+        return referencedType.equals(topLevelViewInputEventTypeName(referencedType));
+    }
+
+    private static String topLevelViewInputEventTypeName(String referencedType) {
+        if (referencedType == null || referencedType.isBlank()) {
+            return "";
+        }
+        int markerIndex = referencedType.indexOf("ViewInputEvent");
+        if (markerIndex < 0) {
+            return ViewArchitectureSupport.topLevelQualifiedTypeNameOf(referencedType);
+        }
+        return referencedType.substring(0, markerIndex + "ViewInputEvent".length());
     }
 }

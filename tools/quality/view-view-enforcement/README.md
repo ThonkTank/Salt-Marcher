@@ -14,6 +14,9 @@ the canonical home for passive `*View` host wiring:
   bundle-local `architecture.view.view.ViewSurfaceArchitectureTest`
 - `jqassistant/`
   `saltmarcher:view-view-enforcement`
+- `bundle.properties`
+  canonical registration source for this bundle's public task names and host
+  script/source-set wiring
 - `support/`
   passive-`View` FXML resource validation runner
 - `root-host.gradle.kts`

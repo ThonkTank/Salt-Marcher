@@ -254,8 +254,60 @@ eval "set -- $(
         tr '\n' ' '
     )" '"$@"'
 
+saltmarcher_has_daemon_flag=false
+saltmarcher_has_configuration_cache_flag=false
+saltmarcher_has_project_cache_dir_flag=false
+for arg do
+    case $arg in
+      --daemon|--no-daemon)
+        saltmarcher_has_daemon_flag=true
+        ;;
+      --configuration-cache|--no-configuration-cache)
+        saltmarcher_has_configuration_cache_flag=true
+        ;;
+      --project-cache-dir|--project-cache-dir=*)
+        saltmarcher_has_project_cache_dir_flag=true
+        ;;
+    esac
+done
+
+if [ "$saltmarcher_has_daemon_flag" = false ]; then
+    set -- "$@" --no-daemon
+fi
+
+if [ "$saltmarcher_has_configuration_cache_flag" = false ]; then
+    set -- "$@" --no-configuration-cache
+fi
+
+if [ "$saltmarcher_has_project_cache_dir_flag" = false ] \
+    && [ -n "${SALTMARCHER_GRADLE_ROOT_PROJECT_CACHE_DIR:-}" ]; then
+    # Root project cache isolation must exist before settings/pluginManagement runs.
+    set -- "$@" --project-cache-dir "$SALTMARCHER_GRADLE_ROOT_PROJECT_CACHE_DIR"
+fi
+
 gradle_pid=
 signal_forwarded=
+
+saltmarcher_print_failure_hint() {
+    if [ -z "${SALTMARCHER_GRADLE_ISOLATION_SEGMENT:-}" ] ; then
+        return 0
+    fi
+
+    saltmarcher_retained_failures_root=${SALTMARCHER_GRADLE_RETAINED_FAILURES_ROOT:-$APP_HOME/build/retained-gradle-failures}
+    saltmarcher_retained_run_root=$saltmarcher_retained_failures_root/${SALTMARCHER_GRADLE_ISOLATION_SEGMENT}
+    [ -d "$saltmarcher_retained_run_root" ] || return 0
+
+    echo "Stable failure diagnostics: $saltmarcher_retained_run_root" >&2
+    if [ -d "$saltmarcher_retained_run_root/reports" ] ; then
+        echo "Retained reports: $saltmarcher_retained_run_root/reports" >&2
+    else
+        echo "No retained reports were written for this failure; inspect the Gradle error output above for the primary cause." >&2
+    fi
+    if [ -d "$saltmarcher_retained_run_root/test-results" ] ; then
+        echo "Retained test results: $saltmarcher_retained_run_root/test-results" >&2
+    fi
+    echo "Per-run paths under .gradle/isolated-runs/... are runtime locations and may already be deleted after cleanup." >&2
+}
 
 forward_signal() {
     signal_name=$1
@@ -281,6 +333,10 @@ if [ -f "$APP_HOME/tools/gradle/finalize-isolated-gradle-run.sh" ] ; then
     if [ "$gradle_status" -eq 0 ] && [ "$finalize_status" -ne 0 ] ; then
         exit "$finalize_status"
     fi
+fi
+
+if [ "$gradle_status" -ne 0 ] ; then
+    saltmarcher_print_failure_hint
 fi
 
 exit "$gradle_status"

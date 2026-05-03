@@ -244,7 +244,7 @@ final class EncounterStateBinder {
                         .toList(),
                 source.allEnemiesDefeated(),
                 missingPartyMembers.stream()
-                        .map(member -> new EncounterCombatPartyMemberButtonStateView.Candidate(
+                        .map(member -> new EncounterStateView.PartyMemberCandidate(
                                 member.numericId(),
                                 member.name(),
                                 member.level()))

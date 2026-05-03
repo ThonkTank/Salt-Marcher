@@ -18,11 +18,15 @@ operating model beneath the umbrella
 The workflow lives in
 [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
 and defines four jobs.
+and defines seven jobs.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `quality-platforms / local-quality` | `Required CI Gate` | Runs `./gradlew check --console=plain`; this is the required CI aggregate for repository-owned blocking Gradle checks. Local documentation-only and check-only default proof routes stay narrower than this CI job. |
-| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `./gradlew ckjmMain --console=plain`, uploads the wrapper-isolated CKJM report path `build/isolated-gradle/**/reports/ckjm/` plus the conventional fallback `build/reports/ckjm/`, then removes the per-invocation isolation roots in a final cleanup step. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
+| `quality-platforms / production-build` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-build`; this is the staged CI surface for assembling production code and running `test` without the broader hygiene or architecture aggregates. |
+| `quality-platforms / quality-hygiene` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh quality-hygiene`; this is the staged CI surface for PMD, SpotBugs, CPD, Lizard, and compiled-artifact hygiene without the architecture or view-topology aggregates. |
+| `quality-platforms / architecture` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh architecture`; this is the staged CI surface for non-view architecture aggregates. |
+| `quality-platforms / view-topology` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh view-topology`; this is the staged CI surface for the jQAssistant-backed passive-view topology blocker. |
+| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `tools/gradle/run-staged-verification.sh metrics-report`, uploads the exported CKJM report from `build/latest-reports/ckjm/` plus the conventional fallback `build/reports/ckjm/`, then runs maintenance cleanup. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
 
@@ -33,10 +37,10 @@ route for documentation-only governance changes without reclassifying them as
 CI full-build work.
 
 Wrapper-based CI Gradle jobs use the same invocation-isolated runtime as local
-wrapper runs. Any uploaded Gradle-produced artifacts must therefore read from
-the wrapper-isolated `build/isolated-gradle/**/reports/...` path, or list that
-path before a conventional `build/reports/...` fallback when the workflow
-needs compatibility with non-wrapper or pre-isolation producers.
+wrapper runs. Each invocation keeps mutable state inside one
+`.gradle/isolated-runs/<run-id>/` root, so any CI artifact that must survive
+wrapper cleanup must be exported first to a stable public path such as
+`build/latest-reports/...`.
 
 CI cleanup must run only after the job's last Gradle artifact consumer. The
 workflow therefore performs wrapper-isolation cleanup in final `if: always()`
@@ -101,7 +105,10 @@ place:
 - Disable direct pushes to `main`.
 - Enable auto-merge.
 - Keep required reviews optional unless the team later decides otherwise.
-- Require `quality-platforms / local-quality`.
+- Require `quality-platforms / production-build`.
+- Require `quality-platforms / quality-hygiene`.
+- Require `quality-platforms / architecture`.
+- Require `quality-platforms / view-topology`.
 - Require `quality-platforms / sonarcloud`.
 - Require `quality-platforms / codescene`.
 - Keep `quality-platforms / ckjm-report` visible for uploaded metrics; do not

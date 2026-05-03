@@ -11,7 +11,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  local-quality:
+  production-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,9 +22,54 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew check --console=plain
+      - run: tools/gradle/run-staged-verification.sh production-build
       - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --cleanup-ci-completed
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
+
+  quality-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: tools/gradle/run-staged-verification.sh quality-hygiene
+      - if: always()
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
+
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: tools/gradle/run-staged-verification.sh architecture
+      - if: always()
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
+
+  view-topology:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: tools/gradle/run-staged-verification.sh view-topology
+      - if: always()
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
 
   ckjm-report:
     runs-on: ubuntu-latest
@@ -37,16 +82,16 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew ckjmMain --console=plain
+      - run: tools/gradle/run-staged-verification.sh metrics-report
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ckjm-report
           path: |
-            build/isolated-gradle/**/reports/ckjm
+            build/latest-reports/ckjm
             build/reports/ckjm
       - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --cleanup-ci-completed
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
 
   sonarcloud:
     runs-on: ubuntu-latest
@@ -68,7 +113,7 @@ jobs:
           -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
           -Dsonar.qualitygate.wait=true
       - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --cleanup-ci-completed
+        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
 
   codescene:
     runs-on: ubuntu-latest

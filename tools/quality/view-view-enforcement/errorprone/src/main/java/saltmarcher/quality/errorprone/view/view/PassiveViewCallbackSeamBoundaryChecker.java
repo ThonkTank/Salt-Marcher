@@ -17,8 +17,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.lang.model.element.Modifier;
-import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-
 @BugPattern(
         name = "PassiveViewCallbackSeamBoundary",
         summary = "Passive Views outside the technical-base allowlist may not expose callback or result-bearing outward seams.",

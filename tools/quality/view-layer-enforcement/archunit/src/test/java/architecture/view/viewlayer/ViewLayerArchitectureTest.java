@@ -3,7 +3,7 @@ package architecture.view.viewlayer;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 import architecture.AnalyzeMainClasses;
-import architecture.view.ViewRolePredicates;
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
@@ -32,8 +32,25 @@ public final class ViewLayerArchitectureTest {
     @ArchTest
     static final ArchRule interactiveSlotcontentViewsMustOwnExactlyOneContentModel =
             classes()
-                    .that(ViewRolePredicates.arePassiveViews())
+                    .that(arePassiveViews())
                     .should(defineExactlyOneContentModelWhenExposingOnViewInputEvent());
+
+    private static DescribedPredicate<JavaClass> arePassiveViews() {
+        return new DescribedPredicate<>("view-layer passive view role classes") {
+            @Override
+            public boolean test(JavaClass input) {
+                if (!isTopLevelRole(input, "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$", "View")
+                        && !isTopLevelRole(input, "^src\\.view\\.slotcontent\\.(controls|main|state|details|topbar|primitives)\\.[^.]+$", "View")) {
+                    return false;
+                }
+                String simpleName = input.getSimpleName();
+                return !simpleName.endsWith("ViewModel")
+                        && !simpleName.endsWith("PresentationModel")
+                        && !simpleName.endsWith("ContributionModel")
+                        && !simpleName.endsWith("ContentModel");
+            }
+        };
+    }
 
     private static ArchCondition<JavaClass> defineExactlyOneContentModelWhenExposingOnViewInputEvent() {
         return new ArchCondition<>("define exactly one local ContentModel when exposing onViewInputEvent from slotcontent") {
@@ -122,5 +139,11 @@ public final class ViewLayerArchitectureTest {
             throw new IllegalStateException("saltmarcher.mainClassesDir is not set");
         }
         return Path.of(mainClassesDir);
+    }
+
+    private static boolean isTopLevelRole(JavaClass input, String packageRegex, String suffix) {
+        return !input.getName().contains("$")
+                && input.getPackageName().matches(packageRegex)
+                && input.getSimpleName().endsWith(suffix);
     }
 }

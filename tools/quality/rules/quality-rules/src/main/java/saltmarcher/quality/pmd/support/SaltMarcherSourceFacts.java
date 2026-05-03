@@ -99,10 +99,6 @@ public final class SaltMarcherSourceFacts {
         return startsWith("src", "view");
     }
 
-    public boolean isViewContributionSource() {
-        return isDiscoverableViewContributionArea() && simpleName.endsWith("Contribution");
-    }
-
     public boolean isViewBinderSource() {
         return isActiveViewRootSource() && simpleName.endsWith("Binder");
     }
@@ -147,7 +143,7 @@ public final class SaltMarcherSourceFacts {
 
     public boolean isLegacyViewSource() {
         return isViewSource()
-                && !isViewContributionSource()
+                && !isDiscoverableViewContributionRole()
                 && !isViewBinderSource()
                 && !isViewModelSource()
                 && !isViewIntentHandlerSource()
@@ -156,6 +152,10 @@ public final class SaltMarcherSourceFacts {
                 && !isViewSupportModelSource()
                 && !isViewInspectorEntrySource()
                 && !isViewPanelSource();
+    }
+
+    private boolean isDiscoverableViewContributionRole() {
+        return isDiscoverableViewContributionArea() && simpleName.endsWith("Contribution");
     }
 
     private boolean isActiveViewRootSource() {

@@ -16,3 +16,7 @@ val checkStylingViewEnforcement by tasks.registering {
     description = "Run the passive View direct-render styling enforcement bundle through one root entrypoint."
     dependsOn("compileJava")
 }
+
+tasks.named("check") {
+    dependsOn(checkStylingViewEnforcement)
+}

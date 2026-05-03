@@ -9,6 +9,8 @@ slotcontent `ContentModel` requirement proof.
 
 It owns:
 
+- `bundle.properties`
+  descriptor-owned bundle id, order, task names, and host wiring
 - `build-harness/`
   `ViewLayerTopologyRules` and `ViewLayerTopologyCheckMain`
 - `archunit/`
@@ -21,3 +23,7 @@ It owns:
 Unified root entrypoint:
 
 - `./gradlew checkViewLayerEnforcement --rerun-tasks --console=plain`
+
+Shared baseline ArchUnit/build-harness infrastructure remains intentionally
+outside this directory; view-layer-specific rule ownership and bundle metadata
+now live here.

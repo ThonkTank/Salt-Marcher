@@ -16,11 +16,11 @@ public final class ViewProgrammaticStylingChecker extends BugChecker
 
     @Override
     public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) {
-        if (!ViewProgrammaticStylingSupport.isTrackedLayerSource(tree)) {
+        if (!StylingLayerProgrammaticStylingSupport.isTrackedLayerSource(tree)) {
             return Description.NO_MATCH;
         }
 
-        Set<String> violations = ViewProgrammaticStylingSupport.collectViolations(tree);
+        Set<String> violations = StylingLayerProgrammaticStylingSupport.collectViolations(tree);
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }

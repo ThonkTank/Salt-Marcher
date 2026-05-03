@@ -151,3 +151,11 @@ tasks.register("checkViewInspectorEntryEnforcement") {
     dependsOn(jqassistantAnalyzeViewInspectorEntryEnforcement)
     dependsOn(gradle.includedBuild("build-harness").task(":viewInspectorEntryTopologyCheck"))
 }
+
+tasks.matching { it.name == "checkArchitecture" }.configureEach {
+    dependsOn("checkViewInspectorEntryEnforcement")
+}
+
+tasks.named("check") {
+    dependsOn("checkViewInspectorEntryEnforcement")
+}

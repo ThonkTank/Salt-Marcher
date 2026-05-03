@@ -1,6 +1,5 @@
 import java.io.File
 import java.util.Properties
-import java.util.UUID
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.Task
 import org.gradle.api.plugins.quality.Pmd
@@ -15,6 +14,8 @@ import saltmarcher.buildlogic.tasks.CheckNoCompiledArtifactsTask
 import saltmarcher.buildlogic.tasks.RenderDesktopIconTask
 import saltmarcher.buildlogic.tasks.hygiene.CkjmReportTask
 import saltmarcher.buildlogic.tasks.hygiene.CpdCheckTask
+import saltmarcher.buildlogic.tasks.hygiene.JqassistantAnalyzeTask
+import saltmarcher.buildlogic.tasks.hygiene.JqassistantScanTask
 import saltmarcher.buildlogic.tasks.hygiene.LizardCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.PmdSourceCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.SetupLizardTask
@@ -51,14 +52,8 @@ val descriptorEnforcementTaskNames = loadDescriptorEnforcementTaskNames(project.
 val architectureGateEntrypoints = setOf(
     "architectureTest",
     "checkArchitecture",
-    "checkViewContentModelEnforcement",
-    "checkViewContributionModelEnforcement",
-    "checkViewEnforcement",
-    "checkViewInspectorEntryEnforcement",
-    "checkViewIntentHandlerEnforcement",
     "checkViewLayerEnforcement",
     "checkViewInputEventEnforcement",
-    "checkViewPublishedEventEnforcement",
     "checkViewArchitecture",
     "pmdArchitectureMain",
     "jqassistantEffectiveRules"
@@ -86,8 +81,18 @@ val resourcePolicyEntrypoints = setOf(
 val continueOnFailureEntrypoints = setOf(
     "build",
     "check",
+    "productionBuild",
+    "checkQualityHygiene",
     "compileJava",
-    "test"
+    "test",
+    "production-build",
+    "quality-hygiene",
+    "architecture",
+    "view-topology",
+    "docs",
+    "metrics-report",
+    "desktop-install",
+    "production-handoff"
 )
     .plus(architectureGateEntrypoints)
     .plus(qualitySmellEntrypoints)
@@ -99,32 +104,9 @@ val requestedTaskNames = gradle.startParameter.taskNames
     .toSet()
 
 val enforcementBundleTaskNames = setOf(
-    "checkViewEnforcement",
-    "viewSurfaceArchitectureTest",
-    "checkViewFxmlResources",
-    "jqassistantScanViewEnforcement",
-    "jqassistantAnalyzeViewEnforcement",
-    "checkViewLayerEnforcement",
-    "viewLayerArchitectureTest",
-    "viewLayerTopologyCheck",
-    "checkViewInspectorEntryEnforcement",
-    "jqassistantScanViewInspectorEntryEnforcement",
-    "jqassistantAnalyzeViewInspectorEntryEnforcement",
-    "viewInspectorEntryTopologyCheck",
     "checkViewInputEventEnforcement",
     "viewInputEventArchitectureTest",
-    "viewInputEventTopologyCheck",
-    "checkViewPublishedEventEnforcement",
-    "viewPublishedEventArchitectureTest",
-    "checkViewIntentHandlerEnforcement",
-    "viewIntentHandlerArchitectureTest",
-    "viewIntentHandlerTopologyCheck",
-    "checkViewContributionModelEnforcement",
-    "viewContributionModelArchitectureTest",
-    "jqassistantScanViewContributionModelEnforcement",
-    "jqassistantAnalyzeViewContributionModelEnforcement",
-    "viewContributionModelTopologyCheck",
-    "checkViewContentModelEnforcement"
+    "viewInputEventTopologyCheck"
 ).plus(descriptorEnforcementTaskNames)
 
 val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty()
@@ -133,6 +115,8 @@ val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty()
         taskName in setOf(
             "build",
             "check",
+            "productionBuild",
+            "checkQualityHygiene",
             "assemble",
             "classes",
             "compileJava",
@@ -152,13 +136,6 @@ val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty()
 
 if (requestedTaskNames.any { it in continueOnFailureEntrypoints }) {
     gradle.startParameter.setContinueOnFailure(true)
-}
-
-val freshGateResultReason = "Quality and architecture gate diagnostics must be produced by the current invocation."
-
-fun Task.enforceFreshGateResult() {
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf(freshGateResultReason) { true }
 }
 
 // Shared project inputs and tool locations
@@ -186,8 +163,8 @@ val sourceJavaRoots = sourceRoots.filter { it.exists() }
 val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
 val generatedWindowIconDir = layout.buildDirectory.dir("generated/window-icon")
 val lizardRequirementsFile = layout.projectDirectory.file("tools/quality/config/lizard/requirements.txt")
-val lizardVenvDir = layout.buildDirectory.dir("tools/lizard-venv")
-val lizardReadyMarker = layout.buildDirectory.file("tools/lizard-venv/.lizard-ready")
+val lizardVenvDir = layout.projectDirectory.dir(".gradle/shared-tools/lizard/venv")
+val lizardReadyMarker = layout.projectDirectory.file(".gradle/shared-tools/lizard/venv/.lizard-ready")
 val cpdReportFile = layout.buildDirectory.file("reports/cpd/main.txt")
 val ckjmBaselineFile = layout.projectDirectory.file("tools/quality/config/ckjm/baseline.tsv")
 val ckjmReportFile = layout.buildDirectory.file("reports/ckjm/main.txt")
@@ -200,13 +177,7 @@ val jqassistantCliFile = jqassistantHomeDir.map { it.file("bin/jqassistant") }
 val jqassistantSourceConfigFile = layout.projectDirectory.file("tools/quality/jqassistant/config.yml")
 val jqassistantGeneratedConfigFile = layout.buildDirectory.file("tools/jqassistant/config.yml")
 val jqassistantRulesDir = layout.projectDirectory.dir("tools/quality/jqassistant/rules")
-val jqassistantStoreRoot = File(
-    System.getProperty("java.io.tmpdir"),
-    "saltmarcher-jqassistant-${UUID.randomUUID()}"
-)
-val jqassistantCheckStoreDir = layout.dir(providers.provider {
-    jqassistantStoreRoot.resolve("check-view-architecture-store")
-})
+val jqassistantCheckStoreDir = layout.buildDirectory.dir("tools/jqassistant/check-view-architecture-store")
 val jqassistantReportsDir = layout.buildDirectory.dir("reports/jqassistant")
 val jqassistantJunitReportsDir = jqassistantReportsDir.map { it.dir("junit") }
 val jqassistantJvmOpens = listOf(
@@ -270,7 +241,6 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.named<JavaCompile>("compileJava") {
-    enforceFreshGateResult()
     dependsOn(gradle.includedBuild("quality-rules-errorprone").task(":jar"))
     options.errorprone.enabled.set(true)
     options.errorprone.disableWarningsInGeneratedCode.set(true)
@@ -367,36 +337,33 @@ val prepareJqassistantConfig by tasks.registering {
     }
 }
 
-val jqassistantScanViewArchitecture by tasks.registering(Exec::class) {
+val jqassistantScanViewArchitecture by tasks.registering(JqassistantScanTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Scan SaltMarcher bytecode and source topology for view-architecture analysis."
-    enforceFreshGateResult()
-    dependsOn(installJqassistant, prepareJqassistantConfig, tasks.named("classes"))
-    inputs.file(jqassistantGeneratedConfigFile)
-    inputs.dir(jqassistantRulesDir)
-    inputs.dir(mainJavaClassesDir)
-    inputs.files(sourceJavaRoots)
-    outputs.dir(jqassistantCheckStoreDir)
-    doFirst {
-        configureJqassistantInvocation(jqassistantGeneratedConfigFile.get(), jqassistantCheckStoreDir.get(), "scan")
-    }
+    dependsOn(installJqassistant, tasks.named("classes"))
+    cliFile.set(jqassistantCliFile)
+    sourceConfigFile.set(jqassistantSourceConfigFile)
+    rulesDirectory.set(jqassistantRulesDir)
+    mainClassesDirectory.set(mainJavaClassesDir)
+    sourceRoots.from(sourceJavaRoots)
+    jvmOpens.set(jqassistantJvmOpens)
+    projectRoot.set(layout.projectDirectory)
+    storeDirectory.set(jqassistantCheckStoreDir)
 }
 
-val jqassistantAnalyzeViewArchitecture by tasks.registering(Exec::class) {
+val jqassistantAnalyzeViewArchitecture by tasks.registering(JqassistantAnalyzeTask::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Analyze SaltMarcher passive-view topology constraints with jQAssistant."
-    enforceFreshGateResult()
     dependsOn(jqassistantScanViewArchitecture)
-    inputs.file(jqassistantGeneratedConfigFile)
-    inputs.dir(jqassistantRulesDir)
-    outputs.dir(jqassistantReportsDir)
-    doFirst {
-        delete(jqassistantReportsDir)
-        delete(layout.buildDirectory.dir("reports/jqassistant-mvvm-preview"))
-        jqassistantReportsDir.get().asFile.mkdirs()
-        jqassistantJunitReportsDir.get().asFile.mkdirs()
-        configureJqassistantInvocation(jqassistantGeneratedConfigFile.get(), jqassistantCheckStoreDir.get(), "analyze")
-    }
+    cliFile.set(jqassistantCliFile)
+    sourceConfigFile.set(jqassistantSourceConfigFile)
+    rulesDirectory.set(jqassistantRulesDir)
+    mainClassesDirectory.set(mainJavaClassesDir)
+    sourceRoots.from(sourceJavaRoots)
+    jvmOpens.set(jqassistantJvmOpens)
+    projectRoot.set(layout.projectDirectory)
+    storeDirectory.set(jqassistantCheckStoreDir)
+    reportsDirectory.set(jqassistantReportsDir)
 }
 
 val jqassistantEffectiveRules by tasks.registering(Exec::class) {
@@ -516,13 +483,30 @@ val ckjmMain by tasks.registering(CkjmReportTask::class) {
 
 // Architecture aggregate and repository/resource policy gates
 
+val productionBuild by tasks.registering {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the staged production build surface without the broader repository quality aggregates."
+    dependsOn("assemble")
+    dependsOn("test")
+}
+
+val checkQualityHygiene by tasks.registering {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the staged non-architecture hygiene gates without the architecture or view-topology aggregates."
+    dependsOn(tasks.named("pmdMain"))
+    dependsOn(tasks.named("spotbugsMain"))
+    dependsOn(cpdMain)
+    dependsOn(lizardMain)
+    dependsOn(checkNoCompiledArtifactsInSource)
+}
+
 val checkArchitecture by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs non-documentation architecture checks from ArchUnit, PMD architecture rules, and the external build harness."
     dependsOn("architectureTest")
+    dependsOn("checkViewIntentHandlerEnforcement")
     dependsOn("checkLayeringArchitectureEnforcement")
     dependsOn("checkViewBinderEnforcement")
-    dependsOn("checkViewInspectorEntryEnforcement")
     dependsOn("checkViewLayerEnforcement")
     dependsOn("pmdArchitectureMain")
     dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
@@ -555,20 +539,10 @@ val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputs
 // Central check aggregate
 
 tasks.named("check") {
-    dependsOn("compileJava")
-    dependsOn("test")
-    dependsOn("architectureTest")
-    dependsOn("checkLayeringArchitectureEnforcement")
-    dependsOn("checkViewBinderEnforcement")
-    dependsOn("checkViewEnforcement")
-    dependsOn("checkViewInspectorEntryEnforcement")
-    dependsOn("checkViewLayerEnforcement")
-    dependsOn("pmdArchitectureMain")
-    dependsOn(gradle.includedBuild("build-harness").task(":architectureCheck"))
+    dependsOn(productionBuild)
+    dependsOn(checkArchitecture)
     dependsOn(checkViewArchitecture)
-    dependsOn(checkNoCompiledArtifactsInSource)
-    dependsOn(cpdMain)
-    dependsOn(lizardMain)
+    dependsOn(checkQualityHygiene)
     dependsOn(ckjmMain)
 }
 
@@ -577,11 +551,9 @@ tasks.matching { it.name == "pmdArchitectureMain" }.configureEach {
 }
 
 tasks.withType<Test>().configureEach {
-    enforceFreshGateResult()
 }
 
 tasks.withType<Pmd>().configureEach {
-    enforceFreshGateResult()
     reports {
         html.required.set(true)
         xml.required.set(true)
@@ -589,25 +561,19 @@ tasks.withType<Pmd>().configureEach {
 }
 
 tasks.withType<PmdSourceCheckTask>().configureEach {
-    enforceFreshGateResult()
 }
 
 tasks.withType<CpdCheckTask>().configureEach {
-    enforceFreshGateResult()
 }
 
 tasks.withType<LizardCheckTask>().configureEach {
-    enforceFreshGateResult()
 }
 
 tasks.withType<CkjmReportTask>().configureEach {
-    enforceFreshGateResult()
 }
 
 tasks.withType<CheckNoCompiledArtifactsTask>().configureEach {
-    enforceFreshGateResult()
 }
 
 tasks.withType<CheckDesktopPackagingInputsTask>().configureEach {
-    enforceFreshGateResult()
 }

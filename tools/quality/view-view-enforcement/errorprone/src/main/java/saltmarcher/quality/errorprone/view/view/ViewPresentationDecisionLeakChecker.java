@@ -15,8 +15,6 @@ import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-
 @BugPattern(
         name = "ViewPresentationDecisionLeak",
         summary = "Presentation decisions derived from model carriers belong in the model, not View widgets.",

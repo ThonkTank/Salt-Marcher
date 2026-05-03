@@ -3,7 +3,7 @@ package src.view.leftbartabs.catalog;
 import java.util.List;
 
 public record CatalogControlsViewInputEvent(
-        Kind kind,
+        Source source,
         FilterPayload filterState,
         String difficultyKey,
         EncounterTuning tuning,
@@ -11,45 +11,14 @@ public record CatalogControlsViewInputEvent(
 ) {
 
     public CatalogControlsViewInputEvent {
-        kind = kind == null ? Kind.FILTERS_CHANGED : kind;
+        source = source == null ? Source.FILTERS_CHANGED : source;
         filterState = filterState == null ? FilterPayload.empty() : filterState;
         difficultyKey = difficultyKey == null ? "" : difficultyKey;
         tuning = tuning == null ? EncounterTuning.empty() : tuning;
         encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
     }
 
-    static CatalogControlsViewInputEvent filtersChanged(FilterPayload filterState) {
-        return new CatalogControlsViewInputEvent(Kind.FILTERS_CHANGED, filterState, "", EncounterTuning.empty(), List.of());
-    }
-
-    static CatalogControlsViewInputEvent encounterDifficultyChanged(String difficultyKey) {
-        return new CatalogControlsViewInputEvent(
-                Kind.ENCOUNTER_DIFFICULTY_CHANGED,
-                FilterPayload.empty(),
-                difficultyKey,
-                EncounterTuning.empty(),
-                List.of());
-    }
-
-    static CatalogControlsViewInputEvent encounterTuningChanged(EncounterTuning tuning) {
-        return new CatalogControlsViewInputEvent(
-                Kind.ENCOUNTER_TUNING_CHANGED,
-                FilterPayload.empty(),
-                "",
-                tuning,
-                List.of());
-    }
-
-    static CatalogControlsViewInputEvent encounterTablesChanged(List<Long> encounterTableIds) {
-        return new CatalogControlsViewInputEvent(
-                Kind.ENCOUNTER_TABLES_CHANGED,
-                FilterPayload.empty(),
-                "",
-                EncounterTuning.empty(),
-                encounterTableIds);
-    }
-
-    enum Kind {
+    enum Source {
         FILTERS_CHANGED,
         ENCOUNTER_DIFFICULTY_CHANGED,
         ENCOUNTER_TUNING_CHANGED,

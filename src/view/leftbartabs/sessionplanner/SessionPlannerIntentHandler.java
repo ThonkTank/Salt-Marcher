@@ -14,36 +14,44 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.kind()) {
-            case REFRESH -> publishedEventListener.accept(SessionPlannerPublishedEvent.refresh());
-            case IMPORT_PLAN -> publishedEventListener.accept(SessionPlannerPublishedEvent.importPlan(event.planId()));
+        switch (event.source()) {
+            case REFRESH_BUTTON -> publishedEventListener.accept(SessionPlannerPublishedEvent.refresh());
+            case IMPORT_BUTTON -> publishedEventListener.accept(SessionPlannerPublishedEvent.importPlan(event.selectedPlanId()));
         }
     }
 
-    void consume(SessionPlannerMainViewInputEvent event) {
+    void consume(SessionPlannerTimelineMainViewInputEvent event) {
         if (event == null) {
             return;
         }
-        switch (event.kind()) {
-            case REMOVE_ENCOUNTER -> publishedEventListener.accept(
+        switch (event.source()) {
+            case REMOVE_ENCOUNTER_BUTTON -> publishedEventListener.accept(
                     SessionPlannerPublishedEvent.removeEncounter(event.encounterToken()));
-            case MOVE_ENCOUNTER_UP -> publishedEventListener.accept(
+            case MOVE_ENCOUNTER_UP_BUTTON -> publishedEventListener.accept(
                     SessionPlannerPublishedEvent.moveEncounterUp(event.encounterToken()));
-            case MOVE_ENCOUNTER_DOWN -> publishedEventListener.accept(
+            case MOVE_ENCOUNTER_DOWN_BUTTON -> publishedEventListener.accept(
                     SessionPlannerPublishedEvent.moveEncounterDown(event.encounterToken()));
-            case SET_SHORT_REST -> publishedEventListener.accept(
+            case SHORT_REST_BUTTON -> publishedEventListener.accept(
                     SessionPlannerPublishedEvent.setRestGap(
                             event.gapIndex(),
                             SessionPlannerPublishedEvent.RestSelection.SHORT_REST));
-            case SET_LONG_REST -> publishedEventListener.accept(
+            case LONG_REST_BUTTON -> publishedEventListener.accept(
                     SessionPlannerPublishedEvent.setRestGap(
                             event.gapIndex(),
                             SessionPlannerPublishedEvent.RestSelection.LONG_REST));
-            case CLEAR_REST -> publishedEventListener.accept(
+            case CLEAR_REST_BUTTON -> publishedEventListener.accept(
                     SessionPlannerPublishedEvent.clearRestGap(event.gapIndex()));
-            case ADD_LOOT_PLACEHOLDER -> publishedEventListener.accept(
+        }
+    }
+
+    void consume(SessionPlannerLootMainViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        switch (event.source()) {
+            case ADD_LOOT_BUTTON -> publishedEventListener.accept(
                     SessionPlannerPublishedEvent.addLootPlaceholder());
-            case REMOVE_LOOT_PLACEHOLDER -> publishedEventListener.accept(
+            case REMOVE_LOOT_BUTTON -> publishedEventListener.accept(
                     SessionPlannerPublishedEvent.removeLootPlaceholder(event.lootToken()));
         }
     }

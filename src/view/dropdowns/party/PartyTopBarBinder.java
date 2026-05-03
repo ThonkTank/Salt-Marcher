@@ -59,7 +59,7 @@ final class PartyTopBarBinder {
                         0,
                         false)));
         panel.onViewInputEvent(intentHandler::consume);
-        intentHandler.consume(PartyTopBarViewInputEvent.opened());
+        loadPanel(party, presentationModel);
         return new Binding(panel);
     }
 

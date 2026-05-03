@@ -16,8 +16,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
-
 @BugPattern(
         name = "PassiveViewModelMutationBoundary",
         summary = "Passive Views must not mutate their co-located model, including through writable observable surfaces.",

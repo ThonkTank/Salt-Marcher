@@ -2,14 +2,19 @@ import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
+import org.gradle.kotlin.dsl.creating
+import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.registering
 import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.withGroovyBuilder
 
 val sourceSets = the<SourceSetContainer>()
-sourceSets.named("test") {
+val testSourceSet = sourceSets["test"]
+val viewInputEventEnforcementArchunit by sourceSets.creating {
     java.srcDir("tools/quality/viewinputevent-enforcement/archunit/src/test/java")
+    compileClasspath += testSourceSet.output + testSourceSet.compileClasspath
+    runtimeClasspath += output + compileClasspath + testSourceSet.output + testSourceSet.runtimeClasspath
 }
 
 val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
@@ -30,12 +35,9 @@ val viewInputEventArchitectureTest by tasks.registering(Test::class) {
     description = "Run only the ViewInputEvent-focused architecture test suite."
     dependsOn(tasks.named("compileJava"))
     inputs.dir(mainJavaClassesDir)
-    testClassesDirs = sourceSets["test"].output.classesDirs
-    classpath = sourceSets["test"].runtimeClasspath
+    testClassesDirs = viewInputEventEnforcementArchunit.output.classesDirs
+    classpath = viewInputEventEnforcementArchunit.runtimeClasspath
     useJUnitPlatform()
-    filter {
-        includeTestsMatching("architecture.view.viewinputevent.ViewInputEventArchitectureTest")
-    }
     doFirst {
         systemProperty("saltmarcher.mainClassesDir", mainJavaClassesDir.get().asFile.absolutePath)
     }

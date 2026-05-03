@@ -388,7 +388,11 @@ public final class CatalogControlsView extends VBox {
         if (suppressFilterEvents) {
             return;
         }
-        viewInputEventHandler.accept(CatalogControlsViewInputEvent.encounterTablesChanged(
+        viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
+                CatalogControlsViewInputEvent.Source.ENCOUNTER_TABLES_CHANGED,
+                CatalogControlsViewInputEvent.FilterPayload.empty(),
+                "",
+                CatalogControlsViewInputEvent.EncounterTuning.empty(),
                 List.copyOf(selectedEncounterTableIds)));
     }
 
@@ -457,26 +461,39 @@ public final class CatalogControlsView extends VBox {
         if (suppressFilterEvents) {
             return;
         }
-        viewInputEventHandler.accept(CatalogControlsViewInputEvent.filtersChanged(toPublishedFilterState(buildFilterState())));
+        viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
+                CatalogControlsViewInputEvent.Source.FILTERS_CHANGED,
+                toPublishedFilterState(buildFilterState()),
+                "",
+                CatalogControlsViewInputEvent.EncounterTuning.empty(),
+                List.of()));
     }
 
     private void fireEncounterDifficultyChanged() {
         if (suppressFilterEvents) {
             return;
         }
-        viewInputEventHandler.accept(CatalogControlsViewInputEvent.encounterDifficultyChanged(
-                difficultyControl.isAuto() ? "auto" : difficultyKey((int) Math.round(difficultyControl.rawValue()))));
+        viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
+                CatalogControlsViewInputEvent.Source.ENCOUNTER_DIFFICULTY_CHANGED,
+                CatalogControlsViewInputEvent.FilterPayload.empty(),
+                difficultyControl.isAuto() ? "auto" : difficultyKey((int) Math.round(difficultyControl.rawValue())),
+                CatalogControlsViewInputEvent.EncounterTuning.empty(),
+                List.of()));
     }
 
     private void fireEncounterTuningChanged() {
         if (suppressFilterEvents) {
             return;
         }
-        viewInputEventHandler.accept(CatalogControlsViewInputEvent.encounterTuningChanged(
+        viewInputEventHandler.accept(new CatalogControlsViewInputEvent(
+                CatalogControlsViewInputEvent.Source.ENCOUNTER_TUNING_CHANGED,
+                CatalogControlsViewInputEvent.FilterPayload.empty(),
+                "",
                 new CatalogControlsViewInputEvent.EncounterTuning(
                         balanceControl.isAuto() ? AUTO_LEVEL : (int) Math.round(balanceControl.rawValue()),
                         amountControl.isAuto() ? AUTO_AMOUNT : amountControl.rawValue(),
-                        diversityControl.isAuto() ? AUTO_LEVEL : (int) Math.round(diversityControl.rawValue()))));
+                        diversityControl.isAuto() ? AUTO_LEVEL : (int) Math.round(diversityControl.rawValue())),
+                List.of()));
     }
 
     private static CatalogControlsViewInputEvent.FilterPayload toPublishedFilterState(CreatureFilterState filterState) {

@@ -14,9 +14,9 @@ final class AdventuringDayTopBarIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.kind()) {
-            case OPENED -> presentationModel.requestRefresh();
-            case CALCULATE -> presentationModel.requestCalculation(event.levels(), event.totalGroupXp());
+        switch (event.source()) {
+            case POPUP_OPENED -> presentationModel.requestRefresh();
+            case CALCULATOR_SUBMIT -> presentationModel.requestCalculation(event.levels(), event.totalGroupXp());
         }
     }
 }

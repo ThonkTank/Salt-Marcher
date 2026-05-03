@@ -32,7 +32,7 @@ activeEnforcementBundleIds
     .mapNotNull(pmdHostScriptsByBundleId::get)
     .distinct()
     .forEach { scriptPath ->
-        apply(from = scriptPath)
+        apply(from = File(scriptPath))
     }
 
 dependencies {

@@ -4,13 +4,17 @@ This bundle co-locates the PublishedEvent-owned SaltMarcher checks that back
 `docs/project/architecture/enforcement/view-published-event-enforcement.md`.
 
 It keeps the existing engines, checker identities, and rule names unchanged
-while making this directory the canonical home for their host wiring:
+while making this directory the canonical home for their host wiring and
+bundle-local registration metadata:
 
 - `errorprone/`
   `ViewPublishedEventBoundary`,
   `ViewPublishedEventProducerOwnership`
 - `archunit/`
   `architecture.view.publishedevent.ViewPublishedEventArchitectureTest`
+- `bundle.properties`
+  canonical registration source for this bundle's public task names and host
+  script/source-set wiring
 - `root-host.gradle.kts`
   root-project test-source, compiler, and aggregate-task wiring
 - `errorprone-host.gradle.kts`

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-05-02
 Source of Truth: Complete invariant catalog for passive `*View` surfaces in
 `src/view/**`, limited to constraints proven directly on `*View.java` files,
 passive-`View`-owned FXML resources, or review-owned passive-`View`
@@ -23,6 +23,8 @@ It answers four questions for every passive `*View` surface:
 This document does not own `*ViewInputEvent` carrier existence or shape,
 Binder-installed wiring, `IntentHandler` entrypoint shape, or `*PublishedEvent`
 routing. Those stay in the neighboring role documents.
+It does own the passive-View-side claim that the outward input seam emits the
+same-stem carrier built by the `View` itself rather than by a foreign role.
 
 ## Enforced
 
@@ -47,7 +49,7 @@ routing. Those stay in the neighboring role documents.
 
 | Invariant ID | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- |
-| `view-view-input-api` | every passive `View` that participates in the same-stem `*ViewInputEvent` protocol | Error Prone `ViewInputEventApi` | `./gradlew checkViewEnforcement` | An interactive passive `View` exposes exactly one outward input seam, `onViewInputEvent(Consumer<SameStemViewInputEvent>)`, and does not misshape that seam. |
+| `view-view-input-api` | every passive `View` that participates in the same-stem `*ViewInputEvent` protocol | Error Prone `ViewInputEventApi` | `./gradlew checkViewEnforcement` | An interactive passive `View` exposes exactly one outward input seam, `onViewInputEvent(Consumer<SameStemViewInputEvent>)`, does not misshape that seam, and does not subscribe to another top-level passive `View`'s `onViewInputEvent(...)` route. |
 | `view-view-callback-seam-boundary` | every passive `*View.java` outside the explicit technical-base allowlist for reusable low-level base controls | Error Prone `PassiveViewCallbackSeamBoundary` and ArchUnit `passiveViewsWithoutLocalIntentHandlersOrViewInputEventsMustNotExposeCallbackSeams` | `./gradlew checkViewEnforcement` | Outside the explicit technical-base allowlist, a passive `View` does not expose alternate callback, async-result, acknowledgement, or other result-bearing outward seams. If the `View` exposes an outward technical input seam at all, that seam is the documented `onViewInputEvent(Consumer<SameStemViewInputEvent>)` route. |
 
 ## Review-Owned
@@ -65,6 +67,11 @@ routing. Those stay in the neighboring role documents.
   passive `View`s react to model changes through bindings or listeners; they do
   not receive presenter-style imperative commands as an alternate presentation
   protocol.
+- `view-view-local-viewinputevent-snapshot-authorship`
+  a mechanically legal passive `View` still authors its own same-stem
+  `*ViewInputEvent` snapshot from current widget/raw-event state rather than
+  delegating carrier construction to Binder, `IntentHandler`, or helper
+  protocols.
 - `view-view-presentation-branching-locality`
   `ViewPresentationDecisionLeak` blocks the narrow proxy case where a passive
   `View` branches on same-root model-derived state while mutating shared widget

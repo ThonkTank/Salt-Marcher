@@ -85,6 +85,27 @@ saltmarcher_seed_read_only_dependency_cache() {
     mv "$temp_modules_dir" "$target_modules_dir"
 }
 
+saltmarcher_seed_generated_gradle_api_jars() {
+    seed_gradle_home=$1
+    isolated_gradle_home=$2
+
+    for source_generated_dir in "$seed_gradle_home"/caches/*/generated-gradle-jars; do
+        [ -d "$source_generated_dir" ] || continue
+        relative_generated_dir=${source_generated_dir#"$seed_gradle_home"/}
+        target_generated_dir=$isolated_gradle_home/$relative_generated_dir
+        temp_generated_dir=$target_generated_dir.tmp.$$
+
+        [ -d "$target_generated_dir" ] && continue
+
+        rm -rf "$temp_generated_dir"
+        mkdir -p "$(dirname "$target_generated_dir")"
+        cp -R "$source_generated_dir" "$temp_generated_dir"
+        find "$temp_generated_dir" \( -name '*.lock' -o -name 'gc.properties' \) -type f -delete
+        rm -rf "$target_generated_dir"
+        mv "$temp_generated_dir" "$target_generated_dir"
+    done
+}
+
 saltmarcher_prepare_composite_root() {
     composite_root=$1
 
@@ -115,12 +136,31 @@ saltmarcher_prepare_composite_root() {
         "$composite_root/tools/quality/incubator/quality-rules-errorprone"
 }
 
+saltmarcher_write_run_metadata() {
+    run_meta_dir=$1
+    run_stage=$2
+
+    mkdir -p "$run_meta_dir"
+    {
+        printf 'rawIsolationId=%s\n' "$saltmarcher_raw_isolation_id"
+        printf 'isolationSegment=%s\n' "$saltmarcher_isolation_segment"
+        printf 'stage=%s\n' "$run_stage"
+        printf 'createdAt=%s\n' "$(date -Iseconds)"
+    } > "$run_meta_dir/run.properties"
+}
+
 saltmarcher_actor_id=$(
     saltmarcher_first_nonblank \
+        "${SALTMARCHER_GRADLE_STAGE:-}" \
         "${SALTMARCHER_GRADLE_ISOLATION_ID:-}" \
         "${CODEX_THREAD_ID:-}" \
         local
 ) || saltmarcher_actor_id=local
+saltmarcher_stage=$(
+    saltmarcher_first_nonblank \
+        "${SALTMARCHER_GRADLE_STAGE:-}" \
+        default
+) || saltmarcher_stage=default
 saltmarcher_invocation_timestamp=$(date +%Y%m%dT%H%M%S%N 2>/dev/null || date +%Y%m%dT%H%M%S)
 saltmarcher_raw_isolation_id=$(
     saltmarcher_first_nonblank \
@@ -129,31 +169,45 @@ saltmarcher_raw_isolation_id=$(
 ) || saltmarcher_raw_isolation_id="${saltmarcher_actor_id}-${saltmarcher_invocation_timestamp}-pid$$"
 saltmarcher_isolation_segment=$(saltmarcher_sanitized_segment "$saltmarcher_raw_isolation_id")
 saltmarcher_seed_gradle_home=${GRADLE_USER_HOME:-$HOME/.gradle}
-saltmarcher_isolated_gradle_home=$APP_HOME/.gradle/isolated-user-home/$saltmarcher_isolation_segment
-saltmarcher_isolated_runtime_root=$APP_HOME/.gradle/isolated-gradle/$saltmarcher_isolation_segment
-saltmarcher_isolated_build_root=$APP_HOME/build/isolated-gradle/$saltmarcher_isolation_segment
-saltmarcher_composite_root=$saltmarcher_isolated_runtime_root/composite-root
+saltmarcher_run_root=$APP_HOME/.gradle/isolated-runs/$saltmarcher_isolation_segment
+saltmarcher_run_meta_dir=$saltmarcher_run_root/meta
+saltmarcher_isolated_gradle_home=$saltmarcher_run_root/gradle-user-home
+saltmarcher_isolated_runtime_root=$saltmarcher_run_root/project-cache
+saltmarcher_root_project_cache_dir=$saltmarcher_isolated_runtime_root/root
+saltmarcher_isolated_build_root=$saltmarcher_run_root/build
+saltmarcher_composite_root=$saltmarcher_run_root/composite-root
 saltmarcher_read_only_dependency_cache_root=$APP_HOME/.gradle/read-only-dependency-cache
 saltmarcher_latest_output_root=$APP_HOME/build/latest-output
+saltmarcher_latest_reports_root=$APP_HOME/build/latest-reports
 saltmarcher_retained_failures_root=$APP_HOME/build/retained-gradle-failures
 
-mkdir -p "$saltmarcher_isolated_gradle_home" "$saltmarcher_isolated_runtime_root"
+mkdir -p \
+    "$saltmarcher_isolated_gradle_home" \
+    "$saltmarcher_isolated_runtime_root" \
+    "$saltmarcher_isolated_build_root"
 saltmarcher_seed_wrapper_distribution "$saltmarcher_seed_gradle_home" "$saltmarcher_isolated_gradle_home"
+saltmarcher_seed_generated_gradle_api_jars "$saltmarcher_seed_gradle_home" "$saltmarcher_isolated_gradle_home"
 if ! saltmarcher_is_nonblank "${GRADLE_RO_DEP_CACHE:-}"; then
     saltmarcher_seed_read_only_dependency_cache \
         "$saltmarcher_seed_gradle_home" \
         "$saltmarcher_read_only_dependency_cache_root"
 fi
 saltmarcher_prepare_composite_root "$saltmarcher_composite_root"
+saltmarcher_write_run_metadata "$saltmarcher_run_meta_dir" "$saltmarcher_stage"
 
 export GRADLE_USER_HOME=$saltmarcher_isolated_gradle_home
+export SALTMARCHER_GRADLE_STAGE=$saltmarcher_stage
 export SALTMARCHER_GRADLE_INVOCATION_ID=$saltmarcher_raw_isolation_id
 export SALTMARCHER_INCLUDED_BUILD_ROOT=$saltmarcher_composite_root
 export SALTMARCHER_GRADLE_ISOLATION_SEGMENT=$saltmarcher_isolation_segment
+export SALTMARCHER_GRADLE_RUN_ROOT=$saltmarcher_run_root
+export SALTMARCHER_GRADLE_RUN_META_DIR=$saltmarcher_run_meta_dir
 export SALTMARCHER_GRADLE_ISOLATED_USER_HOME=$saltmarcher_isolated_gradle_home
 export SALTMARCHER_GRADLE_ISOLATED_RUNTIME_ROOT=$saltmarcher_isolated_runtime_root
+export SALTMARCHER_GRADLE_ROOT_PROJECT_CACHE_DIR=$saltmarcher_root_project_cache_dir
 export SALTMARCHER_GRADLE_ISOLATED_BUILD_ROOT=$saltmarcher_isolated_build_root
 export SALTMARCHER_GRADLE_LATEST_OUTPUT_ROOT=$saltmarcher_latest_output_root
+export SALTMARCHER_GRADLE_LATEST_REPORTS_ROOT=$saltmarcher_latest_reports_root
 export SALTMARCHER_GRADLE_RETAINED_FAILURES_ROOT=$saltmarcher_retained_failures_root
 if ! saltmarcher_is_nonblank "${GRADLE_RO_DEP_CACHE:-}" \
     && [ -d "$saltmarcher_read_only_dependency_cache_root/modules-2" ]; then

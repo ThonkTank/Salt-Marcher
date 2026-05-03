@@ -58,9 +58,10 @@ document exists.
 ## SaltMarcher Verification
 
 - After each completed implementation pass that changes production code, rerun
-  `./gradlew build --console=plain` from the repository root before handoff.
-  If you are working inside `src/` or another subdirectory, set the command
-  working directory to the repository root instead of using `../gradlew`.
+  `tools/gradle/run-staged-verification.sh production-handoff` from the
+  repository root before handoff. If you are working inside `src/` or another
+  subdirectory, set the command working directory to the repository root
+  instead of using `../gradlew`.
 - After each completed implementation pass limited to one or more concrete
   check or enforcement packages under `tools/quality/**`,
   `tools/gradle/build-harness/**`,
@@ -82,32 +83,41 @@ document exists.
   package/bundle rerun, or documentation-enforcement rerun is incomplete and
   must remain WIP.
 - Wrapper-based Gradle invocations automatically use per-invocation build and
-  project-cache directories. They also isolate `GRADLE_USER_HOME`, seed wrapper
-  content into that repo-local invocation home, expose a shared read-only
-  dependency cache snapshot through `GRADLE_RO_DEP_CACHE`, and run the shared
-  included builds through a per-invocation composite mirror so parallel builds
-  do not contend on wrapper, cache, or included-build state.
+  project-cache directories inside one repo-local run root. They also isolate
+  `GRADLE_USER_HOME`, seed wrapper content into that invocation-local home,
+  inject the root build's `--project-cache-dir` before settings evaluation,
+  expose a shared read-only dependency cache snapshot through
+  `GRADLE_RO_DEP_CACHE`, and run the shared included builds through an
+  invocation-local composite mirror so parallel builds do not contend on
+  wrapper, cache, or included-build state.
 - For long verification runs where silent execution makes agent-side
   observation unreliable, prefer `tools/gradle/run-observable-gradle.sh`
   instead of shell loops over many separate `./gradlew` invocations. Use
-  `tools/gradle/run-observable-gradle.sh build` for production-code handoff
-  and pass the corresponding focused task list explicitly for check-only or
-  documentation-only reruns. The canonical public proof tasks themselves
-  remain the existing `./gradlew build`,
-  `./gradlew checkDocumentationEnforcement`, and
-  `./gradlew check*Enforcement` entrypoints.
+  `tools/gradle/run-staged-verification.sh` for the public staged handoff
+  surfaces and pass the corresponding focused task list explicitly only when
+  you intentionally bypass that stage layer. The canonical public proof
+  entrypoints are now `tools/gradle/run-staged-verification.sh
+  production-handoff`, `./gradlew checkDocumentationEnforcement`, and
+  `./gradlew check*Enforcement`.
 - `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
   for local Gradle invocations, but they no longer decide whether wrapper-based
   isolation happens.
+- `./gradlew` defaults to `--no-daemon` unless the caller explicitly passes
+  `--daemon` or `--no-daemon`, so isolated per-run Gradle homes do not keep a
+  detached daemon registry alive after the client exits.
 - Wrapper-based local Gradle runs now delete their per-invocation isolation
-  roots after the run finishes. Successful artifact-producing runs overwrite the
-  stable export surface at `build/latest-output/`; failed or interrupted runs
+  root after the run finishes. Successful artifact-producing runs overwrite the
+  stable export surface at `build/latest-output/`, while maintained reports
+  such as CKJM overwrite `build/latest-reports/`. Failed or interrupted runs
   keep only selected diagnostics under `build/retained-gradle-failures/` for up
-  to seven days.
+  to seven days, and the wrapper prints that stable retained path after a
+  failure. Report paths that Gradle printed under `.gradle/isolated-runs/...`
+  are runtime locations and are not the stable post-run handoff surface.
 - When the desktop app is the manual test surface, run
-  `./gradlew installDesktopApp` after the successful build before handoff
-  unless the user explicitly waives reinstall, the task is documentation-only,
-  or the task is purely non-code planning or review work.
+  `tools/gradle/run-staged-verification.sh desktop-install` after the
+  successful production handoff before handoff unless the user explicitly
+  waives reinstall, the task is documentation-only, or the task is purely
+  non-code planning or review work.
 
 ## Document Types
 

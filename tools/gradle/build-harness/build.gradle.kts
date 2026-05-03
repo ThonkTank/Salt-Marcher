@@ -14,8 +14,6 @@ val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
     ?.let(::File)
     ?: projectDir.parentFile.parentFile.parentFile
 
-fun repoQualityFile(relativeQualityPath: String): File = repoRootDir.resolve("tools/quality/$relativeQualityPath")
-
 apply(from = repoRootDir.resolve("tools/quality/enforcement-bundles.gradle.kts"))
 
 val focusedEnforcementBundleMode = extra["saltmarcherFocusedEnforcementBundleMode"] as Boolean
@@ -28,20 +26,33 @@ activeEnforcementBundleIds
     .mapNotNull(buildHarnessHostScriptsByBundleId::get)
     .distinct()
     .forEach { scriptPath ->
-        apply(from = repoQualityFile(scriptPath.removePrefix("../../quality/")))
+        apply(from = File(scriptPath))
     }
 if (!focusedEnforcementBundleMode) {
-    apply(from = repoQualityFile("documentation-enforcement/build-harness-host.gradle.kts"))
+    apply(from = repoRootDir.resolve("tools/quality/documentation-enforcement/build-harness-host.gradle.kts"))
 }
 
 tasks.register<JavaExec>("architectureCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Checks repository layout, package-path alignment, and documented root-entrypoint presence."
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
+    val repositoryRootDir = repoRootDir
+    val successMarker = layout.buildDirectory.file("reports/architecture-check/success.marker")
+    inputs.files(
+        fileTree(repositoryRootDir) {
+            exclude("build/**")
+            exclude(".gradle/**")
+            exclude(".git/**")
+        }
+    )
+    outputs.file(successMarker)
     classpath = sourceSets["main"].runtimeClasspath
     mainClass = "saltmarcher.architecture.ArchitectureCheckMain"
-    args = listOf(projectDir.parentFile.parentFile.parentFile.absolutePath)
+    args = listOf(repositoryRootDir.absolutePath)
+    doLast {
+        val markerFile = successMarker.get().asFile
+        markerFile.parentFile.mkdirs()
+        markerFile.writeText("passed\n")
+    }
 }
 
 tasks.named("check") {

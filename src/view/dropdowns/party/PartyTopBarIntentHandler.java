@@ -21,16 +21,16 @@ final class PartyTopBarIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.kind()) {
-            case OPENED -> presentationModel.refresh();
-            case ADD_EXISTING -> addExisting(event.memberId(), event.memberName());
-            case REMOVE_FROM_PARTY -> removeFromParty(event.memberId(), event.memberName());
-            case ADJUST_XP -> adjustXp(event.memberId(), event.memberName(), event.xpDelta());
-            case SHORT_REST -> performRest(PartyTopBarPublishedEvent.RestAction.SHORT_REST, "Short Rest wurde fuer die aktive Party ausgefuehrt.");
-            case LONG_REST -> performRest(PartyTopBarPublishedEvent.RestAction.LONG_REST, "Long Rest wurde fuer die aktive Party ausgefuehrt.");
-            case CREATE_CHARACTER -> createCharacter(event.draft());
-            case UPDATE_CHARACTER -> updateCharacter(event.draft());
-            case DELETE_CHARACTER -> deleteCharacter(event.memberId(), event.memberName());
+        switch (event.source()) {
+            case POPUP_OPENED -> presentationModel.refresh();
+            case ADD_EXISTING_MEMBER -> addExisting(event.memberId(), event.memberName());
+            case REMOVE_ACTIVE_MEMBER_BUTTON -> removeFromParty(event.memberId(), event.memberName());
+            case ADJUST_XP_POPUP -> adjustXp(event.memberId(), event.memberName(), event.xpDelta());
+            case SHORT_REST_BUTTON -> performRest(PartyTopBarPublishedEvent.RestAction.SHORT_REST, "Short Rest wurde fuer die aktive Party ausgefuehrt.");
+            case LONG_REST_BUTTON -> performRest(PartyTopBarPublishedEvent.RestAction.LONG_REST, "Long Rest wurde fuer die aktive Party ausgefuehrt.");
+            case CREATE_CHARACTER_SUBMIT -> createCharacter(event.draft());
+            case UPDATE_CHARACTER_SUBMIT -> updateCharacter(event.draft());
+            case DELETE_CHARACTER_CONFIRM -> deleteCharacter(event.memberId(), event.memberName());
         }
     }
 

@@ -43,7 +43,10 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
         Button refreshButton = new Button("Aktualisieren");
         refreshButton.getStyleClass().addAll("compact", "flat");
-        refreshButton.setOnAction(event -> viewInputEventHandler.accept(SessionPlannerControlsViewInputEvent.refresh()));
+        refreshButton.setOnAction(event -> viewInputEventHandler.accept(
+                new SessionPlannerControlsViewInputEvent(
+                        SessionPlannerControlsViewInputEvent.Source.REFRESH_BUTTON,
+                        0L)));
 
         Label titleLabel = new Label("SESSION PLANNER");
         titleLabel.getStyleClass().addAll("section-header", "text-muted");
@@ -190,7 +193,10 @@ public final class SessionPlannerControlsView extends ScrollPane {
         Button importButton = new Button("Importieren");
         importButton.getStyleClass().addAll("compact", "accent");
         importButton.setDisable(!plan.importEnabled());
-        importButton.setOnAction(event -> viewInputEventHandler.accept(SessionPlannerControlsViewInputEvent.importPlan(plan.planId())));
+        importButton.setOnAction(event -> viewInputEventHandler.accept(
+                new SessionPlannerControlsViewInputEvent(
+                        SessionPlannerControlsViewInputEvent.Source.IMPORT_BUTTON,
+                        plan.planId())));
         VBox card = new VBox(4, nameLabel, metaLabel, status, importButton);
         card.getStyleClass().add("session-planner-plan-card");
         return card;

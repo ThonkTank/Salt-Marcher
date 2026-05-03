@@ -14,7 +14,7 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
-import org.gradle.work.DisableCachingByDefault
+import org.gradle.api.tasks.CacheableTask
 import java.io.File
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
@@ -24,12 +24,8 @@ import saltmarcher.buildlogic.tasks.parseCkjmHotspotBaseline
 import saltmarcher.buildlogic.tasks.resolveJavaExecutable
 import saltmarcher.buildlogic.tasks.summarizeCkjmOutput
 
-@DisableCachingByDefault(because = "Verification task whose result is a generated report.")
+@CacheableTask
 abstract class CkjmReportTask : DefaultTask() {
-
-    init {
-        outputs.upToDateWhen { false }
-    }
 
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)

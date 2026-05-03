@@ -26,6 +26,7 @@ plugins {
     pmd
     id("com.github.spotbugs") version "6.5.0"
     id("saltmarcher.quality-conventions")
+    id("saltmarcher.verification-core")
     id("org.openjfx.javafxplugin") version "0.1.0"
     id("org.sonarqube") version "7.2.3.7755"
 }
@@ -85,24 +86,6 @@ sourceSets {
             setSrcDirs(listOf("test"))
         }
     }
-}
-
-apply(from = "tools/quality/enforcement-bundles.gradle.kts")
-
-val focusedEnforcementBundleMode = extra["saltmarcherFocusedEnforcementBundleMode"] as Boolean
-@Suppress("UNCHECKED_CAST")
-val activeEnforcementBundleIds = extra["saltmarcherActiveEnforcementBundleIds"] as List<String>
-@Suppress("UNCHECKED_CAST")
-val rootHostScriptsByBundleId = extra["saltmarcherRootHostScriptsByBundleId"] as Map<String, String>
-
-activeEnforcementBundleIds
-    .map(rootHostScriptsByBundleId::getValue)
-    .distinct()
-    .forEach { scriptPath ->
-        apply(from = scriptPath)
-    }
-if (!focusedEnforcementBundleMode) {
-    apply(from = "tools/quality/documentation-enforcement/root-host.gradle.kts")
 }
 
 dependencies {
@@ -190,6 +173,7 @@ val architectureTest by tasks.registering(Test::class) {
     exclude("architecture/view/binder/**")
     exclude("architecture/view/contribution/**")
     exclude("architecture/view/contributionmodel/**")
+    exclude("architecture/view/intenthandler/**")
     exclude("architecture/shell/layer/**")
     exclude("architecture/view/viewinputevent/**")
     exclude("architecture/view/viewlayer/**")

@@ -81,18 +81,58 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         resetViewButton.getStyleClass().add("toolbar-action-button");
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
-        refreshButton.setOnAction(event -> publish(DungeonTravelControlsViewInputEvent.refresh()));
-        resetViewButton.setOnAction(event -> publish(DungeonTravelControlsViewInputEvent.resetView()));
-        previousLevelButton.setOnAction(event -> publish(DungeonTravelControlsViewInputEvent.previousLevel()));
-        nextLevelButton.setOnAction(event -> publish(DungeonTravelControlsViewInputEvent.nextLevel()));
+        refreshButton.setOnAction(event -> publish(new DungeonTravelControlsViewInputEvent(
+                DungeonTravelControlsViewInputEvent.Source.REFRESH_BUTTON,
+                "OFF",
+                0,
+                0.0,
+                java.util.List.of())));
+        resetViewButton.setOnAction(event -> publish(new DungeonTravelControlsViewInputEvent(
+                DungeonTravelControlsViewInputEvent.Source.RESET_VIEW_BUTTON,
+                "OFF",
+                0,
+                0.0,
+                java.util.List.of())));
+        previousLevelButton.setOnAction(event -> publish(new DungeonTravelControlsViewInputEvent(
+                DungeonTravelControlsViewInputEvent.Source.PREVIOUS_LEVEL_BUTTON,
+                "OFF",
+                0,
+                0.0,
+                java.util.List.of())));
+        nextLevelButton.setOnAction(event -> publish(new DungeonTravelControlsViewInputEvent(
+                DungeonTravelControlsViewInputEvent.Source.NEXT_LEVEL_BUTTON,
+                "OFF",
+                0,
+                0.0,
+                java.util.List.of())));
         overlayControls.setOnModeChanged(mode ->
-                publish(DungeonTravelControlsViewInputEvent.overlayModeChanged(mode == null ? "OFF" : mode.name())));
+                publish(new DungeonTravelControlsViewInputEvent(
+                        DungeonTravelControlsViewInputEvent.Source.OVERLAY_MODE_CONTROL,
+                        mode == null ? "OFF" : mode.name(),
+                        0,
+                        0.0,
+                        java.util.List.of())));
         overlayControls.setOnRangeChanged(levelRange ->
-                publish(DungeonTravelControlsViewInputEvent.overlayRangeChanged(levelRange)));
+                publish(new DungeonTravelControlsViewInputEvent(
+                        DungeonTravelControlsViewInputEvent.Source.OVERLAY_RANGE_CONTROL,
+                        "OFF",
+                        levelRange,
+                        0.0,
+                        java.util.List.of())));
         overlayControls.setOnOpacityChanged(opacity ->
-                publish(DungeonTravelControlsViewInputEvent.overlayOpacityChanged(opacity)));
+                publish(new DungeonTravelControlsViewInputEvent(
+                        DungeonTravelControlsViewInputEvent.Source.OVERLAY_OPACITY_CONTROL,
+                        "OFF",
+                        0,
+                        opacity,
+                        java.util.List.of())));
         overlayControls.setOnSelectedLevelsChanged(levels ->
-                publish(DungeonTravelControlsViewInputEvent.overlayLevelsChanged(levels)));
+                publish(new DungeonTravelControlsViewInputEvent(
+                        DungeonTravelControlsViewInputEvent.Source.OVERLAY_LEVEL_SELECTION,
+                        "OFF",
+                        0,
+                        0.0,
+                        levels)));
         describe(refreshButton, "Dungeon-Karte neu laden");
         describe(resetViewButton, "Kamera auf die Dungeon-Karte zuruecksetzen");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");

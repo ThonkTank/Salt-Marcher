@@ -7,14 +7,16 @@ import com.google.errorprone.matchers.Description;
 import com.google.errorprone.util.ASTHelpers;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.ModifiersTree;
 import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.TreeScanner;
+import com.sun.tools.javac.code.Symbol;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
-import saltmarcher.quality.errorprone.view.ViewArchitectureSupport;
 
 @BugPattern(
         name = "ViewInputEventApi",
@@ -35,27 +37,28 @@ public final class ViewInputEventApiChecker extends BugChecker
             return Description.NO_MATCH;
         }
         String viewSimpleName = ViewArchitectureSupport.topLevelSimpleName(tree);
-        if (!participatesInViewInputEventProtocol(tree, topLevelClass, sourcePackageName, viewSimpleName)) {
-            return Description.NO_MATCH;
-        }
 
         Set<String> violations = new LinkedHashSet<>();
-        for (var member : topLevelClass.getMembers()) {
-            if (member instanceof MethodTree methodTree) {
-                collectMethodViolation(methodTree, sourcePackageName, viewSimpleName, violations);
-            } else if (member instanceof VariableTree variableTree) {
-                collectFieldViolation(variableTree, sourcePackageName, violations);
+        boolean participatesInProtocol = participatesInViewInputEventProtocol(tree, topLevelClass, sourcePackageName, viewSimpleName);
+        if (participatesInProtocol) {
+            for (var member : topLevelClass.getMembers()) {
+                if (member instanceof MethodTree methodTree) {
+                    collectMethodViolation(methodTree, sourcePackageName, viewSimpleName, violations);
+                } else if (member instanceof VariableTree variableTree) {
+                    collectFieldViolation(variableTree, sourcePackageName, violations);
+                }
             }
         }
+        collectForwardingViolation(tree, sourcePackageName, violations);
 
         if (violations.isEmpty()) {
             return Description.NO_MATCH;
         }
         return buildDescription(topLevelClass)
                 .setMessage("Passive View package '" + sourcePackageName
-                        + "' exposes direct callback registration APIs "
+                        + "' mis-shapes the ViewInputEvent surface through "
                         + String.join(", ", violations)
-                        + ". Views may emit user input only through one same-stem fire-and-forget onViewInputEvent(Consumer<...ViewInputEvent>) seam.")
+                        + ". Views may emit user input only through one same-stem fire-and-forget onViewInputEvent(Consumer<...ViewInputEvent>) seam and must not subscribe to another top-level View's input seam.")
                 .build();
     }
 
@@ -130,6 +133,29 @@ public final class ViewInputEventApiChecker extends BugChecker
 
     private static boolean isOutwardVisible(ModifiersTree modifiersTree) {
         return !modifiersTree.getFlags().contains(Modifier.PRIVATE);
+    }
+
+    private static void collectForwardingViolation(
+            CompilationUnitTree tree,
+            String sourcePackageName,
+            Set<String> violations
+    ) {
+        new TreePathScanner<Void, Void>() {
+            @Override
+            public Void visitMethodInvocation(MethodInvocationTree methodInvocationTree, Void unused) {
+                Symbol.MethodSymbol symbol = ASTHelpers.getSymbol(methodInvocationTree);
+                if (symbol == null || !"onViewInputEvent".contentEquals(symbol.getSimpleName())) {
+                    return super.visitMethodInvocation(methodInvocationTree, unused);
+                }
+                String ownerType = ViewArchitectureSupport.getQualifiedOwnerTypeName(symbol);
+                ViewArchitectureSupport.ViewTypeInfo ownerInfo = ViewArchitectureSupport.parseViewType(ownerType);
+                if (ownerInfo == null || !"VIEW".equals(ownerInfo.bucket())) {
+                    return super.visitMethodInvocation(methodInvocationTree, unused);
+                }
+                violations.add("direct view-to-view input forwarding via " + ownerType + ".onViewInputEvent");
+                return super.visitMethodInvocation(methodInvocationTree, unused);
+            }
+        }.scan(tree, null);
     }
 
     private static ClassTree topLevelClass(CompilationUnitTree tree) {

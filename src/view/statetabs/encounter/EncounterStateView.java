@@ -158,10 +158,19 @@ public final class EncounterStateView extends VBox {
         combatRoundLabel.setText("Runde " + state.round());
         combatStatusLabel.setText(state.status());
         Node addPartyNode = combatPane.lookup("#encounter-add-party-button");
-        if (addPartyNode instanceof EncounterCombatPartyMemberButtonStateView addPartyButton) {
+        if (addPartyNode instanceof PartyMemberButton addPartyButton) {
             addPartyButton.updateCandidates(state.missingPartyMembers());
-            addPartyButton.onViewInputEvent(event -> publish(
-                    EncounterStateViewInputEvent.addPartyMemberToCombat(event.memberId(), event.initiative())));
+            addPartyButton.onPartyMemberSelected((memberId, initiative) -> publish(
+                    EncounterStateViewInputEvent.Source.ADD_PARTY_MEMBER_SELECTION,
+                    0L,
+                    0L,
+                    0L,
+                    List.of(),
+                    "",
+                    0,
+                    initiative,
+                    memberId,
+                    false));
         }
         combatCardList.getChildren().clear();
         for (CombatCardView card : state.cards()) {
@@ -187,19 +196,117 @@ public final class EncounterStateView extends VBox {
         viewInputEventHandler.accept(event);
     }
 
+    private void publish(EncounterStateViewInputEvent.Source source) {
+        publish(source, 0L, 0L, 0L, List.of(), "", 0, 0, 0L, false);
+    }
+
+    private void publishCreatureAction(EncounterStateViewInputEvent.Source source, long creatureId) {
+        publish(source, 0L, creatureId, 0L, List.of(), "", 0, 0, 0L, false);
+    }
+
+    private void publishSelectedPlan(long selectedPlanId) {
+        publish(EncounterStateViewInputEvent.Source.OPEN_SAVED_PLAN_SELECTION,
+                selectedPlanId,
+                0L,
+                0L,
+                List.of(),
+                "",
+                0,
+                0,
+                0L,
+                false);
+    }
+
+    private void publishUndo(long undoToken) {
+        publish(EncounterStateViewInputEvent.Source.UNDO_REMOVE_BUTTON,
+                0L,
+                0L,
+                undoToken,
+                List.of(),
+                "",
+                0,
+                0,
+                0L,
+                false);
+    }
+
+    private void publishInitiativeConfirmation(List<EncounterStateViewInputEvent.InitiativeEntry> initiatives) {
+        publish(EncounterStateViewInputEvent.Source.INITIATIVE_CONFIRM_BUTTON,
+                0L,
+                0L,
+                0L,
+                initiatives,
+                "",
+                0,
+                0,
+                0L,
+                false);
+    }
+
+    private void publishHitPointAdjustment(String combatantId, int amount, boolean healing) {
+        publish(EncounterStateViewInputEvent.Source.HIT_POINT_ADJUSTMENT,
+                0L,
+                0L,
+                0L,
+                List.of(),
+                combatantId,
+                amount,
+                0,
+                0L,
+                healing);
+    }
+
+    private void publishInitiativeValue(String combatantId, int initiativeValue) {
+        publish(EncounterStateViewInputEvent.Source.INITIATIVE_VALUE_SUBMIT,
+                0L,
+                0L,
+                0L,
+                List.of(),
+                combatantId,
+                0,
+                initiativeValue,
+                0L,
+                false);
+    }
+
+    private void publish(
+            EncounterStateViewInputEvent.Source source,
+            long selectedPlanId,
+            long creatureId,
+            long undoToken,
+            List<EncounterStateViewInputEvent.InitiativeEntry> initiatives,
+            String combatantId,
+            int amount,
+            int initiativeValue,
+            long partyMemberId,
+            boolean healing
+    ) {
+        publish(new EncounterStateViewInputEvent(
+                source,
+                selectedPlanId,
+                creatureId,
+                undoToken,
+                initiatives,
+                combatantId,
+                amount,
+                initiativeValue,
+                partyMemberId,
+                healing));
+    }
+
     private DialogSurfaceView buildBuilderPane() {
         DialogSurfaceView dialog = new DialogSurfaceView();
         Label title = new Label("Encounter");
         title.getStyleClass().add("title");
         saveEncounterButton.getStyleClass().addAll("compact", "neutral-action");
         saveEncounterButton.setTooltip(new Tooltip("Aktuelles Encounter-Roster speichern"));
-        saveEncounterButton.setOnAction(event -> publish(EncounterStateViewInputEvent.saveEncounter()));
+        saveEncounterButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.SAVE_PLAN_BUTTON));
         openEncounterButton.getStyleClass().addAll("compact", "neutral-action");
         openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter oeffnen"));
         openEncounterButton.setOnAction(event -> showSavedPlansPopup(openEncounterButton));
         clearHistoryButton.getStyleClass().addAll("compact", "neutral-action");
         clearHistoryButton.setTooltip(new Tooltip("Generator-Historie leeren"));
-        clearHistoryButton.setOnAction(event -> publish(EncounterStateViewInputEvent.clearGenerationHistory()));
+        clearHistoryButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.CLEAR_HISTORY_BUTTON));
         Region titleSpacer = new Region();
         HBox.setHgrow(titleSpacer, Priority.ALWAYS);
         HBox titleRow = new HBox(8, title, titleSpacer, clearHistoryButton, openEncounterButton, saveEncounterButton);
@@ -234,17 +341,17 @@ public final class EncounterStateView extends VBox {
         generateButton.getStyleClass().add("neutral-action");
         generateButton.setMaxWidth(Double.MAX_VALUE);
         generateButton.setTooltip(new Tooltip("Encounter aus Catalog-Filtern generieren (Alt+G)"));
-        generateButton.setOnAction(event -> publish(EncounterStateViewInputEvent.generate()));
+        generateButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.GENERATE_BUTTON));
         previousAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
         previousAlternativeButton.setTooltip(new Tooltip("Vorherige Generator-Alternative"));
-        previousAlternativeButton.setOnAction(event -> publish(EncounterStateViewInputEvent.previousAlternative()));
+        previousAlternativeButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.PREVIOUS_ALTERNATIVE_BUTTON));
         nextAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
         nextAlternativeButton.setTooltip(new Tooltip("Naechste Generator-Alternative"));
-        nextAlternativeButton.setOnAction(event -> publish(EncounterStateViewInputEvent.nextAlternative()));
+        nextAlternativeButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.NEXT_ALTERNATIVE_BUTTON));
         builderStartCombatButton.getStyleClass().add("accent");
         builderStartCombatButton.setMaxWidth(Double.MAX_VALUE);
         builderStartCombatButton.setDisable(true);
-        builderStartCombatButton.setOnAction(event -> publish(EncounterStateViewInputEvent.startInitiative()));
+        builderStartCombatButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.START_INITIATIVE_BUTTON));
         DialogSurfaceView.grow(generateButton);
         DialogSurfaceView.grow(builderStartCombatButton);
 
@@ -269,13 +376,13 @@ public final class EncounterStateView extends VBox {
         initiativeList.setPadding(DialogSurfaceView.contentInsets());
 
         Button backButton = new Button("\u2190 Zurueck");
-        backButton.setOnAction(event -> publish(EncounterStateViewInputEvent.initiativeBack()));
+        backButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.INITIATIVE_BACK_BUTTON));
         Button rollAllButton = new Button("Alle wuerfeln");
         rollAllButton.getStyleClass().add("neutral-action");
         rollAllButton.setOnAction(event -> rollAllInitiatives());
         Button startButton = new Button("Kampf starten");
         startButton.getStyleClass().add("accent");
-        startButton.setOnAction(event -> publish(EncounterStateViewInputEvent.initiativeConfirm(readInitiatives())));
+        startButton.setOnAction(event -> publishInitiativeConfirmation(readInitiatives()));
         dialog.setHeader(title);
         dialog.setBody(initiativeList, BodyPolicy.SCROLL);
         dialog.setFooter(backButton, rollAllButton, DialogSurfaceView.spacer(), startButton);
@@ -287,7 +394,7 @@ public final class EncounterStateView extends VBox {
         combatRoundLabel.getStyleClass().add("title");
         combatStatusLabel.getStyleClass().add("text-secondary");
 
-        EncounterCombatPartyMemberButtonStateView addPartyButton = new EncounterCombatPartyMemberButtonStateView();
+        PartyMemberButton addPartyButton = new PartyMemberButton();
         HBox actions = new HBox(addPartyButton);
         actions.setAlignment(Pos.CENTER_RIGHT);
 
@@ -296,7 +403,7 @@ public final class EncounterStateView extends VBox {
         Button nextTurnButton = new Button("\u25B6 _Weiter");
         nextTurnButton.getStyleClass().add("accent");
         nextTurnButton.setMaxWidth(Double.MAX_VALUE);
-        nextTurnButton.setOnAction(event -> publish(EncounterStateViewInputEvent.nextTurn()));
+        nextTurnButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.NEXT_TURN_BUTTON));
         endCombatContainer.setAlignment(Pos.CENTER);
         DialogSurfaceView.grow(nextTurnButton);
         DialogSurfaceView.grow(endCombatContainer);
@@ -330,12 +437,12 @@ public final class EncounterStateView extends VBox {
         resultAwardStatusLabel.getStyleClass().add("text-secondary");
         resultAwardStatusLabel.setWrapText(true);
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
-        resultAwardButton.setOnAction(event -> publish(EncounterStateViewInputEvent.awardXp()));
+        resultAwardButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.AWARD_XP_BUTTON));
         Button doneButton = new Button("Zum Planer");
         doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurueckkehren"));
         doneButton.setAccessibleText("Zur Encounter-Planung zurueckkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
-        doneButton.setOnAction(event -> publish(EncounterStateViewInputEvent.returnToBuilder()));
+        doneButton.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.RETURN_TO_BUILDER_BUTTON));
         DialogSurfaceView.grow(resultAwardButton);
         DialogSurfaceView.grow(doneButton);
 
@@ -377,7 +484,7 @@ public final class EncounterStateView extends VBox {
             removed.getStyleClass().add("text-secondary");
             Button undoButton = new Button("Rueckgaengig");
             undoButton.getStyleClass().addAll("compact", "neutral-action");
-            undoButton.setOnAction(event -> publish(EncounterStateViewInputEvent.undoRemove(undo.token())));
+            undoButton.setOnAction(event -> publishUndo(undo.token()));
             HBox row = new HBox(8, removed, undoButton);
             row.setAlignment(Pos.CENTER_LEFT);
             advisoryRegion.getChildren().add(row);
@@ -398,21 +505,27 @@ public final class EncounterStateView extends VBox {
         Button minus = new Button("-");
         minus.getStyleClass().add("compact");
         minus.setDisable(card.count() <= 1);
-        minus.setOnAction(event -> publish(EncounterStateViewInputEvent.rosterDecrement(card.creatureId())));
+        minus.setOnAction(event -> publishCreatureAction(
+                EncounterStateViewInputEvent.Source.ROSTER_DECREMENT_BUTTON,
+                card.creatureId()));
         Label count = new Label(String.valueOf(card.count()));
         count.getStyleClass().add("bold");
         count.setMinWidth(24);
         count.setAlignment(Pos.CENTER);
         Button plus = new Button("+");
         plus.getStyleClass().add("compact");
-        plus.setOnAction(event -> publish(EncounterStateViewInputEvent.rosterIncrement(card.creatureId())));
+        plus.setOnAction(event -> publishCreatureAction(
+                EncounterStateViewInputEvent.Source.ROSTER_INCREMENT_BUTTON,
+                card.creatureId()));
         HBox quantity = new HBox(2, minus, count, plus);
         quantity.setAlignment(Pos.CENTER);
 
         Button name = new Button(card.name());
         name.getStyleClass().add("creature-link");
         name.setTooltip(new Tooltip("Creature details oeffnen"));
-        name.setOnAction(event -> publish(EncounterStateViewInputEvent.openCreature(card.creatureId())));
+        name.setOnAction(event -> publishCreatureAction(
+                EncounterStateViewInputEvent.Source.OPEN_CREATURE_LINK,
+                card.creatureId()));
 
         HBox detail = new HBox(4);
         detail.setAlignment(Pos.CENTER_LEFT);
@@ -429,7 +542,9 @@ public final class EncounterStateView extends VBox {
         expand.getStyleClass().addAll("text-muted", "clickable");
         Button remove = new Button("\u00d7");
         remove.getStyleClass().addAll("compact", "remove-btn");
-        remove.setOnAction(event -> publish(EncounterStateViewInputEvent.rosterRemove(card.creatureId())));
+        remove.setOnAction(event -> publishCreatureAction(
+                EncounterStateViewInputEvent.Source.ROSTER_REMOVE_BUTTON,
+                card.creatureId()));
         VBox right = new VBox(4, expand, remove);
         right.setAlignment(Pos.CENTER_RIGHT);
 
@@ -527,10 +642,16 @@ public final class EncounterStateView extends VBox {
                         "HP bearbeiten",
                         1,
                         List.of(
-                                new PopupAction("-", "", true, amount -> publish(
-                                        EncounterStateViewInputEvent.damage(card.id(), amount))),
-                                new PopupAction("+", "", false, amount -> publish(
-                                        EncounterStateViewInputEvent.heal(card.id(), amount))))));
+                                new PopupAction(
+                                        "-",
+                                        "",
+                                        true,
+                                        amount -> publishHitPointAdjustment(card.id(), amount, false)),
+                                new PopupAction(
+                                        "+",
+                                        "",
+                                        false,
+                                        amount -> publishHitPointAdjustment(card.id(), amount, true)))));
         return bar;
     }
 
@@ -546,7 +667,7 @@ public final class EncounterStateView extends VBox {
         set.setDefaultButton(true);
         set.setOnAction(event -> {
             popup.hide();
-            publish(EncounterStateViewInputEvent.setInitiative(card.id(), parse(field.getText(), card.initiative())));
+            publishInitiativeValue(card.id(), parse(field.getText(), card.initiative()));
         });
         field.setOnAction(event -> set.fire());
         showPopup(anchor, popup, field, down, field, up, set);
@@ -568,7 +689,7 @@ public final class EncounterStateView extends VBox {
                 option.setMaxWidth(Double.MAX_VALUE);
                 option.setOnAction(event -> {
                     popup.hide();
-                    publish(EncounterStateViewInputEvent.openSavedEncounter(plan.id()));
+                    publishSelectedPlan(plan.id());
                 });
                 content.getChildren().add(option);
             }
@@ -629,7 +750,7 @@ public final class EncounterStateView extends VBox {
         HBox.setHgrow(cancel, Priority.ALWAYS);
         HBox.setHgrow(confirm, Priority.ALWAYS);
         cancel.setOnAction(event -> showNormalEndButton(false));
-        confirm.setOnAction(event -> publish(EncounterStateViewInputEvent.endCombat()));
+        confirm.setOnAction(event -> publish(EncounterStateViewInputEvent.Source.END_COMBAT_CONFIRM_BUTTON));
         endCombatContainer.getChildren().addAll(cancel, confirm);
     }
 
@@ -884,12 +1005,15 @@ public final class EncounterStateView extends VBox {
             String status,
             List<CombatCardView> cards,
             boolean allEnemiesDefeated,
-            List<EncounterCombatPartyMemberButtonStateView.Candidate> missingPartyMembers
+            List<PartyMemberCandidate> missingPartyMembers
     ) {
         public CombatStateView {
             cards = cards == null ? List.of() : List.copyOf(cards);
             missingPartyMembers = missingPartyMembers == null ? List.of() : List.copyOf(missingPartyMembers);
         }
+    }
+
+    public record PartyMemberCandidate(long memberId, String name, int level) {
     }
 
     public record ResultEnemyView(String name, String status, int hpLoss, int xp, boolean defeatedByDefault, String loot) {
@@ -967,6 +1091,122 @@ public final class EncounterStateView extends VBox {
                 return;
             }
             marker.setTranslateX((width * markerFraction) - (width / 2) - (markerWidth / 2));
+        }
+    }
+
+    @FunctionalInterface
+    private interface PartyMemberSelectionListener {
+        void onPartyMemberSelected(long memberId, int initiative);
+    }
+
+    private static final class PartyMemberButton extends Button {
+
+        private static final String CONTROL_ID = "encounter-add-party-button";
+
+        private final PartyMemberPopup popup = new PartyMemberPopup();
+        private List<PartyMemberCandidate> candidates = List.of();
+        private PartyMemberSelectionListener selectionListener = (memberId, initiative) -> { };
+
+        private PartyMemberButton() {
+            super("SC hinzufuegen");
+            getStyleClass().addAll("compact", "neutral-action");
+            setId(CONTROL_ID);
+            updateCandidates(List.of());
+            popup.onPartyMemberSelected((memberId, initiative) ->
+                    selectionListener.onPartyMemberSelected(memberId, initiative));
+            setOnAction(event -> popup.show(this, candidates));
+        }
+
+        private void updateCandidates(List<PartyMemberCandidate> value) {
+            candidates = value == null ? List.of() : List.copyOf(value);
+            setDisable(candidates.isEmpty());
+            setTooltip(new Tooltip(candidates.isEmpty()
+                    ? "Alle aktiven SCs sind im Kampf."
+                    : "Aktives Party-Mitglied in den laufenden Kampf aufnehmen."));
+        }
+
+        private void onPartyMemberSelected(PartyMemberSelectionListener listener) {
+            selectionListener = listener == null ? (memberId, initiative) -> { } : listener;
+        }
+    }
+
+    private static final class PartyMemberPopup {
+
+        private final AnchoredPopupView popup = new AnchoredPopupView();
+        private PartyMemberSelectionListener selectionListener = (memberId, initiative) -> { };
+
+        private void onPartyMemberSelected(PartyMemberSelectionListener listener) {
+            selectionListener = listener == null ? (memberId, initiative) -> { } : listener;
+        }
+
+        private void show(Node anchor, List<PartyMemberCandidate> candidates) {
+            if (anchor == null || candidates == null || candidates.isEmpty()) {
+                return;
+            }
+            popup.hide();
+
+            VBox list = new VBox(6);
+            list.getStyleClass().add("anchored-popup");
+            list.setPadding(new Insets(8));
+
+            TextField firstField = null;
+            for (PartyMemberCandidate candidate : candidates) {
+                TextField initiativeField = initiativeField(candidate.name());
+                Button down = spinnerButton("\u25BC");
+                Button up = spinnerButton("\u25B2");
+                down.setOnAction(event -> initiativeField.setText(String.valueOf(parseInitiative(initiativeField.getText()) - 1)));
+                up.setOnAction(event -> initiativeField.setText(String.valueOf(parseInitiative(initiativeField.getText()) + 1)));
+
+                Button add = new Button("Hinzufuegen");
+                add.getStyleClass().add("accent");
+                Runnable apply = () -> {
+                    popup.hide();
+                    selectionListener.onPartyMemberSelected(candidate.memberId(), parseInitiative(initiativeField.getText()));
+                };
+                add.setOnAction(event -> apply.run());
+                initiativeField.setOnAction(event -> apply.run());
+
+                Label name = new Label(candidate.name() + " (Lv. " + candidate.level() + ")");
+                name.getStyleClass().add("combat-name");
+                HBox.setHgrow(name, Priority.ALWAYS);
+
+                HBox row = new HBox(6, name, down, initiativeField, up, add);
+                row.setAlignment(Pos.CENTER_LEFT);
+                list.getChildren().add(row);
+                if (firstField == null) {
+                    firstField = initiativeField;
+                }
+            }
+
+            popup.setContent(list);
+            popup.showBelow(anchor, 8);
+            if (firstField != null) {
+                popup.focusAfterShown(firstField);
+            }
+        }
+
+        private static TextField initiativeField(String name) {
+            TextField field = new TextField("10");
+            field.getStyleClass().add("text-field");
+            field.setPrefWidth(56);
+            field.setAccessibleText("Initiative fuer " + name);
+            field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9-]*") ? change : null));
+            return field;
+        }
+
+        private static Button spinnerButton(String text) {
+            Button button = new Button(text);
+            button.getStyleClass().add("spinner-btn");
+            button.setFocusTraversable(false);
+            return button;
+        }
+
+        private static int parseInitiative(String text) {
+            try {
+                return Integer.parseInt(text.trim());
+            } catch (NumberFormatException exception) {
+                return 10;
+            }
         }
     }
 }

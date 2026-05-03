@@ -25,18 +25,30 @@ fun findRepositoryRoot(startDirectory: File): File {
         ?: startDirectory.canonicalFile
 }
 
+val repositoryRootForBuildCache = findRepositoryRoot(settingsDir)
+
+buildCache {
+    local {
+        isEnabled = true
+        directory = File(repositoryRootForBuildCache, ".gradle/shared-build-cache")
+    }
+}
+
 val rawIsolationId = System.getenv("SALTMARCHER_GRADLE_INVOCATION_ID")?.nonBlankOrNull()
     ?: System.getenv("SALTMARCHER_GRADLE_ISOLATION_ID")?.nonBlankOrNull()
     ?: System.getenv("CODEX_THREAD_ID")?.nonBlankOrNull()
 val explicitIsolationSegment = System.getenv("SALTMARCHER_GRADLE_ISOLATION_SEGMENT")?.nonBlankOrNull()
+val explicitBuildRoot = System.getenv("SALTMARCHER_GRADLE_ISOLATED_BUILD_ROOT")?.nonBlankOrNull()
+val explicitProjectCacheRoot = System.getenv("SALTMARCHER_GRADLE_ISOLATED_RUNTIME_ROOT")?.nonBlankOrNull()
 
 if (rawIsolationId != null) {
-    val repositoryRoot = findRepositoryRoot(settingsDir)
+    val repositoryRoot = repositoryRootForBuildCache
     val includedBuildRoot = System.getenv("SALTMARCHER_INCLUDED_BUILD_ROOT")
         ?.nonBlankOrNull()
         ?.let(::File)
         ?.canonicalFile
     val settingsRoot = settingsDir.canonicalFile
+    val isRootSettingsBuild = settingsRoot == repositoryRoot
     val buildPathBase = if (includedBuildRoot != null && settingsRoot.toPath().startsWith(includedBuildRoot.toPath())) {
         includedBuildRoot
     } else {
@@ -48,10 +60,16 @@ if (rawIsolationId != null) {
         .path
         .replace(File.separatorChar, '-')
         .let { relativePath -> if (relativePath.isBlank() || relativePath == ".") "root" else stablePathSegment(relativePath) }
-    val isolatedBuildRoot = File(repositoryRoot, "build/isolated-gradle/$isolationId/$buildPath")
-    val isolatedProjectCacheRoot = File(repositoryRoot, ".gradle/isolated-gradle/$isolationId/$buildPath")
+    val isolatedBuildRootBase = explicitBuildRoot?.let(::File)
+        ?: File(repositoryRoot, "build/isolated-gradle/$isolationId")
+    val isolatedProjectCacheRootBase = explicitProjectCacheRoot?.let(::File)
+        ?: File(repositoryRoot, ".gradle/isolated-gradle/$isolationId")
+    val isolatedBuildRoot = File(isolatedBuildRootBase, buildPath)
+    val isolatedProjectCacheRoot = File(isolatedProjectCacheRootBase, buildPath)
 
-    gradle.startParameter.setProjectCacheDir(isolatedProjectCacheRoot)
+    if (!isRootSettingsBuild || gradle.startParameter.projectCacheDir == null) {
+        gradle.startParameter.setProjectCacheDir(isolatedProjectCacheRoot)
+    }
     gradle.beforeProject {
         val projectSegment = path.removePrefix(":")
             .replace(':', '-')

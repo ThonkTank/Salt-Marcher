@@ -20,7 +20,7 @@ final class CatalogIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.kind() == CatalogControlsViewInputEvent.Kind.FILTERS_CHANGED) {
+        if (event.source() == CatalogControlsViewInputEvent.Source.FILTERS_CHANGED) {
             CatalogControlsViewInputEvent.FilterPayload filterState = event.filterState();
             CatalogContributionModel.CreatureFilters nextFilters = new CatalogContributionModel.CreatureFilters(
                     filterState.nameQuery(),
@@ -40,11 +40,11 @@ final class CatalogIntentHandler {
             presentationModel.requestSearch();
             return;
         }
-        if (event.kind() == CatalogControlsViewInputEvent.Kind.ENCOUNTER_DIFFICULTY_CHANGED) {
+        if (event.source() == CatalogControlsViewInputEvent.Source.ENCOUNTER_DIFFICULTY_CHANGED) {
             publishedEventListener.accept(CatalogPublishedEvent.updateEncounterDifficulty(event.difficultyKey()));
             return;
         }
-        if (event.kind() == CatalogControlsViewInputEvent.Kind.ENCOUNTER_TUNING_CHANGED) {
+        if (event.source() == CatalogControlsViewInputEvent.Source.ENCOUNTER_TUNING_CHANGED) {
             CatalogControlsViewInputEvent.EncounterTuning tuning = event.tuning();
             CatalogControlsViewInputEvent.EncounterTuning safeTuning =
                     tuning == null ? CatalogControlsViewInputEvent.EncounterTuning.empty() : tuning;
@@ -54,7 +54,7 @@ final class CatalogIntentHandler {
                     safeTuning.diversityLevel()));
             return;
         }
-        if (event.kind() == CatalogControlsViewInputEvent.Kind.ENCOUNTER_TABLES_CHANGED) {
+        if (event.source() == CatalogControlsViewInputEvent.Source.ENCOUNTER_TABLES_CHANGED) {
             publishedEventListener.accept(CatalogPublishedEvent.updateEncounterTables(event.encounterTableIds()));
         }
     }
@@ -63,24 +63,24 @@ final class CatalogIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.kind()) {
-            case SORT_CHANGED -> {
+        switch (event.source()) {
+            case SORT_SELECTION -> {
                 presentationModel.selectSort(event.sortKey());
                 presentationModel.beginSearch();
                 presentationModel.requestSearch();
             }
-            case PREVIOUS_PAGE -> {
+            case PREVIOUS_PAGE_BUTTON -> {
                 presentationModel.previousPage();
                 presentationModel.beginSearch();
                 presentationModel.requestSearch();
             }
-            case NEXT_PAGE -> {
+            case NEXT_PAGE_BUTTON -> {
                 presentationModel.nextPage();
                 presentationModel.beginSearch();
                 presentationModel.requestSearch();
             }
-            case ROW_OPENED -> presentationModel.requestOpenCreatureDetails(event.creatureId());
-            case ROW_ACTION_TRIGGERED -> publishedEventListener.accept(CatalogPublishedEvent.addCreature(event.creatureId()));
+            case ROW_OPEN_REQUEST -> presentationModel.requestOpenCreatureDetails(event.creatureId());
+            case ROW_ACTION_BUTTON -> publishedEventListener.accept(CatalogPublishedEvent.addCreature(event.creatureId()));
         }
     }
 }

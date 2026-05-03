@@ -32,7 +32,7 @@ Unified focused bundle entrypoint:
   Canonical compile-side blocking behavior remains at `./gradlew compileJava`;
   aggregate blocking behavior enters `./gradlew checkArchitecture` and
   `./gradlew check` through this bundle. The canonical stylesheet-owner proof
-  still reuses `checkDesktopPackagingInputs` as `Enforced Elsewhere`.
+  now stays local to this bundle.
 
 ## Invariant Catalog
 
@@ -40,7 +40,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `styling-central-stylesheet-owner-required` | Enforced Elsewhere | the packaged active application loads shared stylesheet truth | typed Gradle verification task `checkDesktopPackagingInputs` | `./gradlew checkDesktopPackagingInputs`, `./gradlew checkStylingLayerEnforcement`, and `./gradlew check` | The active application keeps the canonical stylesheet owner at `resources/salt-marcher.css`, and the packaged desktop input set references that file as the shared stylesheet path. |
+| `styling-central-stylesheet-owner-required` | Enforced | active SaltMarcher styling is configured or verified | typed Gradle verification task `checkStylingCentralStylesheetOwner` | `./gradlew checkStylingCentralStylesheetOwner`, `./gradlew checkStylingLayerEnforcement`, and `./gradlew check` | The active application keeps the canonical stylesheet owner at `resources/salt-marcher.css`, and the configured styling path remains bound to that canonical owner. |
 | `styling-central-visual-truth-owner-required` | Review-Owned | active application surfaces need shared semantic colors, fonts, text sizes, borders, strokes, spacing, radii, or semantic variants | none | none | Shared visual truth for ordinary active application styling remains centralized in the styling layer instead of being split across Java packages, ad-hoc constants, or parallel style owners. |
 | `styling-central-selector-definition-required` | Enforced | every Java-authored style-class selector added from `bootstrap/`, `shell/`, or `src/` | typed Gradle verification task `checkDefinedStyleClassSelectors` | `./gradlew checkDefinedStyleClassSelectors`, `./gradlew checkStylingLayerEnforcement`, and `./gradlew check` | Every explicit style-class selector authored from Java resolves to a selector defined in centralized stylesheet files under `resources/`, currently the canonical `resources/salt-marcher.css`. |
 

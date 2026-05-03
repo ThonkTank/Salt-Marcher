@@ -28,11 +28,13 @@ final class SessionPlannerBinder {
         SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel();
         SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler();
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
-        SessionPlannerMainView mainView = new SessionPlannerMainView();
+        SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
+        SessionPlannerLootMainView lootView = new SessionPlannerLootMainView();
+        SessionPlannerMainView mainView = new SessionPlannerMainView(timelineView, lootView);
 
         bindRequests(planner, intentHandler);
         bindControls(contributionModel, intentHandler, controlsView);
-        bindMain(contributionModel, intentHandler, mainView);
+        bindMain(contributionModel, intentHandler, timelineView, lootView);
 
         sessionModel.subscribe(contributionModel::apply);
         contributionModel.apply(sessionModel.current());
@@ -70,20 +72,22 @@ final class SessionPlannerBinder {
     private static void bindMain(
             SessionPlannerContributionModel contributionModel,
             SessionPlannerIntentHandler intentHandler,
-            SessionPlannerMainView mainView
+            SessionPlannerTimelineMainView timelineView,
+            SessionPlannerLootMainView lootView
     ) {
-        mainView.onViewInputEvent(intentHandler::consume);
-        mainView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps());
-        mainView.showLootPlaceholders(contributionModel.lootPlaceholders());
+        timelineView.onViewInputEvent(intentHandler::consume);
+        lootView.onViewInputEvent(intentHandler::consume);
+        timelineView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps());
+        lootView.showLootPlaceholders(contributionModel.lootPlaceholders());
         contributionModel.plannedEncounters().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.EncounterModel>) change ->
-                        mainView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps()));
+                        timelineView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps()));
         contributionModel.restGaps().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.RestGapModel>) change ->
-                        mainView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps()));
+                        timelineView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps()));
         contributionModel.lootPlaceholders().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.LootModel>) change ->
-                        mainView.showLootPlaceholders(contributionModel.lootPlaceholders()));
+                        lootView.showLootPlaceholders(contributionModel.lootPlaceholders()));
     }
 
     private static ApplySessionPlannerCommand refreshCommand() {

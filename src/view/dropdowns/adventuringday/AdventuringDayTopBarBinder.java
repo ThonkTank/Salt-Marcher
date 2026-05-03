@@ -32,7 +32,7 @@ final class AdventuringDayTopBarBinder {
         view.showCalculation(toCalculation(presentationModel.calculationProperty().get()));
         presentationModel.calculationProperty()
                 .addListener((ignored, before, after) -> view.showCalculation(toCalculation(after)));
-        intentHandler.consume(AdventuringDayTopBarViewInputEvent.opened());
+        presentationModel.requestRefresh();
         return new Binding(view);
     }
 
@@ -64,24 +64,24 @@ final class AdventuringDayTopBarBinder {
                 safeModel.activePartyLevels());
     }
 
-    private static AdventuringDayCalculatorTopBarView.Calculation toCalculation(
+    private static AdventuringDayTopBarView.Calculation toCalculation(
             AdventuringDayTopBarContributionModel.CalculationModel model
     ) {
         AdventuringDayTopBarContributionModel.CalculationModel safeModel = model == null
                 ? AdventuringDayTopBarContributionModel.CalculationModel.empty(0)
                 : model;
-        return new AdventuringDayCalculatorTopBarView.Calculation(
+        return new AdventuringDayTopBarView.Calculation(
                 toBudget(safeModel.budget()),
                 toProgress(safeModel.progress()));
     }
 
-    private static AdventuringDayCalculatorTopBarView.Budget toBudget(
+    private static AdventuringDayTopBarView.Budget toBudget(
             AdventuringDayTopBarContributionModel.BudgetModel model
     ) {
         AdventuringDayTopBarContributionModel.BudgetModel safeModel = model == null
                 ? new AdventuringDayTopBarContributionModel.BudgetModel(0, 0, 0, 0, 0)
                 : model;
-        return new AdventuringDayCalculatorTopBarView.Budget(
+        return new AdventuringDayTopBarView.Budget(
                 safeModel.totalXp(),
                 safeModel.perThirdXp(),
                 safeModel.firstShortRestXp(),
@@ -89,7 +89,7 @@ final class AdventuringDayTopBarBinder {
                 safeModel.characterCount());
     }
 
-    private static AdventuringDayCalculatorTopBarView.Progress toProgress(
+    private static AdventuringDayTopBarView.Progress toProgress(
             AdventuringDayTopBarContributionModel.ProgressModel model
     ) {
         AdventuringDayTopBarContributionModel.ProgressModel safeModel = model == null
@@ -104,7 +104,7 @@ final class AdventuringDayTopBarBinder {
                         List.of(),
                         List.of())
                 : model;
-        return new AdventuringDayCalculatorTopBarView.Progress(
+        return new AdventuringDayTopBarView.Progress(
                 safeModel.totalGroupXp(),
                 safeModel.perCharacterAwardedXp(),
                 safeModel.partySize(),
@@ -120,20 +120,20 @@ final class AdventuringDayTopBarBinder {
                         .toList());
     }
 
-    private static AdventuringDayCalculatorTopBarView.LevelProgress toLevelProgress(
+    private static AdventuringDayTopBarView.LevelProgress toLevelProgress(
             AdventuringDayTopBarContributionModel.LevelProgressModel model
     ) {
         AdventuringDayTopBarContributionModel.LevelProgressModel safeModel = model == null
                 ? new AdventuringDayTopBarContributionModel.LevelProgressModel(1, 1, 0, 0)
                 : model;
-        return new AdventuringDayCalculatorTopBarView.LevelProgress(
+        return new AdventuringDayTopBarView.LevelProgress(
                 safeModel.startLevel(),
                 safeModel.endLevel(),
                 safeModel.characterCount(),
                 safeModel.levelUps());
     }
 
-    private static AdventuringDayCalculatorTopBarView.ProgressEvent toProgressEvent(
+    private static AdventuringDayTopBarView.ProgressEvent toProgressEvent(
             AdventuringDayTopBarContributionModel.ProgressEventModel model
     ) {
         AdventuringDayTopBarContributionModel.ProgressEventModel safeModel = model == null
@@ -145,7 +145,7 @@ final class AdventuringDayTopBarBinder {
                         0,
                         false)
                 : model;
-        return new AdventuringDayCalculatorTopBarView.ProgressEvent(
+        return new AdventuringDayTopBarView.ProgressEvent(
                 safeModel.groupXp(),
                 toProgressEventType(safeModel.type()),
                 safeModel.dayNumber(),
@@ -154,13 +154,13 @@ final class AdventuringDayTopBarBinder {
                 safeModel.partialDay());
     }
 
-    private static AdventuringDayCalculatorTopBarView.ProgressEventType toProgressEventType(
+    private static AdventuringDayTopBarView.ProgressEventType toProgressEventType(
             AdventuringDayTopBarContributionModel.ProgressEventTypeModel type
     ) {
         return switch (type == null ? AdventuringDayTopBarContributionModel.ProgressEventTypeModel.LONG_REST : type) {
-            case LEVEL_UP -> AdventuringDayCalculatorTopBarView.ProgressEventType.LEVEL_UP;
-            case SHORT_REST -> AdventuringDayCalculatorTopBarView.ProgressEventType.SHORT_REST;
-            case LONG_REST -> AdventuringDayCalculatorTopBarView.ProgressEventType.LONG_REST;
+            case LEVEL_UP -> AdventuringDayTopBarView.ProgressEventType.LEVEL_UP;
+            case SHORT_REST -> AdventuringDayTopBarView.ProgressEventType.SHORT_REST;
+            case LONG_REST -> AdventuringDayTopBarView.ProgressEventType.LONG_REST;
         };
     }
 

@@ -46,16 +46,20 @@ for ordinary node styling. The view-specific document owns the passive-`View`
 direct-render exception and its remaining non-CSS semantics.
 
 The current blocking proof surfaces are `checkStylingLayerEnforcement`,
-`checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,
-`checkDesktopPackagingInputs`, `pmdStylingLayerEnforcement`, `compileJava`,
-and `checkStylingViewEnforcement`.
+`checkStylingCentralStylesheetOwner`, `checkCentralizedStylesheets`,
+`checkDefinedStyleClassSelectors`, `checkDesktopPackagingInputs`,
+`pmdStylingLayerEnforcement`, `compileJava`,
+`checkStylingViewEnforcement`, and `check`.
 `checkStylingLayerEnforcement` is the canonical layer-wide bundle entrypoint.
-It aggregates the stylesheet-file, selector-resolution, packaging-proof, PMD
-inline-style, and broad `ViewProgrammaticStyling` compile surfaces for the
-styling layer itself. `checkStylingViewEnforcement` and the bundle-local
-`ViewDirectRenderStylingPlacement` part of `compileJava` prove only that local
-JavaFX styling values appear in passive `View` code solely inside the
-documented direct-render exception. The remaining passive-`View`
+It aggregates the canonical stylesheet-owner, stylesheet-file,
+selector-resolution, PMD inline-style, and broad `ViewProgrammaticStyling`
+compile surfaces for the styling layer itself.
+`checkStylingViewEnforcement` is the canonical
+passive-`View` styling bundle entrypoint and also participates explicitly in
+the root `check` aggregate. Its bundle-local `ViewDirectRenderStylingPlacement`
+compiler rule, which also blocks `compileJava`, proves only that local JavaFX
+styling values appear in passive `View` code solely inside the documented
+direct-render exception. The remaining passive-`View`
 direct-render-value derivation and "no local visual system" semantics remain
 review-owned until the repository adopts a dedicated central-token or
 equivalent non-CSS proof surface.

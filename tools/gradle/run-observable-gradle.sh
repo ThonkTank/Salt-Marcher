@@ -89,10 +89,10 @@ fi
 cd "$REPO_ROOT"
 
 readonly task_display="${tasks[*]}"
-readonly timestamp="$(date +%Y%m%dT%H%M%S)"
+readonly timestamp="$(date +%Y%m%dT%H%M%S%N 2>/dev/null || date +%Y%m%dT%H%M%S)"
 readonly log_dir="$REPO_ROOT/build/gradle-run-logs"
 readonly log_name="$(join_for_log_name "${tasks[@]}")"
-readonly log_file="$log_dir/${timestamp}-${log_name}.log"
+readonly log_file="$log_dir/${timestamp}-pid$$-${log_name}.log"
 
 mkdir -p "$log_dir"
 

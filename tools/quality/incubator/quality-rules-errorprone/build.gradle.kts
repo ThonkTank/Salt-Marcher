@@ -41,20 +41,23 @@ activeEnforcementBundleIds
     .mapNotNull(errorProneHostScriptsByBundleId::get)
     .distinct()
     .forEach { scriptPath ->
-        apply(from = scriptPath)
+        apply(from = File(scriptPath))
     }
 
 val sourceSets = the<SourceSetContainer>()
 sourceSets.named("main") {
-    java.setSrcDirs(listOf("src/main/java") + activeEnforcementBundleIds.mapNotNull(errorProneSourceDirsByBundleId::get))
+    java.setSrcDirs(
+        listOf(layout.projectDirectory.dir("src/main/java").asFile.absolutePath)
+            + activeEnforcementBundleIds.mapNotNull(errorProneSourceDirsByBundleId::get)
+    )
     resources.setSrcDirs(emptyList<String>())
 }
 
 val bugCheckerServicePath = "META-INF/services/com.google.errorprone.bugpatterns.BugChecker"
-val hostBugCheckerService = layout.projectDirectory.file("src/main/resources/$bugCheckerServicePath")
+val hostBugCheckerService = layout.projectDirectory.file("src/main/resources/$bugCheckerServicePath").asFile
 val bundleBugCheckerServices = activeEnforcementBundleIds
     .mapNotNull(errorProneServiceFilesByBundleId::get)
-    .map(layout.projectDirectory::file)
+    .map(::File)
 val generatedResourcesDir = layout.buildDirectory.dir("generated/quality-rules-errorprone/resources")
 val generatedBugCheckerService = generatedResourcesDir.map { dir -> dir.file(bugCheckerServicePath) }
 
@@ -66,7 +69,7 @@ val syncQualityRulesErrorProneServices = tasks.register("syncQualityRulesErrorPr
         listOf(hostBugCheckerService)
             .plus(bundleBugCheckerServices)
             .forEach { serviceFile ->
-                serviceFile.asFile.readLines()
+                serviceFile.readLines()
                     .map(String::trim)
                     .filter(String::isNotEmpty)
                     .forEach(mergedLines::add)

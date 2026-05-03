@@ -66,58 +66,21 @@ fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enforcement
         .associateBy(EnforcementBundleDescriptor::bundleId)
 }
 
-val legacyEnforcementBundleIdsInOrder = listOf(
-    "view",
-    "viewLayer",
-    "viewInspectorEntry",
-    "viewPublishedEvent",
-    "viewContributionModel",
-    "viewContentModel"
-)
-
 val enforcementBundleDescriptorsById = loadEnforcementBundleDescriptors(rootDir)
 
-val enforcementBundleIdsInOrder = (
-    legacyEnforcementBundleIdsInOrder.mapIndexed { index, bundleId -> bundleId to index } +
-        enforcementBundleDescriptorsById.values.map { descriptor -> descriptor.bundleId to descriptor.order }
-    )
-    .sortedBy { (_, order) -> order }
-    .map { (bundleId, _) -> bundleId }
-    .distinct()
+val enforcementBundleIdsInOrder = enforcementBundleDescriptorsById.values
+    .sortedBy(EnforcementBundleDescriptor::order)
+    .map(EnforcementBundleDescriptor::bundleId)
 
-val legacyEnforcementBundleTaskToId = mapOf(
-    "checkViewEnforcement" to "view",
-    "viewSurfaceArchitectureTest" to "view",
-    "checkViewFxmlResources" to "view",
-    "jqassistantScanViewEnforcement" to "view",
-    "jqassistantAnalyzeViewEnforcement" to "view",
-    "checkViewLayerEnforcement" to "viewLayer",
-    "viewLayerArchitectureTest" to "viewLayer",
-    "viewLayerTopologyCheck" to "viewLayer",
-    "checkViewInspectorEntryEnforcement" to "viewInspectorEntry",
-    "jqassistantScanViewInspectorEntryEnforcement" to "viewInspectorEntry",
-    "jqassistantAnalyzeViewInspectorEntryEnforcement" to "viewInspectorEntry",
-    "viewInspectorEntryTopologyCheck" to "viewInspectorEntry",
-    "checkViewPublishedEventEnforcement" to "viewPublishedEvent",
-    "viewPublishedEventArchitectureTest" to "viewPublishedEvent",
-    "checkViewContributionModelEnforcement" to "viewContributionModel",
-    "viewContributionModelArchitectureTest" to "viewContributionModel",
-    "jqassistantScanViewContributionModelEnforcement" to "viewContributionModel",
-    "jqassistantAnalyzeViewContributionModelEnforcement" to "viewContributionModel",
-    "viewContributionModelTopologyCheck" to "viewContributionModel",
-    "checkViewContentModelEnforcement" to "viewContentModel"
-)
-
-val descriptorEnforcementBundleTaskToId = enforcementBundleDescriptorsById.values
+val enforcementBundleTaskToId = enforcementBundleDescriptorsById.values
     .flatMap { descriptor -> descriptor.taskNames.map { taskName -> taskName to descriptor.bundleId } }
     .toMap()
 
-val enforcementBundleTaskToId = legacyEnforcementBundleTaskToId + descriptorEnforcementBundleTaskToId
-
-val enforcementBundleAwareTasks = enforcementBundleTaskToId.keys
 val fullBuildTaskNames = setOf(
     "build",
     "check",
+    "productionBuild",
+    "checkQualityHygiene",
     "assemble",
     "classes",
     "compileJava",
@@ -144,7 +107,7 @@ val requestedBundleIds = requestedTaskNames
 val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty()
     && requestedBundleIds.isNotEmpty()
     && requestedTaskNames.none { taskName -> taskName in fullBuildTaskNames }
-    && requestedTaskNames.all { taskName -> taskName in enforcementBundleAwareTasks }
+    && requestedTaskNames.all { taskName -> taskName in enforcementBundleTaskToId.keys }
 
 val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
     enforcementBundleIdsInOrder.filter { bundleId -> bundleId in requestedBundleIds }
@@ -152,9 +115,9 @@ val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
     enforcementBundleIdsInOrder
 }
 
+System.setProperty("saltmarcher.repoRootDir", rootDir.absolutePath)
 System.setProperty("saltmarcher.focusedEnforcementBundleMode", focusedEnforcementBundleMode.toString())
 System.setProperty("saltmarcher.activeEnforcementBundleIds", activeEnforcementBundleIds.joinToString(","))
-System.setProperty("saltmarcher.repoRootDir", rootDir.absolutePath)
 
 rootProject.name = "SaltMarcher"
 

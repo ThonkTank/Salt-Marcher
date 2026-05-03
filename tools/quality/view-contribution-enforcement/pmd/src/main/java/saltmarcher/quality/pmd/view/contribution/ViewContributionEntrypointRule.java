@@ -12,10 +12,19 @@ public final class ViewContributionEntrypointRule extends AbstractJavaRule {
     @Override
     public Object visit(ASTCompilationUnit node, Object data) {
         SaltMarcherSourceFacts sourceFacts = SaltMarcherSourceFacts.from(node);
-        if (sourceFacts.isViewContributionSource()) {
+        if (isViewContributionSource(sourceFacts)) {
             checkViewContribution(node, data, sourceFacts);
         }
         return data;
+    }
+
+    private static boolean isViewContributionSource(SaltMarcherSourceFacts sourceFacts) {
+        String[] pathSegments = sourceFacts.relativePath().split("/");
+        return pathSegments.length == 5
+                && "src".equals(pathSegments[0])
+                && "view".equals(pathSegments[1])
+                && Set.of("leftbartabs", "statetabs", "dropdowns").contains(pathSegments[2])
+                && sourceFacts.simpleName().endsWith("Contribution");
     }
 
     private void checkViewContribution(ASTCompilationUnit node, Object data, SaltMarcherSourceFacts sourceFacts) {

@@ -22,7 +22,7 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.kind()) {
+        switch (event.source()) {
             case POINTER_PRESSED -> {
                 DungeonEditorContributionModel.InteractionResult result =
                         contributionModel.primaryPressed(contributionModel.resolvePointerState(
@@ -67,22 +67,19 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.kind()) {
-            case REFRESH -> dispatch(contributionModel.refresh());
-            case SELECT_MAP -> dispatchNullable(contributionModel.selectMap(event.mapKey()));
-            case CREATE_MAP -> dispatch(contributionModel.createMap(event.mapName()));
-            case RENAME_MAP -> dispatchNullable(contributionModel.renameMap(event.mapKey(), event.mapName()));
-            case DELETE_MAP -> dispatchNullable(contributionModel.deleteMap(event.mapKey()));
-            case SELECT_VIEW_MODE -> contributionModel.selectViewMode(event.viewModeKey());
-            case SELECT_TOOL -> contributionModel.selectTool(event.tool());
-            case PREVIOUS_LEVEL -> dispatchNullable(contributionModel.previousLevel());
-            case NEXT_LEVEL -> dispatchNullable(contributionModel.nextLevel());
-            case OVERLAY_MODE_CHANGED -> contributionModel.selectOverlayMode(event.viewModeKey());
-            case OVERLAY_RANGE_CHANGED -> contributionModel.selectOverlayRange(event.overlayRange());
-            case OVERLAY_OPACITY_CHANGED -> contributionModel.selectOverlayOpacity(event.overlayOpacity());
-            case OVERLAY_LEVELS_CHANGED -> contributionModel.selectOverlayLevels(event.overlayLevels());
-            default -> {
-            }
+        switch (event.source()) {
+            case MAP_SELECTION -> dispatchNullable(contributionModel.selectMap(event.mapKey()));
+            case CREATE_MAP_SUBMIT -> dispatch(contributionModel.createMap(event.mapName()));
+            case RENAME_MAP_SUBMIT -> dispatchNullable(contributionModel.renameMap(event.mapKey(), event.mapName()));
+            case DELETE_MAP_CONFIRM -> dispatchNullable(contributionModel.deleteMap(event.mapKey()));
+            case VIEW_MODE_TOGGLE -> contributionModel.selectViewMode(event.viewModeKey());
+            case TOOL_SELECTION -> contributionModel.selectTool(event.tool());
+            case PREVIOUS_LEVEL_BUTTON -> dispatchNullable(contributionModel.previousLevel());
+            case NEXT_LEVEL_BUTTON -> dispatchNullable(contributionModel.nextLevel());
+            case OVERLAY_MODE_CONTROL -> contributionModel.selectOverlayMode(event.overlayModeKey());
+            case OVERLAY_RANGE_CONTROL -> contributionModel.selectOverlayRange(event.overlayRange());
+            case OVERLAY_OPACITY_CONTROL -> contributionModel.selectOverlayOpacity(event.overlayOpacity());
+            case OVERLAY_LEVEL_SELECTION -> contributionModel.selectOverlayLevels(event.overlayLevels());
         }
     }
 

@@ -10,8 +10,9 @@ import org.gradle.kotlin.dsl.withGroovyBuilder
 
 private val freshGateResultReason = "Quality and architecture gate diagnostics must be produced by the current invocation."
 private val stylingStylesheetExtensions = listOf("css", "scss", "sass", "less", "styl")
+private val stylingCanonicalStylesheetRelativePath = "salt-marcher.css"
 private val stylingStylesheetRelativePathProvider = providers.gradleProperty("saltMarcherStylesheet")
-    .orElse("salt-marcher.css")
+    .orElse(stylingCanonicalStylesheetRelativePath)
 private val stylingSourceRoots = files("bootstrap", "shell", "src")
 private val stylingLayerRulesetFile = layout.projectDirectory.file(
     "tools/quality/styling-layer-enforcement/pmd/ruleset.xml"
@@ -53,7 +54,7 @@ private data class CallDefinition(
 private fun verifyCentralizedStylesheets() {
     val projectRootPath = layout.projectDirectory.asFile.toPath().normalize()
     val allowedStylesheetPath = projectRootPath
-        .resolve("resources/${stylingStylesheetRelativePathProvider.get()}")
+        .resolve("resources/$stylingCanonicalStylesheetRelativePath")
         .normalize()
     val extensions = stylingStylesheetExtensions.map { it.lowercase(Locale.ROOT) }.toSet()
 
@@ -74,9 +75,27 @@ private fun verifyCentralizedStylesheets() {
     if (offendingFiles.isNotEmpty()) {
         val details = offendingFiles.joinToString(separator = "\n") { " - $it" }
         throw GradleException(
-            "Stylesheet files must be centralized in resources/${stylingStylesheetRelativePathProvider.get()}.\n" +
+            "Stylesheet files must be centralized in resources/$stylingCanonicalStylesheetRelativePath.\n" +
                 "Move approved visual rules into the central stylesheet instead of adding replacement style files.\n" +
                 "Offending files:\n$details"
+        )
+    }
+}
+
+private fun verifyCentralStylesheetOwner() {
+    val configuredStylesheetPath = stylingStylesheetRelativePathProvider.get()
+    if (configuredStylesheetPath != stylingCanonicalStylesheetRelativePath) {
+        throw GradleException(
+            "SaltMarcher styling must stay owned by resources/$stylingCanonicalStylesheetRelativePath.\n" +
+                "The configured saltMarcherStylesheet path was '$configuredStylesheetPath'."
+        )
+    }
+
+    val canonicalStylesheetFile = layout.projectDirectory.file("resources/$stylingCanonicalStylesheetRelativePath").asFile
+    if (!canonicalStylesheetFile.isFile) {
+        throw GradleException(
+            "SaltMarcher styling must stay owned by resources/$stylingCanonicalStylesheetRelativePath.\n" +
+                "The canonical stylesheet file is missing: ${canonicalStylesheetFile.toPath().toAbsolutePath()}"
         )
     }
 }
@@ -546,6 +565,16 @@ val checkCentralizedStylesheets by tasks.registering {
     }
 }
 
+val checkStylingCentralStylesheetOwner by tasks.registering {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Fail if SaltMarcher styling stops using the canonical resources/salt-marcher.css owner."
+    outputs.upToDateWhen { false }
+    outputs.doNotCacheIf(freshGateResultReason) { true }
+    doLast {
+        verifyCentralStylesheetOwner()
+    }
+}
+
 val checkDefinedStyleClassSelectors by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Fail if Java-authored style classes are missing from resources/salt-marcher.css selectors."
@@ -580,9 +609,9 @@ val checkStylingLayerEnforcement by tasks.registering {
     group = "verification"
     description = "Run the centralized styling-layer enforcement bundle through one root entrypoint."
     dependsOn("compileJava")
+    dependsOn(checkStylingCentralStylesheetOwner)
     dependsOn(checkCentralizedStylesheets)
     dependsOn(checkDefinedStyleClassSelectors)
-    dependsOn("checkDesktopPackagingInputs")
     dependsOn(pmdStylingLayerEnforcement)
     outputs.upToDateWhen { false }
     outputs.doNotCacheIf(freshGateResultReason) { true }

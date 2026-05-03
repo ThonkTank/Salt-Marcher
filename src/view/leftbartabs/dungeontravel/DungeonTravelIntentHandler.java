@@ -20,17 +20,15 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
-        switch (event.kind()) {
-            case REFRESH -> presentationModel.requestRefresh();
-            case RESET_VIEW -> presentationModel.requestResetView();
-            case PREVIOUS_LEVEL -> presentationModel.previousLevel();
-            case NEXT_LEVEL -> presentationModel.nextLevel();
-            case OVERLAY_MODE_CHANGED -> presentationModel.selectOverlayMode(event.overlayModeKey());
-            case OVERLAY_RANGE_CHANGED -> presentationModel.selectOverlayRange(event.overlayRange());
-            case OVERLAY_OPACITY_CHANGED -> presentationModel.selectOverlayOpacity(event.overlayOpacity());
-            case OVERLAY_LEVELS_CHANGED -> presentationModel.selectOverlayLevels(event.overlayLevels());
-            default -> {
-            }
+        switch (event.source()) {
+            case REFRESH_BUTTON -> presentationModel.requestRefresh();
+            case RESET_VIEW_BUTTON -> presentationModel.requestResetView();
+            case PREVIOUS_LEVEL_BUTTON -> presentationModel.previousLevel();
+            case NEXT_LEVEL_BUTTON -> presentationModel.nextLevel();
+            case OVERLAY_MODE_CONTROL -> presentationModel.selectOverlayMode(event.overlayModeKey());
+            case OVERLAY_RANGE_CONTROL -> presentationModel.selectOverlayRange(event.overlayRange());
+            case OVERLAY_OPACITY_CONTROL -> presentationModel.selectOverlayOpacity(event.overlayOpacity());
+            case OVERLAY_LEVEL_SELECTION -> presentationModel.selectOverlayLevels(event.overlayLevels());
         }
     }
 

@@ -63,6 +63,12 @@ public final class ViewInputEventArchitectureTest {
                     .should(belongToInteractiveSameStemView());
 
     @ArchTest
+    static final ArchRule viewInputEventsMustOwnMatchingIntentHandlerConsumeOverload =
+            classes()
+                    .that(ViewRolePredicates.areViewInputEvents())
+                    .should(declareLocalIntentHandlerConsumeOverload());
+
+    @ArchTest
     static final ArchRule viewInputEventsMustNotDeclareDeadSnapshotComponents =
             classes()
                     .that(ViewRolePredicates.areViewInputEvents())
@@ -151,6 +157,22 @@ public final class ViewInputEventArchitectureTest {
                         item,
                         item.getName() + " declares ViewInputEvent components that the co-located IntentHandler never reads: "
                                 + String.join(", ", missingComponents)));
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> declareLocalIntentHandlerConsumeOverload() {
+        return new ArchCondition<>("declare a co-located IntentHandler consume overload for the same ViewInputEvent type") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                Class<?> eventClass = loadClass(item.getName());
+                if (localIntentHandlerFor(item, eventClass).isPresent()) {
+                    return;
+                }
+                events.add(SimpleConditionEvent.violated(
+                        item,
+                        item.getName() + " has no co-located *IntentHandler.consume("
+                                + item.getSimpleName() + ") overload"));
             }
         };
     }

@@ -15,18 +15,14 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
-import org.gradle.work.DisableCachingByDefault
+import org.gradle.api.tasks.CacheableTask
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import javax.inject.Inject
 import saltmarcher.buildlogic.tasks.resolveVenvPythonExecutable
 
-@DisableCachingByDefault(because = "Verification task whose result is a pass/fail report.")
+@CacheableTask
 abstract class LizardCheckTask : DefaultTask() {
-
-    init {
-        outputs.upToDateWhen { false }
-    }
 
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)

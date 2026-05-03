@@ -55,7 +55,7 @@ final class DungeonTravelBinder {
         controls.showMapName(presentationModel.mapNameProperty().get());
         controls.showZoom(main.zoom());
         state.showActions(toActionItems(presentationModel.actionsProperty().get()));
-        intentHandler.consume(DungeonTravelControlsViewInputEvent.refresh());
+        presentationModel.requestRefresh();
         return new Binding(controls, main, state);
     }
 

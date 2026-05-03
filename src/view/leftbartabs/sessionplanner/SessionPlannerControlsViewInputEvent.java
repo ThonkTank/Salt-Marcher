@@ -1,25 +1,17 @@
 package src.view.leftbartabs.sessionplanner;
 
 public record SessionPlannerControlsViewInputEvent(
-        Kind kind,
-        long planId
+        Source source,
+        long selectedPlanId
 ) {
 
     public SessionPlannerControlsViewInputEvent {
-        kind = kind == null ? Kind.REFRESH : kind;
-        planId = Math.max(0L, planId);
+        source = source == null ? Source.REFRESH_BUTTON : source;
+        selectedPlanId = Math.max(0L, selectedPlanId);
     }
 
-    static SessionPlannerControlsViewInputEvent refresh() {
-        return new SessionPlannerControlsViewInputEvent(Kind.REFRESH, 0L);
-    }
-
-    static SessionPlannerControlsViewInputEvent importPlan(long planId) {
-        return new SessionPlannerControlsViewInputEvent(Kind.IMPORT_PLAN, planId);
-    }
-
-    enum Kind {
-        REFRESH,
-        IMPORT_PLAN
+    enum Source {
+        REFRESH_BUTTON,
+        IMPORT_BUTTON
     }
 }

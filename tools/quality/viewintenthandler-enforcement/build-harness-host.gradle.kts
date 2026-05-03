@@ -7,6 +7,7 @@ import org.gradle.kotlin.dsl.the
 val sourceSets = the<SourceSetContainer>()
 sourceSets.named("main") {
     java.srcDir("../../quality/viewintenthandler-enforcement/build-harness/src/main/java")
+    resources.srcDir("../../quality/viewintenthandler-enforcement/build-harness/src/main/resources")
 }
 
 tasks.register<JavaExec>("viewIntentHandlerTopologyCheck") {

@@ -6,12 +6,14 @@ This bundle co-locates the passive-`View`-specific styling checks that back
 It keeps the current proof surface intentionally narrow and honest:
 
 - `errorprone/`
-  `ViewDirectRenderStylingPlacement`
+  `ViewDirectRenderStylingPlacement` plus the bundle-local
+  `ViewDirectRenderStylingSupport`
 - `bundle.properties`
   canonical registration source for this bundle's public task name and host
   script/source-set wiring
 - `root-host.gradle.kts`
-  root-project compiler and aggregate-task wiring
+  root-project compiler wiring, focused entrypoint registration, and explicit
+  root-`check` aggregation
 - `errorprone-host.gradle.kts`
   included-build wiring for the `quality-rules-errorprone` host
 

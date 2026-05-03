@@ -8,13 +8,6 @@ public final class ViewRolePredicates {
     private ViewRolePredicates() {
     }
 
-    public static DescribedPredicate<JavaClass> areContributions() {
-        return rolePredicate(
-                "view contribution role classes",
-                "^src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+$",
-                "Contribution");
-    }
-
     public static DescribedPredicate<JavaClass> areBinders() {
         return rolePredicate(
                 "view binder role classes",

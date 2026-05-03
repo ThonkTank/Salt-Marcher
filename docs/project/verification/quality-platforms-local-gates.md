@@ -97,10 +97,12 @@ topology analysis enters through `checkViewContentModelEnforcement`, focused
 `checkViewInspectorEntryEnforcement`, and broader remaining view-topology
 analysis enters through `checkViewArchitecture`.
 The graph/FXML/topology paths are wired into the central `check` aggregate
-through the named architecture aggregates, while passive-`View` direct-render
-styling placement reaches the full build through `compileJava` itself. This
-keeps focused compilation verification independent from graph analysis while
-ensuring `build` still runs the full architecture harness through `check`.
+through the named architecture aggregates. Passive-`View` direct-render
+styling placement stays compiler-backed through `compileJava` and also enters
+the central `check` aggregate explicitly through
+`checkStylingViewEnforcement`. This keeps focused compilation verification
+independent from graph analysis while ensuring `build` still runs the full
+architecture harness through `check`.
 
 ### Complexity, Duplication, And Metrics
 
@@ -108,9 +110,9 @@ ensuring `build` still runs the full architecture harness through `check`.
 | --- | --- | --- | --- |
 | PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
-| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value; wrapper-based invocations write `main.txt` under `build/isolated-gradle/<isolation-id>/.../reports/cpd/`. |
-| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; wrapper-based invocations write `main.txt` under `build/isolated-gradle/<isolation-id>/.../reports/lizard/`. |
-| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `main.txt` and `summary.md` under `build/isolated-gradle/<isolation-id>/.../reports/ckjm/` for wrapper-based invocations, and warns on baseline hotspot regressions without blocking local build or install handoff. |
+| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value; wrapper-based invocations write `main.txt` under `.gradle/isolated-runs/<run-id>/build/.../reports/cpd/`. |
+| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; wrapper-based invocations write `main.txt` under `.gradle/isolated-runs/<run-id>/build/.../reports/lizard/`. |
+| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `main.txt` and `summary.md` under `.gradle/isolated-runs/<run-id>/build/.../reports/ckjm/` for wrapper-based invocations, and exports the newest maintained report to `build/latest-reports/ckjm/` without blocking local build or install handoff. |
 
 PMD non-architecture reports use explicit metric thresholds. These thresholds
 must stay at or below PMD's documented defaults unless the standard explicitly
@@ -202,6 +204,7 @@ packaging policies that are not language-level architecture rules.
 
 | Entrypoint | Status | Current policy |
 | --- | --- | --- |
+| `./gradlew checkStylingCentralStylesheetOwner` | `Blocking Local Gate` | SaltMarcher styling must stay owned by `resources/salt-marcher.css`, and the active `saltMarcherStylesheet` path must still point at that canonical owner. |
 | `./gradlew checkCentralizedStylesheets` | `Blocking Local Gate` | Stylesheet files with supported stylesheet extensions must be centralized in `resources/salt-marcher.css`. |
 | `./gradlew checkDefinedStyleClassSelectors` | `Blocking Local Gate` | Style classes authored from Java through `getStyleClass()` calls must resolve to selectors in `resources/salt-marcher.css`. |
 | `./gradlew checkNoCompiledArtifactsInSource` | `Blocking Local Gate` | `.class` files must not exist under active source roots. |
@@ -218,7 +221,7 @@ and
 [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
 The canonical styling-layer bundle proof route is
 `./gradlew checkStylingLayerEnforcement`; it aggregates the stylesheet,
-selector, packaging-backed stylesheet-owner, PMD inline-style, and compile-side
+selector, bundle-local stylesheet-owner, PMD inline-style, and compile-side
 programmatic-styling checks for the layer itself.
 The dedicated passive-`View` direct-render placement proof route is
 `./gradlew checkStylingViewEnforcement`; centralized stylesheet ownership and
@@ -261,11 +264,12 @@ It includes:
 - cyclomatic-complexity detection through `lizardMain`
 - OO-metric regression reporting through `ckjmMain`
 
-`./gradlew build --console=plain` remains the default implementation-handoff
-build required by `AGENTS.md` for production-code changes. It reaches the same
-full check set through Gradle's standard `build -> check` lifecycle;
-SaltMarcher-specific checks must be wired to `check`, not duplicated on
-`build`.
+`tools/gradle/run-staged-verification.sh production-handoff` is the default
+implementation-handoff route required by `AGENTS.md` for production-code
+changes. The wrapper is runtime-only: it forwards the canonical surface name to
+one same-named Gradle lifecycle task, and the verification core expands
+`production-handoff` to the production-build, quality-hygiene, architecture,
+and view-topology dependencies inside Gradle.
 
 For check-only implementation work limited to one or more concrete enforcement
 bundles or shared verification packages under `tools/quality/**`,
@@ -287,7 +291,9 @@ full-build path.
 `Blocking Local Gate` for Markdown-backed architecture and enforcement
 documentation checks. It is intentionally outside `check` and `build` so
 documentation-only changes use a narrower proof route by default without
-pulling the full application build and install path.
+pulling the full application build and install path. The matching staged
+surface is `docs`, and the runtime wrapper forwards that surface name without
+owning the documentation task mapping itself.
 
 A completed implementation pass is incomplete until the required
 production-code full build, check-only package/bundle rerun, or
@@ -459,7 +465,8 @@ Architecture-focused entrypoints:
 - `./gradlew checkStylingViewEnforcement --console=plain`
   Aggregates the passive-`View` direct-render styling bundle through
   `compileJava` with the dedicated `ViewDirectRenderStylingPlacement`
-  compiler check.
+  compiler check and is also wired explicitly into the root `check`
+  aggregate.
 - `./gradlew checkShellAppShellEnforcement --console=plain`
   Aggregates the focused `AppShell` bundle through `compileJava` with the
   dedicated `ShellLifecycleHookOwnership` compiler check.
@@ -521,36 +528,45 @@ Gradle state for every wrapper-based invocation.
 `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels for
 local runs, but wrapper isolation no longer depends on either value being set.
 
-Isolated invocations keep the normal entrypoints, including
-`./gradlew build --console=plain`, but move mutable Gradle runtime state into
-repo-local per-invocation paths. They write build outputs under
-`build/isolated-gradle/<isolation-id>/`, project-cache state under
-`.gradle/isolated-gradle/<isolation-id>/`, and wrapper plus writable dependency
-cache state under `.gradle/isolated-user-home/<isolation-id>/`.
+Isolated invocations keep the normal entrypoints, but the public staged local
+handoff now runs through `tools/gradle/run-staged-verification.sh`. Mutable
+Gradle runtime state moves into one repo-local per-invocation run root under
+`.gradle/isolated-runs/<run-id>/`, with build outputs under `build/`,
+project-cache state under `project-cache/`, and wrapper plus writable
+dependency-cache state under `gradle-user-home/`.
 
 The wrapper boot path seeds the isolated user home from the shared Gradle home
 only for matching wrapper content, then exports the isolated
-`GRADLE_USER_HOME` before Gradle starts. Dependency reuse comes from a separate
-repo-local read-only snapshot exposed through `GRADLE_RO_DEP_CACHE`, so
+`GRADLE_USER_HOME` before Gradle starts and injects the root build's
+`--project-cache-dir` from that same per-run root before `settings.gradle.kts`
+evaluates. Dependency reuse comes from a separate repo-local read-only
+snapshot exposed through `GRADLE_RO_DEP_CACHE`, so
 parallel invocations share immutable dependency content without sharing
 writable Gradle user-home state.
 
 The shared included builds `tools/gradle/build-logic`,
 `tools/gradle/build-harness`, `tools/quality/rules/quality-rules`, and
-`tools/quality/incubator/quality-rules-errorprone` also run from a
-composite mirror under `.gradle/isolated-gradle/<isolation-id>/composite-root/`
-so concurrent invocations do not contend on the same included-build source
-root.
+`tools/quality/incubator/quality-rules-errorprone` now run from an
+invocation-local composite mirror under
+`.gradle/isolated-runs/<run-id>/composite-root/`, so concurrent invocations do
+not contend on the same included-build source root while mutable per-run state
+stays inside one run root.
+
+Wrapper-based `./gradlew` invocations now default to `--no-daemon` unless the
+caller explicitly passes `--daemon` or `--no-daemon`, so the isolated
+`GRADLE_USER_HOME` does not keep a detached daemon registry alive after the
+client exits.
 
 After a local wrapper-based run finishes, the wrapper removes the
-per-invocation roots under `build/isolated-gradle/<isolation-id>/`,
-`.gradle/isolated-gradle/<isolation-id>/`, and
-`.gradle/isolated-user-home/<isolation-id>/`. Successful runs that produced
-public build artifacts overwrite the stable export surface at
-`build/latest-output/`. Failed or interrupted runs retain only selected reports
-and test results under `build/retained-gradle-failures/<isolation-id>/`, and
-the wrapper prunes retained failure bundles plus observable-run logs after
-seven days.
+per-invocation root under `.gradle/isolated-runs/<run-id>/`. Successful runs
+that produced public build artifacts overwrite `build/latest-output/`, while
+maintained reports such as CKJM overwrite `build/latest-reports/ckjm/`. Failed
+or interrupted runs retain only selected reports and test results under
+`build/retained-gradle-failures/<run-id>/`, and the wrapper prints that stable
+retained path after a failure. Report paths that Gradle emitted under
+`.gradle/isolated-runs/<run-id>/...` were runtime locations and may already be
+gone after cleanup. The wrapper prunes retained failure bundles plus
+observable-run logs after seven days.
 
 Direct `gradle` invocations that bypass the wrapper do not receive the wrapper
 managed `GRADLE_USER_HOME`, read-only dependency cache, or included-build

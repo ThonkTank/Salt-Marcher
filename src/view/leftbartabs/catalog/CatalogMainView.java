@@ -56,7 +56,10 @@ public final class CatalogMainView extends BorderPane {
         sortCombo.setOnAction(event -> {
             SortSelection selection = sortCombo.getValue();
             if (!suppressSortEvents && selection != null) {
-                viewInputEventHandler.accept(CatalogMainViewInputEvent.sortChanged(selection.key()));
+                viewInputEventHandler.accept(new CatalogMainViewInputEvent(
+                        CatalogMainViewInputEvent.Source.SORT_SELECTION,
+                        0L,
+                        selection.key()));
             }
         });
         topBar.getChildren().addAll(countLabel, spacer, sortLabel, sortCombo);
@@ -75,15 +78,24 @@ public final class CatalogMainView extends BorderPane {
                 event.consume();
             } else if (event.getCode() == KeyCode.ENTER && event.isShiftDown()) {
                 if (rowActionEnabled) {
-                    viewInputEventHandler.accept(CatalogMainViewInputEvent.rowActionTriggered(row.id()));
+                    viewInputEventHandler.accept(new CatalogMainViewInputEvent(
+                            CatalogMainViewInputEvent.Source.ROW_ACTION_BUTTON,
+                            row.id(),
+                            ""));
                 }
                 event.consume();
             }
         });
         setCenter(table);
 
-        previousButton.setOnAction(event -> viewInputEventHandler.accept(CatalogMainViewInputEvent.previousPage()));
-        nextButton.setOnAction(event -> viewInputEventHandler.accept(CatalogMainViewInputEvent.nextPage()));
+        previousButton.setOnAction(event -> viewInputEventHandler.accept(new CatalogMainViewInputEvent(
+                CatalogMainViewInputEvent.Source.PREVIOUS_PAGE_BUTTON,
+                0L,
+                "")));
+        nextButton.setOnAction(event -> viewInputEventHandler.accept(new CatalogMainViewInputEvent(
+                CatalogMainViewInputEvent.Source.NEXT_PAGE_BUTTON,
+                0L,
+                "")));
         HBox pagination = new HBox(8, previousButton, pageLabel, nextButton);
         pagination.setAlignment(Pos.CENTER);
         pagination.setPadding(new Insets(6, 0, 0, 0));
@@ -194,7 +206,10 @@ public final class CatalogMainView extends BorderPane {
     }
 
     private void fireOpen(long id) {
-        viewInputEventHandler.accept(CatalogMainViewInputEvent.rowOpened(id));
+        viewInputEventHandler.accept(new CatalogMainViewInputEvent(
+                CatalogMainViewInputEvent.Source.ROW_OPEN_REQUEST,
+                id,
+                ""));
     }
 
     private TableColumn<RowItem, Void> actionColumn() {
@@ -214,7 +229,10 @@ public final class CatalogMainView extends BorderPane {
                 button.setOnAction(event -> {
                     RowItem row = getTableRow() == null ? null : getTableRow().getItem();
                     if (row != null && rowActionEnabled) {
-                        viewInputEventHandler.accept(CatalogMainViewInputEvent.rowActionTriggered(row.id()));
+                        viewInputEventHandler.accept(new CatalogMainViewInputEvent(
+                                CatalogMainViewInputEvent.Source.ROW_ACTION_BUTTON,
+                                row.id(),
+                                ""));
                     }
                 });
             }
