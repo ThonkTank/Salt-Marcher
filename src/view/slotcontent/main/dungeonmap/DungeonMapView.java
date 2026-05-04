@@ -80,8 +80,9 @@ public class DungeonMapView extends MapCanvasView {
                 List<MapRenderScene.TextPrimitive> texts,
                 List<MapRenderScene.ActorPrimitive> actors
         ) {
-            for (int index = 0; index < displayModel.cells().size(); index++) {
-                DungeonMapContentModel.RenderState.RenderCell cell = displayModel.cells().get(index);
+            List<DungeonMapContentModel.RenderState.RenderCell> cells = displayModel.cells();
+            for (int index = 0; index < cells.size(); index++) {
+                DungeonMapContentModel.RenderState.RenderCell cell = cells.get(index);
                 if (!includeLevel(displayModel, cell.z())) {
                     continue;
                 }
@@ -92,8 +93,9 @@ public class DungeonMapView extends MapCanvasView {
                         square(cell.q(), cell.r(), 1.0),
                         surfaceStyle(cell, displayModel)));
             }
-            for (int index = 0; index < displayModel.edges().size(); index++) {
-                DungeonMapContentModel.RenderState.RenderEdge edge = displayModel.edges().get(index);
+            List<DungeonMapContentModel.RenderState.RenderEdge> edges = displayModel.edges();
+            for (int index = 0; index < edges.size(); index++) {
+                DungeonMapContentModel.RenderState.RenderEdge edge = edges.get(index);
                 if (!includeLevel(displayModel, edge.z())) {
                     continue;
                 }
@@ -106,8 +108,9 @@ public class DungeonMapView extends MapCanvasView {
                                 new MapRenderScene.ScenePoint(edge.endQ(), edge.endR())),
                         edgeStyle(edge, displayModel)));
             }
-            for (int index = 0; index < displayModel.markers().size(); index++) {
-                DungeonMapContentModel.RenderState.RenderMarker marker = displayModel.markers().get(index);
+            List<DungeonMapContentModel.RenderState.RenderMarker> markers = displayModel.markers();
+            for (int index = 0; index < markers.size(); index++) {
+                DungeonMapContentModel.RenderState.RenderMarker marker = markers.get(index);
                 if (!includeLevel(displayModel, marker.z())) {
                     continue;
                 }
@@ -122,8 +125,9 @@ public class DungeonMapView extends MapCanvasView {
                         abbreviateLabel(marker.label(), marker.kind() == DungeonMapContentModel.RenderState.MarkerKind.DOOR ? 1 : 3),
                         labelText()));
             }
-            for (int index = 0; index < displayModel.labels().size(); index++) {
-                DungeonMapContentModel.RenderState.RenderLabel label = displayModel.labels().get(index);
+            List<DungeonMapContentModel.RenderState.RenderLabel> labels = displayModel.labels();
+            for (int index = 0; index < labels.size(); index++) {
+                DungeonMapContentModel.RenderState.RenderLabel label = labels.get(index);
                 if (!includeLevel(displayModel, label.z())) {
                     continue;
                 }
@@ -161,11 +165,13 @@ public class DungeonMapView extends MapCanvasView {
                 List<MapRenderScene.TextPrimitive> texts,
                 List<MapRenderScene.RelationPrimitive> relations
         ) {
+            List<DungeonMapContentModel.RenderState.GraphNode> graphNodes = displayModel.graphNodes();
+            List<DungeonMapContentModel.RenderState.GraphLink> graphLinks = displayModel.graphLinks();
             Map<Long, DungeonMapContentModel.RenderState.GraphNode> nodesById = new LinkedHashMap<>();
-            for (DungeonMapContentModel.RenderState.GraphNode node : displayModel.graphNodes()) {
+            for (DungeonMapContentModel.RenderState.GraphNode node : graphNodes) {
                 nodesById.put(node.id(), node);
             }
-            for (DungeonMapContentModel.RenderState.GraphLink link : displayModel.graphLinks()) {
+            for (DungeonMapContentModel.RenderState.GraphLink link : graphLinks) {
                 DungeonMapContentModel.RenderState.GraphNode from = nodesById.get(link.fromId());
                 DungeonMapContentModel.RenderState.GraphNode to = nodesById.get(link.toId());
                 if (from == null || to == null) {
@@ -184,8 +190,8 @@ public class DungeonMapView extends MapCanvasView {
                                 1.0,
                                 false)));
             }
-            for (int index = 0; index < displayModel.graphNodes().size(); index++) {
-                DungeonMapContentModel.RenderState.GraphNode node = displayModel.graphNodes().get(index);
+            for (int index = 0; index < graphNodes.size(); index++) {
+                DungeonMapContentModel.RenderState.GraphNode node = graphNodes.get(index);
                 surfaces.add(new MapRenderScene.SurfacePrimitive(
                         graphNodeHitRef(node),
                         "ROOM:" + node.id(),
@@ -276,7 +282,7 @@ public class DungeonMapView extends MapCanvasView {
             return switch (settings.mode()) {
                 case OFF -> false;
                 case NEARBY -> Math.abs(level - displayModel.projectionLevel()) <= settings.levelRange();
-                case SELECTED -> settings.selectedLevels().contains(level);
+                case SELECTED -> settings.selectsLevel(level);
             };
         }
 

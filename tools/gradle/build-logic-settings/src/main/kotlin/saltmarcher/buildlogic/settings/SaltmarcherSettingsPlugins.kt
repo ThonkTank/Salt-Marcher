@@ -15,22 +15,8 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             ?: findRepositoryRoot(settings.settingsDir)
         System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
 
-        val enforcementBundleCatalogFile = System.getProperty("saltmarcher.enforcementBundleCatalogFile")
-            ?.trim()
-            ?.takeIf(String::isNotEmpty)
-            ?.let(::File)
-            ?.takeIf(File::isFile)
-            ?: System.getenv("SALTMARCHER_ENFORCEMENT_BUNDLE_CATALOG")
-                ?.trim()
-                ?.takeIf(String::isNotEmpty)
-                ?.let(::File)
-                ?.takeIf(File::isFile)
-        enforcementBundleCatalogFile?.let { catalogFile ->
-            System.setProperty("saltmarcher.enforcementBundleCatalogFile", catalogFile.absolutePath)
-        }
-
         val verificationSurfaceCatalog = loadProperties(File(repoRootDir, "tools/gradle/verification-surface-catalog.properties"))
-        val bundleCatalog = loadBundleCatalog(repoRootDir, enforcementBundleCatalogFile)
+        val bundleCatalog = loadBundleCatalog(repoRootDir)
         val requestedTaskNames = settings.gradle.startParameter.taskNames
             .map { taskName -> taskName.substringAfterLast(":") }
             .toSet()
@@ -69,12 +55,7 @@ private data class MinimalEnforcementBundleDescriptor(
     val taskNames: List<String>
 )
 
-private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) {
-    val includedBuildRoot = System.getenv("SALTMARCHER_INCLUDED_BUILD_ROOT")
-        .nonBlankOrNull()
-    val path = includedBuildRoot?.let { root -> File(root, relativePath).absolutePath } ?: relativePath
-    settings.includeBuild(path)
-}
+private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = settings.includeBuild(relativePath)
 
 private fun findRepositoryRoot(startDirectory: File): File {
     return generateSequence(startDirectory.canonicalFile) { directory -> directory.parentFile }
@@ -83,8 +64,6 @@ private fun findRepositoryRoot(startDirectory: File): File {
         }
         ?: startDirectory.canonicalFile
 }
-
-private fun String?.nonBlankOrNull(): String? = this?.trim()?.takeIf(String::isNotEmpty)
 
 private fun loadProperties(file: File): Properties = Properties().apply {
     file.inputStream().use(::load)
@@ -106,39 +85,9 @@ private fun Properties.boolean(name: String): Boolean = getProperty(name)
     ?.equals("true", ignoreCase = true)
     ?: false
 
-private fun Properties.catalogBundleIds(): List<String> {
-    val explicitIds = list("bundleIdsInOrder")
-    if (explicitIds.isNotEmpty()) {
-        return explicitIds
-    }
-
-    return stringPropertyNames()
-        .asSequence()
-        .filter { propertyName -> propertyName.startsWith("bundle.") && propertyName.endsWith(".order") }
-        .map { propertyName ->
-            val bundleId = propertyName.removePrefix("bundle.").removeSuffix(".order")
-            Triple(bundleId, requiredTrimmed(propertyName).toInt(), bundleId)
-        }
-        .sortedWith(compareBy<Triple<String, Int, String>> { it.second }.thenBy { it.third })
-        .map { it.first }
-        .toList()
-}
-
 private fun loadBundleCatalog(
-    repoRootDir: File,
-    catalogFile: File?
+    repoRootDir: File
 ): Map<String, MinimalEnforcementBundleDescriptor> {
-    if (catalogFile != null) {
-        val properties = loadProperties(catalogFile)
-        return properties.catalogBundleIds().associateWith { bundleId ->
-            MinimalEnforcementBundleDescriptor(
-                bundleId = bundleId,
-                order = properties.requiredTrimmed("bundle.$bundleId.order").toInt(),
-                taskNames = properties.list("bundle.$bundleId.taskNames")
-            )
-        }
-    }
-
     val qualityDir = File(repoRootDir, "tools/quality")
     if (!qualityDir.isDirectory) {
         return emptyMap()

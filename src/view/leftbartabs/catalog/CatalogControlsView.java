@@ -701,6 +701,36 @@ public final class CatalogControlsView extends VBox {
             challengeRatings = copyOf(challengeRatings);
         }
 
+        @Override
+        public List<String> sizes() {
+            return copyOf(sizes);
+        }
+
+        @Override
+        public List<String> types() {
+            return copyOf(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return copyOf(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return copyOf(biomes);
+        }
+
+        @Override
+        public List<String> alignments() {
+            return copyOf(alignments);
+        }
+
+        @Override
+        public List<String> challengeRatings() {
+            return copyOf(challengeRatings);
+        }
+
         static CreatureFilterData empty() {
             return new CreatureFilterData(List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
         }
@@ -722,6 +752,31 @@ public final class CatalogControlsView extends VBox {
             subtypes = copyOf(subtypes);
             biomes = copyOf(biomes);
             alignments = copyOf(alignments);
+        }
+
+        @Override
+        public List<String> sizes() {
+            return copyOf(sizes);
+        }
+
+        @Override
+        public List<String> types() {
+            return copyOf(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return copyOf(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return copyOf(biomes);
+        }
+
+        @Override
+        public List<String> alignments() {
+            return copyOf(alignments);
         }
     }
 
@@ -745,6 +800,26 @@ public final class CatalogControlsView extends VBox {
             balanceLabels = copyPreviewLabels(balanceLabels);
             amountLabels = copyPreviewLabels(amountLabels);
             diversityLabels = copyPreviewLabels(diversityLabels);
+        }
+
+        @Override
+        public List<SliderPreviewLabel> difficultyLabels() {
+            return copyPreviewLabels(difficultyLabels);
+        }
+
+        @Override
+        public List<SliderPreviewLabel> balanceLabels() {
+            return copyPreviewLabels(balanceLabels);
+        }
+
+        @Override
+        public List<SliderPreviewLabel> amountLabels() {
+            return copyPreviewLabels(amountLabels);
+        }
+
+        @Override
+        public List<SliderPreviewLabel> diversityLabels() {
+            return copyPreviewLabels(diversityLabels);
         }
 
         static EncounterTuningPreview empty() {

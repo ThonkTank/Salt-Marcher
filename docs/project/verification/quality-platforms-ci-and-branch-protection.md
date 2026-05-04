@@ -17,7 +17,6 @@ operating model beneath the umbrella
 
 The workflow lives in
 [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
-and defines four jobs.
 and defines seven jobs.
 
 | Job | Status | Current policy |
@@ -26,7 +25,7 @@ and defines seven jobs.
 | `quality-platforms / quality-hygiene` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh quality-hygiene`; this is the staged CI surface for PMD, SpotBugs, CPD, Lizard, and compiled-artifact hygiene without the architecture or view-topology aggregates. |
 | `quality-platforms / architecture` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh architecture`; this is the staged CI surface for non-view architecture aggregates. |
 | `quality-platforms / view-topology` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh view-topology`; this is the staged CI surface for the jQAssistant-backed passive-view topology blocker. |
-| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `tools/gradle/run-staged-verification.sh metrics-report`, uploads the exported CKJM report from `build/latest-reports/ckjm/` plus the conventional fallback `build/reports/ckjm/`, then runs maintenance cleanup. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
+| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `tools/gradle/run-staged-verification.sh metrics-report` and uploads the CKJM report from `build/reports/ckjm/`. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
 | `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
 | `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
 
@@ -36,15 +35,11 @@ outside the required GitHub Actions job set. It is the local default proof
 route for documentation-only governance changes without reclassifying them as
 CI full-build work.
 
-Wrapper-based CI Gradle jobs use the same invocation-isolated runtime as local
-wrapper runs. Each invocation keeps mutable state inside one
-`.gradle/isolated-runs/<run-id>/` root, so any CI artifact that must survive
-wrapper cleanup must be exported first to a stable public path such as
-`build/latest-reports/...`.
-
-CI cleanup must run only after the job's last Gradle artifact consumer. The
-workflow therefore performs wrapper-isolation cleanup in final `if: always()`
-steps after uploads and other Gradle-result consumers complete.
+CI jobs run in fresh GitHub-hosted checkouts, so they do not need repo-local
+same-worktree isolation cleanup. The concurrency concern in CI is stale runs on
+the same ref, not mutable Gradle state inside one filesystem tree. The
+workflow therefore uses workflow concurrency and `merge_group` coverage instead
+of cleanup steps for synthetic isolated run roots.
 
 ### SonarCloud
 
@@ -89,14 +84,15 @@ Optional variables:
 - `CODESCENE_POLL_SECONDS`
 
 Recommended service-side setup: bind the project to this repository with
-`main` as reference branch; enable Delta Analysis for pull requests and pushes
-to `main`; hard-gate hotspot goal violations, code health decline, and new-code
-health below `8.0`; treat absent expected change patterns as warnings.
+`main` as reference branch; enable Delta Analysis for pull requests,
+`merge_group`, and pushes to `main`; hard-gate hotspot goal violations, code
+health decline, and new-code health below `8.0`; treat absent expected change
+patterns as warnings.
 
 ## Branch Protection
 
-SaltMarcher should use `branch -> pull request -> auto-merge` for changes into
-`main`.
+SaltMarcher should use `linked worktree -> topic branch -> pull request ->
+required checks -> auto-merge or merge queue` for changes into `main`.
 
 Configure `main` as follows after service secrets and project bindings are in
 place:
@@ -104,6 +100,9 @@ place:
 - Require a pull request before merging.
 - Disable direct pushes to `main`.
 - Enable auto-merge.
+- Prefer merge queue once the repository plan supports it; if merge queue is
+  enabled, require the same quality-platform jobs on `merge_group` that are
+  required on `pull_request`.
 - Keep required reviews optional unless the team later decides otherwise.
 - Require `quality-platforms / production-build`.
 - Require `quality-platforms / quality-hygiene`.
@@ -127,6 +126,8 @@ The quality platforms do not replace human review.
   work
 - GitHub branch protection, required checks, secrets, variables, and service
   project bindings remain repository configuration, not Gradle behavior
+- local parallel implementation safety is owned by linked worktrees and branch
+  workflow, not by Gradle mutating one shared checkout into per-run snapshots
 - whether a PMD, CPD, Lizard, SonarCloud, or CodeScene finding is a symptom of
   a larger design problem remains review-owned even when the immediate gate is
   mechanically enforced

@@ -366,13 +366,11 @@ runtime wrappers forward canonical surface names, the verification core owns the
 public Gradle lifecycle tasks, focused bundles own `check*Enforcement`, and
 private rule engines remain behind those surfaces.
 
-Wrapper-based local entrypoints keep their public names but execute inside the
-isolated runtime described in
-`docs/project/verification/quality-platforms-local-gates.md`: isolated
-build/project-cache paths, wrapper-injected root `--project-cache-dir` before
-settings evaluation, isolated `GRADLE_USER_HOME`, a shared read-only
-dependency cache snapshot exposed through `GRADLE_RO_DEP_CACHE`, and
-per-invocation mirrors for the shared included builds.
+Wrapper-based local entrypoints keep their public names, but parallel local
+safety now comes from the worktree workflow described in
+`docs/project/verification/quality-platforms-local-gates.md`: one linked git
+worktree plus one branch per agent, verification inside that worktree, and
+merge-back only after the required local surface is green.
 
 Architecture rule status must not be reclassified here. If a layer standard and
 its matching enforcement document disagree about whether a rule is mechanically

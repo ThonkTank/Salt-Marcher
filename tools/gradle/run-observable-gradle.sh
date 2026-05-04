@@ -19,7 +19,7 @@ Examples:
   tools/gradle/run-observable-gradle.sh checkDataRepositoryEnforcement checkDataQueryEnforcement -- --rerun-tasks
 
 Reserved wrapper-owned args are ignored when passed through <extra-gradle-args>:
-  --console, --daemon, --no-daemon, --project-cache-dir, --gradle-user-home, --project-dir
+  --console, --daemon, --no-daemon, --project-dir
 EOF
 }
 
@@ -52,10 +52,10 @@ format_duration() {
 
 is_wrapper_owned_gradle_arg() {
     case "$1" in
-      --console|--daemon|--no-daemon|--project-cache-dir|--gradle-user-home|--project-dir|-g|-p)
+      --console|--daemon|--no-daemon|--project-dir|-p)
         return 0
         ;;
-      --console=*|--project-cache-dir=*|--gradle-user-home=*|--project-dir=*)
+      --console=*|--project-dir=*)
         return 0
         ;;
       *)
@@ -66,7 +66,7 @@ is_wrapper_owned_gradle_arg() {
 
 wrapper_owned_arg_takes_separate_value() {
     case "$1" in
-      --console|--project-cache-dir|--gradle-user-home|--project-dir|-g|-p)
+      --console|--project-dir|-p)
         return 0
         ;;
       *)
@@ -159,12 +159,6 @@ print_known_issue_hint() {
     if grep -Eq "Timeout waiting to lock|Waiting to acquire .*build logic queue|buildLogic.lock" "$log_path"; then
         echo "[observable-gradle] Detected Gradle lock contention around build logic or cache state." >&2
         echo "[observable-gradle] Retry after parallel builds stop or use a single combined invocation." >&2
-        return
-    fi
-
-    if grep -q "Waiting to acquire configuration-cache warmup lock for shared state" "$log_path"; then
-        echo "[observable-gradle] Another first writer is seeding shared configuration state for the same surface." >&2
-        echo "[observable-gradle] This wait is wrapper-owned warmup serialization, not a hung checker." >&2
         return
     fi
 

@@ -129,9 +129,9 @@ architecture harness through `check`.
 | --- | --- | --- | --- |
 | PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
-| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value; wrapper-based invocations write `main.txt` under `.gradle/isolated-runs/<run-id>/build/.../reports/cpd/`. |
-| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; wrapper-based invocations write `main.txt` under `.gradle/isolated-runs/<run-id>/build/.../reports/lizard/`. |
-| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes, writes `main.txt` and `summary.md` under `.gradle/isolated-runs/<run-id>/build/.../reports/ckjm/` for wrapper-based invocations, and exports the newest maintained report to `build/latest-reports/ckjm/` without blocking local build or install handoff. |
+| CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
+| Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold, and writes its report under the active worktree's normal `build/reports/lizard/` surface. |
+| CKJM ext | `Informational Report` | `./gradlew ckjmMain` | Runs on freshly compiled production classes and writes `main.txt` plus `summary.md` under the active worktree's normal `build/reports/ckjm/` surface without blocking local build or install handoff. |
 
 PMD non-architecture reports use explicit metric thresholds. These thresholds
 must stay at or below PMD's documented defaults unless the standard explicitly
@@ -567,180 +567,53 @@ gates, graph analysis, quality reports, repository/resource policy, and the
 central aggregate. This keeps local command usage stable while making the build
 logic easier to extend.
 
-### Parallel Local Invocation Isolation
+### Parallel Local Worktrees
 
-Local Gradle gates support concurrent runs by isolating mutable project-local
-Gradle state for every wrapper-based invocation.
+Local Gradle gates support concurrent agent work through checkout separation,
+not through wrapper-managed same-worktree isolation.
 
-`CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels for
-local runs, but wrapper isolation no longer depends on either value being set.
+Parallel implementation work MUST use one linked git worktree plus one branch
+per agent. The preferred local shape is:
 
-Isolated invocations keep the normal entrypoints, but the public staged local
-handoff now runs through `tools/gradle/run-staged-verification.sh`. Mutable
-Gradle runtime state moves into one repo-local per-invocation run root under
-`.gradle/isolated-runs/<run-id>/`, with build outputs under `build/`,
-project-cache state under `project-cache/`, and wrapper plus writable
-dependency-cache state under `gradle-user-home/`.
+1. create a linked worktree under `build/codex-worktrees/<topic>/`
+2. create or switch to an agent-owned branch inside that worktree
+3. implement and verify there with the normal public Gradle entrypoints
+4. merge back into the integrating worktree only after the required local
+   verification surface is green
 
-The wrapper boot path seeds the isolated user home from the shared Gradle home
-only for matching wrapper content, then exports the isolated
-`GRADLE_USER_HOME` before Gradle starts and injects the root build's
-`--project-cache-dir` from that same per-run root before `settings.gradle.kts`
-evaluates. Dependency reuse comes from a separate repo-local read-only
-snapshot exposed through `GRADLE_RO_DEP_CACHE`, so
-parallel invocations share immutable dependency content without sharing
-writable Gradle user-home state.
+This keeps each agent's mutable `build/` and `.gradle/` state naturally scoped
+to its own filesystem tree. The harness therefore no longer creates
+per-invocation `.gradle/isolated-runs/**` roots, synthetic included-build
+mirrors, wrapper-published plugin repositories, generated descriptor snapshots,
+or wrapper-owned retained-failure export surfaces.
 
-The wrapper now publishes the internal plugins from
-`tools/gradle/build-logic-settings` and `tools/gradle/build-logic` into one
-immutable local Maven repository under
-`.gradle/tooling-plugin-repos/<tooling-key>/maven`. Normal wrapper-based
-Gradle runs resolve `saltmarcher.settings` plus the project plugins from that
-binary repo instead of rebuilding those source builds on every invocation.
-The shared immutable composite snapshot under
-`.gradle/composite-snapshots/<tooling-key>/` is therefore limited to the real
-runtime included builds `tools/gradle/build-harness`,
-`tools/quality/rules/quality-rules`, and
-`tools/quality/incubator/quality-rules-errorprone`, so concurrent invocations
-do not contend on the same included-build source root while mutable per-run
-state stays inside one run root.
-Bundle-owned enforcement source trees under `tools/quality/*-enforcement` and
-`tools/quality/documentation-enforcement` are not copied into that snapshot.
-Runtime isolation links those bundle trees back to the repo-root source of
-truth and relies on `saltmarcher.repoRootDir` for path resolution where bundle
-build-harness wiring needs the owning source tree.
-The included builds now register their bundle-local support sources and
-build-harness task entrypoints directly from descriptor metadata in
-`bundle.properties` plus the generated bundle catalog. That catalog now lives
-as its own immutable snapshot under
-`.gradle/enforcement-bundle-catalog-snapshots/<descriptor-key>/` and carries
-already normalized repo-owned input paths, so wrapper-based runs do not
-re-resolve the same descriptor paths inside Gradle. The root build now
-registers standard `check*Enforcement` tasks from that same descriptor model,
-while the early cache/build-dir isolation and generated-catalog propagation
-come from the repo-local wrapper init script
-`tools/gradle/saltmarcher-isolation.init.gradle.kts`. Root focused-bundle
-selection still comes from the dedicated `saltmarcher.settings` plugin whose
-binary artifact is published from `tools/gradle/build-logic-settings`.
-`SALTMARCHER_ENFORCEMENT_BUNDLE_CATALOG` now points at that descriptor snapshot
-instead of a file inside the composite mirror. Direct non-wrapper fallback
-runs may still use source `includeBuild(...)` resolution, but that is the
-slower compatibility path rather than the normal wrapper path.
-That descriptor model now also owns the root build-harness optional-rule
-registry: active bundles publish explicit
-`buildHarnessArchitectureRuleClasses` and
-`buildHarnessDocumentationRuleClasses`, and the root
-`architectureCheck` / `documentationEnforcementCheck` pass those class names as
-declared task inputs into the shared build-harness runner. The harness no
-longer keeps a `META-INF/services` resource bridge for root optional rules, so
-`:build-harness:processResources` should stay `NO-SOURCE` unless new real
-resources are introduced deliberately.
-Focused PMD, jQAssistant, build-harness, FXML, and styling checks now use
-normal Gradle work avoidance with declared inputs plus reports or success
-markers instead of blanket fresh-run forcing. That optimization does not
-weaken blocking semantics: a successful unchanged run may be reused, while a
-failing run still executes and fails fresh.
-The same rule now applies to the remaining root-owned verification gates:
-`spotbugsMain`, `checkNoCompiledArtifactsInSource`,
-`checkDesktopPackagingInputs`, and `:build-harness:architectureCheck` may
-finish `UP-TO-DATE` or `FROM-CACHE` after a successful unchanged run because
-their current invocation semantics are expressed through reports or explicit
-success markers rather than forced reruns.
-The harness no longer depends on parallel families of
-`build-harness-host.gradle.kts`, `errorprone-host.gradle.kts`,
-`pmd-host.gradle.kts`, standard `root-host.gradle.kts`, or shared
-`apply(from = ...)` descriptor scripts to restate the same paths, main classes,
-and task shapes. Exception bundles now use dedicated verification-core plugins
-referenced through `rootPluginId` metadata instead of local `root-host.gradle.kts`
-scripts.
+The verification core still computes focused bundle selection during settings
+evaluation and still registers the same public `check*Enforcement`,
+`checkDocumentationEnforcement`, and staged lifecycle tasks. The difference is
+that the included builds and bundle descriptors are resolved directly from the
+active worktree layout.
 
-Wrapper-based `./gradlew` invocations now default to `--no-daemon` unless the
-caller explicitly passes `--daemon` or `--no-daemon`, so the isolated
-`GRADLE_USER_HOME` does not keep a detached daemon registry alive after the
-client exits.
-The wrapper no longer appends `--no-configuration-cache` by default. Cache
-compatibility is now the responsibility of the underlying build logic and
-individual tasks instead of a blanket runtime opt-out.
-Wrapper-based runs now auto-append `--configuration-cache` only for a proven
-safe subset:
+`./gradlew` still defaults to `--no-daemon` unless the caller explicitly passes
+`--daemon` or `--no-daemon`. `tools/gradle/run-observable-gradle.sh` and
+`tools/gradle/run-staged-verification.sh` remain the preferred runtime wrappers
+for observability and staged surface routing, but they no longer provide
+parallel safety by rewriting Gradle cache or build directories.
 
-- `help --task <anything>`
-- `checkDocumentationEnforcement`
-- focused public `check*Enforcement` bundle tasks whose owning descriptor has
-  no `rootPluginId` and no `jqassistant.*` metadata
-
-Broad staged surfaces such as `production-handoff`, direct low-level
-investigation tasks, jQAssistant-backed focused bundles, and the exception
-bundles `checkViewEnforcement` and `checkStylingLayerEnforcement` remain
-explicit opt-in surfaces for configuration-cache use. Explicit user flags still
-win: `--configuration-cache` forces it on and `--no-configuration-cache`
-forces it off.
-When configuration-cache reuse is active, the wrapper keys the shared state
-roots by staged surface plus requested work signature, so two different
-focused bundle invocations do not reuse the same writable
-configuration/build state just because they both ran under `stage=default`.
-The wrapper also owns a repo-local first-writer warmup lock per shared
-configuration-state root. Only the uncached first writer is serialized; once
-the wrapper-owned ready marker exists, later identical runs reuse the warmed
-state without the extra lock wait.
-
-After a local wrapper-based run finishes, the wrapper removes the
-per-invocation root under `.gradle/isolated-runs/<run-id>/`. Successful runs
-that produced public build artifacts overwrite `build/latest-output/`, while
-maintained reports such as CKJM overwrite `build/latest-reports/ckjm/`. Failed
-or interrupted runs retain only selected reports and test results under
-`build/retained-gradle-failures/<run-id>/`, and the wrapper prints that stable
-retained path after a failure. Report paths that Gradle emitted under
-`.gradle/isolated-runs/<run-id>/...` were runtime locations and may already be
-gone after cleanup. The wrapper prunes retained failure bundles plus
-observable-run logs after seven days. Immutable tooling-plugin repos,
-composite snapshots, and descriptor-catalog snapshots are bounded cache roots
-rather than permanent
-archives; maintenance cleanup keeps only the newest snapshot set for each root
-and clears abandoned configuration-cache warmup locks when no active
-Gradle/jQAssistant process remains.
-
-Direct `gradle` invocations that bypass the wrapper do not receive the wrapper
-managed `GRADLE_USER_HOME`, read-only dependency cache, or included-build
-mirror path. The parallel-safe local contract therefore applies to
-wrapper-based entrypoints.
-
-The runtime wrappers also own the corresponding Gradle built-in CLI flags for
-that invocation model. Callers may still pass investigation-oriented extra args
-such as `--rerun-tasks`, `--stacktrace`, `--info`, or `--scan`, but
-wrapper-owned flags such as `--console`, `--daemon`, `--no-daemon`,
-`--project-cache-dir`, `--gradle-user-home`, and `--project-dir` are ignored
-when repeated through `tools/gradle/run-observable-gradle.sh` or
-`tools/gradle/run-staged-verification.sh`.
-
-When a wrapper-based invocation requests a diagnostic surface such as
-`quality-hygiene`, `architecture`, `view-topology`, `docs`, `metrics-report`,
-or the focused `check*Enforcement` family, the runtime wrapper may append
-Gradle `--continue` so independent failing diagnostics report together. Broad
-handoff and build-health surfaces such as `production-handoff`, `build`, and
-`check` keep their default fail-fast semantics unless the caller explicitly
-passes `--continue`.
+Callers may still pass investigation-oriented extra args such as
+`--rerun-tasks`, `--stacktrace`, `--info`, or `--scan`, while the runtime
+wrappers continue to own their own invocation defaults such as
+`--console=plain` and the default `--continue` policy for diagnostic surfaces.
 
 This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
-`ckjmMain`, `checkViewEnforcement`, and `checkViewArchitecture` still require current compiled classes;
-if `compileJava` fails, those entrypoints may be skipped because their
-prerequisite failed rather than because another independent check failed.
+`ckjmMain`, `checkViewEnforcement`, and `checkViewArchitecture` still require
+current compiled classes; if `compileJava` fails, those entrypoints may be
+skipped because their prerequisite failed rather than because another
+independent check failed.
 
-Local blocking Gradle gates must still fail on current violations, but a
-successful unchanged verification result may now be reused when its task has
-complete declared inputs plus report or marker outputs. This includes
-SpotBugs, CPD, Lizard, CKJM, focused build-harness checks, documentation
-enforcement, `checkNoCompiledArtifactsInSource`,
-`checkDesktopPackagingInputs`, and the remaining incremental resource-policy
-checks. Tool installation, dependency resolution, packaging, and generated
-resource preparation remain separately incremental because they are not the
-gate result itself. `compileJava`, PMD architecture, and ArchUnit-backed test
-entrypoints still execute according to their own task semantics rather than a
-blanket forced-rerun policy.
-The same reuse contract now applies to the hot-path `quality-rules:jar`
-artifact; successful unchanged packaging runs may stay `UP-TO-DATE` or come
-`FROM-CACHE` without weakening the blocking semantics of the verification
-surfaces that depend on it.
+Local blocking Gradle gates may still finish `UP-TO-DATE` or `FROM-CACHE` when
+their declared inputs and outputs are unchanged. That reuse now comes from
+normal Gradle behavior inside the active worktree rather than from wrapper
+managed same-worktree snapshot infrastructure.
 
 ## References
 

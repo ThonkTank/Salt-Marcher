@@ -3,6 +3,8 @@ package src.view.leftbartabs.catalog;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import javafx.beans.property.ReadOnlyListProperty;
+import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyLongProperty;
@@ -12,7 +14,6 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.published.CreatureCatalogPage;
 import src.domain.creatures.published.CreatureCatalogPageResult;
@@ -100,21 +101,16 @@ public final class CatalogContributionModel {
             new CatalogColumn("size", "Größe"),
             new CatalogColumn("xp", "XP"));
 
-    private final ObservableList<CatalogContent> contents = FXCollections.observableArrayList();
-    private final ObservableList<SortSelection> sortOptions = FXCollections.observableArrayList();
-    private final ObservableList<CatalogColumn> columns = FXCollections.observableArrayList();
-    private final ObservableList<CatalogRow> rows = FXCollections.observableArrayList();
-    private final ObservableList<FilterChip> chips = FXCollections.observableArrayList();
-    private final ObservableList<CatalogContent> readOnlyContents =
-            FXCollections.unmodifiableObservableList(contents);
-    private final ObservableList<SortSelection> readOnlySortOptions =
-            FXCollections.unmodifiableObservableList(sortOptions);
-    private final ObservableList<CatalogColumn> readOnlyColumns =
-            FXCollections.unmodifiableObservableList(columns);
-    private final ObservableList<CatalogRow> readOnlyRows =
-            FXCollections.unmodifiableObservableList(rows);
-    private final ObservableList<FilterChip> readOnlyChips =
-            FXCollections.unmodifiableObservableList(chips);
+    private final ReadOnlyListWrapper<CatalogContent> contents =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private final ReadOnlyListWrapper<SortSelection> sortOptions =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private final ReadOnlyListWrapper<CatalogColumn> columns =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private final ReadOnlyListWrapper<CatalogRow> rows =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private final ReadOnlyListWrapper<FilterChip> chips =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
     private final ReadOnlyObjectWrapper<ContentKind> selectedContent = new ReadOnlyObjectWrapper<>(ContentKind.CREATURES);
     private final ReadOnlyObjectWrapper<CreatureFilterData> creatureFilterData =
             new ReadOnlyObjectWrapper<>(CreatureFilterData.empty());
@@ -143,24 +139,24 @@ public final class CatalogContributionModel {
         columns.setAll(CREATURE_COLUMNS);
     }
 
-    public ObservableList<CatalogContent> contents() {
-        return readOnlyContents;
+    public ReadOnlyListProperty<CatalogContent> contentsProperty() {
+        return contents.getReadOnlyProperty();
     }
 
-    public ObservableList<SortSelection> sortOptions() {
-        return readOnlySortOptions;
+    public ReadOnlyListProperty<SortSelection> sortOptionsProperty() {
+        return sortOptions.getReadOnlyProperty();
     }
 
-    public ObservableList<CatalogColumn> columns() {
-        return readOnlyColumns;
+    public ReadOnlyListProperty<CatalogColumn> columnsProperty() {
+        return columns.getReadOnlyProperty();
     }
 
-    public ObservableList<CatalogRow> rows() {
-        return readOnlyRows;
+    public ReadOnlyListProperty<CatalogRow> rowsProperty() {
+        return rows.getReadOnlyProperty();
     }
 
-    public ObservableList<FilterChip> chips() {
-        return readOnlyChips;
+    public ReadOnlyListProperty<FilterChip> chipsProperty() {
+        return chips.getReadOnlyProperty();
     }
 
     public ReadOnlyObjectProperty<ContentKind> selectedContentProperty() {
@@ -428,6 +424,36 @@ public final class CatalogContributionModel {
             challengeRatings = copiedFilterValues(challengeRatings);
         }
 
+        @Override
+        public List<String> sizes() {
+            return copiedFilterValues(sizes);
+        }
+
+        @Override
+        public List<String> types() {
+            return copiedFilterValues(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return copiedFilterValues(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return copiedFilterValues(biomes);
+        }
+
+        @Override
+        public List<String> alignments() {
+            return copiedFilterValues(alignments);
+        }
+
+        @Override
+        public List<String> challengeRatings() {
+            return copiedFilterValues(challengeRatings);
+        }
+
         public static CreatureFilterData empty() {
             return new CreatureFilterData(List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
         }
@@ -450,6 +476,31 @@ public final class CatalogContributionModel {
             subtypes = copiedFilterValues(subtypes);
             biomes = copiedFilterValues(biomes);
             alignments = copiedFilterValues(alignments);
+        }
+
+        @Override
+        public List<String> sizes() {
+            return copiedFilterValues(sizes);
+        }
+
+        @Override
+        public List<String> types() {
+            return copiedFilterValues(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return copiedFilterValues(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return copiedFilterValues(biomes);
+        }
+
+        @Override
+        public List<String> alignments() {
+            return copiedFilterValues(alignments);
         }
 
         public static CreatureFilters empty() {

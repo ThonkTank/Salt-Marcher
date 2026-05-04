@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
+import javafx.beans.property.ReadOnlyListProperty;
 import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
@@ -92,7 +92,7 @@ final class CatalogBinder {
             EncounterApplicationService encounters
     ) {
         controls.setCreatureFilterData(toControlFilterData(presentationModel.creatureFilterDataProperty().get()));
-        ObservableList<CatalogContributionModel.FilterChip> chips = presentationModel.chips();
+        ReadOnlyListProperty<CatalogContributionModel.FilterChip> chips = presentationModel.chipsProperty();
         controls.setChips(toControlChips(chips));
         applyEncounterBuilderInputs(controls, currentBuilderInputs(sessionModel));
         controls.onViewInputEvent(intentHandler::consume);
@@ -116,10 +116,10 @@ final class CatalogBinder {
             CatalogIntentHandler intentHandler
     ) {
         main.setRowAction("+Add", "Zum Encounter hinzufügen", true);
-        main.setSortOptions(presentationModel.sortOptions().stream().map(CatalogBinder::toMainSort).toList());
+        main.setSortOptions(presentationModel.sortOptionsProperty().stream().map(CatalogBinder::toMainSort).toList());
         main.selectSort(presentationModel.selectedSortKeyProperty().get());
-        main.setColumns(presentationModel.columns().stream().map(CatalogBinder::toMainColumn).toList());
-        ObservableList<CatalogContributionModel.CatalogRow> rows = presentationModel.rows();
+        main.setColumns(presentationModel.columnsProperty().stream().map(CatalogBinder::toMainColumn).toList());
+        ReadOnlyListProperty<CatalogContributionModel.CatalogRow> rows = presentationModel.rowsProperty();
         main.setRows(rows.stream().map(CatalogBinder::toMainRow).toList());
         main.setPlaceholderText(presentationModel.placeholderTextProperty().get());
         main.onViewInputEvent(intentHandler::consume);

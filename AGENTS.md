@@ -82,14 +82,15 @@ document exists.
 - A pass without the required production-code full build, check-only
   package/bundle rerun, or documentation-enforcement rerun is incomplete and
   must remain WIP.
-- Wrapper-based Gradle invocations automatically use per-invocation build and
-  project-cache directories inside one repo-local run root. They also isolate
-  `GRADLE_USER_HOME`, seed wrapper content into that invocation-local home,
-  inject the root build's `--project-cache-dir` before settings evaluation,
-  expose a shared read-only dependency cache snapshot through
-  `GRADLE_RO_DEP_CACHE`, and run the shared included builds through an
-  invocation-local composite mirror so parallel builds do not contend on
-  wrapper, cache, or included-build state.
+- Parallel agent implementation work must not share one live checkout. Each
+  agent must work in its own linked git worktree on its own branch, preferably
+  under `build/codex-worktrees/<topic>/` or a temporary external worktree when
+  the repo-local path is unsuitable.
+- The required local sequence for parallel implementation is: create linked
+  worktree, create or switch to an agent-owned branch inside that worktree,
+  implement there, run the required verification surface there, and merge the
+  green branch back into the integrating worktree only after the required gate
+  passes.
 - For long verification runs where silent execution makes agent-side
   observation unreliable, prefer `tools/gradle/run-observable-gradle.sh`
   instead of shell loops over many separate `./gradlew` invocations. Use
@@ -100,19 +101,9 @@ document exists.
   production-handoff`, `./gradlew checkDocumentationEnforcement`, and
   `./gradlew check*Enforcement`.
 - `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
-  for local Gradle invocations, but they no longer decide whether wrapper-based
-  isolation happens.
+  but are no longer part of the local parallel-safety contract.
 - `./gradlew` defaults to `--no-daemon` unless the caller explicitly passes
-  `--daemon` or `--no-daemon`, so isolated per-run Gradle homes do not keep a
-  detached daemon registry alive after the client exits.
-- Wrapper-based local Gradle runs now delete their per-invocation isolation
-  root after the run finishes. Successful artifact-producing runs overwrite the
-  stable export surface at `build/latest-output/`, while maintained reports
-  such as CKJM overwrite `build/latest-reports/`. Failed or interrupted runs
-  keep only selected diagnostics under `build/retained-gradle-failures/` for up
-  to seven days, and the wrapper prints that stable retained path after a
-  failure. Report paths that Gradle printed under `.gradle/isolated-runs/...`
-  are runtime locations and are not the stable post-run handoff surface.
+  `--daemon` or `--no-daemon`.
 - When the desktop app is the manual test surface, run
   `tools/gradle/run-staged-verification.sh desktop-install` after the
   successful production handoff before handoff unless the user explicitly

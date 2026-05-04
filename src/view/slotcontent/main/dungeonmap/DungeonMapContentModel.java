@@ -813,6 +813,36 @@ public final class DungeonMapContentModel {
             graphLinks = immutableList(graphLinks);
         }
 
+        @Override
+        public List<RenderCell> cells() {
+            return immutableList(cells);
+        }
+
+        @Override
+        public List<RenderEdge> edges() {
+            return immutableList(edges);
+        }
+
+        @Override
+        public List<RenderLabel> labels() {
+            return immutableList(labels);
+        }
+
+        @Override
+        public List<RenderMarker> markers() {
+            return immutableList(markers);
+        }
+
+        @Override
+        public List<RenderState.GraphNode> graphNodes() {
+            return immutableList(graphNodes);
+        }
+
+        @Override
+        public List<RenderState.GraphLink> graphLinks() {
+            return immutableList(graphLinks);
+        }
+
         public OverlayMode overlayMode() {
             return overlaySettings.mode();
         }
@@ -1056,6 +1086,15 @@ public final class DungeonMapContentModel {
                         .distinct()
                         .sorted()
                         .toList();
+            }
+
+            @Override
+            public List<Integer> selectedLevels() {
+                return immutableList(selectedLevels);
+            }
+
+            public boolean selectsLevel(int level) {
+                return selectedLevels.contains(level);
             }
 
             public static LevelOverlaySettings defaults() {

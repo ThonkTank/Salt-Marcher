@@ -49,6 +49,8 @@ fun repoInputTree(includePatterns: List<String>) = fileTree(repoRootDir) {
     exclude(".git/**")
     exclude(".gradle/**")
     exclude("build/**")
+    exclude("**/.gradle/**")
+    exclude("**/build/**")
     includePatterns.forEach(::include)
 }
 
@@ -125,9 +127,14 @@ tasks.register<RepoVerificationMainTask>("architectureCheck") {
     verificationInputs.from(
         repoInputTree(
             listOf(
+                ".github/workflows/quality-platforms.yml",
+                "AGENTS.md",
                 "bootstrap/**",
+                "docs/project/architecture/verification-core.md",
+                "docs/project/verification/**",
                 "shell/**",
                 "src/**",
+                "tools/gradle/**",
                 "tools/gradle/build-harness/src/**"
             )
         )

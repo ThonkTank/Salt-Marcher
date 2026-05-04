@@ -2,9 +2,14 @@ name: quality-platforms
 
 on:
   pull_request:
+  merge_group:
   push:
     branches:
       - main
+
+concurrency:
+  group: quality-platforms-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -23,8 +28,6 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
       - run: tools/gradle/run-staged-verification.sh production-build
-      - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
 
   quality-hygiene:
     runs-on: ubuntu-latest
@@ -38,8 +41,6 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
       - run: tools/gradle/run-staged-verification.sh quality-hygiene
-      - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
 
   architecture:
     runs-on: ubuntu-latest
@@ -53,8 +54,6 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
       - run: tools/gradle/run-staged-verification.sh architecture
-      - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
 
   view-topology:
     runs-on: ubuntu-latest
@@ -68,8 +67,6 @@ jobs:
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
       - run: tools/gradle/run-staged-verification.sh view-topology
-      - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
 
   ckjm-report:
     runs-on: ubuntu-latest
@@ -87,11 +84,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ckjm-report
-          path: |
-            build/latest-reports/ckjm
-            build/reports/ckjm
-      - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
+          path: build/reports/ckjm
 
   sonarcloud:
     runs-on: ubuntu-latest
@@ -112,8 +105,6 @@ jobs:
           -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
           -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
           -Dsonar.qualitygate.wait=true
-      - if: always()
-        run: sh tools/gradle/finalize-isolated-gradle-run.sh --maintenance-cleanup
 
   codescene:
     runs-on: ubuntu-latest
