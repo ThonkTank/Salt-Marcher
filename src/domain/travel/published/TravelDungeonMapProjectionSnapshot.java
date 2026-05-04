@@ -18,16 +18,16 @@ public record TravelDungeonMapProjectionSnapshot(
 ) {
 
     public TravelDungeonMapProjectionSnapshot {
-        mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName.trim();
+        mapName = normalizeMapName(mapName);
         topology = topology == null ? TopologyKind.SQUARE : topology;
-        width = Math.max(1, width);
-        height = Math.max(1, height);
-        cells = cells == null ? List.of() : List.copyOf(cells);
-        edges = edges == null ? List.of() : List.copyOf(edges);
-        labels = labels == null ? List.of() : List.copyOf(labels);
-        markers = markers == null ? List.of() : List.copyOf(markers);
-        graphNodes = graphNodes == null ? List.of() : List.copyOf(graphNodes);
-        graphLinks = graphLinks == null ? List.of() : List.copyOf(graphLinks);
+        width = normalizeDimension(width);
+        height = normalizeDimension(height);
+        cells = immutableElements(cells);
+        edges = immutableElements(edges);
+        labels = immutableElements(labels);
+        markers = immutableElements(markers);
+        graphNodes = immutableElements(graphNodes);
+        graphLinks = immutableElements(graphLinks);
     }
 
     public static TravelDungeonMapProjectionSnapshot empty(String mapName) {
@@ -45,6 +45,36 @@ public record TravelDungeonMapProjectionSnapshot(
                 null);
     }
 
+    @Override
+    public List<CellProjection> cells() {
+        return List.copyOf(cells);
+    }
+
+    @Override
+    public List<EdgeProjection> edges() {
+        return List.copyOf(edges);
+    }
+
+    @Override
+    public List<LabelProjection> labels() {
+        return List.copyOf(labels);
+    }
+
+    @Override
+    public List<MarkerProjection> markers() {
+        return List.copyOf(markers);
+    }
+
+    @Override
+    public List<GraphNodeProjection> graphNodes() {
+        return List.copyOf(graphNodes);
+    }
+
+    @Override
+    public List<GraphLinkProjection> graphLinks() {
+        return List.copyOf(graphLinks);
+    }
+
     public enum TopologyKind {
         SQUARE,
         HEX
@@ -53,8 +83,8 @@ public record TravelDungeonMapProjectionSnapshot(
     public record TopologyRef(String kind, long id) {
 
         public TopologyRef {
-            kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
-            id = Math.max(0L, id);
+            kind = normalizedKind(kind);
+            id = normalizedId(id);
         }
 
         public static TopologyRef empty() {
@@ -77,14 +107,14 @@ public record TravelDungeonMapProjectionSnapshot(
     ) {
 
         public MarkerHandle {
-            kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+            kind = normalizedKind(kind);
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
+            ownerId = normalizedId(ownerId);
+            clusterId = normalizedId(clusterId);
+            corridorId = normalizedId(corridorId);
+            roomId = normalizedId(roomId);
             index = Math.max(0, index);
-            direction = direction == null ? "" : direction.trim();
+            direction = normalizedDirection(direction);
         }
     }
 
@@ -106,8 +136,8 @@ public record TravelDungeonMapProjectionSnapshot(
         public CellProjection {
             label = label == null ? "" : label;
             kind = kind == null ? CellKind.ROOM : kind;
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
+            ownerId = normalizedId(ownerId);
+            clusterId = normalizedId(clusterId);
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
         }
     }
@@ -136,7 +166,7 @@ public record TravelDungeonMapProjectionSnapshot(
         public EdgeProjection {
             kind = kind == null ? EdgeKind.WALL : kind;
             label = label == null ? "" : label;
-            ownerId = Math.max(0L, ownerId);
+            ownerId = normalizedId(ownerId);
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
         }
     }
@@ -160,8 +190,8 @@ public record TravelDungeonMapProjectionSnapshot(
 
         public LabelProjection {
             label = label == null ? "" : label;
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
+            ownerId = normalizedId(ownerId);
+            clusterId = normalizedId(clusterId);
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
         }
     }
@@ -200,17 +230,17 @@ public record TravelDungeonMapProjectionSnapshot(
     ) {
 
         public GraphNodeProjection {
-            id = Math.max(0L, id);
-            clusterId = Math.max(0L, clusterId);
-            label = label == null || label.isBlank() ? "Room" : label;
+            id = normalizedId(id);
+            clusterId = normalizedId(clusterId);
+            label = normalizedGraphLabel(label);
         }
     }
 
     public record GraphLinkProjection(long fromId, long toId, boolean selected) {
 
         public GraphLinkProjection {
-            fromId = Math.max(0L, fromId);
-            toId = Math.max(0L, toId);
+            fromId = normalizedId(fromId);
+            toId = normalizedId(toId);
         }
     }
 
@@ -223,7 +253,7 @@ public record TravelDungeonMapProjectionSnapshot(
     ) {
 
         public PartyTokenProjection {
-            heading = heading == null ? Heading.SOUTH : heading;
+            heading = defaultHeading(heading);
         }
     }
 
@@ -232,5 +262,37 @@ public record TravelDungeonMapProjectionSnapshot(
         EAST,
         SOUTH,
         WEST
+    }
+
+    private static String normalizeMapName(String mapName) {
+        return mapName == null || mapName.isBlank() ? "Dungeon" : mapName.trim();
+    }
+
+    private static String normalizedKind(String kind) {
+        return kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+    }
+
+    private static int normalizeDimension(int dimension) {
+        return Math.max(1, dimension);
+    }
+
+    private static long normalizedId(long id) {
+        return Math.max(0L, id);
+    }
+
+    private static String normalizedGraphLabel(String label) {
+        return label == null || label.isBlank() ? "Room" : label;
+    }
+
+    private static Heading defaultHeading(@Nullable Heading heading) {
+        return heading == null ? Heading.SOUTH : heading;
+    }
+
+    private static String normalizedDirection(String direction) {
+        return direction == null ? "" : direction.trim();
+    }
+
+    private static <T> List<T> immutableElements(@Nullable List<T> elements) {
+        return elements == null ? List.of() : List.copyOf(elements);
     }
 }
