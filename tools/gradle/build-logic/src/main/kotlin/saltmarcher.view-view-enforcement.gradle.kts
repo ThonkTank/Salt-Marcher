@@ -9,6 +9,7 @@ import org.gradle.kotlin.dsl.registering
 import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.withGroovyBuilder
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.tasks.RepoVerificationMainTask
 
 plugins {
     id("saltmarcher.enforcement-bundles")
@@ -90,14 +91,24 @@ val viewSurfaceArchitectureTest = registerFocusedArchunitTestTask(
     false
 )
 
-val checkViewFxmlResources by tasks.registering(org.gradle.api.tasks.JavaExec::class) {
+val checkViewFxmlResources by tasks.registering(RepoVerificationMainTask::class) {
     group = "verification"
     description = "Validate declarative passive-view FXML resource placement and controller ownership."
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
-    classpath = viewViewEnforcementSupport.runtimeClasspath
-    mainClass = "saltmarcher.quality.viewview.fxml.ViewFxmlResourceCheckMain"
-    args = listOf(layout.projectDirectory.asFile.absolutePath)
+    runtimeClasspath.from(viewViewEnforcementSupport.runtimeClasspath)
+    verificationMainClass.set("saltmarcher.quality.viewview.fxml.ViewFxmlResourceCheckMain")
+    repoRootPath.set(layout.projectDirectory.asFile.absolutePath)
+    verificationInputs.from(
+        layout.projectDirectory.asFileTree.matching {
+            include("resources/**")
+            include("shell/**")
+            include("src/**")
+            include("tools/quality/view-view-enforcement/**")
+            exclude("**/.gradle/**")
+            exclude("**/build/**")
+            exclude("**/.git/**")
+        }
+    )
+    successMarker.set(layout.buildDirectory.file("verification-markers/checkViewFxmlResources/success.marker"))
 }
 
 val (_, jqassistantAnalyzeViewEnforcement) = registerFocusedJqassistantTaskPair(

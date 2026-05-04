@@ -30,15 +30,15 @@ public final class EncounterBuilderStateView extends VBox {
     private final Label hardThresholdLabel = new Label();
     private final Label deadlyThresholdLabel = new Label();
     private final VBox rosterList = new VBox(6);
-    private final Label rosterPlaceholder = new Label("Monster per +Add hinzufuegen...");
+    private final Label rosterPlaceholder = new Label("Monster über +Add hinzufügen...");
     private final ScrollPane rosterScroll = new ScrollPane(rosterList);
     private final StackPane rosterHost = new StackPane(rosterPlaceholder, rosterScroll);
     private final VBox advisoryRegion = new VBox(4);
     private final Button previousAlternativeButton = new Button("<");
     private final Button nextAlternativeButton = new Button(">");
     private final Button saveEncounterButton = new Button("Speichern");
-    private final Button openEncounterButton = new Button("Oeffnen");
-    private final Button clearHistoryButton = new Button("Clear");
+    private final Button openEncounterButton = new Button("Öffnen");
+    private final Button clearHistoryButton = new Button("Verlauf löschen");
     private final Button startCombatButton = new Button("_Kampf starten");
     private final DialogSurfaceView dialog = buildPane();
 
@@ -86,7 +86,7 @@ public final class EncounterBuilderStateView extends VBox {
         saveEncounterButton.setTooltip(new Tooltip("Aktuelles Encounter-Roster speichern"));
         saveEncounterButton.setOnAction(event -> publish(false, 0, true, 0L, 0L, 0, false, 0L, false, false));
         openEncounterButton.getStyleClass().addAll("compact", "neutral-action");
-        openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter oeffnen"));
+        openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter öffnen"));
         openEncounterButton.setOnAction(event -> showSavedPlansPopup(openEncounterButton));
         clearHistoryButton.getStyleClass().addAll("compact", "neutral-action");
         clearHistoryButton.setTooltip(new Tooltip("Generator-Historie leeren"));
@@ -124,13 +124,13 @@ public final class EncounterBuilderStateView extends VBox {
         Button generateButton = new Button("_Generieren");
         generateButton.getStyleClass().add("neutral-action");
         generateButton.setMaxWidth(Double.MAX_VALUE);
-        generateButton.setTooltip(new Tooltip("Encounter aus Catalog-Filtern generieren (Alt+G)"));
+        generateButton.setTooltip(new Tooltip("Encounter aus Katalogfiltern generieren (Alt+G)"));
         generateButton.setOnAction(event -> publish(true, 0, false, 0L, 0L, 0, false, 0L, false, false));
         previousAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
         previousAlternativeButton.setTooltip(new Tooltip("Vorherige Generator-Alternative"));
         previousAlternativeButton.setOnAction(event -> publish(false, -1, false, 0L, 0L, 0, false, 0L, false, false));
         nextAlternativeButton.getStyleClass().addAll("compact", "neutral-action");
-        nextAlternativeButton.setTooltip(new Tooltip("Naechste Generator-Alternative"));
+        nextAlternativeButton.setTooltip(new Tooltip("Nächste Generator-Alternative"));
         nextAlternativeButton.setOnAction(event -> publish(false, 1, false, 0L, 0L, 0, false, 0L, false, false));
         startCombatButton.getStyleClass().add("accent");
         startCombatButton.setMaxWidth(Double.MAX_VALUE);
@@ -157,7 +157,7 @@ public final class EncounterBuilderStateView extends VBox {
         rosterList.getChildren().clear();
         advisoryRegion.getChildren().clear();
         if (state.roster().isEmpty()) {
-            rosterPlaceholder.setText("Monster per +Add hinzufuegen...");
+            rosterPlaceholder.setText("Monster über +Add hinzufügen...");
             rosterPlaceholder.setVisible(true);
             rosterPlaceholder.setManaged(true);
             rosterScroll.setVisible(false);
@@ -180,7 +180,7 @@ public final class EncounterBuilderStateView extends VBox {
             EncounterStateView.UndoRemoveView undo = state.pendingUndo();
             Label removed = new Label(undo.creatureName() + " entfernt.");
             removed.getStyleClass().add("text-secondary");
-            Button undoButton = new Button("Rueckgaengig");
+            Button undoButton = new Button("Rückgängig");
             undoButton.getStyleClass().addAll("compact", "neutral-action");
             undoButton.setOnAction(event -> publishUndo(undo.token()));
             HBox row = new HBox(8, removed, undoButton);
@@ -216,7 +216,7 @@ public final class EncounterBuilderStateView extends VBox {
 
         Button name = new Button(card.name());
         name.getStyleClass().add("creature-link");
-        name.setTooltip(new Tooltip("Creature details oeffnen"));
+        name.setTooltip(new Tooltip("Kreaturendetails öffnen"));
 
         HBox detail = new HBox(4);
         detail.setAlignment(Pos.CENTER_LEFT);

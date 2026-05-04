@@ -46,7 +46,7 @@ val windowIconRelativePath = providers.gradleProperty("saltMarcherWindowIcon")
 val startupWmClass = providers.gradleProperty("saltMarcherStartupWmClass")
     .orElse("bootstrap.SaltMarcherApp")
 val stylesheetRelativePath = providers.gradleProperty("saltMarcherStylesheet")
-    .orElse("salt-marcher.css")
+    .orElse("resources/salt-marcher.css")
 val sonarOrganization = providers.gradleProperty("sonarOrganization")
     .orElse(providers.environmentVariable("SONAR_ORGANIZATION"))
 val sonarProjectKey = providers.gradleProperty("sonarProjectKey")
@@ -116,8 +116,6 @@ spotbugs {
 }
 
 tasks.withType<SpotBugsTask>().configureEach {
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf("Quality and architecture gate diagnostics must be produced by the current invocation.") { true }
     reports {
         create("html") {
             required.set(true)

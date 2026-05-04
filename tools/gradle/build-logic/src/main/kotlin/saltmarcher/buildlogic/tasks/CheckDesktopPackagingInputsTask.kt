@@ -1,27 +1,41 @@
 package saltmarcher.buildlogic.tasks
 
+import java.nio.file.Files
 import org.gradle.api.DefaultTask
-import org.gradle.api.GradleException
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import org.gradle.work.DisableCachingByDefault
+import org.gradle.api.tasks.VerificationException
 
-@DisableCachingByDefault(because = "Verification task with no stable outputs.")
+@CacheableTask
 abstract class CheckDesktopPackagingInputsTask : DefaultTask() {
 
-    @get:Internal
+    @get:Optional
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val mainClassSourceFile: RegularFileProperty
 
-    @get:Internal
+    @get:Optional
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val preloaderClassSourceFile: RegularFileProperty
 
-    @get:Internal
+    @get:Optional
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val desktopIconSourceFile: RegularFileProperty
 
-    @get:Internal
+    @get:Optional
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val stylesheetFile: RegularFileProperty
 
     @get:Input
@@ -48,20 +62,25 @@ abstract class CheckDesktopPackagingInputsTask : DefaultTask() {
     @get:Input
     abstract val startupWmClass: Property<String>
 
+    @get:OutputFile
+    abstract val successMarker: RegularFileProperty
+
     @TaskAction
     fun checkPackagingInputs() {
         val violations = mutableListOf<String>()
 
-        if (!mainClassSourceFile.get().asFile.isFile) {
+        if (mainClassSourceFile.orNull?.asFile?.isFile != true) {
             violations.add("Desktop packaging main class not found: ${mainClassName.get()}")
         }
-        if (!preloaderClassSourceFile.get().asFile.isFile) {
+        if (preloaderClassSourceFile.orNull?.asFile?.isFile != true) {
             violations.add("Desktop packaging preloader class not found: ${preloaderClassName.get()}")
         }
 
-        val iconSource = desktopIconSourceFile.get().asFile
-        if (!iconSource.isFile) {
-            violations.add("Desktop icon source is missing: ${iconSource.toPath().toAbsolutePath()}")
+        val iconSource = desktopIconSourceFile.orNull?.asFile
+        if (iconSource == null || !iconSource.isFile) {
+            violations.add(
+                "Desktop icon source is missing: ${iconSource?.toPath()?.toAbsolutePath() ?: desktopIconSourceRelativePath.get()}"
+            )
         }
 
         if (!desktopEntryIconRelativePath.get().endsWith(".svg")) {
@@ -71,9 +90,11 @@ abstract class CheckDesktopPackagingInputsTask : DefaultTask() {
             violations.add("Window icon must point at a PNG file but was '${windowIconRelativePath.get()}'.")
         }
 
-        val stylesheet = stylesheetFile.get().asFile
-        if (!stylesheet.isFile) {
-            violations.add("Desktop stylesheet is missing: ${stylesheet.toPath().toAbsolutePath()}")
+        val stylesheet = stylesheetFile.orNull?.asFile
+        if (stylesheet == null || !stylesheet.isFile) {
+            violations.add(
+                "Desktop stylesheet is missing: ${stylesheet?.toPath()?.toAbsolutePath() ?: stylesheetRelativePath.get()}"
+            )
         }
 
         val launcher = launcherName.get()
@@ -86,9 +107,13 @@ abstract class CheckDesktopPackagingInputsTask : DefaultTask() {
 
         if (violations.isNotEmpty()) {
             val details = violations.joinToString(separator = "\n") { " - $it" }
-            throw GradleException(
+            throw VerificationException(
                 "Desktop packaging input check failed with ${violations.size} violation(s):\n$details"
             )
         }
+
+        val markerPath = successMarker.get().asFile.toPath()
+        Files.createDirectories(markerPath.parent)
+        Files.writeString(markerPath, "passed\n")
     }
 }

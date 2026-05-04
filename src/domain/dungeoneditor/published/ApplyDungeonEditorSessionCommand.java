@@ -1,16 +1,16 @@
-package src.domain.dungeon.published;
+package src.domain.dungeoneditor.published;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 public record ApplyDungeonEditorSessionCommand(
         Action action,
-        @Nullable DungeonMapId mapId,
+        @Nullable DungeonEditorMapId mapId,
         String mapName,
         String viewModeKey,
         String selectedTool,
         int projectionLevelDelta,
-        DungeonOverlaySettings overlaySettings,
+        DungeonEditorOverlaySettings overlaySettings,
         MainViewInput mainViewInput,
         RoomNarrationInput roomNarration
 ) {
@@ -20,7 +20,7 @@ public record ApplyDungeonEditorSessionCommand(
         mapName = mapName == null ? "" : mapName;
         viewModeKey = viewModeKey == null || viewModeKey.isBlank() ? "GRID" : viewModeKey;
         selectedTool = selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
-        overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
+        overlaySettings = overlaySettings == null ? DungeonEditorOverlaySettings.defaults() : overlaySettings;
         mainViewInput = mainViewInput == null ? MainViewInput.empty() : mainViewInput;
         roomNarration = roomNarration == null ? RoomNarrationInput.empty() : roomNarration;
     }
@@ -69,7 +69,7 @@ public record ApplyDungeonEditorSessionCommand(
     public record RoomNarrationInput(
             long roomId,
             String visualDescription,
-            List<DungeonInspectorSnapshot.RoomExitNarration> exits
+            List<DungeonEditorInspectorSnapshot.RoomExitNarration> exits
     ) {
 
         public RoomNarrationInput {

@@ -17,14 +17,16 @@ Context Name: Dungeon
 
 - `dungeon` owns authored dungeon map truth
 - `DungeonMap` is the aggregate root for one authored map
-- editor and travel are separate presentations over the same dungeon write
-  model
-- render-oriented display models are view concerns, not dungeon-domain output
+- authored committed snapshots, authored operation results, authored selection
+  inspectors, and raw travel surfaces are projections over the same authored
+  dungeon write model
+- render-oriented display models and runtime editor-session policy are not
+  dungeon-owned output
 
 ## Published Language
 
 `published/` owns public dungeon commands, queries, results, IDs, statuses,
-and dungeon map facts.
+authored map facts, authored operation results, and raw travel facts.
 
 Published dungeon carriers must not own:
 
@@ -35,10 +37,11 @@ Published dungeon carriers must not own:
 
 ## Application Boundary
 
-`application/` coordinates load, mutate, save, and search through the
-domain-owned ports. The root application service maps authored dungeon truth
-and derived results into `published/` carriers without moving preview,
-rendering, or runtime party state into the domain model.
+`application/` coordinates authored dungeon load, mutate, save, search, and
+raw travel-surface queries through the domain-owned ports. The root application
+service maps authored dungeon truth and derived results into `published/`
+carriers without moving runtime editor-session policy, render ownership, or
+party-aware runtime travel session state into the dungeon model.
 
 ## Aggregate Model
 
@@ -66,6 +69,20 @@ Core invariants:
 - runtime travel state never becomes authored dungeon persistence
 - data rows and view models may transport dungeon facts, but they are not the
   owner of dungeon meaning
+
+## Cross-Context Boundary
+
+- `dungeon` publishes authored `DungeonSnapshot`,
+  `DungeonOperationResult`, `DungeonInspectorSnapshot`, raw travel surfaces,
+  and travel-action results rooted in authored dungeon truth
+- `dungeoneditor` owns runtime editor-session composition that combines authored
+  dungeon facts with session-local selection, tool, preview, and overlay state
+- `travel` owns runtime session composition that combines those raw dungeon
+  facts with party-owned position state
+- `dungeon` does not own editor selection, tool, overlay, projection, preview,
+  or pointer-interpretation session state
+- `dungeon` does not own overlay settings, projection level, refresh cycle, or
+  overworld fallback state for the interactive travel workspace
 
 ## Consistency Model
 

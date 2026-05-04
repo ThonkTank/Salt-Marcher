@@ -197,6 +197,7 @@ public final class DomainLayerArchitectureTest {
     private static boolean isFeaturePublicBoundary(String packageName, String featureName) {
         String rootPackage = "src.domain." + featureName;
         return packageName.equals(rootPackage)
+                || packageName.equals(rootPackage + ".published")
                 || packageName.startsWith(rootPackage + ".published.");
     }
 }

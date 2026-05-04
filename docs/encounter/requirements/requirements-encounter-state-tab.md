@@ -61,10 +61,11 @@ the fixed footer while oversized page bodies scroll.
 - Previous and next controls sit in the generator action row and switch among
   the currently generated alternatives.
 - `Speichern` stores the current roster as a saved encounter plan.
-- `Oeffnen` shows saved encounter plans from the title row. Selecting one
+- `Öffnen` shows saved encounter plans from the title row. Selecting one
   replaces the builder roster, returns to Creation mode, and clears generated
   alternatives, initiative, combat, and result state.
-- `Clear` in the title row clears only transient generator history and
+- `Verlauf löschen` in the title row clears only transient generator history
+  and
   generated labels. The current roster stays in Creation mode as a manual
   encounter.
 - Catalog `+Add` actions append the selected creature to the runtime roster in
@@ -74,13 +75,13 @@ the fixed footer while oversized page bodies scroll.
   a single undo action can restore the most recently removed slot.
 - A roster creature name opens the creature details inspector.
 - `Kampf starten` opens initiative entry when the roster has creatures.
-- `Alle wuerfeln` updates visible initiative spinner values.
+- `Alle würfeln` updates visible initiative spinner values.
 - Confirming initiative opens the combat tracker.
 - Combat internally keeps one entry per individual monster. A combat card may
   still show a runtime mob projection when at least four alive monsters share
   the same creature identity and initiative.
 - `Weiter` advances the active combat turn and round display.
-- `SC hinzufuegen` opens a compact popup for active party members that are not
+- `SC hinzufügen` opens a compact popup for active party members that are not
   already in the running combat; each row accepts an initiative value before
   adding that character to the turn order.
 - HP bars open a compact damage/heal popup.
@@ -131,7 +132,8 @@ the fixed footer while oversized page bodies scroll.
   tuning, and encounter-table selections visible to the runtime session
 - opening a saved encounter plan replaces the current creation roster and
   clears generated-alternative, initiative, combat, and result runtime state
-- the title-row `Clear` action removes transient generation history without
+- the title-row `Verlauf löschen` action removes transient generation history
+  without
   deleting the current roster
 - catalog `+Add` appends creatures in creation mode and adds reinforcements in
   active combat without mutating saved encounter-plan persistence implicitly

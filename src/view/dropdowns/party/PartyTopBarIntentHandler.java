@@ -60,13 +60,13 @@ final class PartyTopBarIntentHandler {
         if (event.shortRestRequested()) {
             performRest(
                     PartyTopBarPublishedEvent.RestAction.SHORT_REST,
-                    "Short Rest wurde fuer die aktive Party ausgefuehrt.");
+                    "Short Rest wurde für die aktive Party ausgeführt.");
             return;
         }
         if (event.longRestRequested()) {
             performRest(
                     PartyTopBarPublishedEvent.RestAction.LONG_REST,
-                    "Long Rest wurde fuer die aktive Party ausgefuehrt.");
+                    "Long Rest wurde für die aktive Party ausgeführt.");
         }
     }
 
@@ -104,7 +104,7 @@ final class PartyTopBarIntentHandler {
             presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
             return;
         }
-        String successMessage = displayName(memberName) + " wurde zur aktiven Party hinzugefuegt.";
+        String successMessage = displayName(memberName) + " wurde zur aktiven Party hinzugefügt.";
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
@@ -150,7 +150,7 @@ final class PartyTopBarIntentHandler {
             presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
             return;
         }
-        String successMessage = displayName(memberName) + " wurde geloescht.";
+        String successMessage = displayName(memberName) + " wurde gelöscht.";
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }
@@ -223,7 +223,7 @@ final class PartyTopBarIntentHandler {
             return;
         }
         String name = safe(parsedDraft.name());
-        String successMessage = displayName(name) + " wurde erstellt und zur Party hinzugefuegt.";
+        String successMessage = displayName(name) + " wurde erstellt und zur Party hinzugefügt.";
         if (!presentationModel.beginMutation(successMessage)) {
             return;
         }

@@ -2,6 +2,8 @@ package saltmarcher.architecture.documentation;
 
 import saltmarcher.architecture.ArchitectureChecker;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 public final class DocumentationEnforcementCheckMain {
 
@@ -9,11 +11,12 @@ public final class DocumentationEnforcementCheckMain {
     }
 
     public static void main(String[] args) {
-        if (args.length != 1) {
-            throw new IllegalArgumentException("Expected exactly one argument: <repo-root>");
+        if (args.length < 1) {
+            throw new IllegalArgumentException("Expected at least one argument: <repo-root> [rule-class ...]");
         }
 
-        DocumentationEnforcementChecker checker = new DocumentationEnforcementChecker(Path.of(args[0]));
+        List<String> optionalRuleClasses = Arrays.asList(args).subList(1, args.length);
+        DocumentationEnforcementChecker checker = new DocumentationEnforcementChecker(Path.of(args[0]), optionalRuleClasses);
         ArchitectureChecker.Result result = checker.check();
         if (!result.isSuccess()) {
             System.err.println(result.render());

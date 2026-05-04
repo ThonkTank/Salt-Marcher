@@ -39,8 +39,9 @@ This document is normative for the `party` feature's persistence path.
 ## Current Mapping
 
 Party persistence stores the character roster, membership, progression, combat
-profile, and character-specific runtime travel state in the party write model.
-Travel state is represented as scalar references to the owning space:
+profile, and character-specific runtime travel context in the party write
+model. That travel context is represented as scalar references to the owning
+space:
 
 - dungeon travel location stores map id, local owner id, local tile coordinate,
   level, location kind, and heading

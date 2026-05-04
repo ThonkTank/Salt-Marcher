@@ -1,6 +1,8 @@
 package saltmarcher.architecture;
 
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
 public final class ArchitectureCheckMain {
 
@@ -8,11 +10,12 @@ public final class ArchitectureCheckMain {
     }
 
     public static void main(String[] args) {
-        if (args.length != 1) {
-            throw new IllegalArgumentException("Expected exactly one argument: <repo-root>");
+        if (args.length < 1) {
+            throw new IllegalArgumentException("Expected at least one argument: <repo-root> [rule-class ...]");
         }
 
-        ArchitectureChecker checker = new ArchitectureChecker(Path.of(args[0]));
+        List<String> optionalRuleClasses = Arrays.asList(args).subList(1, args.length);
+        ArchitectureChecker checker = new ArchitectureChecker(Path.of(args[0]), optionalRuleClasses);
         ArchitectureChecker.Result result = checker.check();
         if (!result.isSuccess()) {
             System.err.println(result.render());

@@ -5,20 +5,23 @@ import org.gradle.api.GradleException
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.registering
 import org.gradle.kotlin.dsl.withGroovyBuilder
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.tasks.CheckCentralizedStylesheetsTask
+import saltmarcher.buildlogic.tasks.CheckDefinedStyleClassSelectorsTask
+import saltmarcher.buildlogic.tasks.CheckStylingCentralStylesheetOwnerTask
 
 plugins {
     id("saltmarcher.enforcement-bundles")
 }
 
-private val freshGateResultReason = "Quality and architecture gate diagnostics must be produced by the current invocation."
 private val stylingStylesheetExtensions = listOf("css", "scss", "sass", "less", "styl")
 private val stylingCanonicalStylesheetRelativePath = "salt-marcher.css"
 private val stylingStylesheetRelativePathProvider = providers.gradleProperty("saltMarcherStylesheet")
-    .orElse(stylingCanonicalStylesheetRelativePath)
+    .orElse("resources/$stylingCanonicalStylesheetRelativePath")
 private val stylingSourceRoots = files("bootstrap", "shell", "src")
 private val stylingLayerRulesetFile = project.file("tools/quality/styling-layer-enforcement/pmd/ruleset.xml")
 
@@ -566,28 +569,39 @@ tasks.named<JavaCompile>("compileJava") {
     }
 }
 
-val checkCentralizedStylesheets by tasks.registering {
+val stylingStylesheetFiles = layout.projectDirectory.asFileTree.matching {
+    stylingStylesheetExtensions.forEach { extension -> include("**/*.$extension") }
+    exclude("**/.git/**", "**/.gradle/**", "**/build/**")
+}
+val stylingJavaSourceFiles = stylingSourceRoots.asFileTree.matching {
+    include("**/*.java")
+    exclude("**/build/**")
+}
+
+val checkCentralizedStylesheets by tasks.registering(CheckCentralizedStylesheetsTask::class) {
     group = "verification"
     description = "Fail if stylesheet files exist outside the central resources/salt-marcher.css file."
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf(freshGateResultReason) { true }
-    doLast { verifyCentralizedStylesheets() }
+    stylesheetFiles.from(stylingStylesheetFiles)
+    canonicalStylesheetRelativePath.set("resources/$stylingCanonicalStylesheetRelativePath")
+    canonicalStylesheetFile.set(layout.projectDirectory.file("resources/$stylingCanonicalStylesheetRelativePath"))
+    successMarker.set(layout.buildDirectory.file("verification-markers/checkCentralizedStylesheets/success.marker"))
 }
 
-val checkStylingCentralStylesheetOwner by tasks.registering {
+val checkStylingCentralStylesheetOwner by tasks.registering(CheckStylingCentralStylesheetOwnerTask::class) {
     group = "verification"
     description = "Fail if SaltMarcher styling stops using the canonical resources/salt-marcher.css owner."
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf(freshGateResultReason) { true }
-    doLast { verifyCentralStylesheetOwner() }
+    configuredStylesheetPath.set(stylingStylesheetRelativePathProvider)
+    canonicalStylesheetRelativePath.set("resources/$stylingCanonicalStylesheetRelativePath")
+    canonicalStylesheetFile.set(layout.projectDirectory.file("resources/$stylingCanonicalStylesheetRelativePath"))
+    successMarker.set(layout.buildDirectory.file("verification-markers/checkStylingCentralStylesheetOwner/success.marker"))
 }
 
-val checkDefinedStyleClassSelectors by tasks.registering {
+val checkDefinedStyleClassSelectors by tasks.registering(CheckDefinedStyleClassSelectorsTask::class) {
     group = "verification"
     description = "Fail if Java-authored style classes are missing from resources/salt-marcher.css selectors."
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf(freshGateResultReason) { true }
-    doLast { verifyDefinedStyleClassSelectors() }
+    stylesheetFiles.from(stylingStylesheetFiles)
+    javaSourceFiles.from(stylingJavaSourceFiles)
+    successMarker.set(layout.buildDirectory.file("verification-markers/checkDefinedStyleClassSelectors/success.marker"))
 }
 
 val pmdStylingLayerEnforcement by tasks.registering(Pmd::class) {
@@ -601,9 +615,6 @@ val pmdStylingLayerEnforcement by tasks.registering(Pmd::class) {
     source = stylingSourceRoots.asFileTree
     include("**/*.java")
     classpath = files()
-
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf(freshGateResultReason) { true }
     reports {
         html.required.set(true)
         xml.required.set(true)
@@ -618,8 +629,6 @@ tasks.register("checkStylingLayerEnforcement") {
     dependsOn(checkStylingCentralStylesheetOwner)
     dependsOn(checkDefinedStyleClassSelectors)
     dependsOn(pmdStylingLayerEnforcement)
-    outputs.upToDateWhen { false }
-    outputs.doNotCacheIf(freshGateResultReason) { true }
 }
 
 tasks.matching { it.name == "checkArchitecture" }.configureEach {

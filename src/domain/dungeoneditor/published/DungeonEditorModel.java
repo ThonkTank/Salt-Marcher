@@ -1,4 +1,4 @@
-package src.domain.dungeon.published;
+package src.domain.dungeoneditor.published;
 
 import java.util.Objects;
 import java.util.function.Consumer;

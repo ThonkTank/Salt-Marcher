@@ -13,8 +13,8 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private final Label zoomLabel = new Label("Zoom: 100%");
     private final Label mapLabel = new Label("Dungeon");
     private final Label levelLabel = new Label("Ebene z=0");
-    private final Button refreshButton = new Button("Refresh");
-    private final Button resetViewButton = new Button("Reset view");
+    private final Button refreshButton = new Button("Neu laden");
+    private final Button resetViewButton = new Button("Ansicht zurücksetzen");
     private final Button previousLevelButton = new Button("-");
     private final Button nextLevelButton = new Button("+");
     private final OverlayControlsPanel overlayControls = new OverlayControlsPanel(this::sectionLabel);
@@ -98,9 +98,9 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         overlayControls.setOnOpacityChanged(opacity -> publishSnapshot(false, false, 0));
         overlayControls.setOnSelectedLevelsChanged(() -> publishSnapshot(false, false, 0));
         describe(refreshButton, "Dungeon-Karte neu laden");
-        describe(resetViewButton, "Kamera auf die Dungeon-Karte zuruecksetzen");
+        describe(resetViewButton, "Kamera auf die Dungeon-Karte zurücksetzen");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
-        describe(nextLevelButton, "Naechste Dungeon-Ebene anzeigen");
+        describe(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
     }
 
     private void publishSnapshot(boolean refreshRequested, boolean resetViewRequested, int projectionLevelShift) {

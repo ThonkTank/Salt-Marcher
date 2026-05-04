@@ -1,17 +1,12 @@
 package src.view.leftbartabs.dungeontravel;
 
 import java.util.List;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyIntegerProperty;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import org.jspecify.annotations.Nullable;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelDungeonSurface;
 import src.domain.travel.published.TravelOverlaySettings;
@@ -22,9 +17,9 @@ public final class DungeonTravelContributionModel {
             new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper mapName = new ReadOnlyStringWrapper("Dungeon");
-    private final ObjectProperty<OverlayProjection> overlaySettings =
-            new SimpleObjectProperty<>(OverlayProjection.defaults());
-    private final IntegerProperty projectionLevel = new SimpleIntegerProperty(0);
+    private final ReadOnlyObjectWrapper<OverlayProjection> overlaySettings =
+            new ReadOnlyObjectWrapper<>(OverlayProjection.defaults());
+    private final ReadOnlyIntegerWrapper projectionLevel = new ReadOnlyIntegerWrapper(0);
     private final ReadOnlyIntegerWrapper cameraResetSignal = new ReadOnlyIntegerWrapper(0);
     private final ReadOnlyIntegerWrapper refreshSignal = new ReadOnlyIntegerWrapper(0);
 
@@ -44,12 +39,12 @@ public final class DungeonTravelContributionModel {
         return mapName.getReadOnlyProperty();
     }
 
-    public ObjectProperty<OverlayProjection> overlaySettingsProperty() {
-        return overlaySettings;
+    public ReadOnlyObjectProperty<OverlayProjection> overlaySettingsProperty() {
+        return overlaySettings.getReadOnlyProperty();
     }
 
-    public IntegerProperty projectionLevelProperty() {
-        return projectionLevel;
+    public ReadOnlyIntegerProperty projectionLevelProperty() {
+        return projectionLevel.getReadOnlyProperty();
     }
 
     public ReadOnlyIntegerProperty cameraResetSignalProperty() {
@@ -179,7 +174,7 @@ public final class DungeonTravelContributionModel {
         String overlayLabel() {
             return switch (modeKey) {
                 case "NEARBY" -> "Nahe Ebenen";
-                case "SELECTED" -> "Ausgewaehlte Ebenen";
+                case "SELECTED" -> "Ausgewählte Ebenen";
                 default -> "Overlays aus";
             };
         }

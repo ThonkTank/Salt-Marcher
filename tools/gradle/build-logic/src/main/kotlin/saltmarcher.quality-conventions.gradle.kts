@@ -47,7 +47,7 @@ val preloaderClassNameProvider = providers.gradleProperty("saltMarcherPreloaderC
 val startupWmClassProvider = providers.gradleProperty("saltMarcherStartupWmClass")
     .orElse("bootstrap.SaltMarcherApp")
 val stylesheetRelativePathProvider = providers.gradleProperty("saltMarcherStylesheet")
-    .orElse("salt-marcher.css")
+    .orElse("resources/salt-marcher.css")
 val jqassistantVersionProvider = providers.gradleProperty("saltMarcherJqassistantVersion")
     .orElse("2.9.1")
 val stylesheetExtensions = listOf("css", "scss", "sass", "less", "styl")
@@ -216,9 +216,6 @@ val registerFocusedPmdTask = fun(
             sourceIncludes.forEach(::include)
         }
         classpath = files()
-
-        outputs.upToDateWhen { false }
-        outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
         reports {
             html.required.set(true)
             xml.required.set(true)
@@ -256,8 +253,6 @@ val registerFocusedJqassistantTaskPair = fun(
         jvmOpens.set(jqassistantJvmOpens)
         projectRoot.set(layout.projectDirectory)
         storeDirectory.set(jqassistantStoreDirectory)
-        outputs.upToDateWhen { false }
-        outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
     }
     val analyzeTask = tasks.register<JqassistantAnalyzeTask>(analyzeTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -272,8 +267,6 @@ val registerFocusedJqassistantTaskPair = fun(
         projectRoot.set(layout.projectDirectory)
         storeDirectory.set(jqassistantStoreDirectory)
         reportsDirectory.set(jqassistantReportsDirectory)
-        outputs.upToDateWhen { false }
-        outputs.doNotCacheIf("Architecture gate diagnostics must be produced by the current invocation.") { true }
     }
     return Pair(scanTask, analyzeTask)
 }
@@ -327,6 +320,10 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.named<JavaCompile>("compileJava") {
     configureCommonErrorProneOptions()
+    options.errorprone.error("UnusedLabel")
+    options.errorprone.error("UnusedMethod")
+    options.errorprone.error("UnusedNestedClass")
+    options.errorprone.error("UnusedVariable")
     if (!focusedEnforcementBundleMode) {
         options.errorprone.error("DomainApplicationServiceApiShape")
         options.errorprone.error("DomainModuleFieldPurity")
@@ -586,6 +583,7 @@ val checkNoCompiledArtifactsInSource by tasks.registering(CheckNoCompiledArtifac
     description = "Fail if compiled .class artifacts are present in bootstrap/, shell/ or src/."
     projectRoot.set(layout.projectDirectory)
     sourceRoots.from(sourceJavaRoots)
+    successMarker.set(layout.buildDirectory.file("verification-markers/checkNoCompiledArtifactsInSource/success.marker"))
 }
 
 val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputsTask::class) {
@@ -594,7 +592,7 @@ val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputs
     mainClassSourceFile.set(layout.projectDirectory.file(mainClassNameProvider.map { "${it.replace('.', '/')}.java" }))
     preloaderClassSourceFile.set(layout.projectDirectory.file(preloaderClassNameProvider.map { "${it.replace('.', '/')}.java" }))
     desktopIconSourceFile.set(layout.projectDirectory.file(desktopIconSourceRelativePathProvider.map { "resources/$it" }))
-    stylesheetFile.set(layout.projectDirectory.file(stylesheetRelativePathProvider.map { "resources/$it" }))
+    stylesheetFile.set(layout.projectDirectory.file(stylesheetRelativePathProvider))
     mainClassName.set(mainClassNameProvider)
     preloaderClassName.set(preloaderClassNameProvider)
     desktopIconSourceRelativePath.set(desktopIconSourceRelativePathProvider)
@@ -603,6 +601,7 @@ val checkDesktopPackagingInputs by tasks.registering(CheckDesktopPackagingInputs
     stylesheetRelativePath.set(stylesheetRelativePathProvider)
     launcherName.set(launcherNameProvider)
     startupWmClass.set(startupWmClassProvider)
+    successMarker.set(layout.buildDirectory.file("verification-markers/checkDesktopPackagingInputs/success.marker"))
 }
 
 // Central check aggregate

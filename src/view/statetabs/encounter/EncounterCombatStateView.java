@@ -244,7 +244,7 @@ public final class EncounterCombatStateView extends VBox {
     private void showConfirmEndButtons(boolean allEnemiesDefeated) {
         endCombatContainer.getChildren().clear();
         Button cancel = new Button("Abbruch");
-        Button confirm = new Button("_Bestaetigen!");
+        Button confirm = new Button("_Bestätigen!");
         if (allEnemiesDefeated) {
             confirm.getStyleClass().add("accent");
         }
@@ -310,7 +310,7 @@ public final class EncounterCombatStateView extends VBox {
         private PartyMemberSelectionListener selectionListener = (memberId, initiative) -> { };
 
         private PartyMemberButton() {
-            super("SC hinzufuegen");
+            super("SC hinzufügen");
             getStyleClass().addAll("compact", "neutral-action");
             setId(CONTROL_ID);
             updateCandidates(List.of());
@@ -359,7 +359,7 @@ public final class EncounterCombatStateView extends VBox {
                 down.setOnAction(event -> initiativeField.setText(String.valueOf(parseInitiative(initiativeField.getText()) - 1)));
                 up.setOnAction(event -> initiativeField.setText(String.valueOf(parseInitiative(initiativeField.getText()) + 1)));
 
-                Button add = new Button("Hinzufuegen");
+                Button add = new Button("Hinzufügen");
                 add.getStyleClass().add("accent");
                 Runnable apply = () -> {
                     popup.hide();
@@ -391,7 +391,7 @@ public final class EncounterCombatStateView extends VBox {
             TextField field = new TextField("10");
             field.getStyleClass().add("text-field");
             field.setPrefWidth(56);
-            field.setAccessibleText("Initiative fuer " + name);
+            field.setAccessibleText("Initiative für " + name);
             field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9-]*") ? change : null));
             return field;
         }

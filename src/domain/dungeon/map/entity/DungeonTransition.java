@@ -56,7 +56,7 @@ public final class DungeonTransition {
     }
 
     public String label() {
-        return "Uebergang " + transitionId;
+        return "Übergang " + transitionId;
     }
 
     public boolean isPlaced() {

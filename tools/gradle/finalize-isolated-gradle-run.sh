@@ -37,6 +37,43 @@ saltmarcher_prune_old_files() {
     find "$root_path" -mindepth 1 -maxdepth 1 -type f -mtime +"$retention_days" -delete
 }
 
+saltmarcher_prune_snapshot_roots() {
+    root_path=$1
+    keep_count=$2
+    [ -d "$root_path" ] || return 0
+    find "$root_path" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' |
+        sort -nr |
+        awk -v keep="$keep_count" 'NR > keep { $1 = ""; sub(/^ /, ""); print }' |
+        while IFS= read -r stale_path; do
+            [ -n "$stale_path" ] || continue
+            rm -rf "$stale_path"
+        done
+}
+
+saltmarcher_scrub_snapshot_artifact_state() {
+    root_path=$1
+    [ -d "$root_path" ] || return 0
+    find "$root_path" \
+        \( -name build -o -name .gradle -o -name .kotlin \) \
+        -type d -prune -exec rm -rf {} +
+}
+
+saltmarcher_prune_snapshot_temp_roots() {
+    root_path=$1
+    [ -d "$root_path" ] || return 0
+    find "$root_path" -mindepth 1 -type d -name '*.tmp.*' -exec rm -rf {} +
+}
+
+saltmarcher_remove_stale_configuration_cache_warmup_locks() {
+    root_path=$1
+    [ -d "$root_path" ] || return 0
+    find "$root_path" -mindepth 1 -maxdepth 1 -type d |
+        while IFS= read -r stale_lock_dir; do
+            [ -n "$stale_lock_dir" ] || continue
+            rm -rf "$stale_lock_dir"
+        done
+}
+
 saltmarcher_write_metadata() {
     metadata_file=$1
     gradle_exit_code=$2
@@ -155,7 +192,9 @@ saltmarcher_has_active_gradle_processes() {
             $2 = ""
             sub(/^  */, "", $0)
             if (pid != self && ppid != self && pid != parent && ppid != parent &&
-                ($0 ~ /GradleWrapperMain/ || $0 ~ /GradleDaemon/ || $0 ~ /jqassistant/)) {
+                ($0 ~ /GradleWrapperMain/ || $0 ~ /GradleDaemon/ || $0 ~ /jqassistant/) &&
+                $0 !~ /ps -eo pid=,ppid=,cmd=/ &&
+                $0 !~ /awk -v self=/) {
                 found = 1
             }
         }
@@ -179,6 +218,15 @@ saltmarcher_maintenance_cleanup() {
     mkdir -p "$REPO_ROOT/.gradle/isolated-runs"
     saltmarcher_cleanup_legacy_isolation_roots
     saltmarcher_prune_local_history
+    saltmarcher_scrub_snapshot_artifact_state "$REPO_ROOT/.gradle/composite-snapshots"
+    saltmarcher_scrub_snapshot_artifact_state "$REPO_ROOT/.gradle/enforcement-bundle-catalog-snapshots"
+    saltmarcher_prune_snapshot_temp_roots "$REPO_ROOT/.gradle/composite-snapshots"
+    saltmarcher_prune_snapshot_temp_roots "$REPO_ROOT/.gradle/enforcement-bundle-catalog-snapshots"
+    saltmarcher_prune_snapshot_temp_roots "$REPO_ROOT/.gradle/tooling-plugin-repos"
+    saltmarcher_remove_stale_configuration_cache_warmup_locks "$REPO_ROOT/.gradle/configuration-cache-warmup-locks"
+    saltmarcher_prune_snapshot_roots "$REPO_ROOT/.gradle/composite-snapshots" 8
+    saltmarcher_prune_snapshot_roots "$REPO_ROOT/.gradle/enforcement-bundle-catalog-snapshots" 8
+    saltmarcher_prune_snapshot_roots "$REPO_ROOT/.gradle/tooling-plugin-repos" 8
 }
 
 if [ "${1:-}" = "--cleanup-ci-completed" ] || [ "${1:-}" = "--maintenance-cleanup" ]; then

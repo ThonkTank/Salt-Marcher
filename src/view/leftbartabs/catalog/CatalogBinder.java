@@ -115,7 +115,7 @@ final class CatalogBinder {
             CatalogContributionModel presentationModel,
             CatalogIntentHandler intentHandler
     ) {
-        main.setRowAction("+Add", "Zum Encounter hinzufuegen", true);
+        main.setRowAction("+Add", "Zum Encounter hinzufügen", true);
         main.setSortOptions(presentationModel.sortOptions().stream().map(CatalogBinder::toMainSort).toList());
         main.selectSort(presentationModel.selectedSortKeyProperty().get());
         main.setColumns(presentationModel.columns().stream().map(CatalogBinder::toMainColumn).toList());
@@ -421,7 +421,7 @@ final class CatalogBinder {
 
         @Override
         public String title() {
-            return "Encounter Builder";
+            return "Encounter-Planer";
         }
 
         @Override

@@ -4,28 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ReadOnlyIntegerProperty;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorSnapshot;
-import src.domain.dungeon.published.DungeonFeatureSnapshot;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapId;
-import src.domain.dungeon.published.DungeonMapSummary;
-import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.domain.dungeon.published.DungeonSurfaceMessages;
-import src.domain.dungeon.published.DungeonSurfacePayload;
-import src.domain.dungeon.published.DungeonTopologyElementKind;
+import src.domain.dungeoneditor.published.DungeonEditorCell;
+import src.domain.dungeoneditor.published.DungeonEditorInspectorSnapshot;
+import src.domain.dungeoneditor.published.DungeonEditorMapId;
+import src.domain.dungeoneditor.published.DungeonEditorMapSnapshot;
+import src.domain.dungeoneditor.published.DungeonEditorMapSummary;
+import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
+import src.domain.dungeoneditor.published.DungeonEditorPreview;
+import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
+import src.domain.dungeoneditor.published.DungeonEditorSurface;
 
 public final class DungeonEditorContributionModel {
 
@@ -44,11 +40,11 @@ public final class DungeonEditorContributionModel {
             new ReadOnlyObjectWrapper<>(new OverlayProjection("OFF", 2, 0.35, List.of()));
     private final ReadOnlyObjectWrapper<List<RoomNarrationCardProjection>> narrationCards =
             new ReadOnlyObjectWrapper<>(List.of());
-    private final IntegerProperty projectionLevel = new SimpleIntegerProperty(0);
-    private final StringProperty selectedTool = new SimpleStringProperty(DEFAULT_TOOL);
-    private @Nullable DungeonMapId selectedMapId;
-    private @Nullable DungeonSurfacePayload currentSurface;
-    private @Nullable DungeonInspectorSnapshot currentInspector;
+    private final ReadOnlyIntegerWrapper projectionLevel = new ReadOnlyIntegerWrapper(0);
+    private final ReadOnlyStringWrapper selectedTool = new ReadOnlyStringWrapper(DEFAULT_TOOL);
+    private @Nullable DungeonEditorMapId selectedMapId;
+    private @Nullable DungeonEditorSurface currentSurface;
+    private @Nullable DungeonEditorInspectorSnapshot currentInspector;
     private DungeonEditorSnapshot.Selection currentSelection = DungeonEditorSnapshot.Selection.empty();
     private DungeonEditorPreview currentPreview = DungeonEditorPreview.none();
     private String currentViewModeKey = DEFAULT_VIEW_MODE;
@@ -97,12 +93,12 @@ public final class DungeonEditorContributionModel {
         return narrationCards.getReadOnlyProperty();
     }
 
-    public IntegerProperty projectionLevelProperty() {
-        return projectionLevel;
+    public ReadOnlyIntegerProperty projectionLevelProperty() {
+        return projectionLevel.getReadOnlyProperty();
     }
 
-    public StringProperty selectedToolProperty() {
-        return selectedTool;
+    public ReadOnlyStringProperty selectedToolProperty() {
+        return selectedTool.getReadOnlyProperty();
     }
 
     public void apply(DungeonEditorSnapshot editorSnapshot) {
@@ -141,15 +137,13 @@ public final class DungeonEditorContributionModel {
             if (nextMaps.isEmpty()) {
                 status.set("Keine Dungeon-Maps vorhanden.");
             } else if (selectedMapId == null) {
-                status.set("Kein Dungeon ausgewaehlt.");
+                status.set("Kein Dungeon ausgewählt.");
             } else {
                 status.set(safeSnapshot.statusText());
             }
         } else {
             reachableLevels.set(levelsFrom(currentSurface, projectionLevel.get()));
-            status.set(safeSnapshot.statusText().isBlank()
-                    ? statusFromMessages(currentSurface.messages())
-                    : safeSnapshot.statusText());
+            status.set(safeSnapshot.statusText());
         }
         clampProjectionLevel();
         busy.set(false);
@@ -165,7 +159,7 @@ public final class DungeonEditorContributionModel {
     }
 
     private void refreshStateText() {
-        String selectionText = currentSelection.topologyRef().kind() == DungeonTopologyElementKind.EMPTY
+        String selectionText = "EMPTY".equals(currentSelection.topologyRef().kind())
                 ? "Auswahl: Keine"
                 : "Auswahl: " + selectionLabel(currentSelection, currentInspector)
                         + " (" + currentSelection.topologyRef().kind() + " " + currentSelection.topologyRef().id() + ")";
@@ -183,19 +177,19 @@ public final class DungeonEditorContributionModel {
                 : overlayProjection;
         return switch (safeOverlay.modeKey()) {
             case "NEARBY" -> "Nahe Ebenen";
-            case "SELECTED" -> "Ausgewaehlte Ebenen";
+            case "SELECTED" -> "Ausgewählte Ebenen";
             default -> "Overlays aus";
         };
     }
 
     private static String selectionLabel(
             DungeonEditorSnapshot.Selection selection,
-            @Nullable DungeonInspectorSnapshot inspector
+            @Nullable DungeonEditorInspectorSnapshot inspector
     ) {
         if (inspector != null && !inspector.title().isBlank()) {
             return inspector.title();
         }
-        return selection.topologyRef().kind().name();
+        return selection.topologyRef().kind();
     }
 
     private static String previewText(DungeonEditorPreview preview) {
@@ -209,12 +203,12 @@ public final class DungeonEditorContributionModel {
         }
         if (preview instanceof DungeonEditorPreview.RoomRectanglePreview roomRectangle) {
             return "Topologie-Preview: "
-                    + (roomRectangle.deleteMode() ? "Raum loeschen" : "Raum malen")
+                    + (roomRectangle.deleteMode() ? "Raum löschen" : "Raum malen")
                     + " z=" + roomRectangle.start().level();
         }
         if (preview instanceof DungeonEditorPreview.ClusterBoundariesPreview boundaries) {
             return "Topologie-Preview: "
-                    + (boundaries.deleteMode() ? "Kanten loeschen" : "Kanten setzen")
+                    + (boundaries.deleteMode() ? "Kanten löschen" : "Kanten setzen")
                     + " (" + boundaries.edges().size() + ")";
         }
         if (preview instanceof DungeonEditorPreview.MoveBoundaryStretchPreview stretch) {
@@ -226,17 +220,17 @@ public final class DungeonEditorContributionModel {
         return "Topologie-Preview: aktiv";
     }
 
-    private static List<Integer> levelsFrom(@Nullable DungeonSurfacePayload surface, int fallbackLevel) {
+    private static List<Integer> levelsFrom(@Nullable DungeonEditorSurface surface, int fallbackLevel) {
         TreeSet<Integer> levels = new TreeSet<>();
         if (surface != null && surface.map() != null) {
             surface.map().areas().forEach(area -> addCellLevels(levels, area.cells()));
-            for (DungeonFeatureSnapshot feature : surface.map().features()) {
+            for (DungeonEditorMapSnapshot.Feature feature : surface.map().features()) {
                 addCellLevels(levels, feature.cells());
             }
             surface.map().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
             if (surface.previewMap() != null) {
                 surface.previewMap().areas().forEach(area -> addCellLevels(levels, area.cells()));
-                for (DungeonFeatureSnapshot feature : surface.previewMap().features()) {
+                for (DungeonEditorMapSnapshot.Feature feature : surface.previewMap().features()) {
                     addCellLevels(levels, feature.cells());
                 }
                 surface.previewMap().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
@@ -248,13 +242,13 @@ public final class DungeonEditorContributionModel {
         return new ArrayList<>(levels);
     }
 
-    private static void addCellLevels(Set<Integer> levels, List<DungeonCellRef> cells) {
-        for (DungeonCellRef cell : cells == null ? List.<DungeonCellRef>of() : cells) {
+    private static void addCellLevels(Set<Integer> levels, List<DungeonEditorCell> cells) {
+        for (DungeonEditorCell cell : cells == null ? List.<DungeonEditorCell>of() : cells) {
             levels.add(cell.level());
         }
     }
 
-    private static String key(@Nullable DungeonMapId mapId) {
+    private static String key(@Nullable DungeonEditorMapId mapId) {
         return mapId == null ? "" : Long.toString(mapId.value());
     }
 
@@ -266,9 +260,9 @@ public final class DungeonEditorContributionModel {
         return "GRAPH".equalsIgnoreCase(viewModeKey) ? "GRAPH" : DEFAULT_VIEW_MODE;
     }
 
-    private static OverlayProjection toOverlayProjection(DungeonOverlaySettings overlaySettings) {
-        DungeonOverlaySettings safeOverlay =
-                overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
+    private static OverlayProjection toOverlayProjection(DungeonEditorOverlaySettings overlaySettings) {
+        DungeonEditorOverlaySettings safeOverlay =
+                overlaySettings == null ? DungeonEditorOverlaySettings.defaults() : overlaySettings;
         return new OverlayProjection(
                 safeOverlay.modeKey(),
                 safeOverlay.levelRange(),
@@ -276,7 +270,7 @@ public final class DungeonEditorContributionModel {
                 safeOverlay.selectedLevels());
     }
 
-    private static List<RoomNarrationCardProjection> toNarrationCards(@Nullable DungeonInspectorSnapshot inspector) {
+    private static List<RoomNarrationCardProjection> toNarrationCards(@Nullable DungeonEditorInspectorSnapshot inspector) {
         if (inspector == null) {
             return List.of();
         }
@@ -297,9 +291,9 @@ public final class DungeonEditorContributionModel {
                 .toList();
     }
 
-    private static MapSelection toMapSelection(@Nullable DungeonMapSummary summary) {
-        DungeonMapSummary safeSummary = summary == null
-                ? new DungeonMapSummary(new DungeonMapId(0L), "Dungeon Map", 0L)
+    private static MapSelection toMapSelection(@Nullable DungeonEditorMapSummary summary) {
+        DungeonEditorMapSummary safeSummary = summary == null
+                ? new DungeonEditorMapSummary(new DungeonEditorMapId(1L), "Dungeon Map", 0L)
                 : summary;
         return new MapSelection(
                 key(safeSummary.mapId()),
@@ -308,22 +302,9 @@ public final class DungeonEditorContributionModel {
                 safeSummary.revision());
     }
 
-    private static String statusFromMessages(@Nullable DungeonSurfaceMessages messages) {
-        if (messages == null) {
-            return "";
-        }
-        if (!messages.reactionMessages().isEmpty()) {
-            return messages.reactionMessages().getFirst();
-        }
-        if (!messages.validationMessages().isEmpty()) {
-            return messages.validationMessages().getFirst();
-        }
-        return "";
-    }
-
     public record MapSelection(
             String key,
-            DungeonMapId mapId,
+            DungeonEditorMapId mapId,
             String mapName,
             long revision
     ) {

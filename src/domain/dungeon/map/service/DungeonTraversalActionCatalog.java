@@ -61,7 +61,7 @@ final class DungeonTraversalActionCatalog {
             return null;
         }
         DungeonTraversalEndpoint target = link.oppositeOf(source);
-        if (source == null || target == null) {
+        if (target == null) {
             return null;
         }
         return new TraversalCandidate(link, source, target, link.directionFrom(source.tile()));
@@ -101,7 +101,7 @@ final class DungeonTraversalActionCatalog {
 
     private static String label(TraversalCandidate candidate, int doorNumber) {
         if (candidate.link().source().kind() == DungeonTraversalSourceKind.DOOR) {
-            return "Tuer " + doorNumber;
+            return "Tür " + doorNumber;
         }
         return candidate.link().source().label();
     }
@@ -166,11 +166,11 @@ final class DungeonTraversalActionCatalog {
             String target = candidate.target().areaLabel().isBlank()
                     ? tileLabel(candidate.target().tile())
                     : candidate.target().areaLabel();
-            return "Ueber " + candidate.link().source().label() + " gelangt ihr zu " + target + ".";
+            return "Über " + candidate.link().source().label() + " gelangt ihr zu " + target + ".";
         }
         String subject = narratedExit(dungeonMap, activeArea, candidate);
         if (subject.isBlank()) {
-            subject = "eine Tuer";
+            subject = "eine Tür";
         }
         String suffix = destinationLabel == null || destinationLabel.isBlank() ? "" : " nach " + destinationLabel;
         return relativePrefix(candidate.direction(), heading) + " ist " + stripTrailingPeriod(subject) + suffix + ".";

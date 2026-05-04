@@ -114,7 +114,7 @@ public final class PartyTopBarContributionModel {
         }
         PanelData data = result.panelData();
         if (data == null) {
-            String message = "Party konnte nach der Aenderung nicht neu geladen werden.";
+            String message = "Party konnte nach der Änderung nicht neu geladen werden.";
             applyStorageError();
             showStatus(message, true);
             lastActionResult = ActionResult.failure(message);
@@ -122,7 +122,7 @@ public final class PartyTopBarContributionModel {
         }
         PartySnapshotResult snapshotResult = data.snapshotResult();
         if (snapshotResult == null || snapshotResult.status() != ReadStatus.SUCCESS) {
-            String message = "Party konnte nach der Aenderung nicht neu geladen werden.";
+            String message = "Party konnte nach der Änderung nicht neu geladen werden.";
             applyStorageError();
             showStatus(message, true);
             lastActionResult = ActionResult.failure(message);
@@ -210,7 +210,7 @@ public final class PartyTopBarContributionModel {
             return "Charakter konnte nicht gefunden werden.";
         }
         if (status == MutationStatus.INVALID_INPUT) {
-            return "Eingaben sind ungueltig.";
+            return "Eingaben sind ungültig.";
         }
         return "Party-Aktion konnte nicht gespeichert werden.";
     }

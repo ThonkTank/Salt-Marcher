@@ -1,5 +1,6 @@
 import java.io.File
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.the
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
@@ -39,4 +40,10 @@ sourceSets.named("main") {
 
 dependencies {
     implementation("net.sourceforge.pmd:pmd-java:7.23.0")
+}
+
+tasks.named<Jar>("jar") {
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+    outputs.cacheIf("quality-rules jar is a hot-path compile dependency") { true }
 }

@@ -41,23 +41,34 @@ public final class DataModelTopologyRules implements ArchitectureRule {
             List<SourceFile> sourceFiles,
             ViolationSink violations) {
         TreeMap<String, List<SourceFile>> schemasByFeature = new TreeMap<>();
+        TreeMap<String, List<SourceFile>> featureFiles = new TreeMap<>();
         for (SourceFile sourceFile : sourceFiles) {
+            if (!sourceFile.isUnderDataFeatureRoot()) {
+                continue;
+            }
+            featureFiles.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
             if (sourceFile.kind() == SourceKind.DATA_SCHEMA) {
                 schemasByFeature.computeIfAbsent(sourceFile.featureName(), ignored -> new ArrayList<>()).add(sourceFile);
             }
         }
 
         for (String featureName : context.dataFeatures(violations)) {
+            List<SourceFile> files = featureFiles.getOrDefault(featureName, List.of());
+            boolean exportsPersistenceBackedSourceState = files.stream()
+                    .anyMatch(sourceFile -> sourceFile.kind() != SourceKind.DATA_ROOT);
+            if (!exportsPersistenceBackedSourceState) {
+                continue;
+            }
             List<SourceFile> schemas = schemasByFeature.getOrDefault(featureName, List.of()).stream()
                     .sorted(Comparator.comparing(SourceFile::relativePath))
                     .toList();
             if (schemas.size() != 1) {
-                String files = schemas.isEmpty()
+                String schemaFiles = schemas.isEmpty()
                         ? "none found"
                         : schemas.stream().map(SourceFile::relativePath).collect(Collectors.joining(", "));
                 violations.add("src/data/" + featureName, "data-feature-schema-contract",
                         "Persistence-exporting data feature '" + featureName + "' must expose exactly one source-model schema declaration."
-                                + " Found: " + files);
+                                + " Found: " + schemaFiles);
             }
         }
     }

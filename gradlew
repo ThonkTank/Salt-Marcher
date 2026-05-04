@@ -255,9 +255,13 @@ eval "set -- $(
     )" '"$@"'
 
 saltmarcher_has_daemon_flag=false
+saltmarcher_has_configuration_cache_flag=false
+saltmarcher_has_no_configuration_cache_flag=false
 saltmarcher_has_project_cache_dir_flag=false
 saltmarcher_has_isolation_init_script=false
 saltmarcher_init_script_awaits_value=false
+saltmarcher_configuration_cache_lock_held=false
+saltmarcher_configuration_cache_wait_logged=false
 saltmarcher_init_script_path=$APP_HOME/tools/gradle/saltmarcher-isolation.init.gradle.kts
 for arg do
     if [ "$saltmarcher_init_script_awaits_value" = true ]; then
@@ -271,6 +275,12 @@ for arg do
     case $arg in
       --daemon|--no-daemon)
         saltmarcher_has_daemon_flag=true
+        ;;
+      --configuration-cache)
+        saltmarcher_has_configuration_cache_flag=true
+        ;;
+      --no-configuration-cache)
+        saltmarcher_has_no_configuration_cache_flag=true
         ;;
       --project-cache-dir|--project-cache-dir=*)
         saltmarcher_has_project_cache_dir_flag=true
@@ -297,6 +307,13 @@ if [ "$saltmarcher_has_daemon_flag" = false ]; then
     set -- "$@" --no-daemon
 fi
 
+if [ "$saltmarcher_has_configuration_cache_flag" = false ] \
+    && [ "$saltmarcher_has_no_configuration_cache_flag" = false ] \
+    && [ "${SALTMARCHER_GRADLE_AUTO_CONFIGURATION_CACHE:-false}" = true ]; then
+    set -- "$@" --configuration-cache
+    saltmarcher_has_configuration_cache_flag=true
+fi
+
 if [ "$saltmarcher_has_project_cache_dir_flag" = false ] \
     && [ -n "${SALTMARCHER_GRADLE_ROOT_PROJECT_CACHE_DIR:-}" ]; then
     # Root project cache isolation must exist before settings/pluginManagement runs.
@@ -310,6 +327,7 @@ fi
 
 gradle_pid=
 signal_forwarded=
+saltmarcher_configuration_cache_lock_dir=${SALTMARCHER_GRADLE_CONFIGURATION_CACHE_WARMUP_LOCK_DIR:-}
 
 saltmarcher_print_failure_hint() {
     if [ -z "${SALTMARCHER_GRADLE_ISOLATION_SEGMENT:-}" ] ; then
@@ -332,6 +350,96 @@ saltmarcher_print_failure_hint() {
     echo "Per-run paths under .gradle/isolated-runs/... are runtime locations and may already be deleted after cleanup." >&2
 }
 
+saltmarcher_configuration_cache_ready() {
+    [ -n "${SALTMARCHER_GRADLE_CONFIGURATION_CACHE_READY_MARKER:-}" ] \
+        && [ -f "$SALTMARCHER_GRADLE_CONFIGURATION_CACHE_READY_MARKER" ]
+}
+
+saltmarcher_configuration_cache_warmup_lock_stale() {
+    lock_dir=$1
+    owner_pid_file=$lock_dir/owner.pid
+
+    [ -d "$lock_dir" ] || return 1
+    [ -f "$owner_pid_file" ] || return 1
+
+    owner_pid=$(sed -n '1p' "$owner_pid_file")
+    [ -n "$owner_pid" ] || return 1
+    if kill -0 "$owner_pid" 2>/dev/null; then
+        return 1
+    fi
+    return 0
+}
+
+saltmarcher_release_configuration_cache_warmup_lock() {
+    if [ "$saltmarcher_configuration_cache_lock_held" = true ] \
+        && [ -n "$saltmarcher_configuration_cache_lock_dir" ] \
+        && [ -d "$saltmarcher_configuration_cache_lock_dir" ]; then
+        rm -rf "$saltmarcher_configuration_cache_lock_dir"
+    fi
+    saltmarcher_configuration_cache_lock_held=false
+}
+
+saltmarcher_acquire_configuration_cache_warmup_lock() {
+    if [ "${SALTMARCHER_GRADLE_CONFIGURATION_CACHE_ACTIVE:-false}" != true ]; then
+        return 0
+    fi
+    if [ "$saltmarcher_has_no_configuration_cache_flag" = true ] || [ "$saltmarcher_has_configuration_cache_flag" = false ]; then
+        return 0
+    fi
+    if [ -z "$saltmarcher_configuration_cache_lock_dir" ]; then
+        return 0
+    fi
+    if saltmarcher_configuration_cache_ready; then
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$saltmarcher_configuration_cache_lock_dir")"
+
+    while :; do
+        if saltmarcher_configuration_cache_ready; then
+            return 0
+        fi
+        if mkdir "$saltmarcher_configuration_cache_lock_dir" 2>/dev/null; then
+            printf '%s\n' "$$" > "$saltmarcher_configuration_cache_lock_dir/owner.pid"
+            printf '%s\n' "$(date +%s)" > "$saltmarcher_configuration_cache_lock_dir/owner.startedAtEpochSeconds"
+            saltmarcher_configuration_cache_lock_held=true
+            if saltmarcher_configuration_cache_ready; then
+                saltmarcher_release_configuration_cache_warmup_lock
+            fi
+            return 0
+        fi
+        if saltmarcher_configuration_cache_warmup_lock_stale "$saltmarcher_configuration_cache_lock_dir"; then
+            rm -rf "$saltmarcher_configuration_cache_lock_dir"
+            continue
+        fi
+        if [ "$saltmarcher_configuration_cache_wait_logged" = false ]; then
+            echo "Waiting to acquire configuration-cache warmup lock for shared state: $saltmarcher_configuration_cache_lock_dir" >&2
+            echo "Another first writer is seeding shared configuration state for the same verification surface." >&2
+            saltmarcher_configuration_cache_wait_logged=true
+        fi
+        sleep 1
+    done
+}
+
+saltmarcher_mark_configuration_cache_ready() {
+    if [ "${SALTMARCHER_GRADLE_CONFIGURATION_CACHE_ACTIVE:-false}" != true ]; then
+        return 0
+    fi
+    if [ "$saltmarcher_has_no_configuration_cache_flag" = true ] || [ "$saltmarcher_has_configuration_cache_flag" = false ]; then
+        return 0
+    fi
+    if [ -z "${SALTMARCHER_GRADLE_CONFIGURATION_CACHE_READY_MARKER:-}" ]; then
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$SALTMARCHER_GRADLE_CONFIGURATION_CACHE_READY_MARKER")"
+    {
+        printf 'readyAt=%s\n' "$(date -Iseconds)"
+        printf 'ownerPid=%s\n' "$$"
+        printf 'sharedStateRoot=%s\n' "${SALTMARCHER_GRADLE_ISOLATED_RUNTIME_ROOT:-}"
+    } > "$SALTMARCHER_GRADLE_CONFIGURATION_CACHE_READY_MARKER"
+}
+
 forward_signal() {
     signal_name=$1
     signal_forwarded=$signal_name
@@ -343,10 +451,15 @@ forward_signal() {
 trap 'forward_signal TERM' TERM
 trap 'forward_signal INT' INT
 
+saltmarcher_acquire_configuration_cache_warmup_lock
 "$JAVACMD" "$@" &
 gradle_pid=$!
 wait "$gradle_pid"
 gradle_status=$?
+if [ "$gradle_status" -eq 0 ]; then
+    saltmarcher_mark_configuration_cache_ready
+fi
+saltmarcher_release_configuration_cache_warmup_lock
 
 if [ -f "$APP_HOME/tools/gradle/finalize-isolated-gradle-run.sh" ] ; then
     sh "$APP_HOME/tools/gradle/finalize-isolated-gradle-run.sh" \

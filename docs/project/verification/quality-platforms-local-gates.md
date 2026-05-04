@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-03
+Last Reviewed: 2026-05-04
 Source of Truth: Detailed local gate inventory, aggregate entrypoints, and
 concurrent local invocation policy for SaltMarcher quality platforms.
 
@@ -31,6 +31,25 @@ checks currently promoted to errors are:
 - `ReferenceEquality`
 - `StringCaseLocaleUsage`
 - `StringSplitter`
+- `UnusedLabel`
+- `UnusedMethod`
+- `UnusedNestedClass`
+- `UnusedVariable`
+
+`compileJava` is the mechanical owner for local unused declaration hygiene:
+unused private methods, unused nested classes, unused private or
+effectively-private fields, unused parameters on private or effectively-private
+methods, unused labels, and unused local variables block compilation. This is
+intentionally local-only coverage. It does not claim whole-repository
+reachability for top-level types or public APIs.
+
+The compile-wide Error Prone baseline already excludes warnings in generated
+code. Outside that narrow generated-code carveout, unused false positives must
+be handled with explicit local intent such as deletion, a narrowly justified
+suppression, or an equally narrow keep marker when reflection or framework
+wiring makes the declaration mechanically unused but semantically live. The
+project does not treat blanket unused-check disablement as an acceptable
+steady-state policy.
 
 `compileJava` does not run the dedicated jQAssistant bundles. Passive `View`
 graph and FXML analysis enter local quality through `checkViewEnforcement`,
@@ -108,7 +127,7 @@ architecture harness through `check`.
 
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
-| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. |
+| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value; wrapper-based invocations write `main.txt` under `.gradle/isolated-runs/<run-id>/build/.../reports/cpd/`. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold; wrapper-based invocations write `main.txt` under `.gradle/isolated-runs/<run-id>/build/.../reports/lizard/`. |
@@ -143,6 +162,10 @@ fails when run directly, but it remains a focused direct entrypoint instead of
 an additional aggregate dependency. `pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.
+
+Whole-program dead-code discovery for top-level types or non-private APIs
+remains `Review-Owned`; the active mechanical gates intentionally stop at the
+local declaration and local-smell boundary described above.
 
 SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
 effort `MAX`, and confidence `MEDIUM`. `MAX` is the strongest analysis effort;
@@ -568,14 +591,19 @@ snapshot exposed through `GRADLE_RO_DEP_CACHE`, so
 parallel invocations share immutable dependency content without sharing
 writable Gradle user-home state.
 
-The shared included builds `tools/gradle/build-logic-settings`,
-`tools/gradle/build-logic`, `tools/gradle/build-harness`,
+The wrapper now publishes the internal plugins from
+`tools/gradle/build-logic-settings` and `tools/gradle/build-logic` into one
+immutable local Maven repository under
+`.gradle/tooling-plugin-repos/<tooling-key>/maven`. Normal wrapper-based
+Gradle runs resolve `saltmarcher.settings` plus the project plugins from that
+binary repo instead of rebuilding those source builds on every invocation.
+The shared immutable composite snapshot under
+`.gradle/composite-snapshots/<tooling-key>/` is therefore limited to the real
+runtime included builds `tools/gradle/build-harness`,
 `tools/quality/rules/quality-rules`, and
-`tools/quality/incubator/quality-rules-errorprone` now run from a shared
-immutable composite snapshot under
-`.gradle/composite-snapshots/<tooling-key>/`, so concurrent invocations do not
-contend on the same included-build source root while mutable per-run state
-stays inside one run root.
+`tools/quality/incubator/quality-rules-errorprone`, so concurrent invocations
+do not contend on the same included-build source root while mutable per-run
+state stays inside one run root.
 Bundle-owned enforcement source trees under `tools/quality/*-enforcement` and
 `tools/quality/documentation-enforcement` are not copied into that snapshot.
 Runtime isolation links those bundle trees back to the repo-root source of
@@ -592,10 +620,32 @@ registers standard `check*Enforcement` tasks from that same descriptor model,
 while the early cache/build-dir isolation and generated-catalog propagation
 come from the repo-local wrapper init script
 `tools/gradle/saltmarcher-isolation.init.gradle.kts`. Root focused-bundle
-selection still comes from the dedicated `saltmarcher.settings` plugin in
-`tools/gradle/build-logic-settings`. `SALTMARCHER_ENFORCEMENT_BUNDLE_CATALOG`
-now points at that descriptor snapshot instead of a file inside the composite
-mirror.
+selection still comes from the dedicated `saltmarcher.settings` plugin whose
+binary artifact is published from `tools/gradle/build-logic-settings`.
+`SALTMARCHER_ENFORCEMENT_BUNDLE_CATALOG` now points at that descriptor snapshot
+instead of a file inside the composite mirror. Direct non-wrapper fallback
+runs may still use source `includeBuild(...)` resolution, but that is the
+slower compatibility path rather than the normal wrapper path.
+That descriptor model now also owns the root build-harness optional-rule
+registry: active bundles publish explicit
+`buildHarnessArchitectureRuleClasses` and
+`buildHarnessDocumentationRuleClasses`, and the root
+`architectureCheck` / `documentationEnforcementCheck` pass those class names as
+declared task inputs into the shared build-harness runner. The harness no
+longer keeps a `META-INF/services` resource bridge for root optional rules, so
+`:build-harness:processResources` should stay `NO-SOURCE` unless new real
+resources are introduced deliberately.
+Focused PMD, jQAssistant, build-harness, FXML, and styling checks now use
+normal Gradle work avoidance with declared inputs plus reports or success
+markers instead of blanket fresh-run forcing. That optimization does not
+weaken blocking semantics: a successful unchanged run may be reused, while a
+failing run still executes and fails fresh.
+The same rule now applies to the remaining root-owned verification gates:
+`spotbugsMain`, `checkNoCompiledArtifactsInSource`,
+`checkDesktopPackagingInputs`, and `:build-harness:architectureCheck` may
+finish `UP-TO-DATE` or `FROM-CACHE` after a successful unchanged run because
+their current invocation semantics are expressed through reports or explicit
+success markers rather than forced reruns.
 The harness no longer depends on parallel families of
 `build-harness-host.gradle.kts`, `errorprone-host.gradle.kts`,
 `pmd-host.gradle.kts`, standard `root-host.gradle.kts`, or shared
@@ -611,10 +661,28 @@ client exits.
 The wrapper no longer appends `--no-configuration-cache` by default. Cache
 compatibility is now the responsibility of the underlying build logic and
 individual tasks instead of a blanket runtime opt-out.
-When callers explicitly request configuration-cache reuse, the wrapper keys the
-shared state roots by staged surface plus requested work signature, so two
-different focused bundle invocations do not reuse the same writable
+Wrapper-based runs now auto-append `--configuration-cache` only for a proven
+safe subset:
+
+- `help --task <anything>`
+- `checkDocumentationEnforcement`
+- focused public `check*Enforcement` bundle tasks whose owning descriptor has
+  no `rootPluginId` and no `jqassistant.*` metadata
+
+Broad staged surfaces such as `production-handoff`, direct low-level
+investigation tasks, jQAssistant-backed focused bundles, and the exception
+bundles `checkViewEnforcement` and `checkStylingLayerEnforcement` remain
+explicit opt-in surfaces for configuration-cache use. Explicit user flags still
+win: `--configuration-cache` forces it on and `--no-configuration-cache`
+forces it off.
+When configuration-cache reuse is active, the wrapper keys the shared state
+roots by staged surface plus requested work signature, so two different
+focused bundle invocations do not reuse the same writable
 configuration/build state just because they both ran under `stage=default`.
+The wrapper also owns a repo-local first-writer warmup lock per shared
+configuration-state root. Only the uncached first writer is serialized; once
+the wrapper-owned ready marker exists, later identical runs reuse the warmed
+state without the extra lock wait.
 
 After a local wrapper-based run finishes, the wrapper removes the
 per-invocation root under `.gradle/isolated-runs/<run-id>/`. Successful runs
@@ -625,7 +693,12 @@ or interrupted runs retain only selected reports and test results under
 retained path after a failure. Report paths that Gradle emitted under
 `.gradle/isolated-runs/<run-id>/...` were runtime locations and may already be
 gone after cleanup. The wrapper prunes retained failure bundles plus
-observable-run logs after seven days.
+observable-run logs after seven days. Immutable tooling-plugin repos,
+composite snapshots, and descriptor-catalog snapshots are bounded cache roots
+rather than permanent
+archives; maintenance cleanup keeps only the newest snapshot set for each root
+and clears abandoned configuration-cache warmup locks when no active
+Gradle/jQAssistant process remains.
 
 Direct `gradle` invocations that bypass the wrapper do not receive the wrapper
 managed `GRADLE_USER_HOME`, read-only dependency cache, or included-build
@@ -653,14 +726,21 @@ This does not make bytecode-dependent entrypoints source-only. `spotbugsMain`,
 if `compileJava` fails, those entrypoints may be skipped because their
 prerequisite failed rather than because another independent check failed.
 
-Local blocking Gradle gates must produce diagnostics from the current
-invocation. `compileJava`, PMD architecture, ArchUnit-backed test entrypoints,
-jQAssistant, PMD non-architecture, SpotBugs, CPD, Lizard, CKJM,
-build-harness architecture checks, documentation-enforcement checks, and
-Gradle-owned resource policy checks must not report success by being skipped as
-`UP-TO-DATE` or restored from the build cache. Tool installation, dependency
-resolution, packaging, and generated-resource preparation tasks may remain
-incremental because they are not the gate result itself.
+Local blocking Gradle gates must still fail on current violations, but a
+successful unchanged verification result may now be reused when its task has
+complete declared inputs plus report or marker outputs. This includes
+SpotBugs, CPD, Lizard, CKJM, focused build-harness checks, documentation
+enforcement, `checkNoCompiledArtifactsInSource`,
+`checkDesktopPackagingInputs`, and the remaining incremental resource-policy
+checks. Tool installation, dependency resolution, packaging, and generated
+resource preparation remain separately incremental because they are not the
+gate result itself. `compileJava`, PMD architecture, and ArchUnit-backed test
+entrypoints still execute according to their own task semantics rather than a
+blanket forced-rerun policy.
+The same reuse contract now applies to the hot-path `quality-rules:jar`
+artifact; successful unchanged packaging runs may stay `UP-TO-DATE` or come
+`FROM-CACHE` without weakening the blocking semantics of the verification
+surfaces that depend on it.
 
 ## References
 

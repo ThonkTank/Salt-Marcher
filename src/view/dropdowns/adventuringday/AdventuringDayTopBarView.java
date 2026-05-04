@@ -287,7 +287,7 @@ public final class AdventuringDayTopBarView extends HBox {
             totalGroupXpField.setPromptText("Gesamt-XP");
             totalGroupXpField.setPrefColumnCount(10);
             totalGroupXpField.textProperty().addListener((ignored, before, after) -> refreshSummary());
-            Label totalGroupXpHint = new Label("Gesamt-XP fuer die Gruppe");
+            Label totalGroupXpHint = new Label("Gesamt-XP für die Gruppe");
             totalGroupXpHint.getStyleClass().add("text-muted");
             progressInputRow = new HBox(8, totalGroupXpHint, totalGroupXpField);
             progressInputRow.setAlignment(Pos.CENTER_LEFT);
@@ -429,7 +429,7 @@ public final class AdventuringDayTopBarView extends HBox {
                 sourceLabel += activePartyLevels.isEmpty() ? " · Laden fehlgeschlagen" : " · Letzter Stand";
             }
             if (sourceMode == PartySourceMode.CUSTOM && activePartyChangedSinceCustomEdit) {
-                sourceLabel += " · Aktive Party geaendert";
+                sourceLabel += " · Aktive Party geändert";
             }
             if (levels.isEmpty()) {
                 partySummaryLabel.setText(sourceLabel);
@@ -512,7 +512,7 @@ public final class AdventuringDayTopBarView extends HBox {
             String suffix = event.partialDay() ? " (teilweiser Tag)" : "";
             String text = switch (event.type()) {
                 case LEVEL_UP -> prefix + "Level-up auf " + event.newLevel()
-                        + " fuer " + event.affectedCharacters() + " Charakter"
+                        + " für " + event.affectedCharacters() + " Charakter"
                         + (event.affectedCharacters() == 1 ? "" : "e") + suffix;
                 case SHORT_REST -> prefix + "Short Rest" + suffix;
                 case LONG_REST -> prefix + "Long Rest" + suffix;

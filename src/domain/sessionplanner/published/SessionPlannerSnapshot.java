@@ -86,7 +86,7 @@ public record SessionPlannerSnapshot(
         }
 
         public static XpBudgetState empty() {
-            return new XpBudgetState(false, 0, 0, 0, 0, 0, 0, 0.0, false, "Kein XP-Budget verfuegbar.");
+            return new XpBudgetState(false, 0, 0, 0, 0, 0, 0, 0.0, false, "Kein XP-Budget verfügbar.");
         }
     }
 
@@ -108,7 +108,7 @@ public record SessionPlannerSnapshot(
         }
 
         public static RestAdviceState empty() {
-            return new RestAdviceState(false, 0, 0, 0, 0, "Keine Rastempfehlung verfuegbar.");
+            return new RestAdviceState(false, 0, 0, 0, 0, "Keine Rastempfehlung verfügbar.");
         }
     }
 

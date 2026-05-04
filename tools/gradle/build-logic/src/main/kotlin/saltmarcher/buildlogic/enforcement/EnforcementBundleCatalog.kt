@@ -44,7 +44,8 @@ data class EnforcementBundleDescriptor(
     val rootPluginId: String?,
     val rootTask: EnforcementRootTask?,
     val buildHarnessSourceDir: String?,
-    val buildHarnessResourceDirs: List<String>,
+    val buildHarnessArchitectureRuleClasses: List<String>,
+    val buildHarnessDocumentationRuleClasses: List<String>,
     val buildHarnessTaskMainClasses: Map<String, String>,
     val errorProneCheckers: List<String>,
     val errorProneSourceDir: String?,
@@ -201,8 +202,8 @@ private fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enf
                     rootTask = properties.readRootTask(""),
                     buildHarnessSourceDir = properties.optionalTrimmed("buildHarnessSourceDir")
                         ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
-                    buildHarnessResourceDirs = properties.list("buildHarnessResourceDirs")
-                        .map { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
+                    buildHarnessArchitectureRuleClasses = properties.list("buildHarnessArchitectureRuleClasses"),
+                    buildHarnessDocumentationRuleClasses = properties.list("buildHarnessDocumentationRuleClasses"),
                     buildHarnessTaskMainClasses = properties.mapEntries("buildHarnessTask.", ".mainClass"),
                     errorProneCheckers = properties.list("errorProneCheckers"),
                     errorProneSourceDir = properties.optionalTrimmed("errorProneSourceDir")
@@ -232,7 +233,8 @@ private fun Properties.readCatalogDescriptor(bundleId: String): EnforcementBundl
         rootPluginId = optionalTrimmed("${propertyPrefix}rootPluginId"),
         rootTask = readRootTask(propertyPrefix),
         buildHarnessSourceDir = optionalTrimmed("${propertyPrefix}buildHarnessSourceDir"),
-        buildHarnessResourceDirs = list("${propertyPrefix}buildHarnessResourceDirs"),
+        buildHarnessArchitectureRuleClasses = list("${propertyPrefix}buildHarnessArchitectureRuleClasses"),
+        buildHarnessDocumentationRuleClasses = list("${propertyPrefix}buildHarnessDocumentationRuleClasses"),
         buildHarnessTaskMainClasses = mapEntries("${propertyPrefix}buildHarnessTask.", ".mainClass"),
         errorProneCheckers = list("${propertyPrefix}errorProneCheckers"),
         errorProneSourceDir = optionalTrimmed("${propertyPrefix}errorProneSourceDir"),
@@ -262,8 +264,17 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         }
     }
     if (buildHarnessSourceDir != null) {
-        require(buildHarnessTaskMainClasses.isNotEmpty()) {
-            "Enforcement bundle '$bundleId' must declare buildHarnessTask.*.mainClass entries when buildHarnessSourceDir is present."
+        require(
+            buildHarnessTaskMainClasses.isNotEmpty() ||
+                buildHarnessArchitectureRuleClasses.isNotEmpty() ||
+                buildHarnessDocumentationRuleClasses.isNotEmpty()
+        ) {
+            "Enforcement bundle '$bundleId' must declare buildHarnessTask.*.mainClass or buildHarness*RuleClasses when buildHarnessSourceDir is present."
+        }
+    }
+    if (buildHarnessArchitectureRuleClasses.isNotEmpty() || buildHarnessDocumentationRuleClasses.isNotEmpty()) {
+        require(buildHarnessSourceDir != null) {
+            "Enforcement bundle '$bundleId' must declare buildHarnessSourceDir when buildHarness*RuleClasses are present."
         }
     }
 

@@ -20,11 +20,11 @@ public final class PartyEditorTopBarView extends VBox {
     private final TextField levelField = createIntegerField();
     private final TextField passivePerceptionField = createIntegerField();
     private final TextField armorClassField = createIntegerField();
-    private final Button revealDeleteButton = new Button("Loeschen");
+    private final Button revealDeleteButton = new Button("Löschen");
     private final VBox deleteSection = new VBox(8);
     private final Label deleteMessageLabel = new Label();
     private final Button cancelDeleteButton = new Button("Abbrechen");
-    private final Button confirmDeleteButton = new Button("Wirklich loeschen");
+    private final Button confirmDeleteButton = new Button("Wirklich löschen");
     private final Button cancelButton = new Button("Abbrechen");
     private final Button submitButton = new Button("Speichern");
     private EditorContent content = EditorContent.hidden();
@@ -58,7 +58,7 @@ public final class PartyEditorTopBarView extends VBox {
         submitButton.setText(safeContent.editingExisting() ? "Speichern" : "Erstellen");
         revealDeleteButton.setVisible(safeContent.editingExisting());
         revealDeleteButton.setManaged(safeContent.editingExisting());
-        deleteMessageLabel.setText("\"" + safeContent.memberName() + "\" wirklich dauerhaft loeschen?");
+        deleteMessageLabel.setText("\"" + safeContent.memberName() + "\" wirklich dauerhaft löschen?");
         deleteSection.setVisible(safeContent.deleteConfirmationVisible());
         deleteSection.setManaged(safeContent.deleteConfirmationVisible());
         populateFields(safeContent);

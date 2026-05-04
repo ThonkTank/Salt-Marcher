@@ -58,15 +58,15 @@ final class SessionPlannerBinder {
         controlsView.showBudget(contributionModel.budgetProperty().get());
         controlsView.showRestAdvice(contributionModel.restAdviceProperty().get());
         controlsView.showGoldBudget(contributionModel.goldBudgetProperty().get());
-        controlsView.showAvailablePlans(contributionModel.availablePlans());
+        controlsView.showAvailablePlans(contributionModel.availablePlansProperty().get());
         controlsView.statusTextProperty().bind(contributionModel.statusTextProperty());
         contributionModel.partyProperty().addListener((ignored, before, after) -> controlsView.showParty(after));
         contributionModel.budgetProperty().addListener((ignored, before, after) -> controlsView.showBudget(after));
         contributionModel.restAdviceProperty().addListener((ignored, before, after) -> controlsView.showRestAdvice(after));
         contributionModel.goldBudgetProperty().addListener((ignored, before, after) -> controlsView.showGoldBudget(after));
-        contributionModel.availablePlans().addListener(
+        contributionModel.availablePlansProperty().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.AvailablePlanModel>) change ->
-                        controlsView.showAvailablePlans(contributionModel.availablePlans()));
+                        controlsView.showAvailablePlans(contributionModel.availablePlansProperty().get()));
     }
 
     private static void bindMain(
@@ -77,17 +77,23 @@ final class SessionPlannerBinder {
     ) {
         timelineView.onViewInputEvent(intentHandler::consume);
         lootView.onViewInputEvent(intentHandler::consume);
-        timelineView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps());
-        lootView.showLootPlaceholders(contributionModel.lootPlaceholders());
-        contributionModel.plannedEncounters().addListener(
+        timelineView.showTimeline(
+                contributionModel.plannedEncountersProperty().get(),
+                contributionModel.restGapsProperty().get());
+        lootView.showLootPlaceholders(contributionModel.lootPlaceholdersProperty().get());
+        contributionModel.plannedEncountersProperty().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.EncounterModel>) change ->
-                        timelineView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps()));
-        contributionModel.restGaps().addListener(
+                        timelineView.showTimeline(
+                                contributionModel.plannedEncountersProperty().get(),
+                                contributionModel.restGapsProperty().get()));
+        contributionModel.restGapsProperty().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.RestGapModel>) change ->
-                        timelineView.showTimeline(contributionModel.plannedEncounters(), contributionModel.restGaps()));
-        contributionModel.lootPlaceholders().addListener(
+                        timelineView.showTimeline(
+                                contributionModel.plannedEncountersProperty().get(),
+                                contributionModel.restGapsProperty().get()));
+        contributionModel.lootPlaceholdersProperty().addListener(
                 (ListChangeListener<SessionPlannerContributionModel.LootModel>) change ->
-                        lootView.showLootPlaceholders(contributionModel.lootPlaceholders()));
+                        lootView.showLootPlaceholders(contributionModel.lootPlaceholdersProperty().get()));
     }
 
     private static ApplySessionPlannerCommand refreshCommand() {

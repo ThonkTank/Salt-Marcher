@@ -32,6 +32,10 @@ saltmarcher_copy_tree() {
     rm -rf "$target_path"
     mkdir -p "$(dirname "$target_path")"
     cp -R "$source_path" "$target_path"
+    rm -rf \
+        "$target_path/build" \
+        "$target_path/.gradle" \
+        "$target_path/.kotlin"
     find "$target_path" \
         \( -name build -o -name .gradle -o -name .kotlin \) \
         -type d -prune -exec rm -rf {} +
@@ -147,6 +151,193 @@ saltmarcher_property_value() {
     property_file=$1
     property_name=$2
     sed -n "s/^$property_name=//p" "$property_file" | head -n 1
+}
+
+saltmarcher_configuration_cache_flag_state() {
+    configuration_cache_state=unset
+    for arg in "$@"; do
+        case "$arg" in
+          --configuration-cache)
+            configuration_cache_state=true
+            ;;
+          --no-configuration-cache)
+            configuration_cache_state=false
+            ;;
+        esac
+    done
+    printf '%s' "$configuration_cache_state"
+}
+
+saltmarcher_csv_contains_exact() {
+    csv_value=$1
+    expected_value=$2
+
+    old_ifs=$IFS
+    IFS=','
+    set -f
+    set -- $csv_value
+    set +f
+    IFS=$old_ifs
+    for candidate do
+        trimmed_candidate=$(printf '%s' "$candidate" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+        [ "$trimmed_candidate" = "$expected_value" ] && return 0
+    done
+    return 1
+}
+
+saltmarcher_bundle_descriptor_metadata_for_task() {
+    requested_task_name=${1##*:}
+    match_count=0
+    matched_bundle_id=
+    matched_root_plugin_id=
+    matched_jqassistant_scan_task_name=
+    matched_jqassistant_analyze_task_name=
+
+    if [ -f "${saltmarcher_enforcement_bundle_catalog:-}" ]; then
+        bundle_ids=$(saltmarcher_property_value "$saltmarcher_enforcement_bundle_catalog" bundleIdsInOrder)
+        old_ifs=$IFS
+        IFS=','
+        set -f
+        set -- $bundle_ids
+        set +f
+        IFS=$old_ifs
+        for bundle_id do
+            task_names=$(saltmarcher_property_value "$saltmarcher_enforcement_bundle_catalog" "bundle.$bundle_id.taskNames")
+            if ! saltmarcher_csv_contains_exact "$task_names" "$requested_task_name"; then
+                continue
+            fi
+            match_count=$((match_count + 1))
+            matched_bundle_id=$bundle_id
+            matched_root_plugin_id=$(saltmarcher_property_value "$saltmarcher_enforcement_bundle_catalog" "bundle.$bundle_id.rootPluginId")
+            matched_jqassistant_scan_task_name=$(saltmarcher_property_value "$saltmarcher_enforcement_bundle_catalog" "bundle.$bundle_id.jqassistant.scanTaskName")
+            matched_jqassistant_analyze_task_name=$(saltmarcher_property_value "$saltmarcher_enforcement_bundle_catalog" "bundle.$bundle_id.jqassistant.analyzeTaskName")
+        done
+    else
+        for descriptor_file in $(find "$APP_HOME/tools/quality" -name bundle.properties -type f -print); do
+            descriptor_owned=$(saltmarcher_property_value "$descriptor_file" descriptorOwned)
+            [ "$descriptor_owned" = true ] || continue
+
+            task_names=$(saltmarcher_property_value "$descriptor_file" taskNames)
+            if ! saltmarcher_csv_contains_exact "$task_names" "$requested_task_name"; then
+                continue
+            fi
+            match_count=$((match_count + 1))
+            matched_bundle_id=$(saltmarcher_property_value "$descriptor_file" bundleId)
+            matched_root_plugin_id=$(saltmarcher_property_value "$descriptor_file" rootPluginId)
+            matched_jqassistant_scan_task_name=$(saltmarcher_property_value "$descriptor_file" jqassistant.scanTaskName)
+            matched_jqassistant_analyze_task_name=$(saltmarcher_property_value "$descriptor_file" jqassistant.analyzeTaskName)
+        done
+    fi
+
+    [ "$match_count" -eq 1 ] || return 1
+    printf '%s|%s|%s|%s\n' \
+        "$matched_bundle_id" \
+        "$matched_root_plugin_id" \
+        "$matched_jqassistant_scan_task_name" \
+        "$matched_jqassistant_analyze_task_name"
+}
+
+saltmarcher_safe_configuration_cache_surface() {
+    non_option_task_count=0
+    help_task_count=0
+    task_selector_count=0
+    requested_surface_tasks=
+    skip_next=false
+    pending_selector=
+
+    for arg in "$@"; do
+        if [ "$skip_next" = true ]; then
+            case "$pending_selector" in
+              --task)
+                task_selector_count=$((task_selector_count + 1))
+                ;;
+            esac
+            skip_next=false
+            pending_selector=
+            continue
+        fi
+
+        case "$arg" in
+          --task)
+            skip_next=true
+            pending_selector=--task
+            ;;
+          --task=*)
+            task_selector_count=$((task_selector_count + 1))
+            ;;
+          --*=*|-P*|-D*|-I*|-c*|-b*|-g*|-p*)
+            ;;
+          -*)
+            ;;
+          *)
+            normalized_task_name=${arg##*:}
+            non_option_task_count=$((non_option_task_count + 1))
+            if [ "$normalized_task_name" = help ]; then
+                help_task_count=$((help_task_count + 1))
+            else
+                if [ -n "$requested_surface_tasks" ]; then
+                    requested_surface_tasks=$requested_surface_tasks"
+$normalized_task_name"
+                else
+                    requested_surface_tasks=$normalized_task_name
+                fi
+            fi
+            ;;
+        esac
+    done
+
+    if [ "$non_option_task_count" -eq 1 ] && [ "$help_task_count" -eq 1 ] && [ "$task_selector_count" -eq 1 ]; then
+        return 0
+    fi
+
+    [ "$task_selector_count" -eq 0 ] || return 1
+    [ -n "$requested_surface_tasks" ] || return 1
+
+    while IFS= read -r requested_task_name; do
+        [ -n "$requested_task_name" ] || continue
+        if [ "$requested_task_name" = checkDocumentationEnforcement ]; then
+            continue
+        fi
+
+        case "$requested_task_name" in
+          check*Enforcement)
+            bundle_descriptor_metadata=$(saltmarcher_bundle_descriptor_metadata_for_task "$requested_task_name") || return 1
+            bundle_root_plugin_id=$(printf '%s' "$bundle_descriptor_metadata" | cut -d '|' -f 2)
+            bundle_jqassistant_scan_task_name=$(printf '%s' "$bundle_descriptor_metadata" | cut -d '|' -f 3)
+            bundle_jqassistant_analyze_task_name=$(printf '%s' "$bundle_descriptor_metadata" | cut -d '|' -f 4)
+            [ -z "$bundle_root_plugin_id" ] || return 1
+            [ -z "$bundle_jqassistant_scan_task_name$bundle_jqassistant_analyze_task_name" ] || return 1
+            ;;
+          *)
+            return 1
+            ;;
+        esac
+    done <<EOF
+$requested_surface_tasks
+EOF
+
+    return 0
+}
+
+saltmarcher_should_auto_configuration_cache() {
+    configuration_cache_state=$(saltmarcher_configuration_cache_flag_state "$@")
+    [ "$configuration_cache_state" = unset ] || return 1
+    saltmarcher_safe_configuration_cache_surface "$@"
+}
+
+saltmarcher_configuration_cache_enabled() {
+    configuration_cache_state=$(saltmarcher_configuration_cache_flag_state "$@")
+    case "$configuration_cache_state" in
+      true)
+        return 0
+        ;;
+      false)
+        return 1
+        ;;
+      *)
+        saltmarcher_should_auto_configuration_cache "$@"
+        ;;
+    esac
 }
 
 saltmarcher_requested_work_signature() {
@@ -299,7 +490,7 @@ saltmarcher_normalize_catalog_value() {
       buildHarnessSourceDir|errorProneSourceDir|errorProneServiceFile|pmdSourceDir|jqassistant.config|jqassistant.rulesDir|pmd.ruleset)
         saltmarcher_resolve_descriptor_path "$descriptor_file" "$descriptor_value"
         ;;
-      buildHarnessResourceDirs|archunit.sourceDirs)
+      archunit.sourceDirs)
         normalized_values=
         old_ifs=$IFS
         IFS=','
@@ -382,6 +573,125 @@ saltmarcher_write_bundle_catalog() {
     rm -f "$temp_descriptor_index" "$temp_sorted_descriptor_index"
 }
 
+saltmarcher_locate_java_cmd() {
+    if [ -n "${JAVA_HOME:-}" ]; then
+        if [ -x "$JAVA_HOME/jre/sh/java" ]; then
+            printf '%s\n' "$JAVA_HOME/jre/sh/java"
+            return 0
+        fi
+        if [ -x "$JAVA_HOME/bin/java" ]; then
+            printf '%s\n' "$JAVA_HOME/bin/java"
+            return 0
+        fi
+        cat >&2 <<EOF
+ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
+EOF
+        return 1
+    fi
+
+    if command -v java >/dev/null 2>&1; then
+        command -v java
+        return 0
+    fi
+
+    cat >&2 <<'EOF'
+ERROR: JAVA_HOME is not set and no 'java' command could be found in PATH.
+EOF
+    return 1
+}
+
+saltmarcher_publish_tooling_build() {
+    build_dir=$1
+    repository_dir=$2
+    plugin_version=$3
+    bootstrap_segment=$4
+    java_cmd=$5
+
+    bootstrap_path_segment=$(saltmarcher_sanitized_segment "$build_dir")
+    bootstrap_project_cache_dir=$saltmarcher_run_root/tooling-plugin-bootstrap/project-cache/$bootstrap_path_segment
+    bootstrap_build_root=$saltmarcher_run_root/tooling-plugin-bootstrap/build/$bootstrap_path_segment
+    bootstrap_runtime_root=$saltmarcher_run_root/tooling-plugin-bootstrap/runtime/$bootstrap_path_segment
+    bootstrap_kotlin_dir=$saltmarcher_run_root/tooling-plugin-bootstrap/kotlin/$bootstrap_path_segment
+    bootstrap_invocation_id=$bootstrap_segment-$bootstrap_path_segment
+    mkdir -p \
+        "$bootstrap_project_cache_dir" \
+        "$bootstrap_build_root" \
+        "$bootstrap_runtime_root" \
+        "$bootstrap_kotlin_dir"
+
+    (
+        cd "$build_dir" || exit 1
+        SALTMARCHER_TOOLING_PLUGIN_BOOTSTRAP=true \
+        SALTMARCHER_REPO_ROOT=$APP_HOME \
+        SALTMARCHER_GRADLE_INVOCATION_ID=$bootstrap_invocation_id \
+        SALTMARCHER_GRADLE_ISOLATED_BUILD_ROOT=$bootstrap_build_root \
+        SALTMARCHER_GRADLE_ISOLATED_RUNTIME_ROOT=$bootstrap_runtime_root \
+        SALTMARCHER_TOOLING_PLUGIN_REPO=$repository_dir \
+        SALTMARCHER_TOOLING_PLUGIN_VERSION=$plugin_version \
+        GRADLE_USER_HOME=$saltmarcher_isolated_gradle_home \
+        "$java_cmd" \
+            "-Dorg.gradle.appname=gradlew" \
+            "-Dkotlin.project.persistent.dir=$bootstrap_kotlin_dir" \
+            "-Dsaltmarcher.toolingPluginRepo=$repository_dir" \
+            "-Dsaltmarcher.toolingPluginVersion=$plugin_version" \
+            -classpath "$APP_HOME/gradle/wrapper/gradle-wrapper.jar" \
+            org.gradle.wrapper.GradleWrapperMain \
+            --no-daemon \
+            --console=plain \
+            -I "$APP_HOME/tools/gradle/saltmarcher-isolation.init.gradle.kts" \
+            --project-cache-dir "$bootstrap_project_cache_dir" \
+            -Porg.gradle.java.installations.auto-detect=false \
+            publishAllPublicationsToSaltmarcherToolingRepository
+    ) || {
+        cat >&2 <<EOF
+Failed to publish tooling plugins from $build_dir into $repository_dir.
+EOF
+        return 1
+    }
+
+    find "$build_dir" -maxdepth 1 -name .kotlin -type d -prune -exec rm -rf {} +
+}
+
+saltmarcher_materialize_tooling_plugin_repo() {
+    repo_root=$1
+    repo_dir=$2
+    plugin_version=$3
+    temp_repo_root=$repo_root.tmp.$$
+    temp_repo_dir=$temp_repo_root/maven
+    bootstrap_segment=$4
+
+    [ -d "$repo_dir" ] && return 0
+
+    rm -rf "$temp_repo_root"
+    mkdir -p "$temp_repo_dir"
+
+    java_cmd=$(saltmarcher_locate_java_cmd) || return 1
+    saltmarcher_publish_tooling_build \
+        "$APP_HOME/tools/gradle/build-logic-settings" \
+        "$temp_repo_dir" \
+        "$plugin_version" \
+        "$bootstrap_segment" \
+        "$java_cmd" || {
+            rm -rf "$temp_repo_root"
+            return 1
+        }
+    saltmarcher_publish_tooling_build \
+        "$APP_HOME/tools/gradle/build-logic" \
+        "$temp_repo_dir" \
+        "$plugin_version" \
+        "$bootstrap_segment" \
+        "$java_cmd" || {
+            rm -rf "$temp_repo_root"
+            return 1
+        }
+
+    if mv -T "$temp_repo_root" "$repo_root" 2>/dev/null; then
+        return 0
+    fi
+
+    rm -rf "$temp_repo_root"
+}
+
 saltmarcher_materialize_composite_snapshot() {
     snapshot_root=$1
     temp_snapshot_root=$snapshot_root.tmp.$$
@@ -394,12 +704,6 @@ saltmarcher_materialize_composite_snapshot() {
         "$temp_snapshot_root/tools/quality/rules" \
         "$temp_snapshot_root/tools/quality/incubator"
     saltmarcher_copy_tree \
-        "$APP_HOME/tools/gradle/build-logic-settings" \
-        "$temp_snapshot_root/tools/gradle/build-logic-settings"
-    saltmarcher_copy_tree \
-        "$APP_HOME/tools/gradle/build-logic" \
-        "$temp_snapshot_root/tools/gradle/build-logic"
-    saltmarcher_copy_tree \
         "$APP_HOME/tools/gradle/build-harness" \
         "$temp_snapshot_root/tools/gradle/build-harness"
     saltmarcher_copy_tree \
@@ -409,7 +713,7 @@ saltmarcher_materialize_composite_snapshot() {
         "$APP_HOME/tools/quality/incubator/quality-rules-errorprone" \
         "$temp_snapshot_root/tools/quality/incubator/quality-rules-errorprone"
 
-    if mv "$temp_snapshot_root" "$snapshot_root" 2>/dev/null; then
+    if mv -T "$temp_snapshot_root" "$snapshot_root" 2>/dev/null; then
         return 0
     fi
 
@@ -428,7 +732,7 @@ saltmarcher_materialize_bundle_catalog_snapshot() {
     mkdir -p "$temp_catalog_root"
     saltmarcher_write_bundle_catalog "$temp_catalog_file"
 
-    if mv "$temp_catalog_root" "$catalog_root" 2>/dev/null; then
+    if mv -T "$temp_catalog_root" "$catalog_root" 2>/dev/null; then
         return 0
     fi
 
@@ -446,21 +750,6 @@ saltmarcher_write_run_metadata() {
         printf 'stage=%s\n' "$run_stage"
         printf 'createdAt=%s\n' "$(date -Iseconds)"
     } > "$run_meta_dir/run.properties"
-}
-
-saltmarcher_configuration_cache_requested() {
-    requested=false
-    for arg in "$@"; do
-        case "$arg" in
-          --configuration-cache)
-            requested=true
-            ;;
-          --no-configuration-cache)
-            requested=false
-            ;;
-        esac
-    done
-    [ "$requested" = true ]
 }
 
 saltmarcher_actor_id=$(
@@ -493,10 +782,24 @@ saltmarcher_requested_work_segment=$(saltmarcher_sanitized_segment "$saltmarcher
 saltmarcher_run_root=$APP_HOME/.gradle/isolated-runs/$saltmarcher_isolation_segment
 saltmarcher_run_meta_dir=$saltmarcher_run_root/meta
 saltmarcher_composite_root=$APP_HOME/.gradle/composite-snapshots/$saltmarcher_tooling_snapshot_segment
+saltmarcher_tooling_plugin_repo_root=$APP_HOME/.gradle/tooling-plugin-repos/$saltmarcher_tooling_snapshot_segment
+saltmarcher_tooling_plugin_repo=$saltmarcher_tooling_plugin_repo_root/maven
+saltmarcher_tooling_plugin_version=$saltmarcher_tooling_snapshot_segment
 saltmarcher_enforcement_bundle_catalog_root=$APP_HOME/.gradle/enforcement-bundle-catalog-snapshots/$saltmarcher_descriptor_snapshot_segment
 saltmarcher_enforcement_bundle_catalog=$saltmarcher_enforcement_bundle_catalog_root/enforcement-bundle-catalog.properties
 saltmarcher_shared_state_root=$APP_HOME/.gradle/shared-configuration-state/$saltmarcher_stage-$saltmarcher_requested_work_segment-$saltmarcher_tooling_snapshot_segment
-if saltmarcher_configuration_cache_requested "$@"; then
+saltmarcher_configuration_cache_warmup_locks_root=$APP_HOME/.gradle/configuration-cache-warmup-locks
+saltmarcher_configuration_cache_warmup_lock_dir=$saltmarcher_configuration_cache_warmup_locks_root/$saltmarcher_stage-$saltmarcher_requested_work_segment-$saltmarcher_tooling_snapshot_segment
+saltmarcher_configuration_cache_ready_marker=$saltmarcher_shared_state_root/configuration-cache-ready.marker
+saltmarcher_auto_configuration_cache=false
+if saltmarcher_should_auto_configuration_cache "$@"; then
+    saltmarcher_auto_configuration_cache=true
+fi
+saltmarcher_configuration_cache_active=false
+if saltmarcher_configuration_cache_enabled "$@"; then
+    saltmarcher_configuration_cache_active=true
+fi
+if [ "$saltmarcher_configuration_cache_active" = true ]; then
     saltmarcher_exported_invocation_id=$saltmarcher_stage-$saltmarcher_tooling_snapshot_segment
     saltmarcher_exported_isolation_segment=$(saltmarcher_sanitized_segment "$saltmarcher_exported_invocation_id")
     saltmarcher_isolated_gradle_home=$saltmarcher_shared_state_root/gradle-user-home
@@ -529,6 +832,11 @@ if ! saltmarcher_is_nonblank "${GRADLE_RO_DEP_CACHE:-}"; then
         "$saltmarcher_read_only_dependency_cache_root"
 fi
 saltmarcher_materialize_composite_snapshot "$saltmarcher_composite_root"
+saltmarcher_materialize_tooling_plugin_repo \
+    "$saltmarcher_tooling_plugin_repo_root" \
+    "$saltmarcher_tooling_plugin_repo" \
+    "$saltmarcher_tooling_plugin_version" \
+    "$saltmarcher_isolation_segment"
 saltmarcher_materialize_bundle_catalog_snapshot \
     "$saltmarcher_enforcement_bundle_catalog_root" \
     "$saltmarcher_enforcement_bundle_catalog"
@@ -538,6 +846,8 @@ export GRADLE_USER_HOME=$saltmarcher_isolated_gradle_home
 export SALTMARCHER_GRADLE_STAGE=$saltmarcher_stage
 export SALTMARCHER_GRADLE_INVOCATION_ID=$saltmarcher_exported_invocation_id
 export SALTMARCHER_INCLUDED_BUILD_ROOT=$saltmarcher_composite_root
+export SALTMARCHER_TOOLING_PLUGIN_REPO=$saltmarcher_tooling_plugin_repo
+export SALTMARCHER_TOOLING_PLUGIN_VERSION=$saltmarcher_tooling_plugin_version
 export SALTMARCHER_REPO_ROOT=$APP_HOME
 export SALTMARCHER_GRADLE_ISOLATION_SEGMENT=$saltmarcher_exported_isolation_segment
 export SALTMARCHER_GRADLE_RUN_ROOT=$saltmarcher_run_root
@@ -550,6 +860,10 @@ export SALTMARCHER_GRADLE_LATEST_OUTPUT_ROOT=$saltmarcher_latest_output_root
 export SALTMARCHER_GRADLE_LATEST_REPORTS_ROOT=$saltmarcher_latest_reports_root
 export SALTMARCHER_GRADLE_RETAINED_FAILURES_ROOT=$saltmarcher_retained_failures_root
 export SALTMARCHER_ENFORCEMENT_BUNDLE_CATALOG=$saltmarcher_enforcement_bundle_catalog
+export SALTMARCHER_GRADLE_AUTO_CONFIGURATION_CACHE=$saltmarcher_auto_configuration_cache
+export SALTMARCHER_GRADLE_CONFIGURATION_CACHE_ACTIVE=$saltmarcher_configuration_cache_active
+export SALTMARCHER_GRADLE_CONFIGURATION_CACHE_READY_MARKER=$saltmarcher_configuration_cache_ready_marker
+export SALTMARCHER_GRADLE_CONFIGURATION_CACHE_WARMUP_LOCK_DIR=$saltmarcher_configuration_cache_warmup_lock_dir
 if ! saltmarcher_is_nonblank "${GRADLE_RO_DEP_CACHE:-}" \
     && [ -d "$saltmarcher_read_only_dependency_cache_root/modules-2" ]; then
     export GRADLE_RO_DEP_CACHE=$saltmarcher_read_only_dependency_cache_root

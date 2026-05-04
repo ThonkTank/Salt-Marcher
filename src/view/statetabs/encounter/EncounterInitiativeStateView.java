@@ -57,9 +57,9 @@ public final class EncounterInitiativeStateView extends VBox {
         title.getStyleClass().add("title");
         initiativeList.setPadding(DialogSurfaceView.contentInsets());
 
-        Button backButton = new Button("\u2190 Zurueck");
+        Button backButton = new Button("\u2190 Zurück");
         backButton.setOnAction(event -> publish(true, List.of()));
-        Button rollAllButton = new Button("Alle wuerfeln");
+        Button rollAllButton = new Button("Alle würfeln");
         rollAllButton.getStyleClass().add("neutral-action");
         rollAllButton.setOnAction(event -> rollAllInitiatives());
         Button startButton = new Button("Kampf starten");

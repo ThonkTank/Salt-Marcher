@@ -129,7 +129,7 @@ public final class SessionPlannerApplicationService {
                         0,
                         0,
                         false,
-                        "Party nicht verfuegbar",
+                        "Party nicht verfügbar",
                         "Aktive Party konnte nicht geladen werden.");
             }
             List<Integer> activeLevels = compositionResult.composition().activePartyLevels();

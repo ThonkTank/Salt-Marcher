@@ -83,7 +83,8 @@ truth plus party-owned runtime state.
 - Valid token drag to a reachable tile updates the party runtime position.
 - Valid dungeon or overworld transitions show the resulting destination state.
 - Invalid movement does not partially commit authored or runtime truth.
-- Reset view restores camera state without changing dungeon or runtime truth.
+- `Ansicht zurücksetzen` restores camera state without changing dungeon or
+  runtime truth.
 
 ## References
 

@@ -41,7 +41,7 @@ public final class CreatureDetailsContentModel {
     }
 
     public void load() {
-        loadingText.set("Loading stat block...");
+        loadingText.set("Lade Kreaturenwerte...");
         errorText.set("");
         loadingText.set("");
         if (result.status() != CreatureLookupStatus.SUCCESS || result.detail() == null) {
@@ -237,9 +237,9 @@ public final class CreatureDetailsContentModel {
 
     private static String errorText(CreatureLookupStatus status) {
         if (status == CreatureLookupStatus.NOT_FOUND) {
-            return "Creature not found.";
+            return "Kreatur nicht gefunden.";
         }
-        return "Creature details could not be loaded.";
+        return "Kreaturendetails konnten nicht geladen werden.";
     }
 
     public record DetailState(

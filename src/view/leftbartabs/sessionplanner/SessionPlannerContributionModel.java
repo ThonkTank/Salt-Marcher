@@ -3,19 +3,17 @@ package src.view.leftbartabs.sessionplanner;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
+import javafx.beans.property.ReadOnlyListProperty;
+import javafx.beans.property.ReadOnlyListWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SessionPlannerSnapshot;
 
 public final class SessionPlannerContributionModel {
-
-    private static final NumberFormat INTEGER_FORMAT = NumberFormat.getIntegerInstance(Locale.GERMANY);
-
     private final ReadOnlyObjectWrapper<PartyModel> party =
             new ReadOnlyObjectWrapper<>(PartyModel.empty());
     private final ReadOnlyObjectWrapper<BudgetModel> budget =
@@ -25,18 +23,14 @@ public final class SessionPlannerContributionModel {
     private final ReadOnlyObjectWrapper<GoldModel> goldBudget =
             new ReadOnlyObjectWrapper<>(GoldModel.placeholder());
     private final ReadOnlyStringWrapper statusText = new ReadOnlyStringWrapper("");
-    private final ObservableList<AvailablePlanModel> availablePlans = FXCollections.observableArrayList();
-    private final ObservableList<EncounterModel> plannedEncounters = FXCollections.observableArrayList();
-    private final ObservableList<RestGapModel> restGaps = FXCollections.observableArrayList();
-    private final ObservableList<LootModel> lootPlaceholders = FXCollections.observableArrayList();
-    private final ObservableList<AvailablePlanModel> readOnlyAvailablePlans =
-            FXCollections.unmodifiableObservableList(availablePlans);
-    private final ObservableList<EncounterModel> readOnlyPlannedEncounters =
-            FXCollections.unmodifiableObservableList(plannedEncounters);
-    private final ObservableList<RestGapModel> readOnlyRestGaps =
-            FXCollections.unmodifiableObservableList(restGaps);
-    private final ObservableList<LootModel> readOnlyLootPlaceholders =
-            FXCollections.unmodifiableObservableList(lootPlaceholders);
+    private final ReadOnlyListWrapper<AvailablePlanModel> availablePlans =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private final ReadOnlyListWrapper<EncounterModel> plannedEncounters =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private final ReadOnlyListWrapper<RestGapModel> restGaps =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
+    private final ReadOnlyListWrapper<LootModel> lootPlaceholders =
+            new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
 
     public ReadOnlyObjectProperty<PartyModel> partyProperty() {
         return party.getReadOnlyProperty();
@@ -58,20 +52,20 @@ public final class SessionPlannerContributionModel {
         return statusText.getReadOnlyProperty();
     }
 
-    public ObservableList<AvailablePlanModel> availablePlans() {
-        return readOnlyAvailablePlans;
+    public ReadOnlyListProperty<AvailablePlanModel> availablePlansProperty() {
+        return availablePlans.getReadOnlyProperty();
     }
 
-    public ObservableList<EncounterModel> plannedEncounters() {
-        return readOnlyPlannedEncounters;
+    public ReadOnlyListProperty<EncounterModel> plannedEncountersProperty() {
+        return plannedEncounters.getReadOnlyProperty();
     }
 
-    public ObservableList<RestGapModel> restGaps() {
-        return readOnlyRestGaps;
+    public ReadOnlyListProperty<RestGapModel> restGapsProperty() {
+        return restGaps.getReadOnlyProperty();
     }
 
-    public ObservableList<LootModel> lootPlaceholders() {
-        return readOnlyLootPlaceholders;
+    public ReadOnlyListProperty<LootModel> lootPlaceholdersProperty() {
+        return lootPlaceholders.getReadOnlyProperty();
     }
 
     public void apply(SessionPlannerSnapshot snapshot) {
@@ -191,7 +185,8 @@ public final class SessionPlannerContributionModel {
     }
 
     private static String format(int value) {
-        return INTEGER_FORMAT.format(Math.max(0, value));
+        NumberFormat format = NumberFormat.getIntegerInstance(Locale.GERMANY);
+        return format.format(Math.max(0, value));
     }
 
     public record PartyModel(
@@ -218,7 +213,7 @@ public final class SessionPlannerContributionModel {
     ) {
 
         static BudgetModel empty() {
-            return new BudgetModel(false, "0", "0", "0", "0", 0.0, false, "Keine Rast-Meilensteine", "Kein XP-Budget verfuegbar.");
+            return new BudgetModel(false, "0", "0", "0", "0", 0.0, false, "Keine Rast-Meilensteine", "Kein XP-Budget verfügbar.");
         }
     }
 
@@ -232,7 +227,7 @@ public final class SessionPlannerContributionModel {
     ) {
 
         static RestAdviceModel empty() {
-            return new RestAdviceModel(false, 0, 0, 0, 0, "Keine Rastempfehlung verfuegbar.");
+            return new RestAdviceModel(false, 0, 0, 0, 0, "Keine Rastempfehlung verfügbar.");
         }
     }
 
@@ -243,7 +238,7 @@ public final class SessionPlannerContributionModel {
     ) {
 
         static GoldModel placeholder() {
-            return new GoldModel("Goldbudget offen", "Loot-Platzhalter werden sichtbar, Gold folgt spaeter.", false);
+            return new GoldModel("Goldbudget offen", "Loot-Platzhalter werden sichtbar, Gold folgt später.", false);
         }
     }
 

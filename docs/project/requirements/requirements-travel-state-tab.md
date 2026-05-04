@@ -4,11 +4,11 @@ Last Reviewed: 2026-04-26
 Source of Truth: Travel global state-tab placeholder structure and visible
 runtime travel context.
 
-# Travel State Tab UI
+# Reise-State-Tab UI
 
 ## Component Purpose
 
-The Travel state tab restores the original lower-right tab labeled `Reise`
+The Reise-State-Tab restores the original lower-right tab labeled `Reise`
 next to the Encounter state tab. It is a global runtime state tab,
 independent from the navigable Travel left-bar tab.
 
@@ -42,7 +42,7 @@ Current state:
 
 ## Acceptance Criteria
 
-- the Travel state tab is a global runtime state-tab surface independent from
+- the Reise-State-Tab is a global runtime state-tab surface independent from
   the navigable Travel left-bar tab
 - selecting the runtime tab labeled `Reise` swaps the state pane from
   Encounter content to the travel placeholder content

@@ -1,9 +1,11 @@
 package src.domain.travel.published;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 
 public record TravelDungeonSnapshot(
         @Nullable TravelDungeonSurface surface,
+        @Nullable TravelDungeonMapProjectionSnapshot mapProjection,
         TravelOverlaySettings overlaySettings,
         int projectionLevel
 ) {
@@ -13,6 +15,6 @@ public record TravelDungeonSnapshot(
     }
 
     public static TravelDungeonSnapshot empty() {
-        return new TravelDungeonSnapshot(null, TravelOverlaySettings.defaults(), 0);
+        return new TravelDungeonSnapshot(null, null, TravelOverlaySettings.defaults(), 0);
     }
 }

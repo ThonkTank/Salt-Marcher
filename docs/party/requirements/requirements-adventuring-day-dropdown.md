@@ -47,7 +47,7 @@ Current state:
 - Loading: the trigger can temporarily show that the rest-budget summary is
   unavailable while it refreshes.
 - No budget: the trigger shows `Kein Rastbudget`.
-- Storage error: the trigger shows `Rastbudget nicht verfuegbar`.
+- Storage error: the trigger shows `Rastbudget nicht verfügbar`.
 - Loaded budget: the trigger shows `Rastbudget` or the compact `SR <xp> · LR
   <xp>` summary and the dropdown exposes the calculator surface.
 

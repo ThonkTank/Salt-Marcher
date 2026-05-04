@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-30
+Last Reviewed: 2026-05-04
 Source of Truth: Quality-platform operating model, status vocabulary,
 verification policy, and architecture-harness relationship for SaltMarcher
 quality gates.
@@ -28,6 +28,20 @@ build-owned repository surfaces: compiler hygiene, PMD non-architecture smells,
 duplicate-code detection, cyclomatic-complexity analysis, OO metrics,
 repository-wide resource/artifact/packaging validation, GitHub Actions,
 branch-protection expectations, SonarCloud, and CodeScene.
+
+For unused-code hygiene, the active mechanical scope is intentionally local:
+`compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and
+`UnusedVariable`, while PMD retains `UnusedAssignment` beside the broader
+smell policy. This scope is limited to removable local declarations, local
+variables, labels, and assignment-smell detection; whole-program dead-code
+reachability for top-level types or non-private APIs remains review-owned
+unless a later explicit decision adopts a stronger gate.
+
+Unused-code false positives are handled by narrow, explicit escape hatches
+instead of weakening the blocking gate. Generated code is excluded through the
+shared Error Prone configuration, and any future framework- or
+reflection-driven exception must stay local, documented, and attributable
+rather than becoming a blanket disablement of the unused checks.
 
 Architecture enforcement enters local quality through the same Gradle
 aggregates, but the owner model now lives in the matching layer and role

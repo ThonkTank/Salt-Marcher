@@ -30,7 +30,7 @@ public final class PartyTopBarView extends HBox {
         setPadding(new Insets(4, 8, 4, 8));
         configureTrigger();
         popup.setContent(buildPanel(rosterView, editorView));
-        popup.addOnShowing(event -> triggerButton.setAccessibleText("Party-Panel geoeffnet, Escape zum Schliessen"));
+        popup.addOnShowing(event -> triggerButton.setAccessibleText("Party-Panel geöffnet, Escape zum Schließen"));
         popup.addOnHiding(event -> triggerButton.setAccessibleText(triggerButton.getText().replace("_", "")));
         getChildren().add(triggerButton);
     }
@@ -48,7 +48,7 @@ public final class PartyTopBarView extends HBox {
     private void configureTrigger() {
         triggerButton.getStyleClass().add("text-secondary");
         triggerButton.setMnemonicParsing(true);
-        triggerButton.setTooltip(new Tooltip("Party-Panel oeffnen (Alt+P)"));
+        triggerButton.setTooltip(new Tooltip("Party-Panel öffnen (Alt+P)"));
         triggerButton.setOnAction(event -> togglePopup());
     }
 
@@ -58,7 +58,7 @@ public final class PartyTopBarView extends HBox {
     ) {
         Button closeButton = new Button("x");
         closeButton.getStyleClass().add("compact");
-        closeButton.setAccessibleText("Party-Panel schliessen");
+        closeButton.setAccessibleText("Party-Panel schließen");
         closeButton.setOnAction(event -> popup.hide());
         Region headerSpacer = new Region();
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);

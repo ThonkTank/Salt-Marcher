@@ -838,7 +838,7 @@ public final class EncounterApplicationService {
                     EncounterApplicationService.this.loadPlan(new LoadSavedEncounterPlanQuery(planId));
             SavedEncounterPlan plan = result.plan();
             if (result.status() != SavedEncounterPlanStatus.SUCCESS || plan == null) {
-                status = result.message().isBlank() ? "Encounter konnte nicht geoeffnet werden." : result.message();
+                status = result.message().isBlank() ? "Encounter konnte nicht geöffnet werden." : result.message();
                 refreshSavedPlans();
                 return snapshot();
             }
@@ -865,7 +865,7 @@ public final class EncounterApplicationService {
             round = 1;
             currentTurnIndex = 0;
             mode = EncounterSessionSnapshot.Mode.BUILDER;
-            status = plan.name() + " geoeffnet.";
+            status = plan.name() + " geöffnet.";
             refreshSavedPlans();
             return snapshot();
         }
@@ -922,12 +922,12 @@ public final class EncounterApplicationService {
                 EncounterSessionSnapshot.EncounterCreature existing = roster.get(index);
                 if (existing.creatureId() == detail.id()) {
                     roster.set(index, existing.withCount(existing.count() + 1, MAX_CREATURES_PER_SLOT));
-                    status = detail.name() + " wurde zum Encounter hinzugefuegt.";
+                    status = detail.name() + " wurde zum Encounter hinzugefügt.";
                     return snapshot();
                 }
             }
             roster.add(fromDetail(detail, 1, "Manual", List.of()));
-            status = detail.name() + " wurde zum Encounter hinzugefuegt.";
+            status = detail.name() + " wurde zum Encounter hinzugefügt.";
             return snapshot();
         }
 
@@ -1022,13 +1022,13 @@ public final class EncounterApplicationService {
             }
             initiativeState = new EncounterSessionSnapshot.InitiativeState(List.copyOf(pendingInitiativeRows));
             mode = EncounterSessionSnapshot.Mode.INITIATIVE;
-            status = "Initiativewerte pruefen und Kampf starten.";
+            status = "Initiativewerte prüfen und Kampf starten.";
             return snapshot();
         }
 
         private EncounterSessionSnapshot backToBuilder() {
             mode = EncounterSessionSnapshot.Mode.BUILDER;
-            status = "Zurueck zur Encounter-Erstellung.";
+            status = "Zurück zur Encounter-Erstellung.";
             return snapshot();
         }
 
@@ -1439,7 +1439,7 @@ public final class EncounterApplicationService {
             case NO_ACTIVE_PARTY -> "Die aktive Party hat keine Mitglieder.";
             case NO_CREATURES -> "Keine Kreaturen passen zu diesen Filtern.";
             case NO_SOLUTION -> "Keine passende Encounter-Komposition gefunden.";
-            case INVALID_REQUEST -> "Encounter-Filter sind ungueltig.";
+            case INVALID_REQUEST -> "Encounter-Filter sind ungültig.";
             case STORAGE_ERROR -> "Encounter konnte nicht generiert werden.";
             case SUCCESS -> "Encounter generiert.";
         };

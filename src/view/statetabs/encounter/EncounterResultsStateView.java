@@ -84,8 +84,8 @@ public final class EncounterResultsStateView extends VBox {
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
         resultAwardButton.setOnAction(event -> publish(true, false));
         Button doneButton = new Button("Zum Planer");
-        doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurueckkehren"));
-        doneButton.setAccessibleText("Zur Encounter-Planung zurueckkehren");
+        doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurückkehren"));
+        doneButton.setAccessibleText("Zur Encounter-Planung zurückkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
         doneButton.setOnAction(event -> publish(false, true));
         DialogSurfaceView.grow(resultAwardButton);

@@ -162,6 +162,12 @@ print_known_issue_hint() {
         return
     fi
 
+    if grep -q "Waiting to acquire configuration-cache warmup lock for shared state" "$log_path"; then
+        echo "[observable-gradle] Another first writer is seeding shared configuration state for the same surface." >&2
+        echo "[observable-gradle] This wait is wrapper-owned warmup serialization, not a hung checker." >&2
+        return
+    fi
+
     if grep -Eq "Broken pipe|client disconnection detected|EOFException|MessageIOException" "$log_path"; then
         echo "[observable-gradle] Detected client or daemon disconnect during a long Gradle run." >&2
         echo "[observable-gradle] The underlying task may have kept running longer than the caller expected." >&2

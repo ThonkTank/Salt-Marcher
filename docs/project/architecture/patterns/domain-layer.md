@@ -13,7 +13,7 @@ SaltMarcher treats `src/domain/**` as the application core in a Hexagonal
 Architecture. Domain code owns business meaning, invariants, policy, use-case
 coordination, published language, and outbound port interfaces. It does not own
 UI translation, shell registration, persistence mechanics, data-source records,
-runtime composition, SQL, filesystem, network, or framework concerns.
+runtime service composition, SQL, filesystem, network, or framework concerns.
 
 Hexagonal Architecture is the one boundary model. DDD vocabulary is optional
 tactical modelling language inside the core. Fowler persistence patterns and
@@ -175,6 +175,12 @@ make a context look more "DDD".
 - `dungeon`: `Context Role: Authored World-Space Context`. Owns authored
   dungeon world-space truth, map topology, rooms or spaces, connections,
   stable identity, and map mutation rules.
+- `dungeoneditor`: `Context Role: Generation Policy Context`. Owns transient
+  runtime editor-session composition derived from `dungeon` public boundaries
+  without owning authored map persistence.
+- `travel`: `Context Role: Generation Policy Context`. Owns transient runtime
+  travel-session composition derived from dungeon and party public boundaries
+  without owning authored map persistence or party roster truth.
 - `sessionplanner`: `Context Role: Generation Policy Context`. Owns transient
   session-planning policy and runtime orchestration derived from party and
   encounter public boundaries without owning persistence truth.
@@ -194,9 +200,17 @@ make a context look more "DDD".
   snapshots through its data source adapter and publishes table summaries and
   weighted candidate rows through its root application service.
 - `dungeon`: `Authored World-Space Context`; owns authored world-space truth
-  independently of party, creatures, and encounter. Views may combine dungeon
-  facts with presentation state, but that composition is not a domain
-  relationship.
+  independently of party, creatures, and encounter. Party-aware runtime
+  travel-session composition lives in `travel`, and runtime editor-session
+  composition lives in `dungeoneditor`, not in `dungeon`.
+- `dungeoneditor`: `Generation Policy Context`; consumes `dungeon` through its
+  root application service and `published/` carriers to build one transient
+  runtime editor workspace for selection, tool policy, preview state, overlay
+  state, projection level, and pointer interpretation.
+- `travel`: `Generation Policy Context`; consumes `party` and `dungeon`
+  through their root application services and `published/` carriers to build
+  one transient runtime travel workspace for dungeon traversal, overlay
+  state, projection level, and overworld fallback handling.
 - `sessionplanner`: `Generation Policy Context`; consumes `party` and
   `encounter` through their root application services and `published/`
   carriers to build one transient planning workspace for encounter order, rest

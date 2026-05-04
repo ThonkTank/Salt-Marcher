@@ -1,10 +1,10 @@
 import java.io.File
-import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.tasks.RepoVerificationMainTask
 
 plugins {
     java
@@ -38,17 +38,48 @@ sourceSets.named("main") {
                     ?.absolutePath
             )
     )
-    resources.setSrcDirs(
-        listOf(layout.projectDirectory.dir("src/main/resources").asFile.absolutePath) +
-            activeEnforcementBundleIds.flatMap { bundleId ->
-                enforcementBundles.descriptor(bundleId).buildHarnessResourceDirs
-            }
-    )
+    resources.setSrcDirs(emptyList<String>())
 }
 
 fun humanizeBundleLabel(bundleId: String): String = bundleId
     .replace(Regex("([a-z0-9])([A-Z])"), "$1 $2")
     .replaceFirstChar(Char::uppercaseChar)
+
+fun repoInputTree(includePatterns: List<String>) = fileTree(repoRootDir) {
+    exclude(".git/**")
+    exclude(".gradle/**")
+    exclude("build/**")
+    includePatterns.forEach(::include)
+}
+
+fun buildHarnessInputs(taskName: String) = when {
+    taskName.endsWith("DocumentationEnforcementCheck") -> repoInputTree(
+        listOf(
+            "AGENTS.md",
+            "docs/**",
+            "src/**/DOMAIN.md",
+            "tools/quality/**/*.md",
+            "tools/quality/**/bundle.properties"
+        )
+    )
+    else -> repoInputTree(
+        listOf(
+            "api/**",
+            "bootstrap/**",
+            "shell/**",
+            "src/**",
+            "tools/quality/**/bundle.properties"
+        )
+    )
+}
+
+fun activeBuildHarnessArchitectureRuleClasses() = activeEnforcementBundleIds
+    .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessArchitectureRuleClasses }
+    .distinct()
+
+fun activeBuildHarnessDocumentationRuleClasses() = activeEnforcementBundleIds
+    .flatMap { bundleId -> enforcementBundles.descriptor(bundleId).buildHarnessDocumentationRuleClasses }
+    .distinct()
 
 fun registerBuildHarnessTask(taskName: String, bundleLabel: String, mainClassName: String) {
     val isDocumentationTask = taskName.endsWith("DocumentationEnforcementCheck")
@@ -58,20 +89,14 @@ fun registerBuildHarnessTask(taskName: String, bundleLabel: String, mainClassNam
         else -> "Run only the focused $bundleLabel build-harness rules."
     }
 
-    tasks.register<JavaExec>(taskName) {
+    tasks.register<RepoVerificationMainTask>(taskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         this.description = description
-        outputs.upToDateWhen { false }
-        outputs.doNotCacheIf(
-            if (isDocumentationTask) {
-                "Documentation enforcement diagnostics must be produced by the current invocation."
-            } else {
-                "Architecture gate diagnostics must be produced by the current invocation."
-            }
-        ) { true }
-        classpath = sourceSets["main"].runtimeClasspath
-        mainClass = mainClassName
-        args = listOf(repoRootDir.absolutePath)
+        runtimeClasspath.from(sourceSets["main"].runtimeClasspath)
+        verificationMainClass.set(mainClassName)
+        repoRootPath.set(repoRootDir.absolutePath)
+        verificationInputs.from(buildHarnessInputs(taskName))
+        successMarker.set(layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
     }
 }
 
@@ -90,26 +115,29 @@ if (!focusedEnforcementBundleMode) {
     )
 }
 
-tasks.register<JavaExec>("architectureCheck") {
+tasks.register<RepoVerificationMainTask>("architectureCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Checks repository layout, package-path alignment, and documented root-entrypoint presence."
-    val repositoryRootDir = repoRootDir
-    val successMarker = layout.buildDirectory.file("reports/architecture-check/success.marker")
-    inputs.files(
-        fileTree(repositoryRootDir) {
-            exclude("build/**")
-            exclude(".gradle/**")
-            exclude(".git/**")
-        }
+    runtimeClasspath.from(sourceSets["main"].runtimeClasspath)
+    verificationMainClass.set("saltmarcher.architecture.ArchitectureCheckMain")
+    repoRootPath.set(repoRootDir.absolutePath)
+    verificationArgs.set(activeBuildHarnessArchitectureRuleClasses())
+    verificationInputs.from(
+        repoInputTree(
+            listOf(
+                "bootstrap/**",
+                "shell/**",
+                "src/**",
+                "tools/gradle/build-harness/src/**"
+            )
+        )
     )
-    outputs.file(successMarker)
-    classpath = sourceSets["main"].runtimeClasspath
-    mainClass = "saltmarcher.architecture.ArchitectureCheckMain"
-    args = listOf(repositoryRootDir.absolutePath)
-    doLast {
-        val markerFile = successMarker.get().asFile
-        markerFile.parentFile.mkdirs()
-        markerFile.writeText("passed\n")
+    successMarker.set(layout.buildDirectory.file("verification-markers/architectureCheck/success.marker"))
+}
+
+if (!focusedEnforcementBundleMode) {
+    tasks.named<RepoVerificationMainTask>("documentationEnforcementCheck") {
+        verificationArgs.set(activeBuildHarnessDocumentationRuleClasses())
     }
 }
 
