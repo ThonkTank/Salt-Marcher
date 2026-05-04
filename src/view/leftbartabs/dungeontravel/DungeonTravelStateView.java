@@ -19,7 +19,7 @@ public final class DungeonTravelStateView extends VBox {
         setPadding(new Insets(12));
         getStyleClass().addAll("surface-root", "control-stack");
 
-        Label title = new Label("Travel state");
+        Label title = new Label("Reisestatus");
         title.getStyleClass().add("panel-title");
         body.setWrapText(true);
         VBox card = new VBox(6, title, body, actions);

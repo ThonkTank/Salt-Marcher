@@ -7,13 +7,14 @@ import org.jspecify.annotations.Nullable;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.dungeon.DungeonApplicationService;
-import src.domain.dungeon.published.ApplyDungeonEditorSessionCommand;
-import src.domain.dungeon.published.DungeonEditorModel;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapId;
-import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.domain.dungeon.published.LoadDungeonEditorQuery;
+import src.domain.dungeoneditor.DungeonEditorApplicationService;
+import src.domain.dungeoneditor.published.ApplyDungeonEditorSessionCommand;
+import src.domain.dungeoneditor.published.DungeonEditorCell;
+import src.domain.dungeoneditor.published.DungeonEditorInspectorSnapshot;
+import src.domain.dungeoneditor.published.DungeonEditorMapId;
+import src.domain.dungeoneditor.published.DungeonEditorModel;
+import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
+import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 
 final class DungeonEditorBinder {
@@ -25,8 +26,8 @@ final class DungeonEditorBinder {
     }
 
     ShellBinding bind() {
-        DungeonApplicationService dungeon = runtimeContext.services().require(DungeonApplicationService.class);
-        DungeonEditorModel editorModel = dungeon.loadEditor(new LoadDungeonEditorQuery(null));
+        DungeonEditorApplicationService editor = runtimeContext.services().require(DungeonEditorApplicationService.class);
+        DungeonEditorModel editorModel = editor.loadEditor(new LoadDungeonEditorQuery(null));
         DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Dungeon workspace", true);
         DungeonEditorIntentHandler intentHandler = new DungeonEditorIntentHandler();
@@ -40,14 +41,14 @@ final class DungeonEditorBinder {
         main.onViewInputEvent(intentHandler::consume);
         controls.onViewInputEvent(intentHandler::consume);
         state.onViewInputEvent(intentHandler::consume);
-        intentHandler.onPublishedEventRequested(event -> dungeon.applyEditorSession(toCommand(event)));
+        intentHandler.onPublishedEventRequested(event -> editor.applyEditorSession(toCommand(event)));
         editorModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
         applySnapshot(editorModel.current(), contributionModel, mapContentModel);
         return new Binding(controls, main, state);
     }
 
     private static void applySnapshot(
-            src.domain.dungeon.published.DungeonEditorSnapshot snapshot,
+            src.domain.dungeoneditor.published.DungeonEditorSnapshot snapshot,
             DungeonEditorContributionModel contributionModel,
             DungeonMapContentModel mapContentModel
     ) {
@@ -64,7 +65,7 @@ final class DungeonEditorBinder {
                     "GRID",
                     "Auswahl",
                     0,
-                    DungeonOverlaySettings.defaults(),
+                    DungeonEditorOverlaySettings.defaults(),
                     ApplyDungeonEditorSessionCommand.MainViewInput.empty(),
                     ApplyDungeonEditorSessionCommand.RoomNarrationInput.empty());
         }
@@ -81,13 +82,13 @@ final class DungeonEditorBinder {
                 toRoomNarrationInput(safeEvent.roomNarration()));
     }
 
-    private static DungeonOverlaySettings toOverlaySettings(
+    private static DungeonEditorOverlaySettings toOverlaySettings(
             DungeonEditorPublishedEvent.OverlaySettings overlaySettings
     ) {
         DungeonEditorPublishedEvent.OverlaySettings safeOverlay = overlaySettings == null
                 ? DungeonEditorPublishedEvent.OverlaySettings.defaults()
                 : overlaySettings;
-        return new DungeonOverlaySettings(
+        return new DungeonEditorOverlaySettings(
                 safeOverlay.modeKey(),
                 safeOverlay.levelRange(),
                 safeOverlay.opacity(),
@@ -122,15 +123,15 @@ final class DungeonEditorBinder {
                 safeNarration.exits().stream().map(DungeonEditorBinder::toPublishedExit).toList());
     }
 
-    private static DungeonInspectorSnapshot.RoomExitNarration toPublishedExit(
+    private static DungeonEditorInspectorSnapshot.RoomExitNarration toPublishedExit(
             DungeonEditorPublishedEvent.RoomExitNarration exit
     ) {
         DungeonEditorPublishedEvent.RoomExitNarration safeExit = exit == null
                 ? new DungeonEditorPublishedEvent.RoomExitNarration("", DungeonEditorPublishedEvent.CellRef.empty(), "", "")
                 : exit;
-        return new DungeonInspectorSnapshot.RoomExitNarration(
+        return new DungeonEditorInspectorSnapshot.RoomExitNarration(
                 safeExit.label(),
-                new src.domain.dungeon.published.DungeonCellRef(
+                new DungeonEditorCell(
                         safeExit.cell().q(),
                         safeExit.cell().r(),
                         safeExit.cell().level()),
@@ -138,8 +139,8 @@ final class DungeonEditorBinder {
                 safeExit.description());
     }
 
-    private static @Nullable DungeonMapId toMapId(long mapId) {
-        return mapId <= 0L ? null : new DungeonMapId(mapId);
+    private static @Nullable DungeonEditorMapId toMapId(long mapId) {
+        return mapId <= 0L ? null : new DungeonEditorMapId(mapId);
     }
 
     private record Binding(
@@ -150,7 +151,7 @@ final class DungeonEditorBinder {
 
         @Override
         public String title() {
-            return "Dungeon Editor";
+            return "Dungeon-Editor";
         }
 
         @Override

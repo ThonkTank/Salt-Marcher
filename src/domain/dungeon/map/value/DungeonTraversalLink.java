@@ -15,7 +15,7 @@ public record DungeonTraversalLink(
     public DungeonTraversalLink {
         key = key == null || key.isBlank() ? fallbackKey(source, firstEndpoint, secondEndpoint) : key.trim();
         source = source == null
-                ? new DungeonTraversalSource(DungeonTraversalSourceKind.DOOR, 0L, "Tuer")
+                ? new DungeonTraversalSource(DungeonTraversalSourceKind.DOOR, 0L, "Tür")
                 : source;
         firstEndpoint = firstEndpoint == null ? defaultEndpoint() : firstEndpoint;
         secondEndpoint = secondEndpoint == null ? defaultEndpoint() : secondEndpoint;

@@ -31,29 +31,29 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     static final String VIEW_GRAPH = "Graph";
     static final String SELECT_TOOL = "Auswahl";
     static final String ROOM_PAINT_TOOL = "Raum malen";
-    static final String ROOM_DELETE_TOOL = "Raum loeschen";
+    static final String ROOM_DELETE_TOOL = "Raum löschen";
     static final String WALL_CREATE_TOOL = "Wand setzen";
-    static final String WALL_DELETE_TOOL = "Wand loeschen";
-    static final String DOOR_CREATE_TOOL = "Tuer setzen";
-    static final String DOOR_DELETE_TOOL = "Tuer loeschen";
+    static final String WALL_DELETE_TOOL = "Wand löschen";
+    static final String DOOR_CREATE_TOOL = "Tür setzen";
+    static final String DOOR_DELETE_TOOL = "Tür löschen";
     static final String CORRIDOR_CREATE_TOOL = "Korridor erstellen";
-    static final String CORRIDOR_DELETE_TOOL = "Korridor loeschen";
+    static final String CORRIDOR_DELETE_TOOL = "Korridor löschen";
     static final String STAIR_CREATE_TOOL = "Treppe erstellen";
-    static final String STAIR_DELETE_TOOL = "Treppe loeschen";
-    static final String TRANSITION_CREATE_TOOL = "Uebergang erstellen";
-    static final String TRANSITION_DELETE_TOOL = "Uebergang loeschen";
+    static final String STAIR_DELETE_TOOL = "Treppe löschen";
+    static final String TRANSITION_CREATE_TOOL = "Übergang erstellen";
+    static final String TRANSITION_DELETE_TOOL = "Übergang löschen";
 
     private static final String ROOM_FAMILY = "Raum";
     private static final String WALL_FAMILY = "Wand";
-    private static final String DOOR_FAMILY = "Tuer";
+    private static final String DOOR_FAMILY = "Tür";
     private static final String CORRIDOR_FAMILY = "Korridor";
     private static final String STAIR_FAMILY = "Treppe";
-    private static final String TRANSITION_FAMILY = "Uebergang";
+    private static final String TRANSITION_FAMILY = "Übergang";
 
     private final ComboBox<MapItem> mapSelector = new ComboBox<>();
     private final SplitMenuButton mapActionButton = new SplitMenuButton();
     private final MenuItem editMapItem = new MenuItem("Dungeon bearbeiten");
-    private final MenuItem deleteMapItem = new MenuItem("Dungeon loeschen");
+    private final MenuItem deleteMapItem = new MenuItem("Dungeon löschen");
     private final Label statusLabel = new Label();
     private final Label levelLabel = new Label("Ebene z=0");
     private final Button previousLevelButton = new Button("-");
@@ -220,7 +220,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         mapActionButton.setOnAction(event -> showCreatePopup(mapActionButton));
         editMapItem.setOnAction(event -> showEditPopup(mapActionButton));
         deleteMapItem.setOnAction(event -> showDeletePopup(mapActionButton));
-        describe(mapActionButton, "Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menue");
+        describe(mapActionButton, "Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menü");
         statusLabel.getStyleClass().add("text-muted");
         statusLabel.setWrapText(false);
         statusLabel.setVisible(false);
@@ -239,7 +239,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
                 overlayControls.overlayOpacity(), overlayControls.overlayLevelsText()));
         levelLabel.getStyleClass().add("text-muted");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
-        describe(nextLevelButton, "Naechste Dungeon-Ebene anzeigen");
+        describe(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
     }
 
     private void configureViewModeControls() {
@@ -283,10 +283,10 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         describe(selectButton, "Auswahlwerkzeug aktivieren");
         describe(roomButton, "Raumwerkzeug waehlen");
         describe(wallButton, "Wandwerkzeug waehlen");
-        describe(doorButton, "Tuerwerkzeug waehlen");
+        describe(doorButton, "Türwerkzeug wählen");
         describe(corridorButton, "Korridorwerkzeug waehlen");
         describe(stairButton, "Treppenwerkzeug waehlen");
-        describe(transitionButton, "Uebergangswerkzeug waehlen");
+        describe(transitionButton, "Übergangswerkzeug wählen");
         roomButton.setOnAction(event -> activateToolFamily(roomButton, ROOM_PAINT_TOOL, ROOM_DELETE_TOOL));
         wallButton.setOnAction(event -> activateToolFamily(wallButton, WALL_CREATE_TOOL, WALL_DELETE_TOOL));
         doorButton.setOnAction(event -> activateToolFamily(doorButton, DOOR_CREATE_TOOL, DOOR_DELETE_TOOL));
@@ -306,8 +306,8 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         mapEditorError.setVisible(false);
 
         Button cancelDeleteButton = new Button("Abbrechen");
-        Button confirmDeleteButton = new Button("Loeschen");
-        Label deleteLabel = new Label("Dungeon loeschen?");
+        Button confirmDeleteButton = new Button("Löschen");
+        Label deleteLabel = new Label("Dungeon löschen?");
         deleteLabel.getStyleClass().add("text-warning");
         Region deleteSpacer = new Region();
         HBox.setHgrow(deleteSpacer, Priority.ALWAYS);
@@ -454,7 +454,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         createMode = false;
         deleteMode = true;
         editingMapIdValue = selected.mapId();
-        mapEditorTitle.setText("Dungeon loeschen: " + selected.mapName());
+        mapEditorTitle.setText("Dungeon löschen: " + selected.mapName());
         mapNameField.setVisible(false);
         mapNameField.setManaged(false);
         mapEditorActionRow.setVisible(false);

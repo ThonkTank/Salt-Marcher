@@ -32,9 +32,17 @@ Published travel carriers must not own:
 
 `TravelApplicationService` is the only callable travel backend boundary. It
 coordinates runtime dungeon-travel session state through foreign root
-application services from `party` and `dungeon`.
+application services from `party` and `dungeon`. Binder and view code consume
+the runtime session through this boundary only; they do not own the session.
+
+The root boundary owns all same-context and foreign published-carrier
+translation. Runtime session orchestration lives below that boundary in
+`travel/application/*UseCase` code and does not consume `travel.published/**`,
+`party.published/**`, or `dungeon.published/**` carriers directly.
 
 ## Commands And Invariants
+
+Write Model: None
 
 Commands entering the model are:
 
@@ -55,7 +63,17 @@ Core invariants:
 - projection level is session-local
 - current runtime dungeon surface is rebuilt from dungeon truth plus party
   position
+- party and dungeon carrier translation happens only at the root boundary
 - no separate `travel` persistence store is introduced
+
+## Ephemeral Policy Rationale
+
+The interactive travel workspace owns only transient runtime composition over
+public party position state and authored dungeon traversal facts. Its decisions
+are overlay state, projection level, refresh or action sequencing, and
+overworld fallback handling for the current session, not persisted authored
+truth. A future durable travel write model would require an explicit new owner
+instead of being absorbed into this generation-policy context.
 
 ## Ubiquitous Language
 

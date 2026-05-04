@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-03
+Last Reviewed: 2026-05-04
 Source of Truth: Dungeon-specific adoption of the generic maps canvas.
 
 # Dungeon Map Adoption Architecture
@@ -27,38 +27,55 @@ invariants.
   `ContentModel`
 - the dungeon map slotcontent `DungeonMapContentModel` is the only allowed
   dungeon-side owner of map render state and the only allowed
-  domain-to-canvas projection owner
-- `DungeonEditorBinder` and `DungeonTravelBinder` load same-context read-side
-  dungeon `published/*Model` handles, subscribe to emitted snapshots, and
-  deliver those snapshots into the dungeon map slotcontent `ContentModel`;
-  `DungeonEditorBinder` also owns reverse pointer-event translation from
+  canvas-facing render-state owner; raw map normalization and preview
+  projection publication stay upstream in the owning runtime application
+  services
+- `DungeonEditorBinder` loads `dungeoneditor` `published/*Model` handles,
+  while `DungeonTravelBinder` loads travel `published/*Model` handles from the
+  separate `travel` context; both subscribe to emitted snapshots and deliver
+  those snapshots into the dungeon map slotcontent `ContentModel`
+- `DungeonEditorBinder` also owns reverse pointer-event translation from
   `CanvasPointerEvent` into dungeon-editor input wiring
 - the active-root dungeon `ContributionModel` owns aggregate controls,
   inspector, status, and other non-canvas projection state, but must not
   mirror dungeon map render projection as a second render path
 - the optional active-root dungeon `IntentHandler` owns input interpretation
-- `DungeonApplicationService` is the only callable dungeon backend boundary
-- dungeon `published/**` owns dungeon-native read-side model handles and
-  snapshot carriers
-- `PartyApplicationService` owns party runtime position outside authored
-  dungeon persistence
+- `DungeonApplicationService` is the only callable authored-dungeon backend
+  boundary
+- `DungeonEditorApplicationService` is the only callable runtime
+  dungeon-editor backend boundary
+- `TravelApplicationService` is the only callable runtime dungeon-travel
+  backend boundary
+- dungeon `published/**` owns dungeon-native authored carriers and raw travel
+  surface carriers
+- dungeoneditor `published/**` owns the interactive runtime editor-session
+  model and snapshot carriers consumed by the editor workspace
+- travel `published/**` owns the interactive runtime travel-session model and
+  snapshot carriers consumed by the travel workspace
+- `PartyApplicationService` owns persisted party travel position outside
+  authored dungeon persistence and is consumed through `travel`
 
 ## Capability Paths
 
 ### Surface Read
 
-`Dungeon*Binder -> DungeonApplicationService -> dungeon published/*Model -> Dungeon*Snapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*Binder -> DungeonEditorApplicationService or TravelApplicationService -> dungeoneditor or travel published/*Model -> Dungeon*Snapshot -> DungeonEditorMapProjectionSnapshot or TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+
+For the editor workspace, `DungeonEditorApplicationService` composes that
+runtime snapshot from authored `DungeonApplicationService` reads such as
+`loadSnapshot(...)`, `describeSelection(...)`, `previewOperation(...)`, and
+`applyOperation(...)`.
 
 ### Preview And Apply
 
-`Dungeon*MainView -> CanvasPointerEvent -> DungeonEditorBinder wiring -> optional Dungeon*IntentHandler -> DungeonEditorPublishedEvent -> DungeonEditorBinder -> DungeonApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView -> CanvasPointerEvent -> DungeonEditorBinder wiring -> optional Dungeon*IntentHandler -> DungeonEditorPublishedEvent -> DungeonEditorBinder -> DungeonEditorApplicationService -> DungeonEditorModel -> DungeonEditorSnapshot -> DungeonEditorMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
-Preview and apply reuse the same dungeon edit body and differ only in the
-boundary wrapper.
+Preview and apply reuse the same authored dungeon edit body and differ only in
+the boundary wrapper and commit semantics.
 
 ### Travel Action
 
-`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> optional DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> DungeonApplicationService -> DungeonTravelModel -> DungeonTravelSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
+`Dungeon*MainView or travel controls -> DungeonTravelBinder wiring -> optional DungeonTravelIntentHandler -> DungeonTravelStatePublishedEvent -> DungeonTravelBinder -> TravelApplicationService -> TravelDungeonModel -> TravelDungeonSnapshot -> TravelDungeonMapProjectionSnapshot -> DungeonMapContentModel -> MapRenderScene -> DungeonMapMainView -> Dungeon*MainView`
 
 Direct token drag is adapter-side travel action resolution, not a second
 backend movement path.
@@ -76,8 +93,19 @@ Catalog behavior remains separate from the shared canvas scene path.
 - The dungeon map slotcontent surface follows the same canonical Binder plus
   `ContentModel` split as the rest of the view layer, but it is also the only
   legal render-state owner toward canvas.
-- Public surface-family unification in `DungeonApplicationService` is still
-  open compatibility debt outside the canvas-seam implementation.
+- Shared dungeon-map geometry, preview diffs, labels, markers, graph nodes,
+  graph links, and party token anchors are published upstream as
+  runtime-context map projection carriers
+  (`DungeonEditorMapProjectionSnapshot` and
+  `TravelDungeonMapProjectionSnapshot`) before the canvas seam instead of
+  being reconstructed from raw runtime snapshots inside the view layer.
+- The editor workspace is not dungeon-owned session state; it is projected
+  through the separate `dungeoneditor` context before the canvas seam.
+- The interactive travel workspace is not dungeon-owned session state; it is
+  projected through the separate `travel` context before the canvas seam.
+- `dungeon` no longer exports an editor-colored raw surface family; editor
+  workspace composition happens in `dungeoneditor` from authored snapshot,
+  authored operation result, and authored inspector reads.
 
 ## Verification Notes
 

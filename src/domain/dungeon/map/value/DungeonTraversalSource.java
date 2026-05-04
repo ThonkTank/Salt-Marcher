@@ -14,7 +14,7 @@ public record DungeonTraversalSource(
 
     private static String defaultLabel(DungeonTraversalSourceKind kind, long id) {
         return switch (kind == null ? DungeonTraversalSourceKind.DOOR : kind) {
-            case DOOR -> "Tuer " + id;
+            case DOOR -> "Tür " + id;
             case STAIR -> "Treppe " + id;
         };
     }

@@ -1,4 +1,4 @@
-package src.domain.dungeon.published;
+package src.domain.dungeoneditor.published;
 
 import java.util.List;
 
@@ -17,26 +17,26 @@ public sealed interface DungeonEditorPreview permits DungeonEditorPreview.NonePr
     }
 
     record RoomRectanglePreview(
-            DungeonCellRef start,
-            DungeonCellRef end,
+            DungeonEditorCell start,
+            DungeonEditorCell end,
             boolean deleteMode
     ) implements DungeonEditorPreview {
         public RoomRectanglePreview {
-            start = start == null ? new DungeonCellRef(0, 0, 0) : start;
-            end = end == null ? new DungeonCellRef(0, 0, 0) : end;
+            start = start == null ? new DungeonEditorCell(0, 0, 0) : start;
+            end = end == null ? new DungeonEditorCell(0, 0, 0) : end;
         }
     }
 
     record ClusterBoundariesPreview(
             long clusterId,
-            List<DungeonEdgeRef> edges,
-            DungeonBoundaryKind boundaryKind,
+            List<DungeonEditorEdge> edges,
+            String boundaryKind,
             boolean deleteMode
     ) implements DungeonEditorPreview {
         public ClusterBoundariesPreview {
             clusterId = Math.max(0L, clusterId);
             edges = edges == null ? List.of() : List.copyOf(edges);
-            boundaryKind = boundaryKind == null ? DungeonBoundaryKind.WALL : boundaryKind;
+            boundaryKind = boundaryKind == null || boundaryKind.isBlank() ? "WALL" : boundaryKind.trim();
         }
     }
 
@@ -47,24 +47,13 @@ public sealed interface DungeonEditorPreview permits DungeonEditorPreview.NonePr
             int deltaLevel
     ) implements DungeonEditorPreview {
         public MoveHandlePreview {
-            handleRef = handleRef == null
-                    ? new DungeonEditorHandleRef(
-                    DungeonEditorHandleKind.CLUSTER_LABEL,
-                    DungeonTopologyElementRef.empty(),
-                    0L,
-                    0L,
-                    0L,
-                    0L,
-                    0,
-                    new DungeonCellRef(0, 0, 0),
-                    "")
-                    : handleRef;
+            handleRef = handleRef == null ? DungeonEditorHandleRef.empty() : handleRef;
         }
     }
 
     record MoveBoundaryStretchPreview(
             long clusterId,
-            List<DungeonEdgeRef> sourceEdges,
+            List<DungeonEditorEdge> sourceEdges,
             int deltaQ,
             int deltaR,
             int deltaLevel

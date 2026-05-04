@@ -5,37 +5,11 @@ import java.util.List;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonAreaKind;
-import src.domain.dungeon.published.DungeonAreaSnapshot;
-import src.domain.dungeon.published.DungeonBoundaryKind;
-import src.domain.dungeon.published.DungeonBoundarySnapshot;
-import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonEditorHandleKind;
-import src.domain.dungeon.published.DungeonEditorHandleRef;
-import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
-import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorSnapshot;
-import src.domain.dungeon.published.DungeonFeatureKind;
-import src.domain.dungeon.published.DungeonFeatureSnapshot;
-import src.domain.dungeon.published.DungeonMapMode;
-import src.domain.dungeon.published.DungeonMapSnapshot;
-import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.domain.dungeon.published.DungeonSnapshot;
-import src.domain.dungeon.published.DungeonSurfacePayload;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonTopologyElementKind;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.domain.dungeon.published.DungeonTopologyKind;
-import src.domain.dungeon.published.DungeonTravelHeading;
-import src.domain.travel.published.TravelDungeonArea;
-import src.domain.travel.published.TravelDungeonBoundary;
-import src.domain.travel.published.TravelDungeonCell;
-import src.domain.travel.published.TravelDungeonFeature;
-import src.domain.travel.published.TravelDungeonMapSnapshot;
-import src.domain.travel.published.TravelDungeonPosition;
+import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
+import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
+import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
+import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
-import src.domain.travel.published.TravelDungeonSurface;
 import src.domain.travel.published.TravelOverlaySettings;
 
 public final class DungeonMapContentModel {
@@ -43,16 +17,11 @@ public final class DungeonMapContentModel {
     private final String placeholderTitle;
     private final boolean editorMode;
     private final ReadOnlyObjectWrapper<RenderState> renderState;
-    private @Nullable DungeonSnapshot snapshot;
-    private @Nullable DungeonSnapshot previewSnapshot;
+    private @Nullable ProjectionData projection;
     private RenderState.ViewMode viewMode = RenderState.ViewMode.GRID;
-    private RenderState.LevelOverlaySettings overlaySettings =
-            RenderState.LevelOverlaySettings.defaults();
+    private RenderState.LevelOverlaySettings overlaySettings = RenderState.LevelOverlaySettings.defaults();
     private int projectionLevel;
     private String selectedTool = "Auswahl";
-    private RenderState.@Nullable PartyToken partyToken;
-    private RenderState.@Nullable Selection selection;
-    private RenderState.@Nullable EditorPreview editorPreview;
 
     public DungeonMapContentModel(String placeholderTitle, boolean editorMode) {
         this.placeholderTitle = placeholderTitle == null || placeholderTitle.isBlank()
@@ -64,42 +33,6 @@ public final class DungeonMapContentModel {
 
     public ReadOnlyObjectProperty<RenderState> renderStateProperty() {
         return renderState.getReadOnlyProperty();
-    }
-
-    public void showSnapshot(DungeonSnapshot nextSnapshot) {
-        snapshot = nextSnapshot;
-        rebuildRenderState();
-    }
-
-    public void showSurface(@Nullable DungeonSurfacePayload nextSurface) {
-        if (nextSurface == null) {
-            snapshot = null;
-            previewSnapshot = null;
-            rebuildRenderState();
-            return;
-        }
-        snapshot = new DungeonSnapshot(
-                nextSurface.mapName(),
-                nextSurface.mode(),
-                nextSurface.map(),
-                nextSurface.aggregateSummaries(),
-                nextSurface.relationSummaries(),
-                nextSurface.revision());
-        previewSnapshot = nextSurface.previewMap() == null
-                ? null
-                : new DungeonSnapshot(
-                        nextSurface.mapName(),
-                        nextSurface.mode(),
-                        nextSurface.previewMap(),
-                        nextSurface.aggregateSummaries(),
-                        nextSurface.relationSummaries(),
-                        nextSurface.revision());
-        rebuildRenderState();
-    }
-
-    public void showPreviewSnapshot(@Nullable DungeonSnapshot nextPreviewSnapshot) {
-        previewSnapshot = nextPreviewSnapshot;
-        rebuildRenderState();
     }
 
     public void selectViewMode(RenderState.ViewMode nextViewMode) {
@@ -128,23 +61,8 @@ public final class DungeonMapContentModel {
         rebuildRenderState();
     }
 
-    public void showPartyToken(RenderState.@Nullable PartyToken nextPartyToken) {
-        partyToken = nextPartyToken;
-        rebuildRenderState();
-    }
-
     public void showSelectedTool(String nextSelectedTool) {
-        selectedTool = nextSelectedTool == null || nextSelectedTool.isBlank() ? "Auswahl" : nextSelectedTool;
-        rebuildRenderState();
-    }
-
-    public void showSelection(RenderState.@Nullable Selection nextSelection) {
-        selection = nextSelection;
-        rebuildRenderState();
-    }
-
-    public void showPendingTopologyEdit(RenderState.@Nullable EditorPreview nextEditorPreview) {
-        editorPreview = nextEditorPreview;
+        selectedTool = normalizeTool(nextSelectedTool);
         rebuildRenderState();
     }
 
@@ -152,19 +70,11 @@ public final class DungeonMapContentModel {
         DungeonEditorSnapshot safeSnapshot = editorSnapshot == null
                 ? DungeonEditorSnapshot.empty("")
                 : editorSnapshot;
-        DungeonSurfacePayload surfacePayload = safeSnapshot.surface();
-        snapshot = toCommittedSnapshot(surfacePayload);
-        previewSnapshot = toPreviewSnapshot(surfacePayload);
+        projection = toProjection(safeSnapshot.mapProjection());
         viewMode = toViewMode(safeSnapshot.viewModeKey());
         overlaySettings = toOverlaySettings(safeSnapshot.overlaySettings());
         projectionLevel = safeSnapshot.projectionLevel();
         selectedTool = normalizeTool(safeSnapshot.selectedTool());
-        RenderState.Selection nextSelection = toSelection(
-                safeSnapshot.selection(),
-                surfacePayload == null ? null : surfacePayload.inspector());
-        selection = nextSelection;
-        editorPreview = toEditorPreview(safeSnapshot.preview(), nextSelection);
-        partyToken = null;
         rebuildRenderState();
     }
 
@@ -172,73 +82,613 @@ public final class DungeonMapContentModel {
         TravelDungeonSnapshot safeSnapshot = travelSnapshot == null
                 ? TravelDungeonSnapshot.empty()
                 : travelSnapshot;
-        TravelDungeonSurface surface = safeSnapshot.surface();
-        snapshot = surface != null && surface.contextKind() == TravelDungeonSurface.ContextKind.DUNGEON
-                ? toCommittedTravelSnapshot(surface)
-                : null;
-        previewSnapshot = null;
+        projection = toProjection(safeSnapshot.mapProjection());
         viewMode = RenderState.ViewMode.GRID;
         overlaySettings = toOverlaySettings(safeSnapshot.overlaySettings());
         projectionLevel = safeSnapshot.projectionLevel();
         selectedTool = "Auswahl";
-        selection = null;
-        editorPreview = null;
-        partyToken = toPartyToken(surface == null ? null : surface.position(), surface);
         rebuildRenderState();
     }
 
     private void rebuildRenderState() {
-        renderState.set(RenderState.fromDungeonSnapshot(
-                snapshot,
-                previewSnapshot,
+        renderState.set(RenderState.fromProjection(
+                projection,
                 placeholderTitle,
                 editorMode,
                 viewMode,
                 overlaySettings,
                 projectionLevel,
-                selectedTool,
-                selection,
-                editorPreview,
-                partyToken));
+                selectedTool));
     }
 
-    private static @Nullable DungeonSnapshot toCommittedSnapshot(@Nullable DungeonSurfacePayload payload) {
-        if (payload == null) {
+    private static @Nullable ProjectionData toProjection(
+            @Nullable DungeonEditorMapProjectionSnapshot projection
+    ) {
+        if (projection == null) {
             return null;
         }
-        return new DungeonSnapshot(
-                payload.mapName(),
-                payload.mode(),
-                payload.map(),
-                payload.aggregateSummaries(),
-                payload.relationSummaries(),
-                payload.revision());
+        return projectionData(
+                projection.mapName(),
+                toProjectionTopology(projection.topology()),
+                projection.width(),
+                projection.height(),
+                toEditorProjectionCells(projection.cells()),
+                toEditorProjectionEdges(projection.edges()),
+                toEditorProjectionLabels(projection.labels()),
+                toEditorProjectionMarkers(projection.markers()),
+                toEditorProjectionGraphNodes(projection.graphNodes()),
+                toEditorProjectionGraphLinks(projection.graphLinks()),
+                toProjectionPartyToken(projection.partyToken()));
     }
 
-    private static @Nullable DungeonSnapshot toPreviewSnapshot(@Nullable DungeonSurfacePayload payload) {
-        if (payload == null || payload.previewMap() == null) {
+    private static @Nullable ProjectionData toProjection(
+            @Nullable TravelDungeonMapProjectionSnapshot projection
+    ) {
+        if (projection == null) {
             return null;
         }
-        return new DungeonSnapshot(
-                payload.mapName(),
-                payload.mode(),
-                payload.previewMap(),
-                payload.aggregateSummaries(),
-                payload.relationSummaries(),
-                payload.revision());
+        return projectionData(
+                projection.mapName(),
+                toProjectionTopology(projection.topology()),
+                projection.width(),
+                projection.height(),
+                toTravelProjectionCells(projection.cells()),
+                toTravelProjectionEdges(projection.edges()),
+                toTravelProjectionLabels(projection.labels()),
+                toTravelProjectionMarkers(projection.markers()),
+                toTravelProjectionGraphNodes(projection.graphNodes()),
+                toTravelProjectionGraphLinks(projection.graphLinks()),
+                toProjectionPartyToken(projection.partyToken()));
     }
 
-    private static @Nullable DungeonSnapshot toCommittedTravelSnapshot(@Nullable TravelDungeonSurface surface) {
-        if (surface == null || surface.contextKind() != TravelDungeonSurface.ContextKind.DUNGEON) {
+    private static ProjectionData projectionData(
+            String mapName,
+            ProjectionData.ProjectionTopologyKind topology,
+            int width,
+            int height,
+            List<ProjectionData.ProjectionCell> cells,
+            List<ProjectionData.ProjectionEdge> edges,
+            List<ProjectionData.ProjectionLabel> labels,
+            List<ProjectionData.ProjectionMarker> markers,
+            List<ProjectionData.ProjectionGraphNode> graphNodes,
+            List<ProjectionData.ProjectionGraphLink> graphLinks,
+            ProjectionData.@Nullable ProjectionPartyToken partyToken
+    ) {
+        return new ProjectionData(
+                mapName,
+                topology,
+                width,
+                height,
+                cells,
+                edges,
+                labels,
+                markers,
+                graphNodes,
+                graphLinks,
+                partyToken);
+    }
+
+    private static ProjectionData.ProjectionTopologyKind toProjectionTopology(
+            DungeonEditorMapProjectionSnapshot.TopologyKind topology
+    ) {
+        return topology == DungeonEditorMapProjectionSnapshot.TopologyKind.HEX
+                ? ProjectionData.ProjectionTopologyKind.HEX
+                : ProjectionData.ProjectionTopologyKind.SQUARE;
+    }
+
+    private static ProjectionData.ProjectionTopologyKind toProjectionTopology(
+            TravelDungeonMapProjectionSnapshot.TopologyKind topology
+    ) {
+        return topology == TravelDungeonMapProjectionSnapshot.TopologyKind.HEX
+                ? ProjectionData.ProjectionTopologyKind.HEX
+                : ProjectionData.ProjectionTopologyKind.SQUARE;
+    }
+
+    private static ProjectionData.ProjectionCell toProjectionCell(
+            DungeonEditorMapProjectionSnapshot.CellProjection cell
+    ) {
+        return projectionCell(
+                cell.q(),
+                cell.r(),
+                cell.level(),
+                cell.label(),
+                cell.kind().name(),
+                cell.ownerId(),
+                cell.clusterId(),
+                cell.topologyRef().kind(),
+                cell.topologyRef().id(),
+                cell.selected(),
+                cell.overlay(),
+                cell.preview(),
+                cell.destructivePreview());
+    }
+
+    private static ProjectionData.ProjectionCell toProjectionCell(
+            TravelDungeonMapProjectionSnapshot.CellProjection cell
+    ) {
+        TravelDungeonMapProjectionSnapshot.TopologyRef topologyRef = cell.topologyRef();
+        String kind = cell.kind().name();
+        int q = cell.q();
+        int r = cell.r();
+        int level = cell.level();
+        return projectionCell(
+                q,
+                r,
+                level,
+                cell.label(),
+                kind,
+                cell.ownerId(),
+                cell.clusterId(),
+                topologyRef.kind(),
+                topologyRef.id(),
+                cell.selected(),
+                cell.overlay(),
+                cell.preview(),
+                cell.destructivePreview());
+    }
+
+    private static ProjectionData.ProjectionCell projectionCell(
+            int q,
+            int r,
+            int level,
+            String label,
+            String kind,
+            long ownerId,
+            long clusterId,
+            String topologyKind,
+            long topologyId,
+            boolean selected,
+            boolean overlay,
+            boolean preview,
+            boolean destructivePreview
+    ) {
+        return new ProjectionData.ProjectionCell(
+                q,
+                r,
+                level,
+                label,
+                toProjectionCellKind(kind),
+                ownerId,
+                clusterId,
+                new ProjectionData.ProjectionTopologyRef(topologyKind, topologyId),
+                selected,
+                overlay,
+                preview,
+                destructivePreview);
+    }
+
+    private static List<ProjectionData.ProjectionCell> toEditorProjectionCells(
+            List<DungeonEditorMapProjectionSnapshot.CellProjection> cells
+    ) {
+        List<ProjectionData.ProjectionCell> mapped = new ArrayList<>(cells.size());
+        for (DungeonEditorMapProjectionSnapshot.CellProjection cell : cells) {
+            mapped.add(toProjectionCell(cell));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static List<ProjectionData.ProjectionCell> toTravelProjectionCells(
+            List<TravelDungeonMapProjectionSnapshot.CellProjection> cells
+    ) {
+        List<ProjectionData.ProjectionCell> mapped = new ArrayList<>(cells.size());
+        for (TravelDungeonMapProjectionSnapshot.CellProjection cell : cells) {
+            mapped.add(toProjectionCell(cell));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionEdge toProjectionEdge(
+            DungeonEditorMapProjectionSnapshot.EdgeProjection edge
+    ) {
+        return projectionEdge(
+                edge.startQ(),
+                edge.startR(),
+                edge.endQ(),
+                edge.endR(),
+                edge.level(),
+                edge.kind().name(),
+                edge.label(),
+                edge.ownerId(),
+                edge.topologyRef().kind(),
+                edge.topologyRef().id(),
+                edge.selected(),
+                edge.preview());
+    }
+
+    private static ProjectionData.ProjectionEdge toProjectionEdge(
+            TravelDungeonMapProjectionSnapshot.EdgeProjection edge
+    ) {
+        return projectionEdge(
+                edge.startQ(),
+                edge.startR(),
+                edge.endQ(),
+                edge.endR(),
+                edge.level(),
+                edge.kind().name(),
+                edge.label(),
+                edge.ownerId(),
+                edge.topologyRef().kind(),
+                edge.topologyRef().id(),
+                edge.selected(),
+                edge.preview());
+    }
+
+    private static ProjectionData.ProjectionEdge projectionEdge(
+            double startQ,
+            double startR,
+            double endQ,
+            double endR,
+            int level,
+            String kind,
+            String label,
+            long ownerId,
+            String topologyKind,
+            long topologyId,
+            boolean selected,
+            boolean preview
+    ) {
+        return new ProjectionData.ProjectionEdge(
+                startQ,
+                startR,
+                endQ,
+                endR,
+                level,
+                "DOOR".equalsIgnoreCase(kind)
+                        ? ProjectionData.ProjectionEdgeKind.DOOR
+                        : ProjectionData.ProjectionEdgeKind.WALL,
+                label,
+                ownerId,
+                new ProjectionData.ProjectionTopologyRef(topologyKind, topologyId),
+                selected,
+                preview);
+    }
+
+    private static List<ProjectionData.ProjectionEdge> toEditorProjectionEdges(
+            List<DungeonEditorMapProjectionSnapshot.EdgeProjection> edges
+    ) {
+        List<ProjectionData.ProjectionEdge> mapped = new ArrayList<>(edges.size());
+        for (DungeonEditorMapProjectionSnapshot.EdgeProjection edge : edges) {
+            mapped.add(toProjectionEdge(edge));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static List<ProjectionData.ProjectionEdge> toTravelProjectionEdges(
+            List<TravelDungeonMapProjectionSnapshot.EdgeProjection> edges
+    ) {
+        List<ProjectionData.ProjectionEdge> mapped = new ArrayList<>(edges.size());
+        for (TravelDungeonMapProjectionSnapshot.EdgeProjection edge : edges) {
+            mapped.add(toProjectionEdge(edge));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionLabel toProjectionLabel(
+            DungeonEditorMapProjectionSnapshot.LabelProjection label
+    ) {
+        return projectionLabel(
+                label.label(),
+                label.q(),
+                label.r(),
+                label.level(),
+                label.ownerId(),
+                label.clusterId(),
+                label.topologyRef().kind(),
+                label.topologyRef().id(),
+                label.selected(),
+                label.preview());
+    }
+
+    private static ProjectionData.ProjectionLabel toProjectionLabel(
+            TravelDungeonMapProjectionSnapshot.LabelProjection label
+    ) {
+        return projectionLabel(
+                label.label(),
+                label.q(),
+                label.r(),
+                label.level(),
+                label.ownerId(),
+                label.clusterId(),
+                label.topologyRef().kind(),
+                label.topologyRef().id(),
+                label.selected(),
+                label.preview());
+    }
+
+    private static ProjectionData.ProjectionLabel projectionLabel(
+            String label,
+            double q,
+            double r,
+            int level,
+            long ownerId,
+            long clusterId,
+            String topologyKind,
+            long topologyId,
+            boolean selected,
+            boolean preview
+    ) {
+        return new ProjectionData.ProjectionLabel(
+                label,
+                q,
+                r,
+                level,
+                ownerId,
+                clusterId,
+                new ProjectionData.ProjectionTopologyRef(topologyKind, topologyId),
+                selected,
+                preview);
+    }
+
+    private static List<ProjectionData.ProjectionLabel> toEditorProjectionLabels(
+            List<DungeonEditorMapProjectionSnapshot.LabelProjection> labels
+    ) {
+        List<ProjectionData.ProjectionLabel> mapped = new ArrayList<>(labels.size());
+        for (DungeonEditorMapProjectionSnapshot.LabelProjection label : labels) {
+            mapped.add(toProjectionLabel(label));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static List<ProjectionData.ProjectionLabel> toTravelProjectionLabels(
+            List<TravelDungeonMapProjectionSnapshot.LabelProjection> labels
+    ) {
+        List<ProjectionData.ProjectionLabel> mapped = new ArrayList<>(labels.size());
+        for (TravelDungeonMapProjectionSnapshot.LabelProjection label : labels) {
+            mapped.add(toProjectionLabel(label));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionMarker toProjectionMarker(
+            DungeonEditorMapProjectionSnapshot.MarkerProjection marker
+    ) {
+        return projectionMarker(
+                marker.label(),
+                marker.q(),
+                marker.r(),
+                marker.level(),
+                marker.kind().name(),
+                marker.selected(),
+                marker.handleRef().kind(),
+                marker.handleRef().topologyRef().kind(),
+                marker.handleRef().topologyRef().id(),
+                marker.handleRef().ownerId(),
+                marker.handleRef().clusterId(),
+                marker.handleRef().corridorId(),
+                marker.handleRef().roomId(),
+                marker.handleRef().index(),
+                marker.handleRef().cell().q(),
+                marker.handleRef().cell().r(),
+                marker.handleRef().cell().level(),
+                marker.handleRef().direction(),
+                marker.preview());
+    }
+
+    private static ProjectionData.ProjectionMarker toProjectionMarker(
+            TravelDungeonMapProjectionSnapshot.MarkerProjection marker
+    ) {
+        return projectionMarker(
+                marker.label(),
+                marker.q(),
+                marker.r(),
+                marker.level(),
+                marker.kind().name(),
+                marker.selected(),
+                marker.handle().kind(),
+                marker.handle().topologyRef().kind(),
+                marker.handle().topologyRef().id(),
+                marker.handle().ownerId(),
+                marker.handle().clusterId(),
+                marker.handle().corridorId(),
+                marker.handle().roomId(),
+                marker.handle().index(),
+                marker.handle().q(),
+                marker.handle().r(),
+                marker.handle().level(),
+                marker.handle().direction(),
+                marker.preview());
+    }
+
+    private static ProjectionData.ProjectionMarker projectionMarker(
+            String label,
+            double q,
+            double r,
+            int level,
+            String kind,
+            boolean selected,
+            String handleKind,
+            String topologyKind,
+            long topologyId,
+            long ownerId,
+            long clusterId,
+            long corridorId,
+            long roomId,
+            int index,
+            int handleQ,
+            int handleR,
+            int handleLevel,
+            String handleDirection,
+            boolean preview
+    ) {
+        return new ProjectionData.ProjectionMarker(
+                label,
+                q,
+                r,
+                level,
+                toProjectionMarkerKind(kind),
+                selected,
+                new ProjectionData.ProjectionMarkerHandle(
+                        handleKind,
+                        new ProjectionData.ProjectionTopologyRef(topologyKind, topologyId),
+                        ownerId,
+                        clusterId,
+                        corridorId,
+                        roomId,
+                        index,
+                        handleQ,
+                        handleR,
+                        handleLevel,
+                        handleDirection),
+                preview);
+    }
+
+    private static List<ProjectionData.ProjectionMarker> toEditorProjectionMarkers(
+            List<DungeonEditorMapProjectionSnapshot.MarkerProjection> markers
+    ) {
+        List<ProjectionData.ProjectionMarker> mapped = new ArrayList<>(markers.size());
+        for (DungeonEditorMapProjectionSnapshot.MarkerProjection marker : markers) {
+            mapped.add(toProjectionMarker(marker));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static List<ProjectionData.ProjectionMarker> toTravelProjectionMarkers(
+            List<TravelDungeonMapProjectionSnapshot.MarkerProjection> markers
+    ) {
+        List<ProjectionData.ProjectionMarker> mapped = new ArrayList<>(markers.size());
+        for (TravelDungeonMapProjectionSnapshot.MarkerProjection marker : markers) {
+            mapped.add(toProjectionMarker(marker));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionGraphNode toProjectionGraphNode(
+            DungeonEditorMapProjectionSnapshot.GraphNodeProjection node
+    ) {
+        return projectionGraphNode(node.id(), node.clusterId(), node.label(), node.q(), node.r(), node.selected());
+    }
+
+    private static ProjectionData.ProjectionGraphNode toProjectionGraphNode(
+            TravelDungeonMapProjectionSnapshot.GraphNodeProjection node
+    ) {
+        return projectionGraphNode(node.id(), node.clusterId(), node.label(), node.q(), node.r(), node.selected());
+    }
+
+    private static ProjectionData.ProjectionGraphNode projectionGraphNode(
+            long id,
+            long clusterId,
+            String label,
+            double q,
+            double r,
+            boolean selected
+    ) {
+        return new ProjectionData.ProjectionGraphNode(id, clusterId, label, q, r, selected);
+    }
+
+    private static List<ProjectionData.ProjectionGraphNode> toEditorProjectionGraphNodes(
+            List<DungeonEditorMapProjectionSnapshot.GraphNodeProjection> nodes
+    ) {
+        List<ProjectionData.ProjectionGraphNode> mapped = new ArrayList<>(nodes.size());
+        for (DungeonEditorMapProjectionSnapshot.GraphNodeProjection node : nodes) {
+            mapped.add(toProjectionGraphNode(node));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static List<ProjectionData.ProjectionGraphNode> toTravelProjectionGraphNodes(
+            List<TravelDungeonMapProjectionSnapshot.GraphNodeProjection> nodes
+    ) {
+        List<ProjectionData.ProjectionGraphNode> mapped = new ArrayList<>(nodes.size());
+        for (TravelDungeonMapProjectionSnapshot.GraphNodeProjection node : nodes) {
+            mapped.add(toProjectionGraphNode(node));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionGraphLink toProjectionGraphLink(
+            DungeonEditorMapProjectionSnapshot.GraphLinkProjection link
+    ) {
+        return new ProjectionData.ProjectionGraphLink(link.fromId(), link.toId(), link.selected());
+    }
+
+    private static ProjectionData.ProjectionGraphLink toProjectionGraphLink(
+            TravelDungeonMapProjectionSnapshot.GraphLinkProjection link
+    ) {
+        return new ProjectionData.ProjectionGraphLink(link.fromId(), link.toId(), link.selected());
+    }
+
+    private static List<ProjectionData.ProjectionGraphLink> toEditorProjectionGraphLinks(
+            List<DungeonEditorMapProjectionSnapshot.GraphLinkProjection> links
+    ) {
+        List<ProjectionData.ProjectionGraphLink> mapped = new ArrayList<>(links.size());
+        for (DungeonEditorMapProjectionSnapshot.GraphLinkProjection link : links) {
+            mapped.add(toProjectionGraphLink(link));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static List<ProjectionData.ProjectionGraphLink> toTravelProjectionGraphLinks(
+            List<TravelDungeonMapProjectionSnapshot.GraphLinkProjection> links
+    ) {
+        List<ProjectionData.ProjectionGraphLink> mapped = new ArrayList<>(links.size());
+        for (TravelDungeonMapProjectionSnapshot.GraphLinkProjection link : links) {
+            mapped.add(toProjectionGraphLink(link));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.@Nullable ProjectionPartyToken toProjectionPartyToken(
+            DungeonEditorMapProjectionSnapshot.@Nullable PartyTokenProjection token
+    ) {
+        if (token == null) {
             return null;
         }
-        return new DungeonSnapshot(
-                surface.mapName(),
-                DungeonMapMode.TRAVEL,
-                toDungeonMapSnapshot(surface.map()),
-                List.of(),
-                List.of(),
-                surface.revision());
+        return projectionPartyToken(
+                token.q(),
+                token.r(),
+                token.level(),
+                token.heading().name(),
+                token.visible());
+    }
+
+    private static ProjectionData.@Nullable ProjectionPartyToken toProjectionPartyToken(
+            TravelDungeonMapProjectionSnapshot.@Nullable PartyTokenProjection token
+    ) {
+        if (token == null) {
+            return null;
+        }
+        return projectionPartyToken(
+                token.q(),
+                token.r(),
+                token.level(),
+                token.heading().name(),
+                token.visible());
+    }
+
+    private static ProjectionData.ProjectionPartyToken projectionPartyToken(
+            double q,
+            double r,
+            int level,
+            String heading,
+            boolean visible
+    ) {
+        return new ProjectionData.ProjectionPartyToken(q, r, level, toProjectionHeading(heading), visible);
+    }
+
+    private static ProjectionData.ProjectionCellKind toProjectionCellKind(String kind) {
+        return switch (kind == null ? "ROOM" : kind) {
+            case "CORRIDOR" -> ProjectionData.ProjectionCellKind.CORRIDOR;
+            case "STAIR" -> ProjectionData.ProjectionCellKind.STAIR;
+            case "TRANSITION" -> ProjectionData.ProjectionCellKind.TRANSITION;
+            default -> ProjectionData.ProjectionCellKind.ROOM;
+        };
+    }
+
+    private static ProjectionData.ProjectionMarkerKind toProjectionMarkerKind(String kind) {
+        return switch (kind == null ? "DOOR" : kind) {
+            case "STAIR" -> ProjectionData.ProjectionMarkerKind.STAIR;
+            case "WAYPOINT" -> ProjectionData.ProjectionMarkerKind.WAYPOINT;
+            default -> ProjectionData.ProjectionMarkerKind.DOOR;
+        };
+    }
+
+    private static ProjectionData.ProjectionHeading toProjectionHeading(String heading) {
+        return switch (heading == null ? "SOUTH" : heading) {
+            case "NORTH" -> ProjectionData.ProjectionHeading.NORTH;
+            case "EAST" -> ProjectionData.ProjectionHeading.EAST;
+            case "WEST" -> ProjectionData.ProjectionHeading.WEST;
+            default -> ProjectionData.ProjectionHeading.SOUTH;
+        };
     }
 
     private static RenderState.ViewMode toViewMode(String viewModeKey) {
@@ -251,11 +701,19 @@ public final class DungeonMapContentModel {
         return selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
     }
 
+    private static int atLeastOne(int value) {
+        return Math.max(1, value);
+    }
+
+    private static <T> List<T> immutableList(@Nullable List<T> items) {
+        return items == null ? List.of() : List.copyOf(items);
+    }
+
     private static RenderState.LevelOverlaySettings toOverlaySettings(
-            DungeonOverlaySettings overlaySettings
+            DungeonEditorOverlaySettings overlaySettings
     ) {
-        DungeonOverlaySettings safeOverlay =
-                overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
+        DungeonEditorOverlaySettings safeOverlay =
+                overlaySettings == null ? DungeonEditorOverlaySettings.defaults() : overlaySettings;
         return new RenderState.LevelOverlaySettings(
                 toOverlayMode(safeOverlay.modeKey()),
                 safeOverlay.levelRange(),
@@ -285,168 +743,176 @@ public final class DungeonMapContentModel {
         return RenderState.OverlayMode.OFF;
     }
 
-    private static RenderState.@Nullable Selection toSelection(
-            DungeonEditorSnapshot.Selection selection,
-            @Nullable DungeonInspectorSnapshot inspector
+    private record ProjectionData(
+            String mapName,
+            ProjectionData.ProjectionTopologyKind topology,
+            int width,
+            int height,
+            List<ProjectionData.ProjectionCell> cells,
+            List<ProjectionData.ProjectionEdge> edges,
+            List<ProjectionData.ProjectionLabel> labels,
+            List<ProjectionData.ProjectionMarker> markers,
+            List<ProjectionData.ProjectionGraphNode> graphNodes,
+            List<ProjectionData.ProjectionGraphLink> graphLinks,
+            @Nullable ProjectionPartyToken partyToken
     ) {
-        if (selection == null || selection.topologyRef().kind() == DungeonTopologyElementKind.EMPTY) {
-            return null;
+
+        private ProjectionData {
+            mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName.trim();
+            topology = topology == null ? ProjectionTopologyKind.SQUARE : topology;
+            width = atLeastOne(width);
+            height = atLeastOne(height);
+            cells = immutableList(cells);
+            edges = immutableList(edges);
+            labels = immutableList(labels);
+            markers = immutableList(markers);
+            graphNodes = immutableList(graphNodes);
+            graphLinks = immutableList(graphLinks);
         }
-        String label = inspector == null ? selection.topologyRef().kind().name() : inspector.title();
-        long ownerId = selection.handleRef() != null && selection.handleRef().ownerId() > 0L
-                ? selection.handleRef().ownerId()
-                : selection.topologyRef().id();
-        return new RenderState.Selection(
-                ownerId,
-                selection.clusterId(),
-                label,
-                new RenderState.TopologyRef(selection.topologyRef().kind().name(), selection.topologyRef().id()),
-                selection.clusterSelection(),
-                selection.handleRef() == null ? emptyHandleRef(ownerId, selection.clusterId()) : selection.handleRef());
-    }
 
-    private static RenderState.@Nullable EditorPreview toEditorPreview(
-            DungeonEditorPreview preview,
-            RenderState.@Nullable Selection selection
-    ) {
-        if (preview == null || preview instanceof DungeonEditorPreview.NonePreview) {
-            return null;
+        private enum ProjectionTopologyKind {
+            SQUARE,
+            HEX
         }
-        return switch (preview) {
-            case DungeonEditorPreview.RoomRectanglePreview room ->
-                    new RenderState.EditorPreview.RoomRectangle(
-                            room.start().q(),
-                            room.start().r(),
-                            room.end().q(),
-                            room.end().r(),
-                            room.start().level(),
-                            room.deleteMode());
-            case DungeonEditorPreview.ClusterBoundariesPreview boundaries ->
-                    new RenderState.EditorPreview.BoundaryEdges(
-                            boundaries.clusterId(),
-                            boundaries.edges(),
-                            boundaries.boundaryKind(),
-                            boundaries.deleteMode());
-            case DungeonEditorPreview.MoveHandlePreview moveHandle ->
-                    new RenderState.EditorPreview.MoveHandleOrCluster(
-                            moveHandle.handleRef().clusterId(),
-                            moveHandle.deltaQ(),
-                            moveHandle.deltaR(),
-                            moveHandle.deltaLevel(),
-                            moveHandle.handleRef(),
-                            selection == null ? "" : selection.label());
-            case DungeonEditorPreview.MoveBoundaryStretchPreview stretch ->
-                    new RenderState.EditorPreview.BoundaryStretchMove(
-                            stretch.clusterId(),
-                            stretch.sourceEdges(),
-                            stretch.deltaQ(),
-                            stretch.deltaR(),
-                            stretch.deltaLevel(),
-                            selection == null ? "" : selection.label());
-            case DungeonEditorPreview.NonePreview ignored -> null;
-        };
-    }
 
-    private static RenderState.@Nullable PartyToken toPartyToken(
-            @Nullable TravelDungeonPosition position,
-            @Nullable TravelDungeonSurface travel
-    ) {
-        if (position == null || travel == null || travel.contextKind() != TravelDungeonSurface.ContextKind.DUNGEON) {
-            return null;
+        private enum ProjectionCellKind {
+            ROOM,
+            CORRIDOR,
+            STAIR,
+            TRANSITION
         }
-        return new RenderState.PartyToken(
-                position.tile().q() + 0.5,
-                position.tile().r() + 0.5,
-                position.tile().level(),
-                toHeading(position.heading()),
-                true);
-    }
 
-    private static RenderState.Heading toHeading(DungeonTravelHeading heading) {
-        return switch (heading == null ? DungeonTravelHeading.defaultHeading() : heading) {
-            case NORTH -> RenderState.Heading.NORTH;
-            case EAST -> RenderState.Heading.EAST;
-            case SOUTH -> RenderState.Heading.SOUTH;
-            case WEST -> RenderState.Heading.WEST;
-        };
-    }
+        private enum ProjectionEdgeKind {
+            WALL,
+            DOOR
+        }
 
-    private static RenderState.Heading toHeading(TravelDungeonPosition.Heading heading) {
-        return switch (heading == null ? TravelDungeonPosition.Heading.SOUTH : heading) {
-            case NORTH -> RenderState.Heading.NORTH;
-            case EAST -> RenderState.Heading.EAST;
-            case SOUTH -> RenderState.Heading.SOUTH;
-            case WEST -> RenderState.Heading.WEST;
-        };
-    }
+        private enum ProjectionMarkerKind {
+            DOOR,
+            STAIR,
+            WAYPOINT
+        }
 
-    private static DungeonMapSnapshot toDungeonMapSnapshot(TravelDungeonMapSnapshot map) {
-        TravelDungeonMapSnapshot safeMap = map == null ? TravelDungeonMapSnapshot.empty() : map;
-        return new DungeonMapSnapshot(
-                DungeonTopologyKind.valueOf(safeMap.topology().name()),
-                safeMap.width(),
-                safeMap.height(),
-                safeMap.areas().stream().map(DungeonMapContentModel::toDungeonAreaSnapshot).toList(),
-                safeMap.boundaries().stream().map(DungeonMapContentModel::toDungeonBoundarySnapshot).toList(),
-                safeMap.features().stream().map(DungeonMapContentModel::toDungeonFeatureSnapshot).toList(),
-                List.of());
-    }
+        private enum ProjectionHeading {
+            NORTH,
+            EAST,
+            SOUTH,
+            WEST
+        }
 
-    private static DungeonAreaSnapshot toDungeonAreaSnapshot(TravelDungeonArea area) {
-        TravelDungeonArea safeArea = area == null
-                ? new TravelDungeonArea(TravelDungeonArea.Kind.ROOM, 1L, "ROOM", List.of())
-                : area;
-        return new DungeonAreaSnapshot(
-                DungeonAreaKind.valueOf(safeArea.kind().name()),
-                safeArea.id(),
-                safeArea.label(),
-                safeArea.cells().stream().map(DungeonMapContentModel::toDungeonCellRef).toList());
-    }
+        private record ProjectionTopologyRef(String kind, long id) {
 
-    private static DungeonBoundarySnapshot toDungeonBoundarySnapshot(TravelDungeonBoundary boundary) {
-        TravelDungeonBoundary safeBoundary = boundary == null
-                ? new TravelDungeonBoundary("wall", 1L, "wall", new src.domain.travel.published.TravelDungeonEdge(
-                        new TravelDungeonCell(0, 0, 0),
-                        new TravelDungeonCell(0, 0, 0)))
-                : boundary;
-        return new DungeonBoundarySnapshot(
-                safeBoundary.kind(),
-                safeBoundary.id(),
-                safeBoundary.label(),
-                new DungeonEdgeRef(
-                        toDungeonCellRef(safeBoundary.edge().from()),
-                        toDungeonCellRef(safeBoundary.edge().to())));
-    }
+            private ProjectionTopologyRef {
+                kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+                id = Math.max(0L, id);
+            }
+        }
 
-    private static DungeonFeatureSnapshot toDungeonFeatureSnapshot(TravelDungeonFeature feature) {
-        TravelDungeonFeature safeFeature = feature == null
-                ? new TravelDungeonFeature(TravelDungeonFeature.Kind.STAIR, 1L, "STAIR", List.of(), "", "")
-                : feature;
-        return new DungeonFeatureSnapshot(
-                DungeonFeatureKind.valueOf(safeFeature.kind().name()),
-                safeFeature.id(),
-                safeFeature.label(),
-                safeFeature.cells().stream().map(DungeonMapContentModel::toDungeonCellRef).toList(),
-                safeFeature.description(),
-                safeFeature.destinationLabel());
-    }
+        private record ProjectionMarkerHandle(
+                String kind,
+                ProjectionData.ProjectionTopologyRef topologyRef,
+                long ownerId,
+                long clusterId,
+                long corridorId,
+                long roomId,
+                int index,
+                int q,
+                int r,
+                int level,
+                String direction
+        ) {
 
-    private static DungeonCellRef toDungeonCellRef(TravelDungeonCell cell) {
-        TravelDungeonCell safeCell = cell == null ? new TravelDungeonCell(0, 0, 0) : cell;
-        return new DungeonCellRef(safeCell.q(), safeCell.r(), safeCell.level());
-    }
+            private ProjectionMarkerHandle {
+                kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+                topologyRef = topologyRef == null
+                        ? new ProjectionData.ProjectionTopologyRef("EMPTY", 0L)
+                        : topologyRef;
+                ownerId = Math.max(0L, ownerId);
+                clusterId = Math.max(0L, clusterId);
+                corridorId = Math.max(0L, corridorId);
+                roomId = Math.max(0L, roomId);
+                index = Math.max(0, index);
+                direction = direction == null ? "" : direction.trim();
+            }
+        }
 
-    private static DungeonEditorHandleRef emptyHandleRef(long ownerId, long clusterId) {
-        return new DungeonEditorHandleRef(
-                DungeonEditorHandleKind.CLUSTER_LABEL,
-                new DungeonTopologyElementRef(DungeonTopologyElementKind.EMPTY, 0L),
-                ownerId,
-                clusterId,
-                0L,
-                0L,
-                0,
-                new DungeonCellRef(0, 0, 0),
-                "");
+        private record ProjectionCell(
+                int q,
+                int r,
+                int level,
+                String label,
+                ProjectionData.ProjectionCellKind kind,
+                long ownerId,
+                long clusterId,
+                ProjectionData.ProjectionTopologyRef topologyRef,
+                boolean selected,
+                boolean overlay,
+                boolean preview,
+                boolean destructivePreview
+        ) {
+        }
+
+        private record ProjectionEdge(
+                double startQ,
+                double startR,
+                double endQ,
+                double endR,
+                int level,
+                ProjectionData.ProjectionEdgeKind kind,
+                String label,
+                long ownerId,
+                ProjectionData.ProjectionTopologyRef topologyRef,
+                boolean selected,
+                boolean preview
+        ) {
+        }
+
+        private record ProjectionLabel(
+                String label,
+                double q,
+                double r,
+                int level,
+                long ownerId,
+                long clusterId,
+                ProjectionData.ProjectionTopologyRef topologyRef,
+                boolean selected,
+                boolean preview
+        ) {
+        }
+
+        private record ProjectionMarker(
+                String label,
+                double q,
+                double r,
+                int level,
+                ProjectionData.ProjectionMarkerKind kind,
+                boolean selected,
+                ProjectionData.ProjectionMarkerHandle handle,
+                boolean preview
+        ) {
+        }
+
+        private record ProjectionGraphNode(
+                long id,
+                long clusterId,
+                String label,
+                double q,
+                double r,
+                boolean selected
+        ) {
+        }
+
+        private record ProjectionGraphLink(long fromId, long toId, boolean selected) {
+        }
+
+        private record ProjectionPartyToken(
+                double q,
+                double r,
+                int level,
+                ProjectionData.ProjectionHeading heading,
+                boolean visible
+        ) {
+        }
     }
 
     public static record RenderState(
@@ -463,18 +929,16 @@ public final class DungeonMapContentModel {
             int projectionLevel,
             boolean editorMode,
             String selectedTool,
-            @Nullable Selection selection,
-            @Nullable EditorPreview editorPreview,
             List<RenderCell> cells,
             List<RenderEdge> edges,
             List<RenderLabel> labels,
             List<RenderMarker> markers,
-            List<GraphNode> graphNodes,
-            List<GraphLink> graphLinks,
+            List<RenderState.GraphNode> graphNodes,
+            List<RenderState.GraphLink> graphLinks,
             @Nullable PartyToken partyToken
     ) {
 
-                    public RenderState {
+        public RenderState {
             title = title == null || title.isBlank() ? "Dungeon Map" : title;
             subtitle = subtitle == null ? "" : subtitle;
             modeLabel = modeLabel == null ? "" : modeLabel;
@@ -485,12 +949,12 @@ public final class DungeonMapContentModel {
             viewMode = viewMode == null ? ViewMode.GRID : viewMode;
             overlaySettings = overlaySettings == null ? LevelOverlaySettings.defaults() : overlaySettings;
             selectedTool = selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
-            cells = cells == null ? List.of() : List.copyOf(cells);
-            edges = edges == null ? List.of() : List.copyOf(edges);
-            labels = labels == null ? List.of() : List.copyOf(labels);
-            markers = markers == null ? List.of() : List.copyOf(markers);
-            graphNodes = graphNodes == null ? List.of() : List.copyOf(graphNodes);
-            graphLinks = graphLinks == null ? List.of() : List.copyOf(graphLinks);
+            cells = immutableList(cells);
+            edges = immutableList(edges);
+            labels = immutableList(labels);
+            markers = immutableList(markers);
+            graphNodes = immutableList(graphNodes);
+            graphLinks = immutableList(graphLinks);
         }
 
         public OverlayMode overlayMode() {
@@ -516,8 +980,6 @@ public final class DungeonMapContentModel {
                     0,
                     true,
                     "Auswahl",
-                    null,
-                    null,
                     List.of(),
                     List.of(),
                     List.of(),
@@ -527,759 +989,159 @@ public final class DungeonMapContentModel {
                     null);
         }
 
-        public static RenderState fromDungeonSnapshot(
-                @Nullable DungeonSnapshot snapshot,
+        public static RenderState fromProjection(
+                @Nullable ProjectionData projection,
                 String placeholderTitle,
                 boolean editorMode,
                 ViewMode viewMode,
-                OverlayMode overlayMode,
+                LevelOverlaySettings overlaySettings,
                 int projectionLevel,
                 String selectedTool
         ) {
-            return fromDungeonSnapshot(
-                    snapshot,
-                    null,
-                    placeholderTitle,
-                    editorMode,
-                    viewMode,
-                    LevelOverlaySettings.of(overlayMode),
-                    projectionLevel,
-                    selectedTool,
-                    null);
-        }
-
-        public static RenderState fromDungeonSnapshot(
-                @Nullable DungeonSnapshot snapshot,
-                String placeholderTitle,
-                boolean editorMode,
-                ViewMode viewMode,
-                OverlayMode overlayMode,
-                int projectionLevel,
-                String selectedTool,
-                @Nullable PartyToken runtimePartyToken
-        ) {
-            return fromDungeonSnapshot(
-                    snapshot,
-                    null,
-                    placeholderTitle,
-                    editorMode,
-                    viewMode,
-                    LevelOverlaySettings.of(overlayMode),
-                    projectionLevel,
-                    selectedTool,
-                    null,
-                    null,
-                    runtimePartyToken);
-        }
-
-        public static RenderState fromDungeonSnapshot(
-                @Nullable DungeonSnapshot snapshot,
-                @Nullable DungeonSnapshot previewSnapshot,
-                String placeholderTitle,
-                boolean editorMode,
-                ViewMode viewMode,
-                LevelOverlaySettings overlaySettings,
-                int projectionLevel,
-                String selectedTool,
-                @Nullable PartyToken runtimePartyToken
-        ) {
-            return fromDungeonSnapshot(
-                    snapshot,
-                    previewSnapshot,
-                    placeholderTitle,
-                    editorMode,
-                    viewMode,
-                    overlaySettings,
-                    projectionLevel,
-                    selectedTool,
-                    null,
-                    null,
-                    runtimePartyToken);
-        }
-
-        public static RenderState fromDungeonSnapshot(
-                @Nullable DungeonSnapshot snapshot,
-                String placeholderTitle,
-                boolean editorMode,
-                ViewMode viewMode,
-                LevelOverlaySettings overlaySettings,
-                int projectionLevel,
-                String selectedTool,
-                @Nullable Selection selection,
-                @Nullable EditorPreview editorPreview,
-                @Nullable PartyToken runtimePartyToken
-        ) {
-            return fromDungeonSnapshot(
-                    snapshot,
-                    null,
-                    placeholderTitle,
-                    editorMode,
-                    viewMode,
-                    overlaySettings,
-                    projectionLevel,
-                    selectedTool,
-                    selection,
-                    editorPreview,
-                    runtimePartyToken);
-        }
-
-        public static RenderState fromDungeonSnapshot(
-                @Nullable DungeonSnapshot snapshot,
-                @Nullable DungeonSnapshot previewSnapshot,
-                String placeholderTitle,
-                boolean editorMode,
-                ViewMode viewMode,
-                LevelOverlaySettings overlaySettings,
-                int projectionLevel,
-                String selectedTool,
-                @Nullable Selection selection,
-                @Nullable EditorPreview editorPreview,
-                @Nullable PartyToken runtimePartyToken
-        ) {
-            if (snapshot == null) {
+            if (projection == null) {
                 return empty(placeholderTitle);
             }
             LevelOverlaySettings resolvedOverlay = overlaySettings == null
                     ? LevelOverlaySettings.defaults()
                     : overlaySettings;
-            DungeonMapSnapshot map = snapshot.map();
-            List<RenderCell> renderedCells = new ArrayList<>();
-            List<RenderEdge> renderedEdges = new ArrayList<>();
-            List<RenderLabel> renderedLabels = new ArrayList<>();
-            List<RenderMarker> renderedMarkers = new ArrayList<>();
-            List<GraphNode> graphNodes = new ArrayList<>();
-            List<GraphLink> graphLinks = new ArrayList<>();
-            renderAreas(map, selection, renderedCells, renderedLabels, graphNodes);
-            addPreviewAndBoundaries(
-                    map,
-                    selection,
-                    editorPreview,
-                    previewSnapshot,
-                    renderedCells,
-                    renderedEdges,
-                    renderedLabels);
-            renderFeatures(map, selection, renderedCells, renderedLabels, renderedMarkers);
-            renderHandles(map, selection, editorPreview, renderedMarkers);
-            addFallbackGraphLinks(graphNodes, graphLinks);
-            boolean mapLoaded = !renderedCells.isEmpty();
+            List<RenderCell> cells = projection.cells().stream()
+                    .map(cell -> new RenderCell(
+                            cell.q(),
+                            cell.r(),
+                            cell.level(),
+                            cell.label(),
+                            toCellKind(cell.kind()),
+                            cell.ownerId(),
+                            cell.clusterId(),
+                            new RenderState.TopologyRef(cell.topologyRef().kind(), cell.topologyRef().id()),
+                            cell.selected(),
+                            cell.overlay(),
+                            cell.preview(),
+                            cell.destructivePreview()))
+                    .toList();
+            List<RenderEdge> edges = projection.edges().stream()
+                    .map(edge -> new RenderEdge(
+                            edge.startQ(),
+                            edge.startR(),
+                            edge.endQ(),
+                            edge.endR(),
+                            edge.level(),
+                            edge.kind() == ProjectionData.ProjectionEdgeKind.DOOR
+                                    ? RenderState.EdgeKind.DOOR
+                                    : RenderState.EdgeKind.WALL,
+                            edge.label(),
+                            edge.ownerId(),
+                            new RenderState.TopologyRef(edge.topologyRef().kind(), edge.topologyRef().id()),
+                            edge.selected(),
+                            edge.preview()))
+                    .toList();
+            List<RenderLabel> labels = projection.labels().stream()
+                    .map(label -> new RenderLabel(
+                            label.label(),
+                            label.q(),
+                            label.r(),
+                            label.level(),
+                            label.ownerId(),
+                            label.clusterId(),
+                            new RenderState.TopologyRef(label.topologyRef().kind(), label.topologyRef().id()),
+                            label.selected(),
+                            label.preview()))
+                    .toList();
+            List<RenderMarker> markers = projection.markers().stream()
+                    .map(RenderState::toRenderMarker)
+                    .toList();
+            List<RenderState.GraphNode> graphNodes = projection.graphNodes().stream()
+                    .map(node -> new RenderState.GraphNode(
+                            node.id(), node.clusterId(), node.label(), node.q(), node.r(), node.selected()))
+                    .toList();
+            List<RenderState.GraphLink> graphLinks = projection.graphLinks().stream()
+                    .map(link -> new RenderState.GraphLink(link.fromId(), link.toId(), link.selected()))
+                    .toList();
+            boolean mapLoaded = !(cells.isEmpty()
+                    && edges.isEmpty()
+                    && labels.isEmpty()
+                    && markers.isEmpty()
+                    && graphNodes.isEmpty());
             return new RenderState(
-                    snapshot.mapName(),
-                    map.width() + " x " + map.height() + " squares · z=" + projectionLevel,
-                    viewMode.label(),
-                    editorMode ? selectedTool : "Token auf der Karte ziehen",
-                    renderedCells.size() + " cells, " + renderedEdges.size() + " edges · "
-                            + resolvedOverlay.mode().label(),
+                    projection.mapName(),
+                    projection.width() + " x " + projection.height() + " grid · z=" + projectionLevel,
+                    (viewMode == null ? ViewMode.GRID : viewMode).label(),
+                    editorMode ? normalizeTool(selectedTool) : "Token auf der Karte ziehen",
+                    cells.size() + " cells, " + edges.size() + " edges · " + resolvedOverlay.mode().label(),
                     mapLoaded,
                     mapLoaded ? "" : "No dungeon map geometry available.",
-                    topology(map.topology()),
-                    viewMode,
+                    projection.topology() == ProjectionData.ProjectionTopologyKind.HEX
+                            ? RenderTopology.HEX
+                            : RenderTopology.SQUARE,
+                    viewMode == null ? ViewMode.GRID : viewMode,
                     resolvedOverlay,
                     projectionLevel,
                     editorMode,
-                    selectedTool,
-                    selection,
-                    editorPreview,
-                    renderedCells,
-                    renderedEdges,
-                    renderedLabels,
-                    renderedMarkers,
+                    normalizeTool(selectedTool),
+                    cells,
+                    edges,
+                    labels,
+                    markers,
                     graphNodes,
                     graphLinks,
-                    editorMode ? null : runtimePartyToken);
+                    editorMode || projection.partyToken() == null
+                            ? null
+                            : new RenderState.PartyToken(
+                                    projection.partyToken().q(),
+                                    projection.partyToken().r(),
+                                    projection.partyToken().level(),
+                                    toHeading(projection.partyToken().heading()),
+                                    projection.partyToken().visible()));
         }
 
-        private static void renderAreas(
-                DungeonMapSnapshot map,
-                @Nullable Selection selection,
-                List<RenderCell> renderedCells,
-                List<RenderLabel> renderedLabels,
-                List<GraphNode> graphNodes
-        ) {
-            for (DungeonAreaSnapshot area : map.areas()) {
-                boolean selected = selectedArea(area, selection);
-                List<RenderCell> areaCells = area.cells().stream()
-                        .map(cell -> renderCell(area, cell, selected, false, 0, 0))
-                        .toList();
-                renderedCells.addAll(areaCells);
-                if (areaCells.isEmpty()) {
-                    continue;
-                }
-                CellCenter center = centerOf(areaCells);
-                renderedLabels.add(new RenderLabel(
-                        area.label(),
-                        center.x(),
-                        center.y(),
-                        areaCells.getFirst().z(),
-                        area.id(),
-                        area.clusterId(),
-                        topologyRef(area.topologyRef()),
-                        selected));
-                graphNodes.add(new GraphNode(area.id(), area.clusterId(), area.label(), center.x(), center.y(), selected));
-            }
+        private static RenderState.CellKind toCellKind(ProjectionData.ProjectionCellKind kind) {
+            return switch (kind == null ? ProjectionData.ProjectionCellKind.ROOM : kind) {
+                case ROOM -> RenderState.CellKind.ROOM;
+                case CORRIDOR -> RenderState.CellKind.CORRIDOR;
+                case STAIR -> RenderState.CellKind.STAIR;
+                case TRANSITION -> RenderState.CellKind.TRANSITION;
+            };
         }
 
-        private static void addPreviewAndBoundaries(
-                DungeonMapSnapshot map,
-                @Nullable Selection selection,
-                @Nullable EditorPreview editorPreview,
-                @Nullable DungeonSnapshot previewSnapshot,
-                List<RenderCell> renderedCells,
-                List<RenderEdge> renderedEdges,
-                List<RenderLabel> renderedLabels
-        ) {
-            addEditorPreview(
-                    renderedCells,
-                    renderedEdges,
-                    renderedLabels,
-                    map.areas(),
-                    map.boundaries(),
-                    selection,
-                    editorPreview,
-                    previewSnapshot);
-            for (DungeonBoundarySnapshot boundary : map.boundaries()) {
-                if (boundary.edge() == null || boundary.edge().from() == null || boundary.edge().to() == null) {
-                    continue;
-                }
-                renderedEdges.add(renderEdge(boundary));
-            }
+        private static RenderState.MarkerKind toMarkerKind(ProjectionData.ProjectionMarkerKind kind) {
+            return switch (kind == null ? ProjectionData.ProjectionMarkerKind.DOOR : kind) {
+                case DOOR -> RenderState.MarkerKind.DOOR;
+                case STAIR -> RenderState.MarkerKind.STAIR;
+                case WAYPOINT -> RenderState.MarkerKind.WAYPOINT;
+            };
         }
 
-        private static void renderFeatures(
-                DungeonMapSnapshot map,
-                @Nullable Selection selection,
-                List<RenderCell> renderedCells,
-                List<RenderLabel> renderedLabels,
-                List<RenderMarker> renderedMarkers
-        ) {
-            for (DungeonFeatureSnapshot feature : map.features()) {
-                List<RenderCell> featureCells = feature.cells().stream()
-                        .map(cell -> renderFeatureCell(feature, cell, selection))
-                        .toList();
-                renderedCells.addAll(featureCells);
-                if (featureCells.isEmpty()) {
-                    continue;
-                }
-                CellCenter center = centerOf(featureCells);
-                boolean selected = selectedFeature(feature, selection);
-                renderedLabels.add(new RenderLabel(
-                        feature.label(),
-                        center.x(),
-                        center.y(),
-                        featureCells.getFirst().z(),
-                        feature.id(),
-                        0L,
-                        topologyRef(feature.topologyRef()),
-                        selected));
-                renderedMarkers.add(markerForFeature(feature, center, featureCells.getFirst().z(), selected));
-            }
-        }
-
-        private static void renderHandles(
-                DungeonMapSnapshot map,
-                @Nullable Selection selection,
-                @Nullable EditorPreview editorPreview,
-                List<RenderMarker> renderedMarkers
-        ) {
-            for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
-                if (handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
-                    continue;
-                }
-                renderedMarkers.add(markerForHandle(handle, selection));
-            }
-            addHandleMovePreview(renderedMarkers, editorPreview);
-        }
-
-        private static void addFallbackGraphLinks(
-                List<GraphNode> graphNodes,
-                List<GraphLink> graphLinks
-        ) {
-            if (!graphLinks.isEmpty() || graphNodes.size() <= 1) {
-                return;
-            }
-            for (int index = 1; index < graphNodes.size(); index++) {
-                graphLinks.add(new GraphLink(graphNodes.get(index - 1).id(), graphNodes.get(index).id(), false));
-            }
-        }
-
-        private static RenderCell renderCell(
-                DungeonAreaSnapshot area,
-                DungeonCellRef cell,
-                boolean selected,
-                boolean preview,
-                int deltaQ,
-                int deltaR
-        ) {
-            return renderCell(area, cell, selected, preview, deltaQ, deltaR, 0);
-        }
-
-        private static RenderCell renderCell(
-                DungeonAreaSnapshot area,
-                DungeonCellRef cell,
-                boolean selected,
-                boolean preview,
-                int deltaQ,
-                int deltaR,
-                int deltaLevel
-        ) {
-            CellKind kind = area.kind() == DungeonAreaKind.CORRIDOR ? CellKind.CORRIDOR : CellKind.ROOM;
-            return new RenderCell(
-                    cell.q() + deltaQ,
-                    cell.r() + deltaR,
-                    cell.level() + deltaLevel,
-                    area.label(),
-                    kind,
-                    area.id(),
-                    area.clusterId(),
-                    topologyRef(area.topologyRef()),
-                    selected,
-                    false,
-                    preview,
-                    false);
-        }
-
-        private static RenderCell renderFeatureCell(
-                DungeonFeatureSnapshot feature,
-                DungeonCellRef cell,
-                @Nullable Selection selection
-        ) {
-            CellKind kind = feature.kind() == DungeonFeatureKind.TRANSITION ? CellKind.TRANSITION : CellKind.STAIR;
-            return new RenderCell(
-                    cell.q(),
-                    cell.r(),
-                    cell.level(),
-                    feature.label(),
-                    kind,
-                    feature.id(),
-                    0L,
-                    topologyRef(feature.topologyRef()),
-                    selectedFeature(feature, selection),
-                    false,
-                    false,
-                    false);
-        }
-
-        private static void addEditorPreview(
-                List<RenderCell> renderedCells,
-                List<RenderEdge> renderedEdges,
-                List<RenderLabel> renderedLabels,
-                List<DungeonAreaSnapshot> areas,
-                List<DungeonBoundarySnapshot> boundaries,
-                @Nullable Selection selection,
-                @Nullable EditorPreview editorPreview,
-                @Nullable DungeonSnapshot previewSnapshot
-        ) {
-            if (editorPreview == null || !editorPreview.active()) {
-                return;
-            }
-            if (editorPreview instanceof EditorPreview.MoveHandleOrCluster movePreview) {
-                addClusterMovePreview(renderedCells, renderedEdges, renderedLabels, areas, boundaries, selection, movePreview);
-            } else if (editorPreview instanceof EditorPreview.RoomRectangle roomRectangle) {
-                addRoomRectanglePreview(renderedCells, roomRectangle);
-            } else if (editorPreview instanceof EditorPreview.BoundaryEdges boundaryEdges) {
-                addBoundaryEdgesPreview(renderedEdges, boundaryEdges);
-            } else if (editorPreview instanceof EditorPreview.BoundaryStretchMove boundaryStretchMove) {
-                addBoundaryStretchPreview(renderedCells, renderedEdges, renderedLabels, selection, previewSnapshot, boundaryStretchMove);
-            }
-        }
-
-        private static void addBoundaryStretchPreview(
-                List<RenderCell> renderedCells,
-                List<RenderEdge> renderedEdges,
-                List<RenderLabel> renderedLabels,
-                @Nullable Selection selection,
-                @Nullable DungeonSnapshot previewSnapshot,
-                EditorPreview.BoundaryStretchMove movePreview
-        ) {
-            if (previewSnapshot == null || previewSnapshot.map() == null) {
-                return;
-            }
-            List<DungeonAreaSnapshot> previewAreas = previewSnapshot.map().areas().stream()
-                    .filter(area -> area.kind() == DungeonAreaKind.ROOM && area.clusterId() == movePreview.clusterId())
-                    .toList();
-            if (previewAreas.isEmpty()) {
-                return;
-            }
-            List<DungeonCellRef> previewClusterCells = previewAreas.stream()
-                    .flatMap(area -> area.cells().stream())
-                    .toList();
-            for (DungeonAreaSnapshot area : previewAreas) {
-                List<RenderCell> previewCells = area.cells().stream()
-                        .map(cell -> renderCell(area, cell, selectedArea(area, selection), true, 0, 0))
-                        .toList();
-                renderedCells.addAll(previewCells);
-                if (previewCells.isEmpty()) {
-                    continue;
-                }
-                CellCenter center = centerOf(previewCells);
-                renderedLabels.add(new RenderLabel(
-                        area.label(),
-                        center.x(),
-                        center.y(),
-                        previewCells.getFirst().z(),
-                        area.id(),
-                        area.clusterId(),
-                        topologyRef(area.topologyRef()),
-                        selectedArea(area, selection),
-                        true));
-            }
-            for (DungeonBoundarySnapshot boundary : previewSnapshot.map().boundaries()) {
-                if (boundary.edge() == null
-                        || boundary.edge().from() == null
-                        || boundary.edge().to() == null
-                        || !edgeTouchesAnyCell(boundary.edge(), previewClusterCells)) {
-                    continue;
-                }
-                renderedEdges.add(renderEdge(boundary, 0, 0, 0, true));
-            }
-        }
-
-        private static void addRoomRectanglePreview(List<RenderCell> renderedCells, EditorPreview.RoomRectangle roomRectangle) {
-            int minQ = Math.min(roomRectangle.startQ(), roomRectangle.endQ());
-            int maxQ = Math.max(roomRectangle.startQ(), roomRectangle.endQ());
-            int minR = Math.min(roomRectangle.startR(), roomRectangle.endR());
-            int maxR = Math.max(roomRectangle.startR(), roomRectangle.endR());
-            for (int q = minQ; q <= maxQ; q++) {
-                for (int r = minR; r <= maxR; r++) {
-                    renderedCells.add(new RenderCell(
-                            q,
-                            r,
-                            roomRectangle.level(),
-                            roomRectangle.deleteMode() ? "Delete preview" : "Paint preview",
-                            CellKind.ROOM,
-                            0L,
-                            0L,
-                            TopologyRef.empty(),
-                            false,
-                            false,
-                            true,
-                            roomRectangle.deleteMode()));
-                }
-            }
-        }
-
-        private static void addClusterMovePreview(
-                List<RenderCell> renderedCells,
-                List<RenderEdge> renderedEdges,
-                List<RenderLabel> renderedLabels,
-                List<DungeonAreaSnapshot> areas,
-                List<DungeonBoundarySnapshot> boundaries,
-                @Nullable Selection selection,
-                EditorPreview.MoveHandleOrCluster movePreview
-        ) {
-            if (!movePreview.active()
-                    || movePreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
-                return;
-            }
-            List<DungeonCellRef> draggedCells = new ArrayList<>();
-            for (DungeonAreaSnapshot area : areas) {
-                if (!draggedClusterArea(area, selection, movePreview)) {
-                    continue;
-                }
-                List<RenderCell> previewCells = area.cells().stream()
-                        .map(cell -> renderCell(
-                                area,
-                                cell,
-                                true,
-                                true,
-                                movePreview.deltaQ(),
-                                movePreview.deltaR(),
-                                movePreview.deltaLevel()))
-                        .toList();
-                renderedCells.addAll(previewCells);
-                draggedCells.addAll(area.cells());
-                if (previewCells.isEmpty()) {
-                    continue;
-                }
-                CellCenter center = centerOf(previewCells);
-                String label = movePreview.label().isBlank() ? area.label() : movePreview.label();
-                renderedLabels.add(new RenderLabel(
-                        label,
-                        center.x(),
-                        center.y(),
-                        previewCells.getFirst().z(),
-                        area.id(),
-                        area.clusterId(),
-                        topologyRef(area.topologyRef()),
-                        true,
-                        true));
-            }
-            addClusterBoundaryMovePreview(renderedEdges, boundaries, draggedCells, movePreview);
-        }
-
-        private static void addClusterBoundaryMovePreview(
-                List<RenderEdge> renderedEdges,
-                List<DungeonBoundarySnapshot> boundaries,
-                List<DungeonCellRef> draggedCells,
-                EditorPreview.MoveHandleOrCluster movePreview
-        ) {
-            if (draggedCells.isEmpty()) {
-                return;
-            }
-            for (DungeonBoundarySnapshot boundary : boundaries) {
-                if (boundary.edge() == null
-                        || boundary.edge().from() == null
-                        || boundary.edge().to() == null
-                        || !edgeTouchesAnyCell(boundary.edge(), draggedCells)) {
-                    continue;
-                }
-                renderedEdges.add(renderEdge(
-                        boundary,
-                        movePreview.deltaQ(),
-                        movePreview.deltaR(),
-                        movePreview.deltaLevel(),
-                        true));
-            }
-        }
-
-        private static void addHandleMovePreview(List<RenderMarker> renderedMarkers, @Nullable EditorPreview editorPreview) {
-            if (!(editorPreview instanceof EditorPreview.MoveHandleOrCluster movePreview)
-                    || !movePreview.active()
-                    || movePreview.handleRef().kind() == DungeonEditorHandleKind.CLUSTER_LABEL) {
-                return;
-            }
-            DungeonEditorHandleRef ref = movePreview.handleRef();
-            DungeonCellRef cell = ref.cell();
-            DungeonCellRef movedCell = new DungeonCellRef(
-                    cell.q() + movePreview.deltaQ(),
-                    cell.r() + movePreview.deltaR(),
-                    cell.level() + movePreview.deltaLevel());
-            DungeonEditorHandleRef movedRef = new DungeonEditorHandleRef(
-                    ref.kind(),
-                    ref.topologyRef(),
-                    ref.ownerId(),
-                    ref.clusterId(),
-                    ref.corridorId(),
-                    ref.roomId(),
-                    ref.index(),
-                    movedCell,
-                    ref.direction());
-            renderedMarkers.add(new RenderMarker(
-                    handleMarkerLabel(ref.kind()),
-                    movedCell.q() + 0.5,
-                    movedCell.r() + 0.5,
-                    movedCell.level(),
-                    handleMarkerKind(ref.kind()),
-                    true,
-                    movedRef,
-                    true));
-        }
-
-        private static void addBoundaryEdgesPreview(
-                List<RenderEdge> renderedEdges,
-                EditorPreview.BoundaryEdges boundaryEdges
-        ) {
-            EdgeKind kind = boundaryEdges.kind() == DungeonBoundaryKind.DOOR ? EdgeKind.DOOR : EdgeKind.WALL;
-            for (DungeonEdgeRef edge : boundaryEdges.edges()) {
-                if (edge == null || edge.from() == null || edge.to() == null) {
-                    continue;
-                }
-                renderedEdges.add(new RenderEdge(
-                        edge.from().q(),
-                        edge.from().r(),
-                        edge.to().q(),
-                        edge.to().r(),
-                        edge.from().level(),
-                        kind,
-                        boundaryEdges.deleteMode() ? "Delete preview" : "Boundary preview",
-                        boundaryEdges.clusterId(),
-                        TopologyRef.empty(),
-                        false,
-                        true));
-            }
-        }
-
-        private static RenderEdge renderEdge(DungeonBoundarySnapshot boundary) {
-            return renderEdge(boundary, 0, 0, 0, false);
-        }
-
-        private static RenderEdge renderEdge(
-                DungeonBoundarySnapshot boundary,
-                int deltaQ,
-                int deltaR,
-                int deltaLevel,
-                boolean preview
-        ) {
-            DungeonEdgeRef edge = boundary.edge();
-            boolean door = "door".equalsIgnoreCase(boundary.kind());
-            return new RenderEdge(
-                    edge.from().q() + deltaQ,
-                    edge.from().r() + deltaR,
-                    edge.to().q() + deltaQ,
-                    edge.to().r() + deltaR,
-                    edge.from().level() + deltaLevel,
-                    door ? EdgeKind.DOOR : EdgeKind.WALL,
-                    boundary.label(),
-                    boundary.id(),
-                    topologyRef(boundary.topologyRef()),
-                    false,
-                    preview);
-        }
-
-        private static RenderMarker markerForFeature(
-                DungeonFeatureSnapshot feature,
-                CellCenter center,
-                int level,
-                boolean selected
-        ) {
-            MarkerKind kind = feature.kind() == DungeonFeatureKind.TRANSITION ? MarkerKind.TRANSITION : MarkerKind.STAIR;
-            String label = feature.kind() == DungeonFeatureKind.TRANSITION ? "->" : "z";
-            return new RenderMarker(label, center.x(), center.y(), level, kind, selected);
-        }
-
-        private static RenderMarker markerForHandle(DungeonEditorHandleSnapshot handle, @Nullable Selection selection) {
-            DungeonEditorHandleRef ref = handle.ref();
+        private static RenderMarker toRenderMarker(ProjectionData.ProjectionMarker marker) {
+            ProjectionData.ProjectionMarkerHandle handle = marker.handle();
             return new RenderMarker(
-                    handleMarkerLabel(ref.kind()),
-                    handle.cell().q() + 0.5,
-                    handle.cell().r() + 0.5,
-                    handle.cell().level(),
-                    handleMarkerKind(ref.kind()),
-                    selectedHandle(ref, selection),
-                    ref);
+                    marker.label(),
+                    marker.q(),
+                    marker.r(),
+                    marker.level(),
+                    toMarkerKind(marker.kind()),
+                    marker.selected(),
+                    handle.kind(),
+                    handle.topologyRef().kind(),
+                    handle.topologyRef().id(),
+                    handle.ownerId(),
+                    handle.clusterId(),
+                    handle.corridorId(),
+                    handle.roomId(),
+                    handle.index(),
+                    handle.q(),
+                    handle.r(),
+                    handle.level(),
+                    handle.direction(),
+                    marker.preview());
         }
 
-        private static MarkerKind handleMarkerKind(DungeonEditorHandleKind kind) {
-            return switch (kind) {
-                case DOOR -> MarkerKind.DOOR;
-                case STAIR_ANCHOR -> MarkerKind.STAIR;
-                case CORRIDOR_ANCHOR -> MarkerKind.WAYPOINT;
-                case CORRIDOR_WAYPOINT -> MarkerKind.WAYPOINT;
-                case CLUSTER_LABEL -> MarkerKind.CLUSTER;
+        private static RenderState.Heading toHeading(ProjectionData.ProjectionHeading heading) {
+            return switch (heading == null ? ProjectionData.ProjectionHeading.SOUTH : heading) {
+                case NORTH -> RenderState.Heading.NORTH;
+                case EAST -> RenderState.Heading.EAST;
+                case SOUTH -> RenderState.Heading.SOUTH;
+                case WEST -> RenderState.Heading.WEST;
             };
-        }
-
-        private static String handleMarkerLabel(DungeonEditorHandleKind kind) {
-            return switch (kind) {
-                case DOOR -> "D";
-                case STAIR_ANCHOR -> "z";
-                case CORRIDOR_ANCHOR -> "o";
-                case CORRIDOR_WAYPOINT -> "•";
-                case CLUSTER_LABEL -> "";
-            };
-        }
-
-        private static boolean selectedArea(DungeonAreaSnapshot area, @Nullable Selection selection) {
-            if (area == null || selection == null) {
-                return false;
-            }
-            if (selection.clusterSelection()) {
-                return area.kind() == DungeonAreaKind.ROOM && area.clusterId() == selection.clusterId();
-            }
-            return topologyRef(area.topologyRef()).equals(selection.topologyRef()) || area.id() == selection.areaId();
-        }
-
-        private static boolean selectedFeature(DungeonFeatureSnapshot feature, @Nullable Selection selection) {
-            if (feature == null || selection == null) {
-                return false;
-            }
-            return topologyRef(feature.topologyRef()).equals(selection.topologyRef());
-        }
-
-        private static boolean selectedHandle(DungeonEditorHandleRef ref, @Nullable Selection selection) {
-            if (ref == null || selection == null || selection.handleRef() == null) {
-                return false;
-            }
-            DungeonEditorHandleRef selected = selection.handleRef();
-            return sameStableHandle(ref, selected);
-        }
-
-        private static boolean draggedClusterArea(
-                DungeonAreaSnapshot area,
-                @Nullable Selection selection,
-                EditorPreview.MoveHandleOrCluster movePreview
-        ) {
-            if (area == null || !movePreview.active()
-                    || movePreview.handleRef().kind() != DungeonEditorHandleKind.CLUSTER_LABEL) {
-                return false;
-            }
-            long selectedClusterId = selection == null ? movePreview.clusterId() : selection.clusterId();
-            return selectedClusterId > 0L
-                    && area.kind() == DungeonAreaKind.ROOM
-                    && area.clusterId() == selectedClusterId;
-        }
-
-        private static boolean sameStableHandle(DungeonEditorHandleRef left, DungeonEditorHandleRef right) {
-            return left.kind() == right.kind()
-                    && left.topologyRef().equals(right.topologyRef())
-                    && left.ownerId() == right.ownerId()
-                    && left.clusterId() == right.clusterId()
-                    && left.corridorId() == right.corridorId()
-                    && left.roomId() == right.roomId()
-                    && left.index() == right.index();
-        }
-
-        private static boolean edgeTouchesAnyCell(DungeonEdgeRef edge, List<DungeonCellRef> cells) {
-            for (DungeonCellRef touchingCell : touchingCells(edge)) {
-                for (DungeonCellRef cell : cells) {
-                    if (sameCell(touchingCell, cell)) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        private static List<DungeonCellRef> touchingCells(DungeonEdgeRef edge) {
-            DungeonCellRef from = edge.from();
-            DungeonCellRef to = edge.to();
-            if (from == null || to == null || from.level() != to.level()) {
-                return List.of();
-            }
-            if (from.r() == to.r()) {
-                return horizontalTouchingCells(from, to);
-            }
-            if (from.q() == to.q()) {
-                return verticalTouchingCells(from, to);
-            }
-            return List.of();
-        }
-
-        private static List<DungeonCellRef> horizontalTouchingCells(DungeonCellRef from, DungeonCellRef to) {
-            int minQ = Math.min(from.q(), to.q());
-            int maxQ = Math.max(from.q(), to.q());
-            List<DungeonCellRef> result = new ArrayList<>();
-            for (int q = minQ; q < maxQ; q++) {
-                result.add(new DungeonCellRef(q, from.r() - 1, from.level()));
-                result.add(new DungeonCellRef(q, from.r(), from.level()));
-            }
-            return List.copyOf(result);
-        }
-
-        private static List<DungeonCellRef> verticalTouchingCells(DungeonCellRef from, DungeonCellRef to) {
-            int minR = Math.min(from.r(), to.r());
-            int maxR = Math.max(from.r(), to.r());
-            List<DungeonCellRef> result = new ArrayList<>();
-            for (int r = minR; r < maxR; r++) {
-                result.add(new DungeonCellRef(from.q() - 1, r, from.level()));
-                result.add(new DungeonCellRef(from.q(), r, from.level()));
-            }
-            return List.copyOf(result);
-        }
-
-        private static boolean sameCell(DungeonCellRef left, DungeonCellRef right) {
-            return left.q() == right.q() && left.r() == right.r() && left.level() == right.level();
-        }
-
-        private static CellCenter centerOf(List<RenderCell> cells) {
-            double x = 0.0;
-            double y = 0.0;
-            for (RenderCell cell : cells) {
-                x += cell.q() + 0.5;
-                y += cell.r() + 0.5;
-            }
-            int count = Math.max(1, cells.size());
-            return new CellCenter(x / count, y / count);
-        }
-
-        private static RenderTopology topology(DungeonTopologyKind topology) {
-            return topology == DungeonTopologyKind.HEX ? RenderTopology.HEX : RenderTopology.SQUARE;
-        }
-
-        private static TopologyRef topologyRef(DungeonTopologyElementRef ref) {
-            if (ref == null) {
-                return TopologyRef.empty();
-            }
-            return new TopologyRef(ref.kind().name(), ref.id());
         }
 
         public enum RenderTopology {
@@ -1401,10 +1263,10 @@ public final class DungeonMapContentModel {
                 int r,
                 int z,
                 String label,
-                CellKind kind,
+                RenderState.CellKind kind,
                 long ownerId,
                 long clusterId,
-                TopologyRef topologyRef,
+                RenderState.TopologyRef topologyRef,
                 boolean selected,
                 boolean overlay,
                 boolean preview,
@@ -1413,8 +1275,8 @@ public final class DungeonMapContentModel {
 
             public RenderCell {
                 label = label == null ? "" : label;
-                kind = kind == null ? CellKind.ROOM : kind;
-                topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+                kind = kind == null ? RenderState.CellKind.ROOM : kind;
+                topologyRef = topologyRef == null ? RenderState.TopologyRef.empty() : topologyRef;
             }
         }
 
@@ -1424,33 +1286,18 @@ public final class DungeonMapContentModel {
                 double endQ,
                 double endR,
                 int z,
-                EdgeKind kind,
+                RenderState.EdgeKind kind,
                 String label,
                 long ownerId,
-                TopologyRef topologyRef,
+                RenderState.TopologyRef topologyRef,
                 boolean selected,
                 boolean preview
         ) {
 
-            public RenderEdge(
-                    double startQ,
-                    double startR,
-                    double endQ,
-                    double endR,
-                    int z,
-                    EdgeKind kind,
-                    String label,
-                    long ownerId,
-                    TopologyRef topologyRef,
-                    boolean selected
-            ) {
-                this(startQ, startR, endQ, endR, z, kind, label, ownerId, topologyRef, selected, false);
-            }
-
             public RenderEdge {
-                kind = kind == null ? EdgeKind.WALL : kind;
+                kind = kind == null ? RenderState.EdgeKind.WALL : kind;
                 label = label == null ? "" : label;
-                topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+                topologyRef = topologyRef == null ? RenderState.TopologyRef.empty() : topologyRef;
             }
         }
 
@@ -1461,27 +1308,14 @@ public final class DungeonMapContentModel {
                 int z,
                 long ownerId,
                 long clusterId,
-                TopologyRef topologyRef,
+                RenderState.TopologyRef topologyRef,
                 boolean selected,
                 boolean preview
         ) {
 
-            public RenderLabel(
-                    String label,
-                    double q,
-                    double r,
-                    int z,
-                    long ownerId,
-                    long clusterId,
-                    TopologyRef topologyRef,
-                    boolean selected
-            ) {
-                this(label, q, r, z, ownerId, clusterId, topologyRef, selected, false);
-            }
-
             public RenderLabel {
                 label = label == null ? "" : label;
-                topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
+                topologyRef = topologyRef == null ? RenderState.TopologyRef.empty() : topologyRef;
             }
         }
 
@@ -1490,80 +1324,33 @@ public final class DungeonMapContentModel {
                 double q,
                 double r,
                 int z,
-                MarkerKind kind,
+                RenderState.MarkerKind kind,
                 boolean selected,
-                DungeonEditorHandleRef handleRef,
+                String handleKind,
+                String handleTopologyRefKind,
+                long handleTopologyRefId,
+                long handleOwnerId,
+                long handleClusterId,
+                long handleCorridorId,
+                long handleRoomId,
+                int handleIndex,
+                int handleQ,
+                int handleR,
+                int handleLevel,
+                String handleDirection,
                 boolean preview
         ) {
 
-            public RenderMarker(String label, double q, double r, int z, MarkerKind kind, boolean selected) {
-                this(label, q, r, z, kind, selected, emptyHandleRef(0L, 0L), false);
-            }
-
-            public RenderMarker(
-                    String label,
-                    double q,
-                    double r,
-                    int z,
-                    MarkerKind kind,
-                    boolean selected,
-                    DungeonEditorHandleRef handleRef
-            ) {
-                this(label, q, r, z, kind, selected, handleRef, false);
-            }
-
             public RenderMarker {
                 label = label == null ? "" : label;
-                kind = kind == null ? MarkerKind.DOOR : kind;
-                handleRef = handleRef == null ? emptyHandleRef(0L, 0L) : handleRef;
+                kind = kind == null ? RenderState.MarkerKind.DOOR : kind;
+                handleKind = normalizeHandleField(handleKind);
+                handleTopologyRefKind = normalizeHandleField(handleTopologyRefKind);
+                handleDirection = handleDirection == null ? "" : handleDirection;
             }
 
-            public String handleKind() {
-                return handleRef.kind().name();
-            }
-
-            public long handleOwnerId() {
-                return handleRef.ownerId();
-            }
-
-            public long handleClusterId() {
-                return handleRef.clusterId();
-            }
-
-            public long handleCorridorId() {
-                return handleRef.corridorId();
-            }
-
-            public long handleRoomId() {
-                return handleRef.roomId();
-            }
-
-            public int handleIndex() {
-                return handleRef.index();
-            }
-
-            public String handleDirection() {
-                return handleRef.direction();
-            }
-
-            public String handleTopologyRefKind() {
-                return handleRef.topologyRef().kind().name();
-            }
-
-            public long handleTopologyRefId() {
-                return handleRef.topologyRef().id();
-            }
-
-            public int handleQ() {
-                return handleRef.cell().q();
-            }
-
-            public int handleR() {
-                return handleRef.cell().r();
-            }
-
-            public int handleLevel() {
-                return handleRef.cell().level();
+            private static String normalizeHandleField(String value) {
+                return value == null || value.isBlank() ? "EMPTY" : value;
             }
         }
 
@@ -1577,46 +1364,10 @@ public final class DungeonMapContentModel {
         public record GraphLink(long fromId, long toId, boolean selected) {
         }
 
-        public record PartyToken(double q, double r, int z, Heading heading, boolean visible) {
+        public record PartyToken(double q, double r, int z, RenderState.Heading heading, boolean visible) {
 
             public PartyToken {
-                heading = heading == null ? Heading.SOUTH : heading;
-            }
-        }
-
-        public record Selection(
-                long areaId,
-                long clusterId,
-                String label,
-                TopologyRef topologyRef,
-                boolean clusterSelection,
-                DungeonEditorHandleRef handleRef
-        ) {
-
-            public Selection(long areaId, long clusterId, String label) {
-                this(areaId, clusterId, label, new TopologyRef(DungeonTopologyElementKind.ROOM.name(), areaId), false);
-            }
-
-            public Selection(long areaId, long clusterId, String label, TopologyRef topologyRef) {
-                this(areaId, clusterId, label, topologyRef, false);
-            }
-
-            public Selection(
-                    long areaId,
-                    long clusterId,
-                    String label,
-                    TopologyRef topologyRef,
-                    boolean clusterSelection
-            ) {
-                this(areaId, clusterId, label, topologyRef, clusterSelection, emptyHandleRef(areaId, clusterId));
-            }
-
-            public Selection {
-                areaId = Math.max(0L, areaId);
-                clusterId = Math.max(0L, clusterId);
-                label = label == null ? "" : label;
-                topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
-                handleRef = handleRef == null ? emptyHandleRef(areaId, clusterId) : handleRef;
+                heading = heading == null ? RenderState.Heading.SOUTH : heading;
             }
         }
 
@@ -1627,139 +1378,9 @@ public final class DungeonMapContentModel {
                 id = Math.max(0L, id);
             }
 
-            public static TopologyRef empty() {
-                return new TopologyRef("EMPTY", 0L);
-            }
-
-            public DungeonTopologyElementRef toPublished() {
-                return new DungeonTopologyElementRef(
-                        src.domain.dungeon.published.DungeonTopologyElementKind.valueOf(kind),
-                        id);
+            public static RenderState.TopologyRef empty() {
+                return new RenderState.TopologyRef("EMPTY", 0L);
             }
         }
-
-        public sealed interface EditorPreview permits
-                EditorPreview.MoveHandleOrCluster,
-                EditorPreview.RoomRectangle,
-                EditorPreview.BoundaryEdges,
-                EditorPreview.BoundaryStretchMove {
-
-            boolean active();
-
-            boolean destructive();
-
-            record MoveHandleOrCluster(
-                    long clusterId,
-                    int deltaQ,
-                    int deltaR,
-                    int deltaLevel,
-                    DungeonEditorHandleRef handleRef,
-                    String label
-            ) implements EditorPreview {
-
-                public MoveHandleOrCluster(long clusterId, int deltaQ, int deltaR) {
-                    this(clusterId, deltaQ, deltaR, 0);
-                }
-
-                public MoveHandleOrCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
-                    this(clusterId, deltaQ, deltaR, deltaLevel, emptyHandleRef(0L, clusterId), "");
-                }
-
-                public MoveHandleOrCluster {
-                    clusterId = Math.max(0L, clusterId);
-                    handleRef = handleRef == null ? emptyHandleRef(0L, clusterId) : handleRef;
-                    label = label == null ? "" : label;
-                }
-
-                @Override
-                public boolean active() {
-                    return (clusterId > 0L || handleRef.ownerId() > 0L)
-                            && (deltaQ != 0 || deltaR != 0 || deltaLevel != 0);
-                }
-
-                @Override
-                public boolean destructive() {
-                    return false;
-                }
-            }
-
-            record RoomRectangle(int startQ, int startR, int endQ, int endR, int level, boolean deleteMode)
-                    implements EditorPreview {
-
-                @Override
-                public boolean active() {
-                    return true;
-                }
-
-                @Override
-                public boolean destructive() {
-                    return deleteMode;
-                }
-            }
-
-            record BoundaryEdges(long clusterId, List<DungeonEdgeRef> edges, DungeonBoundaryKind kind, boolean deleteMode)
-                    implements EditorPreview {
-
-                public BoundaryEdges {
-                    clusterId = Math.max(0L, clusterId);
-                    edges = edges == null ? List.of() : List.copyOf(edges);
-                    kind = kind == null ? DungeonBoundaryKind.WALL : kind;
-                }
-
-                @Override
-                public boolean active() {
-                    return clusterId > 0L && !edges.isEmpty();
-                }
-
-                @Override
-                public boolean destructive() {
-                    return deleteMode;
-                }
-            }
-
-            record BoundaryStretchMove(
-                    long clusterId,
-                    List<DungeonEdgeRef> sourceEdges,
-                    int deltaQ,
-                    int deltaR,
-                    int deltaLevel,
-                    String label
-            ) implements EditorPreview {
-
-                public BoundaryStretchMove {
-                    clusterId = Math.max(0L, clusterId);
-                    sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-                    label = label == null ? "" : label;
-                }
-
-                @Override
-                public boolean active() {
-                    return clusterId > 0L
-                            && !sourceEdges.isEmpty()
-                            && (deltaQ != 0 || deltaR != 0 || deltaLevel != 0);
-                }
-
-                @Override
-                public boolean destructive() {
-                    return false;
-                }
-            }
-        }
-
-        private static DungeonEditorHandleRef emptyHandleRef(long ownerId, long clusterId) {
-            return new DungeonEditorHandleRef(
-                    DungeonEditorHandleKind.CLUSTER_LABEL,
-                    DungeonTopologyElementRef.empty(),
-                    Math.max(0L, ownerId),
-                    Math.max(0L, clusterId),
-                    0L,
-                    Math.max(0L, ownerId),
-                    0,
-                    new DungeonCellRef(0, 0, 0),
-                    "");
-        }
-    }
-
-    private record CellCenter(double x, double y) {
     }
 }

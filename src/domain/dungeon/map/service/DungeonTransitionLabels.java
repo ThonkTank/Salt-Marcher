@@ -14,7 +14,7 @@ final class DungeonTransitionLabels {
         if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
             return dungeon.transitionId() == null
                     ? "Dungeon " + dungeon.mapId()
-                    : "Dungeon " + dungeon.mapId() + " / Uebergang " + dungeon.transitionId();
+                    : "Dungeon " + dungeon.mapId() + " / Übergang " + dungeon.transitionId();
         }
         return "";
     }

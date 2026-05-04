@@ -1,74 +1,74 @@
 Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-26
-Source of Truth: Dungeon adopter boundary language between dungeon-facing
-Binders and `DungeonApplicationService` for map-surface work.
+Source of Truth: Authored dungeon map boundary language between
+`DungeonApplicationService` and downstream runtime-workspace contexts for map
+read, preview, apply, inspector, travel, and catalog work.
 
 # Dungeon Map Surface Contract
 
 ## Purpose
 
 This contract defines the canonical dungeon-native request and response
-language for map load, preview, apply, travel action, and catalog behavior as
-the dungeon adoption of the generic maps feature.
+language for committed map reads, authored edit preview and apply, selection
+inspection, travel action, and catalog behavior as the dungeon adoption of
+the generic maps feature.
 
 Owners:
 
 - provider: `DungeonApplicationService`
-- consumers: dungeon-facing Binders and their canvas-facing dungeon map
-  `PresentationModel` listener seams
-
-Current code may still route some calls through classes named `*ViewModel`.
-Those names do not widen the contract ownership: the canonical outward caller
-role is the Binder.
+- consumers: `DungeonEditorApplicationService`, `TravelApplicationService`,
+  and any future runtime-workspace context that needs authored dungeon map
+  facts
 
 ## Rules
 
-- dungeon surface read MUST use one read family
-- preview and apply MUST reuse one dungeon edit body
-- dungeon surface readback MUST use one top-level surface payload
+- committed dungeon map read MUST use one snapshot read family
+- preview and apply MUST reuse one authored dungeon operation vocabulary
+- selection inspection MUST use one authored selection-describe family
 - travel action execution MUST use one travel-action request family
-- map catalog requests and results remain separate from the surface payload
-  family
-- `DungeonSurfacePayload` is the only domain-to-canvas readback root for
-  dungeon map surfaces
+- map catalog requests and results remain separate from the authored read and
+  mutation result families
+- `DungeonSnapshot` is the committed authored map read root for dungeon map
+  work
+- `DungeonOperationResult` is the authored preview and apply result root for
+  dungeon map work
 
 ## Inbound Request Family
 
-### Surface Read
+### Committed Map Read
 
-- `LoadDungeonSurfaceQuery`
+- `LoadDungeonSnapshotQuery`
 
 Required context:
 
 - `mapId`
-- `surfaceKind`
 
-Optional context:
+### Authored Edit Preview And Apply
 
-- selection context
-- travel position context
+- `PreviewDungeonEditorOperationQuery`
+- `ApplyDungeonEditorOperationCommand`
 
-### Surface Edit
+`DungeonEditorOperation` is the one canonical authored dungeon edit body.
+Preview and apply wrap the same body through their dedicated boundary
+carriers.
 
-- `DungeonSurfaceEdit`
-- `PreviewDungeonSurfaceEditQuery`
-- `ApplyDungeonSurfaceEditCommand`
+### Selection Inspection
 
-`DungeonSurfaceEdit` is the one canonical dungeon edit body. Preview and apply
-wrap the same body.
+- `DescribeDungeonSelectionQuery`
 
 ### Surface Travel Action
 
-- `MoveDungeonSurfaceActionCommand`
+- `LoadDungeonTravelSurfaceQuery`
+- `MoveDungeonTravelActionCommand`
 
 Required fields:
 
-- chosen action id
+- chosen action id for move
 
 Optional fields:
 
-- current travel position context
+- current travel position context for raw travel reads and travel moves
 
 ### Map Catalog
 
@@ -79,22 +79,34 @@ Optional fields:
 
 ## Outbound Payload Family
 
-### Surface Payload
-
-- `DungeonSurfacePayload`
+### Authored Map Reads
 
 Required sections:
 
 - map identity or name context
-- `surfaceKind`
 - committed map projection
-- messages
+- aggregate and relation summaries
+- revision
+
+- `DungeonSnapshot`
+
+### Authored Preview Or Apply Result
+
+- `DungeonOperationResult`
 
 Optional sections:
 
-- preview map projection
-- selection or inspector content
-- travel content
+- validation messages
+- reaction messages
+
+### Selection Inspection
+
+- `DungeonInspectorSnapshot`
+
+### Travel Read Or Action Result
+
+- `DungeonTravelSurfaceSnapshot`
+- `DungeonTravelMoveResult`
 
 ### Catalog Results
 
@@ -105,29 +117,34 @@ Optional sections:
 
 ## Validation And Error Behavior
 
-- invalid edit or travel attempts MUST return a non-committing result
-  represented through payload messages and unchanged committed truth
+- invalid edit attempts MUST return a non-committing result represented
+  through `DungeonOperationResult` messages and unchanged committed truth
+- invalid travel attempts MUST return a non-committing `DungeonTravelMoveResult`
 - preview MUST NOT persist authored truth
-- load failures and empty states MUST remain representable without inventing a
-  second top-level payload family
-- adapters and Binders MUST treat omitted optional sections as absence, not as
-  implicit synthetic defaults
-- consumers MUST not create a second dungeon-specific render payload beside
-  `DungeonSurfacePayload` for canvas projection
+- committed snapshot, inspector, preview result, and travel result reads MUST
+  remain representable without inventing a second editor-colored top-level
+  surface family
+- adapters and Binders MUST treat omitted optional result sections as absence,
+  not as implicit synthetic defaults
+- runtime-workspace contexts MAY translate `DungeonSnapshot`,
+  `DungeonOperationResult`, `DungeonInspectorSnapshot`, and
+  `DungeonTravelSurfaceSnapshot` into their own owner-pure published carriers,
+  but they MUST NOT mutate or replace the authored dungeon meaning carried by
+  those authored results
 
 ## Compatibility Notes
 
-Older split carriers such as separate snapshot, travel-snapshot, or
-mutation-result roots are migration debt once this unified surface contract is
-adopted in code.
+The former editor-colored `DungeonSurface*` carrier family is removed.
+Runtime-workspace contexts now compose their own workspace surfaces from
+authored snapshot, operation-result, inspector, and travel-result carriers.
 
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
-- Review must reject a second top-level dungeon map surface payload beside
-  `DungeonSurfacePayload`.
-- Review must reject a second canonical dungeon edit body beside
-  `DungeonSurfaceEdit`.
+- Review must reject reintroduction of an editor-colored `DungeonSurface*`
+  compatibility family under `dungeon`.
+- Review must reject a second canonical authored dungeon edit body beside
+  `DungeonEditorOperation`.
 
 ## References
 

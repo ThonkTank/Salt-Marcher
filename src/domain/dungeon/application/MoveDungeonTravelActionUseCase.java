@@ -53,7 +53,7 @@ public final class MoveDungeonTravelActionUseCase {
         DungeonTravelSurfaceFacts currentSurface = project(currentMap, currentDerived, position, "");
         DungeonTravelActionFacts action = findAction(currentSurface, actionId);
         if (action == null) {
-            return moveResult(DungeonTravelMoveStatus.INVALID_ACTION, "Aktion ist nicht verfuegbar.", currentSurface);
+            return moveResult(DungeonTravelMoveStatus.INVALID_ACTION, "Aktion ist nicht verfügbar.", currentSurface);
         }
         if (action.kind() == DungeonTravelActionKind.TRAVERSAL) {
             return moveThroughTraversal(currentMap, currentDerived, action);
@@ -68,7 +68,7 @@ public final class MoveDungeonTravelActionUseCase {
     ) {
         DungeonTravelPositionFacts target = action.targetPosition();
         if (target == null) {
-            DungeonTravelSurfaceFacts surface = project(currentMap, currentDerived, null, "Reiseziel ist nicht verfuegbar.");
+            DungeonTravelSurfaceFacts surface = project(currentMap, currentDerived, null, "Reiseziel ist nicht verfügbar.");
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
         }
         DungeonTravelSurfaceFacts surface = project(currentMap, currentDerived, target, "Reiseaktion ausgefuehrt.");
@@ -87,7 +87,7 @@ public final class MoveDungeonTravelActionUseCase {
                     currentMap,
                     currentDerived,
                     currentPosition,
-                    "Uebergang fuehrt zum Overworld-Feld " + overworld.tileId() + ".");
+                    "Übergang führt zum Overworld-Feld " + overworld.tileId() + ".");
             return moveResult(
                     DungeonTravelMoveStatus.EXTERNAL_TARGET,
                     surface.statusLabel(),
@@ -97,7 +97,7 @@ public final class MoveDungeonTravelActionUseCase {
         if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
             return moveToDungeonTransition(currentPosition, dungeon);
         }
-        DungeonTravelSurfaceFacts surface = project(currentMap, currentPosition, "Uebergangsziel ist nicht verfuegbar.");
+        DungeonTravelSurfaceFacts surface = project(currentMap, currentPosition, "Übergangsziel ist nicht verfügbar.");
         return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
     }
 
@@ -112,7 +112,7 @@ public final class MoveDungeonTravelActionUseCase {
                     currentMap,
                     currentDerived,
                     currentPosition,
-                    "Ziel-Uebergang ist noch nicht platziert.");
+                    "Ziel-Übergang ist noch nicht platziert.");
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
         }
         DungeonMapIdentity targetMapId = new DungeonMapIdentity(destination.mapId());
@@ -126,7 +126,7 @@ public final class MoveDungeonTravelActionUseCase {
                     currentMap,
                     currentDerived,
                     currentPosition,
-                    "Ziel-Uebergang ist nicht verfuegbar.");
+                    "Ziel-Übergang ist nicht verfügbar.");
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
         }
         DungeonTravelPositionFacts targetPosition = new DungeonTravelPositionFacts(
@@ -136,8 +136,8 @@ public final class MoveDungeonTravelActionUseCase {
                 anchor,
                 currentPosition.heading());
         DungeonDerivedState targetDerived = derive.execute(targetMap);
-        DungeonTravelSurfaceFacts surface = project(targetMap, targetDerived, targetPosition, "Uebergang benutzt.");
-        return moveResult(DungeonTravelMoveStatus.SUCCESS, "Uebergang benutzt.", surface);
+        DungeonTravelSurfaceFacts surface = project(targetMap, targetDerived, targetPosition, "Übergang benutzt.");
+        return moveResult(DungeonTravelMoveStatus.SUCCESS, "Übergang benutzt.", surface);
     }
 
     private DungeonTravelSurfaceFacts project(

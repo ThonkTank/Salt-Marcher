@@ -109,12 +109,12 @@ final class DungeonTravelBinder {
 
         @Override
         public String title() {
-            return "Dungeon Travel";
+            return "Dungeon-Reise";
         }
 
         @Override
         public String navigationLabel() {
-            return "Travel";
+            return "Reise";
         }
 
         @Override

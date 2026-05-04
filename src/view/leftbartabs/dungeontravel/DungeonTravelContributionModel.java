@@ -179,7 +179,7 @@ public final class DungeonTravelContributionModel {
         String overlayLabel() {
             return switch (modeKey) {
                 case "NEARBY" -> "Nahe Ebenen";
-                case "SELECTED" -> "Ausgewaehlte Ebenen";
+                case "SELECTED" -> "Ausgewählte Ebenen";
                 default -> "Overlays aus";
             };
         }

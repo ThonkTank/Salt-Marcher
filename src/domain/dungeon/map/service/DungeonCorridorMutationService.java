@@ -162,8 +162,12 @@ public final class DungeonCorridorMutationService {
                 dungeonMap.connections().transitions()));
     }
 
+    public ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {
+        return normalizeConnectionsInternal(dungeonMap, source);
+    }
+
     private static DungeonMap copyWithConnections(DungeonMap dungeonMap, ConnectionCatalog nextConnections) {
-        ConnectionCatalog normalized = normalizeConnections(dungeonMap, nextConnections);
+        ConnectionCatalog normalized = normalizeConnectionsInternal(dungeonMap, nextConnections);
         return new DungeonMap(
                 dungeonMap.metadata(),
                 dungeonMap.topology(),
@@ -175,7 +179,7 @@ public final class DungeonCorridorMutationService {
                 dungeonMap.revision() + 1L);
     }
 
-    private static ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {
+    private static ConnectionCatalog normalizeConnectionsInternal(DungeonMap dungeonMap, ConnectionCatalog source) {
         ConnectionCatalog safeSource = source == null ? ConnectionCatalog.empty() : source;
         List<DungeonCorridor> snappedCorridors = snapOwnedAnchors(dungeonMap, safeSource.corridors());
         List<DungeonCorridor> prunedCorridors = pruneAnchorBindings(snappedCorridors);

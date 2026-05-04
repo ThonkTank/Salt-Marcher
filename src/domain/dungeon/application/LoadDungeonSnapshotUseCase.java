@@ -189,7 +189,7 @@ public final class LoadDungeonSnapshotUseCase {
                                 index,
                                 corridorCell,
                                 binding.direction()),
-                        "Tuer " + corridor.corridorId() + "." + (index + 1)));
+                        "Tür " + corridor.corridorId() + "." + (index + 1)));
             }
         }
     }
@@ -287,7 +287,7 @@ public final class LoadDungeonSnapshotUseCase {
         if (!narrations.isEmpty() && selectionFacts.title().equals("Dungeon")) {
             return new InspectorSnapshotData(
                     narrations.size() == 1 ? narrations.getFirst().roomName() : "Raumgruppe",
-                    narrations.size() == 1 ? "Raumbeschreibung" : "Raumbeschreibungen im ausgewaehlten Cluster",
+                    narrations.size() == 1 ? "Raumbeschreibung" : "Raumbeschreibungen im ausgewählten Cluster",
                     selectionFacts.facts(),
                     narrations);
         }
