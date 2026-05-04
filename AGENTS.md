@@ -101,9 +101,10 @@ document exists.
   production-handoff`, `./gradlew checkDocumentationEnforcement`, and
   `./gradlew check*Enforcement`.
 - `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
-  but are no longer part of the local parallel-safety contract.
-- `./gradlew` defaults to `--no-daemon` unless the caller explicitly passes
-  `--daemon` or `--no-daemon`.
+  only when a caller explicitly exports them; they are not part of the local
+  parallel-safety contract and the wrapper does not consume them anymore.
+- `./gradlew` now uses Gradle's normal daemon behavior unless the caller
+  explicitly passes `--daemon` or `--no-daemon`.
 - When the desktop app is the manual test surface, run
   `tools/gradle/run-staged-verification.sh desktop-install` after the
   successful production handoff before handoff unless the user explicitly

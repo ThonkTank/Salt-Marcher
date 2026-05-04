@@ -14,6 +14,7 @@ import shell.api.ShellSlot;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.CreatureCatalogQuery;
 import src.domain.creatures.published.LoadCreatureDetailQuery;
+import src.domain.creatures.published.CreatureFilterOptions;
 import src.domain.creatures.published.LoadCreatureFilterOptionsQuery;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterSessionCommand;
@@ -144,10 +145,10 @@ final class CatalogBinder {
     }
 
     private static CatalogControlsView.CreatureFilterData toControlFilterData(
-            CatalogContributionModel.CreatureFilterData options
+            CreatureFilterOptions options
     ) {
-        CatalogContributionModel.CreatureFilterData safeOptions = options == null
-                ? CatalogContributionModel.CreatureFilterData.empty()
+        CreatureFilterOptions safeOptions = options == null
+                ? CreatureFilterOptions.empty()
                 : options;
         return new CatalogControlsView.CreatureFilterData(
                 safeOptions.sizes(),

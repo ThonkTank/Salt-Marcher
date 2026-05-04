@@ -306,10 +306,9 @@ failure inventory is explicitly needed, callers may request it with
 `tools/gradle/run-staged-verification.sh production-handoff -- --continue`.
 Additional Gradle investigation flags may be passed after `--`, but the
 runtime wrapper keeps ownership of its own invocation defaults such as
-`--console=plain`, `--no-daemon`, isolated `GRADLE_USER_HOME`, and injected
-`--project-cache-dir`. If callers pass those wrapper-owned runtime flags again
-through the extra-args channel, the runtime wrapper ignores them and logs the
-filtered arguments instead of forwarding duplicate built-in Gradle options.
+`--console=plain`. If callers pass wrapper-owned runtime flags again through
+the extra-args channel, the runtime wrapper ignores them and logs the filtered
+arguments instead of forwarding duplicate built-in Gradle options.
 Before Gradle starts, the wrapper also performs a local-socket runtime
 preflight so environments without the required IPv4 bind support fail early
 with an explicit runtime diagnostic instead of surfacing a late internal
@@ -593,8 +592,8 @@ evaluation and still registers the same public `check*Enforcement`,
 that the included builds and bundle descriptors are resolved directly from the
 active worktree layout.
 
-`./gradlew` still defaults to `--no-daemon` unless the caller explicitly passes
-`--daemon` or `--no-daemon`. `tools/gradle/run-observable-gradle.sh` and
+`./gradlew` now uses Gradle's normal daemon behavior unless the caller
+explicitly passes `--daemon` or `--no-daemon`. `tools/gradle/run-observable-gradle.sh` and
 `tools/gradle/run-staged-verification.sh` remain the preferred runtime wrappers
 for observability and staged surface routing, but they no longer provide
 parallel safety by rewriting Gradle cache or build directories.

@@ -72,7 +72,7 @@ complete report, but a violating gate must not produce a successful `check` or
 - [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
 - [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
   owns the detailed local gate inventory, aggregate entrypoints, and parallel
-  local invocation isolation policy
+  local worktree policy
 - [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
   owns the detailed GitHub Actions, service-setup, branch-protection, and
   review-governance policy

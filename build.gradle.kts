@@ -14,11 +14,15 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.PosixFilePermission
 import java.util.EnumSet
 import org.gradle.api.GradleException
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.plugins.quality.Pmd
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.application.tasks.CreateStartScripts
+import org.gradle.process.CommandLineArgumentProvider
+import javax.inject.Inject
 
 plugins {
     java
@@ -29,6 +33,15 @@ plugins {
     id("saltmarcher.verification-core")
     id("org.openjfx.javafxplugin") version "0.1.0"
     id("org.sonarqube") version "7.2.3.7755"
+}
+
+abstract class MainClassesSystemPropertyProvider @Inject constructor() : CommandLineArgumentProvider {
+    @get:InputDirectory
+    abstract val mainClassesDirectory: DirectoryProperty
+
+    override fun asArguments(): Iterable<String> = listOf(
+        "-Dsaltmarcher.mainClassesDir=${mainClassesDirectory.get().asFile.absolutePath}"
+    )
 }
 
 val appDisplayName = providers.gradleProperty("saltMarcherDisplayName").orElse("SaltMarcher")
@@ -175,8 +188,8 @@ val architectureTest by tasks.registering(Test::class) {
     exclude("architecture/shell/layer/**")
     exclude("architecture/view/viewinputevent/**")
     exclude("architecture/view/viewlayer/**")
-    doFirst {
-        systemProperty("saltmarcher.mainClassesDir", mainJavaClassesDir.get().asFile.absolutePath)
+    jvmArgumentProviders += objects.newInstance(MainClassesSystemPropertyProvider::class.java).apply {
+        mainClassesDirectory.set(mainJavaClassesDir)
     }
 }
 

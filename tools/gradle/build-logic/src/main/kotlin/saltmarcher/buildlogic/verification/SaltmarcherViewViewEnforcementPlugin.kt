@@ -1,0 +1,139 @@
+package saltmarcher.buildlogic.verification
+
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
+import org.gradle.kotlin.dsl.the
+import org.gradle.kotlin.dsl.withGroovyBuilder
+import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.tasks.RepoVerificationMainTask
+
+class SaltmarcherViewViewEnforcementPlugin : Plugin<Project> {
+    override fun apply(project: Project) {
+        project.pluginManager.apply("saltmarcher.enforcement-bundles")
+        project.configureViewViewEnforcement()
+    }
+}
+
+internal fun Project.configureViewViewEnforcement() {
+    val passiveViewCallbackSeamTechnicalBaseViews = listOf(
+        "src.view.slotcontent.primitives.mapcanvas.MapCanvasView",
+        "src.view.slotcontent.primitives.popup.AnchoredPopupView",
+        "src.view.slotcontent.topbar.dropdown.DropdownPopupView"
+    ).joinToString(",")
+
+    val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
+    val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
+    val verificationTooling = extensions.getByType<VerificationToolingExtension>()
+    val verificationLifecycle = extensions.getByType<VerificationLifecycleExtension>()
+
+    val sourceSets = the<SourceSetContainer>()
+    val viewViewEnforcementSupport = sourceSets.create("viewViewEnforcementSupport") {
+        java.srcDir("tools/quality/view-view-enforcement/support/src/main/java")
+    }
+
+    val viewCheckerNames = listOf(
+        "PassiveViewDependencyBoundaries",
+        "PassiveViewModelReadApis",
+        "PassiveViewModelMutationBoundary",
+        "ViewPresentationDecisionLeak",
+        "ViewInputEventApi",
+        "PassiveViewCallbackSeamBoundary"
+    )
+    val compileViewVerificationJava = verificationTooling.registerFocusedVerificationCompileTask(
+        "view",
+        viewCheckerNames,
+        "Compile only the passive View verification slice with the passive View Error Prone checks enabled."
+    )
+    compileViewVerificationJava.configure {
+        val errorproneOptions = (options as ExtensionAware).extensions.getByName("errorprone")
+        errorproneOptions.withGroovyBuilder {
+            "option"(
+                "PassiveViewCallbackSeamBoundary:TechnicalBaseViews",
+                passiveViewCallbackSeamTechnicalBaseViews
+            )
+        }
+    }
+    val selectedViewCompileJava = if (focusedEnforcementBundleMode) {
+        compileViewVerificationJava
+    } else {
+        tasks.named<JavaCompile>("compileJava")
+    }
+
+    tasks.named<JavaCompile>("compileJava") {
+        val errorproneOptions = (options as ExtensionAware).extensions.getByName("errorprone")
+        errorproneOptions.withGroovyBuilder {
+            viewCheckerNames.forEach { checkName ->
+                "error"(checkName)
+            }
+            "option"(
+                "PassiveViewCallbackSeamBoundary:TechnicalBaseViews",
+                passiveViewCallbackSeamTechnicalBaseViews
+            )
+        }
+    }
+
+    val viewSurfaceArchitectureTest = verificationTooling.registerFocusedArchunitTestTask(
+        "view",
+        "viewSurfaceArchitectureTest",
+        "Run only the passive View-focused architecture test suite.",
+        selectedViewCompileJava,
+        listOf(project.file("tools/quality/view-view-enforcement/archunit/src/test/java").absolutePath),
+        listOf("architecture/**"),
+        listOf("architecture/view/view/**"),
+        false
+    )
+
+    val checkViewFxmlResources = tasks.register<RepoVerificationMainTask>("checkViewFxmlResources") {
+        group = "verification"
+        description = "Validate declarative passive-view FXML resource placement and controller ownership."
+        runtimeClasspath.from(viewViewEnforcementSupport.runtimeClasspath)
+        verificationMainClass.set("saltmarcher.quality.viewview.fxml.ViewFxmlResourceCheckMain")
+        repoRootPath.set(layout.projectDirectory.asFile.absolutePath)
+        verificationInputs.from(
+            layout.projectDirectory.asFileTree.matching {
+                include("resources/**")
+                include("shell/**")
+                include("src/**")
+                include("tools/quality/view-view-enforcement/**")
+                exclude("**/.gradle/**")
+                exclude("**/build/**")
+                exclude("**/.git/**")
+            }
+        )
+        successMarker.set(layout.buildDirectory.file("verification-markers/checkViewFxmlResources/success.marker"))
+    }
+
+    val jqassistantViewEnforcementTasks = verificationTooling.registerFocusedJqassistantTaskPair(
+        "view",
+        "jqassistantScanViewEnforcement",
+        "jqassistantAnalyzeViewEnforcement",
+        "Scan SaltMarcher passive View topology for the dedicated passive View enforcement bundle.",
+        "Analyze SaltMarcher passive View topology constraints through the dedicated passive View bundle.",
+        project.file("tools/quality/view-view-enforcement/jqassistant/config.yml").absolutePath,
+        project.file("tools/quality/view-view-enforcement/jqassistant/rules").absolutePath,
+        "reports/jqassistant-view-view-enforcement",
+        selectedViewCompileJava
+    )
+
+    val checkViewEnforcement = tasks.register("checkViewEnforcement") {
+        group = "verification"
+        description = "Run all currently active passive View enforcement checks through one root entrypoint."
+        dependsOn(selectedViewCompileJava)
+        dependsOn(viewSurfaceArchitectureTest)
+        dependsOn(checkViewFxmlResources)
+        dependsOn(jqassistantViewEnforcementTasks.analyzeTask)
+    }
+
+    verificationLifecycle.checkArchitecture.configure {
+        dependsOn(checkViewEnforcement)
+    }
+    verificationLifecycle.check.configure {
+        dependsOn(checkViewEnforcement)
+    }
+}

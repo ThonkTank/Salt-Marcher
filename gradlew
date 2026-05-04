@@ -249,17 +249,4 @@ eval "set -- $(
         tr '\n' ' '
     )" '"$@"'
 
-saltmarcher_has_daemon_flag=false
-for arg do
-    case $arg in
-      --daemon|--no-daemon)
-        saltmarcher_has_daemon_flag=true
-        ;;
-    esac
-done
-
-if [ "$saltmarcher_has_daemon_flag" = false ]; then
-    set -- "$@" --no-daemon
-fi
-
 exec "$JAVACMD" "$@"

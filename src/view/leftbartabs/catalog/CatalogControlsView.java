@@ -684,51 +684,56 @@ public final class CatalogControlsView extends VBox {
         }
     }
 
-    public record CreatureFilterData(
-            List<String> sizes,
-            List<String> types,
-            List<String> subtypes,
-            List<String> biomes,
-            List<String> alignments,
-            List<String> challengeRatings
-    ) {
-        public CreatureFilterData {
-            sizes = copyOf(sizes);
-            types = copyOf(types);
-            subtypes = copyOf(subtypes);
-            biomes = copyOf(biomes);
-            alignments = copyOf(alignments);
-            challengeRatings = copyOf(challengeRatings);
+    public static final class CreatureFilterData {
+
+        private static final int SIZES_INDEX = 0;
+        private static final int TYPES_INDEX = 1;
+        private static final int SUBTYPES_INDEX = 2;
+        private static final int BIOMES_INDEX = 3;
+        private static final int ALIGNMENTS_INDEX = 4;
+        private static final int CHALLENGE_RATINGS_INDEX = 5;
+
+        private final List<List<String>> values;
+
+        public CreatureFilterData(
+                List<String> sizes,
+                List<String> types,
+                List<String> subtypes,
+                List<String> biomes,
+                List<String> alignments,
+                List<String> challengeRatings
+        ) {
+            values = List.of(
+                    copyOf(sizes),
+                    copyOf(types),
+                    copyOf(subtypes),
+                    copyOf(biomes),
+                    copyOf(alignments),
+                    copyOf(challengeRatings));
         }
 
-        @Override
         public List<String> sizes() {
-            return copyOf(sizes);
+            return values.get(SIZES_INDEX);
         }
 
-        @Override
         public List<String> types() {
-            return copyOf(types);
+            return values.get(TYPES_INDEX);
         }
 
-        @Override
         public List<String> subtypes() {
-            return copyOf(subtypes);
+            return values.get(SUBTYPES_INDEX);
         }
 
-        @Override
         public List<String> biomes() {
-            return copyOf(biomes);
+            return values.get(BIOMES_INDEX);
         }
 
-        @Override
         public List<String> alignments() {
-            return copyOf(alignments);
+            return values.get(ALIGNMENTS_INDEX);
         }
 
-        @Override
         public List<String> challengeRatings() {
-            return copyOf(challengeRatings);
+            return values.get(CHALLENGE_RATINGS_INDEX);
         }
 
         static CreatureFilterData empty() {

@@ -20,9 +20,9 @@ Verification surfaces:
   production-handoff
 
 Extra Gradle args are forwarded for additional investigation flags such as
---rerun-tasks or --stacktrace. Wrapper-owned runtime flags such as --console,
---daemon, --no-daemon, and cache/path overrides remain owned by the underlying
-runtime wrapper and are ignored if passed here.
+--rerun-tasks or --stacktrace. Wrapper-owned runtime flags such as `--console`
+and `--project-dir` remain owned by the underlying runtime wrapper and are
+ignored if passed here.
 EOF
 }
 

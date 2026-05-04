@@ -19,7 +19,7 @@ Examples:
   tools/gradle/run-observable-gradle.sh checkDataRepositoryEnforcement checkDataQueryEnforcement -- --rerun-tasks
 
 Reserved wrapper-owned args are ignored when passed through <extra-gradle-args>:
-  --console, --daemon, --no-daemon, --project-dir
+  --console, --project-dir
 EOF
 }
 
@@ -52,7 +52,7 @@ format_duration() {
 
 is_wrapper_owned_gradle_arg() {
     case "$1" in
-      --console|--daemon|--no-daemon|--project-dir|-p)
+      --console|--project-dir|-p)
         return 0
         ;;
       --console=*|--project-dir=*)
@@ -212,7 +212,7 @@ mkdir -p "$log_dir"
 
 declare -a gradle_cmd=(./gradlew)
 gradle_cmd+=("${tasks[@]}")
-gradle_cmd+=(--console=plain --no-daemon)
+gradle_cmd+=(--console=plain)
 if should_enable_continue "${tasks[@]}" && ! contains_continue_flag "${extra_args[@]}"; then
     gradle_cmd+=(--continue)
 fi

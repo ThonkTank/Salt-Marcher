@@ -112,8 +112,8 @@ public final class CatalogContributionModel {
     private final ReadOnlyListWrapper<FilterChip> chips =
             new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
     private final ReadOnlyObjectWrapper<ContentKind> selectedContent = new ReadOnlyObjectWrapper<>(ContentKind.CREATURES);
-    private final ReadOnlyObjectWrapper<CreatureFilterData> creatureFilterData =
-            new ReadOnlyObjectWrapper<>(CreatureFilterData.empty());
+    private final ReadOnlyObjectWrapper<CreatureFilterOptions> creatureFilterData =
+            new ReadOnlyObjectWrapper<>(CreatureFilterOptions.empty());
     private final ReadOnlyStringWrapper selectedSortKey = new ReadOnlyStringWrapper(SortOption.NAME_ASC.key());
     private final ReadOnlyStringWrapper countLabel = new ReadOnlyStringWrapper("0 Monster gefunden");
     private final ReadOnlyStringWrapper pageLabel = new ReadOnlyStringWrapper("Seite 1 / 1");
@@ -163,7 +163,7 @@ public final class CatalogContributionModel {
         return selectedContent.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<CreatureFilterData> creatureFilterDataProperty() {
+    public ReadOnlyObjectProperty<CreatureFilterOptions> creatureFilterDataProperty() {
         return creatureFilterData.getReadOnlyProperty();
     }
 
@@ -243,7 +243,7 @@ public final class CatalogContributionModel {
     }
 
     public void applyCreatureFilterOptions(CreatureFilterOptionsResult result) {
-        creatureFilterData.set(toCreatureFilterData(result.options()));
+        creatureFilterData.set(result.options() == null ? CreatureFilterOptions.empty() : result.options());
         if (result.status() != CreatureReadStatus.SUCCESS) {
             statusText.set("Filteroptionen konnten nicht vollständig geladen werden.");
         }
@@ -356,17 +356,6 @@ public final class CatalogContributionModel {
         return value == null ? "" : value;
     }
 
-    private static CreatureFilterData toCreatureFilterData(CreatureFilterOptions options) {
-        CreatureFilterOptions safeOptions = options == null ? CreatureFilterOptions.empty() : options;
-        return new CreatureFilterData(
-                safeOptions.sizes(),
-                safeOptions.types(),
-                safeOptions.subtypes(),
-                safeOptions.biomes(),
-                safeOptions.alignments(),
-                safeOptions.challengeRatings());
-    }
-
     private static List<String> copiedFilterValues(List<String> values) {
         return values == null ? List.of() : List.copyOf(values);
     }
@@ -405,59 +394,6 @@ public final class CatalogContributionModel {
     }
 
     public record FilterChip(String key, String label, String styleClass) {
-    }
-
-    public record CreatureFilterData(
-            List<String> sizes,
-            List<String> types,
-            List<String> subtypes,
-            List<String> biomes,
-            List<String> alignments,
-            List<String> challengeRatings
-    ) {
-        public CreatureFilterData {
-            sizes = copiedFilterValues(sizes);
-            types = copiedFilterValues(types);
-            subtypes = copiedFilterValues(subtypes);
-            biomes = copiedFilterValues(biomes);
-            alignments = copiedFilterValues(alignments);
-            challengeRatings = copiedFilterValues(challengeRatings);
-        }
-
-        @Override
-        public List<String> sizes() {
-            return copiedFilterValues(sizes);
-        }
-
-        @Override
-        public List<String> types() {
-            return copiedFilterValues(types);
-        }
-
-        @Override
-        public List<String> subtypes() {
-            return copiedFilterValues(subtypes);
-        }
-
-        @Override
-        public List<String> biomes() {
-            return copiedFilterValues(biomes);
-        }
-
-        @Override
-        public List<String> alignments() {
-            return copiedFilterValues(alignments);
-        }
-
-        @Override
-        public List<String> challengeRatings() {
-            return copiedFilterValues(challengeRatings);
-        }
-
-        public static CreatureFilterData empty() {
-            return new CreatureFilterData(List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
-        }
-
     }
 
     public record CreatureFilters(

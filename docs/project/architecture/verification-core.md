@@ -45,11 +45,12 @@ know bundle member tasks, internal rule lists, or architecture-rule ownership.
 one same-named Gradle lifecycle task. `tools/gradle/run-observable-gradle.sh`
 remains a generic runtime wrapper for one Gradle invocation.
 
-Runtime wrappers own their invocation defaults for console mode and daemon
-mode. When callers pass those same Gradle built-in flags again through the
-wrapper extra-args channel, the runtime wrapper sanitizes and logs the
-duplicate wrapper-owned flags instead of forwarding conflicting built-in
-options to Gradle.
+Runtime wrappers own their invocation defaults for console mode. When callers
+pass those same Gradle built-in flags again through the wrapper extra-args
+channel, the runtime wrapper sanitizes and logs the duplicate wrapper-owned
+flags instead of forwarding conflicting built-in options to Gradle. Daemon
+selection now follows Gradle's normal behavior unless the caller explicitly
+passes `--daemon` or `--no-daemon`.
 Runtime wrappers also own `--continue` policy for public gate entrypoints so
 failure aggregation is an explicit runtime decision instead of a hidden
 convention-plugin mutation.
@@ -130,7 +131,9 @@ focused-selection facts to the included builds:
 
 Included builds consume those facts and MUST NOT reconstruct the root repo
 state from alternative checkout-relative guessing when the propagated repo root
-is available.
+is available. Project-build plugin code likewise MUST NOT re-derive focused
+bundle selection from `StartParameter` task names once the settings-owned
+selection facts were published.
 Included builds own their technical registration from descriptor metadata such
 as source directories, generated service files, PMD support sources, and
 build-harness task main classes. The root build likewise owns standard
@@ -140,6 +143,12 @@ jQAssistant task shapes. Harness wiring MUST NOT rely on parallel families of
 tiny `*-host.gradle.kts` scripts as a second source of truth for the same
 metadata, and it MUST NOT regenerate a second snapshot copy of the same
 descriptor metadata just to make same-worktree parallelism safe.
+Shared verification task registration inside `tools/gradle/build-logic` should
+flow through typed plugin or extension APIs rather than through untyped
+`extra[...]` function exports between precompiled script plugins.
+Public verification aggregates and focused bundles should attach to root
+lifecycle tasks through typed registry providers rather than by matching task
+names at configuration time.
 The remaining root-owned build-harness optional rules are now descriptor-driven
 as well: bundles contribute root `architectureCheck` and
 `documentationEnforcementCheck` rule classes through explicit

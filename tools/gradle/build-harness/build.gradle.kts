@@ -21,8 +21,6 @@ val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
     ?.let(::File)
     ?: projectDir.parentFile.parentFile.parentFile
 
-extra["saltmarcherBuildHarnessRepoRootDir"] = repoRootDir.absolutePath
-
 val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
 val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
 val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds

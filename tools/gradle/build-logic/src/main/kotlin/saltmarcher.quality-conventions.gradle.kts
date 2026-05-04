@@ -2,6 +2,7 @@ import java.io.File
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.plugins.quality.Pmd
+import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
@@ -21,6 +22,8 @@ import saltmarcher.buildlogic.tasks.hygiene.JqassistantScanTask
 import saltmarcher.buildlogic.tasks.hygiene.LizardCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.PmdSourceCheckTask
 import saltmarcher.buildlogic.tasks.hygiene.SetupLizardTask
+import saltmarcher.buildlogic.verification.VerificationLifecycleExtension
+import saltmarcher.buildlogic.verification.VerificationToolingExtension
 
 plugins {
     id("saltmarcher.enforcement-bundles")
@@ -57,6 +60,10 @@ val sourceJavaRoots = sourceRoots.filter { it.exists() }
 val sourceSets = the<SourceSetContainer>()
 val mainSourceSet = sourceSets["main"]
 val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap { task -> task.destinationDirectory }
+val resetMainJavaClassesOutput = tasks.register<Delete>("resetMainJavaClassesOutput") {
+    description = "Remove compiled main classes before recompilation so deleted sources cannot survive as stale bytecode."
+    delete(mainJavaClassesDir)
+}
 val generatedWindowIconDir = layout.buildDirectory.dir("generated/window-icon")
 val lizardRequirementsFile = layout.projectDirectory.file("tools/quality/config/lizard/requirements.txt")
 val lizardVenvDir = layout.projectDirectory.dir(".gradle/shared-tools/lizard/venv")
@@ -113,166 +120,6 @@ val commonFocusedArchunitSupportIncludes = listOf(
     "architecture/view/ViewRolePredicates.java"
 )
 
-val registerFocusedVerificationCompileTask = fun(
-    bundleId: String,
-    checkerNames: List<String>,
-    taskDescription: String
-): TaskProvider<JavaCompile> {
-    val descriptor = enforcementBundles.descriptor(bundleId)
-    val roots = descriptor.verificationSourceRoots.ifEmpty {
-        error("Missing verificationSourceRoots metadata for enforcement bundle '$bundleId'.")
-    }
-    val includes = descriptor.verificationSourceIncludes.ifEmpty {
-        error("Missing verificationSourceIncludes metadata for enforcement bundle '$bundleId'.")
-    }
-    val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}Verification"
-    val verificationSourceSet = sourceSets.findByName(sourceSetName) ?: sourceSets.create(sourceSetName) {
-        java.setSrcDirs(roots)
-        includes.forEach(java::include)
-        resources.setSrcDirs(emptyList<String>())
-        compileClasspath += mainSourceSet.compileClasspath
-        runtimeClasspath += output + compileClasspath
-    }
-    return tasks.named<JavaCompile>(verificationSourceSet.compileJavaTaskName) {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = taskDescription
-        options.sourcepath = sourceJavaRoots
-        destinationDirectory.set(layout.buildDirectory.dir("classes/java/verification/$bundleId"))
-        configureCommonErrorProneOptions()
-        checkerNames.forEach(options.errorprone::error)
-    }
-}
-
-extra["saltmarcherRegisterFocusedVerificationCompileTask"] = registerFocusedVerificationCompileTask
-
-val registerFocusedArchunitTestTask = fun(
-    bundleId: String,
-    taskName: String,
-    taskDescription: String,
-    selectedCompileJava: TaskProvider<JavaCompile>,
-    archunitSourceDirs: List<String>,
-    archunitIncludes: List<String>,
-    includePatterns: List<String>,
-    useSharedTestSupport: Boolean
-): TaskProvider<Test> {
-    val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}EnforcementArchunit"
-    val mainClassesDirectory = selectedCompileJava.flatMap { task -> task.destinationDirectory }
-    val archunitSourceSet = sourceSets.findByName(sourceSetName) ?: sourceSets.create(sourceSetName) {
-        val sourceDirectories = buildList {
-            addAll(archunitSourceDirs)
-            if (useSharedTestSupport) {
-                add("test")
-            }
-        }
-        java.setSrcDirs(sourceDirectories)
-        if (useSharedTestSupport) {
-            commonFocusedArchunitSupportIncludes.forEach(java::include)
-        }
-        archunitIncludes.forEach(java::include)
-        resources.setSrcDirs(emptyList<String>())
-        compileClasspath += files(configurations.named("testCompileClasspath"))
-        runtimeClasspath += output + compileClasspath + files(configurations.named("testRuntimeClasspath"), mainClassesDirectory)
-    }
-    return tasks.register<Test>(taskName) {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = taskDescription
-        dependsOn(selectedCompileJava)
-        inputs.dir(mainClassesDirectory)
-        testClassesDirs = archunitSourceSet.output.classesDirs
-        classpath = archunitSourceSet.runtimeClasspath
-        useJUnitPlatform()
-        includePatterns.forEach(::include)
-        doFirst {
-            systemProperty("saltmarcher.mainClassesDir", mainClassesDirectory.get().asFile.absolutePath)
-        }
-    }
-}
-
-extra["saltmarcherRegisterFocusedArchunitTestTask"] = registerFocusedArchunitTestTask
-
-val registerFocusedPmdTask = fun(
-    bundleId: String,
-    taskName: String,
-    taskDescription: String,
-    rulesetPath: String,
-    sourceRoots: List<String>,
-    sourceIncludes: List<String>
-): TaskProvider<Pmd> {
-    val roots = sourceRoots.ifEmpty {
-        enforcementBundles.descriptor(bundleId).verificationSourceRoots.ifEmpty {
-            error("Missing verificationSourceRoots metadata for enforcement bundle '$bundleId'.")
-        }
-    }
-    val rulesetFile = project.file(rulesetPath)
-    return tasks.register<Pmd>(taskName) {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = taskDescription
-        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
-
-        ignoreFailures = false
-        ruleSets = listOf()
-        ruleSetFiles = files(rulesetFile)
-        source = files(roots).asFileTree.matching {
-            sourceIncludes.forEach(::include)
-        }
-        classpath = files()
-        reports {
-            html.required.set(true)
-            xml.required.set(true)
-        }
-    }
-}
-
-extra["saltmarcherRegisterFocusedPmdTask"] = registerFocusedPmdTask
-
-val registerFocusedJqassistantTaskPair = fun(
-    bundleId: String,
-    scanTaskName: String,
-    analyzeTaskName: String,
-    scanDescription: String,
-    analyzeDescription: String,
-    sourceConfigPath: String,
-    rulesDirPath: String,
-    reportsDirectoryPath: String,
-    selectedCompileJava: TaskProvider<JavaCompile>
-): Pair<TaskProvider<JqassistantScanTask>, TaskProvider<JqassistantAnalyzeTask>> {
-    val selectedMainClassesDirectory = selectedCompileJava.flatMap { task -> task.destinationDirectory }
-    val jqassistantSourceConfigFile = project.file(sourceConfigPath)
-    val jqassistantRulesDirectory = project.file(rulesDirPath)
-    val jqassistantStoreDirectory = layout.buildDirectory.dir("tools/$bundleId/jqassistant/store")
-    val jqassistantReportsDirectory = layout.buildDirectory.dir(reportsDirectoryPath)
-    val scanTask = tasks.register<JqassistantScanTask>(scanTaskName) {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = scanDescription
-        dependsOn(installJqassistant, selectedCompileJava)
-        cliFile.set(jqassistantCliFile)
-        sourceConfigFile.set(jqassistantSourceConfigFile)
-        rulesDirectory.set(jqassistantRulesDirectory)
-        mainClassesDirectory.set(selectedMainClassesDirectory)
-        sourceRoots.from("bootstrap", "shell", "src")
-        jvmOpens.set(jqassistantJvmOpens)
-        projectRoot.set(layout.projectDirectory)
-        storeDirectory.set(jqassistantStoreDirectory)
-    }
-    val analyzeTask = tasks.register<JqassistantAnalyzeTask>(analyzeTaskName) {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = analyzeDescription
-        dependsOn(scanTask)
-        cliFile.set(jqassistantCliFile)
-        sourceConfigFile.set(jqassistantSourceConfigFile)
-        rulesDirectory.set(jqassistantRulesDirectory)
-        mainClassesDirectory.set(selectedMainClassesDirectory)
-        sourceRoots.from("bootstrap", "shell", "src")
-        jvmOpens.set(jqassistantJvmOpens)
-        projectRoot.set(layout.projectDirectory)
-        storeDirectory.set(jqassistantStoreDirectory)
-        reportsDirectory.set(jqassistantReportsDirectory)
-    }
-    return Pair(scanTask, analyzeTask)
-}
-
-extra["saltmarcherRegisterFocusedJqassistantTaskPair"] = registerFocusedJqassistantTaskPair
-
 // Tool configurations
 
 val cpdCli by configurations.creating {
@@ -319,6 +166,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.named<JavaCompile>("compileJava") {
+    dependsOn(resetMainJavaClassesOutput)
     configureCommonErrorProneOptions()
     options.errorprone.error("UnusedLabel")
     options.errorprone.error("UnusedMethod")
@@ -380,6 +228,21 @@ val installJqassistant by tasks.registering(Sync::class) {
     })
     into(jqassistantInstallDir)
 }
+
+extensions.create(
+    "saltmarcherVerificationTooling",
+    VerificationToolingExtension::class.java,
+    project,
+    enforcementBundles,
+    sourceSets,
+    mainSourceSet,
+    sourceJavaRoots,
+    commonFocusedArchunitSupportIncludes,
+    jqassistantCliFile,
+    jqassistantJvmOpens,
+    installJqassistant,
+    JavaCompile::configureCommonErrorProneOptions
+)
 
 val prepareJqassistantConfig by tasks.registering {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -614,11 +477,21 @@ tasks.named("check") {
     dependsOn(ckjmMain)
 }
 
-tasks.matching { it.name == "pmdArchitectureMain" }.configureEach {
-    dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
-}
+extensions.create(
+    "saltmarcherVerificationLifecycle",
+    VerificationLifecycleExtension::class.java,
+    productionBuild,
+    checkQualityHygiene,
+    checkArchitecture,
+    checkViewArchitecture,
+    ckjmMain,
+    tasks.named("check")
+)
 
-tasks.withType<Test>().configureEach {
+tasks.withType<Pmd>().configureEach {
+    if (name == "pmdArchitectureMain") {
+        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
+    }
 }
 
 tasks.withType<Pmd>().configureEach {
@@ -626,22 +499,4 @@ tasks.withType<Pmd>().configureEach {
         html.required.set(true)
         xml.required.set(true)
     }
-}
-
-tasks.withType<PmdSourceCheckTask>().configureEach {
-}
-
-tasks.withType<CpdCheckTask>().configureEach {
-}
-
-tasks.withType<LizardCheckTask>().configureEach {
-}
-
-tasks.withType<CkjmReportTask>().configureEach {
-}
-
-tasks.withType<CheckNoCompiledArtifactsTask>().configureEach {
-}
-
-tasks.withType<CheckDesktopPackagingInputsTask>().configureEach {
 }

@@ -2,7 +2,6 @@ package saltmarcher.buildlogic.enforcement
 
 import java.io.File
 import java.util.Properties
-import org.gradle.api.Project
 
 data class EnforcementRootTask(
     val description: String?,
@@ -99,7 +98,7 @@ open class EnforcementBundlesExtension(
     fun activeDescriptors(): List<EnforcementBundleDescriptor> = activeEnforcementBundleIds.map(::descriptor)
 }
 
-fun Project.loadEnforcementBundlesExtension(): EnforcementBundlesExtension {
+fun loadEnforcementBundlesExtension(rootDir: File): EnforcementBundlesExtension {
     val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
         ?.trim()
         ?.takeIf(String::isNotEmpty)
@@ -115,27 +114,15 @@ fun Project.loadEnforcementBundlesExtension(): EnforcementBundlesExtension {
         ?.map(String::trim)
         ?.filter(String::isNotEmpty)
         ?.takeIf(List<String>::isNotEmpty)
-    val localSelection = if (propagatedFocusedEnforcementBundleMode != null &&
-        propagatedActiveEnforcementBundleIds != null
-    ) {
-        null
-    } else {
-        computeLocalEnforcementBundleSelection(repoRootDir, catalog)
+    require(propagatedFocusedEnforcementBundleMode != true || propagatedActiveEnforcementBundleIds != null) {
+        "Focused enforcement bundle mode requires propagated active bundle ids from the settings plugin."
     }
-    val focusedEnforcementBundleMode = propagatedFocusedEnforcementBundleMode
-        ?: localSelection?.focusedEnforcementBundleMode
-        ?: false
+    val focusedEnforcementBundleMode = propagatedFocusedEnforcementBundleMode ?: false
     val activeEnforcementBundleIds = if (propagatedActiveEnforcementBundleIds != null) {
         catalog.bundleIdsInOrder.filter { bundleId -> bundleId in propagatedActiveEnforcementBundleIds }
-    } else if (localSelection?.focusedEnforcementBundleMode == true) {
-        localSelection.activeEnforcementBundleIds
     } else {
         catalog.bundleIdsInOrder
     }
-
-    System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
-    System.setProperty("saltmarcher.focusedEnforcementBundleMode", focusedEnforcementBundleMode.toString())
-    System.setProperty("saltmarcher.activeEnforcementBundleIds", activeEnforcementBundleIds.joinToString(","))
 
     return EnforcementBundlesExtension(
         repoRootDir = repoRootDir,
@@ -144,33 +131,6 @@ fun Project.loadEnforcementBundlesExtension(): EnforcementBundlesExtension {
             focusedEnforcementBundleMode = focusedEnforcementBundleMode,
             activeEnforcementBundleIds = activeEnforcementBundleIds
         )
-    )
-}
-
-private fun Project.computeLocalEnforcementBundleSelection(
-    repoRootDir: File,
-    catalog: EnforcementBundleCatalog
-): EnforcementBundleSelection {
-    val verificationSurfaceCatalog = loadProperties(File(repoRootDir, "tools/gradle/verification-surface-catalog.properties"))
-    val broadBuildTaskNames = verificationSurfaceCatalog.list("broadBuildTaskNames").toSet()
-    val requestedTaskNames = gradle.startParameter.taskNames
-        .map { taskName -> taskName.substringAfterLast(":") }
-        .toSet()
-    val requestedBundleIds = requestedTaskNames
-        .mapNotNull(catalog.taskToBundleId::get)
-        .distinct()
-    val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty() &&
-        requestedBundleIds.isNotEmpty() &&
-        requestedTaskNames.none { taskName -> taskName in broadBuildTaskNames } &&
-        requestedTaskNames.all { taskName -> taskName in catalog.taskToBundleId.keys }
-    val activeEnforcementBundleIds = if (focusedEnforcementBundleMode) {
-        catalog.bundleIdsInOrder.filter { bundleId -> bundleId in requestedBundleIds }
-    } else {
-        catalog.bundleIdsInOrder
-    }
-    return EnforcementBundleSelection(
-        focusedEnforcementBundleMode = focusedEnforcementBundleMode,
-        activeEnforcementBundleIds = activeEnforcementBundleIds
     )
 }
 
