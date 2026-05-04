@@ -726,6 +726,7 @@ public final class EncounterApplicationService {
         private EncounterSessionSnapshot.CombatProjection combatState = EncounterSessionSnapshot.CombatProjection.empty();
         private EncounterSessionSnapshot.ResultState resultState = EncounterSessionSnapshot.ResultState.empty();
         private EncounterSessionSnapshot.BuilderInputs builderInputs = EncounterSessionSnapshot.BuilderInputs.empty();
+        private List<EncounterGenerationAdvisory> generationAdvisories = List.of();
         private @Nullable EncounterBudgetSummary budget;
         private int selectedAlternativeIndex;
         private int generatedAdjustedXp;
@@ -783,12 +784,14 @@ public final class EncounterApplicationService {
                 generatedAlternatives.clear();
                 selectedAlternativeIndex = 0;
                 generationHistoryPresent = false;
+                generationAdvisories = List.of();
                 status = result.message().isBlank() ? generationStatusText(result.status()) : result.message();
                 return snapshot();
             }
             generatedAlternatives.clear();
             generatedAlternatives.addAll(result.encounters());
             generationHistoryPresent = true;
+            generationAdvisories = List.copyOf(result.advisories());
             selectedAlternativeIndex = 0;
             applyGeneratedEncounter(generatedAlternatives.getFirst());
             status = generationSuccessText(result);
@@ -851,6 +854,7 @@ public final class EncounterApplicationService {
             }
             generatedAlternatives.clear();
             generationHistoryPresent = false;
+            generationAdvisories = List.of();
             pendingInitiativeRows.clear();
             combatRuntime.clear();
             resultState = EncounterSessionSnapshot.ResultState.empty();
@@ -880,6 +884,7 @@ public final class EncounterApplicationService {
             generatedDifficulty = "";
             generatedTitle = "";
             generationHistoryPresent = false;
+            generationAdvisories = List.of();
             status = "Generator-Historie geleert.";
             return snapshot();
         }
@@ -1189,6 +1194,7 @@ public final class EncounterApplicationService {
             activeSavedPlanId = 0L;
             generatedAlternatives.clear();
             generationHistoryPresent = false;
+            generationAdvisories = List.of();
             selectedAlternativeIndex = 0;
             generatedAdjustedXp = 0;
             generatedDifficulty = "";
@@ -1251,6 +1257,8 @@ public final class EncounterApplicationService {
                     titleLabel(),
                     difficulty,
                     builderInputs,
+                    status,
+                    generationAdvisories,
                     List.copyOf(savedPlans),
                     !roster.isEmpty() && !activeParty.isEmpty(),
                     generatedAlternatives.size() > 1,

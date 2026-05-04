@@ -38,6 +38,8 @@ public final class EncounterStateView extends VBox {
             String partyLabel,
             String templateLabel,
             DifficultySummaryView difficulty,
+            String statusMessage,
+            List<String> generationAdvisoryMessages,
             List<SavedEncounterPlanView> savedPlans,
             BuilderSettingsInput settings,
             List<RosterCardView> roster,
@@ -50,12 +52,14 @@ public final class EncounterStateView extends VBox {
     ) {
         static BuilderStateView empty() {
             return new BuilderStateView(
-                    "",
-                    "",
-                    new DifficultySummaryView(0, 0, 0, 0, 0, ""),
-                    List.of(),
-                    BuilderSettingsInput.defaultInput(),
-                    List.of(),
+                "",
+                "",
+                new DifficultySummaryView(0, 0, 0, 0, 0, ""),
+                "",
+                List.of(),
+                List.of(),
+                BuilderSettingsInput.defaultInput(),
+                List.of(),
                     false,
                     false,
                     false,
@@ -65,6 +69,8 @@ public final class EncounterStateView extends VBox {
         }
 
         public BuilderStateView {
+            statusMessage = statusMessage == null ? "" : statusMessage;
+            generationAdvisoryMessages = generationAdvisoryMessages == null ? List.of() : List.copyOf(generationAdvisoryMessages);
             savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
             roster = roster == null ? List.of() : List.copyOf(roster);
         }

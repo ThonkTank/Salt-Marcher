@@ -10,6 +10,7 @@ public record EncounterBuilderStateViewInputEvent(
         boolean creatureRemovalRequested,
         long undoToken,
         boolean clearHistoryRequested,
+        boolean openCreatureDetailsRequested,
         boolean startInitiativeRequested
 ) {
 

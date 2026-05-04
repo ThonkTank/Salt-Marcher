@@ -5,14 +5,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.EnumMap;
 import javafx.scene.Node;
+import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.encounter.published.LoadEncounterSessionQuery;
 import src.domain.encounter.published.EncounterSessionModel;
 import src.domain.encounter.published.EncounterSessionSnapshot;
+import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
 final class EncounterStateBinder {
 
@@ -26,6 +30,7 @@ final class EncounterStateBinder {
     }
 
     ShellBinding bind() {
+        CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterSessionModel sessionModel = encounters.loadSession(new LoadEncounterSessionQuery());
         EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
@@ -38,6 +43,13 @@ final class EncounterStateBinder {
         sessionModel.subscribe(presentationModel::apply);
         presentationModel.apply(sessionModel.current());
         bindSessionActions(encounters, intentHandler);
+        presentationModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
+            if (after == null || after.longValue() <= 0L) {
+                return;
+            }
+            openCreatureDetails(runtimeContext.inspector(), creatures, after.longValue());
+            presentationModel.clearCreatureDetailSelection();
+        });
         builderView.onViewInputEvent(intentHandler::consume);
         initiativeView.onViewInputEvent(intentHandler::consume);
         combatView.onViewInputEvent(intentHandler::consume);
@@ -57,6 +69,19 @@ final class EncounterStateBinder {
             }
             encounters.applySession(toCommand(intent));
         });
+    }
+
+    private static void openCreatureDetails(
+            InspectorSink inspector,
+            CreaturesApplicationService creatures,
+            long creatureId
+    ) {
+        if (creatureId <= 0L) {
+            return;
+        }
+        inspector.push(CreatureDetailsInspectorEntry.create(
+                creatureId,
+                id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id))));
     }
 
     private static ApplyEncounterSessionCommand toCommand(EncounterStatePublishedEvent intent) {
@@ -200,6 +225,8 @@ final class EncounterStateBinder {
                         difficulty.deadly(),
                         difficulty.adjustedXp(),
                         difficulty.difficulty()),
+                source.statusMessage(),
+                source.generationAdvisoryMessages(),
                 source.savedPlans().stream()
                         .map(plan -> new EncounterStateView.SavedEncounterPlanView(
                                 plan.id(),

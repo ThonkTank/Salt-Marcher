@@ -132,6 +132,8 @@ public record EncounterSessionSnapshot(
             String templateLabel,
             DifficultySummary difficulty,
             BuilderInputs builderInputs,
+            String statusMessage,
+            List<EncounterGenerationAdvisory> generationAdvisories,
             List<SavedEncounterPlanSummary> savedPlans,
             boolean canStartCombat,
             boolean canPreviousAlternative,
@@ -146,6 +148,8 @@ public record EncounterSessionSnapshot(
             templateLabel = templateLabel == null ? "" : templateLabel;
             difficulty = difficulty == null ? new DifficultySummary(0, 0, 0, 0, 0, "") : difficulty;
             builderInputs = builderInputs == null ? BuilderInputs.empty() : builderInputs;
+            statusMessage = statusMessage == null ? "" : statusMessage;
+            generationAdvisories = generationAdvisories == null ? List.of() : List.copyOf(generationAdvisories);
             savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
         }
 
@@ -156,6 +160,8 @@ public record EncounterSessionSnapshot(
                     "",
                     new DifficultySummary(0, 0, 0, 0, 0, ""),
                     BuilderInputs.empty(),
+                    "",
+                    List.of(),
                     List.of(),
                     false,
                     false,

@@ -7,6 +7,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
+import src.domain.encounter.published.EncounterGenerationAdvisory;
 import src.domain.encounter.published.EncounterSessionSnapshot;
 import src.domain.encounter.published.EncounterSessionSnapshot.InitiativeState;
 import src.domain.encounter.published.EncounterSessionSnapshot.PartyMember;
@@ -27,6 +28,7 @@ public final class EncounterStateContributionModel {
     private final ReadOnlyObjectWrapper<Mode> mode = new ReadOnlyObjectWrapper<>(Mode.BUILDER);
     private final ReadOnlyObjectWrapper<BuilderState> builderState =
             new ReadOnlyObjectWrapper<>(BuilderState.empty(BuilderSettings.defaultSettings()));
+    private final ReadOnlyObjectWrapper<@Nullable Long> creatureDetailSelection = new ReadOnlyObjectWrapper<>();
     private final ReadOnlyObjectWrapper<InitiativeState> initiativeState =
             new ReadOnlyObjectWrapper<>(InitiativeState.empty());
     private final ReadOnlyObjectWrapper<EncounterSessionSnapshot.CombatProjection> combatState =
@@ -44,6 +46,10 @@ public final class EncounterStateContributionModel {
 
     ReadOnlyObjectProperty<BuilderState> builderStateProperty() {
         return builderState.getReadOnlyProperty();
+    }
+
+    ReadOnlyObjectProperty<@Nullable Long> creatureDetailSelectionProperty() {
+        return creatureDetailSelection.getReadOnlyProperty();
     }
 
     ReadOnlyObjectProperty<InitiativeState> initiativeStateProperty() {
@@ -66,10 +72,21 @@ public final class EncounterStateContributionModel {
         return List.copyOf(missingCombatPartyMembers);
     }
 
+    void selectCreatureDetail(long creatureId) {
+        if (creatureId <= 0L) {
+            return;
+        }
+        creatureDetailSelection.set(creatureId);
+    }
+
+    void clearCreatureDetailSelection() {
+        creatureDetailSelection.set(null);
+    }
+
     void apply(EncounterSessionSnapshot snapshot) {
         EncounterSessionSnapshot safeSnapshot = snapshot == null ? EncounterSessionSnapshot.empty("") : snapshot;
         mode.set(toMode(safeSnapshot.mode()));
-        builderState.set(toBuilderState(safeSnapshot.builderState()));
+        builderState.set(toBuilderState(safeSnapshot.builderState(), safeSnapshot.status()));
         initiativeState.set(safeSnapshot.initiativeState());
         combatState.set(safeSnapshot.combatState());
         resultState.set(safeSnapshot.resultState());
@@ -87,7 +104,10 @@ public final class EncounterStateContributionModel {
         };
     }
 
-    private static BuilderState toBuilderState(EncounterSessionSnapshot.BuilderState source) {
+    private static BuilderState toBuilderState(
+            EncounterSessionSnapshot.BuilderState source,
+            String statusMessage
+    ) {
         EncounterSessionSnapshot.BuilderState safeSource = source == null
                 ? EncounterSessionSnapshot.BuilderState.empty()
                 : source;
@@ -96,6 +116,8 @@ public final class EncounterStateContributionModel {
                 safeSource.roster(),
                 safeSource.templateLabel(),
                 safeSource.difficulty(),
+                statusMessage,
+                toAdvisoryMessages(safeSource.generationAdvisories()),
                 safeSource.savedPlans(),
                 toBuilderSettings(safeSource.builderInputs()),
                 safeSource.canStartCombat(),
@@ -128,6 +150,19 @@ public final class EncounterStateContributionModel {
         return difficulty.name();
     }
 
+    private static List<String> toAdvisoryMessages(List<EncounterGenerationAdvisory> advisories) {
+        return advisories == null ? List.of() : advisories.stream()
+                .map(EncounterStateContributionModel::advisoryMessage)
+                .toList();
+    }
+
+    private static String advisoryMessage(EncounterGenerationAdvisory advisory) {
+        if (advisory == EncounterGenerationAdvisory.AUTO_RESOLVED) {
+            return "Auto-Einstellungen wurden fuer diese Generierung auf konkrete Zielwerte aufgeloest.";
+        }
+        return "Kein exakter Treffer war verfuegbar. Die beste gefundene Alternative wurde uebernommen.";
+    }
+
     public record BuilderSettings(
             String difficultyLabel,
             int balanceLevel,
@@ -144,6 +179,8 @@ public final class EncounterStateContributionModel {
             List<EncounterSessionSnapshot.EncounterCreature> roster,
             String templateLabel,
             EncounterSessionSnapshot.DifficultySummary difficulty,
+            String statusMessage,
+            List<String> generationAdvisoryMessages,
             List<SavedEncounterPlanSummary> savedPlans,
             BuilderSettings settings,
             boolean canStartCombat,
@@ -157,6 +194,8 @@ public final class EncounterStateContributionModel {
             party = party == null ? List.of() : List.copyOf(party);
             roster = roster == null ? List.of() : List.copyOf(roster);
             templateLabel = templateLabel == null ? "" : templateLabel;
+            statusMessage = statusMessage == null ? "" : statusMessage;
+            generationAdvisoryMessages = generationAdvisoryMessages == null ? List.of() : List.copyOf(generationAdvisoryMessages);
             savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
         }
 
@@ -166,6 +205,8 @@ public final class EncounterStateContributionModel {
                     List.of(),
                     "",
                     new EncounterSessionSnapshot.DifficultySummary(0, 0, 0, 0, 0, ""),
+                    "",
+                    List.of(),
                     List.of(),
                     settings,
                     false,

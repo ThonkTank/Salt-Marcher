@@ -6,10 +6,11 @@ import java.util.function.Consumer;
 
 final class EncounterStateIntentHandler {
 
+    private final EncounterStateContributionModel presentationModel;
     private Consumer<EncounterStatePublishedEvent> publishedEventListener = ignored -> { };
 
     EncounterStateIntentHandler(EncounterStateContributionModel presentationModel) {
-        Objects.requireNonNull(presentationModel, "presentationModel");
+        this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
     }
 
     void onPublishedEventRequested(Consumer<EncounterStatePublishedEvent> listener) {
@@ -63,6 +64,10 @@ final class EncounterStateIntentHandler {
         if (event.undoToken() > 0L) {
             publish(EncounterStatePublishedEvent.Action.UNDO_REMOVE, event.creatureId(), event.openedPlanId(),
                     0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
+            return;
+        }
+        if (event.openCreatureDetailsRequested()) {
+            presentationModel.selectCreatureDetail(event.creatureId());
             return;
         }
         if (event.startInitiativeRequested()) {
