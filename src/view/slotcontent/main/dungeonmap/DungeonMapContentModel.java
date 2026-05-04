@@ -1,5 +1,6 @@
 package src.view.slotcontent.main.dungeonmap;
 
+import java.util.ArrayList;
 import java.util.List;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -103,117 +104,130 @@ public final class DungeonMapContentModel {
     private static @Nullable ProjectionData toProjection(
             @Nullable DungeonEditorMapProjectionSnapshot projection
     ) {
-        return projection == null ? null : toProjection(
+        if (projection == null) {
+            return null;
+        }
+        return projectionData(
                 projection.mapName(),
                 toProjectionTopology(projection.topology()),
                 projection.width(),
                 projection.height(),
-                projection.cells(),
-                projection.edges(),
-                projection.labels(),
-                projection.markers(),
-                projection.graphNodes(),
-                projection.graphLinks(),
-                projection.partyToken());
+                toEditorProjectionCells(projection.cells()),
+                toEditorProjectionEdges(projection.edges()),
+                toEditorProjectionLabels(projection.labels()),
+                toEditorProjectionMarkers(projection.markers()),
+                toEditorProjectionGraphNodes(projection.graphNodes()),
+                toEditorProjectionGraphLinks(projection.graphLinks()),
+                toProjectionPartyToken(projection.partyToken()));
     }
 
     private static @Nullable ProjectionData toProjection(
             @Nullable TravelDungeonMapProjectionSnapshot projection
     ) {
-        return projection == null ? null : toProjection(
+        if (projection == null) {
+            return null;
+        }
+        return projectionData(
                 projection.mapName(),
                 toProjectionTopology(projection.topology()),
                 projection.width(),
                 projection.height(),
-                projection.cells(),
-                projection.edges(),
-                projection.labels(),
-                projection.markers(),
-                projection.graphNodes(),
-                projection.graphLinks(),
-                projection.partyToken());
+                toTravelProjectionCells(projection.cells()),
+                toTravelProjectionEdges(projection.edges()),
+                toTravelProjectionLabels(projection.labels()),
+                toTravelProjectionMarkers(projection.markers()),
+                toTravelProjectionGraphNodes(projection.graphNodes()),
+                toTravelProjectionGraphLinks(projection.graphLinks()),
+                toProjectionPartyToken(projection.partyToken()));
     }
 
-    private static ProjectionData toProjection(
+    private static ProjectionData projectionData(
             String mapName,
-            ProjectionTopologyKind topology,
+            ProjectionData.ProjectionTopologyKind topology,
             int width,
             int height,
-            List<?> cells,
-            List<?> edges,
-            List<?> labels,
-            List<?> markers,
-            List<?> graphNodes,
-            List<?> graphLinks,
-            @Nullable Object partyToken
+            List<ProjectionData.ProjectionCell> cells,
+            List<ProjectionData.ProjectionEdge> edges,
+            List<ProjectionData.ProjectionLabel> labels,
+            List<ProjectionData.ProjectionMarker> markers,
+            List<ProjectionData.ProjectionGraphNode> graphNodes,
+            List<ProjectionData.ProjectionGraphLink> graphLinks,
+            ProjectionData.@Nullable ProjectionPartyToken partyToken
     ) {
         return new ProjectionData(
                 mapName,
                 topology,
                 width,
                 height,
-                cells.stream().map(DungeonMapContentModel::toProjectionCell).toList(),
-                edges.stream().map(DungeonMapContentModel::toProjectionEdge).toList(),
-                labels.stream().map(DungeonMapContentModel::toProjectionLabel).toList(),
-                markers.stream().map(DungeonMapContentModel::toProjectionMarker).toList(),
-                graphNodes.stream().map(DungeonMapContentModel::toProjectionGraphNode).toList(),
-                graphLinks.stream().map(DungeonMapContentModel::toProjectionGraphLink).toList(),
-                toProjectionPartyToken(partyToken));
+                cells,
+                edges,
+                labels,
+                markers,
+                graphNodes,
+                graphLinks,
+                partyToken);
     }
 
-    private static ProjectionTopologyKind toProjectionTopology(
+    private static ProjectionData.ProjectionTopologyKind toProjectionTopology(
             DungeonEditorMapProjectionSnapshot.TopologyKind topology
     ) {
         return topology == DungeonEditorMapProjectionSnapshot.TopologyKind.HEX
-                ? ProjectionTopologyKind.HEX
-                : ProjectionTopologyKind.SQUARE;
+                ? ProjectionData.ProjectionTopologyKind.HEX
+                : ProjectionData.ProjectionTopologyKind.SQUARE;
     }
 
-    private static ProjectionTopologyKind toProjectionTopology(
+    private static ProjectionData.ProjectionTopologyKind toProjectionTopology(
             TravelDungeonMapProjectionSnapshot.TopologyKind topology
     ) {
         return topology == TravelDungeonMapProjectionSnapshot.TopologyKind.HEX
-                ? ProjectionTopologyKind.HEX
-                : ProjectionTopologyKind.SQUARE;
+                ? ProjectionData.ProjectionTopologyKind.HEX
+                : ProjectionData.ProjectionTopologyKind.SQUARE;
     }
 
-    private static ProjectionCell toProjectionCell(Object cellSource) {
-        if (cellSource instanceof DungeonEditorMapProjectionSnapshot.CellProjection cell) {
-            return projectionCell(
-                    cell.q(),
-                    cell.r(),
-                    cell.level(),
-                    cell.label(),
-                    cell.kind().name(),
-                    cell.ownerId(),
-                    cell.clusterId(),
-                    cell.topologyRef().kind(),
-                    cell.topologyRef().id(),
-                    cell.selected(),
-                    cell.overlay(),
-                    cell.preview(),
-                    cell.destructivePreview());
-        }
-        if (cellSource instanceof TravelDungeonMapProjectionSnapshot.CellProjection cell) {
-            return projectionCell(
-                    cell.q(),
-                    cell.r(),
-                    cell.level(),
-                    cell.label(),
-                    cell.kind().name(),
-                    cell.ownerId(),
-                    cell.clusterId(),
-                    cell.topologyRef().kind(),
-                    cell.topologyRef().id(),
-                    cell.selected(),
-                    cell.overlay(),
-                    cell.preview(),
-                    cell.destructivePreview());
-        }
-        throw unsupportedProjectionSource(cellSource, "cell");
+    private static ProjectionData.ProjectionCell toProjectionCell(
+            DungeonEditorMapProjectionSnapshot.CellProjection cell
+    ) {
+        return projectionCell(
+                cell.q(),
+                cell.r(),
+                cell.level(),
+                cell.label(),
+                cell.kind().name(),
+                cell.ownerId(),
+                cell.clusterId(),
+                cell.topologyRef().kind(),
+                cell.topologyRef().id(),
+                cell.selected(),
+                cell.overlay(),
+                cell.preview(),
+                cell.destructivePreview());
     }
 
-    private static ProjectionCell projectionCell(
+    private static ProjectionData.ProjectionCell toProjectionCell(
+            TravelDungeonMapProjectionSnapshot.CellProjection cell
+    ) {
+        TravelDungeonMapProjectionSnapshot.TopologyRef topologyRef = cell.topologyRef();
+        String kind = cell.kind().name();
+        int q = cell.q();
+        int r = cell.r();
+        int level = cell.level();
+        return projectionCell(
+                q,
+                r,
+                level,
+                cell.label(),
+                kind,
+                cell.ownerId(),
+                cell.clusterId(),
+                topologyRef.kind(),
+                topologyRef.id(),
+                cell.selected(),
+                cell.overlay(),
+                cell.preview(),
+                cell.destructivePreview());
+    }
+
+    private static ProjectionData.ProjectionCell projectionCell(
             int q,
             int r,
             int level,
@@ -228,7 +242,7 @@ public final class DungeonMapContentModel {
             boolean preview,
             boolean destructivePreview
     ) {
-        return new ProjectionCell(
+        return new ProjectionData.ProjectionCell(
                 q,
                 r,
                 level,
@@ -236,48 +250,70 @@ public final class DungeonMapContentModel {
                 toProjectionCellKind(kind),
                 ownerId,
                 clusterId,
-                new ProjectionTopologyRef(topologyKind, topologyId),
+                new ProjectionData.ProjectionTopologyRef(topologyKind, topologyId),
                 selected,
                 overlay,
                 preview,
                 destructivePreview);
     }
 
-    private static ProjectionEdge toProjectionEdge(Object edgeSource) {
-        if (edgeSource instanceof DungeonEditorMapProjectionSnapshot.EdgeProjection edge) {
-            return projectionEdge(
-                    edge.startQ(),
-                    edge.startR(),
-                    edge.endQ(),
-                    edge.endR(),
-                    edge.level(),
-                    edge.kind().name(),
-                    edge.label(),
-                    edge.ownerId(),
-                    edge.topologyRef().kind(),
-                    edge.topologyRef().id(),
-                    edge.selected(),
-                    edge.preview());
+    private static List<ProjectionData.ProjectionCell> toEditorProjectionCells(
+            List<DungeonEditorMapProjectionSnapshot.CellProjection> cells
+    ) {
+        List<ProjectionData.ProjectionCell> mapped = new ArrayList<>(cells.size());
+        for (DungeonEditorMapProjectionSnapshot.CellProjection cell : cells) {
+            mapped.add(toProjectionCell(cell));
         }
-        if (edgeSource instanceof TravelDungeonMapProjectionSnapshot.EdgeProjection edge) {
-            return projectionEdge(
-                    edge.startQ(),
-                    edge.startR(),
-                    edge.endQ(),
-                    edge.endR(),
-                    edge.level(),
-                    edge.kind().name(),
-                    edge.label(),
-                    edge.ownerId(),
-                    edge.topologyRef().kind(),
-                    edge.topologyRef().id(),
-                    edge.selected(),
-                    edge.preview());
-        }
-        throw unsupportedProjectionSource(edgeSource, "edge");
+        return List.copyOf(mapped);
     }
 
-    private static ProjectionEdge projectionEdge(
+    private static List<ProjectionData.ProjectionCell> toTravelProjectionCells(
+            List<TravelDungeonMapProjectionSnapshot.CellProjection> cells
+    ) {
+        List<ProjectionData.ProjectionCell> mapped = new ArrayList<>(cells.size());
+        for (TravelDungeonMapProjectionSnapshot.CellProjection cell : cells) {
+            mapped.add(toProjectionCell(cell));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionEdge toProjectionEdge(
+            DungeonEditorMapProjectionSnapshot.EdgeProjection edge
+    ) {
+        return projectionEdge(
+                edge.startQ(),
+                edge.startR(),
+                edge.endQ(),
+                edge.endR(),
+                edge.level(),
+                edge.kind().name(),
+                edge.label(),
+                edge.ownerId(),
+                edge.topologyRef().kind(),
+                edge.topologyRef().id(),
+                edge.selected(),
+                edge.preview());
+    }
+
+    private static ProjectionData.ProjectionEdge toProjectionEdge(
+            TravelDungeonMapProjectionSnapshot.EdgeProjection edge
+    ) {
+        return projectionEdge(
+                edge.startQ(),
+                edge.startR(),
+                edge.endQ(),
+                edge.endR(),
+                edge.level(),
+                edge.kind().name(),
+                edge.label(),
+                edge.ownerId(),
+                edge.topologyRef().kind(),
+                edge.topologyRef().id(),
+                edge.selected(),
+                edge.preview());
+    }
+
+    private static ProjectionData.ProjectionEdge projectionEdge(
             double startQ,
             double startR,
             double endQ,
@@ -291,53 +327,75 @@ public final class DungeonMapContentModel {
             boolean selected,
             boolean preview
     ) {
-        return new ProjectionEdge(
+        return new ProjectionData.ProjectionEdge(
                 startQ,
                 startR,
                 endQ,
                 endR,
                 level,
                 "DOOR".equalsIgnoreCase(kind)
-                        ? ProjectionEdgeKind.DOOR
-                        : ProjectionEdgeKind.WALL,
+                        ? ProjectionData.ProjectionEdgeKind.DOOR
+                        : ProjectionData.ProjectionEdgeKind.WALL,
                 label,
                 ownerId,
-                new ProjectionTopologyRef(topologyKind, topologyId),
+                new ProjectionData.ProjectionTopologyRef(topologyKind, topologyId),
                 selected,
                 preview);
     }
 
-    private static ProjectionLabel toProjectionLabel(Object labelSource) {
-        if (labelSource instanceof DungeonEditorMapProjectionSnapshot.LabelProjection label) {
-            return projectionLabel(
-                    label.label(),
-                    label.q(),
-                    label.r(),
-                    label.level(),
-                    label.ownerId(),
-                    label.clusterId(),
-                    label.topologyRef().kind(),
-                    label.topologyRef().id(),
-                    label.selected(),
-                    label.preview());
+    private static List<ProjectionData.ProjectionEdge> toEditorProjectionEdges(
+            List<DungeonEditorMapProjectionSnapshot.EdgeProjection> edges
+    ) {
+        List<ProjectionData.ProjectionEdge> mapped = new ArrayList<>(edges.size());
+        for (DungeonEditorMapProjectionSnapshot.EdgeProjection edge : edges) {
+            mapped.add(toProjectionEdge(edge));
         }
-        if (labelSource instanceof TravelDungeonMapProjectionSnapshot.LabelProjection label) {
-            return projectionLabel(
-                    label.label(),
-                    label.q(),
-                    label.r(),
-                    label.level(),
-                    label.ownerId(),
-                    label.clusterId(),
-                    label.topologyRef().kind(),
-                    label.topologyRef().id(),
-                    label.selected(),
-                    label.preview());
-        }
-        throw unsupportedProjectionSource(labelSource, "label");
+        return List.copyOf(mapped);
     }
 
-    private static ProjectionLabel projectionLabel(
+    private static List<ProjectionData.ProjectionEdge> toTravelProjectionEdges(
+            List<TravelDungeonMapProjectionSnapshot.EdgeProjection> edges
+    ) {
+        List<ProjectionData.ProjectionEdge> mapped = new ArrayList<>(edges.size());
+        for (TravelDungeonMapProjectionSnapshot.EdgeProjection edge : edges) {
+            mapped.add(toProjectionEdge(edge));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionLabel toProjectionLabel(
+            DungeonEditorMapProjectionSnapshot.LabelProjection label
+    ) {
+        return projectionLabel(
+                label.label(),
+                label.q(),
+                label.r(),
+                label.level(),
+                label.ownerId(),
+                label.clusterId(),
+                label.topologyRef().kind(),
+                label.topologyRef().id(),
+                label.selected(),
+                label.preview());
+    }
+
+    private static ProjectionData.ProjectionLabel toProjectionLabel(
+            TravelDungeonMapProjectionSnapshot.LabelProjection label
+    ) {
+        return projectionLabel(
+                label.label(),
+                label.q(),
+                label.r(),
+                label.level(),
+                label.ownerId(),
+                label.clusterId(),
+                label.topologyRef().kind(),
+                label.topologyRef().id(),
+                label.selected(),
+                label.preview());
+    }
+
+    private static ProjectionData.ProjectionLabel projectionLabel(
             String label,
             double q,
             double r,
@@ -349,67 +407,89 @@ public final class DungeonMapContentModel {
             boolean selected,
             boolean preview
     ) {
-        return new ProjectionLabel(
+        return new ProjectionData.ProjectionLabel(
                 label,
                 q,
                 r,
                 level,
                 ownerId,
                 clusterId,
-                new ProjectionTopologyRef(topologyKind, topologyId),
+                new ProjectionData.ProjectionTopologyRef(topologyKind, topologyId),
                 selected,
                 preview);
     }
 
-    private static ProjectionMarker toProjectionMarker(Object markerSource) {
-        if (markerSource instanceof DungeonEditorMapProjectionSnapshot.MarkerProjection marker) {
-            return projectionMarker(
-                    marker.label(),
-                    marker.q(),
-                    marker.r(),
-                    marker.level(),
-                    marker.kind().name(),
-                    marker.selected(),
-                    marker.handleRef().kind(),
-                    marker.handleRef().topologyRef().kind(),
-                    marker.handleRef().topologyRef().id(),
-                    marker.handleRef().ownerId(),
-                    marker.handleRef().clusterId(),
-                    marker.handleRef().corridorId(),
-                    marker.handleRef().roomId(),
-                    marker.handleRef().index(),
-                    marker.handleRef().cell().q(),
-                    marker.handleRef().cell().r(),
-                    marker.handleRef().cell().level(),
-                    marker.handleRef().direction(),
-                    marker.preview());
+    private static List<ProjectionData.ProjectionLabel> toEditorProjectionLabels(
+            List<DungeonEditorMapProjectionSnapshot.LabelProjection> labels
+    ) {
+        List<ProjectionData.ProjectionLabel> mapped = new ArrayList<>(labels.size());
+        for (DungeonEditorMapProjectionSnapshot.LabelProjection label : labels) {
+            mapped.add(toProjectionLabel(label));
         }
-        if (markerSource instanceof TravelDungeonMapProjectionSnapshot.MarkerProjection marker) {
-            return projectionMarker(
-                    marker.label(),
-                    marker.q(),
-                    marker.r(),
-                    marker.level(),
-                    marker.kind().name(),
-                    marker.selected(),
-                    marker.handle().kind(),
-                    marker.handle().topologyRef().kind(),
-                    marker.handle().topologyRef().id(),
-                    marker.handle().ownerId(),
-                    marker.handle().clusterId(),
-                    marker.handle().corridorId(),
-                    marker.handle().roomId(),
-                    marker.handle().index(),
-                    marker.handle().q(),
-                    marker.handle().r(),
-                    marker.handle().level(),
-                    marker.handle().direction(),
-                    marker.preview());
-        }
-        throw unsupportedProjectionSource(markerSource, "marker");
+        return List.copyOf(mapped);
     }
 
-    private static ProjectionMarker projectionMarker(
+    private static List<ProjectionData.ProjectionLabel> toTravelProjectionLabels(
+            List<TravelDungeonMapProjectionSnapshot.LabelProjection> labels
+    ) {
+        List<ProjectionData.ProjectionLabel> mapped = new ArrayList<>(labels.size());
+        for (TravelDungeonMapProjectionSnapshot.LabelProjection label : labels) {
+            mapped.add(toProjectionLabel(label));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionMarker toProjectionMarker(
+            DungeonEditorMapProjectionSnapshot.MarkerProjection marker
+    ) {
+        return projectionMarker(
+                marker.label(),
+                marker.q(),
+                marker.r(),
+                marker.level(),
+                marker.kind().name(),
+                marker.selected(),
+                marker.handleRef().kind(),
+                marker.handleRef().topologyRef().kind(),
+                marker.handleRef().topologyRef().id(),
+                marker.handleRef().ownerId(),
+                marker.handleRef().clusterId(),
+                marker.handleRef().corridorId(),
+                marker.handleRef().roomId(),
+                marker.handleRef().index(),
+                marker.handleRef().cell().q(),
+                marker.handleRef().cell().r(),
+                marker.handleRef().cell().level(),
+                marker.handleRef().direction(),
+                marker.preview());
+    }
+
+    private static ProjectionData.ProjectionMarker toProjectionMarker(
+            TravelDungeonMapProjectionSnapshot.MarkerProjection marker
+    ) {
+        return projectionMarker(
+                marker.label(),
+                marker.q(),
+                marker.r(),
+                marker.level(),
+                marker.kind().name(),
+                marker.selected(),
+                marker.handle().kind(),
+                marker.handle().topologyRef().kind(),
+                marker.handle().topologyRef().id(),
+                marker.handle().ownerId(),
+                marker.handle().clusterId(),
+                marker.handle().corridorId(),
+                marker.handle().roomId(),
+                marker.handle().index(),
+                marker.handle().q(),
+                marker.handle().r(),
+                marker.handle().level(),
+                marker.handle().direction(),
+                marker.preview());
+    }
+
+    private static ProjectionData.ProjectionMarker projectionMarker(
             String label,
             double q,
             double r,
@@ -430,16 +510,16 @@ public final class DungeonMapContentModel {
             String handleDirection,
             boolean preview
     ) {
-        return new ProjectionMarker(
+        return new ProjectionData.ProjectionMarker(
                 label,
                 q,
                 r,
                 level,
                 toProjectionMarkerKind(kind),
                 selected,
-                new ProjectionMarkerHandle(
+                new ProjectionData.ProjectionMarkerHandle(
                         handleKind,
-                        new ProjectionTopologyRef(topologyKind, topologyId),
+                        new ProjectionData.ProjectionTopologyRef(topologyKind, topologyId),
                         ownerId,
                         clusterId,
                         corridorId,
@@ -452,17 +532,39 @@ public final class DungeonMapContentModel {
                 preview);
     }
 
-    private static ProjectionGraphNode toProjectionGraphNode(Object nodeSource) {
-        if (nodeSource instanceof DungeonEditorMapProjectionSnapshot.GraphNodeProjection node) {
-            return projectionGraphNode(node.id(), node.clusterId(), node.label(), node.q(), node.r(), node.selected());
+    private static List<ProjectionData.ProjectionMarker> toEditorProjectionMarkers(
+            List<DungeonEditorMapProjectionSnapshot.MarkerProjection> markers
+    ) {
+        List<ProjectionData.ProjectionMarker> mapped = new ArrayList<>(markers.size());
+        for (DungeonEditorMapProjectionSnapshot.MarkerProjection marker : markers) {
+            mapped.add(toProjectionMarker(marker));
         }
-        if (nodeSource instanceof TravelDungeonMapProjectionSnapshot.GraphNodeProjection node) {
-            return projectionGraphNode(node.id(), node.clusterId(), node.label(), node.q(), node.r(), node.selected());
-        }
-        throw unsupportedProjectionSource(nodeSource, "graph node");
+        return List.copyOf(mapped);
     }
 
-    private static ProjectionGraphNode projectionGraphNode(
+    private static List<ProjectionData.ProjectionMarker> toTravelProjectionMarkers(
+            List<TravelDungeonMapProjectionSnapshot.MarkerProjection> markers
+    ) {
+        List<ProjectionData.ProjectionMarker> mapped = new ArrayList<>(markers.size());
+        for (TravelDungeonMapProjectionSnapshot.MarkerProjection marker : markers) {
+            mapped.add(toProjectionMarker(marker));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionGraphNode toProjectionGraphNode(
+            DungeonEditorMapProjectionSnapshot.GraphNodeProjection node
+    ) {
+        return projectionGraphNode(node.id(), node.clusterId(), node.label(), node.q(), node.r(), node.selected());
+    }
+
+    private static ProjectionData.ProjectionGraphNode toProjectionGraphNode(
+            TravelDungeonMapProjectionSnapshot.GraphNodeProjection node
+    ) {
+        return projectionGraphNode(node.id(), node.clusterId(), node.label(), node.q(), node.r(), node.selected());
+    }
+
+    private static ProjectionData.ProjectionGraphNode projectionGraphNode(
             long id,
             long clusterId,
             String label,
@@ -470,80 +572,122 @@ public final class DungeonMapContentModel {
             double r,
             boolean selected
     ) {
-        return new ProjectionGraphNode(id, clusterId, label, q, r, selected);
+        return new ProjectionData.ProjectionGraphNode(id, clusterId, label, q, r, selected);
     }
 
-    private static ProjectionGraphLink toProjectionGraphLink(Object linkSource) {
-        if (linkSource instanceof DungeonEditorMapProjectionSnapshot.GraphLinkProjection link) {
-            return new ProjectionGraphLink(link.fromId(), link.toId(), link.selected());
+    private static List<ProjectionData.ProjectionGraphNode> toEditorProjectionGraphNodes(
+            List<DungeonEditorMapProjectionSnapshot.GraphNodeProjection> nodes
+    ) {
+        List<ProjectionData.ProjectionGraphNode> mapped = new ArrayList<>(nodes.size());
+        for (DungeonEditorMapProjectionSnapshot.GraphNodeProjection node : nodes) {
+            mapped.add(toProjectionGraphNode(node));
         }
-        if (linkSource instanceof TravelDungeonMapProjectionSnapshot.GraphLinkProjection link) {
-            return new ProjectionGraphLink(link.fromId(), link.toId(), link.selected());
-        }
-        throw unsupportedProjectionSource(linkSource, "graph link");
+        return List.copyOf(mapped);
     }
 
-    private static @Nullable ProjectionPartyToken toProjectionPartyToken(@Nullable Object partyToken) {
-        if (partyToken instanceof DungeonEditorMapProjectionSnapshot.PartyTokenProjection token) {
-            return projectionPartyToken(
-                    token.q(),
-                    token.r(),
-                    token.level(),
-                    token.heading().name(),
-                    token.visible());
+    private static List<ProjectionData.ProjectionGraphNode> toTravelProjectionGraphNodes(
+            List<TravelDungeonMapProjectionSnapshot.GraphNodeProjection> nodes
+    ) {
+        List<ProjectionData.ProjectionGraphNode> mapped = new ArrayList<>(nodes.size());
+        for (TravelDungeonMapProjectionSnapshot.GraphNodeProjection node : nodes) {
+            mapped.add(toProjectionGraphNode(node));
         }
-        if (partyToken instanceof TravelDungeonMapProjectionSnapshot.PartyTokenProjection token) {
-            return projectionPartyToken(
-                    token.q(),
-                    token.r(),
-                    token.level(),
-                    token.heading().name(),
-                    token.visible());
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.ProjectionGraphLink toProjectionGraphLink(
+            DungeonEditorMapProjectionSnapshot.GraphLinkProjection link
+    ) {
+        return new ProjectionData.ProjectionGraphLink(link.fromId(), link.toId(), link.selected());
+    }
+
+    private static ProjectionData.ProjectionGraphLink toProjectionGraphLink(
+            TravelDungeonMapProjectionSnapshot.GraphLinkProjection link
+    ) {
+        return new ProjectionData.ProjectionGraphLink(link.fromId(), link.toId(), link.selected());
+    }
+
+    private static List<ProjectionData.ProjectionGraphLink> toEditorProjectionGraphLinks(
+            List<DungeonEditorMapProjectionSnapshot.GraphLinkProjection> links
+    ) {
+        List<ProjectionData.ProjectionGraphLink> mapped = new ArrayList<>(links.size());
+        for (DungeonEditorMapProjectionSnapshot.GraphLinkProjection link : links) {
+            mapped.add(toProjectionGraphLink(link));
         }
-        if (partyToken == null) {
+        return List.copyOf(mapped);
+    }
+
+    private static List<ProjectionData.ProjectionGraphLink> toTravelProjectionGraphLinks(
+            List<TravelDungeonMapProjectionSnapshot.GraphLinkProjection> links
+    ) {
+        List<ProjectionData.ProjectionGraphLink> mapped = new ArrayList<>(links.size());
+        for (TravelDungeonMapProjectionSnapshot.GraphLinkProjection link : links) {
+            mapped.add(toProjectionGraphLink(link));
+        }
+        return List.copyOf(mapped);
+    }
+
+    private static ProjectionData.@Nullable ProjectionPartyToken toProjectionPartyToken(
+            DungeonEditorMapProjectionSnapshot.@Nullable PartyTokenProjection token
+    ) {
+        if (token == null) {
             return null;
         }
-        throw unsupportedProjectionSource(partyToken, "party token");
+        return projectionPartyToken(
+                token.q(),
+                token.r(),
+                token.level(),
+                token.heading().name(),
+                token.visible());
     }
 
-    private static ProjectionPartyToken projectionPartyToken(
+    private static ProjectionData.@Nullable ProjectionPartyToken toProjectionPartyToken(
+            TravelDungeonMapProjectionSnapshot.@Nullable PartyTokenProjection token
+    ) {
+        if (token == null) {
+            return null;
+        }
+        return projectionPartyToken(
+                token.q(),
+                token.r(),
+                token.level(),
+                token.heading().name(),
+                token.visible());
+    }
+
+    private static ProjectionData.ProjectionPartyToken projectionPartyToken(
             double q,
             double r,
             int level,
             String heading,
             boolean visible
     ) {
-        return new ProjectionPartyToken(q, r, level, toProjectionHeading(heading), visible);
+        return new ProjectionData.ProjectionPartyToken(q, r, level, toProjectionHeading(heading), visible);
     }
 
-    private static IllegalArgumentException unsupportedProjectionSource(Object source, String role) {
-        String type = source == null ? "null" : source.getClass().getName();
-        return new IllegalArgumentException("Unsupported " + role + " projection source: " + type);
-    }
-
-    private static ProjectionCellKind toProjectionCellKind(String kind) {
+    private static ProjectionData.ProjectionCellKind toProjectionCellKind(String kind) {
         return switch (kind == null ? "ROOM" : kind) {
-            case "CORRIDOR" -> ProjectionCellKind.CORRIDOR;
-            case "STAIR" -> ProjectionCellKind.STAIR;
-            case "TRANSITION" -> ProjectionCellKind.TRANSITION;
-            default -> ProjectionCellKind.ROOM;
+            case "CORRIDOR" -> ProjectionData.ProjectionCellKind.CORRIDOR;
+            case "STAIR" -> ProjectionData.ProjectionCellKind.STAIR;
+            case "TRANSITION" -> ProjectionData.ProjectionCellKind.TRANSITION;
+            default -> ProjectionData.ProjectionCellKind.ROOM;
         };
     }
 
-    private static ProjectionMarkerKind toProjectionMarkerKind(String kind) {
+    private static ProjectionData.ProjectionMarkerKind toProjectionMarkerKind(String kind) {
         return switch (kind == null ? "DOOR" : kind) {
-            case "STAIR" -> ProjectionMarkerKind.STAIR;
-            case "WAYPOINT" -> ProjectionMarkerKind.WAYPOINT;
-            default -> ProjectionMarkerKind.DOOR;
+            case "STAIR" -> ProjectionData.ProjectionMarkerKind.STAIR;
+            case "WAYPOINT" -> ProjectionData.ProjectionMarkerKind.WAYPOINT;
+            default -> ProjectionData.ProjectionMarkerKind.DOOR;
         };
     }
 
-    private static ProjectionHeading toProjectionHeading(String heading) {
+    private static ProjectionData.ProjectionHeading toProjectionHeading(String heading) {
         return switch (heading == null ? "SOUTH" : heading) {
-            case "NORTH" -> ProjectionHeading.NORTH;
-            case "EAST" -> ProjectionHeading.EAST;
-            case "WEST" -> ProjectionHeading.WEST;
-            default -> ProjectionHeading.SOUTH;
+            case "NORTH" -> ProjectionData.ProjectionHeading.NORTH;
+            case "EAST" -> ProjectionData.ProjectionHeading.EAST;
+            case "WEST" -> ProjectionData.ProjectionHeading.WEST;
+            default -> ProjectionData.ProjectionHeading.SOUTH;
         };
     }
 
@@ -599,161 +743,17 @@ public final class DungeonMapContentModel {
         return RenderState.OverlayMode.OFF;
     }
 
-    private enum ProjectionTopologyKind {
-        SQUARE,
-        HEX
-    }
-
-    private enum ProjectionCellKind {
-        ROOM,
-        CORRIDOR,
-        STAIR,
-        TRANSITION
-    }
-
-    private enum ProjectionEdgeKind {
-        WALL,
-        DOOR
-    }
-
-    private enum ProjectionMarkerKind {
-        DOOR,
-        STAIR,
-        WAYPOINT
-    }
-
-    private enum ProjectionHeading {
-        NORTH,
-        EAST,
-        SOUTH,
-        WEST
-    }
-
-    private record ProjectionTopologyRef(String kind, long id) {
-
-        private ProjectionTopologyRef {
-            kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
-            id = Math.max(0L, id);
-        }
-    }
-
-    private record ProjectionMarkerHandle(
-            String kind,
-            ProjectionTopologyRef topologyRef,
-            long ownerId,
-            long clusterId,
-            long corridorId,
-            long roomId,
-            int index,
-            int q,
-            int r,
-            int level,
-            String direction
-    ) {
-
-        private ProjectionMarkerHandle {
-            kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
-            topologyRef = topologyRef == null
-                    ? new ProjectionTopologyRef("EMPTY", 0L)
-                    : topologyRef;
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
-            index = Math.max(0, index);
-            direction = direction == null ? "" : direction.trim();
-        }
-    }
-
-    private record ProjectionCell(
-            int q,
-            int r,
-            int level,
-            String label,
-            ProjectionCellKind kind,
-            long ownerId,
-            long clusterId,
-            ProjectionTopologyRef topologyRef,
-            boolean selected,
-            boolean overlay,
-            boolean preview,
-            boolean destructivePreview
-    ) {
-    }
-
-    private record ProjectionEdge(
-            double startQ,
-            double startR,
-            double endQ,
-            double endR,
-            int level,
-            ProjectionEdgeKind kind,
-            String label,
-            long ownerId,
-            ProjectionTopologyRef topologyRef,
-            boolean selected,
-            boolean preview
-    ) {
-    }
-
-    private record ProjectionLabel(
-            String label,
-            double q,
-            double r,
-            int level,
-            long ownerId,
-            long clusterId,
-            ProjectionTopologyRef topologyRef,
-            boolean selected,
-            boolean preview
-    ) {
-    }
-
-    private record ProjectionMarker(
-            String label,
-            double q,
-            double r,
-            int level,
-            ProjectionMarkerKind kind,
-            boolean selected,
-            ProjectionMarkerHandle handle,
-            boolean preview
-    ) {
-    }
-
-    private record ProjectionGraphNode(
-            long id,
-            long clusterId,
-            String label,
-            double q,
-            double r,
-            boolean selected
-    ) {
-    }
-
-    private record ProjectionGraphLink(long fromId, long toId, boolean selected) {
-    }
-
-    private record ProjectionPartyToken(
-            double q,
-            double r,
-            int level,
-            ProjectionHeading heading,
-            boolean visible
-    ) {
-    }
-
     private record ProjectionData(
             String mapName,
-            ProjectionTopologyKind topology,
+            ProjectionData.ProjectionTopologyKind topology,
             int width,
             int height,
-            List<ProjectionCell> cells,
-            List<ProjectionEdge> edges,
-            List<ProjectionLabel> labels,
-            List<ProjectionMarker> markers,
-            List<ProjectionGraphNode> graphNodes,
-            List<ProjectionGraphLink> graphLinks,
+            List<ProjectionData.ProjectionCell> cells,
+            List<ProjectionData.ProjectionEdge> edges,
+            List<ProjectionData.ProjectionLabel> labels,
+            List<ProjectionData.ProjectionMarker> markers,
+            List<ProjectionData.ProjectionGraphNode> graphNodes,
+            List<ProjectionData.ProjectionGraphLink> graphLinks,
             @Nullable ProjectionPartyToken partyToken
     ) {
 
@@ -768,6 +768,150 @@ public final class DungeonMapContentModel {
             markers = immutableList(markers);
             graphNodes = immutableList(graphNodes);
             graphLinks = immutableList(graphLinks);
+        }
+
+        private enum ProjectionTopologyKind {
+            SQUARE,
+            HEX
+        }
+
+        private enum ProjectionCellKind {
+            ROOM,
+            CORRIDOR,
+            STAIR,
+            TRANSITION
+        }
+
+        private enum ProjectionEdgeKind {
+            WALL,
+            DOOR
+        }
+
+        private enum ProjectionMarkerKind {
+            DOOR,
+            STAIR,
+            WAYPOINT
+        }
+
+        private enum ProjectionHeading {
+            NORTH,
+            EAST,
+            SOUTH,
+            WEST
+        }
+
+        private record ProjectionTopologyRef(String kind, long id) {
+
+            private ProjectionTopologyRef {
+                kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+                id = Math.max(0L, id);
+            }
+        }
+
+        private record ProjectionMarkerHandle(
+                String kind,
+                ProjectionData.ProjectionTopologyRef topologyRef,
+                long ownerId,
+                long clusterId,
+                long corridorId,
+                long roomId,
+                int index,
+                int q,
+                int r,
+                int level,
+                String direction
+        ) {
+
+            private ProjectionMarkerHandle {
+                kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+                topologyRef = topologyRef == null
+                        ? new ProjectionData.ProjectionTopologyRef("EMPTY", 0L)
+                        : topologyRef;
+                ownerId = Math.max(0L, ownerId);
+                clusterId = Math.max(0L, clusterId);
+                corridorId = Math.max(0L, corridorId);
+                roomId = Math.max(0L, roomId);
+                index = Math.max(0, index);
+                direction = direction == null ? "" : direction.trim();
+            }
+        }
+
+        private record ProjectionCell(
+                int q,
+                int r,
+                int level,
+                String label,
+                ProjectionData.ProjectionCellKind kind,
+                long ownerId,
+                long clusterId,
+                ProjectionData.ProjectionTopologyRef topologyRef,
+                boolean selected,
+                boolean overlay,
+                boolean preview,
+                boolean destructivePreview
+        ) {
+        }
+
+        private record ProjectionEdge(
+                double startQ,
+                double startR,
+                double endQ,
+                double endR,
+                int level,
+                ProjectionData.ProjectionEdgeKind kind,
+                String label,
+                long ownerId,
+                ProjectionData.ProjectionTopologyRef topologyRef,
+                boolean selected,
+                boolean preview
+        ) {
+        }
+
+        private record ProjectionLabel(
+                String label,
+                double q,
+                double r,
+                int level,
+                long ownerId,
+                long clusterId,
+                ProjectionData.ProjectionTopologyRef topologyRef,
+                boolean selected,
+                boolean preview
+        ) {
+        }
+
+        private record ProjectionMarker(
+                String label,
+                double q,
+                double r,
+                int level,
+                ProjectionData.ProjectionMarkerKind kind,
+                boolean selected,
+                ProjectionData.ProjectionMarkerHandle handle,
+                boolean preview
+        ) {
+        }
+
+        private record ProjectionGraphNode(
+                long id,
+                long clusterId,
+                String label,
+                double q,
+                double r,
+                boolean selected
+        ) {
+        }
+
+        private record ProjectionGraphLink(long fromId, long toId, boolean selected) {
+        }
+
+        private record ProjectionPartyToken(
+                double q,
+                double r,
+                int level,
+                ProjectionData.ProjectionHeading heading,
+                boolean visible
+        ) {
         }
     }
 
@@ -813,6 +957,10 @@ public final class DungeonMapContentModel {
             graphLinks = immutableList(graphLinks);
         }
 
+        public OverlayMode overlayMode() {
+            return overlaySettings.mode();
+        }
+
         @Override
         public List<RenderCell> cells() {
             return immutableList(cells);
@@ -841,10 +989,6 @@ public final class DungeonMapContentModel {
         @Override
         public List<RenderState.GraphLink> graphLinks() {
             return immutableList(graphLinks);
-        }
-
-        public OverlayMode overlayMode() {
-            return overlaySettings.mode();
         }
 
         public static RenderState empty() {
@@ -912,7 +1056,7 @@ public final class DungeonMapContentModel {
                             edge.endQ(),
                             edge.endR(),
                             edge.level(),
-                            edge.kind() == ProjectionEdgeKind.DOOR
+                            edge.kind() == ProjectionData.ProjectionEdgeKind.DOOR
                                     ? RenderState.EdgeKind.DOOR
                                     : RenderState.EdgeKind.WALL,
                             edge.label(),
@@ -956,7 +1100,7 @@ public final class DungeonMapContentModel {
                     cells.size() + " cells, " + edges.size() + " edges · " + resolvedOverlay.mode().label(),
                     mapLoaded,
                     mapLoaded ? "" : "No dungeon map geometry available.",
-                    projection.topology() == ProjectionTopologyKind.HEX
+                    projection.topology() == ProjectionData.ProjectionTopologyKind.HEX
                             ? RenderTopology.HEX
                             : RenderTopology.SQUARE,
                     viewMode == null ? ViewMode.GRID : viewMode,
@@ -980,8 +1124,8 @@ public final class DungeonMapContentModel {
                                     projection.partyToken().visible()));
         }
 
-        private static RenderState.CellKind toCellKind(ProjectionCellKind kind) {
-            return switch (kind == null ? ProjectionCellKind.ROOM : kind) {
+        private static RenderState.CellKind toCellKind(ProjectionData.ProjectionCellKind kind) {
+            return switch (kind == null ? ProjectionData.ProjectionCellKind.ROOM : kind) {
                 case ROOM -> RenderState.CellKind.ROOM;
                 case CORRIDOR -> RenderState.CellKind.CORRIDOR;
                 case STAIR -> RenderState.CellKind.STAIR;
@@ -989,16 +1133,16 @@ public final class DungeonMapContentModel {
             };
         }
 
-        private static RenderState.MarkerKind toMarkerKind(ProjectionMarkerKind kind) {
-            return switch (kind == null ? ProjectionMarkerKind.DOOR : kind) {
+        private static RenderState.MarkerKind toMarkerKind(ProjectionData.ProjectionMarkerKind kind) {
+            return switch (kind == null ? ProjectionData.ProjectionMarkerKind.DOOR : kind) {
                 case DOOR -> RenderState.MarkerKind.DOOR;
                 case STAIR -> RenderState.MarkerKind.STAIR;
                 case WAYPOINT -> RenderState.MarkerKind.WAYPOINT;
             };
         }
 
-        private static RenderMarker toRenderMarker(ProjectionMarker marker) {
-            ProjectionMarkerHandle handle = marker.handle();
+        private static RenderMarker toRenderMarker(ProjectionData.ProjectionMarker marker) {
+            ProjectionData.ProjectionMarkerHandle handle = marker.handle();
             return new RenderMarker(
                     marker.label(),
                     marker.q(),
@@ -1021,8 +1165,8 @@ public final class DungeonMapContentModel {
                     marker.preview());
         }
 
-        private static RenderState.Heading toHeading(ProjectionHeading heading) {
-            return switch (heading == null ? ProjectionHeading.SOUTH : heading) {
+        private static RenderState.Heading toHeading(ProjectionData.ProjectionHeading heading) {
+            return switch (heading == null ? ProjectionData.ProjectionHeading.SOUTH : heading) {
                 case NORTH -> RenderState.Heading.NORTH;
                 case EAST -> RenderState.Heading.EAST;
                 case SOUTH -> RenderState.Heading.SOUTH;
@@ -1091,10 +1235,6 @@ public final class DungeonMapContentModel {
             @Override
             public List<Integer> selectedLevels() {
                 return immutableList(selectedLevels);
-            }
-
-            public boolean selectsLevel(int level) {
-                return selectedLevels.contains(level);
             }
 
             public static LevelOverlaySettings defaults() {
