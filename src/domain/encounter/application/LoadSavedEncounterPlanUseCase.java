@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
-import src.domain.encounter.published.SavedEncounterPlanStatus;
 
 public final class LoadSavedEncounterPlanUseCase {
 
@@ -29,29 +28,36 @@ public final class LoadSavedEncounterPlanUseCase {
     }
 
     public record Result(
-            SavedEncounterPlanStatus status,
+            Status status,
             @Nullable EncounterPlan plan,
             String message
     ) {
         public Result {
-            status = status == null ? SavedEncounterPlanStatus.STORAGE_ERROR : status;
+            status = status == null ? Status.STORAGE_ERROR : status;
             message = message == null ? "" : message;
         }
 
         static Result success(EncounterPlan plan) {
-            return new Result(SavedEncounterPlanStatus.SUCCESS, plan, "Encounter loaded.");
+            return new Result(Status.SUCCESS, plan, "Encounter loaded.");
         }
 
         static Result notFound(String message) {
-            return new Result(SavedEncounterPlanStatus.NOT_FOUND, null, message);
+            return new Result(Status.NOT_FOUND, null, message);
         }
 
         static Result invalidRequest(String message) {
-            return new Result(SavedEncounterPlanStatus.INVALID_REQUEST, null, message);
+            return new Result(Status.INVALID_REQUEST, null, message);
         }
 
         static Result storageError(String message) {
-            return new Result(SavedEncounterPlanStatus.STORAGE_ERROR, null, message);
+            return new Result(Status.STORAGE_ERROR, null, message);
         }
+    }
+
+    public enum Status {
+        SUCCESS,
+        NOT_FOUND,
+        INVALID_REQUEST,
+        STORAGE_ERROR
     }
 }

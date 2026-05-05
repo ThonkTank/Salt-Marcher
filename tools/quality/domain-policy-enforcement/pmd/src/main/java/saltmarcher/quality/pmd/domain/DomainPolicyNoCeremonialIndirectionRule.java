@@ -20,7 +20,7 @@ public final class DomainPolicyNoCeremonialIndirectionRule extends AbstractJavaR
         }
 
         asCtx(data).addViolationWithMessage(node,
-                "Domain policy role '" + sourceFacts.qualifiedTopLevelTypeName()
+                "Domain policy role '" + sourceFacts.relativePath()
                         + "' is ceremonial indirection only: all non-constructor methods merely "
                         + String.join(", ", analysis.trivialDescriptions())
                         + ". Policy roles must contribute reusable policy instead of only relaying to "

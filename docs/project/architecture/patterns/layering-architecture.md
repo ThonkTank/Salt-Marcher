@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-28
+Last Reviewed: 2026-05-05
 Source of Truth: Cross-layer responsibility matrix, dependency direction,
 boundary crossings, and the only allowed inter-layer seams for active
 SaltMarcher code.
@@ -40,6 +40,47 @@ Responsibilities:
 - `src/data/**` owns concrete adapters, source mechanics, persistence,
   transport, and translation between domain-facing contracts and external
   sources
+
+## Role Ceremoniality Matrix
+
+SaltMarcher does not use one repo-wide "too little logic" rule. Role
+substance is judged only against the responsibility of the owning role family.
+
+### Thin Orchestration Or Adapter Roles
+
+These roles MAY stay intentionally thin, delegating, or wiring-focused when
+they still own a real boundary responsibility:
+
+- view `*Contribution`
+- view `*Binder`
+- view `*IntentHandler`
+- root domain `<PascalContext>ApplicationService`
+- domain `application/*UseCase`
+- data `*ServiceContribution`
+
+### Passive Or State-Only Roles
+
+These roles MAY stay passive or carrier-oriented. They are not expected to own
+decision-heavy logic:
+
+- view `*View`
+- view `*ContributionModel`
+- view `*ContentModel`
+- view `*ViewInputEvent`
+- view `*PublishedEvent`
+- domain `published/**`
+- domain `port/**`
+- data `model/**`
+
+### Non-Ceremonial Substantive Roles
+
+These roles MUST not exist only as relay or wrapper ceremony. If they exist,
+they must own real decision, translation, composition, validation, or
+construction work:
+
+- domain `service/`
+- domain `policy/`
+- domain `factory/`
 
 ## Dependency Direction
 
@@ -109,6 +150,7 @@ Forbidden shortcuts:
 ## Forbidden Patterns
 
 - adjacent-layer pass-through wrappers whose only purpose is diagram symmetry
+  or naming ceremony around an otherwise unchanged collaborator
 - `src/view/**` reaching directly into `src/data/**`
 - passive Views reaching into shell internals, domain internals, data, or
   `*ApplicationService` types

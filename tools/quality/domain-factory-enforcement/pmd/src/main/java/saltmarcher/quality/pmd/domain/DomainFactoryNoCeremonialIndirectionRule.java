@@ -20,7 +20,7 @@ public final class DomainFactoryNoCeremonialIndirectionRule extends AbstractJava
         }
 
         asCtx(data).addViolationWithMessage(node,
-                "Domain factory role '" + sourceFacts.qualifiedTopLevelTypeName()
+                "Domain factory role '" + sourceFacts.relativePath()
                         + "' is ceremonial indirection only: all non-constructor methods merely "
                         + String.join(", ", analysis.trivialDescriptions())
                         + ". Factory roles must own meaningful construction logic instead of only relaying to "

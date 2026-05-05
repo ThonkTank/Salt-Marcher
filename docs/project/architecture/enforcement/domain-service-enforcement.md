@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-30
+Last Reviewed: 2026-05-05
 Source of Truth: Complete architecture-enforcement catalog for tactical
 `service/` role types in named domain modules.
 
@@ -25,11 +25,11 @@ boundaries that also constrain `service/`. Those live in
 Unified focused bundle entrypoint:
 
 - `./gradlew checkDomainServiceEnforcement --rerun-tasks --console=plain`
-  runs the currently active Domain Service-focused Error Prone and
+  runs the currently active Domain Service-focused Error Prone, PMD, and
   documentation-coverage checks through one root task. Canonical compile-side
   blocking behavior remains at `./gradlew compileJava`; the focused bundle
-  proof route adds the role-owned documentation coverage check without pulling
-  the broader architecture aggregates.
+  proof route adds the role-owned source-pattern and documentation coverage
+  checks without pulling the broader architecture aggregates.
 
 ## Invariant Catalog
 
@@ -44,6 +44,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-service-statelessness` | Enforced | every top-level type under `service/` | domain-service bundle Error Prone `DomainServiceStatelessness` | `./gradlew compileJava` and `./gradlew checkDomainServiceEnforcement` | Service role types do not declare instance fields and stay stateless. |
+| `domain-service-no-trivial-relay-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `service/` | domain-service bundle PMD `DomainServiceNoCeremonialIndirectionRule` | `./gradlew pmdDomainServiceEnforcement` and `./gradlew checkDomainServiceEnforcement` | A service role does not consist only of constructor wrappers or one-step delegated relay methods, even when null guards or `requireNonNull(...)` calls are present. |
 
 ### Communication Contract
 
@@ -57,7 +58,7 @@ this document does not duplicate those named-module or model-role rows here.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-service-non-ceremonial-role-use` | Review-Owned | every service role used in a named domain module | none | none | A legal domain service is used only when it clarifies real domain behavior rather than serving as ceremonial tactical partitioning or a renamed procedural coordinator. |
+| `domain-service-non-ceremonial-role-use` | Review-Owned | every service role used in a named domain module | none | none | Beyond the narrowly blocked trivial relay forms above, a legal domain service is used only when it clarifies real domain behavior rather than serving as ceremonial tactical partitioning or a renamed procedural coordinator. |
 
 ## References
 

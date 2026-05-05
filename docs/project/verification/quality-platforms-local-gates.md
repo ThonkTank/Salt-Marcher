@@ -65,13 +65,13 @@ focused Domain Published carrier-shape, signature-purity, topology, and
 documentation proof enters through `checkDomainPublishedEnforcement`,
 focused Domain Port role-shape, boundary, and documentation proof enters
 through `checkDomainPortEnforcement`,
-focused Domain Factory role and documentation proof enters through
+focused Domain Factory role, source-pattern policy, and documentation proof enters through
 `checkDomainFactoryEnforcement`,
 focused Domain Value role and documentation proof enters through
 `checkDomainValueEnforcement`,
-focused Domain Service role and documentation proof enters through
+focused Domain Service role, source-pattern policy, and documentation proof enters through
 `checkDomainServiceEnforcement`,
-focused Domain Policy role and documentation proof enters through
+focused Domain Policy role, source-pattern policy, and documentation proof enters through
 `checkDomainPolicyEnforcement`,
 focused Domain Event role-shape and documentation proof enters through
 `checkDomainEventEnforcement`,
@@ -382,8 +382,9 @@ Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `checkViewInspectorEntryEnforcement`, `checkViewLayerEnforcement`,
 `checkViewInputEventEnforcement`, `checkViewPublishedEventEnforcement`,
 `checkViewIntentHandlerEnforcement`, `checkLayeringArchitectureEnforcement`,
-`checkDocumentationEnforcement`, and `jqassistantEffectiveRules`, each run
-through `./gradlew <task> --console=plain`.
+`checkLayeringIndirectionCandidates`, `checkDocumentationEnforcement`, and
+`jqassistantEffectiveRules`, each run through
+`./gradlew <task> --console=plain`.
 
 `pmdMain` and `spotbugsMain` are central blocking gates and may also be run as
 focused direct entrypoints. `pmdStrictMain` remains the focused text-first PMD
@@ -398,6 +399,7 @@ Architecture-focused entrypoints:
   `checkDomainPortEnforcement`,
   `checkDomainFactoryEnforcement`,
   `checkDomainServiceEnforcement`,
+  `checkDomainPolicyEnforcement`,
   `checkDomainEventEnforcement`,
   `checkDataModelEnforcement`,
   `checkDataGatewayEnforcement`,
@@ -450,13 +452,16 @@ Architecture-focused entrypoints:
   Aggregates the focused `Domain Value` bundle through `compileJava` and
   `:build-harness:domainValueEnforcementDocumentationCheck`.
 - `./gradlew checkDomainFactoryEnforcement --console=plain`
-  Aggregates the focused `Domain Factory` bundle through `compileJava` and
+  Aggregates the focused `Domain Factory` bundle through `compileJava`,
+  `pmdDomainFactoryEnforcement`, and
   `:build-harness:domainFactoryEnforcementDocumentationCheck`.
 - `./gradlew checkDomainServiceEnforcement --console=plain`
-  Aggregates the focused `Domain Service` bundle through `compileJava` and
+  Aggregates the focused `Domain Service` bundle through `compileJava`,
+  `pmdDomainServiceEnforcement`, and
   `:build-harness:domainServiceEnforcementDocumentationCheck`.
 - `./gradlew checkDomainPolicyEnforcement --console=plain`
-  Aggregates the focused `Domain Policy` bundle through `compileJava` and
+  Aggregates the focused `Domain Policy` bundle through `compileJava`,
+  `pmdDomainPolicyEnforcement`, and
   `:build-harness:domainPolicyEnforcementDocumentationCheck`.
 - `./gradlew checkDomainEventEnforcement --console=plain`
   Aggregates the focused Domain Event bundle through `compileJava` and
@@ -494,6 +499,10 @@ Architecture-focused entrypoints:
 - `./gradlew checkLayeringArchitectureEnforcement --console=plain`
   Aggregates the dedicated `Layering Architecture` bundle through
   `:build-harness:layeringArchitectureTopologyCheck`.
+- `./gradlew checkLayeringIndirectionCandidates --console=plain`
+  Runs the report-only thin-role candidate scan through
+  `:build-harness:checkLayeringIndirectionCandidates` without attaching that
+  heuristic to `checkArchitecture`, `check`, or `build`.
 - `./gradlew checkStylingLayerEnforcement --console=plain`
   Aggregates the styling-layer bundle through `compileJava`,
   `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,

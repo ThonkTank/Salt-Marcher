@@ -22,6 +22,11 @@ public final class DomainPolicyEnforcementDocumentationRules implements Architec
                     "Enforced",
                     List.of("domain-policy bundle Error Prone", "DomainPolicyStatelessness"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainPolicyEnforcement")),
+            row(
+                    "domain-policy-no-trivial-relay-wrapper-source-pattern",
+                    "Source-Pattern Enforced",
+                    List.of("domain-policy bundle PMD", "DomainPolicyNoCeremonialIndirectionRule"),
+                    List.of("./gradlew pmdDomainPolicyEnforcement", "./gradlew checkDomainPolicyEnforcement")),
             row("domain-policy-real-policy-behavior", "Review-Owned"));
 
     @Override

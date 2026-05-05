@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-30
+Last Reviewed: 2026-05-05
 Source of Truth: Complete architecture-enforcement catalog for tactical
 `policy/` role types in named domain modules.
 
@@ -26,11 +26,11 @@ boundaries that also constrain `policy/`. Those live in
 Unified focused bundle entrypoint:
 
 - `./gradlew checkDomainPolicyEnforcement --rerun-tasks --console=plain`
-  runs the currently active Domain Policy-focused Error Prone and
+  runs the currently active Domain Policy-focused Error Prone, PMD, and
   documentation-coverage checks through one root task. Canonical compile-side
   blocking behavior remains at `./gradlew compileJava`; the focused bundle
-  proof route adds the role-owned documentation coverage check without pulling
-  the broader architecture aggregates.
+  proof route adds the role-owned source-pattern and documentation coverage
+  checks without pulling the broader architecture aggregates.
 
 ## Invariant Catalog
 
@@ -51,6 +51,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-policy-statelessness` | Enforced | every top-level type under `policy/` | domain-policy bundle Error Prone `DomainPolicyStatelessness` | `./gradlew compileJava` and `./gradlew checkDomainPolicyEnforcement` | Policy role types do not declare instance fields and therefore cannot hide role-local state behind policy objects. |
+| `domain-policy-no-trivial-relay-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `policy/` | domain-policy bundle PMD `DomainPolicyNoCeremonialIndirectionRule` | `./gradlew pmdDomainPolicyEnforcement` and `./gradlew checkDomainPolicyEnforcement` | A policy role does not collapse into one-step delegated relay or renamed helper ceremony, even when null guards or `requireNonNull(...)` calls are present. |
 
 ### Communication Contract
 

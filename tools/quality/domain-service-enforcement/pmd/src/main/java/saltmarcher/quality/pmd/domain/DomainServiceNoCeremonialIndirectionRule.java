@@ -20,7 +20,7 @@ public final class DomainServiceNoCeremonialIndirectionRule extends AbstractJava
         }
 
         asCtx(data).addViolationWithMessage(node,
-                "Domain service role '" + sourceFacts.qualifiedTopLevelTypeName()
+                "Domain service role '" + sourceFacts.relativePath()
                         + "' is ceremonial indirection only: all non-constructor methods merely "
                         + String.join(", ", analysis.trivialDescriptions())
                         + ". Service roles must contribute domain behavior instead of only relaying to "

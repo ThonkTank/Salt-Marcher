@@ -22,6 +22,11 @@ public final class DomainServiceEnforcementDocumentationRules implements Archite
                     "Enforced",
                     List.of("domain-service bundle Error Prone", "DomainServiceStatelessness"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainServiceEnforcement")),
+            row(
+                    "domain-service-no-trivial-relay-wrapper-source-pattern",
+                    "Source-Pattern Enforced",
+                    List.of("domain-service bundle PMD", "DomainServiceNoCeremonialIndirectionRule"),
+                    List.of("./gradlew pmdDomainServiceEnforcement", "./gradlew checkDomainServiceEnforcement")),
             row("domain-service-non-ceremonial-role-use", "Review-Owned"));
 
     @Override

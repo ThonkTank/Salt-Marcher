@@ -22,6 +22,11 @@ public final class DomainFactoryEnforcementDocumentationRules implements Archite
                     "Enforced",
                     List.of("domain-factory bundle Error Prone", "DomainFactoryStatelessness"),
                     List.of("./gradlew compileJava", "./gradlew checkDomainFactoryEnforcement")),
+            row(
+                    "domain-factory-no-trivial-construction-wrapper-source-pattern",
+                    "Source-Pattern Enforced",
+                    List.of("domain-factory bundle PMD", "DomainFactoryNoCeremonialIndirectionRule"),
+                    List.of("./gradlew pmdDomainFactoryEnforcement", "./gradlew checkDomainFactoryEnforcement")),
             row("domain-factory-real-construction-boundary", "Review-Owned"));
 
     @Override

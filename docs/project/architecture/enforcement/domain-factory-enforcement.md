@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-30
+Last Reviewed: 2026-05-05
 Source of Truth: Complete architecture-enforcement catalog for tactical
 `factory/` role types in named domain modules.
 
@@ -25,11 +25,11 @@ boundaries that also constrain `factory/`. Those live in
 Unified focused bundle entrypoint:
 
 - `./gradlew checkDomainFactoryEnforcement --rerun-tasks --console=plain`
-  runs the currently active Domain Factory-focused Error Prone and
+  runs the currently active Domain Factory-focused Error Prone, PMD, and
   documentation-coverage checks through one root task. Canonical compile-side
   blocking behavior remains at `./gradlew compileJava`; the focused bundle
-  proof route adds the role-owned documentation coverage check without pulling
-  the broader architecture aggregates.
+  proof route adds the role-owned source-pattern and documentation coverage
+  checks without pulling the broader architecture aggregates.
 
 ## Invariant Catalog
 
@@ -44,6 +44,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-factory-statelessness` | Enforced | every top-level type under `factory/` | domain-factory bundle Error Prone `DomainFactoryStatelessness` | `./gradlew compileJava` and `./gradlew checkDomainFactoryEnforcement` | Factory role types do not declare instance fields and stay stateless. |
+| `domain-factory-no-trivial-construction-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `factory/` | domain-factory bundle PMD `DomainFactoryNoCeremonialIndirectionRule` | `./gradlew pmdDomainFactoryEnforcement` and `./gradlew checkDomainFactoryEnforcement` | A factory role does not survive only as one-step constructor or collaborator wrapper ceremony, even when null guards or `requireNonNull(...)` calls are present. |
 
 ### Communication Contract
 
@@ -57,7 +58,7 @@ this document does not duplicate those named-module or model-role rows here.
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-factory-real-construction-boundary` | Review-Owned | every factory role used in a named domain module | none | none | A legal factory role still owns meaningful construction logic rather than serving as naming ceremony around direct constructors. |
+| `domain-factory-real-construction-boundary` | Review-Owned | every factory role used in a named domain module | none | none | Beyond the narrowly blocked trivial wrapper forms above, a legal factory role still owns meaningful construction logic rather than serving as naming ceremony around direct constructors. |
 
 ## References
 
