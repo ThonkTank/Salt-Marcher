@@ -27,7 +27,7 @@ public final class DungeonEditorHandleMovementService {
 
     public DungeonMap moveEditorHandle(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        if (handle == null || (deltaQ == 0 && deltaR == 0 && deltaLevel == 0)) {
+        if (handle == null || isStationary(deltaQ, deltaR, deltaLevel)) {
             return dungeonMap;
         }
         if (handle.type() == DungeonEditorHandleType.CLUSTER_LABEL) {
@@ -181,7 +181,7 @@ public final class DungeonEditorHandleMovementService {
                 changed = true;
             } else {
                 int exitIndex = handle.index() - pathSize;
-                if (exitIndex >= 0 && exitIndex < exits.size()) {
+                if (validExitIndex(exitIndex, exits)) {
                     DungeonStairExit exit = exits.get(exitIndex);
                     exits.set(exitIndex, new DungeonStairExit(
                             exit.exitId(),
@@ -219,5 +219,13 @@ public final class DungeonEditorHandleMovementService {
     private static DungeonCell movedCell(DungeonCell cell, int deltaQ, int deltaR, int deltaLevel) {
         DungeonCell safeCell = cell == null ? new DungeonCell(0, 0, 0) : cell;
         return new DungeonCell(safeCell.q() + deltaQ, safeCell.r() + deltaR, safeCell.level() + deltaLevel);
+    }
+
+    private static boolean isStationary(int deltaQ, int deltaR, int deltaLevel) {
+        return deltaQ == 0 && deltaR == 0 && deltaLevel == 0;
+    }
+
+    private static boolean validExitIndex(int exitIndex, List<DungeonStairExit> exits) {
+        return exitIndex >= 0 && exitIndex < exits.size();
     }
 }

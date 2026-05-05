@@ -61,11 +61,11 @@ public final class DungeonCorridorMutationService {
         }
         List<Long> roomIds = new ArrayList<>();
         Long startRoomId = startResolved.endpoint().roomId();
-        if (startRoomId != null && startRoomId > 0L) {
+        if (hasPersistedRoomId(startRoomId)) {
             roomIds.add(startRoomId);
         }
         Long endRoomId = endResolved.endpoint().roomId();
-        if (endRoomId != null && endRoomId > 0L && !roomIds.contains(endRoomId)) {
+        if (hasPersistedRoomId(endRoomId) && !roomIds.contains(endRoomId)) {
             roomIds.add(endRoomId);
         }
         DungeonCorridor corridor = new DungeonCorridor(
@@ -92,7 +92,7 @@ public final class DungeonCorridorMutationService {
             DungeonCorridorRoomEndpoint endpoint
     ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        if (corridorId <= 0L || endpoint == null || !endpoint.present()) {
+        if (invalidCorridorId(corridorId) || endpoint == null || !endpoint.present()) {
             return dungeonMap;
         }
         List<DungeonCorridor> nextCorridors = new ArrayList<>();
@@ -126,7 +126,9 @@ public final class DungeonCorridorMutationService {
 
     public DungeonMap mergeCorridors(DungeonMap dungeonMap, long corridorId, long mergedCorridorId) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        if (corridorId <= 0L || mergedCorridorId <= 0L || corridorId == mergedCorridorId) {
+        if (invalidCorridorId(corridorId)
+                || invalidCorridorId(mergedCorridorId)
+                || corridorId == mergedCorridorId) {
             return dungeonMap;
         }
         DungeonCorridor kept = corridor(dungeonMap, corridorId);
@@ -157,7 +159,7 @@ public final class DungeonCorridorMutationService {
 
     public DungeonMap deleteCorridor(DungeonMap dungeonMap, long corridorId) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        if (corridorId <= 0L) {
+        if (invalidCorridorId(corridorId)) {
             return dungeonMap;
         }
         DungeonCorridor existing = corridor(dungeonMap, corridorId);
@@ -216,12 +218,24 @@ public final class DungeonCorridorMutationService {
             DungeonRoom room = roomId == null ? null : room(dungeonMap, roomId);
             if (room != null) {
                 clusterIds.add(room.clusterId());
-                if (clusterIds.size() > 1) {
+                if (spansMultipleClusters(clusterIds)) {
                     return false;
                 }
             }
         }
         return clusterIds.size() <= 1;
+    }
+
+    private static boolean hasPersistedRoomId(@Nullable Long roomId) {
+        return roomId != null && roomId > 0L;
+    }
+
+    private static boolean invalidCorridorId(long corridorId) {
+        return corridorId <= 0L;
+    }
+
+    private static boolean spansMultipleClusters(Set<Long> clusterIds) {
+        return clusterIds.size() > 1;
     }
 
     private static long nextCorridorId(DungeonMap dungeonMap) {

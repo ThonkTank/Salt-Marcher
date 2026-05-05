@@ -1,7 +1,6 @@
 package src.domain.dungeon.map.service;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -27,7 +26,7 @@ final class DungeonClusterBoundaryEditService {
             DungeonClusterBoundaryKind kind,
             boolean deleteBoundary
     ) {
-        if (clusterId <= 0L || edges == null || edges.isEmpty()) {
+        if (invalidBoundaryEditRequest(clusterId, edges)) {
             return dungeonMap;
         }
         List<DungeonRoomTopologyClusterWork> clusters = REBUILD_SERVICE.workClusters(dungeonMap);
@@ -139,16 +138,14 @@ final class DungeonClusterBoundaryEditService {
             return null;
         }
         List<DungeonCell> touchingCells = DungeonRoomCellProjector.sortedCells(edge.touchingCells());
-        if (touchingCells.size() != 2 || touchingCells.getFirst().level() != touchingCells.get(1).level()) {
+        if (!formsBoundaryPair(touchingCells) || spansLevels(touchingCells)) {
             return null;
         }
         List<DungeonCell> clusterCells = target.cellsAt(touchingCells.getFirst().level());
         List<DungeonCell> insideCells = touchingCells.stream()
                 .filter(clusterCells::contains)
                 .toList();
-        if (insideCells.isEmpty()
-                || (kind != DungeonClusterBoundaryKind.DOOR && insideCells.size() != 2)
-                || (kind == DungeonClusterBoundaryKind.DOOR && insideCells.size() > 2)) {
+        if (!supportsBoundaryKind(insideCells, kind)) {
             return null;
         }
         DungeonCell baseCell = insideCells.getFirst();
@@ -181,7 +178,7 @@ final class DungeonClusterBoundaryEditService {
             Map<Long, List<DungeonCell>> roomCells
     ) {
         long touchingRoomCount = touchingRoomCount(edge, roomCells);
-        if (touchingRoomCount >= 2) {
+        if (touchesMultipleRooms(touchingRoomCount)) {
             return existing != null && existing.kind() != DungeonClusterBoundaryKind.DOOR;
         }
         return touchingRoomCount == 1 && (existing == null || existing.kind() != DungeonClusterBoundaryKind.DOOR);
@@ -196,6 +193,40 @@ final class DungeonClusterBoundaryEditService {
                 .filter(roomCells -> roomCells.stream().anyMatch(touching::contains))
                 .limit(2L)
                 .count();
+    }
+
+    private boolean invalidBoundaryEditRequest(long clusterId, List<DungeonEdge> edges) {
+        return clusterId <= 0L || edges == null || edges.isEmpty();
+    }
+
+    private boolean formsBoundaryPair(List<DungeonCell> touchingCells) {
+        return touchingCells.size() == 2;
+    }
+
+    private boolean spansLevels(List<DungeonCell> touchingCells) {
+        return touchingCells.getFirst().level() != touchingCells.get(1).level();
+    }
+
+    private boolean supportsBoundaryKind(List<DungeonCell> insideCells, DungeonClusterBoundaryKind kind) {
+        if (insideCells.isEmpty()) {
+            return false;
+        }
+        if (kind == DungeonClusterBoundaryKind.DOOR) {
+            return !touchesMoreThanTwoCells(insideCells);
+        }
+        return touchesExactlyTwoCells(insideCells);
+    }
+
+    private boolean touchesMultipleRooms(long touchingRoomCount) {
+        return touchingRoomCount >= 2;
+    }
+
+    private boolean touchesExactlyTwoCells(List<DungeonCell> cells) {
+        return cells.size() == 2;
+    }
+
+    private boolean touchesMoreThanTwoCells(List<DungeonCell> cells) {
+        return cells.size() > 2;
     }
 
     private record BoundaryEditResult(

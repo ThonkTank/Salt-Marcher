@@ -214,10 +214,10 @@ final class DungeonRoomClusterRebuildService {
     ) {
         List<DungeonClusterBoundary> filtered = new ArrayList<>();
         for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
-            Set<DungeonCell> cells = new LinkedHashSet<>(cellsByLevel.getOrDefault(boundary.level(), List.of()));
-            int insideCount = touch(boundary.absoluteEdge(center), cells).insideCells().size();
-            if (insideCount >= 1
-                    && (boundary.kind() == DungeonClusterBoundaryKind.DOOR || insideCount == 2)) {
+            BoundaryTouch touch = touch(
+                    boundary.absoluteEdge(center),
+                    new LinkedHashSet<>(cellsByLevel.getOrDefault(boundary.level(), List.of())));
+            if (retainsBoundary(boundary, touch)) {
                 filtered.add(boundary);
             }
         }
@@ -236,15 +236,13 @@ final class DungeonRoomClusterRebuildService {
             return null;
         }
         List<DungeonCell> touchingCells = DungeonRoomCellProjector.sortedCells(edge.touchingCells());
-        if (touchingCells.size() != 2 || touchingCells.getFirst().level() != touchingCells.get(1).level()) {
+        if (!formsBoundaryPair(touchingCells) || spansLevels(touchingCells)) {
             return null;
         }
         List<DungeonCell> insideCells = touchingCells.stream()
                 .filter(clusterCells::contains)
                 .toList();
-        if (insideCells.isEmpty()
-                || (kind != DungeonClusterBoundaryKind.DOOR && insideCells.size() != 2)
-                || (kind == DungeonClusterBoundaryKind.DOOR && insideCells.size() > 2)) {
+        if (!supportsBoundaryKind(insideCells, kind)) {
             return null;
         }
         DungeonCell baseCell = insideCells.getFirst();
@@ -494,6 +492,45 @@ final class DungeonRoomClusterRebuildService {
         return Map.copyOf(verticesByLevel);
     }
 
+    private boolean retainsBoundary(DungeonClusterBoundary boundary, BoundaryTouch touch) {
+        return touch.touchesCluster()
+                && (boundary.kind() == DungeonClusterBoundaryKind.DOOR || touch.hasTwoInsideCells());
+    }
+
+    private boolean formsBoundaryPair(List<DungeonCell> touchingCells) {
+        return touchingCells.size() == 2;
+    }
+
+    private boolean spansLevels(List<DungeonCell> touchingCells) {
+        return touchingCells.getFirst().level() != touchingCells.get(1).level();
+    }
+
+    private boolean supportsBoundaryKind(List<DungeonCell> insideCells, DungeonClusterBoundaryKind kind) {
+        if (insideCells.isEmpty()) {
+            return false;
+        }
+        if (kind == DungeonClusterBoundaryKind.DOOR) {
+            return !touchesMoreThanTwoCells(insideCells);
+        }
+        return touchesExactlyTwoCells(insideCells);
+    }
+
+    private boolean invalidClusterBindingLookup(
+            DungeonMap dungeonMap,
+            DungeonCell clusterCenter,
+            long clusterId
+    ) {
+        return dungeonMap == null || clusterCenter == null || clusterId <= 0L;
+    }
+
+    private boolean touchesExactlyTwoCells(List<DungeonCell> cells) {
+        return cells.size() == 2;
+    }
+
+    private boolean touchesMoreThanTwoCells(List<DungeonCell> cells) {
+        return cells.size() > 2;
+    }
+
     private BoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {
         List<DungeonCell> insideCells = edge.touchingCells().stream()
                 .filter(clusterCells::contains)
@@ -508,7 +545,7 @@ final class DungeonRoomClusterRebuildService {
             int level
     ) {
         Set<DungeonBoundaryKey> result = new LinkedHashSet<>();
-        if (dungeonMap == null || clusterCenter == null || clusterId <= 0L) {
+        if (invalidClusterBindingLookup(dungeonMap, clusterCenter, clusterId)) {
             return result;
         }
         for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
@@ -588,6 +625,14 @@ final class DungeonRoomClusterRebuildService {
     private record BoundaryTouch(List<DungeonCell> insideCells) {
         private BoundaryTouch {
             insideCells = insideCells == null ? List.of() : List.copyOf(insideCells);
+        }
+
+        private boolean touchesCluster() {
+            return !insideCells.isEmpty();
+        }
+
+        private boolean hasTwoInsideCells() {
+            return insideCells.size() == 2;
         }
     }
 }

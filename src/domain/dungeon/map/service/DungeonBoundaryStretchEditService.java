@@ -30,7 +30,7 @@ final class DungeonBoundaryStretchEditService {
             int deltaR,
             int deltaLevel
     ) {
-        if (clusterId <= 0L || sourceEdges == null || sourceEdges.isEmpty()) {
+        if (invalidStretchRequest(clusterId, sourceEdges)) {
             return dungeonMap;
         }
         List<DungeonRoomTopologyClusterWork> clusters = REBUILD_SERVICE.workClusters(dungeonMap);
@@ -42,7 +42,7 @@ final class DungeonBoundaryStretchEditService {
             return dungeonMap;
         }
         Optional<StretchSelection> stretch = resolveStretch(target, sourceEdges, deltaQ, deltaR, deltaLevel);
-        if (stretch.isEmpty() || stretch.get().movement() == 0) {
+        if (stretch.isEmpty() || stretch.get().stationary()) {
             return dungeonMap;
         }
         return stretch.get().outer()
@@ -57,7 +57,7 @@ final class DungeonBoundaryStretchEditService {
             int deltaR,
             int deltaLevel
     ) {
-        if (deltaLevel != 0) {
+        if (changesLevel(deltaLevel)) {
             return Optional.empty();
         }
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = REBUILD_SERVICE.boundaryMap(target.cluster());
@@ -70,7 +70,7 @@ final class DungeonBoundaryStretchEditService {
             return Optional.empty();
         }
         int movement = movementAlongNormal(seed.get().orientation(), deltaQ, deltaR);
-        if (movement == 0) {
+        if (hasNoMovement(movement)) {
             return Optional.empty();
         }
         int startVariable = variableCoordinate(seed.get().orientation(), sortedEdges.getFirst().edge());
@@ -399,7 +399,7 @@ final class DungeonBoundaryStretchEditService {
         long presentCount = keys.stream()
                 .filter(key -> !sourceKeys.contains(key) && boundaries.containsKey(key))
                 .count();
-        if (presentCount == 0L) {
+        if (hasNoPresentBoundaries(presentCount)) {
             return Optional.of(new ConnectorAction(ConnectorMode.ADD, path));
         }
         if (presentCount != keys.size()) {
@@ -448,11 +448,27 @@ final class DungeonBoundaryStretchEditService {
     private boolean sourceStaysInternal(StretchSelection stretch, Set<DungeonCell> clusterCells) {
         for (StretchEdge edge : stretch.edges()) {
             BoundaryTouch movedTouch = touch(moveEdge(edge.edge(), stretch.orientation(), stretch.movement()), clusterCells);
-            if (!movedTouch.valid() || movedTouch.insideCount() != 2) {
+            if (!movedTouch.valid() || !movedTouch.hasTwoInsideCells()) {
                 return false;
             }
         }
         return true;
+    }
+
+    private boolean invalidStretchRequest(long clusterId, List<DungeonEdge> sourceEdges) {
+        return clusterId <= 0L || sourceEdges == null || sourceEdges.isEmpty();
+    }
+
+    private boolean changesLevel(int deltaLevel) {
+        return deltaLevel != 0;
+    }
+
+    private boolean hasNoMovement(int movement) {
+        return movement == 0;
+    }
+
+    private boolean hasNoPresentBoundaries(long presentCount) {
+        return presentCount == 0L;
     }
 
     private boolean hasPerpendicularBoundary(
@@ -637,6 +653,10 @@ final class DungeonBoundaryStretchEditService {
         private int insideCount() {
             return insideCells.size();
         }
+
+        private boolean hasTwoInsideCells() {
+            return insideCount() == 2;
+        }
     }
 
     private record StretchEdge(
@@ -681,6 +701,10 @@ final class DungeonBoundaryStretchEditService {
         private StretchSelection {
             edges = edges == null ? List.of() : List.copyOf(edges);
             sourceKeys = sourceKeys == null ? Set.of() : Set.copyOf(sourceKeys);
+        }
+
+        private boolean stationary() {
+            return movement == 0;
         }
 
         private boolean movesOutward() {
