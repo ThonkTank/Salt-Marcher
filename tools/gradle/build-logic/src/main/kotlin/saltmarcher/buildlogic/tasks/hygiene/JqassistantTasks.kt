@@ -149,6 +149,18 @@ abstract class JqassistantAnalyzeTask : AbstractJqassistantTask() {
     }
 }
 
+abstract class JqassistantCommandTask : AbstractJqassistantTask() {
+
+    @get:Input
+    abstract val commandName: Property<String>
+
+    @TaskAction
+    fun runCommand() {
+        val generatedConfigFile = materializeConfig(null)
+        runJqassistant(generatedConfigFile, commandName.get())
+    }
+}
+
 private fun java.nio.file.Path.absoluteInvariantPath(): String = toAbsolutePath().toString().replace('\\', '/')
 
 private fun java.io.File.absoluteInvariantPath(): String = absolutePath.replace(File.separatorChar, '/')

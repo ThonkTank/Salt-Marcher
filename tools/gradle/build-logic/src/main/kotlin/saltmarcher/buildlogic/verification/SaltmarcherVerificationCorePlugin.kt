@@ -223,17 +223,19 @@ internal fun Project.configureVerificationCore() {
         dependsOn(viewTopology)
     }
 
-    extensions.create(
-        "saltmarcherVerificationSurfaces",
+    extensions.add(
         VerificationSurfaceRegistry::class.java,
-        checkDocumentationEnforcement,
-        productionBuild,
-        qualityHygiene,
-        architecture,
-        viewTopology,
-        docs,
-        metricsReport,
-        desktopInstall,
-        productionHandoff
+        "saltmarcherVerificationSurfaces",
+        VerificationSurfaceRegistry(
+            checkDocumentationEnforcement = checkDocumentationEnforcement,
+            productionBuild = productionBuild,
+            qualityHygiene = qualityHygiene,
+            architecture = architecture,
+            viewTopology = viewTopology,
+            docs = docs,
+            metricsReport = metricsReport,
+            desktopInstall = desktopInstall,
+            productionHandoff = productionHandoff
+        )
     )
 }

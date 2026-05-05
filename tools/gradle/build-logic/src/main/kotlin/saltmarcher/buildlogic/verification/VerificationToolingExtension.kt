@@ -15,6 +15,7 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
 import saltmarcher.buildlogic.tasks.hygiene.JqassistantAnalyzeTask
 import saltmarcher.buildlogic.tasks.hygiene.JqassistantScanTask
 
@@ -35,6 +36,11 @@ open class VerificationToolingExtension(
     private val installJqassistant: TaskProvider<*>,
     private val configureCommonErrorProneOptions: JavaCompile.() -> Unit
 ) {
+    private fun compileJavaTaskName(sourceSetName: String): String =
+        "compile${sourceSetName.replaceFirstChar(Char::uppercaseChar)}Java"
+
+    private fun classesTaskName(sourceSetName: String): String = "${sourceSetName}Classes"
+
     fun registerFocusedVerificationCompileTask(
         bundleId: String,
         checkerNames: List<String>,
@@ -48,14 +54,14 @@ open class VerificationToolingExtension(
             error("Missing verificationSourceIncludes metadata for enforcement bundle '$bundleId'.")
         }
         val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}Verification"
-        val verificationSourceSet = sourceSets.findByName(sourceSetName) ?: sourceSets.create(sourceSetName) {
+        sourceSets.register(sourceSetName) {
             java.setSrcDirs(roots)
             includes.forEach(java::include)
             resources.setSrcDirs(emptyList<String>())
             compileClasspath += mainSourceSet.compileClasspath
             runtimeClasspath += output + compileClasspath
         }
-        return project.tasks.named<JavaCompile>(verificationSourceSet.compileJavaTaskName) {
+        return project.tasks.named<JavaCompile>(compileJavaTaskName(sourceSetName)) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = taskDescription
             options.sourcepath = sourceJavaRoots
@@ -77,7 +83,7 @@ open class VerificationToolingExtension(
     ): TaskProvider<Test> {
         val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}EnforcementArchunit"
         val mainClassesDirectory = selectedCompileJava.flatMap { task -> task.destinationDirectory }
-        val archunitSourceSet = sourceSets.findByName(sourceSetName) ?: sourceSets.create(sourceSetName) {
+        val archunitSourceSet = sourceSets.register(sourceSetName) {
             val sourceDirectories = buildList {
                 addAll(archunitSourceDirs)
                 if (useSharedTestSupport) {
@@ -95,17 +101,20 @@ open class VerificationToolingExtension(
                 compileClasspath +
                 project.files(project.configurations.named("testRuntimeClasspath"), mainClassesDirectory)
         }
+        val archunitClassesDirs = project.files(archunitSourceSet.map(SourceSet::getOutput).map { output -> output.classesDirs })
+        val archunitRuntimeClasspath = project.files(archunitSourceSet.map(SourceSet::getRuntimeClasspath))
         return project.tasks.register<Test>(taskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = taskDescription
             dependsOn(selectedCompileJava)
+            dependsOn(project.tasks.named(classesTaskName(sourceSetName)))
             inputs.dir(mainClassesDirectory)
-            testClassesDirs = archunitSourceSet.output.classesDirs
-            classpath = archunitSourceSet.runtimeClasspath
+            testClassesDirs = archunitClassesDirs
+            classpath = archunitRuntimeClasspath
             useJUnitPlatform()
             includePatterns.forEach(::include)
-            doFirst {
-                systemProperty("saltmarcher.mainClassesDir", mainClassesDirectory.get().asFile.absolutePath)
+            jvmArgumentProviders += project.objects.newInstance(MainClassesSystemPropertyProvider::class.java).apply {
+                this.mainClassesDirectory.set(mainClassesDirectory)
             }
         }
     }

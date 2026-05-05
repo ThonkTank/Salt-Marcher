@@ -3,15 +3,13 @@ package saltmarcher.buildlogic.verification
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
-import org.gradle.kotlin.dsl.the
 import org.gradle.kotlin.dsl.withGroovyBuilder
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
-import saltmarcher.buildlogic.tasks.RepoVerificationMainTask
+import saltmarcher.buildlogic.tasks.CheckViewFxmlResourcesTask
 
 class SaltmarcherViewViewEnforcementPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -31,11 +29,6 @@ internal fun Project.configureViewViewEnforcement() {
     val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     val verificationTooling = extensions.getByType<VerificationToolingExtension>()
     val verificationLifecycle = extensions.getByType<VerificationLifecycleExtension>()
-
-    val sourceSets = the<SourceSetContainer>()
-    val viewViewEnforcementSupport = sourceSets.create("viewViewEnforcementSupport") {
-        java.srcDir("tools/quality/view-view-enforcement/support/src/main/java")
-    }
 
     val viewCheckerNames = listOf(
         "PassiveViewDependencyBoundaries",
@@ -89,18 +82,15 @@ internal fun Project.configureViewViewEnforcement() {
         false
     )
 
-    val checkViewFxmlResources = tasks.register<RepoVerificationMainTask>("checkViewFxmlResources") {
+    val checkViewFxmlResources = tasks.register<CheckViewFxmlResourcesTask>("checkViewFxmlResources") {
         group = "verification"
         description = "Validate declarative passive-view FXML resource placement and controller ownership."
-        runtimeClasspath.from(viewViewEnforcementSupport.runtimeClasspath)
-        verificationMainClass.set("saltmarcher.quality.viewview.fxml.ViewFxmlResourceCheckMain")
-        repoRootPath.set(layout.projectDirectory.asFile.absolutePath)
+        projectRoot.set(layout.projectDirectory)
         verificationInputs.from(
             layout.projectDirectory.asFileTree.matching {
                 include("resources/**")
                 include("shell/**")
                 include("src/**")
-                include("tools/quality/view-view-enforcement/**")
                 exclude("**/.gradle/**")
                 exclude("**/build/**")
                 exclude("**/.git/**")

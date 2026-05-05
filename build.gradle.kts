@@ -21,8 +21,7 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.application.tasks.CreateStartScripts
-import org.gradle.process.CommandLineArgumentProvider
-import javax.inject.Inject
+import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
 
 plugins {
     java
@@ -33,15 +32,6 @@ plugins {
     id("saltmarcher.verification-core")
     id("org.openjfx.javafxplugin") version "0.1.0"
     id("org.sonarqube") version "7.2.3.7755"
-}
-
-abstract class MainClassesSystemPropertyProvider @Inject constructor() : CommandLineArgumentProvider {
-    @get:InputDirectory
-    abstract val mainClassesDirectory: DirectoryProperty
-
-    override fun asArguments(): Iterable<String> = listOf(
-        "-Dsaltmarcher.mainClassesDir=${mainClassesDirectory.get().asFile.absolutePath}"
-    )
 }
 
 val appDisplayName = providers.gradleProperty("saltMarcherDisplayName").orElse("SaltMarcher")
@@ -139,7 +129,7 @@ tasks.withType<SpotBugsTask>().configureEach {
     }
 }
 
-tasks.matching { it.name == "spotbugsTest" }.configureEach {
+tasks.named<SpotBugsTask>("spotbugsTest") {
     enabled = false
 }
 
