@@ -27,6 +27,7 @@ public final class LayeringArchitectureTopologyRules implements ArchitectureRule
         validateActiveJavaRootAllowlist(context, violations);
         validateSrcDirectChildAllowlist(context, violations);
         validateIncludedBuildTaxonomy(context, violations);
+        new LayeringPassiveCarrierMirrorRules().check(context, violations);
     }
 
     private void validateActiveJavaRootAllowlist(ArchitectureContext context, ViolationSink violations) {

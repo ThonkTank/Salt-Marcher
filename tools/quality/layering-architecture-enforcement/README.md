@@ -6,8 +6,11 @@ This bundle co-locates the currently active SaltMarcher checks that back
 It keeps the proof surface owner-pure:
 
 - `build-harness/`
-  `LayeringArchitectureTopologyRules` and
-  `LayeringArchitectureTopologyCheckMain`
+  `LayeringArchitectureTopologyRules`,
+  `LayeringPassiveCarrierMirrorRules`,
+  `LayeringArchitectureTopologyCheckMain`,
+  `LayeringArchitectureEnforcementCoverageRules`, and
+  `LayeringArchitectureDocumentationEnforcementCheckMain`
 - `pmd/`
   a report-only bundle-local ruleset that configures the shared
   `CeremonialIndirectionRule` for the thin-role candidate surface
@@ -15,10 +18,11 @@ It keeps the proof surface owner-pure:
   descriptor-based registration into the focused-enforcement Gradle path,
   including the report-only `checkLayeringIndirectionCandidates` PMD task
 
-This bundle proves only the repository-wide layer-topology invariants that are
-mechanically owned by the layering document itself, plus the report-only
-thin-role indirection candidate scan. Neighboring `Enforced Elsewhere` rules
-remain in their owning bundles and gates.
+This bundle proves the repository-wide layer-topology invariants, the
+same-feature passive carrier mirror blocker, the bundle-local layering
+documentation coverage, and the report-only thin-role indirection candidate
+scan. Neighboring `Enforced Elsewhere` rules remain in their owning bundles
+and gates.
 
 Unified root entrypoint:
 

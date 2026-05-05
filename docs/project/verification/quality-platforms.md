@@ -311,7 +311,8 @@ Operationally, architecture checks enter local quality through:
   stays intentionally outside `checkArchitecture`, `check`, and `build`
 - `checkLayeringArchitectureEnforcement`
   runs the focused `Layering Architecture` enforcement bundle through the
-  dedicated build-harness topology check for repository-wide layer roots and
+  dedicated build-harness topology, passive-carrier mirror, and
+  documentation-coverage checks for repository-wide layer roots and
   included-build taxonomy
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,

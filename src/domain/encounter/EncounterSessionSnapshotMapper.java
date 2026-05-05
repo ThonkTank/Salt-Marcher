@@ -8,14 +8,15 @@ import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterSessionSnapshot;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
-import src.domain.encounter.session.entity.EncounterSession;
+import src.domain.encounter.session.entity.EncounterSessionRuntimeData;
+import src.domain.encounter.session.entity.EncounterSessionViewState;
 
 final class EncounterSessionSnapshotMapper {
 
     private EncounterSessionSnapshotMapper() {
     }
 
-    static EncounterSessionSnapshot toPublishedSnapshot(EncounterSession.SnapshotData snapshot) {
+    static EncounterSessionSnapshot toPublishedSnapshot(EncounterSessionViewState.SnapshotData snapshot) {
         if (snapshot == null) {
             return EncounterSessionSnapshot.empty("");
         }
@@ -35,8 +36,8 @@ final class EncounterSessionSnapshotMapper {
                         .toList());
     }
 
-    private static EncounterSessionSnapshot.Mode toPublishedMode(EncounterSession.Mode mode) {
-        EncounterSession.Mode effectiveMode = mode == null ? EncounterSession.Mode.BUILDER : mode;
+    private static EncounterSessionSnapshot.Mode toPublishedMode(EncounterSessionViewState.Mode mode) {
+        EncounterSessionViewState.Mode effectiveMode = mode == null ? EncounterSessionViewState.Mode.BUILDER : mode;
         return switch (effectiveMode) {
             case BUILDER -> EncounterSessionSnapshot.Mode.BUILDER;
             case INITIATIVE -> EncounterSessionSnapshot.Mode.INITIATIVE;
@@ -46,14 +47,14 @@ final class EncounterSessionSnapshotMapper {
     }
 
     private static EncounterSessionSnapshot.BuilderState toPublishedBuilderState(
-            EncounterSession.BuilderStateData builderState
+            EncounterSessionViewState.BuilderStateData builderState
     ) {
-        EncounterSession.BuilderStateData safeState = builderState == null
-                ? new EncounterSession.BuilderStateData(
+        EncounterSessionViewState.BuilderStateData safeState = builderState == null
+                ? new EncounterSessionViewState.BuilderStateData(
                         List.of(),
                         List.of(),
                         "",
-                        new EncounterSession.DifficultySummaryData(0, 0, 0, 0, 0, ""),
+                        new EncounterSessionViewState.DifficultySummaryData(0, 0, 0, 0, 0, ""),
                         EncounterGenerationInputs.empty(),
                         List.of(),
                         false,
@@ -145,10 +146,10 @@ final class EncounterSessionSnapshotMapper {
     }
 
     private static EncounterSessionSnapshot.InitiativeState toPublishedInitiativeState(
-            EncounterSession.InitiativeStateData initiativeState
+            EncounterSessionViewState.InitiativeStateData initiativeState
     ) {
-        EncounterSession.InitiativeStateData safeState = initiativeState == null
-                ? EncounterSession.InitiativeStateData.empty()
+        EncounterSessionViewState.InitiativeStateData safeState = initiativeState == null
+                ? EncounterSessionViewState.InitiativeStateData.empty()
                 : initiativeState;
         return new EncounterSessionSnapshot.InitiativeState(
                 safeState.entries().stream()
@@ -161,10 +162,10 @@ final class EncounterSessionSnapshotMapper {
     }
 
     private static EncounterSessionSnapshot.CombatProjection toPublishedCombatProjection(
-            EncounterSession.CombatProjectionData combatState
+            EncounterSessionViewState.CombatProjectionData combatState
     ) {
-        EncounterSession.CombatProjectionData safeState = combatState == null
-                ? EncounterSession.CombatProjectionData.empty()
+        EncounterSessionViewState.CombatProjectionData safeState = combatState == null
+                ? EncounterSessionViewState.CombatProjectionData.empty()
                 : combatState;
         return new EncounterSessionSnapshot.CombatProjection(
                 safeState.currentTurnIndex(),
@@ -188,10 +189,10 @@ final class EncounterSessionSnapshotMapper {
     }
 
     private static EncounterSessionSnapshot.ResultState toPublishedResultState(
-            EncounterSession.ResultStateData resultState
+            EncounterSessionViewState.ResultStateData resultState
     ) {
-        EncounterSession.ResultStateData safeState = resultState == null
-                ? EncounterSession.ResultStateData.empty()
+        EncounterSessionViewState.ResultStateData safeState = resultState == null
+                ? EncounterSessionViewState.ResultStateData.empty()
                 : resultState;
         return new EncounterSessionSnapshot.ResultState(
                 safeState.enemies().stream()

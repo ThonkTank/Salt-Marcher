@@ -144,13 +144,13 @@ final class CatalogBinder {
                 id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id))));
     }
 
-    private static CatalogControlsView.CreatureFilterData toControlFilterData(
+    private static CatalogFilterStripSection.CreatureFilterData toControlFilterData(
             CreatureFilterOptions options
     ) {
         CreatureFilterOptions safeOptions = options == null
                 ? CreatureFilterOptions.empty()
                 : options;
-        return new CatalogControlsView.CreatureFilterData(
+        return new CatalogFilterStripSection.CreatureFilterData(
                 safeOptions.sizes(),
                 safeOptions.types(),
                 safeOptions.subtypes(),
@@ -159,7 +159,7 @@ final class CatalogBinder {
                 safeOptions.challengeRatings());
     }
 
-    private static List<CatalogControlsView.EncounterTableSelection> toEncounterTableSelections(
+    private static List<CatalogEncounterTablePicker.EncounterTableSelection> toEncounterTableSelections(
             EncounterTableCatalogResult result
     ) {
         if (result.status() != EncounterTableReadStatus.SUCCESS) {
@@ -170,20 +170,20 @@ final class CatalogBinder {
                 .toList();
     }
 
-    private static CatalogControlsView.EncounterTableSelection toEncounterTableSelection(
+    private static CatalogEncounterTablePicker.EncounterTableSelection toEncounterTableSelection(
             EncounterTableSummary summary
     ) {
-        return new CatalogControlsView.EncounterTableSelection(
+        return new CatalogEncounterTablePicker.EncounterTableSelection(
                 summary.tableId(),
                 summary.name(),
                 summary.linkedLootTableId());
     }
 
-    private static List<CatalogControlsView.FilterChipView> toControlChips(
+    private static List<CatalogFilterChipsStrip.FilterChipView> toControlChips(
             List<CatalogContributionModel.FilterChip> chips
     ) {
         return chips.stream()
-                .map(chip -> new CatalogControlsView.FilterChipView(chip.key(), chip.label(), chip.styleClass()))
+                .map(chip -> new CatalogFilterChipsStrip.FilterChipView(chip.key(), chip.label(), chip.styleClass()))
                 .toList();
     }
 
@@ -205,7 +205,7 @@ final class CatalogBinder {
                 safeInputs.creatureSubtypes(),
                 safeInputs.biomes(),
                 difficultyKey(safeInputs.targetDifficulty()),
-                new CatalogControlsView.EncounterTuningSelection(
+                new CatalogEncounterTuningSection.EncounterTuningSelection(
                         safeInputs.tuning().balanceLevel(),
                         safeInputs.tuning().amountValue(),
                         safeInputs.tuning().diversityLevel()),
@@ -359,24 +359,24 @@ final class CatalogBinder {
         }
     }
 
-    private static CatalogControlsView.EncounterTuningPreview toControlTuningPreview(
+    private static CatalogEncounterTuningSection.EncounterTuningPreview toControlTuningPreview(
             EncounterTuningPreviewLabels labels
     ) {
         EncounterTuningPreviewLabels safeLabels = labels == null
                 ? new EncounterTuningPreviewLabels(List.of(), List.of(), List.of(), List.of())
                 : labels;
-        return new CatalogControlsView.EncounterTuningPreview(
+        return new CatalogEncounterTuningSection.EncounterTuningPreview(
                 toControlPreviewLabels(safeLabels.difficultyLabels()),
                 toControlPreviewLabels(safeLabels.balanceLabels()),
                 toControlPreviewLabels(safeLabels.amountLabels()),
                 toControlPreviewLabels(safeLabels.diversityLabels()));
     }
 
-    private static List<CatalogControlsView.SliderPreviewLabel> toControlPreviewLabels(
+    private static List<CatalogEncounterTuningSection.SliderPreviewLabel> toControlPreviewLabels(
             List<EncounterTuningPreviewLabels.PreviewLabel> labels
     ) {
         return labels.stream()
-                .map(label -> new CatalogControlsView.SliderPreviewLabel(label.value(), label.label()))
+                .map(label -> new CatalogEncounterTuningSection.SliderPreviewLabel(label.value(), label.label()))
                 .toList();
     }
 

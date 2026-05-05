@@ -14,7 +14,9 @@ import src.domain.encounter.application.LoadEncounterBudgetUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
-import src.domain.encounter.session.entity.EncounterSession;
+import src.domain.encounter.session.entity.EncounterSessionRuntimeData;
+import src.domain.encounter.session.entity.EncounterSessionViewState;
+import src.domain.encounter.session.service.EncounterSessionRuntimeAccess;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyResult;
 import src.domain.party.published.AwardPartyXpCommand;
@@ -24,7 +26,7 @@ import src.domain.party.published.MutationStatus;
 import src.domain.party.published.PartyMemberSummary;
 import src.domain.party.published.ReadStatus;
 
-final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.RuntimeAccess {
+final class EncounterSessionRuntimeAccessAdapter implements EncounterSessionRuntimeAccess {
 
     private final PartyApplicationService party;
     private final CreaturesApplicationService creatures;
@@ -53,15 +55,15 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
     }
 
     @Override
-    public List<EncounterSession.PartyMemberData> loadActiveParty() {
+    public List<EncounterSessionViewState.PartyMemberData> loadActiveParty() {
         ActivePartyResult result = party.loadActiveParty(new LoadActivePartyQuery());
         if (result.status() != ReadStatus.SUCCESS) {
             return List.of();
         }
-        List<EncounterSession.PartyMemberData> members = new ArrayList<>();
+        List<EncounterSessionViewState.PartyMemberData> members = new ArrayList<>();
         for (PartyMemberSummary member : result.members()) {
             if (member != null && member.id() != null) {
-                members.add(new EncounterSession.PartyMemberData(
+                members.add(new EncounterSessionViewState.PartyMemberData(
                         "pc-" + member.id(),
                         member.id(),
                         member.name(),
@@ -72,7 +74,7 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
     }
 
     @Override
-    public Optional<EncounterSession.BudgetData> loadBudget() {
+    public Optional<EncounterSessionRuntimeData.BudgetData> loadBudget() {
         LoadEncounterBudgetUseCase useCase = loadBudgetUseCase;
         if (useCase == null) {
             return Optional.empty();
@@ -88,11 +90,11 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
     }
 
     @Override
-    public EncounterSession.GenerationResultData generate(EncounterGenerationRequest request) {
+    public EncounterSessionRuntimeData.GenerationResultData generate(EncounterGenerationRequest request) {
         EncounterGenerationUseCase useCase = generator;
         if (useCase == null) {
-            return new EncounterSession.GenerationResultData(
-                    EncounterSession.GenerationStatus.STORAGE_ERROR,
+            return new EncounterSessionRuntimeData.GenerationResultData(
+                    EncounterSessionRuntimeData.GenerationStatus.STORAGE_ERROR,
                     List.of(),
                     "Encounter generator service is not registered.",
                     Optional.empty(),
@@ -101,8 +103,8 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
         try {
             return EncounterSessionRuntimeMapper.toSessionGenerationResult(useCase.execute(request));
         } catch (RuntimeException exception) {
-            return new EncounterSession.GenerationResultData(
-                    EncounterSession.GenerationStatus.STORAGE_ERROR,
+            return new EncounterSessionRuntimeData.GenerationResultData(
+                    EncounterSessionRuntimeData.GenerationStatus.STORAGE_ERROR,
                     List.of(),
                     "Encounter generation failed.",
                     Optional.empty(),
@@ -111,11 +113,11 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
     }
 
     @Override
-    public EncounterSession.SavePlanOutcome savePlan(EncounterSession.SavedPlanData plan) {
+    public EncounterSessionRuntimeData.SavePlanOutcome savePlan(EncounterSessionRuntimeData.SavedPlanData plan) {
         SaveEncounterPlanUseCase useCase = savePlanUseCase;
         if (useCase == null) {
-            return new EncounterSession.SavePlanOutcome(
-                    EncounterSession.SavedPlanStatus.STORAGE_ERROR,
+            return new EncounterSessionRuntimeData.SavePlanOutcome(
+                    EncounterSessionRuntimeData.SavedPlanStatus.STORAGE_ERROR,
                     Optional.empty(),
                     "Encounter plan storage is not registered.");
         }
@@ -126,46 +128,46 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
                 plan.creatures().stream()
                         .map(EncounterSessionRuntimeMapper::toPlanCreature)
                         .toList());
-        return new EncounterSession.SavePlanOutcome(
+        return new EncounterSessionRuntimeData.SavePlanOutcome(
                 EncounterSessionRuntimeMapper.toSessionSavePlanStatus(result.status()),
                 result.plan() == null ? Optional.empty() : Optional.of(EncounterSessionRuntimeMapper.toSessionSavedPlan(result.plan())),
                 result.message());
     }
 
     @Override
-    public EncounterSession.LoadPlanOutcome loadPlan(long planId) {
+    public EncounterSessionRuntimeData.LoadPlanOutcome loadPlan(long planId) {
         LoadSavedEncounterPlanUseCase useCase = loadSavedPlanUseCase;
         if (useCase == null) {
-            return new EncounterSession.LoadPlanOutcome(
-                    EncounterSession.SavedPlanStatus.STORAGE_ERROR,
+            return new EncounterSessionRuntimeData.LoadPlanOutcome(
+                    EncounterSessionRuntimeData.SavedPlanStatus.STORAGE_ERROR,
                     Optional.empty(),
                     "Encounter plan storage is not registered.");
         }
         LoadSavedEncounterPlanUseCase.Result result = useCase.execute(planId);
-        return new EncounterSession.LoadPlanOutcome(
+        return new EncounterSessionRuntimeData.LoadPlanOutcome(
                 EncounterSessionRuntimeMapper.toSessionLoadPlanStatus(result.status()),
                 result.plan() == null ? Optional.empty() : Optional.of(EncounterSessionRuntimeMapper.toSessionSavedPlan(result.plan())),
                 result.message());
     }
 
     @Override
-    public EncounterSession.ListPlansOutcome listPlans() {
+    public EncounterSessionRuntimeData.ListPlansOutcome listPlans() {
         ListSavedEncounterPlansUseCase useCase = listSavedPlansUseCase;
         if (useCase == null) {
-            return new EncounterSession.ListPlansOutcome(
-                    EncounterSession.SavedPlanStatus.STORAGE_ERROR,
+            return new EncounterSessionRuntimeData.ListPlansOutcome(
+                    EncounterSessionRuntimeData.SavedPlanStatus.STORAGE_ERROR,
                     List.of(),
                     "Encounter plan storage is not registered.");
         }
         ListSavedEncounterPlansUseCase.Result result = useCase.execute();
-        return new EncounterSession.ListPlansOutcome(
+        return new EncounterSessionRuntimeData.ListPlansOutcome(
                 EncounterSessionRuntimeMapper.toSessionListPlansStatus(result.status()),
                 result.plans().stream().map(EncounterSessionRuntimeMapper::toSessionSavedPlanSummary).toList(),
                 result.message());
     }
 
     @Override
-    public Optional<EncounterSession.CreatureDetailData> loadCreature(long creatureId) {
+    public Optional<EncounterSessionRuntimeData.CreatureDetailData> loadCreature(long creatureId) {
         CreatureDetailResult result = creatures.loadCreatureDetail(new LoadCreatureDetailQuery(creatureId));
         if (result.status() != CreatureLookupStatus.SUCCESS || result.detail() == null) {
             return Optional.empty();
@@ -174,8 +176,8 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
     }
 
     @Override
-    public EncounterSession.AwardXpOutcome awardXp(List<Long> partyMemberIds, int xpPerCharacter) {
+    public EncounterSessionRuntimeData.AwardXpOutcome awardXp(List<Long> partyMemberIds, int xpPerCharacter) {
         MutationResult result = party.awardXp(new AwardPartyXpCommand(partyMemberIds, xpPerCharacter));
-        return new EncounterSession.AwardXpOutcome(result != null && result.status() == MutationStatus.SUCCESS);
+        return new EncounterSessionRuntimeData.AwardXpOutcome(result != null && result.status() == MutationStatus.SUCCESS);
     }
 }

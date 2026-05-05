@@ -25,9 +25,10 @@ global layer model and names where proof currently lives.
 Focused bundle entrypoint:
 
 - `./gradlew checkLayeringArchitectureEnforcement --console=plain` runs the
-  currently active layering-topology checks. `checkArchitecture`, `check`, and
-  `build` include the same proof surface transitively, and the neighboring
-  `Enforced Elsewhere` rows below stay in their owner-specific bundles.
+  currently active layering-topology, passive-carrier mirror, and bundle-local
+  documentation-coverage checks. `checkArchitecture`, `check`, and `build`
+  include the same proof surface transitively, and the neighboring `Enforced
+  Elsewhere` rows below stay in their owner-specific bundles.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain` runs the
   report-only diagnostic PMD surface for thin adapter and orchestration roles
   that are allowed to stay narrow but may still be worth reviewing.
@@ -49,6 +50,7 @@ Focused bundle entrypoint:
 | --- | --- | --- | --- | --- | --- |
 | `layering-no-extra-active-layer-roots` | Enforced | every active Java source root or non-empty `src/` direct child | `layering-architecture-enforcement` bundle build-harness `LayeringArchitectureTopologyRules` | `./gradlew checkLayeringArchitectureEnforcement` and `./gradlew checkArchitecture` | The repository does not grow extra active layer roots or extra `src/` children beside the documented layer topology. |
 | `layering-no-undocumented-cross-layer-public-extension-points` | Review-Owned | every new public type or registration seam that would let one layer reach another | none | none | The system does not grow new public backend, shell, or registration extension points outside the documented cross-layer boundary set. Existing shell, view, domain, and data blockers constrain parts of that surface, but not the full repository-wide extension-point claim as one hard gate. |
+| `layering-no-passive-carrier-shape-mirror-inside-feature-root` | Enforced | every passive `record` or `enum` carrier under one active `src/` feature root | `layering-architecture-enforcement` bundle build-harness `LayeringPassiveCarrierMirrorRules` | `./gradlew checkLayeringArchitectureEnforcement` and `./gradlew checkArchitecture` | One active feature root does not keep multiple passive `record`/`enum` carriers with the same recursive shape under different names or buckets. |
 | `layering-no-direct-view-data-dependency` | Enforced Elsewhere | every dependency from `src/view/**` into `src/data/**` | Error Prone `PassiveViewDependencyBoundaries`, `ViewContributionModelDependencyBoundary`, `ViewContentModelDependencyBoundary`, `ViewIntentHandlerDependencyBoundary`, and `ViewBinderDependencyBoundary`; ArchUnit `passiveViewsMustNotReachShellDomainDataOrBootstrap`, `contributionModelsMustStayShellDataAndServiceFree`, `contentModelsMustStayShellDataAndServiceFree`, `intentHandlersMustStayShellDomainAndDataFree`, and `bindersMustNotReachDataOrShellHost` | `./gradlew compileJava`, `./gradlew checkArchitecture`, and `./gradlew checkViewArchitecture` | View-layer code does not bypass the domain core by depending directly on data-layer implementation code. |
 | `layering-no-direct-view-domain-connection-outside-documented-seams` | Enforced Elsewhere | every direct connection between `src/view/**` and `src/domain/**` | view `view-binder-dependency-boundary`, `view-binder-publishedevent-sink-injection-only`, `view-intenthandler-no-direct-backend-communication`, `view-viewinputevent-view-origin-and-intenthandler-target-only`, `view-contributionmodel-read-side-only-direct-boundary`, and `view-contentmodel-read-side-only-direct-boundary` | see neighboring owner docs and their listed entrypoints | View/domain connections occur only through the documented Binder-owned write seam to root `*ApplicationService` boundaries and the Binder-owned readback seam from root-domain `published/**` facts. |
 | `layering-no-non-applicationservice-public-backend-boundary-below-view` | Review-Owned | every public callable backend surface below `src/view/**` | none | none | Below the view layer, the only intended public backend boundary is a root domain `*ApplicationService`; current domain and data blockers constrain parts of that expectation, but they do not prove the absence of every alternate public backend entrypoint as one hard gate. |

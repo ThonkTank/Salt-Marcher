@@ -507,7 +507,8 @@ Architecture-focused entrypoints:
   `:build-harness:dataPersistencecoreDocumentationEnforcementCheck`.
 - `./gradlew checkLayeringArchitectureEnforcement --console=plain`
   Aggregates the dedicated `Layering Architecture` bundle through
-  `:build-harness:layeringArchitectureTopologyCheck`.
+  `:build-harness:layeringArchitectureTopologyCheck` and
+  `:build-harness:layeringArchitectureDocumentationEnforcementCheck`.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain`
   Runs the descriptor-owned report-only thin-role candidate PMD scan through
   the dedicated `Layering Architecture` bundle without attaching that

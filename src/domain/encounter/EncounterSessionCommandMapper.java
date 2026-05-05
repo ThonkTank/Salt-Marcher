@@ -3,7 +3,6 @@ package src.domain.encounter;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.application.ApplyEncounterSessionUseCase;
 import src.domain.encounter.generation.value.EncounterGenerationInputs;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.generation.value.EncounterRequestedDifficulty;
@@ -13,21 +12,22 @@ import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterSessionSnapshot;
 import src.domain.encounter.published.GenerateEncounterCommand;
-import src.domain.encounter.session.entity.EncounterSession;
+import src.domain.encounter.session.entity.EncounterSessionViewState;
+import src.domain.encounter.session.service.EncounterSessionCommand;
 
 final class EncounterSessionCommandMapper {
 
     private EncounterSessionCommandMapper() {
     }
 
-    static ApplyEncounterSessionUseCase.Command toInternalCommand(
+    static EncounterSessionCommand toInternalCommand(
             @Nullable ApplyEncounterSessionCommand command
     ) {
         if (command == null) {
-            return ApplyEncounterSessionUseCase.Command.refresh();
+            return EncounterSessionCommand.refresh();
         }
-        return new ApplyEncounterSessionUseCase.Command(
-                ApplyEncounterSessionUseCase.Action.valueOf(command.action().name()),
+        return new EncounterSessionCommand(
+                EncounterSessionCommand.Action.valueOf(command.action().name()),
                 command.generation() == null
                         ? Optional.empty()
                         : Optional.of(toInternalGenerateRequest(command.generation())),
@@ -37,7 +37,7 @@ final class EncounterSessionCommandMapper {
                 command.delta(),
                 command.token(),
                 command.initiativeInputs().stream()
-                        .map(entry -> new EncounterSession.InitiativeInputData(entry.id(), entry.initiative()))
+                        .map(entry -> new EncounterSessionViewState.InitiativeInputData(entry.id(), entry.initiative()))
                         .toList(),
                 command.combatantId(),
                 command.initiative(),

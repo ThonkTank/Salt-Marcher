@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
-final class CombatRuntime {
+public final class CombatRuntime {
 
-    static final int FIRST_TURN_INDEX = 0;
-    static final int NO_ACTIVE_TURN_INDEX = -1;
+    public static final int FIRST_TURN_INDEX = 0;
+    public static final int NO_ACTIVE_TURN_INDEX = -1;
 
     private static final int FIRST_COMBAT_ROUND = 1;
     private static final int MOB_MIN_SIZE = 4;
@@ -20,15 +20,15 @@ final class CombatRuntime {
 
     private final List<Combatant> combatants = new ArrayList<>();
 
-    void clear() {
+    public void clear() {
         combatants.clear();
     }
 
-    int addPlayer(String id, String name, int initiative, int order) {
+    public int addPlayer(String id, String name, int initiative, int order) {
         return addPlayerCombatant(combatants, id, name, initiative, order);
     }
 
-    int addMonsters(
+    public int addMonsters(
             String id,
             String name,
             long creatureId,
@@ -58,21 +58,21 @@ final class CombatRuntime {
                 order);
     }
 
-    void sort() {
+    public void sort() {
         sort(combatants);
     }
 
-    boolean hasTurnEntries() {
+    public boolean hasTurnEntries() {
         return !turnEntries(combatants).isEmpty();
     }
 
-    @Nullable String activeTurnId(int currentTurnIndex) {
+    public @Nullable String activeTurnId(int currentTurnIndex) {
         List<TurnEntry> entries = turnEntries(combatants);
         int index = normalizedTurnIndex(entries, currentTurnIndex);
         return index < 0 ? null : entries.get(index).id();
     }
 
-    int turnIndexOf(@Nullable String combatantId, int fallbackTurnIndex) {
+    public int turnIndexOf(@Nullable String combatantId, int fallbackTurnIndex) {
         List<TurnEntry> entries = turnEntries(combatants);
         if (combatantId != null) {
             for (int index = 0; index < entries.size(); index++) {
@@ -84,7 +84,7 @@ final class CombatRuntime {
         return normalizedTurnIndex(entries, fallbackTurnIndex);
     }
 
-    String addMonsterReinforcement(
+    public String addMonsterReinforcement(
             String name,
             long creatureId,
             int hp,
@@ -116,7 +116,7 @@ final class CombatRuntime {
         return uniqueMonsterName(name, nextOrdinal);
     }
 
-    boolean addPlayerToRunningCombat(String id, String name, int initiative) {
+    public boolean addPlayerToRunningCombat(String id, String name, int initiative) {
         for (Combatant combatant : combatants) {
             if (combatant.id().equals(id)) {
                 return false;
@@ -127,7 +127,7 @@ final class CombatRuntime {
         return true;
     }
 
-    TurnAdvance nextTurn(int currentTurnIndex, int round) {
+    public TurnAdvance nextTurn(int currentTurnIndex, int round) {
         List<TurnEntry> entries = turnEntries(combatants);
         if (entries.isEmpty()) {
             return new TurnAdvance(currentTurnIndex, round);
@@ -146,18 +146,18 @@ final class CombatRuntime {
         return new TurnAdvance(currentTurnIndex, round);
     }
 
-    void setInitiative(String combatantId, int initiative) {
+    public void setInitiative(String combatantId, int initiative) {
         setInitiative(combatants, combatantId, initiative);
     }
 
-    boolean mutateHp(String combatantId, int amount, boolean healing) {
+    public boolean mutateHp(String combatantId, int amount, boolean healing) {
         return mutateHp(combatants, combatantId, amount, healing);
     }
 
-    List<EncounterSession.ResultEnemyData> resultEnemies() {
+    public List<EncounterSessionViewState.ResultEnemyData> resultEnemies() {
         return combatants.stream()
                 .filter(combatant -> !combatant.playerCharacter())
-                .map(combatant -> new EncounterSession.ResultEnemyData(
+                .map(combatant -> new EncounterSessionViewState.ResultEnemyData(
                         combatant.name(),
                         combatant.alive() ? "Lebt" : "Tot",
                         Math.max(0, combatant.maxHp() - combatant.currentHp()),
@@ -167,10 +167,10 @@ final class CombatRuntime {
                 .toList();
     }
 
-    EncounterSession.CombatProjectionData combatProjection(int requestedTurnIndex, int round) {
+    public EncounterSessionViewState.CombatProjectionData combatProjection(int requestedTurnIndex, int round) {
         List<TurnEntry> entries = turnEntries(combatants);
         int currentTurnIndex = normalizedTurnIndex(entries, requestedTurnIndex);
-        List<EncounterSession.CombatCardData> cards = new ArrayList<>();
+        List<EncounterSessionViewState.CombatCardData> cards = new ArrayList<>();
         int aliveEnemies = 0;
         int totalEnemies = 0;
         for (Combatant combatant : combatants) {
@@ -183,7 +183,7 @@ final class CombatRuntime {
         }
         for (int index = 0; index < entries.size(); index++) {
             TurnEntry entry = entries.get(index);
-            cards.add(new EncounterSession.CombatCardData(
+            cards.add(new EncounterSessionViewState.CombatCardData(
                     entry.id(),
                     entry.name(),
                     entry.playerCharacter(),
@@ -197,7 +197,7 @@ final class CombatRuntime {
                     entry.detail()));
         }
         String statusText = aliveEnemies + "/" + totalEnemies + " - " + LivePressure.from(aliveEnemies, totalEnemies).label();
-        return new EncounterSession.CombatProjectionData(
+        return new EncounterSessionViewState.CombatProjectionData(
                 currentTurnIndex,
                 round,
                 statusText,
@@ -205,11 +205,11 @@ final class CombatRuntime {
                 totalEnemies > 0 && aliveEnemies == 0);
     }
 
-    static int defaultPlayerInitiative(int partyIndex) {
+    public static int defaultPlayerInitiative(int partyIndex) {
         return DEFAULT_PLAYER_INITIATIVE + Math.max(0, partyIndex);
     }
 
-    static int defaultMonsterInitiative(int initiativeBonus) {
+    public static int defaultMonsterInitiative(int initiativeBonus) {
         return DEFAULT_MONSTER_INITIATIVE + Math.max(MIN_INITIATIVE_BONUS, Math.min(MAX_INITIATIVE_BONUS, initiativeBonus));
     }
 
@@ -547,7 +547,7 @@ final class CombatRuntime {
     private record Combatant(
             String id,
             String name,
-            EncounterSession.CombatantKind kind,
+            EncounterSessionViewState.CombatantKind kind,
             long creatureId,
             int currentHp,
             int maxHp,
@@ -563,7 +563,7 @@ final class CombatRuntime {
             return new Combatant(
                     id,
                     name,
-                    EncounterSession.CombatantKind.PLAYER_CHARACTER,
+                    EncounterSessionViewState.CombatantKind.PLAYER_CHARACTER,
                     0,
                     0,
                     0,
@@ -571,7 +571,7 @@ final class CombatRuntime {
                     initiative,
                     1,
                     0,
-                    EncounterSession.CombatantKind.PLAYER_CHARACTER.publishedLabel(),
+                    EncounterSessionViewState.CombatantKind.PLAYER_CHARACTER.publishedLabel(),
                     "",
                     order);
         }
@@ -596,7 +596,7 @@ final class CombatRuntime {
             return new Combatant(
                     id + ":" + creatureIndex,
                     displayName,
-                    EncounterSession.CombatantKind.MONSTER,
+                    EncounterSessionViewState.CombatantKind.MONSTER,
                     creatureId,
                     hp,
                     hp,
@@ -610,7 +610,7 @@ final class CombatRuntime {
         }
 
         private boolean playerCharacter() {
-            return kind == EncounterSession.CombatantKind.PLAYER_CHARACTER;
+            return kind == EncounterSessionViewState.CombatantKind.PLAYER_CHARACTER;
         }
 
         private boolean alive() {
@@ -645,8 +645,8 @@ final class CombatRuntime {
         }
     }
 
-    record TurnAdvance(int currentTurnIndex, int round) {
-        TurnAdvance {
+    public record TurnAdvance(int currentTurnIndex, int round) {
+        public TurnAdvance {
             round = Math.max(FIRST_COMBAT_ROUND, round);
         }
     }
