@@ -79,7 +79,7 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
         try {
             LoadEncounterBudgetUseCase.Result result = useCase.execute();
             return result.status() == LoadEncounterBudgetUseCase.Status.SUCCESS && result.budget() != null
-                    ? Optional.of(EncounterSessionMapper.toSessionBudget(result.budget()))
+                    ? Optional.of(EncounterSessionRuntimeMapper.toSessionBudget(result.budget()))
                     : Optional.empty();
         } catch (RuntimeException exception) {
             return Optional.empty();
@@ -98,8 +98,8 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
                     false);
         }
         try {
-            return EncounterSessionMapper.toSessionGenerationResult(
-                    useCase.execute(EncounterSessionMapper.toGeneratorRequest(request)));
+            return EncounterSessionRuntimeMapper.toSessionGenerationResult(
+                    useCase.execute(EncounterSessionRuntimeMapper.toGeneratorRequest(request)));
         } catch (RuntimeException exception) {
             return new EncounterSession.GenerationResultData(
                     EncounterSession.GenerationStatus.STORAGE_ERROR,
@@ -124,11 +124,11 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
                 plan.name(),
                 plan.generatedLabel(),
                 plan.creatures().stream()
-                        .map(EncounterSessionMapper::toPlanCreature)
+                        .map(EncounterSessionRuntimeMapper::toPlanCreature)
                         .toList());
         return new EncounterSession.SavePlanOutcome(
-                EncounterSessionMapper.toSessionSavePlanStatus(result.status()),
-                result.plan() == null ? Optional.empty() : Optional.of(EncounterSessionMapper.toSessionSavedPlan(result.plan())),
+                EncounterSessionRuntimeMapper.toSessionSavePlanStatus(result.status()),
+                result.plan() == null ? Optional.empty() : Optional.of(EncounterSessionRuntimeMapper.toSessionSavedPlan(result.plan())),
                 result.message());
     }
 
@@ -143,8 +143,8 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
         }
         LoadSavedEncounterPlanUseCase.Result result = useCase.execute(planId);
         return new EncounterSession.LoadPlanOutcome(
-                EncounterSessionMapper.toSessionLoadPlanStatus(result.status()),
-                result.plan() == null ? Optional.empty() : Optional.of(EncounterSessionMapper.toSessionSavedPlan(result.plan())),
+                EncounterSessionRuntimeMapper.toSessionLoadPlanStatus(result.status()),
+                result.plan() == null ? Optional.empty() : Optional.of(EncounterSessionRuntimeMapper.toSessionSavedPlan(result.plan())),
                 result.message());
     }
 
@@ -159,8 +159,8 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
         }
         ListSavedEncounterPlansUseCase.Result result = useCase.execute();
         return new EncounterSession.ListPlansOutcome(
-                EncounterSessionMapper.toSessionListPlansStatus(result.status()),
-                result.plans().stream().map(EncounterSessionMapper::toSessionSavedPlanSummary).toList(),
+                EncounterSessionRuntimeMapper.toSessionListPlansStatus(result.status()),
+                result.plans().stream().map(EncounterSessionRuntimeMapper::toSessionSavedPlanSummary).toList(),
                 result.message());
     }
 
@@ -170,7 +170,7 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
         if (result.status() != CreatureLookupStatus.SUCCESS || result.detail() == null) {
             return Optional.empty();
         }
-        return Optional.of(EncounterSessionMapper.toSessionCreatureDetail(result.detail()));
+        return Optional.of(EncounterSessionRuntimeMapper.toSessionCreatureDetail(result.detail()));
     }
 
     @Override

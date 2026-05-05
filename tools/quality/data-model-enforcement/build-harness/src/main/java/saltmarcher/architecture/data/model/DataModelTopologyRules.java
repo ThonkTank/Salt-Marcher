@@ -22,7 +22,8 @@ public final class DataModelTopologyRules implements ArchitectureRule {
     private static final Pattern SCHEMA_TABLE_CONSTANT_PATTERN =
             Pattern.compile("\\b[A-Z][A-Z0-9_]*_TABLE\\s*=\\s*\"([^\"]+)\"");
     private static final Pattern SCHEMA_CREATE_TABLE_PATTERN =
-            Pattern.compile("\\bCREATE\\s+(?:TEMP\\s+)?TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\b",
+            Pattern.compile(
+                    "\\bCREATE\\s+(?:TEMP\\s+)?TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
                     Pattern.CASE_INSENSITIVE);
     private static final Pattern JAVA_STRING_LITERAL_PATTERN =
             Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");

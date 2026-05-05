@@ -1,6 +1,7 @@
 package src.data.dungeon.gateway.local;
 
 import org.jspecify.annotations.Nullable;
+import src.data.dungeon.model.DungeonPersistenceSchema;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,23 +22,23 @@ final class DungeonSqliteStatementSupport {
     private static final String INSERT_TEMP_RETAINED_ID_SQL =
             "INSERT INTO " + TEMP_RETAINED_IDS_TABLE + "(id) VALUES (?)";
     private static final String DELETE_OBSOLETE_CORRIDORS_SQL =
-            "DELETE FROM corridors WHERE dungeon_map_id=? AND ("
+            "DELETE FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE + " WHERE dungeon_map_id=? AND ("
                     + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
                     + "OR corridor_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_STAIRS_SQL =
-            "DELETE FROM dungeon_stairs WHERE dungeon_map_id=? AND ("
+            "DELETE FROM " + DungeonPersistenceSchema.STAIRS_TABLE + " WHERE dungeon_map_id=? AND ("
                     + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
                     + "OR stair_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_TRANSITIONS_SQL =
-            "DELETE FROM dungeon_transitions WHERE dungeon_map_id=? AND ("
+            "DELETE FROM " + DungeonPersistenceSchema.TRANSITIONS_TABLE + " WHERE dungeon_map_id=? AND ("
                     + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
                     + "OR transition_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_ROOMS_SQL =
-            "DELETE FROM dungeon_rooms WHERE dungeon_map_id=? AND ("
+            "DELETE FROM " + DungeonPersistenceSchema.ROOMS_TABLE + " WHERE dungeon_map_id=? AND ("
                     + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
                     + "OR room_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_ROOM_CLUSTERS_SQL =
-            "DELETE FROM dungeon_room_clusters WHERE dungeon_map_id=? AND ("
+            "DELETE FROM " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + " WHERE dungeon_map_id=? AND ("
                     + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
                     + "OR cluster_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
 

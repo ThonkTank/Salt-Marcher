@@ -135,8 +135,8 @@ public final class EncounterApplicationService {
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
             return new EncounterBudgetResult(
-                    EncounterPublishedMapper.mapBudgetStatus(result.status()),
-                    EncounterPublishedMapper.toPublishedBudget(result.budget()),
+                    EncounterPublishedBudgetMapper.mapBudgetStatus(result.status()),
+                    EncounterPublishedBudgetMapper.toPublishedBudget(result.budget()),
                     result.message());
         } catch (RuntimeException exception) {
             return new EncounterBudgetResult(EncounterGenerationStatus.STORAGE_ERROR, null, "Encounter budget could not be loaded.");
@@ -148,22 +148,22 @@ public final class EncounterApplicationService {
         if (loadBudgetUseCase == null) {
             currentTuningPreview = new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
-                    EncounterPublishedMapper.tuningPreviewLabels(null),
+                    EncounterPublishedBudgetMapper.tuningPreviewLabels(null),
                     "Encounter tuning preview service is not registered.");
             notifyTuningPreviewListeners(currentTuningPreview);
             return currentTuningPreview;
         }
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
-            EncounterBudgetSummary budget = EncounterPublishedMapper.toPublishedBudget(result.budget());
+            EncounterBudgetSummary budget = EncounterPublishedBudgetMapper.toPublishedBudget(result.budget());
             currentTuningPreview = new EncounterTuningPreviewResult(
-                    EncounterPublishedMapper.mapBudgetStatus(result.status()),
-                    EncounterPublishedMapper.tuningPreviewLabels(budget),
+                    EncounterPublishedBudgetMapper.mapBudgetStatus(result.status()),
+                    EncounterPublishedBudgetMapper.tuningPreviewLabels(budget),
                     result.message());
         } catch (RuntimeException exception) {
             currentTuningPreview = new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
-                    EncounterPublishedMapper.tuningPreviewLabels(null),
+                    EncounterPublishedBudgetMapper.tuningPreviewLabels(null),
                     "Encounter tuning preview could not be loaded.");
         }
         notifyTuningPreviewListeners(currentTuningPreview);
@@ -181,8 +181,8 @@ public final class EncounterApplicationService {
         try {
             LoadEncounterPlanBudgetUseCase.Result result = loadPlanBudgetUseCase.execute(query.planId());
             return new EncounterPlanBudgetResult(
-                    EncounterPublishedMapper.toPublishedPlanBudgetStatus(result.status()),
-                    EncounterPublishedMapper.toPublishedPlanBudget(result.summary()),
+                    EncounterPublishedBudgetMapper.toPublishedPlanBudgetStatus(result.status()),
+                    EncounterPublishedBudgetMapper.toPublishedPlanBudget(result.summary()),
                     result.message());
         } catch (RuntimeException exception) {
             return new EncounterPlanBudgetResult(
@@ -202,14 +202,14 @@ public final class EncounterApplicationService {
         }
         try {
             EncounterGenerationUseCase.GenerateResult result = generator.execute(
-                    EncounterPublishedMapper.toGenerateRequest(request));
+                    EncounterPublishedGenerationMapper.toGenerateRequest(request));
             return new EncounterGenerationResult(
-                    EncounterPublishedMapper.mapStatus(result.status()),
-                    EncounterPublishedMapper.toPublishedBudget(result.budget()),
-                    result.encounters().stream().map(EncounterPublishedMapper::toPublishedEncounter).toList(),
+                    EncounterPublishedGenerationMapper.mapStatus(result.status()),
+                    EncounterPublishedBudgetMapper.toPublishedBudget(result.budget()),
+                    result.encounters().stream().map(EncounterPublishedGenerationMapper::toPublishedEncounter).toList(),
                     result.message(),
-                    EncounterPublishedMapper.toPublishedDiagnostics(result.diagnostics()),
-                    result.advisories().stream().map(EncounterPublishedMapper::toPublishedAdvisory).toList());
+                    EncounterPublishedGenerationMapper.toPublishedDiagnostics(result.diagnostics()),
+                    result.advisories().stream().map(EncounterPublishedGenerationMapper::toPublishedAdvisory).toList());
         } catch (RuntimeException exception) {
             return new EncounterGenerationResult(EncounterGenerationStatus.defaultFailure(), null, List.of(), "Encounter generation failed.");
         }
@@ -232,11 +232,11 @@ public final class EncounterApplicationService {
                 effective.generatedLabel(),
                 effective.creatures().stream()
                         .filter(Objects::nonNull)
-                        .map(EncounterPublishedMapper::toPlanCreature)
+                        .map(EncounterPublishedPlanMapper::toPlanCreature)
                         .toList());
         return new SavedEncounterPlanResult(
-                EncounterPublishedMapper.toPublishedSavePlanStatus(result.status()),
-                result.plan() == null ? null : EncounterPublishedMapper.toPublishedPlan(result.plan()),
+                EncounterPublishedPlanMapper.toPublishedSavePlanStatus(result.status()),
+                result.plan() == null ? null : EncounterPublishedPlanMapper.toPublishedPlan(result.plan()),
                 result.message());
     }
 
@@ -250,8 +250,8 @@ public final class EncounterApplicationService {
         }
         LoadSavedEncounterPlanUseCase.Result result = useCase.execute(query == null ? 0L : query.planId());
         return new SavedEncounterPlanResult(
-                EncounterPublishedMapper.toPublishedLoadPlanStatus(result.status()),
-                result.plan() == null ? null : EncounterPublishedMapper.toPublishedPlan(result.plan()),
+                EncounterPublishedPlanMapper.toPublishedLoadPlanStatus(result.status()),
+                result.plan() == null ? null : EncounterPublishedPlanMapper.toPublishedPlan(result.plan()),
                 result.message());
     }
 
@@ -266,8 +266,8 @@ public final class EncounterApplicationService {
         }
         ListSavedEncounterPlansUseCase.Result result = useCase.execute();
         return new SavedEncounterPlanListResult(
-                EncounterPublishedMapper.toPublishedListPlansStatus(result.status()),
-                result.plans().stream().map(EncounterPublishedMapper::toPublishedSummary).toList(),
+                EncounterPublishedPlanMapper.toPublishedListPlansStatus(result.status()),
+                result.plans().stream().map(EncounterPublishedPlanMapper::toPublishedSummary).toList(),
                 result.message());
     }
 
@@ -286,8 +286,8 @@ public final class EncounterApplicationService {
         if (useCase == null) {
             return EncounterSessionSnapshot.empty("Encounter session is not registered.");
         }
-        EncounterSessionSnapshot snapshot = EncounterSessionMapper.toPublishedSnapshot(
-                useCase.apply(EncounterSessionMapper.toInternalCommand(command)));
+        EncounterSessionSnapshot snapshot = EncounterSessionSnapshotMapper.toPublishedSnapshot(
+                useCase.apply(EncounterSessionCommandMapper.toInternalCommand(command)));
         notifySessionListeners(snapshot);
         return snapshot;
     }
@@ -297,7 +297,7 @@ public final class EncounterApplicationService {
         if (useCase == null) {
             return EncounterSessionSnapshot.empty("Encounter session is not registered.");
         }
-        return EncounterSessionMapper.toPublishedSnapshot(useCase.snapshot());
+        return EncounterSessionSnapshotMapper.toPublishedSnapshot(useCase.snapshot());
     }
 
     private Runnable subscribeSessionListener(Consumer<EncounterSessionSnapshot> listener) {
