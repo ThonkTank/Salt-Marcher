@@ -67,7 +67,8 @@ final class DungeonSqliteTopologyElementGateway {
                 DungeonSqliteStatementSupport.setNullableLong(insert, 4, retainedId(element.clusterId(), clusterIds));
                 DungeonSqliteStatementSupport.setNullableLong(insert, 5, retainedId(element.corridorId(), corridorIds));
                 insert.setString(6, element.label());
-                insert.setInt(7, sortOrder++);
+                insert.setInt(7, sortOrder);
+                sortOrder++;
                 insert.addBatch();
             }
             insert.executeBatch();
