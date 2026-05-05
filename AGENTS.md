@@ -88,9 +88,10 @@ document exists.
   the repo-local path is unsuitable.
 - The required local sequence for parallel implementation is: create linked
   worktree, create or switch to an agent-owned branch inside that worktree,
-  implement there, run the required verification surface there, and merge the
-  green branch back into the integrating worktree only after the required gate
-  passes.
+  implement there, run the required verification surface there, merge the
+  green branch back into the repo-root `SaltMarcher/` checkout only after the
+  required gate passes, then remove the temporary local branch and linked
+  worktree once the verified result lives in the real local working tree.
 - For long verification runs where silent execution makes agent-side
   observation unreliable, prefer `tools/gradle/run-observable-gradle.sh`
   instead of shell loops over many separate `./gradlew` invocations. Use

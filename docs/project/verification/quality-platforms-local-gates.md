@@ -577,8 +577,10 @@ per agent. The preferred local shape is:
 1. create a linked worktree under `build/codex-worktrees/<topic>/`
 2. create or switch to an agent-owned branch inside that worktree
 3. implement and verify there with the normal public Gradle entrypoints
-4. merge back into the integrating worktree only after the required local
-   verification surface is green
+4. merge back into the repo-root `SaltMarcher/` checkout only after the
+   required local verification surface is green
+5. remove the temporary linked worktree and delete the temporary local branch
+   once the verified result lives in the real local working tree
 
 This keeps each agent's mutable `build/` and `.gradle/` state naturally scoped
 to its own filesystem tree. The harness therefore no longer creates
