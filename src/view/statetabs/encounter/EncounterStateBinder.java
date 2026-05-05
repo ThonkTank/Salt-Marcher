@@ -3,21 +3,21 @@ package src.view.statetabs.encounter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.EnumMap;
 import javafx.scene.Node;
+import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.published.LoadCreatureDetailQuery;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterSessionCommand;
-import src.domain.encounter.published.LoadEncounterSessionQuery;
 import src.domain.encounter.published.EncounterSessionModel;
 import src.domain.encounter.published.EncounterSessionSnapshot;
+import src.domain.encounter.published.LoadEncounterSessionQuery;
+import src.view.slotcontent.details.creature.CreatureDetailsInspectorEntry;
 
 final class EncounterStateBinder {
-
-    private static final Map<EncounterStatePublishedEvent.Action, ApplyEncounterSessionCommand.Action> ACTIONS =
-            buildActions();
 
     private final ShellRuntimeContext runtimeContext;
 
@@ -26,6 +26,7 @@ final class EncounterStateBinder {
     }
 
     ShellBinding bind() {
+        CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         EncounterSessionModel sessionModel = encounters.loadSession(new LoadEncounterSessionQuery());
         EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
@@ -38,6 +39,13 @@ final class EncounterStateBinder {
         sessionModel.subscribe(presentationModel::apply);
         presentationModel.apply(sessionModel.current());
         bindSessionActions(encounters, intentHandler);
+        presentationModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
+            if (after == null || after.longValue() <= 0L) {
+                return;
+            }
+            openCreatureDetails(runtimeContext.inspector(), creatures, after.longValue());
+            presentationModel.clearCreatureDetailSelection();
+        });
         builderView.onViewInputEvent(intentHandler::consume);
         initiativeView.onViewInputEvent(intentHandler::consume);
         combatView.onViewInputEvent(intentHandler::consume);
@@ -51,18 +59,136 @@ final class EncounterStateBinder {
             EncounterApplicationService encounters,
             EncounterStateIntentHandler intentHandler
     ) {
-        intentHandler.onPublishedEventRequested(intent -> {
-            if (intent == null) {
-                return;
-            }
-            encounters.applySession(toCommand(intent));
-        });
+        intentHandler.onPublishedEventRequested(event -> encounters.applySession(toCommand(event)));
     }
 
-    private static ApplyEncounterSessionCommand toCommand(EncounterStatePublishedEvent intent) {
-        if (intent == null) {
+    private static void openCreatureDetails(
+            InspectorSink inspector,
+            CreaturesApplicationService creatures,
+            long creatureId
+    ) {
+        if (creatureId <= 0L) {
+            return;
+        }
+        inspector.push(CreatureDetailsInspectorEntry.create(
+                creatureId,
+                id -> creatures.loadCreatureDetail(new LoadCreatureDetailQuery(id))));
+    }
+
+    private static ApplyEncounterSessionCommand toCommand(EncounterStatePublishedEvent event) {
+        if (event == null) {
+            return refreshCommand();
+        }
+        if (event.mutation() instanceof EncounterStatePublishedEvent.BuilderMutation builderMutation) {
+            return toBuilderCommand(builderMutation);
+        }
+        if (event.mutation() instanceof EncounterStatePublishedEvent.InitiativeSubmission initiativeSubmission) {
+            return toInitiativeCommand(initiativeSubmission);
+        }
+        if (event.mutation() instanceof EncounterStatePublishedEvent.CombatMutation combatMutation) {
+            return toCombatCommand(combatMutation);
+        }
+        if (event.mutation() instanceof EncounterStatePublishedEvent.ResultMutation resultMutation) {
+            return toResultCommand(resultMutation);
+        }
+        return refreshCommand();
+    }
+
+    private static ApplyEncounterSessionCommand toBuilderCommand(EncounterStatePublishedEvent.BuilderMutation mutation) {
+        if (mutation.change() instanceof EncounterStatePublishedEvent.GeneratorMutation generator) {
+            if (generator.generate()) {
+                return command(ApplyEncounterSessionCommand.Action.GENERATE);
+            }
+            return command(ApplyEncounterSessionCommand.Action.SHIFT_ALTERNATIVE, generator.alternativeShift());
+        }
+        if (mutation.change() instanceof EncounterStatePublishedEvent.PlanMutation plan) {
+            if (plan.saveCurrentPlan()) {
+                return command(ApplyEncounterSessionCommand.Action.SAVE_CURRENT_PLAN);
+            }
+            return command(ApplyEncounterSessionCommand.Action.OPEN_SAVED_PLAN, plan.selectedPlanId());
+        }
+        if (mutation.change() instanceof EncounterStatePublishedEvent.RosterMutation roster) {
+            if (roster.removeCreature()) {
+                return command(ApplyEncounterSessionCommand.Action.REMOVE_CREATURE, roster.creatureId());
+            }
+            if (roster.delta() > 0) {
+                return command(ApplyEncounterSessionCommand.Action.INCREMENT_CREATURE, roster.creatureId());
+            }
+            return command(ApplyEncounterSessionCommand.Action.DECREMENT_CREATURE, roster.creatureId());
+        }
+        if (mutation.change() instanceof EncounterStatePublishedEvent.UndoMutation undoMutation) {
+            return command(ApplyEncounterSessionCommand.Action.UNDO_REMOVE, undoMutation.token());
+        }
+        if (mutation.change() instanceof EncounterStatePublishedEvent.BuilderActionMutation builderAction) {
+            if (builderAction.clearHistory()) {
+                return command(ApplyEncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY);
+            }
+            return command(ApplyEncounterSessionCommand.Action.OPEN_INITIATIVE);
+        }
+        return refreshCommand();
+    }
+
+    private static ApplyEncounterSessionCommand toInitiativeCommand(EncounterStatePublishedEvent.InitiativeSubmission submission) {
+        if (submission.backToBuilder()) {
+            return command(ApplyEncounterSessionCommand.Action.BACK_TO_BUILDER);
+        }
+        return new ApplyEncounterSessionCommand(
+                ApplyEncounterSessionCommand.Action.CONFIRM_INITIATIVE,
+                null,
+                EncounterSessionSnapshot.BuilderInputs.empty(),
+                0L,
+                0L,
+                0,
+                0L,
+                submission.initiatives().stream()
+                        .map(entry -> new EncounterSessionSnapshot.InitiativeInput(entry.id(), entry.initiative()))
+                        .toList(),
+                "",
+                0,
+                0L,
+                0,
+                false);
+    }
+
+    private static ApplyEncounterSessionCommand toCombatCommand(EncounterStatePublishedEvent.CombatMutation mutation) {
+        if (mutation.change() instanceof EncounterStatePublishedEvent.AdvanceTurnMutation) {
+            return command(ApplyEncounterSessionCommand.Action.ADVANCE_TURN);
+        }
+        if (mutation.change() instanceof EncounterStatePublishedEvent.HpMutation hp) {
             return new ApplyEncounterSessionCommand(
-                    ApplyEncounterSessionCommand.Action.REFRESH,
+                    ApplyEncounterSessionCommand.Action.MUTATE_HP,
+                    null,
+                    EncounterSessionSnapshot.BuilderInputs.empty(),
+                    0L,
+                    0L,
+                    hp.amount(),
+                    0L,
+                    List.of(),
+                    hp.combatantId(),
+                    0,
+                    0L,
+                    hp.amount(),
+                    hp.healing());
+        }
+        if (mutation.change() instanceof EncounterStatePublishedEvent.InitiativeAdjustment initiative) {
+            return new ApplyEncounterSessionCommand(
+                    ApplyEncounterSessionCommand.Action.SET_INITIATIVE,
+                    null,
+                    EncounterSessionSnapshot.BuilderInputs.empty(),
+                    0L,
+                    0L,
+                    0,
+                    0L,
+                    List.of(),
+                    initiative.combatantId(),
+                    initiative.initiativeValue(),
+                    0L,
+                    0,
+                    false);
+        }
+        if (mutation.change() instanceof EncounterStatePublishedEvent.PartyMemberAddition partyMember) {
+            return new ApplyEncounterSessionCommand(
+                    ApplyEncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT,
                     null,
                     EncounterSessionSnapshot.BuilderInputs.empty(),
                     0L,
@@ -71,60 +197,25 @@ final class EncounterStateBinder {
                     0L,
                     List.of(),
                     "",
-                    0,
-                    0,
+                    partyMember.initiativeValue(),
+                    partyMember.partyMemberId(),
                     0,
                     false);
         }
-        EncounterStatePublishedEvent safeIntent = intent;
-        return new ApplyEncounterSessionCommand(
-                toAction(safeIntent.action()),
-                null,
-                EncounterSessionSnapshot.BuilderInputs.empty(),
-                safeIntent.creatureId(),
-                safeIntent.savedPlanId(),
-                safeIntent.delta(),
-                safeIntent.undoToken(),
-                safeIntent.initiatives().stream()
-                        .map(entry -> new EncounterSessionSnapshot.InitiativeInput(entry.id(), entry.initiative()))
-                        .toList(),
-                safeIntent.combatantId(),
-                safeIntent.initiative(),
-                safeIntent.partyMemberId(),
-                safeIntent.amount(),
-                safeIntent.healing());
+        if (mutation.change() instanceof EncounterStatePublishedEvent.EndCombatMutation) {
+            return command(ApplyEncounterSessionCommand.Action.END_COMBAT);
+        }
+        return refreshCommand();
     }
 
-    private static ApplyEncounterSessionCommand.Action toAction(EncounterStatePublishedEvent.Action action) {
-        ApplyEncounterSessionCommand.Action mappedAction = ACTIONS.get(action);
-        return mappedAction == null ? ApplyEncounterSessionCommand.Action.REFRESH : mappedAction;
-    }
-
-    private static Map<EncounterStatePublishedEvent.Action, ApplyEncounterSessionCommand.Action> buildActions() {
-        Map<EncounterStatePublishedEvent.Action, ApplyEncounterSessionCommand.Action> actions =
-                new EnumMap<>(EncounterStatePublishedEvent.Action.class);
-        actions.put(EncounterStatePublishedEvent.Action.GENERATE, ApplyEncounterSessionCommand.Action.GENERATE);
-        actions.put(EncounterStatePublishedEvent.Action.SAVE_CURRENT_PLAN, ApplyEncounterSessionCommand.Action.SAVE_CURRENT_PLAN);
-        actions.put(EncounterStatePublishedEvent.Action.APPLY_SAVED_PLAN, ApplyEncounterSessionCommand.Action.OPEN_SAVED_PLAN);
-        actions.put(EncounterStatePublishedEvent.Action.CLEAR_GENERATION_HISTORY, ApplyEncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY);
-        actions.put(EncounterStatePublishedEvent.Action.SHIFT_ALTERNATIVE, ApplyEncounterSessionCommand.Action.SHIFT_ALTERNATIVE);
-        actions.put(EncounterStatePublishedEvent.Action.ADD_CREATURE, ApplyEncounterSessionCommand.Action.ADD_CREATURE);
-        actions.put(EncounterStatePublishedEvent.Action.INCREMENT_CREATURE, ApplyEncounterSessionCommand.Action.INCREMENT_CREATURE);
-        actions.put(EncounterStatePublishedEvent.Action.DECREMENT_CREATURE, ApplyEncounterSessionCommand.Action.DECREMENT_CREATURE);
-        actions.put(EncounterStatePublishedEvent.Action.REMOVE_CREATURE, ApplyEncounterSessionCommand.Action.REMOVE_CREATURE);
-        actions.put(EncounterStatePublishedEvent.Action.UNDO_REMOVE, ApplyEncounterSessionCommand.Action.UNDO_REMOVE);
-        actions.put(EncounterStatePublishedEvent.Action.START_INITIATIVE, ApplyEncounterSessionCommand.Action.OPEN_INITIATIVE);
-        actions.put(EncounterStatePublishedEvent.Action.BACK_TO_BUILDER, ApplyEncounterSessionCommand.Action.BACK_TO_BUILDER);
-        actions.put(EncounterStatePublishedEvent.Action.CONFIRM_INITIATIVE, ApplyEncounterSessionCommand.Action.CONFIRM_INITIATIVE);
-        actions.put(EncounterStatePublishedEvent.Action.ADVANCE_TURN, ApplyEncounterSessionCommand.Action.ADVANCE_TURN);
-        actions.put(EncounterStatePublishedEvent.Action.SET_INITIATIVE, ApplyEncounterSessionCommand.Action.SET_INITIATIVE);
-        actions.put(EncounterStatePublishedEvent.Action.ADD_PARTY_MEMBER_TO_COMBAT, ApplyEncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT);
-        actions.put(EncounterStatePublishedEvent.Action.END_COMBAT, ApplyEncounterSessionCommand.Action.END_COMBAT);
-        actions.put(EncounterStatePublishedEvent.Action.AWARD_XP, ApplyEncounterSessionCommand.Action.AWARD_XP);
-        actions.put(EncounterStatePublishedEvent.Action.RETURN_TO_BUILDER_AFTER_RESULTS,
-                ApplyEncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS);
-        actions.put(EncounterStatePublishedEvent.Action.MUTATE_HP, ApplyEncounterSessionCommand.Action.MUTATE_HP);
-        return Map.copyOf(actions);
+    private static ApplyEncounterSessionCommand toResultCommand(EncounterStatePublishedEvent.ResultMutation mutation) {
+        if (mutation.change() instanceof EncounterStatePublishedEvent.AwardXpMutation) {
+            return command(ApplyEncounterSessionCommand.Action.AWARD_XP);
+        }
+        if (mutation.change() instanceof EncounterStatePublishedEvent.ReturnToBuilderMutation) {
+            return command(ApplyEncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS);
+        }
+        return refreshCommand();
     }
 
     private void wireRendering(
@@ -135,20 +226,16 @@ final class EncounterStateBinder {
             EncounterResultsStateView resultsView,
             EncounterStateContributionModel presentationModel
     ) {
-        presentationModel.modeProperty().addListener((obs, oldMode, newMode) ->
+        presentationModel.modeProperty().addListener((obs, before, after) ->
                 render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
-        presentationModel.builderStateProperty()
-                .addListener((obs, oldState, newState) ->
-                        render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
-        presentationModel.initiativeStateProperty()
-                .addListener((obs, oldState, newState) ->
-                        render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
-        presentationModel.combatStateProperty()
-                .addListener((obs, oldState, newState) ->
-                        render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
-        presentationModel.resultStateProperty()
-                .addListener((obs, oldState, newState) ->
-                        render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
+        presentationModel.builderStateProperty().addListener((obs, before, after) ->
+                render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
+        presentationModel.initiativeStateProperty().addListener((obs, before, after) ->
+                render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
+        presentationModel.combatStateProperty().addListener((obs, before, after) ->
+                render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
+        presentationModel.resultStateProperty().addListener((obs, before, after) ->
+                render(state, builderView, initiativeView, combatView, resultsView, presentationModel));
     }
 
     private void render(
@@ -161,142 +248,116 @@ final class EncounterStateBinder {
     ) {
         switch (presentationModel.modeProperty().get()) {
             case BUILDER -> {
-                builderView.showBuilder(toBuilderState(presentationModel.builderStateProperty().get()));
+                builderView.showBuilder(presentationModel.builderStateProperty().get());
                 state.showContent(builderView);
             }
             case INITIATIVE -> {
-                initiativeView.showInitiative(toInitiativeState(presentationModel.initiativeStateProperty().get()));
+                initiativeView.showInitiative(presentationModel.initiativeStateProperty().get());
                 state.showContent(initiativeView);
             }
             case COMBAT -> {
-                combatView.showCombat(
-                        toCombatState(
-                                presentationModel.combatStateProperty().get(),
-                                presentationModel.missingCombatPartyMembers()));
+                combatView.showCombat(presentationModel.combatStateProperty().get());
                 state.showContent(combatView);
             }
             case RESULTS -> {
-                resultsView.showResults(toResultState(presentationModel.resultStateProperty().get()));
+                resultsView.showResults(presentationModel.resultStateProperty().get());
                 state.showContent(resultsView);
             }
         }
     }
 
-    private EncounterStateView.BuilderStateView toBuilderState(
-            EncounterStateContributionModel.BuilderState source
-    ) {
-        EncounterSessionSnapshot.DifficultySummary difficulty = source.difficulty();
-        EncounterStateContributionModel.BuilderSettings settings = source.settings();
-        String partyLabel = "Party: " + source.party().size() + ", Lv "
-                + Math.round(source.party().stream().mapToInt(EncounterSessionSnapshot.PartyMember::level)
-                .average().orElse(1.0));
-        return new EncounterStateView.BuilderStateView(
-                partyLabel,
-                source.templateLabel(),
-                new EncounterStateView.DifficultySummaryView(
-                        difficulty.easy(),
-                        difficulty.medium(),
-                        difficulty.hard(),
-                        difficulty.deadly(),
-                        difficulty.adjustedXp(),
-                        difficulty.difficulty()),
-                source.savedPlans().stream()
-                        .map(plan -> new EncounterStateView.SavedEncounterPlanView(
-                                plan.id(),
-                                plan.name(),
-                                plan.generatedLabel(),
-                                plan.creatureCount()))
-                        .toList(),
-                new EncounterStateView.BuilderSettingsInput(
-                        settings.difficultyLabel(),
-                        settings.balanceLevel(),
-                        settings.amountValue(),
-                        settings.diversityLevel()),
-                source.roster().stream()
-                        .map(creature -> new EncounterStateView.RosterCardView(
-                                creature.creatureId(),
-                                creature.name(),
-                                creature.cr(),
-                                creature.totalXp(),
-                                creature.ac(),
-                                creature.type(),
-                                creature.role(),
-                                creature.count()))
-                        .toList(),
-                source.canStartCombat(),
-                source.canPreviousAlternative(),
-                source.canNextAlternative(),
-                source.canSavePlan(),
-                source.canClearGenerationHistory(),
-                source.pendingUndo() == null
-                        ? null
-                        : new EncounterStateView.UndoRemoveView(
-                                source.pendingUndo().token(),
-                                source.pendingUndo().creature().name()));
+    private static ApplyEncounterSessionCommand refreshCommand() {
+        return command(ApplyEncounterSessionCommand.Action.REFRESH);
     }
 
-    private EncounterStateView.InitiativeStateView toInitiativeState(
-            EncounterSessionSnapshot.InitiativeState source
-    ) {
-        return new EncounterStateView.InitiativeStateView(source.entries().stream()
-                .map(entry -> new EncounterStateView.InitiativeEntryView(
-                        entry.id(),
-                        entry.label(),
-                        entry.kind(),
-                        entry.initiative()))
-                .toList());
+    private static ApplyEncounterSessionCommand command(ApplyEncounterSessionCommand.Action action) {
+        return new ApplyEncounterSessionCommand(
+                action,
+                null,
+                EncounterSessionSnapshot.BuilderInputs.empty(),
+                0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
     }
 
-    private EncounterStateView.CombatStateView toCombatState(
-            EncounterSessionSnapshot.CombatProjection source,
-            List<EncounterSessionSnapshot.PartyMember> missingPartyMembers
+    private static ApplyEncounterSessionCommand command(
+            ApplyEncounterSessionCommand.Action action,
+            int delta
     ) {
-        return new EncounterStateView.CombatStateView(
-                source.round(),
-                source.status(),
-                source.cards().stream()
-                        .map(card -> new EncounterStateView.CombatCardView(
-                                card.id(),
-                                card.name(),
-                                card.playerCharacter(),
-                                card.active(),
-                                card.alive(),
-                                card.currentHp(),
-                                card.maxHp(),
-                                card.armorClass(),
-                                card.initiative(),
-                                card.count(),
-                                card.detail()))
-                        .toList(),
-                source.allEnemiesDefeated(),
-                missingPartyMembers.stream()
-                        .map(member -> new EncounterStateView.PartyMemberCandidate(
-                                member.numericId(),
-                                member.name(),
-                                member.level()))
-                        .toList());
+        return new ApplyEncounterSessionCommand(
+                action,
+                null,
+                EncounterSessionSnapshot.BuilderInputs.empty(),
+                0L,
+                0L,
+                delta,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
     }
 
-    private EncounterStateView.ResultStateView toResultState(EncounterSessionSnapshot.ResultState source) {
-        return new EncounterStateView.ResultStateView(
-                source.enemies().stream()
-                        .map(enemy -> new EncounterStateView.ResultEnemyView(
-                                enemy.name(),
-                                enemy.status(),
-                                enemy.hpLoss(),
-                                enemy.xp(),
-                                enemy.defeatedByDefault(),
-                                enemy.loot()))
-                        .toList(),
-                source.defeatedCount(),
-                source.eligibleXp(),
-                source.perPlayerXp(),
-                source.goldSummary(),
-                source.lootDetail(),
-                source.awardStatus(),
-                source.xpAwarded(),
-                source.canAwardXp(),
-                source.partySize());
+    private static ApplyEncounterSessionCommand command(
+            ApplyEncounterSessionCommand.Action action,
+            long longValue
+    ) {
+        return switch (action) {
+            case OPEN_SAVED_PLAN -> new ApplyEncounterSessionCommand(
+                    action,
+                    null,
+                    EncounterSessionSnapshot.BuilderInputs.empty(),
+                    0L,
+                    longValue,
+                    0,
+                    0L,
+                    List.of(),
+                    "",
+                    0,
+                    0L,
+                    0,
+                    false);
+            case INCREMENT_CREATURE,
+                    DECREMENT_CREATURE,
+                    REMOVE_CREATURE -> new ApplyEncounterSessionCommand(
+                    action,
+                    null,
+                    EncounterSessionSnapshot.BuilderInputs.empty(),
+                    longValue,
+                    0L,
+                    0,
+                    0L,
+                    List.of(),
+                    "",
+                    0,
+                    0L,
+                    0,
+                    false);
+            case UNDO_REMOVE -> new ApplyEncounterSessionCommand(
+                    action,
+                    null,
+                    EncounterSessionSnapshot.BuilderInputs.empty(),
+                    0L,
+                    0L,
+                    0,
+                    longValue,
+                    List.of(),
+                    "",
+                    0,
+                    0L,
+                    0,
+                    false);
+            default -> command(action);
+        };
     }
 
     private record Binding(Node state) implements ShellBinding {

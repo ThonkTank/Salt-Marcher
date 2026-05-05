@@ -1220,6 +1220,8 @@ public final class EncounterApplicationService {
                             safeState.difficulty().adjustedXp(),
                             safeState.difficulty().difficulty()),
                     toPublishedBuilderInputs(safeState.builderInputs()),
+                    "",
+                    List.of(),
                     safeState.savedPlans().stream()
                             .map(summary -> new SavedEncounterPlanSummary(
                                     summary.id(),

@@ -6,10 +6,11 @@ import java.util.function.Consumer;
 
 final class EncounterStateIntentHandler {
 
+    private final EncounterStateContributionModel presentationModel;
     private Consumer<EncounterStatePublishedEvent> publishedEventListener = ignored -> { };
 
     EncounterStateIntentHandler(EncounterStateContributionModel presentationModel) {
-        Objects.requireNonNull(presentationModel, "presentationModel");
+        this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
     }
 
     void onPublishedEventRequested(Consumer<EncounterStatePublishedEvent> listener) {
@@ -20,54 +21,43 @@ final class EncounterStateIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.generateRequested()) {
-            publish(EncounterStatePublishedEvent.Action.GENERATE, event.creatureId(), event.openedPlanId(),
-                    0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
+        EncounterBuilderStateViewInputEvent.Interaction interaction = event.interaction();
+        if (interaction instanceof EncounterBuilderStateViewInputEvent.GeneratorInteraction generator) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.BuilderMutation(
+                    new EncounterStatePublishedEvent.GeneratorMutation(
+                            generator.generateRequested(),
+                            generator.alternativeShift()))));
             return;
         }
-        if (event.alternativeShift() != 0) {
-            publish(EncounterStatePublishedEvent.Action.SHIFT_ALTERNATIVE, event.creatureId(),
-                    event.openedPlanId(), event.alternativeShift(), event.undoToken(), List.of(), "", 0, 0L, 0, false);
+        if (interaction instanceof EncounterBuilderStateViewInputEvent.PlanInteraction plan) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.BuilderMutation(
+                    new EncounterStatePublishedEvent.PlanMutation(
+                            plan.saveCurrentPlanRequested(),
+                            plan.selectedPlanId()))));
             return;
         }
-        if (event.saveRequested()) {
-            publish(EncounterStatePublishedEvent.Action.SAVE_CURRENT_PLAN, event.creatureId(), event.openedPlanId(),
-                    0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
+        if (interaction instanceof EncounterBuilderStateViewInputEvent.RosterInteraction roster) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.BuilderMutation(
+                    new EncounterStatePublishedEvent.RosterMutation(
+                            roster.creatureId(),
+                            roster.delta(),
+                            roster.removalRequested()))));
             return;
         }
-        if (event.openedPlanId() > 0L) {
-            publish(EncounterStatePublishedEvent.Action.APPLY_SAVED_PLAN, event.creatureId(), event.openedPlanId(),
-                    0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
+        if (interaction instanceof EncounterBuilderStateViewInputEvent.UndoInteraction undo) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.BuilderMutation(
+                    new EncounterStatePublishedEvent.UndoMutation(undo.token()))));
             return;
         }
-        if (event.clearHistoryRequested()) {
-            publish(EncounterStatePublishedEvent.Action.CLEAR_GENERATION_HISTORY, event.creatureId(),
-                    event.openedPlanId(), 0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
+        if (interaction instanceof EncounterBuilderStateViewInputEvent.DetailInteraction detail) {
+            presentationModel.selectCreatureDetail(detail.creatureId());
             return;
         }
-        if (event.rosterDelta() > 0) {
-            publish(EncounterStatePublishedEvent.Action.INCREMENT_CREATURE, event.creatureId(),
-                    event.openedPlanId(), 0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
-            return;
-        }
-        if (event.rosterDelta() < 0) {
-            publish(EncounterStatePublishedEvent.Action.DECREMENT_CREATURE, event.creatureId(),
-                    event.openedPlanId(), 0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
-            return;
-        }
-        if (event.creatureRemovalRequested()) {
-            publish(EncounterStatePublishedEvent.Action.REMOVE_CREATURE, event.creatureId(),
-                    event.openedPlanId(), 0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
-            return;
-        }
-        if (event.undoToken() > 0L) {
-            publish(EncounterStatePublishedEvent.Action.UNDO_REMOVE, event.creatureId(), event.openedPlanId(),
-                    0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
-            return;
-        }
-        if (event.startInitiativeRequested()) {
-            publish(EncounterStatePublishedEvent.Action.START_INITIATIVE, event.creatureId(),
-                    event.openedPlanId(), 0, event.undoToken(), List.of(), "", 0, 0L, 0, false);
+        if (interaction instanceof EncounterBuilderStateViewInputEvent.BuilderActionInteraction builderAction) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.BuilderMutation(
+                    new EncounterStatePublishedEvent.BuilderActionMutation(
+                            builderAction.clearHistoryRequested(),
+                            builderAction.startInitiativeRequested()))));
         }
     }
 
@@ -75,51 +65,54 @@ final class EncounterStateIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.backRequested()) {
-            publish(EncounterStatePublishedEvent.Action.BACK_TO_BUILDER, 0L, 0L, 0, 0L, List.of(), "", 0, 0L, 0, false);
+        if (event.interaction() instanceof EncounterInitiativeStateViewInputEvent.BackNavigationInteraction) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.InitiativeSubmission(true, List.of())));
             return;
         }
-        publish(
-                EncounterStatePublishedEvent.Action.CONFIRM_INITIATIVE,
-                0L,
-                0L,
-                0,
-                0L,
-                event.initiatives().stream()
+        if (event.interaction() instanceof EncounterInitiativeStateViewInputEvent.SubmissionInteraction submissionInteraction) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.InitiativeSubmission(
+                    false,
+                    submissionInteraction.initiatives().stream()
                         .map(entry -> new EncounterStatePublishedEvent.InitiativeEntry(entry.id(), entry.initiative()))
-                        .toList(),
-                "",
-                0,
-                0L,
-                0,
-                false);
+                        .toList())));
+        }
     }
 
     void consume(EncounterCombatStateViewInputEvent event) {
         if (event == null) {
             return;
         }
-        if (event.nextTurnRequested()) {
-            publish(EncounterStatePublishedEvent.Action.ADVANCE_TURN, 0L, 0L, 0, 0L, List.of(), "", 0, 0L, 0, false);
+        EncounterCombatStateViewInputEvent.Interaction interaction = event.interaction();
+        if (interaction instanceof EncounterCombatStateViewInputEvent.AdvanceTurnInteraction) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.CombatMutation(
+                    new EncounterStatePublishedEvent.AdvanceTurnMutation())));
             return;
         }
-        if (event.hpDelta() != 0) {
-            publish(EncounterStatePublishedEvent.Action.MUTATE_HP, 0L, 0L, event.hpDelta(), 0L, List.of(),
-                    event.combatantId(), 0, 0L, event.hpDelta(), event.healing());
+        if (interaction instanceof EncounterCombatStateViewInputEvent.HpChangeInteraction hpChange) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.CombatMutation(
+                    new EncounterStatePublishedEvent.HpMutation(
+                            hpChange.combatantId(),
+                            hpChange.amount(),
+                            hpChange.healing()))));
             return;
         }
-        if (event.initiativeChangeRequested()) {
-            publish(EncounterStatePublishedEvent.Action.SET_INITIATIVE, 0L, 0L, 0, 0L, List.of(),
-                    event.combatantId(), event.initiativeValue(), 0L, 0, false);
+        if (interaction instanceof EncounterCombatStateViewInputEvent.InitiativeEditInteraction initiativeEdit) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.CombatMutation(
+                    new EncounterStatePublishedEvent.InitiativeAdjustment(
+                            initiativeEdit.combatantId(),
+                            initiativeEdit.initiativeValue()))));
             return;
         }
-        if (event.partyMemberId() > 0L) {
-            publish(EncounterStatePublishedEvent.Action.ADD_PARTY_MEMBER_TO_COMBAT, 0L, 0L, 0, 0L, List.of(),
-                    "", event.initiativeValue(), event.partyMemberId(), 0, false);
+        if (interaction instanceof EncounterCombatStateViewInputEvent.PartyMemberJoinInteraction partyMemberJoin) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.CombatMutation(
+                    new EncounterStatePublishedEvent.PartyMemberAddition(
+                            partyMemberJoin.partyMemberId(),
+                            partyMemberJoin.initiativeValue()))));
             return;
         }
-        if (event.endCombatRequested()) {
-            publish(EncounterStatePublishedEvent.Action.END_COMBAT, 0L, 0L, 0, 0L, List.of(), "", 0, 0L, 0, false);
+        if (interaction instanceof EncounterCombatStateViewInputEvent.EndCombatInteraction) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.CombatMutation(
+                    new EncounterStatePublishedEvent.EndCombatMutation())));
         }
     }
 
@@ -127,50 +120,18 @@ final class EncounterStateIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.awardRequested()) {
-            publish(EncounterStatePublishedEvent.Action.AWARD_XP, 0L, 0L, 0, 0L, List.of(), "", 0, 0L, 0, false);
+        if (event.interaction() instanceof EncounterResultsStateViewInputEvent.AwardInteraction) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.ResultMutation(
+                    new EncounterStatePublishedEvent.AwardXpMutation())));
             return;
         }
-        if (event.returnToBuilderRequested()) {
-            publish(
-                    EncounterStatePublishedEvent.Action.RETURN_TO_BUILDER_AFTER_RESULTS,
-                    0L,
-                    0L,
-                    0,
-                    0L,
-                    List.of(),
-                    "",
-                    0,
-                    0L,
-                    0,
-                    false);
+        if (event.interaction() instanceof EncounterResultsStateViewInputEvent.ReturnInteraction) {
+            publish(new EncounterStatePublishedEvent(new EncounterStatePublishedEvent.ResultMutation(
+                    new EncounterStatePublishedEvent.ReturnToBuilderMutation())));
         }
     }
 
-    private void publish(
-            EncounterStatePublishedEvent.Action action,
-            long creatureId,
-            long selectedPlanId,
-            int delta,
-            long undoToken,
-            List<EncounterStatePublishedEvent.InitiativeEntry> initiatives,
-            String combatantId,
-            int initiativeValue,
-            long partyMemberId,
-            int amount,
-            boolean healing
-    ) {
-        publishedEventListener.accept(new EncounterStatePublishedEvent(
-                action,
-                creatureId,
-                selectedPlanId,
-                delta,
-                undoToken,
-                initiatives,
-                combatantId,
-                initiativeValue,
-                partyMemberId,
-                amount,
-                healing));
+    private void publish(EncounterStatePublishedEvent event) {
+        publishedEventListener.accept(Objects.requireNonNull(event, "event"));
     }
 }
