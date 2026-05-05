@@ -42,6 +42,10 @@ public final class DungeonEditorContributionModel {
             new ReadOnlyObjectWrapper<>(List.of());
     private final ReadOnlyIntegerWrapper projectionLevel = new ReadOnlyIntegerWrapper(0);
     private final ReadOnlyStringWrapper selectedTool = new ReadOnlyStringWrapper(DEFAULT_TOOL);
+    private final ReadOnlyObjectWrapper<MapEditorUiState> mapEditorUiState =
+            new ReadOnlyObjectWrapper<>(MapEditorUiState.hidden());
+    private final ReadOnlyObjectWrapper<ToolPaletteUiState> toolPaletteUiState =
+            new ReadOnlyObjectWrapper<>(ToolPaletteUiState.closed());
     private @Nullable DungeonEditorMapId selectedMapId;
     private @Nullable DungeonEditorSurface currentSurface;
     private @Nullable DungeonEditorInspectorSnapshot currentInspector;
@@ -100,6 +104,14 @@ public final class DungeonEditorContributionModel {
         return selectedTool.getReadOnlyProperty();
     }
 
+    public ReadOnlyObjectProperty<MapEditorUiState> mapEditorUiStateProperty() {
+        return mapEditorUiState.getReadOnlyProperty();
+    }
+
+    public ReadOnlyObjectProperty<ToolPaletteUiState> toolPaletteUiStateProperty() {
+        return toolPaletteUiState.getReadOnlyProperty();
+    }
+
     public void apply(DungeonEditorSnapshot editorSnapshot) {
         DungeonEditorSnapshot safeSnapshot = editorSnapshot == null
                 ? DungeonEditorSnapshot.empty("")
@@ -145,7 +157,95 @@ public final class DungeonEditorContributionModel {
         }
         clampProjectionLevel();
         busy.set(false);
+        synchronizeControlsUiState();
         refreshStateText();
+    }
+
+    long currentSelectedMapIdValue() {
+        return selectedMapId == null ? 0L : selectedMapId.value();
+    }
+
+    String currentViewModeKey() {
+        return viewModeLabel.get();
+    }
+
+    String currentSelectedToolLabel() {
+        return selectedTool.get();
+    }
+
+    OverlayProjection currentOverlayProjection() {
+        return overlayProjection.get();
+    }
+
+    MapEditorUiState currentMapEditorUiState() {
+        return mapEditorUiState.get();
+    }
+
+    ToolPaletteUiState currentToolPaletteUiState() {
+        return toolPaletteUiState.get();
+    }
+
+    void openCreateMapEditor() {
+        mapEditorUiState.set(MapEditorUiState.create("Dungeon"));
+    }
+
+    void openRenameMapEditor(long selectedMapIdValue) {
+        MapListEntry selectedMap = findMapEntry(selectedMapIdValue);
+        if (selectedMap == null) {
+            return;
+        }
+        mapEditorUiState.set(MapEditorUiState.rename(selectedMap.mapIdValue(), selectedMap.mapName()));
+    }
+
+    void openDeleteMapEditor(long selectedMapIdValue) {
+        MapListEntry selectedMap = findMapEntry(selectedMapIdValue);
+        if (selectedMap == null) {
+            return;
+        }
+        mapEditorUiState.set(MapEditorUiState.delete(selectedMap.mapIdValue(), selectedMap.mapName()));
+    }
+
+    void updateMapEditorDraft(String draftName) {
+        MapEditorUiState currentState = mapEditorUiState.get();
+        if (!currentState.visible()) {
+            return;
+        }
+        String safeDraftName = draftName == null ? "" : draftName.strip();
+        if (currentState.draftName().equals(safeDraftName) && currentState.errorText().isBlank()) {
+            return;
+        }
+        mapEditorUiState.set(currentState.withDraftName(safeDraftName).withErrorText(""));
+    }
+
+    void showMapEditorValidationError(String errorText) {
+        MapEditorUiState currentState = mapEditorUiState.get();
+        if (!currentState.visible()) {
+            return;
+        }
+        mapEditorUiState.set(currentState.withErrorText(errorText));
+    }
+
+    void closeMapEditor() {
+        if (mapEditorUiState.get().visible()) {
+            mapEditorUiState.set(MapEditorUiState.hidden());
+        }
+    }
+
+    void openToolPalette(DungeonEditorControlsViewInputEvent.ToolFamily family) {
+        if (family == null) {
+            return;
+        }
+        ToolFamily paletteFamily = ToolFamily.valueOf(family.name());
+        if (toolPaletteUiState.get().visible() && toolPaletteUiState.get().family() == paletteFamily) {
+            return;
+        }
+        toolPaletteUiState.set(ToolPaletteUiState.open(paletteFamily));
+    }
+
+    void closeToolPalette() {
+        if (toolPaletteUiState.get().visible()) {
+            toolPaletteUiState.set(ToolPaletteUiState.closed());
+        }
     }
 
     private void clampProjectionLevel() {
@@ -240,10 +340,32 @@ public final class DungeonEditorContributionModel {
         return new ArrayList<>(levels);
     }
 
+    private void synchronizeControlsUiState() {
+        MapEditorUiState currentMapEditor = mapEditorUiState.get();
+        if (!currentMapEditor.visible()) {
+            return;
+        }
+        if (currentMapEditor.mode() == MapEditorMode.RENAME || currentMapEditor.mode() == MapEditorMode.DELETE) {
+            if (findMapEntry(currentMapEditor.mapIdValue()) == null) {
+                mapEditorUiState.set(MapEditorUiState.hidden());
+            }
+        }
+    }
+
     private static void addCellLevels(Set<Integer> levels, List<DungeonEditorCell> cells) {
         for (DungeonEditorCell cell : cells == null ? List.<DungeonEditorCell>of() : cells) {
             levels.add(cell.level());
         }
+    }
+
+    private @Nullable MapListEntry findMapEntry(long mapIdValue) {
+        if (mapIdValue <= 0L) {
+            return null;
+        }
+        return mapEntries.get().stream()
+                .filter(entry -> entry.mapIdValue() == mapIdValue)
+                .findFirst()
+                .orElse(null);
     }
 
     private static String key(@Nullable DungeonEditorMapId mapId) {
@@ -348,6 +470,154 @@ public final class DungeonEditorContributionModel {
             levelRange = Math.max(0, levelRange);
             opacity = Math.max(0.0, Math.min(1.0, opacity));
             selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
+        }
+    }
+
+    enum MapEditorMode {
+        HIDDEN,
+        CREATE,
+        RENAME,
+        DELETE
+    }
+
+    public record MapEditorUiState(
+            boolean visible,
+            MapEditorMode mode,
+            long mapIdValue,
+            String title,
+            String draftName,
+            String errorText,
+            boolean draftFieldVisible,
+            boolean actionRowVisible,
+            boolean submitVisible,
+            String submitLabel,
+            boolean deleteConfirmationVisible
+    ) {
+        public MapEditorUiState {
+            mode = mode == null ? MapEditorMode.HIDDEN : mode;
+            mapIdValue = Math.max(0L, mapIdValue);
+            title = title == null ? "" : title;
+            draftName = draftName == null ? "" : draftName.strip();
+            errorText = errorText == null ? "" : errorText;
+            submitLabel = submitLabel == null ? "" : submitLabel;
+        }
+
+        static MapEditorUiState hidden() {
+            return new MapEditorUiState(false, MapEditorMode.HIDDEN, 0L, "", "", "", false, false, false, "", false);
+        }
+
+        static MapEditorUiState create(String draftName) {
+            return new MapEditorUiState(
+                    true,
+                    MapEditorMode.CREATE,
+                    0L,
+                    "Neuen Dungeon anlegen",
+                    draftName,
+                    "",
+                    true,
+                    true,
+                    true,
+                    "Erstellen",
+                    false);
+        }
+
+        static MapEditorUiState rename(long mapIdValue, String draftName) {
+            return new MapEditorUiState(
+                    true,
+                    MapEditorMode.RENAME,
+                    mapIdValue,
+                    "Dungeon bearbeiten",
+                    draftName,
+                    "",
+                    true,
+                    true,
+                    true,
+                    "Speichern",
+                    false);
+        }
+
+        static MapEditorUiState delete(long mapIdValue, String mapName) {
+            return new MapEditorUiState(
+                    true,
+                    MapEditorMode.DELETE,
+                    mapIdValue,
+                    "Dungeon löschen: " + (mapName == null ? "" : mapName),
+                    "",
+                    "",
+                    false,
+                    false,
+                    false,
+                    "",
+                    true);
+        }
+
+        MapEditorUiState withDraftName(String nextDraftName) {
+            return new MapEditorUiState(
+                    visible,
+                    mode,
+                    mapIdValue,
+                    title,
+                    nextDraftName,
+                    errorText,
+                    draftFieldVisible,
+                    actionRowVisible,
+                    submitVisible,
+                    submitLabel,
+                    deleteConfirmationVisible);
+        }
+
+        MapEditorUiState withErrorText(String nextErrorText) {
+            return new MapEditorUiState(
+                    visible,
+                    mode,
+                    mapIdValue,
+                    title,
+                    draftName,
+                    nextErrorText,
+                    draftFieldVisible,
+                    actionRowVisible,
+                    submitVisible,
+                    submitLabel,
+                    deleteConfirmationVisible);
+        }
+    }
+
+    enum ToolFamily {
+        NONE,
+        ROOM,
+        WALL,
+        DOOR,
+        CORRIDOR,
+        STAIR,
+        TRANSITION
+    }
+
+    public record ToolPaletteUiState(
+            boolean visible,
+            ToolFamily family,
+            String primaryToolLabel,
+            String secondaryToolLabel
+    ) {
+        public ToolPaletteUiState {
+            family = family == null ? ToolFamily.NONE : family;
+            primaryToolLabel = primaryToolLabel == null ? "" : primaryToolLabel;
+            secondaryToolLabel = secondaryToolLabel == null ? "" : secondaryToolLabel;
+        }
+
+        static ToolPaletteUiState closed() {
+            return new ToolPaletteUiState(false, ToolFamily.NONE, "", "");
+        }
+
+        static ToolPaletteUiState open(ToolFamily family) {
+            return switch (family == null ? ToolFamily.NONE : family) {
+                case ROOM -> new ToolPaletteUiState(true, ToolFamily.ROOM, "Raum malen", "Raum löschen");
+                case WALL -> new ToolPaletteUiState(true, ToolFamily.WALL, "Wand setzen", "Wand löschen");
+                case DOOR -> new ToolPaletteUiState(true, ToolFamily.DOOR, "Tür setzen", "Tür löschen");
+                case CORRIDOR -> new ToolPaletteUiState(true, ToolFamily.CORRIDOR, "Korridor erstellen", "Korridor löschen");
+                case STAIR -> new ToolPaletteUiState(true, ToolFamily.STAIR, "Treppe erstellen", "Treppe löschen");
+                case TRANSITION -> new ToolPaletteUiState(true, ToolFamily.TRANSITION, "Übergang erstellen", "Übergang löschen");
+                case NONE -> closed();
+            };
         }
     }
 

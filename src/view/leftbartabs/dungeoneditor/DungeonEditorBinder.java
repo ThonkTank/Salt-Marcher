@@ -32,7 +32,7 @@ final class DungeonEditorBinder {
         DungeonEditorModel editorModel = editor.loadEditor(new LoadDungeonEditorQuery(null));
         DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Dungeon workspace", true);
-        DungeonEditorIntentHandler intentHandler = new DungeonEditorIntentHandler();
+        DungeonEditorIntentHandler intentHandler = new DungeonEditorIntentHandler(contributionModel);
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         DungeonEditorMainView main = new DungeonEditorMainView();
         DungeonEditorStateView state = new DungeonEditorStateView();

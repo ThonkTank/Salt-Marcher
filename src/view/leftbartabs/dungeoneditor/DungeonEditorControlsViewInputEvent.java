@@ -1,31 +1,17 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import org.jspecify.annotations.Nullable;
+
 public record DungeonEditorControlsViewInputEvent(
-        boolean mapSelectionChanged,
-        boolean createMapRequested,
-        boolean renameMapRequested,
-        boolean deleteMapRequested,
-        long mapIdValue,
-        String mapName,
-        boolean viewModeChanged,
-        ViewMode viewMode,
-        boolean toolChanged,
-        Tool tool,
+        @Nullable MapSelectionInput mapSelection,
+        @Nullable MapEditorInput mapEditor,
+        @Nullable ViewMode viewMode,
+        @Nullable ToolInput toolInput,
         int projectionLevelShift,
-        boolean overlayChanged,
-        String overlayModeKey,
-        int overlayRange,
-        double overlayOpacity,
-        String overlayLevelsText
+        @Nullable OverlayInput overlay
 ) {
 
     public DungeonEditorControlsViewInputEvent {
-        mapIdValue = Math.max(0L, mapIdValue);
-        mapName = mapName == null ? "" : mapName.strip();
-        viewMode = viewMode == null ? ViewMode.GRID : viewMode;
-        tool = tool == null ? Tool.SELECT : tool;
-        overlayModeKey = overlayModeKey == null ? "" : overlayModeKey;
-        overlayLevelsText = overlayLevelsText == null ? "" : overlayLevelsText.strip();
     }
 
     enum ViewMode {
@@ -47,5 +33,57 @@ public record DungeonEditorControlsViewInputEvent(
         STAIR_DELETE,
         TRANSITION_CREATE,
         TRANSITION_DELETE
+    }
+
+    enum ToolFamily {
+        ROOM,
+        WALL,
+        DOOR,
+        CORRIDOR,
+        STAIR,
+        TRANSITION
+    }
+
+    public record MapSelectionInput(long selectedMapIdValue) {
+        public MapSelectionInput {
+            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
+        }
+    }
+
+    public record MapEditorInput(
+            boolean openCreateRequested,
+            boolean openRenameRequested,
+            boolean openDeleteRequested,
+            boolean dismissRequested,
+            boolean submitRequested,
+            boolean confirmDeleteRequested,
+            long selectedMapIdValue,
+            String draftName
+    ) {
+        public MapEditorInput {
+            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
+            draftName = draftName == null ? "" : draftName.strip();
+        }
+    }
+
+    public record ToolInput(
+            @Nullable ToolFamily requestedFamily,
+            @Nullable Tool selectedTool,
+            boolean dismissRequested
+    ) {
+    }
+
+    public record OverlayInput(
+            String modeKey,
+            int levelRange,
+            double opacity,
+            String selectedLevelsText
+    ) {
+        public OverlayInput {
+            modeKey = modeKey == null ? "" : modeKey;
+            levelRange = Math.max(0, levelRange);
+            opacity = Math.max(0.0, Math.min(1.0, opacity));
+            selectedLevelsText = selectedLevelsText == null ? "" : selectedLevelsText.strip();
+        }
     }
 }
