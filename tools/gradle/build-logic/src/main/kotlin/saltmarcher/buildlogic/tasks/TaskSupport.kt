@@ -2,9 +2,17 @@ package saltmarcher.buildlogic.tasks
 
 import org.gradle.api.GradleException
 import java.io.File
+import java.nio.file.FileVisitOption
+import java.nio.file.FileVisitResult
 import java.nio.file.Files
+import java.nio.file.LinkOption
 import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.PosixFilePermission
 import java.util.Locale
+import java.util.EnumSet
 
 internal fun executableName(command: String): String {
     return if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
@@ -45,6 +53,130 @@ internal fun resolveVenvPythonExecutable(venvPath: Path): Path {
         throw GradleException("Lizard virtualenv Python executable not found: $scriptPath")
     }
     return scriptPath
+}
+
+internal fun isJavafxRuntimeJar(file: File): Boolean = isJavafxRuntimeJarName(file.name)
+
+internal fun isJavafxRuntimeJarName(fileName: String): Boolean {
+    return fileName.startsWith("javafx-") && fileName.endsWith(".jar")
+}
+
+internal fun resolvePackagedAppPayloadDir(appImageDir: Path): Path {
+    val jpackagePayloadDir = appImageDir.resolve("lib").resolve("app")
+    if (Files.isDirectory(jpackagePayloadDir)) {
+        return jpackagePayloadDir
+    }
+
+    val fallbackPayloadDir = appImageDir.resolve("app")
+    if (Files.isDirectory(fallbackPayloadDir)) {
+        return fallbackPayloadDir
+    }
+
+    throw GradleException("Could not resolve packaged app payload directory under $appImageDir")
+}
+
+internal fun setExecutableFile(path: Path) {
+    try {
+        Files.setPosixFilePermissions(
+            path,
+            setOf(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE,
+                PosixFilePermission.GROUP_READ,
+                PosixFilePermission.GROUP_EXECUTE,
+                PosixFilePermission.OTHERS_READ,
+                PosixFilePermission.OTHERS_EXECUTE
+            )
+        )
+    } catch (_: UnsupportedOperationException) {
+        // Non-POSIX filesystems still get valid launchers and desktop entries without chmod support.
+    }
+}
+
+internal fun resolveJpackageExecutable(): String? {
+    val javaHomeJpackage = Path.of(System.getProperty("java.home"), "bin", executableName("jpackage"))
+    if (Files.isRegularFile(javaHomeJpackage) && Files.isExecutable(javaHomeJpackage)) {
+        return javaHomeJpackage.toString()
+    }
+
+    val pathDirectories = (System.getenv("PATH") ?: "")
+        .split(File.pathSeparatorChar)
+        .filter { it.isNotBlank() }
+    for (directory in pathDirectories) {
+        val candidate = Path.of(directory, executableName("jpackage"))
+        if (Files.isRegularFile(candidate) && Files.isExecutable(candidate)) {
+            return candidate.toString()
+        }
+    }
+    return null
+}
+
+internal fun resolveDesktopDirectory(): Path {
+    val userHome = Path.of(System.getProperty("user.home"))
+    val xdgUserDirsFile = userHome.resolve(".config").resolve("user-dirs.dirs")
+    if (Files.isRegularFile(xdgUserDirsFile)) {
+        Files.readAllLines(xdgUserDirsFile)
+            .asSequence()
+            .map(String::trim)
+            .filter { it.startsWith("XDG_DESKTOP_DIR=") }
+            .map { it.substringAfter('=').trim().trim('"') }
+            .map { rawPath -> rawPath.replace("\$HOME", userHome.toString()) }
+            .firstOrNull { it.isNotBlank() }
+            ?.let { return Path.of(it) }
+    }
+    val localizedDesktop = userHome.resolve("Schreibtisch")
+    if (Files.isDirectory(localizedDesktop)) {
+        return localizedDesktop
+    }
+    return userHome.resolve("Desktop")
+}
+
+internal fun copyRuntimeImage(sourceDir: Path, targetDir: Path) {
+    Files.walkFileTree(sourceDir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Int.MAX_VALUE, object : SimpleFileVisitor<Path>() {
+        override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+            val target = targetDir.resolve(sourceDir.relativize(dir).toString())
+            Files.createDirectories(target)
+            return FileVisitResult.CONTINUE
+        }
+
+        override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+            val resolvedSource = if (Files.isSymbolicLink(file)) {
+                file.toRealPath()
+            } else {
+                file
+            }
+            val target = targetDir.resolve(sourceDir.relativize(file).toString())
+            Files.createDirectories(target.parent)
+            Files.copy(
+                resolvedSource,
+                target,
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.COPY_ATTRIBUTES
+            )
+            return FileVisitResult.CONTINUE
+        }
+
+        override fun postVisitDirectory(dir: Path, exc: java.io.IOException?): FileVisitResult {
+            if (exc != null) {
+                throw exc
+            }
+            val source = if (Files.isSymbolicLink(dir)) {
+                dir.toRealPath()
+            } else {
+                dir
+            }
+            val target = targetDir.resolve(sourceDir.relativize(dir).toString())
+            if (Files.exists(source, LinkOption.NOFOLLOW_LINKS)) {
+                try {
+                    Files.setLastModifiedTime(target, Files.getLastModifiedTime(source))
+                } catch (_: UnsupportedOperationException) {
+                    // Some filesystems do not support preserving directory timestamps.
+                }
+            }
+            return FileVisitResult.CONTINUE
+        }
+    })
 }
 
 internal data class CkjmMetricRow(

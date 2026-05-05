@@ -3,8 +3,8 @@ package saltmarcher.buildlogic.verification
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.file.Directory
 import org.gradle.api.file.FileCollection
-import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
@@ -17,24 +17,16 @@ import org.gradle.kotlin.dsl.register
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
-import saltmarcher.buildlogic.tasks.hygiene.JqassistantAnalyzeTask
-import saltmarcher.buildlogic.tasks.hygiene.JqassistantScanTask
 
-data class JqassistantTaskPair(
-    val scanTask: TaskProvider<JqassistantScanTask>,
-    val analyzeTask: TaskProvider<JqassistantAnalyzeTask>
-)
-
-open class VerificationHarnessExtension(
+internal open class VerificationHarnessExtension(
     private val project: Project,
     private val enforcementBundles: EnforcementBundlesExtension,
     private val sourceSets: SourceSetContainer,
     private val mainSourceSet: SourceSet,
+    private val sourceRoots: FileCollection,
     private val sourceJavaRoots: FileCollection,
     private val commonFocusedArchunitSupportIncludes: List<String>,
-    private val jqassistantCliFile: Provider<RegularFile>,
-    private val jqassistantJvmOpens: String,
-    private val installJqassistant: TaskProvider<*>,
+    private val jqassistantTaskRegistrar: JqassistantTaskRegistrar,
     private val configureCommonErrorProneOptions: JavaCompile.() -> Unit,
     val productionBuild: TaskProvider<out Task>,
     val checkQualityHygiene: TaskProvider<out Task>,
@@ -171,40 +163,20 @@ open class VerificationHarnessExtension(
         selectedCompileJava: TaskProvider<JavaCompile>
     ): JqassistantTaskPair {
         val selectedMainClassesDirectory = selectedCompileJava.flatMap { task -> task.destinationDirectory }
-        val jqassistantSourceConfigFile = project.file(sourceConfigPath)
-        val jqassistantRulesDirectory = project.file(rulesDirPath)
         val jqassistantStoreDirectory = project.layout.buildDirectory.dir("tools/$bundleId/jqassistant/store")
         val jqassistantReportsDirectory = project.layout.buildDirectory.dir(reportsDirectoryPath)
-        val scanTask = project.tasks.register<JqassistantScanTask>(scanTaskName) {
-            group = LifecycleBasePlugin.VERIFICATION_GROUP
-            description = scanDescription
-            dependsOn(installJqassistant, selectedCompileJava)
-            cliFile.set(jqassistantCliFile)
-            sourceConfigFile.set(jqassistantSourceConfigFile)
-            rulesDirectory.set(jqassistantRulesDirectory)
-            mainClassesDirectory.set(selectedMainClassesDirectory)
-            sourceRoots.from("bootstrap", "shell", "src")
-            jvmOpens.set(jqassistantJvmOpens)
-            projectRoot.set(project.layout.projectDirectory)
-            storeDirectory.set(jqassistantStoreDirectory)
-        }
-        val analyzeTask = project.tasks.register<JqassistantAnalyzeTask>(analyzeTaskName) {
-            group = LifecycleBasePlugin.VERIFICATION_GROUP
-            description = analyzeDescription
-            dependsOn(scanTask)
-            cliFile.set(jqassistantCliFile)
-            sourceConfigFile.set(jqassistantSourceConfigFile)
-            rulesDirectory.set(jqassistantRulesDirectory)
-            mainClassesDirectory.set(selectedMainClassesDirectory)
-            sourceRoots.from("bootstrap", "shell", "src")
-            jvmOpens.set(jqassistantJvmOpens)
-            projectRoot.set(project.layout.projectDirectory)
-            storeDirectory.set(jqassistantStoreDirectory)
-            reportsDirectory.set(jqassistantReportsDirectory)
-        }
-        return JqassistantTaskPair(
-            scanTask = scanTask,
-            analyzeTask = analyzeTask
+        return jqassistantTaskRegistrar.registerTaskPair(
+            scanTaskName = scanTaskName,
+            analyzeTaskName = analyzeTaskName,
+            scanDescription = scanDescription,
+            analyzeDescription = analyzeDescription,
+            sourceConfigPath = sourceConfigPath,
+            rulesDirPath = rulesDirPath,
+            mainClassesDirectory = selectedMainClassesDirectory,
+            sourceRoots = sourceRoots,
+            storeDirectory = jqassistantStoreDirectory,
+            reportsDirectory = jqassistantReportsDirectory,
+            dependsOnTasks = listOf(selectedCompileJava)
         )
     }
 }

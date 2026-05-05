@@ -61,4 +61,5 @@ internal fun Project.configureQualityConventions() {
         jqassistantTasks = jqassistantTasks,
         lifecycleTasks = lifecycleTasks
     )
+    registerQualityConventionPackagingTasks(environment)
 }

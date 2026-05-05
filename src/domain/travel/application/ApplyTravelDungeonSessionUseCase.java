@@ -390,16 +390,29 @@ public final class ApplyTravelDungeonSessionUseCase {
     }
 
     public record BoundaryData(
-            String kind,
+            BoundaryKind kind,
             long id,
             String label,
             EdgeData edge
     ) {
         public BoundaryData {
-            kind = kind == null || kind.isBlank() ? "boundary" : kind.trim();
+            kind = kind == null ? BoundaryKind.WALL : kind;
             id = Math.max(1L, id);
-            label = label == null || label.isBlank() ? kind : label.trim();
+            label = label == null || label.isBlank() ? kind.externalKind() : label.trim();
             edge = edge == null ? new EdgeData(new CellData(0, 0, 0), new CellData(0, 0, 0)) : edge;
+        }
+    }
+
+    public enum BoundaryKind {
+        WALL,
+        DOOR;
+
+        public static BoundaryKind fromExternalKind(String kind) {
+            return "door".equalsIgnoreCase(kind) ? DOOR : WALL;
+        }
+
+        public String externalKind() {
+            return this == DOOR ? "door" : "wall";
         }
     }
 
