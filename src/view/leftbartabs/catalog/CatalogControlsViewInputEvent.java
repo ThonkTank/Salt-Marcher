@@ -22,10 +22,14 @@ public record CatalogControlsViewInputEvent(
         boolean alignmentPopupOpen,
         String alignmentPopupQuery,
         boolean encounterTablePopupOpen,
-        String difficultyKey,
-        int balanceLevel,
+        boolean difficultyAuto,
+        double difficultyValue,
+        boolean balanceAuto,
+        double balanceValue,
+        boolean amountAuto,
         double amountValue,
-        int diversityLevel,
+        boolean diversityAuto,
+        double diversityValue,
         List<Long> encounterTableIds
 ) {
 
@@ -43,7 +47,6 @@ public record CatalogControlsViewInputEvent(
         subtypePopupQuery = normalized(subtypePopupQuery);
         biomePopupQuery = normalized(biomePopupQuery);
         alignmentPopupQuery = normalized(alignmentPopupQuery);
-        difficultyKey = normalized(difficultyKey);
         encounterTableIds = copyLongs(encounterTableIds);
     }
 

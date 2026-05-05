@@ -7,10 +7,14 @@ public record CatalogPublishedEvent(
         List<String> creatureTypes,
         List<String> creatureSubtypes,
         List<String> biomes,
-        String difficultyKey,
-        int balanceLevel,
+        boolean difficultyAuto,
+        double difficultyValue,
+        boolean balanceAuto,
+        double balanceValue,
+        boolean amountAuto,
         double amountValue,
-        int diversityLevel,
+        boolean diversityAuto,
+        double diversityValue,
         List<Long> encounterTableIds,
         long creatureId
 ) {
@@ -20,7 +24,6 @@ public record CatalogPublishedEvent(
         creatureTypes = copyStrings(creatureTypes);
         creatureSubtypes = copyStrings(creatureSubtypes);
         biomes = copyStrings(biomes);
-        difficultyKey = difficultyKey == null ? "" : difficultyKey;
         encounterTableIds = copyLongs(encounterTableIds);
         creatureId = Math.max(0L, creatureId);
     }
@@ -29,10 +32,14 @@ public record CatalogPublishedEvent(
             List<String> creatureTypes,
             List<String> creatureSubtypes,
             List<String> biomes,
-            String difficultyKey,
-            int balanceLevel,
+            boolean difficultyAuto,
+            double difficultyValue,
+            boolean balanceAuto,
+            double balanceValue,
+            boolean amountAuto,
             double amountValue,
-            int diversityLevel,
+            boolean diversityAuto,
+            double diversityValue,
             List<Long> encounterTableIds
     ) {
         return new CatalogPublishedEvent(
@@ -40,10 +47,14 @@ public record CatalogPublishedEvent(
                 creatureTypes,
                 creatureSubtypes,
                 biomes,
-                difficultyKey,
-                balanceLevel,
+                difficultyAuto,
+                difficultyValue,
+                balanceAuto,
+                balanceValue,
+                amountAuto,
                 amountValue,
-                diversityLevel,
+                diversityAuto,
+                diversityValue,
                 encounterTableIds,
                 0L);
     }
@@ -54,10 +65,14 @@ public record CatalogPublishedEvent(
                 List.of(),
                 List.of(),
                 List.of(),
-                "",
-                0,
+                true,
                 0.0,
-                0,
+                true,
+                0.0,
+                true,
+                0.0,
+                true,
+                0.0,
                 List.of(),
                 creatureId);
     }
