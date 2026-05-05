@@ -4,7 +4,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.getByType
@@ -109,29 +108,38 @@ internal fun Project.configureVerificationCore() {
                 aggregateDependencies += gradle.includedBuild("build-harness").task(":$taskName")
             }
 
-        val pmdTask = descriptor.pmd?.let { pmd ->
-            verificationHarness.registerFocusedPmdTask(
-                bundleId,
-                pmd.taskName,
-                pmd.description,
-                pmd.rulesetPath,
-                pmd.sourceRoots,
-                pmd.sourceIncludes
-            )
-        }
+        val pmdTasks = descriptor.pmdTasks.associateBy(
+            keySelector = { pmd -> pmd.taskName },
+            valueTransform = { pmd ->
+                verificationHarness.registerFocusedPmdTask(
+                    bundleId,
+                    pmd.taskName,
+                    pmd.description,
+                    pmd.rulesetPath,
+                    pmd.sourceRoots,
+                    pmd.sourceIncludes,
+                    pmd.ignoreFailures,
+                    pmd.consoleOutput
+                )
+            }
+        )
 
-        val directRootPmdTask = pmdTask?.takeIf {
-            descriptor.pmd?.taskName == rootTaskName && aggregateDependencies.isEmpty()
-        }
-        if (pmdTask != null && directRootPmdTask == null) {
-            aggregateDependencies += pmdTask
-        }
+        val aggregatePmdTasks = descriptor.pmdTasks
+            .filterNot { pmd -> pmd.taskName.startsWith("check") && pmd.taskName != rootTaskName }
+            .map { pmd -> pmdTasks.getValue(pmd.taskName) }
 
+        val rootPmdTask = pmdTasks[rootTaskName]
+        aggregateDependencies.addAll(aggregatePmdTasks.filter { taskProvider -> taskProvider != rootPmdTask })
+
+        val directRootPmdTask = rootPmdTask?.takeIf {
+            aggregateDependencies.isEmpty()
+        }
         val rootTaskProvider: TaskProvider<out Task> = directRootPmdTask ?: tasks.register(rootTaskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = descriptor.rootTask?.description
                 ?: "Run the focused $bundleDisplayName enforcement bundle through one root entrypoint."
             aggregateDependencies.forEach(::dependsOn)
+            rootPmdTask?.let { dependsOn(it) }
         }
 
         if (descriptor.rootTask?.attachToCheckArchitecture == true) {

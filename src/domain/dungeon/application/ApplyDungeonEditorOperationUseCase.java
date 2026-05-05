@@ -1,6 +1,7 @@
 package src.domain.dungeon.application;
 
 import src.domain.dungeon.map.aggregate.DungeonMap;
+import src.domain.dungeon.map.policy.DungeonMapOperationFeedbackPolicy;
 import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
@@ -26,6 +27,9 @@ import org.jspecify.annotations.Nullable;
  * Owns the fixed dungeon editor mutation pipeline.
  */
 public final class ApplyDungeonEditorOperationUseCase {
+
+    private static final DungeonMapOperationFeedbackPolicy OPERATION_FEEDBACK_POLICY =
+            new DungeonMapOperationFeedbackPolicy();
 
     public sealed interface OperationInput permits
             OperationInput.MoveTopologyElement,
@@ -244,8 +248,8 @@ public final class ApplyDungeonEditorOperationUseCase {
     public OperationResultData execute(@Nullable DungeonMapIdentity mapId, OperationInput operation) {
         DungeonMap current = currentMap(mapId);
         DungeonMap mutated = apply(current, operation);
-        List<String> validationMessages = mutated.validationMessages();
-        List<String> reactionMessages = current.reactionMessages(mutated);
+        List<String> validationMessages = OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated);
+        List<String> reactionMessages = OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated);
         DungeonDerivedState derived = derive.execute(mutated);
         DungeonMap saved = repository.save(mutated);
         var snapshot = snapshot(saved, derived);
@@ -258,8 +262,8 @@ public final class ApplyDungeonEditorOperationUseCase {
         DungeonDerivedState derived = derive.execute(mutated);
         return new OperationResultData(
                 snapshot(mutated, derived),
-                mutated.validationMessages(),
-                current.reactionMessages(mutated));
+                OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated),
+                OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated));
     }
 
     private DungeonMap apply(DungeonMap current, OperationInput operation) {

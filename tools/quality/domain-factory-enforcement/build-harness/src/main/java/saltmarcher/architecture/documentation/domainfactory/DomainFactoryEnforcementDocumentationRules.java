@@ -25,7 +25,7 @@ public final class DomainFactoryEnforcementDocumentationRules implements Archite
             row(
                     "domain-factory-no-trivial-construction-wrapper-source-pattern",
                     "Source-Pattern Enforced",
-                    List.of("domain-factory bundle PMD", "DomainFactoryNoCeremonialIndirectionRule"),
+                    List.of("domain-factory bundle PMD", "CeremonialIndirectionRule"),
                     List.of("./gradlew pmdDomainFactoryEnforcement", "./gradlew checkDomainFactoryEnforcement")),
             row("domain-factory-real-construction-boundary", "Review-Owned"));
 

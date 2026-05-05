@@ -51,7 +51,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-policy-statelessness` | Enforced | every top-level type under `policy/` | domain-policy bundle Error Prone `DomainPolicyStatelessness` | `./gradlew compileJava` and `./gradlew checkDomainPolicyEnforcement` | Policy role types do not declare instance fields and therefore cannot hide role-local state behind policy objects. |
-| `domain-policy-no-trivial-relay-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `policy/` | domain-policy bundle PMD `DomainPolicyNoCeremonialIndirectionRule` | `./gradlew pmdDomainPolicyEnforcement` and `./gradlew checkDomainPolicyEnforcement` | A policy role does not collapse into one-step delegated relay or renamed helper ceremony, even when null guards or `requireNonNull(...)` calls are present. |
+| `domain-policy-no-trivial-relay-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `policy/` | domain-policy bundle PMD `CeremonialIndirectionRule` configured for the `policy/` blocker surface | `./gradlew pmdDomainPolicyEnforcement` and `./gradlew checkDomainPolicyEnforcement` | A policy role does not collapse into one-step delegated relay or renamed helper ceremony, even when null guards or `requireNonNull(...)` calls are present. |
 
 ### Communication Contract
 

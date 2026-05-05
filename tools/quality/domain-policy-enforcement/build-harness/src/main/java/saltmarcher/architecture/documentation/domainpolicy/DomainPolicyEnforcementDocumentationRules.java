@@ -25,7 +25,7 @@ public final class DomainPolicyEnforcementDocumentationRules implements Architec
             row(
                     "domain-policy-no-trivial-relay-wrapper-source-pattern",
                     "Source-Pattern Enforced",
-                    List.of("domain-policy bundle PMD", "DomainPolicyNoCeremonialIndirectionRule"),
+                    List.of("domain-policy bundle PMD", "CeremonialIndirectionRule"),
                     List.of("./gradlew pmdDomainPolicyEnforcement", "./gradlew checkDomainPolicyEnforcement")),
             row("domain-policy-real-policy-behavior", "Review-Owned"));
 

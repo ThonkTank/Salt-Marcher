@@ -9,11 +9,11 @@ It keeps the proof surface owner-pure:
   `LayeringArchitectureTopologyRules` and
   `LayeringArchitectureTopologyCheckMain`
 - `pmd/`
-  `LayeringThinRoleIndirectionCandidateRule` and the report-only bundle-local
-  ruleset
+  a report-only bundle-local ruleset that configures the shared
+  `CeremonialIndirectionRule` for the thin-role candidate surface
 - `bundle.properties`
-  descriptor-based registration into the focused-enforcement Gradle path and
-  the dedicated Layering bundle plugin
+  descriptor-based registration into the focused-enforcement Gradle path,
+  including the report-only `checkLayeringIndirectionCandidates` PMD task
 
 This bundle proves only the repository-wide layer-topology invariants that are
 mechanically owned by the layering document itself, plus the report-only

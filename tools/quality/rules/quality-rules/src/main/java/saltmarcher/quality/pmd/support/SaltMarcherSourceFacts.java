@@ -198,10 +198,30 @@ public final class SaltMarcherSourceFacts {
         return isDomainSource() && segments.size() >= 5 && segments.get(3).equals("application");
     }
 
+    public boolean isDomainApplicationServiceRootSource() {
+        return isDomainRoot() && simpleName.endsWith("ApplicationService");
+    }
+
+    public boolean isDomainUseCaseSource() {
+        return isDomainApplicationSource() && simpleName.endsWith("UseCase");
+    }
+
     public boolean isNamedDomainModuleSource() {
         return isDomainSource()
                 && segments.size() >= 5
                 && !Set.of("published", "application").contains(segments.get(3));
+    }
+
+    public boolean isDomainServiceSource() {
+        return isNamedDomainRoleSource("service");
+    }
+
+    public boolean isDomainPolicySource() {
+        return isNamedDomainRoleSource("policy");
+    }
+
+    public boolean isDomainFactorySource() {
+        return isNamedDomainRoleSource("factory");
     }
 
     public boolean isDataSource() {
@@ -210,6 +230,10 @@ public final class SaltMarcherSourceFacts {
 
     public boolean isDataRoot() {
         return isDataSource() && segments.size() == 4;
+    }
+
+    public boolean isDataServiceContributionSource() {
+        return isDataRoot() && simpleName.endsWith("ServiceContribution");
     }
 
     public boolean isDataModel() {
@@ -427,6 +451,11 @@ public final class SaltMarcherSourceFacts {
             }
         }
         return true;
+    }
+
+    private boolean isNamedDomainRoleSource(String roleSegment) {
+        return isNamedDomainModuleSource()
+                && segments.subList(3, segments.size() - 1).contains(roleSegment);
     }
 
     static String toPascalCaseSuffix(String featureName, String suffix) {

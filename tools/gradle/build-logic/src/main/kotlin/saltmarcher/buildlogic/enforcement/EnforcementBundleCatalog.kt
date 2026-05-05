@@ -33,7 +33,9 @@ data class EnforcementPmdTask(
     val description: String,
     val rulesetPath: String,
     val sourceRoots: List<String>,
-    val sourceIncludes: List<String>
+    val sourceIncludes: List<String>,
+    val ignoreFailures: Boolean,
+    val consoleOutput: Boolean
 )
 
 data class EnforcementBundleDescriptor(
@@ -51,7 +53,7 @@ data class EnforcementBundleDescriptor(
     val errorProneServiceFile: String?,
     val archunit: EnforcementArchunitTask?,
     val jqassistant: EnforcementJqassistantTaskPair?,
-    val pmd: EnforcementPmdTask?,
+    val pmdTasks: List<EnforcementPmdTask>,
     val pmdSourceDir: String?,
     val verificationSourceRoots: List<String>,
     val verificationSourceIncludes: List<String>
@@ -164,7 +166,7 @@ private fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enf
                         ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
                     archunit = properties.readArchunitTask("", repoRootDir, descriptorFile),
                     jqassistant = properties.readJqassistantTaskPair("", repoRootDir, descriptorFile),
-                    pmd = properties.readPmdTask("", repoRootDir, descriptorFile, properties.list("taskNames")),
+                    pmdTasks = properties.readPmdTasks("", repoRootDir, descriptorFile, properties.list("taskNames")),
                     pmdSourceDir = properties.optionalTrimmed("pmdSourceDir")
                         ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
                     verificationSourceRoots = properties.list("verificationSourceRoots"),
@@ -213,6 +215,13 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
     if (errorProneCheckers.isNotEmpty()) {
         require(hasErrorProneSource) {
             "Enforcement bundle '$bundleId' must declare errorProneSourceDir/errorProneServiceFile when errorProneCheckers are configured."
+        }
+    }
+
+    if (pmdTasks.isNotEmpty()) {
+        val missingTaskNames = pmdTasks.map(EnforcementPmdTask::taskName) - taskNames.toSet()
+        require(missingTaskNames.isEmpty()) {
+            "Enforcement bundle '$bundleId' declares PMD tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
         }
     }
 
@@ -323,30 +332,49 @@ private fun Properties.readJqassistantTaskPair(
     )
 }
 
-private fun Properties.readPmdTask(
+private fun Properties.readPmdTasks(
     propertyPrefix: String,
     repoRootDir: File,
     descriptorFile: File,
     taskNames: List<String>
-): EnforcementPmdTask? {
-    val taskName = optionalTrimmed("${propertyPrefix}pmd.taskName")
-        ?: taskNames.singleOrNull { taskNameCandidate -> taskNameCandidate.startsWith("pmd") }
-    val description = optionalTrimmed("${propertyPrefix}pmd.description")
-    val rulesetPath = optionalTrimmed("${propertyPrefix}pmd.ruleset")
-    val sourceRoots = list("${propertyPrefix}pmd.sourceRoots")
-    val sourceIncludes = list("${propertyPrefix}pmd.sourceIncludes")
-    if (taskName == null && description == null && rulesetPath == null && sourceRoots.isEmpty() && sourceIncludes.isEmpty()) {
-        return null
+): List<EnforcementPmdTask> {
+    val declaredTaskNames = pmdTaskNames(propertyPrefix)
+    val undeclaredTaskNames = declaredTaskNames - taskNames.toSet()
+    require(undeclaredTaskNames.isEmpty()) {
+        "Enforcement bundle descriptor '$descriptorFile' declares PMD tasks outside taskNames: ${undeclaredTaskNames.joinToString()}."
     }
-    require(taskName != null && description != null && rulesetPath != null) {
-        "Enforcement bundle descriptor '$descriptorFile' must fully declare pmd.taskName, pmd.description, and pmd.ruleset."
+    val tasks = taskNames
+        .filter { taskName -> taskName in declaredTaskNames }
+        .map { taskName -> readNamedPmdTask(propertyPrefix, repoRootDir, descriptorFile, taskName) }
+    val duplicateTaskNames = tasks.groupBy(EnforcementPmdTask::taskName)
+        .filterValues { candidates -> candidates.size > 1 }
+        .keys
+    require(duplicateTaskNames.isEmpty()) {
+        "Enforcement bundle descriptor '$descriptorFile' declares duplicate PMD tasks: ${duplicateTaskNames.joinToString()}."
+    }
+    return tasks
+}
+
+private fun Properties.readNamedPmdTask(
+    propertyPrefix: String,
+    repoRootDir: File,
+    descriptorFile: File,
+    taskName: String
+): EnforcementPmdTask {
+    val propertyBase = "${propertyPrefix}pmdTask.$taskName"
+    val description = optionalTrimmed("$propertyBase.description")
+    val rulesetPath = optionalTrimmed("$propertyBase.ruleset")
+    require(description != null && rulesetPath != null) {
+        "Enforcement bundle descriptor '$descriptorFile' must fully declare $propertyBase.description and $propertyBase.ruleset."
     }
     return EnforcementPmdTask(
         taskName = taskName,
         description = description,
         rulesetPath = resolveDescriptorPath(repoRootDir, descriptorFile, rulesetPath),
-        sourceRoots = sourceRoots,
-        sourceIncludes = sourceIncludes
+        sourceRoots = list("$propertyBase.sourceRoots"),
+        sourceIncludes = list("$propertyBase.sourceIncludes"),
+        ignoreFailures = boolean("$propertyBase.ignoreFailures"),
+        consoleOutput = boolean("$propertyBase.consoleOutput")
     )
 }
 
@@ -398,6 +426,20 @@ private fun Properties.boolean(name: String): Boolean = getProperty(name)
     ?.trim()
     ?.equals("true", ignoreCase = true)
     ?: false
+
+private fun Properties.pmdTaskNames(propertyPrefix: String): List<String> {
+    val prefix = "${propertyPrefix}pmdTask."
+    return stringPropertyNames()
+        .asSequence()
+        .filter { propertyName -> propertyName.startsWith(prefix) }
+        .map { propertyName ->
+            propertyName.removePrefix(prefix).substringBefore('.')
+        }
+        .filter(String::isNotEmpty)
+        .distinct()
+        .sorted()
+        .toList()
+}
 
 private fun Properties.mapEntries(namePrefix: String, nameSuffix: String): Map<String, String> = stringPropertyNames()
     .asSequence()

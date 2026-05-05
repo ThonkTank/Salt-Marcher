@@ -21,10 +21,6 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
-        if (event.refreshRequested()) {
-            presentationModel.requestRefresh();
-            return;
-        }
         if (event.resetViewRequested()) {
             presentationModel.requestCameraReset();
             return;

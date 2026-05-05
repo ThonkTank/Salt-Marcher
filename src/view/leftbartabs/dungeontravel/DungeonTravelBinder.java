@@ -40,8 +40,6 @@ final class DungeonTravelBinder {
         main.onViewportChanged(() -> controls.showZoom(main.zoom()));
         state.onViewInputEvent(intentHandler::consume);
         contributionModel.cameraResetSignalProperty().addListener((ignored, before, after) -> main.resetCamera());
-        contributionModel.refreshSignalProperty().addListener((ignored, before, after) ->
-                travel.applyDungeonTravelSession(refreshCommand()));
         travelModel.subscribe(snapshot -> applySnapshot(snapshot, contributionModel, mapContentModel));
         applySnapshot(travelModel.current(), contributionModel, mapContentModel);
         controls.showZoom(main.zoom());
@@ -67,10 +65,7 @@ final class DungeonTravelBinder {
     }
 
     private static ApplyTravelDungeonSessionCommand toCommand(DungeonTravelStatePublishedEvent event) {
-        if (event == null) {
-            return refreshCommand();
-        }
-        return switch (event.kind()) {
+        return switch (Objects.requireNonNull(event, "event").kind()) {
             case ACTION -> new ApplyTravelDungeonSessionCommand(
                     ApplyTravelDungeonSessionCommand.Action.ACTION,
                     event.actionId(),
@@ -91,14 +86,6 @@ final class DungeonTravelBinder {
                             event.overlayOpacity(),
                             event.overlayLevels()));
         };
-    }
-
-    private static ApplyTravelDungeonSessionCommand refreshCommand() {
-        return new ApplyTravelDungeonSessionCommand(
-                ApplyTravelDungeonSessionCommand.Action.REFRESH,
-                "",
-                0,
-                TravelOverlaySettings.defaults());
     }
 
     private record Binding(

@@ -25,7 +25,7 @@ public final class DomainServiceEnforcementDocumentationRules implements Archite
             row(
                     "domain-service-no-trivial-relay-wrapper-source-pattern",
                     "Source-Pattern Enforced",
-                    List.of("domain-service bundle PMD", "DomainServiceNoCeremonialIndirectionRule"),
+                    List.of("domain-service bundle PMD", "CeremonialIndirectionRule"),
                     List.of("./gradlew pmdDomainServiceEnforcement", "./gradlew checkDomainServiceEnforcement")),
             row("domain-service-non-ceremonial-role-use", "Review-Owned"));
 

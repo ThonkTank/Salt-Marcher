@@ -10,7 +10,10 @@
     <rule name="DomainPolicyNoCeremonialIndirectionRule"
           language="java"
           message="Domain policy ceremonial indirection violation"
-          class="saltmarcher.quality.pmd.domain.DomainPolicyNoCeremonialIndirectionRule">
+          class="saltmarcher.quality.pmd.indirection.CeremonialIndirectionRule">
         <priority>1</priority>
+        <properties>
+            <property name="ruleKind" value="domainPolicy"/>
+        </properties>
     </rule>
 </ruleset>

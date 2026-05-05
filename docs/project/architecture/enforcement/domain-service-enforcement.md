@@ -44,7 +44,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-service-statelessness` | Enforced | every top-level type under `service/` | domain-service bundle Error Prone `DomainServiceStatelessness` | `./gradlew compileJava` and `./gradlew checkDomainServiceEnforcement` | Service role types do not declare instance fields and stay stateless. |
-| `domain-service-no-trivial-relay-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `service/` | domain-service bundle PMD `DomainServiceNoCeremonialIndirectionRule` | `./gradlew pmdDomainServiceEnforcement` and `./gradlew checkDomainServiceEnforcement` | A service role does not consist only of constructor wrappers or one-step delegated relay methods, even when null guards or `requireNonNull(...)` calls are present. |
+| `domain-service-no-trivial-relay-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `service/` | domain-service bundle PMD `CeremonialIndirectionRule` configured for the `service/` blocker surface | `./gradlew pmdDomainServiceEnforcement` and `./gradlew checkDomainServiceEnforcement` | A service role does not consist only of constructor wrappers or one-step delegated relay methods, even when null guards or `requireNonNull(...)` calls are present. |
 
 ### Communication Contract
 

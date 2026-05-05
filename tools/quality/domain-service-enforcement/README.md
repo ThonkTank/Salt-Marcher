@@ -9,7 +9,8 @@ It keeps the full service-role proof route in one package:
   `DomainServiceRoleShape`,
   `DomainServiceStatelessness`
 - `pmd/`
-  `DomainServiceNoCeremonialIndirectionRule` and the bundle-local ruleset
+  a bundle-local ruleset that configures the shared
+  `CeremonialIndirectionRule` for the `service/` blocker surface
 - `build-harness/`
   `DomainServiceEnforcementDocumentationRules`
 - `bundle.properties`

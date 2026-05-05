@@ -124,7 +124,9 @@ internal open class VerificationHarnessExtension(
         taskDescription: String,
         rulesetPath: String,
         sourceRoots: List<String>,
-        sourceIncludes: List<String>
+        sourceIncludes: List<String>,
+        ignoreFailures: Boolean,
+        consoleOutput: Boolean
     ): TaskProvider<Pmd> {
         val roots = sourceRoots.ifEmpty {
             enforcementBundles.descriptor(bundleId).verificationSourceRoots.ifEmpty {
@@ -137,7 +139,8 @@ internal open class VerificationHarnessExtension(
             description = taskDescription
             dependsOn(project.gradle.includedBuild("quality-rules").task(":jar"))
 
-            ignoreFailures = false
+            this.ignoreFailures = ignoreFailures
+            isConsoleOutput = consoleOutput
             ruleSets = listOf()
             ruleSetFiles = project.files(rulesetFile)
             source = project.files(roots).asFileTree.matching {

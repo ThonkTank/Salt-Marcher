@@ -10,7 +10,10 @@
     <rule name="LayeringThinRoleIndirectionCandidateRule"
           language="java"
           message="Layering thin-role indirection candidate"
-          class="saltmarcher.quality.pmd.layering.LayeringThinRoleIndirectionCandidateRule">
+          class="saltmarcher.quality.pmd.indirection.CeremonialIndirectionRule">
         <priority>3</priority>
+        <properties>
+            <property name="ruleKind" value="thinCandidates"/>
+        </properties>
     </rule>
 </ruleset>

@@ -13,7 +13,6 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     private final Label zoomLabel = new Label("Zoom: 100%");
     private final Label mapLabel = new Label("Dungeon");
     private final Label levelLabel = new Label("Ebene z=0");
-    private final Button refreshButton = new Button("Neu laden");
     private final Button resetViewButton = new Button("Ansicht zurücksetzen");
     private final Button previousLevelButton = new Button("-");
     private final Button nextLevelButton = new Button("+");
@@ -85,27 +84,23 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         HBox.setHgrow(mapLabel, Priority.ALWAYS);
         zoomLabel.getStyleClass().add("text-muted");
         levelLabel.getStyleClass().add("text-muted");
-        refreshButton.getStyleClass().add("toolbar-action-button");
         resetViewButton.getStyleClass().add("toolbar-action-button");
         previousLevelButton.getStyleClass().add("toolbar-action-button");
         nextLevelButton.getStyleClass().add("toolbar-action-button");
-        refreshButton.setOnAction(event -> publishSnapshot(true, false, 0));
-        resetViewButton.setOnAction(event -> publishSnapshot(false, true, 0));
-        previousLevelButton.setOnAction(event -> publishSnapshot(false, false, -1));
-        nextLevelButton.setOnAction(event -> publishSnapshot(false, false, 1));
-        overlayControls.setOnModeChanged(mode -> publishSnapshot(false, false, 0));
-        overlayControls.setOnRangeChanged(levelRange -> publishSnapshot(false, false, 0));
-        overlayControls.setOnOpacityChanged(opacity -> publishSnapshot(false, false, 0));
-        overlayControls.setOnSelectedLevelsChanged(() -> publishSnapshot(false, false, 0));
-        describe(refreshButton, "Dungeon-Karte neu laden");
+        resetViewButton.setOnAction(event -> publishSnapshot(true, 0));
+        previousLevelButton.setOnAction(event -> publishSnapshot(false, -1));
+        nextLevelButton.setOnAction(event -> publishSnapshot(false, 1));
+        overlayControls.setOnModeChanged(mode -> publishSnapshot(false, 0));
+        overlayControls.setOnRangeChanged(levelRange -> publishSnapshot(false, 0));
+        overlayControls.setOnOpacityChanged(opacity -> publishSnapshot(false, 0));
+        overlayControls.setOnSelectedLevelsChanged(() -> publishSnapshot(false, 0));
         describe(resetViewButton, "Kamera auf die Dungeon-Karte zurücksetzen");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         describe(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
     }
 
-    private void publishSnapshot(boolean refreshRequested, boolean resetViewRequested, int projectionLevelShift) {
+    private void publishSnapshot(boolean resetViewRequested, int projectionLevelShift) {
         viewInputEventHandler.accept(new DungeonTravelControlsViewInputEvent(
-                refreshRequested,
                 resetViewRequested,
                 projectionLevelShift,
                 overlayControls.overlayModeKey(),
@@ -115,7 +110,7 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
     }
 
     private HBox dungeonRow() {
-        HBox row = compactControlRow(mapLabel, refreshButton, resetViewButton);
+        HBox row = compactControlRow(mapLabel, resetViewButton);
         row.getStyleClass().add("dungeon-control-map-row");
         row.setAlignment(Pos.CENTER_LEFT);
         return row;

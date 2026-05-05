@@ -44,7 +44,7 @@ Unified focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `domain-factory-statelessness` | Enforced | every top-level type under `factory/` | domain-factory bundle Error Prone `DomainFactoryStatelessness` | `./gradlew compileJava` and `./gradlew checkDomainFactoryEnforcement` | Factory role types do not declare instance fields and stay stateless. |
-| `domain-factory-no-trivial-construction-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `factory/` | domain-factory bundle PMD `DomainFactoryNoCeremonialIndirectionRule` | `./gradlew pmdDomainFactoryEnforcement` and `./gradlew checkDomainFactoryEnforcement` | A factory role does not survive only as one-step constructor or collaborator wrapper ceremony, even when null guards or `requireNonNull(...)` calls are present. |
+| `domain-factory-no-trivial-construction-wrapper-source-pattern` | Source-Pattern Enforced | every top-level type under `factory/` | domain-factory bundle PMD `CeremonialIndirectionRule` configured for the `factory/` blocker surface | `./gradlew pmdDomainFactoryEnforcement` and `./gradlew checkDomainFactoryEnforcement` | A factory role does not survive only as one-step constructor or collaborator wrapper ceremony, even when null guards or `requireNonNull(...)` calls are present. |
 
 ### Communication Contract
 

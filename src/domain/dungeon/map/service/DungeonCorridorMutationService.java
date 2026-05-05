@@ -38,24 +38,25 @@ import src.domain.dungeon.map.value.DungeonTopologyRef;
  */
 public final class DungeonCorridorMutationService {
 
-    public @Nullable DungeonMap createCorridor(
+    public DungeonMap createCorridor(
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end
     ) {
-        if (dungeonMap == null || !validCreateEndpoints(start, end) || sameClusterOnly(dungeonMap, start, end)) {
-            return null;
+        Objects.requireNonNull(dungeonMap, "dungeonMap");
+        if (!validCreateEndpoints(start, end) || sameClusterOnly(dungeonMap, start, end)) {
+            return dungeonMap;
         }
         ResolvedEndpointResult startResolved = resolveEndpoint(dungeonMap, start);
         if (startResolved == null) {
-            return null;
+            return dungeonMap;
         }
         ResolvedEndpointResult endResolved = resolveEndpoint(startResolved.map(), end);
         if (endResolved == null || startResolved.endpoint().endpointKey().equals(endResolved.endpoint().endpointKey())) {
-            return null;
+            return dungeonMap;
         }
         if (matchingCorridorExists(endResolved.map(), startResolved.endpoint(), endResolved.endpoint())) {
-            return null;
+            return dungeonMap;
         }
         List<Long> roomIds = new ArrayList<>();
         Long startRoomId = startResolved.endpoint().roomId();
@@ -82,13 +83,14 @@ public final class DungeonCorridorMutationService {
                 endResolved.map().connections().transitions()));
     }
 
-    public @Nullable DungeonMap extendCorridor(
+    public DungeonMap extendCorridor(
             DungeonMap dungeonMap,
             long corridorId,
             DungeonCorridorRoomEndpoint endpoint
     ) {
-        if (dungeonMap == null || corridorId <= 0L || endpoint == null || !endpoint.present()) {
-            return null;
+        Objects.requireNonNull(dungeonMap, "dungeonMap");
+        if (corridorId <= 0L || endpoint == null || !endpoint.present()) {
+            return dungeonMap;
         }
         List<DungeonCorridor> nextCorridors = new ArrayList<>();
         boolean changed = false;
@@ -114,17 +116,18 @@ public final class DungeonCorridorMutationService {
                 List.copyOf(nextCorridors),
                 dungeonMap.connections().stairs(),
                 dungeonMap.connections().transitions()))
-                : null;
+                : dungeonMap;
     }
 
-    public @Nullable DungeonMap mergeCorridors(DungeonMap dungeonMap, long corridorId, long mergedCorridorId) {
-        if (dungeonMap == null || corridorId <= 0L || mergedCorridorId <= 0L || corridorId == mergedCorridorId) {
-            return null;
+    public DungeonMap mergeCorridors(DungeonMap dungeonMap, long corridorId, long mergedCorridorId) {
+        Objects.requireNonNull(dungeonMap, "dungeonMap");
+        if (corridorId <= 0L || mergedCorridorId <= 0L || corridorId == mergedCorridorId) {
+            return dungeonMap;
         }
         DungeonCorridor kept = corridor(dungeonMap, corridorId);
         DungeonCorridor merged = corridor(dungeonMap, mergedCorridorId);
         if (kept == null || merged == null) {
-            return null;
+            return dungeonMap;
         }
         DungeonCorridor updated = kept.mergeKeepingThis(merged);
         List<DungeonCorridor> nextCorridors = new ArrayList<>();
@@ -145,13 +148,14 @@ public final class DungeonCorridorMutationService {
                 dungeonMap.connections().transitions()));
     }
 
-    public @Nullable DungeonMap deleteCorridor(DungeonMap dungeonMap, long corridorId) {
-        if (dungeonMap == null || corridorId <= 0L) {
-            return null;
+    public DungeonMap deleteCorridor(DungeonMap dungeonMap, long corridorId) {
+        Objects.requireNonNull(dungeonMap, "dungeonMap");
+        if (corridorId <= 0L) {
+            return dungeonMap;
         }
         DungeonCorridor existing = corridor(dungeonMap, corridorId);
         if (existing == null || ownedAnchorStillReferenced(dungeonMap, existing)) {
-            return null;
+            return dungeonMap;
         }
         List<DungeonCorridor> nextCorridors = dungeonMap.connections().corridors().stream()
                 .filter(corridor -> corridor.corridorId() != corridorId)
@@ -166,6 +170,7 @@ public final class DungeonCorridorMutationService {
     }
 
     public ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {
+        Objects.requireNonNull(dungeonMap, "dungeonMap");
         return normalizeConnectionsInternal(dungeonMap, source);
     }
 

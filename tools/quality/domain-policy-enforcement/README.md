@@ -9,7 +9,8 @@ It keeps the tactical `policy/` proof route owner-pure and bundle-local:
   `DomainPolicyRoleShape`,
   `DomainPolicyStatelessness`
 - `pmd/`
-  `DomainPolicyNoCeremonialIndirectionRule` and the bundle-local ruleset
+  a bundle-local ruleset that configures the shared
+  `CeremonialIndirectionRule` for the `policy/` blocker surface
 - `build-harness/`
   `DomainPolicyEnforcementDocumentationRules`,
   `DomainPolicyEnforcementDocumentationCheckMain`

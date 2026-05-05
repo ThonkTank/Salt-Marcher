@@ -9,7 +9,8 @@ It keeps the full factory-role proof route in one package:
   `DomainFactoryRoleShape`,
   `DomainFactoryStatelessness`
 - `pmd/`
-  `DomainFactoryNoCeremonialIndirectionRule` and the bundle-local ruleset
+  a bundle-local ruleset that configures the shared
+  `CeremonialIndirectionRule` for the `factory/` blocker surface
 - `build-harness/`
   `DomainFactoryEnforcementDocumentationRules`
 - `bundle.properties`
