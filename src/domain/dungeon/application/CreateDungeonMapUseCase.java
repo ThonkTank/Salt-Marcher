@@ -1,7 +1,9 @@
 package src.domain.dungeon.application;
 
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.port.DungeonMapRepository;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 
 /**
@@ -12,18 +14,23 @@ public final class CreateDungeonMapUseCase {
     public record CreatedMap(DungeonMapIdentity mapId) {
     }
 
-    private final DungeonMapRepository repository;
+    private final Supplier<DungeonMapIdentity> nextMapId;
+    private final Function<DungeonMap, DungeonMap> saveMap;
 
-    public CreateDungeonMapUseCase(DungeonMapRepository repository) {
-        this.repository = repository;
+    public CreateDungeonMapUseCase(
+            Supplier<DungeonMapIdentity> nextMapId,
+            Function<DungeonMap, DungeonMap> saveMap
+    ) {
+        this.nextMapId = Objects.requireNonNull(nextMapId, "nextMapId");
+        this.saveMap = Objects.requireNonNull(saveMap, "saveMap");
     }
 
     public CreatedMap execute(String requestedMapName) {
-        DungeonMapIdentity mapIdentity = repository.nextMapId();
+        DungeonMapIdentity mapIdentity = nextMapId.get();
         String mapName = normalizeName(requestedMapName);
         DungeonMap dungeonMap = DungeonMap.empty(mapIdentity, mapName);
-        repository.save(dungeonMap);
-        return new CreatedMap(mapIdentity);
+        DungeonMap saved = saveMap.apply(dungeonMap);
+        return new CreatedMap(saved.metadata().mapId());
     }
 
     private String normalizeName(String requestedMapName) {

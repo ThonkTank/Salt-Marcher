@@ -44,4 +44,8 @@ public record DungeonAreaFacts(
         DungeonAreaType safeKind = kind == null ? DungeonAreaType.ROOM : kind;
         return new DungeonTopologyRef(DungeonTopologyElementKind.fromAreaType(safeKind), id);
     }
+
+    public boolean isCorridor() {
+        return kind == DungeonAreaType.CORRIDOR;
+    }
 }

@@ -21,7 +21,8 @@ import src.domain.dungeon.map.value.DungeonStairExit;
  */
 public final class DungeonEditorHandleMovementService {
 
-    private static final DungeonCorridorMutationService CORRIDOR_MUTATION_SERVICE = new DungeonCorridorMutationService();
+    private static final DungeonCorridorConnectionNormalizationService CONNECTION_NORMALIZATION_SERVICE =
+            new DungeonCorridorConnectionNormalizationService();
     private static final DungeonTopologyMovementService TOPOLOGY_MOVEMENT_SERVICE = new DungeonTopologyMovementService();
 
     public DungeonMap moveEditorHandle(DungeonMap dungeonMap, DungeonEditorHandle handle, int deltaQ, int deltaR, int deltaLevel) {
@@ -85,10 +86,12 @@ public final class DungeonEditorHandleMovementService {
                             corridor.bindings().anchorRefs())));
         }
         return changed
-                ? copyWithConnections(dungeonMap, new ConnectionCatalog(
-                movedCorridors,
-                dungeonMap.connections().stairs(),
-                dungeonMap.connections().transitions()))
+                ? copyWithConnections(
+                dungeonMap,
+                new ConnectionCatalog(
+                        movedCorridors,
+                        dungeonMap.connections().stairs(),
+                        dungeonMap.connections().transitions()))
                 : dungeonMap;
     }
 
@@ -113,10 +116,12 @@ public final class DungeonEditorHandleMovementService {
             movedCorridors.add(corridor.withBindings(corridor.bindings().replaceAnchorBindings(anchors)));
         }
         return changed
-                ? copyWithConnections(dungeonMap, new ConnectionCatalog(
-                movedCorridors,
-                dungeonMap.connections().stairs(),
-                dungeonMap.connections().transitions()))
+                ? copyWithConnections(
+                dungeonMap,
+                new ConnectionCatalog(
+                        movedCorridors,
+                        dungeonMap.connections().stairs(),
+                        dungeonMap.connections().transitions()))
                 : dungeonMap;
     }
 
@@ -151,10 +156,12 @@ public final class DungeonEditorHandleMovementService {
                             corridor.bindings().anchorRefs())));
         }
         return changed
-                ? copyWithConnections(dungeonMap, new ConnectionCatalog(
-                movedCorridors,
-                dungeonMap.connections().stairs(),
-                dungeonMap.connections().transitions()))
+                ? copyWithConnections(
+                dungeonMap,
+                new ConnectionCatalog(
+                        movedCorridors,
+                        dungeonMap.connections().stairs(),
+                        dungeonMap.connections().transitions()))
                 : dungeonMap;
     }
 
@@ -196,24 +203,17 @@ public final class DungeonEditorHandleMovementService {
                     stair.corridorId()));
         }
         return changed
-                ? copyWithConnections(dungeonMap, new ConnectionCatalog(
-                dungeonMap.connections().corridors(),
-                movedStairs,
-                dungeonMap.connections().transitions()))
+                ? copyWithConnections(
+                dungeonMap,
+                new ConnectionCatalog(
+                        dungeonMap.connections().corridors(),
+                        movedStairs,
+                        dungeonMap.connections().transitions()))
                 : dungeonMap;
     }
 
     private static DungeonMap copyWithConnections(DungeonMap dungeonMap, ConnectionCatalog nextConnections) {
-        ConnectionCatalog normalized = CORRIDOR_MUTATION_SERVICE.normalizeConnections(dungeonMap, nextConnections);
-        return new DungeonMap(
-                dungeonMap.metadata(),
-                dungeonMap.topology(),
-                dungeonMap.topologyIndex(),
-                dungeonMap.spaces(),
-                dungeonMap.rooms(),
-                normalized,
-                dungeonMap.features(),
-                dungeonMap.revision() + 1L);
+        return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(dungeonMap, nextConnections);
     }
 
     private static DungeonCell movedCell(DungeonCell cell, int deltaQ, int deltaR, int deltaLevel) {

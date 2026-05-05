@@ -1,10 +1,11 @@
 package src.domain.dungeon.application;
 
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.entity.DungeonTransition;
-import src.domain.dungeon.map.port.DungeonMapRepository;
-import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.service.DungeonTravelSurfaceProjector;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonDerivedState;
@@ -30,26 +31,26 @@ public final class MoveDungeonTravelActionUseCase {
         }
     }
 
-    private final DungeonMapRepository repository;
-    private final DungeonMapSearch search;
-    private final BuildDungeonDerivedStateUseCase derive;
+    private final LoadDungeonMapUseCase loadDungeonMap;
+    private final Function<DungeonMapIdentity, Optional<DungeonMap>> findById;
+    private final Function<DungeonMap, DungeonDerivedState> deriveState;
     private final DungeonTravelSurfaceProjector projector = new DungeonTravelSurfaceProjector();
 
     public MoveDungeonTravelActionUseCase(
-            DungeonMapRepository repository,
-            DungeonMapSearch search,
-            BuildDungeonDerivedStateUseCase derive
+            LoadDungeonMapUseCase loadDungeonMap,
+            Function<DungeonMapIdentity, Optional<DungeonMap>> findById,
+            Function<DungeonMap, DungeonDerivedState> deriveState
     ) {
-        this.repository = repository;
-        this.search = search;
-        this.derive = derive;
+        this.loadDungeonMap = Objects.requireNonNull(loadDungeonMap, "loadDungeonMap");
+        this.findById = Objects.requireNonNull(findById, "findById");
+        this.deriveState = Objects.requireNonNull(deriveState, "deriveState");
     }
 
     public DungeonTravelMoveFacts execute(Input input) {
         DungeonTravelPositionFacts position = input == null ? null : input.position();
         String actionId = input == null ? "" : input.actionId();
         DungeonMap currentMap = loadMap(position);
-        DungeonDerivedState currentDerived = derive.execute(currentMap);
+        DungeonDerivedState currentDerived = deriveState.apply(currentMap);
         DungeonTravelSurfaceFacts currentSurface = project(currentMap, currentDerived, position, "");
         DungeonTravelActionFacts action = findAction(currentSurface, actionId);
         if (action == null) {
@@ -107,7 +108,7 @@ public final class MoveDungeonTravelActionUseCase {
     ) {
         if (destination.transitionId() == null) {
             DungeonMap currentMap = loadMap(currentPosition);
-            DungeonDerivedState currentDerived = derive.execute(currentMap);
+            DungeonDerivedState currentDerived = deriveState.apply(currentMap);
             DungeonTravelSurfaceFacts surface = project(
                     currentMap,
                     currentDerived,
@@ -116,12 +117,12 @@ public final class MoveDungeonTravelActionUseCase {
             return moveResult(DungeonTravelMoveStatus.TARGET_UNAVAILABLE, surface.statusLabel(), surface);
         }
         DungeonMapIdentity targetMapId = new DungeonMapIdentity(destination.mapId());
-        DungeonMap targetMap = repository.findById(targetMapId).orElse(null);
+        DungeonMap targetMap = findById.apply(targetMapId).orElse(null);
         DungeonTransition targetTransition = targetMap == null ? null : findTransition(targetMap, destination.transitionId());
         DungeonCell anchor = targetTransition == null ? null : targetTransition.anchor();
         if (targetMap == null || targetTransition == null || anchor == null) {
             DungeonMap currentMap = loadMap(currentPosition);
-            DungeonDerivedState currentDerived = derive.execute(currentMap);
+            DungeonDerivedState currentDerived = deriveState.apply(currentMap);
             DungeonTravelSurfaceFacts surface = project(
                     currentMap,
                     currentDerived,
@@ -135,7 +136,7 @@ public final class MoveDungeonTravelActionUseCase {
                 targetTransition.transitionId(),
                 anchor,
                 currentPosition.heading());
-        DungeonDerivedState targetDerived = derive.execute(targetMap);
+        DungeonDerivedState targetDerived = deriveState.apply(targetMap);
         DungeonTravelSurfaceFacts surface = project(targetMap, targetDerived, targetPosition, "Übergang benutzt.");
         return moveResult(DungeonTravelMoveStatus.SUCCESS, "Übergang benutzt.", surface);
     }
@@ -154,23 +155,13 @@ public final class MoveDungeonTravelActionUseCase {
             @Nullable DungeonTravelPositionFacts position,
             String statusLabel
     ) {
-        return project(dungeonMap, derive.execute(dungeonMap), position, statusLabel);
+        return project(dungeonMap, deriveState.apply(dungeonMap), position, statusLabel);
     }
 
     private DungeonMap loadMap(@Nullable DungeonTravelPositionFacts position) {
-        if (position != null) {
-            return repository.findById(position.mapId()).orElseGet(this::loadCurrentMap);
-        }
-        return loadCurrentMap();
-    }
-
-    private DungeonMap loadCurrentMap() {
-        return search.firstMap()
-                .orElseGet(MoveDungeonTravelActionUseCase::emptyFallbackMap);
-    }
-
-    private static DungeonMap emptyFallbackMap() {
-        return DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon Map");
+        return position == null
+                ? loadDungeonMap.execute()
+                : loadDungeonMap.execute(position.mapId());
     }
 
     private static @Nullable DungeonTravelActionFacts findAction(DungeonTravelSurfaceFacts surface, String actionId) {

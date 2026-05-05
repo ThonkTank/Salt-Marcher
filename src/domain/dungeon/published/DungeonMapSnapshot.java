@@ -47,6 +47,26 @@ public record DungeonMapSnapshot(
         return new DungeonMapSnapshot(DungeonTopologyKind.SQUARE, 1, 1, List.of(), List.of(), List.of(), List.of());
     }
 
+    @Override
+    public List<DungeonAreaSnapshot> areas() {
+        return immutableAreas(areas);
+    }
+
+    @Override
+    public List<DungeonBoundarySnapshot> boundaries() {
+        return immutableBoundaries(boundaries);
+    }
+
+    @Override
+    public List<DungeonFeatureSnapshot> features() {
+        return immutableFeatures(features);
+    }
+
+    @Override
+    public List<DungeonEditorHandleSnapshot> editorHandles() {
+        return immutableEditorHandles(editorHandles);
+    }
+
     public List<DungeonCellRef> allCells() {
         return java.util.stream.Stream.concat(
                         areas.stream().flatMap(area -> area.cells().stream()),

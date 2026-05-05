@@ -38,14 +38,19 @@ public record DungeonClusterBoundary(
         return DungeonEdge.sideOf(absoluteCell(center), direction);
     }
 
+    public boolean isDoor() {
+        return kind == DungeonClusterBoundaryKind.DOOR;
+    }
+
+    public boolean matchesAbsoluteEdge(DungeonCell center, DungeonEdge edge) {
+        return edge != null && DungeonBoundaryKey.from(absoluteEdge(center)).equals(DungeonBoundaryKey.from(edge));
+    }
+
     public DungeonTopologyRef resolvedTopologyRef(DungeonCell center) {
         if (topologyRef.present()) {
             return topologyRef;
         }
-        return new DungeonTopologyRef(
-                kind == DungeonClusterBoundaryKind.DOOR
-                        ? DungeonTopologyElementKind.DOOR
-                        : DungeonTopologyElementKind.WALL,
-                DungeonBoundaryKey.from(absoluteEdge(center)).stableId());
+        long boundaryId = DungeonBoundaryKey.from(absoluteEdge(center)).stableId();
+        return isDoor() ? DungeonTopologyRef.door(boundaryId) : DungeonTopologyRef.wall(boundaryId);
     }
 }

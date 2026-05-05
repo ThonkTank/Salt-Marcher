@@ -2,8 +2,6 @@ package src.domain.dungeon.application;
 
 import src.domain.dungeon.map.aggregate.DungeonMap;
 import src.domain.dungeon.map.policy.DungeonMapOperationFeedbackPolicy;
-import src.domain.dungeon.map.port.DungeonMapRepository;
-import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.value.DungeonDerivedState;
 import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
@@ -20,7 +18,8 @@ import src.domain.dungeon.map.value.DungeonRoomNarration;
 import src.domain.dungeon.map.value.DungeonTopologyRef;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -221,24 +220,26 @@ public final class ApplyDungeonEditorOperationUseCase {
         }
     }
 
-    private final DungeonMapRepository repository;
-    private final DungeonMapSearch search;
-    private final BuildDungeonDerivedStateUseCase derive;
+    private final LoadDungeonMapUseCase loadDungeonMap;
+    private final Function<DungeonMap, DungeonMap> saveMap;
+    private final Function<DungeonMap, DungeonDerivedState> deriveState;
     private final AssembleDungeonSnapshotUseCase assembleDungeonSnapshot;
     private final PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles;
 
     public ApplyDungeonEditorOperationUseCase(
-            DungeonMapRepository repository,
-            DungeonMapSearch search,
-            BuildDungeonDerivedStateUseCase derive,
+            LoadDungeonMapUseCase loadDungeonMap,
+            Function<DungeonMap, DungeonMap> saveMap,
+            Function<DungeonMap, DungeonDerivedState> deriveState,
             AssembleDungeonSnapshotUseCase assembleDungeonSnapshot,
             PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles
     ) {
-        this.repository = repository;
-        this.search = search;
-        this.derive = derive;
-        this.assembleDungeonSnapshot = assembleDungeonSnapshot;
-        this.publishDungeonEditorHandles = publishDungeonEditorHandles;
+        this.loadDungeonMap = Objects.requireNonNull(loadDungeonMap, "loadDungeonMap");
+        this.saveMap = Objects.requireNonNull(saveMap, "saveMap");
+        this.deriveState = Objects.requireNonNull(deriveState, "deriveState");
+        this.assembleDungeonSnapshot = Objects.requireNonNull(assembleDungeonSnapshot, "assembleDungeonSnapshot");
+        this.publishDungeonEditorHandles = Objects.requireNonNull(
+                publishDungeonEditorHandles,
+                "publishDungeonEditorHandles");
     }
 
     public OperationResultData execute(OperationInput operation) {
@@ -250,8 +251,8 @@ public final class ApplyDungeonEditorOperationUseCase {
         DungeonMap mutated = apply(current, operation);
         List<String> validationMessages = OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated);
         List<String> reactionMessages = OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated);
-        DungeonDerivedState derived = derive.execute(mutated);
-        DungeonMap saved = repository.save(mutated);
+        DungeonDerivedState derived = deriveState.apply(mutated);
+        DungeonMap saved = saveMap.apply(mutated);
         var snapshot = snapshot(saved, derived);
         return new OperationResultData(snapshot, validationMessages, reactionMessages);
     }
@@ -259,7 +260,7 @@ public final class ApplyDungeonEditorOperationUseCase {
     public OperationResultData preview(@Nullable DungeonMapIdentity mapId, OperationInput operation) {
         DungeonMap current = currentMap(mapId);
         DungeonMap mutated = apply(current, operation);
-        DungeonDerivedState derived = derive.execute(mutated);
+        DungeonDerivedState derived = deriveState.apply(mutated);
         return new OperationResultData(
                 snapshot(mutated, derived),
                 OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated),
@@ -383,12 +384,6 @@ public final class ApplyDungeonEditorOperationUseCase {
     }
 
     private DungeonMap currentMap(@Nullable DungeonMapIdentity mapId) {
-        Optional<DungeonMap> selectedMap = mapId == null ? Optional.empty() : repository.findById(mapId);
-        return selectedMap.or(() -> search.firstMap())
-                .orElseGet(ApplyDungeonEditorOperationUseCase::emptyFallbackMap);
-    }
-
-    private static DungeonMap emptyFallbackMap() {
-        return DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon Map");
+        return loadDungeonMap.execute(mapId);
     }
 }

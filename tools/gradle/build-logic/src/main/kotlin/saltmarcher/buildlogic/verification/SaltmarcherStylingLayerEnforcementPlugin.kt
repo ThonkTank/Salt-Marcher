@@ -92,7 +92,6 @@ internal fun Project.configureStylingLayerEnforcement() {
     val pmdStylingLayerEnforcement = tasks.register("pmdStylingLayerEnforcement", Pmd::class) {
         group = "verification"
         description = "Run the dedicated styling-layer PMD rule bundle."
-        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
 
         ignoreFailures = false
         ruleSets = listOf()

@@ -16,6 +16,26 @@ public record EncounterTuningPreviewLabels(
         diversityLabels = copyOf(diversityLabels);
     }
 
+    @Override
+    public List<PreviewLabel> difficultyLabels() {
+        return copyOf(difficultyLabels);
+    }
+
+    @Override
+    public List<PreviewLabel> balanceLabels() {
+        return copyOf(balanceLabels);
+    }
+
+    @Override
+    public List<PreviewLabel> amountLabels() {
+        return copyOf(amountLabels);
+    }
+
+    @Override
+    public List<PreviewLabel> diversityLabels() {
+        return copyOf(diversityLabels);
+    }
+
     private static List<PreviewLabel> copyOf(List<PreviewLabel> labels) {
         return labels == null ? List.of() : List.copyOf(labels);
     }

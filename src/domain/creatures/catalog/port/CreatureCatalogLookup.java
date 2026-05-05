@@ -177,6 +177,16 @@ public interface CreatureCatalogLookup {
             subtypes = copyStrings(subtypes);
             biomes = copyStrings(biomes);
         }
+
+        @Override
+        public List<String> subtypes() {
+            return copyStrings(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return copyStrings(biomes);
+        }
     }
 
     record CreatureVitals(

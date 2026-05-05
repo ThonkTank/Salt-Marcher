@@ -221,6 +221,20 @@ public final class CalculateAdventuringDayUseCase {
             int longRests,
             List<LevelProgress> levelProgressions,
             List<ProgressEvent> events) {
+        public Progress {
+            levelProgressions = immutableEvents(levelProgressions);
+            events = immutableEvents(events);
+        }
+
+        @Override
+        public List<LevelProgress> levelProgressions() {
+            return immutableEvents(levelProgressions);
+        }
+
+        @Override
+        public List<ProgressEvent> events() {
+            return immutableEvents(events);
+        }
 
         private static Progress empty(int totalGroupXp) {
             return new Progress(totalGroupXp, 0, 0, 0, 0.0, 0, 0, List.of(), List.of());
@@ -263,5 +277,9 @@ public final class CalculateAdventuringDayUseCase {
     }
 
     private record BreakpointLevel(int groupXp, int newLevel) {
+    }
+
+    private static <T> List<T> immutableEvents(List<T> values) {
+        return values == null ? List.of() : List.copyOf(values);
     }
 }

@@ -35,6 +35,11 @@ public record DungeonFeatureSnapshot(
                 : topologyRef;
     }
 
+    @Override
+    public List<DungeonCellRef> cells() {
+        return immutableCells(cells);
+    }
+
     private static DungeonFeatureKind defaultKind(DungeonFeatureKind kind) {
         return kind == null ? DungeonFeatureKind.STAIR : kind;
     }

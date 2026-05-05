@@ -1,6 +1,7 @@
 package src.domain.dungeon.application;
 
-import src.domain.dungeon.map.port.DungeonMapRepository;
+import java.util.Objects;
+import java.util.function.Consumer;
 import src.domain.dungeon.map.value.DungeonMapIdentity;
 
 /**
@@ -8,14 +9,14 @@ import src.domain.dungeon.map.value.DungeonMapIdentity;
  */
 public final class DeleteDungeonMapUseCase {
 
-    private final DungeonMapRepository repository;
+    private final Consumer<DungeonMapIdentity> deleteMap;
 
-    public DeleteDungeonMapUseCase(DungeonMapRepository repository) {
-        this.repository = repository;
+    public DeleteDungeonMapUseCase(Consumer<DungeonMapIdentity> deleteMap) {
+        this.deleteMap = Objects.requireNonNull(deleteMap, "deleteMap");
     }
 
     public DungeonMapIdentity execute(DungeonMapIdentity mapIdentity) {
-        repository.delete(mapIdentity);
+        deleteMap.accept(mapIdentity);
         return mapIdentity;
     }
 }

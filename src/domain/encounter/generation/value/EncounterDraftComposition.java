@@ -1,6 +1,7 @@
 package src.domain.encounter.generation.value;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,20 @@ public record EncounterDraftComposition(
         EncounterDraftCompositionStats stats,
         Set<String> roles
 ) {
+    public EncounterDraftComposition {
+        entries = entries == null ? List.of() : List.copyOf(entries);
+        roles = immutableRoles(roles);
+    }
+
+    @Override
+    public List<EncounterDraftEntry> entries() {
+        return List.copyOf(entries);
+    }
+
+    @Override
+    public Set<String> roles() {
+        return immutableRoles(roles);
+    }
 
     private static final int MAX_CREATURES_PER_DRAFT = 8;
     private static final int MAX_BOSSES_PER_DRAFT = 1;
@@ -80,7 +95,13 @@ public record EncounterDraftComposition(
         }
 
         private Set<String> roles() {
-            return Set.copyOf(roles);
+            return immutableRoles(roles);
         }
+    }
+
+    private static Set<String> immutableRoles(Set<String> roles) {
+        return roles == null
+                ? Set.of()
+                : Collections.unmodifiableSet(new LinkedHashSet<>(roles));
     }
 }

@@ -16,6 +16,7 @@ public record DungeonCorridorDoorEndpoint(
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
+    @Override
     public boolean present() {
         return roomId > 0L && clusterId > 0L;
     }

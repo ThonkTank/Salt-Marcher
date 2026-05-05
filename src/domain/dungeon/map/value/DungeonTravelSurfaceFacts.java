@@ -32,6 +32,11 @@ public record DungeonTravelSurfaceFacts(
         actions = immutableActions(actions);
     }
 
+    @Override
+    public List<DungeonTravelActionFacts> actions() {
+        return immutableActions(actions);
+    }
+
     private static DungeonMapFacts defaultMap(DungeonMapFacts map) {
         return map == null ? new DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of()) : map;
     }

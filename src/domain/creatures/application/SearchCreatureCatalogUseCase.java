@@ -39,8 +39,38 @@ public final class SearchCreatureCatalogUseCase {
             int pageOffset
     ) {
         public CatalogQueryInput {
+            sizes = immutableValues(sizes);
+            types = immutableValues(types);
+            subtypes = immutableValues(subtypes);
+            biomes = immutableValues(biomes);
+            alignments = immutableValues(alignments);
             sortField = sortField == null ? CreatureCatalogLookup.SortField.NAME : sortField;
             sortDirection = sortDirection == null ? CreatureCatalogLookup.SortDirection.ASCENDING : sortDirection;
+        }
+
+        @Override
+        public List<String> sizes() {
+            return immutableValues(sizes);
+        }
+
+        @Override
+        public List<String> types() {
+            return immutableValues(types);
+        }
+
+        @Override
+        public List<String> subtypes() {
+            return immutableValues(subtypes);
+        }
+
+        @Override
+        public List<String> biomes() {
+            return immutableValues(biomes);
+        }
+
+        @Override
+        public List<String> alignments() {
+            return immutableValues(alignments);
         }
     }
 
@@ -118,6 +148,10 @@ public final class SearchCreatureCatalogUseCase {
             return DEFAULT_PAGE_SIZE;
         }
         return Math.min(pageSize, MAX_PAGE_SIZE);
+    }
+
+    private static List<String> immutableValues(@Nullable List<String> values) {
+        return values == null ? List.of() : List.copyOf(values);
     }
 
     private static @Nullable String trimmedOrNull(@Nullable String value) {

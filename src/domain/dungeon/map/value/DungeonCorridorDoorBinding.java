@@ -22,4 +22,8 @@ public record DungeonCorridorDoorBinding(
         direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
+
+    public boolean hasTopologyRef() {
+        return topologyRef.present();
+    }
 }

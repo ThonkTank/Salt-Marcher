@@ -4,30 +4,38 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
-import net.sourceforge.pmd.lang.document.TextRegion;
+import net.sourceforge.pmd.lang.java.ast.ASTAmbiguousName;
+import net.sourceforge.pmd.lang.java.ast.ASTArgumentList;
 import net.sourceforge.pmd.lang.java.ast.ASTBlock;
+import net.sourceforge.pmd.lang.java.ast.ASTBooleanLiteral;
+import net.sourceforge.pmd.lang.java.ast.ASTCharLiteral;
 import net.sourceforge.pmd.lang.java.ast.ASTClassDeclaration;
+import net.sourceforge.pmd.lang.java.ast.ASTClassLiteral;
 import net.sourceforge.pmd.lang.java.ast.ASTConstructorCall;
 import net.sourceforge.pmd.lang.java.ast.ASTExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTExpressionStatement;
+import net.sourceforge.pmd.lang.java.ast.ASTFieldAccess;
 import net.sourceforge.pmd.lang.java.ast.ASTIfStatement;
+import net.sourceforge.pmd.lang.java.ast.ASTInfixExpression;
+import net.sourceforge.pmd.lang.java.ast.ASTLiteral;
 import net.sourceforge.pmd.lang.java.ast.ASTLocalVariableDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTMethodCall;
 import net.sourceforge.pmd.lang.java.ast.ASTMethodDeclaration;
+import net.sourceforge.pmd.lang.java.ast.ASTNullLiteral;
+import net.sourceforge.pmd.lang.java.ast.ASTNumericLiteral;
 import net.sourceforge.pmd.lang.java.ast.ASTReturnStatement;
 import net.sourceforge.pmd.lang.java.ast.ASTStatement;
+import net.sourceforge.pmd.lang.java.ast.ASTStringLiteral;
+import net.sourceforge.pmd.lang.java.ast.ASTSuperExpression;
+import net.sourceforge.pmd.lang.java.ast.ASTThisExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTThrowStatement;
+import net.sourceforge.pmd.lang.java.ast.ASTTypeExpression;
+import net.sourceforge.pmd.lang.java.ast.BinaryOp;
 import net.sourceforge.pmd.lang.java.ast.ASTVariableDeclarator;
+import saltmarcher.quality.pmd.support.JavaSourceTextSupport;
 import saltmarcher.quality.pmd.support.SaltMarcherSourceFacts;
 
 final class CeremonialMethodAnalysis {
-
-    private static final Pattern SIMPLE_REFERENCE = Pattern.compile(
-            "^(?:this\\.)?[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*$");
-    private static final Pattern NULL_GUARD_CONDITION = Pattern.compile(
-            "^(?:null\\s*==\\s*(?:this\\.)?[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*|"
-                    + "(?:this\\.)?[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*\\s*==\\s*null)$");
 
     private CeremonialMethodAnalysis() {
     }
@@ -88,7 +96,7 @@ final class CeremonialMethodAnalysis {
 
     private static boolean isSkippableGuard(ASTStatement statement, SaltMarcherSourceFacts sourceFacts) {
         if (statement instanceof ASTExpressionStatement expressionStatement) {
-            ASTMethodCall methodCall = singleMethodCall(expressionStatement.getExpr());
+            ASTMethodCall methodCall = directMethodCall(expressionStatement.getExpr());
             return methodCall != null && isRequireNonNullCall(methodCall, sourceFacts);
         }
         if (statement instanceof ASTLocalVariableDeclaration declaration) {
@@ -96,11 +104,11 @@ final class CeremonialMethodAnalysis {
             if (declarator == null || !declarator.hasInitializer()) {
                 return false;
             }
-            ASTMethodCall methodCall = singleMethodCall(declarator.getInitializer());
+            ASTMethodCall methodCall = directMethodCall(declarator.getInitializer());
             return methodCall != null && isRequireNonNullCall(methodCall, sourceFacts);
         }
         if (statement instanceof ASTIfStatement ifStatement) {
-            return isNullGuardIfStatement(ifStatement, sourceFacts);
+            return isNullGuardIfStatement(ifStatement);
         }
         return false;
     }
@@ -116,13 +124,12 @@ final class CeremonialMethodAnalysis {
                 || "java.util.Objects".equals(qualifierText);
     }
 
-    private static boolean isNullGuardIfStatement(ASTIfStatement ifStatement, SaltMarcherSourceFacts sourceFacts) {
+    private static boolean isNullGuardIfStatement(ASTIfStatement ifStatement) {
         if (ifStatement.hasElse()) {
             return false;
         }
         ASTStatement thenBranch = unwrapSingleStatement(ifStatement.getThenBranch());
-        return thenBranch instanceof ASTThrowStatement
-                && NULL_GUARD_CONDITION.matcher(normalizedNodeText(ifStatement.getCondition(), sourceFacts)).matches();
+        return thenBranch instanceof ASTThrowStatement && isSimpleNullCheck(ifStatement.getCondition());
     }
 
     private static boolean isTrivialAlias(ASTStatement statement, SaltMarcherSourceFacts sourceFacts) {
@@ -133,7 +140,7 @@ final class CeremonialMethodAnalysis {
         if (declarator == null || !declarator.hasInitializer()) {
             return false;
         }
-        return SIMPLE_REFERENCE.matcher(normalizedNodeText(declarator.getInitializer(), sourceFacts)).matches();
+        return isSimpleReferenceLike(declarator.getInitializer(), sourceFacts);
     }
 
     private static MethodShape classifyEffectiveStatement(
@@ -159,14 +166,21 @@ final class CeremonialMethodAnalysis {
     }
 
     private static MethodShape classifyConstructorReturn(ASTExpression expression, SaltMarcherSourceFacts sourceFacts) {
-        if (expression instanceof ASTMethodCall || expression.descendants(ASTMethodCall.class).first() != null) {
-            return null;
-        }
-        ASTConstructorCall constructorCall = singleOutermostConstructorCall(expression);
+        ASTConstructorCall constructorCall = directConstructorCall(expression);
         if (constructorCall == null) {
             return null;
         }
-        String constructedType = normalizedNodeText(constructorCall.getTypeNode(), sourceFacts);
+        if (constructorCall.isAnonymousClass()) {
+            return null;
+        }
+        ASTExpression qualifier = constructorCall.getQualifier();
+        if (qualifier != null && !isSimpleReferenceLike(qualifier, sourceFacts)) {
+            return null;
+        }
+        if (!argumentsAreSimple(constructorCall.getArguments(), sourceFacts)) {
+            return null;
+        }
+        String constructedType = JavaSourceTextSupport.normalizedNodeText(constructorCall.getTypeNode(), sourceFacts);
         return new MethodShape("wraps constructor " + constructedType, "new:" + constructedType);
     }
 
@@ -176,15 +190,15 @@ final class CeremonialMethodAnalysis {
             Set<String> localMethodNames,
             boolean returnsValue
     ) {
-        if (expression instanceof ASTConstructorCall || expression.descendants(ASTConstructorCall.class).first() != null) {
-            return null;
-        }
-        ASTMethodCall methodCall = singleOutermostMethodCall(expression);
+        ASTMethodCall methodCall = directMethodCall(expression);
         if (methodCall == null) {
             return null;
         }
         ASTExpression qualifier = methodCall.getQualifier();
-        if (qualifier != null && !isSimpleQualifier(qualifier, sourceFacts)) {
+        if (qualifier != null && !isSimpleReferenceLike(qualifier, sourceFacts)) {
+            return null;
+        }
+        if (!argumentsAreSimple(methodCall.getArguments(), sourceFacts)) {
             return null;
         }
 
@@ -200,42 +214,24 @@ final class CeremonialMethodAnalysis {
         return method.ancestors(ASTClassDeclaration.class).last();
     }
 
-    private static ASTMethodCall singleOutermostMethodCall(ASTExpression expression) {
-        if (expression instanceof ASTMethodCall methodCall) {
-            return hasNestedInvocation(methodCall) ? null : methodCall;
-        }
-        List<ASTMethodCall> methodCalls = expression.descendants(ASTMethodCall.class)
-                .filter(methodCall -> methodCall.ancestors(ASTMethodCall.class).first() == null)
-                .toList();
-        if (methodCalls.size() != 1) {
-            return null;
-        }
-        ASTMethodCall methodCall = methodCalls.getFirst();
-        return hasNestedInvocation(methodCall) ? null : methodCall;
+    private static ASTMethodCall directMethodCall(ASTExpression expression) {
+        return expression instanceof ASTMethodCall methodCall ? methodCall : null;
     }
 
-    private static ASTConstructorCall singleOutermostConstructorCall(ASTExpression expression) {
-        if (expression instanceof ASTConstructorCall constructorCall) {
-            return hasNestedInvocation(constructorCall) ? null : constructorCall;
-        }
-        List<ASTConstructorCall> constructorCalls = expression.descendants(ASTConstructorCall.class)
-                .filter(constructorCall -> constructorCall.ancestors(ASTConstructorCall.class).first() == null)
-                .toList();
-        if (constructorCalls.size() != 1) {
-            return null;
-        }
-        ASTConstructorCall constructorCall = constructorCalls.getFirst();
-        return hasNestedInvocation(constructorCall) ? null : constructorCall;
+    private static ASTConstructorCall directConstructorCall(ASTExpression expression) {
+        return expression instanceof ASTConstructorCall constructorCall ? constructorCall : null;
     }
 
-    private static boolean hasNestedInvocation(ASTMethodCall methodCall) {
-        return methodCall.descendants(ASTMethodCall.class).first() != null
-                || methodCall.descendants(ASTConstructorCall.class).first() != null;
+    private static boolean argumentsAreSimple(ASTArgumentList arguments, SaltMarcherSourceFacts sourceFacts) {
+        return arguments.children(ASTExpression.class).toList().stream()
+                .allMatch(argument -> isSimpleDelegatedArgument(argument, sourceFacts));
     }
 
-    private static boolean hasNestedInvocation(ASTConstructorCall constructorCall) {
-        return constructorCall.descendants(ASTMethodCall.class).first() != null
-                || constructorCall.descendants(ASTConstructorCall.class).first() != null;
+    private static boolean isSimpleDelegatedArgument(ASTExpression argument, SaltMarcherSourceFacts sourceFacts) {
+        if (containsInvocation(argument)) {
+            return false;
+        }
+        return isSimpleReferenceLike(argument, sourceFacts) || isSimpleLiteralLike(argument);
     }
 
     private static ASTVariableDeclarator singleDeclarator(ASTLocalVariableDeclaration declaration) {
@@ -251,10 +247,24 @@ final class CeremonialMethodAnalysis {
         return statements.size() == 1 ? statements.getFirst() : statement;
     }
 
-    private static boolean isSimpleQualifier(ASTExpression qualifier, SaltMarcherSourceFacts sourceFacts) {
-        return qualifier.descendants(ASTMethodCall.class).first() == null
-                && qualifier.descendants(ASTConstructorCall.class).first() == null
-                && SIMPLE_REFERENCE.matcher(normalizedNodeText(qualifier, sourceFacts)).matches();
+    private static boolean isSimpleReferenceLike(ASTExpression expression, SaltMarcherSourceFacts sourceFacts) {
+        if (containsInvocation(expression)) {
+            return false;
+        }
+        if (expression instanceof ASTAmbiguousName
+                || expression instanceof ASTThisExpression
+                || expression instanceof ASTSuperExpression) {
+            return true;
+        }
+        if (expression instanceof ASTFieldAccess fieldAccess) {
+            ASTExpression qualifier = fieldAccess.getQualifier();
+            return qualifier != null && isSimpleReferenceLike(qualifier, sourceFacts);
+        }
+        return sourceFacts != null
+                && expression.isParenthesized()
+                && JavaSourceTextSupport.normalizedNodeText(expression, sourceFacts)
+                .startsWith("(")
+                && looksLikeSimpleReferenceText(JavaSourceTextSupport.normalizedNodeText(expression, sourceFacts));
     }
 
     private static String renderCallee(ASTMethodCall methodCall, SaltMarcherSourceFacts sourceFacts) {
@@ -282,93 +292,51 @@ final class CeremonialMethodAnalysis {
 
     private static String qualifierText(ASTMethodCall methodCall, SaltMarcherSourceFacts sourceFacts) {
         ASTExpression qualifier = methodCall.getQualifier();
-        return qualifier == null ? null : normalizedNodeText(qualifier, sourceFacts);
+        return qualifier == null ? null : JavaSourceTextSupport.normalizedNodeText(qualifier, sourceFacts);
     }
 
-    private static String normalizedNodeText(Node node, SaltMarcherSourceFacts sourceFacts) {
-        TextRegion region = node.getTextRegion();
-        String rawText = sourceFacts.text().substring(region.getStartOffset(), region.getEndOffset());
-        return stripCommentsAndStrings(rawText).replaceAll("\\s+", " ").trim();
+    private static boolean isSimpleLiteralLike(ASTExpression expression) {
+        return expression instanceof ASTLiteral
+                || expression instanceof ASTBooleanLiteral
+                || expression instanceof ASTNumericLiteral
+                || expression instanceof ASTStringLiteral
+                || expression instanceof ASTCharLiteral
+                || expression instanceof ASTNullLiteral
+                || expression instanceof ASTClassLiteral
+                || expression instanceof ASTTypeExpression;
     }
 
-    private static String stripCommentsAndStrings(String text) {
-        StringBuilder result = new StringBuilder(text.length());
-        boolean inLineComment = false;
-        boolean inBlockComment = false;
-        boolean inString = false;
-        boolean inChar = false;
-        boolean escaped = false;
-        for (int index = 0; index < text.length(); index++) {
-            char current = text.charAt(index);
-            char next = index + 1 < text.length() ? text.charAt(index + 1) : '\0';
-            if (inLineComment) {
-                if (current == '\n' || current == '\r') {
-                    inLineComment = false;
-                    result.append(current);
-                } else {
-                    result.append(' ');
-                }
-                continue;
-            }
-            if (inBlockComment) {
-                if (current == '*' && next == '/') {
-                    inBlockComment = false;
-                    result.append("  ");
-                    index++;
-                } else {
-                    result.append(current == '\n' || current == '\r' ? current : ' ');
-                }
-                continue;
-            }
-            if (escaped) {
-                escaped = false;
-                result.append(' ');
-                continue;
-            }
-            if (current == '\\' && (inString || inChar)) {
-                escaped = true;
-                result.append(' ');
-                continue;
-            }
-            if (inString) {
-                if (current == '"') {
-                    inString = false;
-                }
-                result.append(current == '\n' || current == '\r' ? current : ' ');
-                continue;
-            }
-            if (inChar) {
-                if (current == '\'') {
-                    inChar = false;
-                }
-                result.append(current == '\n' || current == '\r' ? current : ' ');
-                continue;
-            }
-            if (current == '/' && next == '/') {
-                inLineComment = true;
-                result.append("  ");
-                index++;
-                continue;
-            }
-            if (current == '/' && next == '*') {
-                inBlockComment = true;
-                result.append("  ");
-                index++;
-                continue;
-            }
-            if (current == '"') {
-                inString = true;
-                result.append(' ');
-                continue;
-            }
-            if (current == '\'') {
-                inChar = true;
-                result.append(' ');
-                continue;
-            }
-            result.append(current);
+    private static boolean isSimpleNullCheck(ASTExpression expression) {
+        if (!(expression instanceof ASTInfixExpression infixExpression) || infixExpression.getOperator() != BinaryOp.EQ) {
+            return false;
         }
-        return result.toString();
+        List<ASTExpression> operands = infixExpression.children(ASTExpression.class).toList();
+        if (operands.size() != 2) {
+            return false;
+        }
+        ASTExpression left = operands.getFirst();
+        ASTExpression right = operands.get(1);
+        return (left instanceof ASTNullLiteral && isSimpleReferenceLike(right, null))
+                || (right instanceof ASTNullLiteral && isSimpleReferenceLike(left, null));
+    }
+
+    private static boolean containsInvocation(ASTExpression expression) {
+        if (expression instanceof ASTMethodCall || expression instanceof ASTConstructorCall) {
+            return true;
+        }
+        return expression.descendants(ASTMethodCall.class).first() != null
+                || expression.descendants(ASTConstructorCall.class).first() != null;
+    }
+
+    private static boolean looksLikeSimpleReferenceText(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        String normalized = text;
+        while (normalized.startsWith("(") && normalized.endsWith(")")) {
+            normalized = normalized.substring(1, normalized.length() - 1).trim();
+        }
+        return normalized.matches("(?:this\\.|super\\.)?[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*");
     }
 
     record Analysis(boolean ceremonial, String collaboratorTarget, List<String> trivialDescriptions) {

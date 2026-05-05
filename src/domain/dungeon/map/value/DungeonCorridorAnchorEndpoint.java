@@ -12,6 +12,7 @@ public record DungeonCorridorAnchorEndpoint(
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
+    @Override
     public boolean present() {
         return hostCorridorId > 0L;
     }

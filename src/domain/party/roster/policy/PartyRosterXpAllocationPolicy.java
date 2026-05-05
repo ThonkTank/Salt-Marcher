@@ -44,5 +44,13 @@ public final class PartyRosterXpAllocationPolicy {
             boolean updatedAny,
             boolean validRequest
     ) {
+        public Result {
+            characters = characters == null ? List.of() : List.copyOf(characters);
+        }
+
+        @Override
+        public List<PartyCharacter> characters() {
+            return characters == null ? List.of() : List.copyOf(characters);
+        }
     }
 }

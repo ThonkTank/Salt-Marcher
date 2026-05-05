@@ -13,4 +13,8 @@ public record DungeonCorridorAnchorRef(
     public boolean present() {
         return hostCorridorId > 0L && topologyRef.present();
     }
+
+    public boolean targets(DungeonCorridorAnchorBinding binding) {
+        return binding != null && present() && topologyRef.equals(binding.topologyRef());
+    }
 }

@@ -161,7 +161,6 @@ val architectureTest by tasks.registering(Test::class) {
 val pmdArchitectureMain by tasks.registering(Pmd::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Run SaltMarcher source-level architecture rules against production Java sources."
-    dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
 
     ignoreFailures = false
     ruleSets = listOf()

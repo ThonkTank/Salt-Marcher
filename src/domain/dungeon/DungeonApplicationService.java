@@ -131,20 +131,22 @@ public final class DungeonApplicationService {
                 inspectDungeonSelectionUseCase);
         ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase =
                 new ApplyDungeonEditorOperationUseCase(
-                        repository,
-                        search,
-                        derive,
+                        loadDungeonMapUseCase,
+                        repository::save,
+                        derive::execute,
                         assembleDungeonSnapshotUseCase,
                         publishDungeonEditorHandlesUseCase);
         SearchDungeonMapsUseCase searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(search);
-        CreateDungeonMapUseCase createDungeonMapUseCase = new CreateDungeonMapUseCase(repository);
-        RenameDungeonMapUseCase renameDungeonMapUseCase = new RenameDungeonMapUseCase(repository);
-        DeleteDungeonMapUseCase deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository);
+        CreateDungeonMapUseCase createDungeonMapUseCase =
+                new CreateDungeonMapUseCase(repository::nextMapId, repository::save);
+        RenameDungeonMapUseCase renameDungeonMapUseCase =
+                new RenameDungeonMapUseCase(repository::findById, repository::save);
+        DeleteDungeonMapUseCase deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository::delete);
         LoadMapSnapshotUseCase loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(loadDungeonMapUseCase, derive);
         LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase =
                 new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive);
         MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase =
-                new MoveDungeonTravelActionUseCase(repository, search, derive);
+                new MoveDungeonTravelActionUseCase(loadDungeonMapUseCase, repository::findById, derive::execute);
 
         this.loadSnapshotPath = loadDungeonSnapshotUseCase::execute;
         this.applyOperationPath = applyDungeonEditorOperationUseCase::execute;

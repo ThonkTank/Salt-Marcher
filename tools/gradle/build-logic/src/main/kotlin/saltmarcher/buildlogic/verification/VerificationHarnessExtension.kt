@@ -137,7 +137,6 @@ internal open class VerificationHarnessExtension(
         return project.tasks.register<Pmd>(taskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = taskDescription
-            dependsOn(project.gradle.includedBuild("quality-rules").task(":jar"))
 
             this.ignoreFailures = ignoreFailures
             isConsoleOutput = consoleOutput
