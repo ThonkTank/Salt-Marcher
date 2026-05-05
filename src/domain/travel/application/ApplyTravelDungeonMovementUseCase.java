@@ -16,8 +16,7 @@ final class ApplyTravelDungeonMovementUseCase {
         ApplyTravelDungeonSessionUseCase.MoveResultData result = runtimeAccess.moveDungeonAction(
                 effectivePosition,
                 actionId);
-        if (result.status() == ApplyTravelDungeonSessionUseCase.MoveStatus.EXTERNAL_TARGET
-                && result.externalTarget() != null) {
+        if (result.status().isExternalTarget() && result.externalTarget() != null) {
             boolean saved = runtimeAccess.saveOverworldPosition(
                     result.externalTarget(),
                     activeTravel.travelCharacterIds());
@@ -25,7 +24,7 @@ final class ApplyTravelDungeonMovementUseCase {
                     ? ApplyTravelDungeonSessionUseCase.outsideDungeonSurface(result.externalTarget().tileId())
                     : result.surface();
         }
-        if (result.status() == ApplyTravelDungeonSessionUseCase.MoveStatus.SUCCESS) {
+        if (result.status().isSuccess()) {
             runtimeAccess.saveDungeonPosition(result.surface().position(), activeTravel.travelCharacterIds());
         }
         return result.surface();
