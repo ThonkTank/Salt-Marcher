@@ -7,8 +7,8 @@ import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
 public record DungeonEditorSnapshot(
         List<DungeonEditorMapSummary> maps,
         @Nullable DungeonEditorMapId selectedMapId,
-        String viewModeKey,
-        String selectedTool,
+        DungeonEditorViewMode viewMode,
+        DungeonEditorTool selectedTool,
         int projectionLevel,
         DungeonEditorOverlaySettings overlaySettings,
         Selection selection,
@@ -20,8 +20,8 @@ public record DungeonEditorSnapshot(
 
     public DungeonEditorSnapshot {
         maps = maps == null ? List.of() : List.copyOf(maps);
-        viewModeKey = viewModeKey == null || viewModeKey.isBlank() ? "GRID" : viewModeKey;
-        selectedTool = selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
+        viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
+        selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
         overlaySettings = overlaySettings == null ? DungeonEditorOverlaySettings.defaults() : overlaySettings;
         selection = selection == null ? Selection.empty() : selection;
         preview = preview == null ? DungeonEditorPreview.none() : preview;
@@ -32,8 +32,8 @@ public record DungeonEditorSnapshot(
         return new DungeonEditorSnapshot(
                 List.of(),
                 null,
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 DungeonEditorOverlaySettings.defaults(),
                 Selection.empty(),

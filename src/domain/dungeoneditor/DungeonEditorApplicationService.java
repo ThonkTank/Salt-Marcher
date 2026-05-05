@@ -35,8 +35,11 @@ import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
 import src.domain.dungeoneditor.published.DungeonEditorPreview;
 import src.domain.dungeoneditor.published.DungeonEditorSurface;
 import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
+import src.domain.dungeoneditor.published.DungeonEditorTool;
 import src.domain.dungeoneditor.published.DungeonEditorTopologyElementRef;
+import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
+import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 
 public final class DungeonEditorApplicationService {
 
@@ -97,8 +100,8 @@ public final class DungeonEditorApplicationService {
                 ApplyDungeonEditorSessionCommand.Action.INTERPRET_MAIN_VIEW,
                 null,
                 "",
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 DungeonEditorOverlaySettings.defaults(),
                 ApplyDungeonEditorSessionCommand.MainViewInput.empty(),
@@ -108,8 +111,8 @@ public final class DungeonEditorApplicationService {
                 ApplyDungeonEditorSessionUseCase.Action.valueOf(effective.action().name()),
                 toDomainMapId(effective.mapId()),
                 effective.mapName(),
-                effective.viewModeKey(),
-                effective.selectedTool(),
+                toSessionViewMode(effective.viewMode()),
+                toSessionTool(effective.selectedTool()),
                 effective.projectionLevelDelta(),
                 toInternalOverlay(effective.overlaySettings()),
                 toInternalMainViewInput(effective.mainViewInput()),
@@ -167,8 +170,8 @@ public final class DungeonEditorApplicationService {
         return new DungeonEditorSnapshot(
                 safeSnapshot.maps().stream().map(DungeonEditorApplicationService::toPublishedMapSummary).toList(),
                 toPublishedMapId(safeSnapshot.selectedMapId()),
-                safeSnapshot.viewModeKey(),
-                safeSnapshot.selectedTool(),
+                toPublishedViewMode(safeSnapshot.viewMode()),
+                toPublishedTool(safeSnapshot.selectedTool()),
                 safeSnapshot.projectionLevel(),
                 toPublishedOverlay(safeSnapshot.overlaySettings()),
                 publishedSelection,
@@ -233,8 +236,36 @@ public final class DungeonEditorApplicationService {
                             stretch.deltaQ(),
                             stretch.deltaR(),
                             stretch.deltaLevel());
+            case ApplyDungeonEditorSessionUseCase.CorridorCreatePreviewData ignored -> DungeonEditorPreview.none();
+            case ApplyDungeonEditorSessionUseCase.CorridorDeletePreviewData ignored -> DungeonEditorPreview.none();
             case ApplyDungeonEditorSessionUseCase.NonePreviewData ignored -> DungeonEditorPreview.none();
         };
+    }
+
+    private static DungeonEditorSession.ViewMode toSessionViewMode(DungeonEditorViewMode viewMode) {
+        return viewMode == DungeonEditorViewMode.GRAPH
+                ? DungeonEditorSession.ViewMode.GRAPH
+                : DungeonEditorSession.ViewMode.GRID;
+    }
+
+    private static DungeonEditorSession.Tool toSessionTool(DungeonEditorTool tool) {
+        if (tool == null) {
+            return DungeonEditorSession.Tool.SELECT;
+        }
+        return DungeonEditorSession.Tool.valueOf(tool.name());
+    }
+
+    private static DungeonEditorViewMode toPublishedViewMode(DungeonEditorSession.ViewMode viewMode) {
+        return viewMode == DungeonEditorSession.ViewMode.GRAPH
+                ? DungeonEditorViewMode.GRAPH
+                : DungeonEditorViewMode.GRID;
+    }
+
+    private static DungeonEditorTool toPublishedTool(DungeonEditorSession.Tool tool) {
+        if (tool == null) {
+            return DungeonEditorTool.SELECT;
+        }
+        return DungeonEditorTool.valueOf(tool.name());
     }
 
     private static @Nullable DungeonMapId toDomainMapId(@Nullable DungeonEditorMapId mapId) {

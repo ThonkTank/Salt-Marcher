@@ -14,6 +14,8 @@ import src.domain.dungeoneditor.published.DungeonEditorInspectorSnapshot;
 import src.domain.dungeoneditor.published.DungeonEditorMapId;
 import src.domain.dungeoneditor.published.DungeonEditorModel;
 import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
+import src.domain.dungeoneditor.published.DungeonEditorTool;
+import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 import src.domain.dungeoneditor.published.LoadDungeonEditorQuery;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 
@@ -62,8 +64,8 @@ final class DungeonEditorBinder {
                     ApplyDungeonEditorSessionCommand.Action.INTERPRET_MAIN_VIEW,
                     null,
                     "",
-                    "GRID",
-                    "Auswahl",
+                    DungeonEditorViewMode.GRID,
+                    DungeonEditorTool.SELECT,
                     0,
                     DungeonEditorOverlaySettings.defaults(),
                     ApplyDungeonEditorSessionCommand.MainViewInput.empty(),
@@ -74,7 +76,7 @@ final class DungeonEditorBinder {
                 ApplyDungeonEditorSessionCommand.Action.valueOf(safeEvent.kind().name()),
                 toMapId(safeEvent.mapId()),
                 safeEvent.mapName(),
-                safeEvent.viewModeKey(),
+                safeEvent.viewMode(),
                 safeEvent.selectedTool(),
                 safeEvent.projectionLevelDelta(),
                 toOverlaySettings(safeEvent.overlaySettings()),

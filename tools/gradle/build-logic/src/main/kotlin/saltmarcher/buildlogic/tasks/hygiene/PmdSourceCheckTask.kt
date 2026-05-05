@@ -5,7 +5,6 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Classpath
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputFile
@@ -33,9 +32,9 @@ abstract class PmdSourceCheckTask : DefaultTask() {
     @get:Classpath
     abstract val auxClasspath: ConfigurableFileCollection
 
-    @get:InputFile
+    @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val rulesetFile: RegularFileProperty
+    abstract val rulesetFiles: ConfigurableFileCollection
 
     @get:OutputFile
     abstract val reportFile: RegularFileProperty
@@ -51,35 +50,48 @@ abstract class PmdSourceCheckTask : DefaultTask() {
         val reportPath = reportFile.get().asFile.toPath()
         val outputBuffer = ByteArrayOutputStream()
         val projectRootPath = projectRoot.get().asFile.toPath()
-        val sourceDirs = sourceRoots.files
+        val configuredSourceDirs = sourceRoots.files
+            .map { file -> projectRootPath.relativize(file.toPath()).toString().replace('\\', '/') }
+            .sorted()
+        val sourceDirs = configuredSourceDirs.ifEmpty {
+            listOf("bootstrap", "shell", "src")
+                .filter { relativePath -> Files.exists(projectRootPath.resolve(relativePath)) }
+        }
+        val rulesetPaths = rulesetFiles.files
             .map { file -> projectRootPath.relativize(file.toPath()).toString().replace('\\', '/') }
             .sorted()
 
         Files.createDirectories(reportPath.parent)
+        Files.writeString(reportPath, "")
+        val commandArgs = mutableListOf(
+            "check",
+            "-R",
+            rulesetPaths.joinToString(","),
+            "-f",
+            "text",
+            "-r",
+            reportPath.toString(),
+            "--fail-on-error",
+            "--fail-on-violation"
+        )
+        if (sourceDirs.isNotEmpty()) {
+            commandArgs.addAll(sourceDirs)
+        }
+        logger.lifecycle("pmdStrict args: {}", commandArgs.joinToString(" "))
 
         val execResult = execOperations.javaexec {
             workingDir = projectRoot.get().asFile
             classpath = toolClasspath
             mainClass.set("net.sourceforge.pmd.cli.PmdCli")
-            args(
-                "check",
-                "--rulesets",
-                projectRootPath.relativize(rulesetFile.get().asFile.toPath()).toString().replace('\\', '/'),
-                "--format",
-                "text",
-                "--report-file",
-                reportPath.toString(),
-                "--fail-on-error",
-                "--fail-on-violation"
-            )
+            args(commandArgs)
             val auxClasspathText = auxClasspath.files
                 .distinct()
                 .joinToString(File.pathSeparator)
             if (auxClasspathText.isNotBlank()) {
                 args("--aux-classpath", auxClasspathText)
             }
-            sourceDirs.forEach { dir ->
-                args("--dir", dir)
+            if (sourceDirs.isNotEmpty()) {
+                args(*sourceDirs.toTypedArray())
             }
             isIgnoreExitValue = true
             standardOutput = outputBuffer

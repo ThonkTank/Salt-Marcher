@@ -48,7 +48,13 @@ final class ShellNavigationGraphicLoader {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
         factory.setExpandEntityReferences(false);
+        factory.setXIncludeAware(false);
         return factory;
     }
 
@@ -56,9 +62,7 @@ final class ShellNavigationGraphicLoader {
         Element root = document.getDocumentElement();
         StackPane pane = new StackPane();
         applyStyleClasses(pane, root.getAttribute("class"));
-        if (!pane.getStyleClass().contains("nav-icon")) {
-            pane.getStyleClass().add("nav-icon");
-        }
+        ShellFx.addStyleClass(pane, "nav-icon");
         pane.setMinSize(DEFAULT_SIZE, DEFAULT_SIZE);
         pane.setPrefSize(DEFAULT_SIZE, DEFAULT_SIZE);
         pane.setMaxSize(DEFAULT_SIZE, DEFAULT_SIZE);
@@ -79,7 +83,7 @@ final class ShellNavigationGraphicLoader {
             return;
         }
         applyStyleClasses(graphic, element.getAttribute("class"));
-        pane.getChildren().add(graphic);
+        ShellFx.addChild(pane, graphic);
     }
 
     private static @Nullable Node createNode(Element element) {
@@ -97,7 +101,7 @@ final class ShellNavigationGraphicLoader {
                 doubleAttribute(element, "y1"),
                 doubleAttribute(element, "x2"),
                 doubleAttribute(element, "y2"));
-        line.getStyleClass().add("nav-icon-stroke");
+        ShellFx.addStyleClass(line, "nav-icon-stroke");
         return line;
     }
 
@@ -107,14 +111,14 @@ final class ShellNavigationGraphicLoader {
                 doubleAttribute(element, "y"),
                 doubleAttribute(element, "width"),
                 doubleAttribute(element, "height"));
-        rectangle.getStyleClass().add("nav-icon-fill");
+        ShellFx.addStyleClass(rectangle, "nav-icon-fill");
         return rectangle;
     }
 
     private static SVGPath createPath(Element element) {
         SVGPath path = new SVGPath();
         path.setContent(element.getAttribute("d"));
-        path.getStyleClass().add("nav-icon-fill");
+        ShellFx.addStyleClass(path, "nav-icon-fill");
         return path;
     }
 
@@ -132,10 +136,6 @@ final class ShellNavigationGraphicLoader {
         }
         Arrays.stream(classAttribute.trim().split("\\s+"))
                 .filter(styleClass -> !styleClass.isBlank())
-                .forEach(styleClass -> {
-                    if (!node.getStyleClass().contains(styleClass)) {
-                        node.getStyleClass().add(styleClass);
-                    }
-                });
+                .forEach(styleClass -> ShellFx.addStyleClass(node, styleClass));
     }
 }

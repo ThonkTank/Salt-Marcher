@@ -52,7 +52,7 @@ final class DungeonEditorIntentHandler {
             return;
         }
         if (event.viewModeChanged()) {
-            publish(DungeonEditorPublishedEvent.setViewMode(event.viewModeKey()));
+            publish(DungeonEditorPublishedEvent.setViewMode(event.viewMode()));
             return;
         }
         if (event.toolChanged()) {

@@ -8,6 +8,8 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeoneditor.published.DungeonEditorMapProjectionSnapshot;
 import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
 import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
+import src.domain.dungeoneditor.published.DungeonEditorTool;
+import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 import src.domain.travel.published.TravelDungeonMapProjectionSnapshot;
 import src.domain.travel.published.TravelDungeonSnapshot;
 import src.domain.travel.published.TravelOverlaySettings;
@@ -71,10 +73,10 @@ public final class DungeonMapContentModel {
                 ? DungeonEditorSnapshot.empty("")
                 : editorSnapshot;
         projection = toProjection(safeSnapshot.mapProjection());
-        viewMode = toViewMode(safeSnapshot.viewModeKey());
+        viewMode = toViewMode(safeSnapshot.viewMode());
         overlaySettings = toOverlaySettings(safeSnapshot.overlaySettings());
         projectionLevel = safeSnapshot.projectionLevel();
-        selectedTool = normalizeTool(safeSnapshot.selectedTool());
+        selectedTool = toolLabel(safeSnapshot.selectedTool());
         rebuildRenderState();
     }
 
@@ -691,10 +693,28 @@ public final class DungeonMapContentModel {
         };
     }
 
-    private static RenderState.ViewMode toViewMode(String viewModeKey) {
-        return "GRAPH".equalsIgnoreCase(viewModeKey)
+    private static RenderState.ViewMode toViewMode(DungeonEditorViewMode viewModeKey) {
+        return viewModeKey == DungeonEditorViewMode.GRAPH
                 ? RenderState.ViewMode.GRAPH
                 : RenderState.ViewMode.GRID;
+    }
+
+    private static String toolLabel(DungeonEditorTool selectedTool) {
+        return switch (selectedTool == null ? DungeonEditorTool.SELECT : selectedTool) {
+            case ROOM_PAINT -> "Raum malen";
+            case ROOM_DELETE -> "Raum löschen";
+            case WALL_CREATE -> "Wand setzen";
+            case WALL_DELETE -> "Wand löschen";
+            case DOOR_CREATE -> "Tür setzen";
+            case DOOR_DELETE -> "Tür löschen";
+            case CORRIDOR_CREATE -> "Korridor erstellen";
+            case CORRIDOR_DELETE -> "Korridor löschen";
+            case STAIR_CREATE -> "Treppe erstellen";
+            case STAIR_DELETE -> "Treppe löschen";
+            case TRANSITION_CREATE -> "Übergang erstellen";
+            case TRANSITION_DELETE -> "Übergang löschen";
+            case SELECT -> "Auswahl";
+        };
     }
 
     private static String normalizeTool(String selectedTool) {
@@ -1235,6 +1255,10 @@ public final class DungeonMapContentModel {
             @Override
             public List<Integer> selectedLevels() {
                 return immutableList(selectedLevels);
+            }
+
+            public boolean selectsLevel(int level) {
+                return selectedLevels().contains(level);
             }
 
             public static LevelOverlaySettings defaults() {

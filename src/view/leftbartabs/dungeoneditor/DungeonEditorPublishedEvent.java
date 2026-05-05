@@ -1,13 +1,15 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
+import src.domain.dungeoneditor.published.DungeonEditorTool;
+import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 
 public record DungeonEditorPublishedEvent(
         Kind kind,
         long mapId,
         String mapName,
-        String viewModeKey,
-        String selectedTool,
+        DungeonEditorViewMode viewMode,
+        DungeonEditorTool selectedTool,
         int projectionLevelDelta,
         OverlaySettings overlaySettings,
         MainViewInput mainViewInput,
@@ -18,8 +20,8 @@ public record DungeonEditorPublishedEvent(
         kind = kind == null ? Kind.INTERPRET_MAIN_VIEW : kind;
         mapId = Math.max(0L, mapId);
         mapName = mapName == null ? "" : mapName;
-        viewModeKey = viewModeKey == null || viewModeKey.isBlank() ? "GRID" : viewModeKey;
-        selectedTool = selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
+        viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
+        selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
         overlaySettings = overlaySettings == null ? OverlaySettings.defaults() : overlaySettings;
         mainViewInput = mainViewInput == null ? MainViewInput.empty() : mainViewInput;
         roomNarration = roomNarration == null ? RoomNarrationInput.empty() : roomNarration;
@@ -30,8 +32,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.SELECT_MAP,
                 mapId,
                 "",
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -43,8 +45,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.CREATE_MAP,
                 0L,
                 mapName,
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -56,8 +58,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.RENAME_MAP,
                 mapId,
                 mapName,
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -69,33 +71,33 @@ public record DungeonEditorPublishedEvent(
                 Kind.DELETE_MAP,
                 mapId,
                 "",
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
                 RoomNarrationInput.empty());
     }
 
-    static DungeonEditorPublishedEvent setViewMode(String viewModeKey) {
+    static DungeonEditorPublishedEvent setViewMode(DungeonEditorViewMode viewMode) {
         return new DungeonEditorPublishedEvent(
                 Kind.SET_VIEW_MODE,
                 0L,
                 "",
-                viewModeKey,
-                "Auswahl",
+                viewMode,
+                DungeonEditorTool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
                 RoomNarrationInput.empty());
     }
 
-    static DungeonEditorPublishedEvent setTool(String selectedTool) {
+    static DungeonEditorPublishedEvent setTool(DungeonEditorTool selectedTool) {
         return new DungeonEditorPublishedEvent(
                 Kind.SET_TOOL,
                 0L,
                 "",
-                "GRID",
+                DungeonEditorViewMode.GRID,
                 selectedTool,
                 0,
                 OverlaySettings.defaults(),
@@ -108,8 +110,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.SHIFT_PROJECTION_LEVEL,
                 0L,
                 "",
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 delta,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -121,8 +123,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.SET_OVERLAY,
                 0L,
                 "",
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 overlaySettings,
                 MainViewInput.empty(),
@@ -134,8 +136,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.INTERPRET_MAIN_VIEW,
                 0L,
                 "",
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 mainViewInput,
@@ -147,8 +149,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.SAVE_ROOM_NARRATION,
                 0L,
                 "",
-                "GRID",
-                "Auswahl",
+                DungeonEditorViewMode.GRID,
+                DungeonEditorTool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),

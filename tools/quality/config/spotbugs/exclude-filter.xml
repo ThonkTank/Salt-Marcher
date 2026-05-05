@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <Class name="src.data.creatures.model.CreatureCatalogSearchCriteriaRecord"/>
+        <Method name="alignments"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <Class name="src.data.creatures.model.CreatureCatalogSearchCriteriaRecord"/>
+        <Method name="biomes"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <Class name="src.data.creatures.model.CreatureCatalogSearchCriteriaRecord"/>
+        <Method name="sizes"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <Class name="src.data.creatures.model.CreatureCatalogSearchCriteriaRecord"/>
+        <Method name="subtypes"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <Class name="src.data.creatures.model.CreatureCatalogSearchCriteriaRecord"/>
+        <Method name="types"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogFilterValuesSqliteStore"/>
+        <Method name="loadDistinctAlignments"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogFilterValuesSqliteStore"/>
+        <Method name="loadDistinctBiomes"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogFilterValuesSqliteStore"/>
+        <Method name="loadDistinctSizes"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogFilterValuesSqliteStore"/>
+        <Method name="loadDistinctSubtypes"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogFilterValuesSqliteStore"/>
+        <Method name="loadDistinctTypes"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogSearchSqliteStore$CatalogSearchStatement"/>
+        <Method name="name"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogSearchSqliteStore$CatalogSearchStatement"/>
+        <Method name="size"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogSearchSqliteStore$CatalogSearchStatement"/>
+        <Method name="type"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureCatalogSearchSqliteStore$CatalogSearchStatement"/>
+        <Method name="xp"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureDetailSqliteStore"/>
+        <Method name="loadActions"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureDetailSqliteStore"/>
+        <Method name="loadCreatureDetail"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureDetailStringValuesSqliteStore"/>
+        <Method name="loadBiomes"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.CreatureDetailStringValuesSqliteStore"/>
+        <Method name="loadSubtypes"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.creatures.gateway.local.EncounterCandidateSqliteStore"/>
+        <Method name="loadEncounterCandidates"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.dungeon.gateway.local.DungeonSqliteSchemaManager"/>
+        <Method name="backfillLegacyRoomClusterCenters"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.dungeon.gateway.local.DungeonSqliteSchemaManager"/>
+        <Method name="ensureSchema"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.dungeon.gateway.local.DungeonSqliteSchemaManager"/>
+        <Method name="removeObsoleteSeedMaps"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encounter.gateway.local.EncounterPlanSqliteStore"/>
+        <Method name="exists"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encounter.gateway.local.EncounterPlanSqliteStore"/>
+        <Method name="insertPlan"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encounter.gateway.local.EncounterPlanSqliteStore"/>
+        <Method name="listPlans"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encounter.gateway.local.EncounterPlanSqliteStore"/>
+        <Method name="loadCreatures"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encounter.gateway.local.EncounterPlanSqliteStore"/>
+        <Method name="loadPlan"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encounter.gateway.local.EncounterPlanSqliteStore"/>
+        <Method name="replaceCreatures"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encounter.gateway.local.EncounterPlanSqliteStore"/>
+        <Method name="updatePlan"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encounter.gateway.local.EncounterSchemaMigrator"/>
+        <Method name="ensureSchema"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encountertable.gateway.local.EncounterTableSchemaMigrator"/>
+        <Method name="ensureSchema"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.encountertable.gateway.local.EncounterTableSqliteStore"/>
+        <Method name="loadSummaries"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterBackfillMigrator"/>
+        <Method name="backfillShortRestCadence"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterBackfillMigrator"/>
+        <Method name="normalizeExistingXp"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterBackfillMigrator"/>
+        <Method name="updateCurrentXp"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterBackfillMigrator"/>
+        <Method name="updateShortRestCadence"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterCharacterSqliteStore"/>
+        <Method name="deleteMissingCharacters"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterCharacterSqliteStore"/>
+        <Method name="loadCharacters"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterCharacterSqliteStore"/>
+        <Method name="upsertCharacters"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterMetadataInitializer"/>
+        <Method name="initializeNextCharacterId"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterMetadataInitializer"/>
+        <Method name="queryMaxCharacterId"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterMetadataSqliteStore"/>
+        <Method name="loadNextCharacterId"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterMetadataSqliteStore"/>
+        <Method name="queryMaxCharacterId"/>
+    </Match>
+    <Match>
+        <Bug pattern="SQL_INJECTION_JDBC"/>
+        <Class name="src.data.party.gateway.local.PartyRosterMetadataSqliteStore"/>
+        <Method name="saveNextCharacterId"/>
+    </Match>
+</FindBugsFilter>

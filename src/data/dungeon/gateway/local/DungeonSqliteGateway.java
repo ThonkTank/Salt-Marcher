@@ -26,6 +26,16 @@ import java.util.Set;
 
 public final class DungeonSqliteGateway {
 
+    private static final String FROM = " FROM ";
+    private static final String INSERT_INTO = "INSERT INTO ";
+    private static final String DELETE_FROM = "DELETE FROM ";
+    private static final String WHERE_DUNGEON_MAP_ID = " WHERE dungeon_map_id=?";
+    private static final String WHERE_DUNGEON_MAP_ID_SUBQUERY = " WHERE dungeon_map_id=?)";
+    private static final String COLUMN_DUNGEON_MAP_ID = "dungeon_map_id";
+    private static final String COLUMN_ROOM_ID = "room_id";
+    private static final String COLUMN_CLUSTER_ID = "cluster_id";
+    private static final String COLUMN_LEVEL_Z = "level_z";
+
     private final DungeonSqliteConnectionFactory connectionFactory;
     private final DungeonSqliteSchemaManager schemaManager;
 
@@ -98,6 +108,21 @@ public final class DungeonSqliteGateway {
         }
     }
 
+    private Optional<DungeonMapRecord> findMap(Connection connection, long mapId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT dungeon_map_id, name FROM "
+                        + DungeonPersistenceSchema.MAPS_TABLE
+                        + WHERE_DUNGEON_MAP_ID)) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return Optional.of(toRecord(connection, resultSet));
+                }
+                return Optional.empty();
+            }
+        }
+    }
+
     public DungeonMapRecord saveMap(DungeonMapRecord record) {
         if (record == null) {
             throw new IllegalArgumentException("record must not be null");
@@ -111,10 +136,10 @@ public final class DungeonSqliteGateway {
                 DungeonSqliteConnectionPersistence.persist(connection, record);
                 DungeonSqliteTopologyElementGateway.persist(connection, record);
                 connection.commit();
-                return findMap(record.mapId()).orElse(record);
+                return findMap(connection, record.mapId()).orElse(record);
             } catch (SQLException exception) {
-                connection.rollback();
-                throw exception;
+                rollbackQuietly(connection);
+                throw new IllegalStateException("Failed to save dungeon map to SQLite.", exception);
             } finally {
                 connection.setAutoCommit(previousAutoCommit);
             }
@@ -126,7 +151,7 @@ public final class DungeonSqliteGateway {
     public void deleteMap(long mapId) {
         try (Connection connection = openReadyConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "DELETE FROM " + DungeonPersistenceSchema.MAPS_TABLE + " WHERE dungeon_map_id=?")) {
+                     DELETE_FROM + DungeonPersistenceSchema.MAPS_TABLE + WHERE_DUNGEON_MAP_ID)) {
             statement.setLong(1, mapId);
             statement.executeUpdate();
         } catch (SQLException exception) {
@@ -137,13 +162,14 @@ public final class DungeonSqliteGateway {
     public long nextMapId() {
         try (Connection connection = openReadyConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO " + DungeonPersistenceSchema.MAPS_TABLE + "(name) VALUES(?)",
+                     INSERT_INTO + DungeonPersistenceSchema.MAPS_TABLE + "(name) VALUES(?)",
                      Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, "Dungeon Map");
             statement.executeUpdate();
             try (ResultSet resultSet = statement.getGeneratedKeys()) {
                 if (!resultSet.next()) {
-                    throw new SQLException("No key returned for " + DungeonPersistenceSchema.MAPS_TABLE + " insert");
+                    throw new IllegalStateException(
+                            "No key returned for " + DungeonPersistenceSchema.MAPS_TABLE + " insert");
                 }
                 long mapId = resultSet.getLong(1);
                 deleteMap(connection, mapId);
@@ -166,7 +192,7 @@ public final class DungeonSqliteGateway {
     }
 
     private DungeonMapRecord toRecord(Connection connection, ResultSet resultSet) throws SQLException {
-        long mapId = resultSet.getLong("dungeon_map_id");
+        long mapId = resultSet.getLong(COLUMN_DUNGEON_MAP_ID);
         return new DungeonMapRecord(
                 mapId,
                 resultSet.getString("name"),
@@ -235,20 +261,8 @@ public final class DungeonSqliteGateway {
             replaceRoomFloors(connection, room);
             replaceRoomExitDescriptions(connection, room);
         }
-        DungeonSqliteStatementSupport.deleteRowsNotIn(
-                connection,
-                DungeonPersistenceSchema.ROOMS_TABLE,
-                "room_id",
-                "dungeon_map_id",
-                record.mapId(),
-                roomIds);
-        DungeonSqliteStatementSupport.deleteRowsNotIn(
-                connection,
-                DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE,
-                "cluster_id",
-                "dungeon_map_id",
-                record.mapId(),
-                clusterIds);
+        DungeonSqliteStatementSupport.deleteObsoleteRooms(connection, record.mapId(), roomIds);
+        DungeonSqliteStatementSupport.deleteObsoleteRoomClusters(connection, record.mapId(), clusterIds);
     }
 
     private static void upsertRoomCluster(Connection connection, DungeonRoomClusterRecord cluster) throws SQLException {
@@ -393,7 +407,8 @@ public final class DungeonSqliteGateway {
                 insert.setInt(3, exitDescription.cellY());
                 insert.setString(4, exitDescription.edgeDirection());
                 insert.setString(5, exitDescription.description());
-                insert.setInt(6, sortOrder++);
+                insert.setInt(6, sortOrder);
+                sortOrder++;
                 insert.addBatch();
             }
             insert.executeBatch();
@@ -574,9 +589,17 @@ public final class DungeonSqliteGateway {
 
     private static void deleteMap(Connection connection, long mapId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "DELETE FROM " + DungeonPersistenceSchema.MAPS_TABLE + " WHERE dungeon_map_id=?")) {
+                DELETE_FROM + DungeonPersistenceSchema.MAPS_TABLE + WHERE_DUNGEON_MAP_ID)) {
             statement.setLong(1, mapId);
             statement.executeUpdate();
+        }
+    }
+
+    private static void rollbackQuietly(Connection connection) {
+        try {
+            connection.rollback();
+        } catch (SQLException ignored) {
+            // Preserve the original storage failure that triggered the rollback.
         }
     }
 

@@ -71,12 +71,13 @@ public final class DungeonMapRecordMapper {
     }
 
     public static DungeonMapRecord toRecord(DungeonMap dungeonMap) {
-        SpatialTopology topology = dungeonMap == null ? SpatialTopology.empty() : dungeonMap.topology();
-        long mapId = dungeonMap == null ? 1L : dungeonMap.metadata().mapId().value();
+        SpatialTopology topology = resolvedTopology(dungeonMap);
+        long mapId = resolvedMapId(dungeonMap);
+        ConnectionCatalog connections = resolvedConnections(dungeonMap);
         return new DungeonMapRecord(
                 mapId,
-                dungeonMap == null ? "Dungeon Map" : dungeonMap.metadata().mapName(),
-                dungeonMap == null ? 1L : dungeonMap.revision(),
+                resolvedMapName(dungeonMap),
+                resolvedRevision(dungeonMap),
                 new DungeonGridBoundsRecord(
                         topology.width(),
                         topology.height(),
@@ -84,18 +85,10 @@ public final class DungeonMapRecordMapper {
                         topology.roomAnchorR()),
                 toClusterRecords(topology.roomClusters()),
                 toRoomRecords(dungeonMap == null ? List.of() : dungeonMap.rooms().rooms()),
-                toTopologyElementRecords(mapId, dungeonMap == null
-                        ? DungeonMapTopology.from(topology, RoomCatalog.empty(), ConnectionCatalog.empty())
-                        : dungeonMap.topologyIndex()),
-                DungeonConnectionRecordMapper.toCorridorRecords(dungeonMap == null
-                        ? ConnectionCatalog.empty()
-                        : dungeonMap.connections()),
-                DungeonConnectionRecordMapper.toStairRecords(dungeonMap == null
-                        ? ConnectionCatalog.empty()
-                        : dungeonMap.connections()),
-                DungeonConnectionRecordMapper.toTransitionRecords(dungeonMap == null
-                        ? ConnectionCatalog.empty()
-                        : dungeonMap.connections()));
+                toTopologyElementRecords(mapId, resolvedTopologyIndex(dungeonMap, topology, connections)),
+                DungeonConnectionRecordMapper.toCorridorRecords(connections),
+                DungeonConnectionRecordMapper.toStairRecords(connections),
+                DungeonConnectionRecordMapper.toTransitionRecords(connections));
     }
 
     private static List<DungeonRoomCluster> toClusters(List<DungeonRoomClusterRecord> records) {
@@ -182,9 +175,10 @@ public final class DungeonMapRecordMapper {
                 result.add(new DungeonRoomClusterVertexRecord(
                         clusterId,
                         entry.getKey(),
-                        index++,
+                        index,
                         vertex.q(),
                         vertex.r()));
+                index++;
             }
         }
         return List.copyOf(result);
@@ -249,9 +243,41 @@ public final class DungeonMapRecordMapper {
                     binding.clusterId() <= 0L ? null : binding.clusterId(),
                     binding.corridorId() <= 0L ? null : binding.corridorId(),
                     binding.label(),
-                    sortOrder++));
+                    sortOrder));
+            sortOrder++;
         }
         return List.copyOf(result);
+    }
+
+    private static SpatialTopology resolvedTopology(@Nullable DungeonMap dungeonMap) {
+        return dungeonMap == null ? SpatialTopology.empty() : dungeonMap.topology();
+    }
+
+    private static long resolvedMapId(@Nullable DungeonMap dungeonMap) {
+        return dungeonMap == null ? 1L : dungeonMap.metadata().mapId().value();
+    }
+
+    private static String resolvedMapName(@Nullable DungeonMap dungeonMap) {
+        return dungeonMap == null ? "Dungeon Map" : dungeonMap.metadata().mapName();
+    }
+
+    private static long resolvedRevision(@Nullable DungeonMap dungeonMap) {
+        return dungeonMap == null ? 1L : dungeonMap.revision();
+    }
+
+    private static ConnectionCatalog resolvedConnections(@Nullable DungeonMap dungeonMap) {
+        return dungeonMap == null ? ConnectionCatalog.empty() : dungeonMap.connections();
+    }
+
+    private static DungeonMapTopology resolvedTopologyIndex(
+            @Nullable DungeonMap dungeonMap,
+            SpatialTopology topology,
+            ConnectionCatalog connections
+    ) {
+        if (dungeonMap == null) {
+            return DungeonMapTopology.from(topology, RoomCatalog.empty(), connections);
+        }
+        return dungeonMap.topologyIndex();
     }
 
     private static DungeonTopologyRef topologyRef(String edgeType, @Nullable Long topologyElementId) {

@@ -1,5 +1,8 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import src.domain.dungeoneditor.published.DungeonEditorTool;
+import src.domain.dungeoneditor.published.DungeonEditorViewMode;
+
 public record DungeonEditorControlsViewInputEvent(
         boolean mapSelectionChanged,
         boolean createMapRequested,
@@ -8,9 +11,9 @@ public record DungeonEditorControlsViewInputEvent(
         long mapIdValue,
         String mapName,
         boolean viewModeChanged,
-        String viewModeKey,
+        DungeonEditorViewMode viewMode,
         boolean toolChanged,
-        String tool,
+        DungeonEditorTool tool,
         int projectionLevelShift,
         boolean overlayChanged,
         String overlayModeKey,
@@ -22,8 +25,8 @@ public record DungeonEditorControlsViewInputEvent(
     public DungeonEditorControlsViewInputEvent {
         mapIdValue = Math.max(0L, mapIdValue);
         mapName = mapName == null ? "" : mapName.strip();
-        viewModeKey = viewModeKey == null ? "" : viewModeKey;
-        tool = tool == null ? "" : tool;
+        viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
+        tool = tool == null ? DungeonEditorTool.SELECT : tool;
         overlayModeKey = overlayModeKey == null ? "" : overlayModeKey;
         overlayLevelsText = overlayLevelsText == null ? "" : overlayLevelsText.strip();
     }

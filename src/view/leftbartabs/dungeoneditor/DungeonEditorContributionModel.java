@@ -22,6 +22,8 @@ import src.domain.dungeoneditor.published.DungeonEditorOverlaySettings;
 import src.domain.dungeoneditor.published.DungeonEditorPreview;
 import src.domain.dungeoneditor.published.DungeonEditorSnapshot;
 import src.domain.dungeoneditor.published.DungeonEditorSurface;
+import src.domain.dungeoneditor.published.DungeonEditorTool;
+import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 
 public final class DungeonEditorContributionModel {
 
@@ -126,9 +128,9 @@ public final class DungeonEditorContributionModel {
         currentPreview = safeSnapshot.preview() == null
                 ? DungeonEditorPreview.none()
                 : safeSnapshot.preview();
-        currentViewModeKey = normalizeViewModeKey(safeSnapshot.viewModeKey());
-        viewModeLabel.set("GRAPH".equals(currentViewModeKey) ? "Graph" : "Grid");
-        selectedTool.set(normalizeTool(safeSnapshot.selectedTool()));
+        currentViewModeKey = normalizeViewModeKey(safeSnapshot.viewMode());
+        viewModeLabel.set(safeSnapshot.viewMode() == DungeonEditorViewMode.GRAPH ? "Graph" : "Grid");
+        selectedTool.set(toolLabel(safeSnapshot.selectedTool()));
         overlayProjection.set(toOverlayProjection(safeSnapshot.overlaySettings()));
         projectionLevel.set(safeSnapshot.projectionLevel());
         narrationCards.set(toNarrationCards(currentInspector));
@@ -252,12 +254,26 @@ public final class DungeonEditorContributionModel {
         return mapId == null ? "" : Long.toString(mapId.value());
     }
 
-    private static String normalizeTool(String selectedTool) {
-        return selectedTool == null || selectedTool.isBlank() ? DEFAULT_TOOL : selectedTool;
+    private static String toolLabel(DungeonEditorTool selectedTool) {
+        return switch (selectedTool == null ? DungeonEditorTool.SELECT : selectedTool) {
+            case ROOM_PAINT -> "Raum malen";
+            case ROOM_DELETE -> "Raum löschen";
+            case WALL_CREATE -> "Wand setzen";
+            case WALL_DELETE -> "Wand löschen";
+            case DOOR_CREATE -> "Tür setzen";
+            case DOOR_DELETE -> "Tür löschen";
+            case CORRIDOR_CREATE -> "Korridor erstellen";
+            case CORRIDOR_DELETE -> "Korridor löschen";
+            case STAIR_CREATE -> "Treppe erstellen";
+            case STAIR_DELETE -> "Treppe löschen";
+            case TRANSITION_CREATE -> "Übergang erstellen";
+            case TRANSITION_DELETE -> "Übergang löschen";
+            case SELECT -> DEFAULT_TOOL;
+        };
     }
 
-    private static String normalizeViewModeKey(String viewModeKey) {
-        return "GRAPH".equalsIgnoreCase(viewModeKey) ? "GRAPH" : DEFAULT_VIEW_MODE;
+    private static String normalizeViewModeKey(DungeonEditorViewMode viewModeKey) {
+        return viewModeKey == DungeonEditorViewMode.GRAPH ? "GRAPH" : DEFAULT_VIEW_MODE;
     }
 
     private static OverlayProjection toOverlayProjection(DungeonEditorOverlaySettings overlaySettings) {

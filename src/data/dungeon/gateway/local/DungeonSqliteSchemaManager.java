@@ -13,6 +13,16 @@ import java.util.Locale;
 
 final class DungeonSqliteSchemaManager {
 
+    private static final String SQL_FROM = " FROM ";
+    private static final String SQL_UPDATE = "UPDATE ";
+    private static final String SQL_WHERE = " WHERE ";
+    private static final String STRUCTURE_OBJECT_ID_REFERENCE = ".structure_object_id = ";
+    private static final String SQL_AND_NOT_EXISTS = " AND NOT EXISTS (SELECT 1 FROM ";
+    private static final String INSERT_OR_IGNORE_INTO = "INSERT OR IGNORE INTO ";
+    private static final String TOPOLOGY_INSERT_COLUMNS =
+            "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)";
+    private static final String DOOR = "DOOR";
+
     void ensureSchema(Connection connection) throws SQLException {
         boolean topologyTableExisted = SqliteSchemaColumnSupport.hasTable(
                 connection,
@@ -143,25 +153,25 @@ final class DungeonSqliteSchemaManager {
         String structureLevels = DungeonPersistenceSchema.LEGACY_STRUCTURE_LEVELS_TABLE;
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
-                    "UPDATE " + roomClusters
+                    SQL_UPDATE + roomClusters
                             + " SET center_x = COALESCE(("
-                            + "SELECT CAST(anchor_x2 / 2 AS INTEGER) FROM " + structureLevels
-                            + " WHERE " + structureLevels + ".structure_object_id = "
-                            + roomClusters + ".structure_object_id"
+                            + "SELECT CAST(anchor_x2 / 2 AS INTEGER)" + SQL_FROM + structureLevels
+                            + SQL_WHERE + structureLevels + STRUCTURE_OBJECT_ID_REFERENCE
+                            + roomClusters + STRUCTURE_OBJECT_ID_REFERENCE
                             + " ORDER BY level_z LIMIT 1), center_x),"
                             + " center_y = COALESCE(("
-                            + "SELECT CAST(anchor_y2 / 2 AS INTEGER) FROM " + structureLevels
-                            + " WHERE " + structureLevels + ".structure_object_id = "
-                            + roomClusters + ".structure_object_id"
+                            + "SELECT CAST(anchor_y2 / 2 AS INTEGER)" + SQL_FROM + structureLevels
+                            + SQL_WHERE + structureLevels + STRUCTURE_OBJECT_ID_REFERENCE
+                            + roomClusters + STRUCTURE_OBJECT_ID_REFERENCE
                             + " ORDER BY level_z LIMIT 1), center_y),"
                             + " level_z = COALESCE(("
-                            + "SELECT level_z FROM " + structureLevels
-                            + " WHERE " + structureLevels + ".structure_object_id = "
-                            + roomClusters + ".structure_object_id"
+                            + "SELECT level_z" + SQL_FROM + structureLevels
+                            + SQL_WHERE + structureLevels + STRUCTURE_OBJECT_ID_REFERENCE
+                            + roomClusters + STRUCTURE_OBJECT_ID_REFERENCE
                             + " ORDER BY level_z LIMIT 1), level_z)"
-                            + " WHERE EXISTS (SELECT 1 FROM " + structureLevels
-                            + " WHERE " + structureLevels + ".structure_object_id = "
-                            + roomClusters + ".structure_object_id)");
+                            + " WHERE EXISTS (SELECT 1" + SQL_FROM + structureLevels
+                            + SQL_WHERE + structureLevels + STRUCTURE_OBJECT_ID_REFERENCE
+                            + roomClusters + STRUCTURE_OBJECT_ID_REFERENCE + ")");
         }
     }
 
@@ -203,7 +213,7 @@ final class DungeonSqliteSchemaManager {
         }
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
-                    "UPDATE " + DungeonPersistenceSchema.TRANSITIONS_TABLE
+                    SQL_UPDATE + DungeonPersistenceSchema.TRANSITIONS_TABLE
                             + " SET cell_x = COALESCE(cell_x, stair_anchor_cell_x),"
                             + " cell_y = COALESCE(cell_y, stair_anchor_cell_y),"
                             + " level_z = COALESCE(level_z, stair_anchor_level_z)"
@@ -258,13 +268,13 @@ final class DungeonSqliteSchemaManager {
                             + " AND EXISTS (SELECT 1 FROM " + clusters
                             + " c WHERE c.dungeon_map_id=m.dungeon_map_id"
                             + " AND c.center_x=2 AND c.center_y=2 AND c.level_z=0)"
-                            + " AND NOT EXISTS (SELECT 1 FROM " + corridors
+                            + SQL_AND_NOT_EXISTS + corridors
                             + " c WHERE c.dungeon_map_id=m.dungeon_map_id)"
-                            + " AND NOT EXISTS (SELECT 1 FROM " + stairs
+                            + SQL_AND_NOT_EXISTS + stairs
                             + " s WHERE s.dungeon_map_id=m.dungeon_map_id)"
-                            + " AND NOT EXISTS (SELECT 1 FROM " + transitions
+                            + SQL_AND_NOT_EXISTS + transitions
                             + " t WHERE t.dungeon_map_id=m.dungeon_map_id)"
-                            + " AND NOT EXISTS (SELECT 1 FROM " + exits
+                            + SQL_AND_NOT_EXISTS + exits
                             + " x JOIN " + rooms + " r ON r.room_id=x.room_id"
                             + " WHERE r.dungeon_map_id=m.dungeon_map_id"
                             + " AND x.description IS NOT NULL AND TRIM(x.description) <> '')"
@@ -275,56 +285,56 @@ final class DungeonSqliteSchemaManager {
     private static void backfillRoomTopologyElements(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
-                    "INSERT OR IGNORE INTO " + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
-                            + "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)"
+                    INSERT_OR_IGNORE_INTO + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
+                            + TOPOLOGY_INSERT_COLUMNS
                             + " SELECT dungeon_map_id, 'ROOM', room_id, cluster_id, NULL, name, room_id"
-                            + " FROM " + DungeonPersistenceSchema.ROOMS_TABLE);
+                            + SQL_FROM + DungeonPersistenceSchema.ROOMS_TABLE);
         }
     }
 
     private static void backfillCorridorTopologyElements(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
-                    "INSERT OR IGNORE INTO " + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
-                            + "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)"
+                    INSERT_OR_IGNORE_INTO + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
+                            + TOPOLOGY_INSERT_COLUMNS
                             + " SELECT dungeon_map_id, 'CORRIDOR', corridor_id, NULL, corridor_id,"
                             + " 'Corridor ' || corridor_id, corridor_id"
-                            + " FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE);
+                            + SQL_FROM + DungeonPersistenceSchema.CORRIDORS_TABLE);
         }
     }
 
     private static void backfillStairTopologyElements(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
-                    "INSERT OR IGNORE INTO " + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
-                            + "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)"
+                    INSERT_OR_IGNORE_INTO + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
+                            + TOPOLOGY_INSERT_COLUMNS
                             + " SELECT dungeon_map_id, 'STAIR', stair_id, NULL, corridor_id,"
                             + " COALESCE(name, 'Stair ' || stair_id), stair_id"
-                            + " FROM " + DungeonPersistenceSchema.STAIRS_TABLE);
+                            + SQL_FROM + DungeonPersistenceSchema.STAIRS_TABLE);
         }
     }
 
     private static void backfillTransitionTopologyElements(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(
-                    "INSERT OR IGNORE INTO " + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
-                            + "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)"
+                    INSERT_OR_IGNORE_INTO + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
+                            + TOPOLOGY_INSERT_COLUMNS
                             + " SELECT dungeon_map_id, 'TRANSITION', transition_id, NULL, NULL,"
                             + " 'Uebergang ' || transition_id, transition_id"
-                            + " FROM " + DungeonPersistenceSchema.TRANSITIONS_TABLE);
+                            + SQL_FROM + DungeonPersistenceSchema.TRANSITIONS_TABLE);
         }
     }
 
     private static void backfillClusterBoundaryTopologyElements(Connection connection) throws SQLException {
         String selectSql = "SELECT c.dungeon_map_id, e.cluster_id, c.center_x, c.center_y,"
                 + " e.level_z, e.cell_x, e.cell_y, e.edge_direction, e.edge_type"
-                + " FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE + " e"
+                + SQL_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE + " e"
                 + " JOIN " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + " c ON c.cluster_id=e.cluster_id";
         try (PreparedStatement select = connection.prepareStatement(selectSql);
              ResultSet resultSet = select.executeQuery();
              PreparedStatement insert = topologyInsert(connection);
              PreparedStatement update = connection.prepareStatement(
-                     "UPDATE " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
+                     SQL_UPDATE + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
                              + " SET topology_element_id=?"
                              + " WHERE cluster_id=? AND level_z=? AND cell_x=? AND cell_y=? AND edge_direction=?")) {
             int sortOrder = 0;
@@ -343,7 +353,8 @@ final class DungeonSqliteSchemaManager {
                         resultSet.getLong("cluster_id"),
                         null,
                         labelFor(kind),
-                        sortOrder++);
+                        sortOrder);
+                sortOrder++;
                 update.setLong(1, elementId);
                 update.setLong(2, resultSet.getLong("cluster_id"));
                 update.setInt(3, resultSet.getInt("level_z"));
@@ -361,14 +372,14 @@ final class DungeonSqliteSchemaManager {
         String selectSql = "SELECT c.dungeon_map_id, d.corridor_id, d.room_id, d.cluster_id,"
                 + " rc.center_x, rc.center_y, rc.level_z,"
                 + " d.relative_cell_x, d.relative_cell_y, d.edge_direction"
-                + " FROM " + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE + " d"
+                + SQL_FROM + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE + " d"
                 + " JOIN " + DungeonPersistenceSchema.CORRIDORS_TABLE + " c ON c.corridor_id=d.corridor_id"
                 + " JOIN " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + " rc ON rc.cluster_id=d.cluster_id";
         try (PreparedStatement select = connection.prepareStatement(selectSql);
              ResultSet resultSet = select.executeQuery();
              PreparedStatement insert = topologyInsert(connection);
              PreparedStatement update = connection.prepareStatement(
-                     "UPDATE " + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE
+                     SQL_UPDATE + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE
                              + " SET topology_element_id=? WHERE corridor_id=? AND room_id=?")) {
             int sortOrder = 0;
             while (resultSet.next()) {
@@ -380,12 +391,13 @@ final class DungeonSqliteSchemaManager {
                 insertTopologyElement(
                         insert,
                         resultSet.getLong("dungeon_map_id"),
-                        "DOOR",
+                        DOOR,
                         elementId,
                         resultSet.getLong("cluster_id"),
                         resultSet.getLong("corridor_id"),
                         "Door " + elementId,
-                        sortOrder++);
+                        sortOrder);
+                sortOrder++;
                 update.setLong(1, elementId);
                 update.setLong(2, resultSet.getLong("corridor_id"));
                 update.setLong(3, resultSet.getLong("room_id"));
@@ -399,7 +411,7 @@ final class DungeonSqliteSchemaManager {
     private static PreparedStatement topologyInsert(Connection connection) throws SQLException {
         return connection.prepareStatement(
                 "INSERT OR REPLACE INTO " + DungeonPersistenceSchema.TOPOLOGY_ELEMENTS_TABLE
-                        + "(dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order)"
+                        + TOPOLOGY_INSERT_COLUMNS
                         + " VALUES(?,?,?,?,?,?,?)");
     }
 
@@ -424,11 +436,11 @@ final class DungeonSqliteSchemaManager {
     }
 
     private static String boundaryKind(String value) {
-        return "DOOR".equalsIgnoreCase(value == null ? "" : value.trim()) ? "DOOR" : "WALL";
+        return DOOR.equalsIgnoreCase(value == null ? "" : value.trim()) ? DOOR : "WALL";
     }
 
     private static String labelFor(String kind) {
-        return "DOOR".equals(kind) ? "Door" : "Wall";
+        return DOOR.equals(kind) ? "Door" : "Wall";
     }
 
     private static long boundaryStableId(int q, int r, int level, String direction) {

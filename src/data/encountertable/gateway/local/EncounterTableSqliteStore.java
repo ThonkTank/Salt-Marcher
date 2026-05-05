@@ -13,12 +13,32 @@ import src.data.encountertable.model.EncounterTableSummaryRecord;
 
 final class EncounterTableSqliteStore {
 
+    private static final String TEMP_SELECTED_TABLE_IDS = "sm_temp_selected_encounter_table_ids";
+    private static final String CREATE_TEMP_SELECTED_TABLE_IDS_SQL =
+            "CREATE TEMP TABLE IF NOT EXISTS " + TEMP_SELECTED_TABLE_IDS + "(table_id INTEGER PRIMARY KEY)";
+    private static final String CLEAR_TEMP_SELECTED_TABLE_IDS_SQL =
+            "DELETE FROM " + TEMP_SELECTED_TABLE_IDS;
+    private static final String INSERT_TEMP_SELECTED_TABLE_ID_SQL =
+            "INSERT INTO " + TEMP_SELECTED_TABLE_IDS + "(table_id) VALUES (?)";
     private static final String LOAD_SUMMARIES_SQL =
             "SELECT t.table_id, t.name, l.loot_table_id "
                     + "FROM " + EncounterTablePersistenceSchema.ENCOUNTER_TABLES.name() + " t "
                     + "LEFT JOIN " + EncounterTablePersistenceSchema.ENCOUNTER_TABLE_LOOT_LINKS.name()
                     + " l ON l.table_id = t.table_id "
                     + "ORDER BY LOWER(t.name), t.table_id";
+    private static final String LOAD_GENERATION_CANDIDATES_SQL =
+            "SELECT c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
+                    + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
+                    + "c.ac, c.initiative_bonus, c.legendary_action_count, MAX(e.weight) AS weight "
+                    + "FROM " + EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES.name() + " e "
+                    + "JOIN " + EncounterTablePersistenceSchema.REFERENCED_CREATURES_TABLE_NAME
+                    + " c ON c.id = e.creature_id "
+                    + "WHERE e.table_id IN (SELECT table_id FROM " + TEMP_SELECTED_TABLE_IDS + ") "
+                    + "AND c.xp <= ? "
+                    + "GROUP BY c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
+                    + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
+                    + "c.ac, c.initiative_bonus, c.legendary_action_count "
+                    + "ORDER BY c.xp ASC, LOWER(c.name) ASC";
 
     List<EncounterTableSummaryRecord> loadSummaries(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(LOAD_SUMMARIES_SQL);
@@ -42,27 +62,36 @@ final class EncounterTableSqliteStore {
         if (tableIds == null || tableIds.isEmpty()) {
             return List.of();
         }
-        String placeholders = placeholders(tableIds.size());
-        String sql = "SELECT c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
-                + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
-                + "c.ac, c.initiative_bonus, c.legendary_action_count, MAX(e.weight) AS weight "
-                + "FROM " + EncounterTablePersistenceSchema.ENCOUNTER_TABLE_ENTRIES.name() + " e "
-                + "JOIN " + EncounterTablePersistenceSchema.REFERENCED_CREATURES_TABLE_NAME
-                + " c ON c.id = e.creature_id "
-                + "WHERE e.table_id IN (" + placeholders + ") "
-                + "AND c.xp <= ? "
-                + "GROUP BY c.id, c.name, c.creature_type, c.cr, c.xp, c.hp, "
-                + "c.hit_dice_count, c.hit_dice_sides, c.hit_dice_modifier, "
-                + "c.ac, c.initiative_bonus, c.legendary_action_count "
-                + "ORDER BY c.xp ASC, LOWER(c.name) ASC";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            int parameterIndex = 1;
-            for (Long tableId : tableIds) {
-                statement.setLong(parameterIndex, tableId);
-                parameterIndex++;
-            }
-            statement.setInt(parameterIndex, maximumXp);
+        prepareSelectedTableIds(connection, tableIds);
+        try (PreparedStatement statement = connection.prepareStatement(LOAD_GENERATION_CANDIDATES_SQL)) {
+            statement.setInt(1, maximumXp);
             return readCandidates(statement);
+        } finally {
+            clearSelectedTableIds(connection);
+        }
+    }
+
+    private static void prepareSelectedTableIds(Connection connection, List<Long> tableIds) throws SQLException {
+        createSelectedTableIds(connection);
+        clearSelectedTableIds(connection);
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_TEMP_SELECTED_TABLE_ID_SQL)) {
+            for (Long tableId : tableIds) {
+                statement.setLong(1, tableId);
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    private static void createSelectedTableIds(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(CREATE_TEMP_SELECTED_TABLE_IDS_SQL)) {
+            statement.executeUpdate();
+        }
+    }
+
+    private static void clearSelectedTableIds(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(CLEAR_TEMP_SELECTED_TABLE_IDS_SQL)) {
+            statement.executeUpdate();
         }
     }
 
@@ -88,17 +117,6 @@ final class EncounterTableSqliteStore {
             }
         }
         return candidates;
-    }
-
-    private static String placeholders(int count) {
-        StringBuilder builder = new StringBuilder();
-        for (int index = 0; index < count; index++) {
-            if (index > 0) {
-                builder.append(',');
-            }
-            builder.append('?');
-        }
-        return builder.toString();
     }
 
     private static @Nullable Integer getNullableInt(ResultSet resultSet, String column) throws SQLException {

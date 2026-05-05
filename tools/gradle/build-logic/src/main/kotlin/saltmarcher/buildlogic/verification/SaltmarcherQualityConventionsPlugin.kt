@@ -314,10 +314,17 @@ internal fun Project.configureQualityConventions() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run strict PMD source-smell checks against production Java sources."
         projectRoot.set(layout.projectDirectory)
-        sourceRoots.from(sourceJavaRoots)
+        sourceRoots.from(
+            layout.projectDirectory.dir("bootstrap"),
+            layout.projectDirectory.dir("shell"),
+            layout.projectDirectory.dir("src")
+        )
         toolClasspath.from(pmdCli)
         auxClasspath.from(configurations.named("compileClasspath"))
-        rulesetFile.set(layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"))
+        rulesetFiles.from(
+            layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"),
+            layout.projectDirectory.file("tools/quality/config/pmd/law-of-demeter-ruleset.xml")
+        )
         reportFile.set(layout.buildDirectory.file("reports/pmd/main-strict.txt"))
     }
 
@@ -414,8 +421,10 @@ internal fun Project.configureQualityConventions() {
     )
     extensions.add(VerificationLifecycleExtension::class.java, "saltmarcherVerificationLifecycle", verificationLifecycle)
 
-    tasks.named<Pmd>("pmdArchitectureMain") {
-        dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
+    tasks.withType<Pmd>().configureEach {
+        if (name == "pmdArchitectureMain") {
+            dependsOn(gradle.includedBuild("quality-rules").task(":jar"))
+        }
     }
 
     tasks.withType<Pmd>().configureEach {

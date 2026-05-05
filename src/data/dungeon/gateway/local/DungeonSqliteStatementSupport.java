@@ -13,37 +13,91 @@ import java.util.Set;
 
 final class DungeonSqliteStatementSupport {
 
+    private static final String TEMP_RETAINED_IDS_TABLE = "sm_temp_retained_dungeon_ids";
+    private static final String CREATE_TEMP_RETAINED_IDS_TABLE_SQL =
+            "CREATE TEMP TABLE IF NOT EXISTS " + TEMP_RETAINED_IDS_TABLE + "(id INTEGER PRIMARY KEY)";
+    private static final String CLEAR_TEMP_RETAINED_IDS_SQL =
+            "DELETE FROM " + TEMP_RETAINED_IDS_TABLE;
+    private static final String INSERT_TEMP_RETAINED_ID_SQL =
+            "INSERT INTO " + TEMP_RETAINED_IDS_TABLE + "(id) VALUES (?)";
+    private static final String DELETE_OBSOLETE_CORRIDORS_SQL =
+            "DELETE FROM corridors WHERE dungeon_map_id=? AND ("
+                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+                    + "OR corridor_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
+    private static final String DELETE_OBSOLETE_STAIRS_SQL =
+            "DELETE FROM dungeon_stairs WHERE dungeon_map_id=? AND ("
+                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+                    + "OR stair_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
+    private static final String DELETE_OBSOLETE_TRANSITIONS_SQL =
+            "DELETE FROM dungeon_transitions WHERE dungeon_map_id=? AND ("
+                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+                    + "OR transition_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
+    private static final String DELETE_OBSOLETE_ROOMS_SQL =
+            "DELETE FROM dungeon_rooms WHERE dungeon_map_id=? AND ("
+                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+                    + "OR room_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
+    private static final String DELETE_OBSOLETE_ROOM_CLUSTERS_SQL =
+            "DELETE FROM dungeon_room_clusters WHERE dungeon_map_id=? AND ("
+                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+                    + "OR cluster_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
+
     private DungeonSqliteStatementSupport() {
     }
 
-    static void deleteRowsNotIn(
+    static void deleteObsoleteCorridors(Connection connection, long mapId, Set<Long> retainedIds) throws SQLException {
+        deleteObsoleteRecords(connection, mapId, retainedIds, DELETE_OBSOLETE_CORRIDORS_SQL);
+    }
+
+    static void deleteObsoleteStairs(Connection connection, long mapId, Set<Long> retainedIds) throws SQLException {
+        deleteObsoleteRecords(connection, mapId, retainedIds, DELETE_OBSOLETE_STAIRS_SQL);
+    }
+
+    static void deleteObsoleteTransitions(Connection connection, long mapId, Set<Long> retainedIds) throws SQLException {
+        deleteObsoleteRecords(connection, mapId, retainedIds, DELETE_OBSOLETE_TRANSITIONS_SQL);
+    }
+
+    static void deleteObsoleteRooms(Connection connection, long mapId, Set<Long> retainedIds) throws SQLException {
+        deleteObsoleteRecords(connection, mapId, retainedIds, DELETE_OBSOLETE_ROOMS_SQL);
+    }
+
+    static void deleteObsoleteRoomClusters(Connection connection, long mapId, Set<Long> retainedIds) throws SQLException {
+        deleteObsoleteRecords(connection, mapId, retainedIds, DELETE_OBSOLETE_ROOM_CLUSTERS_SQL);
+    }
+
+    private static void deleteObsoleteRecords(
             Connection connection,
-            String tableName,
-            String idColumn,
-            String mapIdColumn,
             long mapId,
-            Set<Long> retainedIds
+            Set<Long> retainedIds,
+            String deleteSql
     ) throws SQLException {
-        StringBuilder sql = new StringBuilder("DELETE FROM ")
-                .append(tableName)
-                .append(" WHERE ")
-                .append(mapIdColumn)
-                .append("=?");
-        if (retainedIds != null && !retainedIds.isEmpty()) {
-            sql.append(" AND ")
-                    .append(idColumn)
-                    .append(" NOT IN (")
-                    .append("?,".repeat(retainedIds.size()));
-            sql.setLength(sql.length() - 1);
-            sql.append(')');
-        }
-        try (PreparedStatement delete = connection.prepareStatement(sql.toString())) {
+        prepareRetainedIds(connection, retainedIds);
+        try (PreparedStatement delete = connection.prepareStatement(deleteSql)) {
             delete.setLong(1, mapId);
-            int index = 2;
-            for (Long retainedId : retainedIds == null ? Set.<Long>of() : retainedIds) {
-                delete.setLong(index++, retainedId);
-            }
             delete.executeUpdate();
+        }
+    }
+
+    private static void prepareRetainedIds(Connection connection, Set<Long> retainedIds) throws SQLException {
+        createRetainedIdsTable(connection);
+        clearRetainedIds(connection);
+        try (PreparedStatement insert = connection.prepareStatement(INSERT_TEMP_RETAINED_ID_SQL)) {
+            for (Long retainedId : retainedIds == null ? Set.<Long>of() : retainedIds) {
+                insert.setLong(1, retainedId);
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    private static void createRetainedIdsTable(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(CREATE_TEMP_RETAINED_IDS_TABLE_SQL)) {
+            statement.executeUpdate();
+        }
+    }
+
+    private static void clearRetainedIds(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(CLEAR_TEMP_RETAINED_IDS_SQL)) {
+            statement.executeUpdate();
         }
     }
 

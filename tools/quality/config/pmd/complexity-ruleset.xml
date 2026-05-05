@@ -46,12 +46,6 @@
         </properties>
     </rule>
 
-    <rule ref="category/java/design.xml/LawOfDemeter">
-        <properties>
-            <property name="trustRadius" value="1" />
-        </properties>
-    </rule>
-
     <rule ref="category/java/design.xml/ExcessiveParameterList">
         <properties>
             <property name="minimum" value="10" />

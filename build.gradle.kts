@@ -54,6 +54,9 @@ val sonarOrganization = providers.gradleProperty("sonarOrganization")
     .orElse(providers.environmentVariable("SONAR_ORGANIZATION"))
 val sonarProjectKey = providers.gradleProperty("sonarProjectKey")
     .orElse(providers.environmentVariable("SONAR_PROJECT_KEY"))
+val complexityRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml")
+val lawOfDemeterRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/law-of-demeter-ruleset.xml")
+val spotbugsExcludeFilterFile = layout.projectDirectory.file("tools/quality/config/spotbugs/exclude-filter.xml")
 
 val preloaderJvmArg = preloaderClassName.map { "-Djavafx.preloader=$it" }
 val javafxModuleDirName = "javafx"
@@ -109,7 +112,7 @@ pmd {
     isConsoleOutput = true
     isIgnoreFailures = false
     ruleSets = listOf()
-    ruleSetFiles = files(layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml"))
+    ruleSetFiles = files(complexityRulesetFile, lawOfDemeterRulesetFile)
 }
 
 spotbugs {
@@ -119,6 +122,7 @@ spotbugs {
 }
 
 tasks.withType<SpotBugsTask>().configureEach {
+    excludeFilter.set(spotbugsExcludeFilterFile)
     reports {
         create("html") {
             required.set(true)

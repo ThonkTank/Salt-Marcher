@@ -7,8 +7,8 @@ public record ApplyDungeonEditorSessionCommand(
         Action action,
         @Nullable DungeonEditorMapId mapId,
         String mapName,
-        String viewModeKey,
-        String selectedTool,
+        DungeonEditorViewMode viewMode,
+        DungeonEditorTool selectedTool,
         int projectionLevelDelta,
         DungeonEditorOverlaySettings overlaySettings,
         MainViewInput mainViewInput,
@@ -18,8 +18,8 @@ public record ApplyDungeonEditorSessionCommand(
     public ApplyDungeonEditorSessionCommand {
         action = action == null ? Action.INTERPRET_MAIN_VIEW : action;
         mapName = mapName == null ? "" : mapName;
-        viewModeKey = viewModeKey == null || viewModeKey.isBlank() ? "GRID" : viewModeKey;
-        selectedTool = selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
+        viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
+        selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
         overlaySettings = overlaySettings == null ? DungeonEditorOverlaySettings.defaults() : overlaySettings;
         mainViewInput = mainViewInput == null ? MainViewInput.empty() : mainViewInput;
         roomNarration = roomNarration == null ? RoomNarrationInput.empty() : roomNarration;
