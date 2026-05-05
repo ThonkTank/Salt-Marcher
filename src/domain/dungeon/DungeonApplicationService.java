@@ -7,13 +7,17 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.application.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.application.AssembleDungeonSnapshotUseCase;
 import src.domain.dungeon.application.BuildDungeonDerivedStateUseCase;
 import src.domain.dungeon.application.CreateDungeonMapUseCase;
 import src.domain.dungeon.application.DeleteDungeonMapUseCase;
+import src.domain.dungeon.application.InspectDungeonSelectionUseCase;
+import src.domain.dungeon.application.LoadDungeonMapUseCase;
 import src.domain.dungeon.application.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.application.LoadDungeonTravelSurfaceUseCase;
 import src.domain.dungeon.application.LoadMapSnapshotUseCase;
 import src.domain.dungeon.application.MoveDungeonTravelActionUseCase;
+import src.domain.dungeon.application.PublishDungeonEditorHandlesUseCase;
 import src.domain.dungeon.application.RenameDungeonMapUseCase;
 import src.domain.dungeon.application.SearchDungeonMapsUseCase;
 import src.domain.dungeon.map.entity.DungeonAggregate;
@@ -112,17 +116,33 @@ public final class DungeonApplicationService {
         DungeonMapRepository repository = Objects.requireNonNull(mapRepository, "mapRepository");
         DungeonMapSearch search = Objects.requireNonNull(mapSearch, "mapSearch");
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
+        LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository, search);
+        PublishDungeonEditorHandlesUseCase publishDungeonEditorHandlesUseCase =
+                new PublishDungeonEditorHandlesUseCase();
+        AssembleDungeonSnapshotUseCase assembleDungeonSnapshotUseCase =
+                new AssembleDungeonSnapshotUseCase(derive);
+        InspectDungeonSelectionUseCase inspectDungeonSelectionUseCase =
+                new InspectDungeonSelectionUseCase(derive);
 
-        LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase = new LoadDungeonSnapshotUseCase(repository, search, derive);
+        LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase = new LoadDungeonSnapshotUseCase(
+                loadDungeonMapUseCase,
+                assembleDungeonSnapshotUseCase,
+                publishDungeonEditorHandlesUseCase,
+                inspectDungeonSelectionUseCase);
         ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase =
-                new ApplyDungeonEditorOperationUseCase(repository, search, derive);
+                new ApplyDungeonEditorOperationUseCase(
+                        repository,
+                        search,
+                        derive,
+                        assembleDungeonSnapshotUseCase,
+                        publishDungeonEditorHandlesUseCase);
         SearchDungeonMapsUseCase searchDungeonMapsUseCase = new SearchDungeonMapsUseCase(search);
         CreateDungeonMapUseCase createDungeonMapUseCase = new CreateDungeonMapUseCase(repository);
         RenameDungeonMapUseCase renameDungeonMapUseCase = new RenameDungeonMapUseCase(repository);
         DeleteDungeonMapUseCase deleteDungeonMapUseCase = new DeleteDungeonMapUseCase(repository);
-        LoadMapSnapshotUseCase loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(repository, derive);
+        LoadMapSnapshotUseCase loadMapSnapshotUseCase = new LoadMapSnapshotUseCase(loadDungeonMapUseCase, derive);
         LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase =
-                new LoadDungeonTravelSurfaceUseCase(repository, search, derive);
+                new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, derive);
         MoveDungeonTravelActionUseCase moveDungeonTravelActionUseCase =
                 new MoveDungeonTravelActionUseCase(repository, search, derive);
 

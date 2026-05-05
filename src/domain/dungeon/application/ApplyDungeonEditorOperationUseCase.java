@@ -220,15 +220,21 @@ public final class ApplyDungeonEditorOperationUseCase {
     private final DungeonMapRepository repository;
     private final DungeonMapSearch search;
     private final BuildDungeonDerivedStateUseCase derive;
+    private final AssembleDungeonSnapshotUseCase assembleDungeonSnapshot;
+    private final PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles;
 
     public ApplyDungeonEditorOperationUseCase(
             DungeonMapRepository repository,
             DungeonMapSearch search,
-            BuildDungeonDerivedStateUseCase derive
+            BuildDungeonDerivedStateUseCase derive,
+            AssembleDungeonSnapshotUseCase assembleDungeonSnapshot,
+            PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles
     ) {
         this.repository = repository;
         this.search = search;
         this.derive = derive;
+        this.assembleDungeonSnapshot = assembleDungeonSnapshot;
+        this.publishDungeonEditorHandles = publishDungeonEditorHandles;
     }
 
     public OperationResultData execute(OperationInput operation) {
@@ -366,11 +372,10 @@ public final class ApplyDungeonEditorOperationUseCase {
     }
 
     private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot(DungeonMap dungeonMap, DungeonDerivedState derived) {
-        return new LoadDungeonSnapshotUseCase.DungeonSnapshotData(
-                dungeonMap.metadata().mapName(),
+        return assembleDungeonSnapshot.execute(
+                dungeonMap,
                 derived,
-                LoadDungeonSnapshotUseCase.editorHandles(dungeonMap),
-                dungeonMap.revision());
+                publishDungeonEditorHandles.execute(dungeonMap));
     }
 
     private DungeonMap currentMap(@Nullable DungeonMapIdentity mapId) {
