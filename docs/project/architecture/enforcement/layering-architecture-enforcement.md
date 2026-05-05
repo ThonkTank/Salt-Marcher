@@ -29,8 +29,8 @@ Focused bundle entrypoint:
   `build` include the same proof surface transitively, and the neighboring
   `Enforced Elsewhere` rows below stay in their owner-specific bundles.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain` runs the
-  report-only diagnostic for thin adapter and orchestration roles that are
-  allowed to stay narrow but may still be worth reviewing.
+  report-only diagnostic PMD surface for thin adapter and orchestration roles
+  that are allowed to stay narrow but may still be worth reviewing.
 
 ## Invariant Catalog
 
@@ -72,7 +72,7 @@ Focused bundle entrypoint:
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
 | `layering-explicit-cross-layer-public-boundary-diagnostic` | Candidate | every future change that adds or removes one documented cross-layer boundary family | none | none | The architecture stack could emit a dedicated blocker when a boundary family disappears or a new one appears, instead of inferring that drift from several neighboring owner docs. |
-| `layering-thin-role-indirection-candidate-scan` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface | layering-indirection-candidates bundle build-harness `LayeringIndirectionCandidatesMain` | `./gradlew checkLayeringIndirectionCandidates` | Thin adapter and orchestration roles that currently look like pure relay or wrapper ceremony are reported for review without turning that heuristic into a blocker. |
+| `layering-thin-role-indirection-candidate-scan` | Candidate | every root `*ApplicationService`, `application/*UseCase`, `*Binder`, `*IntentHandler`, and `*ServiceContribution` surface | layering-architecture bundle PMD `LayeringThinRoleIndirectionCandidateRule` | `./gradlew checkLayeringIndirectionCandidates` | Thin adapter and orchestration roles that currently look like pure relay or wrapper ceremony are reported for review without turning that heuristic into a blocker. |
 
 ## References
 

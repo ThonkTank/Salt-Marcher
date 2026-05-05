@@ -2,6 +2,7 @@ package saltmarcher.quality.pmd.domain;
 
 import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRule;
+import saltmarcher.quality.pmd.indirection.CeremonialIndirectionSupport;
 import saltmarcher.quality.pmd.support.SaltMarcherSourceFacts;
 
 public final class DomainServiceNoCeremonialIndirectionRule extends AbstractJavaRule {
@@ -9,12 +10,13 @@ public final class DomainServiceNoCeremonialIndirectionRule extends AbstractJava
     @Override
     public Object visit(ASTCompilationUnit node, Object data) {
         SaltMarcherSourceFacts sourceFacts = SaltMarcherSourceFacts.from(node);
-        if (!DomainCeremonialIndirectionSupport.isServiceSource(sourceFacts)) {
+        if (CeremonialIndirectionSupport.substantiveRole(sourceFacts).orElse(null)
+                != CeremonialIndirectionSupport.Role.DOMAIN_SERVICE) {
             return data;
         }
 
-        DomainCeremonialIndirectionSupport.Analysis analysis =
-                DomainCeremonialIndirectionSupport.analyze(sourceFacts);
+        CeremonialIndirectionSupport.Analysis analysis =
+                CeremonialIndirectionSupport.analyze(node, sourceFacts);
         if (!analysis.ceremonial()) {
             return data;
         }

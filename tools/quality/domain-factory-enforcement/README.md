@@ -8,6 +8,8 @@ It keeps the full factory-role proof route in one package:
 - `errorprone/`
   `DomainFactoryRoleShape`,
   `DomainFactoryStatelessness`
+- `pmd/`
+  `DomainFactoryNoCeremonialIndirectionRule` and the bundle-local ruleset
 - `build-harness/`
   `DomainFactoryEnforcementDocumentationRules`
 - `bundle.properties`

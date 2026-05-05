@@ -500,9 +500,9 @@ Architecture-focused entrypoints:
   Aggregates the dedicated `Layering Architecture` bundle through
   `:build-harness:layeringArchitectureTopologyCheck`.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain`
-  Runs the report-only thin-role candidate scan through
-  `:build-harness:checkLayeringIndirectionCandidates` without attaching that
-  heuristic to `checkArchitecture`, `check`, or `build`.
+  Runs the report-only thin-role candidate PMD scan through the dedicated
+  `Layering Architecture` bundle without attaching that heuristic to
+  `checkArchitecture`, `check`, or `build`.
 - `./gradlew checkStylingLayerEnforcement --console=plain`
   Aggregates the styling-layer bundle through `compileJava`,
   `checkCentralizedStylesheets`, `checkDefinedStyleClassSelectors`,

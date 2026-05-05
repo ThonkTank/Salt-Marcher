@@ -8,6 +8,8 @@ It keeps the full service-role proof route in one package:
 - `errorprone/`
   `DomainServiceRoleShape`,
   `DomainServiceStatelessness`
+- `pmd/`
+  `DomainServiceNoCeremonialIndirectionRule` and the bundle-local ruleset
 - `build-harness/`
   `DomainServiceEnforcementDocumentationRules`
 - `bundle.properties`

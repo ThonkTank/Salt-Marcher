@@ -8,6 +8,8 @@ It keeps the tactical `policy/` proof route owner-pure and bundle-local:
 - `errorprone/`
   `DomainPolicyRoleShape`,
   `DomainPolicyStatelessness`
+- `pmd/`
+  `DomainPolicyNoCeremonialIndirectionRule` and the bundle-local ruleset
 - `build-harness/`
   `DomainPolicyEnforcementDocumentationRules`,
   `DomainPolicyEnforcementDocumentationCheckMain`

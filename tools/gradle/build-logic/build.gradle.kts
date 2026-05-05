@@ -46,6 +46,10 @@ gradlePlugin {
             id = "saltmarcher.styling-layer-enforcement"
             implementationClass = "saltmarcher.buildlogic.verification.SaltmarcherStylingLayerEnforcementPlugin"
         }
+        register("saltmarcherLayeringArchitectureEnforcement") {
+            id = "saltmarcher.layering-architecture-enforcement"
+            implementationClass = "saltmarcher.buildlogic.verification.SaltmarcherLayeringArchitectureEnforcementPlugin"
+        }
     }
 }
 
