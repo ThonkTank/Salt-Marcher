@@ -1,9 +1,6 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
@@ -15,10 +12,8 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorSnapshot;
-import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapSummary;
@@ -146,7 +141,7 @@ public final class DungeonEditorContributionModel {
                 status.set(safeSnapshot.statusText());
             }
         } else {
-            reachableLevels.set(levelsFrom(currentSurface, projectionLevel.get()));
+            reachableLevels.set(currentSurface.reachableLevels(projectionLevel.get()));
             status.set(safeSnapshot.statusText().isBlank()
                     ? statusFromMessages(currentSurface.messages())
                     : safeSnapshot.statusText());
@@ -224,34 +219,6 @@ public final class DungeonEditorContributionModel {
                     + " (" + stretch.sourceEdges().size() + ")";
         }
         return "Topologie-Preview: aktiv";
-    }
-
-    private static List<Integer> levelsFrom(@Nullable DungeonSurfacePayload surface, int fallbackLevel) {
-        TreeSet<Integer> levels = new TreeSet<>();
-        if (surface != null && surface.map() != null) {
-            surface.map().areas().forEach(area -> addCellLevels(levels, area.cells()));
-            for (DungeonFeatureSnapshot feature : surface.map().features()) {
-                addCellLevels(levels, feature.cells());
-            }
-            surface.map().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
-            if (surface.previewMap() != null) {
-                surface.previewMap().areas().forEach(area -> addCellLevels(levels, area.cells()));
-                for (DungeonFeatureSnapshot feature : surface.previewMap().features()) {
-                    addCellLevels(levels, feature.cells());
-                }
-                surface.previewMap().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
-            }
-        }
-        if (levels.isEmpty()) {
-            levels.add(fallbackLevel);
-        }
-        return new ArrayList<>(levels);
-    }
-
-    private static void addCellLevels(Set<Integer> levels, List<DungeonCellRef> cells) {
-        for (DungeonCellRef cell : cells == null ? List.<DungeonCellRef>of() : cells) {
-            levels.add(cell.level());
-        }
     }
 
     private static String key(@Nullable DungeonMapId mapId) {

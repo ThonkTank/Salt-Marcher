@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
@@ -1015,39 +1014,13 @@ final class BuildDungeonEditorSnapshotUseCase {
     }
 
     private static int clampProjectionLevel(@Nullable DungeonSurfacePayload surface, int projectionLevel) {
-        List<Integer> levels = levelsFrom(surface, projectionLevel);
+        List<Integer> levels = surface == null
+                ? List.of(projectionLevel)
+                : surface.reachableLevels(projectionLevel);
         if (levels.isEmpty()) {
             return projectionLevel;
         }
         return Math.max(levels.getFirst(), Math.min(levels.getLast(), projectionLevel));
-    }
-
-    private static List<Integer> levelsFrom(@Nullable DungeonSurfacePayload surface, int fallbackLevel) {
-        TreeSet<Integer> levels = new TreeSet<>();
-        if (surface != null && surface.map() != null) {
-            surface.map().areas().forEach(area -> addCellLevels(levels, area.cells()));
-            for (DungeonFeatureSnapshot feature : surface.map().features()) {
-                addCellLevels(levels, feature.cells());
-            }
-            surface.map().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
-            if (surface.previewMap() != null) {
-                surface.previewMap().areas().forEach(area -> addCellLevels(levels, area.cells()));
-                for (DungeonFeatureSnapshot feature : surface.previewMap().features()) {
-                    addCellLevels(levels, feature.cells());
-                }
-                surface.previewMap().editorHandles().forEach(handle -> levels.add(handle.cell().level()));
-            }
-        }
-        if (levels.isEmpty()) {
-            levels.add(fallbackLevel);
-        }
-        return new ArrayList<>(levels);
-    }
-
-    private static void addCellLevels(Set<Integer> levels, List<DungeonCellRef> cells) {
-        for (DungeonCellRef cell : cells == null ? List.<DungeonCellRef>of() : cells) {
-            levels.add(cell.level());
-        }
     }
 
     private static String statusFromMessages(@Nullable DungeonSurfaceMessages messages) {
@@ -1602,68 +1575,112 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             DungeonEditorSnapshot.Selection currentSelection,
             String selectedTool
     ) {
-        if ("Tuer setzen".equals(selectedTool) || "Tuer loeschen".equals(selectedTool)) {
-            if (!input.primaryButtonDown()) {
-                return Effect.none();
-            }
-            BoundaryTarget boundary = input.boundaryTarget();
-            boolean deleteMode = "Tuer loeschen".equals(selectedTool);
-            if (!editableDoorBoundary(snapshot, boundary, deleteMode)) {
-                return Effect.none();
-            }
-            return Effect.apply(new DungeonEditorOperation.EditClusterBoundaries(
-                    resolveBoundaryClusterId(snapshot, boundary),
-                    List.of(new DungeonEdgeRef(boundary.start().toDungeonCellRef(), boundary.end().toDungeonCellRef())),
-                    DungeonBoundaryKind.DOOR,
-                    deleteMode));
+        if (doorBoundaryToolSelected(selectedTool)) {
+            return pressedDoorBoundary(input, snapshot, selectedTool);
         }
         VertexTarget vertex = input.vertexTarget();
         if (vertex == null || !vertex.present()) {
-            if (boundaryDraft == null) {
-                clear();
-            }
-            return Effect.none();
+            return clearOnMissingBoundaryDraft();
         }
         boolean deleteMode = "Wand loeschen".equals(selectedTool);
         long clusterId = resolveClusterId(input, vertex, deleteMode, snapshot, currentSelection);
         if (clusterId <= 0L) {
-            if (boundaryDraft == null) {
-                clear();
-            }
-            return Effect.none();
+            return clearOnMissingBoundaryDraft();
         }
         VertexKey nextVertex = vertexKey(vertex);
-        if (boundaryDraft == null || boundaryDraft.clusterId() != clusterId) {
-            if (!isEditableVertex(snapshot, clusterId, vertex, deleteMode)) {
-                return Effect.none();
-            }
-            boundaryDraft = new BoundaryDraft(clusterId, deleteMode, nextVertex, nextVertex, Set.of());
-            return Effect.clearPreviewIfNeeded(true);
+        if (!matchesBoundaryDraft(clusterId)) {
+            return startBoundaryDraft(snapshot, clusterId, vertex, deleteMode, nextVertex);
         }
-        if (boundaryDraft.currentVertex().equals(nextVertex)) {
+        return advanceBoundaryDraft(input, snapshot, selectedTool, clusterId, deleteMode, nextVertex);
+    }
+
+    private static boolean doorBoundaryToolSelected(String selectedTool) {
+        return "Tuer setzen".equals(selectedTool) || "Tuer loeschen".equals(selectedTool);
+    }
+
+    private Effect pressedDoorBoundary(
+            PointerState input,
+            DungeonSnapshot snapshot,
+            String selectedTool
+    ) {
+        if (!input.primaryButtonDown()) {
+            return Effect.none();
+        }
+        BoundaryTarget boundary = input.boundaryTarget();
+        boolean deleteMode = "Tuer loeschen".equals(selectedTool);
+        if (!editableDoorBoundary(snapshot, boundary, deleteMode)) {
+            return Effect.none();
+        }
+        return Effect.apply(new DungeonEditorOperation.EditClusterBoundaries(
+                resolveBoundaryClusterId(snapshot, boundary),
+                List.of(new DungeonEdgeRef(boundary.start().toDungeonCellRef(), boundary.end().toDungeonCellRef())),
+                DungeonBoundaryKind.DOOR,
+                deleteMode));
+    }
+
+    private Effect clearOnMissingBoundaryDraft() {
+        if (boundaryDraft == null) {
+            clear();
+        }
+        return Effect.none();
+    }
+
+    private boolean matchesBoundaryDraft(long clusterId) {
+        return boundaryDraft != null && boundaryDraft.clusterId() == clusterId;
+    }
+
+    private Effect startBoundaryDraft(
+            DungeonSnapshot snapshot,
+            long clusterId,
+            VertexTarget vertex,
+            boolean deleteMode,
+            VertexKey nextVertex
+    ) {
+        if (!isEditableVertex(snapshot, clusterId, vertex, deleteMode)) {
+            return Effect.none();
+        }
+        boundaryDraft = new BoundaryDraft(clusterId, deleteMode, nextVertex, nextVertex, Set.of());
+        return Effect.clearPreviewIfNeeded(true);
+    }
+
+    private Effect advanceBoundaryDraft(
+            PointerState input,
+            DungeonSnapshot snapshot,
+            String selectedTool,
+            long clusterId,
+            boolean deleteMode,
+            VertexKey nextVertex
+    ) {
+        BoundaryDraft currentDraft = java.util.Objects.requireNonNull(boundaryDraft, "boundaryDraft");
+        if (currentDraft.currentVertex().equals(nextVertex)) {
             return previewFromBoundary(input, snapshot, selectedTool);
         }
         PathResult path = deleteMode
-                ? findDeletePath(snapshot, clusterId, boundaryDraft.currentVertex(), nextVertex)
-                : findCreatePath(snapshot, clusterId, boundaryDraft.currentVertex(), nextVertex);
+                ? findDeletePath(snapshot, clusterId, currentDraft.currentVertex(), nextVertex)
+                : findCreatePath(snapshot, clusterId, currentDraft.currentVertex(), nextVertex);
         if (!path.hasRoute()) {
             return Effect.clearPreviewIfNeeded(true);
         }
-        Set<EdgeKey> previewEdges = new java.util.LinkedHashSet<>(boundaryDraft.previewEdges());
+        Set<EdgeKey> previewEdges = new java.util.LinkedHashSet<>(currentDraft.previewEdges());
         previewEdges.addAll(path.committedEdges());
-        boundaryDraft = new BoundaryDraft(clusterId, deleteMode, boundaryDraft.startVertex(), nextVertex, previewEdges);
+        boundaryDraft = new BoundaryDraft(clusterId, deleteMode, currentDraft.startVertex(), nextVertex, previewEdges);
         if (!deleteMode && touchesExistingWall(snapshot, clusterId, nextVertex)) {
-            BoundaryDraft current = boundaryDraft;
-            boundaryDraft = null;
-            return current.previewEdges().isEmpty()
-                    ? Effect.clearPreviewIfNeeded(true)
-                    : Effect.apply(new DungeonEditorOperation.EditClusterBoundaries(
-                    current.clusterId(),
-                    current.previewEdges().stream().map(EdgeKey::toEdgeRef).toList(),
-                    DungeonBoundaryKind.WALL,
-                    current.deleteMode()));
+            return commitBoundaryDraft();
         }
         return previewFromBoundary(input, snapshot, selectedTool);
+    }
+
+    private Effect commitBoundaryDraft() {
+        BoundaryDraft current = boundaryDraft;
+        boundaryDraft = null;
+        if (current == null || current.previewEdges().isEmpty()) {
+            return Effect.clearPreviewIfNeeded(true);
+        }
+        return Effect.apply(new DungeonEditorOperation.EditClusterBoundaries(
+                current.clusterId(),
+                current.previewEdges().stream().map(EdgeKey::toEdgeRef).toList(),
+                DungeonBoundaryKind.WALL,
+                current.deleteMode()));
     }
 
     private Effect corridorPressed(

@@ -32,7 +32,7 @@ public final class EncounterResultsStateView extends VBox {
     private final VBox resultEnemyList = new VBox(4);
     private final Button resultAwardButton = new Button("XP verteilen");
     private final DialogSurfaceView dialog = buildPane();
-    private EncounterStateView.ResultStateView lastState = EncounterStateView.ResultStateView.empty();
+    private EncounterStateContributionModel.ResultStateView lastState = EncounterStateContributionModel.ResultStateView.empty();
     private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public EncounterResultsStateView() {
@@ -44,13 +44,13 @@ public final class EncounterResultsStateView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void showResults(EncounterStateView.ResultStateView state) {
-        EncounterStateView.ResultStateView safeState = state == null
-                ? EncounterStateView.ResultStateView.empty()
+    public void showResults(EncounterStateContributionModel.ResultStateView state) {
+        EncounterStateContributionModel.ResultStateView safeState = state == null
+                ? EncounterStateContributionModel.ResultStateView.empty()
                 : state;
         lastState = safeState;
         resultEnemyList.getChildren().clear();
-        for (EncounterStateView.ResultEnemyView enemy : safeState.enemies()) {
+        for (EncounterStateContributionModel.ResultEnemyView enemy : safeState.enemies()) {
             resultEnemyList.getChildren().add(buildResultEnemyRow(enemy));
         }
         resultAwardStatusLabel.setText(safeState.awardStatus());
@@ -82,12 +82,12 @@ public final class EncounterResultsStateView extends VBox {
         resultAwardStatusLabel.getStyleClass().add("text-secondary");
         resultAwardStatusLabel.setWrapText(true);
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
-        resultAwardButton.setOnAction(event -> publish(true, false));
+        resultAwardButton.setOnAction(event -> publish(new EncounterResultsStateViewInputEvent.AwardInteraction()));
         Button doneButton = new Button("Zum Planer");
         doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurueckkehren"));
         doneButton.setAccessibleText("Zur Encounter-Planung zurueckkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
-        doneButton.setOnAction(event -> publish(false, true));
+        doneButton.setOnAction(event -> publish(new EncounterResultsStateViewInputEvent.ReturnInteraction()));
         DialogSurfaceView.grow(resultAwardButton);
         DialogSurfaceView.grow(doneButton);
 
@@ -100,7 +100,7 @@ public final class EncounterResultsStateView extends VBox {
         return nextDialog;
     }
 
-    private Node buildResultEnemyRow(EncounterStateView.ResultEnemyView enemy) {
+    private Node buildResultEnemyRow(EncounterStateContributionModel.ResultEnemyView enemy) {
         CheckBox toggle = new CheckBox(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());
         toggle.setSelected(enemy.defeatedByDefault());
         toggle.getStyleClass().add("text-secondary");
@@ -112,7 +112,7 @@ public final class EncounterResultsStateView extends VBox {
         int selectedXp = 0;
         long selectedCount = 0;
         int childIndex = 0;
-        for (EncounterStateView.ResultEnemyView enemy : lastState.enemies()) {
+        for (EncounterStateContributionModel.ResultEnemyView enemy : lastState.enemies()) {
             Node node = childIndex < resultEnemyList.getChildren().size() ? resultEnemyList.getChildren().get(childIndex) : null;
             boolean selected = node instanceof CheckBox checkBox && checkBox.isSelected();
             if (selected) {
@@ -170,7 +170,7 @@ public final class EncounterResultsStateView extends VBox {
         return new Separator();
     }
 
-    private void publish(boolean awardRequested, boolean returnToBuilderRequested) {
-        viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(awardRequested, returnToBuilderRequested));
+    private void publish(EncounterResultsStateViewInputEvent.Interaction interaction) {
+        viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(interaction));
     }
 }

@@ -1,6 +1,9 @@
 package src.domain.dungeon.published;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
 
 public record DungeonSurfacePayload(
@@ -30,5 +33,31 @@ public record DungeonSurfacePayload(
 
     public boolean hasPreviewMap() {
         return previewMap != null && !previewMap.equals(map);
+    }
+
+    public List<Integer> reachableLevels(int fallbackLevel) {
+        TreeSet<Integer> levels = new TreeSet<>();
+        map.areas().forEach(area -> addCellLevels(levels, area.cells()));
+        for (DungeonFeatureSnapshot feature : map.features()) {
+            addCellLevels(levels, feature.cells());
+        }
+        map.editorHandles().forEach(handle -> levels.add(handle.cell().level()));
+        if (previewMap != null) {
+            previewMap.areas().forEach(area -> addCellLevels(levels, area.cells()));
+            for (DungeonFeatureSnapshot feature : previewMap.features()) {
+                addCellLevels(levels, feature.cells());
+            }
+            previewMap.editorHandles().forEach(handle -> levels.add(handle.cell().level()));
+        }
+        if (levels.isEmpty()) {
+            levels.add(fallbackLevel);
+        }
+        return new ArrayList<>(levels);
+    }
+
+    private static void addCellLevels(Set<Integer> levels, List<DungeonCellRef> cells) {
+        for (DungeonCellRef cell : cells == null ? List.<DungeonCellRef>of() : cells) {
+            levels.add(cell.level());
+        }
     }
 }

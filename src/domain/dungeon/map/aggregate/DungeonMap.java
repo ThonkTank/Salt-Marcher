@@ -3,8 +3,6 @@ package src.domain.dungeon.map.aggregate;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.value.ConnectionCatalog;
 import src.domain.dungeon.map.service.DungeonCorridorMutationService;
-import src.domain.dungeon.map.service.DungeonCorridorReadProjector;
-import src.domain.dungeon.map.service.DungeonRoomCellProjector;
 import src.domain.dungeon.map.service.DungeonRoomTopologyEditor;
 import src.domain.dungeon.map.entity.DungeonRoom;
 import src.domain.dungeon.map.entity.DungeonRoomCluster;
@@ -14,7 +12,6 @@ import src.domain.dungeon.map.value.DungeonCell;
 import src.domain.dungeon.map.value.DungeonClusterBoundary;
 import src.domain.dungeon.map.value.DungeonClusterBoundaryKind;
 import src.domain.dungeon.map.value.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.map.value.DungeonCorridorAnchorRef;
 import src.domain.dungeon.map.value.DungeonCorridorBindings;
 import src.domain.dungeon.map.value.DungeonCorridorDoorBinding;
 import src.domain.dungeon.map.value.DungeonCorridorEndpoint;
@@ -36,14 +33,11 @@ import src.domain.dungeon.map.value.SpatialTopology;
 import src.domain.dungeon.map.value.DungeonTopologyRef;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
-import java.util.Set;
 
 /**
  * Canonical aggregate root for one authored dungeon map.
@@ -545,124 +539,7 @@ public final class DungeonMap {
     }
 
     private ConnectionCatalog normalizeConnections(ConnectionCatalog source) {
-        ConnectionCatalog safeSource = source == null ? ConnectionCatalog.empty() : source;
-        List<DungeonCorridor> snappedCorridors = snapOwnedAnchors(safeSource.corridors());
-        List<DungeonCorridor> prunedCorridors = pruneAnchorBindings(snappedCorridors);
-        return new ConnectionCatalog(prunedCorridors, safeSource.stairs(), safeSource.transitions());
-    }
-
-    private List<DungeonCorridor> snapOwnedAnchors(List<DungeonCorridor> corridors) {
-        Map<Long, List<DungeonCell>> cellsByCorridor = corridorCellsByCorridor(corridors);
-        List<DungeonCorridor> result = new ArrayList<>();
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            List<DungeonCorridorAnchorBinding> snapped = corridor.bindings().anchorBindings().stream()
-                    .filter(Objects::nonNull)
-                    .map(binding -> binding.withAbsoluteCell(
-                            snapToHostCorridorCell(binding.absoluteCell(), cellsByCorridor.getOrDefault(
-                                    binding.hostCorridorId(),
-                                    List.of(binding.absoluteCell())))))
-                    .toList();
-            result.add(corridor.withBindings(corridor.bindings().replaceAnchorBindings(snapped)));
-        }
-        return List.copyOf(result);
-    }
-
-    private List<DungeonCorridor> pruneAnchorBindings(List<DungeonCorridor> corridors) {
-        Set<DungeonTopologyRef> referenced = new LinkedHashSet<>();
-        Map<DungeonTopologyRef, Long> hosts = new LinkedHashMap<>();
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
-                if (binding != null && binding.topologyRef().present()) {
-                    hosts.put(binding.topologyRef(), corridor.corridorId());
-                }
-            }
-            for (DungeonCorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
-                if (ref != null && ref.present()) {
-                    referenced.add(ref.topologyRef());
-                }
-            }
-        }
-        List<DungeonCorridor> result = new ArrayList<>();
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            List<DungeonCorridorAnchorBinding> keptBindings = corridor.bindings().anchorBindings().stream()
-                    .filter(Objects::nonNull)
-                    .filter(binding -> referenced.contains(binding.topologyRef()))
-                    .toList();
-            List<DungeonCorridorAnchorRef> keptRefs = corridor.bindings().anchorRefs().stream()
-                    .filter(Objects::nonNull)
-                    .filter(ref -> ref.present() && hosts.containsKey(ref.topologyRef()))
-                    .toList();
-            result.add(corridor.withBindings(
-                    corridor.bindings()
-                            .replaceAnchorBindings(keptBindings)
-                            .replaceAnchorRefs(keptRefs)));
-        }
-        return List.copyOf(result);
-    }
-
-    private Map<Long, List<DungeonCell>> corridorCellsByCorridor(List<DungeonCorridor> corridors) {
-        Map<Long, DungeonRoomCluster> clustersById = clustersById();
-        Map<Long, DungeonRoom> roomsById = roomsById();
-        Map<Long, List<DungeonCell>> roomCellsByRoom = roomCellsByRoom();
-        DungeonCorridorReadProjector.Result projection = new DungeonCorridorReadProjector().project(
-                corridors,
-                clustersById,
-                roomsById,
-                roomCellsByRoom,
-                0L,
-                Map.of());
-        Map<Long, List<DungeonCell>> result = new LinkedHashMap<>();
-        projection.areas().stream()
-                .filter(area -> area.kind() == src.domain.dungeon.map.value.DungeonAreaType.CORRIDOR)
-                .forEach(area -> result.put(area.id(), area.cells()));
-        return Map.copyOf(result);
-    }
-
-    private Map<Long, List<DungeonCell>> roomCellsByRoom() {
-        DungeonRoomCellProjector projector = new DungeonRoomCellProjector();
-        Map<Long, List<DungeonCell>> result = new LinkedHashMap<>();
-        for (DungeonRoomCluster cluster : topology.roomClusters()) {
-            List<DungeonRoom> clusterRooms = rooms.rooms().stream()
-                    .filter(room -> room.clusterId() == cluster.clusterId())
-                    .toList();
-            result.putAll(projector.cellsByRoom(cluster, clusterRooms));
-        }
-        return Map.copyOf(result);
-    }
-
-    private Map<Long, DungeonRoomCluster> clustersById() {
-        Map<Long, DungeonRoomCluster> result = new LinkedHashMap<>();
-        for (DungeonRoomCluster cluster : topology.roomClusters()) {
-            result.put(cluster.clusterId(), cluster);
-        }
-        return Map.copyOf(result);
-    }
-
-    private Map<Long, DungeonRoom> roomsById() {
-        Map<Long, DungeonRoom> result = new LinkedHashMap<>();
-        for (DungeonRoom room : rooms.rooms()) {
-            result.put(room.roomId(), room);
-        }
-        return Map.copyOf(result);
-    }
-
-    private DungeonCell snapToHostCorridorCell(DungeonCell desired, List<DungeonCell> candidates) {
-        if (desired == null || candidates == null || candidates.isEmpty()) {
-            return desired == null ? new DungeonCell(0, 0, 0) : desired;
-        }
-        return candidates.stream()
-                .min(Comparator
-                        .comparingInt((DungeonCell candidate) -> manhattan(desired, candidate))
-                        .thenComparingInt(DungeonCell::level)
-                        .thenComparingInt(DungeonCell::r)
-                        .thenComparingInt(DungeonCell::q))
-                .orElse(desired);
-    }
-
-    private static int manhattan(DungeonCell left, DungeonCell right) {
-        return Math.abs(left.q() - right.q())
-                + Math.abs(left.r() - right.r())
-                + Math.abs(left.level() - right.level());
+        return DungeonCorridorMutationService.normalizeConnections(this, source);
     }
 
     public DungeonMap rename(String mapName) {

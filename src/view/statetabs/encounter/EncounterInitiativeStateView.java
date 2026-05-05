@@ -33,14 +33,14 @@ public final class EncounterInitiativeStateView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void showInitiative(EncounterStateView.InitiativeStateView state) {
-        EncounterStateView.InitiativeStateView safeState = state == null
-                ? new EncounterStateView.InitiativeStateView(List.of())
+    public void showInitiative(EncounterStateContributionModel.InitiativeStateView state) {
+        EncounterStateContributionModel.InitiativeStateView safeState = state == null
+                ? EncounterStateContributionModel.InitiativeStateView.empty()
                 : state;
         initiativeSpinnerById.clear();
         initiativeList.getChildren().clear();
         String currentKind = "";
-        for (EncounterStateView.InitiativeEntryView entry : safeState.entries()) {
+        for (EncounterStateContributionModel.InitiativeEntryView entry : safeState.entries()) {
             if (!entry.kind().equals(currentKind)) {
                 currentKind = entry.kind();
                 Label header = sectionHeader("SC".equals(currentKind) ? "Spieler" : currentKind);
@@ -58,20 +58,20 @@ public final class EncounterInitiativeStateView extends VBox {
         initiativeList.setPadding(DialogSurfaceView.contentInsets());
 
         Button backButton = new Button("\u2190 Zurueck");
-        backButton.setOnAction(event -> publish(true, List.of()));
+        backButton.setOnAction(event -> publish(new EncounterInitiativeStateViewInputEvent.BackNavigationInteraction()));
         Button rollAllButton = new Button("Alle wuerfeln");
         rollAllButton.getStyleClass().add("neutral-action");
         rollAllButton.setOnAction(event -> rollAllInitiatives());
         Button startButton = new Button("Kampf starten");
         startButton.getStyleClass().add("accent");
-        startButton.setOnAction(event -> publish(false, readInitiatives()));
+        startButton.setOnAction(event -> publish(new EncounterInitiativeStateViewInputEvent.SubmissionInteraction(readInitiatives())));
         nextDialog.setHeader(title);
         nextDialog.setBody(initiativeList, BodyPolicy.SCROLL);
         nextDialog.setFooter(backButton, rollAllButton, DialogSurfaceView.spacer(), startButton);
         return nextDialog;
     }
 
-    private Node buildInitiativeRow(EncounterStateView.InitiativeEntryView entry) {
+    private Node buildInitiativeRow(EncounterStateContributionModel.InitiativeEntryView entry) {
         HBox row = new HBox(8);
         row.setAlignment(Pos.CENTER_LEFT);
         row.setPadding(new Insets(0, 0, 0, 12));
@@ -107,8 +107,8 @@ public final class EncounterInitiativeStateView extends VBox {
         return inputs;
     }
 
-    private void publish(boolean backRequested, List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> initiatives) {
-        viewInputEventHandler.accept(new EncounterInitiativeStateViewInputEvent(backRequested, initiatives));
+    private void publish(EncounterInitiativeStateViewInputEvent.Interaction interaction) {
+        viewInputEventHandler.accept(new EncounterInitiativeStateViewInputEvent(interaction));
     }
 
     private Label sectionHeader(String text) {

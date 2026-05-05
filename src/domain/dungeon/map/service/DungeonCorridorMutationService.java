@@ -175,7 +175,7 @@ public final class DungeonCorridorMutationService {
                 dungeonMap.revision() + 1L);
     }
 
-    private static ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {
+    public static ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {
         ConnectionCatalog safeSource = source == null ? ConnectionCatalog.empty() : source;
         List<DungeonCorridor> snappedCorridors = snapOwnedAnchors(dungeonMap, safeSource.corridors());
         List<DungeonCorridor> prunedCorridors = pruneAnchorBindings(snappedCorridors);
