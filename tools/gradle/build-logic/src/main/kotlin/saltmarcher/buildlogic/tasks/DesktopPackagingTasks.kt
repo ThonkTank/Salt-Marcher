@@ -360,7 +360,20 @@ abstract class InstallAppImageTask : DefaultTask() {
 abstract class InstallDesktopEntriesTask : DefaultTask() {
 
     @get:Input
-    abstract val desktopEntryContent: Property<String>
+    abstract val launcherName: Property<String>
+
+    @get:Input
+    abstract val appDisplayName: Property<String>
+
+    @get:Input
+    abstract val desktopEntryIconRelativePath: Property<String>
+
+    @get:Input
+    abstract val startupWmClass: Property<String>
+
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val installedAppDirectory: DirectoryProperty
 
     @get:OutputFile
     abstract val desktopFile: RegularFileProperty
@@ -370,13 +383,29 @@ abstract class InstallDesktopEntriesTask : DefaultTask() {
 
     @TaskAction
     fun install() {
+        val installDir = installedAppDirectory.get().asFile.toPath()
         val desktopPath = desktopFile.get().asFile.toPath()
         val applicationsPath = applicationsFile.get().asFile.toPath()
+        val execPath = installDir.resolve("bin").resolve(launcherName.get())
+        val iconPath = installDir.resolve(desktopEntryIconRelativePath.get())
+        val desktopEntryContent = """
+            [Desktop Entry]
+            Version=1.0
+            Type=Application
+            Name=${appDisplayName.get()}
+            Comment=Launch ${appDisplayName.get()}
+            Exec=${execPath.toAbsolutePath()}
+            Icon=${iconPath.toAbsolutePath()}
+            Terminal=false
+            Categories=Utility;Development;
+            StartupNotify=true
+            StartupWMClass=${startupWmClass.get()}
+            """.trimIndent() + "\n"
 
         Files.createDirectories(desktopPath.parent)
         Files.createDirectories(applicationsPath.parent)
-        Files.writeString(desktopPath, desktopEntryContent.get())
-        Files.writeString(applicationsPath, desktopEntryContent.get())
+        Files.writeString(desktopPath, desktopEntryContent)
+        Files.writeString(applicationsPath, desktopEntryContent)
         setExecutableFile(desktopPath)
         setExecutableFile(applicationsPath)
     }

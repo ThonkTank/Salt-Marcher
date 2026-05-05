@@ -30,10 +30,6 @@ abstract class AbstractJqassistantTask : DefaultTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val cliFile: RegularFileProperty
 
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val sourceConfigFile: RegularFileProperty
-
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val rulesDirectory: DirectoryProperty
@@ -49,26 +45,55 @@ abstract class AbstractJqassistantTask : DefaultTask() {
     @get:Input
     abstract val jvmOpens: Property<String>
 
+    @get:Input
+    abstract val ruleGroups: ListProperty<String>
+
     @get:Internal
     abstract val projectRoot: DirectoryProperty
 
     @get:Inject
     protected abstract val execOperations: ExecOperations
 
-    protected fun materializeConfig(reportRootOverride: java.io.File?): java.io.File {
-        val mainClasspathEntry = "        - java:classpath::${mainClassesDirectory.get().asFile.absoluteInvariantPath()}"
+    protected fun materializeConfig(
+        storeRootOverride: java.io.File,
+        reportRootOverride: java.io.File?
+    ): java.io.File {
+        val scanEntries = buildList {
+            add("java:classpath::${mainClassesDirectory.get().asFile.absoluteInvariantPath()}")
+            addAll(sourceRoots.files.map(File::absoluteInvariantPath).sorted())
+        }
+        val storeUri = "file:${storeRootOverride.absoluteInvariantPath()}"
         val tempReportRoot = reportRootOverride?.toPath() ?: temporaryDir.toPath().resolve("reports")
-        val configText = sourceConfigFile.get().asFile.readText()
-            .replace("file:build/jqassistant/store", "file:${temporaryDir.toPath().resolve("jqassistant-store").absoluteInvariantPath()}")
-            .replace("        - java:classpath::build/classes/java/main", mainClasspathEntry)
-            .replace(
-                "xml.report.file: build/reports/jqassistant/jqassistant-report.xml",
-                "xml.report.file: ${tempReportRoot.resolve("jqassistant-report.xml").absoluteInvariantPath()}"
-            )
-            .replace(
-                "junit.report.directory: build/reports/jqassistant/junit",
-                "junit.report.directory: ${tempReportRoot.resolve("junit").absoluteInvariantPath()}"
-            )
+        val rulesDirectoryPath = rulesDirectory.get().asFile.absoluteInvariantPath()
+        val configText = buildString {
+            appendLine("\$schema: \"https://jqassistant.github.io/jqassistant/current/schema/jqassistant-configuration-cli-v2.6.schema.json\"")
+            appendLine()
+            appendLine("jqassistant:")
+            appendLine("  store:")
+            appendLine("    uri: $storeUri")
+            appendLine("  scan:")
+            appendLine("    reset: true")
+            appendLine("    continue-on-error: false")
+            appendLine("    include:")
+            appendLine("      files:")
+            scanEntries.forEach { entry -> appendLine("        - $entry") }
+            appendLine("  analyze:")
+            appendLine("    rule:")
+            appendLine("      directory: $rulesDirectoryPath")
+            appendLine("    baseline:")
+            appendLine("      enabled: false")
+            appendLine("    report:")
+            appendLine("      continue-on-failure: false")
+            appendLine("      fail-on-severity: BLOCKER")
+            appendLine("      properties:")
+            appendLine("        xml.report.file: ${tempReportRoot.resolve("jqassistant-report.xml").absoluteInvariantPath()}")
+            appendLine("        xml.report.transform-to-html: false")
+            appendLine("        junit.report.directory: ${tempReportRoot.resolve("junit").absoluteInvariantPath()}")
+            appendLine("        junit.report.failureSeverity: BLOCKER")
+            appendLine("        junit.report.errorSeverity: BLOCKER")
+            appendLine("    groups:")
+            ruleGroups.get().forEach { groupName -> appendLine("      - $groupName") }
+        }
         val generatedConfig = temporaryDir.toPath().resolve("jqassistant-config.yml")
         Files.createDirectories(generatedConfig.parent)
         Files.writeString(generatedConfig, configText)
@@ -109,13 +134,8 @@ abstract class JqassistantScanTask : AbstractJqassistantTask() {
     fun scan() {
         val storeDir = storeDirectory.get().asFile
         Files.createDirectories(storeDir.toPath().parent)
-        val generatedConfigFile = materializeConfig(null)
-        runJqassistant(
-            generatedConfigFile,
-            "scan",
-            "-D",
-            "jqassistant.store.uri=file:${storeDir.absoluteInvariantPath()}"
-        )
+        val generatedConfigFile = materializeConfig(storeDir, null)
+        runJqassistant(generatedConfigFile, "scan")
     }
 }
 
@@ -139,13 +159,8 @@ abstract class JqassistantAnalyzeTask : AbstractJqassistantTask() {
         }
         Files.createDirectories(reportsDir.toPath())
         Files.createDirectories(reportsDir.toPath().resolve("junit"))
-        val generatedConfigFile = materializeConfig(reportsDir)
-        runJqassistant(
-            generatedConfigFile,
-            "analyze",
-            "-D",
-            "jqassistant.store.uri=file:${storeDirectory.get().asFile.absoluteInvariantPath()}"
-        )
+        val generatedConfigFile = materializeConfig(storeDirectory.get().asFile, reportsDir)
+        runJqassistant(generatedConfigFile, "analyze")
     }
 }
 
@@ -156,7 +171,7 @@ abstract class JqassistantCommandTask : AbstractJqassistantTask() {
 
     @TaskAction
     fun runCommand() {
-        val generatedConfigFile = materializeConfig(null)
+        val generatedConfigFile = materializeConfig(temporaryDir.toPath().resolve("jqassistant-store").toFile(), null)
         runJqassistant(generatedConfigFile, commandName.get())
     }
 }

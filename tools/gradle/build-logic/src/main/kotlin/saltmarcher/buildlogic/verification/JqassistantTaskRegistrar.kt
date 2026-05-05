@@ -1,5 +1,6 @@
 package saltmarcher.buildlogic.verification
 
+import java.io.File
 import org.gradle.api.Project
 import org.gradle.api.file.Directory
 import org.gradle.api.file.FileCollection
@@ -37,19 +38,19 @@ internal class JqassistantTaskRegistrar(
         reportsDirectory: Provider<Directory>,
         dependsOnTasks: List<Any>
     ): JqassistantTaskPair {
-        val jqassistantSourceConfigFile = project.file(sourceConfigPath)
         val jqassistantRulesDirectory = project.file(rulesDirPath)
+        val jqassistantRuleGroups = loadJqassistantRuleGroups(project.file(sourceConfigPath))
         val scanTask = project.tasks.register<JqassistantScanTask>(scanTaskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = scanDescription
             dependsOn(installJqassistant)
             dependsOn(dependsOnTasks)
             cliFile.set(this@JqassistantTaskRegistrar.cliFile)
-            sourceConfigFile.set(jqassistantSourceConfigFile)
             rulesDirectory.set(jqassistantRulesDirectory)
             this.mainClassesDirectory.set(mainClassesDirectory)
             this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
+            this.ruleGroups.set(jqassistantRuleGroups)
             projectRoot.set(project.layout.projectDirectory)
             this.storeDirectory.set(storeDirectory)
         }
@@ -58,11 +59,11 @@ internal class JqassistantTaskRegistrar(
             description = analyzeDescription
             dependsOn(scanTask)
             cliFile.set(this@JqassistantTaskRegistrar.cliFile)
-            sourceConfigFile.set(jqassistantSourceConfigFile)
             rulesDirectory.set(jqassistantRulesDirectory)
             this.mainClassesDirectory.set(mainClassesDirectory)
             this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
+            this.ruleGroups.set(jqassistantRuleGroups)
             projectRoot.set(project.layout.projectDirectory)
             this.storeDirectory.set(storeDirectory)
             this.reportsDirectory.set(reportsDirectory)
@@ -80,21 +81,38 @@ internal class JqassistantTaskRegistrar(
         sourceRoots: FileCollection,
         dependsOnTasks: List<Any>
     ): TaskProvider<JqassistantCommandTask> {
-        val jqassistantSourceConfigFile = project.file(sourceConfigPath)
         val jqassistantRulesDirectory = project.file(rulesDirPath)
+        val jqassistantRuleGroups = loadJqassistantRuleGroups(project.file(sourceConfigPath))
         return project.tasks.register<JqassistantCommandTask>(taskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             this.description = description
             dependsOn(installJqassistant)
             dependsOn(dependsOnTasks)
             cliFile.set(this@JqassistantTaskRegistrar.cliFile)
-            sourceConfigFile.set(jqassistantSourceConfigFile)
             rulesDirectory.set(jqassistantRulesDirectory)
             this.mainClassesDirectory.set(mainClassesDirectory)
             this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
+            this.ruleGroups.set(jqassistantRuleGroups)
             projectRoot.set(project.layout.projectDirectory)
             this.commandName.set(commandName)
         }
     }
+}
+
+private fun loadJqassistantRuleGroups(configFile: File): List<String> {
+    val groups = mutableListOf<String>()
+    var insideGroups = false
+    configFile.forEachLine { rawLine ->
+        val line = rawLine.trim()
+        when {
+            line == "groups:" -> insideGroups = true
+            insideGroups && line.startsWith("- ") -> groups += line.removePrefix("- ").trim()
+            insideGroups && line.isNotEmpty() && !line.startsWith("#") -> insideGroups = false
+        }
+    }
+    require(groups.isNotEmpty()) {
+        "jQAssistant config '$configFile' must declare at least one analyze group."
+    }
+    return groups
 }

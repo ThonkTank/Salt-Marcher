@@ -16,18 +16,20 @@ import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.the
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
+import saltmarcher.buildlogic.tasks.resolveDesktopDirectory
 
 private const val DefaultJqassistantVersion = "2.9.1"
 
-internal data class QualityConventionEnvironment(
-    val enforcementBundles: EnforcementBundlesExtension,
-    val focusedEnforcementBundleMode: Boolean,
+internal data class QualityConventionVerificationLayout(
     val sourceSets: SourceSetContainer,
     val mainSourceSet: SourceSet,
     val sourceRoots: FileCollection,
     val sourceJavaRoots: FileCollection,
     val mainJavaClassesDir: Provider<Directory>,
-    val commonFocusedArchunitSupportIncludes: List<String>,
+    val commonFocusedArchunitSupportIncludes: List<String>
+)
+
+internal data class QualityConventionPackagingMetadata(
     val appDisplayNameProvider: Provider<String>,
     val desktopIconSourceRelativePathProvider: Provider<String>,
     val desktopEntryIconRelativePathProvider: Provider<String>,
@@ -38,6 +40,16 @@ internal data class QualityConventionEnvironment(
     val preloaderClassNameProvider: Provider<String>,
     val startupWmClassProvider: Provider<String>,
     val stylesheetRelativePathProvider: Provider<String>,
+    val installedAppDirectory: Provider<Directory>,
+    val desktopDirectory: Provider<Directory>,
+    val applicationsDirectory: Provider<Directory>
+)
+
+internal data class QualityConventionEnvironment(
+    val enforcementBundles: EnforcementBundlesExtension,
+    val focusedEnforcementBundleMode: Boolean,
+    val verificationLayout: QualityConventionVerificationLayout,
+    val packagingMetadata: QualityConventionPackagingMetadata,
     val jqassistantVersion: String
 )
 
@@ -69,7 +81,7 @@ internal fun Project.createQualityConventionEnvironment(
         .orElse("resources/salt-marcher.css")
     val jqassistantVersion = providers.gradleProperty("saltMarcherJqassistantVersion").orNull ?: DefaultJqassistantVersion
     val sourceRoots = files("bootstrap", "shell", "src")
-    val sourceJavaRoots = sourceRoots.filter(File::exists)
+    val sourceJavaRoots = files("bootstrap", "shell", "src")
     val sourceSets = the<SourceSetContainer>()
     val mainSourceSet = sourceSets["main"]
     val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap(JavaCompile::getDestinationDirectory)
@@ -78,26 +90,42 @@ internal fun Project.createQualityConventionEnvironment(
         "architecture/MainSourceLocationProvider.java",
         "architecture/view/ViewRolePredicates.java"
     )
+    val installedAppDirectory = layout.dir(
+        launcherNameProvider.map { launcherName ->
+            File(System.getProperty("user.home"), ".local/opt/$launcherName")
+        }
+    )
+    val desktopDirectory = layout.dir(providers.provider { resolveDesktopDirectory().toFile() })
+    val applicationsDirectory = layout.dir(
+        providers.provider { File(System.getProperty("user.home"), ".local/share/applications") }
+    )
 
     return QualityConventionEnvironment(
         enforcementBundles = enforcementBundles,
         focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode,
-        sourceSets = sourceSets,
-        mainSourceSet = mainSourceSet,
-        sourceRoots = sourceRoots,
-        sourceJavaRoots = sourceJavaRoots,
-        mainJavaClassesDir = mainJavaClassesDir,
-        commonFocusedArchunitSupportIncludes = commonFocusedArchunitSupportIncludes,
-        appDisplayNameProvider = appDisplayNameProvider,
-        desktopIconSourceRelativePathProvider = desktopIconSourceRelativePathProvider,
-        desktopEntryIconRelativePathProvider = desktopEntryIconRelativePathProvider,
-        windowIconRelativePathProvider = windowIconRelativePathProvider,
-        launcherNameProvider = launcherNameProvider,
-        mainClassNameProvider = mainClassNameProvider,
-        packageVersionProvider = packageVersionProvider,
-        preloaderClassNameProvider = preloaderClassNameProvider,
-        startupWmClassProvider = startupWmClassProvider,
-        stylesheetRelativePathProvider = stylesheetRelativePathProvider,
+        verificationLayout = QualityConventionVerificationLayout(
+            sourceSets = sourceSets,
+            mainSourceSet = mainSourceSet,
+            sourceRoots = sourceRoots,
+            sourceJavaRoots = sourceJavaRoots,
+            mainJavaClassesDir = mainJavaClassesDir,
+            commonFocusedArchunitSupportIncludes = commonFocusedArchunitSupportIncludes
+        ),
+        packagingMetadata = QualityConventionPackagingMetadata(
+            appDisplayNameProvider = appDisplayNameProvider,
+            desktopIconSourceRelativePathProvider = desktopIconSourceRelativePathProvider,
+            desktopEntryIconRelativePathProvider = desktopEntryIconRelativePathProvider,
+            windowIconRelativePathProvider = windowIconRelativePathProvider,
+            launcherNameProvider = launcherNameProvider,
+            mainClassNameProvider = mainClassNameProvider,
+            packageVersionProvider = packageVersionProvider,
+            preloaderClassNameProvider = preloaderClassNameProvider,
+            startupWmClassProvider = startupWmClassProvider,
+            stylesheetRelativePathProvider = stylesheetRelativePathProvider,
+            installedAppDirectory = installedAppDirectory,
+            desktopDirectory = desktopDirectory,
+            applicationsDirectory = applicationsDirectory
+        ),
         jqassistantVersion = jqassistantVersion
     )
 }
