@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="SaltMarcher Domain Policy Enforcement Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+    <description>
+        Domain policy source-level architecture rules for SaltMarcher production Java sources.
+    </description>
+
+    <rule name="DomainPolicyNoCeremonialIndirectionRule"
+          language="java"
+          message="Domain policy ceremonial indirection violation"
+          class="saltmarcher.quality.pmd.domain.DomainPolicyNoCeremonialIndirectionRule">
+        <priority>1</priority>
+    </rule>
+</ruleset>
