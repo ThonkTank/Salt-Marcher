@@ -1,8 +1,6 @@
 package src.domain.travel.application;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
 
 public final class ApplyTravelDungeonSessionUseCase {
@@ -21,6 +19,9 @@ public final class ApplyTravelDungeonSessionUseCase {
     }
 
     private final RuntimeAccess runtimeAccess;
+    private final LoadTravelDungeonSessionSurfaceUseCase loadTravelDungeonSessionSurfaceUseCase;
+    private final ApplyTravelDungeonMovementUseCase applyTravelDungeonMovementUseCase;
+    private final StabilizeTravelDungeonProjectionUseCase stabilizeTravelDungeonProjectionUseCase;
     private OverlayData overlaySettings = OverlayData.defaults();
     private int projectionLevel;
     private boolean projectionLevelInitialized;
@@ -29,6 +30,9 @@ public final class ApplyTravelDungeonSessionUseCase {
 
     public ApplyTravelDungeonSessionUseCase(RuntimeAccess runtimeAccess) {
         this.runtimeAccess = runtimeAccess;
+        loadTravelDungeonSessionSurfaceUseCase = new LoadTravelDungeonSessionSurfaceUseCase();
+        applyTravelDungeonMovementUseCase = new ApplyTravelDungeonMovementUseCase();
+        stabilizeTravelDungeonProjectionUseCase = new StabilizeTravelDungeonProjectionUseCase();
     }
 
     public void primeRequestedPosition(@Nullable PositionData position) {
@@ -42,8 +46,13 @@ public final class ApplyTravelDungeonSessionUseCase {
                 ? new Command(Action.REFRESH, "", projectionLevel, overlaySettings)
                 : command;
         switch (effectiveCommand.action()) {
-            case REFRESH -> currentSurface = loadPartyAwareSurface(currentPosition());
-            case ACTION -> currentSurface = movePartyAwareSurface(currentPosition(), effectiveCommand.actionId());
+            case REFRESH -> currentSurface = loadTravelDungeonSessionSurfaceUseCase.load(
+                    runtimeAccess,
+                    currentPosition());
+            case ACTION -> currentSurface = applyTravelDungeonMovementUseCase.move(
+                    runtimeAccess,
+                    currentPosition(),
+                    effectiveCommand.actionId());
             case SET_PROJECTION_LEVEL -> projectionLevel = effectiveCommand.projectionLevel();
             case SET_OVERLAY -> overlaySettings = effectiveCommand.overlaySettings();
         }
@@ -52,7 +61,7 @@ public final class ApplyTravelDungeonSessionUseCase {
 
     public SnapshotData snapshot() {
         if (currentSurface == null) {
-            currentSurface = loadPartyAwareSurface(requestedPosition);
+            currentSurface = loadTravelDungeonSessionSurfaceUseCase.load(runtimeAccess, requestedPosition);
         }
         stabilizeProjectionLevel();
         return new SnapshotData(currentSurface, overlaySettings, projectionLevel);
@@ -65,83 +74,17 @@ public final class ApplyTravelDungeonSessionUseCase {
         return currentSurface.position();
     }
 
-    private SurfaceData loadPartyAwareSurface(@Nullable PositionData requestedTravelPosition) {
-        ActiveTravelStateData activeTravel = runtimeAccess.loadActiveTravelState();
-        if (activeTravel.partyLocation() instanceof OverworldPartyLocationData overworld) {
-            return outsideDungeonSurface(overworld.tileId());
-        }
-        PositionData effectivePosition = requestedTravelPosition != null
-                ? requestedTravelPosition
-                : toTravelPosition(activeTravel.partyLocation());
-        SurfaceData surface = runtimeAccess.loadDungeonSurface(effectivePosition);
-        if (requestedTravelPosition == null
-                && activeTravel.partyLocation() == null
-                && !activeTravel.travelCharacterIds().isEmpty()) {
-            runtimeAccess.saveDungeonPosition(surface.position(), activeTravel.travelCharacterIds());
-        }
-        return surface;
-    }
-
-    private SurfaceData movePartyAwareSurface(
-            @Nullable PositionData requestedTravelPosition,
-            String actionId
-    ) {
-        ActiveTravelStateData activeTravel = runtimeAccess.loadActiveTravelState();
-        PositionData effectivePosition = requestedTravelPosition != null
-                ? requestedTravelPosition
-                : toTravelPosition(activeTravel.partyLocation());
-        MoveResultData result = runtimeAccess.moveDungeonAction(effectivePosition, actionId);
-        if (result.status() == MoveStatus.EXTERNAL_TARGET && result.externalTarget() != null) {
-            boolean saved = runtimeAccess.saveOverworldPosition(
-                    result.externalTarget(),
-                    activeTravel.travelCharacterIds());
-            return saved ? outsideDungeonSurface(result.externalTarget().tileId()) : result.surface();
-        }
-        if (result.status() == MoveStatus.SUCCESS) {
-            runtimeAccess.saveDungeonPosition(result.surface().position(), activeTravel.travelCharacterIds());
-        }
-        return result.surface();
-    }
-
     private void stabilizeProjectionLevel() {
-        if (currentSurface == null) {
-            return;
-        }
-        if (!projectionLevelInitialized) {
-            projectionLevel = defaultProjectionLevel(currentSurface, projectionLevel);
-            projectionLevelInitialized = true;
-        }
-        projectionLevel = clampProjectionLevel(currentSurface, projectionLevel);
+        StabilizeTravelDungeonProjectionUseCase.ProjectionLevelState projectionLevelState =
+                stabilizeTravelDungeonProjectionUseCase.stabilize(
+                        currentSurface,
+                        projectionLevel,
+                        projectionLevelInitialized);
+        projectionLevel = projectionLevelState.level();
+        projectionLevelInitialized = projectionLevelState.initialized();
     }
 
-    private static int defaultProjectionLevel(SurfaceData surface, int fallbackLevel) {
-        return surface.contextKind() == ContextKind.DUNGEON
-                ? surface.position().tile().level()
-                : fallbackLevel;
-    }
-
-    private static int clampProjectionLevel(SurfaceData surface, int fallbackLevel) {
-        List<Integer> levels = levelsFrom(surface, fallbackLevel);
-        if (levels.isEmpty()) {
-            return fallbackLevel;
-        }
-        return Math.max(levels.getFirst(), Math.min(levels.getLast(), fallbackLevel));
-    }
-
-    private static List<Integer> levelsFrom(SurfaceData surface, int fallbackLevel) {
-        TreeSet<Integer> levels = new TreeSet<>();
-        MapData map = surface == null ? null : surface.map();
-        if (map != null) {
-            map.areas().forEach(area -> area.cells().forEach(cell -> levels.add(cell.level())));
-            map.features().forEach(feature -> feature.cells().forEach(cell -> levels.add(cell.level())));
-        }
-        if (levels.isEmpty()) {
-            levels.add(fallbackLevel);
-        }
-        return new ArrayList<>(levels);
-    }
-
-    private static @Nullable PositionData toTravelPosition(@Nullable PartyLocationData location) {
+    static @Nullable PositionData toTravelPosition(@Nullable PartyLocationData location) {
         if (!(location instanceof DungeonPartyLocationData dungeonLocation)) {
             return null;
         }
@@ -153,7 +96,7 @@ public final class ApplyTravelDungeonSessionUseCase {
                 dungeonLocation.heading());
     }
 
-    private static SurfaceData outsideDungeonSurface(long tileId) {
+    static SurfaceData outsideDungeonSurface(long tileId) {
         return new SurfaceData(
                 ContextKind.OVERWORLD,
                 "Overworld",
@@ -236,6 +179,11 @@ public final class ApplyTravelDungeonSessionUseCase {
         private static List<Integer> normalizeSelectedLevels(List<Integer> selectedLevels) {
             return selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
         }
+
+        @Override
+        public List<Integer> selectedLevels() {
+            return List.copyOf(selectedLevels);
+        }
     }
 
     public record SurfaceData(
@@ -308,6 +256,11 @@ public final class ApplyTravelDungeonSessionUseCase {
         private static List<ActionData> normalizeActions(List<ActionData> actions) {
             return actions == null ? List.of() : List.copyOf(actions);
         }
+
+        @Override
+        public List<ActionData> actions() {
+            return List.copyOf(actions);
+        }
     }
 
     public enum ContextKind {
@@ -363,6 +316,21 @@ public final class ApplyTravelDungeonSessionUseCase {
         public static MapData empty() {
             return new MapData(TopologyKind.SQUARE, 1, 1, List.of(), List.of(), List.of());
         }
+
+        @Override
+        public List<AreaData> areas() {
+            return List.copyOf(areas);
+        }
+
+        @Override
+        public List<BoundaryData> boundaries() {
+            return List.copyOf(boundaries);
+        }
+
+        @Override
+        public List<FeatureData> features() {
+            return List.copyOf(features);
+        }
     }
 
     public enum TopologyKind {
@@ -381,6 +349,11 @@ public final class ApplyTravelDungeonSessionUseCase {
             id = Math.max(1L, id);
             label = label == null || label.isBlank() ? kind.name() : label.trim();
             cells = cells == null ? List.of() : List.copyOf(cells);
+        }
+
+        @Override
+        public List<CellData> cells() {
+            return List.copyOf(cells);
         }
     }
 
@@ -432,6 +405,11 @@ public final class ApplyTravelDungeonSessionUseCase {
             description = description == null ? "" : description.trim();
             destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
         }
+
+        @Override
+        public List<CellData> cells() {
+            return List.copyOf(cells);
+        }
     }
 
     public enum FeatureKind {
@@ -467,6 +445,11 @@ public final class ApplyTravelDungeonSessionUseCase {
     ) {
         public ActiveTravelStateData {
             travelCharacterIds = travelCharacterIds == null ? List.of() : List.copyOf(travelCharacterIds);
+        }
+
+        @Override
+        public List<Long> travelCharacterIds() {
+            return List.copyOf(travelCharacterIds);
         }
     }
 
