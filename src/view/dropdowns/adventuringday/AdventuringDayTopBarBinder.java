@@ -1,8 +1,11 @@
 package src.view.dropdowns.adventuringday;
 
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
@@ -12,7 +15,10 @@ import src.domain.party.published.CalculateAdventuringDayQuery;
 import src.domain.party.published.LoadAdventuringDayCalculationModelQuery;
 import src.domain.party.published.LoadAdventuringDaySummaryQuery;
 
+@SuppressWarnings("PMD.TooManyMethods")
 final class AdventuringDayTopBarBinder {
+
+    private static final String XP_SUFFIX = " XP";
 
     private final ShellRuntimeContext runtimeContext;
 
@@ -30,11 +36,11 @@ final class AdventuringDayTopBarBinder {
         bindRequests(party, intentHandler);
         view.triggerTextProperty().bind(presentationModel.triggerTextProperty());
         view.onViewInputEvent(intentHandler::consume);
-        view.showPanel(toPanelContent(presentationModel.panelProperty().get()));
-        presentationModel.panelProperty().addListener((ignored, before, after) -> view.showPanel(toPanelContent(after)));
-        view.showCalculation(toCalculation(presentationModel.calculationProperty().get()));
+        view.showPanel(presentationModel.panelProperty().get());
+        presentationModel.panelProperty().addListener((ignored, before, after) -> view.showPanel(after));
+        view.showCalculation(toCalculationContent(presentationModel.calculationProperty().get()));
         presentationModel.calculationProperty()
-                .addListener((ignored, before, after) -> view.showCalculation(toCalculation(after)));
+                .addListener((ignored, before, after) -> view.showCalculation(toCalculationContent(after)));
         summaryModel.subscribe(presentationModel::applySummaryResult);
         calculationModel.subscribe(result ->
                 presentationModel.applyCalculationResult(intentHandler.drainPendingTotalGroupXp(), result));
@@ -58,48 +64,33 @@ final class AdventuringDayTopBarBinder {
         });
     }
 
-    private static AdventuringDayTopBarView.PanelContent toPanelContent(
-            AdventuringDayTopBarContributionModel.PanelModel model
-    ) {
-        AdventuringDayTopBarContributionModel.PanelModel safeModel = model == null
-                ? AdventuringDayTopBarContributionModel.PanelModel.loadingModel()
-                : model;
-        return new AdventuringDayTopBarView.PanelContent(
-                safeModel.loading(),
-                safeModel.error(),
-                safeModel.empty(),
-                safeModel.activePartyLevels());
-    }
-
-    private static AdventuringDayTopBarView.Calculation toCalculation(
+    private static AdventuringDayTopBarView.CalculationContent toCalculationContent(
             AdventuringDayTopBarContributionModel.CalculationModel model
     ) {
         AdventuringDayTopBarContributionModel.CalculationModel safeModel = model == null
                 ? AdventuringDayTopBarContributionModel.CalculationModel.empty(0)
                 : model;
-        return new AdventuringDayTopBarView.Calculation(
-                toBudget(safeModel.budget()),
-                toProgress(safeModel.progress()));
+        AdventuringDayTopBarContributionModel.BudgetModel budget = safeBudgetModel(safeModel.budget());
+        AdventuringDayTopBarContributionModel.ProgressModel progress = safeProgressModel(safeModel.progress());
+        return new AdventuringDayTopBarView.CalculationContent(
+                budgetSummaryLines(budget),
+                budgetTimelineLines(budget),
+                progressSummaryLines(progress),
+                progressTimelineLines(progress));
     }
 
-    private static AdventuringDayTopBarView.Budget toBudget(
+    private static AdventuringDayTopBarContributionModel.BudgetModel safeBudgetModel(
             AdventuringDayTopBarContributionModel.BudgetModel model
     ) {
-        AdventuringDayTopBarContributionModel.BudgetModel safeModel = model == null
+        return model == null
                 ? new AdventuringDayTopBarContributionModel.BudgetModel(0, 0, 0, 0, 0)
                 : model;
-        return new AdventuringDayTopBarView.Budget(
-                safeModel.totalXp(),
-                safeModel.perThirdXp(),
-                safeModel.firstShortRestXp(),
-                safeModel.secondShortRestXp(),
-                safeModel.characterCount());
     }
 
-    private static AdventuringDayTopBarView.Progress toProgress(
+    private static AdventuringDayTopBarContributionModel.ProgressModel safeProgressModel(
             AdventuringDayTopBarContributionModel.ProgressModel model
     ) {
-        AdventuringDayTopBarContributionModel.ProgressModel safeModel = model == null
+        return model == null
                 ? new AdventuringDayTopBarContributionModel.ProgressModel(
                         0,
                         0,
@@ -111,38 +102,48 @@ final class AdventuringDayTopBarBinder {
                         List.of(),
                         List.of())
                 : model;
-        return new AdventuringDayTopBarView.Progress(
-                safeModel.totalGroupXp(),
-                safeModel.perCharacterAwardedXp(),
-                safeModel.partySize(),
-                safeModel.fullDays(),
-                safeModel.totalDays(),
-                safeModel.shortRests(),
-                safeModel.longRests(),
-                safeModel.levelProgressions().stream()
-                        .map(AdventuringDayTopBarBinder::toLevelProgress)
-                        .toList(),
-                safeModel.events().stream()
-                        .map(AdventuringDayTopBarBinder::toProgressEvent)
-                        .toList());
     }
 
-    private static AdventuringDayTopBarView.LevelProgress toLevelProgress(
-            AdventuringDayTopBarContributionModel.LevelProgressModel model
+    private static List<String> budgetSummaryLines(
+            AdventuringDayTopBarContributionModel.BudgetModel budget
     ) {
-        AdventuringDayTopBarContributionModel.LevelProgressModel safeModel = model == null
-                ? new AdventuringDayTopBarContributionModel.LevelProgressModel(1, 1, 0, 0)
-                : model;
-        return new AdventuringDayTopBarView.LevelProgress(
-                safeModel.startLevel(),
-                safeModel.endLevel(),
-                safeModel.characterCount(),
-                safeModel.levelUps());
+        return List.of(
+                "Tag gesamt: " + formatInt(budget.totalXp()) + XP_SUFFIX,
+                "Pro Drittel: ca. " + formatInt(budget.perThirdXp()) + XP_SUFFIX,
+                "Short Rest 1: nach " + formatInt(budget.firstShortRestXp()) + XP_SUFFIX,
+                "Short Rest 2: nach " + formatInt(budget.secondShortRestXp()) + XP_SUFFIX);
     }
 
-    private static AdventuringDayTopBarView.ProgressEvent toProgressEvent(
-            AdventuringDayTopBarContributionModel.ProgressEventModel model
+    private static List<String> budgetTimelineLines(
+            AdventuringDayTopBarContributionModel.BudgetModel budget
     ) {
+        return List.of(
+                "Short Rest 1: " + formatInt(budget.firstShortRestXp()) + XP_SUFFIX,
+                "Short Rest 2: " + formatInt(budget.secondShortRestXp()) + XP_SUFFIX,
+                "Long Rest: " + formatInt(budget.totalXp()) + XP_SUFFIX);
+    }
+
+    private static List<String> progressSummaryLines(
+            AdventuringDayTopBarContributionModel.ProgressModel progress
+    ) {
+        return List.of(
+                "Gesamt-XP: " + formatInt(progress.totalGroupXp()) + XP_SUFFIX,
+                "XP pro Charakter: " + formatInt(progress.perCharacterAwardedXp()),
+                "Adventuring Days: " + formatDays(progress.totalDays()) + " (" + progress.fullDays() + " voll)",
+                "Short Rests: " + progress.shortRests(),
+                "Long Rests: " + progress.longRests(),
+                "Level-ups: " + formatLevelProgress(progress.levelProgressions()));
+    }
+
+    private static List<String> progressTimelineLines(
+            AdventuringDayTopBarContributionModel.ProgressModel progress
+    ) {
+        return progress.events().stream()
+                .map(AdventuringDayTopBarBinder::formatProgressEvent)
+                .toList();
+    }
+
+    private static String formatProgressEvent(AdventuringDayTopBarContributionModel.ProgressEventModel model) {
         AdventuringDayTopBarContributionModel.ProgressEventModel safeModel = model == null
                 ? new AdventuringDayTopBarContributionModel.ProgressEventModel(
                         0,
@@ -152,23 +153,50 @@ final class AdventuringDayTopBarBinder {
                         0,
                         false)
                 : model;
-        return new AdventuringDayTopBarView.ProgressEvent(
-                safeModel.groupXp(),
-                toProgressEventType(safeModel.type()),
-                safeModel.dayNumber(),
-                safeModel.newLevel(),
-                safeModel.affectedCharacters(),
-                safeModel.partialDay());
+        String prefix = "Tag " + safeModel.dayNumber() + ", " + formatInt(safeModel.groupXp()) + XP_SUFFIX + ": ";
+        String suffix = safeModel.partialDay() ? " (teilweiser Tag)" : "";
+        return switch (safeModel.type()) {
+            case LEVEL_UP -> prefix + "Level-up auf " + safeModel.newLevel()
+                    + " für " + safeModel.affectedCharacters() + " Charakter"
+                    + (safeModel.affectedCharacters() == 1 ? "" : "e") + suffix;
+            case SHORT_REST -> prefix + "Short Rest" + suffix;
+            case LONG_REST -> prefix + "Long Rest" + suffix;
+        };
     }
 
-    private static AdventuringDayTopBarView.ProgressEventType toProgressEventType(
-            AdventuringDayTopBarContributionModel.ProgressEventTypeModel type
+    private static String formatLevelProgress(
+            List<AdventuringDayTopBarContributionModel.LevelProgressModel> progressions
     ) {
-        return switch (type == null ? AdventuringDayTopBarContributionModel.ProgressEventTypeModel.LONG_REST : type) {
-            case LEVEL_UP -> AdventuringDayTopBarView.ProgressEventType.LEVEL_UP;
-            case SHORT_REST -> AdventuringDayTopBarView.ProgressEventType.SHORT_REST;
-            case LONG_REST -> AdventuringDayTopBarView.ProgressEventType.LONG_REST;
-        };
+        if (progressions == null || progressions.isEmpty()) {
+            return "keine";
+        }
+        return progressions.stream()
+                .map(AdventuringDayTopBarBinder::formatLevelProgressEntry)
+                .collect(Collectors.joining(", "));
+    }
+
+    private static String formatLevelProgressEntry(
+            AdventuringDayTopBarContributionModel.LevelProgressModel progression
+    ) {
+        AdventuringDayTopBarContributionModel.LevelProgressModel safeProgression = progression == null
+                ? new AdventuringDayTopBarContributionModel.LevelProgressModel(1, 1, 0, 0)
+                : progression;
+        String suffix = safeProgression.levelUps() > 0
+                ? " -> L" + safeProgression.endLevel()
+                : " bleibt";
+        return safeProgression.characterCount() + "x L" + safeProgression.startLevel() + suffix;
+    }
+
+    private static String formatInt(int value) {
+        NumberFormat format = NumberFormat.getIntegerInstance(Locale.GERMANY);
+        return format.format(Math.max(0, value));
+    }
+
+    private static String formatDays(double value) {
+        NumberFormat format = NumberFormat.getNumberInstance(Locale.GERMANY);
+        format.setMinimumFractionDigits(0);
+        format.setMaximumFractionDigits(2);
+        return format.format(value);
     }
 
     private record Binding(Node topBar) implements ShellBinding {

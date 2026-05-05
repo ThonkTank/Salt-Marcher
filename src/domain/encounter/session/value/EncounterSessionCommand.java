@@ -1,10 +1,10 @@
-package src.domain.encounter.session.service;
+package src.domain.encounter.session.value;
 
 import java.util.List;
 import java.util.Optional;
 import src.domain.encounter.generation.value.EncounterGenerationInputs;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
-import src.domain.encounter.session.entity.EncounterSessionViewState;
+import src.domain.encounter.session.entity.EncounterSession;
 
 public record EncounterSessionCommand(
         Action action,
@@ -14,7 +14,7 @@ public record EncounterSessionCommand(
         long planId,
         int delta,
         long token,
-        List<EncounterSessionViewState.InitiativeInputData> initiativeInputs,
+        List<EncounterSession.InitiativeInput> initiativeInputs,
         String combatantId,
         int initiative,
         long partyMemberId,

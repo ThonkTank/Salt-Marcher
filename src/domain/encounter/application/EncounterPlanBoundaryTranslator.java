@@ -1,8 +1,5 @@
-package src.domain.encounter;
+package src.domain.encounter.application;
 
-import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
-import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
-import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
 import src.domain.encounter.plan.value.EncounterPlanCreature;
 import src.domain.encounter.plan.value.EncounterPlanSummary;
@@ -11,12 +8,12 @@ import src.domain.encounter.published.SavedEncounterPlanCreature;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
 
-final class EncounterPublishedPlanMapper {
+public final class EncounterPlanBoundaryTranslator {
 
-    private EncounterPublishedPlanMapper() {
+    private EncounterPlanBoundaryTranslator() {
     }
 
-    static SavedEncounterPlanStatus toPublishedSavePlanStatus(
+    public static SavedEncounterPlanStatus toPublishedSavePlanStatus(
             SaveEncounterPlanUseCase.Status status
     ) {
         SaveEncounterPlanUseCase.Status effectiveStatus = status == null
@@ -29,7 +26,7 @@ final class EncounterPublishedPlanMapper {
         };
     }
 
-    static SavedEncounterPlanStatus toPublishedLoadPlanStatus(
+    public static SavedEncounterPlanStatus toPublishedLoadPlanStatus(
             LoadSavedEncounterPlanUseCase.Status status
     ) {
         LoadSavedEncounterPlanUseCase.Status effectiveStatus = status == null
@@ -43,7 +40,7 @@ final class EncounterPublishedPlanMapper {
         };
     }
 
-    static SavedEncounterPlanStatus toPublishedListPlansStatus(
+    public static SavedEncounterPlanStatus toPublishedListPlansStatus(
             ListSavedEncounterPlansUseCase.Status status
     ) {
         ListSavedEncounterPlansUseCase.Status effectiveStatus = status == null
@@ -55,7 +52,7 @@ final class EncounterPublishedPlanMapper {
         return SavedEncounterPlanStatus.STORAGE_ERROR;
     }
 
-    static SavedEncounterPlan toPublishedPlan(EncounterPlan plan) {
+    public static SavedEncounterPlan toPublishedPlan(EncounterPlan plan) {
         return new SavedEncounterPlan(
                 plan.id(),
                 plan.name(),
@@ -67,7 +64,7 @@ final class EncounterPublishedPlanMapper {
                         .toList());
     }
 
-    static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
+    public static SavedEncounterPlanSummary toPublishedSummary(EncounterPlanSummary summary) {
         return new SavedEncounterPlanSummary(
                 summary.id(),
                 summary.name(),
@@ -75,7 +72,7 @@ final class EncounterPublishedPlanMapper {
                 summary.creatureCount());
     }
 
-    static EncounterPlanCreature toPlanCreature(SavedEncounterPlanCreature creature) {
+    public static EncounterPlanCreature toPlanCreature(SavedEncounterPlanCreature creature) {
         return new EncounterPlanCreature(creature.creatureId(), creature.quantity());
     }
 }

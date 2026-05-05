@@ -8,70 +8,42 @@ public record CatalogPublishedEvent(
         List<String> creatureSubtypes,
         List<String> biomes,
         String difficultyKey,
-        EncounterTuning tuning,
+        int balanceLevel,
+        double amountValue,
+        int diversityLevel,
         List<Long> encounterTableIds,
         long creatureId
 ) {
 
     public CatalogPublishedEvent {
-        kind = kind == null ? Kind.UPDATE_CREATURE_FILTERS : kind;
-        creatureTypes = creatureTypes == null ? List.of() : List.copyOf(creatureTypes);
-        creatureSubtypes = creatureSubtypes == null ? List.of() : List.copyOf(creatureSubtypes);
-        biomes = biomes == null ? List.of() : List.copyOf(biomes);
+        kind = kind == null ? Kind.UPDATE_BUILDER_INPUTS : kind;
+        creatureTypes = copyStrings(creatureTypes);
+        creatureSubtypes = copyStrings(creatureSubtypes);
+        biomes = copyStrings(biomes);
         difficultyKey = difficultyKey == null ? "" : difficultyKey;
-        tuning = tuning == null ? EncounterTuning.empty() : tuning;
-        encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
+        encounterTableIds = copyLongs(encounterTableIds);
         creatureId = Math.max(0L, creatureId);
     }
 
-    static CatalogPublishedEvent updateCreatureFilters(
+    static CatalogPublishedEvent updateBuilderInputs(
             List<String> creatureTypes,
             List<String> creatureSubtypes,
-            List<String> biomes
+            List<String> biomes,
+            String difficultyKey,
+            int balanceLevel,
+            double amountValue,
+            int diversityLevel,
+            List<Long> encounterTableIds
     ) {
         return new CatalogPublishedEvent(
-                Kind.UPDATE_CREATURE_FILTERS,
+                Kind.UPDATE_BUILDER_INPUTS,
                 creatureTypes,
                 creatureSubtypes,
                 biomes,
-                "",
-                EncounterTuning.empty(),
-                List.of(),
-                0L);
-    }
-
-    static CatalogPublishedEvent updateEncounterDifficulty(String difficultyKey) {
-        return new CatalogPublishedEvent(
-                Kind.UPDATE_ENCOUNTER_DIFFICULTY,
-                List.of(),
-                List.of(),
-                List.of(),
                 difficultyKey,
-                EncounterTuning.empty(),
-                List.of(),
-                0L);
-    }
-
-    static CatalogPublishedEvent updateEncounterTuning(int balanceLevel, double amountValue, int diversityLevel) {
-        return new CatalogPublishedEvent(
-                Kind.UPDATE_ENCOUNTER_TUNING,
-                List.of(),
-                List.of(),
-                List.of(),
-                "",
-                new EncounterTuning(balanceLevel, amountValue, diversityLevel),
-                List.of(),
-                0L);
-    }
-
-    static CatalogPublishedEvent updateEncounterTables(List<Long> encounterTableIds) {
-        return new CatalogPublishedEvent(
-                Kind.UPDATE_ENCOUNTER_TABLES,
-                List.of(),
-                List.of(),
-                List.of(),
-                "",
-                EncounterTuning.empty(),
+                balanceLevel,
+                amountValue,
+                diversityLevel,
                 encounterTableIds,
                 0L);
     }
@@ -83,23 +55,23 @@ public record CatalogPublishedEvent(
                 List.of(),
                 List.of(),
                 "",
-                EncounterTuning.empty(),
+                0,
+                0.0,
+                0,
                 List.of(),
                 creatureId);
     }
 
     enum Kind {
-        UPDATE_CREATURE_FILTERS,
-        UPDATE_ENCOUNTER_DIFFICULTY,
-        UPDATE_ENCOUNTER_TUNING,
-        UPDATE_ENCOUNTER_TABLES,
+        UPDATE_BUILDER_INPUTS,
         ADD_CREATURE
     }
 
-    public record EncounterTuning(int balanceLevel, double amountValue, int diversityLevel) {
+    private static List<String> copyStrings(List<String> values) {
+        return values == null ? List.of() : List.copyOf(values);
+    }
 
-        static EncounterTuning empty() {
-            return new EncounterTuning(-1, -1.0, -1);
-        }
+    private static List<Long> copyLongs(List<Long> values) {
+        return values == null ? List.of() : List.copyOf(values);
     }
 }

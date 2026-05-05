@@ -25,6 +25,9 @@ public final class DomainApplicationPublishedBoundaryChecker extends BugChecker
         if (!matcher.matches()) {
             return Description.NO_MATCH;
         }
+        if (!tree.getSourceFile().getName().endsWith("UseCase.java")) {
+            return Description.NO_MATCH;
+        }
 
         String feature = matcher.group(1);
         TreeSet<String> forbiddenReferences = new TreeSet<>();

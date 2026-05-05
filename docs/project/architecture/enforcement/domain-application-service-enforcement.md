@@ -61,7 +61,7 @@ Unified focused bundle entrypoint:
 
 | Invariant ID | Status | Applies When | Mechanical Owner | Blocking Entrypoint | What It Proves |
 | --- | --- | --- | --- | --- | --- |
-| `domain-applicationservice-public-carrier-translation-boundary` | Review-Owned | every handoff from a root `ApplicationService` into same-context `application/*UseCase` code or named domain modules | none | none | Same-context `published/**` carriers are translated at the root boundary before control enters same-context application orchestration or named domain modules. |
+| `domain-applicationservice-public-carrier-translation-boundary` | Review-Owned | every handoff from a root `ApplicationService` into same-context `application/*UseCase` code or named domain modules | none | none | Same-context `published/**` carriers are translated at the root boundary before control enters same-context application orchestration or named domain modules. The root may delegate this translation or projection to narrow direct helper files in `application/`, but not to generic technical buckets or public helper APIs. |
 | `domain-applicationservice-no-runtime-composition-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still does not own shell registration, runtime service lookup, or any alternate runtime-composition seam. |
 | `domain-applicationservice-no-business-policy-ownership` | Review-Owned | every root `*ApplicationService.java` under `src/domain/**` | none | none | A mechanically legal root boundary still delegates business policy to same-context use cases and named domain modules rather than embedding rule-bearing domain logic at the root. |
 

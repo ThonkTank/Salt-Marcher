@@ -1,11 +1,8 @@
-package src.domain.encounter;
+package src.domain.encounter.application;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.application.EncounterGenerationUseCase;
-import src.domain.encounter.application.LoadEncounterBudgetUseCase;
-import src.domain.encounter.application.LoadEncounterPlanBudgetUseCase;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterDifficultyBand;
@@ -14,12 +11,12 @@ import src.domain.encounter.published.EncounterPlanBudgetStatus;
 import src.domain.encounter.published.EncounterPlanBudgetSummary;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
 
-final class EncounterPublishedBudgetMapper {
+public final class EncounterBudgetBoundaryTranslator {
 
-    private EncounterPublishedBudgetMapper() {
+    private EncounterBudgetBoundaryTranslator() {
     }
 
-    static @Nullable EncounterBudgetSummary toPublishedBudget(
+    public static @Nullable EncounterBudgetSummary toPublishedBudget(
             EncounterGenerationUseCase.@Nullable BudgetSummary budget
     ) {
         if (budget == null) {
@@ -37,7 +34,7 @@ final class EncounterPublishedBudgetMapper {
                 budget.remainingDailyXp());
     }
 
-    static @Nullable EncounterBudgetSummary toPublishedBudget(
+    public static @Nullable EncounterBudgetSummary toPublishedBudget(
             EncounterDifficultyMath.@Nullable BudgetSummary budget
     ) {
         if (budget == null) {
@@ -55,7 +52,7 @@ final class EncounterPublishedBudgetMapper {
                 budget.remainingDailyXp());
     }
 
-    static @Nullable EncounterPlanBudgetSummary toPublishedPlanBudget(
+    public static @Nullable EncounterPlanBudgetSummary toPublishedPlanBudget(
             LoadEncounterPlanBudgetUseCase.@Nullable Summary summary
     ) {
         if (summary == null) {
@@ -78,7 +75,7 @@ final class EncounterPublishedBudgetMapper {
                 summary.difficultyLabel());
     }
 
-    static EncounterPlanBudgetStatus toPublishedPlanBudgetStatus(
+    public static EncounterPlanBudgetStatus toPublishedPlanBudgetStatus(
             LoadEncounterPlanBudgetUseCase.Status status
     ) {
         LoadEncounterPlanBudgetUseCase.Status effectiveStatus = status == null
@@ -93,7 +90,7 @@ final class EncounterPublishedBudgetMapper {
         };
     }
 
-    static EncounterGenerationStatus mapBudgetStatus(LoadEncounterBudgetUseCase.Status status) {
+    public static EncounterGenerationStatus mapBudgetStatus(LoadEncounterBudgetUseCase.Status status) {
         LoadEncounterBudgetUseCase.Status effectiveStatus = status == null
                 ? LoadEncounterBudgetUseCase.Status.STORAGE_ERROR
                 : status;
@@ -104,7 +101,7 @@ final class EncounterPublishedBudgetMapper {
         };
     }
 
-    static EncounterTuningPreviewLabels tuningPreviewLabels(@Nullable EncounterBudgetSummary budget) {
+    public static EncounterTuningPreviewLabels tuningPreviewLabels(@Nullable EncounterBudgetSummary budget) {
         int averageLevel = budget == null ? 1 : Math.max(1, Math.min(20, budget.averageLevel()));
         int partySize = budget == null || budget.partyLevels().isEmpty() ? 1 : Math.max(1, budget.partyLevels().size());
         return new EncounterTuningPreviewLabels(

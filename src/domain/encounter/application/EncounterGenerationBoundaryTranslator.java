@@ -1,9 +1,8 @@
-package src.domain.encounter;
+package src.domain.encounter.application;
 
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.value.EncounterGenerationInputs;
 import src.domain.encounter.generation.value.EncounterGenerationRequest;
@@ -22,12 +21,12 @@ import src.domain.encounter.published.EncounterLock;
 import src.domain.encounter.published.GenerateEncounterCommand;
 import src.domain.encounter.published.GeneratedEncounter;
 
-final class EncounterPublishedGenerationMapper {
+public final class EncounterGenerationBoundaryTranslator {
 
-    private EncounterPublishedGenerationMapper() {
+    private EncounterGenerationBoundaryTranslator() {
     }
 
-    static EncounterGenerationRequest toGenerateRequest(GenerateEncounterCommand request) {
+    public static EncounterGenerationRequest toGenerateRequest(GenerateEncounterCommand request) {
         GenerateEncounterCommand effectiveRequest = request == null
                 ? new GenerateEncounterCommand(
                         List.of(),
@@ -51,11 +50,11 @@ final class EncounterPublishedGenerationMapper {
                 effectiveRequest.excludedCreatureIds(),
                 effectiveRequest.lockedCreatures().stream()
                         .filter(Objects::nonNull)
-                        .map(EncounterPublishedGenerationMapper::toLockedCreature)
+                        .map(EncounterGenerationBoundaryTranslator::toLockedCreature)
                         .toList());
     }
 
-    static EncounterGenerationStatus mapStatus(EncounterGenerationUseCase.GenerateStatus status) {
+    public static EncounterGenerationStatus mapStatus(EncounterGenerationUseCase.GenerateStatus status) {
         EncounterGenerationUseCase.GenerateStatus effectiveStatus = status == null
                 ? EncounterGenerationUseCase.GenerateStatus.STORAGE_ERROR
                 : status;
@@ -69,7 +68,7 @@ final class EncounterPublishedGenerationMapper {
         };
     }
 
-    static GeneratedEncounter toPublishedEncounter(EncounterGenerationUseCase.GeneratedEncounterData encounter) {
+    public static GeneratedEncounter toPublishedEncounter(EncounterGenerationUseCase.GeneratedEncounterData encounter) {
         return new GeneratedEncounter(
                 encounter.title(),
                 toPublishedDifficulty(encounter.achievedDifficulty()),
@@ -78,10 +77,10 @@ final class EncounterPublishedGenerationMapper {
                 encounter.adjustedXp(),
                 encounter.xpMultiplier(),
                 encounter.highlights(),
-                encounter.creatures().stream().map(EncounterPublishedGenerationMapper::toPublishedCreature).toList());
+                encounter.creatures().stream().map(EncounterGenerationBoundaryTranslator::toPublishedCreature).toList());
     }
 
-    static @Nullable EncounterGenerationDiagnostics toPublishedDiagnostics(
+    public static @Nullable EncounterGenerationDiagnostics toPublishedDiagnostics(
             EncounterGenerationUseCase.@Nullable GenerationDiagnostics diagnostics
     ) {
         if (diagnostics == null) {
@@ -97,7 +96,7 @@ final class EncounterPublishedGenerationMapper {
                 diagnostics.candidateEvaluations());
     }
 
-    static EncounterGenerationAdvisory toPublishedAdvisory(
+    public static EncounterGenerationAdvisory toPublishedAdvisory(
             EncounterGenerationUseCase.GenerationAdvisory advisory
     ) {
         if (advisory == EncounterGenerationUseCase.GenerationAdvisory.AUTO_RESOLVED) {

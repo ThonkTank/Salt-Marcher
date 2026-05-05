@@ -44,7 +44,8 @@ public final class DomainUseCaseEnforcementCoverageRules implements Architecture
             row("domain-usecase-thin-orchestration-semantics", "Review-Owned"),
             row("domain-usecase-collaborator-surface-discipline", "Review-Owned"),
             row("domain-usecase-no-hidden-business-policy", "Review-Owned"),
-            row("domain-usecase-no-hidden-carrier-bypass-into-model", "Review-Owned"));
+            row("domain-usecase-no-hidden-carrier-bypass-into-model", "Review-Owned"),
+            row("domain-usecase-helper-role-discipline", "Review-Owned"));
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {

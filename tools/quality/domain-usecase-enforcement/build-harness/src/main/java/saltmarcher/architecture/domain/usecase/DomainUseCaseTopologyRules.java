@@ -9,6 +9,12 @@ import saltmarcher.architecture.ViolationSink;
 
 public final class DomainUseCaseTopologyRules implements ArchitectureRule {
 
+    private static final List<String> ALLOWED_APPLICATION_FILE_SUFFIXES = List.of(
+            "UseCase.java",
+            "BoundaryTranslator.java",
+            "Projector.java",
+            "RuntimeAccess.java",
+            "RuntimeAdapter.java");
     private static final Pattern GENERIC_USE_CASE_FILE_PATTERN =
             Pattern.compile(".*(?:Operations|Helper|Adapter|Repository|Mapper|Policy)UseCase\\.java$");
     private static final Pattern BACKEND_PORT_CONTRACT_FILE_PATTERN =
@@ -34,9 +40,9 @@ public final class DomainUseCaseTopologyRules implements ArchitectureRule {
     }
 
     private static void validateDirectPlacement(SourceFile sourceFile, ViolationSink violations) {
-        if (sourceFile.relativeSegments().size() != 5 || !sourceFile.fileName().endsWith("UseCase.java")) {
+        if (sourceFile.relativeSegments().size() != 5 || !hasAllowedApplicationSuffix(sourceFile.fileName())) {
             violations.add(sourceFile.relativePath(), "domain-usecase-direct-file-placement",
-                    "Domain application orchestration must stay as direct *UseCase.java files under src/domain/<context>/application/.");
+                    "Domain application orchestration and narrow boundary helpers must stay as direct *UseCase.java, *BoundaryTranslator.java, *Projector.java, *RuntimeAccess.java, or *RuntimeAdapter.java files under src/domain/<context>/application/.");
         }
     }
 
@@ -52,5 +58,14 @@ public final class DomainUseCaseTopologyRules implements ArchitectureRule {
             violations.add(sourceFile.relativePath(), "domain-usecase-no-backend-port-contract-files",
                     "Backend port contracts such as *Repository, *Lookup, *Catalog, or *Search belong in a named domain module port/ package, not in application/.");
         }
+    }
+
+    private static boolean hasAllowedApplicationSuffix(String fileName) {
+        for (String suffix : ALLOWED_APPLICATION_FILE_SUFFIXES) {
+            if (fileName.endsWith(suffix)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -147,17 +147,17 @@ public final class CombatRuntime {
     }
 
     public void setInitiative(String combatantId, int initiative) {
-        setInitiative(combatants, combatantId, initiative);
+        updateInitiative(combatants, combatantId, initiative);
     }
 
     public boolean mutateHp(String combatantId, int amount, boolean healing) {
         return mutateHp(combatants, combatantId, amount, healing);
     }
 
-    public List<EncounterSessionViewState.ResultEnemyData> resultEnemies() {
+    public List<EncounterSession.ResultEnemyData> resultEnemies() {
         return combatants.stream()
                 .filter(combatant -> !combatant.playerCharacter())
-                .map(combatant -> new EncounterSessionViewState.ResultEnemyData(
+                .map(combatant -> new EncounterSession.ResultEnemyData(
                         combatant.name(),
                         combatant.alive() ? "Lebt" : "Tot",
                         Math.max(0, combatant.maxHp() - combatant.currentHp()),
@@ -167,10 +167,10 @@ public final class CombatRuntime {
                 .toList();
     }
 
-    public EncounterSessionViewState.CombatProjectionData combatProjection(int requestedTurnIndex, int round) {
+    public EncounterSession.CombatProjectionData combatProjection(int requestedTurnIndex, int round) {
         List<TurnEntry> entries = turnEntries(combatants);
         int currentTurnIndex = normalizedTurnIndex(entries, requestedTurnIndex);
-        List<EncounterSessionViewState.CombatCardData> cards = new ArrayList<>();
+        List<EncounterSession.CombatCardData> cards = new ArrayList<>();
         int aliveEnemies = 0;
         int totalEnemies = 0;
         for (Combatant combatant : combatants) {
@@ -183,7 +183,7 @@ public final class CombatRuntime {
         }
         for (int index = 0; index < entries.size(); index++) {
             TurnEntry entry = entries.get(index);
-            cards.add(new EncounterSessionViewState.CombatCardData(
+            cards.add(new EncounterSession.CombatCardData(
                     entry.id(),
                     entry.name(),
                     entry.playerCharacter(),
@@ -197,7 +197,7 @@ public final class CombatRuntime {
                     entry.detail()));
         }
         String statusText = aliveEnemies + "/" + totalEnemies + " - " + LivePressure.from(aliveEnemies, totalEnemies).label();
-        return new EncounterSessionViewState.CombatProjectionData(
+        return new EncounterSession.CombatProjectionData(
                 currentTurnIndex,
                 round,
                 statusText,
@@ -275,7 +275,7 @@ public final class CombatRuntime {
         return nextOrder;
     }
 
-    private static void setInitiative(List<Combatant> combatants, String combatantId, int initiative) {
+    private static void updateInitiative(List<Combatant> combatants, String combatantId, int initiative) {
         TurnEntry entry = turnEntry(combatants, combatantId);
         if (entry == null) {
             return;
@@ -547,7 +547,7 @@ public final class CombatRuntime {
     private record Combatant(
             String id,
             String name,
-            EncounterSessionViewState.CombatantKind kind,
+            EncounterSession.CombatantKind kind,
             long creatureId,
             int currentHp,
             int maxHp,
@@ -563,7 +563,7 @@ public final class CombatRuntime {
             return new Combatant(
                     id,
                     name,
-                    EncounterSessionViewState.CombatantKind.PLAYER_CHARACTER,
+                    EncounterSession.CombatantKind.PLAYER_CHARACTER,
                     0,
                     0,
                     0,
@@ -571,7 +571,7 @@ public final class CombatRuntime {
                     initiative,
                     1,
                     0,
-                    EncounterSessionViewState.CombatantKind.PLAYER_CHARACTER.publishedLabel(),
+                    EncounterSession.CombatantKind.PLAYER_CHARACTER.publishedLabel(),
                     "",
                     order);
         }
@@ -596,7 +596,7 @@ public final class CombatRuntime {
             return new Combatant(
                     id + ":" + creatureIndex,
                     displayName,
-                    EncounterSessionViewState.CombatantKind.MONSTER,
+                    EncounterSession.CombatantKind.MONSTER,
                     creatureId,
                     hp,
                     hp,
@@ -610,7 +610,7 @@ public final class CombatRuntime {
         }
 
         private boolean playerCharacter() {
-            return kind == EncounterSessionViewState.CombatantKind.PLAYER_CHARACTER;
+            return kind == EncounterSession.CombatantKind.PLAYER_CHARACTER;
         }
 
         private boolean alive() {

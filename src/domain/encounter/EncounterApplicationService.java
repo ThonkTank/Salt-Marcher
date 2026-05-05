@@ -7,20 +7,26 @@ import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.application.ApplyEncounterSessionUseCase;
+import src.domain.encounter.application.EncounterBudgetBoundaryTranslator;
+import src.domain.encounter.application.EncounterGenerationBoundaryTranslator;
 import src.domain.encounter.application.EncounterGenerationUseCase;
+import src.domain.encounter.application.EncounterPlanBoundaryTranslator;
+import src.domain.encounter.application.EncounterSessionBoundaryTranslator;
+import src.domain.encounter.application.EncounterSessionRuntimeAdapter;
+import src.domain.encounter.application.EncounterSessionSnapshotProjector;
 import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
 import src.domain.encounter.application.LoadEncounterPlanBudgetUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.plan.port.EncounterPlanRepository;
+import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.encounter.published.EncounterBudgetResult;
 import src.domain.encounter.published.EncounterBudgetSummary;
 import src.domain.encounter.published.EncounterGenerationResult;
 import src.domain.encounter.published.EncounterGenerationStatus;
 import src.domain.encounter.published.EncounterPlanBudgetResult;
 import src.domain.encounter.published.EncounterPlanBudgetStatus;
-import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.encounter.published.EncounterSessionModel;
 import src.domain.encounter.published.EncounterSessionSnapshot;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
@@ -105,7 +111,7 @@ public final class EncounterApplicationService {
         if (party != null && creatures != null) {
             nextGenerator = new EncounterGenerationUseCase(party, creatures, encounterTables);
             nextLoadBudgetUseCase = new LoadEncounterBudgetUseCase(party);
-            nextApplySessionUseCase = new ApplyEncounterSessionUseCase(new EncounterSessionRuntimeAccessAdapter(
+            nextApplySessionUseCase = new ApplyEncounterSessionUseCase(new EncounterSessionRuntimeAdapter(
                     party,
                     creatures,
                     nextGenerator,
@@ -139,8 +145,8 @@ public final class EncounterApplicationService {
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
             return new EncounterBudgetResult(
-                    EncounterPublishedBudgetMapper.mapBudgetStatus(result.status()),
-                    EncounterPublishedBudgetMapper.toPublishedBudget(result.budget()),
+                    EncounterBudgetBoundaryTranslator.mapBudgetStatus(result.status()),
+                    EncounterBudgetBoundaryTranslator.toPublishedBudget(result.budget()),
                     result.message());
         } catch (RuntimeException exception) {
             return new EncounterBudgetResult(EncounterGenerationStatus.STORAGE_ERROR, null, "Encounter budget could not be loaded.");
@@ -152,22 +158,22 @@ public final class EncounterApplicationService {
         if (loadBudgetUseCase == null) {
             currentTuningPreview = new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
-                    EncounterPublishedBudgetMapper.tuningPreviewLabels(null),
+                    EncounterBudgetBoundaryTranslator.tuningPreviewLabels(null),
                     "Encounter tuning preview service is not registered.");
             notifyTuningPreviewListeners(currentTuningPreview);
             return currentTuningPreview;
         }
         try {
             LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
-            EncounterBudgetSummary budget = EncounterPublishedBudgetMapper.toPublishedBudget(result.budget());
+            EncounterBudgetSummary budget = EncounterBudgetBoundaryTranslator.toPublishedBudget(result.budget());
             currentTuningPreview = new EncounterTuningPreviewResult(
-                    EncounterPublishedBudgetMapper.mapBudgetStatus(result.status()),
-                    EncounterPublishedBudgetMapper.tuningPreviewLabels(budget),
+                    EncounterBudgetBoundaryTranslator.mapBudgetStatus(result.status()),
+                    EncounterBudgetBoundaryTranslator.tuningPreviewLabels(budget),
                     result.message());
         } catch (RuntimeException exception) {
             currentTuningPreview = new EncounterTuningPreviewResult(
                     EncounterGenerationStatus.STORAGE_ERROR,
-                    EncounterPublishedBudgetMapper.tuningPreviewLabels(null),
+                    EncounterBudgetBoundaryTranslator.tuningPreviewLabels(null),
                     "Encounter tuning preview could not be loaded.");
         }
         notifyTuningPreviewListeners(currentTuningPreview);
@@ -185,8 +191,8 @@ public final class EncounterApplicationService {
         try {
             LoadEncounterPlanBudgetUseCase.Result result = loadPlanBudgetUseCase.execute(query.planId());
             return new EncounterPlanBudgetResult(
-                    EncounterPublishedBudgetMapper.toPublishedPlanBudgetStatus(result.status()),
-                    EncounterPublishedBudgetMapper.toPublishedPlanBudget(result.summary()),
+                    EncounterBudgetBoundaryTranslator.toPublishedPlanBudgetStatus(result.status()),
+                    EncounterBudgetBoundaryTranslator.toPublishedPlanBudget(result.summary()),
                     result.message());
         } catch (RuntimeException exception) {
             return new EncounterPlanBudgetResult(
@@ -206,14 +212,14 @@ public final class EncounterApplicationService {
         }
         try {
             EncounterGenerationUseCase.GenerateResult result = generator.execute(
-                    EncounterPublishedGenerationMapper.toGenerateRequest(request));
+                    EncounterGenerationBoundaryTranslator.toGenerateRequest(request));
             return new EncounterGenerationResult(
-                    EncounterPublishedGenerationMapper.mapStatus(result.status()),
-                    EncounterPublishedBudgetMapper.toPublishedBudget(result.budget()),
-                    result.encounters().stream().map(EncounterPublishedGenerationMapper::toPublishedEncounter).toList(),
+                    EncounterGenerationBoundaryTranslator.mapStatus(result.status()),
+                    EncounterBudgetBoundaryTranslator.toPublishedBudget(result.budget()),
+                    result.encounters().stream().map(EncounterGenerationBoundaryTranslator::toPublishedEncounter).toList(),
                     result.message(),
-                    EncounterPublishedGenerationMapper.toPublishedDiagnostics(result.diagnostics()),
-                    result.advisories().stream().map(EncounterPublishedGenerationMapper::toPublishedAdvisory).toList());
+                    EncounterGenerationBoundaryTranslator.toPublishedDiagnostics(result.diagnostics()),
+                    result.advisories().stream().map(EncounterGenerationBoundaryTranslator::toPublishedAdvisory).toList());
         } catch (RuntimeException exception) {
             return new EncounterGenerationResult(EncounterGenerationStatus.defaultFailure(), null, List.of(), "Encounter generation failed.");
         }
@@ -236,11 +242,11 @@ public final class EncounterApplicationService {
                 effective.generatedLabel(),
                 effective.creatures().stream()
                         .filter(Objects::nonNull)
-                        .map(EncounterPublishedPlanMapper::toPlanCreature)
+                        .map(EncounterPlanBoundaryTranslator::toPlanCreature)
                         .toList());
         return new SavedEncounterPlanResult(
-                EncounterPublishedPlanMapper.toPublishedSavePlanStatus(result.status()),
-                result.plan() == null ? null : EncounterPublishedPlanMapper.toPublishedPlan(result.plan()),
+                EncounterPlanBoundaryTranslator.toPublishedSavePlanStatus(result.status()),
+                result.plan() == null ? null : EncounterPlanBoundaryTranslator.toPublishedPlan(result.plan()),
                 result.message());
     }
 
@@ -254,8 +260,8 @@ public final class EncounterApplicationService {
         }
         LoadSavedEncounterPlanUseCase.Result result = useCase.execute(query == null ? 0L : query.planId());
         return new SavedEncounterPlanResult(
-                EncounterPublishedPlanMapper.toPublishedLoadPlanStatus(result.status()),
-                result.plan() == null ? null : EncounterPublishedPlanMapper.toPublishedPlan(result.plan()),
+                EncounterPlanBoundaryTranslator.toPublishedLoadPlanStatus(result.status()),
+                result.plan() == null ? null : EncounterPlanBoundaryTranslator.toPublishedPlan(result.plan()),
                 result.message());
     }
 
@@ -270,8 +276,8 @@ public final class EncounterApplicationService {
         }
         ListSavedEncounterPlansUseCase.Result result = useCase.execute();
         return new SavedEncounterPlanListResult(
-                EncounterPublishedPlanMapper.toPublishedListPlansStatus(result.status()),
-                result.plans().stream().map(EncounterPublishedPlanMapper::toPublishedSummary).toList(),
+                EncounterPlanBoundaryTranslator.toPublishedListPlansStatus(result.status()),
+                result.plans().stream().map(EncounterPlanBoundaryTranslator::toPublishedSummary).toList(),
                 result.message());
     }
 
@@ -290,8 +296,8 @@ public final class EncounterApplicationService {
         if (useCase == null) {
             return EncounterSessionSnapshot.empty("Encounter session is not registered.");
         }
-        EncounterSessionSnapshot snapshot = EncounterSessionSnapshotMapper.toPublishedSnapshot(
-                useCase.apply(EncounterSessionCommandMapper.toInternalCommand(command)));
+        EncounterSessionSnapshot snapshot = EncounterSessionSnapshotProjector.toPublishedSnapshot(
+                useCase.apply(EncounterSessionBoundaryTranslator.toInternalCommand(command)));
         notifySessionListeners(snapshot);
         return snapshot;
     }
@@ -301,7 +307,7 @@ public final class EncounterApplicationService {
         if (useCase == null) {
             return EncounterSessionSnapshot.empty("Encounter session is not registered.");
         }
-        return EncounterSessionSnapshotMapper.toPublishedSnapshot(useCase.snapshot());
+        return EncounterSessionSnapshotProjector.toPublishedSnapshot(useCase.snapshot());
     }
 
     private Runnable subscribeSessionListener(Consumer<EncounterSessionSnapshot> listener) {
@@ -332,5 +338,4 @@ public final class EncounterApplicationService {
             listener.accept(result);
         }
     }
-
 }

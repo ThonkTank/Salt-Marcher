@@ -25,7 +25,9 @@ additional domain-layer taxonomies.
 - `Hexagonal Architecture` / `Ports and Adapters` is the canonical model for
   `src/domain/**`
 - `ApplicationService` is the inbound callable boundary of one domain context
-- `application/*UseCase` files orchestrate one use case behind that boundary
+- `application/` owns direct `*UseCase` orchestration plus narrow internal
+  boundary helpers for translation, projection, and runtime adaptation behind
+  that boundary
 - `port/` contains outbound port interfaces owned by the domain core
 - outbound ports are implemented outside `src/domain/**`; adapter placement is
   defined by the data-layer standard, not by this document
@@ -63,7 +65,9 @@ inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
   such boundary handles may appear as same-context `published/*Model` types
   that outer layers observe only through read-side methods like `current()`
   and `subscribe(...)`
-- `application/` contains direct `*UseCase.java` files only
+- `application/` contains direct `*UseCase.java` files plus direct internal
+  `*BoundaryTranslator.java`, `*Projector.java`, `*RuntimeAccess.java`, and
+  `*RuntimeAdapter.java` helper files
 - named domain modules use role subpackages only as needed. The only outbound
   role package is `port/`
 - a domain port expresses what the core needs from outside. It must not expose
@@ -71,7 +75,8 @@ inside a domain module. `repository`, `query`, `gateway`, `mapper`, `model`,
   network clients, transaction objects, or adapter lifecycle
 - named domain modules must not depend on any `src.domain.*.published.*`
   carrier, same-context or foreign. Published language is translated at the
-  root/application boundary before control enters the model
+  root/application boundary before control enters the model. Narrow
+  translation or projection helpers may live directly in `application/`
 - domain code may call outward only through domain-owned outbound ports or
   allowed foreign root application services from application orchestration
 - domain code must not depend on `bootstrap`, `shell.*`, `src.view.*`,
@@ -90,7 +95,8 @@ one domain context.
 - it accepts same-context `published/` command or query carriers
 - it returns same-context `published/` carriers
 - it translates public carriers before control enters application use cases or
-  named domain modules
+  named domain modules, directly or through internal application-boundary
+  helpers in `application/`
 - it does not own shell registration, runtime service lookup, data adapter
   construction, or business policy
 
@@ -126,6 +132,10 @@ src/domain/<context>/
   published/
   application/
     *UseCase.java
+    *BoundaryTranslator.java
+    *Projector.java
+    *RuntimeAccess.java
+    *RuntimeAdapter.java
   <domain-module>/
     aggregate/
     entity/

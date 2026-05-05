@@ -3,58 +3,59 @@ package src.view.leftbartabs.catalog;
 import java.util.List;
 
 public record CatalogControlsViewInputEvent(
-        boolean creatureFiltersChanged,
-        boolean encounterDifficultyChanged,
-        boolean encounterTuningChanged,
-        boolean encounterTablesChanged,
-        FilterPayload filterState,
+        String nameQuery,
+        String challengeRatingMin,
+        String challengeRatingMax,
+        List<String> sizes,
+        List<String> types,
+        List<String> subtypes,
+        List<String> biomes,
+        List<String> alignments,
+        boolean sizePopupOpen,
+        String sizePopupQuery,
+        boolean typePopupOpen,
+        String typePopupQuery,
+        boolean subtypePopupOpen,
+        String subtypePopupQuery,
+        boolean biomePopupOpen,
+        String biomePopupQuery,
+        boolean alignmentPopupOpen,
+        String alignmentPopupQuery,
+        boolean encounterTablePopupOpen,
         String difficultyKey,
-        EncounterTuning tuning,
+        int balanceLevel,
+        double amountValue,
+        int diversityLevel,
         List<Long> encounterTableIds
 ) {
 
     public CatalogControlsViewInputEvent {
-        filterState = filterState == null ? FilterPayload.empty() : filterState;
-        difficultyKey = difficultyKey == null ? "" : difficultyKey;
-        tuning = tuning == null ? EncounterTuning.empty() : tuning;
-        encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
+        nameQuery = normalized(nameQuery);
+        challengeRatingMin = normalized(challengeRatingMin);
+        challengeRatingMax = normalized(challengeRatingMax);
+        sizes = copyStrings(sizes);
+        types = copyStrings(types);
+        subtypes = copyStrings(subtypes);
+        biomes = copyStrings(biomes);
+        alignments = copyStrings(alignments);
+        sizePopupQuery = normalized(sizePopupQuery);
+        typePopupQuery = normalized(typePopupQuery);
+        subtypePopupQuery = normalized(subtypePopupQuery);
+        biomePopupQuery = normalized(biomePopupQuery);
+        alignmentPopupQuery = normalized(alignmentPopupQuery);
+        difficultyKey = normalized(difficultyKey);
+        encounterTableIds = copyLongs(encounterTableIds);
     }
 
-    public record FilterPayload(
-            String nameQuery,
-            String challengeRatingMin,
-            String challengeRatingMax,
-            List<String> sizes,
-            List<String> types,
-            List<String> subtypes,
-            List<String> biomes,
-            List<String> alignments
-    ) {
-
-        public FilterPayload {
-            nameQuery = nameQuery == null ? "" : nameQuery;
-            challengeRatingMin = challengeRatingMin == null ? "" : challengeRatingMin;
-            challengeRatingMax = challengeRatingMax == null ? "" : challengeRatingMax;
-            sizes = sizes == null ? List.of() : List.copyOf(sizes);
-            types = types == null ? List.of() : List.copyOf(types);
-            subtypes = subtypes == null ? List.of() : List.copyOf(subtypes);
-            biomes = biomes == null ? List.of() : List.copyOf(biomes);
-            alignments = alignments == null ? List.of() : List.copyOf(alignments);
-        }
-
-        static FilterPayload empty() {
-            return new FilterPayload("", "", "", List.of(), List.of(), List.of(), List.of(), List.of());
-        }
+    private static String normalized(String value) {
+        return value == null ? "" : value;
     }
 
-    public record EncounterTuning(
-            int balanceLevel,
-            double amountValue,
-            int diversityLevel
-    ) {
+    private static List<String> copyStrings(List<String> values) {
+        return values == null ? List.of() : List.copyOf(values);
+    }
 
-        static EncounterTuning empty() {
-            return new EncounterTuning(-1, -1.0, -1);
-        }
+    private static List<Long> copyLongs(List<Long> values) {
+        return values == null ? List.of() : List.copyOf(values);
     }
 }

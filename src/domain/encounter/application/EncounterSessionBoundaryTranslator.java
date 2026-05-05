@@ -1,4 +1,4 @@
-package src.domain.encounter;
+package src.domain.encounter.application;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,17 +12,15 @@ import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterSessionSnapshot;
 import src.domain.encounter.published.GenerateEncounterCommand;
-import src.domain.encounter.session.entity.EncounterSessionViewState;
-import src.domain.encounter.session.service.EncounterSessionCommand;
+import src.domain.encounter.session.entity.EncounterSession;
+import src.domain.encounter.session.value.EncounterSessionCommand;
 
-final class EncounterSessionCommandMapper {
+public final class EncounterSessionBoundaryTranslator {
 
-    private EncounterSessionCommandMapper() {
+    private EncounterSessionBoundaryTranslator() {
     }
 
-    static EncounterSessionCommand toInternalCommand(
-            @Nullable ApplyEncounterSessionCommand command
-    ) {
+    public static EncounterSessionCommand toInternalCommand(@Nullable ApplyEncounterSessionCommand command) {
         if (command == null) {
             return EncounterSessionCommand.refresh();
         }
@@ -37,7 +35,7 @@ final class EncounterSessionCommandMapper {
                 command.delta(),
                 command.token(),
                 command.initiativeInputs().stream()
-                        .map(entry -> new EncounterSessionViewState.InitiativeInputData(entry.id(), entry.initiative()))
+                        .map(entry -> new EncounterSession.InitiativeInput(entry.id(), entry.initiative()))
                         .toList(),
                 command.combatantId(),
                 command.initiative(),
@@ -46,7 +44,7 @@ final class EncounterSessionCommandMapper {
                 command.healing());
     }
 
-    private static EncounterGenerationInputs toInternalBuilderInputs(
+    public static EncounterGenerationInputs toInternalBuilderInputs(
             EncounterSessionSnapshot.BuilderInputs builderInputs
     ) {
         EncounterSessionSnapshot.BuilderInputs safeInputs = builderInputs == null
@@ -61,7 +59,7 @@ final class EncounterSessionCommandMapper {
                 safeInputs.encounterTableIds());
     }
 
-    private static EncounterGenerationRequest toInternalGenerateRequest(
+    public static EncounterGenerationRequest toInternalGenerateRequest(
             @Nullable GenerateEncounterCommand request
     ) {
         GenerateEncounterCommand safeRequest = request == null
