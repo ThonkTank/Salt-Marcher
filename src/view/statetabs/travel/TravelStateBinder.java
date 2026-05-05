@@ -9,6 +9,9 @@ import shell.api.ShellSlot;
 
 final class TravelStateBinder {
 
+    private static final int TEXT_SLOT_COUNT = 6;
+    private static final int DETAIL_SLOT_COUNT = 3;
+
     TravelStateBinder(ShellRuntimeContext runtimeContext) {
         Objects.requireNonNull(runtimeContext, "runtimeContext");
     }
@@ -16,18 +19,13 @@ final class TravelStateBinder {
     ShellBinding bind() {
         TravelStateContributionModel presentationModel = new TravelStateContributionModel();
         TravelStateView state = new TravelStateView();
-        state.iconTextProperty().bind(presentationModel.iconTextProperty());
-        state.locationTextProperty().bind(presentationModel.locationTextProperty());
-        state.statusTextProperty().bind(presentationModel.statusTextProperty());
-        state.contextTextProperty().bind(presentationModel.contextTextProperty());
-        state.detailKeyOneTextProperty().bind(presentationModel.detailKeyOneTextProperty());
-        state.detailValueOneTextProperty().bind(presentationModel.detailValueOneTextProperty());
-        state.detailKeyTwoTextProperty().bind(presentationModel.detailKeyTwoTextProperty());
-        state.detailValueTwoTextProperty().bind(presentationModel.detailValueTwoTextProperty());
-        state.detailKeyThreeTextProperty().bind(presentationModel.detailKeyThreeTextProperty());
-        state.detailValueThreeTextProperty().bind(presentationModel.detailValueThreeTextProperty());
-        state.sectionHeaderTextProperty().bind(presentationModel.sectionHeaderTextProperty());
-        state.sectionValueTextProperty().bind(presentationModel.sectionValueTextProperty());
+        for (int index = 0; index < TEXT_SLOT_COUNT; index++) {
+            state.textProperty(index).bind(presentationModel.textProperty(index));
+        }
+        for (int index = 0; index < DETAIL_SLOT_COUNT; index++) {
+            state.detailKeyProperty(index).bind(presentationModel.detailKeyProperty(index));
+            state.detailValueProperty(index).bind(presentationModel.detailValueProperty(index));
+        }
         return new Binding(state);
     }
 

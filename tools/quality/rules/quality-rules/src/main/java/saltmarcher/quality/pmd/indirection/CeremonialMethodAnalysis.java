@@ -1,13 +1,17 @@
 package saltmarcher.quality.pmd.indirection;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.sourceforge.pmd.lang.java.ast.ASTAmbiguousName;
+import net.sourceforge.pmd.lang.java.ast.ASTAssignableExpr;
 import net.sourceforge.pmd.lang.java.ast.ASTArgumentList;
 import net.sourceforge.pmd.lang.java.ast.ASTBlock;
 import net.sourceforge.pmd.lang.java.ast.ASTBooleanLiteral;
+import net.sourceforge.pmd.lang.java.ast.ASTCastExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTCharLiteral;
 import net.sourceforge.pmd.lang.java.ast.ASTClassDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTClassLiteral;
@@ -82,8 +86,9 @@ final class CeremonialMethodAnalysis {
             return null;
         }
         List<ASTStatement> effectiveStatements = new ArrayList<>();
+        Map<String, SimpleReference> aliases = new LinkedHashMap<>();
         for (ASTStatement statement : body.children(ASTStatement.class).toList()) {
-            if (isSkippableGuard(statement, sourceFacts) || isTrivialAlias(statement, sourceFacts)) {
+            if (isSkippableScaffolding(statement, sourceFacts, aliases)) {
                 continue;
             }
             effectiveStatements.add(statement);
@@ -91,20 +96,28 @@ final class CeremonialMethodAnalysis {
         if (effectiveStatements.size() != 1) {
             return null;
         }
-        return classifyEffectiveStatement(effectiveStatements.getFirst(), sourceFacts, localMethodNames);
+        return classifyEffectiveStatement(effectiveStatements.getFirst(), sourceFacts, localMethodNames, aliases);
     }
 
-    private static boolean isSkippableGuard(ASTStatement statement, SaltMarcherSourceFacts sourceFacts) {
-        if (statement instanceof ASTExpressionStatement expressionStatement) {
-            ASTMethodCall methodCall = directMethodCall(expressionStatement.getExpr());
-            return methodCall != null && isRequireNonNullCall(methodCall, sourceFacts);
-        }
+    private static boolean isSkippableScaffolding(
+            ASTStatement statement,
+            SaltMarcherSourceFacts sourceFacts,
+            Map<String, SimpleReference> aliases
+    ) {
         if (statement instanceof ASTLocalVariableDeclaration declaration) {
             ASTVariableDeclarator declarator = singleDeclarator(declaration);
             if (declarator == null || !declarator.hasInitializer()) {
                 return false;
             }
-            ASTMethodCall methodCall = directMethodCall(declarator.getInitializer());
+            SimpleReference aliasTarget = trivialAliasTarget(declarator.getInitializer(), sourceFacts, aliases);
+            if (aliasTarget != null) {
+                aliases.put(declarator.getName(), aliasTarget);
+                return true;
+            }
+            return false;
+        }
+        if (statement instanceof ASTExpressionStatement expressionStatement) {
+            ASTMethodCall methodCall = directMethodCall(expressionStatement.getExpr());
             return methodCall != null && isRequireNonNullCall(methodCall, sourceFacts);
         }
         if (statement instanceof ASTIfStatement ifStatement) {
@@ -117,7 +130,7 @@ final class CeremonialMethodAnalysis {
         if (!"requireNonNull".equals(methodCall.getMethodName())) {
             return false;
         }
-        String qualifierText = qualifierText(methodCall, sourceFacts);
+        String qualifierText = qualifierText(methodCall, sourceFacts, Map.of());
         return qualifierText == null
                 || qualifierText.isBlank()
                 || "Objects".equals(qualifierText)
@@ -132,40 +145,55 @@ final class CeremonialMethodAnalysis {
         return thenBranch instanceof ASTThrowStatement && isSimpleNullCheck(ifStatement.getCondition());
     }
 
-    private static boolean isTrivialAlias(ASTStatement statement, SaltMarcherSourceFacts sourceFacts) {
-        if (!(statement instanceof ASTLocalVariableDeclaration declaration)) {
-            return false;
+    private static SimpleReference trivialAliasTarget(
+            ASTExpression initializer,
+            SaltMarcherSourceFacts sourceFacts,
+            Map<String, SimpleReference> aliases
+    ) {
+        SimpleReference directReference = resolveSimpleReference(initializer, sourceFacts, aliases);
+        if (directReference != null) {
+            return directReference;
         }
-        ASTVariableDeclarator declarator = singleDeclarator(declaration);
-        if (declarator == null || !declarator.hasInitializer()) {
-            return false;
+
+        ASTMethodCall methodCall = directMethodCall(initializer);
+        if (methodCall == null || !isRequireNonNullCall(methodCall, sourceFacts)) {
+            return null;
         }
-        return isSimpleReferenceLike(declarator.getInitializer(), sourceFacts);
+        List<ASTExpression> arguments = methodCall.getArguments().children(ASTExpression.class).toList();
+        if (arguments.isEmpty()) {
+            return null;
+        }
+        return resolveSimpleReference(arguments.getFirst(), sourceFacts, aliases);
     }
 
     private static MethodShape classifyEffectiveStatement(
             ASTStatement statement,
             SaltMarcherSourceFacts sourceFacts,
-            Set<String> localMethodNames
+            Set<String> localMethodNames,
+            Map<String, SimpleReference> aliases
     ) {
         if (statement instanceof ASTReturnStatement returnStatement) {
             ASTExpression expression = returnStatement.getExpr();
             if (expression == null) {
                 return null;
             }
-            MethodShape constructorShape = classifyConstructorReturn(expression, sourceFacts);
+            MethodShape constructorShape = classifyConstructorReturn(expression, sourceFacts, aliases);
             if (constructorShape != null) {
                 return constructorShape;
             }
-            return classifyDelegatedCall(expression, sourceFacts, localMethodNames, true);
+            return classifyDelegatedCall(expression, sourceFacts, localMethodNames, aliases, true);
         }
         if (statement instanceof ASTExpressionStatement expressionStatement) {
-            return classifyDelegatedCall(expressionStatement.getExpr(), sourceFacts, localMethodNames, false);
+            return classifyDelegatedCall(expressionStatement.getExpr(), sourceFacts, localMethodNames, aliases, false);
         }
         return null;
     }
 
-    private static MethodShape classifyConstructorReturn(ASTExpression expression, SaltMarcherSourceFacts sourceFacts) {
+    private static MethodShape classifyConstructorReturn(
+            ASTExpression expression,
+            SaltMarcherSourceFacts sourceFacts,
+            Map<String, SimpleReference> aliases
+    ) {
         ASTConstructorCall constructorCall = directConstructorCall(expression);
         if (constructorCall == null) {
             return null;
@@ -174,10 +202,10 @@ final class CeremonialMethodAnalysis {
             return null;
         }
         ASTExpression qualifier = constructorCall.getQualifier();
-        if (qualifier != null && !isSimpleReferenceLike(qualifier, sourceFacts)) {
+        if (qualifier != null && resolveSimpleReference(qualifier, sourceFacts, aliases) == null) {
             return null;
         }
-        if (!argumentsAreSimple(constructorCall.getArguments(), sourceFacts)) {
+        if (!argumentsAreSimple(constructorCall.getArguments(), aliases)) {
             return null;
         }
         String constructedType = JavaSourceTextSupport.normalizedNodeText(constructorCall.getTypeNode(), sourceFacts);
@@ -188,6 +216,7 @@ final class CeremonialMethodAnalysis {
             ASTExpression expression,
             SaltMarcherSourceFacts sourceFacts,
             Set<String> localMethodNames,
+            Map<String, SimpleReference> aliases,
             boolean returnsValue
     ) {
         ASTMethodCall methodCall = directMethodCall(expression);
@@ -195,15 +224,15 @@ final class CeremonialMethodAnalysis {
             return null;
         }
         ASTExpression qualifier = methodCall.getQualifier();
-        if (qualifier != null && !isSimpleReferenceLike(qualifier, sourceFacts)) {
+        if (qualifier != null && resolveSimpleReference(qualifier, sourceFacts, aliases) == null) {
             return null;
         }
-        if (!argumentsAreSimple(methodCall.getArguments(), sourceFacts)) {
+        if (!argumentsAreSimple(methodCall.getArguments(), aliases)) {
             return null;
         }
 
-        String callee = renderCallee(methodCall, sourceFacts);
-        String externalTarget = externalTarget(methodCall, sourceFacts, localMethodNames);
+        String callee = renderCallee(methodCall, sourceFacts, aliases);
+        String externalTarget = externalTarget(methodCall, sourceFacts, localMethodNames, aliases);
         String description = returnsValue
                 ? "returns delegated call " + callee + "(...)"
                 : "forwards delegated call " + callee + "(...)";
@@ -222,16 +251,16 @@ final class CeremonialMethodAnalysis {
         return expression instanceof ASTConstructorCall constructorCall ? constructorCall : null;
     }
 
-    private static boolean argumentsAreSimple(ASTArgumentList arguments, SaltMarcherSourceFacts sourceFacts) {
+    private static boolean argumentsAreSimple(ASTArgumentList arguments, Map<String, SimpleReference> aliases) {
         return arguments.children(ASTExpression.class).toList().stream()
-                .allMatch(argument -> isSimpleDelegatedArgument(argument, sourceFacts));
+                .allMatch(argument -> isSimpleDelegatedArgument(argument, aliases));
     }
 
-    private static boolean isSimpleDelegatedArgument(ASTExpression argument, SaltMarcherSourceFacts sourceFacts) {
+    private static boolean isSimpleDelegatedArgument(ASTExpression argument, Map<String, SimpleReference> aliases) {
         if (containsInvocation(argument)) {
             return false;
         }
-        return isSimpleReferenceLike(argument, sourceFacts) || isSimpleLiteralLike(argument);
+        return resolveSimpleReference(argument, null, aliases) != null || isSimpleLiteralLike(argument);
     }
 
     private static ASTVariableDeclarator singleDeclarator(ASTLocalVariableDeclaration declaration) {
@@ -247,28 +276,52 @@ final class CeremonialMethodAnalysis {
         return statements.size() == 1 ? statements.getFirst() : statement;
     }
 
-    private static boolean isSimpleReferenceLike(ASTExpression expression, SaltMarcherSourceFacts sourceFacts) {
-        if (containsInvocation(expression)) {
-            return false;
+    private static SimpleReference resolveSimpleReference(
+            ASTExpression expression,
+            SaltMarcherSourceFacts sourceFacts,
+            Map<String, SimpleReference> aliases
+    ) {
+        if (expression instanceof ASTCastExpression
+                || expression instanceof ASTMethodCall
+                || expression instanceof ASTConstructorCall) {
+            return null;
         }
-        if (expression instanceof ASTAmbiguousName
-                || expression instanceof ASTThisExpression
-                || expression instanceof ASTSuperExpression) {
-            return true;
+        if (containsInvocation(expression)) {
+            return null;
         }
         if (expression instanceof ASTFieldAccess fieldAccess) {
             ASTExpression qualifier = fieldAccess.getQualifier();
-            return qualifier != null && isSimpleReferenceLike(qualifier, sourceFacts);
+            if (qualifier == null) {
+                return SimpleReference.named(fieldAccess.getName());
+            }
+            SimpleReference qualifierReference = resolveSimpleReference(qualifier, sourceFacts, aliases);
+            return qualifierReference == null ? null : qualifierReference.child(fieldAccess.getName());
         }
-        return sourceFacts != null
-                && expression.isParenthesized()
-                && JavaSourceTextSupport.normalizedNodeText(expression, sourceFacts)
-                .startsWith("(")
-                && looksLikeSimpleReferenceText(JavaSourceTextSupport.normalizedNodeText(expression, sourceFacts));
+        if (expression instanceof ASTAssignableExpr.ASTNamedReferenceExpr namedReference) {
+            SimpleReference aliasedReference = aliases.get(namedReference.getName());
+            return aliasedReference != null ? aliasedReference : SimpleReference.named(namedReference.getName());
+        }
+        if (expression instanceof ASTAmbiguousName ambiguousName) {
+            return SimpleReference.named(ambiguousName.getName());
+        }
+        if (expression instanceof ASTThisExpression) {
+            return SimpleReference.named("this");
+        }
+        if (expression instanceof ASTSuperExpression) {
+            return SimpleReference.named("super");
+        }
+        if (expression instanceof ASTTypeExpression && sourceFacts != null) {
+            return SimpleReference.named(JavaSourceTextSupport.normalizedNodeText(expression, sourceFacts));
+        }
+        return null;
     }
 
-    private static String renderCallee(ASTMethodCall methodCall, SaltMarcherSourceFacts sourceFacts) {
-        String qualifierText = qualifierText(methodCall, sourceFacts);
+    private static String renderCallee(
+            ASTMethodCall methodCall,
+            SaltMarcherSourceFacts sourceFacts,
+            Map<String, SimpleReference> aliases
+    ) {
+        String qualifierText = qualifierText(methodCall, sourceFacts, aliases);
         return qualifierText == null || qualifierText.isBlank()
                 ? methodCall.getMethodName()
                 : qualifierText + "." + methodCall.getMethodName();
@@ -277,10 +330,11 @@ final class CeremonialMethodAnalysis {
     private static String externalTarget(
             ASTMethodCall methodCall,
             SaltMarcherSourceFacts sourceFacts,
-            Set<String> localMethodNames
+            Set<String> localMethodNames,
+            Map<String, SimpleReference> aliases
     ) {
         String methodName = methodCall.getMethodName();
-        String qualifierText = qualifierText(methodCall, sourceFacts);
+        String qualifierText = qualifierText(methodCall, sourceFacts, aliases);
         if (qualifierText == null || qualifierText.isBlank()) {
             return localMethodNames.contains(methodName) ? null : methodName;
         }
@@ -290,9 +344,19 @@ final class CeremonialMethodAnalysis {
         return qualifierText;
     }
 
-    private static String qualifierText(ASTMethodCall methodCall, SaltMarcherSourceFacts sourceFacts) {
+    private static String qualifierText(
+            ASTMethodCall methodCall,
+            SaltMarcherSourceFacts sourceFacts,
+            Map<String, SimpleReference> aliases
+    ) {
         ASTExpression qualifier = methodCall.getQualifier();
-        return qualifier == null ? null : JavaSourceTextSupport.normalizedNodeText(qualifier, sourceFacts);
+        if (qualifier == null) {
+            return null;
+        }
+        SimpleReference simpleReference = resolveSimpleReference(qualifier, sourceFacts, aliases);
+        return simpleReference != null
+                ? simpleReference.display()
+                : JavaSourceTextSupport.normalizedNodeText(qualifier, sourceFacts);
     }
 
     private static boolean isSimpleLiteralLike(ASTExpression expression) {
@@ -316,8 +380,8 @@ final class CeremonialMethodAnalysis {
         }
         ASTExpression left = operands.getFirst();
         ASTExpression right = operands.get(1);
-        return (left instanceof ASTNullLiteral && isSimpleReferenceLike(right, null))
-                || (right instanceof ASTNullLiteral && isSimpleReferenceLike(left, null));
+        return (left instanceof ASTNullLiteral && resolveSimpleReference(right, null, Map.of()) != null)
+                || (right instanceof ASTNullLiteral && resolveSimpleReference(left, null, Map.of()) != null);
     }
 
     private static boolean containsInvocation(ASTExpression expression) {
@@ -328,17 +392,6 @@ final class CeremonialMethodAnalysis {
                 || expression.descendants(ASTConstructorCall.class).first() != null;
     }
 
-    private static boolean looksLikeSimpleReferenceText(String text) {
-        if (text == null || text.isBlank()) {
-            return false;
-        }
-        String normalized = text;
-        while (normalized.startsWith("(") && normalized.endsWith(")")) {
-            normalized = normalized.substring(1, normalized.length() - 1).trim();
-        }
-        return normalized.matches("(?:this\\.|super\\.)?[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*");
-    }
-
     record Analysis(boolean ceremonial, String collaboratorTarget, List<String> trivialDescriptions) {
 
         static Analysis notCeremonial() {
@@ -347,5 +400,16 @@ final class CeremonialMethodAnalysis {
     }
 
     private record MethodShape(String description, String externalTarget) {
+    }
+
+    private record SimpleReference(String display) {
+
+        static SimpleReference named(String display) {
+            return new SimpleReference(display);
+        }
+
+        SimpleReference child(String memberName) {
+            return new SimpleReference(display + "." + memberName);
+        }
     }
 }

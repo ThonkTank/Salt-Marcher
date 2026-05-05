@@ -13,33 +13,39 @@ import javafx.scene.layout.VBox;
 
 public final class TravelStateView extends VBox {
 
-    private final Label iconLabel = new Label();
-    private final Label locationLabel = new Label();
-    private final Label statusBadge = new Label();
-    private final Label contextLabel = new Label();
-    private final Label detailKeyOne = new Label();
-    private final Label detailValueOne = new Label();
-    private final Label detailKeyTwo = new Label();
-    private final Label detailValueTwo = new Label();
-    private final Label detailKeyThree = new Label();
-    private final Label detailValueThree = new Label();
-    private final Label sectionHeader = new Label();
-    private final Label sectionValue = new Label();
+    private static final int ICON_SLOT = 0;
+    private static final int LOCATION_SLOT = 1;
+    private static final int STATUS_SLOT = 2;
+    private static final int CONTEXT_SLOT = 3;
+    private static final int SECTION_HEADER_SLOT = 4;
+    private static final int SECTION_VALUE_SLOT = 5;
+
+    private final Label[] textLabels = new Label[6];
+    private final Label[] detailKeyLabels = new Label[3];
+    private final Label[] detailValueLabels = new Label[3];
     private final VBox actionItems = new VBox(6);
     private final Button actionButton = new Button();
 
     public TravelStateView() {
         getStyleClass().add("travel-pane");
 
-        iconLabel.getStyleClass().add("travel-location-icon");
-        locationLabel.getStyleClass().addAll("text-muted", "text-italic");
-        statusBadge.getStyleClass().add("travel-status-badge");
-        contextLabel.getStyleClass().addAll("text-muted", "text-italic");
-        detailKeyOne.getStyleClass().add("text-muted");
-        detailKeyTwo.getStyleClass().add("text-muted");
-        detailKeyThree.getStyleClass().add("text-muted");
-        sectionHeader.getStyleClass().addAll("section-header", "text-muted");
-        sectionValue.getStyleClass().addAll("text-muted", "text-italic");
+        for (int index = 0; index < textLabels.length; index++) {
+            textLabels[index] = new Label();
+        }
+        for (int index = 0; index < detailKeyLabels.length; index++) {
+            detailKeyLabels[index] = new Label();
+            detailValueLabels[index] = new Label();
+        }
+
+        textLabels[ICON_SLOT].getStyleClass().add("travel-location-icon");
+        textLabels[LOCATION_SLOT].getStyleClass().addAll("text-muted", "text-italic");
+        textLabels[STATUS_SLOT].getStyleClass().add("travel-status-badge");
+        textLabels[CONTEXT_SLOT].getStyleClass().addAll("text-muted", "text-italic");
+        detailKeyLabels[0].getStyleClass().add("text-muted");
+        detailKeyLabels[1].getStyleClass().add("text-muted");
+        detailKeyLabels[2].getStyleClass().add("text-muted");
+        textLabels[SECTION_HEADER_SLOT].getStyleClass().addAll("section-header", "text-muted");
+        textLabels[SECTION_VALUE_SLOT].getStyleClass().addAll("text-muted", "text-italic");
         actionButton.getStyleClass().add("accent");
         actionButton.setMaxWidth(Double.MAX_VALUE);
         actionButton.setVisible(false);
@@ -55,56 +61,20 @@ public final class TravelStateView extends VBox {
                 buildActionSection());
     }
 
-    StringProperty iconTextProperty() {
-        return iconLabel.textProperty();
+    StringProperty textProperty(int index) {
+        return textLabels[index].textProperty();
     }
 
-    StringProperty locationTextProperty() {
-        return locationLabel.textProperty();
+    StringProperty detailKeyProperty(int index) {
+        return detailKeyLabels[index].textProperty();
     }
 
-    StringProperty statusTextProperty() {
-        return statusBadge.textProperty();
-    }
-
-    StringProperty contextTextProperty() {
-        return contextLabel.textProperty();
-    }
-
-    StringProperty detailKeyOneTextProperty() {
-        return detailKeyOne.textProperty();
-    }
-
-    StringProperty detailValueOneTextProperty() {
-        return detailValueOne.textProperty();
-    }
-
-    StringProperty detailKeyTwoTextProperty() {
-        return detailKeyTwo.textProperty();
-    }
-
-    StringProperty detailValueTwoTextProperty() {
-        return detailValueTwo.textProperty();
-    }
-
-    StringProperty detailKeyThreeTextProperty() {
-        return detailKeyThree.textProperty();
-    }
-
-    StringProperty detailValueThreeTextProperty() {
-        return detailValueThree.textProperty();
-    }
-
-    StringProperty sectionHeaderTextProperty() {
-        return sectionHeader.textProperty();
-    }
-
-    StringProperty sectionValueTextProperty() {
-        return sectionValue.textProperty();
+    StringProperty detailValueProperty(int index) {
+        return detailValueLabels[index].textProperty();
     }
 
     private HBox buildLocationRow() {
-        HBox row = new HBox(6, iconLabel, locationLabel);
+        HBox row = new HBox(6, textLabels[ICON_SLOT], textLabels[LOCATION_SLOT]);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
@@ -112,7 +82,7 @@ public final class TravelStateView extends VBox {
     private HBox buildStatusRow() {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox row = new HBox(8, statusBadge, spacer, contextLabel);
+        HBox row = new HBox(8, textLabels[STATUS_SLOT], spacer, textLabels[CONTEXT_SLOT]);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
@@ -122,16 +92,16 @@ public final class TravelStateView extends VBox {
         grid.getStyleClass().add("travel-details-grid");
         grid.setHgap(12);
         grid.setVgap(4);
-        grid.add(detailKeyOne, 0, 0);
-        grid.add(detailValueOne, 1, 0);
-        grid.add(detailKeyTwo, 0, 1);
-        grid.add(detailValueTwo, 1, 1);
-        grid.add(detailKeyThree, 0, 2);
-        grid.add(detailValueThree, 1, 2);
+        int rowIndex = 0;
+        for (int index = 0; index < detailKeyLabels.length; index++) {
+            grid.add(detailKeyLabels[index], 0, rowIndex);
+            grid.add(detailValueLabels[index], 1, rowIndex);
+            rowIndex++;
+        }
         return grid;
     }
 
     private VBox buildActionSection() {
-        return new VBox(4, sectionHeader, sectionValue, actionItems, actionButton);
+        return new VBox(4, textLabels[SECTION_HEADER_SLOT], textLabels[SECTION_VALUE_SLOT], actionItems, actionButton);
     }
 }

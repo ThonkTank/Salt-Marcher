@@ -674,7 +674,8 @@ public final class EncounterSession {
     }
 
     private static String generationStatusText(GenerationStatus status) {
-        return switch (status == null ? GenerationStatus.defaultFailure() : status) {
+        GenerationStatus effectiveStatus = status == null ? GenerationStatus.defaultFailure() : status;
+        return switch (effectiveStatus) {
             case NO_ACTIVE_PARTY -> "Die aktive Party hat keine Mitglieder.";
             case NO_CREATURES -> "Keine Kreaturen passen zu diesen Filtern.";
             case NO_SOLUTION -> "Keine passende Encounter-Komposition gefunden.";

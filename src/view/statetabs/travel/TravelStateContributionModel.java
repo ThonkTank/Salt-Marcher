@@ -5,65 +5,41 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 
 final class TravelStateContributionModel {
 
-    private final ReadOnlyStringWrapper iconText = new ReadOnlyStringWrapper("W");
-    private final ReadOnlyStringWrapper locationText = new ReadOnlyStringWrapper("\u2014 Kein Ort gew\u00e4hlt \u2014");
-    private final ReadOnlyStringWrapper statusText = new ReadOnlyStringWrapper("Reisend");
-    private final ReadOnlyStringWrapper contextText = new ReadOnlyStringWrapper("\u2014");
-    private final ReadOnlyStringWrapper detailKeyOneText = new ReadOnlyStringWrapper("Wetter");
-    private final ReadOnlyStringWrapper detailValueOneText = new ReadOnlyStringWrapper("Bew\u00f6lkt");
-    private final ReadOnlyStringWrapper detailKeyTwoText = new ReadOnlyStringWrapper("Tageszeit");
-    private final ReadOnlyStringWrapper detailValueTwoText = new ReadOnlyStringWrapper("Morgen");
-    private final ReadOnlyStringWrapper detailKeyThreeText = new ReadOnlyStringWrapper("Tempo");
-    private final ReadOnlyStringWrapper detailValueThreeText = new ReadOnlyStringWrapper("Normal");
-    private final ReadOnlyStringWrapper sectionHeaderText = new ReadOnlyStringWrapper("Interaktion");
-    private final ReadOnlyStringWrapper sectionValueText =
-            new ReadOnlyStringWrapper("Gruppenmarker auf der Karte ziehen");
+    private static final String[] TEXT_DEFAULTS = {
+        "W",
+        "\u2014 Kein Ort gew\u00e4hlt \u2014",
+        "Reisend",
+        "\u2014",
+        "Interaktion",
+        "Gruppenmarker auf der Karte ziehen"
+    };
+    private static final String[] DETAIL_KEY_DEFAULTS = {"Wetter", "Tageszeit", "Tempo"};
+    private static final String[] DETAIL_VALUE_DEFAULTS = {"Bew\u00f6lkt", "Morgen", "Normal"};
 
-    ReadOnlyStringProperty iconTextProperty() {
-        return iconText.getReadOnlyProperty();
+    private final ReadOnlyStringWrapper[] textProperties = new ReadOnlyStringWrapper[TEXT_DEFAULTS.length];
+    private final ReadOnlyStringWrapper[] detailKeyProperties = new ReadOnlyStringWrapper[DETAIL_KEY_DEFAULTS.length];
+    private final ReadOnlyStringWrapper[] detailValueProperties =
+            new ReadOnlyStringWrapper[DETAIL_VALUE_DEFAULTS.length];
+
+    TravelStateContributionModel() {
+        for (int index = 0; index < TEXT_DEFAULTS.length; index++) {
+            textProperties[index] = new ReadOnlyStringWrapper(TEXT_DEFAULTS[index]);
+        }
+        for (int index = 0; index < DETAIL_KEY_DEFAULTS.length; index++) {
+            detailKeyProperties[index] = new ReadOnlyStringWrapper(DETAIL_KEY_DEFAULTS[index]);
+            detailValueProperties[index] = new ReadOnlyStringWrapper(DETAIL_VALUE_DEFAULTS[index]);
+        }
     }
 
-    ReadOnlyStringProperty locationTextProperty() {
-        return locationText.getReadOnlyProperty();
+    ReadOnlyStringProperty textProperty(int index) {
+        return textProperties[index].getReadOnlyProperty();
     }
 
-    ReadOnlyStringProperty statusTextProperty() {
-        return statusText.getReadOnlyProperty();
+    ReadOnlyStringProperty detailKeyProperty(int index) {
+        return detailKeyProperties[index].getReadOnlyProperty();
     }
 
-    ReadOnlyStringProperty contextTextProperty() {
-        return contextText.getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty detailKeyOneTextProperty() {
-        return detailKeyOneText.getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty detailValueOneTextProperty() {
-        return detailValueOneText.getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty detailKeyTwoTextProperty() {
-        return detailKeyTwoText.getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty detailValueTwoTextProperty() {
-        return detailValueTwoText.getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty detailKeyThreeTextProperty() {
-        return detailKeyThreeText.getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty detailValueThreeTextProperty() {
-        return detailValueThreeText.getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty sectionHeaderTextProperty() {
-        return sectionHeaderText.getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty sectionValueTextProperty() {
-        return sectionValueText.getReadOnlyProperty();
+    ReadOnlyStringProperty detailValueProperty(int index) {
+        return detailValueProperties[index].getReadOnlyProperty();
     }
 }
