@@ -30,9 +30,10 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     toolConfigurations: QualityConventionToolConfigurations,
     checkViewArchitecture: TaskProvider<out Task>
 ): QualityConventionLifecycleTasks {
+    val verificationLayout = environment.verificationLayout
     val resetMainJavaClassesOutput = tasks.register<Delete>("resetMainJavaClassesOutput") {
         description = "Remove compiled main classes before recompilation so deleted sources cannot survive as stale bytecode."
-        delete(environment.mainJavaClassesDir)
+        delete(verificationLayout.mainJavaClassesDir)
     }
     val lizardRequirementsFile = layout.projectDirectory.file("tools/quality/config/lizard/requirements.txt")
     val lizardVenvDir = layout.projectDirectory.dir(".gradle/shared-tools/lizard/venv")
@@ -63,7 +64,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         projectRoot.set(layout.projectDirectory)
         venvDirectory.set(lizardVenvDir)
         requirementsMarker.set(lizardReadyMarker)
-        sourceRoots.from(environment.sourceJavaRoots)
+        sourceRoots.from(verificationLayout.sourceJavaRoots)
         maxCyclomaticComplexity.set(15)
         reportFile.set(layout.buildDirectory.file("reports/lizard/main.txt"))
     }
@@ -72,7 +73,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run PMD CPD duplicate-code checks against production Java sources."
         projectRoot.set(layout.projectDirectory)
-        sourceRoots.from(environment.sourceJavaRoots)
+        sourceRoots.from(verificationLayout.sourceJavaRoots)
         toolClasspath.from(toolConfigurations.cpdCli)
         minimumTokens.set(100)
         reportFile.set(cpdReportFile)
@@ -97,7 +98,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
     }
 
     tasks.named<Pmd>("pmdMain") {
-        source = environment.sourceJavaRoots.asFileTree
+        source = verificationLayout.sourceJavaRoots.asFileTree
         include("**/*.java")
         classpath = files(configurations.named("compileClasspath"))
     }
@@ -111,7 +112,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         description = "Run CKJM ext OO metrics against compiled production classes and write reports."
         dependsOn(tasks.named("classes"))
         projectRoot.set(layout.projectDirectory)
-        compiledClasses.from(environment.mainJavaClassesDir)
+        compiledClasses.from(verificationLayout.mainJavaClassesDir)
         toolClasspath.from(toolConfigurations.ckjmToolClasspath)
         runtimeClasspath.from(configurations.named("runtimeClasspath"))
         baselineFile.set(ckjmBaselineFile)
@@ -130,7 +131,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Fail if compiled .class artifacts are present in bootstrap/, shell/ or src/."
         projectRoot.set(layout.projectDirectory)
-        sourceRoots.from(environment.sourceJavaRoots)
+        sourceRoots.from(verificationLayout.sourceJavaRoots)
         successMarker.set(layout.buildDirectory.file("verification-markers/checkNoCompiledArtifactsInSource/success.marker"))
     }
 

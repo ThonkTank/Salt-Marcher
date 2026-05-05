@@ -17,14 +17,15 @@ internal fun org.gradle.api.Project.registerQualityConventionHarness(
     jqassistantTasks: QualityConventionJqassistantTasks,
     lifecycleTasks: QualityConventionLifecycleTasks
 ): VerificationHarnessExtension {
+    val verificationLayout = environment.verificationLayout
     val harness = VerificationHarnessExtension(
         project = this,
         enforcementBundles = environment.enforcementBundles,
-        sourceSets = environment.sourceSets,
-        mainSourceSet = environment.mainSourceSet,
-        sourceRoots = environment.sourceRoots,
-        sourceJavaRoots = environment.sourceJavaRoots,
-        commonFocusedArchunitSupportIncludes = environment.commonFocusedArchunitSupportIncludes,
+        sourceSets = verificationLayout.sourceSets,
+        mainSourceSet = verificationLayout.mainSourceSet,
+        sourceRoots = verificationLayout.sourceRoots,
+        sourceJavaRoots = verificationLayout.sourceJavaRoots,
+        commonFocusedArchunitSupportIncludes = verificationLayout.commonFocusedArchunitSupportIncludes,
         jqassistantTaskRegistrar = jqassistantTasks.registrar,
         configureCommonErrorProneOptions = { applyCommonErrorProneOptions(this) },
         productionBuild = lifecycleTasks.productionBuild,
@@ -42,6 +43,7 @@ internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
     environment: QualityConventionEnvironment,
     toolConfigurations: QualityConventionToolConfigurations
 ): QualityConventionJqassistantTasks {
+    val verificationLayout = environment.verificationLayout
     val jqassistantInstallDir = layout.buildDirectory.dir("tools/jqassistant")
     val installJqassistant = tasks.register<Sync>("installJqassistant") {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -73,8 +75,8 @@ internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
         analyzeDescription = "Analyze SaltMarcher passive-view topology constraints with jQAssistant.",
         sourceConfigPath = "tools/quality/jqassistant/config.yml",
         rulesDirPath = "tools/quality/jqassistant/rules",
-        mainClassesDirectory = environment.mainJavaClassesDir,
-        sourceRoots = environment.sourceJavaRoots,
+        mainClassesDirectory = verificationLayout.mainJavaClassesDir,
+        sourceRoots = verificationLayout.sourceJavaRoots,
         storeDirectory = layout.buildDirectory.dir("tools/jqassistant/check-view-architecture-store"),
         reportsDirectory = layout.buildDirectory.dir("reports/jqassistant"),
         dependsOnTasks = listOf(tasks.named("classes"))
@@ -85,8 +87,8 @@ internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
         commandName = "effective-rules",
         sourceConfigPath = "tools/quality/jqassistant/config.yml",
         rulesDirPath = "tools/quality/jqassistant/rules",
-        mainClassesDirectory = environment.mainJavaClassesDir,
-        sourceRoots = environment.sourceJavaRoots,
+        mainClassesDirectory = verificationLayout.mainJavaClassesDir,
+        sourceRoots = verificationLayout.sourceJavaRoots,
         dependsOnTasks = emptyList()
     )
     registrar.registerCommandTask(
@@ -95,8 +97,8 @@ internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
         commandName = "server",
         sourceConfigPath = "tools/quality/jqassistant/config.yml",
         rulesDirPath = "tools/quality/jqassistant/rules",
-        mainClassesDirectory = environment.mainJavaClassesDir,
-        sourceRoots = environment.sourceJavaRoots,
+        mainClassesDirectory = verificationLayout.mainJavaClassesDir,
+        sourceRoots = verificationLayout.sourceJavaRoots,
         dependsOnTasks = listOf(tasks.named("classes"))
     )
     val checkViewArchitecture = tasks.register("checkViewArchitecture") {
