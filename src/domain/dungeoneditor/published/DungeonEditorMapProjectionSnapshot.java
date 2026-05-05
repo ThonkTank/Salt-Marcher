@@ -45,6 +45,36 @@ public record DungeonEditorMapProjectionSnapshot(
                 null);
     }
 
+    @Override
+    public List<CellProjection> cells() {
+        return List.copyOf(cells);
+    }
+
+    @Override
+    public List<EdgeProjection> edges() {
+        return List.copyOf(edges);
+    }
+
+    @Override
+    public List<LabelProjection> labels() {
+        return List.copyOf(labels);
+    }
+
+    @Override
+    public List<MarkerProjection> markers() {
+        return List.copyOf(markers);
+    }
+
+    @Override
+    public List<GraphNodeProjection> graphNodes() {
+        return List.copyOf(graphNodes);
+    }
+
+    @Override
+    public List<GraphLinkProjection> graphLinks() {
+        return List.copyOf(graphLinks);
+    }
+
     public enum TopologyKind {
         SQUARE,
         HEX

@@ -52,11 +52,11 @@ final class DungeonEditorIntentHandler {
             return;
         }
         if (event.viewModeChanged()) {
-            publish(DungeonEditorPublishedEvent.setViewMode(event.viewMode()));
+            publish(DungeonEditorPublishedEvent.setViewMode(toPublishedViewMode(event.viewMode())));
             return;
         }
         if (event.toolChanged()) {
-            publish(DungeonEditorPublishedEvent.setTool(event.tool()));
+            publish(DungeonEditorPublishedEvent.setTool(toPublishedTool(event.tool())));
             return;
         }
         if (event.projectionLevelShift() != 0) {
@@ -127,6 +127,20 @@ final class DungeonEditorIntentHandler {
             case "RELEASE" -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_RELEASED;
             default -> DungeonEditorPublishedEvent.MainViewInput.Source.POINTER_MOVED;
         };
+    }
+
+    private static DungeonEditorPublishedEvent.ViewMode toPublishedViewMode(
+            DungeonEditorControlsViewInputEvent.ViewMode viewMode
+    ) {
+        return viewMode == DungeonEditorControlsViewInputEvent.ViewMode.GRAPH
+                ? DungeonEditorPublishedEvent.ViewMode.GRAPH
+                : DungeonEditorPublishedEvent.ViewMode.GRID;
+    }
+
+    private static DungeonEditorPublishedEvent.Tool toPublishedTool(
+            DungeonEditorControlsViewInputEvent.Tool tool
+    ) {
+        return tool == null ? DungeonEditorPublishedEvent.Tool.SELECT : DungeonEditorPublishedEvent.Tool.valueOf(tool.name());
     }
 
     private static List<Integer> parseLevels(@Nullable String raw) {

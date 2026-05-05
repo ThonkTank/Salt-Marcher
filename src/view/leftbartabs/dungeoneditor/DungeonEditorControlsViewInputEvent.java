@@ -1,8 +1,5 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import src.domain.dungeoneditor.published.DungeonEditorTool;
-import src.domain.dungeoneditor.published.DungeonEditorViewMode;
-
 public record DungeonEditorControlsViewInputEvent(
         boolean mapSelectionChanged,
         boolean createMapRequested,
@@ -11,9 +8,9 @@ public record DungeonEditorControlsViewInputEvent(
         long mapIdValue,
         String mapName,
         boolean viewModeChanged,
-        DungeonEditorViewMode viewMode,
+        ViewMode viewMode,
         boolean toolChanged,
-        DungeonEditorTool tool,
+        Tool tool,
         int projectionLevelShift,
         boolean overlayChanged,
         String overlayModeKey,
@@ -25,9 +22,30 @@ public record DungeonEditorControlsViewInputEvent(
     public DungeonEditorControlsViewInputEvent {
         mapIdValue = Math.max(0L, mapIdValue);
         mapName = mapName == null ? "" : mapName.strip();
-        viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
-        tool = tool == null ? DungeonEditorTool.SELECT : tool;
+        viewMode = viewMode == null ? ViewMode.GRID : viewMode;
+        tool = tool == null ? Tool.SELECT : tool;
         overlayModeKey = overlayModeKey == null ? "" : overlayModeKey;
         overlayLevelsText = overlayLevelsText == null ? "" : overlayLevelsText.strip();
+    }
+
+    enum ViewMode {
+        GRID,
+        GRAPH
+    }
+
+    enum Tool {
+        SELECT,
+        ROOM_PAINT,
+        ROOM_DELETE,
+        WALL_CREATE,
+        WALL_DELETE,
+        DOOR_CREATE,
+        DOOR_DELETE,
+        CORRIDOR_CREATE,
+        CORRIDOR_DELETE,
+        STAIR_CREATE,
+        STAIR_DELETE,
+        TRANSITION_CREATE,
+        TRANSITION_DELETE
     }
 }

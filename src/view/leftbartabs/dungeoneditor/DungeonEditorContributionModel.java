@@ -28,8 +28,6 @@ import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 public final class DungeonEditorContributionModel {
 
     private static final String DEFAULT_TOOL = "Auswahl";
-    private static final String DEFAULT_VIEW_MODE = "GRID";
-
     private final ReadOnlyStringWrapper state = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("");
     private final ReadOnlyObjectWrapper<List<MapSelection>> maps = new ReadOnlyObjectWrapper<>(List.of());
@@ -49,7 +47,6 @@ public final class DungeonEditorContributionModel {
     private @Nullable DungeonEditorInspectorSnapshot currentInspector;
     private DungeonEditorSnapshot.Selection currentSelection = DungeonEditorSnapshot.Selection.empty();
     private DungeonEditorPreview currentPreview = DungeonEditorPreview.none();
-    private String currentViewModeKey = DEFAULT_VIEW_MODE;
 
     public DungeonEditorContributionModel() {
         refreshStateText();
@@ -128,7 +125,6 @@ public final class DungeonEditorContributionModel {
         currentPreview = safeSnapshot.preview() == null
                 ? DungeonEditorPreview.none()
                 : safeSnapshot.preview();
-        currentViewModeKey = normalizeViewModeKey(safeSnapshot.viewMode());
         viewModeLabel.set(safeSnapshot.viewMode() == DungeonEditorViewMode.GRAPH ? "Graph" : "Grid");
         selectedTool.set(toolLabel(safeSnapshot.selectedTool()));
         overlayProjection.set(toOverlayProjection(safeSnapshot.overlaySettings()));
@@ -270,10 +266,6 @@ public final class DungeonEditorContributionModel {
             case TRANSITION_DELETE -> "Übergang löschen";
             case SELECT -> DEFAULT_TOOL;
         };
-    }
-
-    private static String normalizeViewModeKey(DungeonEditorViewMode viewModeKey) {
-        return viewModeKey == DungeonEditorViewMode.GRAPH ? "GRAPH" : DEFAULT_VIEW_MODE;
     }
 
     private static OverlayProjection toOverlayProjection(DungeonEditorOverlaySettings overlaySettings) {

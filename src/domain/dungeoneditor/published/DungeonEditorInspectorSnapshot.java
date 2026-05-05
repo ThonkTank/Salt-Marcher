@@ -16,6 +16,16 @@ public record DungeonEditorInspectorSnapshot(
         roomNarrations = normalizeRoomNarrations(roomNarrations);
     }
 
+    @Override
+    public List<String> facts() {
+        return List.copyOf(facts);
+    }
+
+    @Override
+    public List<RoomNarrationCard> roomNarrations() {
+        return List.copyOf(roomNarrations);
+    }
+
     public record RoomNarrationCard(
             long roomId,
             String roomName,
@@ -28,6 +38,11 @@ public record DungeonEditorInspectorSnapshot(
             roomName = normalizeRoomName(roomName);
             visualDescription = normalizeVisualDescription(visualDescription);
             exits = normalizeExits(exits);
+        }
+
+        @Override
+        public List<RoomExitNarration> exits() {
+            return List.copyOf(exits);
         }
     }
 

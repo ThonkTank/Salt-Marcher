@@ -3,102 +3,163 @@ package src.domain.dungeoneditor.session.entity;
 import java.util.List;
 import java.util.Objects;
 
-public final class DungeonEditorSession {
+public record DungeonEditorSession(
+        SelectedMap selectedMap,
+        ViewMode viewMode,
+        Tool selectedTool,
+        int projectionLevel,
+        OverlaySettings overlaySettings,
+        Selection selection,
+        Preview preview,
+        String statusText
+) {
 
-    private SelectedMap selectedMap = SelectedMap.none();
-    private ViewMode viewMode = ViewMode.GRID;
-    private Tool selectedTool = Tool.SELECT;
-    private int projectionLevel;
-    private OverlaySettings overlaySettings = OverlaySettings.defaults();
-    private Selection selection = Selection.empty();
-    private Preview preview = Preview.none();
-    private String statusText = "";
-
-    public void primeSelectedMap(long mapId) {
-        if (!selectedMap.present() && mapId > 0L) {
-            selectedMap = new SelectedMap(mapId);
-        }
+    public DungeonEditorSession {
+        selectedMap = selectedMap == null ? SelectedMap.none() : selectedMap;
+        viewMode = viewMode == null ? ViewMode.GRID : viewMode;
+        selectedTool = selectedTool == null ? Tool.SELECT : selectedTool;
+        overlaySettings = overlaySettings == null ? OverlaySettings.defaults() : overlaySettings;
+        selection = selection == null ? Selection.empty() : selection;
+        preview = preview == null ? Preview.none() : preview;
+        statusText = statusText == null ? "" : statusText;
     }
 
-    public SelectedMap selectedMap() {
-        return selectedMap;
+    public static DungeonEditorSession empty() {
+        return new DungeonEditorSession(
+                SelectedMap.none(),
+                ViewMode.GRID,
+                Tool.SELECT,
+                0,
+                OverlaySettings.defaults(),
+                Selection.empty(),
+                Preview.none(),
+                "");
     }
 
-    public void selectedMap(SelectedMap nextSelectedMap) {
-        selectedMap = nextSelectedMap == null ? SelectedMap.none() : nextSelectedMap;
+    public DungeonEditorSession primeSelectedMap(long mapId) {
+        return !selectedMap.present() && mapId > 0L
+                ? new DungeonEditorSession(
+                new SelectedMap(mapId),
+                viewMode,
+                selectedTool,
+                projectionLevel,
+                overlaySettings,
+                selection,
+                preview,
+                statusText)
+                : this;
     }
 
-    public ViewMode viewMode() {
-        return viewMode;
+    public DungeonEditorSession withSelectedMap(SelectedMap nextSelectedMap) {
+        return new DungeonEditorSession(
+                nextSelectedMap,
+                viewMode,
+                selectedTool,
+                projectionLevel,
+                overlaySettings,
+                selection,
+                preview,
+                statusText);
     }
 
-    public void viewMode(ViewMode nextViewMode) {
-        viewMode = nextViewMode == null ? ViewMode.GRID : nextViewMode;
+    public DungeonEditorSession withViewMode(ViewMode nextViewMode) {
+        return new DungeonEditorSession(
+                selectedMap,
+                nextViewMode,
+                selectedTool,
+                projectionLevel,
+                overlaySettings,
+                selection,
+                preview,
+                statusText);
     }
 
-    public Tool selectedTool() {
-        return selectedTool;
+    public DungeonEditorSession withSelectedTool(Tool nextSelectedTool) {
+        return new DungeonEditorSession(
+                selectedMap,
+                viewMode,
+                nextSelectedTool,
+                projectionLevel,
+                overlaySettings,
+                selection,
+                preview,
+                statusText);
     }
 
-    public void selectedTool(Tool nextSelectedTool) {
-        selectedTool = nextSelectedTool == null ? Tool.SELECT : nextSelectedTool;
+    public DungeonEditorSession withProjectionLevel(int nextProjectionLevel) {
+        return new DungeonEditorSession(
+                selectedMap,
+                viewMode,
+                selectedTool,
+                nextProjectionLevel,
+                overlaySettings,
+                selection,
+                preview,
+                statusText);
     }
 
-    public int projectionLevel() {
-        return projectionLevel;
+    public DungeonEditorSession shiftProjectionLevel(int delta) {
+        return withProjectionLevel(projectionLevel + delta);
     }
 
-    public void projectionLevel(int nextProjectionLevel) {
-        projectionLevel = nextProjectionLevel;
+    public DungeonEditorSession withOverlaySettings(OverlaySettings nextOverlaySettings) {
+        return new DungeonEditorSession(
+                selectedMap,
+                viewMode,
+                selectedTool,
+                projectionLevel,
+                nextOverlaySettings,
+                selection,
+                preview,
+                statusText);
     }
 
-    public void shiftProjectionLevel(int delta) {
-        projectionLevel += delta;
+    public DungeonEditorSession withSelection(Selection nextSelection) {
+        return new DungeonEditorSession(
+                selectedMap,
+                viewMode,
+                selectedTool,
+                projectionLevel,
+                overlaySettings,
+                nextSelection,
+                preview,
+                statusText);
     }
 
-    public OverlaySettings overlaySettings() {
-        return overlaySettings;
+    public DungeonEditorSession clearSelection() {
+        return withSelection(Selection.empty());
     }
 
-    public void overlaySettings(OverlaySettings nextOverlaySettings) {
-        overlaySettings = nextOverlaySettings == null ? OverlaySettings.defaults() : nextOverlaySettings;
+    public DungeonEditorSession withPreview(Preview nextPreview) {
+        return new DungeonEditorSession(
+                selectedMap,
+                viewMode,
+                selectedTool,
+                projectionLevel,
+                overlaySettings,
+                selection,
+                nextPreview,
+                statusText);
     }
 
-    public Selection selection() {
-        return selection;
+    public DungeonEditorSession clearPreview() {
+        return withPreview(Preview.none());
     }
 
-    public void selection(Selection nextSelection) {
-        selection = nextSelection == null ? Selection.empty() : nextSelection;
+    public DungeonEditorSession withStatusText(String nextStatusText) {
+        return new DungeonEditorSession(
+                selectedMap,
+                viewMode,
+                selectedTool,
+                projectionLevel,
+                overlaySettings,
+                selection,
+                preview,
+                nextStatusText);
     }
 
-    public void clearSelection() {
-        selection = Selection.empty();
-    }
-
-    public Preview preview() {
-        return preview;
-    }
-
-    public void preview(Preview nextPreview) {
-        preview = nextPreview == null ? Preview.none() : nextPreview;
-    }
-
-    public void clearPreview() {
-        preview = Preview.none();
-    }
-
-    public String statusText() {
-        return statusText;
-    }
-
-    public void statusText(String nextStatusText) {
-        statusText = nextStatusText == null ? "" : nextStatusText;
-    }
-
-    public void clearTransientState(String nextStatusText) {
-        preview = Preview.none();
-        statusText(nextStatusText);
+    public DungeonEditorSession clearTransientState(String nextStatusText) {
+        return clearPreview().withStatusText(nextStatusText);
     }
 
     public record SelectedMap(long value) {
@@ -348,8 +409,8 @@ public final class DungeonEditorSession {
             CorridorEndpoint end
     ) implements Preview {
         public CorridorCreatePreview {
-            start = Objects.requireNonNull(start, "start");
-            end = Objects.requireNonNull(end, "end");
+            Objects.requireNonNull(start, "start");
+            Objects.requireNonNull(end, "end");
         }
     }
 

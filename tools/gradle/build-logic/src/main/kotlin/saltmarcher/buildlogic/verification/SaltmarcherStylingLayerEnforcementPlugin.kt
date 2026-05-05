@@ -31,11 +31,10 @@ internal fun Project.configureStylingLayerEnforcement() {
 
     val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
     val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
-    val verificationTooling = extensions.getByType<VerificationToolingExtension>()
-    val verificationLifecycle = extensions.getByType<VerificationLifecycleExtension>()
+    val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
 
     val stylingLayerCheckerNames = listOf("ViewProgrammaticStyling")
-    val compileStylingLayerVerificationJava = verificationTooling.registerFocusedVerificationCompileTask(
+    val compileStylingLayerVerificationJava = verificationHarness.registerFocusedVerificationCompileTask(
         "stylingLayer",
         stylingLayerCheckerNames,
         "Compile only the centralized styling-layer verification slice with the styling Error Prone checks enabled."
@@ -117,10 +116,10 @@ internal fun Project.configureStylingLayerEnforcement() {
         dependsOn(pmdStylingLayerEnforcement)
     }
 
-    verificationLifecycle.checkArchitecture.configure {
+    verificationHarness.checkArchitecture.configure {
         dependsOn(checkStylingLayerEnforcement)
     }
-    verificationLifecycle.check.configure {
+    verificationHarness.check.configure {
         dependsOn(checkStylingLayerEnforcement)
     }
 }

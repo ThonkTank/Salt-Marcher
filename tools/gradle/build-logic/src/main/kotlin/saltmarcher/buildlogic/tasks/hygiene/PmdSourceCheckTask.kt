@@ -77,7 +77,6 @@ abstract class PmdSourceCheckTask : DefaultTask() {
         if (sourceDirs.isNotEmpty()) {
             commandArgs.addAll(sourceDirs)
         }
-        logger.lifecycle("pmdStrict args: {}", commandArgs.joinToString(" "))
 
         val execResult = execOperations.javaexec {
             workingDir = projectRoot.get().asFile
@@ -89,9 +88,6 @@ abstract class PmdSourceCheckTask : DefaultTask() {
                 .joinToString(File.pathSeparator)
             if (auxClasspathText.isNotBlank()) {
                 args("--aux-classpath", auxClasspathText)
-            }
-            if (sourceDirs.isNotEmpty()) {
-                args(*sourceDirs.toTypedArray())
             }
             isIgnoreExitValue = true
             standardOutput = outputBuffer

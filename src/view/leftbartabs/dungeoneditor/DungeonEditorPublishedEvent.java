@@ -1,15 +1,13 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
-import src.domain.dungeoneditor.published.DungeonEditorTool;
-import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 
 public record DungeonEditorPublishedEvent(
         Kind kind,
         long mapId,
         String mapName,
-        DungeonEditorViewMode viewMode,
-        DungeonEditorTool selectedTool,
+        ViewMode viewMode,
+        Tool selectedTool,
         int projectionLevelDelta,
         OverlaySettings overlaySettings,
         MainViewInput mainViewInput,
@@ -20,8 +18,8 @@ public record DungeonEditorPublishedEvent(
         kind = kind == null ? Kind.INTERPRET_MAIN_VIEW : kind;
         mapId = Math.max(0L, mapId);
         mapName = mapName == null ? "" : mapName;
-        viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
-        selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
+        viewMode = viewMode == null ? ViewMode.GRID : viewMode;
+        selectedTool = selectedTool == null ? Tool.SELECT : selectedTool;
         overlaySettings = overlaySettings == null ? OverlaySettings.defaults() : overlaySettings;
         mainViewInput = mainViewInput == null ? MainViewInput.empty() : mainViewInput;
         roomNarration = roomNarration == null ? RoomNarrationInput.empty() : roomNarration;
@@ -32,8 +30,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.SELECT_MAP,
                 mapId,
                 "",
-                DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                ViewMode.GRID,
+                Tool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -45,8 +43,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.CREATE_MAP,
                 0L,
                 mapName,
-                DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                ViewMode.GRID,
+                Tool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -58,8 +56,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.RENAME_MAP,
                 mapId,
                 mapName,
-                DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                ViewMode.GRID,
+                Tool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -71,33 +69,33 @@ public record DungeonEditorPublishedEvent(
                 Kind.DELETE_MAP,
                 mapId,
                 "",
-                DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                ViewMode.GRID,
+                Tool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
                 RoomNarrationInput.empty());
     }
 
-    static DungeonEditorPublishedEvent setViewMode(DungeonEditorViewMode viewMode) {
+    static DungeonEditorPublishedEvent setViewMode(ViewMode viewMode) {
         return new DungeonEditorPublishedEvent(
                 Kind.SET_VIEW_MODE,
                 0L,
                 "",
                 viewMode,
-                DungeonEditorTool.SELECT,
+                Tool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
                 RoomNarrationInput.empty());
     }
 
-    static DungeonEditorPublishedEvent setTool(DungeonEditorTool selectedTool) {
+    static DungeonEditorPublishedEvent setTool(Tool selectedTool) {
         return new DungeonEditorPublishedEvent(
                 Kind.SET_TOOL,
                 0L,
                 "",
-                DungeonEditorViewMode.GRID,
+                ViewMode.GRID,
                 selectedTool,
                 0,
                 OverlaySettings.defaults(),
@@ -110,8 +108,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.SHIFT_PROJECTION_LEVEL,
                 0L,
                 "",
-                DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                ViewMode.GRID,
+                Tool.SELECT,
                 delta,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -123,8 +121,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.SET_OVERLAY,
                 0L,
                 "",
-                DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                ViewMode.GRID,
+                Tool.SELECT,
                 0,
                 overlaySettings,
                 MainViewInput.empty(),
@@ -136,8 +134,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.INTERPRET_MAIN_VIEW,
                 0L,
                 "",
-                DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                ViewMode.GRID,
+                Tool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 mainViewInput,
@@ -149,8 +147,8 @@ public record DungeonEditorPublishedEvent(
                 Kind.SAVE_ROOM_NARRATION,
                 0L,
                 "",
-                DungeonEditorViewMode.GRID,
-                DungeonEditorTool.SELECT,
+                ViewMode.GRID,
+                Tool.SELECT,
                 0,
                 OverlaySettings.defaults(),
                 MainViewInput.empty(),
@@ -168,6 +166,27 @@ public record DungeonEditorPublishedEvent(
         SET_OVERLAY,
         INTERPRET_MAIN_VIEW,
         SAVE_ROOM_NARRATION
+    }
+
+    enum ViewMode {
+        GRID,
+        GRAPH
+    }
+
+    enum Tool {
+        SELECT,
+        ROOM_PAINT,
+        ROOM_DELETE,
+        WALL_CREATE,
+        WALL_DELETE,
+        DOOR_CREATE,
+        DOOR_DELETE,
+        CORRIDOR_CREATE,
+        CORRIDOR_DELETE,
+        STAIR_CREATE,
+        STAIR_DELETE,
+        TRANSITION_CREATE,
+        TRANSITION_DELETE
     }
 
     public record OverlaySettings(

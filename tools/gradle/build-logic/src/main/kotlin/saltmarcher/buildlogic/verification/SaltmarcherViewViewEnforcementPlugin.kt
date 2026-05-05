@@ -27,8 +27,7 @@ internal fun Project.configureViewViewEnforcement() {
 
     val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
     val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
-    val verificationTooling = extensions.getByType<VerificationToolingExtension>()
-    val verificationLifecycle = extensions.getByType<VerificationLifecycleExtension>()
+    val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
 
     val viewCheckerNames = listOf(
         "PassiveViewDependencyBoundaries",
@@ -38,7 +37,7 @@ internal fun Project.configureViewViewEnforcement() {
         "ViewInputEventApi",
         "PassiveViewCallbackSeamBoundary"
     )
-    val compileViewVerificationJava = verificationTooling.registerFocusedVerificationCompileTask(
+    val compileViewVerificationJava = verificationHarness.registerFocusedVerificationCompileTask(
         "view",
         viewCheckerNames,
         "Compile only the passive View verification slice with the passive View Error Prone checks enabled."
@@ -71,7 +70,7 @@ internal fun Project.configureViewViewEnforcement() {
         }
     }
 
-    val viewSurfaceArchitectureTest = verificationTooling.registerFocusedArchunitTestTask(
+    val viewSurfaceArchitectureTest = verificationHarness.registerFocusedArchunitTestTask(
         "view",
         "viewSurfaceArchitectureTest",
         "Run only the passive View-focused architecture test suite.",
@@ -99,7 +98,7 @@ internal fun Project.configureViewViewEnforcement() {
         successMarker.set(layout.buildDirectory.file("verification-markers/checkViewFxmlResources/success.marker"))
     }
 
-    val jqassistantViewEnforcementTasks = verificationTooling.registerFocusedJqassistantTaskPair(
+    val jqassistantViewEnforcementTasks = verificationHarness.registerFocusedJqassistantTaskPair(
         "view",
         "jqassistantScanViewEnforcement",
         "jqassistantAnalyzeViewEnforcement",
@@ -120,10 +119,10 @@ internal fun Project.configureViewViewEnforcement() {
         dependsOn(jqassistantViewEnforcementTasks.analyzeTask)
     }
 
-    verificationLifecycle.checkArchitecture.configure {
+    verificationHarness.checkArchitecture.configure {
         dependsOn(checkViewEnforcement)
     }
-    verificationLifecycle.check.configure {
+    verificationHarness.check.configure {
         dependsOn(checkViewEnforcement)
     }
 }

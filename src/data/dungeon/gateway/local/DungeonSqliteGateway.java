@@ -26,15 +26,10 @@ import java.util.Set;
 
 public final class DungeonSqliteGateway {
 
-    private static final String FROM = " FROM ";
     private static final String INSERT_INTO = "INSERT INTO ";
     private static final String DELETE_FROM = "DELETE FROM ";
     private static final String WHERE_DUNGEON_MAP_ID = " WHERE dungeon_map_id=?";
-    private static final String WHERE_DUNGEON_MAP_ID_SUBQUERY = " WHERE dungeon_map_id=?)";
     private static final String COLUMN_DUNGEON_MAP_ID = "dungeon_map_id";
-    private static final String COLUMN_ROOM_ID = "room_id";
-    private static final String COLUMN_CLUSTER_ID = "cluster_id";
-    private static final String COLUMN_LEVEL_Z = "level_z";
 
     private final DungeonSqliteConnectionFactory connectionFactory;
     private final DungeonSqliteSchemaManager schemaManager;

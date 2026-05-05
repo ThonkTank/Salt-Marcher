@@ -485,8 +485,9 @@ final class InterpretDungeonEditorMainViewInputUseCase {
 
     private static Effect applyCorridorDraft(PendingCorridorTarget start, PendingCorridorTarget target) {
         if (start.endpoint() != null && target.endpoint() != null) {
-            return Effect.apply(DungeonEditorSessionBridge.toDungeonOperation(
-                    new ApplyDungeonEditorSessionUseCase.CorridorCreatePreviewData(start.endpoint(), target.endpoint())));
+            DungeonEditorOperation operation = DungeonEditorSessionBridge.toDungeonOperation(
+                    new ApplyDungeonEditorSessionUseCase.CorridorCreatePreviewData(start.endpoint(), target.endpoint()));
+            return operation == null ? Effect.none() : Effect.apply(operation);
         }
         return Effect.none();
     }
@@ -759,22 +760,22 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         DungeonEdgeRef clickedEdge = new DungeonEdgeRef(
                 boundaryTarget.start().toDungeonCellRef(),
                 boundaryTarget.end().toDungeonCellRef());
-        Boolean outer = outerStretch(clickedEdge, clusterCells);
-        if (outer == null) {
+        BoundaryStretchSide stretchSide = outerStretch(clickedEdge, clusterCells);
+        if (stretchSide == BoundaryStretchSide.NONE) {
             return List.of();
         }
         Map<Integer, DungeonEdgeRef> edgesByVariable =
-                boundaryStretchEdgesOnLine(snapshot, clusterCells, clickedEdge, orientation, outer);
+                boundaryStretchEdgesOnLine(snapshot, clusterCells, clickedEdge, orientation, stretchSide.outer());
         List<DungeonEdgeRef> contiguousEdges = contiguousStretchEdges(edgesByVariable, clickedEdge, orientation);
         return contiguousEdges.isEmpty() ? List.of(clickedEdge) : contiguousEdges;
     }
 
-    private static @Nullable Boolean outerStretch(DungeonEdgeRef clickedEdge, Set<DungeonCellRef> clusterCells) {
+    private static BoundaryStretchSide outerStretch(DungeonEdgeRef clickedEdge, Set<DungeonCellRef> clusterCells) {
         int clickedTouchCount = touchingClusterCount(clickedEdge, clusterCells);
         if (clickedTouchCount == 0) {
-            return null;
+            return BoundaryStretchSide.NONE;
         }
-        return clickedTouchCount == 1;
+        return clickedTouchCount == 1 ? BoundaryStretchSide.OUTER : BoundaryStretchSide.INNER;
     }
 
     private static Map<Integer, DungeonEdgeRef> boundaryStretchEdgesOnLine(
@@ -1748,6 +1749,22 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         }
     }
 
+    private enum BoundaryStretchSide {
+        NONE(false),
+        INNER(false),
+        OUTER(true);
+
+        private final boolean outer;
+
+        BoundaryStretchSide(boolean outer) {
+            this.outer = outer;
+        }
+
+        boolean outer() {
+            return outer;
+        }
+    }
+
     private record BoundaryStretchSession(
             ApplyDungeonEditorSessionUseCase.SelectionData selection,
             long clusterId,
@@ -1799,7 +1816,19 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     }
 
     private record CorridorDraft(PendingCorridorTarget start, boolean present) {
-        static CorridorDraft none() { return new CorridorDraft(null, false); }
+        static CorridorDraft none() {
+            return new CorridorDraft(
+                    new PendingCorridorTarget.EndpointTarget(
+                            "",
+                            "",
+                            ApplyDungeonEditorSessionUseCase.SelectionData.empty(),
+                            0L,
+                            new ApplyDungeonEditorSessionUseCase.CorridorAnchorEndpointData(
+                                    0L,
+                                    new DungeonCellRef(0, 0, 0),
+                                    DungeonTopologyElementRef.empty())),
+                    false);
+        }
         static CorridorDraft start(PendingCorridorTarget target) { return new CorridorDraft(target, true); }
     }
 

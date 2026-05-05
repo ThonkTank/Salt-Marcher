@@ -2,6 +2,7 @@ package saltmarcher.buildlogic.verification
 
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.quality.Pmd
@@ -24,7 +25,7 @@ data class JqassistantTaskPair(
     val analyzeTask: TaskProvider<JqassistantAnalyzeTask>
 )
 
-open class VerificationToolingExtension(
+open class VerificationHarnessExtension(
     private val project: Project,
     private val enforcementBundles: EnforcementBundlesExtension,
     private val sourceSets: SourceSetContainer,
@@ -34,7 +35,13 @@ open class VerificationToolingExtension(
     private val jqassistantCliFile: Provider<RegularFile>,
     private val jqassistantJvmOpens: String,
     private val installJqassistant: TaskProvider<*>,
-    private val configureCommonErrorProneOptions: JavaCompile.() -> Unit
+    private val configureCommonErrorProneOptions: JavaCompile.() -> Unit,
+    val productionBuild: TaskProvider<out Task>,
+    val checkQualityHygiene: TaskProvider<out Task>,
+    val checkArchitecture: TaskProvider<out Task>,
+    val checkViewArchitecture: TaskProvider<out Task>,
+    val ckjmMain: TaskProvider<out Task>,
+    val check: TaskProvider<out Task>
 ) {
     private fun compileJavaTaskName(sourceSetName: String): String =
         "compile${sourceSetName.replaceFirstChar(Char::uppercaseChar)}Java"

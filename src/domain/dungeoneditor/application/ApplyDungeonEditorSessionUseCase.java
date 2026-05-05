@@ -40,7 +40,7 @@ public final class ApplyDungeonEditorSessionUseCase {
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
             new InterpretDungeonEditorMainViewInputUseCase();
-    private final DungeonEditorSession session = new DungeonEditorSession();
+    private DungeonEditorSession session = DungeonEditorSession.empty();
 
     public ApplyDungeonEditorSessionUseCase(
             Function<CreateDungeonMapCommand, CreateDungeonMapResult> createMap,
@@ -65,7 +65,7 @@ public final class ApplyDungeonEditorSessionUseCase {
 
     public void primeSelectedMap(@Nullable DungeonMapId mapId) {
         if (mapId != null) {
-            session.primeSelectedMap(mapId.value());
+            session = session.primeSelectedMap(mapId.value());
         }
     }
 
@@ -97,62 +97,60 @@ public final class ApplyDungeonEditorSessionUseCase {
                 DungeonEditorSessionBridge.toSelectionData(session.selection()),
                 DungeonEditorSessionBridge.toPreviewData(session.preview()),
                 session.statusText()));
-        session.selectedMap(toSelectedMap(snapshot.selectedMapId()));
-        session.projectionLevel(snapshot.projectionLevel());
+        session = session.withSelectedMap(toSelectedMap(snapshot.selectedMapId()))
+                .withProjectionLevel(snapshot.projectionLevel());
         return snapshot;
     }
 
     private void clearTransientState(String nextStatusText) {
-        session.clearTransientState(nextStatusText);
+        session = session.clearTransientState(nextStatusText);
         mainViewInterpreter.clear();
     }
 
     private void selectMap(Command command) {
-        session.selectedMap(toSelectedMap(command.mapId()));
-        session.clearSelection();
+        session = session.withSelectedMap(toSelectedMap(command.mapId())).clearSelection();
         clearTransientState("");
     }
 
     private void createSelectedMap(Command command) {
-        session.selectedMap(toSelectedMap(createMap.apply(new CreateDungeonMapCommand(command.mapName())).mapId()));
-        session.clearSelection();
+        session = session.withSelectedMap(toSelectedMap(createMap.apply(new CreateDungeonMapCommand(command.mapName())).mapId()))
+                .clearSelection();
         clearTransientState("Dungeon-Map erstellt.");
     }
 
     private void renameSelectedMap(Command command) {
-        session.selectedMap(toSelectedMap(renameMap.apply(new RenameDungeonMapCommand(
+        session = session.withSelectedMap(toSelectedMap(renameMap.apply(new RenameDungeonMapCommand(
                 requireMapId(command.mapId()),
-                command.mapName())).mapId()));
-        session.statusText("Dungeon-Map umbenannt.");
+                command.mapName())).mapId()))
+                .withStatusText("Dungeon-Map umbenannt.");
     }
 
     private void deleteSelectedMap(Command command) {
         DungeonMapId deletedMapId = deleteMap.apply(new DeleteDungeonMapCommand(requireMapId(command.mapId()))).mapId();
         if (deletedMapId != null && deletedMapId.equals(toDomainMapId(session.selectedMap()))) {
-            session.selectedMap(DungeonEditorSession.SelectedMap.none());
+            session = session.withSelectedMap(DungeonEditorSession.SelectedMap.none());
         }
-        session.clearSelection();
+        session = session.clearSelection();
         clearTransientState("Dungeon-Map gelöscht.");
     }
 
     private void setViewMode(Command command) {
-        session.viewMode(command.viewMode());
+        session = session.withViewMode(command.viewMode());
         clearTransientState("");
     }
 
     private void setTool(Command command) {
-        session.selectedTool(command.selectedTool());
+        session = session.withSelectedTool(command.selectedTool());
         clearTransientState("");
     }
 
     private void shiftProjectionLevel(Command command) {
-        session.shiftProjectionLevel(command.projectionLevelDelta());
-        session.statusText("");
+        session = session.shiftProjectionLevel(command.projectionLevelDelta()).withStatusText("");
     }
 
     private void setOverlay(Command command) {
-        session.overlaySettings(DungeonEditorSessionBridge.toSessionOverlay(command.overlaySettings()));
-        session.statusText("");
+        session = session.withOverlaySettings(DungeonEditorSessionBridge.toSessionOverlay(command.overlaySettings()))
+                .withStatusText("");
     }
 
     private void applyRoomNarration(RoomNarrationInput roomNarration) {
@@ -165,8 +163,7 @@ public final class ApplyDungeonEditorSessionUseCase {
                         roomNarration.roomId(),
                         roomNarration.visualDescription(),
                         roomNarration.exits())));
-        session.clearPreview();
-        session.statusText(statusFromMessages(result));
+        session = session.clearPreview().withStatusText(statusFromMessages(result));
     }
 
     private void applyMainViewInput(MainViewInput mainViewInput) {
@@ -201,30 +198,28 @@ public final class ApplyDungeonEditorSessionUseCase {
             return;
         }
         if (effect.projectionLevelDelta() != 0) {
-            session.shiftProjectionLevel(effect.projectionLevelDelta());
+            session = session.shiftProjectionLevel(effect.projectionLevelDelta());
         }
         if (effect.statusText() != null) {
-            session.statusText(effect.statusText());
+            session = session.withStatusText(effect.statusText());
         }
         if (effect.clearSelection()) {
-            session.clearSelection();
-            session.clearPreview();
+            session = session.clearSelection().clearPreview();
         } else if (effect.selection() != null) {
-            session.selection(DungeonEditorSessionBridge.toSessionSelection(effect.selection()));
-            session.clearPreview();
+            session = session.withSelection(DungeonEditorSessionBridge.toSessionSelection(effect.selection()))
+                    .clearPreview();
         }
         if (effect.clearPreview()) {
-            session.clearPreview();
+            session = session.clearPreview();
         } else if (effect.preview() != null) {
-            session.preview(DungeonEditorSessionBridge.toSessionPreview(effect.preview()));
-            session.statusText("");
+            session = session.withPreview(DungeonEditorSessionBridge.toSessionPreview(effect.preview()))
+                    .withStatusText("");
         }
         if (effect.applyOperation() != null) {
             DungeonOperationResult result = applyOperation.apply(new ApplyDungeonEditorOperationCommand(
                     requireMapId(session.selectedMap()),
                     effect.applyOperation()));
-            session.clearPreview();
-            session.statusText(statusFromMessages(result));
+            session = session.clearPreview().withStatusText(statusFromMessages(result));
         }
     }
 

@@ -20,8 +20,6 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeoneditor.published.DungeonEditorTool;
-import src.domain.dungeoneditor.published.DungeonEditorViewMode;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView;
 import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 import src.view.slotcontent.controls.dungeoncontrol.DungeonControlPanelView;
@@ -654,27 +652,27 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         return isKnownTool(selectedTool) ? selectedTool : SELECT_TOOL;
     }
 
-    private static DungeonEditorViewMode toViewMode(String viewModeKey) {
+    private static DungeonEditorControlsViewInputEvent.ViewMode toViewMode(String viewModeKey) {
         return VIEW_GRAPH.equalsIgnoreCase(viewModeKey)
-                ? DungeonEditorViewMode.GRAPH
-                : DungeonEditorViewMode.GRID;
+                ? DungeonEditorControlsViewInputEvent.ViewMode.GRAPH
+                : DungeonEditorControlsViewInputEvent.ViewMode.GRID;
     }
 
-    private static DungeonEditorTool toTool(String tool) {
+    private static DungeonEditorControlsViewInputEvent.Tool toTool(String tool) {
         return switch (normalizeTool(tool)) {
-            case ROOM_PAINT_TOOL -> DungeonEditorTool.ROOM_PAINT;
-            case ROOM_DELETE_TOOL -> DungeonEditorTool.ROOM_DELETE;
-            case WALL_CREATE_TOOL -> DungeonEditorTool.WALL_CREATE;
-            case WALL_DELETE_TOOL -> DungeonEditorTool.WALL_DELETE;
-            case DOOR_CREATE_TOOL -> DungeonEditorTool.DOOR_CREATE;
-            case DOOR_DELETE_TOOL -> DungeonEditorTool.DOOR_DELETE;
-            case CORRIDOR_CREATE_TOOL -> DungeonEditorTool.CORRIDOR_CREATE;
-            case CORRIDOR_DELETE_TOOL -> DungeonEditorTool.CORRIDOR_DELETE;
-            case STAIR_CREATE_TOOL -> DungeonEditorTool.STAIR_CREATE;
-            case STAIR_DELETE_TOOL -> DungeonEditorTool.STAIR_DELETE;
-            case TRANSITION_CREATE_TOOL -> DungeonEditorTool.TRANSITION_CREATE;
-            case TRANSITION_DELETE_TOOL -> DungeonEditorTool.TRANSITION_DELETE;
-            default -> DungeonEditorTool.SELECT;
+            case ROOM_PAINT_TOOL -> DungeonEditorControlsViewInputEvent.Tool.ROOM_PAINT;
+            case ROOM_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.ROOM_DELETE;
+            case WALL_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.WALL_CREATE;
+            case WALL_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.WALL_DELETE;
+            case DOOR_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.DOOR_CREATE;
+            case DOOR_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.DOOR_DELETE;
+            case CORRIDOR_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.CORRIDOR_CREATE;
+            case CORRIDOR_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.CORRIDOR_DELETE;
+            case STAIR_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.STAIR_CREATE;
+            case STAIR_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.STAIR_DELETE;
+            case TRANSITION_CREATE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.TRANSITION_CREATE;
+            case TRANSITION_DELETE_TOOL -> DungeonEditorControlsViewInputEvent.Tool.TRANSITION_DELETE;
+            default -> DungeonEditorControlsViewInputEvent.Tool.SELECT;
         };
     }
 

@@ -76,12 +76,22 @@ final class DungeonEditorBinder {
                 ApplyDungeonEditorSessionCommand.Action.valueOf(safeEvent.kind().name()),
                 toMapId(safeEvent.mapId()),
                 safeEvent.mapName(),
-                safeEvent.viewMode(),
-                safeEvent.selectedTool(),
+                toPublishedViewMode(safeEvent.viewMode()),
+                toPublishedTool(safeEvent.selectedTool()),
                 safeEvent.projectionLevelDelta(),
                 toOverlaySettings(safeEvent.overlaySettings()),
                 toMainViewInput(safeEvent.mainViewInput()),
                 toRoomNarrationInput(safeEvent.roomNarration()));
+    }
+
+    private static DungeonEditorViewMode toPublishedViewMode(DungeonEditorPublishedEvent.ViewMode viewMode) {
+        return viewMode == DungeonEditorPublishedEvent.ViewMode.GRAPH
+                ? DungeonEditorViewMode.GRAPH
+                : DungeonEditorViewMode.GRID;
+    }
+
+    private static DungeonEditorTool toPublishedTool(DungeonEditorPublishedEvent.Tool tool) {
+        return tool == null ? DungeonEditorTool.SELECT : DungeonEditorTool.valueOf(tool.name());
     }
 
     private static DungeonEditorOverlaySettings toOverlaySettings(

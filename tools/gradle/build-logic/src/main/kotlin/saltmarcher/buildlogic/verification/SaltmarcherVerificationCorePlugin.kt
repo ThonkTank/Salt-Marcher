@@ -26,8 +26,7 @@ internal fun Project.configureVerificationCore() {
     val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
     val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
     val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
-    val verificationTooling = extensions.getByType<VerificationToolingExtension>()
-    val verificationLifecycle = extensions.getByType<VerificationLifecycleExtension>()
+    val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = enforcementBundles.descriptor(bundleId)
 
@@ -61,7 +60,7 @@ internal fun Project.configureVerificationCore() {
             } else {
                 "Compile only the $bundleDisplayName verification slice with the dedicated Error Prone checks enabled."
             }
-            val compileTask = verificationTooling.registerFocusedVerificationCompileTask(bundleId, checkerNames, compileDescription)
+            val compileTask = verificationHarness.registerFocusedVerificationCompileTask(bundleId, checkerNames, compileDescription)
             if (focusedEnforcementBundleMode) compileTask else tasks.named<JavaCompile>("compileJava")
         } else {
             null
@@ -73,7 +72,7 @@ internal fun Project.configureVerificationCore() {
         descriptor.archunit?.let { archunit ->
             val compileTask = selectedCompileJava
                 ?: error("Missing selected compile task for ArchUnit enforcement bundle '$bundleId'.")
-            val archunitTask = verificationTooling.registerFocusedArchunitTestTask(
+            val archunitTask = verificationHarness.registerFocusedArchunitTestTask(
                 bundleId,
                 archunit.taskName,
                 archunit.description,
@@ -89,7 +88,7 @@ internal fun Project.configureVerificationCore() {
         descriptor.jqassistant?.let { jqassistant ->
             val compileTask = selectedCompileJava
                 ?: error("Missing selected compile task for jQAssistant enforcement bundle '$bundleId'.")
-            val taskPair = verificationTooling.registerFocusedJqassistantTaskPair(
+            val taskPair = verificationHarness.registerFocusedJqassistantTaskPair(
                 bundleId,
                 jqassistant.scanTaskName,
                 jqassistant.analyzeTaskName,
@@ -111,7 +110,7 @@ internal fun Project.configureVerificationCore() {
             }
 
         val pmdTask = descriptor.pmd?.let { pmd ->
-            verificationTooling.registerFocusedPmdTask(
+            verificationHarness.registerFocusedPmdTask(
                 bundleId,
                 pmd.taskName,
                 pmd.description,
@@ -136,12 +135,12 @@ internal fun Project.configureVerificationCore() {
         }
 
         if (descriptor.rootTask?.attachToCheckArchitecture == true) {
-            verificationLifecycle.checkArchitecture.configure {
+            verificationHarness.checkArchitecture.configure {
                 dependsOn(rootTaskProvider)
             }
         }
         if (descriptor.rootTask?.attachToCheck == true) {
-            verificationLifecycle.check.configure {
+            verificationHarness.check.configure {
                 dependsOn(rootTaskProvider)
             }
         }
@@ -175,25 +174,25 @@ internal fun Project.configureVerificationCore() {
     val productionBuild = registerSurfaceTask(
         "production-build",
         "Run the public staged production-build verification surface.",
-        verificationLifecycle.productionBuild
+        verificationHarness.productionBuild
     )
 
     val qualityHygiene = registerSurfaceTask(
         "quality-hygiene",
         "Run the public staged non-architecture hygiene verification surface.",
-        verificationLifecycle.checkQualityHygiene
+        verificationHarness.checkQualityHygiene
     )
 
     val architecture = registerSurfaceTask(
         "architecture",
         "Run the public staged non-view architecture verification surface.",
-        verificationLifecycle.checkArchitecture
+        verificationHarness.checkArchitecture
     )
 
     val viewTopology = registerSurfaceTask(
         "view-topology",
         "Run the public staged passive-view topology verification surface.",
-        verificationLifecycle.checkViewArchitecture
+        verificationHarness.checkViewArchitecture
     )
 
     val docs = registerSurfaceTask(
@@ -205,7 +204,7 @@ internal fun Project.configureVerificationCore() {
     val metricsReport = registerSurfaceTask(
         "metrics-report",
         "Run the public staged CKJM report surface.",
-        verificationLifecycle.ckjmMain
+        verificationHarness.ckjmMain
     )
 
     val desktopInstall = registerSurfaceTask(
@@ -223,19 +222,4 @@ internal fun Project.configureVerificationCore() {
         dependsOn(viewTopology)
     }
 
-    extensions.add(
-        VerificationSurfaceRegistry::class.java,
-        "saltmarcherVerificationSurfaces",
-        VerificationSurfaceRegistry(
-            checkDocumentationEnforcement = checkDocumentationEnforcement,
-            productionBuild = productionBuild,
-            qualityHygiene = qualityHygiene,
-            architecture = architecture,
-            viewTopology = viewTopology,
-            docs = docs,
-            metricsReport = metricsReport,
-            desktopInstall = desktopInstall,
-            productionHandoff = productionHandoff
-        )
-    )
 }
