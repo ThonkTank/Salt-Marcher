@@ -3,6 +3,7 @@ import com.github.spotbugs.snom.Effort
 import com.github.spotbugs.snom.SpotBugsTask
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.plugins.quality.Pmd
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.application.tasks.CreateStartScripts
@@ -140,6 +141,8 @@ val architectureTest by tasks.registering(Test::class) {
     description = "Run only architecture-focused test suites."
     dependsOn(tasks.named("classes"))
     inputs.dir(mainJavaClassesDir)
+        .withPropertyName("mainClassesDirectory")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     useJUnitPlatform()

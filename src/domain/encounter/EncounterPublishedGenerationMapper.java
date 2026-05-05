@@ -5,6 +5,10 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.application.EncounterGenerationUseCase;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.generation.value.EncounterGenerationInputs;
+import src.domain.encounter.generation.value.EncounterGenerationRequest;
+import src.domain.encounter.generation.value.EncounterLockedCreature;
+import src.domain.encounter.generation.value.EncounterRequestedDifficulty;
 import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.encounter.published.EncounterCreature;
 import src.domain.encounter.published.EncounterDifficultyBand;
@@ -23,7 +27,7 @@ final class EncounterPublishedGenerationMapper {
     private EncounterPublishedGenerationMapper() {
     }
 
-    static EncounterGenerationUseCase.GenerateRequest toGenerateRequest(GenerateEncounterCommand request) {
+    static EncounterGenerationRequest toGenerateRequest(GenerateEncounterCommand request) {
         GenerateEncounterCommand effectiveRequest = request == null
                 ? new GenerateEncounterCommand(
                         List.of(),
@@ -34,16 +38,16 @@ final class EncounterPublishedGenerationMapper {
                         List.of(),
                         List.of())
                 : request;
-        return new EncounterGenerationUseCase.GenerateRequest(
-                effectiveRequest.creatureTypes(),
-                effectiveRequest.creatureSubtypes(),
-                effectiveRequest.biomes(),
-                toDifficultyIntent(effectiveRequest.targetDifficulty()),
-                effectiveRequest.targetDifficulty() != null && effectiveRequest.targetDifficulty().isAuto(),
+        return new EncounterGenerationRequest(
+                new EncounterGenerationInputs(
+                        effectiveRequest.creatureTypes(),
+                        effectiveRequest.creatureSubtypes(),
+                        effectiveRequest.biomes(),
+                        toRequestedDifficulty(effectiveRequest.targetDifficulty()),
+                        toTuningIntent(effectiveRequest.tuning()),
+                        effectiveRequest.encounterTableIds()),
                 effectiveRequest.alternativeCount(),
-                toTuningIntent(effectiveRequest.tuning()),
                 effectiveRequest.generationSeed(),
-                effectiveRequest.encounterTableIds(),
                 effectiveRequest.excludedCreatureIds(),
                 effectiveRequest.lockedCreatures().stream()
                         .filter(Objects::nonNull)
@@ -102,8 +106,8 @@ final class EncounterPublishedGenerationMapper {
         return EncounterGenerationAdvisory.FALLBACK_USED;
     }
 
-    private static EncounterGenerationUseCase.LockedCreature toLockedCreature(EncounterLock lock) {
-        return new EncounterGenerationUseCase.LockedCreature(lock.creatureId(), lock.quantity());
+    private static EncounterLockedCreature toLockedCreature(EncounterLock lock) {
+        return new EncounterLockedCreature(lock.creatureId(), lock.quantity());
     }
 
     private static EncounterDifficultyBand toPublishedDifficulty(EncounterDifficultyIntent intent) {
@@ -116,14 +120,14 @@ final class EncounterPublishedGenerationMapper {
         };
     }
 
-    private static EncounterDifficultyIntent toDifficultyIntent(EncounterDifficultyBand band) {
+    private static EncounterRequestedDifficulty toRequestedDifficulty(EncounterDifficultyBand band) {
         EncounterDifficultyBand effectiveBand = band == null ? EncounterDifficultyBand.defaultBand() : band;
         return switch (effectiveBand) {
-            case AUTO -> EncounterDifficultyIntent.MEDIUM;
-            case EASY -> EncounterDifficultyIntent.EASY;
-            case MEDIUM -> EncounterDifficultyIntent.MEDIUM;
-            case HARD -> EncounterDifficultyIntent.HARD;
-            case DEADLY -> EncounterDifficultyIntent.DEADLY;
+            case AUTO -> EncounterRequestedDifficulty.AUTO;
+            case EASY -> EncounterRequestedDifficulty.EASY;
+            case MEDIUM -> EncounterRequestedDifficulty.MEDIUM;
+            case HARD -> EncounterRequestedDifficulty.HARD;
+            case DEADLY -> EncounterRequestedDifficulty.DEADLY;
         };
     }
 

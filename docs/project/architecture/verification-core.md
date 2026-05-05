@@ -54,9 +54,11 @@ passes `--daemon` or `--no-daemon`.
 Runtime wrappers also own `--continue` policy for public gate entrypoints so
 failure aggregation is an explicit runtime decision instead of a hidden
 convention-plugin mutation.
-The default staged production handoff remains fail-fast. A broader
-continue-on-failure sweep is an explicit caller choice through wrapper
-arguments, not an implicit property of the public handoff surface itself.
+The staged production handoff now defaults to continue-on-failure through the
+runtime wrapper so the canonical handoff route reports the broad current
+failure set in one run. The wrapper still owns that policy rather than the
+verification core itself, and direct raw Gradle use of the public surface does
+not inherit wrapper defaults automatically.
 
 ### 2. Verification Core
 
@@ -70,6 +72,11 @@ Mechanically enforced public lifecycle surfaces are:
   `desktop-install`, and `production-handoff`
 - focused bundle surfaces: `check*Enforcement`
 - focused documentation surface: `checkDocumentationEnforcement`
+
+Beyond the staged lifecycle names, the verification core also owns direct
+root lifecycle tasks that feed those aggregates. These root-owned tasks include
+shared hygiene gates such as `checkNoPublicDeadCode`; they are verification
+core surfaces, not descriptor-owned enforcement bundles.
 
 The verification core owns the mapping from a public surface to its underlying
 Gradle dependencies. Root build scripts MUST consume this core instead of
@@ -88,6 +95,10 @@ Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
 jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.
 They communicate with the verification core only through stable descriptor
 metadata and the one public lifecycle task they expose.
+
+Root-owned hygiene gates that are not bundle-specific MUST stay registered in
+the verification core itself. They MUST NOT be back-ported into fake
+descriptor-owned bundles just to reuse the bundle catalog.
 
 ### 4. Rule Implementation
 

@@ -1,5 +1,8 @@
 import java.io.File
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.language.jvm.tasks.ProcessResources
+import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.the
@@ -144,6 +147,20 @@ if (!focusedEnforcementBundleMode) {
     tasks.named<RepoVerificationMainTask>("documentationEnforcementCheck") {
         verificationArgs.set(activeBuildHarnessDocumentationRuleClasses())
     }
+}
+
+// This included build derives active verification sources from propagated
+// bundle selection, so cached outputs can restore an incomplete harness.
+tasks.named<JavaCompile>("compileJava") {
+    outputs.cacheIf("build-harness compile output must track dynamic bundle selection live") { false }
+}
+
+tasks.named<ProcessResources>("processResources") {
+    outputs.cacheIf("build-harness resources must track dynamic bundle selection live") { false }
+}
+
+tasks.named<Jar>("jar") {
+    outputs.cacheIf("build-harness jar must track dynamic bundle selection live") { false }
 }
 
 tasks.named("check") {

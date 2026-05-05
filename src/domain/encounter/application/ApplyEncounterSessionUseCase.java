@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import src.domain.encounter.generation.value.EncounterGenerationInputs;
+import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.session.entity.EncounterSession;
 
 public final class ApplyEncounterSessionUseCase {
@@ -84,8 +86,8 @@ public final class ApplyEncounterSessionUseCase {
 
     public record Command(
             Action action,
-            Optional<EncounterSession.GenerateRequestData> generation,
-            EncounterSession.BuilderInputsData builderInputs,
+            Optional<EncounterGenerationRequest> generation,
+            EncounterGenerationInputs builderInputs,
             long creatureId,
             long planId,
             int delta,
@@ -100,19 +102,19 @@ public final class ApplyEncounterSessionUseCase {
         public Command {
             action = action == null ? Action.REFRESH : action;
             generation = generation == null ? Optional.empty() : generation;
-            builderInputs = builderInputs == null ? EncounterSession.BuilderInputsData.empty() : builderInputs;
+            builderInputs = builderInputs == null ? EncounterGenerationInputs.empty() : builderInputs;
             initiativeInputs = initiativeInputs == null ? List.of() : List.copyOf(initiativeInputs);
             combatantId = combatantId == null ? "" : combatantId;
         }
 
         public static Command refresh() {
             return new Command(
-                    Action.REFRESH,
-                    Optional.empty(),
-                    EncounterSession.BuilderInputsData.empty(),
-                    0L,
-                    0L,
-                    0,
+                Action.REFRESH,
+                Optional.empty(),
+                EncounterGenerationInputs.empty(),
+                0L,
+                0L,
+                0,
                     0L,
                     List.of(),
                     "",

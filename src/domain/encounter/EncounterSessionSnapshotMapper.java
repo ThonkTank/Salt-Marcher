@@ -1,6 +1,9 @@
 package src.domain.encounter;
 
 import java.util.List;
+import src.domain.encounter.generation.value.EncounterGenerationInputs;
+import src.domain.encounter.generation.value.EncounterRequestedDifficulty;
+import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationTuning;
 import src.domain.encounter.published.EncounterSessionSnapshot;
@@ -51,7 +54,7 @@ final class EncounterSessionSnapshotMapper {
                         List.of(),
                         "",
                         new EncounterSession.DifficultySummaryData(0, 0, 0, 0, 0, ""),
-                        EncounterSession.BuilderInputsData.empty(),
+                        EncounterGenerationInputs.empty(),
                         List.of(),
                         false,
                         false,
@@ -127,10 +130,10 @@ final class EncounterSessionSnapshotMapper {
     }
 
     private static EncounterSessionSnapshot.BuilderInputs toPublishedBuilderInputs(
-            EncounterSession.BuilderInputsData builderInputs
+            EncounterGenerationInputs builderInputs
     ) {
-        EncounterSession.BuilderInputsData safeInputs = builderInputs == null
-                ? EncounterSession.BuilderInputsData.empty()
+        EncounterGenerationInputs safeInputs = builderInputs == null
+                ? EncounterGenerationInputs.empty()
                 : builderInputs;
         return new EncounterSessionSnapshot.BuilderInputs(
                 safeInputs.creatureTypes(),
@@ -211,9 +214,9 @@ final class EncounterSessionSnapshotMapper {
                 safeState.partySize());
     }
 
-    private static EncounterDifficultyBand toPublishedDifficultyBand(EncounterSession.DifficultyBand band) {
-        EncounterSession.DifficultyBand effectiveBand = band == null
-                ? EncounterSession.DifficultyBand.MEDIUM
+    private static EncounterDifficultyBand toPublishedDifficultyBand(EncounterRequestedDifficulty band) {
+        EncounterRequestedDifficulty effectiveBand = band == null
+                ? EncounterRequestedDifficulty.MEDIUM
                 : band;
         return switch (effectiveBand) {
             case AUTO -> EncounterDifficultyBand.AUTO;
@@ -224,9 +227,9 @@ final class EncounterSessionSnapshotMapper {
         };
     }
 
-    private static EncounterGenerationTuning toPublishedTuningData(EncounterSession.TuningData tuning) {
-        EncounterSession.TuningData effective = tuning == null
-                ? EncounterSession.TuningData.autoTuning()
+    private static EncounterGenerationTuning toPublishedTuningData(EncounterTuningIntent tuning) {
+        EncounterTuningIntent effective = tuning == null
+                ? EncounterTuningIntent.autoIntent()
                 : tuning;
         return new EncounterGenerationTuning(
                 effective.balanceLevel(),

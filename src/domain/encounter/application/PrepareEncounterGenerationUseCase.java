@@ -18,6 +18,8 @@ import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.LoadEncounterTableCandidatesQuery;
 import src.domain.encounter.generation.value.EncounterCreatureFacts;
 import src.domain.encounter.generation.value.EncounterCandidateProfile;
+import src.domain.encounter.generation.value.EncounterLockedCreature;
+import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.generation.value.EncounterGenerationAttempt;
 import src.domain.encounter.generation.policy.EncounterCandidateProfiles;
 import src.domain.encounter.generation.policy.EncounterAutoTuningPolicy;
@@ -54,7 +56,7 @@ final class PrepareEncounterGenerationUseCase {
             PartyApplicationService party,
             CreaturesApplicationService creatures,
             @Nullable EncounterTableApplicationService encounterTables,
-            EncounterGenerationUseCase.GenerateRequest request,
+            EncounterGenerationRequest request,
             int searchLimit
     ) {
         PartyLoadResult partyLoad = loadPartyState(party);
@@ -107,7 +109,7 @@ final class PrepareEncounterGenerationUseCase {
     }
 
     private static GenerationSearchResult generateDrafts(
-            EncounterGenerationUseCase.GenerateRequest request,
+            EncounterGenerationRequest request,
             EncounterDifficultyMath.Thresholds thresholds,
             int partySize,
             LockedCreatures lockedCreatures,
@@ -140,7 +142,7 @@ final class PrepareEncounterGenerationUseCase {
         return accumulator.fallback();
     }
 
-    private static long effectiveSeed(EncounterGenerationUseCase.GenerateRequest request) {
+    private static long effectiveSeed(EncounterGenerationRequest request) {
         if (request.generationSeed() > NO_GENERATION_SEED) {
             return request.generationSeed();
         }
@@ -178,7 +180,7 @@ final class PrepareEncounterGenerationUseCase {
 
     private static LockedCreatures loadLockedCreatures(
             CreaturesApplicationService creatures,
-            EncounterGenerationUseCase.GenerateRequest request,
+            EncounterGenerationRequest request,
             EncounterGenerationUseCase.BudgetSummary budget
     ) {
         Map<Long, Integer> lockedQuantities = toLockedQuantityMap(request.lockedCreatures());
@@ -192,7 +194,7 @@ final class PrepareEncounterGenerationUseCase {
     private static CandidateLoadResult loadUnlockedCandidates(
             CreaturesApplicationService creatures,
             @Nullable EncounterTableApplicationService encounterTables,
-            EncounterGenerationUseCase.GenerateRequest request,
+            EncounterGenerationRequest request,
             EncounterDifficultyMath.Thresholds thresholds,
             Set<Long> lockedCreatureIds,
             int searchLimit
@@ -225,7 +227,7 @@ final class PrepareEncounterGenerationUseCase {
 
     private static CandidateLoadResult loadTableCandidates(
             @Nullable EncounterTableApplicationService encounterTables,
-            EncounterGenerationUseCase.GenerateRequest request,
+            EncounterGenerationRequest request,
             EncounterDifficultyMath.Thresholds thresholds,
             Set<Long> excludedCreatureIds,
             Set<Long> lockedCreatureIds
@@ -252,9 +254,9 @@ final class PrepareEncounterGenerationUseCase {
         return CandidateLoadResult.success(unlockedProfiles);
     }
 
-    private static Map<Long, Integer> toLockedQuantityMap(List<EncounterGenerationUseCase.LockedCreature> locks) {
+    private static Map<Long, Integer> toLockedQuantityMap(List<EncounterLockedCreature> locks) {
         Map<Long, Integer> quantities = new LinkedHashMap<>();
-        for (EncounterGenerationUseCase.LockedCreature lock : locks) {
+        for (EncounterLockedCreature lock : locks) {
             if (lock == null || lock.creatureId() <= 0) {
                 continue;
             }

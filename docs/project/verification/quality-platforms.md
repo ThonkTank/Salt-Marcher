@@ -29,19 +29,23 @@ duplicate-code detection, cyclomatic-complexity analysis, OO metrics,
 repository-wide resource/artifact/packaging validation, GitHub Actions,
 branch-protection expectations, SonarCloud, and CodeScene.
 
-For unused-code hygiene, the active mechanical scope is intentionally local:
+For unused-code hygiene, the active mechanical scope is split by proof route:
 `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and
-`UnusedVariable`, while PMD retains `UnusedAssignment` beside the broader
-smell policy. This scope is limited to removable local declarations, local
-variables, labels, and assignment-smell detection; whole-program dead-code
-reachability for top-level types or non-private APIs remains review-owned
-unless a later explicit decision adopts a stronger gate.
+`UnusedVariable` for local declarations, PMD retains `UnusedAssignment` beside
+the broader smell policy, and `checkNoPublicDeadCode` owns whole-program
+reachability for public top-level concrete types and public methods. The
+combined mechanical surface therefore covers removable local declarations,
+local variables, labels, assignment-smell detection, and structural
+whole-program dead-code reachability for public concrete APIs. Public abstract
+or interface declarations that remain intentionally exposed without an in-repo
+call path stay review-owned until a stronger explicit scope decision is made.
 
-Unused-code false positives are handled by narrow, explicit escape hatches
-instead of weakening the blocking gate. Generated code is excluded through the
-shared Error Prone configuration, and any future framework- or
-reflection-driven exception must stay local, documented, and attributable
-rather than becoming a blanket disablement of the unused checks.
+Unused-code false positives are handled by narrow, explicit structural roots
+or narrow local escape hatches instead of weakening the blocking gates.
+Generated code is excluded through the shared Error Prone configuration, and
+any future framework- or reflection-driven exception must stay local,
+documented, and attributable rather than becoming a blanket disablement of the
+unused checks.
 
 Architecture enforcement enters local quality through the same Gradle
 aggregates, but the owner model now lives in the matching layer and role

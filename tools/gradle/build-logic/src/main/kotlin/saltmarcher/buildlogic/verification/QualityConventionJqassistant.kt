@@ -9,7 +9,8 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 internal data class QualityConventionJqassistantTasks(
     val installJqassistant: TaskProvider<Sync>,
     val registrar: JqassistantTaskRegistrar,
-    val checkViewArchitecture: TaskProvider<out Task>
+    val checkViewArchitecture: TaskProvider<out Task>,
+    val checkNoPublicDeadCode: TaskProvider<out Task>
 )
 
 internal fun org.gradle.api.Project.registerQualityConventionHarness(
@@ -106,9 +107,28 @@ internal fun org.gradle.api.Project.registerQualityConventionJqassistantTasks(
         description = "Run the canonical SaltMarcher cockpit view-architecture topology blocker via jQAssistant."
         dependsOn(taskPair.analyzeTask)
     }
+    val publicDeadCodeTaskPair = registrar.registerTaskPair(
+        scanTaskName = "jqassistantScanPublicDeadCode",
+        analyzeTaskName = "jqassistantAnalyzePublicDeadCode",
+        scanDescription = "Scan SaltMarcher bytecode and source topology for public dead-code analysis.",
+        analyzeDescription = "Analyze SaltMarcher public concrete type and method reachability with jQAssistant.",
+        sourceConfigPath = "tools/quality/jqassistant/public-dead-code-config.yml",
+        rulesDirPath = "tools/quality/jqassistant/rules",
+        mainClassesDirectory = verificationLayout.mainJavaClassesDir,
+        sourceRoots = verificationLayout.sourceJavaRoots,
+        storeDirectory = layout.buildDirectory.dir("tools/jqassistant/check-public-dead-code-store"),
+        reportsDirectory = layout.buildDirectory.dir("reports/jqassistant-public-dead-code"),
+        dependsOnTasks = listOf(tasks.named("classes"))
+    )
+    val checkNoPublicDeadCode = tasks.register("checkNoPublicDeadCode") {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the canonical SaltMarcher public dead-code blocker via jQAssistant."
+        dependsOn(publicDeadCodeTaskPair.analyzeTask)
+    }
     return QualityConventionJqassistantTasks(
         installJqassistant = installJqassistant,
         registrar = registrar,
-        checkViewArchitecture = checkViewArchitecture
+        checkViewArchitecture = checkViewArchitecture,
+        checkNoPublicDeadCode = checkNoPublicDeadCode
     )
 }

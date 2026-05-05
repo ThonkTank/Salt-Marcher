@@ -1,0 +1,191 @@
+<jqassistant-rules xmlns="http://schema.jqassistant.org/rule/v2.9"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://schema.jqassistant.org/rule/v2.9 https://jqassistant.github.io/jqassistant/current/schema/jqassistant-rule-v2.9.xsd">
+
+    <group id="saltmarcher:public-dead-code" severity="blocker">
+        <includeConstraint refId="saltmarcher:UnusedPublicConcreteType"/>
+        <includeConstraint refId="saltmarcher:UnusedPublicMethod"/>
+    </group>
+
+    <concept id="saltmarcher:ProductionTypeMetadata">
+        <description>Annotates production Java types with stable report metadata for public dead-code analysis.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type)
+            WHERE
+              type.fqn =~ 'bootstrap\\..*'
+              OR type.fqn =~ 'shell\\..*'
+              OR type.fqn =~ 'src\\..*'
+            WITH
+              type,
+              coalesce(type.sourceFileName, '') AS sourceFileName
+            SET
+              type:SaltMarcher:ProductionType,
+              type.relativePath = CASE
+                WHEN sourceFileName = ''
+                  OR type.name IS NULL
+                  OR type.name = ''
+                  OR NOT type.fqn ENDS WITH '.' + type.name
+                  THEN replace(type.fqn, '.', '/') + '.java'
+                ELSE replace(substring(type.fqn, 0, size(type.fqn) - size(type.name) - 1), '.', '/') + '/' + sourceFileName
+              END
+            RETURN type AS ProductionType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:PublicDeadCodeCandidateType">
+        <requiresConcept refId="saltmarcher:ProductionTypeMetadata"/>
+        <description>Labels top-level public concrete production types that belong to the public dead-code candidate surface.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ProductionType)
+            WHERE
+              NOT type.fqn CONTAINS '$'
+              AND type.visibility = 'public'
+              AND type.synthetic IS NULL
+              AND (
+                type:Java:Type:Enum
+                OR type:Java:Type:Record
+                OR (
+                  type:Java:Type:Class
+                  AND type.abstract IS NULL
+                )
+              )
+            SET type:SaltMarcher:PublicDeadCodeCandidateType
+            RETURN type AS PublicDeadCodeCandidateType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:ProductionMethod">
+        <requiresConcept refId="saltmarcher:ProductionTypeMetadata"/>
+        <description>Labels methods declared by production types so reachability stays inside the repo-owned method graph.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:ProductionType)-[:DECLARES]->(method:Java:Method)
+            SET
+              method:SaltMarcher:ProductionMethod,
+              method.ownerRelativePath = type.relativePath
+            RETURN method AS ProductionMethod
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:PublicDeadCodeRootType">
+        <requiresConcept refId="java-classpath:Resolve"/>
+        <requiresConcept refId="saltmarcher:PublicDeadCodeCandidateType"/>
+        <description>Labels structural runtime entry types that keep public concrete production types live.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:PublicDeadCodeCandidateType)-[:IMPLEMENTS*0..]->(shellContributionApi:Java:Type)
+            WHERE
+              shellContributionApi.fqn = 'shell.api.ShellContribution'
+              AND type.fqn =~ 'src\\.view\\.(leftbartabs|statetabs|dropdowns)\\.[^.]+\\.[^.]+Contribution'
+            SET type:SaltMarcher:PublicDeadCodeRootType
+            RETURN type AS PublicDeadCodeRootType
+
+            UNION
+
+            MATCH (type:Java:Type:SaltMarcher:PublicDeadCodeCandidateType)-[:IMPLEMENTS*0..]->(serviceContributionApi:Java:Type)
+            WHERE
+              serviceContributionApi.fqn = 'shell.api.ServiceContribution'
+              AND type.fqn =~ 'src\\.data\\.[^.]+\\.[^.]+ServiceContribution'
+            SET type:SaltMarcher:PublicDeadCodeRootType
+            RETURN type AS PublicDeadCodeRootType
+
+            UNION
+
+            MATCH (type:Java:Type:SaltMarcher:PublicDeadCodeCandidateType)-[:EXTENDS*0..]->(frameworkType:Java:Type)
+            WHERE frameworkType.fqn IN ['javafx.application.Application', 'javafx.application.Preloader']
+            SET type:SaltMarcher:PublicDeadCodeRootType
+            RETURN type AS PublicDeadCodeRootType
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:PublicDeadCodeRootMethod">
+        <requiresConcept refId="java-classpath:Resolve"/>
+        <requiresConcept refId="saltmarcher:ProductionMethod"/>
+        <requiresConcept refId="saltmarcher:PublicDeadCodeRootType"/>
+        <description>Labels structural runtime entry methods and constructors that must stay live.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:PublicDeadCodeRootType)-[:DECLARES]->(constructor:Java:Method:Constructor)
+            WHERE constructor.visibility = 'public'
+            SET constructor:SaltMarcher:PublicDeadCodeRootMethod
+            RETURN constructor AS PublicDeadCodeRootMethod
+
+            UNION
+
+            MATCH (type:Java:Type:SaltMarcher:PublicDeadCodeRootType)-[:EXTENDS*0..]->(frameworkType:Java:Type)
+            MATCH (type)-[:DECLARES]->(method:Java:Method)
+            WHERE
+              frameworkType.fqn IN ['javafx.application.Application', 'javafx.application.Preloader']
+              AND method.name IN ['main', 'start', 'init', 'stop', 'handleApplicationNotification', 'handleStateChangeNotification']
+            SET method:SaltMarcher:PublicDeadCodeRootMethod
+            RETURN method AS PublicDeadCodeRootMethod
+        ]]></cypher>
+    </concept>
+
+    <concept id="saltmarcher:LivePublicDeadCodeType">
+        <requiresConcept refId="java-classpath:Resolve"/>
+        <requiresConcept refId="saltmarcher:PublicDeadCodeRootType"/>
+        <requiresConcept refId="saltmarcher:PublicDeadCodeCandidateType"/>
+        <description>Labels candidate public concrete types that are reachable from structural runtime roots.</description>
+        <cypher><![CDATA[
+            MATCH (candidate:Java:Type:SaltMarcher:PublicDeadCodeCandidateType)
+            WHERE EXISTS {
+              MATCH path = (root:Java:Type:SaltMarcher:PublicDeadCodeRootType)-[:DEPENDS_ON|EXTENDS|IMPLEMENTS*0..]->(candidate)
+              WHERE all(typeNode IN nodes(path) WHERE typeNode:SaltMarcher:ProductionType)
+            }
+            SET candidate:SaltMarcher:LivePublicDeadCodeType
+            RETURN candidate AS LivePublicDeadCodeType
+        ]]></cypher>
+    </concept>
+
+    <constraint id="saltmarcher:UnusedPublicConcreteType">
+        <requiresConcept refId="java-classpath:Resolve"/>
+        <requiresConcept refId="saltmarcher:PublicDeadCodeRootType"/>
+        <requiresConcept refId="saltmarcher:PublicDeadCodeCandidateType"/>
+        <description>Public top-level concrete production types must be reachable from structural runtime roots.</description>
+        <cypher><![CDATA[
+            MATCH (candidate:Java:Type:SaltMarcher:PublicDeadCodeCandidateType)
+            WHERE NOT EXISTS {
+              MATCH path = (root:Java:Type:SaltMarcher:PublicDeadCodeRootType)-[:DEPENDS_ON|EXTENDS|IMPLEMENTS*0..]->(candidate)
+              WHERE all(typeNode IN nodes(path) WHERE typeNode:SaltMarcher:ProductionType)
+            }
+            RETURN
+              candidate.relativePath AS Source,
+              candidate.fqn AS Type,
+              'reachable from bootstrap, JavaFX, or reflective contribution roots' AS ExpectedUsage,
+              'no reachable production dependency path from any structural runtime root' AS ActualUsage,
+              'Delete the type, narrow its visibility, or model its runtime root structurally if it is intentionally live.' AS Details
+            ORDER BY Source, Type
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, Type"/>
+    </constraint>
+
+    <constraint id="saltmarcher:UnusedPublicMethod">
+        <requiresConcept refId="java-classpath:Resolve"/>
+        <requiresConcept refId="java:VirtualInvokes"/>
+        <requiresConcept refId="saltmarcher:ProductionMethod"/>
+        <requiresConcept refId="saltmarcher:PublicDeadCodeRootMethod"/>
+        <requiresConcept refId="saltmarcher:LivePublicDeadCodeType"/>
+        <description>Public methods on live public concrete production types must be reachable from structural runtime entry methods.</description>
+        <cypher><![CDATA[
+            MATCH (type:Java:Type:SaltMarcher:LivePublicDeadCodeType)-[:DECLARES]->(method:Java:Method:SaltMarcher:ProductionMethod)
+            WHERE
+              method.visibility = 'public'
+              AND method.synthetic IS NULL
+              AND method.abstract IS NULL
+              AND NOT method:Java:Method:Constructor
+              AND NOT method:SaltMarcher:PublicDeadCodeRootMethod
+              AND NOT EXISTS {
+                MATCH path = (:Java:Method:SaltMarcher:PublicDeadCodeRootMethod)-[:INVOKES|VIRTUAL_INVOKES*1..]->(method)
+                WHERE all(methodNode IN nodes(path) WHERE methodNode:SaltMarcher:ProductionMethod)
+              }
+            RETURN
+              type.relativePath AS Source,
+              type.fqn AS Type,
+              method.signature AS MemberSignature,
+              'reachable from bootstrap, JavaFX, or reflective contribution entry methods' AS ExpectedUsage,
+              'no reachable invocation path from any structural runtime root method' AS ActualUsage,
+              'Delete the method, narrow its visibility, or model its runtime root structurally if it is intentionally live.' AS Details
+            ORDER BY Source, MemberSignature
+        ]]></cypher>
+        <report primaryColumn="Source" keyColumns="Source, MemberSignature"/>
+    </constraint>
+
+</jqassistant-rules>

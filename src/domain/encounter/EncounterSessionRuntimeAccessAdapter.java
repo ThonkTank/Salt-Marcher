@@ -13,6 +13,7 @@ import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.application.LoadEncounterBudgetUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
+import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.session.entity.EncounterSession;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyResult;
@@ -87,7 +88,7 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
     }
 
     @Override
-    public EncounterSession.GenerationResultData generate(EncounterSession.GenerateRequestData request) {
+    public EncounterSession.GenerationResultData generate(EncounterGenerationRequest request) {
         EncounterGenerationUseCase useCase = generator;
         if (useCase == null) {
             return new EncounterSession.GenerationResultData(
@@ -98,8 +99,7 @@ final class EncounterSessionRuntimeAccessAdapter implements EncounterSession.Run
                     false);
         }
         try {
-            return EncounterSessionRuntimeMapper.toSessionGenerationResult(
-                    useCase.execute(EncounterSessionRuntimeMapper.toGeneratorRequest(request)));
+            return EncounterSessionRuntimeMapper.toSessionGenerationResult(useCase.execute(request));
         } catch (RuntimeException exception) {
             return new EncounterSession.GenerationResultData(
                     EncounterSession.GenerationStatus.STORAGE_ERROR,

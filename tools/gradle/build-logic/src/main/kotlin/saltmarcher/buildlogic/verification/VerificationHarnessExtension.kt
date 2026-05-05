@@ -7,6 +7,7 @@ import org.gradle.api.file.Directory
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskProvider
@@ -108,6 +109,8 @@ internal open class VerificationHarnessExtension(
             dependsOn(selectedCompileJava)
             dependsOn(project.tasks.named(classesTaskName(sourceSetName)))
             inputs.dir(mainClassesDirectory)
+                .withPropertyName("mainClassesDirectory")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
             testClassesDirs = archunitClassesDirs
             classpath = archunitRuntimeClasspath
             useJUnitPlatform()

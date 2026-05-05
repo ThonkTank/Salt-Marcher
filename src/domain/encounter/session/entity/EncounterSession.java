@@ -6,6 +6,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import src.domain.encounter.generation.value.EncounterDifficultyIntent;
+import src.domain.encounter.generation.value.EncounterGenerationInputs;
+import src.domain.encounter.generation.value.EncounterGenerationRequest;
+import src.domain.encounter.generation.value.EncounterRequestedDifficulty;
+import src.domain.encounter.generation.value.EncounterTuningIntent;
 
 public final class EncounterSession {
 
@@ -28,7 +33,7 @@ public final class EncounterSession {
 
         Optional<BudgetData> loadBudget();
 
-        GenerationResultData generate(GenerateRequestData request);
+        GenerationResultData generate(EncounterGenerationRequest request);
 
         SavePlanOutcome savePlan(SavedPlanData plan);
 
@@ -60,12 +65,12 @@ public final class EncounterSession {
         return snapshot();
     }
 
-    public SnapshotData updateBuilderInputs(BuilderInputsData nextInputs) {
-        state.builderInputs = nextInputs == null ? BuilderInputsData.empty() : nextInputs;
+    public SnapshotData updateBuilderInputs(EncounterGenerationInputs nextInputs) {
+        state.builderInputs = nextInputs == null ? EncounterGenerationInputs.empty() : nextInputs;
         return snapshot();
     }
 
-    public SnapshotData generate(RuntimeAccess access, Optional<GenerateRequestData> request) {
+    public SnapshotData generate(RuntimeAccess access, Optional<EncounterGenerationRequest> request) {
         RuntimeAccess safeAccess = Objects.requireNonNull(access, ACCESS_PARAMETER);
         state.pendingUndo = Optional.empty();
         state.activeSavedPlanId = OptionalLong.empty();
@@ -571,16 +576,13 @@ public final class EncounterSession {
         state.combatState = projection;
     }
 
-    private GenerateRequestData generationCommand() {
-        return new GenerateRequestData(
-                state.builderInputs.creatureTypes(),
-                state.builderInputs.creatureSubtypes(),
-                state.builderInputs.biomes(),
-                state.builderInputs.targetDifficulty(),
+    private EncounterGenerationRequest generationCommand() {
+        return new EncounterGenerationRequest(
+                state.builderInputs,
                 DEFAULT_GENERATION_ALTERNATIVE_COUNT,
-                state.builderInputs.tuning(),
                 nextGenerationSeed(),
-                state.builderInputs.encounterTableIds());
+                List.of(),
+                List.of());
     }
 
     private static OptionalInt toOptionalTurnIndex(int turnIndex) {
@@ -641,9 +643,8 @@ public final class EncounterSession {
         return adjustedXp <= 0 ? "" : "Easy";
     }
 
-    private static String difficultyLabel(DifficultyBand band) {
-        return switch (band == null ? DifficultyBand.MEDIUM : band) {
-            case AUTO -> "Auto";
+    private static String difficultyLabel(EncounterDifficultyIntent band) {
+        return switch (band == null ? EncounterDifficultyIntent.MEDIUM : band) {
             case EASY -> "Easy";
             case MEDIUM -> "Medium";
             case HARD -> "Hard";
@@ -667,8 +668,8 @@ public final class EncounterSession {
         return text.toString();
     }
 
-    private static String tuningLabel(TuningData tuning) {
-        TuningData effective = tuning == null ? TuningData.defaultTuning() : tuning;
+    private static String tuningLabel(EncounterTuningIntent tuning) {
+        EncounterTuningIntent effective = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
         return "B" + effective.balanceLevel()
                 + "/M" + Math.round(effective.amountValue())
                 + "/D" + effective.diversityLevel();
@@ -740,26 +741,6 @@ public final class EncounterSession {
 
         public String publishedLabel() {
             return publishedLabel;
-        }
-    }
-
-    public enum DifficultyBand {
-        AUTO,
-        EASY,
-        MEDIUM,
-        HARD,
-        DEADLY;
-
-        public static DifficultyBand defaultBand() {
-            return MEDIUM;
-        }
-
-        public static DifficultyBand autoBand() {
-            return AUTO;
-        }
-
-        public boolean isAuto() {
-            return this == AUTO;
         }
     }
 
@@ -851,89 +832,12 @@ public final class EncounterSession {
         }
     }
 
-    public record TuningData(
-            int balanceLevel,
-            double amountValue,
-            int diversityLevel
-    ) {
-        public static final int AUTO_BALANCE_LEVEL = -1;
-        public static final double AUTO_AMOUNT_VALUE = -1.0;
-        public static final int AUTO_DIVERSITY_LEVEL = -1;
-
-        private static final int DEFAULT_BALANCE_LEVEL = 3;
-        private static final double DEFAULT_AMOUNT_VALUE = 3.0;
-        private static final int DEFAULT_DIVERSITY_LEVEL = 2;
-
-        public TuningData {
-            balanceLevel = normalizeBalance(balanceLevel);
-            amountValue = normalizeAmount(amountValue);
-            diversityLevel = normalizeDiversity(diversityLevel);
-        }
-
-        public static TuningData defaultTuning() {
-            return new TuningData(DEFAULT_BALANCE_LEVEL, DEFAULT_AMOUNT_VALUE, DEFAULT_DIVERSITY_LEVEL);
-        }
-
-        public static TuningData autoTuning() {
-            return new TuningData(AUTO_BALANCE_LEVEL, AUTO_AMOUNT_VALUE, AUTO_DIVERSITY_LEVEL);
-        }
-
-        private static int normalizeBalance(int value) {
-            if (value == AUTO_BALANCE_LEVEL) {
-                return AUTO_BALANCE_LEVEL;
-            }
-            return value < 1 || value > 5 ? DEFAULT_BALANCE_LEVEL : value;
-        }
-
-        private static double normalizeAmount(double value) {
-            if (value == AUTO_AMOUNT_VALUE) {
-                return AUTO_AMOUNT_VALUE;
-            }
-            return Double.isFinite(value) && value >= 1.0 && value <= 5.0 ? value : DEFAULT_AMOUNT_VALUE;
-        }
-
-        private static int normalizeDiversity(int value) {
-            if (value == AUTO_DIVERSITY_LEVEL) {
-                return AUTO_DIVERSITY_LEVEL;
-            }
-            return value < 1 || value > 4 ? DEFAULT_DIVERSITY_LEVEL : value;
-        }
-    }
-
-    public record BuilderInputsData(
-            List<String> creatureTypes,
-            List<String> creatureSubtypes,
-            List<String> biomes,
-            DifficultyBand targetDifficulty,
-            TuningData tuning,
-            List<Long> encounterTableIds
-    ) {
-        public BuilderInputsData {
-            creatureTypes = creatureTypes == null ? List.of() : List.copyOf(creatureTypes);
-            creatureSubtypes = creatureSubtypes == null ? List.of() : List.copyOf(creatureSubtypes);
-            biomes = biomes == null ? List.of() : List.copyOf(biomes);
-            targetDifficulty = targetDifficulty == null ? DifficultyBand.autoBand() : targetDifficulty;
-            tuning = tuning == null ? TuningData.autoTuning() : tuning;
-            encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
-        }
-
-        public static BuilderInputsData empty() {
-            return new BuilderInputsData(
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    DifficultyBand.autoBand(),
-                    TuningData.autoTuning(),
-                    List.of());
-        }
-    }
-
     public record BuilderStateData(
             List<PartyMemberData> party,
             List<EncounterCreatureData> roster,
             String templateLabel,
             DifficultySummaryData difficulty,
-            BuilderInputsData builderInputs,
+            EncounterGenerationInputs builderInputs,
             List<SavedPlanSummaryData> savedPlans,
             boolean canStartCombat,
             boolean canPreviousAlternative,
@@ -947,7 +851,7 @@ public final class EncounterSession {
             roster = roster == null ? List.of() : List.copyOf(roster);
             templateLabel = templateLabel == null ? "" : templateLabel;
             difficulty = difficulty == null ? new DifficultySummaryData(0, 0, 0, 0, 0, "") : difficulty;
-            builderInputs = builderInputs == null ? BuilderInputsData.empty() : builderInputs;
+            builderInputs = builderInputs == null ? EncounterGenerationInputs.empty() : builderInputs;
             savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
             pendingUndo = pendingUndo == null ? Optional.empty() : pendingUndo;
         }
@@ -1085,7 +989,7 @@ public final class EncounterSession {
                     List.of(),
                     "",
                     new DifficultySummaryData(0, 0, 0, 0, 0, ""),
-                    BuilderInputsData.empty(),
+                    EncounterGenerationInputs.empty(),
                     List.of(),
                     false,
                     false,
@@ -1200,37 +1104,15 @@ public final class EncounterSession {
     public record AwardXpOutcome(boolean success) {
     }
 
-    public record GenerateRequestData(
-            List<String> creatureTypes,
-            List<String> creatureSubtypes,
-            List<String> biomes,
-            DifficultyBand targetDifficulty,
-            int alternativeCount,
-            TuningData tuning,
-            long generationSeed,
-            List<Long> encounterTableIds
-    ) {
-        public GenerateRequestData {
-            creatureTypes = creatureTypes == null ? List.of() : List.copyOf(creatureTypes);
-            creatureSubtypes = creatureSubtypes == null ? List.of() : List.copyOf(creatureSubtypes);
-            biomes = biomes == null ? List.of() : List.copyOf(biomes);
-            targetDifficulty = targetDifficulty == null ? DifficultyBand.autoBand() : targetDifficulty;
-            alternativeCount = Math.max(1, Math.min(10, alternativeCount <= 0 ? DEFAULT_GENERATION_ALTERNATIVE_COUNT : alternativeCount));
-            tuning = tuning == null ? TuningData.defaultTuning() : tuning;
-            generationSeed = Math.max(0L, generationSeed);
-            encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
-        }
-    }
-
     public record GeneratedEncounterData(
             String title,
-            DifficultyBand achievedDifficulty,
+            EncounterDifficultyIntent achievedDifficulty,
             int adjustedXp,
             List<GeneratedCreatureData> creatures
     ) {
         public GeneratedEncounterData {
             title = title == null ? "" : title;
-            achievedDifficulty = achievedDifficulty == null ? DifficultyBand.MEDIUM : achievedDifficulty;
+            achievedDifficulty = achievedDifficulty == null ? EncounterDifficultyIntent.MEDIUM : achievedDifficulty;
             creatures = creatures == null ? List.of() : List.copyOf(creatures);
         }
     }
@@ -1254,12 +1136,12 @@ public final class EncounterSession {
     }
 
     public record GenerationDiagnosticsData(
-            DifficultyBand resolvedDifficulty,
-            TuningData resolvedTuning
+            EncounterDifficultyIntent resolvedDifficulty,
+            EncounterTuningIntent resolvedTuning
     ) {
         public GenerationDiagnosticsData {
-            resolvedDifficulty = resolvedDifficulty == null ? DifficultyBand.MEDIUM : resolvedDifficulty;
-            resolvedTuning = resolvedTuning == null ? TuningData.defaultTuning() : resolvedTuning;
+            resolvedDifficulty = resolvedDifficulty == null ? EncounterDifficultyIntent.MEDIUM : resolvedDifficulty;
+            resolvedTuning = resolvedTuning == null ? EncounterTuningIntent.defaultIntent() : resolvedTuning;
         }
     }
 
@@ -1290,7 +1172,7 @@ public final class EncounterSession {
         private InitiativeStateData initiativeState = InitiativeStateData.empty();
         private CombatProjectionData combatState = CombatProjectionData.empty();
         private ResultStateData resultState = ResultStateData.empty();
-        private BuilderInputsData builderInputs = BuilderInputsData.empty();
+        private EncounterGenerationInputs builderInputs = EncounterGenerationInputs.empty();
         private Optional<BudgetData> budget = Optional.empty();
         private int selectedAlternativeIndex;
         private int generatedAdjustedXp;

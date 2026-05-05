@@ -53,6 +53,8 @@ steady-state policy.
 
 `compileJava` does not run the dedicated jQAssistant bundles. Passive `View`
 graph and FXML analysis enter local quality through `checkViewEnforcement`,
+whole-program public dead-code analysis enters through
+`checkNoPublicDeadCode`,
 focused Domain Layer topology, dependency, and documentation proof enters
 through `checkDomainLayerEnforcement`,
 focused Domain ApplicationService API-shape, topology, signature-purity,
@@ -128,6 +130,7 @@ architecture harness through `check`.
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
 | PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | Runs `tools/quality/config/pmd/complexity-ruleset.xml` on production Java sources. `pmdMain` is the central blocking gate; `pmdStrictMain` is the text-first direct entrypoint for the same ruleset. PMD owns non-architecture smell policy plus `UnusedAssignment`; `compileJava` owns `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable`. |
+| Public dead code | `Blocking Local Gate` | `./gradlew checkNoPublicDeadCode` | Runs jQAssistant whole-program reachability analysis for public top-level concrete production types and declared public methods. Structural roots currently include JavaFX entry classes plus reflectively discovered `ShellContribution` and `ServiceContribution` implementations. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. |
 | CPD | `Blocking Local Gate` | `./gradlew cpdMain` | Runs PMD CPD for Java with `minimumTokens = 100`, matching PMD's documented Java example value, and writes its report under the active worktree's normal `build/reports/cpd/` surface. |
 | Lizard | `Blocking Local Gate` | `./gradlew lizardMain` | Runs pinned `lizard==1.21.3` for Java with max cyclomatic complexity `15`, matching Lizard's default warning threshold, and writes its report under the active worktree's normal `build/reports/lizard/` surface. |
@@ -163,9 +166,11 @@ an additional aggregate dependency. `pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.
 
-Whole-program dead-code discovery for top-level types or non-private APIs
-remains `Review-Owned`; the active mechanical gates intentionally stop at the
-local declaration and local-smell boundary described above.
+Whole-program dead-code discovery for public top-level concrete production
+types and declared public methods is now mechanically enforced by
+`checkNoPublicDeadCode`. Local declaration hygiene remains owned by
+`compileJava`, while public abstract declarations and interfaces without an
+in-repo call path remain `Review-Owned`.
 
 SpotBugs uses the official Gradle plugin with `findsecbugs-plugin` enabled,
 effort `MAX`, and confidence `MEDIUM`. `MAX` is the strongest analysis effort;
@@ -211,7 +216,9 @@ report does not block the build.
 
 Focused PMD, SpotBugs, CPD, Lizard, and CKJM entrypoints must stay independent
 of the jQAssistant view-topology blocker; they may be run together for quality
-investigation without pulling in the view-architecture graph analysis.
+investigation without pulling in the view-architecture graph analysis. The
+dedicated `checkNoPublicDeadCode` blocker is the only non-view jQAssistant
+hygiene gate in the central quality path.
 
 Checkstyle metrics and Semgrep are deferred unless current tooling cannot
 express a concrete rule.
@@ -299,11 +306,13 @@ changes. The wrapper is runtime-only: it forwards the canonical surface name to
 one same-named Gradle lifecycle task, and the verification core expands
 `production-handoff` to the production-build, quality-hygiene, architecture,
 and view-topology dependencies inside Gradle.
-By default, `production-handoff` stays fail-fast at the staged-handoff level so
-gross blockers such as compile or root-topology failures stop the handoff
-before the broader hygiene wave adds avoidable noise. When a broader diagnostic
-failure inventory is explicitly needed, callers may request it with
-`tools/gradle/run-staged-verification.sh production-handoff -- --continue`.
+By default, `production-handoff` now runs with Gradle `--continue` at the
+staged-handoff level so the canonical implementation-handoff route reports the
+broader current failure set in one run. The staged handoff still fails overall
+when any blocking dependency fails, but compile, topology, hygiene, and later
+view-architecture blockers no longer hide independent sibling failures behind
+the first failing stage. Callers may still pass `--continue` explicitly for
+clarity, but the canonical wrapper now adds that default itself.
 Additional Gradle investigation flags may be passed after `--`, but the
 runtime wrapper keeps ownership of its own invocation defaults such as
 `--console=plain`. If callers pass wrapper-owned runtime flags again through

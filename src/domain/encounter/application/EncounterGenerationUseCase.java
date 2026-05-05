@@ -3,6 +3,7 @@ package src.domain.encounter.application;
 import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.encounter.generation.value.EncounterGenerationRequest;
 import src.domain.encounter.generation.value.EncounterDifficultyIntent;
 import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.party.PartyApplicationService;
@@ -32,7 +33,7 @@ public final class EncounterGenerationUseCase {
         this.encounterTables = encounterTables;
     }
 
-    public GenerateResult execute(GenerateRequest request) {
+    public GenerateResult execute(EncounterGenerationRequest request) {
         EncounterGenerationPreparationUseCase preparation = PrepareEncounterGenerationUseCase.prepare(
                 party,
                 creatures,
@@ -57,39 +58,6 @@ public final class EncounterGenerationUseCase {
                 preparation.message(),
                 preparation.diagnostics(),
                 preparation.advisories());
-    }
-
-    public record GenerateRequest(
-            List<String> creatureTypes,
-            List<String> creatureSubtypes,
-            List<String> biomes,
-            EncounterDifficultyIntent targetDifficulty,
-            boolean targetDifficultyAuto,
-            int alternativeCount,
-            EncounterTuningIntent tuning,
-            long generationSeed,
-            List<Long> encounterTableIds,
-            List<Long> excludedCreatureIds,
-            List<LockedCreature> lockedCreatures
-    ) {
-        public GenerateRequest {
-            creatureTypes = creatureTypes == null ? List.of() : List.copyOf(creatureTypes);
-            creatureSubtypes = creatureSubtypes == null ? List.of() : List.copyOf(creatureSubtypes);
-            biomes = biomes == null ? List.of() : List.copyOf(biomes);
-            targetDifficulty = targetDifficulty == null ? EncounterDifficultyIntent.MEDIUM : targetDifficulty;
-            alternativeCount = Math.max(1, Math.min(10, alternativeCount <= 0 ? 5 : alternativeCount));
-            tuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
-            generationSeed = Math.max(0L, generationSeed);
-            encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
-            excludedCreatureIds = excludedCreatureIds == null ? List.of() : List.copyOf(excludedCreatureIds);
-            lockedCreatures = lockedCreatures == null ? List.of() : List.copyOf(lockedCreatures);
-        }
-    }
-
-    public record LockedCreature(long creatureId, int quantity) {
-        public LockedCreature {
-            quantity = Math.max(1, quantity);
-        }
     }
 
     public record BudgetSummary(

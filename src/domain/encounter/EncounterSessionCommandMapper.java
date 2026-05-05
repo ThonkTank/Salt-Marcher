@@ -4,6 +4,10 @@ import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.encounter.application.ApplyEncounterSessionUseCase;
+import src.domain.encounter.generation.value.EncounterGenerationInputs;
+import src.domain.encounter.generation.value.EncounterGenerationRequest;
+import src.domain.encounter.generation.value.EncounterRequestedDifficulty;
+import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.encounter.published.ApplyEncounterSessionCommand;
 import src.domain.encounter.published.EncounterDifficultyBand;
 import src.domain.encounter.published.EncounterGenerationTuning;
@@ -42,13 +46,13 @@ final class EncounterSessionCommandMapper {
                 command.healing());
     }
 
-    private static EncounterSession.BuilderInputsData toInternalBuilderInputs(
+    private static EncounterGenerationInputs toInternalBuilderInputs(
             EncounterSessionSnapshot.BuilderInputs builderInputs
     ) {
         EncounterSessionSnapshot.BuilderInputs safeInputs = builderInputs == null
                 ? EncounterSessionSnapshot.BuilderInputs.empty()
                 : builderInputs;
-        return new EncounterSession.BuilderInputsData(
+        return new EncounterGenerationInputs(
                 safeInputs.creatureTypes(),
                 safeInputs.creatureSubtypes(),
                 safeInputs.biomes(),
@@ -57,7 +61,7 @@ final class EncounterSessionCommandMapper {
                 safeInputs.encounterTableIds());
     }
 
-    private static EncounterSession.GenerateRequestData toInternalGenerateRequest(
+    private static EncounterGenerationRequest toInternalGenerateRequest(
             @Nullable GenerateEncounterCommand request
     ) {
         GenerateEncounterCommand safeRequest = request == null
@@ -70,33 +74,36 @@ final class EncounterSessionCommandMapper {
                         List.of(),
                         List.of())
                 : request;
-        return new EncounterSession.GenerateRequestData(
-                safeRequest.creatureTypes(),
-                safeRequest.creatureSubtypes(),
-                safeRequest.biomes(),
-                toInternalDifficultyBand(safeRequest.targetDifficulty()),
+        return new EncounterGenerationRequest(
+                new EncounterGenerationInputs(
+                        safeRequest.creatureTypes(),
+                        safeRequest.creatureSubtypes(),
+                        safeRequest.biomes(),
+                        toInternalDifficultyBand(safeRequest.targetDifficulty()),
+                        toInternalTuningData(safeRequest.tuning()),
+                        safeRequest.encounterTableIds()),
                 safeRequest.alternativeCount(),
-                toInternalTuningData(safeRequest.tuning()),
                 safeRequest.generationSeed(),
-                safeRequest.encounterTableIds());
+                List.of(),
+                List.of());
     }
 
-    private static EncounterSession.DifficultyBand toInternalDifficultyBand(EncounterDifficultyBand band) {
+    private static EncounterRequestedDifficulty toInternalDifficultyBand(EncounterDifficultyBand band) {
         EncounterDifficultyBand effectiveBand = band == null ? EncounterDifficultyBand.defaultBand() : band;
         return switch (effectiveBand) {
-            case AUTO -> EncounterSession.DifficultyBand.AUTO;
-            case EASY -> EncounterSession.DifficultyBand.EASY;
-            case MEDIUM -> EncounterSession.DifficultyBand.MEDIUM;
-            case HARD -> EncounterSession.DifficultyBand.HARD;
-            case DEADLY -> EncounterSession.DifficultyBand.DEADLY;
+            case AUTO -> EncounterRequestedDifficulty.AUTO;
+            case EASY -> EncounterRequestedDifficulty.EASY;
+            case MEDIUM -> EncounterRequestedDifficulty.MEDIUM;
+            case HARD -> EncounterRequestedDifficulty.HARD;
+            case DEADLY -> EncounterRequestedDifficulty.DEADLY;
         };
     }
 
-    private static EncounterSession.TuningData toInternalTuningData(EncounterGenerationTuning tuning) {
+    private static EncounterTuningIntent toInternalTuningData(EncounterGenerationTuning tuning) {
         EncounterGenerationTuning effective = tuning == null
                 ? EncounterGenerationTuning.autoTuning()
                 : tuning;
-        return new EncounterSession.TuningData(
+        return new EncounterTuningIntent(
                 effective.balanceLevel(),
                 effective.amountValue(),
                 effective.diversityLevel());

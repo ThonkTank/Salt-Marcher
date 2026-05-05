@@ -9,8 +9,6 @@ import src.domain.encounter.application.ListSavedEncounterPlansUseCase;
 import src.domain.encounter.application.LoadSavedEncounterPlanUseCase;
 import src.domain.encounter.application.SaveEncounterPlanUseCase;
 import src.domain.encounter.generation.policy.EncounterDifficultyMath;
-import src.domain.encounter.generation.value.EncounterDifficultyIntent;
-import src.domain.encounter.generation.value.EncounterTuningIntent;
 import src.domain.encounter.plan.aggregate.EncounterPlan;
 import src.domain.encounter.plan.value.EncounterPlanCreature;
 import src.domain.encounter.plan.value.EncounterPlanSummary;
@@ -97,34 +95,6 @@ final class EncounterSessionRuntimeMapper {
         return EncounterSession.SavedPlanStatus.STORAGE_ERROR;
     }
 
-    static EncounterGenerationUseCase.GenerateRequest toGeneratorRequest(
-            EncounterSession.GenerateRequestData request
-    ) {
-        EncounterSession.GenerateRequestData effectiveRequest = request == null
-                ? new EncounterSession.GenerateRequestData(
-                        List.of(),
-                        List.of(),
-                        List.of(),
-                        EncounterSession.DifficultyBand.defaultBand(),
-                        5,
-                        EncounterSession.TuningData.defaultTuning(),
-                        0L,
-                        List.of())
-                : request;
-        return new EncounterGenerationUseCase.GenerateRequest(
-                effectiveRequest.creatureTypes(),
-                effectiveRequest.creatureSubtypes(),
-                effectiveRequest.biomes(),
-                toDifficultyIntent(effectiveRequest.targetDifficulty()),
-                effectiveRequest.targetDifficulty().isAuto(),
-                effectiveRequest.alternativeCount(),
-                toTuningIntent(effectiveRequest.tuning()),
-                effectiveRequest.generationSeed(),
-                effectiveRequest.encounterTableIds(),
-                List.of(),
-                List.of());
-    }
-
     static EncounterSession.CreatureDetailData toSessionCreatureDetail(CreatureDetail detail) {
         return new EncounterSession.CreatureDetailData(
                 detail.id(),
@@ -166,7 +136,7 @@ final class EncounterSessionRuntimeMapper {
     ) {
         return new EncounterSession.GeneratedEncounterData(
                 encounter.title(),
-                toSessionDifficultyBand(encounter.achievedDifficulty()),
+                encounter.achievedDifficulty(),
                 encounter.adjustedXp(),
                 encounter.creatures().stream().map(EncounterSessionRuntimeMapper::toSessionGeneratedCreature).toList());
     }
@@ -191,48 +161,7 @@ final class EncounterSessionRuntimeMapper {
             return Optional.empty();
         }
         return Optional.of(new EncounterSession.GenerationDiagnosticsData(
-                toSessionDifficultyBand(diagnostics.resolvedDifficulty()),
-                toSessionTuningData(diagnostics.resolvedTuning())));
-    }
-
-    private static EncounterSession.DifficultyBand toSessionDifficultyBand(EncounterDifficultyIntent intent) {
-        EncounterDifficultyIntent effectiveIntent = intent == null ? EncounterDifficultyIntent.MEDIUM : intent;
-        return switch (effectiveIntent) {
-            case EASY -> EncounterSession.DifficultyBand.EASY;
-            case MEDIUM -> EncounterSession.DifficultyBand.MEDIUM;
-            case HARD -> EncounterSession.DifficultyBand.HARD;
-            case DEADLY -> EncounterSession.DifficultyBand.DEADLY;
-        };
-    }
-
-    private static EncounterDifficultyIntent toDifficultyIntent(EncounterSession.DifficultyBand band) {
-        EncounterSession.DifficultyBand effectiveBand = band == null
-                ? EncounterSession.DifficultyBand.MEDIUM
-                : band;
-        return switch (effectiveBand) {
-            case AUTO -> EncounterDifficultyIntent.MEDIUM;
-            case EASY -> EncounterDifficultyIntent.EASY;
-            case MEDIUM -> EncounterDifficultyIntent.MEDIUM;
-            case HARD -> EncounterDifficultyIntent.HARD;
-            case DEADLY -> EncounterDifficultyIntent.DEADLY;
-        };
-    }
-
-    private static EncounterSession.TuningData toSessionTuningData(EncounterTuningIntent tuning) {
-        EncounterTuningIntent effective = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
-        return new EncounterSession.TuningData(
-                effective.balanceLevel(),
-                effective.amountValue(),
-                effective.diversityLevel());
-    }
-
-    private static EncounterTuningIntent toTuningIntent(EncounterSession.TuningData tuning) {
-        EncounterSession.TuningData effective = tuning == null
-                ? EncounterSession.TuningData.defaultTuning()
-                : tuning;
-        return new EncounterTuningIntent(
-                effective.balanceLevel(),
-                effective.amountValue(),
-                effective.diversityLevel());
+                diagnostics.resolvedDifficulty(),
+                diagnostics.resolvedTuning()));
     }
 }

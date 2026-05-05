@@ -28,7 +28,8 @@ internal data class QualityConventionLifecycleTasks(
 internal fun Project.registerQualityConventionLifecycleTasks(
     environment: QualityConventionEnvironment,
     toolConfigurations: QualityConventionToolConfigurations,
-    checkViewArchitecture: TaskProvider<out Task>
+    checkViewArchitecture: TaskProvider<out Task>,
+    checkNoPublicDeadCode: TaskProvider<out Task>
 ): QualityConventionLifecycleTasks {
     val verificationLayout = environment.verificationLayout
     val resetMainJavaClassesOutput = tasks.register<Delete>("resetMainJavaClassesOutput") {
@@ -143,6 +144,7 @@ internal fun Project.registerQualityConventionLifecycleTasks(
         dependsOn(cpdMain)
         dependsOn(lizardMain)
         dependsOn(checkNoCompiledArtifactsInSource)
+        dependsOn(checkNoPublicDeadCode)
         dependsOn(pmdStrictMain)
     }
 
