@@ -2,10 +2,7 @@ package src.domain.dungeon.application;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.map.aggregate.DungeonMap;
-import src.domain.dungeon.map.port.DungeonMapRepository;
-import src.domain.dungeon.map.port.DungeonMapSearch;
 import src.domain.dungeon.map.service.DungeonTravelSurfaceProjector;
-import src.domain.dungeon.map.value.DungeonMapIdentity;
 import src.domain.dungeon.map.value.DungeonTravelPositionFacts;
 import src.domain.dungeon.map.value.DungeonTravelSurfaceFacts;
 
@@ -14,18 +11,15 @@ public final class LoadDungeonTravelSurfaceUseCase {
     public record Input(@Nullable DungeonTravelPositionFacts position) {
     }
 
-    private final DungeonMapRepository repository;
-    private final DungeonMapSearch search;
+    private final LoadDungeonMapUseCase loadDungeonMap;
     private final BuildDungeonDerivedStateUseCase derive;
     private final DungeonTravelSurfaceProjector projector = new DungeonTravelSurfaceProjector();
 
     public LoadDungeonTravelSurfaceUseCase(
-            DungeonMapRepository repository,
-            DungeonMapSearch search,
+            LoadDungeonMapUseCase loadDungeonMap,
             BuildDungeonDerivedStateUseCase derive
     ) {
-        this.repository = repository;
-        this.search = search;
+        this.loadDungeonMap = loadDungeonMap;
         this.derive = derive;
     }
 
@@ -37,18 +31,8 @@ public final class LoadDungeonTravelSurfaceUseCase {
 
     private DungeonMap loadMap(@Nullable DungeonTravelPositionFacts position) {
         if (position != null) {
-            DungeonMapIdentity mapId = position.mapId();
-            return repository.findById(mapId).orElseGet(this::loadCurrentMap);
+            return loadDungeonMap.execute(position.mapId());
         }
-        return loadCurrentMap();
-    }
-
-    private DungeonMap loadCurrentMap() {
-        return search.firstMap()
-                .orElseGet(LoadDungeonTravelSurfaceUseCase::emptyFallbackMap);
-    }
-
-    private static DungeonMap emptyFallbackMap() {
-        return DungeonMap.empty(new DungeonMapIdentity(1L), "Dungeon Map");
+        return loadDungeonMap.execute();
     }
 }
