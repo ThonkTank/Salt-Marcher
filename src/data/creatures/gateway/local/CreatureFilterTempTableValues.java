@@ -11,16 +11,19 @@ import java.util.Objects;
 
 final class CreatureFilterTempTableValues {
 
+    private static final String INSERT_INTO = "INSERT INTO ";
+    private static final String INSERT_VALUE_SUFFIX = "(value) VALUES (?)";
+
     private static final String INSERT_TEMP_FILTER_SIZE_SQL =
-            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + "(value) VALUES (?)";
+            INSERT_INTO + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + INSERT_VALUE_SUFFIX;
     private static final String INSERT_TEMP_FILTER_TYPE_SQL =
-            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + "(value) VALUES (?)";
+            INSERT_INTO + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + INSERT_VALUE_SUFFIX;
     private static final String INSERT_TEMP_FILTER_ALIGNMENT_SQL =
-            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + "(value) VALUES (?)";
+            INSERT_INTO + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + INSERT_VALUE_SUFFIX;
     private static final String INSERT_TEMP_FILTER_SUBTYPE_SQL =
-            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + "(value) VALUES (?)";
+            INSERT_INTO + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + INSERT_VALUE_SUFFIX;
     private static final String INSERT_TEMP_FILTER_BIOME_SQL =
-            "INSERT INTO " + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + "(value) VALUES (?)";
+            INSERT_INTO + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + INSERT_VALUE_SUFFIX;
 
     private CreatureFilterTempTableValues() {
     }

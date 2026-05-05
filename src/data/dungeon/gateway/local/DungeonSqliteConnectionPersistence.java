@@ -25,10 +25,10 @@ final class DungeonSqliteConnectionPersistence {
     private static final String WHERE_CORRIDOR_ID = " WHERE corridor_id=?";
     private static final String WHERE_STAIR_ID = " WHERE stair_id=?";
     private static final String INSERT_STAIR_EXIT_WITH_ID_SQL =
-            "INSERT INTO " + DungeonPersistenceSchema.STAIR_EXITS_TABLE
+            INSERT_INTO + DungeonPersistenceSchema.STAIR_EXITS_TABLE
                     + "(stair_exit_id, stair_id, cell_x, cell_y, cell_z, label) VALUES(?,?,?,?,?,?)";
     private static final String INSERT_STAIR_EXIT_SQL =
-            "INSERT INTO " + DungeonPersistenceSchema.STAIR_EXITS_TABLE
+            INSERT_INTO + DungeonPersistenceSchema.STAIR_EXITS_TABLE
                     + "(stair_id, cell_x, cell_y, cell_z, label) VALUES(?,?,?,?,?)";
 
     private DungeonSqliteConnectionPersistence() {
@@ -66,7 +66,7 @@ final class DungeonSqliteConnectionPersistence {
             }
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.CORRIDORS_TABLE
+                INSERT_INTO + DungeonPersistenceSchema.CORRIDORS_TABLE
                         + "(corridor_id, dungeon_map_id, level_z) VALUES(?,?,?)")) {
             insert.setLong(1, corridor.corridorId());
             insert.setLong(2, corridor.mapId());
@@ -78,7 +78,7 @@ final class DungeonSqliteConnectionPersistence {
     private static void replaceCorridorMembers(Connection connection, DungeonCorridorRecord corridor)
             throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM " + DungeonPersistenceSchema.CORRIDOR_MEMBERS_TABLE + " WHERE corridor_id=?")) {
+                DELETE_FROM + DungeonPersistenceSchema.CORRIDOR_MEMBERS_TABLE + " WHERE corridor_id=?")) {
             delete.setLong(1, corridor.corridorId());
             delete.executeUpdate();
         }
@@ -234,7 +234,7 @@ final class DungeonSqliteConnectionPersistence {
             }
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.STAIRS_TABLE
+                INSERT_INTO + DungeonPersistenceSchema.STAIRS_TABLE
                         + "(stair_id, dungeon_map_id, name, shape, direction, dimension1, dimension2, corridor_id)"
                         + " VALUES(?,?,?,?,?,?,?,?)")) {
             insert.setLong(1, stair.stairId());
@@ -317,7 +317,7 @@ final class DungeonSqliteConnectionPersistence {
             }
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.TRANSITIONS_TABLE
+                INSERT_INTO + DungeonPersistenceSchema.TRANSITIONS_TABLE
                         + "(transition_id, dungeon_map_id, description, cell_x, cell_y, level_z,"
                         + " destination_type, target_overworld_map_id, target_overworld_tile_id,"
                         + " target_dungeon_map_id, target_transition_id, linked_transition_id)"

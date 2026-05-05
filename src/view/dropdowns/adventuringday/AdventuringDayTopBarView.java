@@ -31,6 +31,10 @@ import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 public final class AdventuringDayTopBarView extends HBox {
 
     private static final double POPUP_WIDTH = 420.0;
+    private static final String STYLE_COMPACT = "compact";
+    private static final String STYLE_TEXT_MUTED = "text-muted";
+    private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+    private static final String XP_SUFFIX = " XP";
 
     private final Button triggerButton = new Button("Rastbudget \u25be");
     private final AnchoredPopupView popup = new AnchoredPopupView();
@@ -67,7 +71,7 @@ public final class AdventuringDayTopBarView extends HBox {
     }
 
     private void configureTrigger() {
-        triggerButton.getStyleClass().add("text-secondary");
+        triggerButton.getStyleClass().add(STYLE_TEXT_SECONDARY);
         triggerButton.setTooltip(new Tooltip("Adventuring-Day-Rechner \u00f6ffnen"));
         triggerButton.setOnAction(event -> togglePopup());
     }
@@ -83,7 +87,7 @@ public final class AdventuringDayTopBarView extends HBox {
         Label headerLabel = new Label("ADVENTURING DAY");
         headerLabel.getStyleClass().add("title-large");
         Button closeButton = new Button("\u00d7");
-        closeButton.getStyleClass().add("compact");
+        closeButton.getStyleClass().add(STYLE_COMPACT);
         closeButton.setAccessibleText("Adventuring-Day-Rechner schliessen");
         closeButton.setOnAction(event -> popup.hide());
         Region spacer = new Region();
@@ -257,27 +261,27 @@ public final class AdventuringDayTopBarView extends HBox {
             setPadding(new Insets(8, 0, 0, 0));
             DAY_FORMAT.setMinimumFractionDigits(0);
             DAY_FORMAT.setMaximumFractionDigits(2);
-            partySummaryLabel.getStyleClass().add("text-secondary");
+            partySummaryLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
 
             ToggleGroup modeGroup = new ToggleGroup();
             budgetModeButton.setToggleGroup(modeGroup);
             progressModeButton.setToggleGroup(modeGroup);
             budgetModeButton.setSelected(true);
-            budgetModeButton.getStyleClass().add("compact");
-            progressModeButton.getStyleClass().add("compact");
+            budgetModeButton.getStyleClass().add(STYLE_COMPACT);
+            progressModeButton.getStyleClass().add(STYLE_COMPACT);
 
             HBox modeRow = new HBox(6, budgetModeButton, progressModeButton);
             HBox headerActions = new HBox(6, useActivePartyButton, addRowButton, clearButton);
-            useActivePartyButton.getStyleClass().add("compact");
-            addRowButton.getStyleClass().add("compact");
-            clearButton.getStyleClass().add("compact");
+            useActivePartyButton.getStyleClass().add(STYLE_COMPACT);
+            addRowButton.getStyleClass().add(STYLE_COMPACT);
+            clearButton.getStyleClass().add(STYLE_COMPACT);
 
             HBox tableHeader = new HBox(8);
             tableHeader.setAlignment(Pos.CENTER_LEFT);
             Label levelHeader = new Label("Level");
             Label countHeader = new Label("Anzahl");
-            levelHeader.getStyleClass().add("text-muted");
-            countHeader.getStyleClass().add("text-muted");
+            levelHeader.getStyleClass().add(STYLE_TEXT_MUTED);
+            countHeader.getStyleClass().add(STYLE_TEXT_MUTED);
             levelHeader.setMinWidth(78);
             countHeader.setMinWidth(70);
             Region tableSpacer = new Region();
@@ -288,16 +292,16 @@ public final class AdventuringDayTopBarView extends HBox {
             totalGroupXpField.setPrefColumnCount(10);
             totalGroupXpField.textProperty().addListener((ignored, before, after) -> refreshSummary());
             Label totalGroupXpHint = new Label("Gesamt-XP für die Gruppe");
-            totalGroupXpHint.getStyleClass().add("text-muted");
+            totalGroupXpHint.getStyleClass().add(STYLE_TEXT_MUTED);
             progressInputRow = new HBox(8, totalGroupXpHint, totalGroupXpField);
             progressInputRow.setAlignment(Pos.CENTER_LEFT);
 
-            emptyLabel.getStyleClass().add("text-muted");
+            emptyLabel.getStyleClass().add(STYLE_TEXT_MUTED);
             rowsBox.getChildren().add(emptyLabel);
             summaryBox.getStyleClass().add("entity-card");
             timelineBox.getStyleClass().add("entity-card");
-            timelineTitleLabel.getStyleClass().addAll("small", "text-secondary");
-            timelineEmptyLabel.getStyleClass().add("text-muted");
+            timelineTitleLabel.getStyleClass().addAll("small", STYLE_TEXT_SECONDARY);
+            timelineEmptyLabel.getStyleClass().add(STYLE_TEXT_MUTED);
             levelProgressLabel.setWrapText(true);
             timelineScrollPane.setFitToWidth(true);
             timelineScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -451,10 +455,10 @@ public final class AdventuringDayTopBarView extends HBox {
         private void renderBudgetSummary() {
             Budget budget = safeCalculation(0).budget();
             summaryBox.getChildren().setAll(totalXpLabel, perThirdLabel, firstRestLabel, secondRestLabel);
-            totalXpLabel.setText("Tag gesamt: " + formatInt(budget.totalXp()) + " XP");
-            perThirdLabel.setText("Pro Drittel: ca. " + formatInt(budget.perThirdXp()) + " XP");
-            firstRestLabel.setText("Short Rest 1: nach " + formatInt(budget.firstShortRestXp()) + " XP");
-            secondRestLabel.setText("Short Rest 2: nach " + formatInt(budget.secondShortRestXp()) + " XP");
+            totalXpLabel.setText("Tag gesamt: " + formatInt(budget.totalXp()) + XP_SUFFIX);
+            perThirdLabel.setText("Pro Drittel: ca. " + formatInt(budget.perThirdXp()) + XP_SUFFIX);
+            firstRestLabel.setText("Short Rest 1: nach " + formatInt(budget.firstShortRestXp()) + XP_SUFFIX);
+            secondRestLabel.setText("Short Rest 2: nach " + formatInt(budget.secondShortRestXp()) + XP_SUFFIX);
             timelineBox.getChildren().setAll(
                     timelineTitleLabel,
                     eventLabel("Short Rest 1", budget.firstShortRestXp()),
@@ -471,7 +475,7 @@ public final class AdventuringDayTopBarView extends HBox {
                     shortRestLabel,
                     longRestLabel,
                     levelProgressLabel);
-            totalXpLabel.setText("Gesamt-XP: " + formatInt(progress.totalGroupXp()) + " XP");
+            totalXpLabel.setText("Gesamt-XP: " + formatInt(progress.totalGroupXp()) + XP_SUFFIX);
             awardedXpLabel.setText("XP pro Charakter: " + formatInt(progress.perCharacterAwardedXp()));
             totalDaysLabel.setText("Adventuring Days: " + formatDays(progress.totalDays())
                     + " (" + progress.fullDays() + " voll)");
@@ -523,7 +527,7 @@ public final class AdventuringDayTopBarView extends HBox {
         }
 
         private Label eventLabel(String name, int groupXp) {
-            Label label = new Label(name + ": " + formatInt(groupXp) + " XP");
+            Label label = new Label(name + ": " + formatInt(groupXp) + XP_SUFFIX);
             label.setWrapText(true);
             return label;
         }
@@ -621,7 +625,7 @@ public final class AdventuringDayTopBarView extends HBox {
                 });
                 countField.setOnAction(event -> normalizeCountField());
 
-                removeButton.getStyleClass().add("compact");
+                removeButton.getStyleClass().add(STYLE_COMPACT);
                 removeButton.setOnAction(event -> {
                     activateCustomMode();
                     removeRow(this);

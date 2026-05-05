@@ -21,10 +21,6 @@ public final class DataModelTopologyRules implements ArchitectureRule {
             Pattern.compile("\\btable\\s*\\(\\s*\"([^\"]+)\"");
     private static final Pattern SCHEMA_TABLE_CONSTANT_PATTERN =
             Pattern.compile("\\b[A-Z][A-Z0-9_]*_TABLE\\s*=\\s*\"([^\"]+)\"");
-    private static final Pattern SCHEMA_CREATE_TABLE_PATTERN =
-            Pattern.compile(
-                    "\\bCREATE\\s+(?:TEMP\\s+)?TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
-                    Pattern.CASE_INSENSITIVE);
     private static final Pattern JAVA_STRING_LITERAL_PATTERN =
             Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");
     private static final Pattern SQL_TABLE_REFERENCE_PATTERN =
@@ -85,7 +81,6 @@ public final class DataModelTopologyRules implements ArchitectureRule {
                     ignored -> new TreeSet<>());
             collectMatches(SCHEMA_TABLE_NAME_PATTERN, sourceFile.content(), tableNames);
             collectMatches(SCHEMA_TABLE_CONSTANT_PATTERN, sourceFile.content(), tableNames);
-            collectMatches(SCHEMA_CREATE_TABLE_PATTERN, sourceFile.content(), tableNames);
         }
 
         for (SourceFile sourceFile : sourceFiles) {

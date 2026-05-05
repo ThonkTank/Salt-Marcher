@@ -18,25 +18,28 @@ import java.util.List;
 
 final class CreatureCatalogSearchSqliteStore {
 
+    private static final String EMPTY_FILTER_COUNT_SQL = "AND ((SELECT COUNT(*) FROM ";
+    private static final String EMPTY_FILTER_SUFFIX_SQL = ") = 0 ";
+
     private static final String SEARCH_SELECT_SQL =
             "SELECT id, name, size, creature_type, alignment, cr, xp, hp, ac, COUNT(*) OVER() AS total_count "
                     + "FROM " + CreaturesPersistenceSchema.CREATURES.name() + " WHERE "
                     + "(? IS NULL OR LOWER(name) LIKE LOWER(?)) "
                     + "AND (? IS NULL OR xp >= ?) "
                     + "AND (? IS NULL OR xp <= ?) "
-                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + ") = 0 "
+                    + EMPTY_FILTER_COUNT_SQL + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + EMPTY_FILTER_SUFFIX_SQL
                     + "OR LOWER(size) IN (SELECT value FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SIZES_TABLE + ")) "
-                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + ") = 0 "
+                    + EMPTY_FILTER_COUNT_SQL + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + EMPTY_FILTER_SUFFIX_SQL
                     + "OR LOWER(creature_type) IN (SELECT value FROM "
                     + CreaturesPersistenceSchema.TEMP_FILTER_TYPES_TABLE + ")) "
-                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + ") = 0 "
+                    + EMPTY_FILTER_COUNT_SQL + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + EMPTY_FILTER_SUFFIX_SQL
                     + "OR LOWER(alignment) IN (SELECT value FROM "
                     + CreaturesPersistenceSchema.TEMP_FILTER_ALIGNMENTS_TABLE + ")) "
-                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + ") = 0 "
+                    + EMPTY_FILTER_COUNT_SQL + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + EMPTY_FILTER_SUFFIX_SQL
                     + "OR id IN (SELECT creature_id FROM " + CreaturesPersistenceSchema.CREATURE_SUBTYPES.name()
                     + " WHERE LOWER(subtype) IN (SELECT value FROM "
                     + CreaturesPersistenceSchema.TEMP_FILTER_SUBTYPES_TABLE + "))) "
-                    + "AND ((SELECT COUNT(*) FROM " + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + ") = 0 "
+                    + EMPTY_FILTER_COUNT_SQL + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + EMPTY_FILTER_SUFFIX_SQL
                     + "OR id IN (SELECT creature_id FROM " + CreaturesPersistenceSchema.CREATURE_BIOMES.name()
                     + " WHERE LOWER(biome) IN (SELECT value FROM "
                     + CreaturesPersistenceSchema.TEMP_FILTER_BIOMES_TABLE + "))) ";

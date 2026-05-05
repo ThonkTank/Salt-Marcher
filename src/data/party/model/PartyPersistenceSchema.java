@@ -12,13 +12,15 @@ public final class PartyPersistenceSchema {
 
     public static final String DATABASE_FILE_NAME = "game.db";
 
+    private static final String TEXT = "TEXT";
+    private static final String INTEGER = "INTEGER";
     private static final String INTEGER_ZERO_DEFAULT = "INTEGER NOT NULL DEFAULT 0";
 
     public static final SqliteTableSpec PLAYER_CHARACTERS = table(
             "player_characters",
             column("id", "INTEGER PRIMARY KEY"),
             column("name", "TEXT NOT NULL"),
-            column("player_name", "TEXT"),
+            column("player_name", TEXT),
             column("level", "INTEGER NOT NULL DEFAULT 1"),
             column("current_xp", INTEGER_ZERO_DEFAULT),
             column("xp_since_long_rest", INTEGER_ZERO_DEFAULT),
@@ -27,16 +29,16 @@ public final class PartyPersistenceSchema {
             column("passive_perception", "INTEGER NOT NULL DEFAULT 10"),
             column("ac", "INTEGER NOT NULL DEFAULT 10"),
             column("in_party", "INTEGER NOT NULL DEFAULT 1"),
-            column("travel_location_kind", "TEXT"),
-            column("travel_dungeon_map_id", "INTEGER"),
-            column("travel_dungeon_location_kind", "TEXT"),
-            column("travel_dungeon_owner_id", "INTEGER"),
-            column("travel_dungeon_q", "INTEGER"),
-            column("travel_dungeon_r", "INTEGER"),
-            column("travel_dungeon_level", "INTEGER"),
-            column("travel_dungeon_heading", "TEXT"),
-            column("travel_overworld_map_id", "INTEGER"),
-            column("travel_overworld_tile_id", "INTEGER"),
+            column("travel_location_kind", TEXT),
+            column("travel_dungeon_map_id", INTEGER),
+            column("travel_dungeon_location_kind", TEXT),
+            column("travel_dungeon_owner_id", INTEGER),
+            column("travel_dungeon_q", INTEGER),
+            column("travel_dungeon_r", INTEGER),
+            column("travel_dungeon_level", INTEGER),
+            column("travel_dungeon_heading", TEXT),
+            column("travel_overworld_map_id", INTEGER),
+            column("travel_overworld_tile_id", INTEGER),
             column("attached_to_party_token", "INTEGER NOT NULL DEFAULT 1"));
 
     public static final SqliteTableSpec PARTY_ROSTER_METADATA = table(

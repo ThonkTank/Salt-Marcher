@@ -13,6 +13,7 @@ import javafx.scene.layout.VBox;
 
 public final class TravelStateView extends VBox {
 
+    private static final String STYLE_TEXT_MUTED = "text-muted";
     private static final int ICON_SLOT = 0;
     private static final int LOCATION_SLOT = 1;
     private static final int STATUS_SLOT = 2;
@@ -38,14 +39,14 @@ public final class TravelStateView extends VBox {
         }
 
         textLabels[ICON_SLOT].getStyleClass().add("travel-location-icon");
-        textLabels[LOCATION_SLOT].getStyleClass().addAll("text-muted", "text-italic");
+        textLabels[LOCATION_SLOT].getStyleClass().addAll(STYLE_TEXT_MUTED, "text-italic");
         textLabels[STATUS_SLOT].getStyleClass().add("travel-status-badge");
-        textLabels[CONTEXT_SLOT].getStyleClass().addAll("text-muted", "text-italic");
-        detailKeyLabels[0].getStyleClass().add("text-muted");
-        detailKeyLabels[1].getStyleClass().add("text-muted");
-        detailKeyLabels[2].getStyleClass().add("text-muted");
-        textLabels[SECTION_HEADER_SLOT].getStyleClass().addAll("section-header", "text-muted");
-        textLabels[SECTION_VALUE_SLOT].getStyleClass().addAll("text-muted", "text-italic");
+        textLabels[CONTEXT_SLOT].getStyleClass().addAll(STYLE_TEXT_MUTED, "text-italic");
+        detailKeyLabels[0].getStyleClass().add(STYLE_TEXT_MUTED);
+        detailKeyLabels[1].getStyleClass().add(STYLE_TEXT_MUTED);
+        detailKeyLabels[2].getStyleClass().add(STYLE_TEXT_MUTED);
+        textLabels[SECTION_HEADER_SLOT].getStyleClass().addAll("section-header", STYLE_TEXT_MUTED);
+        textLabels[SECTION_VALUE_SLOT].getStyleClass().addAll(STYLE_TEXT_MUTED, "text-italic");
         actionButton.getStyleClass().add("accent");
         actionButton.setMaxWidth(Double.MAX_VALUE);
         actionButton.setVisible(false);

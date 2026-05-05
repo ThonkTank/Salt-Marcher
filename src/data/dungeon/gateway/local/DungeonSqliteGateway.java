@@ -28,8 +28,14 @@ public final class DungeonSqliteGateway {
 
     private static final String INSERT_INTO = "INSERT INTO ";
     private static final String DELETE_FROM = "DELETE FROM ";
-    private static final String WHERE_DUNGEON_MAP_ID = " WHERE dungeon_map_id=?";
+    private static final String SQL_FROM = " FROM ";
+    private static final String SQL_WHERE = " WHERE ";
+    private static final String SELECT_MAP_COLUMNS = "SELECT dungeon_map_id, name";
+    private static final String WHERE_DUNGEON_MAP_ID = SQL_WHERE + "dungeon_map_id=?";
+    private static final String WHERE_DUNGEON_MAP_ID_SUBQUERY = SQL_WHERE + "dungeon_map_id=?)";
     private static final String COLUMN_DUNGEON_MAP_ID = "dungeon_map_id";
+    private static final String COLUMN_CLUSTER_ID = "cluster_id";
+    private static final String COLUMN_LEVEL_Z = "level_z";
 
     private final DungeonSqliteConnectionFactory connectionFactory;
     private final DungeonSqliteSchemaManager schemaManager;
@@ -50,7 +56,7 @@ public final class DungeonSqliteGateway {
         String normalized = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         try (Connection connection = openReadyConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT dungeon_map_id, name FROM "
+                     SELECT_MAP_COLUMNS + SQL_FROM
                              + DungeonPersistenceSchema.MAPS_TABLE
                              + " ORDER BY name COLLATE NOCASE, dungeon_map_id")) {
             List<DungeonMapRecord> records = new ArrayList<>();
@@ -71,7 +77,7 @@ public final class DungeonSqliteGateway {
     public Optional<DungeonMapRecord> firstMap() {
         try (Connection connection = openReadyConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT dungeon_map_id, name FROM "
+                     SELECT_MAP_COLUMNS + SQL_FROM
                              + DungeonPersistenceSchema.MAPS_TABLE
                              + " ORDER BY dungeon_map_id LIMIT 1")) {
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -88,9 +94,9 @@ public final class DungeonSqliteGateway {
     public Optional<DungeonMapRecord> findMap(long mapId) {
         try (Connection connection = openReadyConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "SELECT dungeon_map_id, name FROM "
+                     SELECT_MAP_COLUMNS + SQL_FROM
                              + DungeonPersistenceSchema.MAPS_TABLE
-                             + " WHERE dungeon_map_id=?")) {
+                             + WHERE_DUNGEON_MAP_ID)) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
@@ -105,7 +111,7 @@ public final class DungeonSqliteGateway {
 
     private Optional<DungeonMapRecord> findMap(Connection connection, long mapId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT dungeon_map_id, name FROM "
+                SELECT_MAP_COLUMNS + SQL_FROM
                         + DungeonPersistenceSchema.MAPS_TABLE
                         + WHERE_DUNGEON_MAP_ID)) {
             statement.setLong(1, mapId);
@@ -205,7 +211,7 @@ public final class DungeonSqliteGateway {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT MIN(component_x) AS min_x, MIN(component_y) AS min_y,"
                         + " MAX(component_x) AS max_x, MAX(component_y) AS max_y"
-                        + " FROM " + DungeonPersistenceSchema.ROOMS_TABLE + " WHERE dungeon_map_id=?")) {
+                        + SQL_FROM + DungeonPersistenceSchema.ROOMS_TABLE + WHERE_DUNGEON_MAP_ID)) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next() || resultSet.getObject("min_x") == null) {
@@ -226,7 +232,7 @@ public final class DungeonSqliteGateway {
 
     private static void upsertMap(Connection connection, DungeonMapRecord record) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
-                "UPDATE " + DungeonPersistenceSchema.MAPS_TABLE + " SET name=? WHERE dungeon_map_id=?")) {
+                "UPDATE " + DungeonPersistenceSchema.MAPS_TABLE + " SET name=?" + WHERE_DUNGEON_MAP_ID)) {
             update.setString(1, record.name());
             update.setLong(2, record.mapId());
             if (update.executeUpdate() > 0) {
@@ -234,7 +240,7 @@ public final class DungeonSqliteGateway {
             }
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.MAPS_TABLE + "(dungeon_map_id, name) VALUES(?,?)")) {
+                INSERT_INTO + DungeonPersistenceSchema.MAPS_TABLE + "(dungeon_map_id, name) VALUES(?,?)")) {
             insert.setLong(1, record.mapId());
             insert.setString(2, record.name());
             insert.executeUpdate();
@@ -263,7 +269,8 @@ public final class DungeonSqliteGateway {
     private static void upsertRoomCluster(Connection connection, DungeonRoomClusterRecord cluster) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + " SET center_x=?, center_y=?, level_z=? WHERE cluster_id=? AND dungeon_map_id=?")) {
+                        + " SET center_x=?, center_y=?, " + COLUMN_LEVEL_Z + "=? WHERE " + COLUMN_CLUSTER_ID
+                        + "=? AND dungeon_map_id=?")) {
             update.setInt(1, cluster.centerX());
             update.setInt(2, cluster.centerY());
             update.setInt(3, cluster.levelZ());
@@ -274,8 +281,9 @@ public final class DungeonSqliteGateway {
             }
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + "(cluster_id, dungeon_map_id, center_x, center_y, level_z) VALUES(?,?,?,?,?)")) {
+                INSERT_INTO + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
+                        + "(" + COLUMN_CLUSTER_ID + ", dungeon_map_id, center_x, center_y, "
+                        + COLUMN_LEVEL_Z + ") VALUES(?,?,?,?,?)")) {
             insert.setLong(1, cluster.clusterId());
             insert.setLong(2, cluster.mapId());
             insert.setInt(3, cluster.centerX());
@@ -288,13 +296,14 @@ public final class DungeonSqliteGateway {
     private static void replaceClusterVertices(Connection connection, DungeonRoomClusterRecord cluster)
             throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE + " WHERE cluster_id=?")) {
+                DELETE_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE + SQL_WHERE + COLUMN_CLUSTER_ID + "=?")) {
             delete.setLong(1, cluster.clusterId());
             delete.executeUpdate();
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE
-                        + "(cluster_id, level_z, vertex_index, relative_x, relative_y) VALUES(?,?,?,?,?)")) {
+                INSERT_INTO + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE
+                        + "(" + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z
+                        + ", vertex_index, relative_x, relative_y) VALUES(?,?,?,?,?)")) {
             for (DungeonRoomClusterVertexRecord vertex : cluster.vertices()) {
                 insert.setLong(1, cluster.clusterId());
                 insert.setInt(2, vertex.levelZ());
@@ -310,13 +319,14 @@ public final class DungeonSqliteGateway {
     private static void replaceClusterBoundaries(Connection connection, DungeonRoomClusterRecord cluster)
             throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE + " WHERE cluster_id=?")) {
+                DELETE_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE + SQL_WHERE + COLUMN_CLUSTER_ID + "=?")) {
             delete.setLong(1, cluster.clusterId());
             delete.executeUpdate();
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
-                        + "(cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id)"
+                INSERT_INTO + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
+                        + "(" + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z
+                        + ", cell_x, cell_y, edge_direction, edge_type, topology_element_id)"
                         + " VALUES(?,?,?,?,?,?,?)")) {
             for (DungeonClusterBoundaryRecord boundary : cluster.boundaries()) {
                 insert.setLong(1, cluster.clusterId());
@@ -336,7 +346,7 @@ public final class DungeonSqliteGateway {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.ROOMS_TABLE
                         + " SET cluster_id=?, name=?, visual_description=?, component_x=?, component_y=?, level_z=?"
-                        + " WHERE room_id=? AND dungeon_map_id=?")) {
+                        + SQL_WHERE + "room_id=? AND dungeon_map_id=?")) {
             update.setLong(1, room.clusterId());
             update.setString(2, room.name());
             update.setString(3, room.visualDescription());
@@ -350,7 +360,7 @@ public final class DungeonSqliteGateway {
             }
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.ROOMS_TABLE
+                INSERT_INTO + DungeonPersistenceSchema.ROOMS_TABLE
                         + "(room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y, level_z)"
                         + " VALUES(?,?,?,?,?,?,?,?)")) {
             insert.setLong(1, room.roomId());
@@ -367,12 +377,12 @@ public final class DungeonSqliteGateway {
 
     private static void replaceRoomFloors(Connection connection, DungeonRoomRecord room) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM " + DungeonPersistenceSchema.ROOM_FLOORS_TABLE + " WHERE room_id=?")) {
+                DELETE_FROM + DungeonPersistenceSchema.ROOM_FLOORS_TABLE + SQL_WHERE + "room_id=?")) {
             delete.setLong(1, room.roomId());
             delete.executeUpdate();
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.ROOM_FLOORS_TABLE
+                INSERT_INTO + DungeonPersistenceSchema.ROOM_FLOORS_TABLE
                         + "(room_id, level_z, anchor_x, anchor_y) VALUES(?,?,?,?)")) {
             for (DungeonRoomFloorRecord floor : room.floors()) {
                 insert.setLong(1, room.roomId());
@@ -387,12 +397,12 @@ public final class DungeonSqliteGateway {
 
     private static void replaceRoomExitDescriptions(Connection connection, DungeonRoomRecord room) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
-                "DELETE FROM " + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE + " WHERE room_id=?")) {
+                DELETE_FROM + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE + SQL_WHERE + "room_id=?")) {
             delete.setLong(1, room.roomId());
             delete.executeUpdate();
         }
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO " + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE
+                INSERT_INTO + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE
                         + "(room_id, cell_x, cell_y, edge_direction, description, sort_order)"
                         + " VALUES(?,?,?,?,?,?)")) {
             int sortOrder = 0;
@@ -415,8 +425,8 @@ public final class DungeonSqliteGateway {
         Map<Long, List<DungeonClusterBoundaryRecord>> boundariesByCluster = loadClusterBoundaries(connection, mapId);
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT cluster_id, dungeon_map_id, center_x, center_y, level_z"
-                        + " FROM " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + " WHERE dungeon_map_id=? ORDER BY cluster_id")) {
+                        + SQL_FROM + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
+                        + WHERE_DUNGEON_MAP_ID + " ORDER BY cluster_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<DungeonRoomClusterRecord> records = new ArrayList<>();
@@ -427,7 +437,7 @@ public final class DungeonSqliteGateway {
                             resultSet.getLong("dungeon_map_id"),
                             resultSet.getInt("center_x"),
                             resultSet.getInt("center_y"),
-                            resultSet.getInt("level_z"),
+                            resultSet.getInt(COLUMN_LEVEL_Z),
                             verticesByCluster.getOrDefault(clusterId, List.of()),
                             boundariesByCluster.getOrDefault(clusterId, List.of())));
                 }
@@ -441,21 +451,21 @@ public final class DungeonSqliteGateway {
             long mapId
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT cluster_id, level_z, vertex_index, relative_x, relative_y"
-                        + " FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE
-                        + " WHERE cluster_id IN (SELECT cluster_id FROM "
+                "SELECT " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", vertex_index, relative_x, relative_y"
+                        + SQL_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE
+                        + SQL_WHERE + COLUMN_CLUSTER_ID + " IN (SELECT " + COLUMN_CLUSTER_ID + SQL_FROM
                         + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + " WHERE dungeon_map_id=?)"
-                        + " ORDER BY cluster_id, level_z, vertex_index")) {
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
+                        + " ORDER BY " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", vertex_index")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<DungeonRoomClusterVertexRecord>> records = new LinkedHashMap<>();
                 while (resultSet.next()) {
-                    long clusterId = resultSet.getLong("cluster_id");
+                    long clusterId = resultSet.getLong(COLUMN_CLUSTER_ID);
                     records.computeIfAbsent(clusterId, ignored -> new ArrayList<>())
                             .add(new DungeonRoomClusterVertexRecord(
                                     clusterId,
-                                    resultSet.getInt("level_z"),
+                                    resultSet.getInt(COLUMN_LEVEL_Z),
                                     resultSet.getInt("vertex_index"),
                                     resultSet.getInt("relative_x"),
                                     resultSet.getInt("relative_y")));
@@ -470,21 +480,22 @@ public final class DungeonSqliteGateway {
             long mapId
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
-                        + " FROM " + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
-                        + " WHERE cluster_id IN (SELECT cluster_id FROM "
+                "SELECT " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z
+                        + ", cell_x, cell_y, edge_direction, edge_type, topology_element_id"
+                        + SQL_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
+                        + SQL_WHERE + COLUMN_CLUSTER_ID + " IN (SELECT " + COLUMN_CLUSTER_ID + SQL_FROM
                         + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + " WHERE dungeon_map_id=?)"
-                        + " ORDER BY cluster_id, level_z, cell_y, cell_x, edge_direction")) {
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
+                        + " ORDER BY " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", cell_y, cell_x, edge_direction")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<DungeonClusterBoundaryRecord>> records = new LinkedHashMap<>();
                 while (resultSet.next()) {
-                    long clusterId = resultSet.getLong("cluster_id");
+                    long clusterId = resultSet.getLong(COLUMN_CLUSTER_ID);
                     records.computeIfAbsent(clusterId, ignored -> new ArrayList<>())
                             .add(new DungeonClusterBoundaryRecord(
                                     clusterId,
-                                    resultSet.getInt("level_z"),
+                                    resultSet.getInt(COLUMN_LEVEL_Z),
                                     resultSet.getInt("cell_x"),
                                     resultSet.getInt("cell_y"),
                                     resultSet.getString("edge_direction"),
@@ -501,8 +512,8 @@ public final class DungeonSqliteGateway {
         Map<Long, List<DungeonRoomExitDescriptionRecord>> exitsByRoom = loadRoomExitDescriptions(connection, mapId);
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description, component_x, component_y, level_z"
-                        + " FROM " + DungeonPersistenceSchema.ROOMS_TABLE
-                        + " WHERE dungeon_map_id=? ORDER BY room_id")) {
+                        + SQL_FROM + DungeonPersistenceSchema.ROOMS_TABLE
+                        + WHERE_DUNGEON_MAP_ID + " ORDER BY room_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<DungeonRoomRecord> records = new ArrayList<>();
@@ -516,7 +527,7 @@ public final class DungeonSqliteGateway {
                             resultSet.getString("visual_description"),
                             resultSet.getInt("component_x"),
                             resultSet.getInt("component_y"),
-                            resultSet.getInt("level_z"),
+                            resultSet.getInt(COLUMN_LEVEL_Z),
                             floorsByRoom.getOrDefault(roomId, List.of()),
                             exitsByRoom.getOrDefault(roomId, List.of())));
                 }
@@ -531,10 +542,10 @@ public final class DungeonSqliteGateway {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT room_id, level_z, anchor_x, anchor_y"
-                        + " FROM " + DungeonPersistenceSchema.ROOM_FLOORS_TABLE
-                        + " WHERE room_id IN (SELECT room_id FROM "
+                        + SQL_FROM + DungeonPersistenceSchema.ROOM_FLOORS_TABLE
+                        + SQL_WHERE + "room_id IN (SELECT room_id" + SQL_FROM
                         + DungeonPersistenceSchema.ROOMS_TABLE
-                        + " WHERE dungeon_map_id=?)"
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
                         + " ORDER BY room_id, level_z")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -544,7 +555,7 @@ public final class DungeonSqliteGateway {
                     records.computeIfAbsent(roomId, ignored -> new ArrayList<>())
                             .add(new DungeonRoomFloorRecord(
                                     roomId,
-                                    resultSet.getInt("level_z"),
+                                    resultSet.getInt(COLUMN_LEVEL_Z),
                                     resultSet.getInt("anchor_x"),
                                     resultSet.getInt("anchor_y")));
                 }
@@ -559,10 +570,10 @@ public final class DungeonSqliteGateway {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT room_id, cell_x, cell_y, edge_direction, description"
-                        + " FROM " + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE
-                        + " WHERE room_id IN (SELECT room_id FROM "
+                        + SQL_FROM + DungeonPersistenceSchema.ROOM_EXIT_DESCRIPTIONS_TABLE
+                        + SQL_WHERE + "room_id IN (SELECT room_id" + SQL_FROM
                         + DungeonPersistenceSchema.ROOMS_TABLE
-                        + " WHERE dungeon_map_id=?)"
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
                         + " ORDER BY room_id, sort_order, cell_y, cell_x, edge_direction")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {

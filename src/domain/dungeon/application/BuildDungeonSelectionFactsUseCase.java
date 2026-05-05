@@ -16,6 +16,7 @@ final class BuildDungeonSelectionFactsUseCase {
     private static final String DUNGEON_TITLE = "Dungeon";
     private static final String NO_SELECTION_DETAILS = "No selection details available.";
     private static final String SELECTION_NONE = "selection: none";
+    private static final String FACT_KIND = "kind";
     private static final String AUTHORISED_AREA = "Authoriertes Dungeon-Areal.";
     private static final String AUTHORISED_BOUNDARY = "Authorisierte Dungeon-Grenze.";
     private static final String AGGREGATE_OWNER = "Aggregate owner in committed dungeon truth.";
@@ -35,7 +36,7 @@ final class BuildDungeonSelectionFactsUseCase {
                         AUTHORISED_AREA,
                         List.of(
                                 refFact(topologyRef),
-                                factLine("kind", area.kind()),
+                                factLine(FACT_KIND, area.kind()),
                                 factLine("cells", area.cells().size())));
             }
         }
@@ -46,14 +47,14 @@ final class BuildDungeonSelectionFactsUseCase {
                         AUTHORISED_BOUNDARY,
                         List.of(
                                 refFact(topologyRef),
-                                factLine("kind", boundary.kind())));
+                                factLine(FACT_KIND, boundary.kind())));
             }
         }
         for (DungeonFeatureFacts feature : derived.map().features()) {
             if (topologyRef.equals(feature.topologyRef())) {
                 List<String> facts = new ArrayList<>();
                 facts.add(refFact(topologyRef));
-                facts.add(factLine("kind", feature.kind()));
+                facts.add(factLine(FACT_KIND, feature.kind()));
                 appendFactIfPresent(facts, "target", feature.destinationLabel());
                 return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                         feature.label(),
@@ -68,7 +69,7 @@ final class BuildDungeonSelectionFactsUseCase {
                         AGGREGATE_OWNER,
                         List.of(
                                 factLine("id", aggregate.id()),
-                                factLine("kind", topologyRef.kind()),
+                                factLine(FACT_KIND, topologyRef.kind()),
                                 factLine("label", aggregate.label())));
             }
         }
@@ -79,7 +80,7 @@ final class BuildDungeonSelectionFactsUseCase {
                         PRIMITIVE_BOUNDARY,
                         List.of(
                                 factLine("id", primitive.id()),
-                                factLine("kind", topologyRef.kind())));
+                                factLine(FACT_KIND, topologyRef.kind())));
             }
         }
         return fallbackSelection();

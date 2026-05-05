@@ -19,6 +19,8 @@ import src.view.slotcontent.primitives.dialog.DialogSurfaceView.BodyPolicy;
 
 public final class EncounterResultsStateView extends VBox {
 
+    private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+
     private final Label resultSubtitleLabel = new Label();
     private final Label resultXpLabel = new Label();
     private final Label resultPartyLabel = new Label();
@@ -62,11 +64,11 @@ public final class EncounterResultsStateView extends VBox {
         DialogSurfaceView nextDialog = new DialogSurfaceView();
         Label title = new Label("Kampfergebnis");
         title.getStyleClass().add("title");
-        resultSubtitleLabel.getStyleClass().add("text-secondary");
+        resultSubtitleLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
         resultXpLabel.getStyleClass().add("encounter-result-xp");
-        resultPartyLabel.getStyleClass().add("text-secondary");
+        resultPartyLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
         resultGoldLabel.getStyleClass().add("encounter-result-gold");
-        resultLootLabel.getStyleClass().add("text-secondary");
+        resultLootLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
         resultLootLabel.setWrapText(true);
 
         VBox summary = new VBox(2, resultXpLabel, resultPartyLabel, resultGoldLabel, resultLootLabel);
@@ -79,7 +81,7 @@ public final class EncounterResultsStateView extends VBox {
 
         resultEnemyList.setPadding(new Insets(2, 0, 8, 0));
 
-        resultAwardStatusLabel.getStyleClass().add("text-secondary");
+        resultAwardStatusLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
         resultAwardStatusLabel.setWrapText(true);
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
         resultAwardButton.setOnAction(event -> publish(new EncounterResultsStateViewInputEvent.AwardInteraction()));
@@ -103,7 +105,7 @@ public final class EncounterResultsStateView extends VBox {
     private Node buildResultEnemyRow(EncounterStateContributionModel.ResultEnemyView enemy) {
         CheckBox toggle = new CheckBox(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());
         toggle.setSelected(enemy.defeatedByDefault());
-        toggle.getStyleClass().add("text-secondary");
+        toggle.getStyleClass().add(STYLE_TEXT_SECONDARY);
         toggle.selectedProperty().addListener((obs, oldValue, newValue) -> updateResultCalculations());
         return toggle;
     }
@@ -137,7 +139,7 @@ public final class EncounterResultsStateView extends VBox {
 
     private HBox sliderRow(String title, Slider slider, Label valueLabel) {
         Label label = new Label(title);
-        label.getStyleClass().add("text-secondary");
+        label.getStyleClass().add(STYLE_TEXT_SECONDARY);
         valueLabel.setMinWidth(40);
         valueLabel.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
         HBox.setHgrow(slider, Priority.ALWAYS);

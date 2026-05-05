@@ -29,6 +29,12 @@ import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupSpec
 
 public final class PartyRosterTopBarView extends VBox {
 
+    private static final String STYLE_COMPACT = "compact";
+    private static final String STYLE_TEXT_MUTED = "text-muted";
+    private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+    private static final String STYLE_ACCENT = "accent";
+    private static final String STYLE_NEUTRAL_ACTION = "neutral-action";
+
     private final VBox memberList = new VBox();
     private final Label summaryLabel = new Label();
     private final Label restSummaryLabel = new Label();
@@ -124,8 +130,8 @@ public final class PartyRosterTopBarView extends VBox {
     }
 
     private Node restActions() {
-        shortRestButton.getStyleClass().add("compact");
-        longRestButton.getStyleClass().add("compact");
+        shortRestButton.getStyleClass().add(STYLE_COMPACT);
+        longRestButton.getStyleClass().add(STYLE_COMPACT);
         shortRestButton.setOnAction(event -> publish(false, false, false, 0L, "", 0, false, true, false,
                 PartyRosterTopBarViewInputEvent.EditorSeed.empty()));
         longRestButton.setOnAction(event -> publish(false, false, false, 0L, "", 0, false, false, true,
@@ -175,7 +181,7 @@ public final class PartyRosterTopBarView extends VBox {
         Node restChip = restChip(member);
 
         Button editButton = new Button("✎");
-        editButton.getStyleClass().addAll("compact", "icon-button", "accent");
+        editButton.getStyleClass().addAll(STYLE_COMPACT, "icon-button", STYLE_ACCENT);
         editButton.setAccessibleText("Charakter bearbeiten: " + member.name());
         editButton.setTooltip(new Tooltip("Charakter bearbeiten"));
         editButton.setOnAction(event -> publish(
@@ -192,7 +198,7 @@ public final class PartyRosterTopBarView extends VBox {
         editButton.setDisable(actionsDisabled);
 
         Button removeButton = new Button("×");
-        removeButton.getStyleClass().addAll("compact", "icon-button", "neutral-action");
+        removeButton.getStyleClass().addAll(STYLE_COMPACT, "icon-button", STYLE_NEUTRAL_ACTION);
         removeButton.setAccessibleText("Aus aktiver Party entfernen: " + member.name());
         removeButton.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
         removeButton.setOnAction(event -> publish(
@@ -218,7 +224,7 @@ public final class PartyRosterTopBarView extends VBox {
         headerRow.setAlignment(Pos.CENTER_LEFT);
         headerRow.setMaxWidth(Double.MAX_VALUE);
 
-        Label combatLabel = clippedLabel(combatText(member), "text-secondary");
+        Label combatLabel = clippedLabel(combatText(member), STYLE_TEXT_SECONDARY);
         HBox.setHgrow(combatLabel, Priority.ALWAYS);
         HBox actionRow = new HBox(8, combatLabel, restChip, spacer, managementActions);
         actionRow.setAlignment(Pos.CENTER_LEFT);
@@ -287,8 +293,8 @@ public final class PartyRosterTopBarView extends VBox {
 
     private void showActionStatus(String message, boolean error) {
         actionStatusLabel.setText(safe(message));
-        actionStatusLabel.getStyleClass().removeAll("text-warning", "text-muted");
-        actionStatusLabel.getStyleClass().add(error ? "text-warning" : "text-muted");
+        actionStatusLabel.getStyleClass().removeAll("text-warning", STYLE_TEXT_MUTED);
+        actionStatusLabel.getStyleClass().add(error ? "text-warning" : STYLE_TEXT_MUTED);
         actionStatusLabel.setVisible(!safe(message).isBlank());
         actionStatusLabel.setManaged(actionStatusLabel.isVisible());
     }
@@ -418,13 +424,13 @@ public final class PartyRosterTopBarView extends VBox {
 
     private static Label sectionLabel(String text) {
         Label label = new Label(text);
-        label.getStyleClass().addAll("section-header", "text-muted");
+        label.getStyleClass().addAll("section-header", STYLE_TEXT_MUTED);
         return label;
     }
 
     private static Label messageLabel(String text) {
         Label label = new Label(text);
-        label.getStyleClass().add("text-muted");
+        label.getStyleClass().add(STYLE_TEXT_MUTED);
         label.setPadding(new Insets(8));
         label.setWrapText(true);
         return label;

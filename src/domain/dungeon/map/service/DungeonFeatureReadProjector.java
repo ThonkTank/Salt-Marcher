@@ -15,6 +15,8 @@ import java.util.List;
 
 public final class DungeonFeatureReadProjector {
 
+    private static final String FEATURE_KIND_TRANSITION = "transition";
+
     public Result project(List<DungeonStair> stairs, List<DungeonTransition> transitions) {
         List<DungeonFeatureFacts> features = new ArrayList<>();
         List<DungeonRelationGraph.FeatureRelation> relations = new ArrayList<>();
@@ -54,9 +56,9 @@ public final class DungeonFeatureReadProjector {
             if (transition.linkedTransitionId() != null) {
                 relations.add(new DungeonRelationGraph.FeatureRelation(
                         transition.transitionId(),
-                        "transition",
+                        FEATURE_KIND_TRANSITION,
                         transition.linkedTransitionId(),
-                        "transition",
+                        FEATURE_KIND_TRANSITION,
                         "linked"));
             }
         }
@@ -118,24 +120,24 @@ public final class DungeonFeatureReadProjector {
         if (destination instanceof DungeonTransitionDestination.OverworldTileDestination overworld) {
             return new DungeonRelationGraph.FeatureRelation(
                     transition.transitionId(),
-                    "transition",
+                    FEATURE_KIND_TRANSITION,
                     overworld.tileId(),
                     "overworld-tile",
                     "targets");
         }
         if (destination instanceof DungeonTransitionDestination.DungeonMapDestination dungeon) {
             long targetId = dungeon.transitionId() == null ? dungeon.mapId() : dungeon.transitionId();
-            String targetKind = dungeon.transitionId() == null ? "dungeon-map" : "transition";
+            String targetKind = dungeon.transitionId() == null ? "dungeon-map" : FEATURE_KIND_TRANSITION;
             return new DungeonRelationGraph.FeatureRelation(
                     transition.transitionId(),
-                    "transition",
+                    FEATURE_KIND_TRANSITION,
                     targetId,
                     targetKind,
                     "targets");
         }
         return new DungeonRelationGraph.FeatureRelation(
                 transition.transitionId(),
-                "transition",
+                FEATURE_KIND_TRANSITION,
                 0L,
                 "unknown",
                 "targets");

@@ -18,6 +18,7 @@ public final class EncounterSession {
     private static final String MANUAL_CREATURE_ROLE = "Manual";
     private static final String SAVED_PLAN_CREATURE_ROLE = "Saved";
     private static final String REINFORCEMENT_CREATURE_ROLE = "Reinforcement";
+    private static final String ACCESS_PARAMETER = "access";
 
     private final State state = new State();
 
@@ -52,7 +53,7 @@ public final class EncounterSession {
     }
 
     public SnapshotData refreshPartyContext(RuntimeAccess access) {
-        RuntimeAccess safeAccess = Objects.requireNonNull(access, "access");
+        RuntimeAccess safeAccess = Objects.requireNonNull(access, ACCESS_PARAMETER);
         loadActiveParty(safeAccess);
         loadBudgetIntoSession(safeAccess);
         refreshSavedPlans(safeAccess);
@@ -65,7 +66,7 @@ public final class EncounterSession {
     }
 
     public SnapshotData generate(RuntimeAccess access, Optional<GenerateRequestData> request) {
-        RuntimeAccess safeAccess = Objects.requireNonNull(access, "access");
+        RuntimeAccess safeAccess = Objects.requireNonNull(access, ACCESS_PARAMETER);
         state.pendingUndo = Optional.empty();
         state.activeSavedPlanId = OptionalLong.empty();
         loadActiveParty(safeAccess);
@@ -92,7 +93,7 @@ public final class EncounterSession {
     }
 
     public SnapshotData saveCurrentPlan(RuntimeAccess access) {
-        RuntimeAccess safeAccess = Objects.requireNonNull(access, "access");
+        RuntimeAccess safeAccess = Objects.requireNonNull(access, ACCESS_PARAMETER);
         if (state.roster.isEmpty()) {
             state.status = "Speichern braucht mindestens eine Kreatur im Encounter.";
             return snapshot();
@@ -117,7 +118,7 @@ public final class EncounterSession {
     }
 
     public SnapshotData openSavedPlan(RuntimeAccess access, long planId) {
-        RuntimeAccess safeAccess = Objects.requireNonNull(access, "access");
+        RuntimeAccess safeAccess = Objects.requireNonNull(access, ACCESS_PARAMETER);
         LoadPlanOutcome result = safeAccess.loadPlan(planId);
         if (result.status() != SavedPlanStatus.SUCCESS || result.plan().isEmpty()) {
             state.status = result.message().isBlank() ? "Encounter konnte nicht geöffnet werden." : result.message();
@@ -177,7 +178,7 @@ public final class EncounterSession {
     }
 
     public SnapshotData addCreature(RuntimeAccess access, long creatureId) {
-        RuntimeAccess safeAccess = Objects.requireNonNull(access, "access");
+        RuntimeAccess safeAccess = Objects.requireNonNull(access, ACCESS_PARAMETER);
         Optional<CreatureDetailData> detail = safeAccess.loadCreature(creatureId);
         if (detail.isEmpty()) {
             state.status = "Kreatur konnte nicht geladen werden.";
@@ -428,7 +429,7 @@ public final class EncounterSession {
     }
 
     public SnapshotData awardXp(RuntimeAccess access) {
-        RuntimeAccess safeAccess = Objects.requireNonNull(access, "access");
+        RuntimeAccess safeAccess = Objects.requireNonNull(access, ACCESS_PARAMETER);
         if (state.resultState.xpAwarded() || state.resultState.perPlayerXp() <= 0 || state.activeParty.isEmpty()) {
             return snapshot();
         }

@@ -5,6 +5,8 @@ import java.util.function.Consumer;
 
 final class PartyTopBarIntentHandler {
 
+    private static final String CHARACTER_NOT_FOUND = "Charakter konnte nicht gefunden werden.";
+
     private final PartyTopBarContributionModel presentationModel;
     private Consumer<PartyTopBarPublishedEvent> publishedEventListener = ignored -> {};
     private String pendingSuccessMessage = "";
@@ -101,7 +103,7 @@ final class PartyTopBarIntentHandler {
 
     private void addExisting(long memberId, String memberName) {
         if (!validId(memberId)) {
-            presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
+            presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
             return;
         }
         String successMessage = displayName(memberName) + " wurde zur aktiven Party hinzugefügt.";
@@ -124,7 +126,7 @@ final class PartyTopBarIntentHandler {
 
     private void removeFromParty(long memberId, String memberName) {
         if (!validId(memberId)) {
-            presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
+            presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
             return;
         }
         String successMessage = displayName(memberName) + " wurde aus der aktiven Party entfernt.";
@@ -147,7 +149,7 @@ final class PartyTopBarIntentHandler {
 
     private void deleteCharacter(long memberId, String memberName) {
         if (!validId(memberId)) {
-            presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
+            presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
             return;
         }
         String successMessage = displayName(memberName) + " wurde gelöscht.";
@@ -174,7 +176,7 @@ final class PartyTopBarIntentHandler {
             return;
         }
         if (!validId(memberId)) {
-            presentationModel.rejectMutation("Charakter konnte nicht gefunden werden.");
+            presentationModel.rejectMutation(CHARACTER_NOT_FOUND);
             return;
         }
         int amount = Math.abs(xpDelta);

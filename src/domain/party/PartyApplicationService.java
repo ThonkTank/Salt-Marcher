@@ -88,6 +88,9 @@ import src.domain.party.roster.value.PartyTravelLocation;
  */
 public final class PartyApplicationService {
 
+    private static final String QUERY_PARAMETER = "query";
+    private static final String LISTENER_PARAMETER = "listener";
+
     private final LoadPartySnapshotUseCase loadPartySnapshotUseCase;
     private final LoadActivePartyUseCase loadActivePartyUseCase;
     private final LoadActivePartyCompositionUseCase loadActivePartyCompositionUseCase;
@@ -259,24 +262,24 @@ public final class PartyApplicationService {
     }
 
     public PartySnapshotModel loadSnapshotModel(LoadPartySnapshotQuery query) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, QUERY_PARAMETER);
         return partySnapshotModel;
     }
 
     public AdventuringDaySummaryModel loadAdventuringDaySummaryModel(LoadAdventuringDaySummaryQuery query) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, QUERY_PARAMETER);
         return adventuringDaySummaryModel;
     }
 
     public PartyMutationModel loadPartyMutationModel(LoadPartyMutationQuery query) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, QUERY_PARAMETER);
         return partyMutationModel;
     }
 
     public AdventuringDayCalculationModel loadAdventuringDayCalculationModel(
             LoadAdventuringDayCalculationModelQuery query
     ) {
-        Objects.requireNonNull(query, "query");
+        Objects.requireNonNull(query, QUERY_PARAMETER);
         return adventuringDayCalculationModel;
     }
 
@@ -368,26 +371,26 @@ public final class PartyApplicationService {
     }
 
     private Runnable subscribePartySnapshotListener(Consumer<PartySnapshotResult> listener) {
-        Consumer<PartySnapshotResult> safeListener = Objects.requireNonNull(listener, "listener");
+        Consumer<PartySnapshotResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
         partySnapshotListeners.add(safeListener);
         return () -> partySnapshotListeners.remove(safeListener);
     }
 
     private Runnable subscribeAdventuringDaySummaryListener(Consumer<AdventuringDayResult> listener) {
-        Consumer<AdventuringDayResult> safeListener = Objects.requireNonNull(listener, "listener");
+        Consumer<AdventuringDayResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
         adventuringDaySummaryListeners.add(safeListener);
         return () -> adventuringDaySummaryListeners.remove(safeListener);
     }
 
     private Runnable subscribePartyMutationListener(Consumer<MutationResult> listener) {
-        Consumer<MutationResult> safeListener = Objects.requireNonNull(listener, "listener");
+        Consumer<MutationResult> safeListener = Objects.requireNonNull(listener, LISTENER_PARAMETER);
         partyMutationListeners.add(safeListener);
         return () -> partyMutationListeners.remove(safeListener);
     }
 
     private Runnable subscribeAdventuringDayCalculationListener(Consumer<AdventuringDayCalculationResult> listener) {
         Consumer<AdventuringDayCalculationResult> safeListener =
-                Objects.requireNonNull(listener, "listener");
+                Objects.requireNonNull(listener, LISTENER_PARAMETER);
         adventuringDayCalculationListeners.add(safeListener);
         return () -> adventuringDayCalculationListeners.remove(safeListener);
     }

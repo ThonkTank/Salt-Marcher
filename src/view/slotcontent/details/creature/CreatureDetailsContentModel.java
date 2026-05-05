@@ -18,6 +18,7 @@ import src.domain.creatures.published.CreatureLookupStatus;
 public final class CreatureDetailsContentModel {
 
     private static final NumberFormat INTEGER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
+    private static final String FEET_SUFFIX = " ft.";
 
     private final CreatureDetailResult result;
     private final ReadOnlyObjectWrapper<DetailState> detail = new ReadOnlyObjectWrapper<>();
@@ -140,25 +141,25 @@ public final class CreatureDetailsContentModel {
     }
 
     private static String speed(CreatureDetail creature) {
-        StringBuilder speed = new StringBuilder().append(creature.walkSpeed()).append(" ft.");
+        StringBuilder speed = new StringBuilder().append(creature.walkSpeed()).append(FEET_SUFFIX);
         if (creature.flySpeed() > 0) {
-            speed.append(", fly ").append(creature.flySpeed()).append(" ft.");
+            speed.append(", fly ").append(creature.flySpeed()).append(FEET_SUFFIX);
         }
         if (creature.swimSpeed() > 0) {
-            speed.append(", swim ").append(creature.swimSpeed()).append(" ft.");
+            speed.append(", swim ").append(creature.swimSpeed()).append(FEET_SUFFIX);
         }
         if (creature.climbSpeed() > 0) {
-            speed.append(", climb ").append(creature.climbSpeed()).append(" ft.");
+            speed.append(", climb ").append(creature.climbSpeed()).append(FEET_SUFFIX);
         }
         if (creature.burrowSpeed() > 0) {
-            speed.append(", burrow ").append(creature.burrowSpeed()).append(" ft.");
+            speed.append(", burrow ").append(creature.burrowSpeed()).append(FEET_SUFFIX);
         }
         return speed.toString();
     }
 
     private static @Nullable String senses(CreatureDetail creature) {
         StringBuilder text = new StringBuilder();
-        String formatted = reformatColonDelimited(creature.senses(), " ft.");
+        String formatted = reformatColonDelimited(creature.senses(), FEET_SUFFIX);
         if (formatted != null) {
             text.append(formatted);
         }

@@ -16,6 +16,9 @@ import javafx.scene.layout.VBox;
 
 public final class SessionPlannerControlsView extends ScrollPane {
 
+    private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+    private static final String XP_SUFFIX = " XP";
+
     private final VBox content = new VBox(12);
     private final Label statusLabel = new Label();
     private final Label partyHeadlineLabel = new Label();
@@ -55,7 +58,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         HBox header = new HBox(8, titleLabel, spacer, refreshButton);
         header.setAlignment(Pos.CENTER_LEFT);
 
-        statusLabel.getStyleClass().addAll("text-secondary", "session-planner-status");
+        statusLabel.getStyleClass().addAll(STYLE_TEXT_SECONDARY, "session-planner-status");
         statusLabel.setWrapText(true);
 
         content.getChildren().addAll(
@@ -69,9 +72,9 @@ public final class SessionPlannerControlsView extends ScrollPane {
 
         budgetBar.getStyleClass().add("session-planner-budget-bar");
         budgetSummaryLabel.getStyleClass().add("session-planner-budget-summary");
-        milestonesLabel.getStyleClass().add("text-secondary");
-        partyDetailLabel.getStyleClass().add("text-secondary");
-        goldDetailLabel.getStyleClass().add("text-secondary");
+        milestonesLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
+        partyDetailLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
+        goldDetailLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
         restAdviceLabel.setWrapText(true);
         budgetSummaryLabel.setWrapText(true);
         goldDetailLabel.setWrapText(true);
@@ -96,11 +99,11 @@ public final class SessionPlannerControlsView extends ScrollPane {
         SessionPlannerContributionModel.BudgetModel safe = model == null
                 ? SessionPlannerContributionModel.BudgetModel.empty()
                 : model;
-        totalBudgetLabel.setText("Budget " + safe.totalBudgetText() + " XP");
-        plannedXpLabel.setText("Geplant " + safe.plannedXpText() + " XP");
+        totalBudgetLabel.setText("Budget " + safe.totalBudgetText() + XP_SUFFIX);
+        plannedXpLabel.setText("Geplant " + safe.plannedXpText() + XP_SUFFIX);
         remainingXpLabel.setText(safe.overBudget()
-                ? safe.overBudgetText() + " XP ueber"
-                : safe.remainingXpText() + " XP frei");
+                ? safe.overBudgetText() + XP_SUFFIX + " ueber"
+                : safe.remainingXpText() + XP_SUFFIX + " frei");
         budgetSummaryLabel.setText(safe.summaryText());
         milestonesLabel.setText(safe.milestonesText());
         budgetBar.setProgress(Math.max(0.0, Math.min(1.0, safe.progressFraction())));
@@ -128,7 +131,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         List<SessionPlannerContributionModel.AvailablePlanModel> safePlans = plans == null ? List.of() : List.copyOf(plans);
         if (safePlans.isEmpty()) {
             Label empty = new Label("Keine gespeicherten Encounter-Plaene.");
-            empty.getStyleClass().addAll("text-secondary", "session-planner-empty");
+            empty.getStyleClass().addAll(STYLE_TEXT_SECONDARY, "session-planner-empty");
             availablePlansBox.getChildren().add(empty);
             return;
         }
@@ -187,9 +190,9 @@ public final class SessionPlannerControlsView extends ScrollPane {
         nameLabel.getStyleClass().add("session-planner-plan-name");
         Label metaLabel = new Label(plan.creatureCount() + " Kreaturen"
                 + (plan.generatedLabel().isBlank() ? "" : " · " + plan.generatedLabel()));
-        metaLabel.getStyleClass().add("text-secondary");
+        metaLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
         Label status = new Label(plan.statusText());
-        status.getStyleClass().add("text-secondary");
+        status.getStyleClass().add(STYLE_TEXT_SECONDARY);
         Button importButton = new Button("Importieren");
         importButton.getStyleClass().addAll("compact", "accent");
         importButton.setDisable(!plan.importEnabled());

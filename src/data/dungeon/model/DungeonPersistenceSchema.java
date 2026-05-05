@@ -4,6 +4,8 @@ import java.util.List;
 
 public final class DungeonPersistenceSchema {
 
+    private static final String ALTER_TABLE = "ALTER TABLE ";
+
     public static final String DATABASE_FILE_NAME = "game.db";
     public static final String MAPS_TABLE = "dungeon_maps";
     public static final String ROOMS_TABLE = "dungeon_rooms";
@@ -227,49 +229,49 @@ public final class DungeonPersistenceSchema {
                     + ")";
 
     public static final String ADD_DUNGEON_ROOMS_VISUAL_DESCRIPTION_COLUMN_SQL =
-            "ALTER TABLE " + ROOMS_TABLE + " ADD COLUMN visual_description TEXT";
+            ALTER_TABLE + ROOMS_TABLE + " ADD COLUMN visual_description TEXT";
 
     public static final String ADD_DUNGEON_STAIRS_SHAPE_COLUMN_SQL =
-            "ALTER TABLE " + STAIRS_TABLE + " ADD COLUMN shape TEXT NOT NULL DEFAULT 'LADDER'";
+            ALTER_TABLE + STAIRS_TABLE + " ADD COLUMN shape TEXT NOT NULL DEFAULT 'LADDER'";
 
     public static final String ADD_DUNGEON_STAIRS_DIRECTION_COLUMN_SQL =
-            "ALTER TABLE " + STAIRS_TABLE + " ADD COLUMN direction INTEGER NOT NULL DEFAULT 0";
+            ALTER_TABLE + STAIRS_TABLE + " ADD COLUMN direction INTEGER NOT NULL DEFAULT 0";
 
     public static final String ADD_DUNGEON_STAIRS_DIMENSION1_COLUMN_SQL =
-            "ALTER TABLE " + STAIRS_TABLE + " ADD COLUMN dimension1 INTEGER NOT NULL DEFAULT 0";
+            ALTER_TABLE + STAIRS_TABLE + " ADD COLUMN dimension1 INTEGER NOT NULL DEFAULT 0";
 
     public static final String ADD_DUNGEON_STAIRS_DIMENSION2_COLUMN_SQL =
-            "ALTER TABLE " + STAIRS_TABLE + " ADD COLUMN dimension2 INTEGER NOT NULL DEFAULT 0";
+            ALTER_TABLE + STAIRS_TABLE + " ADD COLUMN dimension2 INTEGER NOT NULL DEFAULT 0";
 
     public static final String ADD_DUNGEON_STAIRS_CORRIDOR_ID_COLUMN_SQL =
-            "ALTER TABLE " + STAIRS_TABLE
+            ALTER_TABLE + STAIRS_TABLE
                     + " ADD COLUMN corridor_id INTEGER REFERENCES "
                     + CORRIDORS_TABLE
                     + "(corridor_id) ON DELETE CASCADE";
 
     public static final String ADD_DUNGEON_ROOM_CLUSTERS_CENTER_X_COLUMN_SQL =
-            "ALTER TABLE " + ROOM_CLUSTERS_TABLE + " ADD COLUMN center_x INTEGER NOT NULL DEFAULT 0";
+            ALTER_TABLE + ROOM_CLUSTERS_TABLE + " ADD COLUMN center_x INTEGER NOT NULL DEFAULT 0";
 
     public static final String ADD_DUNGEON_ROOM_CLUSTERS_CENTER_Y_COLUMN_SQL =
-            "ALTER TABLE " + ROOM_CLUSTERS_TABLE + " ADD COLUMN center_y INTEGER NOT NULL DEFAULT 0";
+            ALTER_TABLE + ROOM_CLUSTERS_TABLE + " ADD COLUMN center_y INTEGER NOT NULL DEFAULT 0";
 
     public static final String ADD_DUNGEON_ROOM_CLUSTERS_LEVEL_Z_COLUMN_SQL =
-            "ALTER TABLE " + ROOM_CLUSTERS_TABLE + " ADD COLUMN level_z INTEGER NOT NULL DEFAULT 0";
+            ALTER_TABLE + ROOM_CLUSTERS_TABLE + " ADD COLUMN level_z INTEGER NOT NULL DEFAULT 0";
 
     public static final String ADD_DUNGEON_TRANSITIONS_CELL_X_COLUMN_SQL =
-            "ALTER TABLE " + TRANSITIONS_TABLE + " ADD COLUMN cell_x INTEGER";
+            ALTER_TABLE + TRANSITIONS_TABLE + " ADD COLUMN cell_x INTEGER";
 
     public static final String ADD_DUNGEON_TRANSITIONS_CELL_Y_COLUMN_SQL =
-            "ALTER TABLE " + TRANSITIONS_TABLE + " ADD COLUMN cell_y INTEGER";
+            ALTER_TABLE + TRANSITIONS_TABLE + " ADD COLUMN cell_y INTEGER";
 
     public static final String ADD_DUNGEON_TRANSITIONS_LEVEL_Z_COLUMN_SQL =
-            "ALTER TABLE " + TRANSITIONS_TABLE + " ADD COLUMN level_z INTEGER";
+            ALTER_TABLE + TRANSITIONS_TABLE + " ADD COLUMN level_z INTEGER";
 
     public static final String ADD_DUNGEON_ROOM_CLUSTER_EDGES_TOPOLOGY_ELEMENT_ID_COLUMN_SQL =
-            "ALTER TABLE " + ROOM_CLUSTER_EDGES_TABLE + " ADD COLUMN topology_element_id INTEGER";
+            ALTER_TABLE + ROOM_CLUSTER_EDGES_TABLE + " ADD COLUMN topology_element_id INTEGER";
 
     public static final String ADD_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TOPOLOGY_ELEMENT_ID_COLUMN_SQL =
-            "ALTER TABLE " + CORRIDOR_DOOR_OVERRIDES_TABLE + " ADD COLUMN topology_element_id INTEGER";
+            ALTER_TABLE + CORRIDOR_DOOR_OVERRIDES_TABLE + " ADD COLUMN topology_element_id INTEGER";
 
     public static final List<String> CREATE_TABLE_SQL = List.of(
             CREATE_DUNGEON_MAPS_TABLE_SQL,
@@ -293,20 +295,20 @@ public final class DungeonPersistenceSchema {
     );
 
     public static final List<String> COMPATIBILITY_ALTER_TABLE_SQL = List.of(
-            "ALTER TABLE dungeon_rooms ADD COLUMN visual_description TEXT",
-            "ALTER TABLE dungeon_room_clusters ADD COLUMN center_x INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE dungeon_room_clusters ADD COLUMN center_y INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE dungeon_room_clusters ADD COLUMN level_z INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE dungeon_stairs ADD COLUMN shape TEXT NOT NULL DEFAULT 'LADDER'",
-            "ALTER TABLE dungeon_stairs ADD COLUMN direction INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE dungeon_stairs ADD COLUMN dimension1 INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE dungeon_stairs ADD COLUMN dimension2 INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE dungeon_stairs ADD COLUMN corridor_id INTEGER REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE",
-            "ALTER TABLE dungeon_transitions ADD COLUMN cell_x INTEGER",
-            "ALTER TABLE dungeon_transitions ADD COLUMN cell_y INTEGER",
-            "ALTER TABLE dungeon_transitions ADD COLUMN level_z INTEGER",
-            "ALTER TABLE dungeon_room_cluster_edges ADD COLUMN topology_element_id INTEGER",
-            "ALTER TABLE dungeon_corridor_door_overrides ADD COLUMN topology_element_id INTEGER"
+            ADD_DUNGEON_ROOMS_VISUAL_DESCRIPTION_COLUMN_SQL,
+            ADD_DUNGEON_ROOM_CLUSTERS_CENTER_X_COLUMN_SQL,
+            ADD_DUNGEON_ROOM_CLUSTERS_CENTER_Y_COLUMN_SQL,
+            ADD_DUNGEON_ROOM_CLUSTERS_LEVEL_Z_COLUMN_SQL,
+            ADD_DUNGEON_STAIRS_SHAPE_COLUMN_SQL,
+            ADD_DUNGEON_STAIRS_DIRECTION_COLUMN_SQL,
+            ADD_DUNGEON_STAIRS_DIMENSION1_COLUMN_SQL,
+            ADD_DUNGEON_STAIRS_DIMENSION2_COLUMN_SQL,
+            ADD_DUNGEON_STAIRS_CORRIDOR_ID_COLUMN_SQL,
+            ADD_DUNGEON_TRANSITIONS_CELL_X_COLUMN_SQL,
+            ADD_DUNGEON_TRANSITIONS_CELL_Y_COLUMN_SQL,
+            ADD_DUNGEON_TRANSITIONS_LEVEL_Z_COLUMN_SQL,
+            ADD_DUNGEON_ROOM_CLUSTER_EDGES_TOPOLOGY_ELEMENT_ID_COLUMN_SQL,
+            ADD_DUNGEON_CORRIDOR_DOOR_OVERRIDES_TOPOLOGY_ELEMENT_ID_COLUMN_SQL
     );
 
     private DungeonPersistenceSchema() {

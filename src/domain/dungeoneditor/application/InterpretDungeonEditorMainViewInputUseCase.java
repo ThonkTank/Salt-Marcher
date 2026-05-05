@@ -30,6 +30,10 @@ import src.domain.dungeoneditor.session.entity.DungeonEditorSession;
 
 final class InterpretDungeonEditorMainViewInputUseCase {
     private static final int MINIMUM_HIT_REF_PARTS = 2;
+    private static final String DOOR_KIND = "DOOR";
+    private static final String ROOM_PREFIX = "room:";
+    private static final String EMPTY_KIND = "EMPTY";
+    private static final String CLUSTER_LABEL_KIND = "CLUSTER_LABEL";
 
     private PaintSession paintSession = PaintSession.none();
     private BoundaryDraft boundaryDraft = BoundaryDraft.none();
@@ -531,7 +535,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     private static @Nullable PendingCorridorTarget fixedDoorHandleTarget(@Nullable HitTarget hit) {
         if (hit == null
                 || hit.handleRef() == null
-                || !"DOOR".equals(hit.handleRef().kind())
+                || !DOOR_KIND.equals(hit.handleRef().kind())
                 || hit.handleRef().roomId() <= 0L
                 || hit.handleRef().clusterId() <= 0L
                 || hit.handleRef().direction().isBlank()
@@ -540,7 +544,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         }
         DungeonEditorHandleRef handleRef = hit.handleRef().toDungeonHandleRef();
         return new PendingCorridorTarget.EndpointTarget(
-                "room:" + hit.handleRef().roomId() + ":door:" + hit.topologyRefId(),
+                ROOM_PREFIX + hit.handleRef().roomId() + ":door:" + hit.topologyRefId(),
                 "Tür " + hit.topologyRefId(),
                 new ApplyDungeonEditorSessionUseCase.SelectionData(
                         new DungeonTopologyElementRef(DungeonTopologyElementKind.DOOR, hit.topologyRefId()),
@@ -567,7 +571,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             return null;
         }
         return new PendingCorridorTarget.EndpointTarget(
-                "room:" + roomTouch.room().id() + ":door:" + boundary.topologyRefId(),
+                ROOM_PREFIX + roomTouch.room().id() + ":door:" + boundary.topologyRefId(),
                 "Tür " + boundary.topologyRefId(),
                 selectionForBoundary(boundary, roomTouch.room().clusterId()),
                 0L,
@@ -592,7 +596,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             return null;
         }
         return new PendingCorridorTarget.EndpointTarget(
-                "room:" + roomTouch.room().id() + ":wall:" + boundary.start().q() + ":" + boundary.start().r()
+                ROOM_PREFIX + roomTouch.room().id() + ":wall:" + boundary.start().q() + ":" + boundary.start().r()
                         + ":" + boundary.end().q() + ":" + boundary.end().r() + ":" + boundary.start().level(),
                 roomTouch.room().label().isBlank() ? "Raum " + roomTouch.room().id() : roomTouch.room().label(),
                 selectionForBoundary(boundary, roomTouch.room().clusterId()),
@@ -665,7 +669,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             return null;
         }
         return new PendingCorridorTarget.EndpointTarget(
-                "room:" + room.id(),
+                ROOM_PREFIX + room.id(),
                 room.label().isBlank() ? "Raum " + room.id() : room.label(),
                 new ApplyDungeonEditorSessionUseCase.SelectionData(room.topologyRef(), room.clusterId(), false, null),
                 room.clusterId(),
@@ -930,9 +934,9 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             return false;
         }
         if (deleteMode) {
-            return "DOOR".equals(boundary.kind());
+            return DOOR_KIND.equals(boundary.kind());
         }
-        return !"DOOR".equals(boundary.kind()) && touchingRoomCount(snapshot, boundary) >= 1;
+        return !DOOR_KIND.equals(boundary.kind()) && touchingRoomCount(snapshot, boundary) >= 1;
     }
 
     private static int touchingRoomCount(@Nullable DungeonSnapshot snapshot, BoundaryTarget boundary) {
@@ -1271,7 +1275,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         if (snapshot == null || snapshot.map() == null || boundary == null || !boundary.present()) {
             return null;
         }
-        boolean doorBoundary = "DOOR".equals(boundary.kind());
+        boolean doorBoundary = DOOR_KIND.equals(boundary.kind());
         if (requireDoorBoundary != doorBoundary) {
             return null;
         }
@@ -1464,7 +1468,7 @@ final class InterpretDungeonEditorMainViewInputUseCase {
     }
 
     private static boolean selectableHit(@Nullable HitTarget hit) {
-        return hit != null && hit.kind() != HitKind.EMPTY && hit.topologyRefId() > 0L && !"EMPTY".equals(hit.topologyRefKind());
+        return hit != null && hit.kind() != HitKind.EMPTY && hit.topologyRefId() > 0L && !EMPTY_KIND.equals(hit.topologyRefKind());
     }
 
     private static boolean draggableHit(HitTarget hit) {
@@ -1593,8 +1597,8 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             String direction
     ) {
         HandleTarget {
-            kind = kind == null || kind.isBlank() ? "CLUSTER_LABEL" : kind;
-            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? "EMPTY" : topologyRefKind.trim();
+            kind = kind == null || kind.isBlank() ? CLUSTER_LABEL_KIND : kind;
+            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? EMPTY_KIND : topologyRefKind.trim();
             topologyRefId = Math.max(0L, topologyRefId);
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
@@ -1604,11 +1608,11 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             anchor = anchor == null ? CellTarget.empty() : anchor;
             direction = direction == null ? "" : direction;
         }
-        static HandleTarget empty() { return new HandleTarget("CLUSTER_LABEL", "EMPTY", 0L, 0L, 0L, 0L, 0L, 0, CellTarget.empty(), ""); }
+        static HandleTarget empty() { return new HandleTarget(CLUSTER_LABEL_KIND, EMPTY_KIND, 0L, 0L, 0L, 0L, 0L, 0, CellTarget.empty(), ""); }
         static HandleTarget clusterLabel(String topologyRefKind, long topologyRefId, long ownerId, long clusterId) {
-            return new HandleTarget("CLUSTER_LABEL", topologyRefKind, topologyRefId, ownerId, clusterId, 0L, 0L, 0, CellTarget.empty(), "");
+            return new HandleTarget(CLUSTER_LABEL_KIND, topologyRefKind, topologyRefId, ownerId, clusterId, 0L, 0L, 0, CellTarget.empty(), "");
         }
-        boolean clusterLabel() { return "CLUSTER_LABEL".equals(kind); }
+        boolean clusterLabel() { return CLUSTER_LABEL_KIND.equals(kind); }
         DungeonEditorHandleRef toDungeonHandleRef() {
             return new DungeonEditorHandleRef(
                     DungeonEditorHandleKind.valueOf(kind),
@@ -1637,12 +1641,12 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             kind = kind == null || kind.isBlank() ? "WALL" : kind;
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
-            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? "EMPTY" : topologyRefKind;
+            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? EMPTY_KIND : topologyRefKind;
             topologyRefId = Math.max(0L, topologyRefId);
             start = start == null ? CellTarget.empty() : start;
             end = end == null ? CellTarget.empty() : end;
         }
-        static BoundaryTarget empty() { return new BoundaryTarget(false, "WALL", 0L, 0L, "EMPTY", 0L, CellTarget.empty(), CellTarget.empty()); }
+        static BoundaryTarget empty() { return new BoundaryTarget(false, "WALL", 0L, 0L, EMPTY_KIND, 0L, CellTarget.empty(), CellTarget.empty()); }
     }
 
     record HitTarget(
@@ -1658,14 +1662,14 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             kind = kind == null ? HitKind.EMPTY : kind;
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
-            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? "EMPTY" : topologyRefKind.trim();
+            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? EMPTY_KIND : topologyRefKind.trim();
             topologyRefId = Math.max(0L, topologyRefId);
             handleRef = handleRef == null
                     ? HandleTarget.clusterLabel(topologyRefKind, topologyRefId, ownerId, clusterId)
                     : handleRef;
             boundaryTarget = boundaryTarget == null ? BoundaryTarget.empty() : boundaryTarget;
         }
-        static HitTarget empty() { return new HitTarget(HitKind.EMPTY, 0L, 0L, "EMPTY", 0L, HandleTarget.empty(), BoundaryTarget.empty()); }
+        static HitTarget empty() { return new HitTarget(HitKind.EMPTY, 0L, 0L, EMPTY_KIND, 0L, HandleTarget.empty(), BoundaryTarget.empty()); }
     }
 
     record PointerState(

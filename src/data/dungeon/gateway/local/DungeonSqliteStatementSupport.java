@@ -14,32 +14,35 @@ import java.util.Set;
 
 final class DungeonSqliteStatementSupport {
 
+    private static final String DELETE_FROM = "DELETE FROM ";
     private static final String TEMP_RETAINED_IDS_TABLE = "sm_temp_retained_dungeon_ids";
+    private static final String EMPTY_RETAINED_IDS_COUNT_SQL = "(SELECT COUNT(*) FROM ";
+    private static final String EMPTY_RETAINED_IDS_SUFFIX_SQL = ") = 0 ";
+    private static final String WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL = " WHERE dungeon_map_id=? AND (";
     private static final String CREATE_TEMP_RETAINED_IDS_TABLE_SQL =
             "CREATE TEMP TABLE IF NOT EXISTS " + TEMP_RETAINED_IDS_TABLE + "(id INTEGER PRIMARY KEY)";
-    private static final String CLEAR_TEMP_RETAINED_IDS_SQL =
-            "DELETE FROM " + TEMP_RETAINED_IDS_TABLE;
+    private static final String CLEAR_TEMP_RETAINED_IDS_SQL = DELETE_FROM + TEMP_RETAINED_IDS_TABLE;
     private static final String INSERT_TEMP_RETAINED_ID_SQL =
             "INSERT INTO " + TEMP_RETAINED_IDS_TABLE + "(id) VALUES (?)";
     private static final String DELETE_OBSOLETE_CORRIDORS_SQL =
-            "DELETE FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE + " WHERE dungeon_map_id=? AND ("
-                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+            DELETE_FROM + DungeonPersistenceSchema.CORRIDORS_TABLE + WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL
+                    + EMPTY_RETAINED_IDS_COUNT_SQL + TEMP_RETAINED_IDS_TABLE + EMPTY_RETAINED_IDS_SUFFIX_SQL
                     + "OR corridor_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_STAIRS_SQL =
-            "DELETE FROM " + DungeonPersistenceSchema.STAIRS_TABLE + " WHERE dungeon_map_id=? AND ("
-                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+            DELETE_FROM + DungeonPersistenceSchema.STAIRS_TABLE + WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL
+                    + EMPTY_RETAINED_IDS_COUNT_SQL + TEMP_RETAINED_IDS_TABLE + EMPTY_RETAINED_IDS_SUFFIX_SQL
                     + "OR stair_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_TRANSITIONS_SQL =
-            "DELETE FROM " + DungeonPersistenceSchema.TRANSITIONS_TABLE + " WHERE dungeon_map_id=? AND ("
-                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+            DELETE_FROM + DungeonPersistenceSchema.TRANSITIONS_TABLE + WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL
+                    + EMPTY_RETAINED_IDS_COUNT_SQL + TEMP_RETAINED_IDS_TABLE + EMPTY_RETAINED_IDS_SUFFIX_SQL
                     + "OR transition_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_ROOMS_SQL =
-            "DELETE FROM " + DungeonPersistenceSchema.ROOMS_TABLE + " WHERE dungeon_map_id=? AND ("
-                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+            DELETE_FROM + DungeonPersistenceSchema.ROOMS_TABLE + WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL
+                    + EMPTY_RETAINED_IDS_COUNT_SQL + TEMP_RETAINED_IDS_TABLE + EMPTY_RETAINED_IDS_SUFFIX_SQL
                     + "OR room_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_ROOM_CLUSTERS_SQL =
-            "DELETE FROM " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + " WHERE dungeon_map_id=? AND ("
-                    + "(SELECT COUNT(*) FROM " + TEMP_RETAINED_IDS_TABLE + ") = 0 "
+            DELETE_FROM + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE + WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL
+                    + EMPTY_RETAINED_IDS_COUNT_SQL + TEMP_RETAINED_IDS_TABLE + EMPTY_RETAINED_IDS_SUFFIX_SQL
                     + "OR cluster_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
 
     private DungeonSqliteStatementSupport() {

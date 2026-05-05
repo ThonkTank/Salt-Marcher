@@ -22,6 +22,9 @@ import src.view.slotcontent.primitives.progressmeter.ProgressMeterView.PopupSpec
 
 public final class EncounterCombatStateView extends VBox {
 
+    private static final String STYLE_ACCENT = "accent";
+    private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+
     private final Label combatRoundLabel = new Label();
     private final Label combatStatusLabel = new Label();
     private final VBox combatCardList = new VBox(6);
@@ -59,7 +62,7 @@ public final class EncounterCombatStateView extends VBox {
     private DialogSurfaceView buildPane() {
         DialogSurfaceView nextDialog = new DialogSurfaceView();
         combatRoundLabel.getStyleClass().add("title");
-        combatStatusLabel.getStyleClass().add("text-secondary");
+        combatStatusLabel.getStyleClass().add(STYLE_TEXT_SECONDARY);
 
         PartyMemberButton addPartyButton = new PartyMemberButton();
         HBox actions = new HBox(addPartyButton);
@@ -68,7 +71,7 @@ public final class EncounterCombatStateView extends VBox {
         combatCardList.setPadding(DialogSurfaceView.contentInsets());
 
         Button nextTurnButton = new Button("\u25B6 _Weiter");
-        nextTurnButton.getStyleClass().add("accent");
+        nextTurnButton.getStyleClass().add(STYLE_ACCENT);
         nextTurnButton.setMaxWidth(Double.MAX_VALUE);
         nextTurnButton.setOnAction(event -> publishAdvanceTurn());
         endCombatContainer.setAlignment(Pos.CENTER);
@@ -162,7 +165,7 @@ public final class EncounterCombatStateView extends VBox {
         down.setOnAction(event -> field.setText(String.valueOf(parse(field.getText(), card.initiative()) - 1)));
         up.setOnAction(event -> field.setText(String.valueOf(parse(field.getText(), card.initiative()) + 1)));
         Button set = new Button("\u2713 Setzen");
-        set.getStyleClass().add("accent");
+        set.getStyleClass().add(STYLE_ACCENT);
         set.setDefaultButton(true);
         set.setOnAction(event -> {
             popup.hide();
@@ -201,7 +204,7 @@ public final class EncounterCombatStateView extends VBox {
         endCombatContainer.getChildren().clear();
         Button end = new Button("_Kampf beenden");
         if (allEnemiesDefeated) {
-            end.getStyleClass().add("accent");
+            end.getStyleClass().add(STYLE_ACCENT);
         }
         end.setMaxWidth(Double.MAX_VALUE);
         end.setOnAction(event -> showConfirmEndButtons(allEnemiesDefeated));
@@ -214,7 +217,7 @@ public final class EncounterCombatStateView extends VBox {
         Button cancel = new Button("Abbruch");
         Button confirm = new Button("_Bestätigen!");
         if (allEnemiesDefeated) {
-            confirm.getStyleClass().add("accent");
+            confirm.getStyleClass().add(STYLE_ACCENT);
         }
         cancel.setMaxWidth(Double.MAX_VALUE);
         confirm.setMaxWidth(Double.MAX_VALUE);
@@ -333,7 +336,7 @@ public final class EncounterCombatStateView extends VBox {
                 up.setOnAction(event -> initiativeField.setText(String.valueOf(parseInitiative(initiativeField.getText()) + 1)));
 
                 Button add = new Button("Hinzufügen");
-                add.getStyleClass().add("accent");
+                add.getStyleClass().add(STYLE_ACCENT);
                 Runnable apply = () -> {
                     popup.hide();
                     selectionListener.onPartyMemberSelected(candidate.memberId(), parseInitiative(initiativeField.getText()));

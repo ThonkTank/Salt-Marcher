@@ -22,6 +22,13 @@ import java.util.Map;
 
 final class DungeonSqliteConnectionLoader {
 
+    private static final String SQL_FROM = " FROM ";
+    private static final String COLUMN_CORRIDOR_ID = "corridor_id";
+    private static final String COLUMN_CELL_X = "cell_x";
+    private static final String COLUMN_CELL_Y = "cell_y";
+    private static final String WHERE_CORRIDOR_ID_IN_SELECT = " WHERE corridor_id IN (SELECT corridor_id FROM ";
+    private static final String WHERE_DUNGEON_MAP_ID_SUBQUERY = " WHERE dungeon_map_id=?)";
+
     private DungeonSqliteConnectionLoader() {
     }
 
@@ -36,13 +43,13 @@ final class DungeonSqliteConnectionLoader {
                 loadCorridorAnchorRefs(connection, mapId);
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT corridor_id, dungeon_map_id, level_z"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE
+                        + SQL_FROM + DungeonPersistenceSchema.CORRIDORS_TABLE
                         + " WHERE dungeon_map_id=? ORDER BY corridor_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<DungeonCorridorRecord> records = new ArrayList<>();
                 while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
+                    long corridorId = resultSet.getLong(COLUMN_CORRIDOR_ID);
                     records.add(new DungeonCorridorRecord(
                             corridorId,
                             resultSet.getLong("dungeon_map_id"),
@@ -63,7 +70,7 @@ final class DungeonSqliteConnectionLoader {
         Map<Long, List<DungeonStairExitRecord>> exitsByStair = loadStairExits(connection, mapId);
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT stair_id, dungeon_map_id, name, shape, direction, dimension1, dimension2, corridor_id"
-                        + " FROM " + DungeonPersistenceSchema.STAIRS_TABLE
+                        + SQL_FROM + DungeonPersistenceSchema.STAIRS_TABLE
                         + " WHERE dungeon_map_id=? ORDER BY stair_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -92,7 +99,7 @@ final class DungeonSqliteConnectionLoader {
                 "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y, level_z, destination_type,"
                         + " target_overworld_map_id, target_overworld_tile_id, target_dungeon_map_id,"
                         + " target_transition_id, linked_transition_id"
-                        + " FROM " + DungeonPersistenceSchema.TRANSITIONS_TABLE
+                        + SQL_FROM + DungeonPersistenceSchema.TRANSITIONS_TABLE
                         + " WHERE dungeon_map_id=? ORDER BY transition_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -102,8 +109,8 @@ final class DungeonSqliteConnectionLoader {
                             resultSet.getLong("transition_id"),
                             resultSet.getLong("dungeon_map_id"),
                             resultSet.getString("description"),
-                            DungeonSqliteStatementSupport.nullableInteger(resultSet, "cell_x"),
-                            DungeonSqliteStatementSupport.nullableInteger(resultSet, "cell_y"),
+                            DungeonSqliteStatementSupport.nullableInteger(resultSet, COLUMN_CELL_X),
+                            DungeonSqliteStatementSupport.nullableInteger(resultSet, COLUMN_CELL_Y),
                             DungeonSqliteStatementSupport.nullableInteger(resultSet, "level_z"),
                             resultSet.getString("destination_type"),
                             DungeonSqliteStatementSupport.nullableLong(resultSet, "target_overworld_map_id"),
@@ -120,7 +127,7 @@ final class DungeonSqliteConnectionLoader {
     private static Map<Long, List<Long>> loadCorridorMembers(Connection connection, long mapId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT c.corridor_id, m.room_id"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDORS_TABLE + " c"
+                        + SQL_FROM + DungeonPersistenceSchema.CORRIDORS_TABLE + " c"
                         + " LEFT JOIN " + DungeonPersistenceSchema.CORRIDOR_MEMBERS_TABLE
                         + " m ON m.corridor_id=c.corridor_id"
                         + " WHERE c.dungeon_map_id=?"
@@ -129,7 +136,7 @@ final class DungeonSqliteConnectionLoader {
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<Long>> records = new LinkedHashMap<>();
                 while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
+                    long corridorId = resultSet.getLong(COLUMN_CORRIDOR_ID);
                     records.computeIfAbsent(corridorId, ignored -> new ArrayList<>());
                     long roomId = resultSet.getLong("room_id");
                     if (!resultSet.wasNull()) {
@@ -147,16 +154,16 @@ final class DungeonSqliteConnectionLoader {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT corridor_id, cluster_id, relative_x, relative_y, relative_z"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDOR_WAYPOINTS_TABLE
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM "
+                        + SQL_FROM + DungeonPersistenceSchema.CORRIDOR_WAYPOINTS_TABLE
+                        + WHERE_CORRIDOR_ID_IN_SELECT
                         + DungeonPersistenceSchema.CORRIDORS_TABLE
-                        + " WHERE dungeon_map_id=?)"
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
                         + " ORDER BY corridor_id, sort_order")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<DungeonCorridorWaypointRecord>> records = new LinkedHashMap<>();
                 while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
+                    long corridorId = resultSet.getLong(COLUMN_CORRIDOR_ID);
                     records.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
                             .add(new DungeonCorridorWaypointRecord(
                                     corridorId,
@@ -177,16 +184,16 @@ final class DungeonSqliteConnectionLoader {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y,"
                         + " edge_direction, topology_element_id"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM "
+                        + SQL_FROM + DungeonPersistenceSchema.CORRIDOR_DOOR_OVERRIDES_TABLE
+                        + WHERE_CORRIDOR_ID_IN_SELECT
                         + DungeonPersistenceSchema.CORRIDORS_TABLE
-                        + " WHERE dungeon_map_id=?)"
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
                         + " ORDER BY corridor_id, sort_order, room_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<DungeonCorridorDoorBindingRecord>> records = new LinkedHashMap<>();
                 while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
+                    long corridorId = resultSet.getLong(COLUMN_CORRIDOR_ID);
                     records.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
                             .add(new DungeonCorridorDoorBindingRecord(
                                     corridorId,
@@ -208,16 +215,16 @@ final class DungeonSqliteConnectionLoader {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT corridor_id, anchor_id, host_corridor_id, cell_x, cell_y, cell_z, topology_element_id"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDOR_ANCHORS_TABLE
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM "
+                        + SQL_FROM + DungeonPersistenceSchema.CORRIDOR_ANCHORS_TABLE
+                        + WHERE_CORRIDOR_ID_IN_SELECT
                         + DungeonPersistenceSchema.CORRIDORS_TABLE
-                        + " WHERE dungeon_map_id=?)"
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
                         + " ORDER BY corridor_id, sort_order, anchor_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<DungeonCorridorAnchorBindingRecord>> records = new LinkedHashMap<>();
                 while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
+                    long corridorId = resultSet.getLong(COLUMN_CORRIDOR_ID);
                     records.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
                             .add(new DungeonCorridorAnchorBindingRecord(
                                     corridorId,
@@ -239,16 +246,16 @@ final class DungeonSqliteConnectionLoader {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT corridor_id, host_corridor_id, topology_element_id"
-                        + " FROM " + DungeonPersistenceSchema.CORRIDOR_ANCHOR_REFS_TABLE
-                        + " WHERE corridor_id IN (SELECT corridor_id FROM "
+                        + SQL_FROM + DungeonPersistenceSchema.CORRIDOR_ANCHOR_REFS_TABLE
+                        + WHERE_CORRIDOR_ID_IN_SELECT
                         + DungeonPersistenceSchema.CORRIDORS_TABLE
-                        + " WHERE dungeon_map_id=?)"
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
                         + " ORDER BY corridor_id, sort_order, topology_element_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<DungeonCorridorAnchorRefRecord>> records = new LinkedHashMap<>();
                 while (resultSet.next()) {
-                    long corridorId = resultSet.getLong("corridor_id");
+                    long corridorId = resultSet.getLong(COLUMN_CORRIDOR_ID);
                     records.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
                             .add(new DungeonCorridorAnchorRefRecord(
                                     corridorId,
@@ -266,10 +273,10 @@ final class DungeonSqliteConnectionLoader {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT stair_id, cell_x, cell_y, cell_z"
-                        + " FROM " + DungeonPersistenceSchema.STAIR_PATH_NODES_TABLE
+                        + SQL_FROM + DungeonPersistenceSchema.STAIR_PATH_NODES_TABLE
                         + " WHERE stair_id IN (SELECT stair_id FROM "
                         + DungeonPersistenceSchema.STAIRS_TABLE
-                        + " WHERE dungeon_map_id=?)"
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
                         + " ORDER BY stair_id, sort_order")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -279,8 +286,8 @@ final class DungeonSqliteConnectionLoader {
                     records.computeIfAbsent(stairId, ignored -> new ArrayList<>())
                             .add(new DungeonStairPathNodeRecord(
                                     stairId,
-                                    resultSet.getInt("cell_x"),
-                                    resultSet.getInt("cell_y"),
+                                    resultSet.getInt(COLUMN_CELL_X),
+                                    resultSet.getInt(COLUMN_CELL_Y),
                                     resultSet.getInt("cell_z")));
                 }
                 return DungeonSqliteStatementSupport.copyGrouped(records);
@@ -294,10 +301,10 @@ final class DungeonSqliteConnectionLoader {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT stair_id, stair_exit_id, cell_x, cell_y, cell_z, label"
-                        + " FROM " + DungeonPersistenceSchema.STAIR_EXITS_TABLE
+                        + SQL_FROM + DungeonPersistenceSchema.STAIR_EXITS_TABLE
                         + " WHERE stair_id IN (SELECT stair_id FROM "
                         + DungeonPersistenceSchema.STAIRS_TABLE
-                        + " WHERE dungeon_map_id=?)"
+                        + WHERE_DUNGEON_MAP_ID_SUBQUERY
                         + " ORDER BY stair_id, stair_exit_id")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -308,8 +315,8 @@ final class DungeonSqliteConnectionLoader {
                             .add(new DungeonStairExitRecord(
                                     stairId,
                                     resultSet.getLong("stair_exit_id"),
-                                    resultSet.getInt("cell_x"),
-                                    resultSet.getInt("cell_y"),
+                                    resultSet.getInt(COLUMN_CELL_X),
+                                    resultSet.getInt(COLUMN_CELL_Y),
                                     resultSet.getInt("cell_z"),
                                     resultSet.getString("label")));
                 }

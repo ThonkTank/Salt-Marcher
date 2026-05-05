@@ -16,6 +16,9 @@ import src.domain.travel.published.TravelOverlaySettings;
 
 public final class DungeonMapContentModel {
 
+    private static final String SELECT_TOOL_LABEL = "Auswahl";
+    private static final String EMPTY_KIND = "EMPTY";
+
     private final String placeholderTitle;
     private final boolean editorMode;
     private final ReadOnlyObjectWrapper<RenderState> renderState;
@@ -23,7 +26,7 @@ public final class DungeonMapContentModel {
     private RenderState.ViewMode viewMode = RenderState.ViewMode.GRID;
     private RenderState.LevelOverlaySettings overlaySettings = RenderState.LevelOverlaySettings.defaults();
     private int projectionLevel;
-    private String selectedTool = "Auswahl";
+    private String selectedTool = SELECT_TOOL_LABEL;
 
     public DungeonMapContentModel(String placeholderTitle, boolean editorMode) {
         this.placeholderTitle = placeholderTitle == null || placeholderTitle.isBlank()
@@ -88,7 +91,7 @@ public final class DungeonMapContentModel {
         viewMode = RenderState.ViewMode.GRID;
         overlaySettings = toOverlaySettings(safeSnapshot.overlaySettings());
         projectionLevel = safeSnapshot.projectionLevel();
-        selectedTool = "Auswahl";
+        selectedTool = SELECT_TOOL_LABEL;
         rebuildRenderState();
     }
 
@@ -713,12 +716,12 @@ public final class DungeonMapContentModel {
             case STAIR_DELETE -> "Treppe löschen";
             case TRANSITION_CREATE -> "Übergang erstellen";
             case TRANSITION_DELETE -> "Übergang löschen";
-            case SELECT -> "Auswahl";
+            case SELECT -> SELECT_TOOL_LABEL;
         };
     }
 
     private static String normalizeTool(String selectedTool) {
-        return selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
+        return selectedTool == null || selectedTool.isBlank() ? SELECT_TOOL_LABEL : selectedTool;
     }
 
     private static int atLeastOne(int value) {
@@ -823,7 +826,7 @@ public final class DungeonMapContentModel {
         private record ProjectionTopologyRef(String kind, long id) {
 
             private ProjectionTopologyRef {
-                kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+                kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
                 id = Math.max(0L, id);
             }
         }
@@ -843,9 +846,9 @@ public final class DungeonMapContentModel {
         ) {
 
             private ProjectionMarkerHandle {
-                kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+                kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
                 topologyRef = topologyRef == null
-                        ? new ProjectionData.ProjectionTopologyRef("EMPTY", 0L)
+                        ? new ProjectionData.ProjectionTopologyRef(EMPTY_KIND, 0L)
                         : topologyRef;
                 ownerId = Math.max(0L, ownerId);
                 clusterId = Math.max(0L, clusterId);
@@ -968,7 +971,7 @@ public final class DungeonMapContentModel {
             topology = topology == null ? RenderTopology.SQUARE : topology;
             viewMode = viewMode == null ? ViewMode.GRID : viewMode;
             overlaySettings = overlaySettings == null ? LevelOverlaySettings.defaults() : overlaySettings;
-            selectedTool = selectedTool == null || selectedTool.isBlank() ? "Auswahl" : selectedTool;
+            selectedTool = selectedTool == null || selectedTool.isBlank() ? SELECT_TOOL_LABEL : selectedTool;
             cells = immutableList(cells);
             edges = immutableList(edges);
             labels = immutableList(labels);
@@ -1029,7 +1032,7 @@ public final class DungeonMapContentModel {
                     LevelOverlaySettings.off(),
                     0,
                     true,
-                    "Auswahl",
+                    SELECT_TOOL_LABEL,
                     List.of(),
                     List.of(),
                     List.of(),
@@ -1409,7 +1412,7 @@ public final class DungeonMapContentModel {
             }
 
             private static String normalizeHandleField(String value) {
-                return value == null || value.isBlank() ? "EMPTY" : value;
+                return value == null || value.isBlank() ? EMPTY_KIND : value;
             }
         }
 
@@ -1433,12 +1436,12 @@ public final class DungeonMapContentModel {
         public record TopologyRef(String kind, long id) {
 
             public TopologyRef {
-                kind = kind == null || kind.isBlank() ? "EMPTY" : kind.trim();
+                kind = kind == null || kind.isBlank() ? EMPTY_KIND : kind.trim();
                 id = Math.max(0L, id);
             }
 
             public static RenderState.TopologyRef empty() {
-                return new RenderState.TopologyRef("EMPTY", 0L);
+                return new RenderState.TopologyRef(EMPTY_KIND, 0L);
             }
         }
     }

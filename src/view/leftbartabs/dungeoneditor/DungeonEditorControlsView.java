@@ -49,6 +49,7 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
     private static final String CORRIDOR_FAMILY = "Korridor";
     private static final String STAIR_FAMILY = "Treppe";
     private static final String TRANSITION_FAMILY = "Übergang";
+    private static final String STYLE_SELECTED = "selected";
 
     private final ComboBox<MapItem> mapSelector = new ComboBox<>();
     private final SplitMenuButton mapActionButton = new SplitMenuButton();
@@ -606,22 +607,22 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
         if (selectButton.isSelected()) {
             return SELECT_TOOL;
         }
-        if (roomButton.getStyleClass().contains("selected")) {
+        if (roomButton.getStyleClass().contains(STYLE_SELECTED)) {
             return currentButtonTool(roomButton, ROOM_PAINT_TOOL);
         }
-        if (wallButton.getStyleClass().contains("selected")) {
+        if (wallButton.getStyleClass().contains(STYLE_SELECTED)) {
             return currentButtonTool(wallButton, WALL_CREATE_TOOL);
         }
-        if (doorButton.getStyleClass().contains("selected")) {
+        if (doorButton.getStyleClass().contains(STYLE_SELECTED)) {
             return currentButtonTool(doorButton, DOOR_CREATE_TOOL);
         }
-        if (corridorButton.getStyleClass().contains("selected")) {
+        if (corridorButton.getStyleClass().contains(STYLE_SELECTED)) {
             return currentButtonTool(corridorButton, CORRIDOR_CREATE_TOOL);
         }
-        if (stairButton.getStyleClass().contains("selected")) {
+        if (stairButton.getStyleClass().contains(STYLE_SELECTED)) {
             return currentButtonTool(stairButton, STAIR_CREATE_TOOL);
         }
-        if (transitionButton.getStyleClass().contains("selected")) {
+        if (transitionButton.getStyleClass().contains(STYLE_SELECTED)) {
             return currentButtonTool(transitionButton, TRANSITION_CREATE_TOOL);
         }
         return SELECT_TOOL;
@@ -741,11 +742,11 @@ public final class DungeonEditorControlsView extends DungeonControlPanelView {
 
     private static void markSelected(Button button, boolean selected) {
         if (selected) {
-            if (!button.getStyleClass().contains("selected")) {
-                button.getStyleClass().add("selected");
+            if (!button.getStyleClass().contains(STYLE_SELECTED)) {
+                button.getStyleClass().add(STYLE_SELECTED);
             }
         } else {
-            button.getStyleClass().remove("selected");
+            button.getStyleClass().remove(STYLE_SELECTED);
         }
     }
 
