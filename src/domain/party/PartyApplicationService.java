@@ -3,6 +3,7 @@ package src.domain.party;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import src.domain.party.application.AdjustPartyXpUseCase;
 import src.domain.party.application.AwardPartyXpUseCase;
 import src.domain.party.application.CreateCharacterUseCase;
@@ -27,7 +28,7 @@ import src.domain.party.published.RestType;
 import src.domain.party.published.SetPartyMembershipCommand;
 import src.domain.party.published.UpdateCharacterCommand;
 import src.domain.party.roster.port.PartyRosterRepository;
-import src.domain.party.roster.port.PartyRuntimeFeedback;
+import src.domain.party.roster.port.PartyRuntimeRepository;
 import src.domain.party.roster.value.PartyCharacterDraft;
 import src.domain.party.roster.value.PartyDungeonTravelLocation;
 import src.domain.party.roster.value.PartyDungeonTravelLocationKind;
@@ -44,7 +45,7 @@ import src.domain.party.roster.value.PartyTravelTile;
  */
 public final class PartyApplicationService {
 
-    private final PartyRuntimeFeedback runtimeFeedback;
+    private final @Nullable PartyRuntimeRepository runtimeFeedback;
     private final CreateCharacterUseCase createCharacterUseCase;
     private final UpdateCharacterUseCase updateCharacterUseCase;
     private final DeleteCharacterUseCase deleteCharacterUseCase;
@@ -56,9 +57,9 @@ public final class PartyApplicationService {
 
     public PartyApplicationService(PartyRosterRepository rosterRepository) {
         PartyRosterRepository repository = Objects.requireNonNull(rosterRepository, "rosterRepository");
-        this.runtimeFeedback = repository instanceof PartyRuntimeFeedback feedback
+        this.runtimeFeedback = repository instanceof PartyRuntimeRepository feedback
                 ? feedback
-                : new NoOpPartyRuntimeFeedback();
+                : null;
         this.createCharacterUseCase = new CreateCharacterUseCase(repository);
         this.updateCharacterUseCase = new UpdateCharacterUseCase(repository);
         this.deleteCharacterUseCase = new DeleteCharacterUseCase(repository);
@@ -129,34 +130,41 @@ public final class PartyApplicationService {
         CalculateAdventuringDayCommand effectiveCommand = command == null
                 ? new CalculateAdventuringDayCommand(List.of(), 0)
                 : command;
-        runtimeFeedback.publishAdventuringDayCalculation(
-                effectiveCommand.levels(),
-                effectiveCommand.totalGroupXp());
+        if (runtimeFeedback != null) {
+            runtimeFeedback.publishAdventuringDayCalculation(
+                    effectiveCommand.levels(),
+                    effectiveCommand.totalGroupXp());
+        }
     }
 
     private void runMutation(Supplier<PartyMutationStatus> operation) {
         try {
-            runtimeFeedback.recordMutationStatus(operation.get());
+            PartyMutationStatus status = operation.get();
+            if (runtimeFeedback != null) {
+                runtimeFeedback.recordMutationStatus(status);
+            }
         } catch (IllegalStateException exception) {
-            runtimeFeedback.recordStorageErrorMutation();
+            if (runtimeFeedback != null) {
+                runtimeFeedback.recordStorageErrorMutation();
+            }
         }
     }
 
-    private static PartyMembership toPartyMembership(MembershipState membershipState) {
+    private static PartyMembership toPartyMembership(@Nullable MembershipState membershipState) {
         if (membershipState == null) {
             return PartyMembership.RESERVE;
         }
         return membershipState == MembershipState.ACTIVE ? PartyMembership.ACTIVE : PartyMembership.RESERVE;
     }
 
-    private static PartyRestType toPartyRestType(RestType restType) {
+    private static PartyRestType toPartyRestType(@Nullable RestType restType) {
         if (restType == null) {
             return PartyRestType.SHORT_REST;
         }
         return restType == RestType.LONG_REST ? PartyRestType.LONG_REST : PartyRestType.SHORT_REST;
     }
 
-    private static PartyCharacterDraft toDomainDraft(CharacterDraft draft) {
+    private static PartyCharacterDraft toDomainDraft(@Nullable CharacterDraft draft) {
         if (draft == null) {
             return new PartyCharacterDraft("", "", 0, 0, 0);
         }
@@ -168,7 +176,9 @@ public final class PartyApplicationService {
                 draft.armorClass());
     }
 
-    private static PartyTravelLocation toDomainTravelLocation(PartyTravelLocationSnapshot location) {
+    private static @Nullable PartyTravelLocation toDomainTravelLocation(
+            @Nullable PartyTravelLocationSnapshot location
+    ) {
         if (location instanceof PartyDungeonTravelLocationSnapshot dungeon) {
             return new PartyDungeonTravelLocation(
                     dungeon.mapId(),
@@ -188,18 +198,4 @@ public final class PartyApplicationService {
         return null;
     }
 
-    private static final class NoOpPartyRuntimeFeedback implements PartyRuntimeFeedback {
-
-        @Override
-        public void recordMutationStatus(PartyMutationStatus status) {
-        }
-
-        @Override
-        public void recordStorageErrorMutation() {
-        }
-
-        @Override
-        public void publishAdventuringDayCalculation(List<Integer> levels, int totalGroupXp) {
-        }
-    }
 }

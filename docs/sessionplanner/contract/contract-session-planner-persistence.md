@@ -16,8 +16,8 @@ Current state:
 - `sessionplanner` now owns its own data feature under
   `src/data/sessionplanner/**`
 - the current implementation persists exactly one current session record
-- `LoadSessionPlannerQuery` remains implicit and does not yet expose a session
-  list or explicit session identifier
+- the current implementation still does not expose a session list or explicit
+  session identifier
 
 Target state:
 
@@ -31,8 +31,9 @@ Target state:
 - Bootstrap discovers it generically under `src/data/<feature>/`.
 - The contribution registers the exported root application service through the
   shell-owned service registry, `shell.api.ServiceRegistry`.
-- The exported planner runtime surface is
-  `SessionPlannerApplicationService.class`.
+- The exported planner runtime surfaces are
+  `SessionPlannerApplicationService.class` for write workflows and
+  `SessionPlannerModel.class` for read-only observation.
 - Domain ports, repositories, gateways, mappers, and schema classes remain
   implementation details and must not be registered as runtime services.
 - View assembly code reads planner behavior only through
@@ -103,7 +104,8 @@ The session record does not persist:
 - Review must reject persisted fields that duplicate encounter rosters, party
   character internals, creature detail, or loot internals.
 - Review must reject runtime-service exports other than
-  `SessionPlannerApplicationService.class`.
+  `SessionPlannerApplicationService.class` and
+  `SessionPlannerModel.class`.
 
 ## References
 

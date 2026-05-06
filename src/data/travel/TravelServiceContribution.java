@@ -2,7 +2,7 @@ package src.data.travel;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
-import src.data.travel.ApplicationTravelPartyStateRepository;
+import src.data.travel.runtime.ApplicationTravelPartyStateRepository;
 import src.domain.dungeon.DungeonApplicationService;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;

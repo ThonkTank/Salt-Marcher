@@ -26,10 +26,10 @@ import src.domain.party.published.PartyTravelPositionsModel;
 import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.roster.aggregate.PartyRoster;
 import src.domain.party.roster.port.PartyRosterRepository;
-import src.domain.party.roster.port.PartyRuntimeFeedback;
+import src.domain.party.roster.port.PartyRuntimeRepository;
 import src.domain.party.roster.value.PartyMutationStatus;
 
-public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository, PartyRuntimeFeedback {
+public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository, PartyRuntimeRepository {
 
     private static final String LISTENER_PARAMETER = "listener";
 
@@ -47,25 +47,25 @@ public final class PartyBoundaryRuntimeAdapter implements PartyRosterRepository,
     private final List<Consumer<PartyTravelPositionsResult>> partyTravelPositionsListeners = new ArrayList<>();
     private final List<Consumer<MutationResult>> partyMutationListeners = new ArrayList<>();
     private final List<Consumer<AdventuringDayCalculationResult>> adventuringDayCalculationListeners = new ArrayList<>();
-    private final PartySnapshotModel partySnapshotModel = new PartySnapshotModel(
+    public final PartySnapshotModel partySnapshotModel = new PartySnapshotModel(
             this::currentPartySnapshot,
             this::subscribePartySnapshotListener);
-    private final ActivePartyModel activePartyModel = new ActivePartyModel(
+    public final ActivePartyModel activePartyModel = new ActivePartyModel(
             this::currentActiveParty,
             this::subscribeActivePartyListener);
-    private final ActivePartyCompositionModel activePartyCompositionModel = new ActivePartyCompositionModel(
+    public final ActivePartyCompositionModel activePartyCompositionModel = new ActivePartyCompositionModel(
             this::currentActivePartyComposition,
             this::subscribeActivePartyCompositionListener);
-    private final AdventuringDaySummaryModel adventuringDaySummaryModel = new AdventuringDaySummaryModel(
+    public final AdventuringDaySummaryModel adventuringDaySummaryModel = new AdventuringDaySummaryModel(
             this::currentAdventuringDaySummary,
             this::subscribeAdventuringDaySummaryListener);
-    private final PartyTravelPositionsModel partyTravelPositionsModel = new PartyTravelPositionsModel(
+    public final PartyTravelPositionsModel partyTravelPositionsModel = new PartyTravelPositionsModel(
             this::currentPartyTravelPositions,
             this::subscribePartyTravelPositionsListener);
-    private final PartyMutationModel partyMutationModel = new PartyMutationModel(
+    public final PartyMutationModel partyMutationModel = new PartyMutationModel(
             this::currentPartyMutation,
             this::subscribePartyMutationListener);
-    private final AdventuringDayCalculationModel adventuringDayCalculationModel = new AdventuringDayCalculationModel(
+    public final AdventuringDayCalculationModel adventuringDayCalculationModel = new AdventuringDayCalculationModel(
             this::currentAdventuringDayCalculation,
             this::subscribeAdventuringDayCalculationListener);
     private PartySnapshotResult currentPartySnapshot = PartyBoundaryProjector.failedSnapshotResult();

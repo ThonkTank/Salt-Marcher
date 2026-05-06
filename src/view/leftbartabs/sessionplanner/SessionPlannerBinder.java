@@ -13,7 +13,6 @@ import src.domain.sessionplanner.published.AddSessionParticipantCommand;
 import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
 import src.domain.sessionplanner.published.CreateSessionPlanCommand;
-import src.domain.sessionplanner.published.LoadSessionPlannerQuery;
 import src.domain.sessionplanner.published.MoveSessionEncounterDownCommand;
 import src.domain.sessionplanner.published.MoveSessionEncounterUpCommand;
 import src.domain.sessionplanner.published.RefreshSessionPlannerCommand;
@@ -38,7 +37,7 @@ final class SessionPlannerBinder {
     ShellBinding bind() {
         SessionPlannerApplicationService planner =
                 runtimeContext.services().require(SessionPlannerApplicationService.class);
-        SessionPlannerModel sessionModel = planner.loadSession(new LoadSessionPlannerQuery());
+        SessionPlannerModel sessionModel = runtimeContext.services().require(SessionPlannerModel.class);
         SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel();
         SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler();
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();

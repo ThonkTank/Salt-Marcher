@@ -2,8 +2,8 @@ package src.data.encounter;
 
 import shell.api.ServiceContribution;
 import shell.api.ServiceRegistry;
-import src.data.encounter.ApplicationEncounterPartyFactsRepository;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
+import src.data.encounter.runtime.ApplicationEncounterPartyFactsRepository;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.plan.port.EncounterPlanRepository;

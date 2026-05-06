@@ -21,13 +21,13 @@ Context Name: SessionPlanner
 
 ## Published Language
 
-`published/` owns planner queries, planner commands, rest-kind vocabulary,
-session snapshots, and the read-only planner session observation model.
+`published/` owns planner commands, rest-kind vocabulary, session snapshots,
+and the read-only planner session observation model.
 
 Current state:
 
 - the current published API already exposes focused planner workflow commands
-  plus one read-only `SessionPlannerModel`
+  plus one directly exported read-only `SessionPlannerModel`
 
 Target state:
 
@@ -39,7 +39,8 @@ Target state:
 The root application service coordinates active-party composition reads,
 party-based adventuring-day calculations, saved encounter-plan budget reads
 through the encounter public boundary, planner-owned repository access, and
-session-local mutations and readback.
+session-local mutations. Readback is published separately through the exported
+`SessionPlannerModel`.
 
 Current state:
 
@@ -47,6 +48,8 @@ Current state:
   `application/*UseCase` owners over `SessionPlan`
 - it now keeps exactly one repository-backed current session through a
   planner-owned repository port and current-session access seam
+- the read-only planner state model is exported directly instead of being
+  loaded through a root query method
 
 Target state:
 
@@ -75,7 +78,6 @@ detail, or loot-object internals.
 Commands entering the runtime model are:
 
 - create session plan
-- load session plan
 - add or remove session participant reference
 - attach or detach encounter-plan reference
 - reorder attached encounter reference

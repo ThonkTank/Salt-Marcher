@@ -3,7 +3,7 @@ package src.domain.party.roster.port;
 import java.util.List;
 import src.domain.party.roster.value.PartyMutationStatus;
 
-public interface PartyRuntimeFeedback {
+public interface PartyRuntimeRepository {
 
     void recordMutationStatus(PartyMutationStatus status);
 

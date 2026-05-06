@@ -19,18 +19,18 @@ Context Name: SessionPlanner
 
 ## Published Language
 
-`published/` owns planner queries, planner commands, rest-kind vocabulary, the
-read-only planner snapshot, and the planner session observation model.
+`published/` owns planner commands, rest-kind vocabulary, the read-only
+planner snapshot, and the planner session observation model.
 
 Current state:
 
 - the current published surface already exposes focused planner workflow
-  commands and one read-only `SessionPlannerModel`
+  commands and one directly exported read-only `SessionPlannerModel`
 
 Target state:
 
-- the feature keeps publishing planner-owned queries, workflow triggers,
-  snapshots, and read-only session observation models
+- the feature keeps publishing planner-owned workflow triggers, snapshots, and
+  read-only session observation models
 - it does not publish encounter persistence carriers, creature-detail carriers,
   or party mutation carriers; those stay owned by their original contexts
 
@@ -42,7 +42,8 @@ The root application service coordinates:
 - active-party composition reads needed to resolve participant references
 - party-based adventuring-day calculations
 - saved encounter-plan budget reads through the encounter public boundary
-- session-local workflow mutations and readback
+- session-local workflow mutations
+- publication of the planner-owned read-only observation model
 
 Current state:
 
@@ -50,6 +51,8 @@ Current state:
   `application/*UseCase` owners over `SessionPlan`
 - it now keeps exactly one repository-backed current session through a
   planner-owned repository port and current-session access seam
+- the read-only planner state model is exported directly instead of being
+  loaded through a root query method
 
 Target state:
 
@@ -87,7 +90,6 @@ detail, or loot-object internals.
 Commands entering the runtime model are:
 
 - create session plan
-- load session plan
 - add or remove session participant reference
 - attach or detach saved encounter-plan reference
 - reorder attached encounter reference

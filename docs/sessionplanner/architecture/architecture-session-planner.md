@@ -37,6 +37,8 @@ creature-detail truth, or loot truth.
   render the controls pane and the planning timeline
 - `src/domain/sessionplanner/SessionPlannerApplicationService`
   is the only planner backend boundary exposed to the view layer
+- `src/domain/sessionplanner/published/SessionPlannerModel`
+  is the direct read-only planner observation export
 - `src/domain/sessionplanner/session/aggregate/SessionPlan`
   is the authored aggregate root for persisted session truth
 - `src/data/sessionplanner/SessionPlannerServiceContribution.java`
@@ -53,18 +55,23 @@ Current state:
 - `src/data/sessionplanner/SessionPlannerServiceContribution.java` now owns
   planner registration, repository assembly, and read-only foreign-facts
   adapter assembly
+- the current planner binder reads `SessionPlannerModel` directly from the
+  runtime service registry instead of loading it through the root service
 - the current planner persistence stores exactly one current session record,
   not a session list or explicit load UI
 
 Target state:
 
-- `SessionPlannerApplicationService` becomes a thin orchestrator over a richer
-  session domain model and dedicated repository port
+- `SessionPlannerApplicationService` is command-only and stays a thin
+  orchestrator over a richer session domain model and dedicated repository
+  port
+- `SessionPlannerModel` is exported directly as the feature readback surface
 
 ## Dependency Rules
 
 - the planner view layer may depend only on shell contracts, its own
-  contribution roles, and the `SessionPlannerApplicationService`
+  contribution roles, the `SessionPlannerApplicationService`, and the
+  planner-owned `SessionPlannerModel`
 - `SessionPlannerApplicationService` may depend only on planner-owned ports,
   planner-owned use cases, and planner-owned published carriers
 - session participant facts must enter through the party public boundary
@@ -99,6 +106,8 @@ Target state:
   `party` owns character truth, `encounter` owns encounter-plan rosters,
   `creatures` owns statblocks, and later `loot` owns loot internals
 - the view layer observes planner state through one read-only snapshot model
+- the planner binder resolves that read-only model directly from the runtime
+  registry instead of asking the root to load it
 - mutations enter through explicit planner workflows, not through mutable view
   state or direct foreign application-service calls from the view layer
 - the current persistence model keeps exactly one current session record rather
