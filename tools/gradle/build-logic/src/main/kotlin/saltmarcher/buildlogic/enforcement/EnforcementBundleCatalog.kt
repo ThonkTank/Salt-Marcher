@@ -18,12 +18,13 @@ data class EnforcementArchunitTask(
     val useSharedTestSupport: Boolean
 )
 
-data class EnforcementJqassistantTaskPair(
+data class EnforcementJqassistantTask(
+    val taskName: String,
     val scanTaskName: String,
     val analyzeTaskName: String,
     val scanDescription: String,
     val analyzeDescription: String,
-    val configPath: String,
+    val ruleGroups: List<String>,
     val rulesDirPath: String,
     val reportsDirPath: String
 )
@@ -52,16 +53,15 @@ data class EnforcementBundleDescriptor(
     val errorProneSourceDir: String?,
     val errorProneServiceFile: String?,
     val archunit: EnforcementArchunitTask?,
-    val jqassistant: EnforcementJqassistantTaskPair?,
+    val jqassistantTasks: List<EnforcementJqassistantTask>,
     val pmdTasks: List<EnforcementPmdTask>,
     val pmdSourceDir: String?,
     val verificationSourceRoots: List<String>,
     val verificationSourceIncludes: List<String>
 ) {
-    fun publicCheckTaskName(): String = taskNames.firstOrNull { taskName -> taskName.startsWith("check") }
-        ?: error("Missing public check task for enforcement bundle '$bundleId'.")
+    fun publicCheckTaskName(): String = publicCheckTaskName(taskNames, bundleId)
 
-    fun requiresFocusedCompile(): Boolean = errorProneSourceDir != null || archunit != null || jqassistant != null
+    fun requiresFocusedCompile(): Boolean = errorProneSourceDir != null || archunit != null || jqassistantTasks.isNotEmpty()
 }
 
 data class EnforcementBundleCatalog(
@@ -165,7 +165,7 @@ private fun loadEnforcementBundleDescriptors(repoRootDir: File): Map<String, Enf
                     errorProneServiceFile = properties.optionalTrimmed("errorProneServiceFile")
                         ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
                     archunit = properties.readArchunitTask("", repoRootDir, descriptorFile),
-                    jqassistant = properties.readJqassistantTaskPair("", repoRootDir, descriptorFile),
+                    jqassistantTasks = properties.readJqassistantTasks("", repoRootDir, descriptorFile, properties.list("taskNames")),
                     pmdTasks = properties.readPmdTasks("", repoRootDir, descriptorFile, properties.list("taskNames")),
                     pmdSourceDir = properties.optionalTrimmed("pmdSourceDir")
                         ?.let { rawPath -> resolveDescriptorPath(repoRootDir, descriptorFile, rawPath) },
@@ -222,6 +222,15 @@ private fun EnforcementBundleDescriptor.validated(): EnforcementBundleDescriptor
         val missingTaskNames = pmdTasks.map(EnforcementPmdTask::taskName) - taskNames.toSet()
         require(missingTaskNames.isEmpty()) {
             "Enforcement bundle '$bundleId' declares PMD tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
+        }
+    }
+
+    if (jqassistantTasks.isNotEmpty()) {
+        val missingTaskNames = jqassistantTasks
+            .flatMap { jqassistant -> listOf(jqassistant.taskName, jqassistant.scanTaskName, jqassistant.analyzeTaskName) }
+            .toSet() - taskNames.toSet()
+        require(missingTaskNames.isEmpty()) {
+            "Enforcement bundle '$bundleId' declares jQAssistant tasks that are missing from taskNames: ${missingTaskNames.joinToString()}."
         }
     }
 
@@ -287,11 +296,46 @@ private fun Properties.readArchunitTask(
     )
 }
 
-private fun Properties.readJqassistantTaskPair(
+private fun Properties.readJqassistantTasks(
     propertyPrefix: String,
     repoRootDir: File,
-    descriptorFile: File
-): EnforcementJqassistantTaskPair? {
+    descriptorFile: File,
+    taskNames: List<String>
+): List<EnforcementJqassistantTask> {
+    val namedTaskNames = jqassistantTaskNames(propertyPrefix)
+    val undeclaredTaskNames = namedTaskNames - taskNames.toSet()
+    require(undeclaredTaskNames.isEmpty()) {
+        "Enforcement bundle descriptor '$descriptorFile' declares jQAssistant tasks outside taskNames: ${undeclaredTaskNames.joinToString()}."
+    }
+    val namedTasks = taskNames
+        .filter { taskName -> taskName in namedTaskNames }
+        .map { taskName -> readNamedJqassistantTask(propertyPrefix, repoRootDir, descriptorFile, taskName) }
+    val duplicateNamedTaskNames = namedTasks.groupBy(EnforcementJqassistantTask::taskName)
+        .filterValues { candidates -> candidates.size > 1 }
+        .keys
+    require(duplicateNamedTaskNames.isEmpty()) {
+        "Enforcement bundle descriptor '$descriptorFile' declares duplicate jQAssistant tasks: ${duplicateNamedTaskNames.joinToString()}."
+    }
+
+    val legacyTask = readLegacyJqassistantTask(propertyPrefix, repoRootDir, descriptorFile, taskNames)
+    if (legacyTask != null && namedTaskNames.contains(legacyTask.taskName)) {
+        error(
+            "Enforcement bundle descriptor '$descriptorFile' declares both legacy jqassistant.* metadata " +
+                "and jqassistantTask.${legacyTask.taskName}.* metadata for the same public task."
+        )
+    }
+    return buildList {
+        legacyTask?.let(::add)
+        addAll(namedTasks)
+    }
+}
+
+private fun Properties.readLegacyJqassistantTask(
+    propertyPrefix: String,
+    repoRootDir: File,
+    descriptorFile: File,
+    taskNames: List<String>
+): EnforcementJqassistantTask? {
     val scanTaskName = optionalTrimmed("${propertyPrefix}jqassistant.scanTaskName")
     val analyzeTaskName = optionalTrimmed("${propertyPrefix}jqassistant.analyzeTaskName")
     val scanDescription = optionalTrimmed("${propertyPrefix}jqassistant.scanDescription")
@@ -321,15 +365,62 @@ private fun Properties.readJqassistantTaskPair(
     ) {
         "Enforcement bundle descriptor '$descriptorFile' must fully declare jqassistant.* metadata."
     }
-    return EnforcementJqassistantTaskPair(
+    return EnforcementJqassistantTask(
+        taskName = publicCheckTaskName(taskNames, descriptorFile.path),
         scanTaskName = scanTaskName,
         analyzeTaskName = analyzeTaskName,
         scanDescription = scanDescription,
         analyzeDescription = analyzeDescription,
-        configPath = resolveDescriptorPath(repoRootDir, descriptorFile, configPath),
+        ruleGroups = loadJqassistantRuleGroups(resolveDescriptorPath(repoRootDir, descriptorFile, configPath)),
         rulesDirPath = resolveDescriptorPath(repoRootDir, descriptorFile, rulesDirPath),
         reportsDirPath = reportsDirPath
     )
+}
+
+private fun Properties.readNamedJqassistantTask(
+    propertyPrefix: String,
+    repoRootDir: File,
+    descriptorFile: File,
+    taskName: String
+): EnforcementJqassistantTask {
+    val propertyBase = "${propertyPrefix}jqassistantTask.$taskName"
+    val scanTaskName = optionalTrimmed("$propertyBase.scanTaskName")
+    val analyzeTaskName = optionalTrimmed("$propertyBase.analyzeTaskName")
+    val scanDescription = optionalTrimmed("$propertyBase.scanDescription")
+    val analyzeDescription = optionalTrimmed("$propertyBase.analyzeDescription")
+    val rulesDirPath = optionalTrimmed("$propertyBase.rulesDir")
+    val reportsDirPath = optionalTrimmed("$propertyBase.reportsDir")
+    val ruleGroups = list("$propertyBase.groups")
+    require(
+        scanTaskName != null &&
+            analyzeTaskName != null &&
+            scanDescription != null &&
+            analyzeDescription != null &&
+            rulesDirPath != null &&
+            reportsDirPath != null &&
+            ruleGroups.isNotEmpty()
+    ) {
+        "Enforcement bundle descriptor '$descriptorFile' must fully declare $propertyBase.* metadata."
+    }
+    return EnforcementJqassistantTask(
+        taskName = taskName,
+        scanTaskName = scanTaskName,
+        analyzeTaskName = analyzeTaskName,
+        scanDescription = scanDescription,
+        analyzeDescription = analyzeDescription,
+        ruleGroups = ruleGroups,
+        rulesDirPath = resolveDescriptorPath(repoRootDir, descriptorFile, rulesDirPath),
+        reportsDirPath = reportsDirPath
+    )
+}
+
+private fun Properties.jqassistantTaskNames(propertyPrefix: String): Set<String> {
+    val prefix = "${propertyPrefix}jqassistantTask."
+    return stringPropertyNames()
+        .filter { propertyName -> propertyName.startsWith(prefix) }
+        .map { propertyName -> propertyName.removePrefix(prefix).substringBefore('.') }
+        .filter(String::isNotBlank)
+        .toSet()
 }
 
 private fun Properties.readPmdTasks(
@@ -421,6 +512,27 @@ private fun Properties.list(name: String): List<String> = getProperty(name)
     ?.map(String::trim)
     ?.filter(String::isNotEmpty)
     ?: emptyList()
+
+private fun publicCheckTaskName(taskNames: List<String>, owner: String): String = taskNames.firstOrNull { taskName ->
+    taskName.startsWith("check")
+} ?: error("Missing public check task for enforcement bundle '$owner'.")
+
+private fun loadJqassistantRuleGroups(configPath: String): List<String> {
+    val groups = mutableListOf<String>()
+    var insideGroups = false
+    File(configPath).forEachLine { rawLine ->
+        val line = rawLine.trim()
+        when {
+            line == "groups:" -> insideGroups = true
+            insideGroups && line.startsWith("- ") -> groups += line.removePrefix("- ").trim()
+            insideGroups && line.isNotEmpty() && !line.startsWith("#") -> insideGroups = false
+        }
+    }
+    require(groups.isNotEmpty()) {
+        "jQAssistant config '$configPath' must declare at least one analyze group."
+    }
+    return groups
+}
 
 private fun Properties.boolean(name: String): Boolean = getProperty(name)
     ?.trim()

@@ -36,8 +36,9 @@ Focused bundle entrypoint:
   `check`, `build`, and staged `production-handoff` now consume this blocker
   transitively.
 - `./gradlew checkLayeringIndirectionRelayCandidates --console=plain` runs the
-  report-only jQAssistant thin relay-stack diagnostic for review of deeper
-  thin-orchestration relay chains.
+  report-only jQAssistant thin relay-stack diagnostic from the same focused
+  Layering Indirection owner for review of deeper thin-orchestration relay
+  chains.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain` runs the
   report-only diagnostic PMD surface for thin adapter and orchestration roles
   that are allowed to stay narrow but may still be worth reviewing.

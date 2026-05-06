@@ -519,10 +519,11 @@ Architecture-focused entrypoints:
   `checkArchitecture`, `check`, `build`, and staged `production-handoff`
   through the architecture aggregate.
 - `./gradlew checkLayeringIndirectionRelayCandidates --console=plain`
-  Runs the dedicated report-only `Layering Indirection Relay Candidates`
-  bundle through `jqassistantAnalyzeLayeringIndirectionRelayCandidates`
-  without attaching that diagnostic surface to `checkArchitecture`, `check`,
-  `build`, or staged `production-handoff`.
+  Runs the report-only thin relay-stack diagnostic surface of the dedicated
+  `Layering Indirection` bundle through
+  `jqassistantAnalyzeLayeringIndirectionRelayCandidates` without attaching
+  that diagnostic surface to `checkArchitecture`, `check`, `build`, or staged
+  `production-handoff`.
 - `./gradlew checkLayeringIndirectionCandidates --console=plain`
   Runs the descriptor-owned report-only thin-role candidate PMD scan through
   the dedicated `Layering Architecture` bundle without attaching that

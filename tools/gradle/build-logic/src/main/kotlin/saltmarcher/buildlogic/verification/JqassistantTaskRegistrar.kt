@@ -30,7 +30,7 @@ internal class JqassistantTaskRegistrar(
         analyzeTaskName: String,
         scanDescription: String,
         analyzeDescription: String,
-        sourceConfigPath: String,
+        ruleGroups: List<String>,
         rulesDirPath: String,
         mainClassesDirectory: Provider<Directory>,
         sourceRoots: FileCollection,
@@ -39,7 +39,6 @@ internal class JqassistantTaskRegistrar(
         dependsOnTasks: List<Any>
     ): JqassistantTaskPair {
         val jqassistantRulesDirectory = project.file(rulesDirPath)
-        val jqassistantRuleGroups = loadJqassistantRuleGroups(project.file(sourceConfigPath))
         val scanTask = project.tasks.register<JqassistantScanTask>(scanTaskName) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = scanDescription
@@ -50,7 +49,7 @@ internal class JqassistantTaskRegistrar(
             this.mainClassesDirectory.set(mainClassesDirectory)
             this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
-            this.ruleGroups.set(jqassistantRuleGroups)
+            this.ruleGroups.set(ruleGroups)
             projectRoot.set(project.layout.projectDirectory)
             this.storeDirectory.set(storeDirectory)
         }
@@ -63,7 +62,7 @@ internal class JqassistantTaskRegistrar(
             this.mainClassesDirectory.set(mainClassesDirectory)
             this.sourceRoots.from(sourceRoots)
             this.jvmOpens.set(this@JqassistantTaskRegistrar.jvmOpens)
-            this.ruleGroups.set(jqassistantRuleGroups)
+            this.ruleGroups.set(ruleGroups)
             projectRoot.set(project.layout.projectDirectory)
             this.storeDirectory.set(storeDirectory)
             this.reportsDirectory.set(reportsDirectory)
@@ -100,7 +99,7 @@ internal class JqassistantTaskRegistrar(
     }
 }
 
-private fun loadJqassistantRuleGroups(configFile: File): List<String> {
+internal fun loadJqassistantRuleGroups(configFile: File): List<String> {
     val groups = mutableListOf<String>()
     var insideGroups = false
     configFile.forEachLine { rawLine ->

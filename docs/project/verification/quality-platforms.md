@@ -320,9 +320,9 @@ Operationally, architecture checks enter local quality through:
   now enters `checkArchitecture`, `check`, `build`, and staged
   `production-handoff` transitively
 - `checkLayeringIndirectionRelayCandidates`
-  runs the focused report-only `Layering Indirection Relay Candidates` bundle
-  through the dedicated jQAssistant thin relay-stack diagnostics and stays
-  intentionally outside `checkArchitecture`, `check`, and `build`
+  runs the report-only thin relay-stack diagnostic surface of the focused
+  `Layering Indirection` bundle and stays intentionally outside
+  `checkArchitecture`, `check`, and `build`
 - `checkArchitecture`
   aggregates the focused Domain Layer, Domain ApplicationService,
   Data ServiceContribution,

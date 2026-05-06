@@ -90,23 +90,28 @@ public final class DungeonTravelControlsView extends DungeonControlPanelView {
         resetViewButton.setOnAction(event -> publishSnapshot(true, 0));
         previousLevelButton.setOnAction(event -> publishSnapshot(false, -1));
         nextLevelButton.setOnAction(event -> publishSnapshot(false, 1));
-        overlayControls.setOnModeChanged(mode -> publishSnapshot(false, 0));
-        overlayControls.setOnRangeChanged(levelRange -> publishSnapshot(false, 0));
-        overlayControls.setOnOpacityChanged(opacity -> publishSnapshot(false, 0));
-        overlayControls.setOnSelectedLevelsChanged(() -> publishSnapshot(false, 0));
+        overlayControls.onChanged(snapshot -> publishSnapshot(false, 0, snapshot));
         describe(resetViewButton, "Kamera auf die Dungeon-Karte zurücksetzen");
         describe(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         describe(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
     }
 
     private void publishSnapshot(boolean resetViewRequested, int projectionLevelShift) {
+        publishSnapshot(resetViewRequested, projectionLevelShift, overlayControls.snapshot());
+    }
+
+    private void publishSnapshot(
+            boolean resetViewRequested,
+            int projectionLevelShift,
+            OverlayControlsPanel.InputSnapshot overlaySnapshot
+    ) {
         viewInputEventHandler.accept(new DungeonTravelControlsViewInputEvent(
                 resetViewRequested,
                 projectionLevelShift,
-                overlayControls.overlayModeKey(),
-                overlayControls.overlayRange(),
-                overlayControls.overlayOpacity(),
-                overlayControls.overlayLevelsText()));
+                overlaySnapshot.modeKey(),
+                overlaySnapshot.range(),
+                overlaySnapshot.opacity(),
+                overlaySnapshot.levelsText()));
     }
 
     private HBox dungeonRow() {

@@ -21,11 +21,12 @@ final class CatalogIntentHandler {
             return;
         }
 
-        CatalogContributionModel.LocalFilterState previousLocalFilters = presentationModel.currentLocalFilters();
-        CatalogContributionModel.ControlsState previousDraftControls = presentationModel.currentControlsState();
-        CatalogContributionModel.ControlsState authoritativeControls = presentationModel.currentDomainControls();
+        CatalogContributionModel.InteractionState interactionState = presentationModel.currentInteractionState();
+        CatalogContributionModel.LocalFilterState previousLocalFilters = interactionState.localFilters();
+        CatalogContributionModel.ControlsState previousDraftControls = interactionState.draftControls();
+        CatalogContributionModel.ControlsState authoritativeControls = interactionState.domainControls();
 
-        presentationModel.applyControlsDraft(
+        presentationModel.applyControlsDraft(new CatalogContributionModel.ControlsDraft(
                 new CatalogContributionModel.LocalFilterState(
                         event.nameQuery(),
                         event.challengeRatingMin(),
@@ -58,14 +59,14 @@ final class CatalogIntentHandler {
                 new CatalogContributionModel.FilterDropdownState(event.subtypePopupOpen(), event.subtypePopupQuery()),
                 new CatalogContributionModel.FilterDropdownState(event.biomePopupOpen(), event.biomePopupQuery()),
                 new CatalogContributionModel.FilterDropdownState(event.alignmentPopupOpen(), event.alignmentPopupQuery()),
-                new CatalogContributionModel.FilterDropdownState(event.encounterTablePopupOpen(), ""));
+                new CatalogContributionModel.FilterDropdownState(event.encounterTablePopupOpen(), "")));
 
-        if (!previousLocalFilters.equals(presentationModel.currentLocalFilters())) {
-            presentationModel.beginSearch();
-            presentationModel.advanceSearchCycle();
+        CatalogContributionModel.InteractionState currentState = presentationModel.currentInteractionState();
+        if (!previousLocalFilters.equals(currentState.localFilters())) {
+            presentationModel.requestSearch();
         }
 
-        CatalogContributionModel.ControlsState currentDraftControls = presentationModel.currentControlsState();
+        CatalogContributionModel.ControlsState currentDraftControls = currentState.draftControls();
         if (!previousDraftControls.equals(currentDraftControls) && !currentDraftControls.equals(authoritativeControls)) {
             publishedEventListener.accept(CatalogPublishedEvent.updateBuilderInputs(
                     currentDraftControls.creatureTypes(),
@@ -89,24 +90,16 @@ final class CatalogIntentHandler {
         }
         if (!event.sortKey().isBlank()) {
             presentationModel.selectSort(event.sortKey());
-            presentationModel.beginSearch();
-            presentationModel.advanceSearchCycle();
+            presentationModel.requestSearch();
             return;
         }
-        if (event.pageShift() < 0) {
-            presentationModel.previousPage();
-            presentationModel.beginSearch();
-            presentationModel.advanceSearchCycle();
-            return;
-        }
-        if (event.pageShift() > 0) {
-            presentationModel.nextPage();
-            presentationModel.beginSearch();
-            presentationModel.advanceSearchCycle();
+        if (event.pageShift() != 0) {
+            presentationModel.shiftPage(event.pageShift());
+            presentationModel.requestSearch();
             return;
         }
         if (event.openedCreatureId() > 0L) {
-            presentationModel.selectCreatureDetail(event.openedCreatureId());
+            presentationModel.setCreatureDetailSelection(event.openedCreatureId());
             return;
         }
         if (event.actionCreatureId() > 0L) {

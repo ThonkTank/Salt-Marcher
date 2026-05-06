@@ -15,7 +15,6 @@ import src.domain.creatures.published.CreatureCatalogSortField;
 import src.domain.creatures.published.CreatureFilterOptions;
 import src.domain.creatures.published.CreatureFilterOptionsResult;
 import src.domain.creatures.published.CreatureQueryStatus;
-import src.domain.creatures.published.CreatureReadStatus;
 import src.domain.creatures.published.CreatureSortDirection;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.EncounterTuningPreviewLabels;
@@ -83,23 +82,7 @@ public final class CatalogContributionModel {
             new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
     private final ReadOnlyLongWrapper searchCycle = new ReadOnlyLongWrapper(0L);
     private final ReadOnlyLongWrapper creatureDetailSelection = new ReadOnlyLongWrapper(0L);
-
-    private LocalFilterState localFilters = LocalFilterState.empty();
-    private ControlsState authoritativeControls = ControlsState.empty();
-    private ControlsState controlsState = ControlsState.empty();
-    private FilterOptionsProjection filterOptions = FilterOptionsProjection.empty();
-    private FilterDropdownState sizeDropdownState = FilterDropdownState.closed();
-    private FilterDropdownState typeDropdownState = FilterDropdownState.closed();
-    private FilterDropdownState subtypeDropdownState = FilterDropdownState.closed();
-    private FilterDropdownState biomeDropdownState = FilterDropdownState.closed();
-    private FilterDropdownState alignmentDropdownState = FilterDropdownState.closed();
-    private FilterDropdownState encounterTableDropdownState = FilterDropdownState.closed();
-    private List<EncounterTableOption> encounterTableOptions = List.of();
-    private List<CatalogRow> rows = List.of();
-    private SortOption selectedSort = SortOption.NAME_ASC;
-    private String placeholderText = "Lade Monster...";
-    private int pageOffset;
-    private int totalCount;
+    private final ProjectionState state = new ProjectionState();
 
     public CatalogContributionModel() {
         refreshControlsProjection();
@@ -122,161 +105,71 @@ public final class CatalogContributionModel {
         return creatureDetailSelection.getReadOnlyProperty();
     }
 
-    void applyControlsDraft(
-            LocalFilterState nextLocalFilters,
-            ControlsState nextControlsState,
-            FilterDropdownState nextSizeDropdownState,
-            FilterDropdownState nextTypeDropdownState,
-            FilterDropdownState nextSubtypeDropdownState,
-            FilterDropdownState nextBiomeDropdownState,
-            FilterDropdownState nextAlignmentDropdownState,
-            FilterDropdownState nextEncounterTableDropdownState
-    ) {
-        localFilters = nextLocalFilters == null ? LocalFilterState.empty() : nextLocalFilters;
-        controlsState = nextControlsState == null ? ControlsState.empty() : nextControlsState;
-        sizeDropdownState = nextSizeDropdownState == null ? FilterDropdownState.closed() : nextSizeDropdownState;
-        typeDropdownState = nextTypeDropdownState == null ? FilterDropdownState.closed() : nextTypeDropdownState;
-        subtypeDropdownState = nextSubtypeDropdownState == null ? FilterDropdownState.closed() : nextSubtypeDropdownState;
-        biomeDropdownState = nextBiomeDropdownState == null ? FilterDropdownState.closed() : nextBiomeDropdownState;
-        alignmentDropdownState = nextAlignmentDropdownState == null ? FilterDropdownState.closed() : nextAlignmentDropdownState;
-        encounterTableDropdownState = nextEncounterTableDropdownState == null
-                ? FilterDropdownState.closed()
-                : nextEncounterTableDropdownState;
+    void applyControlsDraft(ControlsDraft draft) {
+        state.applyControlsDraft(draft);
         refreshControlsProjection();
     }
 
     void applyCreatureFilterOptions(CreatureFilterOptionsResult result) {
-        CreatureFilterOptions options = result == null || result.options() == null
-                ? CreatureFilterOptions.empty()
-                : result.options();
-        filterOptions = new FilterOptionsProjection(
-                options.sizes(),
-                options.types(),
-                options.subtypes(),
-                options.biomes(),
-                options.alignments(),
-                options.challengeRatings());
-        pruneInvalidLocalSelections();
+        state.applyCreatureFilterOptions(result);
+        refreshControlsProjection();
     }
 
     boolean applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
-        ControlsState previousAuthoritative = authoritativeControls;
-        ControlsState next = ControlsState.fromBuilderInputs(builderInputs, previousAuthoritative);
-        authoritativeControls = next;
-        controlsState = next;
+        boolean searchChanged = state.applyEncounterBuilderInputs(builderInputs);
         refreshControlsProjection();
-        return ControlsState.searchControlsChanged(previousAuthoritative, next);
+        return searchChanged;
     }
 
     void applyEncounterTables(EncounterTableCatalogResult result) {
-        if (result == null || result.status() != EncounterTableReadStatus.SUCCESS) {
-            encounterTableOptions = List.of();
-            refreshControlsProjection();
-            return;
-        }
-        encounterTableOptions = result.tables().stream()
-                .map(EncounterTableOption::fromSummary)
-                .toList();
+        state.applyEncounterTables(result);
         refreshControlsProjection();
     }
 
     void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
-        authoritativeControls = authoritativeControls.withPreviewLabels(labels);
-        controlsState = controlsState.withPreviewLabels(labels);
+        state.applyEncounterTuningPreview(labels);
         refreshControlsProjection();
     }
 
     void selectSort(String sortKey) {
-        selectedSort = SortOption.fromKey(sortKey);
-        pageOffset = 0;
+        state.selectSort(sortKey);
         refreshMainProjection();
     }
 
-    void previousPage() {
-        if (pageOffset <= 0) {
-            return;
-        }
-        pageOffset = Math.max(0, pageOffset - PAGE_SIZE);
-        refreshMainProjection();
-    }
-
-    void nextPage() {
-        if (pageOffset + PAGE_SIZE >= totalCount) {
-            return;
-        }
-        pageOffset += PAGE_SIZE;
+    void shiftPage(int pageShift) {
+        state.shiftPage(pageShift);
         refreshMainProjection();
     }
 
     void applySearchResult(CreatureCatalogPageResult result) {
-        CreatureCatalogPage page = result == null ? CreatureCatalogPage.empty(PAGE_SIZE, pageOffset) : result.page();
-        if (page == null) {
-            page = CreatureCatalogPage.empty(PAGE_SIZE, pageOffset);
-        }
-        totalCount = Math.max(0, page.totalCount());
-        rows = page.rows().stream().map(CatalogRow::fromCreature).toList();
-        placeholderText = switch (result == null ? CreatureQueryStatus.STORAGE_ERROR : result.status()) {
-            case SUCCESS -> "Keine Monster gefunden";
-            case INVALID_QUERY -> "Filter sind ungültig";
-            default -> "Fehler beim Laden";
-        };
+        state.applySearchResult(result);
         refreshMainProjection();
     }
 
-    void beginSearch() {
-        placeholderText = "Lade Monster...";
+    void requestSearch() {
+        state.beginSearch();
         refreshMainProjection();
-    }
-
-    void advanceSearchCycle() {
         searchCycle.set(searchCycle.get() + 1L);
     }
 
-    void selectCreatureDetail(long creatureId) {
+    void setCreatureDetailSelection(long creatureId) {
         creatureDetailSelection.set(Math.max(0L, creatureId));
     }
 
-    void clearCreatureDetailSelection() {
-        creatureDetailSelection.set(0L);
-    }
-
-    LocalFilterState currentLocalFilters() {
-        return localFilters;
-    }
-
-    ControlsState currentControlsState() {
-        return controlsState;
-    }
-
-    ControlsState currentDomainControls() {
-        return authoritativeControls;
+    InteractionState currentInteractionState() {
+        return state.interactionState();
     }
 
     SearchRequest currentSearchRequest() {
-        return SearchRequest.from(mergedFilters(localFilters, authoritativeControls), selectedSort, pageOffset);
-    }
-
-    private void pruneInvalidLocalSelections() {
-        localFilters = localFilters.retainAvailable(filterOptions);
-        refreshControlsProjection();
+        return state.searchRequest();
     }
 
     private void refreshControlsProjection() {
-        controlsProjection.set(ControlsProjection.from(
-                filterOptions,
-                mergedFilters(localFilters, controlsState),
-                sizeDropdownState,
-                typeDropdownState,
-                subtypeDropdownState,
-                biomeDropdownState,
-                alignmentDropdownState,
-                encounterTableDropdownState,
-                encounterTableOptions,
-                controlsState));
+        controlsProjection.set(state.controlsProjection());
     }
 
     private void refreshMainProjection() {
-        mainProjection.set(MainProjection.from(rows, selectedSort, pageOffset, totalCount, placeholderText));
+        mainProjection.set(state.mainProjection());
     }
 
     private static CreatureFilters mergedFilters(LocalFilterState local, ControlsState controls) {
@@ -447,7 +340,7 @@ public final class CatalogContributionModel {
         }
 
         static ControlsProjection initial() {
-            return from(
+            return new ControlsProjection(
                     FilterOptionsProjection.empty(),
                     CreatureFilters.empty(),
                     FilterDropdownState.closed(),
@@ -457,33 +350,44 @@ public final class CatalogContributionModel {
                     FilterDropdownState.closed(),
                     FilterDropdownState.closed(),
                     List.of(),
+                    List.of(),
                     ControlsState.empty());
         }
+    }
 
-        static ControlsProjection from(
-                FilterOptionsProjection filterOptions,
-                CreatureFilters creatureFilters,
-                FilterDropdownState sizeDropdownState,
-                FilterDropdownState typeDropdownState,
-                FilterDropdownState subtypeDropdownState,
-                FilterDropdownState biomeDropdownState,
-                FilterDropdownState alignmentDropdownState,
-                FilterDropdownState encounterTableDropdownState,
-                List<EncounterTableOption> encounterTableOptions,
-                ControlsState controlsState
-        ) {
-            return new ControlsProjection(
-                    filterOptions,
-                    creatureFilters,
-                    sizeDropdownState,
-                    typeDropdownState,
-                    subtypeDropdownState,
-                    biomeDropdownState,
-                    alignmentDropdownState,
-                    encounterTableDropdownState,
-                    encounterTableOptions,
-                    FilterChip.from(creatureFilters, encounterTableOptions, controlsState),
-                    controlsState);
+    record InteractionState(
+            LocalFilterState localFilters,
+            ControlsState draftControls,
+            ControlsState domainControls
+    ) {
+        InteractionState {
+            localFilters = localFilters == null ? LocalFilterState.empty() : localFilters;
+            draftControls = draftControls == null ? ControlsState.empty() : draftControls;
+            domainControls = domainControls == null ? ControlsState.empty() : domainControls;
+        }
+    }
+
+    record ControlsDraft(
+            LocalFilterState localFilters,
+            ControlsState controlsState,
+            FilterDropdownState sizeDropdownState,
+            FilterDropdownState typeDropdownState,
+            FilterDropdownState subtypeDropdownState,
+            FilterDropdownState biomeDropdownState,
+            FilterDropdownState alignmentDropdownState,
+            FilterDropdownState encounterTableDropdownState
+    ) {
+        ControlsDraft {
+            localFilters = localFilters == null ? LocalFilterState.empty() : localFilters;
+            controlsState = controlsState == null ? ControlsState.empty() : controlsState;
+            sizeDropdownState = sizeDropdownState == null ? FilterDropdownState.closed() : sizeDropdownState;
+            typeDropdownState = typeDropdownState == null ? FilterDropdownState.closed() : typeDropdownState;
+            subtypeDropdownState = subtypeDropdownState == null ? FilterDropdownState.closed() : subtypeDropdownState;
+            biomeDropdownState = biomeDropdownState == null ? FilterDropdownState.closed() : biomeDropdownState;
+            alignmentDropdownState = alignmentDropdownState == null ? FilterDropdownState.closed() : alignmentDropdownState;
+            encounterTableDropdownState = encounterTableDropdownState == null
+                    ? FilterDropdownState.closed()
+                    : encounterTableDropdownState;
         }
     }
 
@@ -933,6 +837,147 @@ public final class CatalogContributionModel {
 
         static FilterDropdownState closed() {
             return new FilterDropdownState(false, "");
+        }
+    }
+
+    private static final class ProjectionState {
+
+        private LocalFilterState localFilters = LocalFilterState.empty();
+        private ControlsState authoritativeControls = ControlsState.empty();
+        private ControlsState controlsState = ControlsState.empty();
+        private FilterOptionsProjection filterOptions = FilterOptionsProjection.empty();
+        private FilterDropdownState sizeDropdownState = FilterDropdownState.closed();
+        private FilterDropdownState typeDropdownState = FilterDropdownState.closed();
+        private FilterDropdownState subtypeDropdownState = FilterDropdownState.closed();
+        private FilterDropdownState biomeDropdownState = FilterDropdownState.closed();
+        private FilterDropdownState alignmentDropdownState = FilterDropdownState.closed();
+        private FilterDropdownState encounterTableDropdownState = FilterDropdownState.closed();
+        private List<EncounterTableOption> encounterTableOptions = List.of();
+        private List<CatalogRow> rows = List.of();
+        private SortOption selectedSort = SortOption.NAME_ASC;
+        private String placeholderText = "Lade Monster...";
+        private int pageOffset;
+        private int totalCount;
+
+        void applyControlsDraft(ControlsDraft draft) {
+            ControlsDraft safeDraft = draft == null
+                    ? new ControlsDraft(
+                            LocalFilterState.empty(),
+                            ControlsState.empty(),
+                            FilterDropdownState.closed(),
+                            FilterDropdownState.closed(),
+                            FilterDropdownState.closed(),
+                            FilterDropdownState.closed(),
+                            FilterDropdownState.closed(),
+                            FilterDropdownState.closed())
+                    : draft;
+            localFilters = safeDraft.localFilters();
+            controlsState = safeDraft.controlsState();
+            sizeDropdownState = safeDraft.sizeDropdownState();
+            typeDropdownState = safeDraft.typeDropdownState();
+            subtypeDropdownState = safeDraft.subtypeDropdownState();
+            biomeDropdownState = safeDraft.biomeDropdownState();
+            alignmentDropdownState = safeDraft.alignmentDropdownState();
+            encounterTableDropdownState = safeDraft.encounterTableDropdownState();
+        }
+
+        void applyCreatureFilterOptions(CreatureFilterOptionsResult result) {
+            CreatureFilterOptions options = result == null || result.options() == null
+                    ? CreatureFilterOptions.empty()
+                    : result.options();
+            filterOptions = new FilterOptionsProjection(
+                    options.sizes(),
+                    options.types(),
+                    options.subtypes(),
+                    options.biomes(),
+                    options.alignments(),
+                    options.challengeRatings());
+            localFilters = localFilters.retainAvailable(filterOptions);
+        }
+
+        boolean applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
+            ControlsState previousAuthoritative = authoritativeControls;
+            ControlsState next = ControlsState.fromBuilderInputs(builderInputs, previousAuthoritative);
+            authoritativeControls = next;
+            controlsState = next;
+            return ControlsState.searchControlsChanged(previousAuthoritative, next);
+        }
+
+        void applyEncounterTables(EncounterTableCatalogResult result) {
+            if (result == null || result.status() != EncounterTableReadStatus.SUCCESS) {
+                encounterTableOptions = List.of();
+                return;
+            }
+            encounterTableOptions = result.tables().stream()
+                    .map(EncounterTableOption::fromSummary)
+                    .toList();
+        }
+
+        void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
+            authoritativeControls = authoritativeControls.withPreviewLabels(labels);
+            controlsState = controlsState.withPreviewLabels(labels);
+        }
+
+        void selectSort(String sortKey) {
+            selectedSort = SortOption.fromKey(sortKey);
+            pageOffset = 0;
+        }
+
+        void shiftPage(int pageShift) {
+            if (pageShift < 0 && pageOffset > 0) {
+                pageOffset = Math.max(0, pageOffset - PAGE_SIZE);
+            } else if (pageShift > 0 && pageOffset + PAGE_SIZE < totalCount) {
+                pageOffset += PAGE_SIZE;
+            }
+        }
+
+        void applySearchResult(CreatureCatalogPageResult result) {
+            CreatureCatalogPage page = result == null ? CreatureCatalogPage.empty(PAGE_SIZE, pageOffset) : result.page();
+            if (page == null) {
+                page = CreatureCatalogPage.empty(PAGE_SIZE, pageOffset);
+            }
+            totalCount = Math.max(0, page.totalCount());
+            rows = page.rows().stream().map(CatalogRow::fromCreature).toList();
+            placeholderText = switch (result == null ? CreatureQueryStatus.STORAGE_ERROR : result.status()) {
+                case SUCCESS -> "Keine Monster gefunden";
+                case INVALID_QUERY -> "Filter sind ungültig";
+                default -> "Fehler beim Laden";
+            };
+        }
+
+        void beginSearch() {
+            placeholderText = "Lade Monster...";
+        }
+
+        InteractionState interactionState() {
+            return new InteractionState(localFilters, controlsState, authoritativeControls);
+        }
+
+        SearchRequest searchRequest() {
+            return SearchRequest.from(
+                    mergedFilters(localFilters, authoritativeControls),
+                    selectedSort,
+                    pageOffset);
+        }
+
+        ControlsProjection controlsProjection() {
+            CreatureFilters creatureFilters = mergedFilters(localFilters, controlsState);
+            return new ControlsProjection(
+                    filterOptions,
+                    creatureFilters,
+                    sizeDropdownState,
+                    typeDropdownState,
+                    subtypeDropdownState,
+                    biomeDropdownState,
+                    alignmentDropdownState,
+                    encounterTableDropdownState,
+                    encounterTableOptions,
+                    FilterChip.from(creatureFilters, encounterTableOptions, controlsState),
+                    controlsState);
+        }
+
+        MainProjection mainProjection() {
+            return MainProjection.from(rows, selectedSort, pageOffset, totalCount, placeholderText);
         }
     }
 }

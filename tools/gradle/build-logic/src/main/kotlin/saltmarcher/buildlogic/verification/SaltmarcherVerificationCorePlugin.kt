@@ -66,7 +66,6 @@ internal fun Project.configureVerificationCore() {
         }
 
         val aggregateDependencies = mutableListOf<Any>()
-        selectedCompileJava?.let(aggregateDependencies::add)
 
         descriptor.archunit?.let { archunit ->
             val compileTask = selectedCompileJava
@@ -84,22 +83,34 @@ internal fun Project.configureVerificationCore() {
             aggregateDependencies += archunitTask
         }
 
-        descriptor.jqassistant?.let { jqassistant ->
-            val compileTask = selectedCompileJava
-                ?: error("Missing selected compile task for jQAssistant enforcement bundle '$bundleId'.")
-            val taskPair = verificationHarness.registerFocusedJqassistantTaskPair(
-                bundleId,
-                jqassistant.scanTaskName,
-                jqassistant.analyzeTaskName,
-                jqassistant.scanDescription,
-                jqassistant.analyzeDescription,
-                jqassistant.configPath,
-                jqassistant.rulesDirPath,
-                jqassistant.reportsDirPath,
-                compileTask
-            )
-            aggregateDependencies += taskPair.analyzeTask
-        }
+        descriptor.jqassistantTasks
+            .takeIf(List<*>::isNotEmpty)
+            ?.let { jqassistantTasks ->
+                val compileTask = selectedCompileJava
+                    ?: error("Missing selected compile task for jQAssistant enforcement bundle '$bundleId'.")
+                jqassistantTasks.forEach { jqassistant ->
+                    val taskPair = verificationHarness.registerFocusedJqassistantTaskPair(
+                        bundleId,
+                        jqassistant.scanTaskName,
+                        jqassistant.analyzeTaskName,
+                        jqassistant.scanDescription,
+                        jqassistant.analyzeDescription,
+                        jqassistant.ruleGroups,
+                        jqassistant.rulesDirPath,
+                        jqassistant.reportsDirPath,
+                        compileTask
+                    )
+                    if (jqassistant.taskName == rootTaskName) {
+                        aggregateDependencies += taskPair.analyzeTask
+                    } else {
+                        tasks.register(jqassistant.taskName) {
+                            group = LifecycleBasePlugin.VERIFICATION_GROUP
+                            description = jqassistant.analyzeDescription
+                            dependsOn(taskPair.analyzeTask)
+                        }
+                    }
+                }
+            }
 
         descriptor.buildHarnessTaskMainClasses
             .keys

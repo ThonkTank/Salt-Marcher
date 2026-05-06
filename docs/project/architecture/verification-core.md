@@ -85,16 +85,19 @@ reconstructing the surface model themselves.
 ### 3. Bundle Owners
 
 Each focused enforcement package under `tools/quality/*-enforcement/` owns one
-public `check*Enforcement` lifecycle task through descriptor-owned bundle
+root public `check*Enforcement` lifecycle task through descriptor-owned bundle
 metadata. Standard bundles are registered centrally by the verification core
-from that metadata; explicit exception bundles now expose `rootPluginId`
-metadata and keep their custom wiring in dedicated verification-core plugins
-inside `tools/gradle/build-logic`.
+from that metadata; they MAY also expose additional public report-only sibling
+tasks when the same owner needs a non-blocking diagnostic surface beside the
+root blocker. Explicit exception bundles now expose `rootPluginId` metadata and
+keep their custom wiring in dedicated verification-core plugins inside
+`tools/gradle/build-logic`.
 
 Bundle owners MAY know their private ArchUnit, Error Prone, PMD,
 jQAssistant, or build-harness tasks. They MUST NOT depend on shell wrappers.
 They communicate with the verification core only through stable descriptor
-metadata and the one public lifecycle task they expose.
+metadata, their one root public lifecycle task, and any explicitly declared
+report-only sibling surfaces.
 
 Root-owned hygiene gates that are not bundle-specific MUST stay registered in
 the verification core itself. They MUST NOT be back-ported into fake

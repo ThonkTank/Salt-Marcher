@@ -57,7 +57,7 @@ final class CatalogBinder {
                 return;
             }
             openCreatureDetails(runtimeContext.inspector(), creatures, after.longValue());
-            presentationModel.clearCreatureDetailSelection();
+            presentationModel.setCreatureDetailSelection(0L);
         });
 
         filterOptionsModel.subscribe(presentationModel::applyCreatureFilterOptions);
@@ -66,8 +66,7 @@ final class CatalogBinder {
         tuningPreviewModel.subscribe(result -> presentationModel.applyEncounterTuningPreview(result.labels()));
         builderInputsModel.subscribe(builderInputs -> {
             if (presentationModel.applyEncounterBuilderInputs(builderInputs)) {
-                presentationModel.beginSearch();
-                presentationModel.advanceSearchCycle();
+                presentationModel.requestSearch();
             }
         });
 
@@ -79,8 +78,7 @@ final class CatalogBinder {
         creatures.loadFilterOptions(new LoadCreatureFilterOptionsQuery());
         encounterTables.loadSummaries(new LoadEncounterTableSummariesQuery());
         encounters.loadTuningPreview(new LoadEncounterTuningPreviewQuery());
-        presentationModel.beginSearch();
-        presentationModel.advanceSearchCycle();
+        presentationModel.requestSearch();
         return new Binding(controls, main);
     }
 

@@ -247,7 +247,7 @@ final class DungeonEditorControlsEvents {
                 null));
     }
 
-    void overlayInput(OverlayControlsPanel overlayControls) {
+    void overlayInput(OverlayControlsPanel.InputSnapshot overlaySnapshot) {
         sink.accept(new DungeonEditorControlsViewInputEvent(
                 null,
                 null,
@@ -255,10 +255,10 @@ final class DungeonEditorControlsEvents {
                 null,
                 0,
                 new DungeonEditorControlsViewInputEvent.OverlayInput(
-                        overlayControls.overlayModeKey(),
-                        overlayControls.overlayRange(),
-                        overlayControls.overlayOpacity(),
-                        overlayControls.overlayLevelsText())));
+                        overlaySnapshot.modeKey(),
+                        overlaySnapshot.range(),
+                        overlaySnapshot.opacity(),
+                        overlaySnapshot.levelsText())));
     }
 }
 
@@ -631,10 +631,7 @@ final class DungeonEditorProjectionControls {
         panelView.describeNode(previousLevelButton, "Vorherige Dungeon-Ebene anzeigen");
         panelView.describeNode(nextLevelButton, "Nächste Dungeon-Ebene anzeigen");
 
-        overlayControls.setOnModeChanged(mode -> events.overlayInput(overlayControls));
-        overlayControls.setOnRangeChanged(levelRange -> events.overlayInput(overlayControls));
-        overlayControls.setOnOpacityChanged(opacity -> events.overlayInput(overlayControls));
-        overlayControls.setOnSelectedLevelsChanged(() -> events.overlayInput(overlayControls));
+        overlayControls.onChanged(events::overlayInput);
 
         gridButton.setToggleGroup(viewModeGroup);
         graphButton.setToggleGroup(viewModeGroup);
