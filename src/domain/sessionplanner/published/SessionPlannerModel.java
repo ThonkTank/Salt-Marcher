@@ -5,16 +5,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public record SessionPlannerModel(
-        Supplier<SessionPlannerSnapshot> currentSupplier,
-        Function<Consumer<SessionPlannerSnapshot>, Runnable> subscribeAction
-) {
+public final class SessionPlannerModel {
 
-    public SessionPlannerModel {
-        currentSupplier = currentSupplier == null
+    private final Supplier<SessionPlannerSnapshot> currentSupplier;
+    private final Function<Consumer<SessionPlannerSnapshot>, Runnable> subscribeAction;
+
+    public SessionPlannerModel(
+            Supplier<SessionPlannerSnapshot> currentSupplier,
+            Function<Consumer<SessionPlannerSnapshot>, Runnable> subscribeAction
+    ) {
+        this.currentSupplier = currentSupplier == null
                 ? () -> SessionPlannerSnapshot.empty("Session planner service is not registered.")
                 : currentSupplier;
-        subscribeAction = subscribeAction == null
+        this.subscribeAction = subscribeAction == null
                 ? listener -> () -> { }
                 : subscribeAction;
     }
